@@ -920,14 +920,14 @@ Value eval_ast(AstNode *node, const char *source) {
                 InterpVar *var = interp_get_or_create_var(node->for_in.var_name);
                 if (var) {
                     /* For dicts, yield the key; for arrays/sets, yield the element */
-                    var->is_id = g_coll_entries[entry_idx].key.is_id;
-                    var->value = g_coll_entries[entry_idx].key.obj_val;
-                    var->is_int = g_coll_entries[entry_idx].key.is_int;
-                    var->int_value = g_coll_entries[entry_idx].key.int_val;
-                    var->is_class = g_coll_entries[entry_idx].key.is_class;
-                    var->cls = g_coll_entries[entry_idx].key.cls_val;
-                    var->is_sel = g_coll_entries[entry_idx].key.is_sel;
-                    var->sel = g_coll_entries[entry_idx].key.sel_val;
+                    var->is_id = g_ctx.coll_entries[entry_idx].key.is_id;
+                    var->value = g_ctx.coll_entries[entry_idx].key.obj_val;
+                    var->is_int = g_ctx.coll_entries[entry_idx].key.is_int;
+                    var->int_value = g_ctx.coll_entries[entry_idx].key.int_val;
+                    var->is_class = g_ctx.coll_entries[entry_idx].key.is_class;
+                    var->cls = g_ctx.coll_entries[entry_idx].key.cls_val;
+                    var->is_sel = g_ctx.coll_entries[entry_idx].key.is_sel;
+                    var->sel = g_ctx.coll_entries[entry_idx].key.sel_val;
                 }
                 g_ctx.break_pending = 0;
                 g_ctx.continue_pending = 0;

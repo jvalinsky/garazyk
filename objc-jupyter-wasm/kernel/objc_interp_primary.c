@@ -388,9 +388,9 @@ Value parse_primary(Parser *p) {
                 if (parser_current(p).type == TOK_CLOSE_BRACKET) {
                     parser_advance(p);
                 }
-                for (i = 0; i < g_var_count; i++) {
-                    if (cstr_eq(g_vars[i].name, "NSMutableArray") && g_vars[i].is_class) {
-                        arr_var = &g_vars[i];
+                for (i = 0; i < g_ctx.var_count; i++) {
+                    if (cstr_eq(g_ctx.vars[i].name, "NSMutableArray") && g_ctx.vars[i].is_class) {
+                        arr_var = &g_ctx.vars[i];
                         break;
                     }
                 }
@@ -405,7 +405,7 @@ Value parse_primary(Parser *p) {
                     /* Create array directly using collection side table,
                      * not via interpreter method dispatch (which won't find
                      * the built-in "array" class method). */
-                    unsigned int arr_cid = g_next_coll_id++;
+                    unsigned int arr_cid = g_ctx.next_coll_id++;
                     Value arr = value_from_id(coll_make_marker("NSMutArr:", arr_cid));
                     for (i = 0; i < obj_count; i++) {
                         coll_add(arr_cid, objects[i], value_from_int(0));
@@ -420,9 +420,9 @@ Value parse_primary(Parser *p) {
             {
                 InterpVar *dict_var = 0;
                 unsigned int i;
-                for (i = 0; i < g_var_count; i++) {
-                    if (cstr_eq(g_vars[i].name, "NSMutableDictionary") && g_vars[i].is_class) {
-                        dict_var = &g_vars[i];
+                for (i = 0; i < g_ctx.var_count; i++) {
+                    if (cstr_eq(g_ctx.vars[i].name, "NSMutableDictionary") && g_ctx.vars[i].is_class) {
+                        dict_var = &g_ctx.vars[i];
                         break;
                     }
                 }
@@ -437,7 +437,7 @@ Value parse_primary(Parser *p) {
                     /* Create dictionary directly using collection side table,
                      * not via interpreter method dispatch (which won't find
                      * the built-in "dictionary" class method). */
-                    unsigned int cid = g_next_coll_id++;
+                    unsigned int cid = g_ctx.next_coll_id++;
                     Value dict = value_from_id(coll_make_marker("NSMutDict:", cid));
                     while (parser_current(p).type != TOK_CLOSE_BRACE && parser_current(p).type != TOK_EOF) {
                         Value key, value;
@@ -699,25 +699,25 @@ Value parse_primary(Parser *p) {
                                     return value_void();
                                 }
                                 mi = find_interpreter_method(setter_sel, method_target, receiver, 1);
-                                if (mi < g_method_count) {
+                                if (mi < g_ctx.method_count) {
                                     Value setter_args[1];
                                     setter_args[0] = val;
-                                    (void)execute_interpreter_method(p, &g_methods[mi], setter_sel,
+                                    (void)execute_interpreter_method(p, &g_ctx.methods[mi], setter_sel,
                                                                      receiver, setter_args, 1, 0);
                                 } else {
                                     /* No method found — check for @synthesize property */
                                     unsigned int pi;
-                                    for (pi = 0; pi < g_property_count; pi++) {
-                                        if (g_properties[pi].synthesized &&
-                                            cstr_eq(prop_name, g_properties[pi].name) &&
+                                    for (pi = 0; pi < g_ctx.property_count; pi++) {
+                                        if (g_ctx.properties[pi].synthesized &&
+                                            cstr_eq(prop_name, g_ctx.properties[pi].name) &&
                                             property_matches_class(receiver, pi)) {
                                             /* Store in side table */
-                                            if (instance_var_set(receiver, g_properties[pi].name, val) != 0) {
+                                            if (instance_var_set(receiver, g_ctx.properties[pi].name, val) != 0) {
                                                 parser_error(p, "instance variable table full (max 256)");
                                             }
                                             /* Also update the ivar variable if inside a method body */
-                                            if (g_properties[pi].ivar_name[0] != '\0') {
-                                                InterpVar *ivar_var = interp_find_var(g_properties[pi].ivar_name);
+                                            if (g_ctx.properties[pi].ivar_name[0] != '\0') {
+                                                InterpVar *ivar_var = interp_find_var(g_ctx.properties[pi].ivar_name);
                                                 if (ivar_var) {
                                                     interp_set_var_from_value(ivar_var, val);
                                                 }
@@ -748,13 +748,13 @@ Value parse_primary(Parser *p) {
                             Value current = value_void();
                             {
                                 unsigned int pi;
-                                for (pi = 0; pi < g_property_count; pi++) {
-                                    if (g_properties[pi].synthesized &&
-                                        cstr_eq(prop_name, g_properties[pi].name) &&
+                                for (pi = 0; pi < g_ctx.property_count; pi++) {
+                                    if (g_ctx.properties[pi].synthesized &&
+                                        cstr_eq(prop_name, g_ctx.properties[pi].name) &&
                                         property_matches_class(receiver, pi)) {
-                                        Value *stored = instance_var_get(receiver, g_properties[pi].name);
+                                        Value *stored = instance_var_get(receiver, g_ctx.properties[pi].name);
                                         if (stored) current = *stored;
-                                        else if (g_properties[pi].is_int) current = value_from_int(0);
+                                        else if (g_ctx.properties[pi].is_int) current = value_from_int(0);
                                         break;
                                     }
                                 }
@@ -778,16 +778,16 @@ Value parse_primary(Parser *p) {
                             /* Write back via setter */
                             {
                                 unsigned int pi;
-                                for (pi = 0; pi < g_property_count; pi++) {
-                                    if (g_properties[pi].synthesized &&
-                                        cstr_eq(prop_name, g_properties[pi].name) &&
+                                for (pi = 0; pi < g_ctx.property_count; pi++) {
+                                    if (g_ctx.properties[pi].synthesized &&
+                                        cstr_eq(prop_name, g_ctx.properties[pi].name) &&
                                         property_matches_class(receiver, pi)) {
-                                        if (instance_var_set(receiver, g_properties[pi].name, new_val) != 0) {
+                                        if (instance_var_set(receiver, g_ctx.properties[pi].name, new_val) != 0) {
                                             parser_error(p, "instance variable table full (max 256)");
                                         }
                                         /* Also update ivar variable if inside method body */
-                                        if (g_properties[pi].ivar_name[0] != '\0') {
-                                            InterpVar *ivar_var = interp_find_var(g_properties[pi].ivar_name);
+                                        if (g_ctx.properties[pi].ivar_name[0] != '\0') {
+                                            InterpVar *ivar_var = interp_find_var(g_ctx.properties[pi].ivar_name);
                                             if (ivar_var) {
                                                 interp_set_var_from_value(ivar_var, new_val);
                                             }
@@ -812,19 +812,19 @@ Value parse_primary(Parser *p) {
                             return value_void();
                         }
                         mi = find_interpreter_method(prop_sel, method_target, receiver, 1);
-                        if (mi < g_method_count) {
-                            return execute_interpreter_method(p, &g_methods[mi], prop_sel,
+                        if (mi < g_ctx.method_count) {
+                            return execute_interpreter_method(p, &g_ctx.methods[mi], prop_sel,
                                                               receiver, 0, 0, 0);
                         }
                         /* No interpreter method found — check @synthesize property */
                         {
                             unsigned int pi;
-                            for (pi = 0; pi < g_property_count; pi++) {
-                                if (g_properties[pi].synthesized &&
-                                    cstr_eq(prop_name, g_properties[pi].name) &&
+                            for (pi = 0; pi < g_ctx.property_count; pi++) {
+                                if (g_ctx.properties[pi].synthesized &&
+                                    cstr_eq(prop_name, g_ctx.properties[pi].name) &&
                                     property_matches_class(receiver, pi)) {
                                     /* Read from side table */
-                                    Value *val = instance_var_get(receiver, g_properties[pi].name);
+                                    Value *val = instance_var_get(receiver, g_ctx.properties[pi].name);
                                     if (val) return *val;
                                     return value_void();
                                 }
@@ -873,13 +873,13 @@ Value parse_primary(Parser *p) {
                                         /* replaceObjectAtIndex:withObject: */
                                         int idx = coll_get_nth(actual_cid, (unsigned int)index.int_val);
                                         if (idx >= 0) {
-                                            g_coll_entries[(unsigned int)idx].key = val;
+                                            g_ctx.coll_entries[(unsigned int)idx].key = val;
                                         }
                                     } else {
                                         /* setObject:forKey: */
                                         int idx = coll_find_by_key(actual_cid, &index);
                                         if (idx >= 0) {
-                                            g_coll_entries[(unsigned int)idx].value = val;
+                                            g_ctx.coll_entries[(unsigned int)idx].value = val;
                                         } else {
                                             coll_add(actual_cid, index, val);
                                         }
@@ -891,11 +891,11 @@ Value parse_primary(Parser *p) {
                             /* Read: objectAtIndex: or objectForKey: */
                             if (is_array) {
                                 int idx = coll_get_nth(actual_cid, (unsigned int)index.int_val);
-                                if (idx >= 0) return g_coll_entries[(unsigned int)idx].key;
+                                if (idx >= 0) return g_ctx.coll_entries[(unsigned int)idx].key;
                                 return value_from_id((id)"(nil)");
                             } else {
                                 int idx = coll_find_by_key(actual_cid, &index);
-                                if (idx >= 0) return g_coll_entries[(unsigned int)idx].value;
+                                if (idx >= 0) return g_ctx.coll_entries[(unsigned int)idx].value;
                                 return value_from_id((id)"(nil)");
                             }
                         }
@@ -913,7 +913,7 @@ Value parse_primary(Parser *p) {
                         if (blk) {
                             Value args[8];
                             unsigned int arg_count = 0;
-                            unsigned int saved_var_count = g_var_count;
+                            unsigned int saved_var_count = g_ctx.var_count;
                             unsigned int ai;
                             /* Save the block variable's current value so we
                              * can restore it after captured variable restoration.
@@ -947,18 +947,18 @@ Value parse_primary(Parser *p) {
                                     if (blk->captures[ai].is_by_ref) {
                                         /* __block: read from original variable slot */
                                         unsigned int vi = blk->captures[ai].var_index;
-                                        if (vi < g_var_count) {
-                                            cap_var->is_id = g_vars[vi].is_id;
-                                            cap_var->value = g_vars[vi].value;
-                                            cap_var->is_int = g_vars[vi].is_int;
-                                            cap_var->int_value = g_vars[vi].int_value;
-                                            cap_var->is_float = g_vars[vi].is_float;
-                                            cap_var->float_value = g_vars[vi].float_value;
-                                            cap_var->is_class = g_vars[vi].is_class;
-                                            cap_var->cls = g_vars[vi].cls;
-                                            cap_var->is_sel = g_vars[vi].is_sel;
-                                            cap_var->sel = g_vars[vi].sel;
-                                            cap_var->is_block_captured = g_vars[vi].is_block_captured;
+                                        if (vi < g_ctx.var_count) {
+                                            cap_var->is_id = g_ctx.vars[vi].is_id;
+                                            cap_var->value = g_ctx.vars[vi].value;
+                                            cap_var->is_int = g_ctx.vars[vi].is_int;
+                                            cap_var->int_value = g_ctx.vars[vi].int_value;
+                                            cap_var->is_float = g_ctx.vars[vi].is_float;
+                                            cap_var->float_value = g_ctx.vars[vi].float_value;
+                                            cap_var->is_class = g_ctx.vars[vi].is_class;
+                                            cap_var->cls = g_ctx.vars[vi].cls;
+                                            cap_var->is_sel = g_ctx.vars[vi].is_sel;
+                                            cap_var->sel = g_ctx.vars[vi].sel;
+                                            cap_var->is_block_captured = g_ctx.vars[vi].is_block_captured;
                                         }
                                     } else {
                                         /* by-value: restore snapshot */
@@ -1004,23 +1004,23 @@ Value parse_primary(Parser *p) {
                                         if (blk->captures[ci].is_by_ref) {
                                             unsigned int vi = blk->captures[ci].var_index;
                                             InterpVar *cap_var = interp_find_var(blk->captures[ci].name);
-                                            if (cap_var && vi < g_var_count) {
-                                                g_vars[vi].is_id = cap_var->is_id;
-                                                g_vars[vi].value = cap_var->value;
-                                                g_vars[vi].is_int = cap_var->is_int;
-                                                g_vars[vi].int_value = cap_var->int_value;
-                                                g_vars[vi].is_float = cap_var->is_float;
-                                                g_vars[vi].float_value = cap_var->float_value;
-                                                g_vars[vi].is_class = cap_var->is_class;
-                                                g_vars[vi].cls = cap_var->cls;
-                                                g_vars[vi].is_sel = cap_var->is_sel;
-                                                g_vars[vi].sel = cap_var->sel;
+                                            if (cap_var && vi < g_ctx.var_count) {
+                                                g_ctx.vars[vi].is_id = cap_var->is_id;
+                                                g_ctx.vars[vi].value = cap_var->value;
+                                                g_ctx.vars[vi].is_int = cap_var->is_int;
+                                                g_ctx.vars[vi].int_value = cap_var->int_value;
+                                                g_ctx.vars[vi].is_float = cap_var->is_float;
+                                                g_ctx.vars[vi].float_value = cap_var->float_value;
+                                                g_ctx.vars[vi].is_class = cap_var->is_class;
+                                                g_ctx.vars[vi].cls = cap_var->cls;
+                                                g_ctx.vars[vi].is_sel = cap_var->is_sel;
+                                                g_ctx.vars[vi].sel = cap_var->sel;
                                             }
                                         }
                                     }
                                 }
 
-                                g_var_count = saved_var_count;
+                                g_ctx.var_count = saved_var_count;
                                 g_ctx.return_pending = 0;
                                 /* Restore the block variable's value, which may
                                  * have been overwritten by captured variable
@@ -1048,10 +1048,10 @@ Value parse_primary(Parser *p) {
          * runtime's hash table when it's empty. */
         {
             unsigned int vi;
-            for (vi = 0; vi < g_var_count; vi++) {
-                if (cstr_eq(g_vars[vi].name, tok.text) && g_vars[vi].is_class) {
+            for (vi = 0; vi < g_ctx.var_count; vi++) {
+                if (cstr_eq(g_ctx.vars[vi].name, tok.text) && g_ctx.vars[vi].is_class) {
                     parser_advance(p);
-                    return value_from_class(g_vars[vi].cls);
+                    return value_from_class(g_ctx.vars[vi].cls);
                 }
             }
         }
@@ -1116,7 +1116,7 @@ Value parse_primary(Parser *p) {
 
     /* Block literal: ^{ body } or ^(Type arg, ...) { body }
      * We capture the body source range (like method bodies) and
-     * register it in g_blocks[]. Block invocation executes the
+     * register it in g_ctx.blocks[]. Block invocation executes the
      * body via eval_source_range. */
     if (tok.type == TOK_CARET) {
         unsigned int block_id;
@@ -1126,12 +1126,12 @@ Value parse_primary(Parser *p) {
         parser_advance(p); /* consume ^ */
 
         /* Allocate a block slot */
-        if (g_block_count >= MAX_BLOCKS) {
+        if (g_ctx.block_count >= MAX_BLOCKS) {
             parser_error(p, "block table full (max 32)");
             return value_void();
         }
-        block_id = g_next_block_id++;
-        blk = &g_blocks[g_block_count];
+        block_id = g_ctx.next_block_id++;
+        blk = &g_ctx.blocks[g_ctx.block_count];
         blk->block_id = block_id;
         blk->source[0] = '\0';
         blk->source_len = 0;
@@ -1212,7 +1212,7 @@ Value parse_primary(Parser *p) {
         } else if (body_len >= 2048) {
             parser_error(p, "block body too large (max 2047 bytes)");
         }
-        g_block_count++;
+        g_ctx.block_count++;
 
         /* Capture current variable values (by-value snapshot).
          * We capture all non-class, non-sel variables that have
@@ -1223,52 +1223,52 @@ Value parse_primary(Parser *p) {
          * is simpler and correct for the notebook use case. */
         {
             unsigned int vi;
-            for (vi = 0; vi < g_var_count && blk->capture_count < 16; vi++) {
+            for (vi = 0; vi < g_ctx.var_count && blk->capture_count < 16; vi++) {
                 unsigned int ai;
                 int is_arg = 0;
                 /* Skip class variables, selector variables, and
                  * variables that are Foundation class names */
-                if (g_vars[vi].is_class || g_vars[vi].is_sel) continue;
-                if (g_vars[vi].name[0] == '\0') continue;
+                if (g_ctx.vars[vi].is_class || g_ctx.vars[vi].is_sel) continue;
+                if (g_ctx.vars[vi].name[0] == '\0') continue;
                 /* Skip variables that shadow block parameters */
                 for (ai = 0; ai < blk->arg_count; ai++) {
-                    if (cstr_eq(g_vars[vi].name, blk->arg_names[ai])) {
+                    if (cstr_eq(g_ctx.vars[vi].name, blk->arg_names[ai])) {
                         is_arg = 1;
                         break;
                     }
                 }
                 if (is_arg) continue;
                 cstr_copy(blk->captures[blk->capture_count].name,
-                          g_vars[vi].name, 64);
-                if (g_vars[vi].is_block_captured) {
+                          g_ctx.vars[vi].name, 64);
+                if (g_ctx.vars[vi].is_block_captured) {
                     /* __block variable: capture by reference (store index) */
                     blk->captures[blk->capture_count].is_by_ref = 1;
                     blk->captures[blk->capture_count].var_index = vi;
                     /* Still snapshot value for fallback / GC marking */
-                    blk->captures[blk->capture_count].value.is_id = g_vars[vi].is_id;
-                    blk->captures[blk->capture_count].value.obj_val = g_vars[vi].value;
-                    blk->captures[blk->capture_count].value.is_int = g_vars[vi].is_int;
-                    blk->captures[blk->capture_count].value.int_val = g_vars[vi].int_value;
-                    blk->captures[blk->capture_count].value.is_float = g_vars[vi].is_float;
-                    blk->captures[blk->capture_count].value.float_val = g_vars[vi].float_value;
-                    blk->captures[blk->capture_count].value.is_class = g_vars[vi].is_class;
-                    blk->captures[blk->capture_count].value.cls_val = g_vars[vi].cls;
-                    blk->captures[blk->capture_count].value.is_sel = g_vars[vi].is_sel;
-                    blk->captures[blk->capture_count].value.sel_val = g_vars[vi].sel;
+                    blk->captures[blk->capture_count].value.is_id = g_ctx.vars[vi].is_id;
+                    blk->captures[blk->capture_count].value.obj_val = g_ctx.vars[vi].value;
+                    blk->captures[blk->capture_count].value.is_int = g_ctx.vars[vi].is_int;
+                    blk->captures[blk->capture_count].value.int_val = g_ctx.vars[vi].int_value;
+                    blk->captures[blk->capture_count].value.is_float = g_ctx.vars[vi].is_float;
+                    blk->captures[blk->capture_count].value.float_val = g_ctx.vars[vi].float_value;
+                    blk->captures[blk->capture_count].value.is_class = g_ctx.vars[vi].is_class;
+                    blk->captures[blk->capture_count].value.cls_val = g_ctx.vars[vi].cls;
+                    blk->captures[blk->capture_count].value.is_sel = g_ctx.vars[vi].is_sel;
+                    blk->captures[blk->capture_count].value.sel_val = g_ctx.vars[vi].sel;
                 } else {
                     /* Normal variable: capture by value (snapshot) */
                     blk->captures[blk->capture_count].is_by_ref = 0;
                     blk->captures[blk->capture_count].var_index = 0;
-                    blk->captures[blk->capture_count].value.is_id = g_vars[vi].is_id;
-                    blk->captures[blk->capture_count].value.obj_val = g_vars[vi].value;
-                    blk->captures[blk->capture_count].value.is_int = g_vars[vi].is_int;
-                    blk->captures[blk->capture_count].value.int_val = g_vars[vi].int_value;
-                    blk->captures[blk->capture_count].value.is_float = g_vars[vi].is_float;
-                    blk->captures[blk->capture_count].value.float_val = g_vars[vi].float_value;
-                    blk->captures[blk->capture_count].value.is_class = g_vars[vi].is_class;
-                    blk->captures[blk->capture_count].value.cls_val = g_vars[vi].cls;
-                    blk->captures[blk->capture_count].value.is_sel = g_vars[vi].is_sel;
-                    blk->captures[blk->capture_count].value.sel_val = g_vars[vi].sel;
+                    blk->captures[blk->capture_count].value.is_id = g_ctx.vars[vi].is_id;
+                    blk->captures[blk->capture_count].value.obj_val = g_ctx.vars[vi].value;
+                    blk->captures[blk->capture_count].value.is_int = g_ctx.vars[vi].is_int;
+                    blk->captures[blk->capture_count].value.int_val = g_ctx.vars[vi].int_value;
+                    blk->captures[blk->capture_count].value.is_float = g_ctx.vars[vi].is_float;
+                    blk->captures[blk->capture_count].value.float_val = g_ctx.vars[vi].float_value;
+                    blk->captures[blk->capture_count].value.is_class = g_ctx.vars[vi].is_class;
+                    blk->captures[blk->capture_count].value.cls_val = g_ctx.vars[vi].cls;
+                    blk->captures[blk->capture_count].value.is_sel = g_ctx.vars[vi].is_sel;
+                    blk->captures[blk->capture_count].value.sel_val = g_ctx.vars[vi].sel;
                 }
                 blk->capture_count++;
             }
