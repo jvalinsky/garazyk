@@ -5,6 +5,15 @@
  * JavaScript passes explicit request pointers and byte lengths into the module
  * and receives allocated response buffers plus explicit lengths back. Domain
  * failures remain JSON payloads; transport failures return integer status codes.
+ *
+ * BUFFER OWNERSHIP CONTRACT:
+ *   - Every call writes a malloc'd response buffer to *out_ptr_ptr
+ *   - Caller MUST call objc_kernel_free(*out_ptr_ptr) after use
+ *   - Exception: when transport status != OBJC_KERNEL_TRANSPORT_OK,
+ *     *out_ptr_ptr == 0 and no allocation is made
+ *   - Response size limit: OBJC_KERNEL_MAX_RESPONSE_BYTES (1 MB)
+ *     If response would exceed limit, buffer is freed internally and
+ *     OBJC_KERNEL_TRANSPORT_RESPONSE_TOO_LARGE is returned
  */
 
 #include "objc_interpreter.h"
@@ -244,13 +253,45 @@ static int parse_json_string(const char **cursor, char *out, unsigned int out_ca
                 ch = '\t';
             } else if (*source == 'u') {
                 unsigned int i = 0u;
+                unsigned int codepoint = 0u;
                 for (i = 0u; i < 4u; i++) {
                     source++;
                     if (!is_hex(*source)) {
                         return OBJC_JSON_INVALID;
                     }
+                    unsigned int digit = 0u;
+                    if (*source >= '0' && *source <= '9') {
+                        digit = (unsigned int)(*source - '0');
+                    } else if (*source >= 'a' && *source <= 'f') {
+                        digit = 10u + (unsigned int)(*source - 'a');
+                    } else if (*source >= 'A' && *source <= 'F') {
+                        digit = 10u + (unsigned int)(*source - 'A');
+                    }
+                    codepoint = (codepoint << 4u) | digit;
                 }
-                ch = '?';
+                if (codepoint > 0x7Fu) {
+                    if (out != 0 && out_capacity > 0u) {
+                        if (offset + 2u >= out_capacity) {
+                            return OBJC_JSON_CODE_TOO_LARGE;
+                        }
+                        if (codepoint <= 0x7FFu) {
+                            out[offset] = (char)(0xC0u | ((codepoint >> 6u) & 0x1Fu));
+                            out[offset + 1u] = (char)(0x80u | (codepoint & 0x3Fu));
+                        } else {
+                            out[offset] = (char)(0xE0u | ((codepoint >> 12u) & 0x0Fu));
+                            out[offset + 1u] = (char)(0x80u | ((codepoint >> 6u) & 0x3Fu));
+                            offset++;
+                            if (offset + 1u >= out_capacity) {
+                                return OBJC_JSON_CODE_TOO_LARGE;
+                            }
+                            out[offset] = (char)(0x80u | (codepoint & 0x3Fu));
+                        }
+                    }
+                    offset += codepoint <= 0x7FFu ? 2u : 3u;
+                    source++;
+                    continue;
+                }
+                ch = (char)codepoint;
             } else {
                 return OBJC_JSON_INVALID;
             }
@@ -344,7 +385,9 @@ static int parse_json_uint(const char **cursor, unsigned int *value) {
     return OBJC_JSON_OK;
 }
 
-static int skip_json_value(const char **cursor) {
+static int skip_json_value_impl(const char **cursor, unsigned int depth);
+
+static int skip_json_value_impl(const char **cursor, unsigned int depth) {
     unsigned int ignored_length = 0u;
     skip_space(cursor);
 
@@ -363,8 +406,60 @@ static int skip_json_value(const char **cursor) {
     if (**cursor == 'n') {
         return parse_literal_value(cursor, "null");
     }
+    if (**cursor == '[') {
+        if (depth >= 16) return OBJC_JSON_INVALID;
+        *cursor += 1;
+        skip_space(cursor);
+        while (**cursor != ']' && **cursor != '\0') {
+            if (skip_json_value_impl(cursor, depth + 1) != OBJC_JSON_OK) {
+                return OBJC_JSON_INVALID;
+            }
+            skip_space(cursor);
+            if (**cursor == ',') {
+                *cursor += 1;
+                skip_space(cursor);
+            } else if (**cursor != ']') {
+                return OBJC_JSON_INVALID;
+            }
+        }
+        if (**cursor != ']') return OBJC_JSON_INVALID;
+        *cursor += 1;
+        return OBJC_JSON_OK;
+    }
+    if (**cursor == '{') {
+        if (depth >= 16) return OBJC_JSON_INVALID;
+        *cursor += 1;
+        skip_space(cursor);
+        while (**cursor != '}' && **cursor != '\0') {
+            unsigned int key_len = 0u;
+            if (parse_json_string(cursor, 0, 0u, &key_len) != OBJC_JSON_OK) {
+                return OBJC_JSON_INVALID;
+            }
+            skip_space(cursor);
+            if (**cursor != ':') return OBJC_JSON_INVALID;
+            *cursor += 1;
+            skip_space(cursor);
+            if (skip_json_value_impl(cursor, depth + 1) != OBJC_JSON_OK) {
+                return OBJC_JSON_INVALID;
+            }
+            skip_space(cursor);
+            if (**cursor == ',') {
+                *cursor += 1;
+                skip_space(cursor);
+            } else if (**cursor != '}') {
+                return OBJC_JSON_INVALID;
+            }
+        }
+        if (**cursor != '}') return OBJC_JSON_INVALID;
+        *cursor += 1;
+        return OBJC_JSON_OK;
+    }
 
     return OBJC_JSON_INVALID;
+}
+
+static int skip_json_value(const char **cursor) {
+    return skip_json_value_impl(cursor, 0);
 }
 
 static int parse_kernel_request_code(const char *json, char *code, unsigned int code_capacity, unsigned int *code_length) {
@@ -597,7 +692,7 @@ static char *copy_request_json(const unsigned char *request_bytes, unsigned int 
         *transport_status = OBJC_KERNEL_TRANSPORT_REQUEST_TOO_LARGE;
         return 0;
     }
-    if (request_bytes == 0 && request_len > 0u) {
+    if (request_bytes == 0) {
         *transport_status = OBJC_KERNEL_TRANSPORT_INVALID_ARGUMENT;
         return 0;
     }
