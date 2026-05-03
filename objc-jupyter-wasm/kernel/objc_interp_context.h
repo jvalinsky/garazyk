@@ -75,4 +75,7 @@ typedef struct InterpContext {
     int continue_pending;
 } InterpContext;
 
+/* Global interpreter context, defined in objc_interpreter.c */
+extern InterpContext g_ctx;
+
 #endif /* OBJC_INTERP_CONTEXT_H */

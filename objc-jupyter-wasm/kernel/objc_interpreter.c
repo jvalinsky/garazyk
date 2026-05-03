@@ -8,7 +8,7 @@
 
 #include "objc_interpreter.h"
 #include "objc_interp_types.h"
-#include "objc_interp_globals.h"
+#include "objc_interp_context.h"
 #include "objc_interp_parser.h"
 
 /* We need the runtime headers for Class, SEL, id, etc. */
