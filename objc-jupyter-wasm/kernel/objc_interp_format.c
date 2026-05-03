@@ -121,6 +121,55 @@ Value format_values_to_pool(const char *fmt, Value *args, int arg_count) {
     while (fmt[fi] != '\0' && pos < sizeof(buf) - 1) {
         if (fmt[fi] == '%' && fmt[fi + 1] != '\0') {
             fi++;
+            /* Parse format specifier: [flags][width][.precision][length]conversion */
+            int flag_zero_pad = 0;
+            int flag_left_align = 0;
+            int flag_plus = 0;
+            int flag_space = 0;
+            int width = 0;
+            int precision = -1; /* -1 means unspecified */
+            int length_l = 0;  /* 0=none, 1=l, 2=ll */
+
+            /* Flags */
+            while (fmt[fi] == '0' || fmt[fi] == '-' || fmt[fi] == '+' || fmt[fi] == ' ') {
+                if (fmt[fi] == '0') flag_zero_pad = 1;
+                else if (fmt[fi] == '-') flag_left_align = 1;
+                else if (fmt[fi] == '+') flag_plus = 1;
+                else if (fmt[fi] == ' ') flag_space = 1;
+                fi++;
+            }
+
+            /* Width (digits) */
+            while (fmt[fi] >= '0' && fmt[fi] <= '9') {
+                width = width * 10 + (fmt[fi] - '0');
+                fi++;
+            }
+
+            /* Precision (.digits) */
+            if (fmt[fi] == '.') {
+                fi++;
+                precision = 0;
+                while (fmt[fi] >= '0' && fmt[fi] <= '9') {
+                    precision = precision * 10 + (fmt[fi] - '0');
+                    fi++;
+                }
+            }
+
+            /* Length modifier (l, ll, z) */
+            if (fmt[fi] == 'l') {
+                length_l = 1;
+                fi++;
+                if (fmt[fi] == 'l') {
+                    length_l = 2;
+                    fi++;
+                }
+            } else if (fmt[fi] == 'z') {
+                /* size_t — treat as unsigned long */
+                length_l = 1;
+                fi++;
+            }
+
+            /* Conversion specifier */
             switch (fmt[fi]) {
                 case '%':
                     if (pos < sizeof(buf)-1) buf[pos++] = '%';
@@ -180,97 +229,132 @@ Value format_values_to_pool(const char *fmt, Value *args, int arg_count) {
                         format_warn_missing_argument('@');
                     }
                     break;
-                case 'd': case 'i':
+                case 'd': case 'i': {
+                    /* Signed integer, with optional width/zero-padding */
                     if (arg_idx < arg_count) {
                         Value v = args[arg_idx++];
+                        long val;
+                        int neg;
+                        char tmp[22]; int ti = 0;
+                        int sign_len = 0;
+
                         if (v.is_int) {
-                            int val = v.int_val;
-                            int neg = val < 0;
-                            if (neg) val = -val;
-                            char tmp[12]; int ti = 0;
-                            if (val == 0) tmp[ti++] = '0';
-                            else { while (val > 0) { tmp[ti++] = '0' + (val % 10); val /= 10; } }
-                            if (neg && pos < sizeof(buf)-1) buf[pos++] = '-';
-                            while (ti > 0 && pos < sizeof(buf)-1) buf[pos++] = tmp[--ti];
+                            val = (length_l > 0) ? (long)v.int_val : (long)v.int_val;
                         } else if (v.is_id) {
-                            int val = (int)(long)v.obj_val;
-                            int neg = val < 0;
-                            if (neg) val = -val;
-                            char tmp[12]; int ti = 0;
-                            if (val == 0) tmp[ti++] = '0';
-                            else { while (val > 0) { tmp[ti++] = '0' + (val % 10); val /= 10; } }
+                            val = (long)v.obj_val;
+                        } else if (v.is_float) {
+                            val = (long)v.float_val;
+                        } else {
+                            val = 0;
+                        }
+                        neg = val < 0;
+                        if (neg) { val = -val; sign_len = 1; }
+                        if (flag_plus && !neg) sign_len = 1;
+                        else if (flag_space && !neg) sign_len = 1;
+
+                        if (val == 0) tmp[ti++] = '0';
+                        else { while (val > 0) { tmp[ti++] = '0' + (int)(val % 10); val /= 10; } }
+
+                        /* Width padding */
+                        if (width > 0 && !flag_left_align) {
+                            int total = ti + sign_len;
+                            char pad = flag_zero_pad ? '0' : ' ';
+                            /* If zero-padding, sign goes first then zeros */
+                            if (flag_zero_pad) {
+                                if (neg && pos < sizeof(buf)-1) buf[pos++] = '-';
+                                else if (flag_plus && pos < sizeof(buf)-1) buf[pos++] = '+';
+                                else if (flag_space && pos < sizeof(buf)-1) buf[pos++] = ' ';
+                                while (total < width && pos < sizeof(buf)-1) { buf[pos++] = pad; total++; }
+                            } else {
+                                while (total < width && pos < sizeof(buf)-1) { buf[pos++] = pad; total++; }
+                                if (neg && pos < sizeof(buf)-1) buf[pos++] = '-';
+                                else if (flag_plus && pos < sizeof(buf)-1) buf[pos++] = '+';
+                                else if (flag_space && pos < sizeof(buf)-1) buf[pos++] = ' ';
+                            }
+                        } else {
                             if (neg && pos < sizeof(buf)-1) buf[pos++] = '-';
-                            while (ti > 0 && pos < sizeof(buf)-1) buf[pos++] = tmp[--ti];
+                            else if (flag_plus && pos < sizeof(buf)-1) buf[pos++] = '+';
+                            else if (flag_space && pos < sizeof(buf)-1) buf[pos++] = ' ';
+                        }
+                        while (ti > 0 && pos < sizeof(buf)-1) buf[pos++] = tmp[--ti];
+                        /* Left-align padding */
+                        if (width > 0 && flag_left_align) {
+                            int total = ti + sign_len;
+                            while (total < width && pos < sizeof(buf)-1) { buf[pos++] = ' '; total++; }
                         }
                     } else {
                         format_warn_missing_argument(fmt[fi]);
                     }
                     break;
-                case 'l':
-                    if (fmt[fi + 1] == 'l' && (fmt[fi + 2] == 'd' || fmt[fi + 2] == 'i')) {
-                        /* %lld — long long */
-                        fi += 2;
-                        if (arg_idx < arg_count) {
-                            Value v = args[arg_idx++];
-                            if (v.is_int) {
-                                long val = (long)v.int_val;
-                                int neg = val < 0;
-                                if (neg) val = -val;
-                                char tmp[20]; int ti = 0;
-                                if (val == 0) tmp[ti++] = '0';
-                                else { while (val > 0) { tmp[ti++] = '0' + (int)(val % 10); val /= 10; } }
-                                if (neg && pos < sizeof(buf)-1) buf[pos++] = '-';
-                                while (ti > 0 && pos < sizeof(buf)-1) buf[pos++] = tmp[--ti];
-                            }
-                        } else {
-                            format_warn_missing_argument('d');
-                        }
-                    } else if (fmt[fi + 1] == 'd' || fmt[fi + 1] == 'i') {
-                        /* %ld */
-                        fi++;
-                        if (arg_idx < arg_count) {
-                            Value v = args[arg_idx++];
-                            if (v.is_int) {
-                                long val = (long)v.int_val;
-                                int neg = val < 0;
-                                if (neg) val = -val;
-                                char tmp[20]; int ti = 0;
-                                if (val == 0) tmp[ti++] = '0';
-                                else { while (val > 0) { tmp[ti++] = '0' + (int)(val % 10); val /= 10; } }
-                                if (neg && pos < sizeof(buf)-1) buf[pos++] = '-';
-                                while (ti > 0 && pos < sizeof(buf)-1) buf[pos++] = tmp[--ti];
-                            }
-                        } else {
-                            format_warn_missing_argument('d');
-                        }
-                    }
-                    break;
-                case 'u':
+                }
+                case 'u': {
+                    /* Unsigned integer, with optional width/zero-padding */
                     if (arg_idx < arg_count) {
                         Value v = args[arg_idx++];
+                        unsigned long val;
+                        char tmp[22]; int ti = 0;
+
                         if (v.is_int) {
-                            int val = v.int_val;
-                            if (val < 0) val = 0;
-                            char tmp[12]; int ti = 0;
-                            if (val == 0) tmp[ti++] = '0';
-                            else { while (val > 0) { tmp[ti++] = '0' + (val % 10); val /= 10; } }
-                            while (ti > 0 && pos < sizeof(buf)-1) buf[pos++] = tmp[--ti];
+                            val = (unsigned long)(v.int_val);
+                        } else if (v.is_id) {
+                            val = (unsigned long)v.obj_val;
+                        } else {
+                            val = 0;
+                        }
+                        if (val == 0) tmp[ti++] = '0';
+                        else { while (val > 0) { tmp[ti++] = '0' + (int)(val % 10); val /= 10; } }
+
+                        if (width > 0 && !flag_left_align) {
+                            int total = ti;
+                            char pad = flag_zero_pad ? '0' : ' ';
+                            while (total < width && pos < sizeof(buf)-1) { buf[pos++] = pad; total++; }
+                        }
+                        while (ti > 0 && pos < sizeof(buf)-1) buf[pos++] = tmp[--ti];
+                        if (width > 0 && flag_left_align) {
+                            int total = ti;
+                            while (total < width && pos < sizeof(buf)-1) { buf[pos++] = ' '; total++; }
                         }
                     } else {
                         format_warn_missing_argument('u');
                     }
                     break;
+                }
+                case 'c': {
+                    /* Character */
+                    if (arg_idx < arg_count) {
+                        Value v = args[arg_idx++];
+                        char ch;
+                        if (v.is_int) ch = (char)v.int_val;
+                        else if (v.is_id && v.obj_val != 0) ch = ((const char *)v.obj_val)[0];
+                        else ch = '?';
+                        if (pos < sizeof(buf)-1) buf[pos++] = ch;
+                    } else {
+                        format_warn_missing_argument('c');
+                    }
+                    break;
+                }
                 case 'f': {
                     if (arg_idx >= arg_count) {
                         format_warn_missing_argument('f');
-                    } else if (pos < sizeof(buf) - 10) {
+                    } else if (pos < sizeof(buf) - 20) {
                         Value v = args[arg_idx++];
                         double fv = v.is_float ? v.float_val : (v.is_int ? (double)v.int_val : 0.0);
                         int neg = fv < 0.0;
+                        int prec = (precision >= 0) ? precision : 6;
                         if (neg) fv = -fv;
                         unsigned long ipart = (unsigned long)fv;
                         double fpart = fv - (double)ipart;
+                        int sign_len = 0;
+                        if (neg) sign_len = 1;
+                        else if (flag_plus) sign_len = 1;
+                        else if (flag_space) sign_len = 1;
+
+                        /* Write sign */
                         if (neg && pos < sizeof(buf)-1) buf[pos++] = '-';
+                        else if (flag_plus && pos < sizeof(buf)-1) buf[pos++] = '+';
+                        else if (flag_space && pos < sizeof(buf)-1) buf[pos++] = ' ';
+
+                        /* Integer part */
                         if (ipart == 0 && pos < sizeof(buf)-1) buf[pos++] = '0';
                         else {
                             char ibuf[20]; int ii = 0;
@@ -278,14 +362,89 @@ Value format_values_to_pool(const char *fmt, Value *args, int arg_count) {
                             while (ii > 0 && pos < sizeof(buf)-1) buf[pos++] = ibuf[--ii];
                         }
                         if (pos < sizeof(buf)-1) buf[pos++] = '.';
-                        { int d; for (d = 0; d < 6 && pos < sizeof(buf)-2; d++) {
+                        /* Fractional part with specified precision */
+                        { int d; for (d = 0; d < prec && pos < sizeof(buf)-2; d++) {
                             fpart *= 10.0;
                             int digit = (int)fpart;
                             buf[pos++] = '0' + digit;
                             fpart -= digit;
                         }}
-                        while (pos > 1 && buf[pos-1] == '0') pos--;
-                        if (pos > 0 && buf[pos-1] == '.' && pos < sizeof(buf)-1) buf[pos++] = '0';
+                        /* If precision was unspecified (default 6), trim trailing zeros */
+                        if (precision < 0) {
+                            while (pos > 1 && buf[pos-1] == '0') pos--;
+                            if (pos > 0 && buf[pos-1] == '.' && pos < sizeof(buf)-1) buf[pos++] = '0';
+                        }
+                    }
+                    break;
+                }
+                case 'g': {
+                    /* Compact float: use %f or %e notation, trim trailing zeros */
+                    if (arg_idx >= arg_count) {
+                        format_warn_missing_argument('g');
+                    } else if (pos < sizeof(buf) - 20) {
+                        Value v = args[arg_idx++];
+                        double fv = v.is_float ? v.float_val : (v.is_int ? (double)v.int_val : 0.0);
+                        int neg = fv < 0.0;
+                        int prec = (precision > 0) ? precision : 6;
+                        if (neg) fv = -fv;
+
+                        if (fv == 0.0) {
+                            if (neg && pos < sizeof(buf)-1) buf[pos++] = '-';
+                            buf[pos++] = '0';
+                        } else if (fv >= 1e-4 && fv < 1e6) {
+                            /* Use %f-style formatting */
+                            unsigned long ipart = (unsigned long)fv;
+                            double fpart = fv - (double)ipart;
+                            if (neg && pos < sizeof(buf)-1) buf[pos++] = '-';
+                            if (ipart == 0 && pos < sizeof(buf)-1) buf[pos++] = '0';
+                            else {
+                                char ibuf[20]; int ii = 0;
+                                while (ipart > 0) { ibuf[ii++] = '0' + (int)(ipart % 10); ipart /= 10; }
+                                while (ii > 0 && pos < sizeof(buf)-1) buf[pos++] = ibuf[--ii];
+                            }
+                            if (pos < sizeof(buf)-1) buf[pos++] = '.';
+                            { int d; for (d = 0; d < prec && pos < sizeof(buf)-2; d++) {
+                                fpart *= 10.0;
+                                int digit = (int)fpart;
+                                buf[pos++] = '0' + digit;
+                                fpart -= digit;
+                            }}
+                            /* Trim trailing zeros */
+                            while (pos > 1 && buf[pos-1] == '0') pos--;
+                            if (pos > 0 && buf[pos-1] == '.' && pos < sizeof(buf)-1) buf[pos++] = '0';
+                        } else {
+                            /* Use %e-style (scientific) notation */
+                            int exp = 0;
+                            if (fv >= 1.0) {
+                                while (fv >= 10.0) { fv /= 10.0; exp++; }
+                            } else {
+                                while (fv < 1.0 && fv > 0.0) { fv *= 10.0; exp--; }
+                            }
+                            if (neg && pos < sizeof(buf)-1) buf[pos++] = '-';
+                            {
+                                unsigned long ipart = (unsigned long)fv;
+                                double fpart = fv - (double)ipart;
+                                buf[pos++] = '0' + (int)ipart;
+                                if (pos < sizeof(buf)-1) buf[pos++] = '.';
+                                { int d; for (d = 0; d < prec - 1 && pos < sizeof(buf)-2; d++) {
+                                    fpart *= 10.0;
+                                    int digit = (int)fpart;
+                                    buf[pos++] = '0' + digit;
+                                    fpart -= digit;
+                                }}
+                                while (pos > 1 && buf[pos-1] == '0') pos--;
+                                if (pos > 0 && buf[pos-1] == '.' && pos < sizeof(buf)-1) buf[pos++] = '0';
+                            }
+                            buf[pos++] = 'e';
+                            if (exp >= 0) buf[pos++] = '+';
+                            else { buf[pos++] = '-'; exp = -exp; }
+                            if (exp < 10) { buf[pos++] = '0'; buf[pos++] = '0' + exp; }
+                            else {
+                                char ebuf[8]; int ei = 0;
+                                while (exp > 0) { ebuf[ei++] = '0' + (exp % 10); exp /= 10; }
+                                while (ei > 0 && pos < sizeof(buf)-1) buf[pos++] = ebuf[--ei];
+                            }
+                        }
                     }
                     break;
                 }
@@ -294,7 +453,18 @@ Value format_values_to_pool(const char *fmt, Value *args, int arg_count) {
                         Value v = args[arg_idx++];
                         if (v.is_id && v.obj_val != 0) {
                             const char *s = (const char *)v.obj_val;
-                            while (*s && pos < sizeof(buf)-1) buf[pos++] = *s++;
+                            int slen = (int)cstr_len(s);
+                            int max_chars = (precision >= 0 && precision < slen) ? precision : slen;
+                            int i;
+                            if (width > 0 && max_chars < width && !flag_left_align) {
+                                int pad = width - max_chars;
+                                for (i = 0; i < pad && pos < sizeof(buf)-1; i++) buf[pos++] = ' ';
+                            }
+                            for (i = 0; i < max_chars && pos < sizeof(buf)-1; i++) buf[pos++] = s[i];
+                            if (width > 0 && max_chars < width && flag_left_align) {
+                                int pad = width - max_chars;
+                                for (i = 0; i < pad && pos < sizeof(buf)-1; i++) buf[pos++] = ' ';
+                            }
                         }
                     } else {
                         format_warn_missing_argument('s');
@@ -321,25 +491,49 @@ Value format_values_to_pool(const char *fmt, Value *args, int arg_count) {
                 case 'x':
                     if (arg_idx < arg_count) {
                         Value v = args[arg_idx++];
-                        unsigned int val = (unsigned int)(v.is_int ? v.int_val : (v.is_id ? (long)v.obj_val : 0));
+                        unsigned long val = (unsigned long)(v.is_int ? v.int_val : (v.is_id ? (long)v.obj_val : 0));
                         if (val == 0 && pos < sizeof(buf)-1) buf[pos++] = '0';
                         else {
-                            char hex[17]; int hi = 0;
-                            while (val > 0 && hi < 16) { hex[hi++] = "0123456789abcdef"[val % 16]; val /= 16; }
+                            char hex[20]; int hi = 0;
+                            while (val > 0 && hi < 19) { hex[hi++] = "0123456789abcdef"[val % 16]; val /= 16; }
+                            if (width > 0 && !flag_left_align) {
+                                int total = hi;
+                                char pad = flag_zero_pad ? '0' : ' ';
+                                while (total < width && pos < sizeof(buf)-1) { buf[pos++] = pad; total++; }
+                            }
                             while (hi > 0 && pos < sizeof(buf)-1) buf[pos++] = hex[--hi];
                         }
                     } else {
                         format_warn_missing_argument('x');
                     }
                     break;
+                case 'X':
+                    if (arg_idx < arg_count) {
+                        Value v = args[arg_idx++];
+                        unsigned long val = (unsigned long)(v.is_int ? v.int_val : (v.is_id ? (long)v.obj_val : 0));
+                        if (val == 0 && pos < sizeof(buf)-1) buf[pos++] = '0';
+                        else {
+                            char hex[20]; int hi = 0;
+                            while (val > 0 && hi < 19) { hex[hi++] = "0123456789ABCDEF"[val % 16]; val /= 16; }
+                            if (width > 0 && !flag_left_align) {
+                                int total = hi;
+                                char pad = flag_zero_pad ? '0' : ' ';
+                                while (total < width && pos < sizeof(buf)-1) { buf[pos++] = pad; total++; }
+                            }
+                            while (hi > 0 && pos < sizeof(buf)-1) buf[pos++] = hex[--hi];
+                        }
+                    } else {
+                        format_warn_missing_argument('X');
+                    }
+                    break;
                 case 'o':
                     if (arg_idx < arg_count) {
                         Value v = args[arg_idx++];
-                        unsigned int val = (unsigned int)(v.is_int ? v.int_val : (v.is_id ? (long)v.obj_val : 0));
+                        unsigned long val = (unsigned long)(v.is_int ? v.int_val : (v.is_id ? (long)v.obj_val : 0));
                         if (val == 0 && pos < sizeof(buf)-1) buf[pos++] = '0';
                         else {
                             char oct[32]; int oi = 0;
-                            while (val > 0 && oi < 31) { oct[oi++] = '0' + (val % 8); val /= 8; }
+                            while (val > 0 && oi < 31) { oct[oi++] = '0' + (int)(val % 8); val /= 8; }
                             while (oi > 0 && pos < sizeof(buf)-1) buf[pos++] = oct[--oi];
                         }
                     } else {
