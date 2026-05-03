@@ -55,7 +55,14 @@
       "Bash(npm run *)",
       "Bash(pip3 show *)",
       "Bash(pip show *)",
-      "Bash(python3 -m pip show jupyterlite)"
+      "Bash(python3 -m pip show jupyterlite)",
+      "Bash(node /Users/jack/Software/garazyk/objc-jupyter-wasm/tests/kernel-smoke.mjs /tmp/objc-jupyter-wasm-kernel-result/wasm/kernel.wasm)",
+      "Bash(python3 -c \"import json; json.load\\(open\\('/Users/jack/Software/garazyk/objc-jupyter-wasm/demo/foundation.ipynb'\\)\\)\")",
+      "Bash(python3 *)",
+      "Bash(node tests/run-notebooks.mjs /Users/jack/Software/garazyk/objc-jupyter-wasm/demo/atproto-aturi.ipynb)",
+      "Bash(awk -F: '$1 > 2200 && $1 < 4500')",
+      "Bash(awk 'NR>=2300 && NR<=4200 && /^[a-zA-Z]/ && /\\\\\\(/ && /[^,]$/ { if \\(last_open\\) print last_open; last_open=NR\" \"$0 } /^\\\\}$/ { last_open=\"\" } END { print \"last_open=\"last_open }' /Users/jack/Software/garazyk/objc-jupyter-wasm/kernel/objc_interpreter.c)",
+      "Bash(awk *)"
     ]
   }
 }
