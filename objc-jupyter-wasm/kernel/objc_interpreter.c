@@ -51,8 +51,6 @@ InterpContext g_ctx = {0};
 
 /* ── NSLog ring buffer ──────────────────────────────────────────── */
 
-char g_nslog_buffer[OBJC_INTERP_NSLOG_BUFFER_SIZE];
-unsigned int g_nslog_offset = 0;
 
 /* ── Interpreter state ──────────────────────────────────────────── */
 
@@ -60,23 +58,18 @@ void set_error_from_parser(struct Parser *p);
 
 #define OBJC_INTERP_MAX_BLOCKS_CAPTURED 32
 
-InterpVar g_vars[OBJC_INTERP_MAX_VARS];
-unsigned int g_var_count = 0;
-unsigned int g_var_scope_base = 0; /* base index for variable scoping during method execution */
 
 
 /* ── Type definitions ───────────────────────────────────────────── */
 
-TypeDef g_typedefs[64];
-unsigned int g_typedef_count = 0;
 
 /* Look up a typedef alias and return the base type, or the original name if not found. */
 const char *typedef_resolve(const char *name) {
     if (!name) return 0;
     unsigned int i;
-    for (i = 0; i < g_typedef_count; i++) {
-        if (cstr_eq(g_typedefs[i].alias, name)) {
-            return g_typedefs[i].base_type;
+    for (i = 0; i < g_ctx.typedef_count; i++) {
+        if (cstr_eq(g_ctx.typedefs[i].alias, name)) {
+            return g_ctx.typedefs[i].base_type;
         }
     }
     return name;
@@ -575,33 +568,33 @@ InterpVar *interp_find_var(const char *name) {
     /* Search backwards — most recently created variable first.
      * This implements variable shadowing: a method-local variable
      * with the same name as a top-level variable takes precedence.
-     * g_var_scope_base limits the search to the current scope
+     * g_ctx.var_scope_base limits the search to the current scope
      * (set during method execution to isolate method-local variables). */
     unsigned int i;
-    if (g_var_count == 0) return 0;
-    for (i = g_var_count; i > g_var_scope_base; i--) {
-        if (cstr_eq(g_vars[i - 1].name, name)) {
-            return &g_vars[i - 1];
+    if (g_ctx.var_count == 0) return 0;
+    for (i = g_ctx.var_count; i > g_ctx.var_scope_base; i--) {
+        if (cstr_eq(g_ctx.vars[i - 1].name, name)) {
+            return &g_ctx.vars[i - 1];
         }
     }
     return 0;
 }
 
 InterpVar *interp_create_var(const char *name) {
-    if (g_var_count >= OBJC_INTERP_MAX_VARS) return 0;
-    cstr_copy(g_vars[g_var_count].name, name, 64);
-    g_vars[g_var_count].value = 0;
-    g_vars[g_var_count].cls = 0;
-    g_vars[g_var_count].sel = 0;
-    g_vars[g_var_count].is_int = 0;
-    g_vars[g_var_count].int_value = 0;
-    g_vars[g_var_count].is_float = 0;
-    g_vars[g_var_count].float_value = 0.0;
-    g_vars[g_var_count].is_class = 0;
-    g_vars[g_var_count].is_sel = 0;
-    g_vars[g_var_count].is_id = 0;
-    g_var_count++;
-    return &g_vars[g_var_count - 1];
+    if (g_ctx.var_count >= OBJC_INTERP_MAX_VARS) return 0;
+    cstr_copy(g_ctx.vars[g_ctx.var_count].name, name, 64);
+    g_ctx.vars[g_ctx.var_count].value = 0;
+    g_ctx.vars[g_ctx.var_count].cls = 0;
+    g_ctx.vars[g_ctx.var_count].sel = 0;
+    g_ctx.vars[g_ctx.var_count].is_int = 0;
+    g_ctx.vars[g_ctx.var_count].int_value = 0;
+    g_ctx.vars[g_ctx.var_count].is_float = 0;
+    g_ctx.vars[g_ctx.var_count].float_value = 0.0;
+    g_ctx.vars[g_ctx.var_count].is_class = 0;
+    g_ctx.vars[g_ctx.var_count].is_sel = 0;
+    g_ctx.vars[g_ctx.var_count].is_id = 0;
+    g_ctx.var_count++;
+    return &g_ctx.vars[g_ctx.var_count - 1];
 }
 
 InterpVar *interp_get_or_create_var(const char *name) {
@@ -628,8 +621,6 @@ extern void format_value(Value v, char *buf, unsigned int capacity);
  * Shared between parse_primary (string literals) and parse_message_send
  * (Foundation stubs like NSNumber, stringByAppendingString). */
 #define OBJC_INTERP_STRING_POOL_SIZE 65536
-char g_string_pool[OBJC_INTERP_STRING_POOL_SIZE];
-unsigned int g_string_pool_offset = 0;
 
 #define MAX_STRING_POOL_MARKS 4096
 
@@ -642,25 +633,16 @@ unsigned int g_string_pool_offset = 0;
 
 
 #define MAX_METHODS 64
-MethodImpl g_methods[MAX_METHODS];
-unsigned int g_method_count = 0;
 
 
-PropertyDecl g_properties[64];
-unsigned int g_property_count = 0;
 
 
 #define MAX_INSTANCE_VARS 256
-InstanceVar g_instance_vars[MAX_INSTANCE_VARS];
-unsigned int g_instance_var_count = 0;
 
 
 #define MAX_COLLECTIONS 64
 #define MAX_COLL_ENTRIES 512
 
-unsigned int g_next_coll_id = 1;
-CollEntry g_coll_entries[MAX_COLL_ENTRIES];
-unsigned int g_coll_entry_count = 0;
 
 /* Count entries for a given collection ID. */
 
@@ -686,9 +668,6 @@ int coll_insert_at(unsigned int coll_id, unsigned int pos, Value key, Value valu
 
 
 #define MAX_BLOCKS 32
-BlockImpl g_blocks[MAX_BLOCKS];
-unsigned int g_block_count = 0;
-unsigned int g_next_block_id = 1;
 
 /* Look up a block by its ID. Returns pointer or 0. */
 
@@ -704,7 +683,7 @@ unsigned int g_next_block_id = 1;
 
 /* Check if a property belongs to the receiver's class.
  * For FDObj: markers, extracts the class name and compares against
- * g_properties[pi].class_name. For non-FDObj: receivers (Foundation
+ * g_ctx.properties[pi].class_name. For non-FDObj: receivers (Foundation
  * objects), returns 1 (always match) since Foundation classes don't
  * have user-defined properties. */
 
@@ -758,19 +737,19 @@ static id method_impl_trampoline(id self, SEL _cmd, ...) {
     unsigned int i;
 
     /* Find the MethodImpl for this selector */
-    for (i = 0; i < g_method_count; i++) {
-        if (g_methods[i].selector == _cmd && g_methods[i].source_len > 0) {
+    for (i = 0; i < g_ctx.method_count; i++) {
+        if (g_ctx.methods[i].selector == _cmd && g_ctx.methods[i].source_len > 0) {
             break;
         }
     }
 
-    if (i >= g_method_count || g_methods[i].source_len == 0) {
+    if (i >= g_ctx.method_count || g_ctx.methods[i].source_len == 0) {
         /* No stored body — return self as default */
         return self;
     }
 
     /* Save current variable count so we can clean up method-local vars */
-    unsigned int saved_var_count = g_var_count;
+    unsigned int saved_var_count = g_ctx.var_count;
 
     /* Set up self and _cmd as interpreter variables */
     {
@@ -806,15 +785,15 @@ static id method_impl_trampoline(id self, SEL _cmd, ...) {
             if (sel_name[si] == ':') sel_colons++;
         }
 
-        if (sel_colons > 0 && g_methods[i].arg_count > 0) {
+        if (sel_colons > 0 && g_ctx.methods[i].arg_count > 0) {
             /* Access variadic arguments */
             __builtin_va_list ap;
             __builtin_va_start(ap, _cmd);
 
             unsigned int ai;
-            for (ai = 0; ai < sel_colons && ai < g_methods[i].arg_count && ai < 8; ai++) {
+            for (ai = 0; ai < sel_colons && ai < g_ctx.methods[i].arg_count && ai < 8; ai++) {
                 id arg_val = __builtin_va_arg(ap, id);
-                InterpVar *var = interp_get_or_create_var(g_methods[i].arg_names[ai]);
+                InterpVar *var = interp_get_or_create_var(g_ctx.methods[i].arg_names[ai]);
                 if (var) {
                     var->is_id = 1;
                     var->value = arg_val;
@@ -831,7 +810,7 @@ static id method_impl_trampoline(id self, SEL _cmd, ...) {
     /* Execute the method body */
     g_ctx.return_pending = 0;
     {
-        Value v = eval_source_range(0, g_methods[i].source_len, g_methods[i].source, 0);
+        Value v = eval_source_range(0, g_ctx.methods[i].source_len, g_ctx.methods[i].source, 0);
         (void)v; /* errors are captured in g_ctx.error_buffer */
     }
 
@@ -851,7 +830,7 @@ static id method_impl_trampoline(id self, SEL _cmd, ...) {
         }
 
         /* Clean up method-local variables (remove any added after saved count) */
-        g_var_count = saved_var_count;
+        g_ctx.var_count = saved_var_count;
         g_ctx.return_pending = 0;
 
         return return_val;
@@ -1078,21 +1057,21 @@ static unsigned int count_lines_up_to(const char *source, unsigned int pos) {
  * format_value, and objc_interp_gc_strings are defined in objc_interp_format.c */
 
 void objc_interp_init(void) {
-    g_nslog_offset = 0;
-    g_nslog_buffer[0] = '\0';
+    g_ctx.nslog_offset = 0;
+    g_ctx.nslog_buffer[0] = '\0';
     g_ctx.error_code = OBJC_INTERP_OK;
     g_ctx.error_buffer[0] = '\0';
     g_ctx.error_line = 0;
     g_ctx.error_column = 0;
     g_ctx.result_buffer[0] = '\0';
-    g_var_count = 0;
-    g_method_count = 0;
-    g_property_count = 0;
-    g_instance_var_count = 0;
-    g_next_coll_id = 1;
-    g_coll_entry_count = 0;
-    g_next_block_id = 1;
-    g_block_count = 0;
+    g_ctx.var_count = 0;
+    g_ctx.method_count = 0;
+    g_ctx.property_count = 0;
+    g_ctx.instance_var_count = 0;
+    g_ctx.next_coll_id = 1;
+    g_ctx.coll_entry_count = 0;
+    g_ctx.next_block_id = 1;
+    g_ctx.block_count = 0;
 
     /* Register Foundation class names as variables with is_class=1.
      * We don't call objc_allocateClassPair (it can cause WASM traps).
@@ -1124,8 +1103,8 @@ int objc_interp(const char *source, unsigned int length) {
     Parser p;
 
     /* Reset per-execution state */
-    g_nslog_offset = 0;
-    g_nslog_buffer[0] = '\0';
+    g_ctx.nslog_offset = 0;
+    g_ctx.nslog_buffer[0] = '\0';
     g_ctx.error_code = OBJC_INTERP_OK;
     g_ctx.error_buffer[0] = '\0';
     g_ctx.error_line = 0;
@@ -1196,11 +1175,11 @@ int objc_interp(const char *source, unsigned int length) {
 }
 
 const char *objc_interp_get_nslog_output(void) {
-    return g_nslog_buffer;
+    return g_ctx.nslog_buffer;
 }
 
 unsigned int objc_interp_get_nslog_length(void) {
-    return g_nslog_offset;
+    return g_ctx.nslog_offset;
 }
 
 const char *objc_interp_get_error(void) {
@@ -1216,31 +1195,31 @@ const char *objc_interp_get_result(void) {
 }
 
 void objc_interp_reset(void) {
-    g_nslog_offset = 0;
-    g_nslog_buffer[0] = '\0';
+    g_ctx.nslog_offset = 0;
+    g_ctx.nslog_buffer[0] = '\0';
     g_ctx.error_code = OBJC_INTERP_OK;
     g_ctx.error_buffer[0] = '\0';
     g_ctx.error_line = 0;
     g_ctx.error_column = 0;
     g_ctx.result_buffer[0] = '\0';
-    /* Don't reset g_var_count — variables persist across cells */
-    /* Don't reset g_method_count — methods persist across cells */
+    /* Don't reset g_ctx.var_count — variables persist across cells */
+    /* Don't reset g_ctx.method_count — methods persist across cells */
 }
 
 /* ── Variable table accessors for tab completion ──────────────── */
 
 unsigned int objc_interp_get_var_count(void) {
-    return g_var_count;
+    return g_ctx.var_count;
 }
 
 const char *objc_interp_get_var_name(unsigned int index) {
-    if (index >= g_var_count) return 0;
-    return g_vars[index].name;
+    if (index >= g_ctx.var_count) return 0;
+    return g_ctx.vars[index].name;
 }
 
 int objc_interp_get_var_is_class(unsigned int index) {
-    if (index >= g_var_count) return 0;
-    return g_vars[index].is_class;
+    if (index >= g_ctx.var_count) return 0;
+    return g_ctx.vars[index].is_class;
 }
 
 unsigned int objc_interp_get_error_line(void) {
