@@ -149,7 +149,7 @@ AstNode *parse_block_ast(Parser *p) {
             parser_error(p, "block too large (max 128 statements)");
             return 0;
         }
-        if (g_return_pending || g_break_pending || g_continue_pending) return block;
+        if (g_ctx.return_pending || g_ctx.break_pending || g_ctx.continue_pending) return block;
     }
     return block;
 }
@@ -809,18 +809,18 @@ Value eval_ast(AstNode *node, const char *source) {
         while (1) {
             Value cond = eval_ast(node->while_stmt.condition, source);
             if (!is_truthy(cond)) break;
-            g_break_pending = 0;
-            g_continue_pending = 0;
+            g_ctx.break_pending = 0;
+            g_ctx.continue_pending = 0;
             eval_ast(node->while_stmt.body, source);
-            if (g_break_pending) {
-                g_break_pending = 0;
+            if (g_ctx.break_pending) {
+                g_ctx.break_pending = 0;
                 break;
             }
-            if (g_continue_pending) {
-                g_continue_pending = 0;
+            if (g_ctx.continue_pending) {
+                g_ctx.continue_pending = 0;
                 continue; /* re-evaluate condition */
             }
-            if (g_return_pending) return last;
+            if (g_ctx.return_pending) return last;
             if (interp_should_interrupt()) return last;
         }
         break;
@@ -828,18 +828,18 @@ Value eval_ast(AstNode *node, const char *source) {
 
     case AST_DO_WHILE: {
         do {
-            g_break_pending = 0;
-            g_continue_pending = 0;
+            g_ctx.break_pending = 0;
+            g_ctx.continue_pending = 0;
             eval_ast(node->do_while_stmt.body, source);
-            if (g_break_pending) {
-                g_break_pending = 0;
+            if (g_ctx.break_pending) {
+                g_ctx.break_pending = 0;
                 break;
             }
-            if (g_continue_pending) {
-                g_continue_pending = 0;
+            if (g_ctx.continue_pending) {
+                g_ctx.continue_pending = 0;
                 /* skip to condition check */
             }
-            if (g_return_pending) return last;
+            if (g_ctx.return_pending) return last;
             if (interp_should_interrupt()) return last;
             {
                 Value cond = eval_ast(node->do_while_stmt.condition, source);
@@ -862,19 +862,19 @@ Value eval_ast(AstNode *node, const char *source) {
                 if (!is_truthy(cond)) break;
             }
 
-            g_break_pending = 0;
-            g_continue_pending = 0;
+            g_ctx.break_pending = 0;
+            g_ctx.continue_pending = 0;
             eval_ast(node->for_stmt.body, source);
 
-            if (g_break_pending) {
-                g_break_pending = 0;
+            if (g_ctx.break_pending) {
+                g_ctx.break_pending = 0;
                 break;
             }
-            if (g_continue_pending) {
-                g_continue_pending = 0;
+            if (g_ctx.continue_pending) {
+                g_ctx.continue_pending = 0;
                 /* Skip to increment */
             }
-            if (g_return_pending) return last;
+            if (g_ctx.return_pending) return last;
             if (interp_should_interrupt()) return last;
 
             /* Increment */
@@ -929,12 +929,12 @@ Value eval_ast(AstNode *node, const char *source) {
                     var->is_sel = g_coll_entries[entry_idx].key.is_sel;
                     var->sel = g_coll_entries[entry_idx].key.sel_val;
                 }
-                g_break_pending = 0;
-                g_continue_pending = 0;
+                g_ctx.break_pending = 0;
+                g_ctx.continue_pending = 0;
                 eval_ast(node->for_in.body, source);
-                if (g_break_pending) { g_break_pending = 0; break; }
-                if (g_continue_pending) { g_continue_pending = 0; continue; }
-                if (g_return_pending) return last;
+                if (g_ctx.break_pending) { g_ctx.break_pending = 0; break; }
+                if (g_ctx.continue_pending) { g_ctx.continue_pending = 0; continue; }
+                if (g_ctx.return_pending) return last;
                 if (interp_should_interrupt()) return last;
             }
         } else if (is_nsstring) {
@@ -960,12 +960,12 @@ Value eval_ast(AstNode *node, const char *source) {
                         var->is_int = 0;
                     }
                 }
-                g_break_pending = 0;
-                g_continue_pending = 0;
+                g_ctx.break_pending = 0;
+                g_ctx.continue_pending = 0;
                 eval_ast(node->for_in.body, source);
-                if (g_break_pending) { g_break_pending = 0; break; }
-                if (g_continue_pending) { g_continue_pending = 0; continue; }
-                if (g_return_pending) return last;
+                if (g_ctx.break_pending) { g_ctx.break_pending = 0; break; }
+                if (g_ctx.continue_pending) { g_ctx.continue_pending = 0; continue; }
+                if (g_ctx.return_pending) return last;
                 if (interp_should_interrupt()) return last;
             }
         } else {
@@ -978,7 +978,7 @@ Value eval_ast(AstNode *node, const char *source) {
         unsigned int i;
         for (i = 0; i < node->block.count; i++) {
             last = eval_ast(node->block.children[i], source);
-            if (g_return_pending || g_break_pending || g_continue_pending)
+            if (g_ctx.return_pending || g_ctx.break_pending || g_ctx.continue_pending)
                 return last;
         }
         break;
@@ -999,15 +999,15 @@ Value eval_ast(AstNode *node, const char *source) {
         last = eval_source_range(node->source_range.source_start,
                                  node->source_range.source_len, source,
                                  count_lines_up_to(source, node->source_range.source_start));
-        g_return_pending = 1;
+        g_ctx.return_pending = 1;
         break;
 
     case AST_BREAK:
-        g_break_pending = 1;
+        g_ctx.break_pending = 1;
         break;
 
     case AST_CONTINUE:
-        g_continue_pending = 1;
+        g_ctx.continue_pending = 1;
         break;
 
     case AST_SWITCH: {
@@ -1033,37 +1033,37 @@ Value eval_ast(AstNode *node, const char *source) {
         /* Execute from matched case (fall-through) or from default.
          * A break inside a switch exits the switch (not the enclosing loop).
          * We use a local flag to track switch-break separately from
-         * g_break_pending (which would exit the enclosing for/while). */
+         * g_ctx.break_pending (which would exit the enclosing for/while). */
         {
             int switch_break = 0;
             if (matched_case >= 0) {
                 unsigned int ci;
                 for (ci = (unsigned int)matched_case; ci < node->switch_stmt.case_count; ci++) {
-                    g_break_pending = 0;
+                    g_ctx.break_pending = 0;
                     eval_ast(node->switch_stmt.case_bodies[ci], source);
-                    if (g_break_pending) {
+                    if (g_ctx.break_pending) {
                         switch_break = 1;
-                        g_break_pending = 0; /* consume the break — it exits switch, not loop */
+                        g_ctx.break_pending = 0; /* consume the break — it exits switch, not loop */
                         break;
                     }
-                    if (g_return_pending) return last;
+                    if (g_ctx.return_pending) return last;
                 }
                 /* Fall through to default if no break */
-                if (!switch_break && !g_return_pending &&
+                if (!switch_break && !g_ctx.return_pending &&
                     node->switch_stmt.has_default && node->switch_stmt.default_body) {
-                    g_break_pending = 0;
+                    g_ctx.break_pending = 0;
                     eval_ast(node->switch_stmt.default_body, source);
-                    if (g_break_pending) {
+                    if (g_ctx.break_pending) {
                         switch_break = 1;
-                        g_break_pending = 0; /* consume break */
+                        g_ctx.break_pending = 0; /* consume break */
                     }
                 }
             } else if (node->switch_stmt.has_default && node->switch_stmt.default_body) {
-                g_break_pending = 0;
+                g_ctx.break_pending = 0;
                 eval_ast(node->switch_stmt.default_body, source);
-                if (g_break_pending) {
+                if (g_ctx.break_pending) {
                     switch_break = 1;
-                    g_break_pending = 0; /* consume break */
+                    g_ctx.break_pending = 0; /* consume break */
                 }
             }
             (void)switch_break; /* break was consumed — enclosing loop continues */
