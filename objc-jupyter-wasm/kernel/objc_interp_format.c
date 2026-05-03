@@ -3,7 +3,7 @@
  */
 
 #include "objc_interp_types.h"
-#include "objc_interp_globals.h"
+#include "objc_interp_context.h"
 #include "objc_interp_format.h"
 #include "objc_interp_state.h"
 #include <string.h>
