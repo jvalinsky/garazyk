@@ -3,12 +3,12 @@
   "sessionsByServer": {
     "api.letta.com": {
       "agentId": "agent-5d3fc1a2-1dc6-4e7b-a6be-7d13bc52570a",
-      "conversationId": "conv-70063f87-eb19-4c1a-a607-0e78327b8af1"
+      "conversationId": "conv-e66d3936-36cf-40a0-af89-e29f92d52bcf"
     }
   },
   "lastSession": {
     "agentId": "agent-5d3fc1a2-1dc6-4e7b-a6be-7d13bc52570a",
-    "conversationId": "conv-70063f87-eb19-4c1a-a607-0e78327b8af1"
+    "conversationId": "conv-e66d3936-36cf-40a0-af89-e29f92d52bcf"
   },
   "memoryReminderInterval": 10,
   "reflectionTrigger": "step-count",
