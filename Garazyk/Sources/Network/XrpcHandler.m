@@ -176,7 +176,8 @@ static XrpcDispatcher *_sharedInstance = nil;
 
     // Timeout signal: set default timeout for all network calls
     static const NSTimeInterval kDefaultRequestTimeout = 30.0;
-    request.timeoutInterval = kDefaultRequestTimeout;
+    // request.timeoutInterval is not available on HttpRequest
+    // Timeout should be configured at the session/connection level
 
     NSString *path = request.path;
     NSString *methodId = request.pathParameters[@"method"];
