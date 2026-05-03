@@ -20,10 +20,6 @@
 /* extern InterpContext g_ctx; declared and defined in objc_interpreter.c */
 extern InterpContext g_ctx;
 
-/* ── Interpreter state ────────────────────────────────────────── */
-
-extern char g_result_buffer[];      /* expression result display buffer */
-
 /* ── NSLog buffer ─────────────────────────────────────────────── */
 
 extern char g_nslog_buffer[];       /* NSLog output buffer */
