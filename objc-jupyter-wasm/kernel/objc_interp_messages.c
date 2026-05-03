@@ -454,7 +454,7 @@ Value parse_message_send(Parser *p) {
                     }
                     g_return_pending = 0;
                     {
-                        Value v = eval_source_range(0, g_methods[mi].source_len, g_methods[mi].source);
+                        Value v = eval_source_range(0, g_methods[mi].source_len, g_methods[mi].source, 0);
                         (void)v;
                     }
                     return_val = g_return_value;
@@ -1698,7 +1698,7 @@ Value parse_message_send(Parser *p) {
 
                             /* Execute the block body */
                             g_return_pending = 0;
-                            eval_source_range(0, blk->source_len, blk->source);
+                            eval_source_range(0, blk->source_len, blk->source, 0);
 
                             /* Check stop flag */
                             {

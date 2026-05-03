@@ -27,13 +27,15 @@ static int is_alnum(char ch) {
 
 /* ── Lexer core ───────────────────────────────────────────────── */
 
-void lexer_init(Lexer *lex, const char *source, unsigned int length) {
+void lexer_init(Lexer *lex, const char *source, unsigned int length,
+                unsigned int line_offset) {
     lex->source = source;
     lex->source_len = length;
     lex->pos = 0;
     lex->token_start = 0;
     lex->line = 1;
     lex->column = 1;
+    lex->lex_line_offset = line_offset;
     lex->current.type = TOK_EOF;
     lex->current.text[0] = '\0';
     lex->current.truncated = 0;

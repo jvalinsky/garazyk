@@ -27,7 +27,8 @@ extern Value parse_expression_safe(struct Parser *p);
 extern Value parse_type_and_var_decl(struct Parser *p);
 extern Value parse_statement(struct Parser *p);
 extern Value parse_block(struct Parser *p);
-extern Value eval_source_range(unsigned int start, unsigned int len, const char *source);
+extern Value eval_source_range(unsigned int start, unsigned int len, const char *source,
+                               unsigned int line_offset);
 
 extern InterpVar *interp_find_var(const char *name);
 extern InterpVar *interp_get_or_create_var(const char *name);
@@ -281,7 +282,7 @@ static id method_impl_trampoline(id self, SEL _cmd, ...) {
 
     g_return_pending = 0;
     {
-        Value v = eval_source_range(0, g_methods[i].source_len, g_methods[i].source);
+        Value v = eval_source_range(0, g_methods[i].source_len, g_methods[i].source, 0);
         (void)v;
     }
 

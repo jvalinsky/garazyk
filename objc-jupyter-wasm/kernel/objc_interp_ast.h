@@ -22,7 +22,8 @@ AstNode *parse_block_ast(struct Parser *p);
 AstNode *parse_statement_ast(struct Parser *p);
 
 /* AST evaluation */
-Value eval_source_range(unsigned int start, unsigned int len, const char *source);
+Value eval_source_range(unsigned int start, unsigned int len, const char *source,
+                        unsigned int line_offset);
 Value eval_ast(AstNode *node, const char *source);
 
 /* Truthiness check */
