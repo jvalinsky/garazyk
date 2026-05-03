@@ -335,7 +335,7 @@ int main(int argc, const char * argv[]) {
                  handler:^(HttpRequest *request, HttpResponse *response) {
                      response.statusCode = 200;
                      response.contentType = @"text/plain; charset=utf-8";
-                     [response setBodyString:@"zuk 1.0.0\n"];
+                     [response setBodyString:@"________  ___  ___  ___  __       \n|\\_____  \\|\\  \\|\\  \\|\\  \\|\\  \\     \n \\|___/  /\\ \\  \\\\  \\ \\  \\/  /|_   \n     /  / /\\ \\  \\\\  \\ \\   ___  \\  \n    /  /_/__\\ \\  \\\\  \\ \\  \\\\ \\  \\ \n   |\\________\\ \\_______\\ \\__\\\\ \\___\\\n    \\|_______|\\|_______|\\|__| \\|__| \n"];
                  }];
 
         [server addRoute:@"GET"
