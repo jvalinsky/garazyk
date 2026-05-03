@@ -634,7 +634,6 @@ Value g_return_value;
 #define OBJC_INTERP_STRING_POOL_SIZE 65536
 char g_string_pool[OBJC_INTERP_STRING_POOL_SIZE];
 unsigned int g_string_pool_offset = 0;
-unsigned int g_parse_depth = 0;
 
 #define MAX_STRING_POOL_MARKS 4096
 
@@ -726,8 +725,6 @@ unsigned int g_next_block_id = 1;
 
 
 #define MAX_AST_NODES 1024
-AstNode g_ast_arena[MAX_AST_NODES];
-unsigned int g_ast_count = 0;
 
 /* Break/continue flags — checked by loop evaluation */
 int g_break_pending = 0;
@@ -1145,8 +1142,8 @@ int objc_interp(const char *source, unsigned int length) {
     g_return_pending = 0;
     g_break_pending = 0;
     g_continue_pending = 0;
-    g_ast_count = 0;
-    g_parse_depth = 0;
+    g_ctx.ast_count = 0;
+    g_ctx.parse_depth = 0;
 
     /* Don't reset variable table — it persists across cells */
 

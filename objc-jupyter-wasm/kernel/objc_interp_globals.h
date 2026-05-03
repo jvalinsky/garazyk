@@ -69,12 +69,9 @@ extern unsigned int g_next_block_id; /* next block ID */
 
 extern char g_string_pool[];         /* string literal + Foundation marker pool */
 extern unsigned int g_string_pool_offset; /* current write offset */
-extern unsigned int g_parse_depth;   /* nesting depth counter */
 
-/* ── AST arena ────────────────────────────────────────────────── */
+/* ── Control flow ──────────────────────────────────────────────── */
 
-extern AstNode g_ast_arena[];        /* AST node storage */
-extern unsigned int g_ast_count;     /* number of allocated AST nodes */
 extern int g_break_pending;          /* 1 after break statement */
 extern int g_continue_pending;       /* 1 after continue statement */
 
