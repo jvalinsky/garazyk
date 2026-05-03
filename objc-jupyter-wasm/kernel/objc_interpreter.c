@@ -130,6 +130,7 @@ typedef struct {
     int is_sel;     /* 1 if this holds a SEL */
     int is_id;      /* 1 if this holds an id */
     int is_block_captured; /* 1 if __block variable — capture by reference */
+    int is_static;     /* 1 if static variable — persists across cells */
 } InterpVar;
 
 #define OBJC_INTERP_MAX_BLOCKS_CAPTURED 32
@@ -205,6 +206,7 @@ typedef enum {
     TOK_CASE,          /* case keyword */
     TOK_DEFAULT,       /* default keyword */
     TOK_NIL,           /* nil keyword */
+    TOK_SUPER,         /* super keyword */
     TOK_BITWISE_OR,    /* | (bitwise OR) */
     TOK_LEFT_SHIFT,    /* << */
     TOK_RIGHT_SHIFT,   /* >> */
@@ -284,8 +286,12 @@ static void lexer_skip_whitespace_and_comments(Lexer *lex) {
             lexer_next(lex);
         } else if (ch == '/' && lex->pos + 1 < lex->source_len &&
                    lex->source[lex->pos + 1] == '/') {
-            /* Single-line comment */
-            while (lex->pos < lex->source_len && lexer_peek(lex) != '\n') {
+            /* Single-line comment: consume everything until \n or EOF */
+            while (lex->pos < lex->source_len && lexer_peek(lex) != '\n' && lexer_peek(lex) != '\0') {
+                lexer_next(lex);
+            }
+            /* Consume the \n if present */
+            if (lex->pos < lex->source_len && lexer_peek(lex) == '\n') {
                 lexer_next(lex);
             }
         } else if (ch == '/' && lex->pos + 1 < lex->source_len &&
@@ -301,6 +307,7 @@ static void lexer_skip_whitespace_and_comments(Lexer *lex) {
                 }
                 lexer_next(lex);
             }
+            /* If we hit EOF without finding */, just return - the outer loop will handle it */
         } else {
             break;
         }
@@ -318,6 +325,30 @@ static Token lexer_next_token(Lexer *lex) {
     tok.truncated = 0;
     tok.text[0] = '\0';
     tok.type = TOK_EOF;
+
+    /* DEBUG: log position only near @{ (line 5, col 30-40) */
+    if (lex->line == 5 && lex->column >= 30 && lex->column <= 40) {
+        nslog_append("DBG lexer: pos=", 16);
+        { char buf[16]; int n = 0; unsigned int sv = lex->pos;
+          if (sv == 0) { buf[n++] = '0'; } else { while (sv > 0) { buf[n++] = '0' + sv % 10; sv /= 10; } }
+          for (int j = n-1; j >= 0; j--) nslog_append(&buf[j], 1); }
+        nslog_append(" col=", 5);
+        { char buf[16]; int n = 0; unsigned int sv = lex->column;
+          if (sv == 0) { buf[n++] = '0'; } else { while (sv > 0) { buf[n++] = '0' + sv % 10; sv /= 10; } }
+          for (int j = n-1; j >= 0; j--) nslog_append(&buf[j], 1); }
+        nslog_append(" next_ch=", 9);
+        if (lex->pos < lex->source_len) {
+            char c = lex->source[lex->pos];
+            char buf2[2] = { c, '\0' };
+            if (c == '\n') nslog_append("\\n", 2);
+            else if (c == ' ') nslog_append("SP", 2);
+            else if (c == '{') nslog_append("{", 1);
+            else nslog_append(buf2, 1);
+        } else {
+            nslog_append("EOF", 3);
+        }
+        nslog_append("\n", 1);
+    }
 
     if (lex->pos >= lex->source_len) {
         tok.type = TOK_EOF;
@@ -445,6 +476,22 @@ static Token lexer_next_token(Lexer *lex) {
             tok.type = TOK_INT_LITERAL;
         } else if (cstr_eq(tok.text, "nil")) {
             tok.type = TOK_NIL;
+        } else if (cstr_eq(tok.text, "NULL")) {
+            tok.type = TOK_NIL;
+        } else if (cstr_eq(tok.text, "instancetype")) {
+            /* Treat instancetype as id — same semantics in interpreter */
+            cstr_copy(tok.text, "id", 64);
+            tok.type = TOK_IDENTIFIER;
+        } else if (cstr_eq(tok.text, "CGFloat")) {
+            /* Treat CGFloat as double */
+            cstr_copy(tok.text, "double", 64);
+            tok.type = TOK_IDENTIFIER;
+        } else if (cstr_eq(tok.text, "static")) {
+            tok.type = TOK_IDENTIFIER; /* treat as普通 identifier, handle in var decl */
+        } else if (cstr_eq(tok.text, "super")) {
+            tok.type = TOK_SUPER;
+        } else if (cstr_eq(tok.text, "typedef")) {
+            tok.type = TOK_IDENTIFIER; /* handle in parse_statement */
         }
         return tok;
     }
@@ -651,6 +698,23 @@ static void set_error_from_parser(Parser *p) {
     cstr_copy(g_error_buffer, p->error_msg, OBJC_INTERP_ERROR_SIZE);
     g_error_line = p->lex.line;
     g_error_column = p->lex.column;
+    /* DEBUG: log error */
+    nslog_append("DBG set_error: code=", 20);
+    { char buf[16]; int n = 0; int sv = p->error;
+      if (sv < 0) { nslog_append("-", 1); sv = -sv; }
+      if (sv == 0) { buf[n++] = '0'; } else { while (sv > 0) { buf[n++] = '0' + sv % 10; sv /= 10; } }
+      for (int j = n-1; j >= 0; j--) nslog_append(&buf[j], 1); }
+    nslog_append(" line=", 6);
+    { char buf[16]; int n = 0; unsigned int sv = p->lex.line;
+      if (sv == 0) { buf[n++] = '0'; } else { while (sv > 0) { buf[n++] = '0' + sv % 10; sv /= 10; } }
+      for (int j = n-1; j >= 0; j--) nslog_append(&buf[j], 1); }
+    nslog_append(" col=", 5);
+    { char buf[16]; int n = 0; unsigned int sv = p->lex.column;
+      if (sv == 0) { buf[n++] = '0'; } else { while (sv > 0) { buf[n++] = '0' + sv % 10; sv /= 10; } }
+      for (int j = n-1; j >= 0; j--) nslog_append(&buf[j], 1); }
+    nslog_append(" msg=", 5);
+    nslog_append(p->error_msg, cstr_len(p->error_msg));
+    nslog_append("\n", 1);
 }
 
 static void parser_init(Parser *p, const char *source, unsigned int length) {
@@ -774,6 +838,8 @@ static InterpVar *interp_create_var(const char *name) {
     g_vars[g_var_count].is_class = 0;
     g_vars[g_var_count].is_sel = 0;
     g_vars[g_var_count].is_id = 0;
+    g_vars[g_var_count].is_block_captured = 0;
+    g_vars[g_var_count].is_static = 0;
     g_var_count++;
     return &g_vars[g_var_count - 1];
 }
@@ -1434,7 +1500,8 @@ typedef enum {
     AST_BREAK,
     AST_CONTINUE,
     AST_SWITCH,
-    AST_DO_WHILE
+    AST_DO_WHILE,
+    AST_NOOP  /* already-executed declaration (@interface, @implementation, etc.) */
 } AstNodeType;
 
 typedef struct AstNode AstNode;
@@ -1561,6 +1628,16 @@ static AstNode *ast_make_source(AstNodeType type, unsigned int start, unsigned i
     n->type = type;
     n->source_range.source_start = start;
     n->source_range.source_len = len;
+    return n;
+}
+
+/* Create a no-op AST node for declarations already executed during parsing
+ * (@interface, @implementation, @class, @protocol).
+ * eval_ast skips these — they must not be re-executed via eval_source_range. */
+static AstNode *ast_make_noop(void) {
+    AstNode *n = ast_alloc();
+    if (!n) return 0;
+    n->type = AST_NOOP;
     return n;
 }
 
@@ -2337,7 +2414,7 @@ static Value format_values_to_pool(const char *fmt, Value *args, int arg_count) 
 /* Parse a message send: [target selector:arg1 key2:arg2 ...]
  * We've already consumed the [.
  */
-static Value parse_message_send(Parser *p) {
+ static Value parse_message_send(Parser *p) {
     Value target;
     char sel_name[256];
     unsigned int sel_len;
@@ -2345,9 +2422,27 @@ static Value parse_message_send(Parser *p) {
     Value keyword_args[16]; /* preserve Value types for interpreter method dispatch */
     unsigned int arg_count;
     Value result;
+    int target_is_super = 0;
+    id receiver = 0;
+    const char *target_class_name = 0; /* for Foundation name-based dispatch */
+    SEL sel = 0;
 
-    /* Parse target */
-    target = parse_expression_safe(p);
+    /* Parse target — check for super keyword */
+    if (parser_current(p).type == TOK_SUPER) {
+        target_is_super = 1;
+        parser_advance(p);
+        /* super in an @implementation — treat as self for now */
+        /* In a real runtime, super calls the superclass method */
+        target = value_from_id(0); /* placeholder */
+        {
+            InterpVar *self_var = interp_find_var("self");
+            if (self_var && self_var->is_id) {
+                target = value_from_id(self_var->value);
+            }
+        }
+    } else {
+        target = parse_expression_safe(p);
+    }
     if (p->error) return value_void();
 
     /* Build selector name from the message pattern */
@@ -2358,6 +2453,28 @@ static Value parse_message_send(Parser *p) {
     /* Parse selector parts and arguments */
     while (parser_current(p).type != TOK_CLOSE_BRACKET &&
            parser_current(p).type != TOK_EOF) {
+
+        /* Comma-separated variadic arguments (e.g., stringWithFormat:@"%d", n).
+         * In ObjC, commas inside [ ] brackets separate variadic arguments
+         * after the last keyword argument. Parse each as an additional
+         * positional argument. */
+        if (parser_current(p).type == TOK_COMMA) {
+            parser_advance(p); /* skip , */
+            if (arg_count < 16) {
+                Value arg = parse_expression_safe(p);
+                if (p->error) return value_void();
+                keyword_args[arg_count] = arg;
+                if (arg.is_int) {
+                    args[arg_count] = (id)(long)arg.int_val;
+                } else if (arg.is_class) {
+                    args[arg_count] = (id)arg.cls_val;
+                } else {
+                    args[arg_count] = arg.obj_val;
+                }
+                arg_count++;
+            }
+            continue;
+        }
 
         if (parser_current(p).type == TOK_IDENTIFIER) {
             /* Selector component */
@@ -2396,6 +2513,23 @@ static Value parse_message_send(Parser *p) {
                     }
                     arg_count++;
                 }
+                /* Handle comma-separated variadic arguments (for stringWithFormat:, etc.) */
+                while (parser_current(p).type == TOK_COMMA && arg_count < 16) {
+                    parser_advance(p); /* consume ',' */
+                    if (arg_count < 16) {
+                        Value arg = parse_expression_safe(p);
+                        if (p->error) return value_void();
+                        keyword_args[arg_count] = arg;
+                        if (arg.is_int) {
+                            args[arg_count] = (id)(long)arg.int_val;
+                        } else if (arg.is_class) {
+                            args[arg_count] = (id)arg.cls_val;
+                        } else {
+                            args[arg_count] = arg.obj_val;
+                        }
+                        arg_count++;
+                    }
+                }
             }
             /* If no colon, this is a unary message (like [obj count]) */
             /* or the last part of the selector */
@@ -2411,9 +2545,7 @@ static Value parse_message_send(Parser *p) {
 
     /* Register the selector */
     {
-        SEL sel = sel_registerName(sel_name);
-        id receiver = 0;
-        const char *target_class_name = 0; /* for Foundation name-based dispatch */
+        sel = sel_registerName(sel_name);
         if (sel == 0) {
             parser_error(p, "selector table full (max 4096 selectors)");
             return value_void();
@@ -2422,6 +2554,14 @@ static Value parse_message_send(Parser *p) {
         if (target.is_id) receiver = target.obj_val;
         else if (target.is_class) receiver = (id)target.cls_val;
         else if (target.is_int) receiver = (id)(long)target.int_val;
+
+        /* Nil messaging: in ObjC, [nil anyMethod] returns nil/0/NO.
+         * This is a fundamental language feature — without it, any
+         * property access on an uninitialized ivar crashes. */
+        if (target.is_id && receiver == 0) {
+            result = value_from_id(0);
+            return result;
+        }
 
         /* Determine target class name for Foundation dispatch.
          * Foundation classes are not registered in the runtime (to avoid
@@ -2710,9 +2850,59 @@ static Value parse_message_send(Parser *p) {
             return value_from_int(val);
         }
 
+        /* NSString: [NSString stringWithString:str] → copy string */
+        if (IS_FOUNDATION_CLASS("NSString") && target.is_class && cstr_eq(sel_name, "stringWithString:") && arg_count >= 1) {
+            if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
+                const char *s = (const char *)keyword_args[0].obj_val;
+                unsigned int slen = cstr_len(s);
+                char *result = string_pool_alloc(slen + 1);
+                if (result == 0) return value_from_id(0);
+                cstr_copy(result, s, slen + 1);
+                return value_from_id((id)result);
+            }
+            return value_from_id(0);
+        }
+
+        /* NSString: [str stringWithString:other] → copy string */
+        if (cstr_eq(sel_name, "stringWithString:") && target.is_id && receiver != 0 && arg_count >= 1) {
+            if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
+                const char *s = (const char *)keyword_args[0].obj_val;
+                unsigned int slen = cstr_len(s);
+                char *result = string_pool_alloc(slen + 1);
+                if (result == 0) return value_from_id(receiver);
+                cstr_copy(result, s, slen + 1);
+                return value_from_id((id)result);
+            }
+            return value_from_id(receiver);
+        }
+
+        /* NSNumber: [num longLongValue] → return long as int */
+        if (cstr_eq(sel_name, "longLongValue") && target.is_id && receiver != 0) {
+            const char *s = (const char *)receiver;
+            if (cstr_eq_n(s, "NSNumber:", 9)) {
+                int val = 0;
+                unsigned int i = 9;
+                while (s[i] >= '0' && s[i] <= '9') val = val * 10 + (s[i++] - '0');
+                return value_from_int(val);
+            }
+            return value_from_int(0);
+        }
+
         /* NSString: [str UTF8String] → return self (already C string) */
         if (cstr_eq(sel_name, "UTF8String") && target.is_id && receiver != 0) {
             return value_from_id(receiver);
+        }
+
+        /* NSNumber: [num unsignedIntValue] → return unsigned int as int */
+        if (cstr_eq(sel_name, "unsignedIntValue") && target.is_id && receiver != 0) {
+            const char *s = (const char *)receiver;
+            if (cstr_eq_n(s, "NSNumber:", 9)) {
+                int val = 0;
+                unsigned int i = 9;
+                while (s[i] >= '0' && s[i] <= '9') val = val * 10 + (s[i++] - '0');
+                return value_from_int(val);
+            }
+            return value_from_int(0);
         }
 
         /* NSString: [str stringByAppendingString:other] → concatenate */
@@ -2727,6 +2917,46 @@ static Value parse_message_send(Parser *p) {
             if (result == 0) return value_from_id(receiver);
             cstr_copy(result, a, needed);
             cstr_copy(result + alen, b, needed - alen);
+            return value_from_id((id)result);
+        }
+
+        /* NSString: [str stringByAppendingPathComponent:other] → concatenate with / */
+        if (cstr_eq(sel_name, "stringByAppendingPathComponent:") && target.is_id && receiver != 0 && arg_count >= 1) {
+            const char *a = (const char *)receiver;
+            const char *b = (const char *)args[0];
+            unsigned int alen = cstr_len(a);
+            unsigned int blen = cstr_len(b);
+            char *result;
+            unsigned int needed = alen + 1 + blen + 1; /* +1 for / separator */
+            result = string_pool_alloc(needed);
+            if (result == 0) return value_from_id(receiver);
+            cstr_copy(result, a, needed);
+            result[alen] = '/';
+            cstr_copy(result + alen + 1, b, needed - alen - 1);
+            return value_from_id((id)result);
+        }
+
+        /* NSString: [str capitalizedString] → capitalize first letter of each word */
+        if (cstr_eq(sel_name, "capitalizedString") && target.is_id && receiver != 0) {
+            const char *s = (const char *)receiver;
+            int slen = (int)cstr_len(s);
+            char *result = string_pool_alloc((unsigned int)slen + 1);
+            if (result == 0) return value_from_id(receiver);
+            {
+                int i = 0;
+                int capitalize_next = 1;
+                while (i < slen) {
+                    char c = s[i];
+                    if (capitalize_next && c >= 'a' && c <= 'z') {
+                        result[i] = (char)(c - 32);
+                    } else {
+                        result[i] = c;
+                    }
+                    capitalize_next = (c == ' ' || c == '\t' || c == '\n' || c == '-');
+                    i++;
+                }
+                result[slen] = '\0';
+            }
             return value_from_id((id)result);
         }
 
@@ -3009,6 +3239,44 @@ static Value parse_message_send(Parser *p) {
                 }
                 buf[pos] = '\0';
                 return value_from_id((id)buf);
+            }
+            return value_from_id(args[0]);
+        }
+
+        /* NSNumber: [NSNumber numberWithUnsignedInt:n] → wrap unsigned int */
+        if (IS_FOUNDATION_CLASS("NSNumber") && target.is_class && cstr_eq(sel_name, "numberWithUnsignedInt:") && arg_count >= 1) {
+            if (keyword_args[0].is_int) {
+                char *buf = string_pool_alloc(30);
+                unsigned int pos = 9;
+                unsigned int v = (unsigned int)keyword_args[0].int_val;
+                buf = string_pool_alloc(30);
+                if (buf == 0) return value_from_int(keyword_args[0].int_val);
+                cstr_copy(buf, "NSNumber:", 30);
+                if (v == 0) { buf[pos++] = '0'; }
+                else {
+                    char tmp[12];
+                    int ti = 0;
+                    while (v > 0) { tmp[ti++] = '0' + (v % 10); v /= 10; }
+                    while (ti > 0) buf[pos++] = tmp[--ti];
+                }
+                buf[pos] = '\0';
+                return value_from_id((id)buf);
+            }
+            return value_from_id(args[0]);
+        }
+
+        /* NSNumber: [NSNumber numberWithLong:n] → wrap long as id */
+        if (IS_FOUNDATION_CLASS("NSNumber") && target.is_class && cstr_eq(sel_name, "numberWithLong:") && arg_count >= 1) {
+            if (keyword_args[0].is_int) {
+                return value_from_id(args[0]); /* Same as numberWithInt: for interpreter */
+            }
+            return value_from_id(args[0]);
+        }
+
+        /* NSNumber: [NSNumber numberWithInteger:n] → wrap NSInteger as id */
+        if (IS_FOUNDATION_CLASS("NSNumber") && target.is_class && cstr_eq(sel_name, "numberWithInteger:") && arg_count >= 1) {
+            if (keyword_args[0].is_int) {
+                return value_from_id(args[0]); /* Same as numberWithInt: for interpreter */
             }
             return value_from_id(args[0]);
         }
@@ -3618,6 +3886,30 @@ static Value parse_message_send(Parser *p) {
                         int idx = coll_get_nth(cid, cnt - 1);
                         if (idx >= 0) return g_coll_entries[idx].key;
                     }
+                    return value_from_id((id)0);
+                }
+
+                /* [arr firstObject] → first element or nil */
+                if (cstr_eq(sel_name, "firstObject")) {
+                    if (coll_count(cid) > 0) {
+                        int idx = coll_get_nth(cid, 0);
+                        if (idx >= 0) return g_coll_entries[idx].key;
+                    }
+                    return value_from_id((id)0);
+                }
+
+                /* [arr arrayByAddingObject:obj] → new array with object appended */
+                if (cstr_eq(sel_name, "arrayByAddingObject:") && arg_count >= 1) {
+                    unsigned int new_cid = g_next_coll_id++;
+                    unsigned int i;
+                    for (i = 0; i < g_coll_entry_count; i++) {
+                        if (g_coll_entries[i].coll_id == cid) {
+                            coll_add(new_cid, g_coll_entries[i].key, g_coll_entries[i].value);
+                        }
+                    }
+                    coll_add(new_cid, keyword_args[0], value_void());
+                    return value_from_id(coll_make_marker("NSArr:", new_cid));
+                }
                     return value_from_id((id)"(nil)");
                 }
 
@@ -3900,7 +4192,6 @@ static Value parse_message_send(Parser *p) {
             return result;
         }
     }
-}
 
 /* ── @interface / @implementation ────────────────────────────────── */
 
@@ -3918,6 +4209,27 @@ static Value parse_interface(Parser *p) {
     }
     cstr_copy(class_name, parser_current(p).text, 64);
     parser_advance(p);
+
+    /* Idempotency guard: if this class is already registered, skip
+     * re-registration. This prevents duplicate sentinel IDs, duplicate
+     * property entries, and stale class_ptr references if parse_interface
+     * is called more than once for the same class. */
+    {
+        InterpVar *existing = interp_find_var(class_name);
+        if (existing && existing->is_class) {
+            /* Class already exists — skip to @end without re-registering */
+            while (parser_current(p).type != TOK_AT_KEYWORD ||
+                   !cstr_eq(parser_current(p).text, "@end")) {
+                if (parser_current(p).type == TOK_EOF) break;
+                parser_advance(p);
+            }
+            if (parser_current(p).type == TOK_AT_KEYWORD &&
+                cstr_eq(parser_current(p).text, "@end")) {
+                parser_advance(p);
+            }
+            return value_from_class(existing->cls);
+        }
+    }
 
     /* Parse : SuperClass */
     super_name[0] = '\0';
@@ -4218,6 +4530,33 @@ static Value parse_implementation(Parser *p) {
         return value_void();
     }
 
+    /* Idempotency: check if this @implementation was already processed.
+     * If methods for this class already exist in g_methods[], skip
+     * re-registration to avoid duplicate entries. */
+    {
+        int class_has_methods = 0;
+        unsigned int mi;
+        for (mi = 0; mi < g_method_count; mi++) {
+            if (g_methods[mi].class_ptr == cls) {
+                class_has_methods = 1;
+                break;
+            }
+        }
+        if (class_has_methods) {
+            /* Already processed — skip to @end */
+            while (parser_current(p).type != TOK_AT_KEYWORD ||
+                   !cstr_eq(parser_current(p).text, "@end")) {
+                if (parser_current(p).type == TOK_EOF) break;
+                parser_advance(p);
+            }
+            if (parser_current(p).type == TOK_AT_KEYWORD &&
+                cstr_eq(parser_current(p).text, "@end")) {
+                parser_advance(p);
+            }
+            return value_from_class(cls);
+        }
+    }
+
     /* Parse method definitions until @end */
     while (parser_current(p).type != TOK_AT_KEYWORD ||
            !cstr_eq(parser_current(p).text, "@end")) {
@@ -4417,8 +4756,12 @@ static Value parse_implementation(Parser *p) {
             /* Parse method body { ... } — capture the source */
             if (parser_current(p).type == TOK_OPEN_BRACE) {
                 int brace_depth = 1;
+                /* p->lex.token_start is where the { token began.
+                 * Body content starts right after the { character,
+                 * which is at token_start + 1. */
+                unsigned int after_brace = p->lex.token_start + 1;
                 parser_advance(p); /* skip opening { */
-                body_start = p->lex.token_start; /* start of first body token */
+                body_start = after_brace; /* includes leading whitespace/comments */
 
                 while (brace_depth > 0 && parser_current(p).type != TOK_EOF) {
                     if (parser_current(p).type == TOK_OPEN_BRACE) brace_depth++;
@@ -4585,6 +4928,50 @@ static Value parse_primary(Parser *p) {
         }
     }
 
+    /* Logical NOT */
+    if (tok.type == TOK_NOT) {
+        parser_advance(p);
+        {
+            Value v = parse_primary(p);
+            return value_from_int(is_truthy(v) ? 0 : 1);
+        }
+    }
+
+    /* Cast expression: (Type *)expr — just parse and ignore the type cast */
+    if (tok.type == TOK_OPEN_PAREN) {
+        Token saved = p->lex.current;
+        unsigned int saved_pos = p->lex.pos;
+        parser_advance(p); /* consume ( */
+        /* Check if this looks like a type cast: (Type *) or (Type) */
+        {
+            int is_cast = 0;
+            Token after_paren = parser_current(p);
+            /* Check for type name followed by * or ) */
+            if (after_paren.type == TOK_IDENTIFIER) {
+                /* Skip type name */
+                parser_advance(p);
+                /* Check for * pointer or closing paren followed by expr */
+                if (parser_current(p).type == TOK_STAR) {
+                    parser_advance(p); /* consume * */
+                    if (parser_current(p).type == TOK_CLOSE_PAREN) {
+                        parser_advance(p); /* consume ) */
+                        is_cast = 1;
+                    }
+                } else if (parser_current(p).type == TOK_CLOSE_PAREN) {
+                    parser_advance(p); /* consume ) */
+                    is_cast = 1;
+                }
+            }
+            if (is_cast) {
+                /* Just evaluate the expression inside, ignoring the cast type */
+                return parse_primary(p);
+            }
+        }
+        /* Not a cast — restore and let regular parsing handle it */
+        p->lex.current = saved;
+        p->lex.pos = saved_pos;
+    }
+
     /* nil literal */
     if (tok.type == TOK_NIL) {
         parser_advance(p);
@@ -4726,6 +5113,242 @@ static Value parse_primary(Parser *p) {
             }
         }
         return value_void();
+    }
+
+    /* @(expr) boxed expression: @(42), @(YES), @(3.14), @(someVar) */
+    if (tok.type == TOK_AT_KEYWORD && cstr_eq(tok.text, "@")) {
+        /* DEBUG: log @ token context */
+        nslog_append("DBG @ handler: tok=@ line=", 27);
+        { char buf[16]; int n = 0; unsigned int sv = p->lex.line;
+          if (sv == 0) { buf[n++] = '0'; } else { while (sv > 0) { buf[n++] = '0' + sv % 10; sv /= 10; } }
+          for (int j = n-1; j >= 0; j--) nslog_append(&buf[j], 1); }
+        nslog_append(" col=", 5);
+        { char buf[16]; int n = 0; unsigned int sv = p->lex.column;
+          if (sv == 0) { buf[n++] = '0'; } else { while (sv > 0) { buf[n++] = '0' + sv % 10; sv /= 10; } }
+          for (int j = n-1; j >= 0; j--) nslog_append(&buf[j], 1); }
+        nslog_append("\n", 1);
+        /* Look ahead to see if next token is ( — don't consume @ yet
+         * because @[array] and @{dict} handlers also need it. */
+        Token saved = p->lex.current;
+        unsigned int saved_pos = p->lex.pos;
+        parser_advance(p); /* peek past @ */
+        if (parser_current(p).type == TOK_OPEN_PAREN) {
+            Value expr_val;
+            parser_advance(p); /* consume ( */
+            expr_val = parse_expression(p);
+            parser_expect(p, TOK_CLOSE_PAREN);
+            if (p->error) return value_void();
+            /* Box the result as NSNumber */
+            if (expr_val.is_int) {
+                unsigned int i;
+                InterpVar *num_var = 0;
+                for (i = 0; i < g_var_count; i++) {
+                    if (cstr_eq(g_vars[i].name, "NSNumber") && g_vars[i].is_class) {
+                        num_var = &g_vars[i];
+                        break;
+                    }
+                }
+                if (!num_var) {
+                    num_var = interp_get_or_create_var("NSNumber");
+                    if (num_var) {
+                        num_var->is_class = 1;
+                        num_var->cls = (Class)objc_lookUpClass("NSNumber");
+                    }
+                }
+                if (num_var && num_var->cls) {
+                    SEL sel = sel_registerName("numberWithInt:");
+                    Value method_target = value_from_id((id)num_var->cls);
+                    unsigned int mi = find_interpreter_method(sel, method_target, (id)num_var->cls, 1);
+                    if (mi < g_method_count) {
+                        Value args[1] = { expr_val };
+                        return execute_interpreter_method(p, &g_methods[mi], sel, (id)num_var->cls, args, 1, 0);
+                    }
+                }
+            } else if (expr_val.is_float) {
+                unsigned int i;
+                InterpVar *num_var = 0;
+                for (i = 0; i < g_var_count; i++) {
+                    if (cstr_eq(g_vars[i].name, "NSNumber") && g_vars[i].is_class) {
+                        num_var = &g_vars[i];
+                        break;
+                    }
+                }
+                if (!num_var) {
+                    num_var = interp_get_or_create_var("NSNumber");
+                    if (num_var) {
+                        num_var->is_class = 1;
+                        num_var->cls = (Class)objc_lookUpClass("NSNumber");
+                    }
+                }
+                if (num_var && num_var->cls) {
+                    SEL sel = sel_registerName("numberWithDouble:");
+                    Value method_target = value_from_id((id)num_var->cls);
+                    unsigned int mi = find_interpreter_method(sel, method_target, (id)num_var->cls, 1);
+                    if (mi < g_method_count) {
+                        Value args[1] = { expr_val };
+                        return execute_interpreter_method(p, &g_methods[mi], sel, (id)num_var->cls, args, 1, 0);
+                    }
+                }
+            } else if (expr_val.is_id || expr_val.is_class) {
+                /* Already an object, return as-is (or wrap in NSValue if needed) */
+                return expr_val;
+            }
+            return expr_val;
+        }
+        /* If not @(, restore parser position — the @ was not consumed.
+         * The @[array] and @{dict} handlers below will handle it. */
+        p->lex.current = saved;
+        p->lex.pos = saved_pos;
+    }
+
+    /* @[ ... ] array literal */
+    if (tok.type == TOK_AT_KEYWORD && cstr_eq(tok.text, "@")) {
+        /* Look ahead: advance past @ to see if next token is [ */
+        Token saved = p->lex.current;
+        unsigned int saved_pos = p->lex.pos;
+        parser_advance(p); /* peek past @ */
+        if (parser_current(p).type == TOK_OPEN_BRACKET) {
+            parser_advance(p); /* consume [ */
+            {
+                Value objects[64];
+                unsigned int obj_count = 0;
+                InterpVar *arr_var = 0;
+                unsigned int i;
+                /* Parse comma-separated expressions */
+                if (parser_current(p).type != TOK_CLOSE_BRACKET) {
+                    objects[obj_count++] = parse_expression_safe(p);
+                    while (parser_current(p).type == TOK_COMMA && obj_count < 64) {
+                        parser_advance(p);
+                        objects[obj_count++] = parse_expression_safe(p);
+                    }
+                }
+                parser_expect(p, TOK_CLOSE_BRACKET);
+                if (p->error) return value_void();
+                /* Create NSMutableArray */
+                for (i = 0; i < g_var_count; i++) {
+                    if (cstr_eq(g_vars[i].name, "NSMutableArray") && g_vars[i].is_class) {
+                        arr_var = &g_vars[i];
+                        break;
+                    }
+                }
+                if (!arr_var) {
+                    arr_var = interp_get_or_create_var("NSMutableArray");
+                    if (arr_var) {
+                        arr_var->is_class = 1;
+                        arr_var->cls = (Class)objc_lookUpClass("NSMutableArray");
+                    }
+                }
+                if (arr_var && arr_var->cls) {
+                    /* [NSMutableArray array] */
+                    SEL sel_alloc = sel_registerName("array");
+                    Value arr_target = value_from_id((id)arr_var->cls);
+                    unsigned int mi = find_interpreter_method(sel_alloc, arr_target, (id)arr_var->cls, 0);
+                    Value arr;
+                    if (mi < g_method_count) {
+                        arr = execute_interpreter_method(p, &g_methods[mi], sel_alloc, (id)arr_var->cls, 0, 0, 0);
+                    } else {
+                        arr = value_from_id(0);
+                    }
+                    /* Add objects */
+                    {
+                        SEL sel_add = sel_registerName("addObject:");
+                        unsigned int j;
+                        for (j = 0; j < obj_count; j++) {
+                            unsigned int mi2 = find_interpreter_method(sel_add, arr, arr.obj_val, 1);
+                            if (mi2 < g_method_count) {
+                                Value args[1] = { objects[j] };
+                                execute_interpreter_method(p, &g_methods[mi2], sel_add, arr.obj_val, args, 1, 0);
+                            }
+                        }
+                    }
+                    return arr;
+                }
+            }
+            return value_void();
+        }
+        /* Not @[ — restore parser position */
+        p->lex.current = saved;
+        p->lex.pos = saved_pos;
+    }
+
+    /* @{ ... } dictionary literal */
+    if (tok.type == TOK_AT_KEYWORD && cstr_eq(tok.text, "@")) {
+        /* Look ahead: advance past @ to see if next token is { */
+        Token saved = p->lex.current;
+        unsigned int saved_pos = p->lex.pos;
+        parser_advance(p); /* peek past @ */
+        /* DEBUG: log what we see after @ */
+        {
+            Token cur = parser_current(p);
+            nslog_append("DBG @{ check: next type=", 25);
+            { char buf[16]; int n = 0; int sv = (int)cur.type;
+              if (sv < 0) { nslog_append("-", 1); sv = -sv; }
+              if (sv == 0) { buf[n++] = '0'; } else { while (sv > 0) { buf[n++] = '0' + sv % 10; sv /= 10; } }
+              for (int j = n-1; j >= 0; j--) nslog_append(&buf[j], 1); }
+            nslog_append(" text=\"", 7);
+            nslog_append(cur.text, cstr_len(cur.text));
+            nslog_append("\"\n", 2);
+        }
+        if (parser_current(p).type == TOK_OPEN_BRACE) {
+            parser_advance(p); /* consume { */
+            {
+                InterpVar *dict_var = 0;
+                unsigned int i;
+                /* Create NSMutableDictionary */
+                for (i = 0; i < g_var_count; i++) {
+                    if (cstr_eq(g_vars[i].name, "NSMutableDictionary") && g_vars[i].is_class) {
+                        dict_var = &g_vars[i];
+                        break;
+                    }
+                }
+                if (!dict_var) {
+                    dict_var = interp_get_or_create_var("NSMutableDictionary");
+                    if (dict_var) {
+                        dict_var->is_class = 1;
+                        dict_var->cls = (Class)objc_lookUpClass("NSMutableDictionary");
+                    }
+                }
+                if (dict_var && dict_var->cls) {
+                    /* [NSMutableDictionary dictionary] */
+                    SEL sel_alloc = sel_registerName("dictionary");
+                    Value dict_target = value_from_id((id)dict_var->cls);
+                    unsigned int mi = find_interpreter_method(sel_alloc, dict_target, (id)dict_var->cls, 0);
+                    Value dict;
+                    if (mi < g_method_count) {
+                        dict = execute_interpreter_method(p, &g_methods[mi], sel_alloc, (id)dict_var->cls, 0, 0, 0);
+                    } else {
+                        dict = value_from_id(0);
+                    }
+                    /* Parse key: value pairs */
+                    while (parser_current(p).type != TOK_CLOSE_BRACE && parser_current(p).type != TOK_EOF) {
+                        Value key, value;
+                        key = parse_expression_safe(p);
+                        if (parser_current(p).type == TOK_COLON) {
+                            parser_advance(p);
+                            value = parse_expression_safe(p);
+                            /* [dict setObject:value forKey:key] */
+                            {
+                                SEL sel_set = sel_registerName("setObject:forKey:");
+                                unsigned int mi2 = find_interpreter_method(sel_set, dict, dict.obj_val, 2);
+                                if (mi2 < g_method_count) {
+                                    Value args[2] = { value, key };
+                                    execute_interpreter_method(p, &g_methods[mi2], sel_set, dict.obj_val, args, 2, 0);
+                                }
+                            }
+                        }
+                        if (parser_current(p).type == TOK_COMMA) {
+                            parser_advance(p);
+                        }
+                    }
+                    parser_expect(p, TOK_CLOSE_BRACE);
+                    return dict;
+                }
+            }
+            return value_void();
+        }
+        /* Not @{ — restore parser position */
+        p->lex.current = saved;
+        p->lex.pos = saved_pos;
     }
 
     /* Integer literal */
@@ -5530,6 +6153,17 @@ static Value parse_primary(Parser *p) {
     }
 
     parser_advance(p);
+    {
+        /* DEBUG: log the unexpected token */
+        nslog_append("DBG Unexpected token: type=", 28);
+        { char buf[16]; int n = 0; int sv = (int)tok.type;
+          if (sv < 0) { nslog_append("-", 1); sv = -sv; }
+          if (sv == 0) { buf[n++] = '0'; } else { while (sv > 0) { buf[n++] = '0' + sv % 10; sv /= 10; } }
+          for (int j = n-1; j >= 0; j--) nslog_append(&buf[j], 1); }
+        nslog_append(" text=\"", 7);
+        nslog_append(tok.text, cstr_len(tok.text));
+        nslog_append("\"\n", 2);
+    }
     parser_error(p, "Unexpected token");
     return value_void();
 }
@@ -5647,6 +6281,18 @@ static Value parse_comparison(Parser *p) {
                 else if (op == TOK_EQ) result = lv == rv;
                 else if (op == TOK_NEQ) result = lv != rv;
                 left = value_from_int(result);
+            } else if (op == TOK_EQ || op == TOK_NEQ) {
+                /* id comparison: obj == nil, obj != nil, nil == obj, etc.
+                 * Also handles id == id (pointer equality) */
+                int result = 0;
+                long lv = 0, rv = 0;
+                if (left.is_id) lv = (long)left.obj_val;
+                else if (left.is_int) lv = left.int_val;
+                if (right.is_id) rv = (long)right.obj_val;
+                else if (right.is_int) rv = right.int_val;
+                if (op == TOK_EQ) result = (lv == rv);
+                else result = (lv != rv);
+                left = value_from_int(result);
             }
         }
     }
@@ -5658,6 +6304,7 @@ static Value parse_comparison(Parser *p) {
 
 static int is_truthy(Value v) {
     if (v.is_int) return v.int_val != 0;
+    if (v.is_float) return v.float_val != 0.0;
     if (v.is_id) return v.obj_val != 0;
     if (v.is_class) return v.cls_val != 0;
     if (v.is_void) return 0;
@@ -5823,11 +6470,18 @@ static Value parse_type_and_var_decl(Parser *p) {
     char type_name[64];
     int is_pointer = 0;
     int is_block_var = 0;  /* 1 if __block qualifier */
+    int is_static_var = 0;  /* 1 if static variable — persists across cells */
     (void)is_pointer; /* may be used later for pointer type tracking */
 
     /* Check for __block qualifier */
     if (parser_current(p).type == TOK_IDENTIFIER && cstr_eq(parser_current(p).text, "__block")) {
         is_block_var = 1;
+        parser_advance(p);
+    }
+
+    /* Check for static qualifier */
+    if (parser_current(p).type == TOK_IDENTIFIER && cstr_eq(parser_current(p).text, "static")) {
+        is_static_var = 1;
         parser_advance(p);
     }
 
@@ -5873,11 +6527,27 @@ static Value parse_type_and_var_decl(Parser *p) {
                     }
                 }
 
+                /* For static block variables, check if one already exists */
+                if (is_static_var) {
+                    InterpVar *existing = interp_find_var(var_name_buf);
+                    if (existing && existing->is_static) {
+                        /* Static variable already initialized - skip reinitialization */
+                        if (parser_current(p).type == TOK_ASSIGN) {
+                            parser_advance(p);
+                            parse_expression(p);
+                            if (p->error) return value_void();
+                        }
+                        return value_void();
+                    }
+                }
+
                 var = interp_get_or_create_var(var_name_buf);
                 if (var == 0) {
                     parser_error(p, "variable table full (max 1024)");
                     return value_void();
                 }
+                var->is_block_captured = is_block_var;
+                var->is_static = is_static_var; /* mark as static if needed */
 
                 /* Parse initializer: = block_literal */
                 if (parser_current(p).type == TOK_ASSIGN) {
@@ -5930,12 +6600,30 @@ static Value parse_type_and_var_decl(Parser *p) {
         cstr_copy(var_name_buf, parser_current(p).text, 64);
         parser_advance(p);
 
+        /* For static variables, check if one already exists (persistent across cells) */
+        if (is_static_var) {
+            var = interp_find_var(var_name_buf);
+            if (var && var->is_static) {
+                /* Static variable already exists - skip reinitialization */
+                var->is_block_captured = is_block_var; /* update block capture flag */
+                /* Skip initializer if present */
+                if (parser_current(p).type == TOK_ASSIGN) {
+                    parser_advance(p);
+                    /* Parse but discard the value */
+                    parse_expression(p);
+                    if (p->error) return value_void();
+                }
+                return value_void();
+            }
+        }
+
         var = interp_get_or_create_var(var_name_buf);
         if (var == 0) {
             parser_error(p, "variable table full (max 1024)");
             return value_void();
         }
         var->is_block_captured = is_block_var;
+        var->is_static = is_static_var; /* mark as static if needed */
 
         /* Parse initializer */
         if (parser_current(p).type == TOK_ASSIGN) {
@@ -6863,15 +7551,17 @@ static AstNode *parse_statement_ast(Parser *p) {
         }
     }
 
-    /* @interface / @implementation — execute immediately (no AST) */
+    /* @interface / @implementation — execute immediately during parse phase.
+     * Return AST_NOOP so eval_ast skips them — they must NOT be re-executed
+     * via eval_source_range, which would cause duplicate class/method
+     * registration and "Unknown identifier" errors. */
     if (tok.type == TOK_AT_KEYWORD &&
         (cstr_eq(tok.text, "@interface") || cstr_eq(tok.text, "@implementation") ||
          cstr_eq(tok.text, "@class") || cstr_eq(tok.text, "@protocol"))) {
-        unsigned int start = p->lex.token_start;
         parse_statement(p); /* execute immediately */
         if (p->error) return 0;
         {
-            AstNode *node = ast_make_source(AST_EXPR_STMT, start, p->lex.token_start - start);
+            AstNode *node = ast_make_noop();
             if (!node && !p->error) {
                 parser_error(p, "AST node limit reached (max 1024)");
                 return 0;
@@ -6927,6 +7617,25 @@ static Value eval_source_range(unsigned int start, unsigned int len,
     if (len == 0) {
         g_parse_depth = saved_parse_depth;
         return value_void();
+    }
+    /* DEBUG: log the source range being evaluated */
+    {
+        nslog_append("DBG eval_source_range: start=", 29);
+        { char buf[16]; int n = 0; unsigned int sv = start;
+          if (sv == 0) { buf[n++] = '0'; } else { while (sv > 0) { buf[n++] = '0' + sv % 10; sv /= 10; } }
+          for (int j = n-1; j >= 0; j--) nslog_append(&buf[j], 1); }
+        nslog_append(" len=", 5);
+        { char buf[16]; int n = 0; unsigned int sv = len;
+          if (sv == 0) { buf[n++] = '0'; } else { while (sv > 0) { buf[n++] = '0' + sv % 10; sv /= 10; } }
+          for (int j = n-1; j >= 0; j--) nslog_append(&buf[j], 1); }
+        nslog_append("\n", 1);
+        /* Print first 60 chars of source range */
+        {
+            unsigned int dl = len > 60 ? 60 : len;
+            nslog_append("  src: \"", 8);
+            nslog_append(source + start, dl);
+            nslog_append("\"\n", 2);
+        }
     }
     parser_init(&p, source + start, len);
     /* Parse all statements in the source range, not just the first one.
@@ -7169,6 +7878,10 @@ static Value eval_ast(AstNode *node, const char *source) {
     case AST_VAR_DECL:
         last = eval_source_range(node->source_range.source_start,
                                  node->source_range.source_len, source);
+        break;
+
+    case AST_NOOP:
+        /* Already executed during parse phase — skip */
         break;
 
     case AST_RETURN:
