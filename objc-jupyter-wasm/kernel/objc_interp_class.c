@@ -126,14 +126,14 @@ Value parse_interface(struct Parser *p) {
             }
 
             if (parser_current(p).type == TOK_IDENTIFIER) {
-                if (g_property_count >= 64) {
+                if (g_ctx.property_count >= 64) {
                     parser_error(p, "property table full (max 64 properties)");
                     while (parser_current(p).type != TOK_SEMICOLON && parser_current(p).type != TOK_CLOSE_PAREN && parser_current(p).type != TOK_EOF) {
                         parser_advance(p);
                     }
                     continue;
                 }
-                PropertyDecl *prop = &g_properties[g_property_count];
+                PropertyDecl *prop = &g_ctx.properties[g_ctx.property_count];
                 if (copy_identifier_or_error(p, prop->type_name, parser_current(p).text, 64, "property type")) {
                     return value_void();
                 }
@@ -155,7 +155,7 @@ Value parse_interface(struct Parser *p) {
                         return value_void();
                     }
                     parser_advance(p);
-                    g_property_count++;
+                    g_ctx.property_count++;
                 }
             }
 
@@ -213,17 +213,17 @@ static id method_impl_trampoline(id self, SEL _cmd, ...) {
     const char *sel_name = sel_getName(_cmd);
     unsigned int i;
 
-    for (i = 0; i < g_method_count; i++) {
-        if (g_methods[i].selector == _cmd && g_methods[i].source_len > 0) {
+    for (i = 0; i < g_ctx.method_count; i++) {
+        if (g_ctx.methods[i].selector == _cmd && g_ctx.methods[i].source_len > 0) {
             break;
         }
     }
 
-    if (i >= g_method_count || g_methods[i].source_len == 0) {
+    if (i >= g_ctx.method_count || g_ctx.methods[i].source_len == 0) {
         return self;
     }
 
-    unsigned int saved_var_count = g_var_count;
+    unsigned int saved_var_count = g_ctx.var_count;
 
     {
         InterpVar *var;
@@ -254,14 +254,14 @@ static id method_impl_trampoline(id self, SEL _cmd, ...) {
             if (sel_name[si] == ':') sel_colons++;
         }
 
-        if (sel_colons > 0 && g_methods[i].arg_count > 0) {
+        if (sel_colons > 0 && g_ctx.methods[i].arg_count > 0) {
             __builtin_va_list ap;
             __builtin_va_start(ap, _cmd);
 
             unsigned int ai;
-            for (ai = 0; ai < sel_colons && ai < g_methods[i].arg_count && ai < 8; ai++) {
+            for (ai = 0; ai < sel_colons && ai < g_ctx.methods[i].arg_count && ai < 8; ai++) {
                 id arg_val = __builtin_va_arg(ap, id);
-                InterpVar *var = interp_get_or_create_var(g_methods[i].arg_names[ai]);
+                InterpVar *var = interp_get_or_create_var(g_ctx.methods[i].arg_names[ai]);
                 if (var) {
                     var->is_id = 1;
                     var->value = arg_val;
@@ -277,7 +277,7 @@ static id method_impl_trampoline(id self, SEL _cmd, ...) {
 
     g_ctx.return_pending = 0;
     {
-        Value v = eval_source_range(0, g_methods[i].source_len, g_methods[i].source, 0);
+        Value v = eval_source_range(0, g_ctx.methods[i].source_len, g_ctx.methods[i].source, 0);
         (void)v;
     }
 
@@ -293,7 +293,7 @@ static id method_impl_trampoline(id self, SEL _cmd, ...) {
             return_val = self;
         }
 
-        g_var_count = saved_var_count;
+        g_ctx.var_count = saved_var_count;
         g_ctx.return_pending = 0;
 
         return return_val;
@@ -329,8 +329,8 @@ Value parse_implementation(struct Parser *p) {
     {
         int class_has_methods = 0;
         unsigned int mi;
-        for (mi = 0; mi < g_method_count; mi++) {
-            if (g_methods[mi].class_ptr == cls) {
+        for (mi = 0; mi < g_ctx.method_count; mi++) {
+            if (g_ctx.methods[mi].class_ptr == cls) {
                 class_has_methods = 1;
                 break;
             }
@@ -376,10 +376,10 @@ Value parse_implementation(struct Parser *p) {
                             parser_advance(p);
                             {
                                 unsigned int pi;
-                                for (pi = 0; pi < g_property_count; pi++) {
-                                    if (cstr_eq(g_properties[pi].name, prop_name) &&
-                                        cstr_eq(g_properties[pi].class_name, class_name)) {
-                                        cstr_copy(g_properties[pi].ivar_name, ivar_name, 64);
+                                for (pi = 0; pi < g_ctx.property_count; pi++) {
+                                    if (cstr_eq(g_ctx.properties[pi].name, prop_name) &&
+                                        cstr_eq(g_ctx.properties[pi].class_name, class_name)) {
+                                        cstr_copy(g_ctx.properties[pi].ivar_name, ivar_name, 64);
                                         break;
                                     }
                                 }
@@ -389,10 +389,10 @@ Value parse_implementation(struct Parser *p) {
 
                     {
                         unsigned int pi;
-                        for (pi = 0; pi < g_property_count; pi++) {
-                            if (cstr_eq(g_properties[pi].name, prop_name) &&
-                                cstr_eq(g_properties[pi].class_name, class_name)) {
-                                g_properties[pi].synthesized = 1;
+                        for (pi = 0; pi < g_ctx.property_count; pi++) {
+                            if (cstr_eq(g_ctx.properties[pi].name, prop_name) &&
+                                cstr_eq(g_ctx.properties[pi].class_name, class_name)) {
+                                g_ctx.properties[pi].synthesized = 1;
                                 break;
                             }
                         }
@@ -550,12 +550,12 @@ Value parse_implementation(struct Parser *p) {
                     return value_void();
                 }
 
-                if (g_method_count < MAX_METHODS && body_len > 0) {
+                if (g_ctx.method_count < MAX_METHODS && body_len > 0) {
                     if (body_len >= 2048) {
                         parser_error(p, "method body too long (max 2047 bytes)");
                         return value_void();
                     }
-                    MethodImpl *mi = &g_methods[g_method_count];
+                    MethodImpl *mi = &g_ctx.methods[g_ctx.method_count];
                     unsigned int copy_len = body_len;
                     cstr_copy(mi->source, p->lex.source + body_start, copy_len + 1);
                     mi->source_len = copy_len;
@@ -569,8 +569,8 @@ Value parse_implementation(struct Parser *p) {
                             cstr_copy(mi->arg_names[ai], arg_names[ai], 64);
                         }
                     }
-                    g_method_count++;
-                } else if (g_method_count >= MAX_METHODS) {
+                    g_ctx.method_count++;
+                } else if (g_ctx.method_count >= MAX_METHODS) {
                     parser_error(p, "method table full (max 64 methods)");
                 }
             }
@@ -581,18 +581,18 @@ Value parse_implementation(struct Parser *p) {
 
     {
         unsigned int pi;
-        for (pi = 0; pi < g_property_count; pi++) {
-            if (cstr_eq(g_properties[pi].class_name, class_name) &&
-                !g_properties[pi].synthesized) {
-                g_properties[pi].synthesized = 1;
-                if (g_properties[pi].ivar_name[0] == '\0') {
-                    const char *pname = g_properties[pi].name;
+        for (pi = 0; pi < g_ctx.property_count; pi++) {
+            if (cstr_eq(g_ctx.properties[pi].class_name, class_name) &&
+                !g_ctx.properties[pi].synthesized) {
+                g_ctx.properties[pi].synthesized = 1;
+                if (g_ctx.properties[pi].ivar_name[0] == '\0') {
+                    const char *pname = g_ctx.properties[pi].name;
                     unsigned int ppos = 0;
-                    g_properties[pi].ivar_name[ppos++] = '_';
+                    g_ctx.properties[pi].ivar_name[ppos++] = '_';
                     while (*pname && ppos < 62) {
-                        g_properties[pi].ivar_name[ppos++] = *pname++;
+                        g_ctx.properties[pi].ivar_name[ppos++] = *pname++;
                     }
-                    g_properties[pi].ivar_name[ppos] = '\0';
+                    g_ctx.properties[pi].ivar_name[ppos] = '\0';
                 }
             }
         }

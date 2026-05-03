@@ -192,7 +192,7 @@ Value parse_message_send(Parser *p) {
         /* Determine target class name for Foundation dispatch.
          * Foundation classes are not registered in the runtime (to avoid
          * WASM traps from objc_allocateClassPair), so we dispatch by name.
-         * We look up the variable name from g_vars[].
+         * We look up the variable name from g_ctx.vars[].
          * IMPORTANT: We can't call object_getClass on non-ObjC pointers
          * (like C strings from the string pool) — it causes WASM traps.
          * So we only call it for class targets, not id targets. */
@@ -202,9 +202,9 @@ Value parse_message_send(Parser *p) {
              * Sentinel pointers: Foundation classes (1-9), custom classes (100+). */
             {
                 unsigned int vi;
-                for (vi = 0; vi < g_var_count; vi++) {
-                    if (g_vars[vi].is_class && g_vars[vi].cls == target.cls_val) {
-                        target_class_name = g_vars[vi].name;
+                for (vi = 0; vi < g_ctx.var_count; vi++) {
+                    if (g_ctx.vars[vi].is_class && g_ctx.vars[vi].cls == target.cls_val) {
+                        target_class_name = g_ctx.vars[vi].name;
                         break;
                     }
                 }
@@ -284,8 +284,8 @@ Value parse_message_send(Parser *p) {
                                  cstr_eq(recv_cls, "NSObject"));
             if (!is_foundation) {
                 unsigned int mi = find_interpreter_method(sel, target, receiver, 0);
-                if (mi < g_method_count) {
-                    return execute_interpreter_method(p, &g_methods[mi], sel, receiver,
+                if (mi < g_ctx.method_count) {
+                    return execute_interpreter_method(p, &g_ctx.methods[mi], sel, receiver,
                                                       keyword_args, arg_count, 1);
                 }
             }
@@ -299,7 +299,7 @@ Value parse_message_send(Parser *p) {
             const char *s = (const char *)receiver;
             if (cstr_eq_n(s, "FDObj:", 6)) {
                 const char *cls_name = s + 6;
-                unsigned int cid = g_next_coll_id++;
+                unsigned int cid = g_ctx.next_coll_id++;
                 if (cstr_eq(cls_name, "NSMutableArray")) {
                     return value_from_id(coll_make_marker("NSMutArr:", cid));
                 }
@@ -326,9 +326,9 @@ Value parse_message_send(Parser *p) {
             if (cstr_starts(s, "FDObj:")) {
                 const char *recv_class_name = s + 6;
                 unsigned int vi;
-                for (vi = 0; vi < g_var_count; vi++) {
-                    if (g_vars[vi].is_class && cstr_eq(g_vars[vi].name, recv_class_name)) {
-                        return value_from_class(g_vars[vi].cls);
+                for (vi = 0; vi < g_ctx.var_count; vi++) {
+                    if (g_ctx.vars[vi].is_class && cstr_eq(g_ctx.vars[vi].name, recv_class_name)) {
+                        return value_from_class(g_ctx.vars[vi].cls);
                     }
                 }
                 return value_from_class((Class)0);
@@ -366,7 +366,7 @@ Value parse_message_send(Parser *p) {
                 /* For real ObjC objects, try object_getClass.
                  * Guard against string pool pointers. */
                 const char *ptr = (const char *)receiver;
-                if (ptr >= g_string_pool && ptr < g_string_pool + OBJC_INTERP_STRING_POOL_SIZE) {
+                if (ptr >= g_ctx.string_pool && ptr < g_ctx.string_pool + OBJC_INTERP_STRING_POOL_SIZE) {
                     nslog_append("<unknown>", 9);
                 } else {
                     Class cls = object_getClass(receiver);
@@ -416,8 +416,8 @@ Value parse_message_send(Parser *p) {
         if (cstr_eq(sel_name, "respondsToSelector:") && target.is_id && arg_count >= 1) {
             if (keyword_args[0].is_sel) {
                 unsigned int mi;
-                for (mi = 0; mi < g_method_count; mi++) {
-                    if (g_methods[mi].selector == keyword_args[0].sel_val) {
+                for (mi = 0; mi < g_ctx.method_count; mi++) {
+                    if (g_ctx.methods[mi].selector == keyword_args[0].sel_val) {
                         return value_from_int(1);
                     }
                 }
@@ -431,15 +431,15 @@ Value parse_message_send(Parser *p) {
                 SEL perf_sel = keyword_args[0].sel_val;
                 unsigned int mi;
                 int found = 0;
-                for (mi = 0; mi < g_method_count; mi++) {
-                    if (g_methods[mi].selector == perf_sel && g_methods[mi].source_len > 0 &&
-                        !g_methods[mi].is_class_method) {
+                for (mi = 0; mi < g_ctx.method_count; mi++) {
+                    if (g_ctx.methods[mi].selector == perf_sel && g_ctx.methods[mi].source_len > 0 &&
+                        !g_ctx.methods[mi].is_class_method) {
                         found = 1;
                         break;
                     }
                 }
                 if (found) {
-                    unsigned int saved_var_count = g_var_count;
+                    unsigned int saved_var_count = g_ctx.var_count;
                     Value return_val;
                     InterpVar *self_var = interp_get_or_create_var("self");
                     if (self_var) { self_var->is_id = 1; self_var->value = receiver; }
@@ -449,11 +449,11 @@ Value parse_message_send(Parser *p) {
                     }
                     g_ctx.return_pending = 0;
                     {
-                        Value v = eval_source_range(0, g_methods[mi].source_len, g_methods[mi].source, 0);
+                        Value v = eval_source_range(0, g_ctx.methods[mi].source_len, g_ctx.methods[mi].source, 0);
                         (void)v;
                     }
                     return_val = g_ctx.return_value;
-                    g_var_count = saved_var_count;
+                    g_ctx.var_count = saved_var_count;
                     g_ctx.return_pending = 0;
                     return return_val;
                 }
@@ -787,7 +787,7 @@ Value parse_message_send(Parser *p) {
             const char *sep = (const char *)keyword_args[0].obj_val;
             int src_len = (int)cstr_len(src);
             int sep_len = (int)cstr_len(sep);
-            unsigned int new_cid = g_next_coll_id++;
+            unsigned int new_cid = g_ctx.next_coll_id++;
             Value dummy = value_void();
             if (sep_len == 0) {
                 /* Empty separator: each char is a component */
@@ -1282,62 +1282,62 @@ Value parse_message_send(Parser *p) {
 
         /* NSArray: [NSArray array] → empty immutable array */
         if (IS_FOUNDATION_CLASS("NSArray") && target.is_class && cstr_eq(sel_name, "array") && arg_count == 0) {
-            unsigned int cid = g_next_coll_id++;
+            unsigned int cid = g_ctx.next_coll_id++;
             return value_from_id(coll_make_marker("NSArr:", cid));
         }
 
         /* NSMutableArray: [NSMutableArray arrayWithCapacity:n] → empty mutable array */
         if (IS_FOUNDATION_CLASS("NSMutableArray") && target.is_class && cstr_eq(sel_name, "arrayWithCapacity:") && arg_count >= 1) {
-            unsigned int cid = g_next_coll_id++;
+            unsigned int cid = g_ctx.next_coll_id++;
             return value_from_id(coll_make_marker("NSMutArr:", cid));
         }
 
         /* NSMutableArray: [NSMutableArray array] → empty mutable array */
         if (IS_FOUNDATION_CLASS("NSMutableArray") && target.is_class && cstr_eq(sel_name, "array") && arg_count == 0) {
-            unsigned int cid = g_next_coll_id++;
+            unsigned int cid = g_ctx.next_coll_id++;
             return value_from_id(coll_make_marker("NSMutArr:", cid));
         }
 
         /* NSDictionary: [NSDictionary dictionary] → empty immutable dict */
         if (IS_FOUNDATION_CLASS("NSDictionary") && target.is_class && cstr_eq(sel_name, "dictionary") && arg_count == 0) {
-            unsigned int cid = g_next_coll_id++;
+            unsigned int cid = g_ctx.next_coll_id++;
             return value_from_id(coll_make_marker("NSDict:", cid));
         }
 
         /* NSMutableDictionary: [NSMutableDictionary dictionaryWithCapacity:n] → empty mutable dict */
         if (IS_FOUNDATION_CLASS("NSMutableDictionary") && target.is_class && cstr_eq(sel_name, "dictionaryWithCapacity:") && arg_count >= 1) {
-            unsigned int cid = g_next_coll_id++;
+            unsigned int cid = g_ctx.next_coll_id++;
             return value_from_id(coll_make_marker("NSMutDict:", cid));
         }
 
         /* NSMutableDictionary: [NSMutableDictionary dictionary] → empty mutable dict */
         if (IS_FOUNDATION_CLASS("NSMutableDictionary") && target.is_class && cstr_eq(sel_name, "dictionary") && arg_count == 0) {
-            unsigned int cid = g_next_coll_id++;
+            unsigned int cid = g_ctx.next_coll_id++;
             return value_from_id(coll_make_marker("NSMutDict:", cid));
         }
 
         /* NSDictionary: [NSDictionary dictionaryWithObject:obj forKey:key] → dict with one entry */
         if (IS_FOUNDATION_CLASS("NSDictionary") && target.is_class && cstr_eq(sel_name, "dictionaryWithObject:forKey:") && arg_count >= 2) {
-            unsigned int cid = g_next_coll_id++;
+            unsigned int cid = g_ctx.next_coll_id++;
             coll_add(cid, keyword_args[1], keyword_args[0]); /* key, value */
             return value_from_id(coll_make_marker("NSDict:", cid));
         }
 
         /* NSSet: [NSSet setWithArray:arr] → set from array */
         if (IS_FOUNDATION_CLASS("NSSet") && target.is_class && cstr_eq(sel_name, "setWithArray:") && arg_count >= 1) {
-            unsigned int cid = g_next_coll_id++;
+            unsigned int cid = g_ctx.next_coll_id++;
             const char *arr_s = (const char *)keyword_args[0].obj_val;
             unsigned int arr_cid = coll_id_from_marker(arr_s, "NSArr:");
             if (arr_cid == 0) arr_cid = coll_id_from_marker(arr_s, "NSMutArr:");
             if (arr_cid > 0) {
                 /* Copy unique elements from array to set */
                 unsigned int i;
-                for (i = 0; i < g_coll_entry_count; i++) {
-                    if (g_coll_entries[i].coll_id == arr_cid) {
+                for (i = 0; i < g_ctx.coll_entry_count; i++) {
+                    if (g_ctx.coll_entries[i].coll_id == arr_cid) {
                         /* Check if already in set */
-                        int existing = coll_find_by_key(cid, &g_coll_entries[i].key);
+                        int existing = coll_find_by_key(cid, &g_ctx.coll_entries[i].key);
                         if (existing < 0) {
-                            coll_add(cid, g_coll_entries[i].key, g_coll_entries[i].value);
+                            coll_add(cid, g_ctx.coll_entries[i].key, g_ctx.coll_entries[i].value);
                         }
                     }
                 }
@@ -1370,7 +1370,7 @@ Value parse_message_send(Parser *p) {
                 if (cstr_eq(sel_name, "objectAtIndex:") && arg_count >= 1 && keyword_args[0].is_int) {
                     int idx = coll_get_nth(cid, (unsigned int)keyword_args[0].int_val);
                     if (idx >= 0) {
-                        return g_coll_entries[idx].key;
+                        return g_ctx.coll_entries[idx].key;
                     }
                     return value_from_id((id)"(nil)");
                 }
@@ -1399,7 +1399,7 @@ Value parse_message_send(Parser *p) {
                 if (cstr_eq(sel_name, "replaceObjectAtIndex:withObject:") && arg_count >= 2) {
                     int idx = coll_get_nth(cid, (unsigned int)keyword_args[0].int_val);
                     if (idx >= 0) {
-                        g_coll_entries[(unsigned int)idx].key = keyword_args[1];
+                        g_ctx.coll_entries[(unsigned int)idx].key = keyword_args[1];
                     }
                     return value_from_id(receiver);
                 }
@@ -1421,15 +1421,15 @@ Value parse_message_send(Parser *p) {
                 /* [arr indexOfObject:obj] → find index of object */
                 if (cstr_eq(sel_name, "indexOfObject:") && arg_count >= 1) {
                     unsigned int i, pos = 0;
-                    for (i = 0; i < g_coll_entry_count; i++) {
-                        if (g_coll_entries[i].coll_id != cid) continue;
-                        if (g_coll_entries[i].key.is_int && keyword_args[0].is_int &&
-                            g_coll_entries[i].key.int_val == keyword_args[0].int_val) {
+                    for (i = 0; i < g_ctx.coll_entry_count; i++) {
+                        if (g_ctx.coll_entries[i].coll_id != cid) continue;
+                        if (g_ctx.coll_entries[i].key.is_int && keyword_args[0].is_int &&
+                            g_ctx.coll_entries[i].key.int_val == keyword_args[0].int_val) {
                             return value_from_int((int)pos);
                         }
-                        if (g_coll_entries[i].key.is_id && keyword_args[0].is_id &&
-                            g_coll_entries[i].key.obj_val != 0 && keyword_args[0].obj_val != 0 &&
-                            cstr_eq((const char *)g_coll_entries[i].key.obj_val,
+                        if (g_ctx.coll_entries[i].key.is_id && keyword_args[0].is_id &&
+                            g_ctx.coll_entries[i].key.obj_val != 0 && keyword_args[0].obj_val != 0 &&
+                            cstr_eq((const char *)g_ctx.coll_entries[i].key.obj_val,
                                     (const char *)keyword_args[0].obj_val)) {
                             return value_from_int((int)pos);
                         }
@@ -1441,7 +1441,7 @@ Value parse_message_send(Parser *p) {
                 /* [dict objectForKey:key] → value for key */
                 if (cstr_eq(sel_name, "objectForKey:") && arg_count >= 1) {
                     int idx = coll_find_by_key(cid, &keyword_args[0]);
-                    if (idx >= 0) return g_coll_entries[idx].value;
+                    if (idx >= 0) return g_ctx.coll_entries[idx].value;
                     return value_from_id((id)"(nil)");
                 }
 
@@ -1451,7 +1451,7 @@ Value parse_message_send(Parser *p) {
                     Value key = keyword_args[1];   /* second arg after forKey: */
                     int idx = coll_find_by_key(cid, &key);
                     if (idx >= 0) {
-                        g_coll_entries[idx].value = val;
+                        g_ctx.coll_entries[idx].value = val;
                     } else {
                         if (coll_add(cid, key, val) != 0) {
                             nslog_append("warning: collection entry table full\n", 38);
@@ -1469,12 +1469,12 @@ Value parse_message_send(Parser *p) {
 
                 /* [dict allKeys] → array of keys */
                 if (cstr_eq(sel_name, "allKeys")) {
-                    unsigned int new_cid = g_next_coll_id++;
+                    unsigned int new_cid = g_ctx.next_coll_id++;
                     unsigned int i;
-                    for (i = 0; i < g_coll_entry_count; i++) {
-                        if (g_coll_entries[i].coll_id == cid) {
+                    for (i = 0; i < g_ctx.coll_entry_count; i++) {
+                        if (g_ctx.coll_entries[i].coll_id == cid) {
                             Value dummy = value_void();
-                            coll_add(new_cid, g_coll_entries[i].key, dummy);
+                            coll_add(new_cid, g_ctx.coll_entries[i].key, dummy);
                         }
                     }
                     return value_from_id(coll_make_marker("NSArr:", new_cid));
@@ -1499,12 +1499,12 @@ Value parse_message_send(Parser *p) {
 
                 /* [dict allValues] → array of values */
                 if (cstr_eq(sel_name, "allValues")) {
-                    unsigned int new_cid = g_next_coll_id++;
+                    unsigned int new_cid = g_ctx.next_coll_id++;
                     unsigned int i;
-                    for (i = 0; i < g_coll_entry_count; i++) {
-                        if (g_coll_entries[i].coll_id == cid) {
+                    for (i = 0; i < g_ctx.coll_entry_count; i++) {
+                        if (g_ctx.coll_entries[i].coll_id == cid) {
                             Value dummy = value_void();
-                            coll_add(new_cid, g_coll_entries[i].value, dummy);
+                            coll_add(new_cid, g_ctx.coll_entries[i].value, dummy);
                         }
                     }
                     return value_from_id(coll_make_marker("NSArr:", new_cid));
@@ -1522,22 +1522,22 @@ Value parse_message_send(Parser *p) {
                         if (my_count != other_count) return value_from_int(0);
                         /* Check all keys in self exist in other with same value */
                         unsigned int i;
-                        for (i = 0; i < g_coll_entry_count; i++) {
-                            if (g_coll_entries[i].coll_id == cid) {
-                                int other_idx = coll_find_by_key(other_cid, &g_coll_entries[i].key);
+                        for (i = 0; i < g_ctx.coll_entry_count; i++) {
+                            if (g_ctx.coll_entries[i].coll_id == cid) {
+                                int other_idx = coll_find_by_key(other_cid, &g_ctx.coll_entries[i].key);
                                 if (other_idx < 0) return value_from_int(0);
                                 /* Compare values — both are Values, check fields */
-                                if (g_coll_entries[i].value.is_int != g_coll_entries[other_idx].value.is_int ||
-                                    g_coll_entries[i].value.is_id != g_coll_entries[other_idx].value.is_id ||
-                                    g_coll_entries[i].value.is_float != g_coll_entries[other_idx].value.is_float)
+                                if (g_ctx.coll_entries[i].value.is_int != g_ctx.coll_entries[other_idx].value.is_int ||
+                                    g_ctx.coll_entries[i].value.is_id != g_ctx.coll_entries[other_idx].value.is_id ||
+                                    g_ctx.coll_entries[i].value.is_float != g_ctx.coll_entries[other_idx].value.is_float)
                                     return value_from_int(0);
-                                if (g_coll_entries[i].value.is_int && g_coll_entries[i].value.int_val != g_coll_entries[other_idx].value.int_val)
+                                if (g_ctx.coll_entries[i].value.is_int && g_ctx.coll_entries[i].value.int_val != g_ctx.coll_entries[other_idx].value.int_val)
                                     return value_from_int(0);
-                                if (g_coll_entries[i].value.is_float && g_coll_entries[i].value.float_val != g_coll_entries[other_idx].value.float_val)
+                                if (g_ctx.coll_entries[i].value.is_float && g_ctx.coll_entries[i].value.float_val != g_ctx.coll_entries[other_idx].value.float_val)
                                     return value_from_int(0);
-                                if (g_coll_entries[i].value.is_id) {
-                                    const char *a = (const char *)g_coll_entries[i].value.obj_val;
-                                    const char *b = (const char *)g_coll_entries[other_idx].value.obj_val;
+                                if (g_ctx.coll_entries[i].value.is_id) {
+                                    const char *a = (const char *)g_ctx.coll_entries[i].value.obj_val;
+                                    const char *b = (const char *)g_ctx.coll_entries[other_idx].value.obj_val;
                                     if (a == 0 || b == 0) { if (a != b) return value_from_int(0); }
                                     else if (!cstr_eq(a, b)) return value_from_int(0);
                                 }
@@ -1552,7 +1552,7 @@ Value parse_message_send(Parser *p) {
                     unsigned int cnt = coll_count(cid);
                     if (cnt > 0) {
                         int idx = coll_get_nth(cid, cnt - 1);
-                        if (idx >= 0) return g_coll_entries[idx].key;
+                        if (idx >= 0) return g_ctx.coll_entries[idx].key;
                     }
                     return value_from_id((id)0);
                 }
@@ -1561,18 +1561,18 @@ Value parse_message_send(Parser *p) {
                 if (cstr_eq(sel_name, "firstObject")) {
                     if (coll_count(cid) > 0) {
                         int idx = coll_get_nth(cid, 0);
-                        if (idx >= 0) return g_coll_entries[idx].key;
+                        if (idx >= 0) return g_ctx.coll_entries[idx].key;
                     }
                     return value_from_id((id)0);
                 }
 
                 /* [arr arrayByAddingObject:obj] → new array with object appended */
                 if (cstr_eq(sel_name, "arrayByAddingObject:") && arg_count >= 1) {
-                    unsigned int new_cid = g_next_coll_id++;
+                    unsigned int new_cid = g_ctx.next_coll_id++;
                     unsigned int i;
-                    for (i = 0; i < g_coll_entry_count; i++) {
-                        if (g_coll_entries[i].coll_id == cid) {
-                            coll_add(new_cid, g_coll_entries[i].key, g_coll_entries[i].value);
+                    for (i = 0; i < g_ctx.coll_entry_count; i++) {
+                        if (g_ctx.coll_entries[i].coll_id == cid) {
+                            coll_add(new_cid, g_ctx.coll_entries[i].key, g_ctx.coll_entries[i].value);
                         }
                     }
                     coll_add(new_cid, keyword_args[0], value_void());
@@ -1583,7 +1583,7 @@ Value parse_message_send(Parser *p) {
                 /* [dict valueForKey:key] → same as objectForKey: */
                 if (cstr_eq(sel_name, "valueForKey:") && arg_count >= 1) {
                     int idx = coll_find_by_key(cid, &keyword_args[0]);
-                    if (idx >= 0) return g_coll_entries[idx].value;
+                    if (idx >= 0) return g_ctx.coll_entries[idx].value;
                     return value_from_id((id)"(nil)");
                 }
 
@@ -1593,7 +1593,7 @@ Value parse_message_send(Parser *p) {
                     Value key = keyword_args[1];
                     int idx = coll_find_by_key(cid, &key);
                     if (idx >= 0) {
-                        g_coll_entries[idx].value = val;
+                        g_ctx.coll_entries[idx].value = val;
                     } else {
                         if (coll_add(cid, key, val) != 0) {
                             nslog_append("warning: collection entry table full\n", 38);
@@ -1612,7 +1612,7 @@ Value parse_message_send(Parser *p) {
                     if (blk) {
                         unsigned int cnt = coll_count(cid);
                         unsigned int idx;
-                        unsigned int saved_var_count = g_var_count;
+                        unsigned int saved_var_count = g_ctx.var_count;
                         for (idx = 0; idx < cnt; idx++) {
                             int entry_idx = coll_get_nth(cid, idx);
                             if (entry_idx < 0) break;
@@ -1626,18 +1626,18 @@ Value parse_message_send(Parser *p) {
                                         if (blk->captures[ci].is_by_ref) {
                                             /* __block: read from original variable slot */
                                             unsigned int vi = blk->captures[ci].var_index;
-                                            if (vi < g_var_count) {
-                                                cap_var->is_id = g_vars[vi].is_id;
-                                                cap_var->value = g_vars[vi].value;
-                                                cap_var->is_int = g_vars[vi].is_int;
-                                                cap_var->int_value = g_vars[vi].int_value;
-                                                cap_var->is_float = g_vars[vi].is_float;
-                                                cap_var->float_value = g_vars[vi].float_value;
-                                                cap_var->is_class = g_vars[vi].is_class;
-                                                cap_var->cls = g_vars[vi].cls;
-                                                cap_var->is_sel = g_vars[vi].is_sel;
-                                                cap_var->sel = g_vars[vi].sel;
-                                                cap_var->is_block_captured = g_vars[vi].is_block_captured;
+                                            if (vi < g_ctx.var_count) {
+                                                cap_var->is_id = g_ctx.vars[vi].is_id;
+                                                cap_var->value = g_ctx.vars[vi].value;
+                                                cap_var->is_int = g_ctx.vars[vi].is_int;
+                                                cap_var->int_value = g_ctx.vars[vi].int_value;
+                                                cap_var->is_float = g_ctx.vars[vi].is_float;
+                                                cap_var->float_value = g_ctx.vars[vi].float_value;
+                                                cap_var->is_class = g_ctx.vars[vi].is_class;
+                                                cap_var->cls = g_ctx.vars[vi].cls;
+                                                cap_var->is_sel = g_ctx.vars[vi].is_sel;
+                                                cap_var->sel = g_ctx.vars[vi].sel;
+                                                cap_var->is_block_captured = g_ctx.vars[vi].is_block_captured;
                                             }
                                         } else {
                                             /* by-value: restore snapshot */
@@ -1664,14 +1664,14 @@ Value parse_message_send(Parser *p) {
                                     if (arg_var) {
                                         if (ai == 0) {
                                             /* First arg: the object */
-                                            arg_var->is_id = g_coll_entries[entry_idx].key.is_id;
-                                            arg_var->value = g_coll_entries[entry_idx].key.obj_val;
-                                            arg_var->is_int = g_coll_entries[entry_idx].key.is_int;
-                                            arg_var->int_value = g_coll_entries[entry_idx].key.int_val;
-                                            arg_var->is_class = g_coll_entries[entry_idx].key.is_class;
-                                            arg_var->cls = g_coll_entries[entry_idx].key.cls_val;
-                                            arg_var->is_sel = g_coll_entries[entry_idx].key.is_sel;
-                                            arg_var->sel = g_coll_entries[entry_idx].key.sel_val;
+                                            arg_var->is_id = g_ctx.coll_entries[entry_idx].key.is_id;
+                                            arg_var->value = g_ctx.coll_entries[entry_idx].key.obj_val;
+                                            arg_var->is_int = g_ctx.coll_entries[entry_idx].key.is_int;
+                                            arg_var->int_value = g_ctx.coll_entries[entry_idx].key.int_val;
+                                            arg_var->is_class = g_ctx.coll_entries[entry_idx].key.is_class;
+                                            arg_var->cls = g_ctx.coll_entries[entry_idx].key.cls_val;
+                                            arg_var->is_sel = g_ctx.coll_entries[entry_idx].key.is_sel;
+                                            arg_var->sel = g_ctx.coll_entries[entry_idx].key.sel_val;
                                         } else if (ai == 1) {
                                             /* Second arg: the index */
                                             arg_var->is_int = 1;
@@ -1710,23 +1710,23 @@ Value parse_message_send(Parser *p) {
                                     if (blk->captures[ci].is_by_ref) {
                                         unsigned int vi = blk->captures[ci].var_index;
                                         InterpVar *cap_var = interp_find_var(blk->captures[ci].name);
-                                        if (cap_var && vi < g_var_count) {
-                                            g_vars[vi].is_id = cap_var->is_id;
-                                            g_vars[vi].value = cap_var->value;
-                                            g_vars[vi].is_int = cap_var->is_int;
-                                            g_vars[vi].int_value = cap_var->int_value;
-                                            g_vars[vi].is_float = cap_var->is_float;
-                                            g_vars[vi].float_value = cap_var->float_value;
-                                            g_vars[vi].is_class = cap_var->is_class;
-                                            g_vars[vi].cls = cap_var->cls;
-                                            g_vars[vi].is_sel = cap_var->is_sel;
-                                            g_vars[vi].sel = cap_var->sel;
+                                        if (cap_var && vi < g_ctx.var_count) {
+                                            g_ctx.vars[vi].is_id = cap_var->is_id;
+                                            g_ctx.vars[vi].value = cap_var->value;
+                                            g_ctx.vars[vi].is_int = cap_var->is_int;
+                                            g_ctx.vars[vi].int_value = cap_var->int_value;
+                                            g_ctx.vars[vi].is_float = cap_var->is_float;
+                                            g_ctx.vars[vi].float_value = cap_var->float_value;
+                                            g_ctx.vars[vi].is_class = cap_var->is_class;
+                                            g_ctx.vars[vi].cls = cap_var->cls;
+                                            g_ctx.vars[vi].is_sel = cap_var->is_sel;
+                                            g_ctx.vars[vi].sel = cap_var->sel;
                                         }
                                     }
                                 }
                             }
 
-                            g_var_count = saved_var_count;
+                            g_ctx.var_count = saved_var_count;
                         }
                     }
                     return value_from_id(receiver);
@@ -1740,8 +1740,8 @@ Value parse_message_send(Parser *p) {
          * falling through to the error. */
         if (target.is_class && target_class_name) {
             unsigned int mi = find_interpreter_method(sel, target, receiver, 0);
-            if (mi < g_method_count) {
-                return execute_interpreter_method(p, &g_methods[mi], sel, receiver,
+            if (mi < g_ctx.method_count) {
+                return execute_interpreter_method(p, &g_ctx.methods[mi], sel, receiver,
                                                   keyword_args, arg_count, 1);
             }
         }

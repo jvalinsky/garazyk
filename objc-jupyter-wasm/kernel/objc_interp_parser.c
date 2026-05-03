@@ -689,8 +689,8 @@ Value parse_statement(Parser *p) {
          * registered as variables with is_class=1, not in the runtime). */
         if (!is_class_type && !is_builtin_type) {
             unsigned int vi;
-            for (vi = 0; vi < g_var_count; vi++) {
-                if (cstr_eq(g_vars[vi].name, tok.text) && g_vars[vi].is_class) {
+            for (vi = 0; vi < g_ctx.var_count; vi++) {
+                if (cstr_eq(g_ctx.vars[vi].name, tok.text) && g_ctx.vars[vi].is_class) {
                     is_class_type = 1;
                     break;
                 }

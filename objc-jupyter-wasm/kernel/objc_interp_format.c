@@ -18,19 +18,19 @@ extern const char *sel_getName(SEL sel);
 void nslog_append(const char *text, unsigned int len) {
     unsigned int i;
     interp_emit_stream(text, len);
-    for (i = 0; i < len && g_nslog_offset + 1 < OBJC_INTERP_NSLOG_BUFFER_SIZE; i++) {
-        g_nslog_buffer[g_nslog_offset++] = text[i];
+    for (i = 0; i < len && g_ctx.nslog_offset + 1 < OBJC_INTERP_NSLOG_BUFFER_SIZE; i++) {
+        g_ctx.nslog_buffer[g_ctx.nslog_offset++] = text[i];
     }
-    g_nslog_buffer[g_nslog_offset] = '\0';
+    g_ctx.nslog_buffer[g_ctx.nslog_offset] = '\0';
 }
 
 void nslog_append_char(char ch) {
     char chunk[1];
     chunk[0] = ch;
     interp_emit_stream(chunk, 1u);
-    if (g_nslog_offset + 1 < OBJC_INTERP_NSLOG_BUFFER_SIZE) {
-        g_nslog_buffer[g_nslog_offset++] = ch;
-        g_nslog_buffer[g_nslog_offset] = '\0';
+    if (g_ctx.nslog_offset + 1 < OBJC_INTERP_NSLOG_BUFFER_SIZE) {
+        g_ctx.nslog_buffer[g_ctx.nslog_offset++] = ch;
+        g_ctx.nslog_buffer[g_ctx.nslog_offset] = '\0';
     }
 }
 
@@ -201,9 +201,9 @@ Value format_values_to_pool(const char *fmt, Value *args, int arg_count) {
                         } else if (v.is_class && v.cls_val != 0) {
                             const char *name = 0;
                             unsigned int vi;
-                            for (vi = 0; vi < g_var_count; vi++) {
-                                if (g_vars[vi].is_class && g_vars[vi].cls == v.cls_val) {
-                                    name = g_vars[vi].name; break;
+                            for (vi = 0; vi < g_ctx.var_count; vi++) {
+                                if (g_ctx.vars[vi].is_class && g_ctx.vars[vi].cls == v.cls_val) {
+                                    name = g_ctx.vars[vi].name; break;
                                 }
                             }
                             if (name == 0) name = "Class";
@@ -665,9 +665,9 @@ void format_value(Value v, char *buf, unsigned int capacity) {
         const char *name = 0;
         {
             unsigned int vi;
-            for (vi = 0; vi < g_var_count; vi++) {
-                if (g_vars[vi].is_class && g_vars[vi].cls == v.cls_val) {
-                    name = g_vars[vi].name;
+            for (vi = 0; vi < g_ctx.var_count; vi++) {
+                if (g_ctx.vars[vi].is_class && g_ctx.vars[vi].cls == v.cls_val) {
+                    name = g_ctx.vars[vi].name;
                     break;
                 }
             }
@@ -686,7 +686,7 @@ void format_value(Value v, char *buf, unsigned int capacity) {
         const char *str_val = (const char *)v.obj_val;
         if (!cstr_starts(str_val, "FDObj:") &&
             str_val != 0 &&
-            (str_val < g_string_pool || str_val >= g_string_pool + OBJC_INTERP_STRING_POOL_SIZE)) {
+            (str_val < g_ctx.string_pool || str_val >= g_ctx.string_pool + OBJC_INTERP_STRING_POOL_SIZE)) {
             cls = object_getClass(v.obj_val);
         }
         const char *name = "id";
@@ -696,9 +696,9 @@ void format_value(Value v, char *buf, unsigned int capacity) {
             /* Look up class name from variable table (class_getName
              * crashes on sentinel pointers in WASM) */
             unsigned int vi;
-            for (vi = 0; vi < g_var_count; vi++) {
-                if (g_vars[vi].is_class && g_vars[vi].cls == cls) {
-                    name = g_vars[vi].name;
+            for (vi = 0; vi < g_ctx.var_count; vi++) {
+                if (g_ctx.vars[vi].is_class && g_ctx.vars[vi].cls == cls) {
+                    name = g_ctx.vars[vi].name;
                     break;
                 }
             }
@@ -722,14 +722,14 @@ void objc_interp_gc_strings(void) {
     unsigned int reloc_count = 0;
     unsigned int new_offset = 0;
     unsigned int i;
-    unsigned int pool_limit = g_string_pool_offset;
-    unsigned long pool_start = (unsigned long)g_string_pool;
+    unsigned int pool_limit = g_ctx.string_pool_offset;
+    unsigned long pool_start = (unsigned long)g_ctx.string_pool;
     unsigned long pool_end = pool_start + (unsigned long)pool_limit;
 
     /* Phase 1: Mark — collect live strings from persistent roots. */
-    for (i = 0; i < g_var_count && reloc_count < MAX_STRING_POOL_MARKS; i++) {
-        if (g_vars[i].is_id && g_vars[i].value != 0) {
-            const char *ptr = (const char *)g_vars[i].value;
+    for (i = 0; i < g_ctx.var_count && reloc_count < MAX_STRING_POOL_MARKS; i++) {
+        if (g_ctx.vars[i].is_id && g_ctx.vars[i].value != 0) {
+            const char *ptr = (const char *)g_ctx.vars[i].value;
             if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
                 relocs[reloc_count].old_off = (unsigned int)((unsigned long)ptr - pool_start);
                 relocs[reloc_count].new_off = 0;
@@ -746,10 +746,10 @@ void objc_interp_gc_strings(void) {
             reloc_count++;
         }
     }
-    for (i = 0; i < g_instance_var_count && reloc_count < MAX_STRING_POOL_MARKS; i++) {
+    for (i = 0; i < g_ctx.instance_var_count && reloc_count < MAX_STRING_POOL_MARKS; i++) {
         /* Mark the object key (FDObj: marker) if it's in the string pool */
         {
-            const char *obj_ptr = (const char *)g_instance_vars[i].object;
+            const char *obj_ptr = (const char *)g_ctx.instance_vars[i].object;
             if ((unsigned long)obj_ptr >= pool_start && (unsigned long)obj_ptr < pool_end) {
                 if (reloc_count >= MAX_STRING_POOL_MARKS) break;
                 relocs[reloc_count].old_off = (unsigned int)((unsigned long)obj_ptr - pool_start);
@@ -758,8 +758,8 @@ void objc_interp_gc_strings(void) {
             }
         }
         /* Mark the value if it's an id-typed string pool pointer */
-        if (g_instance_vars[i].value.is_id && g_instance_vars[i].value.obj_val != 0) {
-            const char *ptr = (const char *)g_instance_vars[i].value.obj_val;
+        if (g_ctx.instance_vars[i].value.is_id && g_ctx.instance_vars[i].value.obj_val != 0) {
+            const char *ptr = (const char *)g_ctx.instance_vars[i].value.obj_val;
             if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
                 if (reloc_count >= MAX_STRING_POOL_MARKS) break;
                 relocs[reloc_count].old_off = (unsigned int)((unsigned long)ptr - pool_start);
@@ -769,9 +769,9 @@ void objc_interp_gc_strings(void) {
         }
     }
     /* Mark collection entry keys and values that are string pool pointers */
-    for (i = 0; i < g_coll_entry_count && reloc_count < MAX_STRING_POOL_MARKS; i++) {
-        if (g_coll_entries[i].key.is_id && g_coll_entries[i].key.obj_val != 0) {
-            const char *ptr = (const char *)g_coll_entries[i].key.obj_val;
+    for (i = 0; i < g_ctx.coll_entry_count && reloc_count < MAX_STRING_POOL_MARKS; i++) {
+        if (g_ctx.coll_entries[i].key.is_id && g_ctx.coll_entries[i].key.obj_val != 0) {
+            const char *ptr = (const char *)g_ctx.coll_entries[i].key.obj_val;
             if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
                 if (reloc_count >= MAX_STRING_POOL_MARKS) break;
                 relocs[reloc_count].old_off = (unsigned int)((unsigned long)ptr - pool_start);
@@ -779,8 +779,8 @@ void objc_interp_gc_strings(void) {
                 reloc_count++;
             }
         }
-        if (g_coll_entries[i].value.is_id && g_coll_entries[i].value.obj_val != 0) {
-            const char *ptr = (const char *)g_coll_entries[i].value.obj_val;
+        if (g_ctx.coll_entries[i].value.is_id && g_ctx.coll_entries[i].value.obj_val != 0) {
+            const char *ptr = (const char *)g_ctx.coll_entries[i].value.obj_val;
             if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
                 if (reloc_count >= MAX_STRING_POOL_MARKS) break;
                 relocs[reloc_count].old_off = (unsigned int)((unsigned long)ptr - pool_start);
@@ -791,11 +791,11 @@ void objc_interp_gc_strings(void) {
     }
 
     /* Mark block captured values that are string pool pointers */
-    for (i = 0; i < g_block_count && reloc_count < MAX_STRING_POOL_MARKS; i++) {
+    for (i = 0; i < g_ctx.block_count && reloc_count < MAX_STRING_POOL_MARKS; i++) {
         unsigned int ci;
-        for (ci = 0; ci < g_blocks[i].capture_count && reloc_count < MAX_STRING_POOL_MARKS; ci++) {
-            if (g_blocks[i].captures[ci].value.is_id && g_blocks[i].captures[ci].value.obj_val != 0) {
-                const char *ptr = (const char *)g_blocks[i].captures[ci].value.obj_val;
+        for (ci = 0; ci < g_ctx.blocks[i].capture_count && reloc_count < MAX_STRING_POOL_MARKS; ci++) {
+            if (g_ctx.blocks[i].captures[ci].value.is_id && g_ctx.blocks[i].captures[ci].value.obj_val != 0) {
+                const char *ptr = (const char *)g_ctx.blocks[i].captures[ci].value.obj_val;
                 if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
                     if (reloc_count >= MAX_STRING_POOL_MARKS) break;
                     relocs[reloc_count].old_off = (unsigned int)((unsigned long)ptr - pool_start);
@@ -807,7 +807,7 @@ void objc_interp_gc_strings(void) {
     }
 
     if (reloc_count == 0) {
-        g_string_pool_offset = 0;
+        g_ctx.string_pool_offset = 0;
         return;
     }
 
@@ -841,32 +841,32 @@ void objc_interp_gc_strings(void) {
         }
 
         {
-            unsigned int len = cstr_len(g_string_pool + old) + 1;
+            unsigned int len = cstr_len(g_ctx.string_pool + old) + 1;
             /* Clamp length to remaining pool to prevent OOB read */
             if (old + len > pool_limit) {
                 len = pool_limit - old;
             }
             if (old != new_offset) {
-                memmove(g_string_pool + new_offset, g_string_pool + old, len);
+                memmove(g_ctx.string_pool + new_offset, g_ctx.string_pool + old, len);
             }
             relocs[i].new_off = new_offset;
             new_offset += len;
         }
     }
-    g_string_pool_offset = new_offset;
+    g_ctx.string_pool_offset = new_offset;
 
     /* Phase 3: Update — rewrite all root pointers to their new offsets.
      * This includes variable values, instance var values, AND instance var
      * object keys (since FDObj: markers live in the string pool). */
-    for (i = 0; i < g_var_count; i++) {
-        if (g_vars[i].is_id && g_vars[i].value != 0) {
-            const char *ptr = (const char *)g_vars[i].value;
+    for (i = 0; i < g_ctx.var_count; i++) {
+        if (g_ctx.vars[i].is_id && g_ctx.vars[i].value != 0) {
+            const char *ptr = (const char *)g_ctx.vars[i].value;
             if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
                 unsigned int off = (unsigned int)((unsigned long)ptr - pool_start);
                 unsigned int r;
                 for (r = 0; r < reloc_count; r++) {
                     if (relocs[r].old_off == off) {
-                        g_vars[i].value = (id)(g_string_pool + relocs[r].new_off);
+                        g_ctx.vars[i].value = (id)(g_ctx.string_pool + relocs[r].new_off);
                         break;
                     }
                 }
@@ -881,36 +881,36 @@ void objc_interp_gc_strings(void) {
             unsigned int r;
             for (r = 0; r < reloc_count; r++) {
                 if (relocs[r].old_off == off) {
-                    g_ctx.return_value.obj_val = (id)(g_string_pool + relocs[r].new_off);
+                    g_ctx.return_value.obj_val = (id)(g_ctx.string_pool + relocs[r].new_off);
                     break;
                 }
             }
         }
     }
-    for (i = 0; i < g_instance_var_count; i++) {
+    for (i = 0; i < g_ctx.instance_var_count; i++) {
         /* Update the object key if it's a string pool pointer (FDObj: marker) */
         {
-            const char *obj_ptr = (const char *)g_instance_vars[i].object;
+            const char *obj_ptr = (const char *)g_ctx.instance_vars[i].object;
             if ((unsigned long)obj_ptr >= pool_start && (unsigned long)obj_ptr < pool_end) {
                 unsigned int off = (unsigned int)((unsigned long)obj_ptr - pool_start);
                 unsigned int r;
                 for (r = 0; r < reloc_count; r++) {
                     if (relocs[r].old_off == off) {
-                        g_instance_vars[i].object = (id)(g_string_pool + relocs[r].new_off);
+                        g_ctx.instance_vars[i].object = (id)(g_ctx.string_pool + relocs[r].new_off);
                         break;
                     }
                 }
             }
         }
         /* Update the value if it's an id-typed string pool pointer */
-        if (g_instance_vars[i].value.is_id && g_instance_vars[i].value.obj_val != 0) {
-            const char *ptr = (const char *)g_instance_vars[i].value.obj_val;
+        if (g_ctx.instance_vars[i].value.is_id && g_ctx.instance_vars[i].value.obj_val != 0) {
+            const char *ptr = (const char *)g_ctx.instance_vars[i].value.obj_val;
             if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
                 unsigned int off = (unsigned int)((unsigned long)ptr - pool_start);
                 unsigned int r;
                 for (r = 0; r < reloc_count; r++) {
                     if (relocs[r].old_off == off) {
-                        g_instance_vars[i].value.obj_val = (id)(g_string_pool + relocs[r].new_off);
+                        g_ctx.instance_vars[i].value.obj_val = (id)(g_ctx.string_pool + relocs[r].new_off);
                         break;
                     }
                 }
@@ -918,28 +918,28 @@ void objc_interp_gc_strings(void) {
         }
     }
     /* Update collection entry keys and values that are string pool pointers */
-    for (i = 0; i < g_coll_entry_count; i++) {
-        if (g_coll_entries[i].key.is_id && g_coll_entries[i].key.obj_val != 0) {
-            const char *ptr = (const char *)g_coll_entries[i].key.obj_val;
+    for (i = 0; i < g_ctx.coll_entry_count; i++) {
+        if (g_ctx.coll_entries[i].key.is_id && g_ctx.coll_entries[i].key.obj_val != 0) {
+            const char *ptr = (const char *)g_ctx.coll_entries[i].key.obj_val;
             if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
                 unsigned int off = (unsigned int)((unsigned long)ptr - pool_start);
                 unsigned int r;
                 for (r = 0; r < reloc_count; r++) {
                     if (relocs[r].old_off == off) {
-                        g_coll_entries[i].key.obj_val = (id)(g_string_pool + relocs[r].new_off);
+                        g_ctx.coll_entries[i].key.obj_val = (id)(g_ctx.string_pool + relocs[r].new_off);
                         break;
                     }
                 }
             }
         }
-        if (g_coll_entries[i].value.is_id && g_coll_entries[i].value.obj_val != 0) {
-            const char *ptr = (const char *)g_coll_entries[i].value.obj_val;
+        if (g_ctx.coll_entries[i].value.is_id && g_ctx.coll_entries[i].value.obj_val != 0) {
+            const char *ptr = (const char *)g_ctx.coll_entries[i].value.obj_val;
             if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
                 unsigned int off = (unsigned int)((unsigned long)ptr - pool_start);
                 unsigned int r;
                 for (r = 0; r < reloc_count; r++) {
                     if (relocs[r].old_off == off) {
-                        g_coll_entries[i].value.obj_val = (id)(g_string_pool + relocs[r].new_off);
+                        g_ctx.coll_entries[i].value.obj_val = (id)(g_ctx.string_pool + relocs[r].new_off);
                         break;
                     }
                 }
@@ -947,17 +947,17 @@ void objc_interp_gc_strings(void) {
         }
     }
     /* Update block captured values that are string pool pointers */
-    for (i = 0; i < g_block_count; i++) {
+    for (i = 0; i < g_ctx.block_count; i++) {
         unsigned int ci;
-        for (ci = 0; ci < g_blocks[i].capture_count; ci++) {
-            if (g_blocks[i].captures[ci].value.is_id && g_blocks[i].captures[ci].value.obj_val != 0) {
-                const char *ptr = (const char *)g_blocks[i].captures[ci].value.obj_val;
+        for (ci = 0; ci < g_ctx.blocks[i].capture_count; ci++) {
+            if (g_ctx.blocks[i].captures[ci].value.is_id && g_ctx.blocks[i].captures[ci].value.obj_val != 0) {
+                const char *ptr = (const char *)g_ctx.blocks[i].captures[ci].value.obj_val;
                 if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
                     unsigned int off = (unsigned int)((unsigned long)ptr - pool_start);
                     unsigned int r;
                     for (r = 0; r < reloc_count; r++) {
                         if (relocs[r].old_off == off) {
-                            g_blocks[i].captures[ci].value.obj_val = (id)(g_string_pool + relocs[r].new_off);
+                            g_ctx.blocks[i].captures[ci].value.obj_val = (id)(g_ctx.string_pool + relocs[r].new_off);
                             break;
                         }
                     }

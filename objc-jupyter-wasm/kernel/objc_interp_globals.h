@@ -1,71 +1,17 @@
-/* objc_interp_globals.h — Shared global variable declarations
+/* objc_interp_globals.h
+ * DEPRECATED: This header is being phased out.
+ * All interpreter globals have been migrated to InterpContext in objc_interp_context.h
  *
- * MIGRATION IN PROGRESS: globals are being moved to InterpContext struct.
- * This header now primarily includes objc_interp_context.h to provide access
- * to the global g_ctx interpreter state.
- *
- * Legacy: Some globals remain here as externs while migration is in progress.
- * Eventually, this file will be deleted entirely.
- *
- * All globals are process-wide singletons — safe for single-threaded WASM.
- * Do NOT use from concurrent threads without synchronization.
+ * This file is kept for now to avoid breaking #includes, but it simply re-exports
+ * the context header.
  */
 
 #ifndef OBJC_INTERP_GLOBALS_H
 #define OBJC_INTERP_GLOBALS_H
 
-#include "objc_interp_types.h"
 #include "objc_interp_context.h"
 
-/* extern InterpContext g_ctx; declared and defined in objc_interpreter.c */
+/* The global interpreter context is defined in objc_interpreter.c and declared as extern below */
 extern InterpContext g_ctx;
-
-/* ── NSLog buffer ─────────────────────────────────────────────── */
-
-extern char g_nslog_buffer[];       /* NSLog output buffer */
-extern unsigned int g_nslog_offset; /* current write offset */
-
-/* ── Variable table ───────────────────────────────────────────── */
-
-extern InterpVar g_vars[];          /* variable storage */
-extern unsigned int g_var_count;     /* number of active variables */
-extern unsigned int g_var_scope_base; /* base index for method scope */
-
-/* ── Type definitions ─────────────────────────────────────────── */
-
-extern TypeDef g_typedefs[];        /* typedef storage */
-extern unsigned int g_typedef_count; /* number of active typedefs */
-
-/* ── Method dispatch state ────────────────────────────────────── */
-
-extern MethodImpl g_methods[];      /* registered method implementations */
-extern unsigned int g_method_count; /* number of registered methods */
-
-/* ── Property declarations ────────────────────────────────────── */
-
-extern PropertyDecl g_properties[];  /* registered @property declarations */
-extern unsigned int g_property_count; /* number of registered properties */
-
-/* ── Instance variable side table ─────────────────────────────── */
-
-extern InstanceVar g_instance_vars[];  /* per-object property storage */
-extern unsigned int g_instance_var_count; /* number of instance vars */
-
-/* ── Collection side table ────────────────────────────────────── */
-
-extern unsigned int g_next_coll_id;  /* next collection ID */
-extern CollEntry g_coll_entries[];    /* collection key-value/element storage */
-extern unsigned int g_coll_entry_count; /* number of collection entries */
-
-/* ── Block side table ─────────────────────────────────────────── */
-
-extern BlockImpl g_blocks[];         /* registered block implementations */
-extern unsigned int g_block_count;   /* number of registered blocks */
-extern unsigned int g_next_block_id; /* next block ID */
-
-/* ── String pool ──────────────────────────────────────────────── */
-
-extern char g_string_pool[];         /* string literal + Foundation marker pool */
-extern unsigned int g_string_pool_offset; /* current write offset */
 
 #endif /* OBJC_INTERP_GLOBALS_H */

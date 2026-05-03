@@ -28,10 +28,10 @@ extern Value eval_source_range(unsigned int start, unsigned int len, const char 
 
 static InterpVar *dispatch_find_var(const char *name) {
     unsigned int i;
-    if (g_var_count == 0) return 0;
-    for (i = g_var_count; i > g_var_scope_base; i--) {
-        if (cstr_eq(g_vars[i - 1].name, name)) {
-            return &g_vars[i - 1];
+    if (g_ctx.var_count == 0) return 0;
+    for (i = g_ctx.var_count; i > g_ctx.var_scope_base; i--) {
+        if (cstr_eq(g_ctx.vars[i - 1].name, name)) {
+            return &g_ctx.vars[i - 1];
         }
     }
     return 0;
@@ -40,22 +40,22 @@ static InterpVar *dispatch_find_var(const char *name) {
 static InterpVar *dispatch_get_or_create_var(const char *name) {
     InterpVar *v = dispatch_find_var(name);
     if (v) return v;
-    if (g_var_count >= OBJC_INTERP_MAX_VARS) return 0;
-    cstr_copy(g_vars[g_var_count].name, name, 64);
-    g_vars[g_var_count].value = 0;
-    g_vars[g_var_count].cls = 0;
-    g_vars[g_var_count].sel = 0;
-    g_vars[g_var_count].is_int = 0;
-    g_vars[g_var_count].int_value = 0;
-    g_vars[g_var_count].is_float = 0;
-    g_vars[g_var_count].float_value = 0.0;
-    g_vars[g_var_count].is_class = 0;
-    g_vars[g_var_count].is_sel = 0;
-    g_vars[g_var_count].is_id = 0;
-    g_vars[g_var_count].is_block_captured = 0;
-    g_vars[g_var_count].is_static = 0;
-    g_var_count++;
-    return &g_vars[g_var_count - 1];
+    if (g_ctx.var_count >= OBJC_INTERP_MAX_VARS) return 0;
+    cstr_copy(g_ctx.vars[g_ctx.var_count].name, name, 64);
+    g_ctx.vars[g_ctx.var_count].value = 0;
+    g_ctx.vars[g_ctx.var_count].cls = 0;
+    g_ctx.vars[g_ctx.var_count].sel = 0;
+    g_ctx.vars[g_ctx.var_count].is_int = 0;
+    g_ctx.vars[g_ctx.var_count].int_value = 0;
+    g_ctx.vars[g_ctx.var_count].is_float = 0;
+    g_ctx.vars[g_ctx.var_count].float_value = 0.0;
+    g_ctx.vars[g_ctx.var_count].is_class = 0;
+    g_ctx.vars[g_ctx.var_count].is_sel = 0;
+    g_ctx.vars[g_ctx.var_count].is_id = 0;
+    g_ctx.vars[g_ctx.var_count].is_block_captured = 0;
+    g_ctx.vars[g_ctx.var_count].is_static = 0;
+    g_ctx.var_count++;
+    return &g_ctx.vars[g_ctx.var_count - 1];
 }
 
 int interpreter_method_matches(MethodImpl *method, SEL sel, Value target,
@@ -71,7 +71,7 @@ int interpreter_method_matches(MethodImpl *method, SEL sel, Value target,
         } else if (target.is_id && receiver != 0) {
             const char *ptr = (const char *)receiver;
             Class recv_cls;
-            if (ptr >= g_string_pool && ptr < g_string_pool + OBJC_INTERP_STRING_POOL_SIZE) {
+            if (ptr >= g_ctx.string_pool && ptr < g_ctx.string_pool + OBJC_INTERP_STRING_POOL_SIZE) {
                 return 0;
             }
             recv_cls = object_getClass(receiver);
@@ -92,12 +92,12 @@ int interpreter_method_matches(MethodImpl *method, SEL sel, Value target,
 unsigned int find_interpreter_method(SEL sel, Value target, id receiver,
                                      int instance_only) {
     unsigned int mi;
-    for (mi = 0; mi < g_method_count; mi++) {
-        if (interpreter_method_matches(&g_methods[mi], sel, target, receiver, instance_only)) {
+    for (mi = 0; mi < g_ctx.method_count; mi++) {
+        if (interpreter_method_matches(&g_ctx.methods[mi], sel, target, receiver, instance_only)) {
             return mi;
         }
     }
-    return g_method_count;
+    return g_ctx.method_count;
 }
 
 int bind_method_var(const char *name, Value value) {
@@ -109,18 +109,18 @@ int bind_method_var(const char *name, Value value) {
 
 void inject_synthesized_ivars(id receiver) {
     unsigned int pi;
-    for (pi = 0; pi < g_property_count; pi++) {
-        if (g_properties[pi].synthesized &&
-            g_properties[pi].ivar_name[0] != '\0' &&
+    for (pi = 0; pi < g_ctx.property_count; pi++) {
+        if (g_ctx.properties[pi].synthesized &&
+            g_ctx.properties[pi].ivar_name[0] != '\0' &&
             property_matches_class(receiver, pi)) {
-            InterpVar *ivar_var = dispatch_get_or_create_var(g_properties[pi].ivar_name);
+            InterpVar *ivar_var = dispatch_get_or_create_var(g_ctx.properties[pi].ivar_name);
             if (ivar_var) {
-                Value *stored = instance_var_get(receiver, g_properties[pi].name);
+                Value *stored = instance_var_get(receiver, g_ctx.properties[pi].name);
                 if (stored) {
                     interp_set_var_from_value(ivar_var, *stored);
                 } else {
                     interp_set_var_from_value(ivar_var,
-                        g_properties[pi].is_int ? value_from_int(0) : value_from_id(0));
+                        g_ctx.properties[pi].is_int ? value_from_int(0) : value_from_id(0));
                 }
             }
         }
@@ -129,14 +129,14 @@ void inject_synthesized_ivars(id receiver) {
 
 void write_back_synthesized_ivars(struct Parser *p, id receiver) {
     unsigned int pi;
-    for (pi = 0; pi < g_property_count; pi++) {
-        if (g_properties[pi].synthesized &&
-            g_properties[pi].ivar_name[0] != '\0' &&
+    for (pi = 0; pi < g_ctx.property_count; pi++) {
+        if (g_ctx.properties[pi].synthesized &&
+            g_ctx.properties[pi].ivar_name[0] != '\0' &&
             property_matches_class(receiver, pi)) {
-            InterpVar *ivar_var = dispatch_find_var(g_properties[pi].ivar_name);
+            InterpVar *ivar_var = dispatch_find_var(g_ctx.properties[pi].ivar_name);
             if (ivar_var) {
                 Value ivar_val = value_from_interp_var(ivar_var);
-                if (instance_var_set(receiver, g_properties[pi].name, ivar_val) != 0) {
+                if (instance_var_set(receiver, g_ctx.properties[pi].name, ivar_val) != 0) {
                     parser_error(p, "instance variable table full (max 256)");
                     return;
                 }
@@ -149,12 +149,12 @@ Value execute_interpreter_method(struct Parser *p, MethodImpl *method, SEL sel,
                                  id receiver, const Value *args,
                                  unsigned int arg_count,
                                  int return_receiver_on_void) {
-    unsigned int saved_var_count = g_var_count;
-    unsigned int saved_scope_base = g_var_scope_base;
+    unsigned int saved_var_count = g_ctx.var_count;
+    unsigned int saved_scope_base = g_ctx.var_scope_base;
     Value return_val = return_receiver_on_void ? value_from_id(receiver) : value_void();
     unsigned int ai;
 
-    g_var_scope_base = g_var_count;
+    g_ctx.var_scope_base = g_ctx.var_count;
     g_ctx.return_pending = 0;
     g_ctx.return_value = value_void();
 
@@ -187,8 +187,8 @@ Value execute_interpreter_method(struct Parser *p, MethodImpl *method, SEL sel,
     }
 
 done:
-    g_var_count = saved_var_count;
-    g_var_scope_base = saved_scope_base;
+    g_ctx.var_count = saved_var_count;
+    g_ctx.var_scope_base = saved_scope_base;
     g_ctx.return_pending = 0;
     return return_val;
 }
