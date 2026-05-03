@@ -479,7 +479,14 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
     for (NSString *table in tablesToDrop) {
         // table is from a hardcoded list, but defensively validate anyway
-        if (![table matches:@"^[a-z0-9_]+$"]) continue;
+        NSError *regexError = nil;
+        NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"^[a-z0-9_]+$" options:0 error:&regexError];
+        if (regex) {
+            NSRange range = NSMakeRange(0, table.length);
+            if ([regex numberOfMatchesInString:table options:0 range:range] == 0) continue;
+        } else {
+            continue; // invalid regex, skip
+        }
         NSString *sql = [NSString stringWithFormat:@"DROP TABLE IF EXISTS %@", table];
         sqlite3_exec(db, sql.UTF8String, NULL, NULL, NULL);
     }
