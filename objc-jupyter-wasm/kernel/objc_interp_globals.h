@@ -26,7 +26,6 @@ extern unsigned int g_error_column; /* column number of last error */
 
 /* ── Interpreter state ────────────────────────────────────────── */
 
-extern int g_interp_initialized;    /* 1 after objc_interp_init() */
 extern char g_result_buffer[];      /* expression result display buffer */
 
 /* ── NSLog buffer ─────────────────────────────────────────────── */
