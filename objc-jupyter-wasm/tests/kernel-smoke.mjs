@@ -664,20 +664,23 @@ assert.match(hostStreamText(), /same=1/);
 // ── Phase 8: @property + @synthesize ──────────────────────────
 
 // @property with auto-synthesized getter/setter
+// NOTE: Class is named PropCounter (not Counter) to avoid colliding with the
+// Phase 5 dot-getter Counter; the interpreter ignores re-declarations of an
+// existing class, so reusing the name silently keeps Phase 5's definition.
 const propTest = execute([
-  '@interface Counter : NSObject',
+  '@interface PropCounter : NSObject',
   '@property (nonatomic, assign) int count;',
   '- (void)increment;',
   '@end',
   '',
-  '@implementation Counter',
+  '@implementation PropCounter',
   '@synthesize count = _count;',
   '- (void)increment {',
   '  _count = _count + 1;',
   '}',
   '@end',
   '',
-  'Counter *c = [[Counter alloc] init];',
+  'PropCounter *c = [[PropCounter alloc] init];',
   '[c setCount:5];',
   'int val = [c count];',
   'NSLog(@"prop-count=%d", val);',
@@ -690,16 +693,19 @@ assert.match(hostStreamText(), /prop-count=5/);
 assert.match(hostStreamText(), /prop-inc=6/);
 
 // @property without explicit ivar (defaults to _prop)
+// NOTE: Class is named PropWidget (not Widget) to avoid colliding with the
+// Phase 5 +new test's Widget class — the interpreter ignores re-declarations
+// of an existing class name.
 const propDefaultTest = execute([
-  '@interface Widget : NSObject',
+  '@interface PropWidget : NSObject',
   '@property (nonatomic, assign) int size;',
   '@end',
   '',
-  '@implementation Widget',
+  '@implementation PropWidget',
   '@synthesize size;',
   '@end',
   '',
-  'Widget *w = [[Widget alloc] init];',
+  'PropWidget *w = [[PropWidget alloc] init];',
   '[w setSize:42];',
   'int s = [w size];',
   'NSLog(@"widget-size=%d", s);'
@@ -795,9 +801,9 @@ const gcGarbageCell = `NSString *temp = @"${gcGarbageA}"; temp = @"${gcGarbageB}
 }
 
 {
-  // Reuse the existing Counter class which already has @property int count
+  // Reuse the PropCounter class which has @property int count
   // (defined in Phase 8 property tests)
-  const gcObjSetCell = execute('Counter *gcCounter = [[Counter alloc] init]; [gcCounter setCount:42];', 'gc-obj-set');
+  const gcObjSetCell = execute('PropCounter *gcCounter = [[PropCounter alloc] init]; [gcCounter setCount:42];', 'gc-obj-set');
   assert.equal(gcObjSetCell.status, 'ok');
 
   for (let i = 0; i < 200; i++) {
