@@ -173,7 +173,7 @@ static AppViewRuntime *_sharedRuntime = nil;
     [_httpServer addRoute:@"GET" path:@"/" handler:^(HttpRequest *req, HttpResponse *res) {
         res.statusCode = 200;
         res.contentType = @"text/plain; charset=utf-8";
-        [res setBodyString:@"syrena 1.0.0\n"];
+        [res setBodyString:@"_____                            \n/  ___|                           \n\\ `--. _   _ _ __ ___ _ __   __ _ \n `--. \\ | | | '__/ _ \\ '_ \\ / _` |\n/\\__/ / |_| | | |  __/ | | | (_| |\n\\____/ \\__, |_|  \\___|_| |_|\\__,_|\n        __/ |                     \n       |___/  \n"];
     }];
 
     [_httpServer addRoute:@"GET" path:@"/favicon.ico" handler:^(HttpRequest *req, HttpResponse *res) {
