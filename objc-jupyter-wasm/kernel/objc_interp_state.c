@@ -5,7 +5,7 @@
  */
 
 #include "objc_interp_types.h"
-#include "objc_interp_globals.h"
+#include "objc_interp_context.h"
 #include "objc_interp_state.h"
 
 /* Runtime functions exported from the WASM module */
