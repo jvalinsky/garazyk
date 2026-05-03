@@ -42,13 +42,13 @@ static Value parse_assignment(Parser *p);
 
 Value parse_expression_safe(Parser *p) {
     Value result;
-    if (g_parse_depth >= MAX_PARSE_DEPTH) {
+    if (g_ctx.parse_depth >= MAX_PARSE_DEPTH) {
         parser_error(p, "maximum expression depth exceeded");
         return value_void();
     }
-    g_parse_depth++;
+    g_ctx.parse_depth++;
     result = parse_expression(p);
-    g_parse_depth--;
+    g_ctx.parse_depth--;
     return result;
 }
 
