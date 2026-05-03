@@ -6,13 +6,7 @@
  * real GNUstep libobjc2 runtime. See objc_interpreter.h for scope.
  */
 
-#include "objc_interpreter.h"
-
-/* We need the runtime headers for Class, SEL, id, etc. */
-#include "runtime.h"
-#include "slot.h"
-
-#include <string.h>
+#include "objc_interp_types.h"
 
 /* Runtime functions exported from the WASM module but not declared
  * in the headers we include (they're in NSObject.h normally). */
@@ -29,69 +23,6 @@ extern void objc_kernel_host_stream(int kind, const char *ptr, unsigned int len)
 extern int objc_kernel_host_should_interrupt(void)
     __attribute__((import_module("objc_kernel_host"), import_name("should_interrupt")));
 
-/* ── String helpers (freestanding, no libc) ─────────────────────── */
-
-static unsigned int cstr_len(const char *s) {
-    unsigned int n = 0;
-    if (s == 0) return 0;
-    while (s[n] != '\0') n++;
-    return n;
-}
-
-static int cstr_eq(const char *a, const char *b) {
-    unsigned int i = 0;
-    if (a == 0 || b == 0) return a == b;
-    while (a[i] != '\0' && b[i] != '\0') {
-        if (a[i] != b[i]) return 0;
-        i++;
-    }
-    return a[i] == b[i];
-}
-
-static int cstr_eq_n(const char *a, const char *b, unsigned int n) {
-    unsigned int i = 0;
-    if (a == 0 || b == 0) return 0;
-    while (i < n && a[i] != '\0' && b[i] != '\0') {
-        if (a[i] != b[i]) return 0;
-        i++;
-    }
-    return i == n;
-}
-
-static int cstr_starts(const char *s, const char *prefix) {
-    unsigned int i = 0;
-    if (s == 0 || prefix == 0) return 0;
-    while (prefix[i] != '\0') {
-        if (s[i] != prefix[i]) return 0;
-        i++;
-    }
-    return 1;
-}
-
-static void cstr_copy(char *dst, const char *src, unsigned int capacity) {
-    unsigned int i = 0;
-    if (dst == 0 || src == 0) return;
-    while (src[i] != '\0' && i + 1 < capacity) {
-        dst[i] = src[i];
-        i++;
-    }
-    dst[i] = '\0';
-}
-
-/* Same as cstr_copy but returns 1 if the source did not fit and was
- * truncated, 0 otherwise. Use at identifier-copy sites where silent
- * truncation would cause later table lookups to miss. */
-static int cstr_copy_checked(char *dst, const char *src, unsigned int capacity) {
-    unsigned int i = 0;
-    if (dst == 0 || src == 0 || capacity == 0) return 0;
-    while (src[i] != '\0' && i + 1 < capacity) {
-        dst[i] = src[i];
-        i++;
-    }
-    dst[i] = '\0';
-    return src[i] != '\0';
-}
-
 /* ── NSLog ring buffer ──────────────────────────────────────────── */
 
 static char g_nslog_buffer[OBJC_INTERP_NSLOG_BUFFER_SIZE];
@@ -106,7 +37,6 @@ static unsigned int g_error_column = 0;
 static int g_interp_initialized = 0;
 
 /* Forward declaration — Parser struct defined below */
-struct Parser;
 static void set_error_from_parser(struct Parser *p);
 
 static char g_result_buffer[512];
@@ -130,122 +60,16 @@ static void interp_set_resource_error(const char *msg) {
     interp_emit_stream("\n", 1);
 }
 
-/* Variable table: name → value (as id) */
-typedef struct {
-    char name[64];
-    id value;
-    Class cls;      /* if this is a Class-typed variable */
-    SEL sel;        /* if this is a SEL-typed variable */
-    int is_int;
-    int int_value;
-    int is_float;
-    double float_value;
-    int is_class;   /* 1 if this holds a Class */
-    int is_sel;     /* 1 if this holds a SEL */
-    int is_id;      /* 1 if this holds an id */
-    int is_block_captured; /* 1 if __block variable — capture by reference */
-    int is_static;     /* 1 if static variable — persists across cells */
-} InterpVar;
-
-#define OBJC_INTERP_MAX_BLOCKS_CAPTURED 32
+/* ── Interpreter state globals ──────────────────────────────────── */
 
 static InterpVar g_vars[OBJC_INTERP_MAX_VARS];
 static unsigned int g_var_count = 0;
 static unsigned int g_var_scope_base = 0; /* base index for variable scoping during method execution */
 
-/* Typedef table for type aliases (e.g., typedef NSInteger MyInt;) */
-#define OBJC_INTERP_MAX_TYPEDEFS 64
-typedef struct {
-    char alias[64];     /* e.g., "MyInt" */
-    char base_type[64]; /* e.g., "NSInteger" or "int" */
-} TypeDef;
 static TypeDef g_typedefs[OBJC_INTERP_MAX_TYPEDEFS];
 static unsigned int g_typedef_count = 0;
 
-/* ── Token types ────────────────────────────────────────────────── */
-
-typedef enum {
-    TOK_EOF = 0,
-    TOK_IDENTIFIER,
-    TOK_AT_KEYWORD,     /* @interface, @implementation, @end, @\"string\" */
-    TOK_STRING_LITERAL, /* @\"...\" or \"...\" */
-    TOK_INT_LITERAL,
-    TOK_FLOAT_LITERAL,
-    TOK_OPEN_BRACKET,   /* [ */
-    TOK_CLOSE_BRACKET,  /* ] */
-    TOK_OPEN_BRACE,     /* { */
-    TOK_CLOSE_BRACE,    /* } */
-    TOK_OPEN_PAREN,     /* ( */
-    TOK_CLOSE_PAREN,    /* ) */
-    TOK_SEMICOLON,      /* ; */
-    TOK_COLON,          /* : */
-    TOK_COMMA,          /* , */
-    TOK_DOT,            /* . */
-    TOK_ARROW,          /* -> */
-    TOK_STAR,           /* * */
-    TOK_AMPERSAND,      /* & */
-    TOK_ASSIGN,         /* = */
-    TOK_EQ,             /* == */
-    TOK_NEQ,            /* != */
-    TOK_PLUS,           /* + */
-    TOK_MINUS,          /* - */
-    TOK_SLASH,          /* / */
-    TOK_PERCENT,        /* % */
-    TOK_LT,            /* < */
-    TOK_GT,            /* > */
-    TOK_LE,            /* <= */
-    TOK_GE,            /* >= */
-    TOK_PLUS_ASSIGN,   /* += */
-    TOK_MINUS_ASSIGN,  /* -= */
-    TOK_STAR_ASSIGN,   /* *= */
-    TOK_SLASH_ASSIGN,  /* /= */
-    TOK_PERCENT_ASSIGN,/* %= */
-    TOK_QUESTION,      /* ? (ternary) */
-    TOK_RETURN,        /* return keyword */
-    TOK_IF,            /* if keyword */
-    TOK_ELSE,          /* else keyword */
-    TOK_WHILE,         /* while keyword */
-    TOK_FOR,           /* for keyword */
-    TOK_DO,            /* do keyword */
-    TOK_BREAK,         /* break keyword */
-    TOK_CONTINUE,     /* continue keyword */
-    TOK_IN,            /* in keyword (for-in) */
-    TOK_AND,           /* && */
-    TOK_OR,            /* || */
-    TOK_NOT,           /* ! (logical not) */
-    TOK_PLUS_PLUS,     /* ++ */
-    TOK_MINUS_MINUS,   /* -- */
-    TOK_CARET,         /* ^ (block literal) */
-    TOK_SWITCH,        /* switch keyword */
-    TOK_CASE,          /* case keyword */
-    TOK_DEFAULT,       /* default keyword */
-    TOK_NIL,           /* nil keyword */
-    TOK_SUPER,         /* super keyword */
-    TOK_BITWISE_OR,    /* | (bitwise OR) */
-    TOK_LEFT_SHIFT,    /* << */
-    TOK_RIGHT_SHIFT,   /* >> */
-    TOK_UNKNOWN
-} TokenType;
-
-typedef struct {
-    TokenType type;
-    char text[OBJC_INTERP_MAX_TOKEN];
-    unsigned int line;
-    unsigned int column;
-    int truncated;
-} Token;
-
 /* ── Lexer ──────────────────────────────────────────────────────── */
-
-typedef struct {
-    const char *source;
-    unsigned int source_len;
-    unsigned int pos;       /* position after current token */
-    unsigned int token_start; /* position where current token began */
-    unsigned int line;
-    unsigned int column;
-    Token current;
-} Lexer;
 
 /* Forward declarations for logging functions used by lexer */
 static void nslog_append(const char *text, unsigned int len);
@@ -962,117 +786,7 @@ static void nslog_append_long(long value) {
     }
 }
 
-/* ── Value type ─────────────────────────────────────────────────── */
-
-typedef struct {
-    id obj_val;
-    Class cls_val;
-    SEL sel_val;
-    int int_val;
-    double float_val;
-    int is_int;
-    int is_float;
-    int is_class;
-    int is_sel;
-    int is_id;
-    int is_void;
-} Value;
-
-static Value value_from_id(id obj) {
-    Value v;
-    v.obj_val = obj;
-    v.cls_val = 0;
-    v.sel_val = 0;
-    v.int_val = 0;
-    v.float_val = 0.0;
-    v.is_int = 0;
-    v.is_float = 0;
-    v.is_class = 0;
-    v.is_sel = 0;
-    v.is_id = 1;
-    v.is_void = 0;
-    return v;
-}
-
-static Value value_from_class(Class cls) {
-    Value v;
-    v.obj_val = 0;
-    v.cls_val = cls;
-    v.sel_val = 0;
-    v.int_val = 0;
-    v.float_val = 0.0;
-    v.is_int = 0;
-    v.is_float = 0;
-    v.is_class = 1;
-    v.is_sel = 0;
-    v.is_id = 0;
-    v.is_void = 0;
-    return v;
-}
-
-static Value value_from_int(int n) {
-    Value v;
-    v.obj_val = 0;
-    v.cls_val = 0;
-    v.sel_val = 0;
-    v.int_val = n;
-    v.float_val = 0.0;
-    v.is_int = 1;
-    v.is_float = 0;
-    v.is_class = 0;
-    v.is_sel = 0;
-    v.is_id = 0;
-    v.is_void = 0;
-    return v;
-}
-
-static Value value_from_float(double f) {
-    Value v;
-    v.obj_val = 0;
-    v.cls_val = 0;
-    v.sel_val = 0;
-    v.int_val = 0;
-    v.float_val = f;
-    v.is_int = 0;
-    v.is_float = 1;
-    v.is_class = 0;
-    v.is_sel = 0;
-    v.is_id = 0;
-    v.is_void = 0;
-    return v;
-}
-
-static Value value_from_sel(SEL s) {
-    Value v;
-    v.obj_val = 0;
-    v.cls_val = 0;
-    v.sel_val = s;
-    v.int_val = 0;
-    v.float_val = 0.0;
-    v.is_int = 0;
-    v.is_float = 0;
-    v.is_class = 0;
-    v.is_sel = 1;
-    v.is_id = 0;
-    v.is_void = 0;
-    return v;
-}
-
-static Value value_void(void) {
-    Value v;
-    v.obj_val = 0;
-    v.cls_val = 0;
-    v.sel_val = 0;
-    v.int_val = 0;
-    v.float_val = 0.0;
-    v.is_int = 0;
-    v.is_float = 0;
-    v.is_class = 0;
-    v.is_sel = 0;
-    v.is_id = 0;
-    v.is_void = 1;
-    return v;
-}
+/* ── Value helpers (non-inline — access InterpVar internals) ──── */
 
 /* Set all type flags in a variable from a Value, clearing incompatible flags */
 static void interp_set_var_from_value(InterpVar *var, Value v) {
@@ -1114,19 +828,9 @@ static Value g_return_value;
 /* String pool for string literals and Foundation object encoding.
  * Shared between parse_primary (string literals) and parse_message_send
  * (Foundation stubs like NSNumber, stringByAppendingString). */
-#define OBJC_INTERP_STRING_POOL_SIZE 65536
 static char g_string_pool[OBJC_INTERP_STRING_POOL_SIZE];
 static unsigned int g_string_pool_offset = 0;
 static unsigned int g_parse_depth = 0;
-
-#define MAX_STRING_POOL_MARKS 4096
-
-typedef struct {
-    unsigned int old_off;
-    unsigned int new_off;
-} RelocEntry;
-
-#define MAX_PARSE_DEPTH 64
 
 /* Allocate `size` bytes from the string pool.
  * Returns pointer to the start of the allocation, or 0 if the pool is full.
@@ -1143,65 +847,16 @@ static char *string_pool_alloc(unsigned int size) {
     }
 }
 
-/* Method implementation context — stored for interpreter method dispatch */
-typedef struct {
-    char source[2048]; /* method body source (without outer braces) */
-    unsigned int source_len;
-    Class class_ptr;
-    SEL selector;
-    int is_class_method;
-    char arg_names[8][64]; /* argument names (up to 8 keyword args) */
-    unsigned int arg_count; /* number of keyword arguments */
-} MethodImpl;
-
-#define MAX_METHODS 64
 static MethodImpl g_methods[MAX_METHODS];
 static unsigned int g_method_count = 0;
 
-/* Property declarations — stored during @interface parsing,
- * used by @synthesize to auto-generate getter/setter methods. */
-typedef struct {
-    char name[64];       /* property name */
-    char ivar_name[64];  /* ivar name from @synthesize (e.g., _count from @synthesize count = _count) */
-    char type_name[64];  /* type: int, id, Class, SEL, etc. */
-    char class_name[64]; /* which class this property belongs to */
-    int is_int;          /* 1 if type is int */
-    int synthesized;     /* 1 if @synthesize was seen — enables property dispatch */
-} PropertyDecl;
-
-static PropertyDecl g_properties[64];
+static PropertyDecl g_properties[MAX_PROPERTIES];
 static unsigned int g_property_count = 0;
 
-/* Instance variable side table — per-object property storage.
- * Maps (object pointer, property name) → stored value.
- * This is the interpreter's equivalent of objc_setAssociatedObject:
- * real ObjC runtimes use associated objects for dynamic property
- * storage; we use a simple linear-scan table. */
-typedef struct {
-    id object;          /* object pointer (receiver) */
-    char prop_name[64]; /* property name */
-    Value value;        /* stored value */
-} InstanceVar;
-
-#define MAX_INSTANCE_VARS 256
 static InstanceVar g_instance_vars[MAX_INSTANCE_VARS];
 static unsigned int g_instance_var_count = 0;
 
-/* ── Collection side table ────────────────────────────────────────
- * Foundation collections (NSDictionary, NSMutableDictionary, NSMutableArray,
- * NSSet) are stored in a side table. Each collection gets a unique ID
- * and is referenced by a string pool marker like "NSDict:5" or "NSMutArr:12".
- * The collection data (key-value pairs, elements) is stored in
- * g_coll_entries[] with the collection ID as the lookup key. */
-
-typedef struct {
-    unsigned int coll_id;     /* which collection this entry belongs to */
-    Value key;                /* key (for dicts) or element (for arrays/sets) */
-    Value value;              /* value (for dicts only) */
-} CollEntry;
-
-#define MAX_COLLECTIONS 64
-#define MAX_COLL_ENTRIES 512
+/* ── Collection side table ──────────────────────────────────────── */
 
 static unsigned int g_next_coll_id = 1;
 static CollEntry g_coll_entries[MAX_COLL_ENTRIES];
@@ -1351,31 +1006,8 @@ static id coll_make_marker(const char *prefix, unsigned int coll_id) {
     }
 }
 
-/* ── Block side table ────────────────────────────────────────────
- * Blocks are stored as source ranges (like method bodies).
- * When a block literal ^{ ... } is parsed, we capture the body
- * source and register it in g_blocks[]. Block objects are
- * referenced by string pool markers like "NSBlock:5".
- * When a block is invoked, we execute the body via eval_source_range. */
+/* ── Block side table ──────────────────────────────────────────── */
 
-typedef struct {
-    char name[64];   /* captured variable name */
-    Value value;     /* captured value (by-value snapshot) */
-    int is_by_ref;   /* 1 if __block — capture by reference */
-    unsigned int var_index; /* index into g_vars[] for by-reference access */
-} BlockCapture;
-
-typedef struct {
-    unsigned int block_id;        /* unique ID */
-    char source[2048];            /* block body source (without outer braces) */
-    unsigned int source_len;
-    char arg_names[8][64];       /* parameter names */
-    unsigned int arg_count;
-    BlockCapture captures[16];   /* captured variable values */
-    unsigned int capture_count;
-} BlockImpl;
-
-#define MAX_BLOCKS 32
 static BlockImpl g_blocks[MAX_BLOCKS];
 static unsigned int g_block_count = 0;
 static unsigned int g_next_block_id = 1;
@@ -1499,81 +1131,8 @@ static int synthesized_ivar_set(id self, const char *var_name, Value val) {
     return 0;
 }
 
-/* ── AST nodes for control flow ──────────────────────────────────── */
+/* ── AST arena ─────────────────────────────────────────────────── */
 
-/* The interpreter is a single-pass parser/evaluator for expressions,
- * but control flow (if/while/for) requires re-evaluating conditions
- * and loop bodies. We use a small AST for control flow nodes only.
- * Expression statements are stored as source ranges and re-parsed
- * when executed (same technique as method body capture). */
-
-typedef enum {
-    AST_IF,
-    AST_WHILE,
-    AST_FOR,
-    AST_FOR_IN,
-    AST_BLOCK,
-    AST_EXPR_STMT,
-    AST_VAR_DECL,
-    AST_RETURN,
-    AST_BREAK,
-    AST_CONTINUE,
-    AST_SWITCH,
-    AST_DO_WHILE,
-    AST_NOOP  /* already-executed declaration (@interface, @implementation, etc.) */
-} AstNodeType;
-
-typedef struct AstNode AstNode;
-
-struct AstNode {
-    AstNodeType type;
-    union {
-        struct { /* AST_IF */
-            AstNode *condition;
-            AstNode *then_branch;
-            AstNode *else_branch;
-        } if_stmt;
-        struct { /* AST_WHILE */
-            AstNode *condition;
-            AstNode *body;
-        } while_stmt;
-        struct { /* AST_FOR */
-            AstNode *init;
-            AstNode *condition;
-            AstNode *increment;
-            AstNode *body;
-        } for_stmt;
-        struct { /* AST_FOR_IN */
-            char var_name[64];   /* iteration variable name */
-            unsigned int collection_start; /* source range for collection expr */
-            unsigned int collection_len;
-            AstNode *body;
-        } for_in;
-        struct { /* AST_SWITCH */
-            unsigned int expr_start;  /* source range for switch expression */
-            unsigned int expr_len;
-            int case_values[32];      /* integer values for each case */
-            AstNode *case_bodies[32]; /* body block for each case */
-            unsigned int case_count;
-            int has_default;
-            AstNode *default_body;
-        } switch_stmt;
-        struct { /* AST_DO_WHILE */
-            AstNode *condition;
-            AstNode *body;
-        } do_while_stmt;
-        struct { /* AST_BLOCK */
-            AstNode *children[128];
-            unsigned int count;
-        } block;
-        struct { /* AST_EXPR_STMT, AST_VAR_DECL, AST_RETURN */
-            unsigned int source_start;
-            unsigned int source_len;
-        } source_range;
-    };
-};
-
-#define MAX_AST_NODES 1024
 static AstNode g_ast_arena[MAX_AST_NODES];
 static unsigned int g_ast_count = 0;
 
