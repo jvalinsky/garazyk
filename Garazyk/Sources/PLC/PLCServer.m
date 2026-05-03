@@ -416,7 +416,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     [self.httpServer addRoute:@"GET" path:@"/" handler:^(HttpRequest *req, HttpResponse *resp) {
         resp.statusCode = HttpStatusOK;
         resp.contentType = @"text/plain; charset=utf-8";
-        [resp setBodyString:@"campagnola 1.0.0\n"];
+        [resp setBodyString:@"___                                                _        \n  / (_)                                              | |       \n |      __,   _  _  _     _   __,   __,  _  _    __  | |  __,  \n |     /  |  / |/ |/ |  |/ \\_/  |  /  | / |/ |  /  \\_|/  /  |  \n  \\___/\\_/|_/  |  |  |_/|__/ \\_/|_/\\_/|/  |  |_/\\__/ |__/\\_/|_/\n                       /|            /|                        \n                       \\|            \\| \n"];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/export" handler:^(HttpRequest *req, HttpResponse *resp) {

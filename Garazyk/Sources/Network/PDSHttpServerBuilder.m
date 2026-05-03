@@ -173,7 +173,7 @@
            handler:^(HttpRequest *request, HttpResponse *response) {
              response.statusCode = HttpStatusOK;
              response.contentType = @"text/plain; charset=utf-8";
-             [response setBodyString:@"kaszlak 1.0.0\n"];
+[response setBodyString:@",--.                                                                     \n   ,--/  /|                                       ,--,                     ,-.  \n',---,': / '                                     ,--.'|                 ,--/ /|  \n:   : '/ /                                ,----,|  | :               ,--. :/ |  \n|   '   ,                .--.--.        .'   .`|:  : '               :  : ' /   \n'   |  /     ,--.--.    /  /    '    .'   .'  .'|  ' |     ,--.--.   |  '  /    \n|   ;  ;    /       \\  |  :  /`./  ,---, '   ./ '  | |    /       \\  '  |  :    \n:   '   \\  .--.  .-. | |  :  ;_    ;   | .'  /  |  | :   .--.  .-. | |  |   \\   \n|   |    '  \\__\\/: . .  \\  \\    `. `---' /  ;--,'  : |__  \\__\\/: . . '  : |. \\  \n'   : |.  \\ ,\" .--.; |   \\`----.   \\  /  /  / .`||  | '.'| ,\" .--.; | |  | ' \\ \\ \n|   | '_\\.'/  /  ,.  |  /  /\\`--'  /./__;     .' ;  :    ;/  /  ,.  | '  : |--'  \n'   : |   ;  :   .'   \\'--'.     / ;   |  .'    |  ,   /;  :   .'   \\;  |,'     \n;   |,'   |  ,     .-./  \\`--'---'  \\`---'         ---\\`-' |  ,     .-./'--'       \n'---'      \\`--\\`---'                                      \\`--\\`---' \n"];
            }];
 
   // Suppress browser console noise for favicon probes when no icon asset is
