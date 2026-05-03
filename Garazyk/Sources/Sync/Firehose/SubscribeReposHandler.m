@@ -237,23 +237,11 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   }
 
   [webSocketConnection startOnExistingTransport];
-  [self sendInitialRepositoryStateToConnection:webSocketConnection
-                                        cursor:[request
-                                                   queryParamForKey:@"cursor"]];
-}
-  [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)_attachedConnections.count];
-  [self.relayMetrics recordDownstreamConnected];
-
-  if ([self.delegate respondsToSelector:@selector
-                     (subscribeReposHandler:didAcceptConnection:)]) {
-    [self.delegate subscribeReposHandler:self
-                     didAcceptConnection:webSocketConnection];
-  }
-
-  [webSocketConnection startOnExistingTransport];
-  [self sendInitialRepositoryStateToConnection:webSocketConnection
-                                        cursor:[request
-                                                   queryParamForKey:@"cursor"]];
+   [self sendInitialRepositoryStateToConnection:webSocketConnection
+                                         cursor:[request
+                                                    queryParamForKey:@"cursor"]];
+   [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)_attachedConnections.count];
+   [self.relayMetrics recordDownstreamConnected];
 }
 
 #pragma mark - WebSocketServerDelegate

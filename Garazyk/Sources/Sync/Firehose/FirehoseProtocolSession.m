@@ -21,12 +21,11 @@
 }
 
 - (NSData *)encodeCommitEvent:(FirehoseCommitEvent *)event {
-  NSUInteger seq;
-  dispatch_sync(_sequenceQueue, ^{
-    _sequenceNumber++;
-    seq = _sequenceNumber;
-  });
-  event.seq = seq;
+   __block NSUInteger seq;
+   dispatch_sync(_sequenceQueue, ^{
+     _sequenceNumber++;
+     seq = _sequenceNumber;
+   });
   NSError *error = nil;
   NSData *data = [self.eventFormatter encodeCommitEvent:event error:&error];
   if (!data) {
@@ -36,12 +35,11 @@
 }
 
 - (NSData *)encodeIdentityEvent:(FirehoseIdentityEvent *)event {
-  NSUInteger seq;
-  dispatch_sync(_sequenceQueue, ^{
-    _sequenceNumber++;
-    seq = _sequenceNumber;
-  });
-  event.seq = seq;
+   __block NSUInteger seq;
+   dispatch_sync(_sequenceQueue, ^{
+     _sequenceNumber++;
+     seq = _sequenceNumber;
+   });
   NSError *error = nil;
   NSData *data = [self.eventFormatter encodeIdentityEvent:event error:&error];
   if (!data) {
@@ -51,12 +49,11 @@
 }
 
 - (NSData *)encodeAccountEvent:(FirehoseAccountEvent *)event {
-  NSUInteger seq;
-  dispatch_sync(_sequenceQueue, ^{
-    _sequenceNumber++;
-    seq = _sequenceNumber;
-  });
-  event.seq = seq;
+   __block NSUInteger seq;
+   dispatch_sync(_sequenceQueue, ^{
+     _sequenceNumber++;
+     seq = _sequenceNumber;
+   });
   NSError *error = nil;
   NSData *data = [self.eventFormatter encodeAccountEvent:event error:&error];
   if (!data) {
@@ -66,12 +63,11 @@
 }
 
 - (NSData *)encodeInfoEvent:(FirehoseInfoEvent *)event {
-  NSUInteger seq;
-  dispatch_sync(_sequenceQueue, ^{
-    _sequenceNumber++;
-    seq = _sequenceNumber;
-  });
-  event.seq = seq;
+   __block NSUInteger seq;
+   dispatch_sync(_sequenceQueue, ^{
+     _sequenceNumber++;
+     seq = _sequenceNumber;
+   });
   NSError *error = nil;
   NSData *data = [self.eventFormatter encodeInfoEvent:event error:&error];
   if (!data) {
