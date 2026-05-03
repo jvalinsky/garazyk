@@ -103,9 +103,8 @@ void objc_interp_reset(void);
 /**
  * Perform garbage collection on the string pool.
  * Reclaims unreachable string pool entries. Called automatically
- * between cell executions.
+ * between cell executions.  Defined in objc_interp_format.c.
  */
-void objc_interp_gc_strings(void);
 
 /**
  * Get the number of variables in the interpreter's variable table.
