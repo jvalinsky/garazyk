@@ -464,6 +464,7 @@ struct AstNode {
 
 /* ── Forward declarations ───────────────────────────────────────── */
 
-struct Parser;  /* defined in objc_interp_parser.h */
+struct Parser;  /* defined in objc_interpreter.c */
+typedef struct Parser Parser;
 
 #endif /* OBJC_INTERP_TYPES_H */
