@@ -58,9 +58,6 @@ unsigned int g_nslog_offset = 0;
 
 void set_error_from_parser(struct Parser *p);
 
-char g_result_buffer[512];
-
-
 #define OBJC_INTERP_MAX_BLOCKS_CAPTURED 32
 
 InterpVar g_vars[OBJC_INTERP_MAX_VARS];
@@ -1098,7 +1095,7 @@ void objc_interp_init(void) {
     g_ctx.error_buffer[0] = '\0';
     g_ctx.error_line = 0;
     g_ctx.error_column = 0;
-    g_result_buffer[0] = '\0';
+    g_ctx.result_buffer[0] = '\0';
     g_var_count = 0;
     g_method_count = 0;
     g_property_count = 0;
@@ -1144,7 +1141,7 @@ int objc_interp(const char *source, unsigned int length) {
     g_ctx.error_buffer[0] = '\0';
     g_ctx.error_line = 0;
     g_ctx.error_column = 0;
-    g_result_buffer[0] = '\0';
+    g_ctx.result_buffer[0] = '\0';
     g_return_pending = 0;
     g_break_pending = 0;
     g_continue_pending = 0;
@@ -1200,7 +1197,7 @@ int objc_interp(const char *source, unsigned int length) {
             }
 
             /* Format the last expression result for REPL display */
-            format_value(last, g_result_buffer, 512);
+            format_value(last, g_ctx.result_buffer, 512);
         }
     }
 
@@ -1226,7 +1223,7 @@ int objc_interp_get_error_code(void) {
 }
 
 const char *objc_interp_get_result(void) {
-    return g_result_buffer;
+    return g_ctx.result_buffer;
 }
 
 void objc_interp_reset(void) {
@@ -1236,7 +1233,7 @@ void objc_interp_reset(void) {
     g_ctx.error_buffer[0] = '\0';
     g_ctx.error_line = 0;
     g_ctx.error_column = 0;
-    g_result_buffer[0] = '\0';
+    g_ctx.result_buffer[0] = '\0';
     /* Don't reset g_var_count — variables persist across cells */
     /* Don't reset g_method_count — methods persist across cells */
 }
