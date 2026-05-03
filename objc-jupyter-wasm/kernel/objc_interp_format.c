@@ -737,9 +737,9 @@ void objc_interp_gc_strings(void) {
             }
         }
     }
-    /* Mark the static g_return_value if it holds a string pool pointer */
-    if (g_return_value.is_id && g_return_value.obj_val != 0 && reloc_count < MAX_STRING_POOL_MARKS) {
-        const char *ptr = (const char *)g_return_value.obj_val;
+    /* Mark the static g_ctx.return_value if it holds a string pool pointer */
+    if (g_ctx.return_value.is_id && g_ctx.return_value.obj_val != 0 && reloc_count < MAX_STRING_POOL_MARKS) {
+        const char *ptr = (const char *)g_ctx.return_value.obj_val;
         if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
             relocs[reloc_count].old_off = (unsigned int)((unsigned long)ptr - pool_start);
             relocs[reloc_count].new_off = 0;
@@ -873,15 +873,15 @@ void objc_interp_gc_strings(void) {
             }
         }
     }
-    /* Update g_return_value if it holds a string pool pointer */
-    if (g_return_value.is_id && g_return_value.obj_val != 0) {
-        const char *ptr = (const char *)g_return_value.obj_val;
+    /* Update g_ctx.return_value if it holds a string pool pointer */
+    if (g_ctx.return_value.is_id && g_ctx.return_value.obj_val != 0) {
+        const char *ptr = (const char *)g_ctx.return_value.obj_val;
         if ((unsigned long)ptr >= pool_start && (unsigned long)ptr < pool_end) {
             unsigned int off = (unsigned int)((unsigned long)ptr - pool_start);
             unsigned int r;
             for (r = 0; r < reloc_count; r++) {
                 if (relocs[r].old_off == off) {
-                    g_return_value.obj_val = (id)(g_string_pool + relocs[r].new_off);
+                    g_ctx.return_value.obj_val = (id)(g_string_pool + relocs[r].new_off);
                     break;
                 }
             }
