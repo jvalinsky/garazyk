@@ -281,7 +281,7 @@ static Value parse_ternary(Parser *p) {
             if (p->error) return true_val;
             if (parser_current(p).type != TOK_COLON) {
                 p->error = 1;
-                cstr_copy(g_error_buffer, "expected ':' in ternary expression", OBJC_INTERP_ERROR_SIZE);
+                cstr_copy(g_ctx.error_buffer, "expected ':' in ternary expression", OBJC_INTERP_ERROR_SIZE);
                 return cond;
             }
             parser_advance(p); /* skip : */

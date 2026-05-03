@@ -28,8 +28,8 @@ void interp_emit_stream(const char *ptr, unsigned int len) {
 }
 
 void interp_set_resource_error(const char *msg) {
-    g_error_code = OBJC_INTERP_RESOURCE_ERROR;
-    cstr_copy(g_error_buffer, msg, OBJC_INTERP_ERROR_SIZE);
+    g_ctx.error_code = OBJC_INTERP_RESOURCE_ERROR;
+    cstr_copy(g_ctx.error_buffer, msg, OBJC_INTERP_ERROR_SIZE);
     interp_emit_stream("Error: ", 7);
     interp_emit_stream(msg, cstr_len(msg));
     interp_emit_stream("\n", 1);
@@ -220,7 +220,7 @@ id coll_make_marker(const char *prefix, unsigned int coll_id) {
     {
         char *result = string_pool_alloc(pos + digits + 1);
         if (result == 0) {
-            g_error_code = OBJC_INTERP_RESOURCE_ERROR;
+            g_ctx.error_code = OBJC_INTERP_RESOURCE_ERROR;
             interp_emit_stream("Error: string pool exhausted (cannot create collection)\n", 56);
             return (id)0;
         }
@@ -345,8 +345,8 @@ int synthesized_ivar_set(id self, const char *var_name, Value val) {
     int pi = find_synthesized_ivar(var_name, self);
     if (pi >= 0) {
         if (instance_var_set(self, g_properties[pi].name, val) != 0) {
-            g_error_code = OBJC_INTERP_RESOURCE_ERROR;
-            cstr_copy(g_error_buffer, "instance variable table full (max 256)", OBJC_INTERP_ERROR_SIZE);
+            g_ctx.error_code = OBJC_INTERP_RESOURCE_ERROR;
+            cstr_copy(g_ctx.error_buffer, "instance variable table full (max 256)", OBJC_INTERP_ERROR_SIZE);
             interp_emit_stream("warning: instance variable table full (max 256)\n", cstr_len("warning: instance variable table full (max 256)\n"));
             return -1;
         }

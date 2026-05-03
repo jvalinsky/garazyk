@@ -948,8 +948,8 @@ Value eval_ast(AstNode *node, const char *source) {
                     {
                         char *ch_ptr = string_pool_alloc(2);
                         if (ch_ptr == 0) {
-                            g_error_code = OBJC_INTERP_RESOURCE_ERROR;
-                            cstr_copy(g_error_buffer, "string pool exhausted — restart kernel", OBJC_INTERP_ERROR_SIZE);
+                            g_ctx.error_code = OBJC_INTERP_RESOURCE_ERROR;
+                            cstr_copy(g_ctx.error_buffer, "string pool exhausted — restart kernel", OBJC_INTERP_ERROR_SIZE);
                             interp_emit_stream("warning: string pool exhausted — restart kernel\n", cstr_len("warning: string pool exhausted — restart kernel\n"));
                             break;
                         }
@@ -1016,7 +1016,7 @@ Value eval_ast(AstNode *node, const char *source) {
             node->switch_stmt.expr_start,
             node->switch_stmt.expr_len, source,
             count_lines_up_to(source, node->switch_stmt.expr_start));
-        if (g_error_code != OBJC_INTERP_OK) return switch_val;
+        if (g_ctx.error_code != OBJC_INTERP_OK) return switch_val;
 
         /* Find matching case */
         int matched_case = -1;

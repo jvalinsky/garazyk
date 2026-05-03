@@ -1,12 +1,11 @@
 /* objc_interp_globals.h — Shared global variable declarations
  *
- * This header declares all interpreter global variables as `extern`.
- * The definitions live in objc_interpreter.c (the main implementation file).
- * Extracted modules include this header to access shared state.
+ * MIGRATION IN PROGRESS: globals are being moved to InterpContext struct.
+ * This header now primarily includes objc_interp_context.h to provide access
+ * to the global g_ctx interpreter state.
  *
- * Strategy: globals start as `static` in objc_interpreter.c. When a module
- * is extracted that needs a global, `static` is removed from the definition
- * in objc_interpreter.c and the module includes this header.
+ * Legacy: Some globals remain here as externs while migration is in progress.
+ * Eventually, this file will be deleted entirely.
  *
  * All globals are process-wide singletons — safe for single-threaded WASM.
  * Do NOT use from concurrent threads without synchronization.
@@ -16,13 +15,10 @@
 #define OBJC_INTERP_GLOBALS_H
 
 #include "objc_interp_types.h"
+#include "objc_interp_context.h"
 
-/* ── Error state ──────────────────────────────────────────────── */
-
-extern char g_error_buffer[];       /* error message buffer */
-extern int g_error_code;            /* OBJC_INTERP_OK or error code */
-extern unsigned int g_error_line;   /* line number of last error */
-extern unsigned int g_error_column; /* column number of last error */
+/* extern InterpContext g_ctx; declared and defined in objc_interpreter.c */
+extern InterpContext g_ctx;
 
 /* ── Interpreter state ────────────────────────────────────────── */
 
