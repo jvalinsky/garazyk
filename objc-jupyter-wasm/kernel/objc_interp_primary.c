@@ -556,14 +556,14 @@ Value parse_primary(Parser *p) {
          * parse_message_send will also call parse_expression_safe for
          * the target, but we count here too so that [[...]] nesting
          * increments depth by 2 per level (primary + safe wrapper). */
-        if (g_parse_depth >= MAX_PARSE_DEPTH) {
+        if (g_ctx.parse_depth >= MAX_PARSE_DEPTH) {
             parser_error(p, "expression too deeply nested (max 64 levels)");
             return value_void();
         }
-        g_parse_depth++;
+        g_ctx.parse_depth++;
         {
             Value result = parse_message_send(p);
-            g_parse_depth--;
+            g_ctx.parse_depth--;
             return result;
         }
     }
