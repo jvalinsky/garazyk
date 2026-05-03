@@ -19,7 +19,9 @@
     "check:js": "node --check js/wasm-loader.js && node --check js/objc-worker.js && node --check jupyterlite/kernel.js && node --check scripts/copy-static-assets.mjs && node --check scripts/build-smoke-site.mjs && node --check tests/browser-smoke.mjs && node --check tests/browser-smoke-page.mjs && node --check tests/kernel-smoke.mjs",
     "clean": "rimraf lib dist objc_jupyter_wasm/labextension",
     "smoke:browser": "node tests/browser-smoke.mjs dist/jupyterlite-smoke",
-    "smoke:kernel": "node tests/kernel-smoke.mjs ./result/wasm/kernel.wasm"
+    "smoke:kernel": "node tests/kernel-smoke.mjs ./result/wasm/kernel.wasm",
+    "test:notebooks": "node tests/run-notebooks.mjs --dir demo/",
+    "test:notebooks:verbose": "node tests/run-notebooks.mjs --verbose --dir demo/"
   },
   "dependencies": {
     "@jupyterlab/application": "^4.4.5",
