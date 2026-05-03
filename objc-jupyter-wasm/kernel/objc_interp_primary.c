@@ -1000,7 +1000,7 @@ Value parse_primary(Parser *p) {
                             {
                                 Value result;
                                 g_return_pending = 0;
-                                result = eval_source_range(0, blk->source_len, blk->source);
+                                result = eval_source_range(0, blk->source_len, blk->source, 0);
 
                                 /* Write back __block variables to original slots */
                                 {

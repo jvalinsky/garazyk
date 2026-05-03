@@ -5,7 +5,8 @@
 
 #include "objc_interp_types.h"
 
-void lexer_init(Lexer *lex, const char *source, unsigned int length);
+void lexer_init(Lexer *lex, const char *source, unsigned int length,
+                unsigned int line_offset);
 char lexer_peek(Lexer *lex);
 char lexer_next(Lexer *lex);
 void lexer_skip_whitespace_and_comments(Lexer *lex);

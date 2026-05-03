@@ -21,7 +21,8 @@ extern void parser_advance(struct Parser *p);
 extern int parser_expect(struct Parser *p, TokenType type);
 extern void parser_error(struct Parser *p, const char *msg);
 extern Value parse_expression_safe(struct Parser *p);
-extern Value eval_source_range(unsigned int start, unsigned int len, const char *source);
+extern Value eval_source_range(unsigned int start, unsigned int len, const char *source,
+                               unsigned int line_offset);
 
 /* Parser layout must match the definition in objc_interpreter.c. */
 typedef struct Parser {
@@ -178,7 +179,7 @@ Value execute_interpreter_method(struct Parser *p, MethodImpl *method, SEL sel,
     inject_synthesized_ivars(receiver);
 
     {
-        Value ignored = eval_source_range(0, method->source_len, method->source);
+        Value ignored = eval_source_range(0, method->source_len, method->source, 0);
         (void)ignored;
     }
 
