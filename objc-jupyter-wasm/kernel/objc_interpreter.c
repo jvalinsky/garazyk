@@ -47,7 +47,7 @@ extern void objc_interp_gc_strings(void);
 /* ── Centralized interpreter context ────────────────────────────── */
 
 #include "objc_interp_context.h"
-static InterpContext g_ctx = {0};
+InterpContext g_ctx = {0};
 
 /* ── NSLog ring buffer ──────────────────────────────────────────── */
 
@@ -55,11 +55,6 @@ char g_nslog_buffer[OBJC_INTERP_NSLOG_BUFFER_SIZE];
 unsigned int g_nslog_offset = 0;
 
 /* ── Interpreter state ──────────────────────────────────────────── */
-
-char g_error_buffer[OBJC_INTERP_ERROR_SIZE];
-int g_error_code = OBJC_INTERP_OK;
-unsigned int g_error_line = 0;
-unsigned int g_error_column = 0;
 
 void set_error_from_parser(struct Parser *p);
 
@@ -455,10 +450,10 @@ static Token lexer_next_token(Lexer *lex) {
 
 
 void set_error_from_parser(Parser *p) {
-    g_error_code = p->error;
-    cstr_copy(g_error_buffer, p->error_msg, OBJC_INTERP_ERROR_SIZE);
-    g_error_line = p->lex.line + p->lex.lex_line_offset;
-    g_error_column = p->lex.column;
+    g_ctx.error_code = p->error;
+    cstr_copy(g_ctx.error_buffer, p->error_msg, OBJC_INTERP_ERROR_SIZE);
+    g_ctx.error_line = p->lex.line + p->lex.lex_line_offset;
+    g_ctx.error_column = p->lex.column;
 }
 
 void parser_init(Parser *p, const char *source, unsigned int length,
@@ -851,7 +846,7 @@ static id method_impl_trampoline(id self, SEL _cmd, ...) {
     g_return_pending = 0;
     {
         Value v = eval_source_range(0, g_methods[i].source_len, g_methods[i].source, 0);
-        (void)v; /* errors are captured in g_error_buffer */
+        (void)v; /* errors are captured in g_ctx.error_buffer */
     }
 
     /* Determine return value */
@@ -1029,7 +1024,7 @@ static Value parse_ternary(Parser *p) {
             if (p->error) return true_val;
             if (parser_current(p).type != TOK_COLON) {
                 p->error = 1;
-                cstr_copy(g_error_buffer, "expected ':' in ternary expression", OBJC_INTERP_ERROR_SIZE);
+                cstr_copy(g_ctx.error_buffer, "expected ':' in ternary expression", OBJC_INTERP_ERROR_SIZE);
                 return cond;
             }
             parser_advance(p); /* skip : */
@@ -1099,10 +1094,10 @@ static unsigned int count_lines_up_to(const char *source, unsigned int pos) {
 void objc_interp_init(void) {
     g_nslog_offset = 0;
     g_nslog_buffer[0] = '\0';
-    g_error_code = OBJC_INTERP_OK;
-    g_error_buffer[0] = '\0';
-    g_error_line = 0;
-    g_error_column = 0;
+    g_ctx.error_code = OBJC_INTERP_OK;
+    g_ctx.error_buffer[0] = '\0';
+    g_ctx.error_line = 0;
+    g_ctx.error_column = 0;
     g_result_buffer[0] = '\0';
     g_var_count = 0;
     g_method_count = 0;
@@ -1145,10 +1140,10 @@ int objc_interp(const char *source, unsigned int length) {
     /* Reset per-execution state */
     g_nslog_offset = 0;
     g_nslog_buffer[0] = '\0';
-    g_error_code = OBJC_INTERP_OK;
-    g_error_buffer[0] = '\0';
-    g_error_line = 0;
-    g_error_column = 0;
+    g_ctx.error_code = OBJC_INTERP_OK;
+    g_ctx.error_buffer[0] = '\0';
+    g_ctx.error_line = 0;
+    g_ctx.error_column = 0;
     g_result_buffer[0] = '\0';
     g_return_pending = 0;
     g_break_pending = 0;
@@ -1168,19 +1163,19 @@ int objc_interp(const char *source, unsigned int length) {
 
         if (p.error) {
             if (cstr_eq(p.error_msg, "Execution interrupted")) {
-                g_error_code = OBJC_INTERP_INTERRUPTED;
+                g_ctx.error_code = OBJC_INTERP_INTERRUPTED;
             } else {
-                g_error_code = p.error;
+                g_ctx.error_code = p.error;
             }
-            cstr_copy(g_error_buffer, p.error_msg, OBJC_INTERP_ERROR_SIZE);
-            g_error_line = p.lex.line;
-            g_error_column = p.lex.column;
+            cstr_copy(g_ctx.error_buffer, p.error_msg, OBJC_INTERP_ERROR_SIZE);
+            g_ctx.error_line = p.lex.line;
+            g_ctx.error_column = p.lex.column;
             return p.error;
         }
 
         if (!root) {
-            g_error_code = OBJC_INTERP_MEMORY_ERROR;
-            cstr_copy(g_error_buffer, "AST allocation failed", OBJC_INTERP_ERROR_SIZE);
+            g_ctx.error_code = OBJC_INTERP_MEMORY_ERROR;
+            cstr_copy(g_ctx.error_buffer, "AST allocation failed", OBJC_INTERP_ERROR_SIZE);
             return OBJC_INTERP_MEMORY_ERROR;
         }
 
@@ -1190,18 +1185,18 @@ int objc_interp(const char *source, unsigned int length) {
 
             if (p.error) {
                 if (cstr_eq(p.error_msg, "Execution interrupted")) {
-                    g_error_code = OBJC_INTERP_INTERRUPTED;
+                    g_ctx.error_code = OBJC_INTERP_INTERRUPTED;
                 } else {
-                    g_error_code = p.error;
+                    g_ctx.error_code = p.error;
                 }
-                cstr_copy(g_error_buffer, p.error_msg, OBJC_INTERP_ERROR_SIZE);
-                g_error_line = p.lex.line;
-                g_error_column = p.lex.column;
+                cstr_copy(g_ctx.error_buffer, p.error_msg, OBJC_INTERP_ERROR_SIZE);
+                g_ctx.error_line = p.lex.line;
+                g_ctx.error_column = p.lex.column;
                 return p.error;
             }
 
-            if (g_error_code != OBJC_INTERP_OK) {
-                return g_error_code;
+            if (g_ctx.error_code != OBJC_INTERP_OK) {
+                return g_ctx.error_code;
             }
 
             /* Format the last expression result for REPL display */
@@ -1223,11 +1218,11 @@ unsigned int objc_interp_get_nslog_length(void) {
 }
 
 const char *objc_interp_get_error(void) {
-    return g_error_buffer;
+    return g_ctx.error_buffer;
 }
 
 int objc_interp_get_error_code(void) {
-    return g_error_code;
+    return g_ctx.error_code;
 }
 
 const char *objc_interp_get_result(void) {
@@ -1237,10 +1232,10 @@ const char *objc_interp_get_result(void) {
 void objc_interp_reset(void) {
     g_nslog_offset = 0;
     g_nslog_buffer[0] = '\0';
-    g_error_code = OBJC_INTERP_OK;
-    g_error_buffer[0] = '\0';
-    g_error_line = 0;
-    g_error_column = 0;
+    g_ctx.error_code = OBJC_INTERP_OK;
+    g_ctx.error_buffer[0] = '\0';
+    g_ctx.error_line = 0;
+    g_ctx.error_column = 0;
     g_result_buffer[0] = '\0';
     /* Don't reset g_var_count — variables persist across cells */
     /* Don't reset g_method_count — methods persist across cells */
@@ -1263,9 +1258,9 @@ int objc_interp_get_var_is_class(unsigned int index) {
 }
 
 unsigned int objc_interp_get_error_line(void) {
-    return g_error_line;
+    return g_ctx.error_line;
 }
 
 unsigned int objc_interp_get_error_column(void) {
-    return g_error_column;
+    return g_ctx.error_column;
 }
