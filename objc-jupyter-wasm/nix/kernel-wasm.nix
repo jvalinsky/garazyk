@@ -75,6 +75,20 @@ stdenv.mkDerivation {
       -c objc_interp_lexer.c \
       -o objc_interp_lexer.o
 
+    # Compile the state module
+    ${llvmPackages.clang-unwrapped}/bin/clang --target=wasm32-wasi \
+      -O2 \
+      --sysroot=${wasiSysroot} \
+      -I${libobjc2WasmFull}/include/objc \
+      -I. \
+      -Wall \
+      -Wextra \
+      -Wno-unused-parameter \
+      -Wno-unused-variable \
+      -Wno-unused-function \
+      -c objc_interp_state.c \
+      -o objc_interp_state.o
+
     # Link: kernel + libobjc2 runtime + wasi-libc
     # Stack configuration: 1 MB stack with stack-first placement to trap on overflow rather than silently corrupt heap
     ${llvmPackages.lld}/bin/wasm-ld \
@@ -123,6 +137,7 @@ stdenv.mkDerivation {
       objc_runtime_bridge.o \
       objc_interpreter.o \
       objc_interp_lexer.o \
+      objc_interp_state.o \
       ${libobjc2WasmFull}/obj/*.o
 
     runHook postBuild
