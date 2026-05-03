@@ -624,10 +624,6 @@ extern void format_value(Value v, char *buf, unsigned int capacity);
 
 /* ── Method dispatch state ─────────────────────────────────────── */
 
-/* Return value flag — set by return statement, checked by method dispatch */
-int g_return_pending = 0;
-Value g_return_value;
-
 /* String pool for string literals and Foundation object encoding.
  * Shared between parse_primary (string literals) and parse_message_send
  * (Foundation stubs like NSNumber, stringByAppendingString). */
@@ -725,10 +721,6 @@ unsigned int g_next_block_id = 1;
 
 
 #define MAX_AST_NODES 1024
-
-/* Break/continue flags — checked by loop evaluation */
-int g_break_pending = 0;
-int g_continue_pending = 0;
 
 /* ── Forward declarations ───────────────────────────────────────── */
 
@@ -837,7 +829,7 @@ static id method_impl_trampoline(id self, SEL _cmd, ...) {
     }
 
     /* Execute the method body */
-    g_return_pending = 0;
+    g_ctx.return_pending = 0;
     {
         Value v = eval_source_range(0, g_methods[i].source_len, g_methods[i].source, 0);
         (void)v; /* errors are captured in g_ctx.error_buffer */
@@ -847,11 +839,11 @@ static id method_impl_trampoline(id self, SEL _cmd, ...) {
     {
         id return_val;
 
-        if (g_return_pending) {
+        if (g_ctx.return_pending) {
             /* Explicit return statement */
-            if (g_return_value.is_id) return_val = g_return_value.obj_val;
-            else if (g_return_value.is_class) return_val = (id)g_return_value.cls_val;
-            else if (g_return_value.is_int) return_val = (id)(long)g_return_value.int_val;
+            if (g_ctx.return_value.is_id) return_val = g_ctx.return_value.obj_val;
+            else if (g_ctx.return_value.is_class) return_val = (id)g_ctx.return_value.cls_val;
+            else if (g_ctx.return_value.is_int) return_val = (id)(long)g_ctx.return_value.int_val;
             else return_val = self;
         } else {
             /* No explicit return — default to self */
@@ -860,7 +852,7 @@ static id method_impl_trampoline(id self, SEL _cmd, ...) {
 
         /* Clean up method-local variables (remove any added after saved count) */
         g_var_count = saved_var_count;
-        g_return_pending = 0;
+        g_ctx.return_pending = 0;
 
         return return_val;
     }
@@ -1139,9 +1131,9 @@ int objc_interp(const char *source, unsigned int length) {
     g_ctx.error_line = 0;
     g_ctx.error_column = 0;
     g_ctx.result_buffer[0] = '\0';
-    g_return_pending = 0;
-    g_break_pending = 0;
-    g_continue_pending = 0;
+    g_ctx.return_pending = 0;
+    g_ctx.break_pending = 0;
+    g_ctx.continue_pending = 0;
     g_ctx.ast_count = 0;
     g_ctx.parse_depth = 0;
 

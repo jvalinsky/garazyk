@@ -275,7 +275,7 @@ static id method_impl_trampoline(id self, SEL _cmd, ...) {
         }
     }
 
-    g_return_pending = 0;
+    g_ctx.return_pending = 0;
     {
         Value v = eval_source_range(0, g_methods[i].source_len, g_methods[i].source, 0);
         (void)v;
@@ -284,17 +284,17 @@ static id method_impl_trampoline(id self, SEL _cmd, ...) {
     {
         id return_val;
 
-        if (g_return_pending) {
-            if (g_return_value.is_id) return_val = g_return_value.obj_val;
-            else if (g_return_value.is_class) return_val = (id)g_return_value.cls_val;
-            else if (g_return_value.is_int) return_val = (id)(long)g_return_value.int_val;
+        if (g_ctx.return_pending) {
+            if (g_ctx.return_value.is_id) return_val = g_ctx.return_value.obj_val;
+            else if (g_ctx.return_value.is_class) return_val = (id)g_ctx.return_value.cls_val;
+            else if (g_ctx.return_value.is_int) return_val = (id)(long)g_ctx.return_value.int_val;
             else return_val = self;
         } else {
             return_val = self;
         }
 
         g_var_count = saved_var_count;
-        g_return_pending = 0;
+        g_ctx.return_pending = 0;
 
         return return_val;
     }
