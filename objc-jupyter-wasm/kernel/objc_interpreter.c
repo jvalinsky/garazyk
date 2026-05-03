@@ -44,6 +44,11 @@ extern void nslog_append_int(int value);
 extern void nslog_append_long(long value);
 extern void objc_interp_gc_strings(void);
 
+/* ── Centralized interpreter context ────────────────────────────── */
+
+#include "objc_interp_context.h"
+static InterpContext g_ctx = {0};
+
 /* ── NSLog ring buffer ──────────────────────────────────────────── */
 
 char g_nslog_buffer[OBJC_INTERP_NSLOG_BUFFER_SIZE];
@@ -1131,6 +1136,7 @@ void objc_interp_init(void) {
             }
         }
     }
+    g_ctx.interp_initialized = 1;
 }
 
 int objc_interp(const char *source, unsigned int length) {

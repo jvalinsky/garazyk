@@ -639,22 +639,25 @@ void format_value(Value v, char *buf, unsigned int capacity) {
             while (ipart > 0) { ibuf[ii++] = '0' + (ipart % 10); ipart /= 10; }
             while (ii > 0) fmt_append_char(buf, capacity, &offset, ibuf[--ii]);
         }
-        fmt_append_char(buf, capacity, &offset, '.');
         /* Fractional part: up to 6 digits, trim trailing zeros */
-        char fbuf[7];
-        int fi = 0;
-        int last_nonzero = 0;
-        for (int d = 0; d < 6; d++) {
-            fpart *= 10.0;
-            int digit = (int)fpart;
-            fbuf[fi++] = '0' + digit;
-            if (digit != 0) last_nonzero = fi;
-            fpart -= digit;
-        }
-        /* If all zeros, show at least one */
-        if (last_nonzero == 0) last_nonzero = 1;
-        for (int d = 0; d < last_nonzero; d++) {
-            fmt_append_char(buf, capacity, &offset, fbuf[d]);
+        {
+            char fbuf[7];
+            int fi = 0;
+            int last_nonzero = 0;
+            for (int d = 0; d < 6; d++) {
+                fpart *= 10.0;
+                int digit = (int)fpart;
+                fbuf[fi++] = '0' + digit;
+                if (digit != 0) last_nonzero = fi;
+                fpart -= digit;
+            }
+            /* Whole number: skip decimal point entirely (4.0 → "4") */
+            if (last_nonzero > 0) {
+                fmt_append_char(buf, capacity, &offset, '.');
+                for (int d = 0; d < last_nonzero; d++) {
+                    fmt_append_char(buf, capacity, &offset, fbuf[d]);
+                }
+            }
         }
     } else if (v.is_class && v.cls_val != 0) {
         /* Look up class name from variable table (class_getName
