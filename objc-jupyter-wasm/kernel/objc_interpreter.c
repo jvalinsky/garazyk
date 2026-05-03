@@ -3984,7 +3984,6 @@ static Value format_values_to_pool(const char *fmt, Value *args, int arg_count) 
                     coll_add(new_cid, keyword_args[0], value_void());
                     return value_from_id(coll_make_marker("NSArr:", new_cid));
                 }
-                    return value_from_id((id)"(nil)");
                 }
 
                 /* [dict valueForKey:key] → same as objectForKey: */
