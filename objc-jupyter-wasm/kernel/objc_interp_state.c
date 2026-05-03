@@ -9,8 +9,10 @@
 #include "objc_interp_state.h"
 
 /* Runtime functions exported from the WASM module */
-extern int objc_kernel_host_should_interrupt(void);
-extern void objc_kernel_host_stream(int fd, const char *ptr, unsigned int len);
+extern int objc_kernel_host_should_interrupt(void)
+    __attribute__((import_module("objc_kernel_host"), import_name("should_interrupt")));
+extern void objc_kernel_host_stream(int fd, const char *ptr, unsigned int len)
+    __attribute__((import_module("objc_kernel_host"), import_name("stream")));
 
 /* ── Interpreter helpers ────────────────────────────────────────── */
 
