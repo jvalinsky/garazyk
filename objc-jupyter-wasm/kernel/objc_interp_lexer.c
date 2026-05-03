@@ -114,7 +114,20 @@ Token lexer_next_token(Lexer *lex) {
 
     char ch = lexer_peek(lex);
 
-    /* @-keywords and @"string" */
+    /* Preprocessor directives: #import, #define, #pragma, #if, #ifdef, etc.
+     * Skip the entire line — these have no meaning in the interpreter. */
+    if (ch == '#') {
+        while (lex->pos < lex->source_len && lexer_peek(lex) != '\n' && lexer_peek(lex) != '\0') {
+            lexer_next(lex);
+        }
+        if (lex->pos < lex->source_len && lexer_peek(lex) == '\n') {
+            lexer_next(lex);
+        }
+        /* Recurse to get the next real token */
+        return lexer_next_token(lex);
+    }
+
+    /* @-keywords and @\"string\" */
     if (ch == '@') {
         lexer_next(lex);
         tok.text[0] = '@';
@@ -131,8 +144,16 @@ Token lexer_next_token(Lexer *lex) {
                     c = lexer_next(lex);
                     if (c == 'n') c = '\n';
                     else if (c == 't') c = '\t';
+                    else if (c == 'r') c = '\r';
+                    else if (c == '0') c = '\0';
+                    else if (c == 'a') c = '\a';
+                    else if (c == 'b') c = '\b';
+                    else if (c == 'f') c = '\f';
+                    else if (c == 'v') c = '\v';
                     else if (c == '\\') c = '\\';
                     else if (c == '"') c = '"';
+                    else if (c == '\'') c = '\'';
+                    /* else: unknown escape, keep the character after backslash as-is */
                 }
                 if (i + 1 < OBJC_INTERP_MAX_TOKEN) {
                     tok.text[i++] = c;
@@ -171,8 +192,16 @@ Token lexer_next_token(Lexer *lex) {
                 c = lexer_next(lex);
                 if (c == 'n') c = '\n';
                 else if (c == 't') c = '\t';
+                else if (c == 'r') c = '\r';
+                else if (c == '0') c = '\0';
+                else if (c == 'a') c = '\a';
+                else if (c == 'b') c = '\b';
+                else if (c == 'f') c = '\f';
+                else if (c == 'v') c = '\v';
                 else if (c == '\\') c = '\\';
                 else if (c == '"') c = '"';
+                else if (c == '\'') c = '\'';
+                /* else: unknown escape, keep the character after backslash as-is */
             }
             if (i + 1 < OBJC_INTERP_MAX_TOKEN) {
                 tok.text[i++] = c;
