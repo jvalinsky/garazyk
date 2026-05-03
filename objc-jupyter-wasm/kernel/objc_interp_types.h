@@ -193,6 +193,7 @@ typedef struct {
     unsigned int token_start; /* position where current token began */
     unsigned int line;
     unsigned int column;
+    unsigned int lex_line_offset; /* offset to add to line for error reporting */
     Token current;
 } Lexer;
 

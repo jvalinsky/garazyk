@@ -20,7 +20,8 @@ extern const char *sel_getName(SEL);
 
 /* Forward declarations for parser functions still in objc_interpreter.c */
 extern void set_error_from_parser(struct Parser *p);
-extern void parser_init(struct Parser *p, const char *source, unsigned int length);
+extern void parser_init(struct Parser *p, const char *source, unsigned int length,
+                        unsigned int line_offset);
 extern Token parser_current(struct Parser *p);
 extern void parser_advance(struct Parser *p);
 extern int parser_expect(struct Parser *p, TokenType type);
@@ -42,7 +43,6 @@ extern InterpVar *interp_find_var(const char *name);
 /* Internal forward declarations for mutually recursive AST routines. */
 AstNode *parse_block_ast(struct Parser *p);
 AstNode *parse_statement_ast(struct Parser *p);
-Value eval_source_range(unsigned int start, unsigned int len, const char *source);
 Value eval_ast(AstNode *node, const char *source);
 
 AstNode *ast_alloc(void) {
@@ -732,8 +732,19 @@ AstNode *parse_statement_ast(Parser *p) {
     }
 }
 
+/* Count newlines in source[0..pos) to compute line offset for error reporting. */
+static unsigned int count_lines_up_to(const char *source, unsigned int pos) {
+    unsigned int lines = 0;
+    unsigned int i;
+    for (i = 0; i < pos; i++) {
+        if (source[i] == '\n') lines++;
+    }
+    return lines;
+}
+
 Value eval_source_range(unsigned int start, unsigned int len,
-                        const char *source) {
+                        const char *source,
+                        unsigned int line_offset) {
     Parser p;
     Value last = value_void();
     unsigned int saved_parse_depth = g_parse_depth;
@@ -742,7 +753,7 @@ Value eval_source_range(unsigned int start, unsigned int len,
         g_parse_depth = saved_parse_depth;
         return value_void();
     }
-    parser_init(&p, source + start, len);
+    parser_init(&p, source + start, len, line_offset);
     /* Parse all statements in the source range, not just the first one.
      * This is needed for method bodies with multiple statements.
      * For control flow (if/while/for), use the two-phase AST approach.
@@ -886,7 +897,8 @@ Value eval_ast(AstNode *node, const char *source) {
          * For NSSet: iterate by elements.
          * For NSString: iterate by character. */
         Value coll = eval_source_range(node->for_in.collection_start,
-                                       node->for_in.collection_len, source);
+                                       node->for_in.collection_len, source,
+                                       count_lines_up_to(source, node->for_in.collection_start));
         const char *coll_str = (const char *)coll.obj_val;
         unsigned int cid = 0;
         int is_nsstring = 0;
@@ -981,7 +993,8 @@ Value eval_ast(AstNode *node, const char *source) {
     case AST_EXPR_STMT:
     case AST_VAR_DECL:
         last = eval_source_range(node->source_range.source_start,
-                                 node->source_range.source_len, source);
+                                 node->source_range.source_len, source,
+                                 count_lines_up_to(source, node->source_range.source_start));
         break;
 
     case AST_NOOP:
@@ -990,7 +1003,8 @@ Value eval_ast(AstNode *node, const char *source) {
 
     case AST_RETURN:
         last = eval_source_range(node->source_range.source_start,
-                                 node->source_range.source_len, source);
+                                 node->source_range.source_len, source,
+                                 count_lines_up_to(source, node->source_range.source_start));
         g_return_pending = 1;
         break;
 
@@ -1006,7 +1020,8 @@ Value eval_ast(AstNode *node, const char *source) {
         /* Evaluate the switch expression */
         Value switch_val = eval_source_range(
             node->switch_stmt.expr_start,
-            node->switch_stmt.expr_len, source);
+            node->switch_stmt.expr_len, source,
+            count_lines_up_to(source, node->switch_stmt.expr_start));
         if (g_error_code != OBJC_INTERP_OK) return switch_val;
 
         /* Find matching case */
