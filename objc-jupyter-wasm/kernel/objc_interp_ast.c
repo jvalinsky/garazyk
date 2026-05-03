@@ -40,8 +40,8 @@ AstNode *parse_statement_ast(struct Parser *p);
 Value eval_ast(AstNode *node, const char *source);
 
 AstNode *ast_alloc(void) {
-    if (g_ast_count >= MAX_AST_NODES) return 0;
-    return &g_ast_arena[g_ast_count++];
+    if (g_ctx.ast_count >= MAX_AST_NODES) return 0;
+    return &g_ctx.ast_arena[g_ctx.ast_count++];
 }
 
 AstNode *ast_make_if(AstNode *condition, AstNode *then_branch, AstNode *else_branch) {
@@ -741,10 +741,10 @@ Value eval_source_range(unsigned int start, unsigned int len,
                         unsigned int line_offset) {
     Parser p;
     Value last = value_void();
-    unsigned int saved_parse_depth = g_parse_depth;
-    g_parse_depth = 0;
+    unsigned int saved_parse_depth = g_ctx.parse_depth;
+    g_ctx.parse_depth = 0;
     if (len == 0) {
-        g_parse_depth = saved_parse_depth;
+        g_ctx.parse_depth = saved_parse_depth;
         return value_void();
     }
     parser_init(&p, source + start, len, line_offset);
@@ -760,33 +760,33 @@ Value eval_source_range(unsigned int start, unsigned int len,
             /* Control flow: use two-phase AST approach.
              * Save and restore AST count to avoid corrupting
              * the outer AST arena. */
-            unsigned int saved_ast_count = g_ast_count;
+            unsigned int saved_ast_count = g_ctx.ast_count;
             AstNode *root = parse_block_ast(&p);
             if (p.error) {
                 set_error_from_parser(&p);
-                g_ast_count = saved_ast_count;
-                g_parse_depth = saved_parse_depth;
+                g_ctx.ast_count = saved_ast_count;
+                g_ctx.parse_depth = saved_parse_depth;
                 return last;
             }
             if (root) {
                 last = eval_ast(root, source + start);
             }
-            g_ast_count = saved_ast_count;
+            g_ctx.ast_count = saved_ast_count;
             if (p.error) {
                 set_error_from_parser(&p);
-                g_parse_depth = saved_parse_depth;
+                g_ctx.parse_depth = saved_parse_depth;
                 return last;
             }
         } else {
             last = parse_statement(&p);
             if (p.error) {
                 set_error_from_parser(&p);
-                g_parse_depth = saved_parse_depth;
+                g_ctx.parse_depth = saved_parse_depth;
                 return last;
             }
         }
     }
-    g_parse_depth = saved_parse_depth;
+    g_ctx.parse_depth = saved_parse_depth;
     return last;
 }
 
