@@ -155,8 +155,8 @@ Value execute_interpreter_method(struct Parser *p, MethodImpl *method, SEL sel,
     unsigned int ai;
 
     g_var_scope_base = g_var_count;
-    g_return_pending = 0;
-    g_return_value = value_void();
+    g_ctx.return_pending = 0;
+    g_ctx.return_value = value_void();
 
     if (bind_method_var("self", value_from_id(receiver)) != 0 ||
         bind_method_var("_cmd", value_from_sel(sel)) != 0) {
@@ -182,14 +182,14 @@ Value execute_interpreter_method(struct Parser *p, MethodImpl *method, SEL sel,
         write_back_synthesized_ivars(p, receiver);
     }
 
-    if (!p->error && g_return_pending) {
-        return_val = g_return_value;
+    if (!p->error && g_ctx.return_pending) {
+        return_val = g_ctx.return_value;
     }
 
 done:
     g_var_count = saved_var_count;
     g_var_scope_base = saved_scope_base;
-    g_return_pending = 0;
+    g_ctx.return_pending = 0;
     return return_val;
 }
 

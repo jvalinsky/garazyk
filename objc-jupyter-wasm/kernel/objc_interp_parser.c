@@ -554,18 +554,18 @@ Value parse_statement(Parser *p) {
         if (parser_current(p).type != TOK_SEMICOLON &&
             parser_current(p).type != TOK_CLOSE_BRACE &&
             parser_current(p).type != TOK_EOF) {
-            g_return_value = parse_expression(p);
-            if (p->error) return g_return_value;
+            g_ctx.return_value = parse_expression(p);
+            if (p->error) return g_ctx.return_value;
         } else {
-            g_return_value = value_void();
+            g_ctx.return_value = value_void();
         }
 
         if (parser_current(p).type == TOK_SEMICOLON) {
             parser_advance(p);
         }
 
-        g_return_pending = 1;
-        return g_return_value;
+        g_ctx.return_pending = 1;
+        return g_ctx.return_value;
     }
 
     /* @interface */
@@ -863,7 +863,7 @@ Value parse_block(Parser *p) {
         }
         last = parse_statement(p);
         if (p->error) return last;
-        if (g_return_pending) return last;
+        if (g_ctx.return_pending) return last;
     }
     return last;
 }
