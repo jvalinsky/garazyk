@@ -5,12 +5,6 @@
 #include "objc_interp_format.h"
 #include "objc_interp_lexer.h"
 
-typedef struct Parser {
-    Lexer lex;
-    int error;
-    char error_msg[OBJC_INTERP_ERROR_SIZE];
-} Parser;
-
 
 /* extern for runtime bridge function */
 extern void interp_emit_stream(const char *data, unsigned int len);
