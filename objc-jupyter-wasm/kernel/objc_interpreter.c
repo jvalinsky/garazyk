@@ -78,6 +78,20 @@ static void cstr_copy(char *dst, const char *src, unsigned int capacity) {
     dst[i] = '\0';
 }
 
+/* Same as cstr_copy but returns 1 if the source did not fit and was
+ * truncated, 0 otherwise. Use at identifier-copy sites where silent
+ * truncation would cause later table lookups to miss. */
+static int cstr_copy_checked(char *dst, const char *src, unsigned int capacity) {
+    unsigned int i = 0;
+    if (dst == 0 || src == 0 || capacity == 0) return 0;
+    while (src[i] != '\0' && i + 1 < capacity) {
+        dst[i] = src[i];
+        i++;
+    }
+    dst[i] = '\0';
+    return src[i] != '\0';
+}
+
 /* ── NSLog ring buffer ──────────────────────────────────────────── */
 
 static char g_nslog_buffer[OBJC_INTERP_NSLOG_BUFFER_SIZE];
@@ -307,7 +321,7 @@ static void lexer_skip_whitespace_and_comments(Lexer *lex) {
                 }
                 lexer_next(lex);
             }
-            /* If we hit EOF without finding */, just return - the outer loop will handle it */
+            /* If we hit EOF without finding star-slash, just return - the outer loop will handle it */
         } else {
             break;
         }
@@ -325,30 +339,6 @@ static Token lexer_next_token(Lexer *lex) {
     tok.truncated = 0;
     tok.text[0] = '\0';
     tok.type = TOK_EOF;
-
-    /* DEBUG: log position only near @{ (line 5, col 30-40) */
-    if (lex->line == 5 && lex->column >= 30 && lex->column <= 40) {
-        nslog_append("DBG lexer: pos=", 16);
-        { char buf[16]; int n = 0; unsigned int sv = lex->pos;
-          if (sv == 0) { buf[n++] = '0'; } else { while (sv > 0) { buf[n++] = '0' + sv % 10; sv /= 10; } }
-          for (int j = n-1; j >= 0; j--) nslog_append(&buf[j], 1); }
-        nslog_append(" col=", 5);
-        { char buf[16]; int n = 0; unsigned int sv = lex->column;
-          if (sv == 0) { buf[n++] = '0'; } else { while (sv > 0) { buf[n++] = '0' + sv % 10; sv /= 10; } }
-          for (int j = n-1; j >= 0; j--) nslog_append(&buf[j], 1); }
-        nslog_append(" next_ch=", 9);
-        if (lex->pos < lex->source_len) {
-            char c = lex->source[lex->pos];
-            char buf2[2] = { c, '\0' };
-            if (c == '\n') nslog_append("\\n", 2);
-            else if (c == ' ') nslog_append("SP", 2);
-            else if (c == '{') nslog_append("{", 1);
-            else nslog_append(buf2, 1);
-        } else {
-            nslog_append("EOF", 3);
-        }
-        nslog_append("\n", 1);
-    }
 
     if (lex->pos >= lex->source_len) {
         tok.type = TOK_EOF;
@@ -698,23 +688,6 @@ static void set_error_from_parser(Parser *p) {
     cstr_copy(g_error_buffer, p->error_msg, OBJC_INTERP_ERROR_SIZE);
     g_error_line = p->lex.line;
     g_error_column = p->lex.column;
-    /* DEBUG: log error */
-    nslog_append("DBG set_error: code=", 20);
-    { char buf[16]; int n = 0; int sv = p->error;
-      if (sv < 0) { nslog_append("-", 1); sv = -sv; }
-      if (sv == 0) { buf[n++] = '0'; } else { while (sv > 0) { buf[n++] = '0' + sv % 10; sv /= 10; } }
-      for (int j = n-1; j >= 0; j--) nslog_append(&buf[j], 1); }
-    nslog_append(" line=", 6);
-    { char buf[16]; int n = 0; unsigned int sv = p->lex.line;
-      if (sv == 0) { buf[n++] = '0'; } else { while (sv > 0) { buf[n++] = '0' + sv % 10; sv /= 10; } }
-      for (int j = n-1; j >= 0; j--) nslog_append(&buf[j], 1); }
-    nslog_append(" col=", 5);
-    { char buf[16]; int n = 0; unsigned int sv = p->lex.column;
-      if (sv == 0) { buf[n++] = '0'; } else { while (sv > 0) { buf[n++] = '0' + sv % 10; sv /= 10; } }
-      for (int j = n-1; j >= 0; j--) nslog_append(&buf[j], 1); }
-    nslog_append(" msg=", 5);
-    nslog_append(p->error_msg, cstr_len(p->error_msg));
-    nslog_append("\n", 1);
 }
 
 static void parser_init(Parser *p, const char *source, unsigned int length) {
@@ -805,6 +778,52 @@ static void parser_error(Parser *p, const char *msg) {
         buf[pos] = '\0';
         cstr_copy(p->error_msg, buf, OBJC_INTERP_ERROR_SIZE);
     }
+}
+
+/* Copy an identifier into a fixed-size field, raising a parser error if
+ * the identifier does not fit. Silent truncation is a correctness hazard:
+ * later table lookups compare the full source name against the truncated
+ * stored copy and miss. `kind` is a short noun ("class", "super",
+ * "property", "ivar", "argument", "variable") used in the error message. */
+static int copy_identifier_or_error(Parser *p, char *dst, const char *src,
+                                    unsigned int capacity, const char *kind) {
+    char buf[OBJC_INTERP_ERROR_SIZE];
+    unsigned int pos = 0;
+    const char *prefix;
+    unsigned int pi;
+    unsigned int max_chars;
+    if (cstr_copy_checked(dst, src, capacity) == 0) return 0;
+    /* Truncation: format "<kind> name too long (max N): '<truncated>...'" */
+    max_chars = capacity > 0 ? capacity - 1 : 0;
+    prefix = kind ? kind : "identifier";
+    pi = 0;
+    while (prefix[pi] != '\0' && pos < sizeof(buf) - 1) buf[pos++] = prefix[pi++];
+    {
+        const char *suffix = " name too long (max ";
+        pi = 0;
+        while (suffix[pi] != '\0' && pos < sizeof(buf) - 1) buf[pos++] = suffix[pi++];
+    }
+    {
+        unsigned int n = max_chars;
+        char digits[10];
+        int dcount = 0;
+        if (n == 0) digits[dcount++] = '0';
+        while (n > 0 && dcount < 10) { digits[dcount++] = '0' + (n % 10); n /= 10; }
+        while (dcount > 0 && pos < sizeof(buf) - 1) buf[pos++] = digits[--dcount];
+    }
+    {
+        const char *mid = "): '";
+        pi = 0;
+        while (mid[pi] != '\0' && pos < sizeof(buf) - 1) buf[pos++] = mid[pi++];
+    }
+    pi = 0;
+    while (dst[pi] != '\0' && pos < sizeof(buf) - 5) buf[pos++] = dst[pi++];
+    if (pos < sizeof(buf) - 5) {
+        buf[pos++] = '.'; buf[pos++] = '.'; buf[pos++] = '.'; buf[pos++] = '\'';
+    }
+    buf[pos] = '\0';
+    parser_error(p, buf);
+    return 1;
 }
 
 /* ── Variable table ─────────────────────────────────────────────── */
@@ -2483,9 +2502,21 @@ static Value format_values_to_pool(const char *fmt, Value *args, int arg_count) 
             cstr_copy(part_buf, parser_current(p).text, OBJC_INTERP_MAX_TOKEN);
             part_len = cstr_len(part_buf);
 
+            /* Reserve room for this part plus a possible ':' and the null
+             * terminator. Without this guard, a long selector silently
+             * overflows sel_name[256]: the cstr_copy below bounds the byte
+             * write, but `sel_len += part_len` advances by the untruncated
+             * length, and the next `sel_name[sel_len] = ':'` then indexes
+             * past the buffer. */
+            if (sel_len + part_len + 2 > sizeof(sel_name)) {
+                sel_name[sel_len] = '\0';
+                parser_error(p, "selector name too long (max 254 chars)");
+                return value_void();
+            }
+
             /* Append selector component (no extra colon — the colon
-             * after each keyword part is added below at line 904) */
-            cstr_copy(sel_name + sel_len, part_buf, 256 - sel_len);
+             * after each keyword part is added below) */
+            cstr_copy(sel_name + sel_len, part_buf, sizeof(sel_name) - sel_len);
             sel_len += part_len;
 
             parser_advance(p);
@@ -2494,7 +2525,8 @@ static Value format_values_to_pool(const char *fmt, Value *args, int arg_count) 
             if (parser_current(p).type == TOK_COLON) {
                 parser_advance(p); /* consume : */
 
-                /* Replace the last part of the selector name to add : */
+                /* Append ':' to the selector. Bounded: the guard above
+                 * already reserved room for the colon and null. */
                 sel_name[sel_len] = ':';
                 sel_len++;
                 sel_name[sel_len] = '\0';
@@ -2601,7 +2633,13 @@ static Value format_values_to_pool(const char *fmt, Value *args, int arg_count) 
                 unsigned int name_len = cstr_len(target_class_name);
                 unsigned int needed = 6 + name_len + 1;
                 char *buf = string_pool_alloc(needed);
-                if (buf == 0) return value_from_id((id)"FDObj:overflow");
+                if (buf == 0) {
+                    /* String pool exhausted. Returning a literal sentinel
+                     * here would be misinterpreted by downstream FDObj:
+                     * checks as a Foundation object of class "overflow". */
+                    parser_error(p, "string pool exhausted ([alloc])");
+                    return value_void();
+                }
                 cstr_copy(buf, "FDObj:", needed);
                 cstr_copy(buf + 6, target_class_name, needed - 6);
                 return value_from_id((id)buf);
@@ -2615,12 +2653,48 @@ static Value format_values_to_pool(const char *fmt, Value *args, int arg_count) 
                 unsigned int name_len = cstr_len(target_class_name);
                 unsigned int needed = 6 + name_len + 1;
                 char *buf = string_pool_alloc(needed);
-                if (buf == 0) return value_from_id((id)"FDObj:overflow");
+                if (buf == 0) {
+                    parser_error(p, "string pool exhausted ([new])");
+                    return value_void();
+                }
                 cstr_copy(buf, "FDObj:", needed);
                 cstr_copy(buf + 6, target_class_name, needed - 6);
                 return value_from_id((id)buf);
             }
             return value_from_id((id)0);
+        }
+
+        /* ── Interpreter method dispatch for custom classes ─────────
+         * For FDObj: markers of custom (non-Foundation) classes, check
+         * interpreter-registered methods BEFORE built-in dispatch.
+         * Foundation classes (NSString, NSNumber, NSArray, NSDictionary,
+         * NSSet, NSData, NSObject) use built-in dispatch exclusively.
+         * Custom classes may override built-in selectors (e.g., init,
+         * count, description) with @implementation methods.
+         * When target_is_super is set, skip this dispatch to avoid
+         * infinite recursion (super calls should fall through to
+         * built-in NSObject dispatch). */
+        if (!target_is_super &&
+            target.is_id && receiver != 0 &&
+            is_string_pool_pointer(receiver) &&
+            cstr_starts((const char *)receiver, "FDObj:")) {
+            const char *recv_cls = ((const char *)receiver) + 6;
+            int is_foundation = (cstr_eq(recv_cls, "NSString") ||
+                                 cstr_eq(recv_cls, "NSNumber") ||
+                                 cstr_eq(recv_cls, "NSArray") ||
+                                 cstr_eq(recv_cls, "NSMutableArray") ||
+                                 cstr_eq(recv_cls, "NSDictionary") ||
+                                 cstr_eq(recv_cls, "NSMutableDictionary") ||
+                                 cstr_eq(recv_cls, "NSSet") ||
+                                 cstr_eq(recv_cls, "NSData") ||
+                                 cstr_eq(recv_cls, "NSObject"));
+            if (!is_foundation) {
+                unsigned int mi = find_interpreter_method(sel, target, receiver, 0);
+                if (mi < g_method_count) {
+                    return execute_interpreter_method(p, &g_methods[mi], sel, receiver,
+                                                      keyword_args, arg_count, 1);
+                }
+            }
         }
 
         /* Built-in: [obj init] → return self (standard NSObject pattern) */
@@ -4080,6 +4154,7 @@ static Value format_values_to_pool(const char *fmt, Value *args, int arg_count) 
                 return execute_interpreter_method(p, &g_methods[mi], sel, receiver,
                                                   keyword_args, arg_count, 1);
             }
+            /* Method not found — fall through to property dispatch and built-ins */
         }
 
         /* ── Property dispatch (via instance variable side table) ──────
@@ -4207,7 +4282,9 @@ static Value parse_interface(Parser *p) {
         parser_error(p, "Expected class name after @interface");
         return value_void();
     }
-    cstr_copy(class_name, parser_current(p).text, 64);
+    if (copy_identifier_or_error(p, class_name, parser_current(p).text, 64, "class")) {
+        return value_void();
+    }
     parser_advance(p);
 
     /* Idempotency guard: if this class is already registered, skip
@@ -4237,7 +4314,9 @@ static Value parse_interface(Parser *p) {
     if (parser_current(p).type == TOK_COLON) {
         parser_advance(p);
         if (parser_current(p).type == TOK_IDENTIFIER) {
-            cstr_copy(super_name, parser_current(p).text, 64);
+            if (copy_identifier_or_error(p, super_name, parser_current(p).text, 64, "superclass")) {
+                return value_void();
+            }
             parser_advance(p);
             /* Look up the superclass in our variable table first,
              * then fall back to the runtime */
@@ -4314,13 +4393,17 @@ static Value parse_interface(Parser *p) {
                     continue;
                 }
                 PropertyDecl *prop = &g_properties[g_property_count];
-                cstr_copy(prop->type_name, parser_current(p).text, 64);
+                if (copy_identifier_or_error(p, prop->type_name, parser_current(p).text, 64, "property type")) {
+                    return value_void();
+                }
                 prop->is_int = cstr_eq(prop->type_name, "int") ||
                                cstr_eq(prop->type_name, "NSInteger") ||
                                cstr_eq(prop->type_name, "NSUInteger") ||
                                cstr_eq(prop->type_name, "BOOL") ||
                                cstr_eq(prop->type_name, "long") ||
                                cstr_eq(prop->type_name, "char");
+                /* class_name is already validated via copy_identifier_or_error
+                 * earlier in parse_interface; cstr_copy is sufficient here. */
                 cstr_copy(prop->class_name, class_name, 64);
                 parser_advance(p);
 
@@ -4331,7 +4414,9 @@ static Value parse_interface(Parser *p) {
 
                 /* Property name */
                 if (parser_current(p).type == TOK_IDENTIFIER) {
-                    cstr_copy(prop->name, parser_current(p).text, 64);
+                    if (copy_identifier_or_error(p, prop->name, parser_current(p).text, 64, "property")) {
+                        return value_void();
+                    }
                     parser_advance(p);
                     g_property_count++;
                 }
@@ -4514,7 +4599,9 @@ static Value parse_implementation(Parser *p) {
         parser_error(p, "Expected class name after @implementation");
         return value_void();
     }
-    cstr_copy(class_name, parser_current(p).text, 64);
+    if (copy_identifier_or_error(p, class_name, parser_current(p).text, 64, "class")) {
+        return value_void();
+    }
     parser_advance(p);
 
     cls = (Class)objc_getClass(class_name);
@@ -4571,7 +4658,9 @@ static Value parse_implementation(Parser *p) {
                    parser_current(p).type != TOK_EOF) {
                 if (parser_current(p).type == TOK_IDENTIFIER) {
                     char prop_name[64];
-                    cstr_copy(prop_name, parser_current(p).text, 64);
+                    if (copy_identifier_or_error(p, prop_name, parser_current(p).text, 64, "property")) {
+                        return value_void();
+                    }
                     parser_advance(p);
 
                     /* Parse = _ivar — store the ivar name for method body access */
@@ -4579,7 +4668,9 @@ static Value parse_implementation(Parser *p) {
                         parser_advance(p);
                         if (parser_current(p).type == TOK_IDENTIFIER) {
                             char ivar_name[64];
-                            cstr_copy(ivar_name, parser_current(p).text, 64);
+                            if (copy_identifier_or_error(p, ivar_name, parser_current(p).text, 64, "ivar")) {
+                                return value_void();
+                            }
                             parser_advance(p);
                             /* Store ivar name in the property declaration */
                             {
@@ -4718,7 +4809,9 @@ static Value parse_implementation(Parser *p) {
 
                 /* Capture argument name */
                 if (parser_current(p).type == TOK_IDENTIFIER && arg_count < 8) {
-                    cstr_copy(arg_names[arg_count], parser_current(p).text, 64);
+                    if (copy_identifier_or_error(p, arg_names[arg_count], parser_current(p).text, 64, "argument")) {
+                        return value_void();
+                    }
                     arg_count++;
                     parser_advance(p);
                 }
@@ -5003,74 +5096,287 @@ static Value parse_primary(Parser *p) {
         }
     }
 
-    /* Numeric object literals: @42, @3.14, @YES, @NO */
+    /* @-literal dispatch: @42, @3.14, @YES, @NO, @(expr), @[array], @{dict}
+     * The lexer tokenizes '@' as TOK_AT_KEYWORD with text "@".
+     * The next token after '@' determines the literal type.
+     * IMPORTANT: We consume '@' exactly ONCE here, then dispatch
+     * based on the following token. Previous code had a separate
+     * numeric literal handler that consumed '@' and fell through
+     * without restoring parser state, causing the @-literal
+     * handler to skip a token.
+     * NOTE: The lexer reads @YES/@NO/@TRUE/@FALSE as single
+     * TOK_AT_KEYWORD tokens with text "@YES"/"@NO"/"@TRUE"/"@FALSE".
+     * We handle those as special cases before the generic dispatch. */
+    if (tok.type == TOK_AT_KEYWORD && (cstr_eq(tok.text, "@YES") || cstr_eq(tok.text, "@TRUE"))) {
+        /* @YES / @TRUE → NSNumber numberWithBool:YES
+         * Uses the same marker format as the built-in numberWithBool: handler. */
+        parser_advance(p); /* consume @YES/@TRUE */
+        {
+            char *buf = string_pool_alloc(14);
+            if (buf == 0) return value_from_int(1);
+            cstr_copy(buf, "NSNumber:", 14);
+            buf[9] = '1';
+            buf[10] = '\0';
+            return value_from_id((id)buf);
+        }
+    }
+    if (tok.type == TOK_AT_KEYWORD && (cstr_eq(tok.text, "@NO") || cstr_eq(tok.text, "@FALSE"))) {
+        /* @NO / @FALSE → NSNumber numberWithBool:NO
+         * Uses the same marker format as the built-in numberWithBool: handler. */
+        parser_advance(p); /* consume @NO/@FALSE */
+        {
+            char *buf = string_pool_alloc(14);
+            if (buf == 0) return value_from_int(0);
+            cstr_copy(buf, "NSNumber:", 14);
+            buf[9] = '0';
+            buf[10] = '\0';
+            return value_from_id((id)buf);
+        }
+    }
     if (tok.type == TOK_AT_KEYWORD && cstr_eq(tok.text, "@")) {
-        parser_advance(p); /* consume @ first */
-        Token next = parser_current(p);
-        if (next.type == TOK_INT_LITERAL) {
+        parser_advance(p); /* consume '@' */
+        Token after_at = parser_current(p);
+
+        if (after_at.type == TOK_INT_LITERAL) {
+            /* @42 — numeric object literal → NSNumber marker */
             Value num_val = parse_primary(p); /* parse the integer */
             if (num_val.is_int) {
-                /* Convert to [NSNumber numberWithInt:value] */
-                unsigned int i;
-                InterpVar *num_var = 0;
-                /* Find or create NSNumber in Foundation */
-                for (i = 0; i < g_var_count; i++) {
-                    if (cstr_eq(g_vars[i].name, "NSNumber") && g_vars[i].is_class) {
-                        num_var = &g_vars[i];
-                        break;
+                /* Create NSNumber marker: "NSNumber:<int_value>"
+                 * Same format as the built-in numberWithInt: handler. */
+                char *buf = string_pool_alloc(64);
+                if (buf != 0) {
+                    int v = num_val.int_val;
+                    cstr_copy(buf, "NSNumber:", 64);
+                    {
+                        /* Convert int to string and append */
+                        char tmp[20];
+                        int tpos = 0;
+                        int neg = 0;
+                        unsigned int blen;
+                        if (v < 0) { neg = 1; v = -v; }
+                        if (v == 0) tmp[tpos++] = '0';
+                        else { while (v > 0) { tmp[tpos++] = '0' + (v % 10); v /= 10; } }
+                        blen = (unsigned int)cstr_len(buf);
+                        if (neg && blen < 63) buf[blen++] = '-';
+                        while (tpos > 0 && blen < 63) buf[blen++] = tmp[--tpos];
+                        buf[blen] = '\0';
                     }
-                }
-                if (!num_var) {
-                    /* Create NSNumber class variable */
-                    num_var = interp_get_or_create_var("NSNumber");
-                    if (num_var) {
-                        num_var->is_class = 1;
-                        num_var->cls = (Class)objc_lookUpClass("NSNumber");
-                    }
-                }
-                if (num_var && num_var->cls) {
-                    /* Dispatch [NSNumber numberWithInt:value] */
-                    SEL sel = sel_registerName("numberWithInt:");
-                    Value method_target = value_from_id((id)num_var->cls);
-                    unsigned int mi = find_interpreter_method(sel, method_target, (id)num_var->cls, 1);
-                    if (mi < g_method_count) {
-                        Value args[1] = { num_val };
-                        return execute_interpreter_method(p, &g_methods[mi], sel, (id)num_var->cls, args, 1, 0);
-                    }
+                    return value_from_id((id)buf);
                 }
             }
             return num_val;
-        } else if (next.type == TOK_FLOAT_LITERAL) {
+        } else if (after_at.type == TOK_FLOAT_LITERAL) {
+            /* @3.14 — numeric object literal → NSFloat marker */
             Value num_val = parse_primary(p); /* parse the float */
             if (num_val.is_float) {
-                /* Convert to [NSNumber numberWithDouble:value] */
-                unsigned int i;
-                InterpVar *num_var = 0;
-                for (i = 0; i < g_var_count; i++) {
-                    if (cstr_eq(g_vars[i].name, "NSNumber") && g_vars[i].is_class) {
-                        num_var = &g_vars[i];
-                        break;
+                /* Create NSFloat marker: "NSFloat:<float_value>"
+                 * Same format as the built-in numberWithDouble: handler. */
+                char *buf = string_pool_alloc(64);
+                if (buf != 0) {
+                    cstr_copy(buf, "NSFloat:", 64);
+                    {
+                        /* Convert float to string and append */
+                        char tmp[32];
+                        int tpos = 0;
+                        double v = num_val.float_val;
+                        int neg = 0;
+                        unsigned int blen;
+                        unsigned int ipart;
+                        double fpart;
+                        if (v < 0) { neg = 1; v = -v; }
+                        ipart = (unsigned int)v;
+                        fpart = v - (double)ipart;
+                        if (neg && cstr_len(buf) < 63) { blen = (unsigned int)cstr_len(buf); buf[blen++] = '-'; }
+                        /* Integer part */
+                        if (ipart == 0) tmp[tpos++] = '0';
+                        else { unsigned int n = ipart; while (n > 0) { tmp[tpos++] = '0' + (n % 10); n /= 10; } }
+                        blen = (unsigned int)cstr_len(buf);
+                        while (tpos > 0 && blen < 63) buf[blen++] = tmp[--tpos];
+                        /* Decimal part */
+                        if (fpart > 0.0 && blen < 62) {
+                            buf[blen++] = '.';
+                            {
+                                int digits = 0;
+                                while (fpart > 0.0 && digits < 6 && blen < 63) {
+                                    fpart *= 10.0;
+                                    int d = (int)fpart;
+                                    buf[blen++] = '0' + d;
+                                    fpart -= (double)d;
+                                    digits++;
+                                }
+                            }
+                        }
+                        buf[blen] = '\0';
                     }
-                }
-                if (!num_var) {
-                    num_var = interp_get_or_create_var("NSNumber");
-                    if (num_var) {
-                        num_var->is_class = 1;
-                        num_var->cls = (Class)objc_lookUpClass("NSNumber");
-                    }
-                }
-                if (num_var && num_var->cls) {
-                    SEL sel = sel_registerName("numberWithDouble:");
-                    Value method_target = value_from_id((id)num_var->cls);
-                    unsigned int mi = find_interpreter_method(sel, method_target, (id)num_var->cls, 1);
-                    if (mi < g_method_count) {
-                        Value args[1] = { num_val };
-                        return execute_interpreter_method(p, &g_methods[mi], sel, (id)num_var->cls, args, 1, 0);
-                    }
+                    return value_from_id((id)buf);
                 }
             }
             return num_val;
+        } else if (after_at.type == TOK_OPEN_PAREN) {
+            /* @(expr) boxed expression */
+            parser_advance(p); /* consume ( */
+            {
+                Value expr_val = parse_expression(p);
+                parser_expect(p, TOK_CLOSE_PAREN);
+                if (p->error) return value_void();
+                if (expr_val.is_int) {
+                    /* Create NSNumber marker: "NSNumber:<int_value>" */
+                    char *buf = string_pool_alloc(64);
+                    if (buf != 0) {
+                        int v = expr_val.int_val;
+                        cstr_copy(buf, "NSNumber:", 64);
+                        {
+                            char tmp[20];
+                            int tpos = 0;
+                            int neg = 0;
+                            unsigned int blen;
+                            if (v < 0) { neg = 1; v = -v; }
+                            if (v == 0) tmp[tpos++] = '0';
+                            else { while (v > 0) { tmp[tpos++] = '0' + (v % 10); v /= 10; } }
+                            blen = (unsigned int)cstr_len(buf);
+                            if (neg && blen < 63) buf[blen++] = '-';
+                            while (tpos > 0 && blen < 63) buf[blen++] = tmp[--tpos];
+                            buf[blen] = '\0';
+                        }
+                        return value_from_id((id)buf);
+                    }
+                    return expr_val;
+                } else if (expr_val.is_float) {
+                    /* Create NSFloat marker: "NSFloat:<float_value>" */
+                    char *buf = string_pool_alloc(64);
+                    if (buf != 0) {
+                        cstr_copy(buf, "NSFloat:", 64);
+                        {
+                            char tmp[32];
+                            int tpos = 0;
+                            double v = expr_val.float_val;
+                            int neg = 0;
+                            unsigned int blen;
+                            unsigned int ipart;
+                            double fpart;
+                            if (v < 0) { neg = 1; v = -v; }
+                            ipart = (unsigned int)v;
+                            fpart = v - (double)ipart;
+                            if (neg && cstr_len(buf) < 63) { blen = (unsigned int)cstr_len(buf); buf[blen++] = '-'; }
+                            if (ipart == 0) tmp[tpos++] = '0';
+                            else { unsigned int n = ipart; while (n > 0) { tmp[tpos++] = '0' + (n % 10); n /= 10; } }
+                            blen = (unsigned int)cstr_len(buf);
+                            while (tpos > 0 && blen < 63) buf[blen++] = tmp[--tpos];
+                            if (fpart > 0.0 && blen < 62) {
+                                buf[blen++] = '.';
+                                {
+                                    int digits = 0;
+                                    while (fpart > 0.0 && digits < 6 && blen < 63) {
+                                        fpart *= 10.0;
+                                        int d = (int)fpart;
+                                        buf[blen++] = '0' + d;
+                                        fpart -= (double)d;
+                                        digits++;
+                                    }
+                                }
+                            }
+                            buf[blen] = '\0';
+                        }
+                        return value_from_id((id)buf);
+                    }
+                    return expr_val;
+                } else if (expr_val.is_id || expr_val.is_class) {
+                    return expr_val;
+                }
+                return expr_val;
+            }
+        } else if (after_at.type == TOK_OPEN_BRACKET) {
+            /* @[ ... ] array literal */
+            parser_advance(p); /* consume [ */
+            {
+                Value objects[64];
+                unsigned int obj_count = 0;
+                InterpVar *arr_var = 0;
+                unsigned int i;
+                if (parser_current(p).type != TOK_CLOSE_BRACKET) {
+                    objects[obj_count++] = parse_expression_safe(p);
+                    while (parser_current(p).type == TOK_COMMA && obj_count < 64) {
+                        parser_advance(p);
+                        objects[obj_count++] = parse_expression_safe(p);
+                    }
+                }
+                if (parser_current(p).type == TOK_CLOSE_BRACKET) {
+                    parser_advance(p);
+                }
+                for (i = 0; i < g_var_count; i++) {
+                    if (cstr_eq(g_vars[i].name, "NSMutableArray") && g_vars[i].is_class) {
+                        arr_var = &g_vars[i];
+                        break;
+                    }
+                }
+                if (!arr_var) {
+                    arr_var = interp_get_or_create_var("NSMutableArray");
+                    if (arr_var) {
+                        arr_var->is_class = 1;
+                        arr_var->cls = (Class)objc_lookUpClass("NSMutableArray");
+                    }
+                }
+                if (arr_var && arr_var->cls) {
+                    /* Create array directly using collection side table,
+                     * not via interpreter method dispatch (which won't find
+                     * the built-in "array" class method). */
+                    unsigned int arr_cid = g_next_coll_id++;
+                    Value arr = value_from_id(coll_make_marker("NSMutArr:", arr_cid));
+                    for (i = 0; i < obj_count; i++) {
+                        coll_add(arr_cid, objects[i], value_from_int(0));
+                    }
+                    return arr;
+                }
+            }
+            return value_void();
+        } else if (after_at.type == TOK_OPEN_BRACE) {
+            /* @{ ... } dictionary literal */
+            parser_advance(p); /* consume { */
+            {
+                InterpVar *dict_var = 0;
+                unsigned int i;
+                for (i = 0; i < g_var_count; i++) {
+                    if (cstr_eq(g_vars[i].name, "NSMutableDictionary") && g_vars[i].is_class) {
+                        dict_var = &g_vars[i];
+                        break;
+                    }
+                }
+                if (!dict_var) {
+                    dict_var = interp_get_or_create_var("NSMutableDictionary");
+                    if (dict_var) {
+                        dict_var->is_class = 1;
+                        dict_var->cls = (Class)objc_lookUpClass("NSMutableDictionary");
+                    }
+                }
+                if (dict_var && dict_var->cls) {
+                    /* Create dictionary directly using collection side table,
+                     * not via interpreter method dispatch (which won't find
+                     * the built-in "dictionary" class method). */
+                    unsigned int cid = g_next_coll_id++;
+                    Value dict = value_from_id(coll_make_marker("NSMutDict:", cid));
+                    while (parser_current(p).type != TOK_CLOSE_BRACE && parser_current(p).type != TOK_EOF) {
+                        Value key, value;
+                        key = parse_expression_safe(p);
+                        if (parser_current(p).type == TOK_COLON) {
+                            parser_advance(p);
+                            value = parse_expression_safe(p);
+                            /* Add key-value pair directly to collection
+                             * side table (bypass interpreter method dispatch). */
+                            coll_add(cid, key, value);
+                        }
+                        if (parser_current(p).type == TOK_COMMA) {
+                            parser_advance(p);
+                        }
+                    }
+                    parser_expect(p, TOK_CLOSE_BRACE);
+                    return dict;
+                }
+            }
+            return value_void();
         }
+        /* @ not followed by int, float, (, [, or { — fall through to error */
+        parser_error(p, "Unexpected '@' (expected @number, @(...), @[...], or @{...})");
+        return value_void();
     }
 
     /* @selector() expression */
@@ -5113,242 +5419,6 @@ static Value parse_primary(Parser *p) {
             }
         }
         return value_void();
-    }
-
-    /* @(expr) boxed expression: @(42), @(YES), @(3.14), @(someVar) */
-    if (tok.type == TOK_AT_KEYWORD && cstr_eq(tok.text, "@")) {
-        /* DEBUG: log @ token context */
-        nslog_append("DBG @ handler: tok=@ line=", 27);
-        { char buf[16]; int n = 0; unsigned int sv = p->lex.line;
-          if (sv == 0) { buf[n++] = '0'; } else { while (sv > 0) { buf[n++] = '0' + sv % 10; sv /= 10; } }
-          for (int j = n-1; j >= 0; j--) nslog_append(&buf[j], 1); }
-        nslog_append(" col=", 5);
-        { char buf[16]; int n = 0; unsigned int sv = p->lex.column;
-          if (sv == 0) { buf[n++] = '0'; } else { while (sv > 0) { buf[n++] = '0' + sv % 10; sv /= 10; } }
-          for (int j = n-1; j >= 0; j--) nslog_append(&buf[j], 1); }
-        nslog_append("\n", 1);
-        /* Look ahead to see if next token is ( — don't consume @ yet
-         * because @[array] and @{dict} handlers also need it. */
-        Token saved = p->lex.current;
-        unsigned int saved_pos = p->lex.pos;
-        parser_advance(p); /* peek past @ */
-        if (parser_current(p).type == TOK_OPEN_PAREN) {
-            Value expr_val;
-            parser_advance(p); /* consume ( */
-            expr_val = parse_expression(p);
-            parser_expect(p, TOK_CLOSE_PAREN);
-            if (p->error) return value_void();
-            /* Box the result as NSNumber */
-            if (expr_val.is_int) {
-                unsigned int i;
-                InterpVar *num_var = 0;
-                for (i = 0; i < g_var_count; i++) {
-                    if (cstr_eq(g_vars[i].name, "NSNumber") && g_vars[i].is_class) {
-                        num_var = &g_vars[i];
-                        break;
-                    }
-                }
-                if (!num_var) {
-                    num_var = interp_get_or_create_var("NSNumber");
-                    if (num_var) {
-                        num_var->is_class = 1;
-                        num_var->cls = (Class)objc_lookUpClass("NSNumber");
-                    }
-                }
-                if (num_var && num_var->cls) {
-                    SEL sel = sel_registerName("numberWithInt:");
-                    Value method_target = value_from_id((id)num_var->cls);
-                    unsigned int mi = find_interpreter_method(sel, method_target, (id)num_var->cls, 1);
-                    if (mi < g_method_count) {
-                        Value args[1] = { expr_val };
-                        return execute_interpreter_method(p, &g_methods[mi], sel, (id)num_var->cls, args, 1, 0);
-                    }
-                }
-            } else if (expr_val.is_float) {
-                unsigned int i;
-                InterpVar *num_var = 0;
-                for (i = 0; i < g_var_count; i++) {
-                    if (cstr_eq(g_vars[i].name, "NSNumber") && g_vars[i].is_class) {
-                        num_var = &g_vars[i];
-                        break;
-                    }
-                }
-                if (!num_var) {
-                    num_var = interp_get_or_create_var("NSNumber");
-                    if (num_var) {
-                        num_var->is_class = 1;
-                        num_var->cls = (Class)objc_lookUpClass("NSNumber");
-                    }
-                }
-                if (num_var && num_var->cls) {
-                    SEL sel = sel_registerName("numberWithDouble:");
-                    Value method_target = value_from_id((id)num_var->cls);
-                    unsigned int mi = find_interpreter_method(sel, method_target, (id)num_var->cls, 1);
-                    if (mi < g_method_count) {
-                        Value args[1] = { expr_val };
-                        return execute_interpreter_method(p, &g_methods[mi], sel, (id)num_var->cls, args, 1, 0);
-                    }
-                }
-            } else if (expr_val.is_id || expr_val.is_class) {
-                /* Already an object, return as-is (or wrap in NSValue if needed) */
-                return expr_val;
-            }
-            return expr_val;
-        }
-        /* If not @(, restore parser position — the @ was not consumed.
-         * The @[array] and @{dict} handlers below will handle it. */
-        p->lex.current = saved;
-        p->lex.pos = saved_pos;
-    }
-
-    /* @[ ... ] array literal */
-    if (tok.type == TOK_AT_KEYWORD && cstr_eq(tok.text, "@")) {
-        /* Look ahead: advance past @ to see if next token is [ */
-        Token saved = p->lex.current;
-        unsigned int saved_pos = p->lex.pos;
-        parser_advance(p); /* peek past @ */
-        if (parser_current(p).type == TOK_OPEN_BRACKET) {
-            parser_advance(p); /* consume [ */
-            {
-                Value objects[64];
-                unsigned int obj_count = 0;
-                InterpVar *arr_var = 0;
-                unsigned int i;
-                /* Parse comma-separated expressions */
-                if (parser_current(p).type != TOK_CLOSE_BRACKET) {
-                    objects[obj_count++] = parse_expression_safe(p);
-                    while (parser_current(p).type == TOK_COMMA && obj_count < 64) {
-                        parser_advance(p);
-                        objects[obj_count++] = parse_expression_safe(p);
-                    }
-                }
-                parser_expect(p, TOK_CLOSE_BRACKET);
-                if (p->error) return value_void();
-                /* Create NSMutableArray */
-                for (i = 0; i < g_var_count; i++) {
-                    if (cstr_eq(g_vars[i].name, "NSMutableArray") && g_vars[i].is_class) {
-                        arr_var = &g_vars[i];
-                        break;
-                    }
-                }
-                if (!arr_var) {
-                    arr_var = interp_get_or_create_var("NSMutableArray");
-                    if (arr_var) {
-                        arr_var->is_class = 1;
-                        arr_var->cls = (Class)objc_lookUpClass("NSMutableArray");
-                    }
-                }
-                if (arr_var && arr_var->cls) {
-                    /* [NSMutableArray array] */
-                    SEL sel_alloc = sel_registerName("array");
-                    Value arr_target = value_from_id((id)arr_var->cls);
-                    unsigned int mi = find_interpreter_method(sel_alloc, arr_target, (id)arr_var->cls, 0);
-                    Value arr;
-                    if (mi < g_method_count) {
-                        arr = execute_interpreter_method(p, &g_methods[mi], sel_alloc, (id)arr_var->cls, 0, 0, 0);
-                    } else {
-                        arr = value_from_id(0);
-                    }
-                    /* Add objects */
-                    {
-                        SEL sel_add = sel_registerName("addObject:");
-                        unsigned int j;
-                        for (j = 0; j < obj_count; j++) {
-                            unsigned int mi2 = find_interpreter_method(sel_add, arr, arr.obj_val, 1);
-                            if (mi2 < g_method_count) {
-                                Value args[1] = { objects[j] };
-                                execute_interpreter_method(p, &g_methods[mi2], sel_add, arr.obj_val, args, 1, 0);
-                            }
-                        }
-                    }
-                    return arr;
-                }
-            }
-            return value_void();
-        }
-        /* Not @[ — restore parser position */
-        p->lex.current = saved;
-        p->lex.pos = saved_pos;
-    }
-
-    /* @{ ... } dictionary literal */
-    if (tok.type == TOK_AT_KEYWORD && cstr_eq(tok.text, "@")) {
-        /* Look ahead: advance past @ to see if next token is { */
-        Token saved = p->lex.current;
-        unsigned int saved_pos = p->lex.pos;
-        parser_advance(p); /* peek past @ */
-        /* DEBUG: log what we see after @ */
-        {
-            Token cur = parser_current(p);
-            nslog_append("DBG @{ check: next type=", 25);
-            { char buf[16]; int n = 0; int sv = (int)cur.type;
-              if (sv < 0) { nslog_append("-", 1); sv = -sv; }
-              if (sv == 0) { buf[n++] = '0'; } else { while (sv > 0) { buf[n++] = '0' + sv % 10; sv /= 10; } }
-              for (int j = n-1; j >= 0; j--) nslog_append(&buf[j], 1); }
-            nslog_append(" text=\"", 7);
-            nslog_append(cur.text, cstr_len(cur.text));
-            nslog_append("\"\n", 2);
-        }
-        if (parser_current(p).type == TOK_OPEN_BRACE) {
-            parser_advance(p); /* consume { */
-            {
-                InterpVar *dict_var = 0;
-                unsigned int i;
-                /* Create NSMutableDictionary */
-                for (i = 0; i < g_var_count; i++) {
-                    if (cstr_eq(g_vars[i].name, "NSMutableDictionary") && g_vars[i].is_class) {
-                        dict_var = &g_vars[i];
-                        break;
-                    }
-                }
-                if (!dict_var) {
-                    dict_var = interp_get_or_create_var("NSMutableDictionary");
-                    if (dict_var) {
-                        dict_var->is_class = 1;
-                        dict_var->cls = (Class)objc_lookUpClass("NSMutableDictionary");
-                    }
-                }
-                if (dict_var && dict_var->cls) {
-                    /* [NSMutableDictionary dictionary] */
-                    SEL sel_alloc = sel_registerName("dictionary");
-                    Value dict_target = value_from_id((id)dict_var->cls);
-                    unsigned int mi = find_interpreter_method(sel_alloc, dict_target, (id)dict_var->cls, 0);
-                    Value dict;
-                    if (mi < g_method_count) {
-                        dict = execute_interpreter_method(p, &g_methods[mi], sel_alloc, (id)dict_var->cls, 0, 0, 0);
-                    } else {
-                        dict = value_from_id(0);
-                    }
-                    /* Parse key: value pairs */
-                    while (parser_current(p).type != TOK_CLOSE_BRACE && parser_current(p).type != TOK_EOF) {
-                        Value key, value;
-                        key = parse_expression_safe(p);
-                        if (parser_current(p).type == TOK_COLON) {
-                            parser_advance(p);
-                            value = parse_expression_safe(p);
-                            /* [dict setObject:value forKey:key] */
-                            {
-                                SEL sel_set = sel_registerName("setObject:forKey:");
-                                unsigned int mi2 = find_interpreter_method(sel_set, dict, dict.obj_val, 2);
-                                if (mi2 < g_method_count) {
-                                    Value args[2] = { value, key };
-                                    execute_interpreter_method(p, &g_methods[mi2], sel_set, dict.obj_val, args, 2, 0);
-                                }
-                            }
-                        }
-                        if (parser_current(p).type == TOK_COMMA) {
-                            parser_advance(p);
-                        }
-                    }
-                    parser_expect(p, TOK_CLOSE_BRACE);
-                    return dict;
-                }
-            }
-            return value_void();
-        }
-        /* Not @{ — restore parser position */
-        p->lex.current = saved;
-        p->lex.pos = saved_pos;
     }
 
     /* Integer literal */
@@ -5502,7 +5572,9 @@ static Value parse_primary(Parser *p) {
                         return value_void();
                     }
 
-                    cstr_copy(prop_name, parser_current(p).text, 64);
+                    if (copy_identifier_or_error(p, prop_name, parser_current(p).text, 64, "property")) {
+                        return value_void();
+                    }
                     parser_advance(p);
 
                     /* Check for setter: obj.prop = value */
@@ -5997,8 +6069,11 @@ static Value parse_primary(Parser *p) {
                 /* Parameter name */
                 if (parser_current(p).type == TOK_IDENTIFIER) {
                     if (blk->arg_count < 8) {
-                        cstr_copy(blk->arg_names[blk->arg_count],
-                                  parser_current(p).text, 64);
+                        if (copy_identifier_or_error(p, blk->arg_names[blk->arg_count],
+                                                     parser_current(p).text, 64,
+                                                     "block argument")) {
+                            return value_void();
+                        }
                         blk->arg_count++;
                     }
                     parser_advance(p);
@@ -6153,17 +6228,6 @@ static Value parse_primary(Parser *p) {
     }
 
     parser_advance(p);
-    {
-        /* DEBUG: log the unexpected token */
-        nslog_append("DBG Unexpected token: type=", 28);
-        { char buf[16]; int n = 0; int sv = (int)tok.type;
-          if (sv < 0) { nslog_append("-", 1); sv = -sv; }
-          if (sv == 0) { buf[n++] = '0'; } else { while (sv > 0) { buf[n++] = '0' + sv % 10; sv /= 10; } }
-          for (int j = n-1; j >= 0; j--) nslog_append(&buf[j], 1); }
-        nslog_append(" text=\"", 7);
-        nslog_append(tok.text, cstr_len(tok.text));
-        nslog_append("\"\n", 2);
-    }
     parser_error(p, "Unexpected token");
     return value_void();
 }
@@ -6508,7 +6572,9 @@ static Value parse_type_and_var_decl(Parser *p) {
                 InterpVar *var;
                 Value init_val;
 
-                cstr_copy(var_name_buf, parser_current(p).text, 64);
+                if (copy_identifier_or_error(p, var_name_buf, parser_current(p).text, 64, "variable")) {
+                    return value_void();
+                }
                 parser_advance(p);
 
                 if (parser_current(p).type == TOK_CLOSE_PAREN) {
@@ -6597,7 +6663,9 @@ static Value parse_type_and_var_decl(Parser *p) {
         char var_name_buf[64];
         InterpVar *var;
         Value init_val;
-        cstr_copy(var_name_buf, parser_current(p).text, 64);
+        if (copy_identifier_or_error(p, var_name_buf, parser_current(p).text, 64, "variable")) {
+            return value_void();
+        }
         parser_advance(p);
 
         /* For static variables, check if one already exists (persistent across cells) */
@@ -7217,7 +7285,9 @@ static AstNode *parse_statement_ast(Parser *p) {
                     parser_advance(p);
                 }
                 if (parser_current(p).type == TOK_IDENTIFIER) {
-                    cstr_copy(for_in_var, parser_current(p).text, 64);
+                    if (copy_identifier_or_error(p, for_in_var, parser_current(p).text, 64, "for-in variable")) {
+                        return 0;
+                    }
                     parser_advance(p);
                     if (parser_current(p).type == TOK_IN) {
                         is_for_in = 1;
@@ -7617,25 +7687,6 @@ static Value eval_source_range(unsigned int start, unsigned int len,
     if (len == 0) {
         g_parse_depth = saved_parse_depth;
         return value_void();
-    }
-    /* DEBUG: log the source range being evaluated */
-    {
-        nslog_append("DBG eval_source_range: start=", 29);
-        { char buf[16]; int n = 0; unsigned int sv = start;
-          if (sv == 0) { buf[n++] = '0'; } else { while (sv > 0) { buf[n++] = '0' + sv % 10; sv /= 10; } }
-          for (int j = n-1; j >= 0; j--) nslog_append(&buf[j], 1); }
-        nslog_append(" len=", 5);
-        { char buf[16]; int n = 0; unsigned int sv = len;
-          if (sv == 0) { buf[n++] = '0'; } else { while (sv > 0) { buf[n++] = '0' + sv % 10; sv /= 10; } }
-          for (int j = n-1; j >= 0; j--) nslog_append(&buf[j], 1); }
-        nslog_append("\n", 1);
-        /* Print first 60 chars of source range */
-        {
-            unsigned int dl = len > 60 ? 60 : len;
-            nslog_append("  src: \"", 8);
-            nslog_append(source + start, dl);
-            nslog_append("\"\n", 2);
-        }
     }
     parser_init(&p, source + start, len);
     /* Parse all statements in the source range, not just the first one.
