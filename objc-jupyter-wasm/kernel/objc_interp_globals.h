@@ -38,8 +38,6 @@ extern unsigned int g_typedef_count; /* number of active typedefs */
 
 /* ── Method dispatch state ────────────────────────────────────── */
 
-extern int g_return_pending;        /* 1 after return statement */
-extern Value g_return_value;        /* value from return statement */
 extern MethodImpl g_methods[];      /* registered method implementations */
 extern unsigned int g_method_count; /* number of registered methods */
 
@@ -69,10 +67,5 @@ extern unsigned int g_next_block_id; /* next block ID */
 
 extern char g_string_pool[];         /* string literal + Foundation marker pool */
 extern unsigned int g_string_pool_offset; /* current write offset */
-
-/* ── Control flow ──────────────────────────────────────────────── */
-
-extern int g_break_pending;          /* 1 after break statement */
-extern int g_continue_pending;       /* 1 after continue statement */
 
 #endif /* OBJC_INTERP_GLOBALS_H */

@@ -447,14 +447,14 @@ Value parse_message_send(Parser *p) {
                         InterpVar *cmd_var = interp_get_or_create_var("_cmd");
                         if (cmd_var) { cmd_var->is_sel = 1; cmd_var->sel = perf_sel; }
                     }
-                    g_return_pending = 0;
+                    g_ctx.return_pending = 0;
                     {
                         Value v = eval_source_range(0, g_methods[mi].source_len, g_methods[mi].source, 0);
                         (void)v;
                     }
-                    return_val = g_return_value;
+                    return_val = g_ctx.return_value;
                     g_var_count = saved_var_count;
-                    g_return_pending = 0;
+                    g_ctx.return_pending = 0;
                     return return_val;
                 }
             }
@@ -1692,7 +1692,7 @@ Value parse_message_send(Parser *p) {
                             }
 
                             /* Execute the block body */
-                            g_return_pending = 0;
+                            g_ctx.return_pending = 0;
                             eval_source_range(0, blk->source_len, blk->source, 0);
 
                             /* Check stop flag */

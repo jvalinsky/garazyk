@@ -994,7 +994,7 @@ Value parse_primary(Parser *p) {
                             /* Execute the block body */
                             {
                                 Value result;
-                                g_return_pending = 0;
+                                g_ctx.return_pending = 0;
                                 result = eval_source_range(0, blk->source_len, blk->source, 0);
 
                                 /* Write back __block variables to original slots */
@@ -1021,7 +1021,7 @@ Value parse_primary(Parser *p) {
                                 }
 
                                 g_var_count = saved_var_count;
-                                g_return_pending = 0;
+                                g_ctx.return_pending = 0;
                                 /* Restore the block variable's value, which may
                                  * have been overwritten by captured variable
                                  * restoration (e.g., if the block was assigned
