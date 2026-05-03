@@ -344,11 +344,6 @@ Value format_values_to_pool(const char *fmt, Value *args, int arg_count) {
                         if (neg) fv = -fv;
                         unsigned long ipart = (unsigned long)fv;
                         double fpart = fv - (double)ipart;
-                        int sign_len = 0;
-                        if (neg) sign_len = 1;
-                        else if (flag_plus) sign_len = 1;
-                        else if (flag_space) sign_len = 1;
-
                         /* Write sign */
                         if (neg && pos < sizeof(buf)-1) buf[pos++] = '-';
                         else if (flag_plus && pos < sizeof(buf)-1) buf[pos++] = '+';
@@ -827,7 +822,8 @@ void objc_interp_gc_strings(void) {
         }
     }
 
-    /* Phase 2: Compact — move only unique live strings. */
+    /* Phase 2: Compact — move only unique live strings.
+     * Bounds check: if old_off is beyond pool_limit, skip it (stale pointer). */
     for (i = 0; i < reloc_count; i++) {
         unsigned int old = relocs[i].old_off;
         if (i > 0 && relocs[i - 1].old_off == old) {
@@ -835,8 +831,18 @@ void objc_interp_gc_strings(void) {
             continue;
         }
 
+        if (old >= pool_limit) {
+            /* Stale relocation — pointer was beyond used pool. Mark as dead. */
+            relocs[i].new_off = new_offset;
+            continue;
+        }
+
         {
             unsigned int len = cstr_len(g_string_pool + old) + 1;
+            /* Clamp length to remaining pool to prevent OOB read */
+            if (old + len > pool_limit) {
+                len = pool_limit - old;
+            }
             if (old != new_offset) {
                 memmove(g_string_pool + new_offset, g_string_pool + old, len);
             }
