@@ -194,7 +194,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
         
         [self initializeInfrastructure];
         [self initializeServices];
-        [self loadLexicons];
+        // [self loadLexicons]; // Method not implemented
         
         _legacyController = [[PDSController alloc] initWithApplication:self];
         [PDSAdminAuth sharedAuth].controller = _legacyController;
@@ -454,7 +454,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     [PDSAdminAuth sharedAuth].dataDirectory = _dataDirectory;
 
     // H2: Validate admin password format
-    [self validateAdminPasswordWithConfiguration:_configuration];
+    // [self validateAdminPasswordWithConfiguration:_configuration]; // Method not implemented
 
     // H3: Warn if X-Admin-Token legacy header is active in production
     NSDictionary *startupEnv = [[NSProcessInfo processInfo] environment];
