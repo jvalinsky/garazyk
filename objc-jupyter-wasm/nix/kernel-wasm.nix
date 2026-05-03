@@ -89,6 +89,20 @@ stdenv.mkDerivation {
       -c objc_interp_state.c \
       -o objc_interp_state.o
 
+    # Compile the class declaration / implementation parser
+    ${llvmPackages.clang-unwrapped}/bin/clang --target=wasm32-wasi \
+      -O2 \
+      --sysroot=${wasiSysroot} \
+      -I${libobjc2WasmFull}/include/objc \
+      -I. \
+      -Wall \
+      -Wextra \
+      -Wno-unused-parameter \
+      -Wno-unused-variable \
+      -Wno-unused-function \
+      -c objc_interp_class.c \
+      -o objc_interp_class.o
+
     # Compile the formatting / NSLog module
     ${llvmPackages.clang-unwrapped}/bin/clang --target=wasm32-wasi \
       -O2 \
@@ -102,6 +116,76 @@ stdenv.mkDerivation {
       -Wno-unused-function \
       -c objc_interp_format.c \
       -o objc_interp_format.o
+
+    # Compile the AST module
+    ${llvmPackages.clang-unwrapped}/bin/clang --target=wasm32-wasi \
+      -O2 \
+      --sysroot=${wasiSysroot} \
+      -I${libobjc2WasmFull}/include/objc \
+      -I. \
+      -Wall \
+      -Wextra \
+      -Wno-unused-parameter \
+      -Wno-unused-variable \
+      -Wno-unused-function \
+      -c objc_interp_ast.c \
+      -o objc_interp_ast.o
+
+    # Compile method dispatch and NSLog evaluation helpers
+    ${llvmPackages.clang-unwrapped}/bin/clang --target=wasm32-wasi \
+      -O2 \
+      --sysroot=${wasiSysroot} \
+      -I${libobjc2WasmFull}/include/objc \
+      -I. \
+      -Wall \
+      -Wextra \
+      -Wno-unused-parameter \
+      -Wno-unused-variable \
+      -Wno-unused-function \
+      -c objc_interp_dispatch.c \
+      -o objc_interp_dispatch.o
+
+    # Compile the parser module
+    ${llvmPackages.clang-unwrapped}/bin/clang --target=wasm32-wasi \
+      -O2 \
+      --sysroot=${wasiSysroot} \
+      -I${libobjc2WasmFull}/include/objc \
+      -I. \
+      -Wall \
+      -Wextra \
+      -Wno-unused-parameter \
+      -Wno-unused-variable \
+      -Wno-unused-function \
+      -c objc_interp_parser.c \
+      -o objc_interp_parser.o
+
+    # Compile the primary expression module
+    ${llvmPackages.clang-unwrapped}/bin/clang --target=wasm32-wasi \
+      -O2 \
+      --sysroot=${wasiSysroot} \
+      -I${libobjc2WasmFull}/include/objc \
+      -I. \
+      -Wall \
+      -Wextra \
+      -Wno-unused-parameter \
+      -Wno-unused-variable \
+      -Wno-unused-function \
+      -c objc_interp_primary.c \
+      -o objc_interp_primary.o
+
+    # Compile the messages module
+    ${llvmPackages.clang-unwrapped}/bin/clang --target=wasm32-wasi \
+      -O2 \
+      --sysroot=${wasiSysroot} \
+      -I${libobjc2WasmFull}/include/objc \
+      -I. \
+      -Wall \
+      -Wextra \
+      -Wno-unused-parameter \
+      -Wno-unused-variable \
+      -Wno-unused-function \
+      -c objc_interp_messages.c \
+      -o objc_interp_messages.o
 
     # Link: kernel + libobjc2 runtime + wasi-libc
     # Stack configuration: 1 MB stack with stack-first placement to trap on overflow rather than silently corrupt heap
@@ -152,7 +236,13 @@ stdenv.mkDerivation {
       objc_interpreter.o \
       objc_interp_lexer.o \
       objc_interp_state.o \
+      objc_interp_class.o \
       objc_interp_format.o \
+      objc_interp_dispatch.o \
+      objc_interp_ast.o \
+      objc_interp_parser.o \
+      objc_interp_primary.o \
+      objc_interp_messages.o \
       ${libobjc2WasmFull}/obj/*.o
 
     runHook postBuild
