@@ -533,9 +533,16 @@ function normalizeRuntimeManifest(runtimeManifestOrUrl) {
 
 async function verifySha256(runtimeManifest, bytes) {
   if (!runtimeManifest.sha256) {
+    const isDev = typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development';
+    if (!isDev) {
+      throw new Error(
+        `SHA-256 verification failed: runtime manifest has no sha256. ` +
+        `Set NODE_ENV=development to skip (dev builds only).`
+      );
+    }
     if (globalThis.console && typeof globalThis.console.warn === 'function') {
       globalThis.console.warn(
-        `Skipping SHA-256 verification for ${runtimeManifest.kernelWasmUrl}; runtime manifest has no sha256`
+        `[dev] Skipping SHA-256 verification for ${runtimeManifest.kernelWasmUrl}`
       );
     }
     return;
