@@ -1,3 +1,0 @@
-interface:
-  display_name: "ObjC Locking and Queue Audit"
-  short_description: "Audit Objective-C lock and queue invariants"
