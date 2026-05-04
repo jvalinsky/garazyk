@@ -179,3 +179,5 @@ tooling/test-audit-validator/.artifacts/
 # Deciduous database (local)
 .deciduous/
 plc/
+.letta/
+objc-jupyter-wasm/.letta/
