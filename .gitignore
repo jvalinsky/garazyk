@@ -1,3 +1,9 @@
+# JupyterLite build output
+_output/
+
+# Nix build results
+result/
+
 # Build directories
 build/
 build-*/

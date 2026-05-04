@@ -11,6 +11,8 @@ Standards-oriented AT Protocol implementation in Objective-C for macOS and Linux
 - [Setup](docs/01-getting-started/setup.md)
 - [Codebase Map](docs/01-getting-started/codebase-map.md)
 - [Request Lifecycle](docs/01-getting-started/request-lifecycle.md)
+- [Context Map](docs/01-getting-started/context-map.md)
+- [Services Setup](docs/guides/services-setup.md)
 - [Tutorials](docs/10-tutorials/index.md)
 - [CLI Reference](docs/11-reference/cli-reference.md)
 
@@ -49,6 +51,32 @@ cmake --build build-linux -j
 ./build-linux/tests/AllTests
 ```
 
+## Contributing
+
+1. Build using the platform commands above.
+2. Run focused tests first, then broader suites.
+3. Update docs for any contributor-facing behavior change.
+4. Keep internal links valid across repository markdown.
+
+### Quality Gates
+
+```bash
+xcodegen generate
+xcodebuild -scheme AllTests build
+./build/tests/AllTests
+xcodebuild -scheme kaszlak build
+```
+
+If fuzzers were touched, rebuild affected fuzz targets.
+Register new test classes in `Garazyk/Tests/test_main.m`.
+
+## Documentation Governance
+
+- `docs/` is the canonical contributor documentation path.
+- Root files should remain entrypoints, not duplicate long-form content.
+- Internal markdown links must stay valid across the repository scope.
+- Historical material should be archived and indexed, not silently dropped.
+
 ## Runtime Surfaces
 
 - `/xrpc/*` protocol endpoints
@@ -65,10 +93,9 @@ See [Explorer, OpenAPI & UI](docs/11-reference/explorer-openapi-ui.md) for surfa
 - [Source-Adjacent Documentation](docs/11-reference/source-adjacent-documentation.md)
 - [Tooling and Skills Documentation](docs/11-reference/tooling-and-skills-documentation.md)
 - [Repository Documentation Index](docs/repo-index/index.md)
+- [Spec Version & Lexicon Compliance](docs/11-reference/spec-version.md)
 
 ## Related Entrypoints
 
-- [Build Guide](BUILD.md)
-- [Contributing](CONTRIBUTING.md)
-- [Documentation Conventions](DOCUMENTATION.md)
 - [Agent Instructions](AGENTS.md)
+- [Agent Quick Reference](AGENTS_QUICKREF.md)

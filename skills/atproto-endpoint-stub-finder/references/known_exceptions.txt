@@ -1,5 +1,0 @@
-# Paths to ignore in stub scans (one per line).
-# CLI stubs are test helpers, not server endpoints.
-Garazyk/Sources/CLI/
-# Test fixtures.
-Garazyk/Tests/

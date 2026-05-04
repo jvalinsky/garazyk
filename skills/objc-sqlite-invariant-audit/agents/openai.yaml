@@ -1,3 +1,0 @@
-interface:
-  display_name: "ObjC SQLite Invariant Audit"
-  short_description: "Audit Objective-C SQLite invariants"

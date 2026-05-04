@@ -1,3 +1,0 @@
-interface:
-  display_name: "ObjC Firehose Flow Audit"
-  short_description: "Audit firehose ordering and backpressure"
