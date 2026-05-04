@@ -35,6 +35,44 @@ extern InterpVar *interp_get_or_create_var(const char *name);
 
 /* Parser layout must match the definition in objc_interpreter.c. */
 
+/* Class-to-protocol conformance table (simplified storage).
+ * For each class, stores up to 8 protocol names it conforms to. */
+static char class_conformances[OBJC_INTERP_MAX_CLASSES][8][64];
+static unsigned int class_conforms_count[OBJC_INTERP_MAX_CLASSES];
+
+/* Record that a class conforms to a protocol (by name). */
+static void add_class_conformance(const char *class_name, const char *protocol_name) {
+    unsigned int ci;
+    /* Find class index by name */
+    for (ci = 0; ci < OBJC_INTERP_MAX_CLASSES; ci++) {
+        InterpVar *var = &g_ctx.vars[ci];
+        if (var->is_class && cstr_eq(var->name, class_name)) {
+            unsigned int cc = class_conforms_count[ci];
+            if (cc < 8) {
+                cstr_copy(class_conformances[ci][cc], protocol_name, 64);
+                class_conforms_count[ci]++;
+            }
+            return;
+        }
+    }
+}
+
+/* Check if a class (by name) conforms to a protocol (by name). */
+static int check_class_conformance(const char *class_name, const char *protocol_name) {
+    unsigned int ci;
+    for (ci = 0; ci < OBJC_INTERP_MAX_CLASSES; ci++) {
+        InterpVar *var = &g_ctx.vars[ci];
+        if (var->is_class && cstr_eq(var->name, class_name)) {
+            unsigned int cc;
+            for (cc = 0; cc < class_conforms_count[ci]; cc++) {
+                if (cstr_eq(class_conformances[ci][cc], protocol_name)) return 1;
+            }
+            return 0;
+        }
+    }
+    return 0;
+}
+
 /* Parse @interface Name : SuperClass { ivars } methodDecls @end */
 Value parse_interface(struct Parser *p) {
     char class_name[64];
@@ -84,6 +122,27 @@ Value parse_interface(struct Parser *p) {
                     super_class = 0;
                 }
             }
+        }
+    }
+
+    /* Parse <Protocol1, Protocol2, ...> conformance list */
+    if (parser_current(p).type == TOK_LT) {
+        parser_advance(p);
+        while (parser_current(p).type != TOK_GT &&
+               parser_current(p).type != TOK_EOF) {
+            if (parser_current(p).type == TOK_IDENTIFIER) {
+                /* Record that this class conforms to the named protocol */
+                add_class_conformance(class_name, parser_current(p).text);
+                parser_advance(p);
+            } else {
+                parser_advance(p);
+            }
+            if (parser_current(p).type == TOK_COMMA) {
+                parser_advance(p);
+            }
+        }
+        if (parser_current(p).type == TOK_GT) {
+            parser_advance(p);
         }
     }
 
@@ -206,6 +265,192 @@ Value parse_interface(struct Parser *p) {
     }
 
     return value_from_class(new_class);
+}
+
+/* Parse @protocol Name <ConformsTo> { @required/@optional method_decls } @end */
+Value parse_protocol(struct Parser *p) {
+    char proto_name[64];
+
+    if (parser_current(p).type != TOK_IDENTIFIER) {
+        parser_error(p, "Expected protocol name after @protocol");
+        return value_void();
+    }
+    if (copy_identifier_or_error(p, proto_name, parser_current(p).text, 64, "protocol")) {
+        return value_void();
+    }
+    parser_advance(p);
+
+    /* Check if protocol already declared — skip body if so */
+    {
+        unsigned int pi;
+        for (pi = 0; pi < g_ctx.protocol_count; pi++) {
+            if (cstr_eq(g_ctx.protocols[pi].name, proto_name)) {
+                /* Skip to @end */
+                while (!(parser_current(p).type == TOK_AT_KEYWORD &&
+                         cstr_eq(parser_current(p).text, "@end")) &&
+                       parser_current(p).type != TOK_EOF) {
+                    parser_advance(p);
+                }
+                if (parser_current(p).type == TOK_AT_KEYWORD &&
+                    cstr_eq(parser_current(p).text, "@end")) {
+                    parser_advance(p);
+                }
+                return value_void();
+            }
+        }
+    }
+
+    if (g_ctx.protocol_count >= MAX_PROTOCOLS) {
+        parser_error(p, "protocol table full (max 32 protocols)");
+        return value_void();
+    }
+
+    ProtocolDecl *proto = &g_ctx.protocols[g_ctx.protocol_count];
+    cstr_copy(proto->name, proto_name, MAX_PROTOCOL_NAME);
+    proto->conforms_count = 0;
+    proto->required_count = 0;
+    proto->optional_count = 0;
+
+    /* Parse <ConformsTo1, ConformsTo2> conformance list */
+    if (parser_current(p).type == TOK_LT) {
+        parser_advance(p);
+        while (parser_current(p).type != TOK_GT &&
+               parser_current(p).type != TOK_EOF) {
+            if (parser_current(p).type == TOK_IDENTIFIER &&
+                proto->conforms_count < 8) {
+                if (copy_identifier_or_error(p, proto->conforms_to[proto->conforms_count],
+                                          parser_current(p).text, MAX_PROTOCOL_NAME,
+                                          "conforms-to protocol")) {
+                    return value_void();
+                }
+                proto->conforms_count++;
+                parser_advance(p);
+            } else {
+                parser_advance(p);
+            }
+            if (parser_current(p).type == TOK_COMMA) {
+                parser_advance(p);
+            }
+        }
+        if (parser_current(p).type == TOK_GT) {
+            parser_advance(p);
+        }
+    }
+
+    /* Parse protocol body: @required/@optional method decls, @end */
+    {
+        int current_section_required = 1; /* default is @required */
+
+        while (!(parser_current(p).type == TOK_AT_KEYWORD &&
+                 cstr_eq(parser_current(p).text, "@end")) &&
+               parser_current(p).type != TOK_EOF) {
+
+            if (parser_current(p).type == TOK_AT_KEYWORD) {
+                if (cstr_eq(parser_current(p).text, "@required")) {
+                    current_section_required = 1;
+                    parser_advance(p);
+                    continue;
+                }
+                if (cstr_eq(parser_current(p).text, "@optional")) {
+                    current_section_required = 0;
+                    parser_advance(p);
+                    continue;
+                }
+                /* Unknown @keyword in protocol — skip it */
+                parser_advance(p);
+                continue;
+            }
+
+            /* Method declaration: + or - followed by selector */
+            if (parser_current(p).type == TOK_PLUS || parser_current(p).type == TOK_MINUS) {
+                char sel_name[256];
+                unsigned int sel_len = 0;
+
+                parser_advance(p); /* consume + or - */
+
+                /* Skip return type in parens: (void), (id), etc. */
+                if (parser_current(p).type == TOK_OPEN_PAREN) {
+                    int depth = 1;
+                    parser_advance(p);
+                    while (depth > 0 && parser_current(p).type != TOK_EOF) {
+                        if (parser_current(p).type == TOK_OPEN_PAREN) depth++;
+                        else if (parser_current(p).type == TOK_CLOSE_PAREN) depth--;
+                        parser_advance(p);
+                    }
+                }
+
+                /* Build selector name from keyword parts */
+                while (parser_current(p).type != TOK_SEMICOLON &&
+                       parser_current(p).type != TOK_EOF &&
+                       parser_current(p).type != TOK_OPEN_BRACE &&
+                       !(parser_current(p).type == TOK_AT_KEYWORD &&
+                         (cstr_eq(parser_current(p).text, "@required") ||
+                          cstr_eq(parser_current(p).text, "@optional") ||
+                          cstr_eq(parser_current(p).text, "@end")))) {
+
+                    if (parser_current(p).type == TOK_IDENTIFIER) {
+                        unsigned int len = cstr_len(parser_current(p).text);
+                        if (sel_len + len + 1 < 256) {
+                            cstr_copy(sel_name + sel_len, parser_current(p).text, 256 - sel_len);
+                            sel_len += len;
+                        }
+                        parser_advance(p);
+                    } else if (parser_current(p).type == TOK_COLON) {
+                        if (sel_len + 1 < 256) {
+                            sel_name[sel_len++] = ':';
+                            sel_name[sel_len] = '\0';
+                        }
+                        parser_advance(p);
+                        /* Skip argument type (int), (id), etc. */
+                        if (parser_current(p).type == TOK_OPEN_PAREN) {
+                            int depth = 1;
+                            parser_advance(p);
+                            while (depth > 0 && parser_current(p).type != TOK_EOF) {
+                                if (parser_current(p).type == TOK_OPEN_PAREN) depth++;
+                                else if (parser_current(p).type == TOK_CLOSE_PAREN) depth--;
+                                parser_advance(p);
+                            }
+                        }
+                        /* Skip argument name */
+                        if (parser_current(p).type == TOK_IDENTIFIER) {
+                            parser_advance(p);
+                        }
+                    } else {
+                        parser_advance(p);
+                    }
+                }
+
+                sel_name[sel_len] = '\0';
+
+                /* Store method in appropriate list */
+                if (sel_len > 0) {
+                    if (current_section_required && proto->required_count < MAX_PROTOCOL_METHODS) {
+                        cstr_copy(proto->required_methods[proto->required_count], sel_name, 256);
+                        proto->required_count++;
+                    } else if (!current_section_required && proto->optional_count < MAX_PROTOCOL_METHODS) {
+                        cstr_copy(proto->optional_methods[proto->optional_count], sel_name, 256);
+                        proto->optional_count++;
+                    }
+                }
+
+                if (parser_current(p).type == TOK_SEMICOLON) {
+                    parser_advance(p);
+                }
+                continue;
+            }
+
+            /* Skip unknown tokens */
+            parser_advance(p);
+        }
+    }
+
+    if (parser_current(p).type == TOK_AT_KEYWORD &&
+        cstr_eq(parser_current(p).text, "@end")) {
+        parser_advance(p);
+    }
+
+    g_ctx.protocol_count++;
+    return value_void();
 }
 
 /* Method implementation function retained for runtime compatibility. */

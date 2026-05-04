@@ -16,59 +16,69 @@
 #include "objc_interp_types.h"
 
 typedef struct InterpContext {
-    /* ── Error state ─────────────────────────────────────────────── */
+    /* ── Error state ───────────────────────────────────────── */
     char error_buffer[OBJC_INTERP_ERROR_SIZE];
     int error_code;
     unsigned int error_line;
     unsigned int error_column;
 
-    /* ── Interpreter state ───────────────────────────────────────── */
+    /* ── Interpreter state ───────────────────────────────────── */
     int interp_initialized;
     char result_buffer[512];
 
-    /* ── NSLog ring buffer ───────────────────────────────────────── */
+    /* ── NSLog ring buffer ──────────────────────────────────── */
     char nslog_buffer[OBJC_INTERP_NSLOG_BUFFER_SIZE];
     unsigned int nslog_offset;
 
-    /* ── Variable table ─────────────────────────────────────────── */
+    /* ── Variable table ───────────────────────────────────── */
     InterpVar vars[OBJC_INTERP_MAX_VARS];
     unsigned int var_count;
     unsigned int var_scope_base;
 
-    /* ── Type definitions ───────────────────────────────────────── */
+    /* ── Type definitions ──────────────────────────────────── */
     TypeDef typedefs[64];
     unsigned int typedef_count;
 
-    /* ── Method dispatch state ──────────────────────────────────── */
+    /* ── Method dispatch state ────────────────────────────── */
     int return_pending;
     Value return_value;
     MethodImpl methods[64];
     unsigned int method_count;
 
-    /* ── Property declarations ──────────────────────────────────── */
+    /* ── Property declarations ─────────────────────────────── */
     PropertyDecl properties[64];
     unsigned int property_count;
 
-    /* ── Instance variable side table ───────────────────────────── */
+    /* ── Instance variable side table ───────────────────────── */
     InstanceVar instance_vars[256];
     unsigned int instance_var_count;
 
-    /* ── Collection side table ──────────────────────────────────── */
+    /* ── Collection side table ─────────────────────────────── */
     unsigned int next_coll_id;
     CollEntry coll_entries[512];
     unsigned int coll_entry_count;
 
-    /* ── Block side table ───────────────────────────────────────── */
+    /* ── Block side table ─────────────────────────────────── */
     BlockImpl blocks[32];
     unsigned int block_count;
     unsigned int next_block_id;
 
-    /* ── String pool ────────────────────────────────────────────── */
+    /* ── Protocol declarations ────────────────────────────── */
+    ProtocolDecl protocols[MAX_PROTOCOLS];
+    unsigned int protocol_count;
+
+    /* ── Exception/try-catch state ─────────────────────────── */
+    TryFrame try_stack[MAX_TRY_DEPTH];
+    unsigned int try_depth;
+    int exception_pending;
+    Value current_exception;
+
+    /* ── String pool ────────────────────────────────────── */
     char string_pool[OBJC_INTERP_STRING_POOL_SIZE];
     unsigned int string_pool_offset;
     unsigned int parse_depth;
 
-    /* ── AST arena ──────────────────────────────────────────────── */
+    /* ── AST arena ──────────────────────────────────────── */
     AstNode ast_arena[1024];
     unsigned int ast_count;
     int break_pending;

@@ -471,6 +471,23 @@ Value parse_message_send(Parser *p) {
             return value_from_int(0);
         }
 
+        /* NSObject: [obj conformsToProtocol:proto] → check protocol conformance */
+        if (cstr_eq(sel_name, "conformsToProtocol:") && target.is_id && arg_count >= 1) {
+            const char *protocol_name = 0;
+            /* The argument is a protocol object or a string name.
+             * In our interpreter, protocols are name strings in the protocol table.
+             * We look up by name match. */
+            if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
+                protocol_name = (const char *)keyword_args[0].obj_val;
+            }
+            if (protocol_name && target_class_name) {
+                extern int class_conforms_to_protocol(const char *, const char *);
+                int conforms = class_conforms_to_protocol(target_class_name, protocol_name);
+                return value_from_int(conforms);
+            }
+            return value_from_int(0);
+        }
+
         /* NSObject: [obj performSelector:sel] → dispatch selector */
         if (cstr_eq(sel_name, "performSelector:") && target.is_id && arg_count >= 1) {
             if (keyword_args[0].is_sel) {

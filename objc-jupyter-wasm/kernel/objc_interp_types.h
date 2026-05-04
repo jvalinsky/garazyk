@@ -388,6 +388,34 @@ typedef struct {
 
 #define MAX_BLOCKS 32
 
+/* ── Protocol declarations ─────────────────────────────────────── */
+
+#define MAX_PROTOCOLS 32
+#define MAX_PROTOCOL_METHODS 32
+#define MAX_PROTOCOL_NAME 64
+
+typedef struct {
+    char name[MAX_PROTOCOL_NAME];
+    char conforms_to[8][MAX_PROTOCOL_NAME];  /* protocols this protocol conforms to */
+    unsigned int conforms_count;
+    /* Method declarations: stored as selector names for checking */
+    char required_methods[MAX_PROTOCOL_METHODS][256];
+    unsigned int required_count;
+    char optional_methods[MAX_PROTOCOL_METHODS][256];
+    unsigned int optional_count;
+} ProtocolDecl;
+
+/* ── Exception/try-catch state ────────────────────────────────── */
+
+typedef struct {
+    int exception_pending;
+    Value exception_obj;
+    int catch_active;
+    char catch_var[64];
+} TryFrame;
+
+#define MAX_TRY_DEPTH 16
+
 /* ── AST nodes for control flow ─────────────────────────────────── */
 
 typedef enum {
@@ -403,7 +431,10 @@ typedef enum {
     AST_CONTINUE,
     AST_SWITCH,
     AST_DO_WHILE,
-    AST_NOOP  /* already-executed declaration (@interface, @implementation, etc.) */
+    AST_NOOP,  /* already-executed declaration (@interface, @implementation, etc.) */
+    AST_PROTOCOL,  /* @protocol declaration — executed at parse time */
+    AST_TRY_CATCH,  /* @try / @catch / @finally */
+    AST_THROW  /* @throw statement */
 } AstNodeType;
 
 typedef struct AstNode AstNode;
@@ -445,6 +476,19 @@ struct AstNode {
             AstNode *condition;
             AstNode *body;
         } do_while_stmt;
+        struct { /* AST_PROTOCOL */
+            /* Protocol already executed at parse time, no AST data needed */
+        } protocol_decl;
+        struct { /* AST_TRY_CATCH */
+            AstNode *try_body;
+            char catch_var[64];
+            AstNode *catch_body;
+            AstNode *finally_body;
+        } try_catch;
+        struct { /* AST_THROW */
+            unsigned int source_start;
+            unsigned int source_len;
+        } throw_stmt;
         struct { /* AST_BLOCK */
             AstNode *children[128];
             unsigned int count;

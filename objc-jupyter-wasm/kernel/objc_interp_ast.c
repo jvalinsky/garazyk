@@ -115,6 +115,24 @@ AstNode *ast_make_noop(void) {
     return n;
 }
 
+AstNode *ast_make_protocol(void) {
+    AstNode *n = ast_alloc();
+    if (!n) return 0;
+    n->type = AST_PROTOCOL;
+    return n;
+}
+
+AstNode *ast_make_try_catch(void) {
+    AstNode *n = ast_alloc();
+    if (!n) return 0;
+    n->type = AST_TRY_CATCH;
+    n->try_catch.try_body = 0;
+    n->try_catch.catch_body = 0;
+    n->try_catch.finally_body = 0;
+    n->try_catch.catch_var[0] = '\0';
+    return n;
+}
+
 int is_truthy(Value v) {
     if (v.is_int) return v.int_val != 0;
     if (v.is_float) return v.float_val != 0.0;
@@ -686,9 +704,117 @@ AstNode *parse_statement_ast(Parser *p) {
             AstNode *node = ast_make_noop();
             if (!node && !p->error) {
                 parser_error(p, "AST node limit reached (max 1024)");
-                return 0;
             }
             return node;
+        }
+    }
+
+    /* @try / @catch / @finally */
+    if (tok.type == TOK_AT_KEYWORD && cstr_eq(tok.text, "@try")) {
+        AstNode *node = ast_make_try_catch();
+        if (!node) {
+            if (!p->error) parser_error(p, "AST node limit reached (max 1024)");
+            return 0;
+        }
+        parser_advance(p); /* consume '@try' */
+
+        /* Parse try body */
+        if (parser_current(p).type == TOK_OPEN_BRACE) {
+            parser_advance(p);
+            node->try_catch.try_body = parse_block_ast(p);
+            if (parser_current(p).type == TOK_CLOSE_BRACE) parser_advance(p);
+        } else {
+            node->try_catch.try_body = parse_statement_ast(p);
+        }
+        if (!node->try_catch.try_body) return 0;
+
+        /* Parse @catch blocks */
+        if (parser_current(p).type == TOK_AT_KEYWORD &&
+            cstr_eq(parser_current(p).text, "@catch")) {
+            parser_advance(p); /* consume '@catch' */
+
+            /* Parse (ExceptionType *var) */
+            if (parser_current(p).type == TOK_OPEN_PAREN) {
+                int paren_depth = 1;
+                parser_advance(p);
+                /* Extract the variable name */
+                while (paren_depth > 0 && parser_current(p).type != TOK_EOF) {
+                    if (parser_current(p).type == TOK_OPEN_PAREN) paren_depth++;
+                    else if (parser_current(p).type == TOK_CLOSE_PAREN) {
+                        paren_depth--;
+                        if (paren_depth == 0) { parser_advance(p); break; }
+                    }
+                    else if (paren_depth == 1 && parser_current(p).type == TOK_IDENTIFIER) {
+                        /* Could be the variable name — copy it */
+                        cstr_copy(node->try_catch.catch_var, parser_current(p).text, 64);
+                    }
+                    parser_advance(p);
+                }
+            }
+
+            /* Parse catch body */
+            if (parser_current(p).type == TOK_OPEN_BRACE) {
+                parser_advance(p);
+                node->try_catch.catch_body = parse_block_ast(p);
+                if (parser_current(p).type == TOK_CLOSE_BRACE) parser_advance(p);
+            } else {
+                node->try_catch.catch_body = parse_statement_ast(p);
+            }
+        }
+
+        /* Parse optional @finally block */
+        if (parser_current(p).type == TOK_AT_KEYWORD &&
+            cstr_eq(parser_current(p).text, "@finally")) {
+            parser_advance(p);
+            if (parser_current(p).type == TOK_OPEN_BRACE) {
+                parser_advance(p);
+                node->try_catch.finally_body = parse_block_ast(p);
+                if (parser_current(p).type == TOK_CLOSE_BRACE) parser_advance(p);
+            } else {
+                node->try_catch.finally_body = parse_statement_ast(p);
+            }
+        }
+
+        return node;
+    }
+
+    /* @throw statement */
+    if (tok.type == TOK_AT_KEYWORD && cstr_eq(tok.text, "@throw")) {
+        parser_advance(p); /* consume '@throw' */
+
+        /* @throw; — re-throw the current exception inside @catch */
+        if (parser_current(p).type == TOK_SEMICOLON) {
+            parser_advance(p);
+            /* Create a special AST node for re-throw.
+             * Set source_start = 0 as a sentinel meaning "use current_exception". */
+            AstNode *node = ast_alloc();
+            if (!node) {
+                if (!p->error) parser_error(p, "AST node limit reached (max 1024)");
+                return 0;
+            }
+            node->type = AST_THROW;
+            node->throw_stmt.source_start = 0; /* sentinel: re-throw */
+            node->throw_stmt.source_len = 0;
+            return node;
+        }
+
+        /* @throw expr; — throw a new exception */
+        {
+            unsigned int start = p->lex.token_start;
+            if (parser_current(p).type != TOK_SEMICOLON &&
+                parser_current(p).type != TOK_CLOSE_BRACE &&
+                parser_current(p).type != TOK_EOF) {
+                parse_expression(p);
+            }
+            if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
+            {
+                AstNode *node = ast_make_source(AST_THROW, start,
+                                                p->lex.token_start - start);
+                if (!node && !p->error) {
+                    parser_error(p, "AST node limit reached (max 1024)");
+                }
+                return node;
+            }
         }
     }
 
@@ -995,6 +1121,109 @@ Value eval_ast(AstNode *node, const char *source) {
     case AST_NOOP:
         /* Already executed during parse phase — skip */
         break;
+
+    case AST_PROTOCOL:
+        /* Protocol was already registered during parse phase — skip */
+        break;
+
+    case AST_TRY_CATCH: {
+        /* Push try frame */
+        if (g_ctx.try_depth >= MAX_TRY_DEPTH) {
+            g_ctx.error_code = OBJC_INTERP_RESOURCE_ERROR;
+            cstr_copy(g_ctx.error_buffer, "try-catch nesting too deep (max 16)", OBJC_INTERP_ERROR_SIZE);
+            return last;
+        }
+        TryFrame *frame = &g_ctx.try_stack[g_ctx.try_depth++];
+        frame->exception_pending = 0;
+        frame->catch_active = 0;
+        frame->catch_var[0] = '\0';
+
+        /* Execute try body */
+        g_ctx.exception_pending = 0;
+        eval_ast(node->try_catch.try_body, source);
+
+        int had_exception = g_ctx.exception_pending;
+
+        /* If exception occurred, execute catch body */
+        if (had_exception && node->try_catch.catch_body) {
+            /* Bind exception to catch variable if specified */
+            if (node->try_catch.catch_var[0] != '\0') {
+                InterpVar *catch_var = interp_get_or_create_var(node->try_catch.catch_var);
+                if (catch_var) {
+                    catch_var->is_id = g_ctx.current_exception.is_id;
+                    catch_var->value = g_ctx.current_exception.obj_val;
+                    catch_var->is_int = g_ctx.current_exception.is_int;
+                    catch_var->int_value = g_ctx.current_exception.int_val;
+                    catch_var->is_float = g_ctx.current_exception.is_float;
+                    catch_var->float_value = g_ctx.current_exception.float_val;
+                    catch_var->is_class = g_ctx.current_exception.is_class;
+                    catch_var->cls = g_ctx.current_exception.cls_val;
+                    catch_var->is_sel = g_ctx.current_exception.is_sel;
+                    catch_var->sel = g_ctx.current_exception.sel_val;
+                }
+            }
+            g_ctx.exception_pending = 0;
+            g_ctx.current_exception = value_void();
+            eval_ast(node->try_catch.catch_body, source);
+        }
+
+        /* Always execute finally body if present */
+        if (node->try_catch.finally_body) {
+            eval_ast(node->try_catch.finally_body, source);
+        }
+
+        /* Pop try frame */
+        if (g_ctx.try_depth > 0) g_ctx.try_depth--;
+
+        /* If exception was not caught and not re-thrown, re-raise */
+        if (had_exception && g_ctx.exception_pending) {
+            /* stays pending — will propagate to outer try */
+        }
+        break;
+    }
+
+    case AST_THROW: {
+        Value exc;
+        /* Re-throw: if source_start == 0, use current_exception. */
+        if (node->throw_stmt.source_start == 0) {
+            /* Inside @catch — re-throw the caught exception. */
+            exc = g_ctx.current_exception;
+            if (exc.is_void) {
+                /* No current exception — this is an error. */
+                g_ctx.error_code = OBJC_INTERP_RUNTIME_ERROR;
+                cstr_copy(g_ctx.error_buffer, "re-throw with no active exception", OBJC_INTERP_ERROR_SIZE);
+                break;
+            }
+        } else {
+            /* Evaluate the throw expression to get the exception object */
+            exc = eval_source_range(node->throw_stmt.source_start,
+                                    node->throw_stmt.source_len, source,
+                                    count_lines_up_to(source, node->throw_stmt.source_start));
+        }
+        g_ctx.current_exception = exc;
+        g_ctx.exception_pending = 1;
+
+        /* If inside a try block, the exception will be caught by
+         * the AST_TRY_CATCH handler above.
+         * If not, this will propagate as an interpreter error. */
+        if (g_ctx.try_depth == 0) {
+            /* No try block — report as interpreter error */
+            g_ctx.error_code = OBJC_INTERP_RUNTIME_ERROR;
+            char buf[OBJC_INTERP_ERROR_SIZE];
+            buf[0] = '\0';
+            format_value(exc, buf, OBJC_INTERP_ERROR_SIZE);
+            cstr_copy(g_ctx.error_buffer, "uncaught exception: ", OBJC_INTERP_ERROR_SIZE);
+            {
+                unsigned int pos = cstr_len(g_ctx.error_buffer);
+                unsigned int bi = 0;
+                while (buf[bi] != '\0' && pos < OBJC_INTERP_ERROR_SIZE - 1) {
+                    g_ctx.error_buffer[pos++] = buf[bi++];
+                }
+                g_ctx.error_buffer[pos] = '\0';
+            }
+        }
+        break;
+    }
 
     case AST_RETURN:
         last = eval_source_range(node->source_range.source_start,

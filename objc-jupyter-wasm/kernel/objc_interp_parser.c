@@ -603,13 +603,7 @@ Value parse_statement(Parser *p) {
     /* @protocol */
     if (tok.type == TOK_AT_KEYWORD && cstr_eq(tok.text, "@protocol")) {
         parser_advance(p);
-        while (!(parser_current(p).type == TOK_AT_KEYWORD &&
-                 cstr_eq(parser_current(p).text, "@end")) &&
-               parser_current(p).type != TOK_EOF) {
-            parser_advance(p);
-        }
-        if (parser_current(p).type == TOK_AT_KEYWORD) parser_advance(p);
-        return value_void();
+        return parse_protocol(p);
     }
 
     /* @try ... @catch ... @finally ... (no-op semantics for now) */

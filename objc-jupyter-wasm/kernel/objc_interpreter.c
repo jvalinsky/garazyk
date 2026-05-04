@@ -720,6 +720,10 @@ void objc_interp_init(void) {
     g_ctx.coll_entry_count = 0;
     g_ctx.next_block_id = 1;
     g_ctx.block_count = 0;
+    g_ctx.protocol_count = 0;
+    g_ctx.try_depth = 0;
+    g_ctx.exception_pending = 0;
+    g_ctx.current_exception = value_void();
 
     /* Register Foundation class names as variables with is_class=1.
      * We don't call objc_allocateClassPair (it can cause WASM traps).
@@ -850,6 +854,9 @@ void objc_interp_reset(void) {
     g_ctx.error_line = 0;
     g_ctx.error_column = 0;
     g_ctx.result_buffer[0] = '\0';
+    g_ctx.exception_pending = 0;
+    g_ctx.current_exception = value_void();
+    g_ctx.try_depth = 0;
     /* Don't reset g_ctx.var_count — variables persist across cells */
     /* Don't reset g_ctx.method_count — methods persist across cells */
 }

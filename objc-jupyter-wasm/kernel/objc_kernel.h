@@ -19,6 +19,9 @@
 #define OBJC_KERNEL_TRANSPORT_OOM 4
 #define OBJC_KERNEL_TRANSPORT_INTERNAL_ERROR 5
 
+/* Interpreter error codes (also used as transport codes for domain errors). */
+#define OBJC_INTERP_RUNTIME_ERROR 6  /* uncaught exception */
+
 /* Request and response size limits. */
 #define OBJC_KERNEL_MAX_REQUEST_BYTES 65536u
 #define OBJC_KERNEL_MAX_RESPONSE_BYTES 1048576u

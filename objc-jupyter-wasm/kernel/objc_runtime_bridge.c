@@ -817,6 +817,9 @@ static int build_execute_response(
         if (objc_interp_get_error_code() == OBJC_INTERP_INTERRUPTED) {
             ename = "Interrupted";
         }
+        if (objc_interp_get_error_code() == OBJC_INTERP_RUNTIME_ERROR) {
+            ename = "ObjCException";
+        }
 
         /* Build error response with traceback */
         {

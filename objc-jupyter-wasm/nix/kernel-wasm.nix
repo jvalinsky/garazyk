@@ -230,6 +230,7 @@ stdenv.mkDerivation {
       --export=_NSConcreteGlobalBlock \
       --export=_NSConcreteStackBlock \
       --export=objc_interp_full_reset \
+      --export=class_conformsToProtocol: \
       -L${wasiSysroot}/lib/wasm32-wasi \
       -lc \
       -o kernel.wasm \
