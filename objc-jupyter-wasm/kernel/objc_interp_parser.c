@@ -668,18 +668,38 @@ Value parse_statement(Parser *p) {
     if (tok.type == TOK_IDENTIFIER) {
         /* Check for __block qualifier */
         int is_block_qualifier = cstr_eq(tok.text, "__block");
+        /* Storage qualifiers — route to parse_type_and_var_decl
+         * for proper handling (static/extern). Note: unsigned/short are type
+         * modifiers that would need multi-token type parsing, not implemented yet. */
+        int is_storage_qualifier = (
+            cstr_eq(tok.text, "static") ||
+            cstr_eq(tok.text, "extern")
+        );
         /* Check if this is a type name followed by a variable name.
          * Built-in types are always recognized. Registered class names
          * (from @implementation) are also recognized as types when
          * followed by * (pointer) or another identifier.
          * Also check if this is a typedef alias. */
+        /* Note: unsigned, short omitted — they're type modifiers that need
+         * multi-token type parsing. Will be addressed in a separate fix. */
         int is_builtin_type = (
             cstr_eq(tok.text, "int") || cstr_eq(tok.text, "NSInteger") ||
             cstr_eq(tok.text, "NSUInteger") || cstr_eq(tok.text, "void") ||
             cstr_eq(tok.text, "id") || cstr_eq(tok.text, "Class") ||
             cstr_eq(tok.text, "SEL") || cstr_eq(tok.text, "BOOL") ||
             cstr_eq(tok.text, "long") || cstr_eq(tok.text, "char") ||
-            cstr_eq(tok.text, "float") || cstr_eq(tok.text, "double")
+            cstr_eq(tok.text, "float") || cstr_eq(tok.text, "double") ||
+            /* Foundation framework types */
+            cstr_eq(tok.text, "NSString") || cstr_eq(tok.text, "NSArray") ||
+            cstr_eq(tok.text, "NSMutableArray") || cstr_eq(tok.text, "NSDictionary") ||
+            cstr_eq(tok.text, "NSMutableDictionary") || cstr_eq(tok.text, "NSNumber") ||
+            cstr_eq(tok.text, "NSData") || cstr_eq(tok.text, "NSSet") ||
+            /* C99 integer types */
+            cstr_eq(tok.text, "uint8_t") || cstr_eq(tok.text, "uint16_t") ||
+            cstr_eq(tok.text, "uint32_t") || cstr_eq(tok.text, "uint64_t") ||
+            cstr_eq(tok.text, "int8_t") || cstr_eq(tok.text, "int16_t") ||
+            cstr_eq(tok.text, "int32_t") || cstr_eq(tok.text, "int64_t") ||
+            cstr_eq(tok.text, "size_t")
         );
         /* Check if it's a typedef alias */
         const char *resolved_type = typedef_resolve(tok.text);
@@ -697,9 +717,10 @@ Value parse_statement(Parser *p) {
             }
         }
 
-        if (is_builtin_type || is_class_type || is_typedef || is_block_qualifier) {
-            if (is_block_qualifier) {
-                /* __block is always followed by a type — call directly */
+        if (is_builtin_type || is_class_type || is_typedef || is_block_qualifier || is_storage_qualifier) {
+            if (is_block_qualifier || is_storage_qualifier) {
+                /* __block and storage qualifiers (static, extern)
+                 * are always followed by a type — call directly */
                 Value v = parse_type_and_var_decl(p);
                 if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
                 return v;
