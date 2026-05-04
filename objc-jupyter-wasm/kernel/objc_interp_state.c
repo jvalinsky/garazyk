@@ -35,11 +35,6 @@ void interp_set_resource_error(const char *msg) {
     interp_emit_stream("\n", 1);
 }
 
-/* Diagnostic accessor for var_count */
-unsigned int g_ctx_var_count(void) {
-    return g_ctx.var_count;
-}
-
 /* ── Value helpers (non-inline — access InterpVar internals) ──── */
 
 /* Set all type flags in a variable from a Value, clearing incompatible flags */
