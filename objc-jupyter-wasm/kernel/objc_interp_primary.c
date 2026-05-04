@@ -15,6 +15,8 @@
 #include "objc_interp_ast.h"
 #include "objc_interp_class.h"
 
+extern void interp_emit_stream(const char *data, unsigned int len);
+
 /* Parser layout must match the definition in objc_interpreter.c. */
 
 /* Externs for functions still in objc_interpreter.c or other modules. */
@@ -72,6 +74,22 @@ static Value parse_negated_integer_literal(Parser *p) {
     unsigned long mag = 0;
     int status;
     if (lit.truncated) {
+        /* Diagnostic: log token details for debugging state pollution */
+        {
+            char _diag[256];
+            unsigned int _dp = 0;
+            const char *_pfx = "TRUNCATED_NEG: type=";
+            while (*_pfx && _dp < sizeof(_diag) - 1) _diag[_dp++] = *_pfx++;
+            if (_dp < sizeof(_diag) - 2) { _diag[_dp++] = '0' + (lit.type / 10) % 10; _diag[_dp++] = '0' + lit.type % 10; }
+            { const char *_sfx = " line="; while (*_sfx && _dp < sizeof(_diag) - 1) _diag[_dp++] = *_sfx++; }
+            { unsigned int _v = lit.line; char _buf[12]; int _n = 0; if (_v == 0) _buf[_n++] = '0'; else { while (_v > 0 && _n < 11) { _buf[_n++] = '0' + (_v % 10); _v /= 10; } } for (int _r = _n - 1; _r >= 0 && _dp < sizeof(_diag) - 1; _r--) _diag[_dp++] = _buf[_r]; }
+            { const char *_sfx = " col="; while (*_sfx && _dp < sizeof(_diag) - 1) _diag[_dp++] = *_sfx++; }
+            { unsigned int _v = lit.column; char _buf[12]; int _n = 0; if (_v == 0) _buf[_n++] = '0'; else { while (_v > 0 && _n < 11) { _buf[_n++] = '0' + (_v % 10); _v /= 10; } } for (int _r = _n - 1; _r >= 0 && _dp < sizeof(_diag) - 1; _r--) _diag[_dp++] = _buf[_r]; }
+            { const char *_sfx = " text=\""; while (*_sfx && _dp < sizeof(_diag) - 1) _diag[_dp++] = *_sfx++; }
+            { unsigned int _ti = 0; while (_ti < 30 && lit.text[_ti] && _dp < sizeof(_diag) - 2) _diag[_dp++] = lit.text[_ti++]; }
+            if (_dp < sizeof(_diag) - 2) { _diag[_dp++] = '"'; _diag[_dp++] = '\n'; }
+            interp_emit_stream(_diag, _dp);
+        }
         parser_error(p, "integer literal too long");
         return value_void();
     }
@@ -511,6 +529,22 @@ Value parse_primary(Parser *p) {
         unsigned long val = 0;
         int status;
         if (tok.truncated) {
+            /* Diagnostic: log token details for debugging state pollution */
+            {
+                char _diag[256];
+                unsigned int _dp = 0;
+                const char *_pfx = "TRUNCATED_INT: type=";
+                while (*_pfx && _dp < sizeof(_diag) - 1) _diag[_dp++] = *_pfx++;
+                if (_dp < sizeof(_diag) - 2) { _diag[_dp++] = '0' + (tok.type / 10) % 10; _diag[_dp++] = '0' + tok.type % 10; }
+                { const char *_sfx = " line="; while (*_sfx && _dp < sizeof(_diag) - 1) _diag[_dp++] = *_sfx++; }
+                { unsigned int _v = tok.line; char _buf[12]; int _n = 0; if (_v == 0) _buf[_n++] = '0'; else { while (_v > 0 && _n < 11) { _buf[_n++] = '0' + (_v % 10); _v /= 10; } } for (int _r = _n - 1; _r >= 0 && _dp < sizeof(_diag) - 1; _r--) _diag[_dp++] = _buf[_r]; }
+                { const char *_sfx = " col="; while (*_sfx && _dp < sizeof(_diag) - 1) _diag[_dp++] = *_sfx++; }
+                { unsigned int _v = tok.column; char _buf[12]; int _n = 0; if (_v == 0) _buf[_n++] = '0'; else { while (_v > 0 && _n < 11) { _buf[_n++] = '0' + (_v % 10); _v /= 10; } } for (int _r = _n - 1; _r >= 0 && _dp < sizeof(_diag) - 1; _r--) _diag[_dp++] = _buf[_r]; }
+                { const char *_sfx = " text=\""; while (*_sfx && _dp < sizeof(_diag) - 1) _diag[_dp++] = *_sfx++; }
+                { unsigned int _ti = 0; while (_ti < 30 && tok.text[_ti] && _dp < sizeof(_diag) - 2) _diag[_dp++] = tok.text[_ti++]; }
+                if (_dp < sizeof(_diag) - 2) { _diag[_dp++] = '"'; _diag[_dp++] = '\n'; }
+                interp_emit_stream(_diag, _dp);
+            }
             parser_error(p, "integer literal too long");
             return value_void();
         }
