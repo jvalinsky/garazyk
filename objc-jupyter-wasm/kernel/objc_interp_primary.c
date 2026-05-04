@@ -282,6 +282,7 @@ Value parse_primary(Parser *p) {
                             buf[blen++] = '.';
                             {
                                 int digits = 0;
+                                unsigned int frac_start = blen;
                                 while (fpart > 0.0 && digits < 6 && blen < 63) {
                                     fpart *= 10.0;
                                     int d = (int)fpart;
@@ -289,6 +290,8 @@ Value parse_primary(Parser *p) {
                                     fpart -= (double)d;
                                     digits++;
                                 }
+                                /* Trim trailing zeros */
+                                while (blen > frac_start && buf[blen - 1] == '0') blen--;
                             }
                         }
                         buf[blen] = '\0';
@@ -351,6 +354,7 @@ Value parse_primary(Parser *p) {
                                 buf[blen++] = '.';
                                 {
                                     int digits = 0;
+                                    unsigned int frac_start = blen;
                                     while (fpart > 0.0 && digits < 6 && blen < 63) {
                                         fpart *= 10.0;
                                         int d = (int)fpart;
@@ -358,6 +362,8 @@ Value parse_primary(Parser *p) {
                                         fpart -= (double)d;
                                         digits++;
                                     }
+                                    /* Trim trailing zeros */
+                                    while (blen > frac_start && buf[blen - 1] == '0') blen--;
                                 }
                             }
                             buf[blen] = '\0';
@@ -1312,7 +1318,7 @@ Value parse_primary(Parser *p) {
         return value_void();
     }
 
-    parser_advance(p);
     parser_error(p, "Unexpected token");
+    parser_advance(p);
     return value_void();
 }
