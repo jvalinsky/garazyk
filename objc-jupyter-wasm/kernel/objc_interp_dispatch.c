@@ -23,6 +23,7 @@ extern void parser_error(struct Parser *p, const char *msg);
 extern Value parse_expression_safe(struct Parser *p);
 extern Value eval_source_range(unsigned int start, unsigned int len, const char *source,
                                unsigned int line_offset);
+extern InterpVar *interp_find_var(const char *name);
 
 /* Parser layout must match the definition in objc_interpreter.c. */
 
@@ -245,4 +246,73 @@ void eval_nslog(struct Parser *p) {
 
     /* NSLog always appends a newline */
     nslog_append_char('\n');
+}
+
+/* Check if a class conforms to a given protocol.
+ * 1. Checks the class_conformances table (populated in parse_interface).
+ * 2. If the protocol declares required methods, verifies the class
+ *    (or its @implementation) actually implements them.
+ * Returns 1 if the class conforms (name + method-level), 0 otherwise. */
+int class_conforms_to_protocol(const char *class_name, const char *protocol_name) {
+    int found_protocol = 0;
+    int found_class = 0;
+    unsigned int pi = 0; /* protocol index */
+    unsigned int ci = 0; /* class variable index */
+
+    /* Find the protocol in the protocol table */
+    for (pi = 0; pi < g_ctx.protocol_count; pi++) {
+        if (cstr_eq(g_ctx.protocols[pi].name, protocol_name)) {
+            found_protocol = 1;
+            break;
+        }
+    }
+    if (!found_protocol) return 0; /* protocol not even registered */
+
+    /* Find the class in the variable table */
+    for (ci = 0; ci < g_ctx.var_count; ci++) {
+        if (g_ctx.vars[ci].is_class && cstr_eq(g_ctx.vars[ci].name, class_name)) {
+            found_class = 1;
+            break;
+        }
+    }
+    if (!found_class) return 0; /* class not found */
+
+    /* Check class_conformances table (was <Protocol> declared?) */
+    {
+        extern char class_conformances[OBJC_INTERP_MAX_CLASSES][8][64];
+        extern unsigned int class_conforms_count[OBJC_INTERP_MAX_CLASSES];
+        unsigned int cc;
+        int name_conforms = 0;
+        for (cc = 0; cc < class_conforms_count[ci]; cc++) {
+            if (cstr_eq(class_conformances[ci][cc], protocol_name)) {
+                name_conforms = 1;
+                break;
+            }
+        }
+        if (!name_conforms) return 0; /* class was not declared as conforming */
+    }
+
+    /* Method-level check: verify required methods are implemented.
+     * We check both: (a) methods registered via @implementation, and
+     * (b) methods dynamically added via class_addMethod. */
+    {
+        unsigned int ri;
+        unsigned int mi;
+        for (ri = 0; ri < g_ctx.protocols[pi].required_count; ri++) {
+            const char *req_sel = g_ctx.protocols[pi].required_methods[ri];
+            int method_found = 0;
+
+            /* Check interpreter-registered methods (from @implementation) */
+            for (mi = 0; mi < g_ctx.method_count; mi++) {
+                if (g_ctx.methods[mi].class_ptr == (Class)(unsigned long)(100 + ci) &&
+                    cstr_eq(g_ctx.methods[mi].source, req_sel)) {
+                    method_found = 1;
+                    break;
+                }
+            }
+            if (!method_found) return 0; /* required method not implemented */
+        }
+    }
+
+    return 1; /* all required methods found */
 }
