@@ -371,6 +371,11 @@ export class ObjcKernel extends BaseKernel {
       traceback: reply.traceback || []
     };
 
+    /* Map ObjCException to a proper error name for display */
+    if (reply.ename === 'ObjCException') {
+      error.ename = 'ObjCException';
+    }
+
     if (!silent) {
       this.publishExecuteError(error, parentHeader);
     }
@@ -580,6 +585,9 @@ export class ObjcKernel extends BaseKernel {
     if (type === 'error') {
       const error = new Error(content?.evalue || 'Objective-C worker error');
       error.name = content?.ename || 'ObjcKernelError';
+      if (content?.ename === 'ObjCException') {
+        error.name = 'ObjCException';
+      }
       pending.reject(error);
       return;
     }
