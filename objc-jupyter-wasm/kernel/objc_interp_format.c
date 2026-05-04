@@ -684,6 +684,16 @@ void format_value(Value v, char *buf, unsigned int capacity) {
          * so we check if the pointer looks like a Foundation stub or C string first. */
         Class cls = (Class)0;
         const char *str_val = (const char *)v.obj_val;
+        /* NSNumber marker: "NSNumber:<value>" — display just the value */
+        if (cstr_starts(str_val, "NSNumber:")) {
+            fmt_append_str(buf, capacity, &offset, str_val + 9);
+            return;
+        }
+        /* NSFloat marker: "NSFloat:<value>" — display just the value */
+        if (cstr_starts(str_val, "NSFloat:")) {
+            fmt_append_str(buf, capacity, &offset, str_val + 8);
+            return;
+        }
         if (!cstr_starts(str_val, "FDObj:") &&
             str_val != 0 &&
             (str_val < g_ctx.string_pool || str_val >= g_ctx.string_pool + OBJC_INTERP_STRING_POOL_SIZE)) {
