@@ -493,6 +493,15 @@ Value parse_type_and_var_decl(Parser *p) {
             parser_error(p, "variable table full (max 1024)");
             return value_void();
         }
+        /* Clear all type flags before re-setting — prevents stale flags
+         * when a variable is redeclared (e.g., 'int i = 1' after 'int i = 0'
+         * in a prior cell, where the old variable had is_int=1 but also
+         * potentially stale is_id/is_float from state pollution). */
+        var->is_int = 0;
+        var->is_float = 0;
+        var->is_class = 0;
+        var->is_sel = 0;
+        var->is_id = 0;
         var->is_block_captured = is_block_var;
         var->is_static = is_static_var; /* mark as static if needed */
 
