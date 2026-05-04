@@ -980,6 +980,7 @@ Value eval_ast(AstNode *node, const char *source) {
             last = eval_ast(node->block.children[i], source);
             if (g_ctx.return_pending || g_ctx.break_pending || g_ctx.continue_pending)
                 return last;
+            if (g_ctx.error_code != OBJC_INTERP_OK) return last;
         }
         break;
     }
