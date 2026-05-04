@@ -1,3 +1,0 @@
-interface:
-  display_name: "ObjC Service Boundary Audit"
-  short_description: "Audit service authz boundary checks"
