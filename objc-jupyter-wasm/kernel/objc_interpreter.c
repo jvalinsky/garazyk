@@ -460,6 +460,22 @@ Token parser_current(Parser *p) {
 
 void parser_advance(Parser *p) {
     p->lex.current = lexer_next_token(&p->lex);
+    /* Diagnostic: detect truncated flag corruption after lexer returns */
+    if (p->lex.current.truncated != 0 && p->lex.current.type == TOK_INT_LITERAL) {
+        extern void interp_emit_stream(const char *data, unsigned int len);
+        extern unsigned int g_ctx_var_count(void);
+        char _adiag[160];
+        unsigned int _adp = 0;
+        const char *_apfx = "ADVANCE_BUG: truncated=";
+        while (*_apfx && _adp < sizeof(_adiag) - 1) _adiag[_adp++] = *_apfx++;
+        { int _v = p->lex.current.truncated; char _buf[12]; int _n = 0; if (_v < 0) { _adiag[_adp++] = '-'; _v = -_v; } if (_v == 0) _buf[_n++] = '0'; else { while (_v > 0 && _n < 11) { _buf[_n++] = '0' + (_v % 10); _v /= 10; } } for (int _r = _n - 1; _r >= 0 && _adp < sizeof(_adiag) - 1; _r--) _adiag[_adp++] = _buf[_r]; }
+        { const char *_asfx = " var_count="; while (*_asfx && _adp < sizeof(_adiag) - 1) _adiag[_adp++] = *_asfx++; }
+        { unsigned int _vc = g_ctx_var_count(); char _buf[12]; int _n = 0; if (_vc == 0) _buf[_n++] = '0'; else { while (_vc > 0 && _n < 11) { _buf[_n++] = '0' + (_vc % 10); _vc /= 10; } } for (int _r = _n - 1; _r >= 0 && _adp < sizeof(_adiag) - 1; _r--) _adiag[_adp++] = _buf[_r]; }
+        { const char *_asfx = " text=\""; while (*_asfx && _adp < sizeof(_adiag) - 1) _adiag[_adp++] = *_asfx++; }
+        { unsigned int _ati = 0; while (_ati < 16 && p->lex.current.text[_ati] && _adp < sizeof(_adiag) - 2) _adiag[_adp++] = p->lex.current.text[_ati++]; }
+        if (_adp < sizeof(_adiag) - 2) { _adiag[_adp++] = '"'; _adiag[_adp++] = '\n'; }
+        interp_emit_stream(_adiag, _adp);
+    }
 }
 
 int parser_expect(Parser *p, TokenType type) {
@@ -593,6 +609,8 @@ InterpVar *interp_create_var(const char *name) {
     g_ctx.vars[g_ctx.var_count].is_class = 0;
     g_ctx.vars[g_ctx.var_count].is_sel = 0;
     g_ctx.vars[g_ctx.var_count].is_id = 0;
+    g_ctx.vars[g_ctx.var_count].is_block_captured = 0;
+    g_ctx.vars[g_ctx.var_count].is_static = 0;
     g_ctx.var_count++;
     return &g_ctx.vars[g_ctx.var_count - 1];
 }
@@ -1204,6 +1222,16 @@ void objc_interp_reset(void) {
     g_ctx.result_buffer[0] = '\0';
     /* Don't reset g_ctx.var_count — variables persist across cells */
     /* Don't reset g_ctx.method_count — methods persist across cells */
+}
+
+void objc_interp_full_reset(void) {
+    /* Clear all persistent state for test isolation.
+     * Unlike objc_interp_reset which preserves variables/methods across cells,
+     * this zeroes everything and re-initializes Foundation classes. */
+    memset(&g_ctx, 0, sizeof(g_ctx));
+    g_ctx.next_coll_id = 1;
+    g_ctx.next_block_id = 1;
+    objc_interp_init();
 }
 
 /* ── Variable table accessors for tab completion ──────────────── */

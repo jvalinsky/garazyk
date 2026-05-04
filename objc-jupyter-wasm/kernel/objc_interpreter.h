@@ -101,6 +101,13 @@ const char *objc_interp_get_result(void);
 void objc_interp_reset(void);
 
 /**
+ * Full reset: clears ALL persistent state (variables, methods, properties,
+ * collections, blocks, string pool) and re-initializes Foundation classes.
+ * Use for test isolation between test groups.
+ */
+void objc_interp_full_reset(void);
+
+/**
  * Perform garbage collection on the string pool.
  * Reclaims unreachable string pool entries. Called automatically
  * between cell executions.  Defined in objc_interp_format.c.

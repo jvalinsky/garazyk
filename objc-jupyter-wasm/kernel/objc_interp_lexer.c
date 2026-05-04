@@ -332,6 +332,19 @@ Token lexer_next_token(Lexer *lex) {
         }
         tok.text[i] = '\0';
         tok.type = TOK_INT_LITERAL;
+        /* Diagnostic: catch truncated flag corruption */
+        if (tok.truncated != 0) {
+            extern void interp_emit_stream(const char *data, unsigned int len);
+            char _ldiag[128];
+            unsigned int _ldp = 0;
+            const char *_lpfx = "LEXER_BUG: truncated=";
+            while (*_lpfx && _ldp < sizeof(_ldiag) - 1) _ldiag[_ldp++] = *_lpfx++;
+            _ldiag[_ldp++] = '0' + (tok.truncated % 10);
+            { const char *_lsfx = " text=\""; while (*_lsfx && _ldp < sizeof(_ldiag) - 1) _ldiag[_ldp++] = *_lsfx++; }
+            { unsigned int _lti = 0; while (_lti < 20 && tok.text[_lti] && _ldp < sizeof(_ldiag) - 2) _ldiag[_ldp++] = tok.text[_lti++]; }
+            if (_ldp < sizeof(_ldiag) - 2) { _ldiag[_ldp++] = '"'; _ldiag[_ldp++] = '\n'; }
+            interp_emit_stream(_ldiag, _ldp);
+        }
         return tok;
     }
 
