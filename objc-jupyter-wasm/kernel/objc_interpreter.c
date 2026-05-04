@@ -86,8 +86,8 @@ const char *typedef_resolve(const char *name) {
 void set_error_from_parser(Parser *p) {
     g_ctx.error_code = p->error;
     cstr_copy(g_ctx.error_buffer, p->error_msg, OBJC_INTERP_ERROR_SIZE);
-    g_ctx.error_line = p->lex.line + p->lex.lex_line_offset;
-    g_ctx.error_column = p->lex.column;
+    g_ctx.error_line = p->error_line;
+    g_ctx.error_column = p->error_column;
 }
 
 void parser_init(Parser *p, const char *source, unsigned int length,
@@ -117,6 +117,10 @@ int parser_expect(Parser *p, TokenType type) {
 
 void parser_error(Parser *p, const char *msg) {
     p->error = OBJC_INTERP_SYNTAX_ERROR;
+    p->error_line = p->lex.line + p->lex.lex_line_offset;
+    p->error_column = p->lex.column;
+    if (p->error_line == 0) p->error_line = 1;
+    if (p->error_column == 0) p->error_column = 1;
     /* Format: "line N, column M: <message>" */
     {
         char buf[OBJC_INTERP_ERROR_SIZE];
@@ -128,10 +132,9 @@ void parser_error(Parser *p, const char *msg) {
         }
         /* Write line number */
         {
-            unsigned int line = p->lex.line + p->lex.lex_line_offset;
+            unsigned int line = p->error_line;
             char digits[10];
             int dcount = 0;
-            if (line == 0) line = 1;
             while (line > 0 && dcount < 10) {
                 digits[dcount++] = '0' + (line % 10);
                 line /= 10;
@@ -152,10 +155,9 @@ void parser_error(Parser *p, const char *msg) {
         }
         /* Write column number */
         {
-            unsigned int col = p->lex.column;
+            unsigned int col = p->error_column;
             char digits[10];
             int dcount = 0;
-            if (col == 0) col = 1;
             while (col > 0 && dcount < 10) {
                 digits[dcount++] = '0' + (col % 10);
                 col /= 10;

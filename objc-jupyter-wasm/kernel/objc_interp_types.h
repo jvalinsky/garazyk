@@ -469,6 +469,8 @@ typedef struct Parser {
     Lexer lex;
     int error;
     char error_msg[OBJC_INTERP_ERROR_SIZE];
+    unsigned int error_line;
+    unsigned int error_column;
 } Parser;
 
 #endif /* OBJC_INTERP_TYPES_H */
