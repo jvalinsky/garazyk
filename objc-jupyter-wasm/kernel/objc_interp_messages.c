@@ -288,6 +288,52 @@ Value parse_message_send(Parser *p) {
                     return execute_interpreter_method(p, &g_ctx.methods[mi], sel, receiver,
                                                       keyword_args, arg_count, 1);
                 }
+
+                /* Synthesized property getter/setter dispatch.
+                 * If no interpreter method matched, check if the selector
+                 * corresponds to a synthesized @property accessor. */
+                {
+                    unsigned int pi;
+
+                    /* Setter pattern: setXxx: → property xxx */
+                    if (sel_name[0] == 's' && sel_name[1] == 'e' &&
+                        sel_name[2] == 't' &&
+                        sel_name[3] >= 'A' && sel_name[3] <= 'Z' &&
+                        arg_count >= 1) {
+                        char prop_name[64];
+                        unsigned int si = 3, di = 0;
+                        prop_name[di++] = sel_name[si++] + 32; /* lowercase */
+                        while (sel_name[si] && sel_name[si] != ':' && di < 62)
+                            prop_name[di++] = sel_name[si++];
+                        prop_name[di] = '\0';
+
+                        for (pi = 0; pi < g_ctx.property_count; pi++) {
+                            if (g_ctx.properties[pi].synthesized &&
+                                cstr_eq(prop_name, g_ctx.properties[pi].name) &&
+                                property_matches_class(receiver, pi)) {
+                                instance_var_set(receiver,
+                                    g_ctx.properties[pi].name, keyword_args[0]);
+                                return value_from_id(receiver);
+                            }
+                        }
+                    }
+
+                    /* Getter pattern: xxx (no args, selector = property name) */
+                    if (arg_count == 0) {
+                        for (pi = 0; pi < g_ctx.property_count; pi++) {
+                            if (g_ctx.properties[pi].synthesized &&
+                                cstr_eq(sel_name, g_ctx.properties[pi].name) &&
+                                property_matches_class(receiver, pi)) {
+                                Value *stored = instance_var_get(receiver,
+                                    g_ctx.properties[pi].name);
+                                if (stored) return *stored;
+                                if (g_ctx.properties[pi].is_int)
+                                    return value_from_int(0);
+                                return value_from_id(0);
+                            }
+                        }
+                    }
+                }
             }
         }
 
