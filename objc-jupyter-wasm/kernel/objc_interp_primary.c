@@ -126,8 +126,33 @@ Value parse_primary(Parser *p) {
             Token after_paren = parser_current(p);
             /* Check for type name followed by * or ) */
             if (after_paren.type == TOK_IDENTIFIER) {
-                /* Skip type name */
-                parser_advance(p);
+                /* Skip type name — may be multi-token (unsigned int, long long, etc.) */
+                int is_type_modifier = (
+                    cstr_eq(after_paren.text, "unsigned") ||
+                    cstr_eq(after_paren.text, "signed") ||
+                    cstr_eq(after_paren.text, "short") ||
+                    cstr_eq(after_paren.text, "long") ||
+                    cstr_eq(after_paren.text, "const") ||
+                    cstr_eq(after_paren.text, "volatile") ||
+                    cstr_eq(after_paren.text, "restrict")
+                );
+                parser_advance(p); /* consume first type token */
+                /* If it was a type modifier, consume the following type tokens */
+                if (is_type_modifier) {
+                    while (parser_current(p).type == TOK_IDENTIFIER && (
+                        cstr_eq(parser_current(p).text, "int") ||
+                        cstr_eq(parser_current(p).text, "char") ||
+                        cstr_eq(parser_current(p).text, "long") ||
+                        cstr_eq(parser_current(p).text, "short") ||
+                        cstr_eq(parser_current(p).text, "double") ||
+                        cstr_eq(parser_current(p).text, "unsigned") ||
+                        cstr_eq(parser_current(p).text, "signed") ||
+                        cstr_eq(parser_current(p).text, "const") ||
+                        cstr_eq(parser_current(p).text, "volatile") ||
+                        cstr_eq(parser_current(p).text, "restrict"))) {
+                        parser_advance(p);
+                    }
+                }
                 /* Check for * pointer or closing paren followed by expr */
                 if (parser_current(p).type == TOK_STAR) {
                     parser_advance(p); /* consume * */

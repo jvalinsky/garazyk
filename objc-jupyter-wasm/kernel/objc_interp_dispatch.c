@@ -101,6 +101,23 @@ unsigned int find_interpreter_method(SEL sel, Value target, id receiver,
     return g_ctx.method_count;
 }
 
+/* Find method for super dispatch: skip methods belonging to skip_class,
+ * then search the remaining methods (including NSObject built-ins).
+ * This implements [super selector:] by looking up the method in the
+ * superclass chain rather than the current class. */
+unsigned int find_interpreter_method_super(SEL sel, Value target, id receiver,
+                                           Class skip_class) {
+    unsigned int mi;
+    /* First pass: find a method that does NOT belong to skip_class */
+    for (mi = 0; mi < g_ctx.method_count; mi++) {
+        if (g_ctx.methods[mi].class_ptr == skip_class) continue;
+        if (interpreter_method_matches(&g_ctx.methods[mi], sel, target, receiver, 0)) {
+            return mi;
+        }
+    }
+    return g_ctx.method_count;
+}
+
 int bind_method_var(const char *name, Value value) {
     InterpVar *var = dispatch_get_or_create_var(name);
     if (var == 0) return -1;
@@ -159,6 +176,11 @@ Value execute_interpreter_method(struct Parser *p, MethodImpl *method, SEL sel,
     g_ctx.return_pending = 0;
     g_ctx.return_value = value_void();
 
+    /* Save and set current class for super dispatch */
+    {
+        Class saved_class_ptr = g_ctx.current_class_ptr;
+        g_ctx.current_class_ptr = method->class_ptr;
+
     if (bind_method_var("self", value_from_id(receiver)) != 0 ||
         bind_method_var("_cmd", value_from_sel(sel)) != 0) {
         parser_error(p, "variable table full (max 1024)");
@@ -191,6 +213,8 @@ done:
     g_ctx.var_count = saved_var_count;
     g_ctx.var_scope_base = saved_scope_base;
     g_ctx.return_pending = 0;
+    g_ctx.current_class_ptr = saved_class_ptr;
+    }
     return return_val;
 }
 

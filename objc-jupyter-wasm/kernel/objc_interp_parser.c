@@ -400,6 +400,74 @@ Value parse_type_and_var_decl(Parser *p) {
         parser_advance(p);
     }
 
+    /* Multi-token type parsing: unsigned int, long long, signed char, etc.
+     * Consume subsequent type tokens that extend the type, then map
+     * the combined type to one of the interpreter's internal types. */
+    if (cstr_eq(type_name, "unsigned") || cstr_eq(type_name, "signed")) {
+        /* unsigned/signed alone → int; followed by int/char/long/short → combine */
+        if (parser_current(p).type == TOK_IDENTIFIER) {
+            if (cstr_eq(parser_current(p).text, "int") ||
+                cstr_eq(parser_current(p).text, "char") ||
+                cstr_eq(parser_current(p).text, "short") ||
+                cstr_eq(parser_current(p).text, "long")) {
+                /* unsigned int → int, unsigned char → char, etc.
+                 * In the interpreter, all are mapped to the base type. */
+                cstr_copy(type_name, parser_current(p).text, 64);
+                parser_advance(p);
+            }
+            /* else: standalone "unsigned" → treat as "int" */
+        }
+        if (cstr_eq(type_name, "unsigned") || cstr_eq(type_name, "signed")) {
+            cstr_copy(type_name, "int", 64);
+        }
+    }
+    if (cstr_eq(type_name, "long")) {
+        /* long alone → int; long long → int; long double → double */
+        if (parser_current(p).type == TOK_IDENTIFIER) {
+            if (cstr_eq(parser_current(p).text, "long")) {
+                cstr_copy(type_name, "int", 64); /* long long → int */
+                parser_advance(p);
+            } else if (cstr_eq(parser_current(p).text, "int")) {
+                cstr_copy(type_name, "int", 64); /* long int → int */
+                parser_advance(p);
+            } else if (cstr_eq(parser_current(p).text, "double")) {
+                cstr_copy(type_name, "double", 64); /* long double → double */
+                parser_advance(p);
+            }
+        }
+        /* standalone "long" → int */
+        if (cstr_eq(type_name, "long")) {
+            cstr_copy(type_name, "int", 64);
+        }
+    }
+    if (cstr_eq(type_name, "short")) {
+        /* short alone → int; short int → int */
+        if (parser_current(p).type == TOK_IDENTIFIER &&
+            cstr_eq(parser_current(p).text, "int")) {
+            parser_advance(p);
+        }
+        cstr_copy(type_name, "int", 64);
+    }
+    /* Also handle: unsigned long, unsigned long long, etc.
+     * These come from the unsigned branch above mapping to "long" or "int",
+     * then we need to handle "long" after "unsigned" was consumed.
+     * The unsigned branch already consumed the base type, but if it saw
+     * "unsigned long" it mapped type_name to "long" — handle that here. */
+    if (cstr_eq(type_name, "long")) {
+        if (parser_current(p).type == TOK_IDENTIFIER) {
+            if (cstr_eq(parser_current(p).text, "long")) {
+                cstr_copy(type_name, "int", 64); /* long long → int */
+                parser_advance(p);
+            } else if (cstr_eq(parser_current(p).text, "int")) {
+                cstr_copy(type_name, "int", 64); /* long int → int */
+                parser_advance(p);
+            }
+        }
+        if (cstr_eq(type_name, "long")) {
+            cstr_copy(type_name, "int", 64);
+        }
+    }
+
     /* Block variable declaration: void (^blockName)(params) = ^{ ... };
      * After the return type, we see ( ^ name ) ( param_types ) = block_literal */
     if (parser_current(p).type == TOK_OPEN_PAREN) {
@@ -783,8 +851,7 @@ Value parse_statement(Parser *p) {
         /* Check for __block qualifier */
         int is_block_qualifier = cstr_eq(tok.text, "__block");
         /* Storage qualifiers — route to parse_type_and_var_decl
-         * for proper handling (static/extern). Note: unsigned/short are type
-         * modifiers that would need multi-token type parsing, not implemented yet. */
+         * for proper handling (static/extern). */
         int is_storage_qualifier = (
             cstr_eq(tok.text, "static") ||
             cstr_eq(tok.text, "extern")
@@ -796,6 +863,14 @@ Value parse_statement(Parser *p) {
             cstr_eq(tok.text, "const") ||
             cstr_eq(tok.text, "volatile") ||
             cstr_eq(tok.text, "restrict")
+        );
+        /* Type modifiers: unsigned, signed, short — always followed by
+         * a type name (or standalone as int). Route to parse_type_and_var_decl
+         * which now handles multi-token type parsing. */
+        int is_type_modifier = (
+            cstr_eq(tok.text, "unsigned") ||
+            cstr_eq(tok.text, "signed") ||
+            cstr_eq(tok.text, "short")
         );
         /* Check if this is a type name followed by a variable name.
          * Built-in types are always recognized. Registered class names
@@ -840,8 +915,8 @@ Value parse_statement(Parser *p) {
             }
         }
 
-        if (is_builtin_type || is_class_type || is_typedef || is_block_qualifier || is_storage_qualifier || is_type_qualifier) {
-            if (is_block_qualifier || is_storage_qualifier || is_type_qualifier) {
+        if (is_builtin_type || is_class_type || is_typedef || is_block_qualifier || is_storage_qualifier || is_type_qualifier || is_type_modifier) {
+            if (is_block_qualifier || is_storage_qualifier || is_type_qualifier || is_type_modifier) {
                 /* __block and storage qualifiers (static, extern)
                  * are always followed by a type — call directly */
                 Value v = parse_type_and_var_decl(p);
