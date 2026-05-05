@@ -1042,6 +1042,21 @@ static const FoundationSelector foundation_selectors[] = {
     {"NSData", "description"},
     {"NSData", "isEqual:"},
     {"NSData", "isEqualToData:"},
+
+    /* NSJSONSerialization */
+    {"NSJSONSerialization", "JSONObjectWithData:options:error:"},
+    {"NSJSONSerialization", "dataWithJSONObject:options:error:"},
+
+    /* Networking */
+    {"NSURL", "URLWithString:"},
+    {"NSMutableURLRequest", "requestWithURL:"},
+    {"NSMutableURLRequest", "setHTTPMethod:"},
+    {"NSMutableURLRequest", "setValue:forHTTPHeaderField:"},
+    {"NSMutableURLRequest", "setHTTPBody:"},
+    {"NSURLSession", "sharedSession"},
+    {"NSURLSession", "dataTaskWithRequest:completionHandler:"},
+    {"NSURLSession", "dataTaskWithURL:completionHandler:"},
+    {"NSURLSessionDataTask", "resume"},
 };
 #define FOUNDATION_SELECTOR_COUNT (sizeof(foundation_selectors) / sizeof(foundation_selectors[0]))
 
@@ -1049,7 +1064,8 @@ static const char *foundation_class_names[] = {
     "NSObject", "NSString", "NSNumber",
     "NSArray", "NSMutableArray", "NSDictionary",
     "NSMutableDictionary", "NSSet", "NSData",
-    "NSCharacterSet"
+    "NSCharacterSet", "NSJSONSerialization",
+    "NSURL", "NSMutableURLRequest", "NSURLSession", "NSURLSessionDataTask"
 };
 #define FOUNDATION_CLASS_COUNT (sizeof(foundation_class_names) / sizeof(foundation_class_names[0]))
 

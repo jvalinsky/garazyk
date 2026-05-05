@@ -25,6 +25,15 @@ extern Value eval_source_range(unsigned int start, unsigned int len, const char 
                                unsigned int line_offset);
 extern InterpVar *interp_find_var(const char *name);
 
+/* string pool and FDObj helpers */
+extern int is_string_pool_pointer(id ptr);
+extern Class class_for_fdobj_marker(id receiver);
+
+/* Forward declarations for this file */
+static const char *class_get_superclass_name(const char *class_name);
+static Class class_ptr_for_name(const char *name);
+static const char *class_name_for_ptr(Class cls);
+
 /* Parser layout must match the definition in objc_interpreter.c. */
 
 static InterpVar *dispatch_find_var(const char *name) {
@@ -91,11 +100,50 @@ int interpreter_method_matches(MethodImpl *method, SEL sel, Value target,
 }
 
 unsigned int find_interpreter_method(SEL sel, Value target, id receiver,
-                                     int instance_only) {
+                                        int instance_only) {
     unsigned int mi;
+    const char *target_class_name = 0;
+    Class recv_cls = (Class)0;
+
+    /* Get target class information */
+    if (target.is_class) {
+        recv_cls = (Class)target.cls_val;
+        target_class_name = class_name_for_ptr(recv_cls);
+    } else if (target.is_id && receiver != 0) {
+        const char *recv_str = (const char *)receiver;
+        if (is_string_pool_pointer(receiver)) {
+            recv_cls = class_for_fdobj_marker(receiver);
+        } else {
+            recv_cls = object_getClass(receiver);
+        }
+        if (recv_cls) {
+            target_class_name = class_name_for_ptr(recv_cls);
+        }
+    }
+
     for (mi = 0; mi < g_ctx.method_count; mi++) {
-        if (interpreter_method_matches(&g_ctx.methods[mi], sel, target, receiver, instance_only)) {
-            return mi;
+        MethodImpl *method = &g_ctx.methods[mi];
+        if (method->selector != sel || method->source_len == 0) continue;
+
+        /* Check if method matches the target */
+        if (target.is_class && method->is_class_method) {
+            /* Class method: check class pointer or name */
+            if (method->class_ptr == target.cls_val) return mi;
+            if (target_class_name) {
+                const char *method_class_name = class_name_for_ptr(method->class_ptr);
+                if (method_class_name && cstr_eq(method_class_name, target_class_name)) {
+                    return mi;
+                }
+            }
+        } else if ((target.is_id || target.is_int) && !method->is_class_method) {
+            /* Instance method: check class pointer or name */
+            if (recv_cls && method->class_ptr == recv_cls) return mi;
+            if (target_class_name) {
+                const char *method_class_name = class_name_for_ptr(method->class_ptr);
+                if (method_class_name && cstr_eq(method_class_name, target_class_name)) {
+                    return mi;
+                }
+            }
         }
     }
     return g_ctx.method_count;

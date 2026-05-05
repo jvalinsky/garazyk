@@ -502,16 +502,15 @@ Value parse_type_and_var_decl(Parser *p) {
                     parser_advance(p); /* consume ) */
                 }
 
-                /* Skip the parameter type list: (Type1, Type2, ...) */
+                /* Skip the parameter type list: (Type1, Type2, ...)
+                 * We need to track parenthesis depth to handle nested types. */
                 if (parser_current(p).type == TOK_OPEN_PAREN) {
-                    parser_advance(p);
-                    while (parser_current(p).type != TOK_CLOSE_PAREN &&
-                           parser_current(p).type != TOK_EOF) {
+                    unsigned int paren_depth = 0;
+                    do {
+                        if (parser_current(p).type == TOK_OPEN_PAREN) paren_depth++;
+                        else if (parser_current(p).type == TOK_CLOSE_PAREN) paren_depth--;
                         parser_advance(p);
-                    }
-                    if (parser_current(p).type == TOK_CLOSE_PAREN) {
-                        parser_advance(p);
-                    }
+                    } while (paren_depth > 0 && parser_current(p).type != TOK_EOF);
                 }
 
                 /* For static block variables, check if one already exists */

@@ -13,8 +13,95 @@ extern int objc_kernel_host_should_interrupt(void)
     __attribute__((import_module("objc_kernel_host"), import_name("should_interrupt")));
 extern void objc_kernel_host_stream(int fd, const char *ptr, unsigned int len)
     __attribute__((import_module("objc_kernel_host"), import_name("stream")));
+extern id objc_kernel_host_json_parse(const char *ptr, unsigned int len)
+    __attribute__((import_module("objc_kernel_host"), import_name("json_parse")));
+extern int objc_kernel_host_fetch(int task_id, const char *url, const char *method, const char *headers_json, const char *body, unsigned int body_len)
+    __attribute__((import_module("objc_kernel_host"), import_name("fetch")));
 
 /* ── Interpreter helpers ────────────────────────────────────────── */
+
+extern InterpVar *interp_get_or_create_var(const char *name);
+
+/* ── Network callback (exported to JS) ──────────────────────────── */
+
+void objc_kernel_on_fetch_complete(int task_id, int status_code, const char *data, unsigned int data_len) {
+    unsigned int i;
+    for (i = 0; i < g_ctx.network_task_count; i++) {
+        if (g_ctx.network_tasks[i].task_id == task_id && g_ctx.network_tasks[i].active) {
+            unsigned int block_id = g_ctx.network_tasks[i].block_id;
+            g_ctx.network_tasks[i].active = 0; /* Mark as complete */
+
+            /* Construct NSData for the response body */
+            Value data_val = value_from_id(0);
+            if (data && data_len > 0) {
+                unsigned int needed = 7 + data_len * 2 + 1;
+                char *buf = string_pool_alloc(needed);
+                if (buf) {
+                    static const char hex_chars[] = "0123456789abcdef";
+                    unsigned int j;
+                    cstr_copy(buf, "NSData:", needed);
+                    for (j = 0; j < data_len; j++) {
+                        unsigned char c = (unsigned char)data[j];
+                        buf[7 + j * 2] = hex_chars[(c >> 4) & 0x0f];
+                        buf[7 + j * 2 + 1] = hex_chars[c & 0x0f];
+                    }
+                    buf[7 + data_len * 2] = '\0';
+                    data_val = value_from_id((id)buf);
+                }
+            }
+
+            /* Construct NSHTTPURLResponse marker (simplified for now) */
+            Value response_val = value_from_id((id)"FDObj:NSHTTPURLResponse"); /* Simplified */
+            
+            /* Error value */
+            Value error_val = value_from_id(0); /* nil error for now if we got a response */
+
+            /* We need to execute the block with (data, response, error) */
+            /* This is a bit tricky: we are outside the normal parse_statement loop.
+               We must locate the block, set up arguments, and call eval_source_range. */
+            {
+                BlockImpl *blk = block_get(block_id);
+                if (blk) {
+                    /* Save variables to restore later */
+                    unsigned int saved_var_count = g_ctx.var_count;
+
+                    /* Set up arguments */
+                    if (blk->arg_count > 0) {
+                        InterpVar *arg = interp_get_or_create_var(blk->arg_names[0]);
+                        if (arg) interp_set_var_from_value(arg, data_val);
+                    }
+                    if (blk->arg_count > 1) {
+                        InterpVar *arg = interp_get_or_create_var(blk->arg_names[1]);
+                        if (arg) interp_set_var_from_value(arg, response_val);
+                    }
+                    if (blk->arg_count > 2) {
+                        InterpVar *arg = interp_get_or_create_var(blk->arg_names[2]);
+                        if (arg) interp_set_var_from_value(arg, error_val);
+                    }
+
+                    /* Execute block */
+                    {
+                        extern Value eval_source_range(unsigned int start, unsigned int len, const char *source, unsigned int line_offset);
+                        eval_source_range(0, blk->source_len, blk->source, 0);
+                    }
+
+                    /* Restore variables */
+                    g_ctx.var_count = saved_var_count;
+                }
+            }
+            break;
+        }
+    }
+}
+
+int objc_kernel_has_pending_tasks(void) {
+    unsigned int i;
+    int count = 0;
+    for (i = 0; i < g_ctx.network_task_count; i++) {
+        if (g_ctx.network_tasks[i].active) count++;
+    }
+    return count;
+}
 
 int interp_should_interrupt(void) {
     return objc_kernel_host_should_interrupt() != 0;
@@ -68,6 +155,70 @@ Value value_from_interp_var(const InterpVar *var) {
     return v;
 }
 
+Value value_from_int_exported(int n) {
+    return value_from_int(n);
+}
+
+Value value_from_id_exported(id obj) {
+    return value_from_id(obj);
+}
+
+Value value_from_float_exported(double f) {
+    return value_from_float(f);
+}
+
+/* ── JavaScript Collection Helpers ─────────────────────────────── */
+
+int coll_add_string_val(unsigned int coll_id, const char *key_str, const char *val_str) {
+    Value key = value_void();
+    Value val = value_void();
+    if (key_str) {
+        unsigned int len = cstr_len(key_str);
+        char *k = string_pool_alloc(len + 1);
+        if (k) { cstr_copy(k, key_str, len + 1); key = value_from_id((id)k); }
+    }
+    if (val_str) {
+        unsigned int len = cstr_len(val_str);
+        char *v = string_pool_alloc(len + 1);
+        if (v) { cstr_copy(v, val_str, len + 1); val = value_from_id((id)v); }
+    }
+    return coll_add(coll_id, key, val);
+}
+
+int coll_add_int_val(unsigned int coll_id, const char *key_str, int val_int) {
+    Value key = value_void();
+    if (key_str) {
+        unsigned int len = cstr_len(key_str);
+        char *k = string_pool_alloc(len + 1);
+        if (k) { cstr_copy(k, key_str, len + 1); key = value_from_id((id)k); }
+    }
+    return coll_add(coll_id, key, value_from_int(val_int));
+}
+
+int coll_add_double_val(unsigned int coll_id, const char *key_str, double val_double) {
+    Value key = value_void();
+    if (key_str) {
+        unsigned int len = cstr_len(key_str);
+        char *k = string_pool_alloc(len + 1);
+        if (k) { cstr_copy(k, key_str, len + 1); key = value_from_id((id)k); }
+    }
+    return coll_add(coll_id, key, value_from_float(val_double));
+}
+
+int coll_add_bool_val(unsigned int coll_id, const char *key_str, int val_bool) {
+    return coll_add_int_val(coll_id, key_str, val_bool ? 1 : 0);
+}
+
+int coll_add_marker_val(unsigned int coll_id, const char *key_str, id marker) {
+    Value key = value_void();
+    if (key_str) {
+        unsigned int len = cstr_len(key_str);
+        char *k = string_pool_alloc(len + 1);
+        if (k) { cstr_copy(k, key_str, len + 1); key = value_from_id((id)k); }
+    }
+    return coll_add(coll_id, key, value_from_id(marker));
+}
+
 /* ── String pool ───────────────────────────────────────────────── */
 
 /* Allocate `size` bytes from the string pool.
@@ -94,6 +245,10 @@ unsigned int coll_count(unsigned int coll_id) {
         if (g_ctx.coll_entries[i].coll_id == coll_id) count++;
     }
     return count;
+}
+
+unsigned int coll_create_new(void) {
+    return g_ctx.next_coll_id++;
 }
 
 /* Add an entry to a collection. Returns 0 on success, -1 if table full. */

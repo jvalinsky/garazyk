@@ -153,12 +153,21 @@ typedef enum {
     TOK_MINUS_MINUS,   /* -- */
     TOK_LEFT_SHIFT,    /* << */
     TOK_RIGHT_SHIFT,   /* >> */
-    TOK_RETURN,
+    TOK_BITWISE_OR,    /* | */
+    TOK_CARET,         /* ^ */
+    TOK_BITWISE_NOT,   /* ~ */
+    TOK_LOGICAL_AND,   /* && */
+    TOK_LOGICAL_OR,    /* || */
+    TOK_NOT,           /* ! */
+    TOK_QUESTION,      /* ? */
+    TOK_OR,            /* || */
+    TOK_AND,           /* && */
     TOK_IF,
     TOK_ELSE,
     TOK_WHILE,
     TOK_FOR,
     TOK_DO,
+    TOK_RETURN,
     TOK_BREAK,
     TOK_CONTINUE,
     TOK_IN,
@@ -168,13 +177,6 @@ typedef enum {
     TOK_SIZEOF,
     TOK_NIL,
     TOK_SUPER,
-    TOK_NOT,
-    TOK_BITWISE_OR,
-    TOK_OR,
-    TOK_AND,
-    TOK_QUESTION,
-    TOK_CARET,
-    TOK_TILDE,
     TOK_UNKNOWN
 } TokenType;
 
@@ -401,6 +403,16 @@ typedef struct {
 } BlockImpl;
 
 #define MAX_BLOCKS 32
+
+/* ── Network Task Registry ─────────────────────────────────────── */
+
+typedef struct {
+    int task_id;
+    unsigned int block_id; /* The Block completionHandler to fire */
+    int active;
+} PendingNetworkTask;
+
+#define MAX_NETWORK_TASKS 32
 
 /* ── Protocol declarations ─────────────────────────────────────── */
 

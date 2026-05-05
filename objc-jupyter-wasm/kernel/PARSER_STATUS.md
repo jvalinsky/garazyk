@@ -66,16 +66,16 @@ The Objective-C interpreter in `kernel.wasm` uses a custom recursive-descent par
 **Example now works:** `unsigned int x = 0;`  
 **Impact:** Fixes 3-4 failing cells
 
-### Fix 3: Block Parameter Pointer Types ⏳ PENDING INVESTIGATION
-**Problem:** Block closures with pointer parameters crash parsing  
-**Example failing:**
+### Fix 3: Block Parameter Pointer Types ✓ COMPLETED
+**Status:** Implemented on 2026-05-05  
+**What was fixed:** Block literals and declarations now correctly parse pointer parameters (e.g., `int *stop`), multi-token types (e.g., `unsigned int`), and explicit return types (e.g., `^int { ... }`). `enumerateObjectsUsingBlock:` now uses the actual parameter name for the stop flag.
+**Example now works:**
 ```c
 [nums enumerateObjectsUsingBlock:^(id obj, int idx, int *stop) {
     if (idx == 1) { *stop = 1; }
 }];
 ```
-**Impact:** Blocks 1-2 failing cells  
-**Status:** Requires investigation; error reporting may be misleading
+**Impact:** Fixes remaining failing cells in `objc-state-and-blocks.ipynb` and `algorithms.ipynb`.
 
 ### Fix 4: Smoke Test Verification ✓ COMPLETED
 **Status:** All smoke tests passed with new features (2026-05-05)
@@ -91,9 +91,10 @@ The Objective-C interpreter in `kernel.wasm` uses a custom recursive-descent par
 - Classes: Any user-defined @interface class
 
 ### Type Modifiers SUPPORTED
-- `unsigned` (partial) — handled via mapping to base types
-- `long`, `short` (partial) — handled via mapping to base types
+- `unsigned`, `signed` — handled via mapping to base types
+- `long`, `short` — handled via mapping to base types
 - `static`, `extern` — supported for variable declarations
+- `*` (pointer) — supported in block parameters and basic expressions
 
 ### Type Modifiers NOT YET SUPPORTED
 - `const`, `volatile`, `restrict` — not implemented
@@ -139,13 +140,12 @@ Coverage: 60+ feature blocks across parser, runtime, and Foundation
 
 ### Notebook Tests
 Run with: `node tests/run-notebooks.mjs --dir demo/`  
-Current baseline: 75/85 cells passing
+Current baseline: 15/15 notebooks passing (92/101 cells)
 
 ### Known Test Failures
-The failing cells are due to unimplemented parser features, not regressions:
-1. `objc-state-and-blocks.ipynb` — static keyword (FIX 1 addresses this)
-2. `atproto-accounts.ipynb` — @interface issues (may relate to FIX 2 or pre-existing)
-3. Others — Foundation stubs, multi-token types, block parameters
+Failing/skipped cells are now mostly due to missing Foundation stubs or advanced C features:
+1. `atproto-*.ipynb` — networking stubs, complex @interface constructs
+2. Advanced C — struct/union, function pointers
 
 ## Performance Notes
 

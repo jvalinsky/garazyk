@@ -94,14 +94,20 @@ int objc_kernel_info_json(unsigned int *out_ptr_ptr, unsigned int *out_len_ptr);
  *         Domain errors (parse/runtime) are returned as JSON with status != "ok".
  */
 int objc_kernel_execute_json(
-    const unsigned char *request_ptr,
+    const unsigned char *request_bytes,
     unsigned int request_len,
     unsigned int *out_ptr_ptr,
     unsigned int *out_len_ptr
 );
 
 /**
- * Get code completion matches.
+ * Returns the number of pending asynchronous tasks (e.g. network fetches).
+ */
+int objc_kernel_has_pending_tasks(void);
+
+/**
+ * Perform code completion.
+
  *
  * Request JSON format:
  *   { "code": "...", "cursorPos": N }
