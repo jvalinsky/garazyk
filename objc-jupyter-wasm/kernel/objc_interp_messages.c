@@ -26,6 +26,11 @@ extern id objc_lookUpClass(const char *name);
 extern Class object_getClass(id);
 extern InterpVar *interp_find_var(const char *name);
 extern InterpVar *interp_get_or_create_var(const char *name);
+extern unsigned int find_interpreter_method(SEL sel, Value target, id receiver, int is_setter);
+extern unsigned int find_interpreter_method_super(SEL sel, Value target, id receiver, Class skip_class);
+extern Value execute_interpreter_method(struct Parser *p, MethodImpl *method, SEL sel, id receiver,
+                                        const Value *keyword_args, unsigned int keyword_count,
+                                        int return_receiver_on_void);
 
 Value parse_message_send(Parser *p) {
     Value target;
@@ -265,9 +270,21 @@ Value parse_message_send(Parser *p) {
          * NSSet, NSData, NSObject) use built-in dispatch exclusively.
          * Custom classes may override built-in selectors (e.g., init,
          * count, description) with @implementation methods.
-         * When target_is_super is set, skip this dispatch to avoid
-         * infinite recursion (super calls should fall through to
-         * built-in NSObject dispatch). */
+         * When target_is_super is set, use super dispatch: skip the
+         * current class's methods and search the superclass chain. */
+        if (target_is_super &&
+            target.is_id && receiver != 0 &&
+            is_string_pool_pointer(receiver) &&
+            cstr_starts((const char *)receiver, "FDObj:")) {
+            unsigned int mi = find_interpreter_method_super(sel, target, receiver,
+                                                            g_ctx.current_class_ptr);
+            if (mi < g_ctx.method_count) {
+                return execute_interpreter_method(p, &g_ctx.methods[mi], sel, receiver,
+                                                  keyword_args, arg_count, 1);
+            }
+            /* Fall through to built-in dispatch (NSObject methods, etc.) */
+        }
+
         if (!target_is_super &&
             target.is_id && receiver != 0 &&
             is_string_pool_pointer(receiver) &&
@@ -2211,6 +2228,27 @@ Value parse_message_send(Parser *p) {
         if ((cstr_eq(sel_name, "copy") || cstr_eq(sel_name, "mutableCopy")) &&
             target.is_id && receiver != 0) {
             return value_from_id(receiver);
+        }
+
+        /* NSObject: retain / release / autorelease — no-ops in interpreter.
+         * The interpreter uses a string pool and collection side table,
+         * not reference counting. These messages return self (for retain,
+         * autorelease) or void (for release) to avoid "does not respond"
+         * errors when code uses ARC patterns. */
+        if (cstr_eq(sel_name, "retain") && target.is_id) {
+            return value_from_id(receiver);
+        }
+        if (cstr_eq(sel_name, "release") && target.is_id) {
+            return value_void();
+        }
+        if (cstr_eq(sel_name, "autorelease") && target.is_id) {
+            /* In a real runtime, this adds to the current autorelease pool.
+             * Here we just return self — the pool stack exists but is a no-op. */
+            return value_from_id(receiver);
+        }
+        if (cstr_eq(sel_name, "drain") && target.is_id) {
+            /* NSAutoreleasePool drain — no-op */
+            return value_void();
         }
 
         /* Fall through: no built-in, interpreter method, or property matched.
