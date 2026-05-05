@@ -9,7 +9,7 @@
 @interface PDSSequencerAnalyticsCollector ()
 @property (nonatomic, strong) PDSServiceDatabases *serviceDatabases;
 @property (nonatomic, weak) SubscribeReposHandler *subscribeHandler;
-@property (nonatomic, strong) dispatch_source_t timer;
+@property (nonatomic, PDS_GCD_STRONG) dispatch_source_t timer;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t queue;
 @property (nonatomic) int64_t lastSeq;
 @property (nonatomic) NSTimeInterval lastTimestamp;

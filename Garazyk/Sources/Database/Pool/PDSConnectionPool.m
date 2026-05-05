@@ -12,7 +12,7 @@
 
 // Thread safety
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t poolQueue;
-@property (nonatomic, strong) dispatch_semaphore_t connectionSemaphore;
+@property (nonatomic, PDS_GCD_STRONG) dispatch_semaphore_t connectionSemaphore;
 
 // Connection metadata
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSDate *> *connectionLastUsed;

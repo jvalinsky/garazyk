@@ -249,8 +249,8 @@ static inline int set_reuseaddr(int fd) {
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t listenerQueue;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t connectionsQueue;
 @property(nonatomic, strong) NSMutableSet<WebSocketConnection *> *mutableConnections;
-@property(nonatomic, strong) dispatch_semaphore_t stopSemaphore;
-@property(nonatomic, strong) dispatch_group_t taskGroup;
+@property(nonatomic, PDS_GCD_STRONG) dispatch_semaphore_t stopSemaphore;
+@property(nonatomic, PDS_GCD_STRONG) dispatch_group_t taskGroup;
 @end
 
 @implementation WebSocketServer
