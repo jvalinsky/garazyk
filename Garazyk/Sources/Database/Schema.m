@@ -1,6 +1,6 @@
 #import "Database/Schema.h"
 
-NSInteger const kPDSDatabaseSchemaVersion = 1;
+NSInteger const kPDSDatabaseSchemaVersion = 2;
 
 NSString * const kPDSAccountTableName = @"accounts";
 NSString * const kPDSAgeAssuranceNoVerification = @"no_verification";

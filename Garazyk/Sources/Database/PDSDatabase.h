@@ -342,6 +342,9 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
 /*! The subject DID for relationship records (e.g. follow target). */
 @property (nonatomic, copy, nullable) NSString *subjectDid;
 
+/*! Date when the record was indexed by the PDS. */
+@property (nonatomic, strong, nullable) NSDate *indexedAt;
+
 @end
 
 /*!
