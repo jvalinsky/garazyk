@@ -53,11 +53,10 @@ int main(int argc, char *argv[]) {
         // 2. Initialize PDS application
         NSError *error = nil;
         PDSApplication *app = [[PDSApplication alloc]
-            initWithDataDirectory:dataDir
-                           error:&error];
+            initWithDataDirectory:dataDir];
         
         if (!app) {
-            NSLog(@"ERROR: Failed to initialize PDS: %@", error);
+            NSLog(@"ERROR: Failed to initialize PDS");
             return 1;
         }
         
