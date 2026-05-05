@@ -285,6 +285,7 @@ int main(int argc, char *argv[]) {
       @"PDSCLIServeCommandTests",
       @"PDSCLIRelayCommandTests",
       @"PDSHealthCheckTests",
+      @"HealthEndpointIntegrationTests",
       @"PDSMetricsTests",
       @"OAuthServerMetadataTests",
       @"OAuthSessionTests",
