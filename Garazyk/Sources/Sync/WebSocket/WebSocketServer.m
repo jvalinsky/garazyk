@@ -1,5 +1,7 @@
 #import "Sync/WebSocket/WebSocketServer.h"
+#ifdef __APPLE__
 #import "Network/PDSNetworkTransportMac.h"
+#endif
 #import "Compat/PDSTypes.h"
 #import "Sync/WebSocket/WebSocketConnection.h"
 
