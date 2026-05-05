@@ -670,15 +670,30 @@ AstNode *parse_statement_ast(Parser *p) {
         }
     }
 
-    /* return statement → source range */
+    /* return statement → source range.
+     * Skip tokens to find statement boundaries; do NOT evaluate
+     * the expression during AST construction (it may reference
+     * variables not yet defined). */
     if (tok.type == TOK_RETURN) {
         unsigned int start = p->lex.token_start;
         parser_advance(p);
         if (parser_current(p).type != TOK_SEMICOLON &&
             parser_current(p).type != TOK_CLOSE_BRACE &&
             parser_current(p).type != TOK_EOF) {
-            parse_expression(p);
-            if (p->error) return 0;
+            /* Skip tokens until semicolon or end of block */
+            int brace_depth = 0;
+            while (parser_current(p).type != TOK_EOF) {
+                if (parser_current(p).type == TOK_OPEN_BRACE) brace_depth++;
+                else if (parser_current(p).type == TOK_CLOSE_BRACE) {
+                    if (brace_depth == 0) break;
+                    brace_depth--;
+                }
+                else if (parser_current(p).type == TOK_SEMICOLON && brace_depth == 0) {
+                    parser_advance(p);
+                    break;
+                }
+                parser_advance(p);
+            }
         }
         if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
         {
