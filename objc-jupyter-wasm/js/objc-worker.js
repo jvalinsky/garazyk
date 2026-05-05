@@ -120,7 +120,7 @@ self.onmessage = async event => {
     }
 
     if (type === 'execute_request') {
-      const reply = kernel.execute(code, cellId);
+      const reply = await kernel.execute(code, cellId);
       for (const stream of reply.streams || []) {
         postReply(id, generation, 'stream', stream);
       }
