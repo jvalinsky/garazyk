@@ -16,6 +16,7 @@
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/ATProtoDagCBOR.h"
 #import "Repository/CAR.h"
+#import "Compat/PDSTypes.h"
 
 // ---------------------------------------------------------------------------
 // AppViewIngestEvent
@@ -179,8 +180,8 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
 @property (nonatomic, strong) AppViewDatabase *database;
 @property (nonatomic, strong) NSArray<NSString *> *relayURLs;
 @property (nonatomic, strong) NSMutableArray<AppViewRelayConnection *> *connections;
-@property (nonatomic, strong) dispatch_queue_t eventQueue;
-@property (nonatomic, strong) dispatch_queue_t checkpointQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t eventQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t checkpointQueue;
 @property (nonatomic, strong) NSTimer *checkpointTimer;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *lagByRelay;

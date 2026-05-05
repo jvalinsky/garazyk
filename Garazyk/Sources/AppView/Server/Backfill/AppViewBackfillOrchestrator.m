@@ -10,6 +10,7 @@
 #import "AppView/Server/Indexers/AppViewIndexer.h"
 #import "AppView/Server/Backfill/AppViewBackfillWorker.h"
 #import "Debug/PDSLogger.h"
+#import "Compat/PDSTypes.h"
 
 // ---------------------------------------------------------------------------
 
@@ -19,7 +20,7 @@
 @property (nonatomic, strong) NSArray<id<AppViewIndexer>> *indexers;
 
 // Queue discipline
-@property (nonatomic, strong) dispatch_queue_t schedulerQueue; // Serial
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t schedulerQueue; // Serial
 @property (nonatomic, strong) NSMutableArray<NSString *> *pendingQueue;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *activeWorkersByHost;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSDate *> *hostBackoffUntil;

@@ -1,5 +1,6 @@
 #import "Database/Cache/PDSRecordCache.h"
 #import "Debug/PDSLogger.h"
+#import "Compat/PDSTypes.h"
 
 // Cache entry structure
 @interface PDSRecordCacheEntry : NSObject
@@ -27,7 +28,7 @@
 @property (nonatomic, assign) NSUInteger evictions;
 
 // Thread safety
-@property (nonatomic, strong) dispatch_queue_t cacheQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t cacheQueue;
 
 @end
 

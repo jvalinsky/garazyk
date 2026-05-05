@@ -1,5 +1,6 @@
 #import "Database/Pool/PDSConnectionPool.h"
 #import "Debug/PDSLogger.h"
+#import "Compat/PDSTypes.h"
 #import <sqlite3.h>
 
 @interface PDSConnectionPool ()
@@ -10,7 +11,7 @@
 @property (nonatomic, strong) NSDate *lastPruneTime;
 
 // Thread safety
-@property (nonatomic, strong) dispatch_queue_t poolQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t poolQueue;
 @property (nonatomic, strong) dispatch_semaphore_t connectionSemaphore;
 
 // Connection metadata
