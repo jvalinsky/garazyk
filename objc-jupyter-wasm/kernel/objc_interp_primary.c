@@ -1149,6 +1149,13 @@ Value parse_primary(Parser *p) {
             parser_advance(p); /* consume ( */
             while (parser_current(p).type != TOK_CLOSE_PAREN &&
                    parser_current(p).type != TOK_EOF) {
+                /* Skip type qualifiers: const, volatile, restrict */
+                while (parser_current(p).type == TOK_IDENTIFIER &&
+                       (cstr_eq(parser_current(p).text, "const") ||
+                        cstr_eq(parser_current(p).text, "volatile") ||
+                        cstr_eq(parser_current(p).text, "restrict"))) {
+                    parser_advance(p);
+                }
                 /* Skip type name */
                 if (parser_current(p).type == TOK_IDENTIFIER) {
                     parser_advance(p);
