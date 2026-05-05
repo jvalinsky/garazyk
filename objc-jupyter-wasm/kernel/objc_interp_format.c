@@ -694,6 +694,12 @@ void format_value(Value v, char *buf, unsigned int capacity) {
             fmt_append_str(buf, capacity, &offset, str_val + 8);
             return;
         }
+        /* String pool pointer — it's a C string, show the content */
+        if (str_val >= g_ctx.string_pool &&
+            str_val < g_ctx.string_pool + OBJC_INTERP_STRING_POOL_SIZE) {
+            fmt_append_str(buf, capacity, &offset, str_val);
+            return;
+        }
         if (!cstr_starts(str_val, "FDObj:") &&
             str_val != 0 &&
             (str_val < g_ctx.string_pool || str_val >= g_ctx.string_pool + OBJC_INTERP_STRING_POOL_SIZE)) {
