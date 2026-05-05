@@ -7,6 +7,7 @@
 //
 
 #import "PDSBlobAuditOperation.h"
+#import "Compat/PDSTypes.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -24,7 +25,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, readonly) PDSServiceDatabases *serviceDatabases;
 
 /// Serial queue for thread-safe operations
-@property (nonatomic, strong, readonly) dispatch_queue_t queue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG, readonly) dispatch_queue_t queue;
 
 @end
 
