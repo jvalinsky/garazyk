@@ -187,3 +187,5 @@ tooling/test-audit-validator/.artifacts/
 plc/
 .letta/
 objc-jupyter-wasm/.letta/
+objc-jupyter-wasm/result
+result
