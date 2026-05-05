@@ -9,10 +9,11 @@
 #import "PDSWebSocketServer.h"
 #import "PDSWebSocketNetworkAdapter.h"
 #import "Network/PDSNetworkTransport.h"
+#import "Compat/PDSTypes.h"
 
 @interface PDSWebSocketServer ()
 @property (nonatomic, strong, nullable) id<PDSNetworkListener> listener;
-@property (nonatomic, strong) dispatch_queue_t eventQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t eventQueue;
 @property (nonatomic, assign) NSUInteger requestedPort;
 @property (nonatomic, copy) PDSWebSocketListenerFactory listenerFactory;
 @end

@@ -2,6 +2,7 @@
 #import "Database/Utils/PDSSQLiteUtils.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Debug/PDSLogger.h"
+#import "Compat/PDSTypes.h"
 #import <sqlite3.h>
 
 NSString * const JelczDatabaseErrorDomain = @"com.atproto.jelcz.database";
@@ -12,7 +13,7 @@ static const char *kJelczDatabaseQueueKey = "kJelczDatabaseQueueKey";
 @property (nonatomic, readwrite) NSURL *databaseURL;
 @property (nonatomic, readwrite) BOOL isOpen;
 @property (nonatomic, assign) sqlite3 *db;
-@property (nonatomic, strong) dispatch_queue_t dbQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t dbQueue;
 @end
 
 @implementation JelczDatabase

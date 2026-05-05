@@ -9,11 +9,12 @@
 #import "PDSWebSocketNetworkAdapter.h"
 #import "WebSocketCodec.h"
 #import "Network/PDSNetworkTransport.h"
+#import "Compat/PDSTypes.h"
 
 @interface PDSWebSocketNetworkAdapter ()
 @property (nonatomic, strong) id<PDSNetworkConnection> connection;
 @property (nonatomic, strong) WebSocketCodec *codec;
-@property (nonatomic, strong) dispatch_queue_t eventQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t eventQueue;
 @property (nonatomic, assign) BOOL isRunning;
 @property (nonatomic, assign) BOOL isClosed;
 @end

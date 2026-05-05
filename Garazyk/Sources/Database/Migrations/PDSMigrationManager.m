@@ -4,6 +4,7 @@
 #import "Database/PDSDatabase.h"
 #import "Database/PDSBlock.h"
 #import "Debug/PDSLogger.h"
+#import "Compat/PDSTypes.h"
 #import <sqlite3.h>
 
 NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
@@ -501,7 +502,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 @interface PDSMigrationManager ()
 @property (nonatomic, strong) NSMutableArray<id<PDSMigration>> *migrations;
-@property (nonatomic, strong) dispatch_queue_t queue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t queue;
 
 // Monolithic migration helpers
 - (NSArray<NSString *> *)queryAllDIDsFromDatabase:(sqlite3 *)db error:(NSError **)error;
