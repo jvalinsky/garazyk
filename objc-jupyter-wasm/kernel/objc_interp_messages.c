@@ -528,6 +528,113 @@ Value parse_message_send(Parser *p) {
             return value_from_id(receiver);
         }
 
+        /* NSObject: [obj performSelector:sel withObject:obj] → dispatch selector with one arg */
+        if (cstr_eq(sel_name, "performSelector:withObject:") && target.is_id && arg_count >= 2) {
+            if (keyword_args[0].is_sel) {
+                SEL perf_sel = keyword_args[0].sel_val;
+                unsigned int mi;
+                int found = 0;
+                for (mi = 0; mi < g_ctx.method_count; mi++) {
+                    if (g_ctx.methods[mi].selector == perf_sel && g_ctx.methods[mi].source_len > 0 &&
+                        !g_ctx.methods[mi].is_class_method) {
+                        found = 1;
+                        break;
+                    }
+                }
+                if (found) {
+                    unsigned int saved_var_count = g_ctx.var_count;
+                    Value return_val;
+                    InterpVar *self_var = interp_get_or_create_var("self");
+                    if (self_var) { self_var->is_id = 1; self_var->value = receiver; }
+                    {
+                        InterpVar *cmd_var = interp_get_or_create_var("_cmd");
+                        if (cmd_var) { cmd_var->is_sel = 1; cmd_var->sel = perf_sel; }
+                    }
+                    /* Bind the withObject: argument to the method's first parameter name */
+                    if (g_ctx.methods[mi].arg_count >= 1) {
+                        InterpVar *arg_var = interp_get_or_create_var(g_ctx.methods[mi].arg_names[0]);
+                        if (arg_var) {
+                            arg_var->is_id = keyword_args[1].is_id;
+                            arg_var->value = keyword_args[1].obj_val;
+                            arg_var->is_int = keyword_args[1].is_int;
+                            arg_var->int_value = keyword_args[1].int_val;
+                            arg_var->is_float = keyword_args[1].is_float;
+                            arg_var->float_value = keyword_args[1].float_val;
+                        }
+                    }
+                    g_ctx.return_pending = 0;
+                    {
+                        Value v = eval_source_range(0, g_ctx.methods[mi].source_len, g_ctx.methods[mi].source, 0);
+                        (void)v;
+                    }
+                    return_val = g_ctx.return_value;
+                    g_ctx.var_count = saved_var_count;
+                    g_ctx.return_pending = 0;
+                    return return_val;
+                }
+            }
+            return value_from_id(receiver);
+        }
+
+        /* NSObject: [obj performSelector:sel withObject:obj1 withObject:obj2] → dispatch with two args */
+        if (cstr_eq(sel_name, "performSelector:withObject:withObject:") && target.is_id && arg_count >= 3) {
+            if (keyword_args[0].is_sel) {
+                SEL perf_sel = keyword_args[0].sel_val;
+                unsigned int mi;
+                int found = 0;
+                for (mi = 0; mi < g_ctx.method_count; mi++) {
+                    if (g_ctx.methods[mi].selector == perf_sel && g_ctx.methods[mi].source_len > 0 &&
+                        !g_ctx.methods[mi].is_class_method) {
+                        found = 1;
+                        break;
+                    }
+                }
+                if (found) {
+                    unsigned int saved_var_count = g_ctx.var_count;
+                    Value return_val;
+                    InterpVar *self_var = interp_get_or_create_var("self");
+                    if (self_var) { self_var->is_id = 1; self_var->value = receiver; }
+                    {
+                        InterpVar *cmd_var = interp_get_or_create_var("_cmd");
+                        if (cmd_var) { cmd_var->is_sel = 1; cmd_var->sel = perf_sel; }
+                    }
+                    /* Bind the two withObject: arguments */
+                    if (g_ctx.methods[mi].arg_count >= 1) {
+                        InterpVar *arg_var = interp_get_or_create_var(g_ctx.methods[mi].arg_names[0]);
+                        if (arg_var) {
+                            arg_var->is_id = keyword_args[1].is_id;
+                            arg_var->value = keyword_args[1].obj_val;
+                            arg_var->is_int = keyword_args[1].is_int;
+                            arg_var->int_value = keyword_args[1].int_val;
+                            arg_var->is_float = keyword_args[1].is_float;
+                            arg_var->float_value = keyword_args[1].float_val;
+                        }
+                    }
+                    if (g_ctx.methods[mi].arg_count >= 2) {
+                        InterpVar *arg_var = interp_get_or_create_var(g_ctx.methods[mi].arg_names[1]);
+                        if (arg_var) {
+                            arg_var->is_id = keyword_args[2].is_id;
+                            arg_var->value = keyword_args[2].obj_val;
+                            arg_var->is_int = keyword_args[2].is_int;
+                            arg_var->int_value = keyword_args[2].int_val;
+                            arg_var->is_float = keyword_args[2].is_float;
+                            arg_var->float_value = keyword_args[2].float_val;
+                        }
+                    }
+                    g_ctx.return_pending = 0;
+                    {
+                        Value v = eval_source_range(0, g_ctx.methods[mi].source_len, g_ctx.methods[mi].source, 0);
+                        (void)v;
+                    }
+                    return_val = g_ctx.return_value;
+                    g_ctx.var_count = saved_var_count;
+                    g_ctx.return_pending = 0;
+                    return return_val;
+                }
+            }
+            return value_from_id(receiver);
+        }
+
         /* NSString: [NSString stringWithFormat:@"..." args...] */
         if (IS_FOUNDATION_CLASS("NSString") && target.is_class && cstr_eq(sel_name, "stringWithFormat:") && arg_count >= 1) {
             const char *fmt = 0;
@@ -779,6 +886,85 @@ Value parse_message_send(Parser *p) {
             }
         }
 
+        /* NSString: [str rangeOfString:substr] → NSRange {location, length}
+         * Returns NSRange as a marker string "NSRange:loc:len" or NSNotFound */
+        if (cstr_eq(sel_name, "rangeOfString:") && target.is_id && receiver != 0 && arg_count >= 1) {
+            const char *s = (const char *)receiver;
+            const char *substr = 0;
+            if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
+                substr = (const char *)keyword_args[0].obj_val;
+            }
+            if (substr == 0 || cstr_len(substr) == 0) {
+                /* Empty substring: return {0, 0} */
+                return value_from_id((id)"NSRange:0:0");
+            }
+            {
+                const char *found = strstr(s, substr);
+                if (found != 0) {
+                    unsigned int loc = (unsigned int)(found - s);
+                    unsigned int len = (unsigned int)cstr_len(substr);
+                    /* Format "NSRange:loc:len" manually (no stdio.h in WASM) */
+                    char buf[64];
+                    unsigned int bp = 8; /* after "NSRange:" */
+                    unsigned int tmp_loc = loc, tmp_len = len;
+                    char loc_buf[12], len_buf[12];
+                    int li = 0, lei = 0;
+                    cstr_copy(buf, "NSRange:", 64);
+                    /* Convert loc to string */
+                    if (tmp_loc == 0) loc_buf[li++] = '0';
+                    else { while (tmp_loc > 0) { loc_buf[li++] = '0' + (tmp_loc % 10); tmp_loc /= 10; } }
+                    /* Convert len to string */
+                    if (tmp_len == 0) len_buf[lei++] = '0';
+                    else { while (tmp_len > 0) { len_buf[lei++] = '0' + (tmp_len % 10); tmp_len /= 10; } }
+                    /* Write loc (reversed) */
+                    { int j; for (j = li - 1; j >= 0; j--) buf[bp++] = loc_buf[j]; }
+                    buf[bp++] = ':';
+                    /* Write len (reversed) */
+                    { int j; for (j = lei - 1; j >= 0; j--) buf[bp++] = len_buf[j]; }
+                    buf[bp] = '\0';
+                    {
+                        char *marker = string_pool_alloc(bp + 1);
+                        if (marker) { cstr_copy(marker, buf, bp + 1); }
+                        return value_from_id((id)marker);
+                    }
+                }
+                /* NSNotFound: location = UINT_MAX, length = 0 */
+                return value_from_id((id)"NSRange:4294967295:0");
+            }
+        }
+
+        /* NSString: [str substringWithRange:range] → substring from NSRange marker */
+        if (cstr_eq(sel_name, "substringWithRange:") && target.is_id && receiver != 0 && arg_count >= 1) {
+            const char *s = (const char *)receiver;
+            const char *range_marker = 0;
+            unsigned int loc = 0, len = 0;
+            if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
+                range_marker = (const char *)keyword_args[0].obj_val;
+            }
+            if (range_marker != 0 && cstr_starts(range_marker, "NSRange:")) {
+                /* Parse "NSRange:loc:len" manually (no stdio.h in WASM) */
+                const char *p = range_marker + 8; /* skip "NSRange:" */
+                loc = 0;
+                while (*p >= '0' && *p <= '9') { loc = loc * 10 + (unsigned int)(*p - '0'); p++; }
+                if (*p == ':') p++;
+                len = 0;
+                while (*p >= '0' && *p <= '9') { len = len * 10 + (unsigned int)(*p - '0'); p++; }
+            }
+            {
+                int slen = (int)cstr_len(s);
+                if (loc < (unsigned int)slen && loc + len <= (unsigned int)slen) {
+                    char *result = string_pool_alloc((unsigned int)len + 1);
+                    if (result != 0) {
+                        unsigned int i;
+                        for (i = 0; i < len; i++) result[i] = s[loc + i];
+                        result[len] = '\0';
+                        return value_from_id((id)result);
+                    }
+                }
+                return value_from_id((id)"");
+            }
+        }
+
         /* NSString: [str uppercaseString] → ASCII uppercase */
         if (cstr_eq(sel_name, "uppercaseString") && target.is_id && receiver != 0) {
             const char *s = (const char *)receiver;
@@ -861,6 +1047,32 @@ Value parse_message_send(Parser *p) {
                 }
                 return value_from_id((id)result);
             }
+        }
+
+        /* NSString: [str stringByAppendingFormat:@"..."] → format and append */
+        if (cstr_eq(sel_name, "stringByAppendingFormat:") && target.is_id && receiver != 0 && arg_count >= 1) {
+            const char *base = (const char *)receiver;
+            const char *fmt = 0;
+            if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
+                fmt = (const char *)keyword_args[0].obj_val;
+            }
+            if (fmt != 0) {
+                Value formatted = format_values_to_pool(fmt, &keyword_args[1], arg_count - 1);
+                if (formatted.is_id && formatted.obj_val != 0) {
+                    const char *suffix = (const char *)formatted.obj_val;
+                    int base_len = (int)cstr_len(base);
+                    int suffix_len = (int)cstr_len(suffix);
+                    char *result = string_pool_alloc((unsigned int)(base_len + suffix_len + 1));
+                    if (result != 0) {
+                        int i;
+                        for (i = 0; i < base_len; i++) result[i] = base[i];
+                        for (i = 0; i < suffix_len; i++) result[base_len + i] = suffix[i];
+                        result[base_len + suffix_len] = '\0';
+                        return value_from_id((id)result);
+                    }
+                }
+            }
+            return value_from_id(receiver);
         }
 
         /* NSString: [str componentsSeparatedByString:sep] → NSArray of components */
@@ -1082,6 +1294,52 @@ Value parse_message_send(Parser *p) {
             return value_from_id(args[0]);
         }
 
+        /* NSNumber: [NSNumber numberWithUnsignedLong:n] → wrap unsigned long as id */
+        if (IS_FOUNDATION_CLASS("NSNumber") && target.is_class && cstr_eq(sel_name, "numberWithUnsignedLong:") && arg_count >= 1) {
+            if (keyword_args[0].is_int) {
+                /* Encode as NSNumber: with unsigned value */
+                unsigned int v = (unsigned int)keyword_args[0].int_val;
+                char *buf = string_pool_alloc(30);
+                unsigned int pos = 9;
+                if (buf == 0) return value_from_int(keyword_args[0].int_val);
+                cstr_copy(buf, "NSNumber:", 30);
+                if (v == 0) { buf[pos++] = '0'; }
+                else {
+                    char tmp[12];
+                    int ti = 0;
+                    while (v > 0) { tmp[ti++] = '0' + (v % 10); v /= 10; }
+                    while (ti > 0) buf[pos++] = tmp[--ti];
+                }
+                buf[pos] = '\0';
+                return value_from_id((id)buf);
+            }
+            return value_from_id(args[0]);
+        }
+
+        /* NSNumber: [NSNumber numberWithLongLong:n] → wrap long long as id */
+        if (IS_FOUNDATION_CLASS("NSNumber") && target.is_class && cstr_eq(sel_name, "numberWithLongLong:") && arg_count >= 1) {
+            if (keyword_args[0].is_int) {
+                /* Same encoding as numberWithInt: — interpreter uses 32-bit ints */
+                int v = keyword_args[0].int_val;
+                int neg = v < 0;
+                unsigned int pos = 9;
+                char *buf = string_pool_alloc(30);
+                if (buf == 0) return value_from_int(v);
+                cstr_copy(buf, "NSNumber:", 30);
+                if (neg) { v = -v; buf[pos++] = '-'; }
+                if (v == 0) { buf[pos++] = '0'; }
+                else {
+                    char tmp[12];
+                    int ti = 0;
+                    while (v > 0) { tmp[ti++] = '0' + (v % 10); v /= 10; }
+                    while (ti > 0) buf[pos++] = tmp[--ti];
+                }
+                buf[pos] = '\0';
+                return value_from_id((id)buf);
+            }
+            return value_from_id(args[0]);
+        }
+
         /* NSNumber: [num intValue] → unwrap int from NSNumber encoding */
         if (cstr_eq(sel_name, "intValue") && target.is_id && receiver != 0) {
             const char *s = (const char *)receiver;
@@ -1296,6 +1554,32 @@ Value parse_message_send(Parser *p) {
                 if (s[i] == '-') { neg = 1; i++; }
                 while (s[i] >= '0' && s[i] <= '9') val = val * 10 + (s[i++] - '0');
                 return value_from_int(neg ? -val : val);
+            }
+            return value_from_int(0);
+        }
+
+        /* NSNumber: [num integerValue] → alias for intValue */
+        if (cstr_eq(sel_name, "integerValue") && target.is_id && receiver != 0) {
+            const char *s = (const char *)receiver;
+            if (cstr_eq_n(s, "NSNumber:", 9)) {
+                int val = 0;
+                unsigned int i = 9;
+                int neg = 0;
+                if (s[i] == '-') { neg = 1; i++; }
+                while (s[i] >= '0' && s[i] <= '9') val = val * 10 + (s[i++] - '0');
+                return value_from_int(neg ? -val : val);
+            }
+            return value_from_int(0);
+        }
+
+        /* NSNumber: [num unsignedIntegerValue] → unsigned alias for intValue */
+        if (cstr_eq(sel_name, "unsignedIntegerValue") && target.is_id && receiver != 0) {
+            const char *s = (const char *)receiver;
+            if (cstr_eq_n(s, "NSNumber:", 9)) {
+                int val = 0;
+                unsigned int i = 9;
+                while (s[i] >= '0' && s[i] <= '9') val = val * 10 + (s[i++] - '0');
+                return value_from_int(val);
             }
             return value_from_int(0);
         }
@@ -1616,6 +1900,28 @@ Value parse_message_send(Parser *p) {
                 if (cstr_eq(sel_name, "removeObjectForKey:") && arg_count >= 1) {
                     int idx = coll_find_by_key(cid, &keyword_args[0]);
                     if (idx >= 0) coll_remove_at((unsigned int)idx);
+                    return value_from_id(receiver);
+                }
+
+                /* [mutDict addEntriesFromDictionary:other] → merge entries from other dict */
+                if (cstr_eq(sel_name, "addEntriesFromDictionary:") && arg_count >= 1) {
+                    const char *other_s = (const char *)keyword_args[0].obj_val;
+                    unsigned int other_cid = coll_id_from_marker(other_s, "NSDict:");
+                    if (other_cid == 0) other_cid = coll_id_from_marker(other_s, "NSMutDict:");
+                    if (other_cid > 0) {
+                        unsigned int i;
+                        for (i = 0; i < g_ctx.coll_entry_count; i++) {
+                            if (g_ctx.coll_entries[i].coll_id == other_cid) {
+                                /* Add or update entry in target dict */
+                                int idx = coll_find_by_key(cid, &g_ctx.coll_entries[i].key);
+                                if (idx >= 0) {
+                                    g_ctx.coll_entries[idx].value = g_ctx.coll_entries[i].value;
+                                } else {
+                                    coll_add(cid, g_ctx.coll_entries[i].key, g_ctx.coll_entries[i].value);
+                                }
+                            }
+                        }
+                    }
                     return value_from_id(receiver);
                 }
 
