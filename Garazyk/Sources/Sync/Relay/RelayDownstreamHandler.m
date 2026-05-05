@@ -15,13 +15,14 @@
 #import "Sync/Relay/EventFormatter.h"
 #import "Core/CID.h"
 #import "Debug/PDSLogger.h"
+#import "Compat/PDSTypes.h"
 
 @interface RelayDownstreamHandler ()
 @property (nonatomic, strong) RelayEventBuffer *eventBuffer;
 @property (nonatomic, strong) SubscribeReposHandler *subscribeReposHandler;
 @property (nonatomic, assign) int64_t currentSequence;
 @property (nonatomic, strong) NSMutableArray<id<PDSNetworkConnection>> *downstreamConnections;
-@property (nonatomic, strong) dispatch_queue_t handlerQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t handlerQueue;
 @end
 
 @implementation RelayDownstreamHandler

@@ -4,14 +4,11 @@
 #import "Core/CID.h"
 #import "Repository/CBOR.h"
 #import "Debug/PDSLogger.h"
+#import "Compat/PDSTypes.h"
 
 @interface MSTCacheManager ()
 @property (nonatomic, strong) NSMutableDictionary<NSString *, MST *> *cache;
-#if defined(__linux__) || defined(__GNUstep__)
-@property (nonatomic, assign) dispatch_queue_t queue;
-#else
-@property (nonatomic, strong) dispatch_queue_t queue;
-#endif
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t queue;
 @end
 
 @implementation MSTCacheManager

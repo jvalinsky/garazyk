@@ -3,13 +3,14 @@
 #import "Sync/Firehose/SubscribeReposHandler.h"
 #import "Metrics/PDSMetrics.h"
 #import "Debug/PDSLogger.h"
+#import "Compat/PDSTypes.h"
 #import <sqlite3.h>
 
 @interface PDSSequencerAnalyticsCollector ()
 @property (nonatomic, strong) PDSServiceDatabases *serviceDatabases;
 @property (nonatomic, weak) SubscribeReposHandler *subscribeHandler;
 @property (nonatomic, strong) dispatch_source_t timer;
-@property (nonatomic, strong) dispatch_queue_t queue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t queue;
 @property (nonatomic) int64_t lastSeq;
 @property (nonatomic) NSTimeInterval lastTimestamp;
 @property (nonatomic) NSInteger lastWarnings;

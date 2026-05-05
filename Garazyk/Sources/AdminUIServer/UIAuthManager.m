@@ -1,11 +1,12 @@
 #import "AdminUIServer/UIAuthManager.h"
 #import "Network/HttpRequest.h"
+#import "Compat/PDSTypes.h"
 
 @interface UIAuthManager ()
 
 @property(nonatomic, copy) NSString *password;
 @property(nonatomic, strong) NSMutableSet<NSString *> *activeTokens;
-@property(nonatomic, strong) dispatch_queue_t stateQueue;
+@property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t stateQueue;
 
 @end
 
