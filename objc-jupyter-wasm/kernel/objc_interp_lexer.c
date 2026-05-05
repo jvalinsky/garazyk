@@ -336,6 +336,8 @@ Token lexer_next_token(Lexer *lex) {
             tok.type = TOK_CASE;
         } else if (cstr_eq(tok.text, "default")) {
             tok.type = TOK_DEFAULT;
+        } else if (cstr_eq(tok.text, "sizeof")) {
+            tok.type = TOK_SIZEOF;
         } else if (cstr_eq(tok.text, "YES") || cstr_eq(tok.text, "TRUE")) {
             /* Boolean true → integer 1 */
             tok.text[0] = '1'; tok.text[1] = '\0';
