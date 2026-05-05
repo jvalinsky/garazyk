@@ -1479,8 +1479,29 @@ Value parse_primary(Parser *p) {
             return value_void();
         }
         if (cstr_eq(tok.text, "@protocol")) {
-            /* Skip protocol declarations */
             parser_advance(p);
+            /* Expression: @protocol(Name) */
+            if (parser_current(p).type == TOK_OPEN_PAREN) {
+                parser_advance(p);
+                if (parser_current(p).type == TOK_IDENTIFIER) {
+                    char proto_name[64];
+                    cstr_copy(proto_name, parser_current(p).text, 64);
+                    parser_advance(p);
+                    if (parser_current(p).type == TOK_CLOSE_PAREN) parser_advance(p);
+
+                    /* Return protocol marker FDProt:Name */
+                    unsigned int needed = 7 + cstr_len(proto_name) + 1;
+                    char *buf = string_pool_alloc(needed);
+                    if (buf) {
+                        cstr_copy(buf, "FDProt:", needed);
+                        cstr_copy(buf + 7, proto_name, needed - 7);
+                        return value_from_id((id)buf);
+                    }
+                }
+                return value_void();
+            }
+
+            /* Declaration: @protocol Name <ConformsTo> ... @end */
             while (!(parser_current(p).type == TOK_AT_KEYWORD &&
                      cstr_eq(parser_current(p).text, "@end")) &&
                    parser_current(p).type != TOK_EOF) {
