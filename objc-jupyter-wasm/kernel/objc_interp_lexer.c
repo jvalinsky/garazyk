@@ -153,6 +153,23 @@ Token lexer_next_token(Lexer *lex) {
                     else if (c == '\\') c = '\\';
                     else if (c == '"') c = '"';
                     else if (c == '\'') c = '\'';
+                    else if (c == 'x') {
+                        /* Hex escape: \xNN → byte value */
+                        int hex = 0;
+                        int digits = 0;
+                        while (digits < 2 && lex->pos < lex->source_len) {
+                            char hc = lexer_peek(lex);
+                            int hv = -1;
+                            if (hc >= '0' && hc <= '9') hv = hc - '0';
+                            else if (hc >= 'a' && hc <= 'f') hv = hc - 'a' + 10;
+                            else if (hc >= 'A' && hc <= 'F') hv = hc - 'A' + 10;
+                            if (hv < 0) break;
+                            hex = (hex << 4) | hv;
+                            lexer_next(lex);
+                            digits++;
+                        }
+                        c = (char)hex;
+                    }
                     /* else: unknown escape, keep the character after backslash as-is */
                 }
                 if (i + 1 < OBJC_INTERP_MAX_TOKEN) {
@@ -181,6 +198,56 @@ Token lexer_next_token(Lexer *lex) {
         return tok;
     }
 
+    /* Character literal: 'A' → TOK_INT_LITERAL with ASCII value */
+    if (ch == '\'') {
+        lexer_next(lex);
+        char c = 0;
+        if (lex->pos < lex->source_len) {
+            c = lexer_next(lex);
+            if (c == '\\' && lex->pos < lex->source_len) {
+                c = lexer_next(lex);
+                if (c == 'n') c = '\n';
+                else if (c == 't') c = '\t';
+                else if (c == 'r') c = '\r';
+                else if (c == '0') c = '\0';
+                else if (c == '\\') c = '\\';
+                else if (c == '\'') c = '\'';
+                /* else: unknown escape, keep character after backslash */
+            }
+        }
+        /* Skip closing ' */
+        if (lex->pos < lex->source_len && lexer_peek(lex) == '\'') {
+            lexer_next(lex);
+        }
+        /* Convert character to integer string for TOK_INT_LITERAL */
+        {
+            int val = (int)(unsigned char)c;
+            /* Convert integer to string */
+            char buf[16];
+            int len = 0;
+            if (val == 0) {
+                buf[0] = '0'; len = 1;
+            } else {
+                int tmp = val;
+                while (tmp > 0) {
+                    buf[len++] = '0' + (tmp % 10);
+                    tmp /= 10;
+                }
+                /* Reverse */
+                int j;
+                for (j = 0; j < len / 2; j++) {
+                    char t = buf[j];
+                    buf[j] = buf[len - 1 - j];
+                    buf[len - 1 - j] = t;
+                }
+            }
+            buf[len] = '\0';
+            cstr_copy(tok.text, buf, 64);
+        }
+        tok.type = TOK_INT_LITERAL;
+        return tok;
+    }
+
     /* String literal (C string, not ObjC) */
     if (ch == '"') {
         lexer_next(lex);
@@ -201,6 +268,23 @@ Token lexer_next_token(Lexer *lex) {
                 else if (c == '\\') c = '\\';
                 else if (c == '"') c = '"';
                 else if (c == '\'') c = '\'';
+                else if (c == 'x') {
+                    /* Hex escape: \xNN → byte value */
+                    int hex = 0;
+                    int digits = 0;
+                    while (digits < 2 && lex->pos < lex->source_len) {
+                        char hc = lexer_peek(lex);
+                        int hv = -1;
+                        if (hc >= '0' && hc <= '9') hv = hc - '0';
+                        else if (hc >= 'a' && hc <= 'f') hv = hc - 'a' + 10;
+                        else if (hc >= 'A' && hc <= 'F') hv = hc - 'A' + 10;
+                        if (hv < 0) break;
+                        hex = (hex << 4) | hv;
+                        lexer_next(lex);
+                        digits++;
+                    }
+                    c = (char)hex;
+                }
                 /* else: unknown escape, keep the character after backslash as-is */
             }
             if (i + 1 < OBJC_INTERP_MAX_TOKEN) {
