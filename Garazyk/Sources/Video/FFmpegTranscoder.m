@@ -13,10 +13,6 @@
 #endif
 
 // CGSize compat for GNUstep (no CoreGraphics)
-#ifndef __APPLE__
-typedef struct CGSize { double width; double height; } CGSize;
-#endif
-
 #ifndef CGSizeZero
 #define CGSizeZero ((CGSize){0, 0})
 #endif
