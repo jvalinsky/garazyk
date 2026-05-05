@@ -908,6 +908,42 @@ Value parse_primary(Parser *p) {
                     }
                 }
 
+                /* C string subscript: str[index] → character at index as int
+                 * For non-collection id values (e.g., const char * pointers),
+                 * treat [index] as a byte access and return the char value. */
+                if (parser_current(p).type == TOK_OPEN_BRACKET && var->is_id && var->value != 0) {
+                    const char *marker = (const char *)var->value;
+                    unsigned int cid = coll_id_from_marker(marker, "NSArr:");
+                    unsigned int cid2 = coll_id_from_marker(marker, "NSMutArr:");
+                    unsigned int cid3 = coll_id_from_marker(marker, "NSDict:");
+                    unsigned int cid4 = coll_id_from_marker(marker, "NSMutDict:");
+
+                    if (cid == 0 && cid2 == 0 && cid3 == 0 && cid4 == 0) {
+                        /* Not a collection — treat as C string subscript */
+                        parser_advance(p); /* consume [ */
+                        {
+                            Value index = parse_expression(p);
+                            if (p->error) return index;
+
+                            if (parser_current(p).type != TOK_CLOSE_BRACKET) {
+                                parser_error(p, "Expected ']' after subscript index");
+                                return value_void();
+                            }
+                            parser_advance(p); /* consume ] */
+
+                            if (index.is_int) {
+                                const char *s = (const char *)var->value;
+                                int idx = index.int_val;
+                                int slen = (int)cstr_len(s);
+                                if (idx >= 0 && idx < slen) {
+                                    return value_from_int((int)(unsigned char)s[idx]);
+                                }
+                            }
+                            return value_from_int(0);
+                        }
+                    }
+                }
+
                 /* Block invocation: blockName(args) or blockName()
                  * If the variable holds a block marker ("NSBlock:N"),
                  * and the next token is (, invoke the block. */
@@ -1096,6 +1132,26 @@ Value parse_primary(Parser *p) {
                 return v;
             }
         }
+    }
+
+    /* Pointer dereference: *identifier
+     * In the interpreter, this just returns the variable's value
+     * since we don't have real pointer indirection. */
+    if (tok.type == TOK_STAR) {
+        parser_advance(p);
+        if (parser_current(p).type == TOK_IDENTIFIER) {
+            InterpVar *var = interp_find_var(parser_current(p).text);
+            parser_advance(p);
+            if (var) {
+                if (var->is_int) return value_from_int(var->int_value);
+                if (var->is_id) return value_from_id(var->value);
+                if (var->is_class) return value_from_class(var->cls);
+                if (var->is_float) return value_from_float(var->float_value);
+            }
+            return value_from_int(0);
+        }
+        /* * followed by non-identifier — treat as multiplication in context */
+        return parse_primary(p);
     }
 
     /* Minus (unary) */
