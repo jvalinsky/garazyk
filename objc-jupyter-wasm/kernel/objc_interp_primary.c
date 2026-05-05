@@ -1251,6 +1251,25 @@ Value parse_primary(Parser *p) {
 
         parser_advance(p); /* consume ^ */
 
+        /* Optional return type: ^int (arg) { ... } or ^int { ... }
+         * If we see identifiers followed by ( or {, they form a return type. */
+        if (parser_current(p).type == TOK_IDENTIFIER) {
+            Token saved = p->lex.current;
+            unsigned int saved_pos = p->lex.pos;
+            while (parser_current(p).type == TOK_IDENTIFIER) {
+                parser_advance(p);
+            }
+            while (parser_current(p).type == TOK_STAR) {
+                parser_advance(p);
+            }
+            if (parser_current(p).type != TOK_OPEN_PAREN &&
+                parser_current(p).type != TOK_OPEN_BRACE) {
+                /* Not a return type, rewind to parse as parameter list or body */
+                p->lex.current = saved;
+                p->lex.pos = saved_pos;
+            }
+        }
+
         /* Allocate a block slot */
         if (g_ctx.block_count >= MAX_BLOCKS) {
             parser_error(p, "block table full (max 32)");
@@ -1276,9 +1295,35 @@ Value parse_primary(Parser *p) {
                         cstr_eq(parser_current(p).text, "restrict"))) {
                     parser_advance(p);
                 }
-                /* Skip type name */
-                if (parser_current(p).type == TOK_IDENTIFIER) {
-                    parser_advance(p);
+                /* Skip type name (possibly multi-token: unsigned int, etc.)
+                 * and handle nested parentheses (like int (void)). */
+                while (parser_current(p).type == TOK_IDENTIFIER ||
+                       parser_current(p).type == TOK_STAR ||
+                       parser_current(p).type == TOK_OPEN_PAREN) {
+                    if (parser_current(p).type == TOK_OPEN_PAREN) {
+                        unsigned int pd = 0;
+                        do {
+                            if (parser_current(p).type == TOK_OPEN_PAREN) pd++;
+                            else if (parser_current(p).type == TOK_CLOSE_PAREN) pd--;
+                            parser_advance(p);
+                        } while (pd > 0 && parser_current(p).type != TOK_EOF);
+                    } else if (parser_current(p).type == TOK_STAR) {
+                        parser_advance(p);
+                    } else {
+                        /* TOK_IDENTIFIER: could be part of type or the name itself */
+                        Token saved = p->lex.current;
+                        unsigned int saved_pos = p->lex.pos;
+                        parser_advance(p);
+                        if (parser_current(p).type != TOK_IDENTIFIER &&
+                            parser_current(p).type != TOK_STAR &&
+                            parser_current(p).type != TOK_OPEN_PAREN) {
+                            /* This was likely the parameter name, rewind so the
+                             * logic below can capture it. */
+                            p->lex.current = saved;
+                            p->lex.pos = saved_pos;
+                            break;
+                        }
+                    }
                 }
                 /* Skip pointer stars */
                 while (parser_current(p).type == TOK_STAR) {
@@ -1296,8 +1341,11 @@ Value parse_primary(Parser *p) {
                     }
                     parser_advance(p);
                 }
-                /* Skip comma */
+                /* Skip comma or other unexpected tokens to ensure progress */
                 if (parser_current(p).type == TOK_COMMA) {
+                    parser_advance(p);
+                } else if (parser_current(p).type != TOK_CLOSE_PAREN &&
+                           parser_current(p).type != TOK_EOF) {
                     parser_advance(p);
                 }
             }

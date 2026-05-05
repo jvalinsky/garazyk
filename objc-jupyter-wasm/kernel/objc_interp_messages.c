@@ -32,6 +32,90 @@ extern Value execute_interpreter_method(struct Parser *p, MethodImpl *method, SE
                                         const Value *keyword_args, unsigned int keyword_count,
                                         int return_receiver_on_void);
 
+/* ── Static helpers for JSON serialization ──────────────────────── */
+
+static void append_json_str(char *buf, unsigned int *pos, unsigned int max_len, const char *s) {
+    if (!s) return;
+    while (*s != '\0' && *pos < max_len - 1) {
+        if (*s == '"' || *s == '\\') {
+            if (*pos < max_len - 2) {
+                buf[(*pos)++] = '\\';
+                buf[(*pos)++] = *s;
+            }
+        } else {
+            buf[(*pos)++] = *s;
+        }
+        s++;
+    }
+}
+
+static void append_json_value(char *buf, unsigned int *pos, unsigned int max_len, Value v) {
+    if (v.is_int) {
+        char nbuf[32];
+        int val = v.int_val;
+        unsigned int npos = 0;
+        if (val < 0) { if (*pos < max_len) buf[(*pos)++] = '-'; val = -val; }
+        if (val == 0) { if (*pos < max_len) buf[(*pos)++] = '0'; }
+        else {
+            int t = val;
+            while (t > 0) { npos++; t /= 10; }
+            t = val;
+            { unsigned int d = npos; do { d--; nbuf[d] = '0' + (t % 10); t /= 10; } while (t > 0); }
+            { unsigned int i; for(i=0; i<npos && *pos<max_len; i++) buf[(*pos)++] = nbuf[i]; }
+        }
+    } else if (v.is_float) {
+        if (*pos < max_len - 3) { buf[(*pos)++] = '0'; buf[(*pos)++] = '.'; buf[(*pos)++] = '0'; } /* simplified float */
+    } else if (v.is_id) {
+        const char *s = (const char *)v.obj_val;
+        if (s == 0 || cstr_starts(s, "NSNull:")) {
+            append_json_str(buf, pos, max_len, "null");
+        } else if (cstr_starts(s, "NSDict:") || cstr_starts(s, "NSMutDict:")) {
+            unsigned int cid = coll_id_from_marker(s, cstr_starts(s, "NSDict:") ? "NSDict:" : "NSMutDict:");
+            unsigned int i;
+            int first = 1;
+            if (*pos < max_len) buf[(*pos)++] = '{';
+            for (i = 0; i < g_ctx.coll_entry_count; i++) {
+                if (g_ctx.coll_entries[i].coll_id == cid) {
+                    if (!first && *pos < max_len) buf[(*pos)++] = ',';
+                    first = 0;
+                    if (*pos < max_len) buf[(*pos)++] = '"';
+                    if (g_ctx.coll_entries[i].key.is_id && g_ctx.coll_entries[i].key.obj_val) {
+                        append_json_str(buf, pos, max_len, (const char *)g_ctx.coll_entries[i].key.obj_val);
+                    }
+                    if (*pos < max_len) buf[(*pos)++] = '"';
+                    if (*pos < max_len) buf[(*pos)++] = ':';
+                    append_json_value(buf, pos, max_len, g_ctx.coll_entries[i].value);
+                }
+            }
+            if (*pos < max_len) buf[(*pos)++] = '}';
+        } else if (cstr_starts(s, "NSArr:") || cstr_starts(s, "NSMutArr:")) {
+            unsigned int cid = coll_id_from_marker(s, cstr_starts(s, "NSArr:") ? "NSArr:" : "NSMutArr:");
+            unsigned int i;
+            int first = 1;
+            if (*pos < max_len) buf[(*pos)++] = '[';
+            for (i = 0; i < g_ctx.coll_entry_count; i++) {
+                if (g_ctx.coll_entries[i].coll_id == cid) {
+                    if (!first && *pos < max_len) buf[(*pos)++] = ',';
+                    first = 0;
+                    append_json_value(buf, pos, max_len, g_ctx.coll_entries[i].key);
+                }
+            }
+            if (*pos < max_len) buf[(*pos)++] = ']';
+        } else if (cstr_starts(s, "NSNumber:")) {
+            append_json_str(buf, pos, max_len, s + 9);
+        } else if (cstr_starts(s, "NSFloat:")) {
+            append_json_str(buf, pos, max_len, s + 8);
+        } else {
+            /* Raw string */
+            if (*pos < max_len) buf[(*pos)++] = '"';
+            append_json_str(buf, pos, max_len, s);
+            if (*pos < max_len) buf[(*pos)++] = '"';
+        }
+    } else {
+        append_json_str(buf, pos, max_len, "null");
+    }
+}
+
 Value parse_message_send(Parser *p) {
     Value target;
     char sel_name[256];
@@ -223,6 +307,22 @@ Value parse_message_send(Parser *p) {
         #define IS_FOUNDATION_CLASS(name) \
             (target_class_name && cstr_eq(target_class_name, name))
 
+        /* ── Primitive numeric value dispatch ─────────────────────── */
+        if (target.is_int || target.is_float) {
+            if (cstr_eq(sel_name, "intValue") || cstr_eq(sel_name, "longValue") || cstr_eq(sel_name, "integerValue")) {
+                if (target.is_int) return target;
+                return value_from_int((int)target.float_val);
+            }
+            if (cstr_eq(sel_name, "floatValue") || cstr_eq(sel_name, "doubleValue")) {
+                if (target.is_float) return target;
+                return value_from_float((double)target.int_val);
+            }
+            if (cstr_eq(sel_name, "boolValue")) {
+                if (target.is_int) return value_from_int(target.int_val != 0);
+                return value_from_int(target.float_val != 0.0);
+            }
+        }
+
         /* Built-in: [ClassName alloc] → return FDObj: marker for all classes.
          * In WASM, class_createInstance crashes on sentinel pointers,
          * so we use the FDObj: marker approach for ALL classes (not just
@@ -413,6 +513,57 @@ Value parse_message_send(Parser *p) {
             Class cls = (Class)0;
             cls = object_getClass(receiver);
             return value_from_class(cls);
+        }
+
+        /* ── Category method dispatch for Foundation instances ─────── */
+        /* String literals (@"..."), NSNumber markers, collection markers,
+         * etc. are not FDObj: markers, so the normal interpreter method
+         * lookup above skips them.  Check the interpreter method table
+         * for category methods on Foundation classes before falling
+         * through to built-in dispatch. */
+        if (target.is_id && receiver != 0 &&
+            is_string_pool_pointer(receiver) &&
+            !cstr_starts((const char *)receiver, "FDObj:")) {
+            /* Determine the Foundation class name for this receiver */
+            const char *foundation_cls_name = (const char *)0;
+            const char *s = (const char *)receiver;
+            /* Plain C strings are NSString instances */
+            foundation_cls_name = "NSString";
+            /* Check for NSNumber/NSData/collection markers */
+            if (cstr_starts(s, "NSNumber:") || cstr_starts(s, "NSFloat:"))
+                foundation_cls_name = "NSNumber";
+            else if (cstr_starts(s, "NSArr:"))
+                foundation_cls_name = "NSArray";
+            else if (cstr_starts(s, "NSMutArr:"))
+                foundation_cls_name = "NSMutableArray";
+            else if (cstr_starts(s, "NSDict:"))
+                foundation_cls_name = "NSDictionary";
+            else if (cstr_starts(s, "NSMutDict:"))
+                foundation_cls_name = "NSMutableDictionary";
+            else if (cstr_starts(s, "NSSet:"))
+                foundation_cls_name = "NSSet";
+            else if (cstr_starts(s, "NSData:"))
+                foundation_cls_name = "NSData";
+            else if (cstr_starts(s, "NSBlock:"))
+                foundation_cls_name = "NSBlock";
+
+            if (foundation_cls_name) {
+                /* Look up the class pointer for this Foundation class */
+                InterpVar *cls_var = interp_find_var(foundation_cls_name);
+                if (cls_var && cls_var->is_class) {
+                    /* Search interpreter methods for this class + selector */
+                    unsigned int mi;
+                    for (mi = 0; mi < g_ctx.method_count; mi++) {
+                        MethodImpl *method = &g_ctx.methods[mi];
+                        if (method->selector == sel && method->source_len > 0 &&
+                            method->class_ptr == cls_var->cls &&
+                            !method->is_class_method) {
+                            return execute_interpreter_method(p, &g_ctx.methods[mi], sel,
+                                                              receiver, keyword_args, arg_count, 1);
+                        }
+                    }
+                }
+            }
         }
 
         /* ── Foundation built-in dispatch ────────────────────────────── */
@@ -1601,6 +1752,466 @@ Value parse_message_send(Parser *p) {
             return value_from_int(0);
         }
 
+        /* ── NSJSONSerialization dispatch ─────────────────────────── */
+
+        if (IS_FOUNDATION_CLASS("NSJSONSerialization") && target.is_class) {
+            if (cstr_eq(sel_name, "JSONObjectWithData:options:error:") && arg_count >= 1) {
+                id data_obj = keyword_args[0].obj_val;
+                if (data_obj != 0 && cstr_eq_n((const char *)data_obj, "NSData:", 7)) {
+                    /* Decode hex data to a string */
+                    const char *hex = ((const char *)data_obj) + 7;
+                    int hex_len = (int)cstr_len(hex);
+                    int byte_len = hex_len / 2;
+                    char *json_str = string_pool_alloc((unsigned int)byte_len + 1);
+                    if (json_str) {
+                        static const char hex_vals[] = "0123456789abcdef";
+                        int i;
+                        for (i = 0; i < byte_len; i++) {
+                            char hi = hex[i * 2];
+                            char lo = hex[i * 2 + 1];
+                            int hi_val = 0, lo_val = 0, j;
+                            for (j = 0; j < 16; j++) {
+                                if (hi == hex_vals[j] || hi == hex_vals[j] - 32) hi_val = j;
+                                if (lo == hex_vals[j] || lo == hex_vals[j] - 32) lo_val = j;
+                            }
+                            json_str[i] = (char)((hi_val << 4) | lo_val);
+                        }
+                        json_str[byte_len] = '\0';
+                        
+                        /* Call host import to parse JSON and build collections */
+                        return value_from_id(objc_kernel_host_json_parse(json_str, (unsigned int)byte_len));
+                    }
+                }
+                return value_from_id(0); /* Return nil on failure */
+            }
+            if (cstr_eq(sel_name, "dataWithJSONObject:options:error:") && arg_count >= 1) {
+                static char json_gen_buf[262144]; /* 256KB buffer for JSON stringification */
+                unsigned int pos = 0;
+                Value obj = keyword_args[0];
+                append_json_value(json_gen_buf, &pos, sizeof(json_gen_buf), obj);
+                json_gen_buf[pos] = '\0';
+                
+                /* Now encode as NSData hex string */
+                {
+                    unsigned int needed = 7 + pos * 2 + 1;
+                    char *buf = string_pool_alloc(needed);
+                    if (buf) {
+                        static const char hex_chars[] = "0123456789abcdef";
+                        unsigned int i;
+                        cstr_copy(buf, "NSData:", needed);
+                        for (i = 0; i < pos; i++) {
+                            unsigned char c = (unsigned char)json_gen_buf[i];
+                            buf[7 + i * 2] = hex_chars[(c >> 4) & 0x0f];
+                            buf[7 + i * 2 + 1] = hex_chars[c & 0x0f];
+                        }
+                        buf[7 + pos * 2] = '\0';
+                        return value_from_id((id)buf);
+                    }
+                }
+                return value_from_id(0);
+            }
+        }
+
+        /* ── Networking dispatch (NSURL, NSURLRequest, NSURLSession) ── */
+
+        /* NSURL */
+        if (IS_FOUNDATION_CLASS("NSURL") && target.is_class) {
+            if (cstr_eq(sel_name, "URLWithString:") && arg_count >= 1) {
+                const char *url_str = (const char *)keyword_args[0].obj_val;
+                if (url_str) {
+                    unsigned int len = cstr_len(url_str);
+                    char *buf = string_pool_alloc(len + 7);
+                    if (buf) {
+                        cstr_copy(buf, "NSURL:", 7);
+                        cstr_copy(buf + 6, url_str, len + 1);
+                        return value_from_id((id)buf);
+                    }
+                }
+                return value_from_id(0);
+            }
+        }
+
+        /* NSMutableURLRequest */
+        if (IS_FOUNDATION_CLASS("NSMutableURLRequest") && target.is_class) {
+            if (cstr_eq(sel_name, "requestWithURL:") && arg_count >= 1) {
+                const char *url_marker = (const char *)keyword_args[0].obj_val;
+                if (url_marker && cstr_starts(url_marker, "NSURL:")) {
+                    unsigned int cid = g_ctx.next_coll_id++;
+                    coll_add_string_val(cid, "url", url_marker + 6);
+                    coll_add_string_val(cid, "method", "GET");
+                    unsigned int headers_cid = g_ctx.next_coll_id++;
+                    coll_add_marker_val(cid, "headers", coll_make_marker("NSMutDict:", headers_cid));
+                    return value_from_id(coll_make_marker("NSURLReq:", cid));
+                }
+                return value_from_id(0);
+            }
+        }
+        
+        if (target.is_id && receiver != 0 && cstr_starts((const char *)receiver, "NSURLReq:")) {
+            unsigned int cid = coll_id_from_marker((const char *)receiver, "NSURLReq:");
+            if (cstr_eq(sel_name, "setHTTPMethod:") && arg_count >= 1) {
+                Value key = value_void();
+                Value val = keyword_args[0];
+                char *k = string_pool_alloc(7);
+                if (k) { cstr_copy(k, "method", 7); key = value_from_id((id)k); }
+                int idx = coll_find_by_key(cid, &key);
+                if (idx >= 0) g_ctx.coll_entries[idx].value = val;
+                else coll_add(cid, key, val);
+                return value_from_id(receiver);
+            }
+            if (cstr_eq(sel_name, "setValue:forHTTPHeaderField:") && arg_count >= 2) {
+                Value headers_key = value_void();
+                char *hk = string_pool_alloc(8);
+                if (hk) { cstr_copy(hk, "headers", 8); headers_key = value_from_id((id)hk); }
+                int h_idx = coll_find_by_key(cid, &headers_key);
+                if (h_idx >= 0) {
+                    Value headers_dict = g_ctx.coll_entries[h_idx].value;
+                    if (headers_dict.is_id) {
+                        unsigned int hcid = coll_id_from_marker((const char *)headers_dict.obj_val, "NSMutDict:");
+                        if (hcid) {
+                            Value key = keyword_args[1];
+                            Value val = keyword_args[0];
+                            int idx = coll_find_by_key(hcid, &key);
+                            if (idx >= 0) g_ctx.coll_entries[idx].value = val;
+                            else coll_add(hcid, key, val);
+                        }
+                    }
+                }
+                return value_from_id(receiver);
+            }
+            if (cstr_eq(sel_name, "setHTTPBody:") && arg_count >= 1) {
+                Value key = value_void();
+                Value val = keyword_args[0];
+                char *k = string_pool_alloc(5);
+                if (k) { cstr_copy(k, "body", 5); key = value_from_id((id)k); }
+                int idx = coll_find_by_key(cid, &key);
+                if (idx >= 0) g_ctx.coll_entries[idx].value = val;
+                else coll_add(cid, key, val);
+                return value_from_id(receiver);
+            }
+        }
+
+        /* NSURLSession */
+        if (IS_FOUNDATION_CLASS("NSURLSession") && target.is_class) {
+            if (cstr_eq(sel_name, "sharedSession")) {
+                return value_from_id((id)"NSURLSession:shared");
+            }
+        }
+        
+        if (target.is_id && receiver != 0 && cstr_starts((const char *)receiver, "NSURLSession:")) {
+            if (cstr_eq(sel_name, "dataTaskWithRequest:completionHandler:") && arg_count >= 2) {
+                const char *req_marker = (const char *)keyword_args[0].obj_val;
+                const char *blk_marker = (const char *)keyword_args[1].obj_val;
+                if (req_marker && cstr_starts(req_marker, "NSURLReq:") && blk_marker && cstr_starts(blk_marker, "NSBlock:")) {
+                    if (g_ctx.network_task_count < MAX_NETWORK_TASKS) {
+                        int task_id = g_ctx.next_network_task_id++;
+                        g_ctx.network_tasks[g_ctx.network_task_count].task_id = task_id;
+                        g_ctx.network_tasks[g_ctx.network_task_count].block_id = block_id_from_marker(blk_marker);
+                        g_ctx.network_tasks[g_ctx.network_task_count].active = 0; /* not active until resume */
+                        
+                        /* Store the request marker so we can fetch it when resumed */
+                        unsigned int cid = g_ctx.next_coll_id++;
+                        coll_add_int_val(cid, "task_id", task_id);
+                        coll_add_string_val(cid, "req", req_marker);
+                        
+                        g_ctx.network_task_count++;
+                        return value_from_id(coll_make_marker("NSURLTask:", cid));
+                    }
+                }
+                return value_from_id(0);
+            }
+        }
+        
+        if (target.is_id && receiver != 0 && cstr_starts((const char *)receiver, "NSURLTask:")) {
+            if (cstr_eq(sel_name, "resume")) {
+                unsigned int cid = coll_id_from_marker((const char *)receiver, "NSURLTask:");
+                Value key_task = value_void();
+                char *kt = string_pool_alloc(8);
+                if (kt) { cstr_copy(kt, "task_id", 8); key_task = value_from_id((id)kt); }
+                int idx_task = coll_find_by_key(cid, &key_task);
+                
+                Value key_req = value_void();
+                char *kr = string_pool_alloc(4);
+                if (kr) { cstr_copy(kr, "req", 4); key_req = value_from_id((id)kr); }
+                int idx_req = coll_find_by_key(cid, &key_req);
+                
+                if (idx_task >= 0 && idx_req >= 0) {
+                    int task_id = g_ctx.coll_entries[idx_task].value.int_val;
+                    const char *req_marker = (const char *)g_ctx.coll_entries[idx_req].value.obj_val;
+                    unsigned int req_cid = coll_id_from_marker(req_marker, "NSURLReq:");
+                    
+                    /* Mark active */
+                    unsigned int i;
+                    for (i = 0; i < g_ctx.network_task_count; i++) {
+                        if (g_ctx.network_tasks[i].task_id == task_id) {
+                            g_ctx.network_tasks[i].active = 1;
+                            break;
+                        }
+                    }
+                    
+                    /* Extract properties for fetch */
+                    const char *url = "";
+                    const char *method = "GET";
+                    const char *body = 0;
+                    unsigned int body_len = 0;
+                    
+                    Value k_url = value_void(); char *ku = string_pool_alloc(4); if(ku){cstr_copy(ku,"url",4); k_url=value_from_id((id)ku);}
+                    Value k_method = value_void(); char *km = string_pool_alloc(7); if(km){cstr_copy(km,"method",7); k_method=value_from_id((id)km);}
+                    Value k_body = value_void(); char *kb = string_pool_alloc(5); if(kb){cstr_copy(kb,"body",5); k_body=value_from_id((id)kb);}
+                    Value k_headers = value_void(); char *kh = string_pool_alloc(8); if(kh){cstr_copy(kh,"headers",8); k_headers=value_from_id((id)kh);}
+                    
+                    int i_u = coll_find_by_key(req_cid, &k_url);
+                    if (i_u >= 0) url = (const char *)g_ctx.coll_entries[i_u].value.obj_val;
+                    
+                    int i_m = coll_find_by_key(req_cid, &k_method);
+                    if (i_m >= 0) method = (const char *)g_ctx.coll_entries[i_m].value.obj_val;
+                    
+                    int i_b = coll_find_by_key(req_cid, &k_body);
+                    if (i_b >= 0) {
+                        const char *data_str = (const char *)g_ctx.coll_entries[i_b].value.obj_val;
+                        if (data_str && cstr_starts(data_str, "NSData:")) {
+                            /* hex string NSData:XXXX */
+                            const char *hex = data_str + 7;
+                            int hex_len = (int)cstr_len(hex);
+                            body_len = hex_len / 2;
+                            char *bin_body = string_pool_alloc(body_len);
+                            if (bin_body) {
+                                static const char hex_vals[] = "0123456789abcdef";
+                                int x;
+                                for (x = 0; x < body_len; x++) {
+                                    char hi = hex[x * 2];
+                                    char lo = hex[x * 2 + 1];
+                                    int hi_val = 0, lo_val = 0, j;
+                                    for (j = 0; j < 16; j++) {
+                                        if (hi == hex_vals[j] || hi == hex_vals[j] - 32) hi_val = j;
+                                        if (lo == hex_vals[j] || lo == hex_vals[j] - 32) lo_val = j;
+                                    }
+                                    bin_body[x] = (char)((hi_val << 4) | lo_val);
+                                }
+                                body = bin_body;
+                            }
+                        }
+                    }
+                    
+                    /* Stringify headers dict to JSON using our C stringifier */
+                    static char headers_json[4096];
+                    headers_json[0] = '\0';
+                    int i_h = coll_find_by_key(req_cid, &k_headers);
+                    if (i_h >= 0) {
+                        unsigned int pos = 0;
+                        append_json_value(headers_json, &pos, sizeof(headers_json), g_ctx.coll_entries[i_h].value);
+                        headers_json[pos] = '\0';
+                    }
+                    
+                    extern int objc_kernel_host_fetch(int task_id, const char *url, const char *method, const char *headers_json, const char *body, unsigned int body_len);
+                    
+                    /* Tell host to perform the fetch */
+                    objc_kernel_host_fetch(task_id, url, method, headers_json[0] ? headers_json : "{}", body, body_len);
+                }
+                return value_from_id(receiver);
+            }
+        }
+
+        /* ── Networking dispatch (NSURL, NSURLRequest, NSURLSession) ── */
+
+        /* NSURL */
+        if (IS_FOUNDATION_CLASS("NSURL") && target.is_class) {
+            if (cstr_eq(sel_name, "URLWithString:") && arg_count >= 1) {
+                const char *url_str = (const char *)keyword_args[0].obj_val;
+                if (url_str) {
+                    unsigned int len = cstr_len(url_str);
+                    char *buf = string_pool_alloc(len + 7);
+                    if (buf) {
+                        cstr_copy(buf, "NSURL:", 7);
+                        cstr_copy(buf + 6, url_str, len + 1);
+                        return value_from_id((id)buf);
+                    }
+                }
+                return value_from_id(0);
+            }
+        }
+
+        /* NSMutableURLRequest */
+        if (IS_FOUNDATION_CLASS("NSMutableURLRequest") && target.is_class) {
+            if (cstr_eq(sel_name, "requestWithURL:") && arg_count >= 1) {
+                const char *url_marker = (const char *)keyword_args[0].obj_val;
+                if (url_marker && cstr_starts(url_marker, "NSURL:")) {
+                    unsigned int cid = g_ctx.next_coll_id++;
+                    coll_add_string_val(cid, "url", url_marker + 6);
+                    coll_add_string_val(cid, "method", "GET");
+                    unsigned int headers_cid = g_ctx.next_coll_id++;
+                    coll_add_marker_val(cid, "headers", coll_make_marker("NSMutDict:", headers_cid));
+                    return value_from_id(coll_make_marker("NSURLReq:", cid));
+                }
+                return value_from_id(0);
+            }
+        }
+        
+        if (target.is_id && receiver != 0 && cstr_starts((const char *)receiver, "NSURLReq:")) {
+            unsigned int cid = coll_id_from_marker((const char *)receiver, "NSURLReq:");
+            if (cstr_eq(sel_name, "setHTTPMethod:") && arg_count >= 1) {
+                Value key = value_void();
+                Value val = keyword_args[0];
+                char *k = string_pool_alloc(7);
+                if (k) { cstr_copy(k, "method", 7); key = value_from_id((id)k); }
+                int idx = coll_find_by_key(cid, &key);
+                if (idx >= 0) g_ctx.coll_entries[idx].value = val;
+                else coll_add(cid, key, val);
+                return value_from_id(receiver);
+            }
+            if (cstr_eq(sel_name, "setValue:forHTTPHeaderField:") && arg_count >= 2) {
+                Value headers_key = value_void();
+                char *hk = string_pool_alloc(8);
+                if (hk) { cstr_copy(hk, "headers", 8); headers_key = value_from_id((id)hk); }
+                int h_idx = coll_find_by_key(cid, &headers_key);
+                if (h_idx >= 0) {
+                    Value headers_dict = g_ctx.coll_entries[h_idx].value;
+                    if (headers_dict.is_id) {
+                        unsigned int hcid = coll_id_from_marker((const char *)headers_dict.obj_val, "NSMutDict:");
+                        if (hcid) {
+                            Value key = keyword_args[1];
+                            Value val = keyword_args[0];
+                            int idx = coll_find_by_key(hcid, &key);
+                            if (idx >= 0) g_ctx.coll_entries[idx].value = val;
+                            else coll_add(hcid, key, val);
+                        }
+                    }
+                }
+                return value_from_id(receiver);
+            }
+            if (cstr_eq(sel_name, "setHTTPBody:") && arg_count >= 1) {
+                Value key = value_void();
+                Value val = keyword_args[0];
+                char *k = string_pool_alloc(5);
+                if (k) { cstr_copy(k, "body", 5); key = value_from_id((id)k); }
+                int idx = coll_find_by_key(cid, &key);
+                if (idx >= 0) g_ctx.coll_entries[idx].value = val;
+                else coll_add(cid, key, val);
+                return value_from_id(receiver);
+            }
+        }
+
+        /* NSURLSession */
+        if (IS_FOUNDATION_CLASS("NSURLSession") && target.is_class) {
+            if (cstr_eq(sel_name, "sharedSession")) {
+                return value_from_id((id)"NSURLSession:shared");
+            }
+        }
+        
+        if (target.is_id && receiver != 0 && cstr_starts((const char *)receiver, "NSURLSession:")) {
+            if (cstr_eq(sel_name, "dataTaskWithRequest:completionHandler:") && arg_count >= 2) {
+                const char *req_marker = (const char *)keyword_args[0].obj_val;
+                const char *blk_marker = (const char *)keyword_args[1].obj_val;
+                if (req_marker && cstr_starts(req_marker, "NSURLReq:") && blk_marker && cstr_starts(blk_marker, "NSBlock:")) {
+                    if (g_ctx.network_task_count < MAX_NETWORK_TASKS) {
+                        int task_id = g_ctx.next_network_task_id++;
+                        g_ctx.network_tasks[g_ctx.network_task_count].task_id = task_id;
+                        g_ctx.network_tasks[g_ctx.network_task_count].block_id = block_id_from_marker(blk_marker);
+                        g_ctx.network_tasks[g_ctx.network_task_count].active = 0; /* not active until resume */
+                        
+                        /* Store the request marker so we can fetch it when resumed */
+                        unsigned int cid = g_ctx.next_coll_id++;
+                        coll_add_int_val(cid, "task_id", task_id);
+                        coll_add_string_val(cid, "req", req_marker);
+                        
+                        g_ctx.network_task_count++;
+                        return value_from_id(coll_make_marker("NSURLTask:", cid));
+                    }
+                }
+                return value_from_id(0);
+            }
+        }
+        
+        if (target.is_id && receiver != 0 && cstr_starts((const char *)receiver, "NSURLTask:")) {
+            if (cstr_eq(sel_name, "resume")) {
+                unsigned int cid = coll_id_from_marker((const char *)receiver, "NSURLTask:");
+                Value key_task = value_void();
+                char *kt = string_pool_alloc(8);
+                if (kt) { cstr_copy(kt, "task_id", 8); key_task = value_from_id((id)kt); }
+                int idx_task = coll_find_by_key(cid, &key_task);
+                
+                Value key_req = value_void();
+                char *kr = string_pool_alloc(4);
+                if (kr) { cstr_copy(kr, "req", 4); key_req = value_from_id((id)kr); }
+                int idx_req = coll_find_by_key(cid, &key_req);
+                
+                if (idx_task >= 0 && idx_req >= 0) {
+                    int task_id = g_ctx.coll_entries[idx_task].value.int_val;
+                    const char *req_marker = (const char *)g_ctx.coll_entries[idx_req].value.obj_val;
+                    unsigned int req_cid = coll_id_from_marker(req_marker, "NSURLReq:");
+                    
+                    /* Mark active */
+                    unsigned int i;
+                    for (i = 0; i < g_ctx.network_task_count; i++) {
+                        if (g_ctx.network_tasks[i].task_id == task_id) {
+                            g_ctx.network_tasks[i].active = 1;
+                            break;
+                        }
+                    }
+                    
+                    /* Extract properties for fetch */
+                    const char *url = "";
+                    const char *method = "GET";
+                    const char *body = 0;
+                    unsigned int body_len = 0;
+                    
+                    Value k_url = value_void(); char *ku = string_pool_alloc(4); if(ku){cstr_copy(ku,"url",4); k_url=value_from_id((id)ku);}
+                    Value k_method = value_void(); char *km = string_pool_alloc(7); if(km){cstr_copy(km,"method",7); k_method=value_from_id((id)km);}
+                    Value k_body = value_void(); char *kb = string_pool_alloc(5); if(kb){cstr_copy(kb,"body",5); k_body=value_from_id((id)kb);}
+                    Value k_headers = value_void(); char *kh = string_pool_alloc(8); if(kh){cstr_copy(kh,"headers",8); k_headers=value_from_id((id)kh);}
+                    
+                    int i_u = coll_find_by_key(req_cid, &k_url);
+                    if (i_u >= 0) url = (const char *)g_ctx.coll_entries[i_u].value.obj_val;
+                    
+                    int i_m = coll_find_by_key(req_cid, &k_method);
+                    if (i_m >= 0) method = (const char *)g_ctx.coll_entries[i_m].value.obj_val;
+                    
+                    int i_b = coll_find_by_key(req_cid, &k_body);
+                    if (i_b >= 0) {
+                        const char *data_str = (const char *)g_ctx.coll_entries[i_b].value.obj_val;
+                        if (data_str && cstr_starts(data_str, "NSData:")) {
+                            /* hex string NSData:XXXX */
+                            const char *hex = data_str + 7;
+                            int hex_len = (int)cstr_len(hex);
+                            body_len = hex_len / 2;
+                            char *bin_body = string_pool_alloc(body_len);
+                            if (bin_body) {
+                                static const char hex_vals[] = "0123456789abcdef";
+                                int x;
+                                for (x = 0; x < body_len; x++) {
+                                    char hi = hex[x * 2];
+                                    char lo = hex[x * 2 + 1];
+                                    int hi_val = 0, lo_val = 0, j;
+                                    for (j = 0; j < 16; j++) {
+                                        if (hi == hex_vals[j] || hi == hex_vals[j] - 32) hi_val = j;
+                                        if (lo == hex_vals[j] || lo == hex_vals[j] - 32) lo_val = j;
+                                    }
+                                    bin_body[x] = (char)((hi_val << 4) | lo_val);
+                                }
+                                body = bin_body;
+                            }
+                        }
+                    }
+                    
+                    /* Stringify headers dict to JSON using our C stringifier */
+                    static char headers_json[4096];
+                    headers_json[0] = '\0';
+                    int i_h = coll_find_by_key(req_cid, &k_headers);
+                    if (i_h >= 0) {
+                        unsigned int pos = 0;
+                        append_json_value(headers_json, &pos, sizeof(headers_json), g_ctx.coll_entries[i_h].value);
+                        headers_json[pos] = '\0';
+                    }
+                    
+                    extern int objc_kernel_host_fetch(int task_id, const char *url, const char *method, const char *headers_json, const char *body, unsigned int body_len);
+                    
+                    /* Tell host to perform the fetch */
+                    objc_kernel_host_fetch(task_id, url, method, headers_json[0] ? headers_json : "{}", body, body_len);
+                }
+                return value_from_id(receiver);
+            }
+        }
+
         /* ── NSData dispatch ──────────────────────────────────────── */
 
         /* NSData: [NSData data] → empty data */
@@ -1638,6 +2249,38 @@ Value parse_message_send(Parser *p) {
                 }
                 return value_from_id((id)buf);
             }
+        }
+
+        /* NSMutableData: [NSMutableData dataWithCapacity:n] → empty mutable data */
+        if (IS_FOUNDATION_CLASS("NSMutableData") && target.is_class && cstr_eq(sel_name, "dataWithCapacity:") && arg_count >= 1) {
+            char *buf = string_pool_alloc(8);
+            if (buf == 0) return value_from_id((id)"NSData:");
+            cstr_copy(buf, "NSData:", 8);
+            return value_from_id((id)buf);
+        }
+
+        /* NSMutableData: [NSMutableData data] → empty mutable data */
+        if (IS_FOUNDATION_CLASS("NSMutableData") && target.is_class && cstr_eq(sel_name, "data") && arg_count == 0) {
+            char *buf = string_pool_alloc(8);
+            if (buf == 0) return value_from_id((id)"NSData:");
+            cstr_copy(buf, "NSData:", 8);
+            return value_from_id((id)buf);
+        }
+
+        /* NSData: [NSData dataWithData:other] → copy of other data */
+        if (IS_FOUNDATION_CLASS("NSData") && target.is_class && cstr_eq(sel_name, "dataWithData:") && arg_count >= 1) {
+            const char *other = (const char *)keyword_args[0].obj_val;
+            if (other && cstr_eq_n(other, "NSData:", 7)) {
+                unsigned int needed = (unsigned int)cstr_len(other) + 1;
+                char *buf = string_pool_alloc(needed);
+                if (buf == 0) return value_from_id((id)"NSData:");
+                cstr_copy(buf, other, needed);
+                return value_from_id((id)buf);
+            }
+            char *buf = string_pool_alloc(8);
+            if (buf == 0) return value_from_id((id)"NSData:");
+            cstr_copy(buf, "NSData:", 8);
+            return value_from_id((id)buf);
         }
 
         /* NSData instance methods — check for NSData: prefix on receiver */
@@ -1709,7 +2352,336 @@ Value parse_message_send(Parser *p) {
                 return value_from_int(0);
             }
 
-            /* [data subdataWithRange:] — needs NSRange, deferred */
+            /* [data byteAtIndex:i] → return integer value of byte at index */
+            if (cstr_eq(sel_name, "byteAtIndex:") && arg_count >= 1) {
+                const char *hex = s + 7;
+                int hex_len = (int)cstr_len(hex);
+                int idx = keyword_args[0].is_int ? keyword_args[0].int_val : 0;
+                if (idx < 0 || idx * 2 + 1 >= hex_len) return value_from_int(0);
+                {
+                    static const char hex_vals[] = "0123456789abcdef";
+                    char hi = hex[idx * 2];
+                    char lo = hex[idx * 2 + 1];
+                    int hi_val = 0, lo_val = 0, j;
+                    for (j = 0; j < 16; j++) {
+                        if (hi == hex_vals[j] || hi == hex_vals[j] - 32) hi_val = j;
+                        if (lo == hex_vals[j] || lo == hex_vals[j] - 32) lo_val = j;
+                    }
+                    return value_from_int((hi_val << 4) | lo_val);
+                }
+            }
+
+            /* [data subdataWithRange:] → extract subrange as new NSData
+             * Accepts two integer args: location and length (simulating NSRange). */
+            if (cstr_eq(sel_name, "subdataWithRange:") && arg_count >= 2) {
+                const char *hex = s + 7;
+                int hex_len = (int)cstr_len(hex);
+                int loc = keyword_args[0].is_int ? keyword_args[0].int_val : 0;
+                int len = keyword_args[1].is_int ? keyword_args[1].int_val : 0;
+                if (loc < 0) loc = 0;
+                if (len < 0) len = 0;
+                if (loc * 2 > hex_len) loc = hex_len / 2;
+                if (loc + len > hex_len / 2) len = (hex_len / 2) - loc;
+                {
+                    unsigned int needed = 7 + (unsigned int)len * 2 + 1;
+                    char *buf = string_pool_alloc(needed);
+                    if (buf == 0) return value_from_id((id)"NSData:");
+                    cstr_copy(buf, "NSData:", needed);
+                    {
+                        int i;
+                        for (i = 0; i < len * 2 && (loc * 2 + i) < hex_len; i++) {
+                            buf[7 + i] = hex[loc * 2 + i];
+                        }
+                        buf[7 + len * 2] = '\0';
+                    }
+                    return value_from_id((id)buf);
+                }
+            }
+
+            /* [data appendData:other] → append other's bytes (NSMutableData) */
+            if (cstr_eq(sel_name, "appendData:") && arg_count >= 1) {
+                const char *other = (const char *)keyword_args[0].obj_val;
+                if (other && cstr_eq_n(other, "NSData:", 7)) {
+                    const char *hex1 = s + 7;
+                    const char *hex2 = other + 7;
+                    int len1 = (int)cstr_len(hex1);
+                    int len2 = (int)cstr_len(hex2);
+                    unsigned int needed = 7 + (unsigned int)(len1 + len2) + 1;
+                    char *buf = string_pool_alloc(needed);
+                    if (buf == 0) return value_from_id(receiver);
+                    cstr_copy(buf, "NSData:", needed);
+                    {
+                        int i;
+                        for (i = 0; i < len1; i++) buf[7 + i] = hex1[i];
+                        for (i = 0; i < len2; i++) buf[7 + len1 + i] = hex2[i];
+                        buf[7 + len1 + len2] = '\0';
+                    }
+                    return value_from_id((id)buf);
+                }
+                return value_from_id(receiver);
+            }
+
+            /* [data appendBytes:length:] → append raw bytes (NSMutableData)
+             * Accepts a string (each char = byte) and length. */
+            if (cstr_eq(sel_name, "appendBytes:length:") && arg_count >= 2) {
+                const char *bytes = (const char *)keyword_args[0].obj_val;
+                int len = keyword_args[1].is_int ? keyword_args[1].int_val : 0;
+                const char *hex = s + 7;
+                int hex_len = (int)cstr_len(hex);
+                if (len < 0) len = 0;
+                {
+                    int blen = (int)cstr_len(bytes);
+                    if (len > blen) len = blen;
+                    unsigned int needed = 7 + (unsigned int)(hex_len + len * 2) + 1;
+                    char *buf = string_pool_alloc(needed);
+                    if (buf == 0) return value_from_id(receiver);
+                    cstr_copy(buf, "NSData:", needed);
+                    {
+                        int i;
+                        for (i = 0; i < hex_len; i++) buf[7 + i] = hex[i];
+                        {
+                            static const char hex_chars[] = "0123456789abcdef";
+                            for (i = 0; i < len; i++) {
+                                unsigned char c = (unsigned char)bytes[i];
+                                buf[7 + hex_len + i * 2] = hex_chars[(c >> 4) & 0x0f];
+                                buf[7 + hex_len + i * 2 + 1] = hex_chars[c & 0x0f];
+                            }
+                            buf[7 + hex_len + len * 2] = '\0';
+                        }
+                    }
+                    return value_from_id((id)buf);
+                }
+            }
+
+            /* [data copy] → return a copy of this NSData */
+            if (cstr_eq(sel_name, "copy") && arg_count == 0) {
+                unsigned int needed = (unsigned int)cstr_len(s) + 1;
+                char *buf = string_pool_alloc(needed);
+                if (buf == 0) return value_from_id(receiver);
+                cstr_copy(buf, s, needed);
+                return value_from_id((id)buf);
+            }
+        }
+
+        /* ── Host-bridged crypto/encoding dispatch ─────────────────── */
+
+        /* [CID sha256Digest:data] → SHA-256 via host bridge
+         * Accepts NSData, returns NSData (32 bytes). */
+        if (IS_FOUNDATION_CLASS("CID") && target.is_class && cstr_eq(sel_name, "sha256Digest:") && arg_count >= 1) {
+            const char *arg = (const char *)keyword_args[0].obj_val;
+            if (arg && cstr_eq_n(arg, "NSData:", 7)) {
+                const char *hex = arg + 7;
+                int hex_len = (int)cstr_len(hex);
+                int byte_len = hex_len / 2;
+                /* Decode hex to raw bytes in a temp buffer, call host, encode result */
+                char *raw = (char *)0;
+                if (byte_len > 0) {
+                    raw = string_pool_alloc((unsigned int)byte_len);
+                    if (raw) {
+                        static const char hv[] = "0123456789abcdef";
+                        int i;
+                        for (i = 0; i < byte_len; i++) {
+                            char hi = hex[i * 2], lo = hex[i * 2 + 1];
+                            int hiv = 0, lov = 0, j;
+                            for (j = 0; j < 16; j++) {
+                                if (hi == hv[j] || hi == hv[j] - 32) hiv = j;
+                                if (lo == hv[j] || lo == hv[j] - 32) lov = j;
+                            }
+                            raw[i] = (char)((hiv << 4) | lov);
+                        }
+                    }
+                }
+                {
+                    char out_buf[64]; /* SHA-256 = 32 bytes, hex = 64 chars */
+                    int result_len = objc_kernel_host_sha256(raw ? raw : "", (unsigned int)byte_len, out_buf, 64);
+                    if (result_len > 0) {
+                        /* result_len is byte count of hash; encode as NSData:hex */
+                        unsigned int needed = 7 + (unsigned int)result_len * 2 + 1;
+                        char *buf = string_pool_alloc(needed);
+                        if (buf) {
+                            static const char hc[] = "0123456789abcdef";
+                            int i;
+                            cstr_copy(buf, "NSData:", needed);
+                            for (i = 0; i < result_len; i++) {
+                                unsigned char c = (unsigned char)out_buf[i];
+                                buf[7 + i * 2] = hc[(c >> 4) & 0x0f];
+                                buf[7 + i * 2 + 1] = hc[c & 0x0f];
+                            }
+                            buf[7 + result_len * 2] = '\0';
+                            return value_from_id((id)buf);
+                        }
+                    }
+                }
+            }
+            return value_from_id((id)"NSData:");
+        }
+
+        /* [CID sha256:data] → CID with SHA-256 via host bridge
+         * Accepts NSData, returns a CID string marker. */
+        if (IS_FOUNDATION_CLASS("CID") && target.is_class && cstr_eq(sel_name, "sha256:") && arg_count >= 1) {
+            /* Delegate to sha256Digest: then wrap in CID */
+            /* For now, return the digest as NSData (same as sha256Digest:) */
+            const char *arg = (const char *)keyword_args[0].obj_val;
+            if (arg && cstr_eq_n(arg, "NSData:", 7)) {
+                const char *hex = arg + 7;
+                int hex_len = (int)cstr_len(hex);
+                int byte_len = hex_len / 2;
+                char *raw = (char *)0;
+                if (byte_len > 0) {
+                    raw = string_pool_alloc((unsigned int)byte_len);
+                    if (raw) {
+                        static const char hv[] = "0123456789abcdef";
+                        int i;
+                        for (i = 0; i < byte_len; i++) {
+                            char hi = hex[i * 2], lo = hex[i * 2 + 1];
+                            int hiv = 0, lov = 0, j;
+                            for (j = 0; j < 16; j++) {
+                                if (hi == hv[j] || hi == hv[j] - 32) hiv = j;
+                                if (lo == hv[j] || lo == hv[j] - 32) lov = j;
+                            }
+                            raw[i] = (char)((hiv << 4) | lov);
+                        }
+                    }
+                }
+                {
+                    char out_buf[64];
+                    int result_len = objc_kernel_host_sha256(raw ? raw : "", (unsigned int)byte_len, out_buf, 64);
+                    if (result_len > 0) {
+                        unsigned int needed = 7 + (unsigned int)result_len * 2 + 1;
+                        char *buf = string_pool_alloc(needed);
+                        if (buf) {
+                            static const char hc[] = "0123456789abcdef";
+                            int i;
+                            cstr_copy(buf, "NSData:", needed);
+                            for (i = 0; i < result_len; i++) {
+                                unsigned char c = (unsigned char)out_buf[i];
+                                buf[7 + i * 2] = hc[(c >> 4) & 0x0f];
+                                buf[7 + i * 2 + 1] = hc[c & 0x0f];
+                            }
+                            buf[7 + result_len * 2] = '\0';
+                            return value_from_id((id)buf);
+                        }
+                    }
+                }
+            }
+            return value_from_id((id)"NSData:");
+        }
+
+        /* [CID base32Encode:data] → base32 string via host bridge */
+        if (IS_FOUNDATION_CLASS("CID") && target.is_class && cstr_eq(sel_name, "base32Encode:") && arg_count >= 1) {
+            const char *arg = (const char *)keyword_args[0].obj_val;
+            if (arg && cstr_eq_n(arg, "NSData:", 7)) {
+                const char *hex = arg + 7;
+                int hex_len = (int)cstr_len(hex);
+                int byte_len = hex_len / 2;
+                char *raw = (char *)0;
+                if (byte_len > 0) {
+                    raw = string_pool_alloc((unsigned int)byte_len);
+                    if (raw) {
+                        static const char hv[] = "0123456789abcdef";
+                        int i;
+                        for (i = 0; i < byte_len; i++) {
+                            char hi = hex[i * 2], lo = hex[i * 2 + 1];
+                            int hiv = 0, lov = 0, j;
+                            for (j = 0; j < 16; j++) {
+                                if (hi == hv[j] || hi == hv[j] - 32) hiv = j;
+                                if (lo == hv[j] || lo == hv[j] - 32) lov = j;
+                            }
+                            raw[i] = (char)((hiv << 4) | lov);
+                        }
+                    }
+                }
+                {
+                    char out_buf[512];
+                    int result_len = objc_kernel_host_base32_encode(raw ? raw : "", (unsigned int)byte_len, out_buf, 512);
+                    if (result_len > 0) {
+                        unsigned int needed = (unsigned int)result_len + 1;
+                        char *buf = string_pool_alloc(needed);
+                        if (buf) {
+                            int i;
+                            for (i = 0; i < result_len; i++) buf[i] = out_buf[i];
+                            buf[result_len] = '\0';
+                            return value_from_id((id)buf);
+                        }
+                    }
+                }
+            }
+            return value_from_id((id)"");
+        }
+
+        /* [CID base32Decode:string] → NSData via host bridge */
+        if (IS_FOUNDATION_CLASS("CID") && target.is_class && cstr_eq(sel_name, "base32Decode:") && arg_count >= 1) {
+            const char *str = (const char *)keyword_args[0].obj_val;
+            if (str) {
+                int str_len = (int)cstr_len(str);
+                char out_buf[512];
+                int result_len = objc_kernel_host_base32_decode(str, (unsigned int)str_len, out_buf, 512);
+                if (result_len > 0) {
+                    unsigned int needed = 7 + (unsigned int)result_len * 2 + 1;
+                    char *buf = string_pool_alloc(needed);
+                    if (buf) {
+                        static const char hc[] = "0123456789abcdef";
+                        int i;
+                        cstr_copy(buf, "NSData:", needed);
+                        for (i = 0; i < result_len; i++) {
+                            unsigned char c = (unsigned char)out_buf[i];
+                            buf[7 + i * 2] = hc[(c >> 4) & 0x0f];
+                            buf[7 + i * 2 + 1] = hc[c & 0x0f];
+                        }
+                        buf[7 + result_len * 2] = '\0';
+                        return value_from_id((id)buf);
+                    }
+                }
+            }
+            return value_from_id((id)"NSData:");
+        }
+
+        /* [CryptoUtils sha256:data] → NSData via host bridge */
+        if (IS_FOUNDATION_CLASS("CryptoUtils") && target.is_class && cstr_eq(sel_name, "sha256:") && arg_count >= 1) {
+            const char *arg = (const char *)keyword_args[0].obj_val;
+            if (arg && cstr_eq_n(arg, "NSData:", 7)) {
+                const char *hex = arg + 7;
+                int hex_len = (int)cstr_len(hex);
+                int byte_len = hex_len / 2;
+                char *raw = (char *)0;
+                if (byte_len > 0) {
+                    raw = string_pool_alloc((unsigned int)byte_len);
+                    if (raw) {
+                        static const char hv[] = "0123456789abcdef";
+                        int i;
+                        for (i = 0; i < byte_len; i++) {
+                            char hi = hex[i * 2], lo = hex[i * 2 + 1];
+                            int hiv = 0, lov = 0, j;
+                            for (j = 0; j < 16; j++) {
+                                if (hi == hv[j] || hi == hv[j] - 32) hiv = j;
+                                if (lo == hv[j] || lo == hv[j] - 32) lov = j;
+                            }
+                            raw[i] = (char)((hiv << 4) | lov);
+                        }
+                    }
+                }
+                {
+                    char out_buf[64];
+                    int result_len = objc_kernel_host_sha256(raw ? raw : "", (unsigned int)byte_len, out_buf, 64);
+                    if (result_len > 0) {
+                        unsigned int needed = 7 + (unsigned int)result_len * 2 + 1;
+                        char *buf = string_pool_alloc(needed);
+                        if (buf) {
+                            static const char hc[] = "0123456789abcdef";
+                            int i;
+                            cstr_copy(buf, "NSData:", needed);
+                            for (i = 0; i < result_len; i++) {
+                                unsigned char c = (unsigned char)out_buf[i];
+                                buf[7 + i * 2] = hc[(c >> 4) & 0x0f];
+                                buf[7 + i * 2 + 1] = hc[c & 0x0f];
+                            }
+                            buf[7 + result_len * 2] = '\0';
+                            return value_from_id((id)buf);
+                        }
+                    }
+                }
+            }
+            return value_from_id((id)"NSData:");
         }
 
         /* ── Foundation collection dispatch ──────────────────────── */
@@ -2152,12 +3124,18 @@ Value parse_message_send(Parser *p) {
                                             arg_var->is_int = 1;
                                             arg_var->int_value = (int)idx;
                                             arg_var->is_id = 0;
+                                        } else if (ai == 2) {
+                                            /* Third arg (BOOL *stop) — initialize to 0 */
+                                            arg_var->is_int = 1;
+                                            arg_var->int_value = 0;
+                                            arg_var->is_id = 0;
                                         }
-                                        /* Third arg (BOOL *stop) — we set up a 'stop' variable */
                                     }
                                 }
-                                /* Set up 'stop' variable for BOOL *stop */
-                                {
+                                /* Also set up a default 'stop' variable if the block
+                                 * has fewer than 3 parameters, for compatibility with
+                                 * scripts that might assume its existence. */
+                                if (blk->arg_count < 3) {
                                     InterpVar *stop_var = interp_get_or_create_var("stop");
                                     if (stop_var) {
                                         stop_var->is_int = 1;
@@ -2170,9 +3148,14 @@ Value parse_message_send(Parser *p) {
                             g_ctx.return_pending = 0;
                             eval_source_range(0, blk->source_len, blk->source, 0);
 
-                            /* Check stop flag */
+                            /* Check for interpreter error after block execution */
+                            if (g_ctx.error_code != OBJC_INTERP_OK) break;
+
+                            /* Check stop flag. Use the name of the 3rd parameter if it exists,
+                             * otherwise fall back to "stop". */
                             {
-                                InterpVar *stop_var = interp_find_var("stop");
+                                const char *stop_name = (blk->arg_count >= 3) ? blk->arg_names[2] : "stop";
+                                InterpVar *stop_var = interp_find_var(stop_name);
                                 if (stop_var && stop_var->is_int && stop_var->int_value != 0) {
                                     break;
                                 }
