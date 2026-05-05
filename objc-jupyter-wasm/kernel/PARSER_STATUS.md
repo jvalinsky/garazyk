@@ -20,6 +20,8 @@ The Objective-C interpreter in `kernel.wasm` uses a custom recursive-descent par
 - ✓ Variable declarations (int, void, id, Class, SEL, BOOL, long, char, float, double)
 - ✓ Static variable declarations (as of 2026-05-04)
 - ✓ Extern declarations (as of 2026-05-04)
+- ✓ typedef declarations (including NS_ENUM) (as of 2026-05-05)
+- ✓ Explicit ivar blocks in @interface { ... } (as of 2026-05-05)
 
 ### Foundation Framework
 - ✓ Literal syntax: @"string", @42, @3.14, @[], @{}, @()
@@ -45,6 +47,7 @@ The Objective-C interpreter in `kernel.wasm` uses a custom recursive-descent par
 - ✓ Arithmetic (+, -, *, /, %)
 - ✓ Compound assignment (+=, -=, *=, /=, %=)
 - ✓ Unary minus (-)
+- ✓ sizeof operator (as of 2026-05-05)
 - ✓ Pointer dereference (*) in expressions
 - ✓ Pointer dereference assignment (*x = value)
 
@@ -57,12 +60,11 @@ The Objective-C interpreter in `kernel.wasm` uses a custom recursive-descent par
 **Files changed:** objc_interp_parser.c (lines 671-726)  
 **Impact:** Fixes 6-7 failing cells
 
-### Fix 2: Multi-Token Type Parsing ⏳ PENDING
-**Problem:** Types like `unsigned int` and `short int` fail to parse  
-**Root cause:** Parser reads only one token as type name  
-**Example failing:** `unsigned int x = 0;`  
-**Impact:** Blocks 3-4 failing cells  
-**Effort:** Medium (requires type parser refactoring)
+### Fix 2: Multi-Token Type Parsing ✓ COMPLETED
+**Status:** Implemented as part of ivar/typedef/sizeof fixes (2026-05-05)  
+**What was fixed:** `unsigned int`, `long long`, `short int`, etc. are now correctly parsed in declarations, @interface ivar blocks, and sizeof().  
+**Example now works:** `unsigned int x = 0;`  
+**Impact:** Fixes 3-4 failing cells
 
 ### Fix 3: Block Parameter Pointer Types ⏳ PENDING INVESTIGATION
 **Problem:** Block closures with pointer parameters crash parsing  
@@ -75,9 +77,8 @@ The Objective-C interpreter in `kernel.wasm` uses a custom recursive-descent par
 **Impact:** Blocks 1-2 failing cells  
 **Status:** Requires investigation; error reporting may be misleading
 
-### Fix 4: Smoke Test Verification ⏳ PENDING
-**Status:** Long-running tests in progress; kernel builds successfully  
-**Known issue:** Pre-existing for-loop test failure needs investigation
+### Fix 4: Smoke Test Verification ✓ COMPLETED
+**Status:** All smoke tests passed with new features (2026-05-05)
 
 ## Type Recognition
 
@@ -89,11 +90,14 @@ The Objective-C interpreter in `kernel.wasm` uses a custom recursive-descent par
 - C99: uint8_t, uint16_t, uint32_t, uint64_t, int8_t, int16_t, int32_t, int64_t, size_t
 - Classes: Any user-defined @interface class
 
+### Type Modifiers SUPPORTED
+- `unsigned` (partial) — handled via mapping to base types
+- `long`, `short` (partial) — handled via mapping to base types
+- `static`, `extern` — supported for variable declarations
+
 ### Type Modifiers NOT YET SUPPORTED
-- `unsigned` (standalone) — requires multi-token parsing
-- `short` (standalone) — requires multi-token parsing
 - `const`, `volatile`, `restrict` — not implemented
-- Complex types (`struct`, `union`, `enum`) — not implemented
+- Complex types (`struct`, `union`) — not implemented (except via `typedef NS_ENUM`)
 
 ## Cross-Cell Persistence
 
@@ -104,6 +108,7 @@ The Objective-C interpreter in `kernel.wasm` uses a custom recursive-descent par
 - Static variables
 - User-defined instance variables (side table)
 - Block definitions and closures
+- typedef aliases and enum constants
 
 ### What Resets Between Cells
 - Local variables (non-static)
@@ -116,7 +121,7 @@ The Objective-C interpreter in `kernel.wasm` uses a custom recursive-descent par
 
 ### Entry Points
 - `objc_kernel_execute()` — Execute a single cell
-- `objc_kernel_inspect()` — Get variable/class info (not yet implemented)
+- `objc_kernel_inspect()` — Get variable/class info with type and value (as of 2026-05-05)
 - `objc_kernel_complete()` — Code completion (not yet implemented)
 
 ### Key Functions

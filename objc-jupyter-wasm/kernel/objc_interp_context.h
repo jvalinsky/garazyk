@@ -49,6 +49,10 @@ typedef struct InterpContext {
     PropertyDecl properties[64];
     unsigned int property_count;
 
+    /* ── Declared class ivars (from @interface { } blocks) ── */
+    ClassIvar class_ivars[MAX_CLASS_IVARS];
+    unsigned int class_ivar_count;
+
     /* ── Instance variable side table ───────────────────────── */
     InstanceVar instance_vars[256];
     unsigned int instance_var_count;

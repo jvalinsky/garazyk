@@ -468,6 +468,15 @@ Value parse_type_and_var_decl(Parser *p) {
         }
     }
 
+    /* Resolve typedef aliases: if type_name is a typedef, replace with base type.
+     * This allows "MyInt x = 5;" to work when "typedef int MyInt;" was declared. */
+    {
+        const char *resolved = typedef_resolve(type_name);
+        if (resolved && !cstr_eq(resolved, type_name)) {
+            cstr_copy(type_name, resolved, 64);
+        }
+    }
+
     /* Block variable declaration: void (^blockName)(params) = ^{ ... };
      * After the return type, we see ( ^ name ) ( param_types ) = block_literal */
     if (parser_current(p).type == TOK_OPEN_PAREN) {
@@ -843,6 +852,156 @@ Value parse_statement(Parser *p) {
             }
         }
         return value_void();
+    }
+
+    /* typedef statement: typedef <type> <name>; or typedef NS_ENUM(...) */
+    if (tok.type == TOK_IDENTIFIER && cstr_eq(tok.text, "typedef")) {
+        parser_advance(p); /* consume 'typedef' */
+
+        /* Handle NS_ENUM macro: typedef NS_ENUM(NSInteger, Direction) { ... } */
+        if (parser_current(p).type == TOK_IDENTIFIER &&
+            cstr_eq(parser_current(p).text, "NS_ENUM")) {
+            parser_advance(p); /* consume NS_ENUM */
+            if (parser_current(p).type == TOK_OPEN_PAREN) {
+                parser_advance(p); /* consume ( */
+                /* Read the base type (e.g., NSInteger) */
+                char base_type[64];
+                base_type[0] = '\0';
+                if (parser_current(p).type == TOK_IDENTIFIER) {
+                    cstr_copy(base_type, parser_current(p).text, 64);
+                    parser_advance(p);
+                }
+                /* Comma */
+                if (parser_current(p).type == TOK_COMMA) {
+                    parser_advance(p);
+                }
+                /* Read the enum name */
+                char enum_name[64];
+                enum_name[0] = '\0';
+                if (parser_current(p).type == TOK_IDENTIFIER) {
+                    cstr_copy(enum_name, parser_current(p).text, 64);
+                    parser_advance(p);
+                }
+                /* Close paren */
+                if (parser_current(p).type == TOK_CLOSE_PAREN) {
+                    parser_advance(p);
+                }
+                /* Record the typedef */
+                if (enum_name[0] != '\0' && g_ctx.typedef_count < OBJC_INTERP_MAX_TYPEDEFS) {
+                    cstr_copy(g_ctx.typedefs[g_ctx.typedef_count].alias, enum_name, 64);
+                    cstr_copy(g_ctx.typedefs[g_ctx.typedef_count].base_type,
+                              base_type[0] ? base_type : "int", 64);
+                    g_ctx.typedef_count++;
+                }
+                /* Parse optional { A, B, C } enum body */
+                if (parser_current(p).type == TOK_OPEN_BRACE) {
+                    parser_advance(p); /* consume { */
+                    while (parser_current(p).type != TOK_CLOSE_BRACE &&
+                           parser_current(p).type != TOK_EOF) {
+                        /* Read enum constant name */
+                        if (parser_current(p).type == TOK_IDENTIFIER) {
+                            char const_name[64];
+                            cstr_copy(const_name, parser_current(p).text, 64);
+                            parser_advance(p);
+                            /* Optional = value */
+                            if (parser_current(p).type == TOK_ASSIGN) {
+                                parser_advance(p);
+                                /* Parse the value expression (simple: just an integer) */
+                                Value val = parse_expression(p);
+                                /* Register as a variable */
+                                InterpVar *var = interp_get_or_create_var(const_name);
+                                if (var) {
+                                    var->is_int = 1;
+                                    var->int_value = val.is_int ? val.int_val : 0;
+                                    var->is_id = 0;
+                                    var->is_class = 0;
+                                    var->is_sel = 0;
+                                }
+                            } else {
+                                /* Auto-increment: register with value 0 */
+                                InterpVar *var = interp_get_or_create_var(const_name);
+                                if (var) {
+                                    var->is_int = 1;
+                                    var->int_value = 0;
+                                    var->is_id = 0;
+                                    var->is_class = 0;
+                                    var->is_sel = 0;
+                                }
+                            }
+                        }
+                        if (parser_current(p).type == TOK_COMMA) {
+                            parser_advance(p);
+                        }
+                    }
+                    if (parser_current(p).type == TOK_CLOSE_BRACE) {
+                        parser_advance(p);
+                    }
+                }
+                if (parser_current(p).type == TOK_SEMICOLON) {
+                    parser_advance(p);
+                }
+                return value_void();
+            }
+        }
+
+        /* Regular typedef: typedef <type> <name>; */
+        {
+            char base_type[64];
+            char alias_name[64];
+            base_type[0] = '\0';
+            alias_name[0] = '\0';
+
+            /* Read the base type (possibly multi-token) */
+            if (parser_current(p).type == TOK_IDENTIFIER) {
+                cstr_copy(base_type, parser_current(p).text, 64);
+                parser_advance(p);
+
+                /* Multi-token type: unsigned int, long long, etc. */
+                if (cstr_eq(base_type, "unsigned") || cstr_eq(base_type, "signed")) {
+                    if (parser_current(p).type == TOK_IDENTIFIER &&
+                        (cstr_eq(parser_current(p).text, "int") ||
+                         cstr_eq(parser_current(p).text, "char") ||
+                         cstr_eq(parser_current(p).text, "long") ||
+                         cstr_eq(parser_current(p).text, "short"))) {
+                        parser_advance(p);
+                    }
+                    cstr_copy(base_type, "int", 64);
+                }
+                if (cstr_eq(base_type, "long")) {
+                    if (parser_current(p).type == TOK_IDENTIFIER &&
+                        (cstr_eq(parser_current(p).text, "long") ||
+                         cstr_eq(parser_current(p).text, "int"))) {
+                        parser_advance(p);
+                    }
+                    cstr_copy(base_type, "int", 64);
+                }
+            }
+
+            /* Skip pointer * */
+            while (parser_current(p).type == TOK_STAR) {
+                parser_advance(p);
+                cstr_copy(base_type, "id", 64);
+            }
+
+            /* Read the alias name */
+            if (parser_current(p).type == TOK_IDENTIFIER) {
+                cstr_copy(alias_name, parser_current(p).text, 64);
+                parser_advance(p);
+            }
+
+            /* Record the typedef */
+            if (alias_name[0] != '\0' && g_ctx.typedef_count < OBJC_INTERP_MAX_TYPEDEFS) {
+                cstr_copy(g_ctx.typedefs[g_ctx.typedef_count].alias, alias_name, 64);
+                cstr_copy(g_ctx.typedefs[g_ctx.typedef_count].base_type,
+                          base_type[0] ? base_type : "int", 64);
+                g_ctx.typedef_count++;
+            }
+
+            if (parser_current(p).type == TOK_SEMICOLON) {
+                parser_advance(p);
+            }
+            return value_void();
+        }
     }
 
     /* Type declaration: int, void, id, Class, SEL, or registered class name */
