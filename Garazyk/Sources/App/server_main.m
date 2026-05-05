@@ -19,6 +19,7 @@
 #import "Debug/PDSLogger.h"
 #import "Network/XrpcMethodRegistry.h"
 #import "Database/PDSDatabase.h"
+#import "Database/Monitoring/PDSHealthCheck.h"
 
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
@@ -44,13 +45,18 @@ int main(int argc, const char * argv[]) {
         }];
 
         [server addHandlerForPath:@"/_health" handler:^(HttpRequest *request, HttpResponse *response) {
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:@{@"status": @"ok"}];
+            NSDictionary *health = [[PDSHealthCheck sharedInstance] performHealthCheck];
+            response.statusCode = [health[@"status"] isEqualToString:@"critical"] ? 503 : 200;
+            [response setJsonBody:health];
         }];
 
+        // /xrpc/_health is handled by xrpcDispatcher via XrpcServerMethods
+        // We can keep a direct handler for better performance or just let it fall through.
+        // Let's make it consistent.
         [server addHandlerForPath:@"/xrpc/_health" handler:^(HttpRequest *request, HttpResponse *response) {
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:@{@"status": @"ok"}];
+            NSDictionary *health = [[PDSHealthCheck sharedInstance] performHealthCheck];
+            response.statusCode = [health[@"status"] isEqualToString:@"critical"] ? 503 : 200;
+            [response setJsonBody:health];
         }];
 
         [server addHandlerForPath:@"/robots.txt" handler:^(HttpRequest *request, HttpResponse *response) {

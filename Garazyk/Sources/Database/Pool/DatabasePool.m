@@ -349,7 +349,7 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
             stores[did] = @{
                 @"is_open": @(store.isOpen),
                 @"db_path": store.dbPath ?: @"",
-                @"last_access": lastAccess ?: [NSDate distantPast]
+                @"last_access": @((lastAccess ?: [NSDate distantPast]).timeIntervalSince1970)
             };
         }
         m[@"stores"] = stores;
