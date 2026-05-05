@@ -10,7 +10,7 @@
 #import "Auth/PDSKeyManagerFactory.h"
 #import "Debug/PDSLogger.h"
 
-NSErrorDomain const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
+NSString * const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
 
 @implementation PDSReadinessCheck
 

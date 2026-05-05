@@ -15,9 +15,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-NSErrorDomain const PDSReadinessErrorDomain;
+extern NSString * const PDSReadinessErrorDomain;
 
-typedef NS_ERROR_ENUM(PDSReadinessErrorDomain, PDSReadinessError) {
+typedef NS_ENUM(NSInteger, PDSReadinessError) {
     PDSReadinessErrorDatabaseUnavailable = 1,
     PDSReadinessErrorPLCUnreachable = 2,
     PDSReadinessErrorSigningKeyUnavailable = 3,
