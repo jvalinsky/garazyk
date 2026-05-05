@@ -718,9 +718,10 @@ AstNode *parse_statement_ast(Parser *p) {
      * Return AST_NOOP so eval_ast skips them — they must NOT be re-executed
      * via eval_source_range, which would cause duplicate class/method
      * registration and "Unknown identifier" errors. */
-    if (tok.type == TOK_AT_KEYWORD &&
-        (cstr_eq(tok.text, "@interface") || cstr_eq(tok.text, "@implementation") ||
-         cstr_eq(tok.text, "@class") || cstr_eq(tok.text, "@protocol"))) {
+    if ((tok.type == TOK_AT_KEYWORD &&
+         (cstr_eq(tok.text, "@interface") || cstr_eq(tok.text, "@implementation") ||
+          cstr_eq(tok.text, "@class") || cstr_eq(tok.text, "@protocol"))) ||
+        (tok.type == TOK_IDENTIFIER && cstr_eq(tok.text, "typedef"))) {
         parse_statement(p); /* execute immediately */
         if (p->error) return 0;
         {

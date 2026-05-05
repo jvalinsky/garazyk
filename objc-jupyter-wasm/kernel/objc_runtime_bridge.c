@@ -21,6 +21,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+extern unsigned int objc_interp_get_var_count(void);
+extern const char *objc_interp_get_var_name(unsigned int index);
+extern void objc_interp_get_var_inspect_info(unsigned int index, char *buf, unsigned int capacity);
+
 #define OBJC_KERNEL_MAX_REQUEST_BYTES 65536u
 #define OBJC_KERNEL_MAX_RESPONSE_BYTES 1048576u
 #define OBJC_KERNEL_SMALL_RESPONSE_BYTES 8192u
@@ -1475,9 +1479,12 @@ static int build_inspect_response_impl(const char *code, unsigned int code_lengt
     builder_append_literal(&builder, "\"status\":\"ok\",");
 
     if (found) {
+        char info_buf[256];
+        objc_interp_get_var_inspect_info(i, info_buf, sizeof(info_buf));
+
         builder_append_literal(&builder, "\"found\":true,");
-        builder_append_literal(&builder, "\"data\":{\"text/plain\":\"Variable: ");
-        builder_append_json_escaped_range(&builder, identifier, cstr_len(identifier));
+        builder_append_literal(&builder, "\"data\":{\"text/plain\":\"");
+        builder_append_json_escaped_range(&builder, info_buf, cstr_len(info_buf));
         builder_append_literal(&builder, "\"},");
         builder_append_literal(&builder, "\"metadata\":{}");
     } else {

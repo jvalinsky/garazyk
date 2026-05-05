@@ -201,6 +201,45 @@ void inject_synthesized_ivars(id receiver) {
             }
         }
     }
+    /* Also inject explicit class ivars (from @interface { } blocks).
+     * These are ivars declared directly in the class, not via @property. */
+    {
+        /* Find the class name for the receiver */
+        const char *recv_class = 0;
+        const char *recv_marker = (const char *)receiver;
+        if (cstr_starts(recv_marker, "FDObj:")) {
+            recv_class = recv_marker + 6;
+        }
+        if (recv_class) {
+            unsigned int ci;
+            for (ci = 0; ci < g_ctx.class_ivar_count; ci++) {
+                if (cstr_eq(g_ctx.class_ivars[ci].class_name, recv_class)) {
+                    /* Check if this ivar is already handled by a synthesized property */
+                    int handled_by_property = 0;
+                    for (pi = 0; pi < g_ctx.property_count; pi++) {
+                        if (g_ctx.properties[pi].synthesized &&
+                            cstr_eq(g_ctx.properties[pi].ivar_name, g_ctx.class_ivars[ci].ivar_name) &&
+                            cstr_eq(g_ctx.properties[pi].class_name, recv_class)) {
+                            handled_by_property = 1;
+                            break;
+                        }
+                    }
+                    if (!handled_by_property) {
+                        InterpVar *ivar_var = dispatch_get_or_create_var(g_ctx.class_ivars[ci].ivar_name);
+                        if (ivar_var) {
+                            Value *stored = instance_var_get(receiver, g_ctx.class_ivars[ci].ivar_name);
+                            if (stored) {
+                                interp_set_var_from_value(ivar_var, *stored);
+                            } else {
+                                interp_set_var_from_value(ivar_var,
+                                    g_ctx.class_ivars[ci].is_int ? value_from_int(0) : value_from_id(0));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 void write_back_synthesized_ivars(struct Parser *p, id receiver) {
@@ -215,6 +254,41 @@ void write_back_synthesized_ivars(struct Parser *p, id receiver) {
                 if (instance_var_set(receiver, g_ctx.properties[pi].name, ivar_val) != 0) {
                     parser_error(p, "instance variable table full (max 256)");
                     return;
+                }
+            }
+        }
+    }
+    /* Also write back explicit class ivars (from @interface { } blocks) */
+    {
+        const char *recv_class = 0;
+        const char *recv_marker = (const char *)receiver;
+        if (cstr_starts(recv_marker, "FDObj:")) {
+            recv_class = recv_marker + 6;
+        }
+        if (recv_class) {
+            unsigned int ci;
+            for (ci = 0; ci < g_ctx.class_ivar_count; ci++) {
+                if (cstr_eq(g_ctx.class_ivars[ci].class_name, recv_class)) {
+                    /* Skip if already handled by a synthesized property */
+                    int handled_by_property = 0;
+                    for (pi = 0; pi < g_ctx.property_count; pi++) {
+                        if (g_ctx.properties[pi].synthesized &&
+                            cstr_eq(g_ctx.properties[pi].ivar_name, g_ctx.class_ivars[ci].ivar_name) &&
+                            cstr_eq(g_ctx.properties[pi].class_name, recv_class)) {
+                            handled_by_property = 1;
+                            break;
+                        }
+                    }
+                    if (!handled_by_property) {
+                        InterpVar *ivar_var = dispatch_find_var(g_ctx.class_ivars[ci].ivar_name);
+                        if (ivar_var) {
+                            Value ivar_val = value_from_interp_var(ivar_var);
+                            if (instance_var_set(receiver, g_ctx.class_ivars[ci].ivar_name, ivar_val) != 0) {
+                                parser_error(p, "instance variable table full (max 256)");
+                                return;
+                            }
+                        }
+                    }
                 }
             }
         }

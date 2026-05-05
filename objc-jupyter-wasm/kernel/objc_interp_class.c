@@ -163,13 +163,114 @@ Value parse_interface(struct Parser *p) {
     }
 
     if (parser_current(p).type == TOK_OPEN_BRACE) {
-        parser_advance(p);
+        parser_advance(p); /* consume { */
+        /* Parse ivar declarations: type name; type name; ... */
         while (parser_current(p).type != TOK_CLOSE_BRACE &&
                parser_current(p).type != TOK_EOF) {
-            parser_advance(p);
+            /* Read the type name(s) */
+            char ivar_type[64];
+            ivar_type[0] = '\0';
+
+            /* Skip type qualifiers (const, volatile, __weak, __strong, __unsafe_unretained) */
+            while (parser_current(p).type == TOK_IDENTIFIER &&
+                   (cstr_eq(parser_current(p).text, "const") ||
+                    cstr_eq(parser_current(p).text, "volatile") ||
+                    cstr_eq(parser_current(p).text, "__weak") ||
+                    cstr_eq(parser_current(p).text, "__strong") ||
+                    cstr_eq(parser_current(p).text, "__unsafe_unretained"))) {
+                parser_advance(p);
+            }
+
+            /* Read the type name */
+            if (parser_current(p).type == TOK_IDENTIFIER) {
+                cstr_copy(ivar_type, parser_current(p).text, 64);
+                parser_advance(p);
+
+                /* Multi-token types: unsigned int, long long, etc. */
+                if (cstr_eq(ivar_type, "unsigned") || cstr_eq(ivar_type, "signed")) {
+                    if (parser_current(p).type == TOK_IDENTIFIER &&
+                        (cstr_eq(parser_current(p).text, "int") ||
+                         cstr_eq(parser_current(p).text, "char") ||
+                         cstr_eq(parser_current(p).text, "long") ||
+                         cstr_eq(parser_current(p).text, "short"))) {
+                        parser_advance(p);
+                    }
+                    cstr_copy(ivar_type, "int", 64);
+                }
+                if (cstr_eq(ivar_type, "long")) {
+                    if (parser_current(p).type == TOK_IDENTIFIER &&
+                        (cstr_eq(parser_current(p).text, "long") ||
+                         cstr_eq(parser_current(p).text, "int"))) {
+                        parser_advance(p);
+                    }
+                    cstr_copy(ivar_type, "int", 64);
+                }
+                if (cstr_eq(ivar_type, "short")) {
+                    if (parser_current(p).type == TOK_IDENTIFIER &&
+                        cstr_eq(parser_current(p).text, "int")) {
+                        parser_advance(p);
+                    }
+                    cstr_copy(ivar_type, "int", 64);
+                }
+            }
+
+            /* Check for pointer * after type */
+            while (parser_current(p).type == TOK_STAR) {
+                parser_advance(p);
+                /* If type was a class name, mark as id */
+                if (ivar_type[0] != '\0' && !cstr_eq(ivar_type, "int") &&
+                    !cstr_eq(ivar_type, "char") && !cstr_eq(ivar_type, "float") &&
+                    !cstr_eq(ivar_type, "double") && !cstr_eq(ivar_type, "void")) {
+                    cstr_copy(ivar_type, "id", 64);
+                }
+            }
+
+            /* Read one or more ivar names separated by commas */
+            while (parser_current(p).type == TOK_IDENTIFIER ||
+                   (parser_current(p).type == TOK_IDENTIFIER &&
+                    parser_current(p).text[0] == '_')) {
+                char ivar_name[64];
+                cstr_copy(ivar_name, parser_current(p).text, 64);
+                parser_advance(p);
+
+                /* Handle pointer after ivar name (e.g., int *_ptr) */
+                while (parser_current(p).type == TOK_STAR) {
+                    parser_advance(p);
+                }
+
+                /* Record this ivar */
+                if (g_ctx.class_ivar_count < MAX_CLASS_IVARS) {
+                    ClassIvar *ci = &g_ctx.class_ivars[g_ctx.class_ivar_count];
+                    cstr_copy(ci->class_name, class_name, 64);
+                    cstr_copy(ci->ivar_name, ivar_name, 64);
+                    cstr_copy(ci->type_name, ivar_type, 64);
+                    ci->is_int = (cstr_eq(ivar_type, "int") || cstr_eq(ivar_type, "NSInteger") ||
+                                  cstr_eq(ivar_type, "NSUInteger") || cstr_eq(ivar_type, "long") ||
+                                  cstr_eq(ivar_type, "char") || cstr_eq(ivar_type, "BOOL") ||
+                                  cstr_eq(ivar_type, "short"));
+                    ci->is_id = (cstr_eq(ivar_type, "id") || cstr_eq(ivar_type, "NSString") ||
+                                 cstr_eq(ivar_type, "NSArray") || cstr_eq(ivar_type, "NSMutableArray") ||
+                                 cstr_eq(ivar_type, "NSDictionary") || cstr_eq(ivar_type, "NSMutableDictionary") ||
+                                 cstr_eq(ivar_type, "NSNumber") || cstr_eq(ivar_type, "NSData") ||
+                                 cstr_eq(ivar_type, "NSSet") || cstr_eq(ivar_type, "NSObject"));
+                    g_ctx.class_ivar_count++;
+                }
+
+                /* Comma-separated ivars: int x, y; */
+                if (parser_current(p).type == TOK_COMMA) {
+                    parser_advance(p);
+                    continue;
+                }
+                break;
+            }
+
+            /* Consume the semicolon */
+            if (parser_current(p).type == TOK_SEMICOLON) {
+                parser_advance(p);
+            }
         }
         if (parser_current(p).type == TOK_CLOSE_BRACE) {
-            parser_advance(p);
+            parser_advance(p); /* consume } */
         }
     }
 

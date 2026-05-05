@@ -11,6 +11,7 @@
 #include "objc_interp_context.h"
 #include "objc_interp_lexer.h"
 #include "objc_interp_parser.h"
+#include "objc_interp_state.h"
 
 /* We need the runtime headers for Class, SEL, id, etc. */
 #include "runtime.h"
@@ -886,6 +887,32 @@ const char *objc_interp_get_var_name(unsigned int index) {
 int objc_interp_get_var_is_class(unsigned int index) {
     if (index >= g_ctx.var_count) return 0;
     return g_ctx.vars[index].is_class;
+}
+
+void objc_interp_get_var_inspect_info(unsigned int index, char *buf, unsigned int capacity) {
+    if (index >= g_ctx.var_count) {
+        buf[0] = '\0';
+        return;
+    }
+    InterpVar *v = &g_ctx.vars[index];
+    Value val = value_from_interp_var(v);
+
+    /* Format: "int x = 42" or "id arr = <NSArray:5>" */
+    unsigned int offset = 0;
+    const char *type = "id";
+    if (v->is_int) type = "int";
+    else if (v->is_float) type = "float";
+    else if (v->is_class) type = "Class";
+    else if (v->is_sel) type = "SEL";
+
+    fmt_append_str(buf, capacity, &offset, type);
+    fmt_append_str(buf, capacity, &offset, " ");
+    fmt_append_str(buf, capacity, &offset, v->name);
+    fmt_append_str(buf, capacity, &offset, " = ");
+
+    char val_buf[128];
+    format_value(val, val_buf, sizeof(val_buf));
+    fmt_append_str(buf, capacity, &offset, val_buf);
 }
 
 unsigned int objc_interp_get_error_line(void) {

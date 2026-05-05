@@ -148,31 +148,33 @@ typedef enum {
     TOK_MINUS_ASSIGN,  /* -= */
     TOK_STAR_ASSIGN,   /* *= */
     TOK_SLASH_ASSIGN,  /* /= */
-    TOK_PERCENT_ASSIGN,/* %= */
-    TOK_QUESTION,      /* ? (ternary) */
-    TOK_RETURN,        /* return keyword */
-    TOK_IF,            /* if keyword */
-    TOK_ELSE,          /* else keyword */
-    TOK_WHILE,         /* while keyword */
-    TOK_FOR,           /* for keyword */
-    TOK_DO,            /* do keyword */
-    TOK_BREAK,         /* break keyword */
-    TOK_CONTINUE,     /* continue keyword */
-    TOK_IN,            /* in keyword (for-in) */
-    TOK_AND,           /* && */
-    TOK_OR,            /* || */
-    TOK_NOT,           /* ! (logical not) */
+    TOK_PERCENT_ASSIGN, /* %= */
     TOK_PLUS_PLUS,     /* ++ */
     TOK_MINUS_MINUS,   /* -- */
-    TOK_CARET,         /* ^ (block literal) */
-    TOK_SWITCH,        /* switch keyword */
-    TOK_CASE,          /* case keyword */
-    TOK_DEFAULT,       /* default keyword */
-    TOK_NIL,           /* nil keyword */
-    TOK_SUPER,         /* super keyword */
-    TOK_BITWISE_OR,    /* | (bitwise OR) */
     TOK_LEFT_SHIFT,    /* << */
     TOK_RIGHT_SHIFT,   /* >> */
+    TOK_RETURN,
+    TOK_IF,
+    TOK_ELSE,
+    TOK_WHILE,
+    TOK_FOR,
+    TOK_DO,
+    TOK_BREAK,
+    TOK_CONTINUE,
+    TOK_IN,
+    TOK_SWITCH,
+    TOK_CASE,
+    TOK_DEFAULT,
+    TOK_SIZEOF,
+    TOK_NIL,
+    TOK_SUPER,
+    TOK_NOT,
+    TOK_BITWISE_OR,
+    TOK_OR,
+    TOK_AND,
+    TOK_QUESTION,
+    TOK_CARET,
+    TOK_TILDE,
     TOK_UNKNOWN
 } TokenType;
 
@@ -336,6 +338,18 @@ typedef struct {
 } PropertyDecl;
 
 #define MAX_PROPERTIES 64
+
+/* ── Declared instance variables (from @interface { } blocks) ──── */
+
+#define MAX_CLASS_IVARS 256
+
+typedef struct {
+    char class_name[64];  /* which class this ivar belongs to */
+    char ivar_name[64];   /* e.g., "_val" */
+    char type_name[64];   /* e.g., "int", "id", "NSString *" */
+    int is_int;           /* 1 if the ivar is an integer type */
+    int is_id;            /* 1 if the ivar is an object type */
+} ClassIvar;
 
 /* ── Instance variable side table ───────────────────────────────── */
 
