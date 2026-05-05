@@ -5,6 +5,10 @@
 #import "Auth/CryptoUtils.h"
 #import "App/PDSConfiguration.h"
 
+#ifdef LINUX
+#include <sys/stat.h>
+#endif
+
 NSString * const PLCRotationKeyManagerErrorDomain = @"com.atproto.plc.rotation";
 
 static NSString *const kRotationKeyFileName = @"plc_rotation_key.bin";
