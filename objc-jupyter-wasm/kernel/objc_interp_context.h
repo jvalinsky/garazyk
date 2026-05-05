@@ -67,6 +67,11 @@ typedef struct InterpContext {
     unsigned int block_count;
     unsigned int next_block_id;
 
+    /* ── Network Task Registry ────────────────────────────── */
+    PendingNetworkTask network_tasks[MAX_NETWORK_TASKS];
+    unsigned int network_task_count;
+    unsigned int next_network_task_id;
+
     /* ── Protocol declarations ────────────────────────────── */
     ProtocolDecl protocols[MAX_PROTOCOLS];
     unsigned int protocol_count;

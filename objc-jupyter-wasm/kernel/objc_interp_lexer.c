@@ -551,6 +551,7 @@ Token lexer_next_token(Lexer *lex) {
         case '?': tok.type = TOK_QUESTION; break;
         case '^': tok.type = TOK_CARET; break;
         case '|': tok.type = TOK_BITWISE_OR; break;
+        case '~': tok.type = TOK_BITWISE_NOT; break;
         default: tok.type = TOK_UNKNOWN; break;
     }
 
