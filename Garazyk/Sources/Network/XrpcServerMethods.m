@@ -24,6 +24,7 @@
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
+#import "Database/Monitoring/PDSHealthCheck.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "Core/DID.h"
 #import "Core/PDSAccountEvents.h"
@@ -331,6 +332,9 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
     
     // Register com.atproto.server.describeServer
     [self registerDescribeServerWithDispatcher:dispatcher configuration:config];
+    
+    // Register _health endpoint for diagnostics
+    [self registerHealthEndpointWithDispatcher:dispatcher];
     
     // Register account and session methods
     [self registerAccountAndSessionMethodsWithDispatcher:dispatcher
@@ -1359,6 +1363,28 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
                             PDSAccountEventDidKey: did,
                             PDSAccountEventStatusKey: @"deactivated"
                         }];
+    }];
+}
+
+#pragma mark - Health Endpoint
+
++ (void)registerHealthEndpointWithDispatcher:(XrpcDispatcher *)dispatcher {
+    [dispatcher registerMethod:@"_health" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSDictionary *health = [[PDSHealthCheck sharedInstance] performHealthCheck];
+        NSString *status = health[@"status"];
+        
+        // Return 503 if critical, 200 otherwise (including warnings)
+        if ([status isEqualToString:@"critical"]) {
+            response.statusCode = HttpStatusServiceUnavailable;
+        } else {
+            response.statusCode = HttpStatusOK;
+        }
+        
+        NSMutableDictionary *result = [NSMutableDictionary dictionaryWithDictionary:health];
+        result[@"version"] = @"0.1.0";
+        result[@"status"] = status ?: @"healthy";
+        
+        [response setJsonBody:result];
     }];
 }
 
