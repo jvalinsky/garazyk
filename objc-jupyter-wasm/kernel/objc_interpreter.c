@@ -822,6 +822,15 @@ int objc_interp(const char *source, unsigned int length) {
                 return g_ctx.error_code;
             }
 
+            if (g_ctx.exception_pending) {
+                g_ctx.error_code = OBJC_INTERP_RUNTIME_ERROR;
+                char val_buf[128];
+                format_value(g_ctx.current_exception, val_buf, sizeof(val_buf));
+                cstr_copy(g_ctx.error_buffer, "Uncaught exception: ", OBJC_INTERP_ERROR_SIZE);
+                cstr_copy(g_ctx.error_buffer + 20, val_buf, OBJC_INTERP_ERROR_SIZE - 20);
+                return OBJC_INTERP_RUNTIME_ERROR;
+            }
+
             /* Format the last expression result for REPL display */
             format_value(last, g_ctx.result_buffer, 512);
         }

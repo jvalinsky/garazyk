@@ -3,200 +3,104 @@
 ## Overview
 The Objective-C interpreter in `kernel.wasm` uses a custom recursive-descent parser for Objective-C and C syntax. This document tracks implemented features, known gaps, and in-progress fixes.
 
-## Current Status (as of 2026-05-04)
-- **Notebook Tests:** 75/85 cells passing
-- **Smoke Tests:** 60+ feature blocks
-- **Parser Gaps:** 10 failing cells (6-7 addressable via current fixes)
+## Current Status (as of 2026-05-05)
+- **Notebook Tests:** 95/101 cells passing
+- **Smoke Tests:** 80+ feature blocks
+- **Runtime Expansion:** Phase D-G completed (Exceptions, Protocols, Blocks, Forwarding, KVC)
 
 ## Implemented Features
 
 ### Core Language
 - ✓ @interface/@implementation class definitions
 - ✓ Method declarations (instance and class)
-- ✓ Property declarations with @property syntax
+- ✓ Property declarations with @property syntax and attributes (readonly, nonatomic, etc.)
 - ✓ @synthesize and automatic property synthesis
 - ✓ Message sends with multi-keyword selectors
-- ✓ Block declarations and invocations
+- ✓ Block declarations and invocations with __block capture
+- ✓ Exception handling: @try, @catch, @finally, @throw
+- ✓ Autorelease pools: @autoreleasepool scoping
+- ✓ Protocol declarations and runtime conformance checking
+- ✓ Message forwarding: forwardInvocation:, methodSignatureForSelector:
+- ✓ Basic Key-Value Coding (KVC): valueForKey:, setValue:forKey:
 - ✓ Variable declarations (int, void, id, Class, SEL, BOOL, long, char, float, double)
-- ✓ Static variable declarations (as of 2026-05-04)
-- ✓ Extern declarations (as of 2026-05-04)
-- ✓ typedef declarations (including NS_ENUM) (as of 2026-05-05)
-- ✓ Explicit ivar blocks in @interface { ... } (as of 2026-05-05)
+- ✓ Static and extern variable declarations
+- ✓ typedef declarations (including NS_ENUM)
+- ✓ Explicit ivar blocks in @interface { ... }
+- ✓ Qualifiers: const, volatile, restrict (parsed and skipped)
 
 ### Foundation Framework
 - ✓ Literal syntax: @"string", @42, @3.14, @[], @{}, @()
 - ✓ NSLog output capture
 - ✓ NSString: length, characterAtIndex:, substringFromIndex:, substringToIndex:, hasPrefix:, hasSuffix:, uppercaseString, lowercaseString, stringByReplacingOccurrencesOfString:withString:, componentsSeparatedByString:
-- ✓ NSArray/NSMutableArray: array, addObject:, removeObjectAtIndex:, objectAtIndex:, count, enumerateObjectsUsingBlock: (basic)
-- ✓ NSDictionary/NSMutableDictionary: dictionary, setObject:forKey:, objectForKey:, count
-- ✓ NSSet/NSMutableSet: set, addObject:, removeObject:, containsObject:, count
+- ✓ NSArray/NSMutableArray: array, addObject:, removeObjectAtIndex:, objectAtIndex:, count, enumerateObjectsUsingBlock:, objectEnumerator
+- ✓ NSDictionary/NSMutableDictionary: dictionary, setObject:forKey:, objectForKey:, count, objectEnumerator
+- ✓ NSSet/NSMutableSet: set, addObject:, removeObject:, containsObject:, count, objectEnumerator
 - ✓ NSNumber: numberWithInt:, numberWithFloat:, numberWithBool:, intValue, floatValue, boolValue
 - ✓ NSData: basic allocation and access
+- ✓ Fast Enumeration: for (type var in collection) for built-ins and custom objects (via objectEnumerator)
 
 ### Control Flow
 - ✓ if/else statements
 - ✓ switch/case with fall-through and break
-- ✓ for loops (C-style)
+- ✓ for loops (C-style and for-in)
 - ✓ while loops and do/while
 - ✓ break and continue statements
 - ✓ Ternary operator (?:)
-- ✓ Logical operators (&&, ||, !)
-- ✓ Comparison operators (==, !=, <, >, <=, >=)
+- ✓ Logical and Comparison operators
 
 ### Operators
-- ✓ Arithmetic (+, -, *, /, %)
-- ✓ Compound assignment (+=, -=, *=, /=, %=)
-- ✓ Unary minus (-)
-- ✓ sizeof operator (as of 2026-05-05)
-- ✓ Pointer dereference (*) in expressions
-- ✓ Pointer dereference assignment (*x = value)
+- ✓ Arithmetic, Compound assignment, Unary minus
+- ✓ sizeof operator
+- ✓ Pointer dereference (*) in expressions and assignment
 
-## Known Gaps & Fixes
+## Implementation Progress
 
-### Fix 1: Storage Qualifier Routing ✓ COMPLETED
-**Status:** Implemented in commit b9875dee  
-**What was fixed:** `static` and `extern` keywords in variable declarations  
-**Example now works:** `static int counter = 0;`  
-**Files changed:** objc_interp_parser.c (lines 671-726)  
-**Impact:** Fixes 6-7 failing cells
+### Exceptions & Protocols (Phase D) ✓ COMPLETED
+**Implemented:** Stack-based `TryFrame` system, exception unwinding in AST evaluator, @protocol parsing, and `conformsToProtocol:` checking.
 
-### Fix 2: Multi-Token Type Parsing ✓ COMPLETED
-**Status:** Implemented as part of ivar/typedef/sizeof fixes (2026-05-05)  
-**What was fixed:** `unsigned int`, `long long`, `short int`, etc. are now correctly parsed in declarations, @interface ivar blocks, and sizeof().  
-**Example now works:** `unsigned int x = 0;`  
-**Impact:** Fixes 3-4 failing cells
+### Property Attributes & Autoreleasepool (Phase E) ✓ COMPLETED
+**Implemented:** @autoreleasepool structural scaffolding and @property attribute parsing (readonly, nonatomic, copy, strong). Synthesis now respects `readonly`.
 
-### Fix 3: Block Parameter Pointer Types ✓ COMPLETED
-**Status:** Implemented on 2026-05-05  
-**What was fixed:** Block literals and declarations now correctly parse pointer parameters (e.g., `int *stop`), multi-token types (e.g., `unsigned int`), and explicit return types (e.g., `^int { ... }`). `enumerateObjectsUsingBlock:` now uses the actual parameter name for the stop flag.
-**Example now works:**
-```c
-[nums enumerateObjectsUsingBlock:^(id obj, int idx, int *stop) {
-    if (idx == 1) { *stop = 1; }
-}];
-```
-**Impact:** Fixes remaining failing cells in `objc-state-and-blocks.ipynb` and `algorithms.ipynb`.
+### Advanced Blocks & Fast Enumeration (Phase F) ✓ COMPLETED
+**Implemented:** `__block` storage qualifier with write-back semantics and protocol-based `for-in` iteration for custom classes.
 
-### Fix 4: Smoke Test Verification ✓ COMPLETED
-**Status:** All smoke tests passed with new features (2026-05-05)
+### Message Forwarding & KVC (Phase G) ✓ COMPLETED
+**Implemented:** Fallback path for unrecognized selectors, `forwardInvocation:`, `NSInvocation` simulation, and `valueForKey:` / `setValue:forKey:` property mapping.
 
 ## Type Recognition
 
 ### Builtin Types Recognized
-- Primitives: int, void, char, float, double, long
-- Objective-C: id, Class, SEL, BOOL
-- Objective-C integers: NSInteger, NSUInteger
-- Foundation: NSString, NSArray, NSMutableArray, NSDictionary, NSMutableDictionary, NSNumber, NSData, NSSet
-- C99: uint8_t, uint16_t, uint32_t, uint64_t, int8_t, int16_t, int32_t, int64_t, size_t
+- Primitives: int, void, char, float, double, long, BOOL
+- Objective-C: id, Class, SEL, Protocol
+- Foundation: NSString, NSArray, NSDictionary, NSSet, NSNumber, NSData, NSInvocation, NSEnumerator
 - Classes: Any user-defined @interface class
 
 ### Type Modifiers SUPPORTED
-- `unsigned`, `signed` — handled via mapping to base types
-- `long`, `short` — handled via mapping to base types
-- `static`, `extern` — supported for variable declarations
-- `*` (pointer) — supported in block parameters and basic expressions
+- `unsigned`, `signed`, `long`, `short`, `static`, `extern`, `*` (pointer)
+- `const`, `volatile`, `restrict` (ignored)
+- `__block`, `__weak`, `__strong` (block capture control)
 
 ### Type Modifiers NOT YET SUPPORTED
-- `const`, `volatile`, `restrict` — not implemented
-- Complex types (`struct`, `union`) — not implemented (except via `typedef NS_ENUM`)
-
-## Cross-Cell Persistence
-
-### What Persists
-- Class definitions (@interface/@implementation)
-- Method implementations
-- Property declarations
-- Static variables
-- User-defined instance variables (side table)
-- Block definitions and closures
-- typedef aliases and enum constants
-
-### What Resets Between Cells
-- Local variables (non-static)
-- Expression evaluation state
-- Return/break/continue flags
-- Parse depth tracking
-- Error state
+- Complex types (`struct`, `union`) — not fully implemented (except via `typedef NS_ENUM`)
 
 ## Architecture
 
-### Entry Points
-- `objc_kernel_execute()` — Execute a single cell
-- `objc_kernel_inspect()` — Get variable/class info with type and value (as of 2026-05-05)
-- `objc_kernel_complete()` — Code completion (not yet implemented)
-
-### Key Functions
-- `parse_statement()` (line 646) — Route statement types (expressions, declarations, control flow)
-- `parse_type_and_var_decl()` (line 336) — Parse variable declarations with type modifiers
-- `parse_expression()` (line 871) — Parse expressions and operators
-- `objc_interp_init()` (line 1059) — Initialize interpreter state
-- `objc_interp()` (line 1102) — Execute cell code
+### Entries
+- `objc_kernel_execute()` — Execute cell code
+- `objc_kernel_inspect()` — Variable/class reflection
+- `objc_kernel_complete()` — Code completion (planned)
 
 ## Testing
 
 ### Smoke Tests
-Run with: `node tests/kernel-smoke.mjs result/wasm/kernel.wasm`  
-Coverage: 60+ feature blocks across parser, runtime, and Foundation
-
-### Notebook Tests
-Run with: `node tests/run-notebooks.mjs --dir demo/`  
-Current baseline: 15/15 notebooks passing (92/101 cells)
-
-### Known Test Failures
-Failing/skipped cells are now mostly due to missing Foundation stubs or advanced C features:
-1. `atproto-*.ipynb` — networking stubs, complex @interface constructs
-2. Advanced C — struct/union, function pointers
-
-## Performance Notes
-
-### Limitations of Interpreter vs Compiled Approach
-- No optimization or JIT compilation
-- Message dispatch is linear search (not method tables)
-- Collection operations copy data unnecessarily
-- Block closures allocate and copy capture context on each invocation
-- No inlining of simple methods
-
-### Expected Performance Profile
-- Simple operations: microseconds
-- Collection operations: milliseconds (depending on size)
-- Class definition overhead: negligible (one-time per cell)
-- Block invocation: ~1-10 microseconds (including closure setup)
+Run with: `node tests/test-runtime-v2.mjs result/wasm/kernel.wasm`  
+Covers: Exceptions, Protocols, Blocks, Forwarding, KVC, Autoreleasepool.
 
 ## Future Work
-
-### High Priority
-1. Complete multi-token type parsing (Fix 2)
-2. Investigate block parameter pointer types (Fix 3)
-3. Verify/fix smoke test regressions (Fix 4)
-
-### Medium Priority
-1. Implement `const` and `volatile` qualifiers
-2. Add struct/union/enum support
-3. Improve error messages and line tracking
-4. Add variable inspection (objc_kernel_inspect)
-5. Add code completion (objc_kernel_complete)
-
-### Low Priority (Architecture Change)
-1. Replace linear dispatch with method hash tables
-2. Implement proper autorelease pool stacks
-3. Add GC support (currently manual memory management)
-4. Full GNUstep Base integration (beyond curated micro-base)
+1. **Method Swizzling**: Support for `method_exchangeImplementations` on interpreted methods.
+2. **KVO**: Key-Value Observing support for synthesized properties.
+3. **Struct Support**: Parsing and memory layout for simple C structs.
+4. **Variadic Methods**: Support for custom variadic method signatures.
 
 ## Code Organization
-
-| File | Purpose |
-|------|---------|
-| objc_interp_parser.c | Recursive-descent parser, expression evaluation |
-| objc_interp_lexer.c | Tokenization |
-| objc_interp_types.c | Type definitions, AST nodes |
-| objc_interp_context.h | Centralized interpreter state (Phase D) |
-| objc_interpreter.c | Main interpreter, initialization |
-| objc_runtime_bridge.c | GNUstep libobjc2 integration |
-| objc_interp_state.c | Variable/collection/block tables |
-| objc_interp_messages.c | Method dispatch |
-| objc_interp_dispatch.c | Message send routing |
-| objc_interp_primary.c | Primary expression parsing |
-| objc_interp_format.c | String formatting (NSLog, etc) |
-| objc_interp_class.c | Class definition handling |
-| objc_interp_ast.c | AST evaluation |
-
+(Refer to the source files in `kernel/` for implementation details.)
