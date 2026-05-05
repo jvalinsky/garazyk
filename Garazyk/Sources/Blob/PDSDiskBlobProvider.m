@@ -66,7 +66,7 @@ NSString * const PDSDiskBlobProviderErrorDomain = @"com.atproto.pds.diskblobprov
     
     // Check file size before loading into memory
     NSError *attrsError = nil;
-    NSDictionary<NSFileAttributeKey, id> *attrs = [_fileManager attributesOfItemAtPath:blobURL.path error:&attrsError];
+    NSDictionary *attrs = [_fileManager attributesOfItemAtPath:blobURL.path error:&attrsError];
     if (!attrs) {
         if (error) {
             *error = attrsError;
