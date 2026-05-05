@@ -2,6 +2,7 @@
 
 #ifdef __APPLE__
 #import <mach/mach.h>
+#include <sys/sysctl.h>
 #else
 #include <unistd.h>
 #endif

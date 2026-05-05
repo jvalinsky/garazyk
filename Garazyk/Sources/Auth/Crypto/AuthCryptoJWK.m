@@ -38,7 +38,7 @@ NSString * const PDSKeyErrorDomain = @"com.atproto.pds.key";
  * Adapter class wrapping SecKeyRef to conform to PDSKeyProtocol.
  * Must be defined OUTSIDE AuthCryptoJWK implementation.
  */
-@interface PDSSecKeyAdapter : NSObject <PDSPrivateKeyProtocol>
+@interface PDSSecKeyAdapter : NSObject <PDSPrivateKeyProtocol, PDSPublicKeyProtocol>
 @property (nonatomic, assign) SecKeyRef secKey;
 @property (nonatomic, assign) BOOL isPrivateKey;
 @property (nonatomic, copy) NSString *keyID;

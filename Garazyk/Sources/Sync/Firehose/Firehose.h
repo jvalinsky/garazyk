@@ -268,6 +268,9 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 /*! Whether currently connected to the server. */
 @property (nonatomic, readonly) BOOL isConnected;
 
+/*! Heartbeat timeout for the underlying WebSocket connection. */
+@property (nonatomic, assign) NSTimeInterval heartbeatTimeout;
+
 - (instancetype)initWithServerURL:(NSURL *)serverURL;
 
 /*! Creates a new subscription with optional cursor and collection filter. */

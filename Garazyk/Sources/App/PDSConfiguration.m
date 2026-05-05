@@ -148,7 +148,7 @@ static BOOL PDSConfigRunningUnderTests(void) {
     _plcReplicaBindAddress = nil;
     _plcReplicaDataDir = nil;
 
-    _debugVerboseLogging = YES;
+    _debugVerboseLogging = NO;
     _debugInMemoryDatabases = NO;
     _debugResetOnStartup = NO;
     _useNewRepositoryImplementation = NO;

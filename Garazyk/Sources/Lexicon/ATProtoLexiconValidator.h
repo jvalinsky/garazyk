@@ -36,7 +36,7 @@ typedef NS_ENUM(NSInteger, ATProtoValidationMode) {
 
  @abstract Validates records against lexicon schemas.
 
- @discussion Provides comprehensive validation for all ATProto data types
+ @discussion Provides validation for all ATProto data types
  and constraints. Stateless for thread safety.
  */
 @interface ATProtoLexiconValidator : NSObject

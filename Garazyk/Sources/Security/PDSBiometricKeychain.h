@@ -26,9 +26,11 @@ typedef NS_ENUM(NSInteger, PDSBiometricKeychainError) {
 
 + (instancetype)sharedInstance;
 
+- (instancetype)init NS_UNAVAILABLE;
+
 - (instancetype)initWithServiceName:(NSString *)serviceName
                         accessGroup:(nullable NSString *)accessGroup
-                      useBiometrics:(BOOL)useBiometrics;
+                      useBiometrics:(BOOL)useBiometrics NS_DESIGNATED_INITIALIZER;
 
 - (BOOL)storeKey:(NSData *)keyData
         forAccount:(NSString *)account

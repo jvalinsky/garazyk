@@ -11,6 +11,7 @@
 #import "Database/PDSDatabase.h"
 #import "Core/CID.h"
 #import "Core/ATProtoCBORSerialization.h"
+#import "Core/ATURI.h"
 #import "Core/NSDateFormatter+ATProto.h"
 
 @interface GraphService ()
@@ -444,10 +445,10 @@
 #pragma mark - Starter Packs
 
 - (nullable NSDictionary *)getStarterPack:(NSString *)starterPackURI error:(NSError **)error {
-    NSArray *parts = [starterPackURI componentsSeparatedByString:@"/"];
-    if (parts.count < 5) return nil;
-    NSString *did = parts[2];
-    NSString *rkey = parts[4];
+    ATURI *parsedURI = [ATURI uriWithString:starterPackURI error:nil];
+    if (!parsedURI) return nil;
+    NSString *did = parsedURI.did;
+    NSString *rkey = parsedURI.rkey;
 
     NSString *query = @"SELECT cid, name, created_at FROM starter_packs WHERE did = ? AND rkey = ?";
     NSArray *rows = [self.database executeParameterizedQuery:query params:@[did, rkey] error:error];
