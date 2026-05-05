@@ -963,6 +963,8 @@ static const FoundationSelector foundation_selectors[] = {
     {"NSString", "componentsSeparatedByString:"},
     {"NSString", "stringByTrimmingWhitespace"},
     {"NSString", "stringWithFormat:"},
+    {"NSString", "copy"},
+    {"NSString", "mutableCopy"},
 
     /* NSNumber */
     {"NSNumber", "numberWithInt:"},
@@ -1031,7 +1033,8 @@ static const FoundationSelector foundation_selectors[] = {
 static const char *foundation_class_names[] = {
     "NSObject", "NSString", "NSNumber",
     "NSArray", "NSMutableArray", "NSDictionary",
-    "NSMutableDictionary", "NSSet", "NSData"
+    "NSMutableDictionary", "NSSet", "NSData",
+    "NSCharacterSet"
 };
 #define FOUNDATION_CLASS_COUNT (sizeof(foundation_class_names) / sizeof(foundation_class_names[0]))
 
