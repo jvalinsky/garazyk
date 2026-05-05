@@ -1207,7 +1207,8 @@ Value eval_ast(AstNode *node, const char *source) {
                 }
             }
             g_ctx.exception_pending = 0;
-            g_ctx.current_exception = value_void();
+            /* Keep current_exception alive for @throw; (re-throw) inside catch body.
+             * It will be cleared when the catch block finishes without re-throwing. */
             eval_ast(node->try_catch.catch_body, source);
         }
 
@@ -1222,6 +1223,9 @@ Value eval_ast(AstNode *node, const char *source) {
         /* If exception was not caught and not re-thrown, re-raise */
         if (had_exception && g_ctx.exception_pending) {
             /* stays pending — will propagate to outer try */
+        } else if (!g_ctx.exception_pending) {
+            /* Exception was caught and not re-thrown — clear current_exception */
+            g_ctx.current_exception = value_void();
         }
         break;
     }
