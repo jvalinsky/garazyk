@@ -34,7 +34,26 @@ let instance;
     },
     should_interrupt() {
       return 0;
-    }
+    },
+    json_parse() { return 0; },
+    json_stringify() { return 0; },
+    fetch() { return 0; },
+    /* Crypto host stubs */
+    sha256(dataPtr, dataLen, outPtr, outCap) { return 0; },
+    random_bytes(outPtr, count) {
+      const bytes = new Uint8Array(instance.exports.memory.buffer, outPtr, count);
+      for (let i = 0; i < count; i++) bytes[i] = 0;
+      return count;
+    },
+    hmac_sha256(keyPtr, keyLen, dataPtr, dataLen, outPtr, outCap) { return 0; },
+    /* Encoding host stubs */
+    base32_encode(dataPtr, dataLen, outPtr, outCap) { return 0; },
+    base32_decode(strPtr, strLen, outPtr, outCap) { return 0; },
+    base58btc_encode(dataPtr, dataLen, outPtr, outCap) { return 0; },
+    base58btc_decode(strPtr, strLen, outPtr, outCap) { return 0; },
+    /* CBOR host stubs */
+    cbor_encode(jsonPtr, jsonLen, outPtr, outCap) { return 0; },
+    cbor_decode(dataPtr, dataLen, outPtr, outCap) { return 0; }
   }
 }));
 wasi.initialize(instance);
