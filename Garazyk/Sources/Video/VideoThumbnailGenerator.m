@@ -1,6 +1,15 @@
 #import "Video/VideoThumbnailGenerator.h"
 #import "Core/CID.h"
 #import "Debug/PDSLogger.h"
+#import "Compat/PDSTypes.h"
+
+#ifdef LINUX
+#define PDS_THUMB_TASK_SET_EXECUTABLE(task, path) task.launchPath = path
+#define PDS_THUMB_TASK_LAUNCH(task, error) ([task launch], YES)
+#else
+#define PDS_THUMB_TASK_SET_EXECUTABLE(task, path) task.executableURL = [NSURL fileURLWithPath:path]
+#define PDS_THUMB_TASK_LAUNCH(task, error) [task launchAndReturnError:error]
+#endif
 
 #if TARGET_OS_MAC
 #import <AVFoundation/AVFoundation.h>
@@ -109,7 +118,7 @@ NSString * const ATProtoVideoThumbnailErrorDomain = @"com.atproto.video.thumbnai
 
             // ffmpeg -ss <time> -i <input> -frames:v 1 -f image2 -q:v 2 <output>
             NSTask *task = [[NSTask alloc] init];
-            task.executableURL = [NSURL fileURLWithPath:@"ffmpeg"];
+            PDS_THUMB_TASK_SET_EXECUTABLE(task, @"ffmpeg");
             task.arguments = @[
                 @"-ss", [NSString stringWithFormat:@"%.1f", seconds],
                 @"-i", videoURL.path,
@@ -124,7 +133,7 @@ NSString * const ATProtoVideoThumbnailErrorDomain = @"com.atproto.video.thumbnai
             task.standardError = stderrPipe;
 
             NSError *taskError = nil;
-            BOOL launched = [task launchAndReturnError:&taskError];
+            BOOL launched = PDS_THUMB_TASK_LAUNCH(task, &taskError);
             if (!launched) {
                 NSError *err = [NSError errorWithDomain:ATProtoVideoThumbnailErrorDomain
                                                    code:ATProtoVideoThumbnailErrorGenerationFailed
