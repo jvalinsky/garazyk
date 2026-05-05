@@ -11,12 +11,13 @@
 #import "Network/HttpResponseSender.h"
 #import "Network/HttpRequest.h"
 #import "Network/PDSNetworkTransport.h"
+#import "Compat/PDSTypes.h"
 
 @interface HttpConnectionIOCoordinator ()
 @property (nonatomic, strong) id<PDSNetworkConnection> connection;
 @property (nonatomic, strong) HttpProtocolDriver *driver;
 @property (nonatomic, strong) HttpResponseSender *sender;
-@property (nonatomic, strong) dispatch_queue_t coordinationQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t coordinationQueue;
 @property (nonatomic, assign) BOOL isPaused;
 @property (nonatomic, assign) BOOL readScheduled;
 @property (nonatomic, assign) BOOL isClosed;

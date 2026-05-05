@@ -7,6 +7,7 @@
 #import "Database/PDSDatabase.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Debug/PDSLogger.h"
+#import "Compat/PDSTypes.h"
 #import <sqlite3.h>
 
 static NSString *const PDSBlobAuditManagerErrorDomain = @"com.atproto.pds.diagnostics";
@@ -16,7 +17,7 @@ static NSString *const PDSBlobAuditManagerErrorDomain = @"com.atproto.pds.diagno
 @property (nonatomic, strong) BlobStorage *blobStorage;
 @property (nonatomic, strong) PDSServiceDatabases *serviceDatabases;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSOperation *> *jobMap;
-@property (nonatomic, strong) dispatch_queue_t queue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t queue;
 @end
 
 @implementation PDSBlobAuditManager

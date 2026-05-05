@@ -3,13 +3,14 @@
 #import "Network/HttpResponse.h"
 #import "Auth/JWT.h"
 #import "Debug/PDSLogger.h"
+#import "Compat/PDSTypes.h"
 
 @interface ChatAuthManager ()
 @property (nonatomic, strong, nullable) JWTVerifier *verifier;
 @property (nonatomic, strong, nullable) NSData *cachedPublicKey;
 @property (nonatomic, copy, nullable) NSString *cachedPdsUrl;
 @property (nonatomic, assign) NSTimeInterval lastKeyFetchTime;
-@property (nonatomic, strong) dispatch_queue_t keyCacheQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t keyCacheQueue;
 @end
 
 static const NSTimeInterval kKeyRefreshInterval = 3600.0; // Re-fetch JWKS every hour
