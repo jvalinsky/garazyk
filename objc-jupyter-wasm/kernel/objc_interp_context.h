@@ -80,6 +80,12 @@ typedef struct InterpContext {
     /* ── Current method dispatch context ─────────────────── */
     Class current_class_ptr;  /* class of the currently-executing method (for super dispatch) */
 
+    /* ── Class hierarchy table ─────────────────────────── */
+#define MAX_CLASS_HIERARCHY 128
+    char class_hierarchy_class[MAX_CLASS_HIERARCHY][64]; /* class_name */
+    char class_hierarchy_super[MAX_CLASS_HIERARCHY][64]; /* super_name */
+    unsigned int class_hierarchy_count;
+
     /* ── String pool ────────────────────────────────────── */
     char string_pool[OBJC_INTERP_STRING_POOL_SIZE];
     unsigned int string_pool_offset;

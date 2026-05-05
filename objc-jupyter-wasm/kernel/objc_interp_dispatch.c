@@ -101,18 +101,76 @@ unsigned int find_interpreter_method(SEL sel, Value target, id receiver,
     return g_ctx.method_count;
 }
 
-/* Find method for super dispatch: skip methods belonging to skip_class,
- * then search the remaining methods (including NSObject built-ins).
+/* Look up the superclass name for a given class name from the hierarchy table. */
+static const char *class_get_superclass_name(const char *class_name) {
+    unsigned int hi;
+    for (hi = 0; hi < g_ctx.class_hierarchy_count; hi++) {
+        if (cstr_eq(g_ctx.class_hierarchy_class[hi], class_name)) {
+            return g_ctx.class_hierarchy_super[hi];
+        }
+    }
+    return 0;
+}
+
+/* Look up the class_ptr (sentinel) for a class name from the variable table. */
+static Class class_ptr_for_name(const char *name) {
+    unsigned int vi;
+    for (vi = 0; vi < g_ctx.var_count; vi++) {
+        if (g_ctx.vars[vi].is_class && cstr_eq(g_ctx.vars[vi].name, name)) {
+            return g_ctx.vars[vi].cls;
+        }
+    }
+    return (Class)0;
+}
+
+/* Look up the class name for a given class_ptr from the variable table. */
+static const char *class_name_for_ptr(Class cls) {
+    unsigned int vi;
+    for (vi = 0; vi < g_ctx.var_count; vi++) {
+        if (g_ctx.vars[vi].is_class && g_ctx.vars[vi].cls == cls) {
+            return g_ctx.vars[vi].name;
+        }
+    }
+    return 0;
+}
+
+/* Find method for super dispatch: walk the superclass chain from skip_class
+ * and search for methods matching the selector in any superclass.
  * This implements [super selector:] by looking up the method in the
  * superclass chain rather than the current class. */
 unsigned int find_interpreter_method_super(SEL sel, Value target, id receiver,
                                            Class skip_class) {
     unsigned int mi;
-    /* First pass: find a method that does NOT belong to skip_class */
+    /* Collect the set of superclass class_ptrs by walking the hierarchy */
+    Class super_classes[16]; /* max 16 levels of inheritance */
+    unsigned int super_count = 0;
+    const char *current_name = class_name_for_ptr(skip_class);
+
+    /* Walk up the hierarchy from skip_class */
+    while (current_name && super_count < 16) {
+        const char *parent_name = class_get_superclass_name(current_name);
+        if (!parent_name || parent_name[0] == '\0') break;
+        Class parent_cls = class_ptr_for_name(parent_name);
+        if (parent_cls == (Class)0) break;
+        super_classes[super_count++] = parent_cls;
+        current_name = parent_name;
+    }
+
+    /* Search for methods matching the selector in any superclass */
     for (mi = 0; mi < g_ctx.method_count; mi++) {
-        if (g_ctx.methods[mi].class_ptr == skip_class) continue;
-        if (interpreter_method_matches(&g_ctx.methods[mi], sel, target, receiver, 0)) {
-            return mi;
+        MethodImpl *method = &g_ctx.methods[mi];
+        unsigned int si;
+        if (method->selector != sel || method->source_len == 0) continue;
+        if (method->class_ptr == skip_class) continue;
+        for (si = 0; si < super_count; si++) {
+            if (method->class_ptr == super_classes[si]) {
+                if (!method->is_class_method && (target.is_id || target.is_int)) {
+                    return mi;
+                }
+                if (method->is_class_method && target.is_class) {
+                    return mi;
+                }
+            }
         }
     }
     return g_ctx.method_count;

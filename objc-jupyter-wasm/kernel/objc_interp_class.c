@@ -155,6 +155,13 @@ Value parse_interface(struct Parser *p) {
         new_class = (Class)(unsigned long)custom_class_id++;
     }
 
+    /* Register the class-superclass relationship in the hierarchy table */
+    if (g_ctx.class_hierarchy_count < MAX_CLASS_HIERARCHY) {
+        cstr_copy(g_ctx.class_hierarchy_class[g_ctx.class_hierarchy_count], class_name, 64);
+        cstr_copy(g_ctx.class_hierarchy_super[g_ctx.class_hierarchy_count], super_name, 64);
+        g_ctx.class_hierarchy_count++;
+    }
+
     if (parser_current(p).type == TOK_OPEN_BRACE) {
         parser_advance(p);
         while (parser_current(p).type != TOK_CLOSE_BRACE &&
