@@ -214,11 +214,11 @@ InterpVar *interp_find_var(const char *name) {
     /* Search backwards — most recently created variable first.
      * This implements variable shadowing: a method-local variable
      * with the same name as a top-level variable takes precedence.
-     * g_ctx.var_scope_base limits the search to the current scope
-     * (set during method execution to isolate method-local variables). */
+     * We search ALL variables (not just the current scope) so that
+     * global variables are still accessible from within methods. */
     unsigned int i;
     if (g_ctx.var_count == 0) return 0;
-    for (i = g_ctx.var_count; i > g_ctx.var_scope_base; i--) {
+    for (i = g_ctx.var_count; i > 0; i--) {
         if (cstr_eq(g_ctx.vars[i - 1].name, name)) {
             return &g_ctx.vars[i - 1];
         }
@@ -734,7 +734,8 @@ void objc_interp_init(void) {
         static const char * const foundation_classes[] = {
             "NSObject", "NSString", "NSNumber",
             "NSArray", "NSMutableArray", "NSDictionary",
-            "NSMutableDictionary", "NSSet", "NSData"
+            "NSMutableDictionary", "NSSet", "NSData",
+            "NSCharacterSet"
         };
         unsigned int i;
         for (i = 0; i < sizeof(foundation_classes) / sizeof(foundation_classes[0]); i++) {
