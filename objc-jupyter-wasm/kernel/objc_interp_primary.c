@@ -32,6 +32,10 @@ extern InterpVar *interp_find_var(const char *name);
 extern InterpVar *interp_get_or_create_var(const char *name);
 extern void eval_nslog(struct Parser *p);
 
+extern const char *typedef_resolve(const char *name);
+extern Value parse_expression(struct Parser *p);
+extern Value parse_unary(struct Parser *p);
+
 static int hex_digit_value(char ch) {
     if (ch >= '0' && ch <= '9') return ch - '0';
     if (ch >= 'a' && ch <= 'f') return ch - 'a' + 10;
@@ -91,6 +95,41 @@ static Value parse_negated_integer_literal(Parser *p) {
 
 Value parse_primary(Parser *p) {
     Token tok = parser_current(p);
+
+    /* sizeof operator */
+    if (tok.type == TOK_SIZEOF) {
+        parser_advance(p);
+        /* Expect ( */
+        if (parser_current(p).type == TOK_OPEN_PAREN) {
+            parser_advance(p);
+            /* Handle sizeof(type) or sizeof(expression) */
+            if (parser_current(p).type == TOK_IDENTIFIER) {
+                char type_buf[64];
+                cstr_copy(type_buf, parser_current(p).text, 64);
+                const char *res = typedef_resolve(type_buf);
+                if (res) cstr_copy(type_buf, res, 64);
+
+                if (cstr_eq(type_buf, "int") || cstr_eq(type_buf, "char") || cstr_eq(type_buf, "id") ||
+                    cstr_eq(type_buf, "void") || cstr_eq(type_buf, "float") || cstr_eq(type_buf, "double") ||
+                    cstr_eq(type_buf, "NSInteger") || cstr_eq(type_buf, "NSUInteger") || cstr_eq(type_buf, "BOOL") ||
+                    cstr_eq(type_buf, "Class") || cstr_eq(type_buf, "SEL")) {
+                    parser_advance(p);
+                    /* Optional pointer * */
+                    while (parser_current(p).type == TOK_STAR) parser_advance(p);
+                    if (parser_current(p).type == TOK_CLOSE_PAREN) parser_advance(p);
+                    return value_from_int(4); /* all are 4 bytes in 32-bit wasm */
+                }
+            }
+            /* Not a simple type, parse as expression */
+            parse_expression(p);
+            if (parser_current(p).type == TOK_CLOSE_PAREN) parser_advance(p);
+            return value_from_int(4);
+        } else {
+            /* sizeof expression */
+            parse_primary(p);
+            return value_from_int(4);
+        }
+    }
 
     /* Unary minus — handle before other primaries */
     if (tok.type == TOK_MINUS) {
