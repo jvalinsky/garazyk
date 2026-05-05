@@ -352,6 +352,17 @@ Value parse_type_and_var_decl(Parser *p) {
         parser_advance(p);
     }
 
+    /* Skip type qualifiers: const, volatile, restrict — not semantically
+     * meaningful in the interpreter, but must be consumed to avoid
+     * "Unknown identifier" errors on declarations like
+     *   const char *bytes = [data bytes]; */
+    while (parser_current(p).type == TOK_IDENTIFIER &&
+           (cstr_eq(parser_current(p).text, "const") ||
+            cstr_eq(parser_current(p).text, "volatile") ||
+            cstr_eq(parser_current(p).text, "restrict"))) {
+        parser_advance(p);
+    }
+
     type_name[0] = '\0';
 
     if (parser_current(p).type == TOK_IDENTIFIER) {
