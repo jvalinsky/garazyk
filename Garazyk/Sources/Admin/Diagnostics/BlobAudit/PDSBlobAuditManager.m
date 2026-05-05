@@ -34,7 +34,7 @@ static NSString *const PDSBlobAuditManagerErrorDomain = @"com.atproto.pds.diagno
         _auditQueue = [[NSOperationQueue alloc] init];
         _auditQueue.maxConcurrentOperationCount = 1;
         if ([_auditQueue respondsToSelector:@selector(setQualityOfService:)]) {
-            _auditQueue.qualityOfService = NSQualityOfServiceBackground;
+            [_auditQueue performSelector:@selector(setQualityOfService:) withObject:@(NSQualityOfServiceBackground)];
         }
     }
     return self;
