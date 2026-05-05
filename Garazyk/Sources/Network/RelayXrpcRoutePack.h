@@ -22,6 +22,8 @@ NS_ASSUME_NONNULL_BEGIN
                   subscribeReposHandler:(nullable SubscribeReposHandler *)subscribeReposHandler
                               plcResolver:(nullable DIDPLCResolver *)plcResolver NS_DESIGNATED_INITIALIZER;
 
+- (instancetype)init NS_UNAVAILABLE;
+
 - (void)registerRoutesWithServer:(HttpServer *)server;
 
 @end

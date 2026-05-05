@@ -273,7 +273,16 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     if (incomingSeq > _highestSeenSeq) {
         _highestSeenSeq = incomingSeq;
     }
-    int64_t lag = _highestSeenSeq - self.lastCheckpointSeq;
+    
+    int64_t lastCheckpointSeq = 0;
+    for (AppViewRelayConnection *conn in _connections) {
+        if ([conn.relayURL isEqualToString:relayURL]) {
+            lastCheckpointSeq = conn.lastCheckpointSeq;
+            break;
+        }
+    }
+    
+    int64_t lag = _highestSeenSeq - lastCheckpointSeq;
     if (lag > self.maxLagForBackpressure) {
         PDS_LOG_WARN(@"[AppView Ingest] Backpressure: lag=%lld exceeds threshold=%lld for %@",
                      (long long)lag, (long long)self.maxLagForBackpressure, relayURL);

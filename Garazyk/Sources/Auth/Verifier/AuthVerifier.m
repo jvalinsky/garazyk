@@ -76,10 +76,6 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
     return self;
 }
 
-- (instancetype)init {
-    return [self initWithKeyResolver:nil accountPolicy:nil nonceStore:nil];
-}
-
 - (void)setLocalPublicKey:(id)publicKey {
     self.localPublicKey = publicKey;
 }

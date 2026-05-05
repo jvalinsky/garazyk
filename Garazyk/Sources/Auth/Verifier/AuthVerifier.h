@@ -124,7 +124,9 @@ typedef NS_ENUM(NSInteger, AuthVerifierError) {
  */
 - (instancetype)initWithKeyResolver:(nullable id<TokenKeyResolver>)keyResolver
                       accountPolicy:(id<AccountPolicy>)accountPolicy
-                         nonceStore:(nullable id<DPoPNonceStore>)nonceStore;
+                         nonceStore:(nullable id<DPoPNonceStore>)nonceStore NS_DESIGNATED_INITIALIZER;
+
+- (instancetype)init NS_UNAVAILABLE;
 
 /*!
  @brief Verify an incoming request.

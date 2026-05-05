@@ -1,4 +1,5 @@
 #import "Sync/WebSocket/WebSocketServer.h"
+#import "Network/PDSNetworkTransportMac.h"
 #import "Compat/PDSTypes.h"
 #import "Sync/WebSocket/WebSocketConnection.h"
 
@@ -344,7 +345,8 @@ static inline int set_reuseaddr(int fd) {
     nw_listener_set_new_connection_handler(listener, ^(nw_connection_t connection) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return;
-        WebSocketConnection *webSocketConnection = [[WebSocketConnection alloc] initWithConnection:connection];
+        PDSNetworkConnectionMac *adapter = [[PDSNetworkConnectionMac alloc] initWithConnection:connection];
+        WebSocketConnection *webSocketConnection = [[WebSocketConnection alloc] initWithConnection:adapter];
         [strongSelf addConnection:webSocketConnection];
         webSocketConnection.delegate = strongSelf;
         if ([strongSelf.delegate respondsToSelector:@selector(webSocketServer:didAcceptConnection:)]) {

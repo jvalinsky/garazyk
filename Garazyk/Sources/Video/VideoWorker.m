@@ -21,6 +21,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
 
 @implementation ATProtoVideoWorker {
     dispatch_queue_t _workerQueue;
+    dispatch_queue_t _stateQueue;
     dispatch_source_t _pollTimer;
 }
 
@@ -40,6 +41,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
         _pollInterval = 5.0;
         _maxConcurrentJobs = 2;
         _workerQueue = dispatch_queue_create("com.atproto.video.worker", DISPATCH_QUEUE_SERIAL);
+        _stateQueue = dispatch_queue_create("com.atproto.video.state", DISPATCH_QUEUE_SERIAL);
         _processingJobIds = [NSMutableSet set];
     }
     return self;
@@ -129,9 +131,11 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
     }
 
     for (NSDictionary *job in pendingJobs) {
-        @synchronized(self.processingJobIds) {
+        __block BOOL shouldBreak = NO;
+        dispatch_sync(_stateQueue, ^{
             if (self.processingJobIds.count >= self.maxConcurrentJobs) {
-                break;
+                shouldBreak = YES;
+                return;
             }
 
             NSString *jobId = job[@"job_id"];
@@ -139,7 +143,8 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
                 [self.processingJobIds addObject:jobId];
                 [self processJob:jobId];
             }
-        }
+        });
+        if (shouldBreak) break;
     }
 }
 
@@ -423,9 +428,9 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
 - (void)completeJob:(NSString *)jobId {
     [self updateJobState:jobId state:@"COMPLETED" progress:100 message:@"Processing complete"];
 
-    @synchronized(self.processingJobIds) {
+    dispatch_sync(_stateQueue, ^{
         [self.processingJobIds removeObject:jobId];
-    }
+    });
 
     PDS_LOG_INFO(@"Video job completed: %@", jobId);
 }
@@ -438,9 +443,9 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
                                message:errorMsg
                                  error:nil];
 
-    @synchronized(self.processingJobIds) {
+    dispatch_sync(_stateQueue, ^{
         [self.processingJobIds removeObject:jobId];
-    }
+    });
 
     PDS_LOG_ERROR(@"Video job failed: %@ - %@", jobId, error);
 }

@@ -6,7 +6,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @class PDSRateLimitAdminHandler
  * @brief Handles rate limit management API endpoints with audit trail.
  *
- * Provides comprehensive rate limit administration including queries, monitoring,
+ * Provides rate limit administration including queries, monitoring,
  * and admin overrides with full audit trail logging.
  *
  * Endpoints:
