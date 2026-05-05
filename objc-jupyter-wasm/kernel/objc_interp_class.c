@@ -35,39 +35,32 @@ extern InterpVar *interp_get_or_create_var(const char *name);
 
 /* Parser layout must match the definition in objc_interpreter.c. */
 
-/* Class-to-protocol conformance table (simplified storage).
- * For each class, stores up to 8 protocol names it conforms to. */
-static char class_conformances[OBJC_INTERP_MAX_CLASSES][8][64];
-static unsigned int class_conforms_count[OBJC_INTERP_MAX_CLASSES];
-
 /* Record that a class conforms to a protocol (by name). */
 static void add_class_conformance(const char *class_name, const char *protocol_name) {
-    unsigned int ci;
-    /* Find class index by name */
-    for (ci = 0; ci < OBJC_INTERP_MAX_CLASSES; ci++) {
-        InterpVar *var = &g_ctx.vars[ci];
-        if (var->is_class && cstr_eq(var->name, class_name)) {
-            unsigned int cc = class_conforms_count[ci];
-            if (cc < 8) {
-                cstr_copy(class_conformances[ci][cc], protocol_name, 64);
-                class_conforms_count[ci]++;
+    InterpVar *var = interp_get_or_create_var(class_name);
+    if (var) {
+        unsigned int ci = (unsigned int)(var - g_ctx.vars);
+        unsigned int cc = g_ctx.class_conforms_count[ci];
+        if (cc < 8) {
+            /* Avoid duplicates */
+            unsigned int i;
+            for (i = 0; i < cc; i++) {
+                if (cstr_eq(g_ctx.class_conformances[ci][i], protocol_name)) return;
             }
-            return;
+            cstr_copy(g_ctx.class_conformances[ci][cc], protocol_name, 64);
+            g_ctx.class_conforms_count[ci]++;
         }
     }
 }
 
 /* Check if a class (by name) conforms to a protocol (by name). */
 static int check_class_conformance(const char *class_name, const char *protocol_name) {
-    unsigned int ci;
-    for (ci = 0; ci < OBJC_INTERP_MAX_CLASSES; ci++) {
-        InterpVar *var = &g_ctx.vars[ci];
-        if (var->is_class && cstr_eq(var->name, class_name)) {
-            unsigned int cc;
-            for (cc = 0; cc < class_conforms_count[ci]; cc++) {
-                if (cstr_eq(class_conformances[ci][cc], protocol_name)) return 1;
-            }
-            return 0;
+    InterpVar *var = interp_find_var(class_name);
+    if (var && var->is_class) {
+        unsigned int ci = (unsigned int)(var - g_ctx.vars);
+        unsigned int cc;
+        for (cc = 0; cc < g_ctx.class_conforms_count[ci]; cc++) {
+            if (cstr_eq(g_ctx.class_conformances[ci][cc], protocol_name)) return 1;
         }
     }
     return 0;
@@ -108,16 +101,29 @@ Value parse_interface(struct Parser *p) {
 
     {
         InterpVar *existing = interp_find_var(class_name);
-        if (existing && existing->is_class) {
-            /* Class already exists */
-            Class existing_cls = existing->cls;
+        /* If class exists and has a Class pointer, and it's NOT a category,
+         * skip the body (already defined). Forward declarations or
+         * categories should continue. */
+        if (existing && existing->is_class && existing->cls != 0 && !is_category) {
+            /* Not a category — skip body */
+            while (parser_current(p).type != TOK_AT_KEYWORD ||
+                   !cstr_eq(parser_current(p).text, "@end")) {
+                if (parser_current(p).type == TOK_EOF) break;
+                parser_advance(p);
+            }
+            if (parser_current(p).type == TOK_AT_KEYWORD &&
+                cstr_eq(parser_current(p).text, "@end")) {
+                parser_advance(p);
+            }
+            return value_from_class(existing->cls);
+        }
 
-            if (is_category) {
-                /* Category: add methods to existing class.
-                 * Skip ivar block, handle @property, skip method decls until @end. */
-                while (!(parser_current(p).type == TOK_AT_KEYWORD &&
-                       cstr_eq(parser_current(p).text, "@end")) &&
-                       parser_current(p).type != TOK_EOF) {
+        if (is_category && existing && existing->is_class) {
+             /* Category: add methods to existing class.
+              * Skip ivar block, handle @property, skip method decls until @end. */
+             while (!(parser_current(p).type == TOK_AT_KEYWORD &&
+                    cstr_eq(parser_current(p).text, "@end")) &&
+                    parser_current(p).type != TOK_EOF) {
 
                     if (parser_current(p).type == TOK_AT_KEYWORD &&
                         cstr_eq(parser_current(p).text, "@property")) {
@@ -159,21 +165,8 @@ Value parse_interface(struct Parser *p) {
                     cstr_eq(parser_current(p).text, "@end")) {
                     parser_advance(p);
                 }
-                return value_from_class(existing_cls);
+                return value_from_class(existing->cls);
             }
-
-            /* Not a category — skip body as before */
-            while (parser_current(p).type != TOK_AT_KEYWORD ||
-                   !cstr_eq(parser_current(p).text, "@end")) {
-                if (parser_current(p).type == TOK_EOF) break;
-                parser_advance(p);
-            }
-            if (parser_current(p).type == TOK_AT_KEYWORD &&
-                cstr_eq(parser_current(p).text, "@end")) {
-                parser_advance(p);
-            }
-            return value_from_class(existing_cls);
-        }
     }
 
     super_name[0] = '\0';
@@ -193,6 +186,15 @@ Value parse_interface(struct Parser *p) {
                     super_class = 0;
                 }
             }
+        }
+    }
+
+    /* Ensure the class variable exists in g_ctx.vars early, so that
+     * add_class_conformance can find its index. */
+    {
+        InterpVar *var = interp_get_or_create_var(class_name);
+        if (var) {
+            var->is_class = 1;
         }
     }
 
@@ -353,25 +355,42 @@ Value parse_interface(struct Parser *p) {
             cstr_eq(parser_current(p).text, "@property")) {
             parser_advance(p);
 
+            int is_readonly = 0;
+            int is_copy = 0;
+            int is_strong = 0;
+            int is_nonatomic = 0;
+
             if (parser_current(p).type == TOK_OPEN_PAREN) {
-                int depth = 1;
                 parser_advance(p);
-                while (depth > 0 && parser_current(p).type != TOK_EOF) {
-                    if (parser_current(p).type == TOK_OPEN_PAREN) depth++;
-                    else if (parser_current(p).type == TOK_CLOSE_PAREN) depth--;
-                    parser_advance(p);
+                while (parser_current(p).type != TOK_CLOSE_PAREN &&
+                       parser_current(p).type != TOK_EOF) {
+                    if (parser_current(p).type == TOK_IDENTIFIER) {
+                        if (cstr_eq(parser_current(p).text, "readonly")) is_readonly = 1;
+                        else if (cstr_eq(parser_current(p).text, "copy")) is_copy = 1;
+                        else if (cstr_eq(parser_current(p).text, "strong")) is_strong = 1;
+                        else if (cstr_eq(parser_current(p).text, "nonatomic")) is_nonatomic = 1;
+                        parser_advance(p);
+                    } else {
+                        parser_advance(p);
+                    }
+                    if (parser_current(p).type == TOK_COMMA) parser_advance(p);
                 }
+                if (parser_current(p).type == TOK_CLOSE_PAREN) parser_advance(p);
             }
 
             if (parser_current(p).type == TOK_IDENTIFIER) {
                 if (g_ctx.property_count >= 64) {
                     parser_error(p, "property table full (max 64 properties)");
-                    while (parser_current(p).type != TOK_SEMICOLON && parser_current(p).type != TOK_CLOSE_PAREN && parser_current(p).type != TOK_EOF) {
+                    while (parser_current(p).type != TOK_SEMICOLON && parser_current(p).type != TOK_EOF) {
                         parser_advance(p);
                     }
                     continue;
                 }
                 PropertyDecl *prop = &g_ctx.properties[g_ctx.property_count];
+                prop->is_readonly = is_readonly;
+                prop->is_copy = is_copy;
+                prop->is_strong = is_strong;
+                prop->is_nonatomic = is_nonatomic;
                 if (copy_identifier_or_error(p, prop->type_name, parser_current(p).text, 64, "property type")) {
                     return value_void();
                 }
@@ -436,9 +455,8 @@ Value parse_interface(struct Parser *p) {
     }
 
     {
-        InterpVar *var = interp_get_or_create_var(class_name);
+        InterpVar *var = interp_find_var(class_name);
         if (var) {
-            var->is_class = 1;
             var->cls = new_class;
         }
     }
