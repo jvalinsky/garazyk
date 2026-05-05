@@ -20,7 +20,26 @@ const imports = {
       if (kind === 0) console.log('[stdout]:', msg);
       else if (kind === 1) console.log('[stderr]:', msg);
     },
-    should_interrupt: () => 0
+    should_interrupt: () => 0,
+    json_parse: () => 0,
+    json_stringify: () => 0,
+    fetch: () => 0,
+    /* Crypto host stubs */
+    sha256(dataPtr, dataLen, outPtr, outCap) { return 0; },
+    random_bytes(outPtr, count) {
+      const bytes = new Uint8Array(memory.buffer, outPtr, count);
+      for (let i = 0; i < count; i++) bytes[i] = 0;
+      return count;
+    },
+    hmac_sha256(keyPtr, keyLen, dataPtr, dataLen, outPtr, outCap) { return 0; },
+    /* Encoding host stubs */
+    base32_encode(dataPtr, dataLen, outPtr, outCap) { return 0; },
+    base32_decode(strPtr, strLen, outPtr, outCap) { return 0; },
+    base58btc_encode(dataPtr, dataLen, outPtr, outCap) { return 0; },
+    base58btc_decode(strPtr, strLen, outPtr, outCap) { return 0; },
+    /* CBOR host stubs */
+    cbor_encode(jsonPtr, jsonLen, outPtr, outCap) { return 0; },
+    cbor_decode(dataPtr, dataLen, outPtr, outCap) { return 0; }
   }
 };
 
