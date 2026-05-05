@@ -2102,7 +2102,7 @@ static NSUInteger UISafeLength(id value) {
     NSMutableString *html = [NSMutableString stringWithString:@"<div id=\"ozone-config-result\"></div><form class=\"form mb-lg\" onsubmit=\"updateOzoneConfig();return false;\"><div class=\"form-group\"><label>Config (JSON):</label><textarea id=\"config-json\" class=\"form-input\" placeholder=\"Enter config as JSON\">"];
     [html appendString:UIEscaped(jsonStr)];
     [html appendString:@"</textarea></div><button type=\"submit\" class=\"btn btn-primary btn-sm\">Update Config</button></form><div class=\"detail-card\">"];
-    [result enumerateKeysAndObjectsUsingBlock:^(NSString *key, id value, BOOL *stop) {
+    [result enumerateKeysAndObjectsUsingBlock:^(id key, id value, BOOL *stop) {
         [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">%@</span><span class=\"text-sm\">%@</span></div>",
             UIEscaped(key), UIEscaped([value description])];
     }];
@@ -2399,7 +2399,7 @@ static NSUInteger UISafeLength(id value) {
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
     }
     NSMutableString *html = [NSMutableString stringWithString:@"<div class=\"detail-card\">"];
-    [result enumerateKeysAndObjectsUsingBlock:^(NSString *key, id value, BOOL *stop) {
+    [result enumerateKeysAndObjectsUsingBlock:^(id key, id value, BOOL *stop) {
         [html appendFormat:@"<div class=\"detail-row\"><span class=\"detail-label\">%@</span><span>%@</span></div>",
             UIEscaped(key), UIEscaped([value description])];
     }];
