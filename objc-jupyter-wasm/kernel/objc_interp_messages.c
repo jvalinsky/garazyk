@@ -379,16 +379,20 @@ Value parse_message_send(Parser *p) {
                 }
                 return value_from_class((Class)0);
             }
-            /* Tagged Foundation string pool objects — return their sentinel class */
+            /* Tagged Foundation string pool objects — return their sentinel class.
+             * Class IDs must match objc_interpreter.c foundation_classes[]:
+             * NSObject=1, NSString=2, NSNumber=3, NSArray=4, NSMutableArray=5,
+             * NSDictionary=6, NSMutableDictionary=7, NSSet=8, NSData=9,
+             * NSCharacterSet=10 */
             if (cstr_starts(s, "NSNumber:")) return value_from_class((Class)3);
             if (cstr_starts(s, "NSFloat:")) return value_from_class((Class)3);
             if (cstr_starts(s, "NSArr:")) return value_from_class((Class)4);
-            if (cstr_starts(s, "NSMutArr:")) return value_from_class((Class)4);
-            if (cstr_starts(s, "NSDict:")) return value_from_class((Class)5);
-            if (cstr_starts(s, "NSMutDict:")) return value_from_class((Class)5);
-            if (cstr_starts(s, "NSSet:")) return value_from_class((Class)6);
-            if (cstr_starts(s, "NSData:")) return value_from_class((Class)7);
-            if (cstr_starts(s, "NSBlock:")) return value_from_class((Class)8);
+            if (cstr_starts(s, "NSMutArr:")) return value_from_class((Class)5);
+            if (cstr_starts(s, "NSDict:")) return value_from_class((Class)6);
+            if (cstr_starts(s, "NSMutDict:")) return value_from_class((Class)7);
+            if (cstr_starts(s, "NSSet:")) return value_from_class((Class)8);
+            if (cstr_starts(s, "NSData:")) return value_from_class((Class)9);
+            if (cstr_starts(s, "NSBlock:")) return value_from_class((Class)11);
             Class cls = (Class)0;
             cls = object_getClass(receiver);
             return value_from_class(cls);
@@ -760,6 +764,21 @@ Value parse_message_send(Parser *p) {
             return value_from_int(cstr_eq(s + slen - sfxlen, suffix) ? 1 : 0);
         }
 
+        /* NSString: [str containsString:substr] → check if string contains substring */
+        if (cstr_eq(sel_name, "containsString:") && target.is_id && receiver != 0 && arg_count >= 1) {
+            const char *s = (const char *)receiver;
+            const char *substr = 0;
+            if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
+                substr = (const char *)keyword_args[0].obj_val;
+            }
+            if (substr == 0) return value_from_int(0);
+            /* strstr returns a pointer to the first occurrence, or NULL */
+            {
+                const char *found = strstr(s, substr);
+                return value_from_int(found != 0 ? 1 : 0);
+            }
+        }
+
         /* NSString: [str uppercaseString] → ASCII uppercase */
         if (cstr_eq(sel_name, "uppercaseString") && target.is_id && receiver != 0) {
             const char *s = (const char *)receiver;
@@ -934,6 +953,57 @@ Value parse_message_send(Parser *p) {
                 start++;
             while (end > start && (s[end-1] == ' ' || s[end-1] == '\t' || s[end-1] == '\n' || s[end-1] == '\r'))
                 end--;
+            {
+                int comp_len = end - start;
+                unsigned int needed = (unsigned int)comp_len + 1;
+                char *result = string_pool_alloc(needed);
+                if (result == 0) return value_from_id(receiver);
+                {
+                    int i;
+                    for (i = 0; i < comp_len; i++) result[i] = s[start + i];
+                    result[comp_len] = '\0';
+                }
+                return value_from_id((id)result);
+            }
+        }
+
+        /* NSCharacterSet: [NSCharacterSet whitespaceCharacterSet] → return marker */
+        if (IS_FOUNDATION_CLASS("NSCharacterSet") && target.is_class &&
+            cstr_eq(sel_name, "whitespaceCharacterSet")) {
+            return value_from_id((id)"NSCharSet:whitespace");
+        }
+        /* NSCharacterSet: [NSCharacterSet whitespaceAndNewlineCharacterSet] → return marker */
+        if (IS_FOUNDATION_CLASS("NSCharacterSet") && target.is_class &&
+            cstr_eq(sel_name, "whitespaceAndNewlineCharacterSet")) {
+            return value_from_id((id)"NSCharSet:whitespaceAndNewline");
+        }
+
+        /* NSString: [str stringByTrimmingCharactersInSet:charSet] → trim chars in set */
+        if (cstr_eq(sel_name, "stringByTrimmingCharactersInSet:") && target.is_id && receiver != 0 && arg_count >= 1) {
+            const char *s = (const char *)receiver;
+            const char *cs_marker = 0;
+            if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
+                cs_marker = (const char *)keyword_args[0].obj_val;
+            }
+            int slen = (int)cstr_len(s);
+            int start = 0, end = slen;
+            /* Determine which characters to trim based on the charset marker */
+            if (cs_marker != 0 && cstr_eq_n(cs_marker, "NSCharSet:", 10)) {
+                const char *cs_type = cs_marker + 10;
+                int is_whitespace = cstr_eq(cs_type, "whitespace");
+                int is_whitespace_and_newline = cstr_eq(cs_type, "whitespaceAndNewline");
+                if (is_whitespace) {
+                    while (start < end && (s[start] == ' ' || s[start] == '\t'))
+                        start++;
+                    while (end > start && (s[end-1] == ' ' || s[end-1] == '\t'))
+                        end--;
+                } else if (is_whitespace_and_newline) {
+                    while (start < end && (s[start] == ' ' || s[start] == '\t' || s[start] == '\n' || s[start] == '\r'))
+                        start++;
+                    while (end > start && (s[end-1] == ' ' || s[end-1] == '\t' || s[end-1] == '\n' || s[end-1] == '\r'))
+                        end--;
+                }
+            }
             {
                 int comp_len = end - start;
                 unsigned int needed = (unsigned int)comp_len + 1;
@@ -1386,6 +1456,25 @@ Value parse_message_send(Parser *p) {
             return value_from_id(coll_make_marker("NSDict:", cid));
         }
 
+        /* NSDictionary/NSMutableDictionary: [NSMutableDictionary dictionaryWithDictionary:dict] → shallow copy */
+        if ((IS_FOUNDATION_CLASS("NSDictionary") || IS_FOUNDATION_CLASS("NSMutableDictionary")) &&
+            target.is_class && cstr_eq(sel_name, "dictionaryWithDictionary:") && arg_count >= 1) {
+            unsigned int new_cid = g_ctx.next_coll_id++;
+            const char *src_s = (const char *)keyword_args[0].obj_val;
+            unsigned int src_cid = coll_id_from_marker(src_s, "NSDict:");
+            if (src_cid == 0) src_cid = coll_id_from_marker(src_s, "NSMutDict:");
+            if (src_cid > 0) {
+                /* Copy all entries from source dictionary */
+                unsigned int i;
+                for (i = 0; i < g_ctx.coll_entry_count; i++) {
+                    if (g_ctx.coll_entries[i].coll_id == src_cid) {
+                        coll_add(new_cid, g_ctx.coll_entries[i].key, g_ctx.coll_entries[i].value);
+                    }
+                }
+            }
+            return value_from_id(coll_make_marker("NSMutDict:", new_cid));
+        }
+
         /* NSSet: [NSSet setWithArray:arr] → set from array */
         if (IS_FOUNDATION_CLASS("NSSet") && target.is_class && cstr_eq(sel_name, "setWithArray:") && arg_count >= 1) {
             unsigned int cid = g_ctx.next_coll_id++;
@@ -1807,6 +1896,15 @@ Value parse_message_send(Parser *p) {
                 return execute_interpreter_method(p, &g_ctx.methods[mi], sel, receiver,
                                                   keyword_args, arg_count, 1);
             }
+        }
+
+        /* NSObject: copy / mutableCopy — return self for value types.
+         * In this interpreter, strings and collections are value-typed
+         * (C strings in the string pool, or interpreter-managed objects),
+         * so copy/mutableCopy can return the receiver directly. */
+        if ((cstr_eq(sel_name, "copy") || cstr_eq(sel_name, "mutableCopy")) &&
+            target.is_id && receiver != 0) {
+            return value_from_id(receiver);
         }
 
         /* Fall through: no built-in, interpreter method, or property matched.
