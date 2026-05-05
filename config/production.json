@@ -1,0 +1,36 @@
+{
+  "server": {
+    "host": "pds.garazyk.xyz",
+    "port": 2583,
+    "data_dir": "DEPLOY_DIR/pds-data",
+    "issuer": "https://pds.garazyk.xyz",
+    "available_user_domains": ["garazyk.xyz"]
+  },
+  "appView": {
+    "url": "https://api.bsky.app",
+    "did": "did:web:api.bsky.app",
+    "local_enabled": false
+  },
+  "plc": {
+    "url": "https://plc.directory"
+  },
+  "session": {
+    "access_token_ttl_seconds": 1800,
+    "refresh_token_ttl_seconds": 2592000,
+    "invite_code_required": true
+  },
+  "cors": {
+    "allowed_origins": ["*"],
+    "allowed_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"],
+    "allowed_headers": ["DPoP", "Authorization", "Content-Type", "*"],
+    "max_age": 86400
+  },
+  "links": {
+    "privacy_policy": "https://garazyk.xyz/privacy",
+    "terms_of_service": "https://garazyk.xyz/terms"
+  },
+  "logging": {
+    "format": "text",
+    "level": "info"
+  }
+}
