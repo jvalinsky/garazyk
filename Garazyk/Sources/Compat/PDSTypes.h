@@ -72,6 +72,15 @@
 #define PDS_DISPATCH_QUEUE_STRONG assign
 #endif
 
+/**
+ * @def PDS_GCD_STRONG
+ * @brief Property attribute for any GCD type (semaphore, group, source, etc.).
+ *
+ * Same as PDS_DISPATCH_QUEUE_STRONG — on GNUstep/Linux, GCD types
+ * are not Objective-C objects and cannot use 'strong'.
+ */
+#define PDS_GCD_STRONG PDS_DISPATCH_QUEUE_STRONG
+
 #ifdef DEPRECATED_MSG_ATTRIBUTE
 #undef DEPRECATED_MSG_ATTRIBUTE
 #endif
