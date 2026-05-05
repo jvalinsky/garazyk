@@ -11,6 +11,7 @@
  */
 
 #import "Core/DID.h"
+#import "Core/ATURI.h"
 #import "Core/CID.h"
 #import "App/PDSConfiguration.h"
 #import "Debug/PDSLogger.h"
@@ -92,6 +93,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
 
 @implementation DIDResolver {
     NSURLSession *_session;
+    dispatch_queue_t _didQueue;
     // _staleTTL and _maxTTL are synthesized properties
     // _cacheTimestamps is synthesized property
 }
@@ -114,6 +116,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
 - (instancetype)init {
     self = [super init];
     if (self) {
+        _didQueue = dispatch_queue_create("com.atproto.did", DISPATCH_QUEUE_SERIAL);
         NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
         config.timeoutIntervalForRequest = 10.0;
         config.timeoutIntervalForResource = 15.0;
@@ -221,9 +224,9 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
         }
     }
 
-    // Parse DID method
-    NSArray<NSString *> *components = [did componentsSeparatedByString:@":"];
-    if (components.count < 3) {
+    // Parse DID method using ATDID primitive
+    ATDID *parsedDID = [ATDID didWithString:did error:nil];
+    if (!parsedDID) {
         NSError *error = [NSError errorWithDomain:DIDErrorDomain
                                           code:DIDErrorInvalidIdentifier
                                       userInfo:@{NSLocalizedDescriptionKey: @"Invalid DID format"}];
@@ -231,7 +234,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
         return;
     }
 
-    NSString *method = components[1];
+    NSString *method = parsedDID.method;
 
     if ([method isEqualToString:@"web"]) {
         [self resolveDIDWeb:did completion:completion];
@@ -438,8 +441,8 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     // did:web:example.com -> https://example.com/.well-known/did.json
     // did:web:example.com:user -> https://example.com/user/did.json
     
-    NSArray<NSString *> *parts = [did componentsSeparatedByString:@":"];
-    if (parts.count < 3) {
+    ATDID *parsedDID = [ATDID didWithString:did error:nil];
+    if (!parsedDID) {
         NSError *error = [NSError errorWithDomain:DIDErrorDomain
                                          code:DIDErrorInvalidIdentifier
                                      userInfo:@{NSLocalizedDescriptionKey: @"Invalid did:web format"}];
@@ -447,12 +450,13 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
         return;
     }
     
-    NSString *domain = parts[2];
+    NSArray<NSString *> *identifierParts = [parsedDID.identifier componentsSeparatedByString:@":"];
+    NSString *domain = identifierParts[0];
     NSString *path = @".well-known/did.json";
     
-    if (parts.count > 3) {
+    if (identifierParts.count > 1) {
         // Additional path components
-        NSArray<NSString *> *pathComponents = [parts subarrayWithRange:NSMakeRange(3, parts.count - 3)];
+        NSArray<NSString *> *pathComponents = [identifierParts subarrayWithRange:NSMakeRange(1, identifierParts.count - 1)];
         path = [[pathComponents componentsJoinedByString:@"/"] stringByAppendingPathComponent:@"did.json"];
     }
     

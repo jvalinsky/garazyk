@@ -205,20 +205,10 @@
 
 + (NSDictionary *)getUploadLimitsForDid:(NSString *)did
                                 jobStore:(id<VideoJobStore>)jobStore {
-  // Default limits
-  NSInteger maxDailyVideos = 25;
-  NSInteger maxDailyBytes = 50 * 1024 * 1024;
-
-  // Try to get actual usage from job store
-  NSError *error = nil;
-  NSDictionary *job = [jobStore getVideoJobById:@"" error:&error];
-  // If we can't query, return defaults
-  // TODO: Add a proper method to VideoJobStore for querying daily usage
-
   return @{
     @"canUpload" : @YES,
-    @"remainingDailyVideos" : @(maxDailyVideos),
-    @"remainingDailyBytes" : @(maxDailyBytes),
+    @"remainingDailyVideos" : @(25),
+    @"remainingDailyBytes" : @(50 * 1024 * 1024),
     @"message" : @""
   };
 }

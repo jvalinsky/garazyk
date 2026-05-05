@@ -45,7 +45,7 @@ static NSString *const kSubscribeReposInfoOutdatedCursor = @"OutdatedCursor";
 @property(nonatomic, strong) FirehoseProtocolSession *session;
 @property(nonatomic, strong) PDSServiceDatabases *serviceDatabases;
 @property(nonatomic, strong) PDSDatabasePool *userDatabasePool;
-@property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t eventQueue;
+@property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t syncQueue;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t broadcastFanoutQueue;
 @property(nonatomic, assign) BOOL sequenceInitialized;
 @property(atomic, assign) BOOL stopping;
@@ -94,9 +94,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   if (self) {
     _serviceDatabases = serviceDatabases;
     _userDatabasePool = userDatabasePool;
-    _eventQueue = dispatch_queue_create("com.atproto.pds.subscribeRepos.events",
+    _syncQueue = dispatch_queue_create("com.atproto.pds.subscribeRepos.sync",
                                         DISPATCH_QUEUE_SERIAL);
-    dispatch_queue_set_specific(_eventQueue, kSubscribeReposEventQueueKey,
+    dispatch_queue_set_specific(_syncQueue, kSubscribeReposEventQueueKey,
                                 kSubscribeReposEventQueueKey, NULL);
     _broadcastFanoutQueue = dispatch_queue_create(
         "com.atproto.pds.subscribeRepos.broadcast", DISPATCH_QUEUE_CONCURRENT);
@@ -109,7 +109,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     _lastCommitRevByDID = [NSMutableDictionary dictionary];
 
     // Initialize backpressure rate limiter (100 events/sec)
-    _eventRateLimiter = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, _eventQueue);
+    _eventRateLimiter = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, _syncQueue);
     if (_eventRateLimiter) {
       uint64_t interval = NSEC_PER_SEC / 100; // 100 events per second
       dispatch_source_set_timer(_eventRateLimiter,
@@ -187,7 +187,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   }
 
   if (dispatch_get_specific(kSubscribeReposEventQueueKey) == NULL) {
-    dispatch_sync(self.eventQueue, ^{
+    dispatch_sync(self.syncQueue, ^{
                   });
   }
 
@@ -237,11 +237,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   }
 
   [webSocketConnection startOnExistingTransport];
-   [self sendInitialRepositoryStateToConnection:webSocketConnection
-                                         cursor:[request
-                                                    queryParamForKey:@"cursor"]];
-   [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)_attachedConnections.count];
-   [self.relayMetrics recordDownstreamConnected];
+  [self sendInitialRepositoryStateToConnection:webSocketConnection
+                                        cursor:[request queryParamForKey:@"cursor"]];
 }
 
 #pragma mark - WebSocketServerDelegate
@@ -333,7 +330,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   // so it doesn't block the caller (e.g. the HTTP request handler thread taking
   // the DB transaction).
   __weak typeof(self) weakSelf = self;
-  dispatch_async(self.eventQueue, ^{
+  dispatch_async(self.syncQueue, ^{
     __strong typeof(weakSelf) strongSelf = weakSelf;
     if (!strongSelf || strongSelf.stopping) return;
 
@@ -438,7 +435,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     return;
   }
   __weak typeof(self) weakSelf = self;
-  dispatch_async(self.eventQueue, ^{
+  dispatch_async(self.syncQueue, ^{
     __strong typeof(weakSelf) strongSelf = weakSelf;
     if (!strongSelf || strongSelf.stopping) return;
     @autoreleasepool {
@@ -465,7 +462,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     return;
   }
   __weak typeof(self) weakSelf = self;
-  dispatch_async(self.eventQueue, ^{
+  dispatch_async(self.syncQueue, ^{
     __strong typeof(weakSelf) strongSelf = weakSelf;
     if (!strongSelf || strongSelf.stopping) return;
     [strongSelf ensureSequenceInitialized];
@@ -549,7 +546,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     return;
   }
   __weak typeof(self) weakSelf = self;
-  dispatch_async(self.eventQueue, ^{
+  dispatch_async(self.syncQueue, ^{
     __strong typeof(weakSelf) strongSelf = weakSelf;
     if (!strongSelf || strongSelf.stopping) return;
     @autoreleasepool {
@@ -592,7 +589,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     return;
   }
   __weak typeof(self) weakSelf = self;
-  dispatch_async(self.eventQueue, ^{
+  dispatch_async(self.syncQueue, ^{
     __strong typeof(weakSelf) strongSelf = weakSelf;
     if (!strongSelf || strongSelf.stopping) return;
     @autoreleasepool {
@@ -638,7 +635,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     return;
   }
   __weak typeof(self) weakSelf = self;
-  dispatch_async(self.eventQueue, ^{
+  dispatch_async(self.syncQueue, ^{
     __strong typeof(weakSelf) strongSelf = weakSelf;
     if (!strongSelf || strongSelf.stopping) return;
     [strongSelf ensureSequenceInitialized];
@@ -684,9 +681,12 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     return;
   }
   dispatch_queue_t fanout = self.broadcastFanoutQueue;
+  __weak typeof(self) weakSelf = self;
   for (WebSocketConnection *connection in snapshot) {
     dispatch_async(fanout, ^{
-      if (![self sendEventData:eventData
+      __strong typeof(weakSelf) strongSelf = weakSelf;
+      if (!strongSelf) return;
+      if (![strongSelf sendEventData:eventData
             toConnectionWithBackpressureCheck:connection]) {
         PDS_LOG_SYNC_WARN(@"Dropping slow consumer during live broadcast");
       }
@@ -727,13 +727,13 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     PDS_LOG_SYNC_INFO(@"No cursor requested by client, connection will start in live update mode");
   }
 
-  PDS_LOG_SYNC_INFO(@"Queuing initial state worker for connection %@ (queue: %p)", connection.remoteAddress, self.eventQueue);
-  if (!self.eventQueue) {
+  PDS_LOG_SYNC_INFO(@"Queuing initial state worker for connection %@ (queue: %p)", connection.remoteAddress, self.syncQueue);
+  if (!self.syncQueue) {
     PDS_LOG_SYNC_ERROR(@"CRITICAL: eventQueue is NULL in SubscribeReposHandler!");
     return;
   }
   __weak typeof(self) weakSelf = self;
-  dispatch_async(self.eventQueue, ^{
+  dispatch_async(self.syncQueue, ^{
     __strong typeof(weakSelf) strongSelf = weakSelf;
     if (!strongSelf || strongSelf.stopping) return;
     PDS_LOG_SYNC_INFO(@"Async worker started: processing initial state for connection %@", connection.remoteAddress);

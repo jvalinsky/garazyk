@@ -1,4 +1,5 @@
 #import "PDSNetworkTransportMac.h"
+#import "Debug/PDSLogger.h"
 #import <Foundation/Foundation.h>
 
 @implementation PDSNetworkTransportFactory

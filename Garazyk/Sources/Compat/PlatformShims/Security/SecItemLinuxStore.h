@@ -10,6 +10,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/** Error domain for SecItemLinuxStore errors. */
+extern NSString * const SecItemLinuxStoreErrorDomain;
+
 /**
  Persistent keychain store using SQLite backend.
 

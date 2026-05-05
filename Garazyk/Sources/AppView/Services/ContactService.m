@@ -5,6 +5,7 @@
  */
 
 #import "AppView/Services/ContactService.h"
+#import "Debug/PDSLogger.h"
 #import "AppView/Services/ActorService.h"
 #import "Database/PDSDatabase.h"
 #import <CommonCrypto/CommonCrypto.h>
