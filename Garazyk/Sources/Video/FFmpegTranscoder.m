@@ -1,6 +1,24 @@
 #import "Video/FFmpegTranscoder.h"
 #import "Video/VideoTranscoder.h"
 #import "Debug/PDSLogger.h"
+#import "Compat/PDSTypes.h"
+
+#ifdef LINUX
+#include <CoreGraphics/CoreGraphics.h>
+// GNUstep NSTask doesn't have executableURL; use setLaunchPath: instead
+#define PDS_TASK_SET_EXECUTABLE(task, path) task.launchPath = path
+#define PDS_TASK_LAUNCH(task, error) ([task launch], YES)
+#else
+#define PDS_TASK_SET_EXECUTABLE(task, path) task.executableURL = [NSURL fileURLWithPath:path]
+#define PDS_TASK_LAUNCH(task, error) [task launchAndReturnError:error]
+#endif
+
+#ifndef CGSizeZero
+#define CGSizeZero ((CGSize){0, 0})
+#endif
+#ifndef CGSizeMake
+#define CGSizeMake(w, h) ((CGSize){(w), (h)})
+#endif
 
 NSString * const FFmpegTranscoderErrorDomain = @"com.atproto.video.transcoder.ffmpeg";
 
@@ -93,14 +111,14 @@ NSString * const FFmpegTranscoderErrorDomain = @"com.atproto.video.transcoder.ff
             [args addObject:finalOutputURL.path];
 
             NSTask *task = [[NSTask alloc] init];
-            task.executableURL = [NSURL fileURLWithPath:self.ffmpegPath];
+            PDS_TASK_SET_EXECUTABLE(task, self.ffmpegPath);
             task.arguments = args;
 
             NSPipe *stderrPipe = [NSPipe pipe];
             task.standardError = stderrPipe;
 
             NSError *taskError = nil;
-            BOOL launched = [task launchAndReturnError:&taskError];
+            BOOL launched = PDS_TASK_LAUNCH(task, &taskError);
             if (!launched) {
                 if (shouldCleanup) {
                     [[NSFileManager defaultManager] removeItemAtURL:finalOutputURL error:nil];
@@ -143,7 +161,7 @@ NSString * const FFmpegTranscoderErrorDomain = @"com.atproto.video.transcoder.ff
 
 - (float)probeFramerateForVideoAtURL:(NSURL *)videoURL {
     NSTask *task = [[NSTask alloc] init];
-    task.executableURL = [NSURL fileURLWithPath:self.ffprobePath];
+    PDS_TASK_SET_EXECUTABLE(task, self.ffprobePath);
     task.arguments = @[
         @"-v", @"error",
         @"-select_streams", @"v:0",
@@ -156,7 +174,7 @@ NSString * const FFmpegTranscoderErrorDomain = @"com.atproto.video.transcoder.ff
     task.standardOutput = stdoutPipe;
 
     NSError *taskError = nil;
-    BOOL launched = [task launchAndReturnError:&taskError];
+    BOOL launched = PDS_TASK_LAUNCH(task, &taskError);
     if (!launched) {
         PDS_LOG_WARN(@"Failed to launch ffprobe: %@", taskError);
         return 0;
@@ -188,7 +206,7 @@ NSString * const FFmpegTranscoderErrorDomain = @"com.atproto.video.transcoder.ff
 
 - (float)probeDurationForVideoAtURL:(NSURL *)videoURL {
     NSTask *task = [[NSTask alloc] init];
-    task.executableURL = [NSURL fileURLWithPath:self.ffprobePath];
+    PDS_TASK_SET_EXECUTABLE(task, self.ffprobePath);
     task.arguments = @[
         @"-v", @"error",
         @"-show_entries", @"format=duration",
@@ -200,7 +218,7 @@ NSString * const FFmpegTranscoderErrorDomain = @"com.atproto.video.transcoder.ff
     task.standardOutput = stdoutPipe;
 
     NSError *taskError = nil;
-    BOOL launched = [task launchAndReturnError:&taskError];
+    BOOL launched = PDS_TASK_LAUNCH(task, &taskError);
     if (!launched) {
         PDS_LOG_WARN(@"Failed to launch ffprobe: %@", taskError);
         return 0;
@@ -221,7 +239,7 @@ NSString * const FFmpegTranscoderErrorDomain = @"com.atproto.video.transcoder.ff
 
 - (CGSize)probeDimensionsForVideoAtURL:(NSURL *)videoURL {
     NSTask *task = [[NSTask alloc] init];
-    task.executableURL = [NSURL fileURLWithPath:self.ffprobePath];
+    PDS_TASK_SET_EXECUTABLE(task, self.ffprobePath);
     task.arguments = @[
         @"-v", @"error",
         @"-select_streams", @"v:0",
@@ -234,7 +252,7 @@ NSString * const FFmpegTranscoderErrorDomain = @"com.atproto.video.transcoder.ff
     task.standardOutput = stdoutPipe;
 
     NSError *taskError = nil;
-    BOOL launched = [task launchAndReturnError:&taskError];
+    BOOL launched = PDS_TASK_LAUNCH(task, &taskError);
     if (!launched) {
         PDS_LOG_WARN(@"Failed to launch ffprobe: %@", taskError);
         return CGSizeZero;
