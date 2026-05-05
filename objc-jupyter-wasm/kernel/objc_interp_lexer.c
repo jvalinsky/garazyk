@@ -364,6 +364,10 @@ Token lexer_next_token(Lexer *lex) {
             tok.type = TOK_SUPER;
         } else if (cstr_eq(tok.text, "typedef")) {
             tok.type = TOK_IDENTIFIER; /* handle in parse_statement */
+        } else if (cstr_eq(tok.text, "__block")) {
+            tok.type = TOK_IDENTIFIER; /* handle in var decl */
+        } else if (cstr_eq(tok.text, "__weak") || cstr_eq(tok.text, "__strong")) {
+            tok.type = TOK_IDENTIFIER; /* handle in var decl */
         }
         return tok;
     }
