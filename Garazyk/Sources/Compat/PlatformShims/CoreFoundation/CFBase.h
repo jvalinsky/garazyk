@@ -72,11 +72,28 @@ static inline void CFRelease(CFTypeRef cf) {
 }
 
 // CFAutorelease - adds object to autorelease pool for deferred release
+// Under ARC, explicit -autorelease is forbidden, so use objc_msgSend.
+#ifndef __clang_major__
+// Fallback for non-clang compilers
 static inline CFTypeRef CFAutorelease(CFTypeRef cf) {
     if (cf == NULL) return NULL;
     id obj = (__bridge id)cf;
     return (__bridge CFTypeRef)[obj autorelease];
 }
+#elif __has_feature(objc_arc)
+#include <objc/message.h>
+static inline CFTypeRef CFAutorelease(CFTypeRef cf) {
+    if (cf == NULL) return NULL;
+    id obj = (__bridge id)cf;
+    return (__bridge CFTypeRef)objc_msgSend(obj, sel_registerName("autorelease"));
+}
+#else
+static inline CFTypeRef CFAutorelease(CFTypeRef cf) {
+    if (cf == NULL) return NULL;
+    id obj = (__bridge id)cf;
+    return (__bridge CFTypeRef)[obj autorelease];
+}
+#endif
 
 // CFGetRetainCount (not meaningful under ARC)
 static inline CFIndex CFGetRetainCount(CFTypeRef cf) {
