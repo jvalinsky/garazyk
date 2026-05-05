@@ -1642,7 +1642,7 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
         return @{};
     }
 
-    id json = [NSJSONSerialization JSONObjectWithData:responseData options:NSJSONReadingFragmentsAllowed error:nil];
+    id json = [NSJSONSerialization JSONObjectWithData:responseData options:NSJSONReadingAllowFragments error:nil];
     // Strip NSNull values from JSON so render methods never encounter them.
     // NSJSONSerialization converts JSON null -> [NSNull null], which crashes
     // when NSString methods like -length or -stringByReplacingOccurrencesOfString:
