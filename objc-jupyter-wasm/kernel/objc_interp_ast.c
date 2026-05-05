@@ -133,6 +133,14 @@ AstNode *ast_make_try_catch(void) {
     return n;
 }
 
+AstNode *ast_make_autoreleasepool(void) {
+    AstNode *n = ast_alloc();
+    if (!n) return 0;
+    n->type = AST_AUTORELEASEPOOL;
+    n->autoreleasepool.body = 0;
+    return n;
+}
+
 int is_truthy(Value v) {
     if (v.is_int) return v.int_val != 0;
     if (v.is_float) return v.float_val != 0.0;
@@ -833,6 +841,27 @@ AstNode *parse_statement_ast(Parser *p) {
         }
     }
 
+    /* @autoreleasepool { ... } */
+    if (tok.type == TOK_AT_KEYWORD && cstr_eq(tok.text, "@autoreleasepool")) {
+        AstNode *node = ast_make_autoreleasepool();
+        if (!node) {
+            if (!p->error) parser_error(p, "AST node limit reached (max 1024)");
+            return 0;
+        }
+        parser_advance(p); /* consume '@autoreleasepool' */
+
+        /* Expect '{' */
+        if (parser_current(p).type == TOK_OPEN_BRACE) {
+            parser_advance(p);
+            node->autoreleasepool.body = parse_block_ast(p);
+            if (parser_current(p).type == TOK_CLOSE_BRACE) parser_advance(p);
+        } else {
+            /* Single-statement body (no braces) */
+            node->autoreleasepool.body = parse_statement_ast(p);
+        }
+        return node;
+    }
+
     /* Type declaration or expression statement → source range.
      * We only advance the parser to find the statement boundaries;
      * actual evaluation happens in eval_ast → eval_source_range.
@@ -1237,6 +1266,25 @@ Value eval_ast(AstNode *node, const char *source) {
                 g_ctx.error_buffer[pos] = '\0';
             }
         }
+        break;
+    }
+
+    case AST_AUTORELEASEPOOL: {
+        /* Push a new autorelease pool */
+        if (g_ctx.pool_depth >= MAX_AUTORELEASE_POOL_DEPTH) {
+            g_ctx.error_code = OBJC_INTERP_RESOURCE_ERROR;
+            cstr_copy(g_ctx.error_buffer, "@autoreleasepool nesting too deep (max 16)", OBJC_INTERP_ERROR_SIZE);
+            break;
+        }
+        g_ctx.pool_depth++;
+
+        /* Execute body */
+        if (node->autoreleasepool.body) {
+            eval_ast(node->autoreleasepool.body, source);
+        }
+
+        /* Drain: pop pool (objects "released" — no-op in interpreter) */
+        if (g_ctx.pool_depth > 0) g_ctx.pool_depth--;
         break;
     }
 

@@ -14,10 +14,8 @@
  * It does NOT support:
  *   - Preprocessor directives (#import, #define)
  *   - C structs or unions
- *   - Blocks (^{ ... })
- *   - ARC (@autoreleasepool, __strong, __weak)
- *   - @property, @synthesize
- *   - Full C type system
+ *   - ARC (__strong, __weak) — @autoreleasepool is structural only
+ *   - Full C type system (struct/union/enum)
  */
 
 #ifndef OBJC_INTERPRETER_H

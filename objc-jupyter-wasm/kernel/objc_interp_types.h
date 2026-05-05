@@ -434,7 +434,8 @@ typedef enum {
     AST_NOOP,  /* already-executed declaration (@interface, @implementation, etc.) */
     AST_PROTOCOL,  /* @protocol declaration — executed at parse time */
     AST_TRY_CATCH,  /* @try / @catch / @finally */
-    AST_THROW  /* @throw statement */
+    AST_THROW,  /* @throw statement */
+    AST_AUTORELEASEPOOL  /* @autoreleasepool { ... } */
 } AstNodeType;
 
 typedef struct AstNode AstNode;
@@ -489,6 +490,9 @@ struct AstNode {
             unsigned int source_start;
             unsigned int source_len;
         } throw_stmt;
+        struct { /* AST_AUTORELEASEPOOL */
+            AstNode *body;
+        } autoreleasepool;
         struct { /* AST_BLOCK */
             AstNode *children[128];
             unsigned int count;

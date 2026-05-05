@@ -73,6 +73,13 @@ typedef struct InterpContext {
     int exception_pending;
     Value current_exception;
 
+    /* ── Autorelease pool stack ─────────────────────────── */
+#define MAX_AUTORELEASE_POOL_DEPTH 16
+    unsigned int pool_depth;
+
+    /* ── Current method dispatch context ─────────────────── */
+    Class current_class_ptr;  /* class of the currently-executing method (for super dispatch) */
+
     /* ── String pool ────────────────────────────────────── */
     char string_pool[OBJC_INTERP_STRING_POOL_SIZE];
     unsigned int string_pool_offset;
