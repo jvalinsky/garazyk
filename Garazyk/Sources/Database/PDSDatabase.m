@@ -7,12 +7,25 @@
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Database/Migration/PDSMigrationExecutor.h"
 #import "Database/Migration/PDSServiceMigration001.h"
+#import "Database/Migration/PDSServiceMigration002.h"
 #if !defined(__linux__) && !defined(__GNUstep__)
 #import <Security/Security.h>
 #endif
 
 NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
+
+// Explicit column lists for tables with migration-added columns.
+// Using named columns instead of SELECT * prevents index-shift bugs
+// when ALTER TABLE adds columns in different orders on migrated vs.
+// fresh databases.
+static NSString *const kAccountsColumns = @"did, handle, email, password_hash, "
+    @"password_salt, access_jwt, refresh_jwt, created_at, updated_at, "
+    @"tfa_enabled, tfa_secret, recovery_codes, invite_enabled, "
+    @"age_assurance, age_verified_at, webauthn_enabled";
+
+static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
+    @"value, subject_did, created_at, indexed_at";
 
 @interface PDSDatabase ()
 
@@ -112,6 +125,7 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
         PDSMigrationExecutor *executor = [[PDSMigrationExecutor alloc] init];
         NSArray *migrations = @[
             [[PDSServiceMigration001 alloc] init],
+            [[PDSServiceMigration002 alloc] init],
             // Future migrations go here
         ];
         if (![executor executePendingMigrationsOnDatabase:self migrations:migrations error:error]) {
@@ -851,53 +865,11 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
         return;
     }
 
-    // Migrations for accounts table
-    const char *accountMigrations[] = {
-        "ALTER TABLE accounts ADD COLUMN password_salt BLOB",
-        "ALTER TABLE accounts ADD COLUMN tfa_enabled INTEGER DEFAULT 0",
-        "ALTER TABLE accounts ADD COLUMN tfa_secret BLOB",
-        "ALTER TABLE accounts ADD COLUMN recovery_codes BLOB",
-        "ALTER TABLE accounts ADD COLUMN invite_enabled INTEGER DEFAULT 0",
-        "ALTER TABLE accounts ADD COLUMN webauthn_enabled INTEGER DEFAULT 0"
-    };
-
-    for (int i = 0; i < 6; i++) {
-        rc = sqlite3_exec(_db, accountMigrations[i], NULL, NULL, &errMsg);
-        if (rc != SQLITE_OK && errMsg && strstr(errMsg, "duplicate column name") == NULL) {
-            NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
-            sqlite3_free(errMsg);
-            if (error) *error = e;
-            result = NO;
-            return;
-        }
-        if (errMsg) {
-            sqlite3_free(errMsg);
-            errMsg = NULL;
-        }
-    }
-
-    // Migrations for records table
-    const char *recordMigrations[] = {
-        "ALTER TABLE records ADD COLUMN value TEXT",
-        "ALTER TABLE records ADD COLUMN subject_did TEXT",
-        "CREATE INDEX IF NOT EXISTS idx_records_subject_did ON records(subject_did)",
-        "CREATE INDEX IF NOT EXISTS idx_records_subject_did_collection ON records(subject_did, collection)"
-    };
-
-    for (int i = 0; i < 4; i++) {
-        rc = sqlite3_exec(_db, recordMigrations[i], NULL, NULL, &errMsg);
-        if (rc != SQLITE_OK && errMsg && strstr(errMsg, "duplicate column name") == NULL && strstr(errMsg, "already exists") == NULL) {
-            NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorMigrationFailed];
-            sqlite3_free(errMsg);
-            if (error) *error = e;
-            result = NO;
-            return;
-        }
-        if (errMsg) {
-            sqlite3_free(errMsg);
-            errMsg = NULL;
-        }
-    }
+    // Inline ALTERs removed — all schema evolution is now handled by
+    // versioned migrations (PDSServiceMigration002+). Columns that
+    // were previously added here (password_salt, tfa_enabled, etc.)
+    // are already in the CREATE TABLE statements for fresh databases,
+    // and are added to old databases by the migration system.
 
     if (errMsg) sqlite3_free(errMsg);
 
@@ -1296,7 +1268,7 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
     __block id result = nil;
     [self safeExecuteSync:^{
 
-    NSString *sql = @"SELECT * FROM accounts WHERE did = ?";
+    NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM accounts WHERE did = ?", kAccountsColumns];
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
@@ -1324,7 +1296,7 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
     __block id result = nil;
     [self safeExecuteSync:^{
 
-    NSString *sql = @"SELECT * FROM accounts WHERE handle = ?";
+    NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM accounts WHERE handle = ?", kAccountsColumns];
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
@@ -1353,7 +1325,7 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
     __block id result = nil;
     [self safeExecuteSync:^{
 
-    NSString *sql = @"SELECT * FROM accounts WHERE email = ?";
+    NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM accounts WHERE email = ?", kAccountsColumns];
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
@@ -1381,7 +1353,7 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
     __block id result = nil;
     [self safeExecuteSync:^{
 
-    NSString *sql = @"SELECT * FROM accounts WHERE refresh_jwt = ?";
+    NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM accounts WHERE refresh_jwt = ?", kAccountsColumns];
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
@@ -1413,7 +1385,7 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
     __block id result = nil;
     [self safeExecuteSync:^{
 
-    NSString *sql = @"SELECT * FROM accounts ORDER BY created_at DESC";
+    NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM accounts ORDER BY created_at DESC", kAccountsColumns];
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
@@ -1443,8 +1415,8 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
     [self safeExecuteSync:^{
 
     NSString *sql = afterDid
-        ? @"SELECT * FROM accounts WHERE did > ? ORDER BY did ASC LIMIT ?"
-        : @"SELECT * FROM accounts ORDER BY did ASC LIMIT ?";
+        ? [NSString stringWithFormat:@"SELECT %@ FROM accounts WHERE did > ? ORDER BY did ASC LIMIT ?", kAccountsColumns]
+        : [NSString stringWithFormat:@"SELECT %@ FROM accounts ORDER BY did ASC LIMIT ?", kAccountsColumns];
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
@@ -1738,9 +1710,28 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
     record.rkey = @((const char *)sqlite3_column_text(stmt, 3));
     record.cid = @((const char *)sqlite3_column_text(stmt, 4));
 
-    const char *createdAtText = (const char *)sqlite3_column_text(stmt, 5);
+    // Column 5: value (TEXT)
+    const char *valueText = (const char *)sqlite3_column_text(stmt, 5);
+    if (valueText) {
+        record.value = @(valueText);
+    }
+
+    // Column 6: subject_did (TEXT)
+    const char *subjectDidText = (const char *)sqlite3_column_text(stmt, 6);
+    if (subjectDidText) {
+        record.subjectDid = @(subjectDidText);
+    }
+
+    // Column 7: created_at (TEXT)
+    const char *createdAtText = (const char *)sqlite3_column_text(stmt, 7);
     if (createdAtText) {
         record.createdAt = [[NSDateFormatter atproto_iso8601Formatter] dateFromString:@(createdAtText)];
+    }
+
+    // Column 8: indexed_at (TEXT)
+    const char *indexedAtText = (const char *)sqlite3_column_text(stmt, 8);
+    if (indexedAtText) {
+        record.indexedAt = [[NSDateFormatter atproto_iso8601Formatter] dateFromString:@(indexedAtText)];
     }
 
     return record;
@@ -2841,7 +2832,7 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
     __block id result = nil;
     [self safeExecuteSync:^{
 
-    NSString *sql = @"SELECT * FROM records WHERE uri = ?";
+    NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM records WHERE uri = ?", kRecordsColumns];
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
@@ -2910,7 +2901,7 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
     __block id result = nil;
     [self safeExecuteSync:^{
 
-    NSMutableString *sql = [NSMutableString stringWithString:@"SELECT * FROM records WHERE did = ?"];
+    NSMutableString *sql = [NSMutableString stringWithFormat:@"SELECT %@ FROM records WHERE did = ?", kRecordsColumns];
     NSMutableArray *params = [NSMutableArray arrayWithObject:did];
 
     if (collection.length > 0) {
