@@ -304,12 +304,11 @@ static BOOL didDocumentContainsHandle(DIDDocument *doc, NSString *handle) {
 
     HandleResolver *handleResolver = [[HandleResolver alloc] init];
     __block NSString *did = nil;
+    __block NSError *capturedError = nil;
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
     [handleResolver resolveHandle:identifier completion:^(NSString * _Nullable resolvedDid, NSError * _Nullable resolveError) {
         did = resolvedDid;
-        if (!did && resolveError && error && !*error) {
-            *error = resolveError;
-        }
+        capturedError = resolveError;
         dispatch_semaphore_signal(semaphore);
     }];
 
@@ -317,7 +316,7 @@ static BOOL didDocumentContainsHandle(DIDDocument *doc, NSString *handle) {
     if (did.length == 0) {
         if (errorName) *errorName = @"HandleNotFound";
         if (error && !*error) {
-            *error = [NSError errorWithDomain:@"com.atproto.identity"
+            *error = capturedError ?: [NSError errorWithDomain:@"com.atproto.identity"
                                          code:400
                                      userInfo:@{NSLocalizedDescriptionKey: @"Handle resolution failed"}];
         }
