@@ -46,10 +46,14 @@
         ];
 
         # ── Build tools ────────────────────────────────────────────────
+        pythonEnv = pkgs.python3.withPackages (ps: with ps; [
+          jupyterlab
+          jupyterlab-lsp
+        ]);
         buildTools = with pkgs; [
           cmake
           ninja
-          python3
+          pythonEnv
           nodejs
           pkg-config
         ];

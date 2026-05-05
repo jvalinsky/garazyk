@@ -231,6 +231,17 @@ stdenv.mkDerivation {
       --export=_NSConcreteStackBlock \
       --export=objc_interp_full_reset \
       --export=class_conformsToProtocol: \
+      --export=coll_create_new \
+      --export=coll_add \
+      --export=coll_make_marker \
+      --export=string_pool_alloc \
+      --export=coll_add_string_val \
+      --export=coll_add_int_val \
+      --export=coll_add_double_val \
+      --export=coll_add_bool_val \
+      --export=coll_add_marker_val \
+      --export=objc_kernel_on_fetch_complete \
+      --export=objc_kernel_has_pending_tasks \
       -L${wasiSysroot}/lib/wasm32-wasi \
       -lc \
       -o kernel.wasm \
