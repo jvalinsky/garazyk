@@ -33,7 +33,9 @@ static NSString *const PDSBlobAuditManagerErrorDomain = @"com.atproto.pds.diagno
         // Create operation queue with serial execution
         _auditQueue = [[NSOperationQueue alloc] init];
         _auditQueue.maxConcurrentOperationCount = 1;
-        _auditQueue.qualityOfService = NSQualityOfServiceBackground;
+        if ([_auditQueue respondsToSelector:@selector(setQualityOfService:)]) {
+            _auditQueue.qualityOfService = NSQualityOfServiceBackground;
+        }
     }
     return self;
 }
