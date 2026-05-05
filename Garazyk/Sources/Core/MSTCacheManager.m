@@ -7,7 +7,11 @@
 
 @interface MSTCacheManager ()
 @property (nonatomic, strong) NSMutableDictionary<NSString *, MST *> *cache;
+#if defined(__linux__) || defined(__GNUstep__)
+@property (nonatomic, assign) dispatch_queue_t queue;
+#else
 @property (nonatomic, strong) dispatch_queue_t queue;
+#endif
 @end
 
 @implementation MSTCacheManager
