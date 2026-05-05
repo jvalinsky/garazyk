@@ -4,7 +4,6 @@
 #import "Compat/PDSTypes.h"
 
 #ifdef LINUX
-#include <CoreGraphics/CoreGraphics.h>
 // GNUstep NSTask doesn't have executableURL; use setLaunchPath: instead
 #define PDS_TASK_SET_EXECUTABLE(task, path) task.launchPath = path
 #define PDS_TASK_LAUNCH(task, error) ([task launch], YES)
@@ -13,11 +12,16 @@
 #define PDS_TASK_LAUNCH(task, error) [task launchAndReturnError:error]
 #endif
 
+// CGSize compat for GNUstep (no CoreGraphics)
+#ifndef __APPLE__
+typedef struct CGSize { double width; double height; } CGSize;
+#endif
+
 #ifndef CGSizeZero
 #define CGSizeZero ((CGSize){0, 0})
 #endif
 #ifndef CGSizeMake
-#define CGSizeMake(w, h) ((CGSize){(w), (h)})
+#define CGSizeMake(w, h) ((CGSize){(CGFloat)(w), (CGFloat)(h)})
 #endif
 
 NSString * const FFmpegTranscoderErrorDomain = @"com.atproto.video.transcoder.ffmpeg";
