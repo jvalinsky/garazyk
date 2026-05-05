@@ -83,7 +83,7 @@ typedef struct InterpContext {
     Value current_exception;
 
     /* ── Autorelease pool stack ─────────────────────────── */
-#define MAX_AUTORELEASE_POOL_DEPTH 16
+    AutoreleasePool pools[MAX_AUTORELEASE_POOL_DEPTH];
     unsigned int pool_depth;
 
     /* ── Current method dispatch context ─────────────────── */
@@ -94,6 +94,18 @@ typedef struct InterpContext {
     char class_hierarchy_class[MAX_CLASS_HIERARCHY][64]; /* class_name */
     char class_hierarchy_super[MAX_CLASS_HIERARCHY][64]; /* super_name */
     unsigned int class_hierarchy_count;
+
+    /* ── Class conformance table ────────────────────────── */
+    char class_conformances[OBJC_INTERP_MAX_VARS][8][64];
+    unsigned int class_conforms_count[OBJC_INTERP_MAX_VARS];
+
+    /* ── Enumerators ────────────────────────────────────── */
+    EnumeratorState enumerators[MAX_ENUMERATORS];
+    unsigned int next_enumerator_id;
+
+    /* ── Invocations ────────────────────────────────────── */
+    InvocationState invocations[MAX_INVOCATIONS];
+    unsigned int next_invocation_id;
 
     /* ── String pool ────────────────────────────────────── */
     char string_pool[OBJC_INTERP_STRING_POOL_SIZE];

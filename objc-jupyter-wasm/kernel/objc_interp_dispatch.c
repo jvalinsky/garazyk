@@ -110,7 +110,6 @@ unsigned int find_interpreter_method(SEL sel, Value target, id receiver,
         recv_cls = (Class)target.cls_val;
         target_class_name = class_name_for_ptr(recv_cls);
     } else if (target.is_id && receiver != 0) {
-        const char *recv_str = (const char *)receiver;
         if (is_string_pool_pointer(receiver)) {
             recv_cls = class_for_fdobj_marker(receiver);
         } else {
@@ -123,7 +122,7 @@ unsigned int find_interpreter_method(SEL sel, Value target, id receiver,
 
     for (mi = 0; mi < g_ctx.method_count; mi++) {
         MethodImpl *method = &g_ctx.methods[mi];
-        if (method->selector != sel || method->source_len == 0) continue;
+        if (method->selector != sel) continue;
 
         /* Check if method matches the target */
         if (target.is_class && method->is_class_method) {
@@ -483,12 +482,10 @@ int class_conforms_to_protocol(const char *class_name, const char *protocol_name
 
     /* Check class_conformances table (was <Protocol> declared?) */
     {
-        extern char class_conformances[OBJC_INTERP_MAX_CLASSES][8][64];
-        extern unsigned int class_conforms_count[OBJC_INTERP_MAX_CLASSES];
         unsigned int cc;
         int name_conforms = 0;
-        for (cc = 0; cc < class_conforms_count[ci]; cc++) {
-            if (cstr_eq(class_conformances[ci][cc], protocol_name)) {
+        for (cc = 0; cc < g_ctx.class_conforms_count[ci]; cc++) {
+            if (cstr_eq(g_ctx.class_conformances[ci][cc], protocol_name)) {
                 name_conforms = 1;
                 break;
             }
@@ -502,14 +499,16 @@ int class_conforms_to_protocol(const char *class_name, const char *protocol_name
     {
         unsigned int ri;
         unsigned int mi;
+        Class target_cls = g_ctx.vars[ci].cls;
+
         for (ri = 0; ri < g_ctx.protocols[pi].required_count; ri++) {
             const char *req_sel = g_ctx.protocols[pi].required_methods[ri];
             int method_found = 0;
 
             /* Check interpreter-registered methods (from @implementation) */
             for (mi = 0; mi < g_ctx.method_count; mi++) {
-                if (g_ctx.methods[mi].class_ptr == (Class)(unsigned long)(100 + ci) &&
-                    cstr_eq(g_ctx.methods[mi].source, req_sel)) {
+                if (g_ctx.methods[mi].class_ptr == target_cls &&
+                    cstr_eq(sel_getName(g_ctx.methods[mi].selector), req_sel)) {
                     method_found = 1;
                     break;
                 }

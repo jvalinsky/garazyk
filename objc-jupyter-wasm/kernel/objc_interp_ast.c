@@ -927,8 +927,8 @@ Value eval_source_range(unsigned int start, unsigned int len,
         Token tok = parser_current(&p);
         if (tok.type == TOK_IF || tok.type == TOK_WHILE ||
             tok.type == TOK_FOR || tok.type == TOK_SWITCH ||
-            tok.type == TOK_DO) {
-            /* Control flow: use two-phase AST approach.
+            tok.type == TOK_DO || tok.type == TOK_AT_KEYWORD) {
+            /* Control flow or @keyword: use two-phase AST approach.
              * Save and restore AST count to avoid corrupting
              * the outer AST arena. */
             unsigned int saved_ast_count = g_ctx.ast_count;
@@ -991,7 +991,7 @@ Value eval_ast(AstNode *node, const char *source) {
                 g_ctx.continue_pending = 0;
                 continue; /* re-evaluate condition */
             }
-            if (g_ctx.return_pending) return last;
+            if (g_ctx.return_pending || g_ctx.exception_pending) return last;
             if (interp_should_interrupt()) return last;
         }
         break;
@@ -1010,7 +1010,7 @@ Value eval_ast(AstNode *node, const char *source) {
                 g_ctx.continue_pending = 0;
                 /* skip to condition check */
             }
-            if (g_ctx.return_pending) return last;
+            if (g_ctx.return_pending || g_ctx.exception_pending) return last;
             if (interp_should_interrupt()) return last;
             {
                 Value cond = eval_ast(node->do_while_stmt.condition, source);
@@ -1045,7 +1045,7 @@ Value eval_ast(AstNode *node, const char *source) {
                 g_ctx.continue_pending = 0;
                 /* Skip to increment */
             }
-            if (g_ctx.return_pending) return last;
+            if (g_ctx.return_pending || g_ctx.exception_pending) return last;
             if (interp_should_interrupt()) return last;
 
             /* Increment */
@@ -1055,12 +1055,7 @@ Value eval_ast(AstNode *node, const char *source) {
     }
 
     case AST_FOR_IN: {
-        /* for (type var in collection) { body }
-         * Evaluate the collection expression, then iterate.
-         * For NSArray/NSMutableArray: iterate by index, yield elements.
-         * For NSDictionary/NSMutableDictionary: iterate by keys.
-         * For NSSet: iterate by elements.
-         * For NSString: iterate by character. */
+        /* for (type var in collection) { body } */
         Value coll = eval_source_range(node->for_in.collection_start,
                                        node->for_in.collection_len, source,
                                        count_lines_up_to(source, node->for_in.collection_start));
@@ -1075,14 +1070,14 @@ Value eval_ast(AstNode *node, const char *source) {
             if (cid == 0) cid = coll_id_from_marker(coll_str, "NSMutDict:");
             if (cid == 0) cid = coll_id_from_marker(coll_str, "NSSet:");
             if (cid == 0) {
-                /* Not a collection marker — check if it's a string */
                 is_nsstring = (!cstr_eq_n(coll_str, "NSNumber:", 9) &&
-                               !cstr_eq_n(coll_str, "FDObj:", 6));
+                               !cstr_eq_n(coll_str, "FDObj:", 6) &&
+                               !cstr_eq_n(coll_str, "NSEnum:", 7));
             }
         }
 
         if (cid > 0) {
-            /* Collection iteration using side table */
+            /* Built-in collection iteration */
             unsigned int cnt = coll_count(cid);
             unsigned int idx;
             for (idx = 0; idx < cnt; idx++) {
@@ -1090,45 +1085,27 @@ Value eval_ast(AstNode *node, const char *source) {
                 if (entry_idx < 0) break;
                 InterpVar *var = interp_get_or_create_var(node->for_in.var_name);
                 if (var) {
-                    /* For dicts, yield the key; for arrays/sets, yield the element */
-                    var->is_id = g_ctx.coll_entries[entry_idx].key.is_id;
-                    var->value = g_ctx.coll_entries[entry_idx].key.obj_val;
-                    var->is_int = g_ctx.coll_entries[entry_idx].key.is_int;
-                    var->int_value = g_ctx.coll_entries[entry_idx].key.int_val;
-                    var->is_class = g_ctx.coll_entries[entry_idx].key.is_class;
-                    var->cls = g_ctx.coll_entries[entry_idx].key.cls_val;
-                    var->is_sel = g_ctx.coll_entries[entry_idx].key.is_sel;
-                    var->sel = g_ctx.coll_entries[entry_idx].key.sel_val;
+                    interp_set_var_from_value(var, g_ctx.coll_entries[entry_idx].key);
                 }
                 g_ctx.break_pending = 0;
                 g_ctx.continue_pending = 0;
                 eval_ast(node->for_in.body, source);
                 if (g_ctx.break_pending) { g_ctx.break_pending = 0; break; }
                 if (g_ctx.continue_pending) { g_ctx.continue_pending = 0; continue; }
-                if (g_ctx.return_pending) return last;
+                if (g_ctx.return_pending || g_ctx.exception_pending) return last;
                 if (interp_should_interrupt()) return last;
             }
         } else if (is_nsstring) {
-            /* NSString: iterate by character */
+            /* NSString character iteration */
             unsigned int len = (unsigned int)cstr_len(coll_str);
             unsigned int ci;
             for (ci = 0; ci < len; ci++) {
                 InterpVar *var = interp_get_or_create_var(node->for_in.var_name);
                 if (var) {
-                    /* Store single character as a string in the pool */
-                    {
-                        char *ch_ptr = string_pool_alloc(2);
-                        if (ch_ptr == 0) {
-                            g_ctx.error_code = OBJC_INTERP_RESOURCE_ERROR;
-                            cstr_copy(g_ctx.error_buffer, "string pool exhausted — restart kernel", OBJC_INTERP_ERROR_SIZE);
-                            interp_emit_stream("warning: string pool exhausted — restart kernel\n", cstr_len("warning: string pool exhausted — restart kernel\n"));
-                            break;
-                        }
-                        ch_ptr[0] = coll_str[ci];
-                        ch_ptr[1] = '\0';
-                        var->is_id = 1;
-                        var->value = (id)ch_ptr;
-                        var->is_int = 0;
+                    char *ch_ptr = string_pool_alloc(2);
+                    if (ch_ptr) {
+                        ch_ptr[0] = coll_str[ci]; ch_ptr[1] = '\0';
+                        interp_set_var_from_value(var, value_from_id((id)ch_ptr));
                     }
                 }
                 g_ctx.break_pending = 0;
@@ -1136,11 +1113,52 @@ Value eval_ast(AstNode *node, const char *source) {
                 eval_ast(node->for_in.body, source);
                 if (g_ctx.break_pending) { g_ctx.break_pending = 0; break; }
                 if (g_ctx.continue_pending) { g_ctx.continue_pending = 0; continue; }
-                if (g_ctx.return_pending) return last;
+                if (g_ctx.return_pending || g_ctx.exception_pending) return last;
                 if (interp_should_interrupt()) return last;
             }
-        } else {
-            /* Unknown collection type — just skip */
+        } else if (coll.is_id && coll.obj_val != 0) {
+            /* Protocol-based iteration: objectEnumerator + nextObject */
+            Value enumerator;
+            {
+                /* Use a temporary variable to send the message */
+                InterpVar *tmp = interp_get_or_create_var("__for_in_recv");
+                if (tmp) {
+                    tmp->is_id = 1; tmp->value = coll.obj_val;
+                    const char *src = "[__for_in_recv objectEnumerator]";
+                    enumerator = eval_source_range(0, (unsigned int)cstr_len(src), src, 0);
+                } else {
+                    enumerator = value_void();
+                }
+            }
+
+            if (enumerator.is_id && enumerator.obj_val != 0) {
+                while (1) {
+                    Value next_obj;
+                    InterpVar *tmp = interp_get_or_create_var("__for_in_enum");
+                    if (tmp) {
+                        tmp->is_id = 1; tmp->value = enumerator.obj_val;
+                        const char *src = "[__for_in_enum nextObject]";
+                        next_obj = eval_source_range(0, (unsigned int)cstr_len(src), src, 0);
+                    } else {
+                        break;
+                    }
+
+                    if (!next_obj.is_id || next_obj.obj_val == 0) break;
+
+                    InterpVar *var = interp_get_or_create_var(node->for_in.var_name);
+                    if (var) {
+                        interp_set_var_from_value(var, next_obj);
+                    }
+
+                    g_ctx.break_pending = 0;
+                    g_ctx.continue_pending = 0;
+                    eval_ast(node->for_in.body, source);
+                    if (g_ctx.break_pending) { g_ctx.break_pending = 0; break; }
+                    if (g_ctx.continue_pending) { g_ctx.continue_pending = 0; continue; }
+                    if (g_ctx.return_pending || g_ctx.exception_pending) return last;
+                    if (interp_should_interrupt()) return last;
+                }
+            }
         }
         break;
     }
@@ -1281,7 +1299,10 @@ Value eval_ast(AstNode *node, const char *source) {
             cstr_copy(g_ctx.error_buffer, "@autoreleasepool nesting too deep (max 16)", OBJC_INTERP_ERROR_SIZE);
             break;
         }
-        g_ctx.pool_depth++;
+        {
+            AutoreleasePool *pool = &g_ctx.pools[g_ctx.pool_depth++];
+            pool->count = 0;
+        }
 
         /* Execute body */
         if (node->autoreleasepool.body) {
@@ -1344,7 +1365,7 @@ Value eval_ast(AstNode *node, const char *source) {
                         g_ctx.break_pending = 0; /* consume the break — it exits switch, not loop */
                         break;
                     }
-                    if (g_ctx.return_pending) return last;
+                    if (g_ctx.return_pending || g_ctx.exception_pending) return last;
                 }
                 /* Fall through to default if no break */
                 if (!switch_break && !g_ctx.return_pending &&

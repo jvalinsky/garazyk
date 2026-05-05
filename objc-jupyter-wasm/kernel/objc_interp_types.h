@@ -337,9 +337,30 @@ typedef struct {
     char class_name[64]; /* which class this property belongs to */
     int is_int;          /* 1 if type is int */
     int synthesized;     /* 1 if @synthesize was seen — enables property dispatch */
+    int is_readonly;
+    int is_copy;
+    int is_strong;
+    int is_nonatomic;
 } PropertyDecl;
 
 #define MAX_PROPERTIES 64
+
+typedef struct {
+    unsigned int coll_id;
+    unsigned int index;
+    int active;
+} EnumeratorState;
+
+#define MAX_ENUMERATORS 16
+
+typedef struct {
+    SEL selector;
+    id receiver;
+    Value args[16];
+    unsigned int arg_count;
+} InvocationState;
+
+#define MAX_INVOCATIONS 16
 
 /* ── Declared instance variables (from @interface { } blocks) ──── */
 
@@ -430,6 +451,16 @@ typedef struct {
     char optional_methods[MAX_PROTOCOL_METHODS][256];
     unsigned int optional_count;
 } ProtocolDecl;
+
+/* ── Autorelease pool stack ─────────────────────────── */
+
+#define MAX_AUTORELEASE_POOL_DEPTH 16
+#define MAX_AUTORELEASE_OBJECTS 256
+
+typedef struct {
+    unsigned int object_markers[MAX_AUTORELEASE_OBJECTS];
+    unsigned int count;
+} AutoreleasePool;
 
 /* ── Exception/try-catch state ────────────────────────────────── */
 

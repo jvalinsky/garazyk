@@ -426,6 +426,7 @@ Value parse_message_send(Parser *p) {
 
                         for (pi = 0; pi < g_ctx.property_count; pi++) {
                             if (g_ctx.properties[pi].synthesized &&
+                                !g_ctx.properties[pi].is_readonly &&
                                 cstr_eq(prop_name, g_ctx.properties[pi].name) &&
                                 property_matches_class(receiver, pi)) {
                                 instance_var_set(receiver,
@@ -477,6 +478,257 @@ Value parse_message_send(Parser *p) {
                 }
                 if (cstr_eq(cls_name, "NSSet")) {
                     return value_from_id(coll_make_marker("NSSet:", cid));
+                }
+            }
+            return value_from_id(receiver);
+        }
+
+        /* Built-in: [obj conformsToProtocol:] */
+        if (cstr_eq(sel_name, "conformsToProtocol:") && arg_count == 1) {
+            const char *proto_arg = (const char *)args[0];
+            if (proto_arg) {
+                const char *protocol_name = 0;
+                if (cstr_starts(proto_arg, "FDProt:")) {
+                    protocol_name = proto_arg + 7;
+                } else if (is_string_pool_pointer(proto_arg) && !cstr_starts(proto_arg, "FDObj:")) {
+                    /* Assume it's a string object with the protocol name */
+                    protocol_name = proto_arg;
+                }
+
+                if (protocol_name) {
+                    const char *class_name = 0;
+                    if (target.is_class) {
+                        /* Class target: find class name by pointer */
+                        unsigned int vi;
+                        for (vi = 0; vi < g_ctx.var_count; vi++) {
+                            if (g_ctx.vars[vi].is_class && g_ctx.vars[vi].cls == target.cls_val) {
+                                class_name = g_ctx.vars[vi].name;
+                                break;
+                            }
+                        }
+                    } else if (target.is_id && receiver != 0 && is_string_pool_pointer(receiver) && cstr_starts((const char *)receiver, "FDObj:")) {
+                        class_name = ((const char *)receiver) + 6;
+                    }
+
+                    if (class_name) {
+                        if (class_conforms_to_protocol(class_name, protocol_name)) {
+                            return value_from_int(1);
+                        }
+                    }
+                }
+            }
+            return value_from_int(0);
+        }
+
+        /* Built-in: [obj objectEnumerator] and [obj allObjects] */
+        if (target.is_id && receiver != 0) {
+            const char *s = (const char *)receiver;
+            unsigned int cid = 0;
+            if (cstr_starts(s, "NSArr:")) cid = coll_id_from_marker(s, "NSArr:");
+            else if (cstr_starts(s, "NSMutArr:")) cid = coll_id_from_marker(s, "NSMutArr:");
+            else if (cstr_starts(s, "NSDict:")) cid = coll_id_from_marker(s, "NSDict:");
+            else if (cstr_starts(s, "NSMutDict:")) cid = coll_id_from_marker(s, "NSMutDict:");
+            else if (cstr_starts(s, "NSSet:")) cid = coll_id_from_marker(s, "NSSet:");
+
+            if (cid > 0) {
+                if (cstr_eq(sel_name, "objectEnumerator")) {
+                    unsigned int eid = g_ctx.next_enumerator_id % MAX_ENUMERATORS;
+                    g_ctx.enumerators[eid].coll_id = cid;
+                    g_ctx.enumerators[eid].index = 0;
+                    g_ctx.enumerators[eid].active = 1;
+                    g_ctx.next_enumerator_id++;
+                    
+                    char *buf = string_pool_alloc(24);
+                    if (buf) {
+                        cstr_copy(buf, "NSEnum:", 24);
+                        {
+                            char tmp[12]; int ti = 0, v = (int)eid;
+                            if (v == 0) buf[7] = '0', buf[8] = '\0';
+                            else {
+                                while (v > 0) { tmp[ti++] = '0' + (v % 10); v /= 10; }
+                                int j = 0; while (ti > 0) buf[7 + j++] = tmp[--ti];
+                                buf[7 + j] = '\0';
+                            }
+                        }
+                        return value_from_id((id)buf);
+                    }
+                }
+                if (cstr_eq(sel_name, "allObjects")) {
+                    unsigned int new_cid = g_ctx.next_coll_id++;
+                    unsigned int count = coll_count(cid);
+                    unsigned int i;
+                    Value dummy = value_void();
+                    for (i = 0; i < count; i++) {
+                        int eidx = coll_get_nth(cid, i);
+                        if (eidx >= 0) coll_add(new_cid, g_ctx.coll_entries[eidx].key, dummy);
+                    }
+                    return value_from_id(coll_make_marker("NSArr:", new_cid));
+                }
+            }
+        }
+
+        /* Built-in: [NSEnum nextObject] */
+        if (target.is_id && receiver != 0 && cstr_starts((const char *)receiver, "NSEnum:")) {
+            if (cstr_eq(sel_name, "nextObject")) {
+                const char *s = (const char *)receiver;
+                unsigned int eid = 0;
+                const char *p = s + 7;
+                while (*p >= '0' && *p <= '9') { eid = eid * 10 + (*p - '0'); p++; }
+                
+                if (eid < MAX_ENUMERATORS && g_ctx.enumerators[eid].active) {
+                    unsigned int cid = g_ctx.enumerators[eid].coll_id;
+                    unsigned int idx = g_ctx.enumerators[eid].index;
+                    unsigned int count = coll_count(cid);
+                    if (idx < count) {
+                        int eidx = coll_get_nth(cid, idx);
+                        g_ctx.enumerators[eid].index++;
+                        if (eidx >= 0) return g_ctx.coll_entries[eidx].key;
+                    }
+                    g_ctx.enumerators[eid].active = 0;
+                }
+                return value_from_id(0);
+            }
+        }
+
+        /* Built-in: [obj methodSignatureForSelector:] */
+        if (cstr_eq(sel_name, "methodSignatureForSelector:") && target.is_id && arg_count >= 1) {
+            SEL fwd_sel = sel_registerName("forwardInvocation:");
+            if (find_interpreter_method(fwd_sel, target, receiver, 0) < g_ctx.method_count) {
+                return value_from_id((id)"FDSig:v@:@");
+            }
+            return value_from_id(0);
+        }
+
+        /* Built-in: [NSInvocation invocationWithMethodSignature:] */
+        if (IS_FOUNDATION_CLASS("NSInvocation") && target.is_class && cstr_eq(sel_name, "invocationWithMethodSignature:")) {
+            unsigned int inv_id = g_ctx.next_invocation_id % MAX_INVOCATIONS;
+            g_ctx.invocations[inv_id].selector = 0;
+            g_ctx.invocations[inv_id].receiver = 0;
+            g_ctx.invocations[inv_id].arg_count = 0;
+            g_ctx.next_invocation_id++;
+            char *buf = string_pool_alloc(24);
+            if (buf) {
+                cstr_copy(buf, "FDInv:", 24);
+                {
+                    char tmp[12]; int ti = 0, v = (int)inv_id;
+                    if (v == 0) buf[6] = '0', buf[7] = '\0';
+                    else {
+                        while (v > 0) { tmp[ti++] = '0' + (v % 10); v /= 10; }
+                        int j = 0; while (ti > 0) buf[6 + j++] = tmp[--ti];
+                        buf[6 + j] = '\0';
+                    }
+                }
+                return value_from_id((id)buf);
+            }
+        }
+
+        if (target.is_id && receiver != 0 && cstr_starts((const char *)receiver, "FDInv:")) {
+            unsigned int inv_id = 0;
+            const char *p_inv = ((const char *)receiver) + 6;
+            while (*p_inv >= '0' && *p_inv <= '9') { inv_id = inv_id * 10 + (*p_inv - '0'); p_inv++; }
+            
+            if (inv_id < MAX_INVOCATIONS) {
+                if (cstr_eq(sel_name, "setSelector:") && arg_count >= 1) {
+                    if (keyword_args[0].is_sel) g_ctx.invocations[inv_id].selector = keyword_args[0].sel_val;
+                    return value_void();
+                }
+                if (cstr_eq(sel_name, "selector")) {
+                    return value_from_sel(g_ctx.invocations[inv_id].selector);
+                }
+                if (cstr_eq(sel_name, "setTarget:") && arg_count >= 1) {
+                    if (keyword_args[0].is_id) g_ctx.invocations[inv_id].receiver = keyword_args[0].obj_val;
+                    return value_void();
+                }
+                if (cstr_eq(sel_name, "target")) {
+                    return value_from_id(g_ctx.invocations[inv_id].receiver);
+                }
+                if (cstr_eq(sel_name, "getArgument:atIndex:") && arg_count >= 2) {
+                    /* Not fully supported (pointers), but return the Value for reflection if possible */
+                    return value_void();
+                }
+                if (cstr_eq(sel_name, "setArgument:atIndex:") && arg_count >= 2) {
+                    int idx = keyword_args[1].is_int ? keyword_args[1].int_val : 0;
+                    if (idx >= 2 && idx - 2 < 16) {
+                        g_ctx.invocations[inv_id].args[idx - 2] = keyword_args[0];
+                        if (idx - 2 + 1 > g_ctx.invocations[inv_id].arg_count)
+                            g_ctx.invocations[inv_id].arg_count = (unsigned int)(idx - 2 + 1);
+                    }
+                    return value_void();
+                }
+                if (cstr_eq(sel_name, "invoke") || cstr_eq(sel_name, "invokeWithTarget:")) {
+                    id invoke_receiver = g_ctx.invocations[inv_id].receiver;
+                    if (cstr_eq(sel_name, "invokeWithTarget:")) invoke_receiver = keyword_args[0].obj_val;
+                    
+                    if (invoke_receiver) {
+                        /* Use eval_source_range trick to re-dispatch */
+                        InterpVar *tmp = interp_get_or_create_var("__inv_recv");
+                        if (tmp) {
+                            tmp->is_id = 1; tmp->value = invoke_receiver;
+                            const char *s_name = sel_getName(g_ctx.invocations[inv_id].selector);
+                            /* This is complex to build source with multiple args.
+                             * For now, just support 0 or 1 args for forwarding. */
+                            if (g_ctx.invocations[inv_id].arg_count == 0) {
+                                char buf[128];
+                                cstr_copy(buf, "[__inv_recv ", 128);
+                                cstr_copy(buf + 12, s_name, 110);
+                                unsigned int blen = cstr_len(buf);
+                                buf[blen++] = ']'; buf[blen] = '\0';
+                                return eval_source_range(0, blen, buf, 0);
+                            }
+                        }
+                    }
+                    return value_void();
+                }
+            }
+        }
+
+        /* Built-in: [obj valueForKey:] */
+        if (cstr_eq(sel_name, "valueForKey:") && target.is_id && receiver != 0 && arg_count == 1) {
+            const char *key = (const char *)args[0];
+            if (key) {
+                unsigned int pi;
+                /* 1. Try property getter */
+                for (pi = 0; pi < g_ctx.property_count; pi++) {
+                    if (cstr_eq(g_ctx.properties[pi].name, key) && property_matches_class(receiver, pi)) {
+                        Value *v = instance_var_get(receiver, g_ctx.properties[pi].name);
+                        if (v) return *v;
+                        if (g_ctx.properties[pi].is_int) return value_from_int(0);
+                        return value_from_id(0);
+                    }
+                }
+                /* 2. Try raw ivar access */
+                Value *v = instance_var_get(receiver, key);
+                if (v) return *v;
+            }
+            return value_from_id(0);
+        }
+
+        /* Built-in: [obj setValue:forKey:] */
+        if (cstr_eq(sel_name, "setValue:forKey:") && target.is_id && receiver != 0 && arg_count == 2) {
+            const char *key = (const char *)args[1];
+            if (key) {
+                unsigned int pi;
+                /* 1. Try property setter */
+                for (pi = 0; pi < g_ctx.property_count; pi++) {
+                    if (cstr_eq(g_ctx.properties[pi].name, key) && property_matches_class(receiver, pi)) {
+                        instance_var_set(receiver, g_ctx.properties[pi].name, keyword_args[0]);
+                        return value_void();
+                    }
+                }
+                /* 2. Try raw ivar access */
+                instance_var_set(receiver, key, keyword_args[0]);
+            }
+            return value_void();
+        }
+
+        /* Built-in: [obj autorelease] → add to current pool */
+        if (cstr_eq(sel_name, "autorelease") && target.is_id && receiver != 0) {
+            if (g_ctx.pool_depth > 0) {
+                AutoreleasePool *pool = &g_ctx.pools[g_ctx.pool_depth - 1];
+                if (pool->count < MAX_AUTORELEASE_OBJECTS) {
+                    /* Store the object marker as a uintptr_t cast to unsigned int.
+                     * String pool pointers are already within 32-bit range. */
+                    pool->object_markers[pool->count++] = (unsigned int)(uintptr_t)receiver;
                 }
             }
             return value_from_id(receiver);
@@ -3234,11 +3486,61 @@ Value parse_message_send(Parser *p) {
             return value_void();
         }
 
-        /* Fall through: no built-in, interpreter method, or property matched.
-         * Runtime IMP dispatch is not used because WASM enforces exact
-         * function signatures — variadic IMP calls cause signature
-         * mismatch traps. All supported methods must be handled as
-         * built-ins or interpreter-registered methods above. */
+        /* NSObject: drain / release / autorelease ... (existing no-ops) */
+
+        /* Fall through: check for forwarding before reporting error */
+        if (target.is_id && receiver != 0 && is_string_pool_pointer(receiver) && cstr_starts((const char *)receiver, "FDObj:")) {
+             /* 1. Try forwardingTargetForSelector: */
+             SEL fwd_target_sel = sel_registerName("forwardingTargetForSelector:");
+             unsigned int mi_target = find_interpreter_method(fwd_target_sel, target, receiver, 0);
+             if (mi_target < g_ctx.method_count) {
+                 Value sel_val = value_from_sel(sel);
+                 Value fwd_target = execute_interpreter_method(p, &g_ctx.methods[mi_target], fwd_target_sel, receiver, &sel_val, 1, 0);
+                 if (fwd_target.is_id && fwd_target.obj_val != 0 && fwd_target.obj_val != receiver) {
+                     /* Re-dispatch to new target using eval_source_range trick */
+                     InterpVar *tmp = interp_get_or_create_var("__fwd_target");
+                     if (tmp) {
+                         tmp->is_id = 1; tmp->value = fwd_target.obj_val;
+                         /* Build message send source ... this is complex for many args.
+                          * For now, just support simple re-dispatch if target changed. */
+                     }
+                 }
+             }
+
+             /* 2. Try forwardInvocation: */
+             SEL fwd_sel = sel_registerName("forwardInvocation:");
+             unsigned int mi = find_interpreter_method(fwd_sel, target, receiver, 0);
+             if (mi < g_ctx.method_count) {
+                 unsigned int inv_id = g_ctx.next_invocation_id % MAX_INVOCATIONS;
+                 g_ctx.invocations[inv_id].selector = sel;
+                 g_ctx.invocations[inv_id].receiver = receiver;
+                 g_ctx.invocations[inv_id].arg_count = arg_count;
+                 {
+                     unsigned int ai;
+                     for (ai = 0; ai < arg_count && ai < 16; ai++)
+                         g_ctx.invocations[inv_id].args[ai] = keyword_args[ai];
+                 }
+                 g_ctx.next_invocation_id++;
+
+                 char *buf = string_pool_alloc(24);
+                 if (buf) {
+                     cstr_copy(buf, "FDInv:", 24);
+                     {
+                         char tmp[12]; int ti = 0, v = (int)inv_id;
+                         if (v == 0) buf[6] = '0', buf[7] = '\0';
+                         else {
+                             while (v > 0) { tmp[ti++] = '0' + (v % 10); v /= 10; }
+                             int j = 0; while (ti > 0) buf[6 + j++] = tmp[--ti];
+                             buf[6 + j] = '\0';
+                         }
+                     }
+                     Value inv_val = value_from_id((id)buf);
+                     return execute_interpreter_method(p, &g_ctx.methods[mi], fwd_sel, receiver, &inv_val, 1, 0);
+                 }
+             }
+        }
+
+        /* Fall through: report error */
         {
             const char *cls_name = "unknown";
             if (target_class_name) {
