@@ -2,6 +2,7 @@
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/CID.h"
 #import "Core/ATProtoBase32.h"
+#import "Debug/PDSLogger.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -48,8 +49,26 @@ static BOOL isBase32Char(unichar c) {
         return @"";
     }
     
+    // Debug: print CBOR hex for DID derivation debugging
+    NSMutableString *hexStr = [NSMutableString stringWithCapacity:cborData.length * 2];
+    const unsigned char *bytes = cborData.bytes;
+    for (NSUInteger i = 0; i < cborData.length; i++) {
+        [hexStr appendFormat:@"%02x", bytes[i]];
+    }
+    PDS_LOG_INFO(@"DID derivation CBOR hex (%lu bytes): %@", (unsigned long)cborData.length, hexStr);
+    
     NSData *hash = [CID rawSha256:cborData];
+    
+    // Debug: print SHA256 hex
+    NSMutableString *hashHex = [NSMutableString stringWithCapacity:hash.length * 2];
+    const unsigned char *hashBytes = hash.bytes;
+    for (NSUInteger i = 0; i < hash.length; i++) {
+        [hashHex appendFormat:@"%02x", hashBytes[i]];
+    }
+    PDS_LOG_INFO(@"DID derivation SHA256: %@", hashHex);
+    
     NSString *base32 = [ATProtoBase32 encodeData:hash];
+    PDS_LOG_INFO(@"DID derivation base32 full: %@", base32);
     // did:plc is first 24 chars of base32 hash
     if (base32.length > 24) {
         base32 = [base32 substringToIndex:24];

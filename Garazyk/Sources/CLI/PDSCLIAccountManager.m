@@ -327,10 +327,37 @@
         @"prev": [NSNull null]
     };
 
-    // 4. Generate DID (Derive from genesis data)
-    NSString *did = [PLCOperation calculateDIDForData:opData];
+    // 4. Sign the operation first (DID is derived from the SIGNED genesis op)
+    NSError *cborError = nil;
+    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:opData error:&cborError];
+    if (!cborData) {
+        if (error) *error = cborError;
+        return nil;
+    }
     
-    // 5. POST genesis operation to PLC Server
+    NSData *sha256Hash = [CryptoUtils sha256:cborData];
+    if (!sha256Hash) {
+        if (error) *error = [NSError errorWithDomain:@"PDSCLI" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Hash failure"}];
+        return nil;
+    }
+    
+    NSError *sigError = nil;
+    // Genesis operations must be signed by a rotation key, not the atproto signing key
+    NSData *signature = [[Secp256k1 shared] signHash:sha256Hash withPrivateKey:rotationKeyPair.privateKey error:&sigError];
+    if (!signature) {
+        if (error) *error = sigError;
+        return nil;
+    }
+    
+    NSMutableDictionary *signedOp = [opData mutableCopy];
+    signedOp[@"sig"] = [CryptoUtils base64URLEncode:signature];
+    
+    // 5. Generate DID from the SIGNED genesis operation
+    // Per the did:plc spec, the DID is SHA-256(DAG-CBOR(signedGenesisOp))[:15] in base32lower
+    NSString *did = [PLCOperation calculateDIDForData:signedOp];
+    PDS_LOG_INFO(@"Calculated DID from signed genesis op: %@", did);
+    
+    // 6. POST genesis operation to PLC Server
     PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
     NSString *plcUrl = [NSProcessInfo processInfo].environment[@"PDS_PLC_URL"] ?: config.plcURL;
     
@@ -343,37 +370,13 @@
         plcUrl = @"http://127.0.0.1:2582";
     }
     NSString *urlStr = [NSString stringWithFormat:@"%@/%@", plcUrl, did];
-    
-    // Encode and sign the operation
-    NSError *cborError = nil;
-    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:opData error:&cborError];
-    if (!cborData) {
-        if (error) *error = cborError;
-        return nil;
-    }
-    
-    NSData *sha256 = [CryptoUtils sha256:cborData];
-    if (!sha256) {
-        if (error) *error = [NSError errorWithDomain:@"PDSCLI" code:1 userInfo:@{NSLocalizedDescriptionKey: @"Hash failure"}];
-        return nil;
-    }
-    
-    NSError *sigError = nil;
-    // Genesis operations must be signed by a rotation key, not the atproto signing key
-    NSData *signature = [[Secp256k1 shared] signHash:sha256 withPrivateKey:rotationKeyPair.privateKey error:&sigError];
-    if (!signature) {
-        if (error) *error = sigError;
-        return nil;
-    }
-    
-    NSMutableDictionary *payload = [opData mutableCopy];
-    payload[@"sig"] = [CryptoUtils base64URLEncode:signature];
+    PDS_LOG_INFO(@"Posting genesis op to: %@", urlStr);
     
     // Post to PLC server
     NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlStr]];
     req.HTTPMethod = @"POST";
     [req setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
-    req.HTTPBody = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
+    req.HTTPBody = [NSJSONSerialization dataWithJSONObject:signedOp options:0 error:nil];
     
     dispatch_semaphore_t sema = dispatch_semaphore_create(0);
     __block NSError *reqError = nil;

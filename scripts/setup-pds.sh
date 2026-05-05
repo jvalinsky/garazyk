@@ -118,17 +118,29 @@ account_output=$(
         --handle "$HANDLE" \
         --password "$PASSWORD" \
         --config "$CONFIG" \
+        --verbose \
         2>&1
 ) || die "Failed to create account:\n${account_output}"
 
 echo "$account_output"
 
-# Try to extract DID from output
+# Extract DID from verbose log output ("Generated and Registered DID: did:plc:...")
 DID=$(echo "$account_output" | grep -oE 'did:plc:[a-z2-7]{24}' | head -1 || true)
+
+# Fallback: look up DID by handle
+if [[ -z "$DID" ]]; then
+    DID=$(
+        "$BINARY" account list --config "$CONFIG" 2>&1 \
+        | grep "$HANDLE" \
+        | grep -oE 'did:plc:[a-z2-7]{24}' \
+        | head -1 || true
+    )
+fi
+
 if [[ -n "$DID" ]]; then
     info "Account created with DID: ${DID}"
 else
-    warn "Account created but could not extract DID from output"
+    warn "Account created but could not extract DID"
     warn "Continuing — DID verification will be skipped"
 fi
 
@@ -178,13 +190,17 @@ section "Generating invite codes"
 
 INVITE_CODES=""
 for i in $(seq 1 5); do
-    code=$(
+    raw=$(
         "$BINARY" invite create \
             --config "$CONFIG" \
             2>&1
     ) || { warn "Failed to generate invite code ${i}"; continue; }
-    # Extract just the code from output
-    code_val=$(echo "$code" | grep -oE '[A-Za-z0-9_-]{6,}' | tail -1 || echo "$code")
+    # Extract code from "  Code:     XXXX-XXXX-XXXX" output
+    code_val=$(echo "$raw" | grep 'Code:' | awk '{print $NF}' || echo "")
+    if [[ -z "$code_val" || "$code_val" == "(null)" ]]; then
+        warn "Invite code ${i} returned empty"
+        continue
+    fi
     INVITE_CODES+="  ${i}. ${code_val}\n"
     info "Invite code ${i}: ${code_val}"
 done
