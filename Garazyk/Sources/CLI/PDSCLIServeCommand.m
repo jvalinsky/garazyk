@@ -9,6 +9,7 @@
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
 #import "Network/PDSHttpServerBuilder.h"
+#import "Database/Monitoring/PDSHealthCheck.h"
 #import "PDSCLIDefinitions.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
 
@@ -233,27 +234,21 @@
       @"PDSCLIServeCommand: Registered routes via PDSHttpServerBuilder");
 
   // Register Health Check
-  [httpServer
-      addRoute:@"GET"
-          path:@"/health"
-       handler:^(HttpRequest *request, HttpResponse *response) {
-         response.statusCode = 200;
-         [response setJsonBody:@{@"status" : @"ok", @"version" : @"0.1.0"}];
-       }];
-
   [httpServer addRoute:@"GET"
-                  path:@"/_health"
-               handler:^(HttpRequest *request, HttpResponse *response) {
-                 response.statusCode = 200;
-                 [response setJsonBody:@{@"status" : @"ok"}];
-               }];
+                    path:@"/health"
+                 handler:^(HttpRequest *request, HttpResponse *response) {
+                   NSDictionary *health = [[PDSHealthCheck sharedInstance] performHealthCheck];
+                   response.statusCode = [health[@"status"] isEqualToString:@"critical"] ? 503 : 200;
+                   [response setJsonBody:health];
+                 }];
 
-  [httpServer
-      addHandlerForPath:@"/xrpc/_health"
-                handler:^(HttpRequest *request, HttpResponse *response) {
-                  response.statusCode = 200;
-                  [response setJsonBody:@{@"version" : @"0.1.0"}];
-                }];
+    [httpServer addRoute:@"GET"
+                    path:@"/_health"
+                 handler:^(HttpRequest *request, HttpResponse *response) {
+                   NSDictionary *health = [[PDSHealthCheck sharedInstance] performHealthCheck];
+                   response.statusCode = [health[@"status"] isEqualToString:@"critical"] ? 503 : 200;
+                   [response setJsonBody:health];
+                 }];
 
   // Admin Login: accepts admin password, returns admin-scoped JWT
   [httpServer addRoute:@"POST"
