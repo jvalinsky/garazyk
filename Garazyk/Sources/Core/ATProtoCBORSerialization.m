@@ -108,7 +108,7 @@ static NSData *CBORBase64URLDecode(NSString *string) {
   } else if ([obj isKindOfClass:[NSString class]]) {
     return [CBORValue textString:obj];
   } else if ([obj isKindOfClass:[NSNumber class]]) {
-    // Handle boolean using robust CFTypeID check
+    // Handle boolean using CFTypeID check
     // This avoids issues with @encode(BOOL) varying across platforms (signed
     // char vs bool)
     if (CFGetTypeID((__bridge CFTypeRef)obj) == CFBooleanGetTypeID()) {

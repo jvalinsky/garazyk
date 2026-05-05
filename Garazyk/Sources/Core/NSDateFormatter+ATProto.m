@@ -164,11 +164,7 @@ void NSDateFormatterLinkATProtoCategory(void) {
     }
 
     // Fallback for GNUstep or older macOS
-    NSDate *date = [[self atproto_iso8601Formatter] dateFromString:string];
-    if (date) return date;
-
-    // Manual fallback for extreme robustness
-    return [self atproto_dateFromStringManual:string];
+    return [[self atproto_iso8601Formatter] dateFromString:string];
 }
 
 @end

@@ -79,9 +79,9 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 @property (nonatomic, strong, nullable) RelayMetrics *relayMetrics;
 
 
-- (instancetype)initWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases;
+- (instancetype)initWithServiceDatabases:(nullable PDSServiceDatabases *)serviceDatabases;
 
-- (instancetype)initWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases
+- (instancetype)initWithServiceDatabases:(nullable PDSServiceDatabases *)serviceDatabases
                         userDatabasePool:(nullable PDSDatabasePool *)userDatabasePool;
 
 /*! Starts a legacy standalone listener (compatibility/test use only). */

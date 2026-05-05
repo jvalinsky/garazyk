@@ -669,13 +669,8 @@
 
             if (!isLocal) {
                 HandleResolver *handleResolver = [[HandleResolver alloc] init];
-                __block NSString *resolvedDid = nil;
-                dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-                [handleResolver resolveHandle:normalizedHandle completion:^(NSString * _Nullable rDid, NSError * _Nullable rError) {
-                    resolvedDid = rDid;
-                    dispatch_semaphore_signal(semaphore);
-                }];
-                dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
+                NSError *rError = nil;
+                NSString *resolvedDid = [XrpcIdentityHelper resolveHandleToDid:normalizedHandle handleResolver:handleResolver error:&rError];
 
                 if (![resolvedDid isEqualToString:did]) {
                     PDS_LOG_ERROR(@"Handle verification failed for %@: expected %@, got %@", normalizedHandle, did, resolvedDid);

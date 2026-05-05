@@ -245,24 +245,28 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
       return;
     }
 
+    __weak typeof(self) weakSelf = self;
     [self fetchClientMetadataFromURL:clientID
                           completion:^(NSDictionary *_Nullable fetchedMetadata,
                                        NSError *_Nullable fetchError) {
+                            __strong typeof(weakSelf) strongSelf = weakSelf;
+                            if (!strongSelf) return;
+                            
                             if (fetchedMetadata) {
                               NSError *validationError = nil;
                               NSDictionary *validatedClient =
-                                  [self validateClientMetadata:fetchedMetadata
+                                  [strongSelf validateClientMetadata:fetchedMetadata
                                                          error:&validationError];
                               if (validatedClient) {
                                 // Ensure client_id in metadata matches the URL
                                 NSString *metadataClientID =
                                     validatedClient[@"client_id"];
                                 if ([metadataClientID isEqualToString:clientID]) {
-                                  @synchronized(sClientMetadataCache) {
+                                  dispatch_sync(sAuthGlobalsQueue, ^{
                                     [sClientMetadataCache
                                          setObject:validatedClient
                                             forKey:clientID];
-                                  }
+                                  });
                                   PDS_LOG_AUTH_INFO(@"Successfully discovered "
                                                     @"and cached client: %@",
                                                     clientID);
@@ -3478,10 +3482,12 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
 }
 
 - (NSUInteger)pendingConsentCountForTesting {
-  @synchronized(sPendingConsents) {
+  __block NSUInteger count = 0;
+  dispatch_sync(sAuthGlobalsQueue, ^{
     [self cleanupExpiredPendingConsentsLocked];
-    return sPendingConsents.count;
-  }
+    count = sPendingConsents.count;
+  });
+  return count;
 }
 
 - (void)clearPendingConsentsForTesting {

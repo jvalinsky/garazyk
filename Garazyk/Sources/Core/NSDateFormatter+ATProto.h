@@ -60,7 +60,7 @@ NS_ASSUME_NONNULL_BEGIN
  
  @abstract Parses an ISO 8601 datetime string.
  
- @discussion Robustly handles various ISO 8601 formats allowed by ATProto:
+ @discussion Handles various ISO 8601 formats allowed by ATProto:
  - YYYY-MM-DDTHH:mm:ssZ
  - YYYY-MM-DDTHH:mm:ss.SSSZ
  - YYYY-MM-DDTHH:mm:ss+HH:MM

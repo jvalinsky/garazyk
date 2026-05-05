@@ -7,6 +7,7 @@
  */
 
 #import "SecItemLinuxStore.h"
+#import "Debug/PDSLogger.h"
 #import <sqlite3.h>
 
 #define PDS_SQLITE_AUTORELEASE_STMT __attribute__((cleanup(PDS_sqlite3_finalize_cleanup)))

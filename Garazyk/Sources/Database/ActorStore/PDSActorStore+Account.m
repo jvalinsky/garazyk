@@ -5,6 +5,7 @@
  */
 
 #import "PDSActorStore+Account.h"
+#import "Debug/PDSLogger.h"
 #import "PDSActorStoreInternal.h"
 #import "Core/ATProtoError.h"
 #import "Database/Utils/PDSSQLiteUtils.h"
@@ -176,7 +177,7 @@ void PDSActorStoreLinkAccountCategory(void) {}
     }
     col++;
     
-    // Robust date parsing
+    // Parse ISO8601 date
     if (sqlite3_column_type(stmt, col) == SQLITE_FLOAT || sqlite3_column_type(stmt, col) == SQLITE_INTEGER) {
         account.createdAt = sqlite3_column_double(stmt, col);
     } else if (sqlite3_column_type(stmt, col) == SQLITE_TEXT) {

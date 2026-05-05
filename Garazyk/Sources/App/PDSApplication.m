@@ -141,48 +141,24 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
 #pragma mark - Initialization
 
 - (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration {
-    return [self initWithConfiguration:configuration
-                         dataDirectory:nil
-                        serviceMaxSize:0
-                   userDatabaseMaxSize:0
-                       didCacheMaxSize:0
-                     sequencerMaxSize:0];
+    return [self initWithConfiguration:configuration dataDirectory:nil];
 }
 
 - (instancetype)initWithDataDirectory:(NSString *)dataDirectory {
-    return [self initWithConfiguration:nil
-                         dataDirectory:dataDirectory
-                        serviceMaxSize:0
-                   userDatabaseMaxSize:0
-                       didCacheMaxSize:0
-                     sequencerMaxSize:0];
+    return [self initWithDataDirectory:dataDirectory error:nil];
+}
+
+- (instancetype)initWithDataDirectory:(NSString *)dataDirectory error:(NSError **)error {
+    return [self initWithConfiguration:nil dataDirectory:dataDirectory];
 }
 
 - (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration dataDirectory:(nullable NSString *)dataDirectory {
-    return [self initWithConfiguration:configuration
-                         dataDirectory:dataDirectory
-                        serviceMaxSize:0
-                   userDatabaseMaxSize:0
-                       didCacheMaxSize:0
-                     sequencerMaxSize:0];
-}
-
-- (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration
-                        dataDirectory:(nullable NSString *)dataDirectory
-                       serviceMaxSize:(NSUInteger)serviceMaxSize
-                  userDatabaseMaxSize:(NSUInteger)userDatabaseMaxSize
-                      didCacheMaxSize:(NSUInteger)didCacheMaxSize
-                    sequencerMaxSize:(NSUInteger)sequencerMaxSize {
     self = [super init];
     if (self) {
         _configuration = configuration ?: [PDSConfiguration sharedConfiguration];
-        _dataDirectory = dataDirectory ?: (_configuration.dataDirectory ?: [PDSConfiguration defaultDataDirectory]);
+        _dataDirectory = [dataDirectory copy] ?: (_configuration.dataDirectory ?: [PDSConfiguration defaultDataDirectory]);
         _httpPort = _configuration.serverPort > 0 ? _configuration.serverPort : 2583;
         _running = NO;
-        _servicePoolSizeOverride = serviceMaxSize;
-        _userPoolSizeOverride = userDatabaseMaxSize;
-        _didCachePoolSizeOverride = didCacheMaxSize;
-        _sequencerPoolSizeOverride = sequencerMaxSize;
 
         // M2: Catch unhandled ObjC exceptions
         NSSetUncaughtExceptionHandler(&PDSApplicationUncaughtExceptionHandler);
@@ -194,10 +170,25 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
         
         [self initializeInfrastructure];
         [self initializeServices];
-        // [self loadLexicons]; // Method not implemented
-        
+
         _legacyController = [[PDSController alloc] initWithApplication:self];
         [PDSAdminAuth sharedAuth].controller = _legacyController;
+    }
+    return self;
+}
+
+- (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration
+                        dataDirectory:(nullable NSString *)dataDirectory
+                       serviceMaxSize:(NSUInteger)serviceMaxSize
+                  userDatabaseMaxSize:(NSUInteger)userDatabaseMaxSize
+                      didCacheMaxSize:(NSUInteger)didCacheMaxSize
+                    sequencerMaxSize:(NSUInteger)sequencerMaxSize {
+    self = [self initWithConfiguration:configuration dataDirectory:dataDirectory];
+    if (self) {
+        _servicePoolSizeOverride = serviceMaxSize;
+        _userPoolSizeOverride = userDatabaseMaxSize;
+        _didCachePoolSizeOverride = didCacheMaxSize;
+        _sequencerPoolSizeOverride = sequencerMaxSize;
     }
     return self;
 }

@@ -127,6 +127,8 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (instancetype)initWithDataDirectory:(NSString *)dataDirectory;
 
+- (instancetype)initWithDataDirectory:(NSString *)dataDirectory error:(NSError **)error;
+
 - (instancetype)init NS_UNAVAILABLE;
 
 #pragma mark - Lifecycle

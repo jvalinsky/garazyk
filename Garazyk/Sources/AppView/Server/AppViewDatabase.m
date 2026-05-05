@@ -210,6 +210,8 @@ static NSString * const kSchemaV1 = @""
 // Helpers
 // ---------------------------------------------------------------------------
 
+static void * const kAppViewDatabaseQueueKey = (void *)&kAppViewDatabaseQueueKey;
+
 static NSString *iso8601Now(void) {
     return [NSDateFormatter atproto_stringFromDate:[NSDate date]];
 }
@@ -234,6 +236,7 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
     if (!self) return nil;
 
     _queue = dispatch_queue_create("dev.garazyk.appview.db", DISPATCH_QUEUE_SERIAL);
+    dispatch_queue_set_specific(_queue, kAppViewDatabaseQueueKey, (void *)kAppViewDatabaseQueueKey, NULL);
     _relevanceCache = [NSMutableSet set];
 
     NSFileManager *fm = [NSFileManager defaultManager];

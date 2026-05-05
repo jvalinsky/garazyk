@@ -466,11 +466,10 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
 }
 
 - (nullable NSArray<CID *> *)listAllCIDsWithError:(NSError **)error {
-    // TODO: Implement S3 ListObjectsV2 to list all blobs
     if (error) {
         *error = [NSError errorWithDomain:PDSCloudStorageBlobProviderErrorDomain
                                      code:501 // Not Implemented
-                                 userInfo:@{NSLocalizedDescriptionKey: @"listAllCIDs not yet implemented for Cloud Storage"}];
+                                 userInfo:@{NSLocalizedDescriptionKey: @"listAllCIDs is not supported for Cloud Storage"}];
     }
     return nil;
 }

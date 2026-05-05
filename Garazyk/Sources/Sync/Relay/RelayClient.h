@@ -12,6 +12,7 @@
 #import <Foundation/Foundation.h>
 
 @class RelayClient;
+@class Firehose;
 @class FirehoseCommitEvent;
 @class FirehoseIdentityEvent;
 @class FirehoseErrorEvent;
@@ -56,6 +57,9 @@ extern NSInteger const RelayClientErrorCodeAuthenticationFailed;
 
 /*! URL of the relay server. */
 @property (nonatomic, readonly) NSURL *serverURL;
+
+/*! The underlying Firehose client. */
+@property (nonatomic, strong, readonly, nullable) Firehose *firehose;
 
 /*! Whether connected to the server. */
 @property (nonatomic, readonly) BOOL isConnected;

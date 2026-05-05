@@ -32,6 +32,8 @@ typedef NS_ENUM(NSInteger, PDSAuthzError) {
 
 + (instancetype)sharedManager;
 
+- (instancetype)init NS_DESIGNATED_INITIALIZER;
+
 - (void)setDatabase:(PDSDatabase *)database;
 
 - (BOOL)isAuthorizedToAccessRepo:(NSString *)repoDID

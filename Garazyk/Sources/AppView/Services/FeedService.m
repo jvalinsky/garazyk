@@ -5,6 +5,7 @@
 #import <CommonCrypto/CommonDigest.h>
 #import "Core/CID.h"
 #import "Core/ATProtoCBORSerialization.h"
+#import "Core/ATURI.h"
 #import "Database/Schema.h"
 #import "Core/NSDateFormatter+ATProto.h"
 @interface FeedService ()
@@ -119,9 +120,9 @@
         return nil;
     }
 
-    NSArray *components = [uri componentsSeparatedByString:@"/"];
-    NSString *repo = components.count > 2 ? components[2] : nil;
-    NSString *rkey = components.count > 4 ? components[4] : nil;
+    ATURI *parsedURI = [ATURI uriWithString:uri error:nil];
+    NSString *repo = parsedURI.did;
+    NSString *rkey = parsedURI.rkey;
 
     NSDictionary *threadPost = @{
         @"uri": uri,
@@ -435,13 +436,13 @@
 }
 
 - (nullable NSDictionary *)getPostByURI:(NSString *)uri error:(NSError **)error {
-    NSArray *components = [uri componentsSeparatedByString:@"/"];
-    if (components.count < 5) {
+    ATURI *parsedURI = [ATURI uriWithString:uri error:nil];
+    if (!parsedURI) {
         return nil;
     }
 
-    NSString *repo = components[2];
-    NSString *rkey = components[4];
+    NSString *repo = parsedURI.did;
+    NSString *rkey = parsedURI.rkey;
 
     NSString *query = @"SELECT cid, value FROM records WHERE did = ? AND collection = ? AND rkey = ?";
     NSArray *rows = [self.database executeParameterizedQuery:query params:@[repo, @"app.bsky.feed.post", rkey] error:error];

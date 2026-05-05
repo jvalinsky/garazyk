@@ -73,7 +73,7 @@ project(ATProtoPDS
 # Global Settings
 #=============================
 # Compiler flags
-set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -Wno-implicit-function-declaration")
+# set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -Wno-implicit-function-declaration")
 
 # Enable ARC only on macOS (GNUstep runtime doesn't support it)
 if(APPLE)

@@ -83,6 +83,14 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
     self.isConnected = NO;
 }
 
+- (NSTimeInterval)heartbeatTimeout {
+    return self.connection.heartbeatTimeout;
+}
+
+- (void)setHeartbeatTimeout:(NSTimeInterval)heartbeatTimeout {
+    self.connection.heartbeatTimeout = heartbeatTimeout;
+}
+
 - (void)sendEventToSubscriptions:(id)event kind:(FirehoseEventKind)kind {
     for (FirehoseSubscription *subscription in self.subscriptions) {
         if (!subscription.isActive) continue;
