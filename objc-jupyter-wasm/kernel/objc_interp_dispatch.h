@@ -13,4 +13,7 @@ Value execute_interpreter_method(struct Parser *p, MethodImpl *method, SEL sel, 
 /* NSLog evaluation */
 void eval_nslog(struct Parser *p);
 
+/* Protocol conformance */
+int class_conforms_to_protocol(const char *class_name, const char *protocol_name);
+
 #endif /* OBJC_INTERP_DISPATCH_H */
