@@ -89,9 +89,80 @@ Value parse_interface(struct Parser *p) {
     }
     parser_advance(p);
 
+    /* Check for Category (ClassName) or Extension (ClassName) */
+    char category_name[64];
+    category_name[0] = '\0';
+    int is_category = 0;
+
+    if (parser_current(p).type == TOK_OPEN_PAREN) {
+        parser_advance(p); /* consume ( */
+        if (parser_current(p).type == TOK_IDENTIFIER) {
+            cstr_copy(category_name, parser_current(p).text, 64);
+            is_category = 1;
+            parser_advance(p);
+        }
+        if (parser_current(p).type == TOK_CLOSE_PAREN) {
+            parser_advance(p);
+        }
+    }
+
     {
         InterpVar *existing = interp_find_var(class_name);
         if (existing && existing->is_class) {
+            /* Class already exists */
+            Class existing_cls = existing->cls;
+
+            if (is_category) {
+                /* Category: add methods to existing class.
+                 * Skip ivar block, handle @property, skip method decls until @end. */
+                while (!(parser_current(p).type == TOK_AT_KEYWORD &&
+                       cstr_eq(parser_current(p).text, "@end")) &&
+                       parser_current(p).type != TOK_EOF) {
+
+                    if (parser_current(p).type == TOK_AT_KEYWORD &&
+                        cstr_eq(parser_current(p).text, "@property")) {
+                        /* Parse property in category/extension */
+                        parser_advance(p);
+                        if (parser_current(p).type == TOK_OPEN_PAREN) {
+                            int depth = 1;
+                            parser_advance(p);
+                            while (depth > 0 && parser_current(p).type != TOK_EOF) {
+                                if (parser_current(p).type == TOK_OPEN_PAREN) depth++;
+                                else if (parser_current(p).type == TOK_CLOSE_PAREN) depth--;
+                                parser_advance(p);
+                            }
+                        }
+                        if (parser_current(p).type == TOK_IDENTIFIER) {
+                            if (g_ctx.property_count < MAX_PROPERTIES) {
+                                PropertyDecl *prop = &g_ctx.properties[g_ctx.property_count];
+                                cstr_copy(prop->type_name, parser_current(p).text, 64);
+                                prop->is_int = cstr_eq(prop->type_name, "int");
+                                cstr_copy(prop->class_name, class_name, 64);
+                                parser_advance(p);
+                                if (parser_current(p).type == TOK_IDENTIFIER) {
+                                    if (copy_identifier_or_error(p, prop->name, parser_current(p).text, 64, "property")) {
+                                        return value_void();
+                                    }
+                                    parser_advance(p);
+                                    g_ctx.property_count++;
+                                }
+                            }
+                        }
+                        if (parser_current(p).type == TOK_SEMICOLON) parser_advance(p);
+                        continue;
+                    }
+
+                    /* Skip other tokens until @end */
+                    parser_advance(p);
+                }
+                if (parser_current(p).type == TOK_AT_KEYWORD &&
+                    cstr_eq(parser_current(p).text, "@end")) {
+                    parser_advance(p);
+                }
+                return value_from_class(existing_cls);
+            }
+
+            /* Not a category — skip body as before */
             while (parser_current(p).type != TOK_AT_KEYWORD ||
                    !cstr_eq(parser_current(p).text, "@end")) {
                 if (parser_current(p).type == TOK_EOF) break;
@@ -101,7 +172,7 @@ Value parse_interface(struct Parser *p) {
                 cstr_eq(parser_current(p).text, "@end")) {
                 parser_advance(p);
             }
-            return value_from_class(existing->cls);
+            return value_from_class(existing_cls);
         }
     }
 
@@ -667,16 +738,41 @@ Value parse_implementation(struct Parser *p) {
     }
     parser_advance(p);
 
-    cls = (Class)objc_getClass(class_name);
-    if (cls == 0) {
+    /* Check for Category (ClassName) or Extension ()) */
+    char category_name[64];
+    category_name[0] = '\0';
+    int is_category = 0;
+
+    if (parser_current(p).type == TOK_OPEN_PAREN) {
+        parser_advance(p); /* consume ( */
+        if (parser_current(p).type == TOK_IDENTIFIER) {
+            cstr_copy(category_name, parser_current(p).text, 64);
+            is_category = 1;
+            parser_advance(p);
+        }
+        if (parser_current(p).type == TOK_CLOSE_PAREN) {
+            parser_advance(p);
+        }
+    }
+
+    /* Look up class: first check our variable table, then try runtime */
+    {
         InterpVar *var = interp_find_var(class_name);
         if (var && var->is_class) {
             cls = var->cls;
+        } else {
+            cls = (Class)objc_getClass(class_name);
+            if (cls == 0) {
+                parser_error(p, "Class not found for @implementation");
+                return value_void();
+            }
+            /* Register the class in our variable table with the runtime pointer */
+            var = interp_get_or_create_var(class_name);
+            if (var) {
+                var->is_class = 1;
+                var->cls = cls;
+            }
         }
-    }
-    if (cls == 0) {
-        parser_error(p, "Class not found for @implementation");
-        return value_void();
     }
 
     {
@@ -688,7 +784,11 @@ Value parse_implementation(struct Parser *p) {
                 break;
             }
         }
-        if (class_has_methods) {
+        /* For categories, always parse method implementations even if
+         * the base class already has methods — categories add to the
+         * existing method table. For non-categories, skip if already
+         * implemented (prevents duplicate parsing on re-evaluation). */
+        if (class_has_methods && !is_category) {
             while (parser_current(p).type != TOK_AT_KEYWORD ||
                    !cstr_eq(parser_current(p).text, "@end")) {
                 if (parser_current(p).type == TOK_EOF) break;
