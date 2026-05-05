@@ -297,6 +297,36 @@ static Value parse_ternary(Parser *p) {
 }
 
 static Value parse_assignment(Parser *p) {
+    /* Pointer dereference assignment: *identifier = value
+     * In the interpreter, pointer variables are stored as regular variables,
+     * so *stop = 1 is equivalent to stop = 1. */
+    if (parser_current(p).type == TOK_STAR) {
+        Token star_tok = parser_current(p);
+        unsigned int saved_pos = p->lex.pos;
+        Token saved_tok = p->lex.current;
+        parser_advance(p); /* consume * */
+        if (parser_current(p).type == TOK_IDENTIFIER) {
+            Token ident = parser_current(p);
+            parser_advance(p);
+            if (parser_current(p).type == TOK_ASSIGN) {
+                InterpVar *var = interp_find_var(ident.text);
+                Value val;
+                parser_advance(p);
+                val = parse_assignment(p);
+                if (p->error) return val;
+                if (var == 0) {
+                    parser_error(p, "assignment target is not a variable");
+                    return value_void();
+                }
+                interp_set_var_from_value(var, val);
+                return val;
+            }
+        }
+        /* Not a dereference assignment — rewind and fall through */
+        p->lex.pos = saved_pos;
+        p->lex.current = saved_tok;
+    }
+
     if (parser_current(p).type == TOK_IDENTIFIER) {
         Token ident = parser_current(p);
         Token saved = p->lex.current;
@@ -534,10 +564,10 @@ Value parse_type_and_var_decl(Parser *p) {
                 var->is_sel = init_val.is_sel;
                 var->is_id = init_val.is_id;
             }
-            return init_val;
-        }
-
-        /* Default initialization */
+            /* Don't return here — fall through to handle comma-separated
+             * declarations like int a = 0, b = 1, c = 2; */
+        } else {
+            /* Default initialization (no initializer provided) */
         if (var) {
             if (cstr_eq(type_name, "int") || cstr_eq(type_name, "NSInteger") || cstr_eq(type_name, "NSUInteger")) {
                 var->is_int = 1;
@@ -554,6 +584,76 @@ Value parse_type_and_var_decl(Parser *p) {
             } else {
                 var->is_id = 1;
                 var->value = 0;
+            }
+        }
+        } /* end else (no initializer) */
+
+        /* Handle comma-separated declarations: int a = 0, b = 0, c = 0; */
+        while (parser_current(p).type == TOK_COMMA) {
+            parser_advance(p); /* consume , */
+
+            /* Skip pointer stars */
+            while (parser_current(p).type == TOK_STAR) {
+                parser_advance(p);
+            }
+
+            /* Next variable name */
+            if (parser_current(p).type == TOK_IDENTIFIER) {
+                char var_name2[64];
+                if (copy_identifier_or_error(p, var_name2, parser_current(p).text, 64, "variable")) {
+                    return value_void();
+                }
+                parser_advance(p);
+
+                var = interp_get_or_create_var(var_name2);
+                if (var == 0) {
+                    parser_error(p, "variable table full (max 1024)");
+                    return value_void();
+                }
+                var->is_int = 0;
+                var->is_float = 0;
+                var->is_class = 0;
+                var->is_sel = 0;
+                var->is_id = 0;
+                var->is_block_captured = is_block_var;
+                var->is_static = is_static_var;
+
+                /* Parse optional initializer */
+                if (parser_current(p).type == TOK_ASSIGN) {
+                    Value init_val2;
+                    parser_advance(p);
+                    init_val2 = parse_expression(p);
+                    if (p->error) return init_val2;
+
+                    var->value = init_val2.obj_val;
+                    var->cls = init_val2.cls_val;
+                    var->sel = init_val2.sel_val;
+                    var->is_int = init_val2.is_int;
+                    var->int_value = init_val2.int_val;
+                    var->is_float = init_val2.is_float;
+                    var->float_value = init_val2.float_val;
+                    var->is_class = init_val2.is_class;
+                    var->is_sel = init_val2.is_sel;
+                    var->is_id = init_val2.is_id;
+                } else {
+                    /* Set default value based on type */
+                    if (cstr_eq(type_name, "int") || cstr_eq(type_name, "NSInteger") || cstr_eq(type_name, "NSUInteger")) {
+                        var->is_int = 1;
+                        var->int_value = 0;
+                    } else if (cstr_eq(type_name, "float") || cstr_eq(type_name, "double")) {
+                        var->is_float = 1;
+                        var->float_value = 0.0;
+                    } else if (cstr_eq(type_name, "Class")) {
+                        var->is_class = 1;
+                        var->cls = 0;
+                    } else if (cstr_eq(type_name, "SEL")) {
+                        var->is_sel = 1;
+                        var->sel = 0;
+                    } else {
+                        var->is_id = 1;
+                        var->value = 0;
+                    }
+                }
             }
         }
 
@@ -689,6 +789,14 @@ Value parse_statement(Parser *p) {
             cstr_eq(tok.text, "static") ||
             cstr_eq(tok.text, "extern")
         );
+        /* Type qualifiers: const, volatile, restrict — always followed by
+         * a type name, so route to parse_type_and_var_decl like storage
+         * qualifiers. */
+        int is_type_qualifier = (
+            cstr_eq(tok.text, "const") ||
+            cstr_eq(tok.text, "volatile") ||
+            cstr_eq(tok.text, "restrict")
+        );
         /* Check if this is a type name followed by a variable name.
          * Built-in types are always recognized. Registered class names
          * (from @implementation) are also recognized as types when
@@ -708,6 +816,7 @@ Value parse_statement(Parser *p) {
             cstr_eq(tok.text, "NSMutableArray") || cstr_eq(tok.text, "NSDictionary") ||
             cstr_eq(tok.text, "NSMutableDictionary") || cstr_eq(tok.text, "NSNumber") ||
             cstr_eq(tok.text, "NSData") || cstr_eq(tok.text, "NSSet") ||
+            cstr_eq(tok.text, "NSCharacterSet") ||
             /* C99 integer types */
             cstr_eq(tok.text, "uint8_t") || cstr_eq(tok.text, "uint16_t") ||
             cstr_eq(tok.text, "uint32_t") || cstr_eq(tok.text, "uint64_t") ||
@@ -731,8 +840,8 @@ Value parse_statement(Parser *p) {
             }
         }
 
-        if (is_builtin_type || is_class_type || is_typedef || is_block_qualifier || is_storage_qualifier) {
-            if (is_block_qualifier || is_storage_qualifier) {
+        if (is_builtin_type || is_class_type || is_typedef || is_block_qualifier || is_storage_qualifier || is_type_qualifier) {
+            if (is_block_qualifier || is_storage_qualifier || is_type_qualifier) {
                 /* __block and storage qualifiers (static, extern)
                  * are always followed by a type — call directly */
                 Value v = parse_type_and_var_decl(p);
