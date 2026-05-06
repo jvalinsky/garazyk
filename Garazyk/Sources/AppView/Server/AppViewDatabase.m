@@ -63,6 +63,19 @@ static NSString * const kSchemaV1 = @""
 "CREATE INDEX IF NOT EXISTS idx_event_log_seq ON appview_event_log(seq);"
 "CREATE INDEX IF NOT EXISTS idx_event_log_created ON appview_event_log(created_at);"
 
+"CREATE TABLE IF NOT EXISTS appview_cursor_events ("
+"  cursor      INTEGER PRIMARY KEY AUTOINCREMENT,"
+"  event_type  TEXT NOT NULL,"
+"  seq         INTEGER NOT NULL,"
+"  did         TEXT,"
+"  rev         TEXT,"
+"  cid         TEXT,"
+"  raw_envelope BLOB NOT NULL,"
+"  created_at  TEXT NOT NULL"
+");"
+"CREATE UNIQUE INDEX IF NOT EXISTS idx_cursor_events_dedup ON appview_cursor_events(did, rev, cid, event_type);"
+"CREATE INDEX IF NOT EXISTS idx_cursor_events_seq ON appview_cursor_events(seq);"
+
 "CREATE TABLE IF NOT EXISTS appview_relevance ("
 "  did        TEXT NOT NULL PRIMARY KEY,"
 "  reason     INTEGER NOT NULL,"
@@ -221,6 +234,14 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
     return [NSDateFormatter atproto_dateFromString:str];
 }
 
+static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
+    if (data.length > 0) {
+        sqlite3_bind_blob(stmt, idx, data.bytes, (int)data.length, SQLITE_TRANSIENT);
+    } else {
+        sqlite3_bind_zeroblob(stmt, idx, 0);
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Implementation
 // ---------------------------------------------------------------------------
@@ -229,6 +250,7 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
     sqlite3 *_db;
     dispatch_queue_t _queue;
     NSMutableSet<NSString *> *_relevanceCache; // in-memory set for fast isDIDRelevant
+    NSMutableDictionary<NSString *, NSNumber *> *_durableCursorByRelayURL;
 }
 
 - (nullable instancetype)initWithPath:(NSString *)path error:(NSError **)error {
@@ -238,10 +260,11 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
     _queue = dispatch_queue_create("dev.garazyk.appview.db", DISPATCH_QUEUE_SERIAL);
     dispatch_queue_set_specific(_queue, kAppViewDatabaseQueueKey, (void *)kAppViewDatabaseQueueKey, NULL);
     _relevanceCache = [NSMutableSet set];
+    _durableCursorByRelayURL = [NSMutableDictionary dictionary];
 
     NSFileManager *fm = [NSFileManager defaultManager];
     NSString *dbDir = [path stringByDeletingLastPathComponent];
-    if (![fm fileExistsAtPath:dbDir]) {
+    if (![path isEqualToString:@":memory:"] && dbDir.length > 0 && ![fm fileExistsAtPath:dbDir]) {
         NSError *createError = nil;
         if (![fm createDirectoryAtPath:dbDir withIntermediateDirectories:YES attributes:nil error:&createError]) {
             if (error) {
@@ -318,10 +341,27 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
             return;
         }
 
+        sqlite3_exec(self->_db,
+                     "CREATE TABLE IF NOT EXISTS appview_cursor_events ("
+                     "  cursor INTEGER PRIMARY KEY AUTOINCREMENT,"
+                     "  event_type TEXT NOT NULL,"
+                     "  seq INTEGER NOT NULL,"
+                     "  did TEXT,"
+                     "  rev TEXT,"
+                     "  cid TEXT,"
+                     "  raw_envelope BLOB NOT NULL,"
+                     "  created_at TEXT NOT NULL"
+                     ");"
+                     "CREATE UNIQUE INDEX IF NOT EXISTS idx_cursor_events_dedup ON appview_cursor_events(did, rev, cid, event_type);"
+                     "CREATE INDEX IF NOT EXISTS idx_cursor_events_seq ON appview_cursor_events(seq);",
+                     NULL, NULL, NULL);
+
         // Populate in-memory relevance cache
-        const char *sql = "SELECT did FROM appview_relevance WHERE expires_at IS NULL OR expires_at > datetime('now')";
+        const char *sql = "SELECT did FROM appview_relevance WHERE expires_at IS NULL OR expires_at > ?";
         sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
+            NSString *now = iso8601Now();
+            sqlite3_bind_text(stmt, 1, now.UTF8String, -1, SQLITE_TRANSIENT);
             while (sqlite3_step(stmt) == SQLITE_ROW) {
                 const char *did = (const char *)sqlite3_column_text(stmt, 0);
                 if (did) {
@@ -644,7 +684,7 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
             sqlite3_bind_int64(stmt, 2, delta.seq);
             sqlite3_bind_text(stmt, 3, delta.commitCID.UTF8String, -1, SQLITE_TRANSIENT);
             sqlite3_bind_text(stmt, 4, delta.rev.UTF8String, -1, SQLITE_TRANSIENT);
-            sqlite3_bind_blob(stmt, 5, delta.rawEnvelope.bytes, (int)delta.rawEnvelope.length, SQLITE_TRANSIENT);
+            bindDataOrZeroBlob(stmt, 5, delta.rawEnvelope);
             sqlite3_bind_text(stmt, 6, now.UTF8String, -1, SQLITE_TRANSIENT);
             int rc = sqlite3_step(stmt);
             sqlite3_finalize(stmt);
@@ -739,7 +779,7 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
             else      sqlite3_bind_null(stmt, 3);
             if (cid)  sqlite3_bind_text(stmt, 4, cid.UTF8String,  -1, SQLITE_TRANSIENT);
             else      sqlite3_bind_null(stmt, 4);
-            sqlite3_bind_blob(stmt, 5, rawEnvelope.bytes, (int)rawEnvelope.length, SQLITE_TRANSIENT);
+            bindDataOrZeroBlob(stmt, 5, rawEnvelope);
             sqlite3_bind_text(stmt, 6, now.UTF8String, -1, SQLITE_TRANSIENT);
             int rc = sqlite3_step(stmt);
             sqlite3_finalize(stmt);
@@ -786,6 +826,115 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
         }
     });
     return deleted;
+}
+
+// ---------------------------------------------------------------------------
+// Internal Cursor Event Store
+// ---------------------------------------------------------------------------
+
+- (BOOL)appendStoredEventWithType:(NSString *)eventType
+                              seq:(int64_t)seq
+                              did:(nullable NSString *)did
+                              rev:(nullable NSString *)rev
+                              cid:(nullable NSString *)cid
+                      rawEnvelope:(NSData *)rawEnvelope
+                            error:(NSError **)error {
+    __block BOOL ok = YES;
+    __block NSError *innerError = nil;
+
+    dispatch_sync(_queue, ^{
+        const char *sql =
+            "INSERT OR IGNORE INTO appview_cursor_events(event_type, seq, did, rev, cid, raw_envelope, created_at)"
+            " VALUES(?,?,?,?,?,?,?)";
+        sqlite3_stmt *stmt = NULL;
+        int rc = sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL);
+        if (rc == SQLITE_OK) {
+            NSString *now = iso8601Now();
+            sqlite3_bind_text(stmt, 1, eventType.UTF8String, -1, SQLITE_TRANSIENT);
+            sqlite3_bind_int64(stmt, 2, seq);
+            if (did) sqlite3_bind_text(stmt, 3, did.UTF8String, -1, SQLITE_TRANSIENT);
+            else sqlite3_bind_null(stmt, 3);
+            if (rev) sqlite3_bind_text(stmt, 4, rev.UTF8String, -1, SQLITE_TRANSIENT);
+            else sqlite3_bind_null(stmt, 4);
+            if (cid) sqlite3_bind_text(stmt, 5, cid.UTF8String, -1, SQLITE_TRANSIENT);
+            else sqlite3_bind_null(stmt, 5);
+            bindDataOrZeroBlob(stmt, 6, rawEnvelope);
+            sqlite3_bind_text(stmt, 7, now.UTF8String, -1, SQLITE_TRANSIENT);
+            rc = sqlite3_step(stmt);
+            sqlite3_finalize(stmt);
+        }
+        if (rc != SQLITE_DONE && rc != SQLITE_OK) {
+            ok = NO;
+            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain
+                                             code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to append stored AppView event"}];
+        }
+    });
+
+    if (!ok && error) *error = innerError;
+    return ok;
+}
+
+- (nullable NSArray<NSDictionary *> *)loadStoredEventsAfterCursor:(int64_t)cursor
+                                                           limit:(NSInteger)limit
+                                                           error:(NSError **)error {
+    __block NSMutableArray<NSDictionary *> *events = [NSMutableArray array];
+    __block NSError *innerError = nil;
+
+    dispatch_sync(_queue, ^{
+        const char *sql =
+            "SELECT cursor, event_type, seq, did, rev, cid, raw_envelope, created_at"
+            " FROM appview_cursor_events WHERE cursor > ? ORDER BY cursor ASC LIMIT ?";
+        sqlite3_stmt *stmt = NULL;
+        int rc = sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL);
+        if (rc != SQLITE_OK) {
+            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to prepare event replay query"}];
+            return;
+        }
+        sqlite3_bind_int64(stmt, 1, cursor);
+        sqlite3_bind_int64(stmt, 2, limit);
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            NSMutableDictionary *event = [NSMutableDictionary dictionary];
+            event[@"cursor"] = @(sqlite3_column_int64(stmt, 0));
+            const char *type = (const char *)sqlite3_column_text(stmt, 1);
+            event[@"event_type"] = type ? @(type) : @"";
+            event[@"seq"] = @(sqlite3_column_int64(stmt, 2));
+            const char *did = (const char *)sqlite3_column_text(stmt, 3);
+            if (did) event[@"did"] = @(did);
+            const char *rev = (const char *)sqlite3_column_text(stmt, 4);
+            if (rev) event[@"rev"] = @(rev);
+            const char *cid = (const char *)sqlite3_column_text(stmt, 5);
+            if (cid) event[@"cid"] = @(cid);
+            const void *blob = sqlite3_column_blob(stmt, 6);
+            int blobLen = sqlite3_column_bytes(stmt, 6);
+            event[@"raw_envelope"] = blob ? [NSData dataWithBytes:blob length:blobLen] : [NSData data];
+            const char *createdAt = (const char *)sqlite3_column_text(stmt, 7);
+            if (createdAt) event[@"created_at"] = @(createdAt);
+            [events addObject:[event copy]];
+        }
+        sqlite3_finalize(stmt);
+    });
+
+    if (innerError && error) *error = innerError;
+    return innerError ? nil : [events copy];
+}
+
+- (int64_t)durableCursorForRelayURL:(NSString *)relayURL {
+    __block int64_t seq = 0;
+    dispatch_sync(_queue, ^{
+        seq = [self->_durableCursorByRelayURL[relayURL] longLongValue];
+    });
+    return seq;
+}
+
+- (void)markDurableCursor:(int64_t)seq forRelayURL:(NSString *)relayURL {
+    dispatch_sync(_queue, ^{
+        int64_t current = [self->_durableCursorByRelayURL[relayURL] longLongValue];
+        if (seq > current) {
+            self->_durableCursorByRelayURL[relayURL] = @(seq);
+        }
+    });
 }
 
 // ---------------------------------------------------------------------------
@@ -861,10 +1010,12 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
 - (NSInteger)pruneExpiredRelevanceMemberships:(NSError **)error {
     __block NSInteger deleted = 0;
     dispatch_sync(_queue, ^{
+        NSString *now = iso8601Now();
         const char *sql =
-            "DELETE FROM appview_relevance WHERE expires_at IS NOT NULL AND expires_at <= datetime('now')";
+            "DELETE FROM appview_relevance WHERE expires_at IS NOT NULL AND expires_at <= ?";
         sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
+            sqlite3_bind_text(stmt, 1, now.UTF8String, -1, SQLITE_TRANSIENT);
             sqlite3_step(stmt);
             deleted = sqlite3_changes(self->_db);
             sqlite3_finalize(stmt);
@@ -872,9 +1023,10 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
         // Rebuild cache
         [self->_relevanceCache removeAllObjects];
         const char *sel =
-            "SELECT did FROM appview_relevance WHERE expires_at IS NULL OR expires_at > datetime('now')";
+            "SELECT did FROM appview_relevance WHERE expires_at IS NULL OR expires_at > ?";
         sqlite3_stmt *sel_stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sel, -1, &sel_stmt, NULL) == SQLITE_OK) {
+            sqlite3_bind_text(sel_stmt, 1, now.UTF8String, -1, SQLITE_TRANSIENT);
             while (sqlite3_step(sel_stmt) == SQLITE_ROW) {
                 const char *did = (const char *)sqlite3_column_text(sel_stmt, 0);
                 if (did) [self->_relevanceCache addObject:[NSString stringWithUTF8String:did]];
@@ -889,9 +1041,11 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
     __block NSMutableArray<NSString *> *results = [NSMutableArray array];
     dispatch_sync(_queue, ^{
         const char *sql =
-            "SELECT did FROM appview_relevance WHERE expires_at IS NULL OR expires_at > datetime('now')";
+            "SELECT did FROM appview_relevance WHERE expires_at IS NULL OR expires_at > ?";
         sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
+            NSString *now = iso8601Now();
+            sqlite3_bind_text(stmt, 1, now.UTF8String, -1, SQLITE_TRANSIENT);
             while (sqlite3_step(stmt) == SQLITE_ROW) {
                 const char *did = (const char *)sqlite3_column_text(stmt, 0);
                 if (did) [results addObject:[NSString stringWithUTF8String:did]];
@@ -929,7 +1083,7 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
             else     sqlite3_bind_null(stmt, 4);
             if (cid) sqlite3_bind_text(stmt, 5, cid.UTF8String, -1, SQLITE_TRANSIENT);
             else     sqlite3_bind_null(stmt, 5);
-            sqlite3_bind_blob(stmt, 6, rawRecord.bytes, (int)rawRecord.length, SQLITE_TRANSIENT);
+            bindDataOrZeroBlob(stmt, 6, rawRecord);
             sqlite3_bind_text(stmt, 7, validationError.UTF8String, -1, SQLITE_TRANSIENT);
             sqlite3_bind_text(stmt, 8, now.UTF8String, -1, SQLITE_TRANSIENT);
             int rc = sqlite3_step(stmt);
@@ -1088,7 +1242,7 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
         } else if ([param isKindOfClass:[NSString class]]) {
             sqlite3_bind_text(stmt, idx, [param UTF8String], -1, SQLITE_TRANSIENT);
         } else if ([param isKindOfClass:[NSData class]]) {
-            sqlite3_bind_blob(stmt, idx, [param bytes], (int)[param length], SQLITE_TRANSIENT);
+            bindDataOrZeroBlob(stmt, idx, param);
         } else if ([param isKindOfClass:[NSNumber class]]) {
             sqlite3_bind_int64(stmt, idx, [param longLongValue]);
         }
@@ -1134,6 +1288,222 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
     NSString *sql = @"INSERT OR REPLACE INTO blocks (cid, repo_did, block_data, content_type, size, created_at) VALUES (?, ?, ?, ?, ?, ?)";
     NSArray *params = @[cid, repoDid, blockData, contentType ?: @"application/cbor", @(blockData.length), iso8601Now()];
     return [self executeParameterizedUpdate:sql params:params error:error];
+}
+
+- (BOOL)saveRepoSnapshotForDID:(NSString *)did
+                       lastRev:(NSString *)lastRev
+                       records:(NSArray<NSDictionary *> *)records
+                        blocks:(NSArray<NSDictionary *> *)blocks
+                         error:(NSError **)error {
+    __block BOOL ok = YES;
+    __block NSError *innerError = nil;
+
+    dispatch_sync(_queue, ^{
+        char *errmsg = NULL;
+        int rc = sqlite3_exec(self->_db, "BEGIN IMMEDIATE", NULL, NULL, &errmsg);
+        if (rc != SQLITE_OK) {
+            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey: errmsg ? @(errmsg) : @"Failed to begin snapshot transaction"}];
+            if (errmsg) sqlite3_free(errmsg);
+            ok = NO;
+            return;
+        }
+
+        rc = sqlite3_exec(self->_db,
+                          "CREATE TEMP TABLE IF NOT EXISTS appview_snapshot_uris(uri TEXT PRIMARY KEY);"
+                          "DELETE FROM appview_snapshot_uris;",
+                          NULL, NULL, &errmsg);
+        if (rc != SQLITE_OK) {
+            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey: errmsg ? @(errmsg) : @"Failed to prepare snapshot temp table"}];
+            if (errmsg) sqlite3_free(errmsg);
+            sqlite3_exec(self->_db, "ROLLBACK", NULL, NULL, NULL);
+            ok = NO;
+            return;
+        }
+
+        const char *insertBlockSQL =
+            "INSERT OR REPLACE INTO blocks(cid, repo_did, block_data, content_type, size, created_at)"
+            " VALUES(?,?,?,?,?,?)";
+        sqlite3_stmt *blockStmt = NULL;
+        rc = sqlite3_prepare_v2(self->_db, insertBlockSQL, -1, &blockStmt, NULL);
+        if (rc != SQLITE_OK) {
+            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to prepare block snapshot insert"}];
+            sqlite3_exec(self->_db, "ROLLBACK", NULL, NULL, NULL);
+            ok = NO;
+            return;
+        }
+        for (NSDictionary *block in blocks) {
+            NSData *cidData = block[@"cid_data"];
+            NSData *blockData = block[@"block_data"];
+            if (![cidData isKindOfClass:[NSData class]] || ![blockData isKindOfClass:[NSData class]]) continue;
+            NSString *contentType = block[@"content_type"] ?: @"application/cbor";
+            NSString *now = iso8601Now();
+            sqlite3_bind_blob(blockStmt, 1, cidData.bytes, (int)cidData.length, SQLITE_TRANSIENT);
+            sqlite3_bind_text(blockStmt, 2, did.UTF8String, -1, SQLITE_TRANSIENT);
+            sqlite3_bind_blob(blockStmt, 3, blockData.bytes, (int)blockData.length, SQLITE_TRANSIENT);
+            sqlite3_bind_text(blockStmt, 4, contentType.UTF8String, -1, SQLITE_TRANSIENT);
+            sqlite3_bind_int64(blockStmt, 5, blockData.length);
+            sqlite3_bind_text(blockStmt, 6, now.UTF8String, -1, SQLITE_TRANSIENT);
+            rc = sqlite3_step(blockStmt);
+            sqlite3_reset(blockStmt);
+            sqlite3_clear_bindings(blockStmt);
+            if (rc != SQLITE_DONE) break;
+        }
+        sqlite3_finalize(blockStmt);
+        if (rc != SQLITE_DONE && blocks.count > 0) {
+            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to store snapshot blocks"}];
+            sqlite3_exec(self->_db, "ROLLBACK", NULL, NULL, NULL);
+            ok = NO;
+            return;
+        }
+
+        const char *insertRecordSQL =
+            "INSERT OR REPLACE INTO records(uri, did, collection, rkey, cid, handle, value, subject_did, indexed_at)"
+            " VALUES(?,?,?,?,?,?,?,?,?)";
+        const char *insertURIToTempSQL = "INSERT OR IGNORE INTO appview_snapshot_uris(uri) VALUES(?)";
+        sqlite3_stmt *recordStmt = NULL;
+        sqlite3_stmt *tempStmt = NULL;
+        rc = sqlite3_prepare_v2(self->_db, insertRecordSQL, -1, &recordStmt, NULL);
+        if (rc == SQLITE_OK) rc = sqlite3_prepare_v2(self->_db, insertURIToTempSQL, -1, &tempStmt, NULL);
+        if (rc != SQLITE_OK) {
+            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to prepare record snapshot insert"}];
+            if (recordStmt) sqlite3_finalize(recordStmt);
+            if (tempStmt) sqlite3_finalize(tempStmt);
+            sqlite3_exec(self->_db, "ROLLBACK", NULL, NULL, NULL);
+            ok = NO;
+            return;
+        }
+
+        for (NSDictionary *record in records) {
+            NSString *uri = record[@"uri"];
+            NSString *collection = record[@"collection"];
+            NSString *rkey = record[@"rkey"];
+            NSString *cid = record[@"cid"];
+            NSString *handle = record[@"handle"];
+            NSString *value = record[@"value"];
+            NSString *subjectDID = record[@"subject_did"];
+            if (uri.length == 0 || collection.length == 0 || rkey.length == 0 || cid.length == 0) continue;
+
+            NSString *now = iso8601Now();
+            sqlite3_bind_text(recordStmt, 1, uri.UTF8String, -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(recordStmt, 2, did.UTF8String, -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(recordStmt, 3, collection.UTF8String, -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(recordStmt, 4, rkey.UTF8String, -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(recordStmt, 5, cid.UTF8String, -1, SQLITE_TRANSIENT);
+            if (handle) sqlite3_bind_text(recordStmt, 6, handle.UTF8String, -1, SQLITE_TRANSIENT);
+            else sqlite3_bind_null(recordStmt, 6);
+            if (value) sqlite3_bind_text(recordStmt, 7, value.UTF8String, -1, SQLITE_TRANSIENT);
+            else sqlite3_bind_null(recordStmt, 7);
+            if (subjectDID) sqlite3_bind_text(recordStmt, 8, subjectDID.UTF8String, -1, SQLITE_TRANSIENT);
+            else sqlite3_bind_null(recordStmt, 8);
+            sqlite3_bind_text(recordStmt, 9, now.UTF8String, -1, SQLITE_TRANSIENT);
+            rc = sqlite3_step(recordStmt);
+            sqlite3_reset(recordStmt);
+            sqlite3_clear_bindings(recordStmt);
+            if (rc != SQLITE_DONE) break;
+
+            sqlite3_bind_text(tempStmt, 1, uri.UTF8String, -1, SQLITE_TRANSIENT);
+            rc = sqlite3_step(tempStmt);
+            sqlite3_reset(tempStmt);
+            sqlite3_clear_bindings(tempStmt);
+            if (rc != SQLITE_DONE) break;
+        }
+        sqlite3_finalize(recordStmt);
+        sqlite3_finalize(tempStmt);
+        if (rc != SQLITE_DONE && records.count > 0) {
+            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to store snapshot records"}];
+            sqlite3_exec(self->_db, "ROLLBACK", NULL, NULL, NULL);
+            ok = NO;
+            return;
+        }
+
+        const char *deleteSQL =
+            "DELETE FROM records WHERE did = ? AND uri NOT IN (SELECT uri FROM appview_snapshot_uris)";
+        sqlite3_stmt *deleteStmt = NULL;
+        rc = sqlite3_prepare_v2(self->_db, deleteSQL, -1, &deleteStmt, NULL);
+        if (rc == SQLITE_OK) {
+            sqlite3_bind_text(deleteStmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
+            rc = sqlite3_step(deleteStmt);
+            sqlite3_finalize(deleteStmt);
+        }
+        if (rc != SQLITE_DONE && rc != SQLITE_OK) {
+            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey: errmsg ? @(errmsg) : @"Failed to delete stale snapshot records"}];
+            if (errmsg) sqlite3_free(errmsg);
+            sqlite3_exec(self->_db, "ROLLBACK", NULL, NULL, NULL);
+            ok = NO;
+            return;
+        }
+
+        const char *eventSQL =
+            "INSERT OR IGNORE INTO appview_cursor_events(event_type, seq, did, rev, cid, raw_envelope, created_at)"
+            " VALUES('historical_snapshot', 0, ?, ?, ?, ?, ?)";
+        sqlite3_stmt *eventStmt = NULL;
+        rc = sqlite3_prepare_v2(self->_db, eventSQL, -1, &eventStmt, NULL);
+        if (rc == SQLITE_OK) {
+            NSData *rawEnvelope = [lastRev dataUsingEncoding:NSUTF8StringEncoding] ?: [NSData data];
+            NSString *now = iso8601Now();
+            sqlite3_bind_text(eventStmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(eventStmt, 2, lastRev.UTF8String, -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(eventStmt, 3, lastRev.UTF8String, -1, SQLITE_TRANSIENT);
+            bindDataOrZeroBlob(eventStmt, 4, rawEnvelope);
+            sqlite3_bind_text(eventStmt, 5, now.UTF8String, -1, SQLITE_TRANSIENT);
+            rc = sqlite3_step(eventStmt);
+            sqlite3_finalize(eventStmt);
+        }
+        if (rc != SQLITE_DONE && rc != SQLITE_OK) {
+            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to append snapshot cursor event"}];
+            sqlite3_exec(self->_db, "ROLLBACK", NULL, NULL, NULL);
+            ok = NO;
+            return;
+        }
+
+        const char *stateSQL =
+            "INSERT INTO appview_repo_sync_state(did, status, last_rev, last_backfill_at, error_count, last_error)"
+            " VALUES(?,?,?,?,0,NULL)"
+            " ON CONFLICT(did) DO UPDATE SET"
+            " status = excluded.status,"
+            " last_rev = excluded.last_rev,"
+            " last_backfill_at = excluded.last_backfill_at,"
+            " error_count = 0,"
+            " last_error = NULL";
+        sqlite3_stmt *stateStmt = NULL;
+        rc = sqlite3_prepare_v2(self->_db, stateSQL, -1, &stateStmt, NULL);
+        if (rc == SQLITE_OK) {
+            NSString *now = iso8601Now();
+            sqlite3_bind_text(stateStmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
+            sqlite3_bind_int(stateStmt, 2, (int)AppViewRepoSyncStatusSynced);
+            sqlite3_bind_text(stateStmt, 3, lastRev.UTF8String, -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(stateStmt, 4, now.UTF8String, -1, SQLITE_TRANSIENT);
+            rc = sqlite3_step(stateStmt);
+            sqlite3_finalize(stateStmt);
+        }
+        if (rc != SQLITE_DONE && rc != SQLITE_OK) {
+            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to mark snapshot synced"}];
+            sqlite3_exec(self->_db, "ROLLBACK", NULL, NULL, NULL);
+            ok = NO;
+            return;
+        }
+
+        rc = sqlite3_exec(self->_db, "COMMIT", NULL, NULL, &errmsg);
+        if (rc != SQLITE_OK) {
+            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey: errmsg ? @(errmsg) : @"Failed to commit snapshot"}];
+            if (errmsg) sqlite3_free(errmsg);
+            sqlite3_exec(self->_db, "ROLLBACK", NULL, NULL, NULL);
+            ok = NO;
+        }
+    });
+
+    if (!ok && error) *error = innerError;
+    return ok;
 }
 
 #pragma mark - Stats
