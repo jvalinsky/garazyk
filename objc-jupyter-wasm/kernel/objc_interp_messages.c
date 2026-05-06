@@ -762,6 +762,9 @@ Value parse_message_send(Parser *p) {
             if (cstr_starts(s, "NSSet:")) return value_from_class((Class)8);
             if (cstr_starts(s, "NSData:")) return value_from_class((Class)9);
             if (cstr_starts(s, "NSBlock:")) return value_from_class((Class)11);
+            /* String pool pointers that don't match any known marker prefix
+             * are NSString instances (plain @"" literals stored as C strings). */
+            if (is_string_pool_pointer(receiver)) return value_from_class((Class)2);
             Class cls = (Class)0;
             cls = object_getClass(receiver);
             return value_from_class(cls);
@@ -3449,11 +3452,95 @@ Value parse_message_send(Parser *p) {
          * interpreter-registered class methods (+ methods) before
          * falling through to the error. */
         if (target.is_class && target_class_name) {
+            /* [ClassName class] — return the class itself (meta-class identity) */
+            if (cstr_eq(sel_name, "class")) {
+                return value_from_class(target.cls_val);
+            }
             unsigned int mi = find_interpreter_method(sel, target, receiver, 0);
             if (mi < g_ctx.method_count) {
                 return execute_interpreter_method(p, &g_ctx.methods[mi], sel, receiver,
                                                   keyword_args, arg_count, 1);
             }
+        }
+
+        /* NSObject: isKindOfClass: — walk class hierarchy */
+        if (cstr_eq(sel_name, "isKindOfClass:") && target.is_id && arg_count >= 1) {
+            Class target_cls = 0;
+            if (keyword_args[0].is_class) {
+                target_cls = keyword_args[0].cls_val;
+            } else if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
+                target_cls = class_for_fdobj_marker(keyword_args[0].obj_val);
+                if (!target_cls) target_cls = object_getClass(keyword_args[0].obj_val);
+            }
+            if (target_cls) {
+                Class recv_cls = 0;
+                const char *r = (const char *)receiver;
+                if (r && is_string_pool_pointer(receiver)) {
+                    if (cstr_starts(r, "FDObj:")) {
+                        recv_cls = class_for_fdobj_marker(receiver);
+                    } else {
+                        /* Foundation tagged objects — map marker prefix to sentinel class.
+                         * Must match objc_interpreter.c foundation_classes[] order:
+                         * NSObject=1, NSString=2, NSNumber=3, NSArray=4, NSMutableArray=5,
+                         * NSDictionary=6, NSMutableDictionary=7, NSSet=8, NSData=9 */
+                        if (cstr_starts(r, "NSNumber:") || cstr_starts(r, "NSFloat:")) recv_cls = (Class)3;
+                        else if (cstr_starts(r, "NSArr:")) recv_cls = (Class)4;
+                        else if (cstr_starts(r, "NSMutArr:")) recv_cls = (Class)5;
+                        else if (cstr_starts(r, "NSDict:")) recv_cls = (Class)6;
+                        else if (cstr_starts(r, "NSMutDict:")) recv_cls = (Class)7;
+                        else if (cstr_starts(r, "NSSet:")) recv_cls = (Class)8;
+                        else if (cstr_starts(r, "NSData:")) recv_cls = (Class)9;
+                        else if (cstr_starts(r, "NSBlock:")) recv_cls = (Class)11;
+                        /* String pool pointers without NSStr: prefix are NSString */
+                        else recv_cls = (Class)2;
+                    }
+                } else {
+                    recv_cls = object_getClass(receiver);
+                }
+                while (recv_cls) {
+                    if (recv_cls == target_cls) return value_from_int(1);
+                    const char *name = class_name_for_ptr(recv_cls);
+                    if (!name) break;
+                    const char *super_name = class_get_superclass_name(name);
+                    if (!super_name || super_name[0] == '\0') break;
+                    recv_cls = class_ptr_for_name(super_name);
+                }
+            }
+            return value_from_int(0);
+        }
+
+        /* NSObject: isMemberOfClass: — exact class match */
+        if (cstr_eq(sel_name, "isMemberOfClass:") && target.is_id && arg_count >= 1) {
+            Class target_cls = 0;
+            if (keyword_args[0].is_class) {
+                target_cls = keyword_args[0].cls_val;
+            } else if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
+                target_cls = class_for_fdobj_marker(keyword_args[0].obj_val);
+                if (!target_cls) target_cls = object_getClass(keyword_args[0].obj_val);
+            }
+            if (target_cls) {
+                Class recv_cls = 0;
+                const char *r = (const char *)receiver;
+                if (r && is_string_pool_pointer(receiver)) {
+                    if (cstr_starts(r, "FDObj:")) {
+                        recv_cls = class_for_fdobj_marker(receiver);
+                    } else {
+                        if (cstr_starts(r, "NSNumber:") || cstr_starts(r, "NSFloat:")) recv_cls = (Class)3;
+                        else if (cstr_starts(r, "NSArr:")) recv_cls = (Class)4;
+                        else if (cstr_starts(r, "NSMutArr:")) recv_cls = (Class)5;
+                        else if (cstr_starts(r, "NSDict:")) recv_cls = (Class)6;
+                        else if (cstr_starts(r, "NSMutDict:")) recv_cls = (Class)7;
+                        else if (cstr_starts(r, "NSSet:")) recv_cls = (Class)8;
+                        else if (cstr_starts(r, "NSData:")) recv_cls = (Class)9;
+                        else if (cstr_starts(r, "NSBlock:")) recv_cls = (Class)11;
+                        else recv_cls = (Class)2;
+                    }
+                } else {
+                    recv_cls = object_getClass(receiver);
+                }
+                return value_from_int(recv_cls == target_cls ? 1 : 0);
+            }
+            return value_from_int(0);
         }
 
         /* NSObject: copy / mutableCopy — return self for value types.
