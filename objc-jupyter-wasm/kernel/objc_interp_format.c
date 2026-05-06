@@ -846,130 +846,102 @@ void format_value(Value v, char *buf, unsigned int capacity) {
 }
 
 /* ── String pool garbage collection ─────────────────────────────── */
-/* RelocEntry is defined in objc_interp_types.h */
 
-/* With the ObjId handle system, GC works differently:
- * 1. Walk root ObjId handles to find which object table entries are live
- * 2. Mark those entries' pool_offsets as live
- * 3. Compact the string pool (move live strings to front)
- * 4. Update ObjectEntry.pool_offset for each live entry
- * No root pointer rewriting needed — all access goes through obj_deref(). */
+/* With the ObjId handle system, GC works as follows:
+ * 1. Walk root ObjId handles to mark which object table entries are live
+ * 2. Collect live pool_offsets from marked entries
+ * 3. Sort by pool_offset, compact the string pool
+ * 4. Walk ALL active object table entries and update pool_offsets
+ *    using the relocation table
+ * 5. Free unreachable entries (active but not marked as live)
+ *
+ * This is simpler than the old approach because:
+ * - No need to walk roots twice (mark + update)
+ * - No binary search per root — we update all entries in one pass
+ * - The relocs[] array maps old_off → new_off for compaction */
 
-typedef enum {
-    GC_MARK,   /* Phase 1: mark live object table entries */
-    GC_UPDATE  /* Phase 3: update pool_offset in object table */
-} GcPhase;
+/* Bit vector for marking live object table entries during GC.
+ * MAX_OBJECTS = 4096, so 4096 bits = 512 bytes. */
+static unsigned char gc_live_bits[MAX_OBJECTS / 8];
 
-/* Visit an ObjId handle: in GC_MARK, record the pool_offset as live.
- * In GC_UPDATE, update the pool_offset from the relocation table. */
-static void gc_visit_obj(ObjId h, RelocEntry *relocs, unsigned int *reloc_count,
-                          unsigned int max_relocs, GcPhase phase) {
+static void gc_mark_live(ObjId h) {
     if (h == OBJ_NULL || h >= MAX_OBJECTS || !g_ctx.objects[h].active) return;
-    if (phase == GC_MARK) {
-        if (*reloc_count < max_relocs) {
-            relocs[*reloc_count].old_off = g_ctx.objects[h].pool_offset;
-            relocs[*reloc_count].new_off = 0;
-            (*reloc_count)++;
-        }
-    } else {
-        /* Binary search: relocs[] is sorted by old_off after Phase 2. */
-        unsigned int off = g_ctx.objects[h].pool_offset;
-        unsigned int lo = 0, hi = *reloc_count;
-        while (lo < hi) {
-            unsigned int mid = lo + (hi - lo) / 2;
-            if (relocs[mid].old_off < off) lo = mid + 1;
-            else hi = mid;
-        }
-        if (lo < *reloc_count && relocs[lo].old_off == off) {
-            g_ctx.objects[h].pool_offset = relocs[lo].new_off;
-        }
-    }
+    gc_live_bits[h / 8] |= (1 << (h % 8));
 }
 
-static void gc_visit_value(Value *v, RelocEntry *relocs, unsigned int *reloc_count,
-                           unsigned int max_relocs, GcPhase phase) {
+static int gc_is_live(ObjId h) {
+    if (h == OBJ_NULL || h >= MAX_OBJECTS) return 0;
+    return (gc_live_bits[h / 8] >> (h % 8)) & 1;
+}
+
+static void gc_mark_value(Value *v) {
     if (!v->is_id || v->obj_val == OBJ_NULL) return;
-    gc_visit_obj(v->obj_val, relocs, reloc_count, max_relocs, phase);
+    gc_mark_live(v->obj_val);
 }
 
-static void gc_visit_roots(RelocEntry *relocs, unsigned int *reloc_count,
-                           unsigned int max_relocs, GcPhase phase) {
+static void gc_mark_roots(void) {
     unsigned int i, ci;
 
     /* Variables */
     for (i = 0; i < g_ctx.var_count; i++) {
         if (g_ctx.vars[i].is_id && g_ctx.vars[i].value != OBJ_NULL) {
-            gc_visit_obj(g_ctx.vars[i].value, relocs, reloc_count,
-                         max_relocs, phase);
+            gc_mark_live(g_ctx.vars[i].value);
         }
     }
 
     /* Return value */
-    gc_visit_value(&g_ctx.return_value, relocs, reloc_count, max_relocs, phase);
+    gc_mark_value(&g_ctx.return_value);
 
     /* Instance variables: object key (FDObj: marker) + value */
     for (i = 0; i < g_ctx.instance_var_count; i++) {
-        gc_visit_obj(g_ctx.instance_vars[i].object, relocs, reloc_count,
-                     max_relocs, phase);
-        gc_visit_value(&g_ctx.instance_vars[i].value, relocs, reloc_count,
-                       max_relocs, phase);
+        gc_mark_live(g_ctx.instance_vars[i].object);
+        gc_mark_value(&g_ctx.instance_vars[i].value);
     }
 
     /* Collection entries: key + value */
     for (i = 0; i < g_ctx.coll_entry_count; i++) {
-        gc_visit_value(&g_ctx.coll_entries[i].key, relocs, reloc_count,
-                       max_relocs, phase);
-        gc_visit_value(&g_ctx.coll_entries[i].value, relocs, reloc_count,
-                       max_relocs, phase);
+        gc_mark_value(&g_ctx.coll_entries[i].key);
+        gc_mark_value(&g_ctx.coll_entries[i].value);
     }
 
     /* Block captures */
     for (i = 0; i < g_ctx.block_count; i++) {
         for (ci = 0; ci < g_ctx.blocks[i].capture_count; ci++) {
-            gc_visit_value(&g_ctx.blocks[i].captures[ci].value, relocs,
-                           reloc_count, max_relocs, phase);
+            gc_mark_value(&g_ctx.blocks[i].captures[ci].value);
         }
     }
 
     /* Invocations: receiver + args */
     for (i = 0; i < g_ctx.next_invocation_id && i < MAX_INVOCATIONS; i++) {
-        gc_visit_obj(g_ctx.invocations[i].receiver, relocs, reloc_count,
-                     max_relocs, phase);
+        gc_mark_live(g_ctx.invocations[i].receiver);
         {
             unsigned int ai;
             for (ai = 0; ai < g_ctx.invocations[i].arg_count; ai++) {
-                gc_visit_value(&g_ctx.invocations[i].args[ai], relocs,
-                               reloc_count, max_relocs, phase);
+                gc_mark_value(&g_ctx.invocations[i].args[ai]);
             }
         }
     }
 
     /* Associations: target + value */
     for (i = 0; i < g_ctx.association_count; i++) {
-        gc_visit_obj(g_ctx.associations[i].target, relocs, reloc_count,
-                     max_relocs, phase);
-        gc_visit_value(&g_ctx.associations[i].value, relocs, reloc_count,
-                       max_relocs, phase);
+        gc_mark_live(g_ctx.associations[i].target);
+        gc_mark_value(&g_ctx.associations[i].value);
     }
 
     /* KVO observers: target + observer */
     for (i = 0; i < g_ctx.kvo_count; i++) {
-        gc_visit_obj(g_ctx.kvo_observers[i].target, relocs, reloc_count,
-                     max_relocs, phase);
-        gc_visit_obj(g_ctx.kvo_observers[i].observer, relocs, reloc_count,
-                     max_relocs, phase);
+        gc_mark_live(g_ctx.kvo_observers[i].target);
+        gc_mark_live(g_ctx.kvo_observers[i].observer);
     }
 
     /* Current exception */
-    gc_visit_value(&g_ctx.current_exception, relocs, reloc_count,
-                   max_relocs, phase);
+    gc_mark_value(&g_ctx.current_exception);
 
     /* Autorelease pool objects */
     for (i = 0; i < g_ctx.pool_depth; i++) {
         unsigned int j;
         for (j = 0; j < g_ctx.pools[i].count; j++) {
-            gc_visit_obj(g_ctx.pools[i].object_markers[j], relocs,
-                         reloc_count, max_relocs, phase);
+            gc_mark_live(g_ctx.pools[i].object_markers[j]);
         }
     }
 }
@@ -981,12 +953,28 @@ void objc_interp_gc_strings(void) {
     unsigned int i;
     unsigned int pool_limit = g_ctx.string_pool_offset;
 
-    /* Phase 1: Mark — collect live pool offsets from root ObjId handles. */
-    gc_visit_roots(relocs, &reloc_count, MAX_STRING_POOL_MARKS, GC_MARK);
+    /* Clear live bits */
+    for (i = 0; i < sizeof(gc_live_bits); i++) {
+        gc_live_bits[i] = 0;
+    }
+
+    /* Phase 1: Mark — walk roots to identify live object table entries. */
+    gc_mark_roots();
+
+    /* Collect live pool offsets from marked entries. */
+    for (i = 1; i < MAX_OBJECTS; i++) {
+        if (gc_is_live(i) && g_ctx.objects[i].active) {
+            if (reloc_count < MAX_STRING_POOL_MARKS) {
+                relocs[reloc_count].old_off = g_ctx.objects[i].pool_offset;
+                relocs[reloc_count].new_off = 0;
+                reloc_count++;
+            }
+        }
+    }
 
     if (reloc_count == 0) {
         g_ctx.string_pool_offset = 0;
-        /* Also deactivate all object table entries — nothing is live */
+        /* Deactivate all object table entries — nothing is live */
         for (i = 0; i < MAX_OBJECTS; i++) {
             g_ctx.objects[i].active = 0;
         }
@@ -1037,31 +1025,34 @@ void objc_interp_gc_strings(void) {
     }
     g_ctx.string_pool_offset = new_offset;
 
-    /* Phase 3: Update — rewrite ObjectEntry.pool_offset for each live entry.
-     * Uses the same root enumeration as Phase 1 (mark), guaranteeing
-     * every marked entry is also updated. */
-    gc_visit_roots(relocs, &reloc_count, MAX_STRING_POOL_MARKS, GC_UPDATE);
-
-    /* Mark unreachable object table entries as inactive */
-    {
-        /* Build a set of live handles from the relocs.
-         * Any active object whose pool_offset was NOT in the relocs
-         * after compaction is unreachable and should be freed. */
-        /* Simple approach: mark all active entries, then unmark those
-         * that were visited by gc_visit_roots during UPDATE. Since
-         * gc_visit_obj only visits active entries, we can track which
-         * ones were visited by checking if their pool_offset was updated.
-         * Actually, the simplest approach: after GC, any active object
-         * whose pool_offset is 0 or >= new_offset is dead. */
-        for (i = 1; i < MAX_OBJECTS; i++) {
-            if (g_ctx.objects[i].active &&
-                (g_ctx.objects[i].pool_offset == 0 ||
-                 g_ctx.objects[i].pool_offset >= new_offset)) {
-                g_ctx.objects[i].active = 0;
-                g_ctx.objects[i].pool_offset = 0;
-                g_ctx.objects[i].next_free = g_ctx.object_free_list;
-                g_ctx.object_free_list = i;
+    /* Phase 3: Update — walk ALL active object table entries and update
+     * their pool_offsets using the relocation table. This is simpler than
+     * walking roots again because we don't need binary search per root —
+     * we just look up each entry's old offset in the sorted relocs[]. */
+    for (i = 1; i < MAX_OBJECTS; i++) {
+        if (!g_ctx.objects[i].active) continue;
+        {
+            unsigned int off = g_ctx.objects[i].pool_offset;
+            /* Binary search for old_off in relocs[] */
+            unsigned int lo = 0, hi = reloc_count;
+            while (lo < hi) {
+                unsigned int mid = lo + (hi - lo) / 2;
+                if (relocs[mid].old_off < off) lo = mid + 1;
+                else hi = mid;
             }
+            if (lo < reloc_count && relocs[lo].old_off == off) {
+                g_ctx.objects[i].pool_offset = relocs[lo].new_off;
+            }
+        }
+    }
+
+    /* Phase 4: Free unreachable entries — active but not marked as live. */
+    for (i = 1; i < MAX_OBJECTS; i++) {
+        if (g_ctx.objects[i].active && !gc_is_live(i)) {
+            g_ctx.objects[i].active = 0;
+            g_ctx.objects[i].pool_offset = 0;
+            g_ctx.objects[i].next_free = g_ctx.object_free_list;
+            g_ctx.object_free_list = i;
         }
     }
 }
