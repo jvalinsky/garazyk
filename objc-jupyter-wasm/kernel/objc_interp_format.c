@@ -848,30 +848,32 @@ void format_value(Value v, char *buf, unsigned int capacity) {
 /* ── String pool garbage collection ─────────────────────────────── */
 /* RelocEntry is defined in objc_interp_types.h */
 
-/* Centralized root visitor: marks or updates every id/Value pointer in
- * InterpContext that could reference the string pool.  Used for both
- * Phase 1 (mark) and Phase 3 (update) to ensure the root set is
- * identical — no more "mark but forget to update" bugs. */
+/* With the ObjId handle system, GC works differently:
+ * 1. Walk root ObjId handles to find which object table entries are live
+ * 2. Mark those entries' pool_offsets as live
+ * 3. Compact the string pool (move live strings to front)
+ * 4. Update ObjectEntry.pool_offset for each live entry
+ * No root pointer rewriting needed — all access goes through obj_deref(). */
+
 typedef enum {
-    GC_MARK,   /* Phase 1: record old_off into relocs[] */
-    GC_UPDATE  /* Phase 3: rewrite pointer from relocs[] */
+    GC_MARK,   /* Phase 1: mark live object table entries */
+    GC_UPDATE  /* Phase 3: update pool_offset in object table */
 } GcPhase;
 
-static void gc_visit_id_ptr(id *ptr, RelocEntry *relocs, unsigned int *reloc_count,
-                            unsigned int max_relocs, unsigned long pool_start,
-                            unsigned long pool_end, GcPhase phase) {
-    if (*ptr == 0) return;
-    unsigned long addr = (unsigned long)(*ptr);
-    if (addr < pool_start || addr >= pool_end) return;
-    unsigned int off = (unsigned int)(addr - pool_start);
+/* Visit an ObjId handle: in GC_MARK, record the pool_offset as live.
+ * In GC_UPDATE, update the pool_offset from the relocation table. */
+static void gc_visit_obj(ObjId h, RelocEntry *relocs, unsigned int *reloc_count,
+                          unsigned int max_relocs, GcPhase phase) {
+    if (h == OBJ_NULL || h >= MAX_OBJECTS || !g_ctx.objects[h].active) return;
     if (phase == GC_MARK) {
         if (*reloc_count < max_relocs) {
-            relocs[*reloc_count].old_off = off;
+            relocs[*reloc_count].old_off = g_ctx.objects[h].pool_offset;
             relocs[*reloc_count].new_off = 0;
             (*reloc_count)++;
         }
     } else {
         /* Binary search: relocs[] is sorted by old_off after Phase 2. */
+        unsigned int off = g_ctx.objects[h].pool_offset;
         unsigned int lo = 0, hi = *reloc_count;
         while (lo < hi) {
             unsigned int mid = lo + (hi - lo) / 2;
@@ -879,99 +881,95 @@ static void gc_visit_id_ptr(id *ptr, RelocEntry *relocs, unsigned int *reloc_cou
             else hi = mid;
         }
         if (lo < *reloc_count && relocs[lo].old_off == off) {
-            *ptr = (id)(g_ctx.string_pool + relocs[lo].new_off);
+            g_ctx.objects[h].pool_offset = relocs[lo].new_off;
         }
     }
 }
 
 static void gc_visit_value(Value *v, RelocEntry *relocs, unsigned int *reloc_count,
-                           unsigned int max_relocs, unsigned long pool_start,
-                           unsigned long pool_end, GcPhase phase) {
-    if (!v->is_id || v->obj_val == 0) return;
-    gc_visit_id_ptr(&v->obj_val, relocs, reloc_count, max_relocs,
-                    pool_start, pool_end, phase);
+                           unsigned int max_relocs, GcPhase phase) {
+    if (!v->is_id || v->obj_val == OBJ_NULL) return;
+    gc_visit_obj(v->obj_val, relocs, reloc_count, max_relocs, phase);
 }
 
 static void gc_visit_roots(RelocEntry *relocs, unsigned int *reloc_count,
-                           unsigned int max_relocs, unsigned long pool_start,
-                           unsigned long pool_end, GcPhase phase) {
+                           unsigned int max_relocs, GcPhase phase) {
     unsigned int i, ci;
 
     /* Variables */
     for (i = 0; i < g_ctx.var_count; i++) {
-        if (g_ctx.vars[i].is_id && g_ctx.vars[i].value != 0) {
-            gc_visit_id_ptr(&g_ctx.vars[i].value, relocs, reloc_count,
-                            max_relocs, pool_start, pool_end, phase);
+        if (g_ctx.vars[i].is_id && g_ctx.vars[i].value != OBJ_NULL) {
+            gc_visit_obj(g_ctx.vars[i].value, relocs, reloc_count,
+                         max_relocs, phase);
         }
     }
 
     /* Return value */
-    gc_visit_value(&g_ctx.return_value, relocs, reloc_count, max_relocs,
-                   pool_start, pool_end, phase);
+    gc_visit_value(&g_ctx.return_value, relocs, reloc_count, max_relocs, phase);
 
     /* Instance variables: object key (FDObj: marker) + value */
     for (i = 0; i < g_ctx.instance_var_count; i++) {
-        gc_visit_id_ptr(&g_ctx.instance_vars[i].object, relocs, reloc_count,
-                        max_relocs, pool_start, pool_end, phase);
+        gc_visit_obj(g_ctx.instance_vars[i].object, relocs, reloc_count,
+                     max_relocs, phase);
         gc_visit_value(&g_ctx.instance_vars[i].value, relocs, reloc_count,
-                       max_relocs, pool_start, pool_end, phase);
+                       max_relocs, phase);
     }
 
     /* Collection entries: key + value */
     for (i = 0; i < g_ctx.coll_entry_count; i++) {
         gc_visit_value(&g_ctx.coll_entries[i].key, relocs, reloc_count,
-                       max_relocs, pool_start, pool_end, phase);
+                       max_relocs, phase);
         gc_visit_value(&g_ctx.coll_entries[i].value, relocs, reloc_count,
-                       max_relocs, pool_start, pool_end, phase);
+                       max_relocs, phase);
     }
 
     /* Block captures */
     for (i = 0; i < g_ctx.block_count; i++) {
         for (ci = 0; ci < g_ctx.blocks[i].capture_count; ci++) {
             gc_visit_value(&g_ctx.blocks[i].captures[ci].value, relocs,
-                           reloc_count, max_relocs, pool_start, pool_end, phase);
+                           reloc_count, max_relocs, phase);
         }
     }
 
     /* Invocations: receiver + args */
     for (i = 0; i < g_ctx.next_invocation_id && i < MAX_INVOCATIONS; i++) {
-        gc_visit_id_ptr(&g_ctx.invocations[i].receiver, relocs, reloc_count,
-                        max_relocs, pool_start, pool_end, phase);
+        gc_visit_obj(g_ctx.invocations[i].receiver, relocs, reloc_count,
+                     max_relocs, phase);
         {
             unsigned int ai;
             for (ai = 0; ai < g_ctx.invocations[i].arg_count; ai++) {
                 gc_visit_value(&g_ctx.invocations[i].args[ai], relocs,
-                               reloc_count, max_relocs, pool_start, pool_end, phase);
+                               reloc_count, max_relocs, phase);
             }
         }
     }
 
     /* Associations: target + value */
     for (i = 0; i < g_ctx.association_count; i++) {
-        gc_visit_id_ptr(&g_ctx.associations[i].target, relocs, reloc_count,
-                        max_relocs, pool_start, pool_end, phase);
+        gc_visit_obj(g_ctx.associations[i].target, relocs, reloc_count,
+                     max_relocs, phase);
         gc_visit_value(&g_ctx.associations[i].value, relocs, reloc_count,
-                       max_relocs, pool_start, pool_end, phase);
+                       max_relocs, phase);
     }
 
     /* KVO observers: target + observer */
     for (i = 0; i < g_ctx.kvo_count; i++) {
-        gc_visit_id_ptr(&g_ctx.kvo_observers[i].target, relocs, reloc_count,
-                        max_relocs, pool_start, pool_end, phase);
-        gc_visit_id_ptr(&g_ctx.kvo_observers[i].observer, relocs, reloc_count,
-                        max_relocs, pool_start, pool_end, phase);
+        gc_visit_obj(g_ctx.kvo_observers[i].target, relocs, reloc_count,
+                     max_relocs, phase);
+        gc_visit_obj(g_ctx.kvo_observers[i].observer, relocs, reloc_count,
+                     max_relocs, phase);
     }
 
     /* Current exception */
     gc_visit_value(&g_ctx.current_exception, relocs, reloc_count,
-                   max_relocs, pool_start, pool_end, phase);
+                   max_relocs, phase);
 
     /* Autorelease pool objects */
     for (i = 0; i < g_ctx.pool_depth; i++) {
         unsigned int j;
         for (j = 0; j < g_ctx.pools[i].count; j++) {
-            gc_visit_id_ptr(&g_ctx.pools[i].object_markers[j], relocs,
-                            reloc_count, max_relocs, pool_start, pool_end, phase);
+            gc_visit_obj(g_ctx.pools[i].object_markers[j], relocs,
+                         reloc_count, max_relocs, phase);
         }
     }
 }
@@ -982,15 +980,16 @@ void objc_interp_gc_strings(void) {
     unsigned int new_offset = 0;
     unsigned int i;
     unsigned int pool_limit = g_ctx.string_pool_offset;
-    unsigned long pool_start = (unsigned long)g_ctx.string_pool;
-    unsigned long pool_end = pool_start + (unsigned long)pool_limit;
 
-    /* Phase 1: Mark — collect live strings from ALL persistent roots. */
-    gc_visit_roots(relocs, &reloc_count, MAX_STRING_POOL_MARKS,
-                   pool_start, pool_end, GC_MARK);
+    /* Phase 1: Mark — collect live pool offsets from root ObjId handles. */
+    gc_visit_roots(relocs, &reloc_count, MAX_STRING_POOL_MARKS, GC_MARK);
 
     if (reloc_count == 0) {
         g_ctx.string_pool_offset = 0;
+        /* Also deactivate all object table entries — nothing is live */
+        for (i = 0; i < MAX_OBJECTS; i++) {
+            g_ctx.objects[i].active = 0;
+        }
         return;
     }
 
@@ -1038,11 +1037,32 @@ void objc_interp_gc_strings(void) {
     }
     g_ctx.string_pool_offset = new_offset;
 
-    /* Phase 3: Update — rewrite ALL root pointers to their new offsets.
+    /* Phase 3: Update — rewrite ObjectEntry.pool_offset for each live entry.
      * Uses the same root enumeration as Phase 1 (mark), guaranteeing
-     * every marked pointer is also updated — no more "mark but forget
-     * to update" bugs. */
-    gc_visit_roots(relocs, &reloc_count, MAX_STRING_POOL_MARKS,
-                   pool_start, pool_end, GC_UPDATE);
+     * every marked entry is also updated. */
+    gc_visit_roots(relocs, &reloc_count, MAX_STRING_POOL_MARKS, GC_UPDATE);
+
+    /* Mark unreachable object table entries as inactive */
+    {
+        /* Build a set of live handles from the relocs.
+         * Any active object whose pool_offset was NOT in the relocs
+         * after compaction is unreachable and should be freed. */
+        /* Simple approach: mark all active entries, then unmark those
+         * that were visited by gc_visit_roots during UPDATE. Since
+         * gc_visit_obj only visits active entries, we can track which
+         * ones were visited by checking if their pool_offset was updated.
+         * Actually, the simplest approach: after GC, any active object
+         * whose pool_offset is 0 or >= new_offset is dead. */
+        for (i = 1; i < MAX_OBJECTS; i++) {
+            if (g_ctx.objects[i].active &&
+                (g_ctx.objects[i].pool_offset == 0 ||
+                 g_ctx.objects[i].pool_offset >= new_offset)) {
+                g_ctx.objects[i].active = 0;
+                g_ctx.objects[i].pool_offset = 0;
+                g_ctx.objects[i].next_free = g_ctx.object_free_list;
+                g_ctx.object_free_list = i;
+            }
+        }
+    }
 }
 
