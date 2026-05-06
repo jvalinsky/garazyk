@@ -58,12 +58,45 @@ void objc_kernel_on_fetch_complete(int task_id, int status_code, const char *dat
 
             /* We need to execute the block with (data, response, error) */
             /* This is a bit tricky: we are outside the normal parse_statement loop.
-               We must locate the block, set up arguments, and call eval_source_range. */
+               We must locate the block, set up arguments, and call eval_source_range.
+               Save ALL dispatch-critical state so the callback runs in a clean
+               interpreter context and cannot corrupt the caller's state. */
             {
                 BlockImpl *blk = block_get(block_id);
                 if (blk) {
-                    /* Save variables to restore later */
+                    /* Save full interpreter state */
                     unsigned int saved_var_count = g_ctx.var_count;
+                    int saved_error_code = g_ctx.error_code;
+                    char saved_error_buffer[OBJC_INTERP_ERROR_SIZE];
+                    cstr_copy(saved_error_buffer, g_ctx.error_buffer, OBJC_INTERP_ERROR_SIZE);
+                    int saved_return_pending = g_ctx.return_pending;
+                    int saved_break_pending = g_ctx.break_pending;
+                    int saved_continue_pending = g_ctx.continue_pending;
+                    int saved_exception_pending = g_ctx.exception_pending;
+                    Value saved_current_exception = g_ctx.current_exception;
+                    unsigned int saved_try_depth = g_ctx.try_depth;
+                    unsigned int saved_pool_depth = g_ctx.pool_depth;
+                    unsigned int saved_parse_depth = g_ctx.parse_depth;
+                    unsigned int saved_eval_depth = g_ctx.eval_depth;
+                    unsigned int saved_loop_iterations = g_ctx.loop_iterations;
+                    int saved_suppress = g_ctx.suppress_side_effects;
+                    unsigned int saved_ast_count = g_ctx.ast_count;
+
+                    /* Reset for clean callback execution */
+                    g_ctx.error_code = OBJC_INTERP_OK;
+                    g_ctx.error_buffer[0] = '\0';
+                    g_ctx.return_pending = 0;
+                    g_ctx.break_pending = 0;
+                    g_ctx.continue_pending = 0;
+                    g_ctx.exception_pending = 0;
+                    g_ctx.current_exception = value_void();
+                    g_ctx.try_depth = 0;
+                    g_ctx.pool_depth = 0;
+                    g_ctx.parse_depth = 0;
+                    g_ctx.eval_depth = 0;
+                    g_ctx.loop_iterations = 0;
+                    g_ctx.suppress_side_effects = 0;
+                    g_ctx.ast_count = 0;
 
                     /* Set up arguments */
                     if (blk->arg_count > 0) {
@@ -85,8 +118,22 @@ void objc_kernel_on_fetch_complete(int task_id, int status_code, const char *dat
                         eval_source_range(0, blk->source_len, blk->source, 0);
                     }
 
-                    /* Restore variables */
+                    /* Restore full interpreter state */
                     g_ctx.var_count = saved_var_count;
+                    g_ctx.error_code = saved_error_code;
+                    cstr_copy(g_ctx.error_buffer, saved_error_buffer, OBJC_INTERP_ERROR_SIZE);
+                    g_ctx.return_pending = saved_return_pending;
+                    g_ctx.break_pending = saved_break_pending;
+                    g_ctx.continue_pending = saved_continue_pending;
+                    g_ctx.exception_pending = saved_exception_pending;
+                    g_ctx.current_exception = saved_current_exception;
+                    g_ctx.try_depth = saved_try_depth;
+                    g_ctx.pool_depth = saved_pool_depth;
+                    g_ctx.parse_depth = saved_parse_depth;
+                    g_ctx.eval_depth = saved_eval_depth;
+                    g_ctx.loop_iterations = saved_loop_iterations;
+                    g_ctx.suppress_side_effects = saved_suppress;
+                    g_ctx.ast_count = saved_ast_count;
                 }
             }
             break;
@@ -238,6 +285,18 @@ char *string_pool_alloc(unsigned int size) {
 
 /* ── Collection side table ──────────────────────────────────────── */
 
+/* Initialize the collection handle table. Must be called after
+ * memset(&g_ctx, 0, ...) because the free list uses -1 as sentinel. */
+void coll_init(void) {
+    int i;
+    g_ctx.coll_free_list = -1;
+    for (i = 0; i < MAX_COLLECTIONS; i++) {
+        g_ctx.coll_slot_active[i] = 0;
+        g_ctx.coll_generation[i] = 0;
+        g_ctx.coll_free_next[i] = -1;
+    }
+}
+
 /* Count entries for a given collection ID. */
 unsigned int coll_count(unsigned int coll_id) {
     unsigned int i, count = 0;
@@ -248,13 +307,49 @@ unsigned int coll_count(unsigned int coll_id) {
 }
 
 unsigned int coll_create_new(void) {
-    return g_ctx.next_coll_id++;
+    int slot;
+    /* Try to pop from the free list first */
+    if (g_ctx.coll_free_list >= 0) {
+        slot = g_ctx.coll_free_list;
+        g_ctx.coll_free_list = g_ctx.coll_free_next[slot];
+    } else if (g_ctx.next_coll_id < MAX_COLLECTIONS) {
+        /* Allocate a new slot */
+        slot = (int)g_ctx.next_coll_id;
+        g_ctx.next_coll_id++;
+        g_ctx.coll_generation[slot] = 0;
+    } else {
+        /* No free slots and table full — error */
+        g_ctx.error_code = OBJC_INTERP_RESOURCE_ERROR;
+        cstr_copy(g_ctx.error_buffer, "collection table full (max 64)", OBJC_INTERP_ERROR_SIZE);
+        return 0;
+    }
+    g_ctx.coll_slot_active[slot] = 1;
+    /* Encode the collection ID as: (generation << 16) | slot_index
+     * This allows coll_id_from_marker to validate the generation
+     * and detect ABA reuse bugs. */
+    return (unsigned int)((g_ctx.coll_generation[slot] << 16) | (unsigned int)slot);
+}
+
+/* Destroy a collection: free its slot and entries. */
+void coll_destroy(unsigned int coll_id) {
+    unsigned int slot = coll_id & 0xFFFF;
+    if (slot >= g_ctx.next_coll_id) return;
+    if (!g_ctx.coll_slot_active[slot]) return;
+    /* Remove all entries for this collection */
+    coll_remove_all(coll_id);
+    /* Increment generation to invalidate stale markers */
+    g_ctx.coll_generation[slot]++;
+    g_ctx.coll_slot_active[slot] = 0;
+    /* Push slot onto free list */
+    g_ctx.coll_free_next[slot] = g_ctx.coll_free_list;
+    g_ctx.coll_free_list = (int)slot;
 }
 
 /* Add an entry to a collection. Returns 0 on success, -1 if table full. */
 int coll_add(unsigned int coll_id, Value key, Value value) {
+    unsigned int slot = coll_id & 0xFFFF;
     if (g_ctx.coll_entry_count >= MAX_COLL_ENTRIES) return -1;
-    if (coll_id >= g_ctx.next_coll_id + MAX_COLLECTIONS) return -1;
+    if (slot >= MAX_COLLECTIONS || !g_ctx.coll_slot_active[slot]) return -1;
     g_ctx.coll_entries[g_ctx.coll_entry_count].coll_id = coll_id;
     g_ctx.coll_entries[g_ctx.coll_entry_count].key = key;
     g_ctx.coll_entries[g_ctx.coll_entry_count].value = value;
@@ -344,16 +439,21 @@ unsigned int coll_id_from_marker(const char *s, const char *prefix) {
     if (!cstr_eq_n(s, prefix, prefix_len)) return 0;
     for (i = prefix_len; s[i] >= '0' && s[i] <= '9'; i++) {
         unsigned int digit = (unsigned int)(s[i] - '0');
-        /* Prevent overflow: if id * 10 would exceed MAX_COLL_ENTRIES, clamp */
-        if (id > 429496729) { /* (2^32 - 1) / 10 */
+        /* Prevent overflow: if id * 10 would exceed 2^31, clamp */
+        if (id > 214748364) { /* (2^31 - 1) / 10 */
             id = 0;
             break;
         }
         id = id * 10 + digit;
-        if (id >= 512) { /* MAX_COLL_ENTRIES */
-            id = 0;
-            break;
-        }
+    }
+    /* Validate: the slot must be active and the generation must match.
+     * The encoded ID is (generation << 16) | slot_index. */
+    {
+        unsigned int slot = id & 0xFFFF;
+        unsigned int gen = (id >> 16) & 0xFFFF;
+        if (slot >= MAX_COLLECTIONS) return 0;
+        if (!g_ctx.coll_slot_active[slot]) return 0;
+        if (g_ctx.coll_generation[slot] != gen) return 0;
     }
     return id;
 }

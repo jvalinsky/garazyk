@@ -24,8 +24,10 @@ int coll_add_marker_val(unsigned int coll_id, const char *key_str, id marker);
 char *string_pool_alloc(unsigned int size);
 
 /* Collection side table */
+void coll_init(void);
 unsigned int coll_count(unsigned int coll_id);
 unsigned int coll_create_new(void);
+void coll_destroy(unsigned int coll_id);
 int coll_add(unsigned int coll_id, Value key, Value value);
 int coll_find_by_key(unsigned int coll_id, Value *key);
 void coll_remove_at(unsigned int idx);
