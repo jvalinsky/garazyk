@@ -884,7 +884,7 @@ Value parse_primary(Parser *p) {
                                             /* Also update the ivar variable if inside a method body */
                                             if (g_ctx.properties[pi].ivar_name[0] != '\0') {
                                                 InterpVar *ivar_var = interp_find_var(g_ctx.properties[pi].ivar_name);
-                                                if (ivar_var) {
+                                                if (ivar_var && !g_ctx.suppress_side_effects) {
                                                     interp_set_var_from_value(ivar_var, val);
                                                 }
                                             }
@@ -954,7 +954,7 @@ Value parse_primary(Parser *p) {
                                         /* Also update ivar variable if inside method body */
                                         if (g_ctx.properties[pi].ivar_name[0] != '\0') {
                                             InterpVar *ivar_var = interp_find_var(g_ctx.properties[pi].ivar_name);
-                                            if (ivar_var) {
+                                            if (ivar_var && !g_ctx.suppress_side_effects) {
                                                 interp_set_var_from_value(ivar_var, new_val);
                                             }
                                         }
