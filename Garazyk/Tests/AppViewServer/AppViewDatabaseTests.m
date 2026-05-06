@@ -219,6 +219,82 @@
     XCTAssertFalse([self.db hasEventWithDID:@"did:plc:z" rev:@"rev999" cid:@"cid999"]);
 }
 
+- (void)testStoredEventsReplayAfterCursor {
+    NSError *err = nil;
+    NSData *raw = [@"{}" dataUsingEncoding:NSUTF8StringEncoding];
+
+    XCTAssertTrue([self.db appendStoredEventWithType:@"historical_snapshot"
+                                                seq:0
+                                                did:@"did:plc:replay"
+                                                rev:@"rev1"
+                                                cid:@"cid1"
+                                        rawEnvelope:raw
+                                              error:&err]);
+    XCTAssertTrue([self.db appendStoredEventWithType:@"live_commit"
+                                                seq:42
+                                                did:@"did:plc:replay"
+                                                rev:@"rev2"
+                                                cid:@"cid2"
+                                        rawEnvelope:raw
+                                              error:&err]);
+
+    NSArray<NSDictionary *> *events = [self.db loadStoredEventsAfterCursor:0 limit:10 error:&err];
+    XCTAssertNil(err);
+    XCTAssertEqual(events.count, 2u);
+    XCTAssertEqualObjects(events[0][@"event_type"], @"historical_snapshot");
+    XCTAssertEqualObjects(events[1][@"event_type"], @"live_commit");
+
+    NSNumber *firstCursor = events[0][@"cursor"];
+    NSArray<NSDictionary *> *tail = [self.db loadStoredEventsAfterCursor:firstCursor.longLongValue limit:10 error:&err];
+    XCTAssertEqual(tail.count, 1u);
+    XCTAssertEqualObjects(tail[0][@"rev"], @"rev2");
+}
+
+- (void)testRepoSnapshotStoresGenericRecordsBlocksAndMarksSynced {
+    NSError *err = nil;
+    AppViewRepoSyncState *state = [[AppViewRepoSyncState alloc] initWithDID:@"did:plc:snapshot"];
+    state.status = AppViewRepoSyncStatusProcessing;
+    XCTAssertTrue([self.db upsertRepoSyncState:state error:&err]);
+
+    NSData *cidData = [@"cid-bytes" dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *blockData = [@"block" dataUsingEncoding:NSUTF8StringEncoding];
+    NSArray *records = @[
+        @{
+            @"uri": @"at://did:plc:snapshot/app.bsky.feed.post/one",
+            @"collection": @"app.bsky.feed.post",
+            @"rkey": @"one",
+            @"cid": @"bafyone",
+            @"value": @"{\"$type\":\"app.bsky.feed.post\",\"text\":\"hello\"}"
+        }
+    ];
+    NSArray *blocks = @[
+        @{@"cid_data": cidData, @"block_data": blockData}
+    ];
+
+    XCTAssertTrue([self.db saveRepoSnapshotForDID:@"did:plc:snapshot"
+                                          lastRev:@"rev-snapshot"
+                                          records:records
+                                           blocks:blocks
+                                            error:&err], @"Snapshot failed: %@", err);
+
+    XCTAssertEqual([self.db getTotalRecordsCountForCollection:@"app.bsky.feed.post" error:&err], 1);
+    XCTAssertEqual([self.db getTotalBlocksCountWithError:&err], 1);
+
+    AppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:@"did:plc:snapshot" error:&err];
+    XCTAssertEqual(loaded.status, AppViewRepoSyncStatusSynced);
+    XCTAssertEqualObjects(loaded.lastRev, @"rev-snapshot");
+
+    NSArray<NSDictionary *> *events = [self.db loadStoredEventsAfterCursor:0 limit:10 error:&err];
+    XCTAssertEqual(events.count, 1u);
+    XCTAssertEqualObjects(events[0][@"event_type"], @"historical_snapshot");
+}
+
+- (void)testDurableCursorOnlyAdvancesForward {
+    [self.db markDurableCursor:100 forRelayURL:@"wss://relay"];
+    [self.db markDurableCursor:90 forRelayURL:@"wss://relay"];
+    XCTAssertEqual([self.db durableCursorForRelayURL:@"wss://relay"], 100LL);
+}
+
 // ---------------------------------------------------------------------------
 // Relevance Set
 // ---------------------------------------------------------------------------
