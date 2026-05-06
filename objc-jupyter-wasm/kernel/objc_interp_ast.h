@@ -12,6 +12,11 @@ AstNode *ast_make_for(AstNode *init, AstNode *condition, AstNode *increment, Ast
 AstNode *ast_make_block(void);
 int ast_block_add(AstNode *block, AstNode *child);
 AstNode *ast_make_source(AstNodeType type, unsigned int start, unsigned int len);
+AstNode *ast_make_logical(AstNodeType type, unsigned int left_start, unsigned int left_len,
+                          unsigned int right_start, unsigned int right_len);
+AstNode *ast_make_ternary(unsigned int cond_start, unsigned int cond_len,
+                          unsigned int true_start, unsigned int true_len,
+                          unsigned int false_start, unsigned int false_len);
 AstNode *ast_make_noop(void);
 
 /* Expression helpers shared with the main parser */
