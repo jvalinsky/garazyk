@@ -220,7 +220,7 @@ Value parse_primary(Parser *p) {
     /* nil literal */
     if (tok.type == TOK_NIL) {
         parser_advance(p);
-        return value_from_id(0);
+        return value_from_obj(OBJ_NULL);
     }
 
     /* String literal @"..." */
@@ -672,7 +672,7 @@ Value parse_primary(Parser *p) {
                 }
             }
         }
-        return value_from_id(0);
+        return value_from_obj(OBJ_NULL);
     }
 
     /* Identifier — could be a variable, class name, or NSLog */
@@ -722,7 +722,7 @@ Value parse_primary(Parser *p) {
                     }
                 }
             }
-            return value_from_id(0);
+            return value_from_obj(OBJ_NULL);
         }
 
         /* Check for NSStringFromSelector */
@@ -741,7 +741,7 @@ Value parse_primary(Parser *p) {
                     }
                 }
             }
-            return value_from_id(0);
+            return value_from_obj(OBJ_NULL);
         }
 
         /* Check for class_addMethod */
@@ -865,9 +865,9 @@ Value parse_primary(Parser *p) {
                         return g_ctx.associations[ai].value;
                     }
                 }
-                return value_from_id(0);
+                return value_from_obj(OBJ_NULL);
             }
-            return value_from_id(0);
+            return value_from_obj(OBJ_NULL);
         }
 
         /* Look up variable */
