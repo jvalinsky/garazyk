@@ -904,9 +904,14 @@ Value parse_message_send(Parser *p) {
             const char *protocol_name = 0;
             /* The argument is a protocol object or a string name.
              * In our interpreter, protocols are name strings in the protocol table.
-             * We look up by name match. */
+             * @protocol(Name) returns FDProt:Name markers. */
             if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
-                protocol_name = (const char *)keyword_args[0].obj_val;
+                const char *arg = (const char *)keyword_args[0].obj_val;
+                if (cstr_starts(arg, "FDProt:")) {
+                    protocol_name = arg + 7;
+                } else {
+                    protocol_name = arg;
+                }
             }
             if (protocol_name && target_class_name) {
                 extern int class_conforms_to_protocol(const char *, const char *);
