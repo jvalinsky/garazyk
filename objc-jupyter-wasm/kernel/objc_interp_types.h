@@ -98,6 +98,8 @@ typedef struct {
     int is_id;      /* 1 if this holds an id */
     int is_block_captured; /* 1 if __block variable — capture by reference */
     int is_static;     /* 1 if static variable — persists across cells */
+    int is_struct;     /* 1 if this holds a struct value (side table) */
+    unsigned int struct_instance_id; /* index into struct_instances side table */
 } InterpVar;
 
 #define OBJC_INTERP_MAX_BLOCKS_CAPTURED 32
@@ -327,6 +329,30 @@ typedef struct {
 } MethodImpl;
 
 #define MAX_METHODS 64
+
+/* ── Struct type system ─────────────────────────────────────────── */
+
+#define MAX_STRUCT_FIELDS 8
+#define MAX_STRUCT_DEFS 32
+#define MAX_STRUCT_INSTANCES 64
+
+/* Struct definition: describes the layout of a struct type */
+typedef struct {
+    char name[64];                              /* "NSRange", "CGPoint", etc. */
+    char field_names[MAX_STRUCT_FIELDS][64];     /* "location", "length" */
+    int field_types[MAX_STRUCT_FIELDS];           /* 0=int, 1=float, 2=id */
+    unsigned int field_count;
+} StructDef;
+
+/* Struct instance: runtime storage for a struct value (side table) */
+typedef struct {
+    char type_name[64];                          /* "NSRange" */
+    int int_fields[MAX_STRUCT_FIELDS];
+    double float_fields[MAX_STRUCT_FIELDS];
+    id id_fields[MAX_STRUCT_FIELDS];
+    unsigned int field_count;
+    int active;                                  /* 1 if slot in use */
+} StructInstance;
 
 /* ── Property declarations ─────────────────────────────────────── */
 

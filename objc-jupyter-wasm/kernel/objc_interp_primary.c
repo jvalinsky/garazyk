@@ -35,6 +35,7 @@ extern void eval_nslog(struct Parser *p);
 
 extern const char *typedef_resolve(const char *name);
 extern const char *sel_getName(SEL);
+extern StructDef *struct_def_find(const char *name);
 extern Value parse_expression(struct Parser *p);
 extern Value parse_unary(struct Parser *p);
 
@@ -883,6 +884,41 @@ Value parse_primary(Parser *p) {
                     var->int_value--;
                     parser_advance(p);
                     return value_from_int(old_val);
+                }
+
+                /* Struct member access: r.location, r.length, etc. */
+                if (var->is_struct && parser_current(p).type == TOK_DOT) {
+                    char field_name[64];
+                    StructDef *sd;
+                    StructInstance *si;
+                    parser_advance(p); /* consume . */
+                    if (parser_current(p).type != TOK_IDENTIFIER) {
+                        parser_error(p, "Expected field name after '.'");
+                        return value_void();
+                    }
+                    if (copy_identifier_or_error(p, field_name, parser_current(p).text, 64, "field")) {
+                        return value_void();
+                    }
+                    parser_advance(p);
+
+                    si = &g_ctx.struct_instances[var->struct_instance_id];
+                    sd = struct_def_find(si->type_name);
+                    if (sd && si) {
+                        unsigned int fi;
+                        for (fi = 0; fi < sd->field_count && fi < MAX_STRUCT_FIELDS; fi++) {
+                            if (cstr_eq(sd->field_names[fi], field_name)) {
+                                if (sd->field_types[fi] == 0) {
+                                    return value_from_int(si->int_fields[fi]);
+                                } else if (sd->field_types[fi] == 1) {
+                                    return value_from_float(si->float_fields[fi]);
+                                } else {
+                                    return value_from_id(si->id_fields[fi]);
+                                }
+                            }
+                        }
+                    }
+                    parser_error(p, "Unknown struct field");
+                    return value_void();
                 }
 
                 /* Dot syntax: obj.property → [obj property]
