@@ -865,12 +865,15 @@ static void gc_visit_id_ptr(id *ptr, RelocEntry *relocs, unsigned int *reloc_cou
             (*reloc_count)++;
         }
     } else {
-        unsigned int r;
-        for (r = 0; r < *reloc_count; r++) {
-            if (relocs[r].old_off == off) {
-                *ptr = (id)(g_ctx.string_pool + relocs[r].new_off);
-                break;
-            }
+        /* Binary search: relocs[] is sorted by old_off after Phase 2. */
+        unsigned int lo = 0, hi = *reloc_count;
+        while (lo < hi) {
+            unsigned int mid = lo + (hi - lo) / 2;
+            if (relocs[mid].old_off < off) lo = mid + 1;
+            else hi = mid;
+        }
+        if (lo < *reloc_count && relocs[lo].old_off == off) {
+            *ptr = (id)(g_ctx.string_pool + relocs[lo].new_off);
         }
     }
 }
@@ -956,6 +959,15 @@ static void gc_visit_roots(RelocEntry *relocs, unsigned int *reloc_count,
     /* Current exception */
     gc_visit_value(&g_ctx.current_exception, relocs, reloc_count,
                    max_relocs, pool_start, pool_end, phase);
+
+    /* Autorelease pool objects */
+    for (i = 0; i < g_ctx.pool_depth; i++) {
+        unsigned int j;
+        for (j = 0; j < g_ctx.pools[i].count; j++) {
+            gc_visit_id_ptr(&g_ctx.pools[i].object_markers[j], relocs,
+                            reloc_count, max_relocs, pool_start, pool_end, phase);
+        }
+    }
 }
 
 void objc_interp_gc_strings(void) {

@@ -38,9 +38,16 @@ unsigned int coll_id_from_marker(const char *s, const char *prefix);
 id coll_make_marker(const char *prefix, unsigned int coll_id);
 
 /* Block side table */
+void block_init(void);
 BlockImpl *block_get(unsigned int block_id);
 unsigned int block_id_from_marker(const char *s);
 id block_make_marker(unsigned int block_id);
+
+/* Invocation side table */
+void invocation_init(void);
+
+/* Association side table */
+void association_init(void);
 
 /* Instance variable side table */
 Value *instance_var_get(id object, const char *prop_name);
