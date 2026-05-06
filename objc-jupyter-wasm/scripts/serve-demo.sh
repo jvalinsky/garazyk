@@ -70,11 +70,12 @@ PATH="$(dirname "$JUPYTER_BIN"):$PATH" jupyter lite build \
 # "Plugin 'objc-jupyter-wasm:kernel' is already registered".
 echo ">> Checking federated extension registration..."
 
-python3 -c "
+export EXT_NAME DIST
+python3 << 'PYEOF'
 import json, glob, os
 
-ext_name = '$EXT_NAME'
-dist_dir = '$DIST'
+ext_name = os.environ.get('EXT_NAME', 'objc-jupyter-wasm')
+dist_dir = os.environ.get('DIST', 'dist/jupyterlite')
 
 # Read the _build metadata from the extension's package.json
 pkg_json = os.path.join(dist_dir, 'extensions', ext_name, 'package.json')
@@ -100,15 +101,12 @@ root_fe = root_data.get('jupyter-config-data', {}).get('federated_extensions', [
 already_registered = any(e.get('name') == ext_name for e in root_fe)
 
 if already_registered:
-    # Build succeeded — deduplicate: keep extension ONLY in root config,
+    # Deduplicate: keep extension ONLY in root config,
     # remove from subdirectory configs to prevent double-loading.
-    # JupyterLite merges ALL jupyter-lite.json files on the URL path,
-    # so having the extension in both root and /lab/ causes
-    # "Plugin 'objc-jupyter-wasm:kernel' is already registered".
     patched = 0
     for f in all_configs:
         if f == root_config:
-            continue  # keep root as-is
+            continue
         try:
             with open(f, 'r') as fh:
                 config = json.load(fh)
@@ -158,22 +156,24 @@ if 'defaultKernelName' not in jcd or jcd['defaultKernelName'] == 'python':
     with open(root_config, 'w') as fh:
         json.dump(root_data, fh, indent=2)
     print(f'  Set defaultKernelName to objective-c')
-"
+PYEOF
 
 # ── 6. Verify ────────────────────────────────────────────────────
 echo ">> Verifying built site..."
-python3 -c "
+python3 << 'PYEOF'
 import json, os
-config = json.load(open('$DIST/jupyter-lite.json'))
+dist_dir = os.environ.get('DIST', 'dist/jupyterlite')
+ext_name = os.environ.get('EXT_NAME', 'objc-jupyter-wasm')
+config = json.load(open(os.path.join(dist_dir, 'jupyter-lite.json')))
 fe = config.get('jupyter-config-data', {}).get('federated_extensions', [])
 kernel = config.get('jupyter-config-data', {}).get('defaultKernelName', '')
-wasm = os.path.exists('$DIST/extensions/$EXT_NAME/static/kernel/kernel.wasm')
+wasm = os.path.exists(os.path.join(dist_dir, 'extensions', ext_name, 'static', 'kernel', 'kernel.wasm'))
 print(f'  federated_extensions: {len(fe)} registered')
 print(f'  defaultKernelName: {kernel}')
-print(f'  kernel.wasm: {\"found\" if wasm else \"MISSING\"}')
+print(f'  kernel.wasm: {"found" if wasm else "MISSING"}')
 if not fe or not wasm:
     raise SystemExit('ERROR: Site is incomplete')
-"
+PYEOF
 
 # ── 7. Serve ─────────────────────────────────────────────────────
 echo ""
@@ -193,8 +193,11 @@ cd "$DIST"
 # Serve with correct MIME types for .wasm (application/wasm) and .js.
 # Without this, python3 -m http.server sends application/octet-stream for
 # .wasm files, which causes WebAssembly.instantiateStreaming to fail.
-python3 -c "
-import http.server, mimetypes
+export PORT
+python3 << 'PYEOF'
+import http.server, os
+
+port = int(os.environ.get('PORT', '8765'))
 
 class WasmHandler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
@@ -202,5 +205,5 @@ class WasmHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Content-Type', 'application/wasm')
         super().end_headers()
 
-http.server.test(HandlerClass=WasmHandler, port=$PORT, bind='')
-"
+http.server.test(HandlerClass=WasmHandler, port=port, bind='')
+PYEOF
