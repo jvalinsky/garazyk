@@ -745,7 +745,8 @@ void objc_interp_init(void) {
             "NSCharacterSet", "NSJSONSerialization",
             "NSMutableString",
             "NSURL", "NSMutableURLRequest", "NSURLSession", "NSURLSessionDataTask",
-            "CID", "CryptoUtils", "ATProtoCBORSerialization"
+            "CID", "CryptoUtils", "ATProtoCBORSerialization",
+            "NSNull"
         };
         unsigned int i;
         for (i = 0; i < sizeof(foundation_classes) / sizeof(foundation_classes[0]); i++) {
