@@ -754,6 +754,27 @@ void objc_interp_init(void) {
             }
         }
     }
+    /* Register Foundation class hierarchy so isKindOfClass: walks correctly.
+     * All Foundation classes inherit from NSObject. */
+    {
+        static const char * const foundation_subclasses[] = {
+            "NSString", "NSNumber", "NSArray", "NSMutableArray",
+            "NSDictionary", "NSMutableDictionary", "NSSet", "NSData",
+            "NSCharacterSet", "NSJSONSerialization",
+            "NSURL", "NSMutableURLRequest", "NSURLSession", "NSURLSessionDataTask",
+            "CID", "CryptoUtils", "ATProtoCBORSerialization"
+        };
+        unsigned int i;
+        for (i = 0; i < sizeof(foundation_subclasses) / sizeof(foundation_subclasses[0]); i++) {
+            if (g_ctx.class_hierarchy_count < MAX_CLASS_HIERARCHY) {
+                cstr_copy(g_ctx.class_hierarchy_class[g_ctx.class_hierarchy_count],
+                          foundation_subclasses[i], 64);
+                cstr_copy(g_ctx.class_hierarchy_super[g_ctx.class_hierarchy_count],
+                          "NSObject", 64);
+                g_ctx.class_hierarchy_count++;
+            }
+        }
+    }
     g_ctx.interp_initialized = 1;
 }
 
