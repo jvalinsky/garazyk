@@ -26,7 +26,6 @@ extern Value eval_source_range(unsigned int start, unsigned int len, const char 
 extern InterpVar *interp_find_var(const char *name);
 
 /* string pool and FDObj helpers */
-extern int is_string_pool_pointer(id ptr);
 extern Class class_for_fdobj_marker(ObjId receiver);
 
 /* Forward declarations for this file */

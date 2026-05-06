@@ -203,18 +203,6 @@ Value value_from_interp_var(const InterpVar *var) {
     return v;
 }
 
-Value value_from_int_exported(int n) {
-    return value_from_int(n);
-}
-
-Value value_from_id_exported(id obj) {
-    return value_from_id(obj);
-}
-
-Value value_from_float_exported(double f) {
-    return value_from_float(f);
-}
-
 /* ── JavaScript Collection Helpers ─────────────────────────────── */
 
 int coll_add_string_val(unsigned int coll_id, const char *key_str, const char *val_str) {
@@ -756,13 +744,6 @@ int synthesized_ivar_set(ObjId self, const char *var_name, Value val) {
 }
 
 /* ── String pool pointer check ──────────────────────────────────── */
-
-int is_string_pool_pointer(id value) {
-    unsigned long addr = (unsigned long)value;
-    unsigned long pool_start = (unsigned long)g_ctx.string_pool;
-    unsigned long pool_end = pool_start + OBJC_INTERP_STRING_POOL_SIZE;
-    return value != 0 && addr >= pool_start && addr < pool_end;
-}
 
 /* ── Class lookup for FDObj: markers ────────────────────────────── */
 
