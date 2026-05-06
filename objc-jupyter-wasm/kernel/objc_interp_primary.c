@@ -649,6 +649,29 @@ Value parse_primary(Parser *p) {
         }
     }
 
+    /* Address-of operator: &var → returns a stable pointer for the variable.
+     * Used with objc_setAssociatedObject / objc_getAssociatedObject.
+     * We return a string pool pointer containing "ADDR:varname" so that
+     * the same variable always produces the same pointer. */
+    if (tok.type == TOK_AMPERSAND) {
+        parser_advance(p);
+        if (parser_current(p).type == TOK_IDENTIFIER) {
+            char var_name[64];
+            cstr_copy(var_name, parser_current(p).text, 64);
+            parser_advance(p);
+            {
+                unsigned int needed = 6 + cstr_len(var_name) + 1;
+                char *buf = string_pool_alloc(needed);
+                if (buf) {
+                    cstr_copy(buf, "ADDR:", needed);
+                    cstr_copy(buf + 5, var_name, needed - 5);
+                    return value_from_id((id)buf);
+                }
+            }
+        }
+        return value_from_id(0);
+    }
+
     /* Identifier — could be a variable, class name, or NSLog */
     if (tok.type == TOK_IDENTIFIER) {
         /* Check for NSLog */
@@ -693,6 +716,79 @@ Value parse_primary(Parser *p) {
                 }
             }
             return value_void();
+        }
+
+        /* objc_setAssociatedObject(object, key, value, policy) */
+        if (cstr_eq(tok.text, "objc_setAssociatedObject")) {
+            parser_advance(p);
+            if (parser_current(p).type == TOK_OPEN_PAREN) {
+                Value obj_arg, key_arg, val_arg, policy_arg;
+                parser_advance(p);
+                obj_arg = parse_expression(p);
+                if (parser_current(p).type == TOK_COMMA) parser_advance(p);
+                key_arg = parse_expression(p);
+                if (parser_current(p).type == TOK_COMMA) parser_advance(p);
+                val_arg = parse_expression(p);
+                if (parser_current(p).type == TOK_COMMA) parser_advance(p);
+                policy_arg = parse_expression(p);
+                parser_expect(p, TOK_CLOSE_PAREN);
+
+                /* Store in association table.
+                 * Keys are compared by string content (not pointer),
+                 * since &var produces a new pool pointer each time. */
+                if (g_ctx.association_count < MAX_ASSOCIATIONS) {
+                    id target = obj_arg.is_id ? obj_arg.obj_val : 0;
+                    const char *key_str = key_arg.is_id ? (const char *)key_arg.obj_val : "";
+                    unsigned int ai;
+                    int found = 0;
+                    for (ai = 0; ai < g_ctx.association_count; ai++) {
+                        if (g_ctx.associations[ai].target == target &&
+                            cstr_eq((const char *)g_ctx.associations[ai].key, key_str)) {
+                            g_ctx.associations[ai].value = val_arg;
+                            g_ctx.associations[ai].policy = policy_arg.is_int ? policy_arg.int_val : 1;
+                            found = 1;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        Association *a = &g_ctx.associations[g_ctx.association_count];
+                        a->target = target;
+                        a->key = (void *)key_str;
+                        a->value = val_arg;
+                        a->policy = policy_arg.is_int ? policy_arg.int_val : 1;
+                        g_ctx.association_count++;
+                    }
+                }
+                return value_void();
+            }
+            return value_void();
+        }
+
+        /* objc_getAssociatedObject(object, key) */
+        if (cstr_eq(tok.text, "objc_getAssociatedObject")) {
+            parser_advance(p);
+            if (parser_current(p).type == TOK_OPEN_PAREN) {
+                Value obj_arg, key_arg;
+                parser_advance(p);
+                obj_arg = parse_expression(p);
+                if (parser_current(p).type == TOK_COMMA) parser_advance(p);
+                key_arg = parse_expression(p);
+                parser_expect(p, TOK_CLOSE_PAREN);
+
+                /* Look up in association table.
+                 * Keys are compared by string content (not pointer). */
+                id target = obj_arg.is_id ? obj_arg.obj_val : 0;
+                const char *key_str = key_arg.is_id ? (const char *)key_arg.obj_val : "";
+                unsigned int ai;
+                for (ai = 0; ai < g_ctx.association_count; ai++) {
+                    if (g_ctx.associations[ai].target == target &&
+                        cstr_eq((const char *)g_ctx.associations[ai].key, key_str)) {
+                        return g_ctx.associations[ai].value;
+                    }
+                }
+                return value_from_id(0);
+            }
+            return value_from_id(0);
         }
 
         /* Look up variable */
