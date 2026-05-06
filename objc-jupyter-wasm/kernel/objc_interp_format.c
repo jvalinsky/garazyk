@@ -13,6 +13,28 @@ extern Class object_getClass(id);
 extern void interp_emit_stream(const char *ptr, unsigned int len);
 extern const char *sel_getName(SEL sel);
 
+/* Helper: write integer to buffer, return chars written */
+static int int_to_buf(char *buf, int capacity, int val) {
+    int neg = val < 0;
+    int i = 0;
+    int start;
+    if (neg) val = -val;
+    if (capacity <= 1) return 0;
+    start = neg ? 1 : 0;
+    if (val == 0) { buf[0] = '0'; return 1; }
+    while (val > 0 && i + start < capacity - 1) {
+        buf[start + i] = '0' + (val % 10);
+        val /= 10;
+        i++;
+    }
+    if (neg && start + i < capacity) { buf[start + i] = '-'; i++; }
+    /* Reverse digits */
+    { int lo = 0, hi = i - 1;
+      while (lo < hi) { char t = buf[lo]; buf[lo] = buf[hi]; buf[hi] = t; lo++; hi--; } }
+    buf[i] = '\0';
+    return i;
+}
+
 /* ── NSLog implementation ────────────────────────────────────────── */
 
 void nslog_append(const char *text, unsigned int len) {
@@ -198,6 +220,85 @@ Value format_values_to_pool(const char *fmt, Value *args, int arg_count) {
                             } else if (cstr_eq_n(s, "NSMutStr:", 9)) {
                                 const char *val = s + 9;
                                 while (*val && pos < sizeof(buf)-1) buf[pos++] = *val++;
+                            } else if (cstr_eq_n(s, "NSArr:", 6) || cstr_eq_n(s, "NSMutArr:", 9)) {
+                                /* Format array as ( elem1, elem2, ... ) */
+                                unsigned int cid = coll_id_from_marker(s, "NSArr:");
+                                if (cid == 0) cid = coll_id_from_marker(s, "NSMutArr:");
+                                if (pos < sizeof(buf)-1) buf[pos++] = '(';
+                                if (cid > 0) {
+                                    unsigned int cnt = coll_count(cid);
+                                    unsigned int ei;
+                                    for (ei = 0; ei < cnt; ei++) {
+                                        int idx = coll_get_nth(cid, ei);
+                                        if (idx >= 0) {
+                                            Value elem = g_ctx.coll_entries[(unsigned int)idx].key;
+                                            if (ei > 0) { if (pos < sizeof(buf)-2) { buf[pos++] = ','; buf[pos++] = ' '; } }
+                                            /* Format element value */
+                                            if (elem.is_id && elem.obj_val != 0) {
+                                                const char *es = (const char *)elem.obj_val;
+                                                if (cstr_eq_n(es, "NSNumber:", 9)) es += 9;
+                                                else if (cstr_eq_n(es, "NSFloat:", 8)) es += 8;
+                                                while (*es && pos < sizeof(buf)-1) buf[pos++] = *es++;
+                                            } else if (elem.is_int) {
+                                                pos += int_to_buf(buf + pos, sizeof(buf) - pos, elem.int_val);
+                                            }
+                                        }
+                                    }
+                                }
+                                if (pos < sizeof(buf)-1) buf[pos++] = ')';
+                            } else if (cstr_eq_n(s, "NSDict:", 7) || cstr_eq_n(s, "NSMutDict:", 10)) {
+                                /* Format dictionary as { key1 = val1; key2 = val2; } */
+                                unsigned int cid = coll_id_from_marker(s, "NSDict:");
+                                if (cid == 0) cid = coll_id_from_marker(s, "NSMutDict:");
+                                if (pos < sizeof(buf)-1) buf[pos++] = '{';
+                                if (cid > 0) {
+                                    unsigned int cnt = coll_count(cid);
+                                    unsigned int ei;
+                                    for (ei = 0; ei < cnt; ei++) {
+                                        int idx = coll_get_nth(cid, ei);
+                                        if (idx >= 0) {
+                                            Value key = g_ctx.coll_entries[(unsigned int)idx].key;
+                                            Value val = g_ctx.coll_entries[(unsigned int)idx].value;
+                                            if (ei > 0) { if (pos < sizeof(buf)-2) { buf[pos++] = ';'; buf[pos++] = ' '; } }
+                                            /* Format key */
+                                            if (key.is_id && key.obj_val != 0) {
+                                                const char *ks = (const char *)key.obj_val;
+                                                while (*ks && pos < sizeof(buf)-1) buf[pos++] = *ks++;
+                                            }
+                                            if (pos < sizeof(buf)-3) { buf[pos++] = ' '; buf[pos++] = '='; buf[pos++] = ' '; }
+                                            /* Format value */
+                                            if (val.is_id && val.obj_val != 0) {
+                                                const char *vs = (const char *)val.obj_val;
+                                                if (cstr_eq_n(vs, "NSNumber:", 9)) vs += 9;
+                                                else if (cstr_eq_n(vs, "NSFloat:", 8)) vs += 8;
+                                                while (*vs && pos < sizeof(buf)-1) buf[pos++] = *vs++;
+                                            } else if (val.is_int) {
+                                                pos += int_to_buf(buf + pos, sizeof(buf) - pos, val.int_val);
+                                            }
+                                        }
+                                    }
+                                }
+                                if (pos < sizeof(buf)-1) buf[pos++] = '}';
+                            } else if (cstr_eq_n(s, "NSSet:", 6)) {
+                                /* Format set as { elem1, elem2, ... } */
+                                unsigned int cid = coll_id_from_marker(s, "NSSet:");
+                                if (pos < sizeof(buf)-1) buf[pos++] = '{';
+                                if (cid > 0) {
+                                    unsigned int cnt = coll_count(cid);
+                                    unsigned int ei;
+                                    for (ei = 0; ei < cnt; ei++) {
+                                        int idx = coll_get_nth(cid, ei);
+                                        if (idx >= 0) {
+                                            Value elem = g_ctx.coll_entries[(unsigned int)idx].value;
+                                            if (ei > 0) { if (pos < sizeof(buf)-2) { buf[pos++] = ','; buf[pos++] = ' '; } }
+                                            if (elem.is_id && elem.obj_val != 0) {
+                                                const char *es = (const char *)elem.obj_val;
+                                                while (*es && pos < sizeof(buf)-1) buf[pos++] = *es++;
+                                            }
+                                        }
+                                    }
+                                }
+                                if (pos < sizeof(buf)-1) buf[pos++] = '}';
                             } else {
                                 while (*s && pos < sizeof(buf)-1) buf[pos++] = *s++;
                             }
