@@ -27,6 +27,7 @@ extern const char *typedef_resolve(const char *name);
 extern int interp_should_interrupt(void);
 extern InterpVar *interp_find_var(const char *name);
 extern InterpVar *interp_get_or_create_var(const char *name);
+extern StructDef *struct_def_find(const char *name);
 
 /* Forward declarations for static precedence functions. */
 static Value parse_multiplicative(Parser *p);
@@ -688,6 +689,7 @@ Value parse_type_and_var_decl(Parser *p) {
             var->is_class = 0;
             var->is_sel = 0;
             var->is_id = 0;
+            var->is_struct = 0;
             var->is_block_captured = is_block_var;
             var->is_static = is_static_var; /* mark as static if needed */
         }
@@ -695,6 +697,68 @@ Value parse_type_and_var_decl(Parser *p) {
         /* Parse initializer */
         if (parser_current(p).type == TOK_ASSIGN) {
             parser_advance(p);
+
+            /* Struct brace initializer: NSRange r = {5, 3}; */
+            {
+                StructDef *sd = struct_def_find(type_name);
+                if (sd && parser_current(p).type == TOK_OPEN_BRACE) {
+                    unsigned int inst_id = g_ctx.struct_instance_count;
+                    if (inst_id >= MAX_STRUCT_INSTANCES) {
+                        parser_error(p, "struct instance table full");
+                        return value_void();
+                    }
+                    {
+                        StructInstance *si = &g_ctx.struct_instances[inst_id];
+                        cstr_copy(si->type_name, type_name, 64);
+                        si->field_count = sd->field_count;
+                        si->active = 1;
+                        {
+                            unsigned int fi;
+                            for (fi = 0; fi < sd->field_count && fi < MAX_STRUCT_FIELDS; fi++) {
+                                si->int_fields[fi] = 0;
+                                si->float_fields[fi] = 0.0;
+                                si->id_fields[fi] = 0;
+                            }
+                        }
+                        g_ctx.struct_instance_count++;
+                    }
+
+                    /* Parse { field1, field2, ... } */
+                    parser_advance(p); /* consume { */
+                    {
+                        unsigned int fi;
+                        for (fi = 0; fi < sd->field_count && fi < MAX_STRUCT_FIELDS; fi++) {
+                            if (fi > 0 && parser_current(p).type == TOK_COMMA) {
+                                parser_advance(p);
+                            }
+                            if (parser_current(p).type == TOK_CLOSE_BRACE) break;
+                            {
+                                Value fv = parse_expression(p);
+                                if (p->error) return fv;
+                                StructInstance *si = &g_ctx.struct_instances[inst_id];
+                                if (sd->field_types[fi] == 0) {
+                                    si->int_fields[fi] = fv.is_int ? fv.int_val : (fv.is_float ? (int)fv.float_val : 0);
+                                } else if (sd->field_types[fi] == 1) {
+                                    si->float_fields[fi] = fv.is_float ? fv.float_val : (fv.is_int ? (double)fv.int_val : 0.0);
+                                } else {
+                                    si->id_fields[fi] = fv.obj_val;
+                                }
+                            }
+                        }
+                    }
+                    if (parser_current(p).type == TOK_CLOSE_BRACE) {
+                        parser_advance(p);
+                    }
+
+                    if (var && !g_ctx.suppress_side_effects) {
+                        var->is_struct = 1;
+                        var->struct_instance_id = inst_id;
+                    }
+                    /* Don't return — fall through to handle comma-separated decls */
+                    goto after_initializer;
+                }
+            }
+
             init_val = parse_expression(p);
             if (p->error) return init_val;
 
@@ -733,6 +797,8 @@ Value parse_type_and_var_decl(Parser *p) {
             }
         }
         } /* end else (no initializer) */
+
+after_initializer:
 
         /* Handle comma-separated declarations: int a = 0, b = 0, c = 0; */
         while (parser_current(p).type == TOK_COMMA) {
@@ -1131,9 +1197,11 @@ Value parse_statement(Parser *p) {
         const char *resolved_type = typedef_resolve(tok.text);
         int is_typedef = (resolved_type != tok.text);
         int is_class_type = (!is_builtin_type && !is_typedef && objc_lookUpClass(tok.text) != 0);
+        /* Check if it's a known struct type (NSRange, CGPoint, etc.) */
+        int is_struct_type = (struct_def_find(tok.text) != 0);
         /* Also check variable table for Foundation class names (which are
          * registered as variables with is_class=1, not in the runtime). */
-        if (!is_class_type && !is_builtin_type) {
+        if (!is_class_type && !is_builtin_type && !is_struct_type) {
             unsigned int vi;
             for (vi = 0; vi < g_ctx.var_count; vi++) {
                 if (cstr_eq(g_ctx.vars[vi].name, tok.text) && g_ctx.vars[vi].is_class) {
@@ -1143,7 +1211,7 @@ Value parse_statement(Parser *p) {
             }
         }
 
-        if (is_builtin_type || is_class_type || is_typedef || is_block_qualifier || is_storage_qualifier || is_type_qualifier || is_type_modifier) {
+        if (is_builtin_type || is_class_type || is_typedef || is_struct_type || is_block_qualifier || is_storage_qualifier || is_type_qualifier || is_type_modifier) {
             if (is_block_qualifier || is_storage_qualifier || is_type_qualifier || is_type_modifier) {
                 /* __block and storage qualifiers (static, extern)
                  * are always followed by a type — call directly */
