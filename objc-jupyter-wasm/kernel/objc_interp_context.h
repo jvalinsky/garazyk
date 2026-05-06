@@ -101,6 +101,11 @@ typedef struct InterpContext {
     char class_hierarchy_super[MAX_CLASS_HIERARCHY][64]; /* super_name */
     unsigned int class_hierarchy_count;
 
+    /* ── +initialize tracking ─────────────────────────── */
+#define MAX_INITIALIZED_CLASSES 128
+    Class initialized_classes[MAX_INITIALIZED_CLASSES];
+    unsigned int initialized_count;
+
     /* ── Class conformance table ────────────────────────── */
     char class_conformances[OBJC_INTERP_MAX_VARS][8][64];
     unsigned int class_conforms_count[OBJC_INTERP_MAX_VARS];
