@@ -505,19 +505,19 @@ Value parse_message_send(Parser *p) {
                 const char *cls_name = s + 6;
                 unsigned int cid = coll_create_new();
                 if (cstr_eq(cls_name, "NSMutableArray")) {
-                    return value_from_id(coll_make_marker("NSMutArr:", cid));
+                    return value_from_obj(coll_make_marker("NSMutArr:", cid));
                 }
                 if (cstr_eq(cls_name, "NSMutableDictionary")) {
-                    return value_from_id(coll_make_marker("NSMutDict:", cid));
+                    return value_from_obj(coll_make_marker("NSMutDict:", cid));
                 }
                 if (cstr_eq(cls_name, "NSArray")) {
-                    return value_from_id(coll_make_marker("NSArr:", cid));
+                    return value_from_obj(coll_make_marker("NSArr:", cid));
                 }
                 if (cstr_eq(cls_name, "NSDictionary")) {
-                    return value_from_id(coll_make_marker("NSDict:", cid));
+                    return value_from_obj(coll_make_marker("NSDict:", cid));
                 }
                 if (cstr_eq(cls_name, "NSSet")) {
-                    return value_from_id(coll_make_marker("NSSet:", cid));
+                    return value_from_obj(coll_make_marker("NSSet:", cid));
                 }
             }
             return value_from_obj(receiver);
@@ -602,7 +602,7 @@ Value parse_message_send(Parser *p) {
                         int eidx = coll_get_nth(cid, i);
                         if (eidx >= 0) coll_add(new_cid, g_ctx.coll_entries[eidx].key, dummy);
                     }
-                    return value_from_id(coll_make_marker("NSArr:", new_cid));
+                    return value_from_obj(coll_make_marker("NSArr:", new_cid));
                 }
             }
         }
@@ -1601,7 +1601,7 @@ Value parse_message_send(Parser *p) {
                     }
                 }
             }
-            return value_from_id(coll_make_marker("NSArr:", new_cid));
+            return value_from_obj(coll_make_marker("NSArr:", new_cid));
         }
 
         /* NSString: [str stringByTrimmingWhitespace] → trim leading/trailing whitespace
@@ -2123,7 +2123,7 @@ Value parse_message_send(Parser *p) {
                     coll_add_string_val(cid, "method", "GET");
                     unsigned int headers_cid = coll_create_new();
                     coll_add_marker_val(cid, "headers", coll_make_marker("NSMutDict:", headers_cid));
-                    return value_from_id(coll_make_marker("NSURLReq:", cid));
+                    return value_from_obj(coll_make_marker("NSURLReq:", cid));
                 }
                 return value_from_obj(OBJ_NULL);
             }
@@ -2197,7 +2197,7 @@ Value parse_message_send(Parser *p) {
                         coll_add_string_val(cid, "req", req_marker);
                         
                         g_ctx.network_task_count++;
-                        return value_from_id(coll_make_marker("NSURLTask:", cid));
+                        return value_from_obj(coll_make_marker("NSURLTask:", cid));
                     }
                 }
                 return value_from_obj(OBJ_NULL);
@@ -2323,7 +2323,7 @@ Value parse_message_send(Parser *p) {
                     coll_add_string_val(cid, "method", "GET");
                     unsigned int headers_cid = coll_create_new();
                     coll_add_marker_val(cid, "headers", coll_make_marker("NSMutDict:", headers_cid));
-                    return value_from_id(coll_make_marker("NSURLReq:", cid));
+                    return value_from_obj(coll_make_marker("NSURLReq:", cid));
                 }
                 return value_from_obj(OBJ_NULL);
             }
@@ -2397,7 +2397,7 @@ Value parse_message_send(Parser *p) {
                         coll_add_string_val(cid, "req", req_marker);
                         
                         g_ctx.network_task_count++;
-                        return value_from_id(coll_make_marker("NSURLTask:", cid));
+                        return value_from_obj(coll_make_marker("NSURLTask:", cid));
                     }
                 }
                 return value_from_obj(OBJ_NULL);
@@ -2981,44 +2981,44 @@ Value parse_message_send(Parser *p) {
         /* NSArray: [NSArray array] → empty immutable array */
         if (IS_FOUNDATION_CLASS("NSArray") && target.is_class && cstr_eq(sel_name, "array") && arg_count == 0) {
             unsigned int cid = coll_create_new();
-            return value_from_id(coll_make_marker("NSArr:", cid));
+            return value_from_obj(coll_make_marker("NSArr:", cid));
         }
 
         /* NSMutableArray: [NSMutableArray arrayWithCapacity:n] → empty mutable array */
         if (IS_FOUNDATION_CLASS("NSMutableArray") && target.is_class && cstr_eq(sel_name, "arrayWithCapacity:") && arg_count >= 1) {
             unsigned int cid = coll_create_new();
-            return value_from_id(coll_make_marker("NSMutArr:", cid));
+            return value_from_obj(coll_make_marker("NSMutArr:", cid));
         }
 
         /* NSMutableArray: [NSMutableArray array] → empty mutable array */
         if (IS_FOUNDATION_CLASS("NSMutableArray") && target.is_class && cstr_eq(sel_name, "array") && arg_count == 0) {
             unsigned int cid = coll_create_new();
-            return value_from_id(coll_make_marker("NSMutArr:", cid));
+            return value_from_obj(coll_make_marker("NSMutArr:", cid));
         }
 
         /* NSDictionary: [NSDictionary dictionary] → empty immutable dict */
         if (IS_FOUNDATION_CLASS("NSDictionary") && target.is_class && cstr_eq(sel_name, "dictionary") && arg_count == 0) {
             unsigned int cid = coll_create_new();
-            return value_from_id(coll_make_marker("NSDict:", cid));
+            return value_from_obj(coll_make_marker("NSDict:", cid));
         }
 
         /* NSMutableDictionary: [NSMutableDictionary dictionaryWithCapacity:n] → empty mutable dict */
         if (IS_FOUNDATION_CLASS("NSMutableDictionary") && target.is_class && cstr_eq(sel_name, "dictionaryWithCapacity:") && arg_count >= 1) {
             unsigned int cid = coll_create_new();
-            return value_from_id(coll_make_marker("NSMutDict:", cid));
+            return value_from_obj(coll_make_marker("NSMutDict:", cid));
         }
 
         /* NSMutableDictionary: [NSMutableDictionary dictionary] → empty mutable dict */
         if (IS_FOUNDATION_CLASS("NSMutableDictionary") && target.is_class && cstr_eq(sel_name, "dictionary") && arg_count == 0) {
             unsigned int cid = coll_create_new();
-            return value_from_id(coll_make_marker("NSMutDict:", cid));
+            return value_from_obj(coll_make_marker("NSMutDict:", cid));
         }
 
         /* NSDictionary: [NSDictionary dictionaryWithObject:obj forKey:key] → dict with one entry */
         if (IS_FOUNDATION_CLASS("NSDictionary") && target.is_class && cstr_eq(sel_name, "dictionaryWithObject:forKey:") && arg_count >= 2) {
             unsigned int cid = coll_create_new();
             coll_add(cid, keyword_args[1], keyword_args[0]); /* key, value */
-            return value_from_id(coll_make_marker("NSDict:", cid));
+            return value_from_obj(coll_make_marker("NSDict:", cid));
         }
 
         /* NSDictionary/NSMutableDictionary: [NSMutableDictionary dictionaryWithDictionary:dict] → shallow copy */
@@ -3037,7 +3037,7 @@ Value parse_message_send(Parser *p) {
                     }
                 }
             }
-            return value_from_id(coll_make_marker("NSMutDict:", new_cid));
+            return value_from_obj(coll_make_marker("NSMutDict:", new_cid));
         }
 
         /* NSSet: [NSSet setWithArray:arr] → set from array */
@@ -3059,7 +3059,7 @@ Value parse_message_send(Parser *p) {
                     }
                 }
             }
-            return value_from_id(coll_make_marker("NSSet:", cid));
+            return value_from_obj(coll_make_marker("NSSet:", cid));
         }
 
         /* ── Instance method dispatch on collection objects ────── */
@@ -3216,7 +3216,7 @@ Value parse_message_send(Parser *p) {
                             coll_add(new_cid, g_ctx.coll_entries[i].key, dummy);
                         }
                     }
-                    return value_from_id(coll_make_marker("NSArr:", new_cid));
+                    return value_from_obj(coll_make_marker("NSArr:", new_cid));
                 }
 
                 /* [set containsObject:obj] → BOOL */
@@ -3246,7 +3246,7 @@ Value parse_message_send(Parser *p) {
                             coll_add(new_cid, g_ctx.coll_entries[i].value, dummy);
                         }
                     }
-                    return value_from_id(coll_make_marker("NSArr:", new_cid));
+                    return value_from_obj(coll_make_marker("NSArr:", new_cid));
                 }
 
                 /* [dict isEqualToDictionary:other] → compare dicts */
@@ -3315,7 +3315,7 @@ Value parse_message_send(Parser *p) {
                         }
                     }
                     coll_add(new_cid, keyword_args[0], value_void());
-                    return value_from_id(coll_make_marker("NSArr:", new_cid));
+                    return value_from_obj(coll_make_marker("NSArr:", new_cid));
                 }
                 }
 
