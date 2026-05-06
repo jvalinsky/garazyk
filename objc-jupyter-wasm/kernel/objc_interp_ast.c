@@ -925,9 +925,34 @@ Value eval_source_range(unsigned int start, unsigned int len,
      * For other statements, evaluate directly. */
     while (p.lex.current.type != TOK_EOF && !p.error) {
         Token tok = parser_current(&p);
+        /* Two-phase AST approach is needed for control flow (if/while/for/switch/do)
+         * and @-keywords that are declarations or control flow (@autoreleasepool,
+         * @try, @throw, @protocol, @interface, @implementation, @end, @class,
+         * @property, @synthesize, @dynamic, @selector).
+         * It must NOT be used for @-literals (@[], @{}, @(), @YES, @NO, @42, etc.)
+         * because parse_block_ast would create an AST_EXPR_STMT node whose
+         * eval_ast → eval_source_range recursion hits the same @-literal token
+         * again, causing infinite recursion and stack overflow. */
+        int is_ast_keyword = 0;
+        if (tok.type == TOK_AT_KEYWORD) {
+            is_ast_keyword = cstr_eq(tok.text, "@autoreleasepool") ||
+                             cstr_eq(tok.text, "@try") ||
+                             cstr_eq(tok.text, "@catch") ||
+                             cstr_eq(tok.text, "@finally") ||
+                             cstr_eq(tok.text, "@throw") ||
+                             cstr_eq(tok.text, "@protocol") ||
+                             cstr_eq(tok.text, "@interface") ||
+                             cstr_eq(tok.text, "@implementation") ||
+                             cstr_eq(tok.text, "@end") ||
+                             cstr_eq(tok.text, "@class") ||
+                             cstr_eq(tok.text, "@property") ||
+                             cstr_eq(tok.text, "@synthesize") ||
+                             cstr_eq(tok.text, "@dynamic") ||
+                             cstr_eq(tok.text, "@selector");
+        }
         if (tok.type == TOK_IF || tok.type == TOK_WHILE ||
             tok.type == TOK_FOR || tok.type == TOK_SWITCH ||
-            tok.type == TOK_DO || tok.type == TOK_AT_KEYWORD) {
+            tok.type == TOK_DO || is_ast_keyword) {
             /* Control flow or @keyword: use two-phase AST approach.
              * Save and restore AST count to avoid corrupting
              * the outer AST arena. */
