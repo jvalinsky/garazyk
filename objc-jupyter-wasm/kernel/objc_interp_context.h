@@ -135,6 +135,11 @@ typedef struct InterpContext {
     unsigned int string_pool_offset;
     unsigned int parse_depth;
 
+    /* ── Object table (handle → pool_offset indirection) ── */
+    ObjectEntry objects[MAX_OBJECTS];
+    unsigned int object_count;
+    unsigned int object_free_list;  /* head of free slot list, OBJ_NULL if empty */
+
     /* ── Struct type system ──────────────────────────────── */
     StructDef struct_defs[MAX_STRUCT_DEFS];
     unsigned int struct_def_count;

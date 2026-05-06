@@ -283,6 +283,105 @@ char *string_pool_alloc(unsigned int size) {
     }
 }
 
+/* ── Object table (handle-based GC) ───────────────────────────── */
+
+/* Initialize the object table. Must be called after memset. */
+void obj_init(void) {
+    unsigned int i;
+    g_ctx.object_count = 0;
+    g_ctx.object_free_list = OBJ_NULL;
+    for (i = 0; i < MAX_OBJECTS; i++) {
+        g_ctx.objects[i].active = 0;
+        g_ctx.objects[i].pool_offset = 0;
+        g_ctx.objects[i].next_free = OBJ_NULL;
+    }
+}
+
+/* Allocate a string-pool buffer and register it in the object table.
+ * Returns an ObjId handle (1-based), or OBJ_NULL if the table or pool is full. */
+ObjId obj_alloc(unsigned int size) {
+    unsigned int slot;
+    char *ptr = string_pool_alloc(size);
+    if (ptr == 0) return OBJ_NULL;
+
+    /* Find a free slot */
+    if (g_ctx.object_free_list != OBJ_NULL) {
+        slot = g_ctx.object_free_list;
+        g_ctx.object_free_list = g_ctx.objects[slot].next_free;
+    } else if (g_ctx.object_count + 1 < MAX_OBJECTS) {
+        slot = ++g_ctx.object_count; /* 1-based */
+    } else {
+        /* Table full — can't register, but pool alloc already happened.
+         * The string is still in the pool but untracked. */
+        return OBJ_NULL;
+    }
+
+    g_ctx.objects[slot].pool_offset = (unsigned int)(ptr - g_ctx.string_pool);
+    g_ctx.objects[slot].active = 1;
+    g_ctx.objects[slot].next_free = OBJ_NULL;
+    return (ObjId)slot;
+}
+
+/* Copy a string into the pool and register it. */
+ObjId obj_alloc_str(const char *src, unsigned int len) {
+    ObjId h = obj_alloc(len + 1);
+    if (h == OBJ_NULL) return OBJ_NULL;
+    {
+        char *ptr = g_ctx.string_pool + g_ctx.objects[h].pool_offset;
+        unsigned int i;
+        for (i = 0; i < len && src[i] != '\0'; i++) {
+            ptr[i] = src[i];
+        }
+        ptr[i] = '\0';
+    }
+    return h;
+}
+
+/* Dereference a handle → string pool pointer. Returns null for OBJ_NULL. */
+const char *obj_deref(ObjId h) {
+    if (h == OBJ_NULL || h >= MAX_OBJECTS || !g_ctx.objects[h].active) return 0;
+    return g_ctx.string_pool + g_ctx.objects[h].pool_offset;
+}
+
+/* Free a handle — mark the slot as available for reuse. */
+void obj_free(ObjId h) {
+    if (h == OBJ_NULL || h >= MAX_OBJECTS || !g_ctx.objects[h].active) return;
+    g_ctx.objects[h].active = 0;
+    g_ctx.objects[h].pool_offset = 0;
+    g_ctx.objects[h].next_free = g_ctx.object_free_list;
+    g_ctx.object_free_list = h;
+}
+
+/* Check if a handle is valid and active. */
+int obj_is_valid(ObjId h) {
+    return h != OBJ_NULL && h < MAX_OBJECTS && g_ctx.objects[h].active;
+}
+
+/* Register an existing string-pool pointer in the object table.
+ * Used by the value_from_id() compatibility shim. */
+ObjId obj_register_ptr(const char *ptr) {
+    unsigned int slot;
+    unsigned int offset;
+    if (ptr == 0) return OBJ_NULL;
+    offset = (unsigned int)(ptr - g_ctx.string_pool);
+    if (offset >= g_ctx.string_pool_offset) return OBJ_NULL; /* not in pool */
+
+    /* Find a free slot */
+    if (g_ctx.object_free_list != OBJ_NULL) {
+        slot = g_ctx.object_free_list;
+        g_ctx.object_free_list = g_ctx.objects[slot].next_free;
+    } else if (g_ctx.object_count + 1 < MAX_OBJECTS) {
+        slot = ++g_ctx.object_count; /* 1-based */
+    } else {
+        return OBJ_NULL; /* table full */
+    }
+
+    g_ctx.objects[slot].pool_offset = offset;
+    g_ctx.objects[slot].active = 1;
+    g_ctx.objects[slot].next_free = OBJ_NULL;
+    return (ObjId)slot;
+}
+
 /* ── Collection side table ──────────────────────────────────────── */
 
 /* Initialize the collection handle table. Must be called after
@@ -396,7 +495,7 @@ int coll_find_by_key(unsigned int coll_id, Value *key) {
             key->obj_val != 0 && g_ctx.coll_entries[i].key.obj_val != 0) {
             /* String content comparison — two different @"key" literals
              * may have different string pool pointers but same content. */
-            if (cstr_eq((const char *)key->obj_val, (const char *)g_ctx.coll_entries[i].key.obj_val))
+            if (cstr_eq(obj_deref(key->obj_val), obj_deref(g_ctx.coll_entries[i].key.obj_val)))
                 return (int)i;
         }
     }
@@ -536,7 +635,7 @@ id block_make_marker(unsigned int block_id) {
 
 /* Look up an instance variable in the side table.
  * Returns pointer to the value (mutable), or 0 if not found. */
-Value *instance_var_get(id object, const char *prop_name) {
+Value *instance_var_get(ObjId object, const char *prop_name) {
     unsigned int i;
     for (i = 0; i < g_ctx.instance_var_count; i++) {
         if (g_ctx.instance_vars[i].object == object &&
@@ -549,7 +648,7 @@ Value *instance_var_get(id object, const char *prop_name) {
 
 /* Store an instance variable in the side table.
  * Overwrites existing entry for (object, prop_name), or adds new. */
-int instance_var_set(id object, const char *prop_name, Value val) {
+int instance_var_set(ObjId object, const char *prop_name, Value val) {
     unsigned int i;
     for (i = 0; i < g_ctx.instance_var_count; i++) {
         if (g_ctx.instance_vars[i].object == object &&
@@ -576,15 +675,11 @@ int instance_var_set(id object, const char *prop_name, Value val) {
  * g_ctx.properties[pi].class_name. For non-FDObj: receivers (Foundation
  * objects), returns 1 (always match) since Foundation classes don't
  * have user-defined properties. */
-int property_matches_class(id receiver, unsigned int pi) {
+int property_matches_class(ObjId receiver, unsigned int pi) {
     const char *s;
-    unsigned long addr;
-    unsigned long pool_start = (unsigned long)g_ctx.string_pool;
-    unsigned long pool_end = pool_start + OBJC_INTERP_STRING_POOL_SIZE;
-    if (receiver == 0) return 0;
-    addr = (unsigned long)receiver;
-    if (addr < pool_start || addr >= pool_end) return 0;
-    s = (const char *)receiver;
+    if (receiver == OBJ_NULL) return 0;
+    s = obj_deref(receiver);
+    if (s == 0) return 0;
     if (cstr_starts(s, "FDObj:")) {
         const char *recv_class = s + 6;
         if (g_ctx.properties[pi].class_name[0] != '\0' &&
@@ -598,7 +693,7 @@ int property_matches_class(id receiver, unsigned int pi) {
 /* Check if a variable name is a synthesized ivar name.
  * Returns the property index if found, or -1 if not.
  * This is used to redirect ivar access in method bodies to the side table. */
-int find_synthesized_ivar(const char *var_name, id receiver) {
+int find_synthesized_ivar(const char *var_name, ObjId receiver) {
     unsigned int pi;
     for (pi = 0; pi < g_ctx.property_count; pi++) {
         if (g_ctx.properties[pi].synthesized &&
@@ -613,7 +708,7 @@ int find_synthesized_ivar(const char *var_name, id receiver) {
 
 /* Read a synthesized ivar value from the side table.
  * Returns the value, or value_void() if not found. */
-Value synthesized_ivar_get(id self, const char *var_name) {
+Value synthesized_ivar_get(ObjId self, const char *var_name) {
     int pi = find_synthesized_ivar(var_name, self);
     if (pi >= 0) {
         Value *val = instance_var_get(self, g_ctx.properties[pi].name);
@@ -623,7 +718,7 @@ Value synthesized_ivar_get(id self, const char *var_name) {
 }
 
 /* Write a synthesized ivar value to the side table. */
-int synthesized_ivar_set(id self, const char *var_name, Value val) {
+int synthesized_ivar_set(ObjId self, const char *var_name, Value val) {
     int pi = find_synthesized_ivar(var_name, self);
     if (pi >= 0) {
         if (instance_var_set(self, g_ctx.properties[pi].name, val) != 0) {
@@ -647,10 +742,12 @@ int is_string_pool_pointer(id value) {
 
 /* ── Class lookup for FDObj: markers ────────────────────────────── */
 
-Class class_for_fdobj_marker(id receiver) {
-    const char *s = (const char *)receiver;
+Class class_for_fdobj_marker(ObjId receiver) {
+    const char *s;
     unsigned int vi;
-    if (!is_string_pool_pointer(receiver) || !cstr_starts(s, "FDObj:")) return (Class)0;
+    if (!obj_is_valid(receiver)) return (Class)0;
+    s = obj_deref(receiver);
+    if (s == 0 || !cstr_starts(s, "FDObj:")) return (Class)0;
     for (vi = 0; vi < g_ctx.var_count; vi++) {
         if (g_ctx.vars[vi].is_class && cstr_eq(g_ctx.vars[vi].name, s + 6)) {
             return g_ctx.vars[vi].cls;

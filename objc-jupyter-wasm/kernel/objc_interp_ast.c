@@ -1233,7 +1233,7 @@ Value eval_ast(AstNode *node, const char *source) {
         Value coll = eval_source_range(node->for_in.collection_start,
                                        node->for_in.collection_len, source,
                                        count_lines_up_to(source, node->for_in.collection_start));
-        const char *coll_str = (const char *)coll.obj_val;
+        const char *coll_str = obj_deref(coll.obj_val);
         unsigned int cid = 0;
         int is_nsstring = 0;
 
