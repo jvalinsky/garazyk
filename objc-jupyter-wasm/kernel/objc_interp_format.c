@@ -195,6 +195,9 @@ Value format_values_to_pool(const char *fmt, Value *args, int arg_count) {
                                 if (pos < sizeof(buf)-1) buf[pos++] = '<';
                                 { const char *cn = s + 6; while (*cn && pos < sizeof(buf)-2) buf[pos++] = *cn++; }
                                 if (pos < sizeof(buf)-1) buf[pos++] = '>';
+                            } else if (cstr_eq_n(s, "NSMutStr:", 9)) {
+                                const char *val = s + 9;
+                                while (*val && pos < sizeof(buf)-1) buf[pos++] = *val++;
                             } else {
                                 while (*s && pos < sizeof(buf)-1) buf[pos++] = *s++;
                             }
@@ -691,6 +694,11 @@ void format_value(Value v, char *buf, unsigned int capacity) {
         }
         /* NSFloat marker: "NSFloat:<value>" — display just the value */
         if (cstr_starts(str_val, "NSFloat:")) {
+            fmt_append_str(buf, capacity, &offset, str_val + 8);
+            return;
+        }
+        /* NSMutableString marker: "NSMutStr:<content>" — display the content */
+        if (cstr_starts(str_val, "NSMutStr:")) {
             fmt_append_str(buf, capacity, &offset, str_val + 8);
             return;
         }
