@@ -256,14 +256,14 @@ int coll_add_bool_val(unsigned int coll_id, const char *key_str, int val_bool) {
     return coll_add_int_val(coll_id, key_str, val_bool ? 1 : 0);
 }
 
-int coll_add_marker_val(unsigned int coll_id, const char *key_str, id marker) {
+int coll_add_marker_val(unsigned int coll_id, const char *key_str, ObjId marker) {
     Value key = value_void();
     if (key_str) {
         unsigned int len = cstr_len(key_str);
         char *k = string_pool_alloc(len + 1);
         if (k) { cstr_copy(k, key_str, len + 1); key = value_from_id((id)k); }
     }
-    return coll_add(coll_id, key, value_from_id(marker));
+    return coll_add(coll_id, key, value_from_obj(marker));
 }
 
 /* ── String pool ───────────────────────────────────────────────── */
@@ -339,6 +339,13 @@ ObjId obj_alloc_str(const char *src, unsigned int len) {
 
 /* Dereference a handle → string pool pointer. Returns null for OBJ_NULL. */
 const char *obj_deref(ObjId h) {
+    if (h == OBJ_NULL || h >= MAX_OBJECTS || !g_ctx.objects[h].active) return 0;
+    return g_ctx.string_pool + g_ctx.objects[h].pool_offset;
+}
+
+/* Mutable dereference — returns writable pointer for building strings.
+ * Use only during construction (before the handle is shared). */
+char *obj_deref_mut(ObjId h) {
     if (h == OBJ_NULL || h >= MAX_OBJECTS || !g_ctx.objects[h].active) return 0;
     return g_ctx.string_pool + g_ctx.objects[h].pool_offset;
 }
@@ -585,7 +592,7 @@ unsigned int coll_id_from_marker(const char *s, const char *prefix) {
 }
 
 /* Create a collection marker string in the string pool. */
-id coll_make_marker(const char *prefix, unsigned int coll_id) {
+ObjId coll_make_marker(const char *prefix, unsigned int coll_id) {
     char buf[64];
     unsigned int pos = cstr_len(prefix);
     unsigned int tmp = coll_id;
@@ -599,14 +606,14 @@ id coll_make_marker(const char *prefix, unsigned int coll_id) {
     { unsigned int t = tmp; unsigned int d = digits; do { d--; buf[pos + d] = '0' + (t % 10); t /= 10; } while (t > 0); }
     buf[pos + digits] = '\0';
     {
-        char *result = string_pool_alloc(pos + digits + 1);
-        if (result == 0) {
+        ObjId h = obj_alloc(pos + digits + 1);
+        if (h == OBJ_NULL) {
             g_ctx.error_code = OBJC_INTERP_RESOURCE_ERROR;
             interp_emit_stream("Error: string pool exhausted (cannot create collection)\n", 56);
-            return (id)0;
+            return OBJ_NULL;
         }
-        cstr_copy(result, buf, pos + digits + 1);
-        return (id)result;
+        cstr_copy(obj_deref_mut(h), buf, pos + digits + 1);
+        return h;
     }
 }
 
@@ -643,7 +650,7 @@ unsigned int block_id_from_marker(const char *s) {
 }
 
 /* Create a block marker string in the string pool. */
-id block_make_marker(unsigned int block_id) {
+ObjId block_make_marker(unsigned int block_id) {
     return coll_make_marker("NSBlock:", block_id);
 }
 
