@@ -32,7 +32,7 @@ void objc_kernel_on_fetch_complete(int task_id, int status_code, const char *dat
             g_ctx.network_tasks[i].active = 0; /* Mark as complete */
 
             /* Construct NSData for the response body */
-            Value data_val = value_from_id(0);
+            Value data_val = value_from_obj(OBJ_NULL);
             if (data && data_len > 0) {
                 unsigned int needed = 7 + data_len * 2 + 1;
                 char *buf = string_pool_alloc(needed);
@@ -54,7 +54,7 @@ void objc_kernel_on_fetch_complete(int task_id, int status_code, const char *dat
             Value response_val = value_from_id((id)"FDObj:NSHTTPURLResponse"); /* Simplified */
             
             /* Error value */
-            Value error_val = value_from_id(0); /* nil error for now if we got a response */
+            Value error_val = value_from_obj(OBJ_NULL); /* nil error for now if we got a response */
 
             /* We need to execute the block with (data, response, error) */
             /* This is a bit tricky: we are outside the normal parse_statement loop.
