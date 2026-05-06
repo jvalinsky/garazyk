@@ -761,7 +761,8 @@ Value parse_message_send(Parser *p) {
             if (cstr_starts(s, "NSMutDict:")) return value_from_class((Class)7);
             if (cstr_starts(s, "NSSet:")) return value_from_class((Class)8);
             if (cstr_starts(s, "NSData:")) return value_from_class((Class)9);
-            if (cstr_starts(s, "NSBlock:")) return value_from_class((Class)11);
+            if (cstr_starts(s, "NSBlock:")) return value_from_class((Class)20);
+            if (cstr_starts(s, "NSMutStr:")) return value_from_class((Class)12);
             /* String pool pointers that don't match any known marker prefix
              * are NSString instances (plain @"" literals stored as C strings). */
             if (is_string_pool_pointer(receiver)) return value_from_class((Class)2);
@@ -1139,6 +1140,78 @@ Value parse_message_send(Parser *p) {
                 return value_from_id((id)result);
             }
             return value_from_id(receiver);
+        }
+
+        /* NSMutableString: [NSMutableString stringWithString:str] → create mutable string */
+        if (IS_FOUNDATION_CLASS("NSMutableString") && target.is_class && cstr_eq(sel_name, "stringWithString:") && arg_count >= 1) {
+            if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
+                const char *s = (const char *)keyword_args[0].obj_val;
+                unsigned int slen = cstr_len(s);
+                /* Create NSMutStr:content marker in string pool */
+                char *result = string_pool_alloc(9 + slen + 1);
+                if (result == 0) return value_from_id(0);
+                cstr_copy(result, "NSMutStr:", 10);
+                cstr_copy(result + 9, s, slen + 1);
+                return value_from_id((id)result);
+            }
+            return value_from_id(0);
+        }
+
+        /* NSMutableString: [ms appendString:str] → append to mutable string.
+         * Since the string pool is append-only, we create a new marker and
+         * update any variable that points to the old marker. */
+        if (cstr_eq(sel_name, "appendString:") && target.is_id && receiver != 0 && arg_count >= 1) {
+            const char *r = (const char *)receiver;
+            if (cstr_starts(r, "NSMutStr:")) {
+                const char *old_content = r + 9;
+                unsigned int old_len = cstr_len(old_content);
+                if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
+                    const char *append = (const char *)keyword_args[0].obj_val;
+                    unsigned int append_len = cstr_len(append);
+                    char *result = string_pool_alloc(9 + old_len + append_len + 1);
+                    if (result == 0) return value_from_id(receiver);
+                    cstr_copy(result, "NSMutStr:", 10);
+                    cstr_copy(result + 9, old_content, old_len + 1);
+                    cstr_copy(result + 9 + old_len, append, append_len + 1);
+                    /* Update any variable pointing to the old marker */
+                    {
+                        unsigned int vi;
+                        for (vi = 0; vi < g_ctx.var_count; vi++) {
+                            if (g_ctx.vars[vi].is_id && g_ctx.vars[vi].value == receiver) {
+                                g_ctx.vars[vi].value = (id)result;
+                            }
+                        }
+                    }
+                    return value_from_id((id)result);
+                }
+                return value_from_id(receiver);
+            }
+        }
+
+        /* NSMutableString: [ms setString:str] → replace mutable string content */
+        if (cstr_eq(sel_name, "setString:") && target.is_id && receiver != 0 && arg_count >= 1) {
+            const char *r = (const char *)receiver;
+            if (cstr_starts(r, "NSMutStr:")) {
+                if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
+                    const char *new_content = (const char *)keyword_args[0].obj_val;
+                    unsigned int new_len = cstr_len(new_content);
+                    char *result = string_pool_alloc(9 + new_len + 1);
+                    if (result == 0) return value_from_id(receiver);
+                    cstr_copy(result, "NSMutStr:", 10);
+                    cstr_copy(result + 9, new_content, new_len + 1);
+                    /* Update any variable pointing to the old marker */
+                    {
+                        unsigned int vi;
+                        for (vi = 0; vi < g_ctx.var_count; vi++) {
+                            if (g_ctx.vars[vi].is_id && g_ctx.vars[vi].value == receiver) {
+                                g_ctx.vars[vi].value = (id)result;
+                            }
+                        }
+                    }
+                    return value_from_id((id)result);
+                }
+                return value_from_id(receiver);
+            }
         }
 
         /* NSNumber: [num longLongValue] → return long as int */
@@ -3490,7 +3563,8 @@ Value parse_message_send(Parser *p) {
                         else if (cstr_starts(r, "NSMutDict:")) recv_cls = (Class)7;
                         else if (cstr_starts(r, "NSSet:")) recv_cls = (Class)8;
                         else if (cstr_starts(r, "NSData:")) recv_cls = (Class)9;
-                        else if (cstr_starts(r, "NSBlock:")) recv_cls = (Class)11;
+                        else if (cstr_starts(r, "NSMutStr:")) recv_cls = (Class)12;
+                        else if (cstr_starts(r, "NSBlock:")) recv_cls = (Class)20;
                         /* String pool pointers without NSStr: prefix are NSString */
                         else recv_cls = (Class)2;
                     }
@@ -3532,7 +3606,8 @@ Value parse_message_send(Parser *p) {
                         else if (cstr_starts(r, "NSMutDict:")) recv_cls = (Class)7;
                         else if (cstr_starts(r, "NSSet:")) recv_cls = (Class)8;
                         else if (cstr_starts(r, "NSData:")) recv_cls = (Class)9;
-                        else if (cstr_starts(r, "NSBlock:")) recv_cls = (Class)11;
+                        else if (cstr_starts(r, "NSMutStr:")) recv_cls = (Class)12;
+                        else if (cstr_starts(r, "NSBlock:")) recv_cls = (Class)20;
                         else recv_cls = (Class)2;
                     }
                 } else {
