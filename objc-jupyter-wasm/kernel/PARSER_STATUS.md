@@ -3,10 +3,11 @@
 ## Overview
 The Objective-C interpreter in `kernel.wasm` uses a custom recursive-descent parser for Objective-C and C syntax. This document tracks implemented features, known gaps, and in-progress fixes.
 
-## Current Status (as of 2026-05-05)
+## Current Status (as of 2026-05-06)
 - **Notebook Tests:** 95/101 cells passing
 - **Smoke Tests:** 80+ feature blocks
-- **Runtime Expansion:** Phase D-G completed (Exceptions, Protocols, Blocks, Forwarding, KVC)
+- **Runtime Gap Probes:** 84/84 passed
+- **Runtime Expansion:** Phase D-H completed (Exceptions, Protocols, Blocks, Forwarding, KVC, Collection/Block/Ternary fixes)
 
 ## Implemented Features
 
@@ -16,7 +17,7 @@ The Objective-C interpreter in `kernel.wasm` uses a custom recursive-descent par
 - ✓ Property declarations with @property syntax and attributes (readonly, nonatomic, etc.)
 - ✓ @synthesize and automatic property synthesis
 - ✓ Message sends with multi-keyword selectors
-- ✓ Block declarations and invocations with __block capture
+- ✓ Block declarations and invocations with __block capture and return values
 - ✓ Exception handling: @try, @catch, @finally, @throw
 - ✓ Autorelease pools: @autoreleasepool scoping
 - ✓ Protocol declarations and runtime conformance checking
@@ -67,6 +68,12 @@ The Objective-C interpreter in `kernel.wasm` uses a custom recursive-descent par
 ### Message Forwarding & KVC (Phase G) ✓ COMPLETED
 **Implemented:** Fallback path for unrecognized selectors, `forwardInvocation:`, `NSInvocation` simulation, and `valueForKey:` / `setValue:forKey:` property mapping.
 
+### Collection, Block & Ternary Fixes (Phase H) ✓ COMPLETED
+**Implemented:** Three root-cause fixes that brought runtime gap probes from 70/84 to 84/84:
+1. **Collection slot activation** — All 23 collection creation sites now use `coll_create_new()` instead of raw `g_ctx.next_coll_id++`, properly setting `coll_slot_active` and `coll_generation`. Fixed subscripts, fast enumeration, KVC, enumerateObjectsUsingBlock, and sel_getName.
+2. **Block return values** — `eval_source_range()` now checks `g_ctx.return_pending` in its statement loop; block invocation uses `g_ctx.return_value` when set; `block_id_from_marker()` validates against the block table instead of the collection table.
+3. **Ternary in variable declarations** — AST ternary scanner skips detection for type-prefixed statements (variable declarations), preventing the `Type name = ` prefix from being included in the condition source range.
+
 ## Type Recognition
 
 ### Builtin Types Recognized
@@ -93,8 +100,12 @@ The Objective-C interpreter in `kernel.wasm` uses a custom recursive-descent par
 ## Testing
 
 ### Smoke Tests
-Run with: `node tests/test-runtime-v2.mjs result/wasm/kernel.wasm`  
+Run with: `node tests/test-runtime-v2.mjs result/wasm/kernel.wasm`
 Covers: Exceptions, Protocols, Blocks, Forwarding, KVC, Autoreleasepool.
+
+### Runtime Gap Probes
+Run with: `node tests/test-runtime-gap-probes.mjs result/wasm/kernel.wasm`
+84 targeted probes across 20+ feature categories. All passing.
 
 ## Future Work
 1. **Method Swizzling**: Support for `method_exchangeImplementations` on interpreted methods.
