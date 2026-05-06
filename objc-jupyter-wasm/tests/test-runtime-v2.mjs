@@ -5,7 +5,7 @@ import { WASI } from 'node:wasi';
 const wasmPath = process.argv[2];
 
 if (!wasmPath) {
-  throw new Error('Usage: node tests/test-runtime-expansion.mjs /path/to/kernel.wasm');
+  throw new Error('Usage: node tests/test-runtime-v2.mjs /path/to/kernel.wasm');
 }
 
 const bytes = await readFile(wasmPath);
