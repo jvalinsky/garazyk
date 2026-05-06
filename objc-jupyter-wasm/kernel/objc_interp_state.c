@@ -621,9 +621,25 @@ BlockImpl *block_get(unsigned int block_id) {
     return 0;
 }
 
-/* Parse a block ID from a marker string like "NSBlock:5". */
+/* Parse a block ID from a marker string like "NSBlock:5".
+ * Unlike coll_id_from_marker, block IDs are simple sequential
+ * integers stored in the block side table — no generation
+ * validation against the collection table. */
 unsigned int block_id_from_marker(const char *s) {
-    return coll_id_from_marker(s, "NSBlock:");
+    const char *prefix = "NSBlock:";
+    unsigned int prefix_len = 8; /* cstr_len("NSBlock:") */
+    unsigned int id = 0;
+    unsigned int i;
+    if (!cstr_eq_n(s, prefix, prefix_len)) return 0;
+    for (i = prefix_len; s[i] >= '0' && s[i] <= '9'; i++) {
+        unsigned int digit = (unsigned int)(s[i] - '0');
+        if (id > 214748364) { id = 0; break; }
+        id = id * 10 + digit;
+    }
+    /* Validate: the block must exist in the block table */
+    if (id == 0) return 0;
+    if (block_get(id) == 0) return 0;
+    return id;
 }
 
 /* Create a block marker string in the string pool. */

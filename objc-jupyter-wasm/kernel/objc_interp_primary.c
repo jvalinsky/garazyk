@@ -1312,6 +1312,13 @@ Value parse_primary(Parser *p) {
                                 Value result;
                                 g_ctx.return_pending = 0;
                                 result = eval_source_range(0, blk->source_len, blk->source, 0);
+                                /* If the block body executed a return statement,
+                                 * use the stored return value (which is set by
+                                 * parse_statement for TOK_RETURN). Otherwise
+                                 * result is the value of the last expression. */
+                                if (g_ctx.return_pending) {
+                                    result = g_ctx.return_value;
+                                }
 
                                 /* Write back __block variables to original slots */
                                 {
