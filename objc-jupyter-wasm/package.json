@@ -30,6 +30,7 @@
     "@jupyterlab/observables": "^5.4.5",
     "@jupyterlab/services": "^7.4.5",
     "@jupyterlite/kernel": "^0.6.4",
+    "multiformats": "^13.4.2",
     "serve-handler": "^6.1.7"
   },
   "devDependencies": {

@@ -663,6 +663,9 @@ function normalizeDisplayData(data: Record<string, any>): MimeBundle {
   const normalized = { ...(data as MimeBundle) };
 
   if (!hasDisplayData(normalized) || normalized['text/plain'] !== undefined) {
+    /* Enrich CID-like text output with the CID MIME type so the
+     * CID viewer extension can render it as a structured table. */
+    enrichAtprotoMimeTypes(normalized);
     return normalized;
   }
 
@@ -672,6 +675,29 @@ function normalizeDisplayData(data: Record<string, any>): MimeBundle {
       typeof firstValue === 'string' ? firstValue : JSON.stringify(firstValue ?? normalized),
     ...normalized
   };
+}
+
+/**
+ * Detect ATProto data types in text/plain output and add corresponding
+ * MIME types so the viewer extensions can render them.
+ */
+function enrichAtprotoMimeTypes(data: MimeBundle): void {
+  const text = data['text/plain'];
+  if (typeof text !== 'string') return;
+
+  const trimmed = text.trim();
+
+  /* CIDv1 base32: starts with 'b' and uses base32 chars (bafyrei..., bafkrei...) */
+  if (/^b[a-z2-7]{8,}$/i.test(trimmed)) {
+    data['application/vnd.atproto.cid'] = trimmed;
+    return;
+  }
+
+  /* CIDv0 base58btc: starts with 'Qm' and uses base58 chars */
+  if (/^Qm[1-9A-HJ-NP-Za-km-z]{20,}$/.test(trimmed)) {
+    data['application/vnd.atproto.cid'] = trimmed;
+    return;
+  }
 }
 
 function analyzeCompleteness(code: string): KernelMessage.IIsCompleteReplyMsg['content'] {
