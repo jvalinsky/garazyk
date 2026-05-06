@@ -685,7 +685,12 @@ function enrichAtprotoMimeTypes(data: MimeBundle): void {
   const text = data['text/plain'];
   if (typeof text !== 'string') return;
 
-  const trimmed = text.trim();
+  /* Strip ObjC string literal delimiters (@"...") that the kernel
+   * includes in its result representation. */
+  let trimmed = text.trim();
+  if (trimmed.startsWith('@"') && trimmed.endsWith('"') && trimmed.length > 3) {
+    trimmed = trimmed.slice(2, -1);
+  }
 
   /* CIDv1 base32: starts with 'b' and uses base32 chars (bafyrei..., bafkrei...) */
   if (/^b[a-z2-7]{8,}$/i.test(trimmed)) {
