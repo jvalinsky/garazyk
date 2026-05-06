@@ -9,9 +9,6 @@
 /* Value helpers (non-inline — access InterpVar internals) */
 void interp_set_var_from_value(InterpVar *var, Value v);
 Value value_from_interp_var(const InterpVar *var);
-Value value_from_int_exported(int n);
-Value value_from_id_exported(id obj);
-Value value_from_float_exported(double f);
 
 /* JavaScript Collection Helpers */
 int coll_add_string_val(unsigned int coll_id, const char *key_str, const char *val_str);
@@ -68,9 +65,6 @@ int property_matches_class(ObjId receiver, unsigned int pi);
 int find_synthesized_ivar(const char *var_name, ObjId receiver);
 Value synthesized_ivar_get(ObjId self, const char *var_name);
 int synthesized_ivar_set(ObjId self, const char *var_name, Value val);
-
-/* String pool pointer check (legacy — prefer obj_is_valid) */
-int is_string_pool_pointer(id value);
 
 /* Class lookup for FDObj: markers */
 Class class_for_fdobj_marker(ObjId receiver);
