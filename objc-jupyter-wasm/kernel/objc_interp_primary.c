@@ -812,8 +812,8 @@ Value parse_primary(Parser *p) {
                  * Keys are compared by string content (not pointer),
                  * since &var produces a new pool pointer each time. */
                 if (g_ctx.association_count < MAX_ASSOCIATIONS) {
-                    id target = obj_arg.is_id ? obj_arg.obj_val : 0;
-                    const char *key_str = key_arg.is_id ? (const char *)key_arg.obj_val : "";
+                    ObjId target = obj_arg.is_id ? obj_arg.obj_val : OBJ_NULL;
+                    const char *key_str = key_arg.is_id ? obj_deref(key_arg.obj_val) : "";
                     unsigned int ai;
                     int found = 0;
                     for (ai = 0; ai < g_ctx.association_count; ai++) {
@@ -852,8 +852,8 @@ Value parse_primary(Parser *p) {
 
                 /* Look up in association table.
                  * Keys are compared by string content (not pointer). */
-                id target = obj_arg.is_id ? obj_arg.obj_val : 0;
-                const char *key_str = key_arg.is_id ? (const char *)key_arg.obj_val : "";
+                ObjId target = obj_arg.is_id ? obj_arg.obj_val : OBJ_NULL;
+                const char *key_str = key_arg.is_id ? obj_deref(key_arg.obj_val) : "";
                 unsigned int ai;
                 for (ai = 0; ai < g_ctx.association_count; ai++) {
                     if (g_ctx.associations[ai].target == target &&
@@ -912,7 +912,7 @@ Value parse_primary(Parser *p) {
                                 } else if (sd->field_types[fi] == 1) {
                                     return value_from_float(si->float_fields[fi]);
                                 } else {
-                                    return value_from_id(si->id_fields[fi]);
+                                    return value_from_obj(si->id_fields[fi]);
                                 }
                             }
                         }
@@ -967,8 +967,8 @@ Value parse_primary(Parser *p) {
                             /* Dispatch setter as message send */
                             {
                                 SEL setter_sel = sel_registerName(setter_name);
-                                id receiver = var->is_id ? var->value : (id)var->cls;
-                                Value method_target = value_from_id(receiver);
+                                ObjId receiver = var->is_id ? var->value : value_from_id((id)var->cls).obj_val;
+                                Value method_target = value_from_obj(receiver);
                                 unsigned int mi;
                                 if (setter_sel == 0) {
                                     parser_error(p, "selector table full (max 4096 selectors)");
@@ -1020,7 +1020,7 @@ Value parse_primary(Parser *p) {
                             if (p->error) return rhs;
 
                             /* Read current value via getter */
-                            id receiver = var->is_id ? var->value : (id)var->cls;
+                            ObjId receiver = var->is_id ? var->value : value_from_id((id)var->cls).obj_val;
                             Value current = value_void();
                             {
                                 unsigned int pi;
@@ -1080,8 +1080,8 @@ Value parse_primary(Parser *p) {
                     /* Getter: obj.property → [obj property] */
                     {
                         SEL prop_sel = sel_registerName(prop_name);
-                        id receiver = var->is_id ? var->value : (id)var->cls;
-                        Value method_target = value_from_id(receiver);
+                        ObjId receiver = var->is_id ? var->value : value_from_id((id)var->cls).obj_val;
+                        Value method_target = value_from_obj(receiver);
                         unsigned int mi;
                         if (prop_sel == 0) {
                             parser_error(p, "selector table full (max 4096 selectors)");
@@ -1116,7 +1116,7 @@ Value parse_primary(Parser *p) {
                  *                    arr[index] = obj → replaceObjectAtIndex:withObject:
                  *                    dict[key] = obj → setObject:forKey: */
                 if (parser_current(p).type == TOK_OPEN_BRACKET && var->is_id && var->value != 0) {
-                    const char *marker = (const char *)var->value;
+                    const char *marker = obj_deref(var->value);
                     unsigned int cid = coll_id_from_marker(marker, "NSArr:");
                     unsigned int cid2 = coll_id_from_marker(marker, "NSMutArr:");
                     unsigned int cid3 = coll_id_from_marker(marker, "NSDict:");
@@ -1160,7 +1160,7 @@ Value parse_primary(Parser *p) {
                                             coll_add(actual_cid, index, val);
                                         }
                                     }
-                                    return value_from_id(var->value);
+                                    return value_from_obj(var->value);
                                 }
                             }
 
@@ -1182,7 +1182,7 @@ Value parse_primary(Parser *p) {
                  * For non-collection id values (e.g., const char * pointers),
                  * treat [index] as a byte access and return the char value. */
                 if (parser_current(p).type == TOK_OPEN_BRACKET && var->is_id && var->value != 0) {
-                    const char *marker = (const char *)var->value;
+                    const char *marker = obj_deref(var->value);
                     unsigned int cid = coll_id_from_marker(marker, "NSArr:");
                     unsigned int cid2 = coll_id_from_marker(marker, "NSMutArr:");
                     unsigned int cid3 = coll_id_from_marker(marker, "NSDict:");
@@ -1202,7 +1202,7 @@ Value parse_primary(Parser *p) {
                             parser_advance(p); /* consume ] */
 
                             if (index.is_int) {
-                                const char *s = (const char *)var->value;
+                                const char *s = obj_deref(var->value);
                                 int idx = index.int_val;
                                 int slen = (int)cstr_len(s);
                                 if (idx >= 0 && idx < slen) {
@@ -1218,7 +1218,7 @@ Value parse_primary(Parser *p) {
                  * If the variable holds a block marker ("NSBlock:N"),
                  * and the next token is (, invoke the block. */
                 if (parser_current(p).type == TOK_OPEN_PAREN && var->is_id && var->value != 0) {
-                    const char *marker = (const char *)var->value;
+                    const char *marker = obj_deref(var->value);
                     unsigned int bid = block_id_from_marker(marker);
                     if (bid > 0) {
                         BlockImpl *blk = block_get(bid);
@@ -1231,7 +1231,7 @@ Value parse_primary(Parser *p) {
                              * can restore it after captured variable restoration.
                              * (Captured values may overwrite the block variable
                              * with a stale nil value from creation time.) */
-                            id saved_block_value = var->value;
+                            ObjId saved_block_value = var->value;
                             int saved_block_is_id = var->is_id;
 
                             parser_advance(p); /* consume ( */
@@ -1351,7 +1351,7 @@ Value parse_primary(Parser *p) {
                 if (var->is_int) return value_from_int(var->int_value);
                 if (var->is_class) return value_from_class(var->cls);
                 if (var->is_sel) return value_from_sel(var->sel);
-                return value_from_id(var->value);
+                return value_from_obj(var->value);
             }
         }
 
@@ -1414,7 +1414,7 @@ Value parse_primary(Parser *p) {
             parser_advance(p);
             if (var) {
                 if (var->is_int) return value_from_int(var->int_value);
-                if (var->is_id) return value_from_id(var->value);
+                if (var->is_id) return value_from_obj(var->value);
                 if (var->is_class) return value_from_class(var->cls);
                 if (var->is_float) return value_from_float(var->float_value);
             }

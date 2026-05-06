@@ -200,7 +200,7 @@ Value format_values_to_pool(const char *fmt, Value *args, int arg_count) {
                     if (arg_idx < arg_count) {
                         Value v = args[arg_idx++];
                         if (v.is_id && v.obj_val != 0) {
-                            const char *s = (const char *)v.obj_val;
+                            const char *s = obj_deref(v.obj_val);
                             if (cstr_eq_n(s, "NSData:", 7)) {
                                 const char *hex = s + 7;
                                 int hex_len = (int)cstr_len(hex);
@@ -235,7 +235,7 @@ Value format_values_to_pool(const char *fmt, Value *args, int arg_count) {
                                             if (ei > 0) { if (pos < sizeof(buf)-2) { buf[pos++] = ','; buf[pos++] = ' '; } }
                                             /* Format element value */
                                             if (elem.is_id && elem.obj_val != 0) {
-                                                const char *es = (const char *)elem.obj_val;
+                                                const char *es = obj_deref(elem.obj_val);
                                                 if (cstr_eq_n(es, "NSNumber:", 9)) es += 9;
                                                 else if (cstr_eq_n(es, "NSFloat:", 8)) es += 8;
                                                 while (*es && pos < sizeof(buf)-1) buf[pos++] = *es++;
@@ -262,13 +262,13 @@ Value format_values_to_pool(const char *fmt, Value *args, int arg_count) {
                                             if (ei > 0) { if (pos < sizeof(buf)-2) { buf[pos++] = ';'; buf[pos++] = ' '; } }
                                             /* Format key */
                                             if (key.is_id && key.obj_val != 0) {
-                                                const char *ks = (const char *)key.obj_val;
+                                                const char *ks = obj_deref(key.obj_val);
                                                 while (*ks && pos < sizeof(buf)-1) buf[pos++] = *ks++;
                                             }
                                             if (pos < sizeof(buf)-3) { buf[pos++] = ' '; buf[pos++] = '='; buf[pos++] = ' '; }
                                             /* Format value */
                                             if (val.is_id && val.obj_val != 0) {
-                                                const char *vs = (const char *)val.obj_val;
+                                                const char *vs = obj_deref(val.obj_val);
                                                 if (cstr_eq_n(vs, "NSNumber:", 9)) vs += 9;
                                                 else if (cstr_eq_n(vs, "NSFloat:", 8)) vs += 8;
                                                 while (*vs && pos < sizeof(buf)-1) buf[pos++] = *vs++;
@@ -292,7 +292,7 @@ Value format_values_to_pool(const char *fmt, Value *args, int arg_count) {
                                             Value elem = g_ctx.coll_entries[(unsigned int)idx].value;
                                             if (ei > 0) { if (pos < sizeof(buf)-2) { buf[pos++] = ','; buf[pos++] = ' '; } }
                                             if (elem.is_id && elem.obj_val != 0) {
-                                                const char *es = (const char *)elem.obj_val;
+                                                const char *es = obj_deref(elem.obj_val);
                                                 while (*es && pos < sizeof(buf)-1) buf[pos++] = *es++;
                                             }
                                         }
@@ -429,7 +429,11 @@ Value format_values_to_pool(const char *fmt, Value *args, int arg_count) {
                         Value v = args[arg_idx++];
                         char ch;
                         if (v.is_int) ch = (char)v.int_val;
-                        else if (v.is_id && v.obj_val != 0) ch = ((const char *)v.obj_val)[0];
+                        else if (v.is_id) {
+                            const char *s = obj_deref(v.obj_val);
+                            if (s != 0) ch = s[0];
+                            else ch = '?';
+                        }
                         else ch = '?';
                         if (pos < sizeof(buf)-1) buf[pos++] = ch;
                     } else {
@@ -551,7 +555,7 @@ Value format_values_to_pool(const char *fmt, Value *args, int arg_count) {
                     if (arg_idx < arg_count) {
                         Value v = args[arg_idx++];
                         if (v.is_id && v.obj_val != 0) {
-                            const char *s = (const char *)v.obj_val;
+                            const char *s = obj_deref(v.obj_val);
                             int slen = (int)cstr_len(s);
                             int max_chars = (precision >= 0 && precision < slen) ? precision : slen;
                             int i;
@@ -787,7 +791,11 @@ void format_value(Value v, char *buf, unsigned int capacity) {
          * But object_getClass can crash on non-ObjC pointers (C strings),
          * so we check if the pointer looks like a Foundation stub or C string first. */
         Class cls = (Class)0;
-        const char *str_val = (const char *)v.obj_val;
+        const char *str_val = obj_deref(v.obj_val);
+        if (str_val == 0) {
+            fmt_append_str(buf, capacity, &offset, "nil");
+            return;
+        }
         /* NSNumber marker: "NSNumber:<value>" — display just the value */
         if (cstr_starts(str_val, "NSNumber:")) {
             fmt_append_str(buf, capacity, &offset, str_val + 9);
@@ -809,11 +817,9 @@ void format_value(Value v, char *buf, unsigned int capacity) {
             fmt_append_str(buf, capacity, &offset, str_val);
             return;
         }
-        if (!cstr_starts(str_val, "FDObj:") &&
-            str_val != 0 &&
-            (str_val < g_ctx.string_pool || str_val >= g_ctx.string_pool + OBJC_INTERP_STRING_POOL_SIZE)) {
-            cls = object_getClass(v.obj_val);
-        }
+        /* Handle-based objects always dereference to string pool pointers.
+         * The object_getClass path is only for real ObjC objects, which
+         * can't be stored as ObjId handles. */
         const char *name = "id";
         if (cstr_starts(str_val, "FDObj:")) {
             name = str_val + 6; /* Show class name from FDObj: marker */
