@@ -104,10 +104,10 @@ const probes = [
 
   // ── Protocols ───────────────────────────────────────────────
   { cat: 'Protocols', name: '@protocol + conformsToProtocol:',
-    code: `@protocol Drawable\n- (void)draw;\n@end\n@interface Shape : NSObject <Drawable>\n- (void)draw { NSLog(@"drawing"); }\n@end\n@implementation Shape @end\nShape *s = [Shape new];\nNSLog(@"%d", [s conformsToProtocol:@protocol(Drawable)]);`,
+    code: `@protocol Drawable\n- (void)draw;\n@end\n@interface Shape : NSObject <Drawable>\n@end\n@implementation Shape\n- (void)draw { NSLog(@"drawing"); }\n@end\nShape *s = [Shape new];\nNSLog(@"%d", [s conformsToProtocol:@protocol(Drawable)]);`,
     expect: '1' },
   { cat: 'Protocols', name: 'Optional protocol methods',
-    code: `@protocol Opt\n@required - (void)req;\n@optional - (void)opt;\n@end\n@interface Impl : NSObject <Opt>\n- (void)req { NSLog(@"req"); }\n@end\n@implementation Impl @end\nNSLog(@"conforms %d", [[Impl new] conformsToProtocol:@protocol(Opt)]);`,
+    code: `@protocol Opt\n@required - (void)req;\n@optional - (void)opt;\n@end\n@interface Impl : NSObject <Opt>\n@end\n@implementation Impl\n- (void)req { NSLog(@"req"); }\n@end\nNSLog(@"conforms %d", [[Impl new] conformsToProtocol:@protocol(Opt)]);`,
     expect: 'conforms 1' },
   { cat: 'Protocols', name: 'Protocol inheritance',
     code: `@protocol Base <NSObject>\n- (void)baseMethod;\n@end\n@protocol Sub <Base>\n- (void)subMethod;\n@end\nNSLog(@"ok");`,
