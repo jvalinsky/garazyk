@@ -193,6 +193,7 @@ stdenv.mkDerivation {
       --no-entry \
       --allow-undefined \
       --export-memory \
+      --initial-memory=16777216 \
       -z stack-size=1048576 \
       --stack-first \
       --export=objc_kernel_init \
