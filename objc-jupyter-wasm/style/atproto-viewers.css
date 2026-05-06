@@ -1,0 +1,76 @@
+/* ATProto viewer styles for objc-jupyter-wasm */
+
+/* ── CID Viewer ─────────────────────────────────────────────── */
+
+.atproto-cid-panel {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+  font-size: 13px;
+  padding: 8px 12px;
+  border: 1px solid var(--jp-border-color2, #d0d0d0);
+  border-radius: 4px;
+  background: var(--jp-layout-color0, #ffffff);
+  max-width: 600px;
+}
+
+.atproto-cid-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.atproto-cid-badge {
+  display: inline-block;
+  background: var(--jp-brand-color1, #1976d2);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+}
+
+.atproto-cid-string {
+  font-family: monospace;
+  font-size: 12px;
+  word-break: break-all;
+  color: var(--jp-content-font-color1, #333);
+}
+
+.atproto-cid-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.atproto-cid-table th {
+  text-align: left;
+  padding: 3px 8px 3px 0;
+  color: var(--jp-content-font-color2, #666);
+  font-weight: 500;
+  white-space: nowrap;
+  width: 100px;
+}
+
+.atproto-cid-table td {
+  padding: 3px 0;
+  color: var(--jp-content-font-color1, #333);
+}
+
+.atproto-code {
+  color: var(--jp-content-font-color3, #999);
+  font-size: 11px;
+}
+
+.atproto-digest {
+  font-family: monospace;
+  font-size: 11px;
+  word-break: break-all;
+}
+
+/* ── Error ───────────────────────────────────────────────────── */
+
+.atproto-error {
+  color: var(--jp-error-color1, #d32f2f);
+  font-size: 13px;
+  padding: 8px;
+}
