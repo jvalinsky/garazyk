@@ -238,13 +238,12 @@ Value parse_primary(Parser *p) {
             unsigned int skip_at = (text[0] == '@') ? 1 : 0;
             const char *content = text + skip_at;
             unsigned int len = cstr_len(content);
-            char *str_ptr = string_pool_alloc(len + 1);
-            if (str_ptr == 0) {
+            ObjId h = obj_alloc_str(content, len);
+            if (h == OBJ_NULL) {
                 parser_error(p, "string pool exhausted — restart kernel");
                 return value_void();
             }
-            cstr_copy(str_ptr, content, len + 1);
-            return value_from_id((id)str_ptr);
+            return value_from_obj(h);
         }
     }
 
@@ -264,12 +263,13 @@ Value parse_primary(Parser *p) {
          * Uses the same marker format as the built-in numberWithBool: handler. */
         parser_advance(p); /* consume @YES/@TRUE */
         {
-            char *buf = string_pool_alloc(14);
-            if (buf == 0) return value_from_int(1);
+            ObjId h = obj_alloc(14);
+            if (h == OBJ_NULL) return value_from_int(1);
+            char *buf = obj_deref_mut(h);
             cstr_copy(buf, "NSNumber:", 14);
             buf[9] = '1';
             buf[10] = '\0';
-            return value_from_id((id)buf);
+            return value_from_obj(h);
         }
     }
     if (tok.type == TOK_AT_KEYWORD && (cstr_eq(tok.text, "@NO") || cstr_eq(tok.text, "@FALSE"))) {
@@ -277,12 +277,13 @@ Value parse_primary(Parser *p) {
          * Uses the same marker format as the built-in numberWithBool: handler. */
         parser_advance(p); /* consume @NO/@FALSE */
         {
-            char *buf = string_pool_alloc(14);
-            if (buf == 0) return value_from_int(0);
+            ObjId h = obj_alloc(14);
+            if (h == OBJ_NULL) return value_from_int(0);
+            char *buf = obj_deref_mut(h);
             cstr_copy(buf, "NSNumber:", 14);
             buf[9] = '0';
             buf[10] = '\0';
-            return value_from_id((id)buf);
+            return value_from_obj(h);
         }
     }
     if (tok.type == TOK_AT_KEYWORD && cstr_eq(tok.text, "@")) {
@@ -295,8 +296,9 @@ Value parse_primary(Parser *p) {
             if (num_val.is_int) {
                 /* Create NSNumber marker: "NSNumber:<int_value>"
                  * Same format as the built-in numberWithInt: handler. */
-                char *buf = string_pool_alloc(64);
-                if (buf != 0) {
+                ObjId h = obj_alloc(64);
+                if (h != OBJ_NULL) {
+                    char *buf = obj_deref_mut(h);
                     int v = num_val.int_val;
                     cstr_copy(buf, "NSNumber:", 64);
                     {
@@ -313,7 +315,7 @@ Value parse_primary(Parser *p) {
                         while (tpos > 0 && blen < 63) buf[blen++] = tmp[--tpos];
                         buf[blen] = '\0';
                     }
-                    return value_from_id((id)buf);
+                    return value_from_obj(h);
                 }
             }
             return num_val;
@@ -323,8 +325,9 @@ Value parse_primary(Parser *p) {
             if (num_val.is_float) {
                 /* Create NSFloat marker: "NSFloat:<float_value>"
                  * Same format as the built-in numberWithDouble: handler. */
-                char *buf = string_pool_alloc(64);
-                if (buf != 0) {
+                ObjId h = obj_alloc(64);
+                if (h != OBJ_NULL) {
+                    char *buf = obj_deref_mut(h);
                     cstr_copy(buf, "NSFloat:", 64);
                     {
                         /* Convert float to string and append */
@@ -363,7 +366,7 @@ Value parse_primary(Parser *p) {
                         }
                         buf[blen] = '\0';
                     }
-                    return value_from_id((id)buf);
+                    return value_from_obj(h);
                 }
             }
             return num_val;
@@ -376,8 +379,9 @@ Value parse_primary(Parser *p) {
                 if (p->error) return value_void();
                 if (expr_val.is_int) {
                     /* Create NSNumber marker: "NSNumber:<int_value>" */
-                    char *buf = string_pool_alloc(64);
-                    if (buf != 0) {
+                    ObjId h = obj_alloc(64);
+                    if (h != OBJ_NULL) {
+                        char *buf = obj_deref_mut(h);
                         int v = expr_val.int_val;
                         cstr_copy(buf, "NSNumber:", 64);
                         {
@@ -393,13 +397,14 @@ Value parse_primary(Parser *p) {
                             while (tpos > 0 && blen < 63) buf[blen++] = tmp[--tpos];
                             buf[blen] = '\0';
                         }
-                        return value_from_id((id)buf);
+                        return value_from_obj(h);
                     }
                     return expr_val;
                 } else if (expr_val.is_float) {
                     /* Create NSFloat marker: "NSFloat:<float_value>" */
-                    char *buf = string_pool_alloc(64);
-                    if (buf != 0) {
+                    ObjId h = obj_alloc(64);
+                    if (h != OBJ_NULL) {
+                        char *buf = obj_deref_mut(h);
                         cstr_copy(buf, "NSFloat:", 64);
                         {
                             char tmp[32];
@@ -435,7 +440,7 @@ Value parse_primary(Parser *p) {
                             }
                             buf[blen] = '\0';
                         }
-                        return value_from_id((id)buf);
+                        return value_from_obj(h);
                     }
                     return expr_val;
                 } else if (expr_val.is_id || expr_val.is_class) {
@@ -664,11 +669,12 @@ Value parse_primary(Parser *p) {
             parser_advance(p);
             {
                 unsigned int needed = 6 + cstr_len(var_name) + 1;
-                char *buf = string_pool_alloc(needed);
-                if (buf) {
+                ObjId h = obj_alloc(needed);
+                if (h != OBJ_NULL) {
+                    char *buf = obj_deref_mut(h);
                     cstr_copy(buf, "ADDR:", needed);
                     cstr_copy(buf + 5, var_name, needed - 5);
-                    return value_from_id((id)buf);
+                    return value_from_obj(h);
                 }
             }
         }
@@ -716,9 +722,8 @@ Value parse_primary(Parser *p) {
                 if (sel_arg.is_sel && sel_arg.sel_val != 0) {
                     const char *name = sel_getName(sel_arg.sel_val);
                     if (name) {
-                        char *pool_str = string_pool_alloc((unsigned int)cstr_len(name) + 1);
-                        if (pool_str) cstr_copy(pool_str, name, (unsigned int)cstr_len(name) + 1);
-                        return value_from_id((id)pool_str);
+                        ObjId h = obj_alloc_str(name, (unsigned int)cstr_len(name));
+                        if (h != OBJ_NULL) return value_from_obj(h);
                     }
                 }
             }
@@ -735,9 +740,8 @@ Value parse_primary(Parser *p) {
                 if (sel_arg.is_sel && sel_arg.sel_val != 0) {
                     const char *name = sel_getName(sel_arg.sel_val);
                     if (name) {
-                        char *pool_str = string_pool_alloc((unsigned int)cstr_len(name) + 1);
-                        if (pool_str) cstr_copy(pool_str, name, (unsigned int)cstr_len(name) + 1);
-                        return value_from_id((id)pool_str);
+                        ObjId h = obj_alloc_str(name, (unsigned int)cstr_len(name));
+                        if (h != OBJ_NULL) return value_from_obj(h);
                     }
                 }
             }
@@ -971,8 +975,8 @@ Value parse_primary(Parser *p) {
                             /* Dispatch setter as message send */
                             {
                                 SEL setter_sel = sel_registerName(setter_name);
-                                ObjId receiver = var->is_id ? var->value : value_from_id((id)var->cls).obj_val;
-                                Value method_target = value_from_obj(receiver);
+                                ObjId receiver = var->is_id ? var->value : OBJ_NULL;
+                                Value method_target = var->is_id ? value_from_obj(receiver) : value_from_class(var->cls);
                                 unsigned int mi;
                                 if (setter_sel == 0) {
                                     parser_error(p, "selector table full (max 4096 selectors)");
@@ -1024,7 +1028,7 @@ Value parse_primary(Parser *p) {
                             if (p->error) return rhs;
 
                             /* Read current value via getter */
-                            ObjId receiver = var->is_id ? var->value : value_from_id((id)var->cls).obj_val;
+                            ObjId receiver = var->is_id ? var->value : fdobj_marker_for_class(var->cls);
                             Value current = value_void();
                             {
                                 unsigned int pi;
@@ -1084,8 +1088,8 @@ Value parse_primary(Parser *p) {
                     /* Getter: obj.property → [obj property] */
                     {
                         SEL prop_sel = sel_registerName(prop_name);
-                        ObjId receiver = var->is_id ? var->value : value_from_id((id)var->cls).obj_val;
-                        Value method_target = value_from_obj(receiver);
+                        ObjId receiver = var->is_id ? var->value : fdobj_marker_for_class(var->cls);
+                        Value method_target = var->is_id ? value_from_obj(receiver) : value_from_class(var->cls);
                         unsigned int mi;
                         if (prop_sel == 0) {
                             parser_error(p, "selector table full (max 4096 selectors)");
@@ -1172,11 +1176,11 @@ Value parse_primary(Parser *p) {
                             if (is_array) {
                                 int idx = coll_get_nth(actual_cid, (unsigned int)index.int_val);
                                 if (idx >= 0) return g_ctx.coll_entries[(unsigned int)idx].key;
-                                return value_from_id((id)"(nil)");
+                                return value_from_obj(obj_alloc_str("(nil)", 5));
                             } else {
                                 int idx = coll_find_by_key(actual_cid, &index);
                                 if (idx >= 0) return g_ctx.coll_entries[(unsigned int)idx].value;
-                                return value_from_id((id)"(nil)");
+                                return value_from_obj(obj_alloc_str("(nil)", 5));
                             }
                         }
                     }
@@ -1708,11 +1712,12 @@ Value parse_primary(Parser *p) {
 
                     /* Return protocol marker FDProt:Name */
                     unsigned int needed = 7 + cstr_len(proto_name) + 1;
-                    char *buf = string_pool_alloc(needed);
-                    if (buf) {
+                    ObjId h = obj_alloc(needed);
+                    if (h != OBJ_NULL) {
+                        char *buf = obj_deref_mut(h);
                         cstr_copy(buf, "FDProt:", needed);
                         cstr_copy(buf + 7, proto_name, needed - 7);
-                        return value_from_id((id)buf);
+                        return value_from_obj(h);
                     }
                 }
                 return value_void();
