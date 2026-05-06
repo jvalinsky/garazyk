@@ -215,6 +215,24 @@ const char *class_name_for_ptr(Class cls) {
     return 0;
 }
 
+/* Check if a class has had +initialize called (or is pre-initialized). */
+int class_is_initialized(Class cls) {
+    unsigned int i;
+    /* Foundation classes (sentinel < 100) are always considered initialized */
+    if (cls != 0 && (unsigned long)cls < 100) return 1;
+    for (i = 0; i < g_ctx.initialized_count; i++) {
+        if (g_ctx.initialized_classes[i] == cls) return 1;
+    }
+    return 0;
+}
+
+/* Mark a class as having had +initialize called. */
+void mark_class_initialized(Class cls) {
+    if (g_ctx.initialized_count < MAX_INITIALIZED_CLASSES) {
+        g_ctx.initialized_classes[g_ctx.initialized_count++] = cls;
+    }
+}
+
 /* Find method for super dispatch: walk the superclass chain from skip_class
  * and search for methods matching the selector in any superclass.
  * This implements [super selector:] by looking up the method in the

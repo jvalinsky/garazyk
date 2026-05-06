@@ -314,6 +314,39 @@ Value parse_message_send(Parser *p) {
         #define IS_FOUNDATION_CLASS(name) \
             (target_class_name && cstr_eq(target_class_name, name))
 
+        /* ── +initialize auto-call ────────────────────────────────────
+         * In ObjC 2.0, +initialize is called lazily on a class the first
+         * time it receives a message. We walk the superclass chain first
+         * (superclass +initialize before subclass), and mark the class as
+         * initialized BEFORE calling to prevent re-entrancy. */
+        if (target.is_class && target.cls_val && target_class_name &&
+            !class_is_initialized(target.cls_val)) {
+            /* Build superclass chain: current → parent → ... → root */
+            const char *chain[16];
+            unsigned int chain_len = 0;
+            const char *cur = target_class_name;
+            while (cur && cur[0] != '\0' && chain_len < 16) {
+                chain[chain_len++] = cur;
+                cur = class_get_superclass_name(cur);
+            }
+            /* Walk from root to current class, calling +initialize on each
+             * un-initialized class in the chain. */
+            while (chain_len > 0) {
+                chain_len--;
+                const char *cname = chain[chain_len];
+                Class ccls = class_ptr_for_name(cname);
+                if (ccls && !class_is_initialized(ccls)) {
+                    mark_class_initialized(ccls);
+                    SEL init_sel = sel_registerName("initialize");
+                    unsigned int mi = find_interpreter_method(init_sel, target, receiver, 0);
+                    if (mi < g_ctx.method_count) {
+                        execute_interpreter_method(p, &g_ctx.methods[mi], init_sel,
+                                                   receiver, 0, 0, 0);
+                    }
+                }
+            }
+        }
+
         /* ── Primitive numeric value dispatch ─────────────────────── */
         if (target.is_int || target.is_float) {
             if (cstr_eq(sel_name, "intValue") || cstr_eq(sel_name, "longValue") || cstr_eq(sel_name, "integerValue")) {
@@ -940,33 +973,10 @@ Value parse_message_send(Parser *p) {
         if (cstr_eq(sel_name, "performSelector:") && target.is_id && arg_count >= 1) {
             if (keyword_args[0].is_sel) {
                 SEL perf_sel = keyword_args[0].sel_val;
-                unsigned int mi;
-                int found = 0;
-                for (mi = 0; mi < g_ctx.method_count; mi++) {
-                    if (g_ctx.methods[mi].selector == perf_sel && g_ctx.methods[mi].source_len > 0 &&
-                        !g_ctx.methods[mi].is_class_method) {
-                        found = 1;
-                        break;
-                    }
-                }
-                if (found) {
-                    unsigned int saved_var_count = g_ctx.var_count;
-                    Value return_val;
-                    InterpVar *self_var = interp_get_or_create_var("self");
-                    if (self_var) { self_var->is_id = 1; self_var->value = receiver; }
-                    {
-                        InterpVar *cmd_var = interp_get_or_create_var("_cmd");
-                        if (cmd_var) { cmd_var->is_sel = 1; cmd_var->sel = perf_sel; }
-                    }
-                    g_ctx.return_pending = 0;
-                    {
-                        Value v = eval_source_range(0, g_ctx.methods[mi].source_len, g_ctx.methods[mi].source, 0);
-                        (void)v;
-                    }
-                    return_val = g_ctx.return_value;
-                    g_ctx.var_count = saved_var_count;
-                    g_ctx.return_pending = 0;
-                    return return_val;
+                unsigned int mi = find_interpreter_method(perf_sel, target, receiver, 0);
+                if (mi < g_ctx.method_count) {
+                    return execute_interpreter_method(p, &g_ctx.methods[mi], perf_sel,
+                                                      receiver, 0, 0, 1);
                 }
             }
             return value_from_id(receiver);
@@ -976,45 +986,12 @@ Value parse_message_send(Parser *p) {
         if (cstr_eq(sel_name, "performSelector:withObject:") && target.is_id && arg_count >= 2) {
             if (keyword_args[0].is_sel) {
                 SEL perf_sel = keyword_args[0].sel_val;
-                unsigned int mi;
-                int found = 0;
-                for (mi = 0; mi < g_ctx.method_count; mi++) {
-                    if (g_ctx.methods[mi].selector == perf_sel && g_ctx.methods[mi].source_len > 0 &&
-                        !g_ctx.methods[mi].is_class_method) {
-                        found = 1;
-                        break;
-                    }
-                }
-                if (found) {
-                    unsigned int saved_var_count = g_ctx.var_count;
-                    Value return_val;
-                    InterpVar *self_var = interp_get_or_create_var("self");
-                    if (self_var) { self_var->is_id = 1; self_var->value = receiver; }
-                    {
-                        InterpVar *cmd_var = interp_get_or_create_var("_cmd");
-                        if (cmd_var) { cmd_var->is_sel = 1; cmd_var->sel = perf_sel; }
-                    }
-                    /* Bind the withObject: argument to the method's first parameter name */
-                    if (g_ctx.methods[mi].arg_count >= 1) {
-                        InterpVar *arg_var = interp_get_or_create_var(g_ctx.methods[mi].arg_names[0]);
-                        if (arg_var) {
-                            arg_var->is_id = keyword_args[1].is_id;
-                            arg_var->value = keyword_args[1].obj_val;
-                            arg_var->is_int = keyword_args[1].is_int;
-                            arg_var->int_value = keyword_args[1].int_val;
-                            arg_var->is_float = keyword_args[1].is_float;
-                            arg_var->float_value = keyword_args[1].float_val;
-                        }
-                    }
-                    g_ctx.return_pending = 0;
-                    {
-                        Value v = eval_source_range(0, g_ctx.methods[mi].source_len, g_ctx.methods[mi].source, 0);
-                        (void)v;
-                    }
-                    return_val = g_ctx.return_value;
-                    g_ctx.var_count = saved_var_count;
-                    g_ctx.return_pending = 0;
-                    return return_val;
+                unsigned int mi = find_interpreter_method(perf_sel, target, receiver, 0);
+                if (mi < g_ctx.method_count) {
+                    Value perf_args[1];
+                    perf_args[0] = keyword_args[1];
+                    return execute_interpreter_method(p, &g_ctx.methods[mi], perf_sel,
+                                                      receiver, perf_args, 1, 1);
                 }
             }
             return value_from_id(receiver);
@@ -1024,56 +1001,13 @@ Value parse_message_send(Parser *p) {
         if (cstr_eq(sel_name, "performSelector:withObject:withObject:") && target.is_id && arg_count >= 3) {
             if (keyword_args[0].is_sel) {
                 SEL perf_sel = keyword_args[0].sel_val;
-                unsigned int mi;
-                int found = 0;
-                for (mi = 0; mi < g_ctx.method_count; mi++) {
-                    if (g_ctx.methods[mi].selector == perf_sel && g_ctx.methods[mi].source_len > 0 &&
-                        !g_ctx.methods[mi].is_class_method) {
-                        found = 1;
-                        break;
-                    }
-                }
-                if (found) {
-                    unsigned int saved_var_count = g_ctx.var_count;
-                    Value return_val;
-                    InterpVar *self_var = interp_get_or_create_var("self");
-                    if (self_var) { self_var->is_id = 1; self_var->value = receiver; }
-                    {
-                        InterpVar *cmd_var = interp_get_or_create_var("_cmd");
-                        if (cmd_var) { cmd_var->is_sel = 1; cmd_var->sel = perf_sel; }
-                    }
-                    /* Bind the two withObject: arguments */
-                    if (g_ctx.methods[mi].arg_count >= 1) {
-                        InterpVar *arg_var = interp_get_or_create_var(g_ctx.methods[mi].arg_names[0]);
-                        if (arg_var) {
-                            arg_var->is_id = keyword_args[1].is_id;
-                            arg_var->value = keyword_args[1].obj_val;
-                            arg_var->is_int = keyword_args[1].is_int;
-                            arg_var->int_value = keyword_args[1].int_val;
-                            arg_var->is_float = keyword_args[1].is_float;
-                            arg_var->float_value = keyword_args[1].float_val;
-                        }
-                    }
-                    if (g_ctx.methods[mi].arg_count >= 2) {
-                        InterpVar *arg_var = interp_get_or_create_var(g_ctx.methods[mi].arg_names[1]);
-                        if (arg_var) {
-                            arg_var->is_id = keyword_args[2].is_id;
-                            arg_var->value = keyword_args[2].obj_val;
-                            arg_var->is_int = keyword_args[2].is_int;
-                            arg_var->int_value = keyword_args[2].int_val;
-                            arg_var->is_float = keyword_args[2].is_float;
-                            arg_var->float_value = keyword_args[2].float_val;
-                        }
-                    }
-                    g_ctx.return_pending = 0;
-                    {
-                        Value v = eval_source_range(0, g_ctx.methods[mi].source_len, g_ctx.methods[mi].source, 0);
-                        (void)v;
-                    }
-                    return_val = g_ctx.return_value;
-                    g_ctx.var_count = saved_var_count;
-                    g_ctx.return_pending = 0;
-                    return return_val;
+                unsigned int mi = find_interpreter_method(perf_sel, target, receiver, 0);
+                if (mi < g_ctx.method_count) {
+                    Value perf_args[2];
+                    perf_args[0] = keyword_args[1];
+                    perf_args[1] = keyword_args[2];
+                    return execute_interpreter_method(p, &g_ctx.methods[mi], perf_sel,
+                                                      receiver, perf_args, 2, 1);
                 }
             }
             return value_from_id(receiver);
@@ -2558,6 +2492,16 @@ Value parse_message_send(Parser *p) {
                 }
                 return value_from_id(receiver);
             }
+        }
+
+        /* ── NSNull dispatch ──────────────────────────────────────── */
+
+        /* NSNull: [NSNull null] → singleton marker */
+        if (IS_FOUNDATION_CLASS("NSNull") && target.is_class && cstr_eq(sel_name, "null") && arg_count == 0) {
+            char *buf = string_pool_alloc(8);
+            if (buf == 0) return value_from_id((id)"NSNull:");
+            cstr_copy(buf, "NSNull:", 8);
+            return value_from_id((id)buf);
         }
 
         /* ── NSData dispatch ──────────────────────────────────────── */

@@ -21,4 +21,8 @@ const char *class_get_superclass_name(const char *class_name);
 Class class_ptr_for_name(const char *name);
 const char *class_name_for_ptr(Class cls);
 
+/* +initialize tracking */
+int class_is_initialized(Class cls);
+void mark_class_initialized(Class cls);
+
 #endif /* OBJC_INTERP_DISPATCH_H */
