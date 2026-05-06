@@ -98,6 +98,11 @@ export class ObjcKernel extends BaseKernel {
       return;
     }
 
+    if (msgType === 'interrupt_request') {
+      this._handleInterrupt(msg);
+      return;
+    }
+
     if (msgType === 'comm_info_request') {
       await this._handleCommInfo(msg as KernelMessage.ICommInfoRequestMsg);
       return;
@@ -420,6 +425,25 @@ export class ObjcKernel extends BaseKernel {
     } finally {
       this._sendStatus(msg, 'idle');
     }
+  }
+
+  private _handleInterrupt(msg: KernelMessage.IMessage): void {
+    /* Set the interrupt flag so the WASM interpreter checks it on
+     * the next loop iteration or eval_ast re-entry.  The WASM
+     * `should_interrupt` host import reads this flag via Atomics. */
+    if (this._interruptView) {
+      Atomics.store(this._interruptView, 0, 1);
+    }
+
+    /* Reply per the Jupyter protocol: interrupt_reply */
+    const reply = KernelMessage.createMessage({
+      msgType: 'interrupt_reply',
+      channel: 'shell',
+      parentHeader: msg.header,
+      session: msg.header.session,
+      content: { status: 'ok' }
+    });
+    this._sendKernelMessage(reply);
   }
 
   private _sendStatus(

@@ -3,5 +3,5 @@
     "language": "objective-c",
     "argv": [],
     "env": {},
-    "interrupt_mode": "signal"
+    "interrupt_mode": "message"
 }
