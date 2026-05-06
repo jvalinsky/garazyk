@@ -956,6 +956,7 @@ static const FoundationSelector foundation_selectors[] = {
     {"NSString", "length"},
     {"NSString", "intValue"},
     {"NSString", "UTF8String"},
+    {"NSString", "dataUsingEncoding:"},
     {"NSString", "stringByAppendingString:"},
     {"NSString", "stringByAppendingFormat:"},
     {"NSString", "isEqualToString:"},

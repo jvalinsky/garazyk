@@ -785,6 +785,18 @@ void objc_interp_init(void) {
             }
         }
     }
+    /* Register Foundation string encoding constants.
+     * These are integer variables so code like [str dataUsingEncoding:4]
+     * or [str dataUsingEncoding:NSUTF8StringEncoding] both work. */
+    {
+        InterpVar *v;
+        v = interp_get_or_create_var("NSASCIIStringEncoding");
+        if (v) { v->is_int = 1; v->is_class = 0; v->int_value = 1; }
+        v = interp_get_or_create_var("NSUTF8StringEncoding");
+        if (v) { v->is_int = 1; v->is_class = 0; v->int_value = 4; }
+        v = interp_get_or_create_var("NSMacOSRomanStringEncoding");
+        if (v) { v->is_int = 1; v->is_class = 0; v->int_value = 30; }
+    }
     /* Register built-in Foundation struct types (NSRange, CGPoint, CGSize, CGRect) */
     struct_register_builtin();
     g_ctx.interp_initialized = 1;

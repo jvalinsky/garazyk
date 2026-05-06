@@ -1187,6 +1187,32 @@ Value parse_message_send(Parser *p) {
             return value_from_obj(receiver);
         }
 
+        /* NSString: [str dataUsingEncoding:enc] → NSData from string bytes.
+         * Kernel strings are already UTF-8 C strings, so we hex-encode
+         * the raw bytes into the NSData:<hex> marker format. The encoding
+         * parameter is accepted but effectively ignored — all kernel
+         * strings are UTF-8, which matches NSUTF8StringEncoding (4). */
+        if (cstr_eq(sel_name, "dataUsingEncoding:") && target.is_id && receiver != OBJ_NULL && arg_count >= 1) {
+            const char *str = obj_deref(receiver);
+            unsigned int slen = (unsigned int)cstr_len(str);
+            unsigned int needed = 7 + slen * 2 + 1;
+            ObjId h = obj_alloc(needed);
+            if (h == OBJ_NULL) return value_from_obj(obj_alloc_str("NSData:", 7));
+            char *buf = obj_deref_mut(h);
+            cstr_copy(buf, "NSData:", needed);
+            {
+                static const char hex_chars[] = "0123456789abcdef";
+                unsigned int i;
+                for (i = 0; i < slen; i++) {
+                    unsigned char c = (unsigned char)str[i];
+                    buf[7 + i * 2]     = hex_chars[(c >> 4) & 0x0f];
+                    buf[7 + i * 2 + 1] = hex_chars[c & 0x0f];
+                }
+                buf[7 + slen * 2] = '\0';
+            }
+            return value_from_obj(h);
+        }
+
         /* NSNumber: [num unsignedIntValue] → return unsigned int as int */
         if (cstr_eq(sel_name, "unsignedIntValue") && target.is_id && receiver != OBJ_NULL) {
             const char *s = obj_deref(receiver);
