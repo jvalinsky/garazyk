@@ -529,7 +529,7 @@ Value parse_message_send(Parser *p) {
                 const char *protocol_name = 0;
                 if (cstr_starts(proto_arg, "FDProt:")) {
                     protocol_name = proto_arg + 7;
-                } else if (is_string_pool_pointer(proto_arg) && !cstr_starts(proto_arg, "FDObj:")) {
+                } else if (proto_arg && !cstr_starts(proto_arg, "FDObj:")) {
                     /* Assume it's a string object with the protocol name */
                     protocol_name = proto_arg;
                 }
