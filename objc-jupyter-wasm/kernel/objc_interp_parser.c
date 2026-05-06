@@ -166,13 +166,15 @@ static Value parse_comparison(Parser *p) {
                 else if (op == TOK_NEQ) result = lv != rv;
                 left = value_from_int(result);
             } else if (op == TOK_EQ || op == TOK_NEQ) {
-                /* id comparison: obj == nil, obj != nil, nil == obj, etc.
-                 * Also handles id == id (pointer equality) */
+                /* id/class comparison: obj == nil, obj != nil, nil == obj, etc.
+                 * Also handles id == id (pointer equality) and Class != nil */
                 int result = 0;
                 long lv = 0, rv = 0;
                 if (left.is_id) lv = (long)left.obj_val;
+                else if (left.is_class) lv = (long)left.cls_val;
                 else if (left.is_int) lv = left.int_val;
                 if (right.is_id) rv = (long)right.obj_val;
+                else if (right.is_class) rv = (long)right.cls_val;
                 else if (right.is_int) rv = right.int_val;
                 if (op == TOK_EQ) result = (lv == rv);
                 else result = (lv != rv);
