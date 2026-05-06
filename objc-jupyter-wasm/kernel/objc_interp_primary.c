@@ -479,7 +479,7 @@ Value parse_primary(Parser *p) {
                      * not via interpreter method dispatch (which won't find
                      * the built-in "array" class method). */
                     unsigned int arr_cid = coll_create_new();
-                    Value arr = value_from_id(coll_make_marker("NSArr:", arr_cid));
+                    Value arr = value_from_obj(coll_make_marker("NSArr:", arr_cid));
                     for (i = 0; i < obj_count; i++) {
                         coll_add(arr_cid, objects[i], value_from_int(0));
                     }
@@ -511,7 +511,7 @@ Value parse_primary(Parser *p) {
                      * not via interpreter method dispatch (which won't find
                      * the built-in "dictionary" class method). */
                     unsigned int cid = coll_create_new();
-                    Value dict = value_from_id(coll_make_marker("NSDict:", cid));
+                    Value dict = value_from_obj(coll_make_marker("NSDict:", cid));
                     while (parser_current(p).type != TOK_CLOSE_BRACE && parser_current(p).type != TOK_EOF) {
                         Value key, value;
                         key = parse_expression_safe(p);
@@ -1672,7 +1672,7 @@ Value parse_primary(Parser *p) {
             }
         }
 
-        return value_from_id(block_make_marker(block_id));
+        return value_from_obj(block_make_marker(block_id));
     }
 
     /* @keyword */
