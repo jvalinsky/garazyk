@@ -41,6 +41,7 @@
   },
   "jupyterlab": {
     "extension": true,
+    "mimeExtension": "lib/src/cid-mime-extension.js",
     "outputDir": "objc_jupyter_wasm/labextension",
     "sharedPackages": {
       "@jupyterlite/kernel": {
