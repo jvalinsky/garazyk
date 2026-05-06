@@ -18,7 +18,7 @@ int coll_add_string_val(unsigned int coll_id, const char *key_str, const char *v
 int coll_add_int_val(unsigned int coll_id, const char *key_str, int val_int);
 int coll_add_double_val(unsigned int coll_id, const char *key_str, double val_double);
 int coll_add_bool_val(unsigned int coll_id, const char *key_str, int val_bool);
-int coll_add_marker_val(unsigned int coll_id, const char *key_str, id marker);
+int coll_add_marker_val(unsigned int coll_id, const char *key_str, ObjId marker);
 
 /* String pool */
 char *string_pool_alloc(unsigned int size);
@@ -28,7 +28,8 @@ void obj_init(void);
 ObjId obj_alloc(unsigned int size);      /* allocate in pool + register in table */
 ObjId obj_alloc_str(const char *src, unsigned int len); /* copy string + register */
 ObjId obj_register_ptr(const char *ptr); /* register existing pool pointer in table */
-const char *obj_deref(ObjId id);         /* dereference handle → string pool pointer */
+const char *obj_deref(ObjId id);         /* dereference handle → const string pool pointer */
+char *obj_deref_mut(ObjId id);           /* dereference handle → mutable string pool pointer */
 void obj_free(ObjId id);                /* mark slot as free */
 int obj_is_valid(ObjId id);             /* check if handle is valid and active */
 
@@ -44,13 +45,13 @@ void coll_remove_all(unsigned int coll_id);
 int coll_get_nth(unsigned int coll_id, unsigned int n);
 int coll_insert_at(unsigned int coll_id, unsigned int pos, Value key, Value value);
 unsigned int coll_id_from_marker(const char *s, const char *prefix);
-id coll_make_marker(const char *prefix, unsigned int coll_id);
+ObjId coll_make_marker(const char *prefix, unsigned int coll_id);
 
 /* Block side table */
 void block_init(void);
 BlockImpl *block_get(unsigned int block_id);
 unsigned int block_id_from_marker(const char *s);
-id block_make_marker(unsigned int block_id);
+ObjId block_make_marker(unsigned int block_id);
 
 /* Invocation side table */
 void invocation_init(void);
