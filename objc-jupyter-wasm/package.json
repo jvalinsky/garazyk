@@ -16,10 +16,11 @@
     "build:jupyterlite": "node scripts/build-smoke-site.mjs",
     "build:labextension": "jupyter labextension build .",
     "build:lib": "tsc -p tsconfig.json",
-    "check:js": "node --check js/wasm-loader.js && node --check js/objc-worker.js && node --check jupyterlite/kernel.js && node --check scripts/copy-static-assets.mjs && node --check scripts/build-smoke-site.mjs && node --check tests/browser-smoke.mjs && node --check tests/browser-smoke-page.mjs && node --check tests/kernel-smoke.mjs",
+    "check:js": "node --check js/wasm-loader.js && node --check js/objc-worker.js && node --check jupyterlite/kernel.js && node --check scripts/copy-static-assets.mjs && node --check scripts/build-smoke-site.mjs && node --check tests/browser-smoke.mjs && node --check tests/browser-smoke-page.mjs && node --check tests/kernel-smoke.mjs && node --check tests/run-notebooks.mjs && node --check tests/objc-kernel-test-harness.mjs && node --check tests/garazyk-compat-corpus.mjs && node --check tests/test-garazyk-compat.mjs",
     "clean": "rimraf lib dist objc_jupyter_wasm/labextension",
     "smoke:browser": "node tests/browser-smoke.mjs dist/jupyterlite-smoke",
     "smoke:kernel": "node tests/kernel-smoke.mjs ./result/wasm/kernel.wasm",
+    "test:garazyk-compat": "node tests/test-garazyk-compat.mjs result/wasm/kernel.wasm",
     "test:notebooks": "node tests/run-notebooks.mjs --dir demo/",
     "test:notebooks:verbose": "node tests/run-notebooks.mjs --verbose --dir demo/"
   },

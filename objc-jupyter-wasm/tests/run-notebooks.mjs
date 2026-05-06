@@ -17,6 +17,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { resolve, join, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WASI } from 'node:wasi';
+import { classifySnippet } from './objc-kernel-test-harness.mjs';
 
 // ── ANSI palette ───────────────────────────────────────────────────────────────
 
@@ -187,6 +188,24 @@ function isPlaceholder(source) {
   return false;
 }
 
+function notebookCategory(notebookPath) {
+  const name = basename(notebookPath, '.ipynb');
+  if (name.startsWith('atproto-')) return name.slice('atproto-'.length);
+  if (name.startsWith('objc-')) return name.slice('objc-'.length);
+  return name;
+}
+
+function failureMode(reply) {
+  if (!reply || reply.status !== 'error') return null;
+  if (reply.ename === 'HarnessError' && /memory access out of bounds/i.test(reply.evalue ?? '')) {
+    return 'wasm-trap';
+  }
+  if (/unsupported|does not respond|Unexpected token|parse/i.test(`${reply.ename ?? ''} ${reply.evalue ?? ''}`)) {
+    return 'unsupported-or-parse-error';
+  }
+  return 'runtime-error';
+}
+
 // ── Per-notebook runner ────────────────────────────────────────────────────────
 
 async function runNotebook(notebookPath) {
@@ -204,9 +223,23 @@ async function runNotebook(notebookPath) {
   for (let i = 0; i < codeCells.length; i++) {
     const cell = codeCells[i];
     const source = Array.isArray(cell.source) ? cell.source.join('') : (cell.source ?? '');
+    const compatibility = classifySnippet(source, {
+      tags: [notebookCategory(notebookPath)],
+      supportClass: notebookPath.includes('atproto-') ? 'direct' : undefined,
+    });
 
     if (isPlaceholder(source)) {
-      cellResults.push({ index: i, status: 'skip', source, streams: [] });
+      cellResults.push({
+        index: i,
+        status: 'skip',
+        source,
+        streams: [],
+        compatibility: {
+          ...compatibility,
+          expectedStatus: 'skip',
+          failureMode: null,
+        },
+      });
       continue;
     }
 
@@ -217,7 +250,19 @@ async function runNotebook(notebookPath) {
       reply = { status: 'error', ename: 'HarnessError', evalue: err.message, traceback: [], streams: [] };
     }
 
-    cellResults.push({ index: i, status: reply.status, source, streams: reply.streams, data: reply.data, reply });
+    cellResults.push({
+      index: i,
+      status: reply.status,
+      source,
+      streams: reply.streams,
+      data: reply.data,
+      reply,
+      compatibility: {
+        ...compatibility,
+        expectedStatus: 'ok',
+        failureMode: failureMode(reply),
+      },
+    });
 
     if (bail && reply.status === 'error') break;
   }
