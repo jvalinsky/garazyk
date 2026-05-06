@@ -435,14 +435,25 @@ export class ObjcKernel extends BaseKernel {
       Atomics.store(this._interruptView, 0, 1);
     }
 
-    /* Reply per the Jupyter protocol: interrupt_reply */
-    const reply = KernelMessage.createMessage({
-      msgType: 'interrupt_reply',
+    /* Reply per the Jupyter protocol: interrupt_reply.
+     * KernelMessage.createMessage has no overload for interrupt_reply
+     * (@jupyterlab/services doesn't define IInterruptReplyMsg), so we
+     * construct the message manually. */
+    const reply: KernelMessage.IMessage = {
+      header: {
+        date: new Date().toISOString(),
+        msg_id: `${msg.header.session}-${Date.now()}`,
+        msg_type: 'interrupt_reply' as KernelMessage.ShellMessageType,
+        session: msg.header.session,
+        username: '',
+        version: '5.3'
+      },
+      parent_header: msg.header,
+      metadata: {},
       channel: 'shell',
-      parentHeader: msg.header,
-      session: msg.header.session,
-      content: { status: 'ok' }
-    });
+      content: { status: 'ok' },
+      buffers: []
+    };
     this._sendKernelMessage(reply);
   }
 
