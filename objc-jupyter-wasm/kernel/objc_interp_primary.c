@@ -27,6 +27,7 @@ extern int copy_identifier_or_error(struct Parser *p, char *dst, const char *src
 extern Value parse_message_send(struct Parser *p);
 extern id objc_lookUpClass(const char *name);
 extern Class object_getClass(id);
+extern Class class_ptr_for_name(const char *name);
 extern int is_truthy(Value v);
 extern InterpVar *interp_find_var(const char *name);
 extern InterpVar *interp_get_or_create_var(const char *name);
@@ -709,7 +710,14 @@ Value parse_primary(Parser *p) {
             if (parser_current(p).type == TOK_OPEN_PAREN) {
                 parser_advance(p);
                 if (parser_current(p).type == TOK_STRING_LITERAL) {
-                    Class cls = (Class)objc_getClass(parser_current(p).text);
+                    const char *cls_name = parser_current(p).text;
+                    /* Check interpreter variable table first — Foundation
+                     * classes use sentinel pointers and aren't in the real
+                     * ObjC runtime inside WASM. */
+                    Class cls = class_ptr_for_name(cls_name);
+                    if (cls == 0) {
+                        cls = (Class)objc_getClass(cls_name);
+                    }
                     parser_advance(p);
                     parser_expect(p, TOK_CLOSE_PAREN);
                     return value_from_class(cls);
