@@ -278,6 +278,13 @@ Value parse_message_send(Parser *p) {
             return result;
         }
 
+        /* When side effects are suppressed (short-circuit evaluation of &&/||/?:),
+         * skip Foundation dispatch and return nil. */
+        if (g_ctx.suppress_side_effects) {
+            result = value_from_id(0);
+            return result;
+        }
+
         /* Determine target class name for Foundation dispatch.
          * Foundation classes are not registered in the runtime (to avoid
          * WASM traps from objc_allocateClassPair), so we dispatch by name.
