@@ -478,7 +478,7 @@ Value parse_primary(Parser *p) {
                     /* Create array directly using collection side table,
                      * not via interpreter method dispatch (which won't find
                      * the built-in "array" class method). */
-                    unsigned int arr_cid = g_ctx.next_coll_id++;
+                    unsigned int arr_cid = coll_create_new();
                     Value arr = value_from_id(coll_make_marker("NSArr:", arr_cid));
                     for (i = 0; i < obj_count; i++) {
                         coll_add(arr_cid, objects[i], value_from_int(0));
@@ -510,7 +510,7 @@ Value parse_primary(Parser *p) {
                     /* Create dictionary directly using collection side table,
                      * not via interpreter method dispatch (which won't find
                      * the built-in "dictionary" class method). */
-                    unsigned int cid = g_ctx.next_coll_id++;
+                    unsigned int cid = coll_create_new();
                     Value dict = value_from_id(coll_make_marker("NSDict:", cid));
                     while (parser_current(p).type != TOK_CLOSE_BRACE && parser_current(p).type != TOK_EOF) {
                         Value key, value;
@@ -715,7 +715,11 @@ Value parse_primary(Parser *p) {
                 parser_expect(p, TOK_CLOSE_PAREN);
                 if (sel_arg.is_sel && sel_arg.sel_val != 0) {
                     const char *name = sel_getName(sel_arg.sel_val);
-                    return value_from_id((id)name);
+                    if (name) {
+                        char *pool_str = string_pool_alloc((unsigned int)cstr_len(name) + 1);
+                        if (pool_str) cstr_copy(pool_str, name, (unsigned int)cstr_len(name) + 1);
+                        return value_from_id((id)pool_str);
+                    }
                 }
             }
             return value_from_id(0);
