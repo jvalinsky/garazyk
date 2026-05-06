@@ -448,15 +448,29 @@ export class ObjcWasmKernel {
       throw new Error(`Failed to fetch ${runtimeManifest.kernelWasmUrl}: ${response.status}`);
     }
 
-    const bytes = new Uint8Array(await response.arrayBuffer());
-    await verifySha256(runtimeManifest, bytes);
-
     const host = ObjcWasmKernel._createHostImports(options.onStream || null);
     const wasi = ObjcWasmKernel._createWasiImports(host);
-    const { instance } = await WebAssembly.instantiate(bytes, {
+    const importObject = {
       wasi_snapshot_preview1: wasi.imports,
       objc_kernel_host: host.imports
-    });
+    };
+
+    let instance;
+    if (typeof WebAssembly.instantiateStreaming === 'function') {
+      /* Streaming compilation: the browser compiles WASM bytes as they
+       * arrive over the network, reducing time-to-first-execution.
+       * Falls back to buffered compilation for environments that don't
+       * support instantiateStreaming (e.g. older Node.js). */
+      const { instance: inst } = await WebAssembly.instantiateStreaming(
+        response, importObject
+      );
+      instance = inst;
+    } else {
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      await verifySha256(runtimeManifest, bytes);
+      const { instance: inst } = await WebAssembly.instantiate(bytes, importObject);
+      instance = inst;
+    }
 
     host.bindMemory(instance.exports.memory);
     host.bindExports(instance.exports);
