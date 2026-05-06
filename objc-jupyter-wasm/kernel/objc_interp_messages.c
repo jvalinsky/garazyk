@@ -634,7 +634,7 @@ Value parse_message_send(Parser *p) {
         if (cstr_eq(sel_name, "methodSignatureForSelector:") && target.is_id && arg_count >= 1) {
             SEL fwd_sel = sel_registerName("forwardInvocation:");
             if (find_interpreter_method(fwd_sel, target, receiver, 0) < g_ctx.method_count) {
-                return value_from_id((id)"FDSig:v@:@");
+                return value_from_obj(obj_alloc_str("FDSig:v@:@", 10));
             }
             return value_from_obj(OBJ_NULL);
         }
@@ -1346,7 +1346,7 @@ Value parse_message_send(Parser *p) {
             }
             if (substr == 0 || cstr_len(substr) == 0) {
                 /* Empty substring: return {0, 0} */
-                return value_from_id((id)"NSRange:0:0");
+                return value_from_obj(obj_alloc_str("NSRange:0:0", 12));
             }
             {
                 const char *found = strstr(s, substr);
@@ -1379,7 +1379,7 @@ Value parse_message_send(Parser *p) {
                     }
                 }
                 /* NSNotFound: location = UINT_MAX, length = 0 */
-                return value_from_id((id)"NSRange:4294967295:0");
+                return value_from_obj(obj_alloc_str("NSRange:4294967295:0", 20));
             }
         }
 
@@ -1411,7 +1411,7 @@ Value parse_message_send(Parser *p) {
                         return value_from_id((id)result);
                     }
                 }
-                return value_from_id((id)"");
+                return value_from_obj(obj_alloc_str("", 0));
             }
         }
 
@@ -1632,12 +1632,12 @@ Value parse_message_send(Parser *p) {
         /* NSCharacterSet: [NSCharacterSet whitespaceCharacterSet] → return marker */
         if (IS_FOUNDATION_CLASS("NSCharacterSet") && target.is_class &&
             cstr_eq(sel_name, "whitespaceCharacterSet")) {
-            return value_from_id((id)"NSCharSet:whitespace");
+            return value_from_obj(obj_alloc_str("NSCharSet:whitespace", 21));
         }
         /* NSCharacterSet: [NSCharacterSet whitespaceAndNewlineCharacterSet] → return marker */
         if (IS_FOUNDATION_CLASS("NSCharacterSet") && target.is_class &&
             cstr_eq(sel_name, "whitespaceAndNewlineCharacterSet")) {
-            return value_from_id((id)"NSCharSet:whitespaceAndNewline");
+            return value_from_obj(obj_alloc_str("NSCharSet:whitespaceAndNewline", 30));
         }
 
         /* NSString: [str stringByTrimmingCharactersInSet:charSet] → trim chars in set */
@@ -2176,7 +2176,7 @@ Value parse_message_send(Parser *p) {
         /* NSURLSession */
         if (IS_FOUNDATION_CLASS("NSURLSession") && target.is_class) {
             if (cstr_eq(sel_name, "sharedSession")) {
-                return value_from_id((id)"NSURLSession:shared");
+                return value_from_obj(obj_alloc_str("NSURLSession:shared", 20));
             }
         }
         
@@ -2376,7 +2376,7 @@ Value parse_message_send(Parser *p) {
         /* NSURLSession */
         if (IS_FOUNDATION_CLASS("NSURLSession") && target.is_class) {
             if (cstr_eq(sel_name, "sharedSession")) {
-                return value_from_id((id)"NSURLSession:shared");
+                return value_from_obj(obj_alloc_str("NSURLSession:shared", 20));
             }
         }
         
@@ -2499,7 +2499,7 @@ Value parse_message_send(Parser *p) {
         /* NSNull: [NSNull null] → singleton marker */
         if (IS_FOUNDATION_CLASS("NSNull") && target.is_class && cstr_eq(sel_name, "null") && arg_count == 0) {
             char *buf = string_pool_alloc(8);
-            if (buf == 0) return value_from_id((id)"NSNull:");
+            if (buf == 0) return value_from_obj(obj_alloc_str("NSNull:", 7));
             cstr_copy(buf, "NSNull:", 8);
             return value_from_id((id)buf);
         }
@@ -2509,7 +2509,7 @@ Value parse_message_send(Parser *p) {
         /* NSData: [NSData data] → empty data */
         if (IS_FOUNDATION_CLASS("NSData") && target.is_class && cstr_eq(sel_name, "data") && arg_count == 0) {
             char *buf = string_pool_alloc(8);
-            if (buf == 0) return value_from_id((id)"NSData:");
+            if (buf == 0) return value_from_obj(obj_alloc_str("NSData:", 7));
             cstr_copy(buf, "NSData:", 8);
             return value_from_id((id)buf);
         }
@@ -2527,7 +2527,7 @@ Value parse_message_send(Parser *p) {
                 /* Hex encoding: 2 chars per byte + "NSData:" prefix */
                 unsigned int needed = 7 + (unsigned int)len * 2 + 1;
                 char *buf = string_pool_alloc(needed);
-                if (buf == 0) return value_from_id((id)"NSData:");
+                if (buf == 0) return value_from_obj(obj_alloc_str("NSData:", 7));
                 cstr_copy(buf, "NSData:", needed);
                 {
                     static const char hex_chars[] = "0123456789abcdef";
@@ -2546,7 +2546,7 @@ Value parse_message_send(Parser *p) {
         /* NSMutableData: [NSMutableData dataWithCapacity:n] → empty mutable data */
         if (IS_FOUNDATION_CLASS("NSMutableData") && target.is_class && cstr_eq(sel_name, "dataWithCapacity:") && arg_count >= 1) {
             char *buf = string_pool_alloc(8);
-            if (buf == 0) return value_from_id((id)"NSData:");
+            if (buf == 0) return value_from_obj(obj_alloc_str("NSData:", 7));
             cstr_copy(buf, "NSData:", 8);
             return value_from_id((id)buf);
         }
@@ -2554,7 +2554,7 @@ Value parse_message_send(Parser *p) {
         /* NSMutableData: [NSMutableData data] → empty mutable data */
         if (IS_FOUNDATION_CLASS("NSMutableData") && target.is_class && cstr_eq(sel_name, "data") && arg_count == 0) {
             char *buf = string_pool_alloc(8);
-            if (buf == 0) return value_from_id((id)"NSData:");
+            if (buf == 0) return value_from_obj(obj_alloc_str("NSData:", 7));
             cstr_copy(buf, "NSData:", 8);
             return value_from_id((id)buf);
         }
@@ -2565,12 +2565,12 @@ Value parse_message_send(Parser *p) {
             if (other && cstr_eq_n(other, "NSData:", 7)) {
                 unsigned int needed = (unsigned int)cstr_len(other) + 1;
                 char *buf = string_pool_alloc(needed);
-                if (buf == 0) return value_from_id((id)"NSData:");
+                if (buf == 0) return value_from_obj(obj_alloc_str("NSData:", 7));
                 cstr_copy(buf, other, needed);
                 return value_from_id((id)buf);
             }
             char *buf = string_pool_alloc(8);
-            if (buf == 0) return value_from_id((id)"NSData:");
+            if (buf == 0) return value_from_obj(obj_alloc_str("NSData:", 7));
             cstr_copy(buf, "NSData:", 8);
             return value_from_id((id)buf);
         }
@@ -2677,7 +2677,7 @@ Value parse_message_send(Parser *p) {
                 {
                     unsigned int needed = 7 + (unsigned int)len * 2 + 1;
                     char *buf = string_pool_alloc(needed);
-                    if (buf == 0) return value_from_id((id)"NSData:");
+                    if (buf == 0) return value_from_obj(obj_alloc_str("NSData:", 7));
                     cstr_copy(buf, "NSData:", needed);
                     {
                         int i;
@@ -2805,7 +2805,7 @@ Value parse_message_send(Parser *p) {
                     }
                 }
             }
-            return value_from_id((id)"NSData:");
+            return value_from_obj(obj_alloc_str("NSData:", 7));
         }
 
         /* [CID sha256:data] → CID with SHA-256 via host bridge
@@ -2856,7 +2856,7 @@ Value parse_message_send(Parser *p) {
                     }
                 }
             }
-            return value_from_id((id)"NSData:");
+            return value_from_obj(obj_alloc_str("NSData:", 7));
         }
 
         /* [CID base32Encode:data] → base32 string via host bridge */
@@ -2898,7 +2898,7 @@ Value parse_message_send(Parser *p) {
                     }
                 }
             }
-            return value_from_id((id)"");
+            return value_from_obj(obj_alloc_str("", 0));
         }
 
         /* [CID base32Decode:string] → NSData via host bridge */
@@ -2925,7 +2925,7 @@ Value parse_message_send(Parser *p) {
                     }
                 }
             }
-            return value_from_id((id)"NSData:");
+            return value_from_obj(obj_alloc_str("NSData:", 7));
         }
 
         /* [CryptoUtils sha256:data] → NSData via host bridge */
@@ -2973,7 +2973,7 @@ Value parse_message_send(Parser *p) {
                     }
                 }
             }
-            return value_from_id((id)"NSData:");
+            return value_from_obj(obj_alloc_str("NSData:", 7));
         }
 
         /* ── Foundation collection dispatch ──────────────────────── */
@@ -3089,7 +3089,7 @@ Value parse_message_send(Parser *p) {
                     if (idx >= 0) {
                         return g_ctx.coll_entries[idx].key;
                     }
-                    return value_from_id((id)"(nil)");
+                    return value_from_obj(obj_alloc_str("(nil)", 5));
                 }
 
                 /* [mutArr addObject:obj] → append element */
@@ -3159,7 +3159,7 @@ Value parse_message_send(Parser *p) {
                 if (cstr_eq(sel_name, "objectForKey:") && arg_count >= 1) {
                     int idx = coll_find_by_key(cid, &keyword_args[0]);
                     if (idx >= 0) return g_ctx.coll_entries[idx].value;
-                    return value_from_id((id)"(nil)");
+                    return value_from_obj(obj_alloc_str("(nil)", 5));
                 }
 
                 /* [mutDict setObject:obj forKey:key] → set key-value */
@@ -3323,7 +3323,7 @@ Value parse_message_send(Parser *p) {
                 if (cstr_eq(sel_name, "valueForKey:") && arg_count >= 1) {
                     int idx = coll_find_by_key(cid, &keyword_args[0]);
                     if (idx >= 0) return g_ctx.coll_entries[idx].value;
-                    return value_from_id((id)"(nil)");
+                    return value_from_obj(obj_alloc_str("(nil)", 5));
                 }
 
                 /* [mutDict setValue:val forKey:key] → same as setObject:forKey: */
