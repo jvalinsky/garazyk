@@ -362,6 +362,25 @@ typedef struct {
 
 #define MAX_INVOCATIONS 16
 
+typedef struct {
+    id target;
+    void *key;
+    Value value;
+    int policy;
+} Association;
+
+#define MAX_ASSOCIATIONS 256
+
+typedef struct {
+    id target;
+    char key_path[64];
+    id observer;
+    int options;
+    void *context;
+} KVOObserver;
+
+#define MAX_KVO_OBSERVERS 64
+
 /* ── Declared instance variables (from @interface { } blocks) ──── */
 
 #define MAX_CLASS_IVARS 256
