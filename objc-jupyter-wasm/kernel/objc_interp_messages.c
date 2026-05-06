@@ -503,7 +503,7 @@ Value parse_message_send(Parser *p) {
             const char *s = obj_deref(receiver);
             if (cstr_eq_n(s, "FDObj:", 6)) {
                 const char *cls_name = s + 6;
-                unsigned int cid = g_ctx.next_coll_id++;
+                unsigned int cid = coll_create_new();
                 if (cstr_eq(cls_name, "NSMutableArray")) {
                     return value_from_id(coll_make_marker("NSMutArr:", cid));
                 }
@@ -594,7 +594,7 @@ Value parse_message_send(Parser *p) {
                     }
                 }
                 if (cstr_eq(sel_name, "allObjects")) {
-                    unsigned int new_cid = g_ctx.next_coll_id++;
+                    unsigned int new_cid = coll_create_new();
                     unsigned int count = coll_count(cid);
                     unsigned int i;
                     Value dummy = value_void();
@@ -1531,7 +1531,7 @@ Value parse_message_send(Parser *p) {
             const char *sep = obj_deref(keyword_args[0].obj_val);
             int src_len = (int)cstr_len(src);
             int sep_len = (int)cstr_len(sep);
-            unsigned int new_cid = g_ctx.next_coll_id++;
+            unsigned int new_cid = coll_create_new();
             Value dummy = value_void();
             if (sep_len == 0) {
                 /* Empty separator: each char is a component */
@@ -2118,10 +2118,10 @@ Value parse_message_send(Parser *p) {
             if (cstr_eq(sel_name, "requestWithURL:") && arg_count >= 1) {
                 const char *url_marker = obj_deref(keyword_args[0].obj_val);
                 if (url_marker && cstr_starts(url_marker, "NSURL:")) {
-                    unsigned int cid = g_ctx.next_coll_id++;
+                    unsigned int cid = coll_create_new();
                     coll_add_string_val(cid, "url", url_marker + 6);
                     coll_add_string_val(cid, "method", "GET");
-                    unsigned int headers_cid = g_ctx.next_coll_id++;
+                    unsigned int headers_cid = coll_create_new();
                     coll_add_marker_val(cid, "headers", coll_make_marker("NSMutDict:", headers_cid));
                     return value_from_id(coll_make_marker("NSURLReq:", cid));
                 }
@@ -2192,7 +2192,7 @@ Value parse_message_send(Parser *p) {
                         g_ctx.network_tasks[g_ctx.network_task_count].active = 0; /* not active until resume */
                         
                         /* Store the request marker so we can fetch it when resumed */
-                        unsigned int cid = g_ctx.next_coll_id++;
+                        unsigned int cid = coll_create_new();
                         coll_add_int_val(cid, "task_id", task_id);
                         coll_add_string_val(cid, "req", req_marker);
                         
@@ -2318,10 +2318,10 @@ Value parse_message_send(Parser *p) {
             if (cstr_eq(sel_name, "requestWithURL:") && arg_count >= 1) {
                 const char *url_marker = obj_deref(keyword_args[0].obj_val);
                 if (url_marker && cstr_starts(url_marker, "NSURL:")) {
-                    unsigned int cid = g_ctx.next_coll_id++;
+                    unsigned int cid = coll_create_new();
                     coll_add_string_val(cid, "url", url_marker + 6);
                     coll_add_string_val(cid, "method", "GET");
-                    unsigned int headers_cid = g_ctx.next_coll_id++;
+                    unsigned int headers_cid = coll_create_new();
                     coll_add_marker_val(cid, "headers", coll_make_marker("NSMutDict:", headers_cid));
                     return value_from_id(coll_make_marker("NSURLReq:", cid));
                 }
@@ -2392,7 +2392,7 @@ Value parse_message_send(Parser *p) {
                         g_ctx.network_tasks[g_ctx.network_task_count].active = 0; /* not active until resume */
                         
                         /* Store the request marker so we can fetch it when resumed */
-                        unsigned int cid = g_ctx.next_coll_id++;
+                        unsigned int cid = coll_create_new();
                         coll_add_int_val(cid, "task_id", task_id);
                         coll_add_string_val(cid, "req", req_marker);
                         
@@ -2980,43 +2980,43 @@ Value parse_message_send(Parser *p) {
 
         /* NSArray: [NSArray array] → empty immutable array */
         if (IS_FOUNDATION_CLASS("NSArray") && target.is_class && cstr_eq(sel_name, "array") && arg_count == 0) {
-            unsigned int cid = g_ctx.next_coll_id++;
+            unsigned int cid = coll_create_new();
             return value_from_id(coll_make_marker("NSArr:", cid));
         }
 
         /* NSMutableArray: [NSMutableArray arrayWithCapacity:n] → empty mutable array */
         if (IS_FOUNDATION_CLASS("NSMutableArray") && target.is_class && cstr_eq(sel_name, "arrayWithCapacity:") && arg_count >= 1) {
-            unsigned int cid = g_ctx.next_coll_id++;
+            unsigned int cid = coll_create_new();
             return value_from_id(coll_make_marker("NSMutArr:", cid));
         }
 
         /* NSMutableArray: [NSMutableArray array] → empty mutable array */
         if (IS_FOUNDATION_CLASS("NSMutableArray") && target.is_class && cstr_eq(sel_name, "array") && arg_count == 0) {
-            unsigned int cid = g_ctx.next_coll_id++;
+            unsigned int cid = coll_create_new();
             return value_from_id(coll_make_marker("NSMutArr:", cid));
         }
 
         /* NSDictionary: [NSDictionary dictionary] → empty immutable dict */
         if (IS_FOUNDATION_CLASS("NSDictionary") && target.is_class && cstr_eq(sel_name, "dictionary") && arg_count == 0) {
-            unsigned int cid = g_ctx.next_coll_id++;
+            unsigned int cid = coll_create_new();
             return value_from_id(coll_make_marker("NSDict:", cid));
         }
 
         /* NSMutableDictionary: [NSMutableDictionary dictionaryWithCapacity:n] → empty mutable dict */
         if (IS_FOUNDATION_CLASS("NSMutableDictionary") && target.is_class && cstr_eq(sel_name, "dictionaryWithCapacity:") && arg_count >= 1) {
-            unsigned int cid = g_ctx.next_coll_id++;
+            unsigned int cid = coll_create_new();
             return value_from_id(coll_make_marker("NSMutDict:", cid));
         }
 
         /* NSMutableDictionary: [NSMutableDictionary dictionary] → empty mutable dict */
         if (IS_FOUNDATION_CLASS("NSMutableDictionary") && target.is_class && cstr_eq(sel_name, "dictionary") && arg_count == 0) {
-            unsigned int cid = g_ctx.next_coll_id++;
+            unsigned int cid = coll_create_new();
             return value_from_id(coll_make_marker("NSMutDict:", cid));
         }
 
         /* NSDictionary: [NSDictionary dictionaryWithObject:obj forKey:key] → dict with one entry */
         if (IS_FOUNDATION_CLASS("NSDictionary") && target.is_class && cstr_eq(sel_name, "dictionaryWithObject:forKey:") && arg_count >= 2) {
-            unsigned int cid = g_ctx.next_coll_id++;
+            unsigned int cid = coll_create_new();
             coll_add(cid, keyword_args[1], keyword_args[0]); /* key, value */
             return value_from_id(coll_make_marker("NSDict:", cid));
         }
@@ -3024,7 +3024,7 @@ Value parse_message_send(Parser *p) {
         /* NSDictionary/NSMutableDictionary: [NSMutableDictionary dictionaryWithDictionary:dict] → shallow copy */
         if ((IS_FOUNDATION_CLASS("NSDictionary") || IS_FOUNDATION_CLASS("NSMutableDictionary")) &&
             target.is_class && cstr_eq(sel_name, "dictionaryWithDictionary:") && arg_count >= 1) {
-            unsigned int new_cid = g_ctx.next_coll_id++;
+            unsigned int new_cid = coll_create_new();
             const char *src_s = obj_deref(keyword_args[0].obj_val);
             unsigned int src_cid = coll_id_from_marker(src_s, "NSDict:");
             if (src_cid == 0) src_cid = coll_id_from_marker(src_s, "NSMutDict:");
@@ -3042,7 +3042,7 @@ Value parse_message_send(Parser *p) {
 
         /* NSSet: [NSSet setWithArray:arr] → set from array */
         if (IS_FOUNDATION_CLASS("NSSet") && target.is_class && cstr_eq(sel_name, "setWithArray:") && arg_count >= 1) {
-            unsigned int cid = g_ctx.next_coll_id++;
+            unsigned int cid = coll_create_new();
             const char *arr_s = obj_deref(keyword_args[0].obj_val);
             unsigned int arr_cid = coll_id_from_marker(arr_s, "NSArr:");
             if (arr_cid == 0) arr_cid = coll_id_from_marker(arr_s, "NSMutArr:");
@@ -3208,7 +3208,7 @@ Value parse_message_send(Parser *p) {
 
                 /* [dict allKeys] → array of keys */
                 if (cstr_eq(sel_name, "allKeys")) {
-                    unsigned int new_cid = g_ctx.next_coll_id++;
+                    unsigned int new_cid = coll_create_new();
                     unsigned int i;
                     for (i = 0; i < g_ctx.coll_entry_count; i++) {
                         if (g_ctx.coll_entries[i].coll_id == cid) {
@@ -3238,7 +3238,7 @@ Value parse_message_send(Parser *p) {
 
                 /* [dict allValues] → array of values */
                 if (cstr_eq(sel_name, "allValues")) {
-                    unsigned int new_cid = g_ctx.next_coll_id++;
+                    unsigned int new_cid = coll_create_new();
                     unsigned int i;
                     for (i = 0; i < g_ctx.coll_entry_count; i++) {
                         if (g_ctx.coll_entries[i].coll_id == cid) {
@@ -3307,7 +3307,7 @@ Value parse_message_send(Parser *p) {
 
                 /* [arr arrayByAddingObject:obj] → new array with object appended */
                 if (cstr_eq(sel_name, "arrayByAddingObject:") && arg_count >= 1) {
-                    unsigned int new_cid = g_ctx.next_coll_id++;
+                    unsigned int new_cid = coll_create_new();
                     unsigned int i;
                     for (i = 0; i < g_ctx.coll_entry_count; i++) {
                         if (g_ctx.coll_entries[i].coll_id == cid) {
