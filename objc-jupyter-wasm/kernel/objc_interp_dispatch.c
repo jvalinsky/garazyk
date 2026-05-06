@@ -30,9 +30,9 @@ extern int is_string_pool_pointer(id ptr);
 extern Class class_for_fdobj_marker(id receiver);
 
 /* Forward declarations for this file */
-static const char *class_get_superclass_name(const char *class_name);
-static Class class_ptr_for_name(const char *name);
-static const char *class_name_for_ptr(Class cls);
+const char *class_get_superclass_name(const char *class_name);
+Class class_ptr_for_name(const char *name);
+const char *class_name_for_ptr(Class cls);
 
 /* Parser layout must match the definition in objc_interpreter.c. */
 
@@ -149,7 +149,7 @@ unsigned int find_interpreter_method(SEL sel, Value target, id receiver,
 }
 
 /* Look up the superclass name for a given class name from the hierarchy table. */
-static const char *class_get_superclass_name(const char *class_name) {
+const char *class_get_superclass_name(const char *class_name) {
     unsigned int hi;
     for (hi = 0; hi < g_ctx.class_hierarchy_count; hi++) {
         if (cstr_eq(g_ctx.class_hierarchy_class[hi], class_name)) {
@@ -160,7 +160,7 @@ static const char *class_get_superclass_name(const char *class_name) {
 }
 
 /* Look up the class_ptr (sentinel) for a class name from the variable table. */
-static Class class_ptr_for_name(const char *name) {
+Class class_ptr_for_name(const char *name) {
     unsigned int vi;
     for (vi = 0; vi < g_ctx.var_count; vi++) {
         if (g_ctx.vars[vi].is_class && cstr_eq(g_ctx.vars[vi].name, name)) {
@@ -171,7 +171,7 @@ static Class class_ptr_for_name(const char *name) {
 }
 
 /* Look up the class name for a given class_ptr from the variable table. */
-static const char *class_name_for_ptr(Class cls) {
+const char *class_name_for_ptr(Class cls) {
     unsigned int vi;
     for (vi = 0; vi < g_ctx.var_count; vi++) {
         if (g_ctx.vars[vi].is_class && g_ctx.vars[vi].cls == cls) {
