@@ -107,6 +107,14 @@ typedef struct InterpContext {
     InvocationState invocations[MAX_INVOCATIONS];
     unsigned int next_invocation_id;
 
+    /* ── Associations ───────────────────────────────────── */
+    Association associations[MAX_ASSOCIATIONS];
+    unsigned int association_count;
+
+    /* ── KVO ────────────────────────────────────────────── */
+    KVOObserver kvo_observers[MAX_KVO_OBSERVERS];
+    unsigned int kvo_count;
+
     /* ── String pool ────────────────────────────────────── */
     char string_pool[OBJC_INTERP_STRING_POOL_SIZE];
     unsigned int string_pool_offset;
