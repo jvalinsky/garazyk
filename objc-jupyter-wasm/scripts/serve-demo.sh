@@ -102,12 +102,16 @@ already_registered = any(e.get('name') == ext_name for e in root_fe)
 if already_registered:
     # Build succeeded — deduplicate: keep extension ONLY in root config,
     # remove from subdirectory configs to prevent double-loading.
+    # JupyterLite merges ALL jupyter-lite.json files on the URL path,
+    # so having the extension in both root and /lab/ causes
+    # "Plugin 'objc-jupyter-wasm:kernel' is already registered".
     patched = 0
     for f in all_configs:
         if f == root_config:
             continue  # keep root as-is
         try:
-            config = json.load(open(f))
+            with open(f, 'r') as fh:
+                config = json.load(fh)
         except Exception:
             continue
         jcd = config.get('jupyter-config-data', {})
@@ -186,4 +190,17 @@ echo "========================================="
 echo ""
 
 cd "$DIST"
-python3 -m http.server "$PORT"
+# Serve with correct MIME types for .wasm (application/wasm) and .js.
+# Without this, python3 -m http.server sends application/octet-stream for
+# .wasm files, which causes WebAssembly.instantiateStreaming to fail.
+python3 -c "
+import http.server, mimetypes
+
+class WasmHandler(http.server.SimpleHTTPRequestHandler):
+    def end_headers(self):
+        if self.path.endswith('.wasm'):
+            self.send_header('Content-Type', 'application/wasm')
+        super().end_headers()
+
+http.server.test(HandlerClass=WasmHandler, port=$PORT, bind='')
+"
