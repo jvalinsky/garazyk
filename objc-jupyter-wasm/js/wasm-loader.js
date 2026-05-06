@@ -459,12 +459,23 @@ export class ObjcWasmKernel {
     if (typeof WebAssembly.instantiateStreaming === 'function') {
       /* Streaming compilation: the browser compiles WASM bytes as they
        * arrive over the network, reducing time-to-first-execution.
-       * Falls back to buffered compilation for environments that don't
-       * support instantiateStreaming (e.g. older Node.js). */
-      const { instance: inst } = await WebAssembly.instantiateStreaming(
-        response, importObject
-      );
-      instance = inst;
+       * Falls back to buffered compilation if streaming fails (e.g.
+       * wrong MIME type from a simple HTTP server, or CORS issues). */
+      try {
+        const { instance: inst } = await WebAssembly.instantiateStreaming(
+          response, importObject
+        );
+        instance = inst;
+      } catch {
+        /* Streaming failed — likely a MIME type mismatch (server sent
+         * application/octet-stream instead of application/wasm).
+         * Fall back to buffered compilation. */
+        const fallbackResponse = await fetch(runtimeManifest.kernelWasmUrl);
+        const bytes = new Uint8Array(await fallbackResponse.arrayBuffer());
+        await verifySha256(runtimeManifest, bytes);
+        const { instance: inst } = await WebAssembly.instantiate(bytes, importObject);
+        instance = inst;
+      }
     } else {
       const bytes = new Uint8Array(await response.arrayBuffer());
       await verifySha256(runtimeManifest, bytes);
