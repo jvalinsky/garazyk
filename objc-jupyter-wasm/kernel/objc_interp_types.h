@@ -19,6 +19,23 @@
 
 #include <string.h>
 
+/* ── Object handle type ───────────────────────────────────────── */
+/* ObjId replaces raw id pointers for interpreter-allocated objects.
+ * An ObjId is a 1-based index into the object table (0 = null).
+ * obj_deref(id) returns the string-pool pointer for the handle.
+ * This indirection eliminates pointer relocation during GC —
+ * only the object table entries need updating, not every root. */
+typedef unsigned int ObjId;
+#define OBJ_NULL 0
+
+#define MAX_OBJECTS 4096
+
+typedef struct {
+    unsigned int pool_offset;  /* offset into string_pool, or 0 if free */
+    unsigned int next_free;    /* free list link (only when slot is free) */
+    int active;               /* 1 if in use, 0 if free */
+} ObjectEntry;
+
 /* ── String helpers (freestanding, no libc) ─────────────────────── */
 
 static unsigned int cstr_len(const char *s) {
@@ -86,7 +103,7 @@ static int cstr_copy_checked(char *dst, const char *src, unsigned int capacity) 
 
 typedef struct {
     char name[64];
-    id value;
+    ObjId value;
     Class cls;      /* if this is a Class-typed variable */
     SEL sel;        /* if this is a SEL-typed variable */
     int is_int;
@@ -206,7 +223,7 @@ typedef struct {
 /* ── Value type ─────────────────────────────────────────────────── */
 
 typedef struct {
-    id obj_val;
+    ObjId obj_val;
     Class cls_val;
     SEL sel_val;
     int int_val;
@@ -219,7 +236,7 @@ typedef struct {
     int is_void;
 } Value;
 
-static Value value_from_id(id obj) {
+static Value value_from_obj(ObjId obj) {
     Value v;
     v.obj_val = obj;
     v.cls_val = 0;
@@ -233,6 +250,21 @@ static Value value_from_id(id obj) {
     v.is_id = 1;
     v.is_void = 0;
     return v;
+}
+
+/* Legacy bridge: register a string-pool pointer in the object table
+ * and return a Value with the handle. Returns value_from_obj(OBJ_NULL)
+ * for null pointers or if the table is full. */
+static Value value_from_id(id ptr) {
+    if (ptr == 0) return value_from_obj(OBJ_NULL);
+    {
+        /* Register the existing pool allocation in the object table.
+         * This is a temporary compatibility shim — new code should use
+         * obj_alloc() + value_from_obj() instead. */
+        extern ObjId obj_register_ptr(const char *ptr);
+        ObjId h = obj_register_ptr((const char *)ptr);
+        return value_from_obj(h);
+    }
 }
 
 static Value value_from_class(Class cls) {
@@ -349,7 +381,7 @@ typedef struct {
     char type_name[64];                          /* "NSRange" */
     int int_fields[MAX_STRUCT_FIELDS];
     double float_fields[MAX_STRUCT_FIELDS];
-    id id_fields[MAX_STRUCT_FIELDS];
+    ObjId id_fields[MAX_STRUCT_FIELDS];
     unsigned int field_count;
     int active;                                  /* 1 if slot in use */
 } StructInstance;
@@ -381,7 +413,7 @@ typedef struct {
 
 typedef struct {
     SEL selector;
-    id receiver;
+    ObjId receiver;
     Value args[16];
     unsigned int arg_count;
 } InvocationState;
@@ -389,7 +421,7 @@ typedef struct {
 #define MAX_INVOCATIONS 16
 
 typedef struct {
-    id target;
+    ObjId target;
     void *key;
     Value value;
     int policy;
@@ -398,9 +430,9 @@ typedef struct {
 #define MAX_ASSOCIATIONS 256
 
 typedef struct {
-    id target;
+    ObjId target;
     char key_path[64];
-    id observer;
+    ObjId observer;
     int options;
     void *context;
 } KVOObserver;
@@ -424,7 +456,7 @@ typedef struct {
 #define MAX_INSTANCE_VARS 256
 
 typedef struct {
-    id object;           /* object pointer (FDObj: marker in string pool) */
+    ObjId object;           /* object handle (FDObj: marker in object table) */
     char prop_name[64];  /* property name */
     Value value;         /* stored value */
 } InstanceVar;
@@ -503,7 +535,7 @@ typedef struct {
 #define MAX_AUTORELEASE_OBJECTS 256
 
 typedef struct {
-    id object_markers[MAX_AUTORELEASE_OBJECTS];
+    ObjId object_markers[MAX_AUTORELEASE_OBJECTS];
     unsigned int count;
 } AutoreleasePool;
 
