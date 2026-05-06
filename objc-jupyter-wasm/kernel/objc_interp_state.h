@@ -23,6 +23,15 @@ int coll_add_marker_val(unsigned int coll_id, const char *key_str, id marker);
 /* String pool */
 char *string_pool_alloc(unsigned int size);
 
+/* Object table (handle-based GC) */
+void obj_init(void);
+ObjId obj_alloc(unsigned int size);      /* allocate in pool + register in table */
+ObjId obj_alloc_str(const char *src, unsigned int len); /* copy string + register */
+ObjId obj_register_ptr(const char *ptr); /* register existing pool pointer in table */
+const char *obj_deref(ObjId id);         /* dereference handle → string pool pointer */
+void obj_free(ObjId id);                /* mark slot as free */
+int obj_is_valid(ObjId id);             /* check if handle is valid and active */
+
 /* Collection side table */
 void coll_init(void);
 unsigned int coll_count(unsigned int coll_id);
@@ -50,24 +59,27 @@ void invocation_init(void);
 void association_init(void);
 
 /* Instance variable side table */
-Value *instance_var_get(id object, const char *prop_name);
-int instance_var_set(id object, const char *prop_name, Value val);
+Value *instance_var_get(ObjId object, const char *prop_name);
+int instance_var_set(ObjId object, const char *prop_name, Value val);
 
 /* Property matching */
-int property_matches_class(id receiver, unsigned int pi);
-int find_synthesized_ivar(const char *var_name, id receiver);
-Value synthesized_ivar_get(id self, const char *var_name);
-int synthesized_ivar_set(id self, const char *var_name, Value val);
+int property_matches_class(ObjId receiver, unsigned int pi);
+int find_synthesized_ivar(const char *var_name, ObjId receiver);
+Value synthesized_ivar_get(ObjId self, const char *var_name);
+int synthesized_ivar_set(ObjId self, const char *var_name, Value val);
 
-/* String pool pointer check */
+/* String pool pointer check (legacy — prefer obj_is_valid) */
 int is_string_pool_pointer(id value);
+
+/* Class lookup for FDObj: markers */
+Class class_for_fdobj_marker(ObjId receiver);
 
 /* Struct type system */
 StructDef *struct_def_find(const char *name);
 void struct_register_builtin(void);
 
 /* Class lookup for FDObj: markers */
-Class class_for_fdobj_marker(id receiver);
+Class class_for_fdobj_marker(ObjId receiver);
 
 /* Interrupt / stream / error helpers */
 int interp_should_interrupt(void);

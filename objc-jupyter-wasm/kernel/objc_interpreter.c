@@ -409,7 +409,7 @@ static id method_impl_trampoline(id self, SEL _cmd, ...) {
         var = interp_get_or_create_var("self");
         if (var) {
             var->is_id = 1;
-            var->value = self;
+            var->value = (ObjId)self;
             var->is_int = 0;
             var->is_class = 0;
             var->is_sel = 0;
@@ -447,7 +447,7 @@ static id method_impl_trampoline(id self, SEL _cmd, ...) {
                 InterpVar *var = interp_get_or_create_var(g_ctx.methods[i].arg_names[ai]);
                 if (var) {
                     var->is_id = 1;
-                    var->value = arg_val;
+                    var->value = (ObjId)arg_val;
                     var->is_int = 0;
                     var->is_class = 0;
                     var->is_sel = 0;
@@ -471,7 +471,7 @@ static id method_impl_trampoline(id self, SEL _cmd, ...) {
 
         if (g_ctx.return_pending) {
             /* Explicit return statement */
-            if (g_ctx.return_value.is_id) return_val = g_ctx.return_value.obj_val;
+            if (g_ctx.return_value.is_id) return_val = (id)obj_deref(g_ctx.return_value.obj_val);
             else if (g_ctx.return_value.is_class) return_val = (id)g_ctx.return_value.cls_val;
             else if (g_ctx.return_value.is_int) return_val = (id)(long)g_ctx.return_value.int_val;
             else return_val = self;
@@ -721,6 +721,7 @@ void objc_interp_init(void) {
     g_ctx.instance_var_count = 0;
     g_ctx.next_coll_id = 1;
     coll_init();
+    obj_init();
     g_ctx.coll_entry_count = 0;
     g_ctx.next_block_id = 1;
     g_ctx.block_count = 0;
@@ -921,6 +922,7 @@ void objc_interp_full_reset(void) {
     block_init();
     invocation_init();
     association_init();
+    obj_init();
     g_ctx.next_coll_id = 1;
     g_ctx.next_block_id = 1;
     g_ctx.next_enumerator_id = 1;

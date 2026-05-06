@@ -26,9 +26,9 @@ extern id objc_lookUpClass(const char *name);
 extern Class object_getClass(id);
 extern InterpVar *interp_find_var(const char *name);
 extern InterpVar *interp_get_or_create_var(const char *name);
-extern unsigned int find_interpreter_method(SEL sel, Value target, id receiver, int is_setter);
-extern unsigned int find_interpreter_method_super(SEL sel, Value target, id receiver, Class skip_class);
-extern Value execute_interpreter_method(struct Parser *p, MethodImpl *method, SEL sel, id receiver,
+extern unsigned int find_interpreter_method(SEL sel, Value target, ObjId receiver, int is_setter);
+extern unsigned int find_interpreter_method_super(SEL sel, Value target, ObjId receiver, Class skip_class);
+extern Value execute_interpreter_method(struct Parser *p, MethodImpl *method, SEL sel, ObjId receiver,
                                         const Value *keyword_args, unsigned int keyword_count,
                                         int return_receiver_on_void);
 
@@ -66,7 +66,7 @@ static void append_json_value(char *buf, unsigned int *pos, unsigned int max_len
     } else if (v.is_float) {
         if (*pos < max_len - 3) { buf[(*pos)++] = '0'; buf[(*pos)++] = '.'; buf[(*pos)++] = '0'; } /* simplified float */
     } else if (v.is_id) {
-        const char *s = (const char *)v.obj_val;
+        const char *s = obj_deref(v.obj_val);
         if (s == 0 || cstr_starts(s, "NSNull:")) {
             append_json_str(buf, pos, max_len, "null");
         } else if (cstr_starts(s, "NSDict:") || cstr_starts(s, "NSMutDict:")) {
@@ -80,7 +80,7 @@ static void append_json_value(char *buf, unsigned int *pos, unsigned int max_len
                     first = 0;
                     if (*pos < max_len) buf[(*pos)++] = '"';
                     if (g_ctx.coll_entries[i].key.is_id && g_ctx.coll_entries[i].key.obj_val) {
-                        append_json_str(buf, pos, max_len, (const char *)g_ctx.coll_entries[i].key.obj_val);
+                        append_json_str(buf, pos, max_len, obj_deref(g_ctx.coll_entries[i].key.obj_val));
                     }
                     if (*pos < max_len) buf[(*pos)++] = '"';
                     if (*pos < max_len) buf[(*pos)++] = ':';
@@ -120,12 +120,12 @@ Value parse_message_send(Parser *p) {
     Value target;
     char sel_name[256];
     unsigned int sel_len;
-    id args[16];
+    ObjId args[16];
     Value keyword_args[16]; /* preserve Value types for interpreter method dispatch */
     unsigned int arg_count;
     Value result;
     int target_is_super = 0;
-    id receiver = 0;
+    ObjId receiver = OBJ_NULL;
     const char *target_class_name = 0; /* for Foundation name-based dispatch */
     SEL sel = 0;
 
@@ -135,11 +135,11 @@ Value parse_message_send(Parser *p) {
         parser_advance(p);
         /* super in an @implementation — treat as self for now */
         /* In a real runtime, super calls the superclass method */
-        target = value_from_id(0); /* placeholder */
+        target = value_from_obj(OBJ_NULL); /* placeholder */
         {
             InterpVar *self_var = interp_find_var("self");
             if (self_var && self_var->is_id) {
-                target = value_from_id(self_var->value);
+                target = value_from_obj(self_var->value);
             }
         }
     } else {
@@ -167,9 +167,9 @@ Value parse_message_send(Parser *p) {
                 if (p->error) return value_void();
                 keyword_args[arg_count] = arg;
                 if (arg.is_int) {
-                    args[arg_count] = (id)(long)arg.int_val;
+                    args[arg_count] = (ObjId)(unsigned long)arg.int_val;
                 } else if (arg.is_class) {
-                    args[arg_count] = (id)arg.cls_val;
+                    args[arg_count] = (ObjId)arg.cls_val;
                 } else {
                     args[arg_count] = arg.obj_val;
                 }
@@ -220,9 +220,9 @@ Value parse_message_send(Parser *p) {
                     if (p->error) return value_void();
                     keyword_args[arg_count] = arg;
                     if (arg.is_int) {
-                        args[arg_count] = (id)(long)arg.int_val;
+                        args[arg_count] = (ObjId)(unsigned long)arg.int_val;
                     } else if (arg.is_class) {
-                        args[arg_count] = (id)arg.cls_val;
+                        args[arg_count] = (ObjId)arg.cls_val;
                     } else {
                         args[arg_count] = arg.obj_val;
                     }
@@ -236,9 +236,9 @@ Value parse_message_send(Parser *p) {
                         if (p->error) return value_void();
                         keyword_args[arg_count] = arg;
                         if (arg.is_int) {
-                            args[arg_count] = (id)(long)arg.int_val;
+                            args[arg_count] = (ObjId)(unsigned long)arg.int_val;
                         } else if (arg.is_class) {
-                            args[arg_count] = (id)arg.cls_val;
+                            args[arg_count] = (ObjId)arg.cls_val;
                         } else {
                             args[arg_count] = arg.obj_val;
                         }
@@ -267,21 +267,21 @@ Value parse_message_send(Parser *p) {
         }
 
         if (target.is_id) receiver = target.obj_val;
-        else if (target.is_class) receiver = (id)target.cls_val;
-        else if (target.is_int) receiver = (id)(long)target.int_val;
+        else if (target.is_class) receiver = (ObjId)target.cls_val;
+        else if (target.is_int) receiver = (ObjId)(unsigned long)target.int_val;
 
         /* Nil messaging: in ObjC, [nil anyMethod] returns nil/0/NO.
          * This is a fundamental language feature — without it, any
          * property access on an uninitialized ivar crashes. */
-        if (target.is_id && receiver == 0) {
-            result = value_from_id(0);
+        if (target.is_id && receiver == OBJ_NULL) {
+            result = value_from_obj(OBJ_NULL);
             return result;
         }
 
         /* When side effects are suppressed (short-circuit evaluation of &&/||/?:),
          * skip Foundation dispatch and return nil. */
         if (g_ctx.suppress_side_effects) {
-            result = value_from_id(0);
+            result = value_from_obj(OBJ_NULL);
             return result;
         }
 
@@ -383,7 +383,7 @@ Value parse_message_send(Parser *p) {
                 cstr_copy(buf + 6, target_class_name, needed - 6);
                 return value_from_id((id)buf);
             }
-            return value_from_id((id)0);
+            return value_from_obj(OBJ_NULL);
         }
 
         /* Built-in: [ClassName new] → same as alloc (returns FDObj: marker) */
@@ -400,7 +400,7 @@ Value parse_message_send(Parser *p) {
                 cstr_copy(buf + 6, target_class_name, needed - 6);
                 return value_from_id((id)buf);
             }
-            return value_from_id((id)0);
+            return value_from_obj(OBJ_NULL);
         }
 
         /* ── Interpreter method dispatch for custom classes ─────────
@@ -413,9 +413,9 @@ Value parse_message_send(Parser *p) {
          * When target_is_super is set, use super dispatch: skip the
          * current class's methods and search the superclass chain. */
         if (target_is_super &&
-            target.is_id && receiver != 0 &&
-            is_string_pool_pointer(receiver) &&
-            cstr_starts((const char *)receiver, "FDObj:")) {
+            target.is_id && receiver != OBJ_NULL &&
+            obj_is_valid(receiver) &&
+            cstr_starts(obj_deref(receiver), "FDObj:")) {
             unsigned int mi = find_interpreter_method_super(sel, target, receiver,
                                                             g_ctx.current_class_ptr);
             if (mi < g_ctx.method_count) {
@@ -426,10 +426,10 @@ Value parse_message_send(Parser *p) {
         }
 
         if (!target_is_super &&
-            target.is_id && receiver != 0 &&
-            is_string_pool_pointer(receiver) &&
-            cstr_starts((const char *)receiver, "FDObj:")) {
-            const char *recv_cls = ((const char *)receiver) + 6;
+            target.is_id && receiver != OBJ_NULL &&
+            obj_is_valid(receiver) &&
+            cstr_starts(obj_deref(receiver), "FDObj:")) {
+            const char *recv_cls = (obj_deref(receiver)) + 6;
             int is_foundation = (cstr_eq(recv_cls, "NSString") ||
                                  cstr_eq(recv_cls, "NSNumber") ||
                                  cstr_eq(recv_cls, "NSArray") ||
@@ -471,7 +471,7 @@ Value parse_message_send(Parser *p) {
                                 property_matches_class(receiver, pi)) {
                                 instance_var_set(receiver,
                                     g_ctx.properties[pi].name, keyword_args[0]);
-                                return value_from_id(receiver);
+                                return value_from_obj(receiver);
                             }
                         }
                     }
@@ -487,7 +487,7 @@ Value parse_message_send(Parser *p) {
                                 if (stored) return *stored;
                                 if (g_ctx.properties[pi].is_int)
                                     return value_from_int(0);
-                                return value_from_id(0);
+                                return value_from_obj(OBJ_NULL);
                             }
                         }
                     }
@@ -496,11 +496,11 @@ Value parse_message_send(Parser *p) {
         }
 
         /* Built-in: [obj init] → return self (standard NSObject pattern) */
-        if (cstr_eq(sel_name, "init") && target.is_id && receiver != 0) {
+        if (cstr_eq(sel_name, "init") && target.is_id && receiver != OBJ_NULL) {
             /* Check if receiver is an FDObj: marker for a collection class.
              * If so, create a proper collection marker instead of returning
              * the FDObj: marker. */
-            const char *s = (const char *)receiver;
+            const char *s = obj_deref(receiver);
             if (cstr_eq_n(s, "FDObj:", 6)) {
                 const char *cls_name = s + 6;
                 unsigned int cid = g_ctx.next_coll_id++;
@@ -520,12 +520,12 @@ Value parse_message_send(Parser *p) {
                     return value_from_id(coll_make_marker("NSSet:", cid));
                 }
             }
-            return value_from_id(receiver);
+            return value_from_obj(receiver);
         }
 
         /* Built-in: [obj conformsToProtocol:] */
         if (cstr_eq(sel_name, "conformsToProtocol:") && arg_count == 1) {
-            const char *proto_arg = (const char *)args[0];
+            const char *proto_arg = obj_deref(args[0]);
             if (proto_arg) {
                 const char *protocol_name = 0;
                 if (cstr_starts(proto_arg, "FDProt:")) {
@@ -546,8 +546,8 @@ Value parse_message_send(Parser *p) {
                                 break;
                             }
                         }
-                    } else if (target.is_id && receiver != 0 && is_string_pool_pointer(receiver) && cstr_starts((const char *)receiver, "FDObj:")) {
-                        class_name = ((const char *)receiver) + 6;
+                    } else if (target.is_id && receiver != OBJ_NULL && obj_is_valid(receiver) && cstr_starts(obj_deref(receiver), "FDObj:")) {
+                        class_name = (obj_deref(receiver)) + 6;
                     }
 
                     if (class_name) {
@@ -561,8 +561,8 @@ Value parse_message_send(Parser *p) {
         }
 
         /* Built-in: [obj objectEnumerator] and [obj allObjects] */
-        if (target.is_id && receiver != 0) {
-            const char *s = (const char *)receiver;
+        if (target.is_id && receiver != OBJ_NULL) {
+            const char *s = obj_deref(receiver);
             unsigned int cid = 0;
             if (cstr_starts(s, "NSArr:")) cid = coll_id_from_marker(s, "NSArr:");
             else if (cstr_starts(s, "NSMutArr:")) cid = coll_id_from_marker(s, "NSMutArr:");
@@ -608,9 +608,9 @@ Value parse_message_send(Parser *p) {
         }
 
         /* Built-in: [NSEnum nextObject] */
-        if (target.is_id && receiver != 0 && cstr_starts((const char *)receiver, "NSEnum:")) {
+        if (target.is_id && receiver != OBJ_NULL && cstr_starts(obj_deref(receiver), "NSEnum:")) {
             if (cstr_eq(sel_name, "nextObject")) {
-                const char *s = (const char *)receiver;
+                const char *s = obj_deref(receiver);
                 unsigned int eid = 0;
                 const char *p = s + 7;
                 while (*p >= '0' && *p <= '9') { eid = eid * 10 + (*p - '0'); p++; }
@@ -626,7 +626,7 @@ Value parse_message_send(Parser *p) {
                     }
                     g_ctx.enumerators[eid].active = 0;
                 }
-                return value_from_id(0);
+                return value_from_obj(OBJ_NULL);
             }
         }
 
@@ -636,7 +636,7 @@ Value parse_message_send(Parser *p) {
             if (find_interpreter_method(fwd_sel, target, receiver, 0) < g_ctx.method_count) {
                 return value_from_id((id)"FDSig:v@:@");
             }
-            return value_from_id(0);
+            return value_from_obj(OBJ_NULL);
         }
 
         /* Built-in: [NSInvocation invocationWithMethodSignature:] */
@@ -662,9 +662,9 @@ Value parse_message_send(Parser *p) {
             }
         }
 
-        if (target.is_id && receiver != 0 && cstr_starts((const char *)receiver, "FDInv:")) {
+        if (target.is_id && receiver != OBJ_NULL && cstr_starts(obj_deref(receiver), "FDInv:")) {
             unsigned int inv_id = 0;
-            const char *p_inv = ((const char *)receiver) + 6;
+            const char *p_inv = (obj_deref(receiver)) + 6;
             while (*p_inv >= '0' && *p_inv <= '9') { inv_id = inv_id * 10 + (*p_inv - '0'); p_inv++; }
             
             if (inv_id < MAX_INVOCATIONS) {
@@ -680,7 +680,7 @@ Value parse_message_send(Parser *p) {
                     return value_void();
                 }
                 if (cstr_eq(sel_name, "target")) {
-                    return value_from_id(g_ctx.invocations[inv_id].receiver);
+                    return value_from_obj(g_ctx.invocations[inv_id].receiver);
                 }
                 if (cstr_eq(sel_name, "getArgument:atIndex:") && arg_count >= 2) {
                     /* Not fully supported (pointers), but return the Value for reflection if possible */
@@ -696,10 +696,10 @@ Value parse_message_send(Parser *p) {
                     return value_void();
                 }
                 if (cstr_eq(sel_name, "invoke") || cstr_eq(sel_name, "invokeWithTarget:")) {
-                    id invoke_receiver = g_ctx.invocations[inv_id].receiver;
+                    ObjId invoke_receiver = g_ctx.invocations[inv_id].receiver;
                     if (cstr_eq(sel_name, "invokeWithTarget:")) invoke_receiver = keyword_args[0].obj_val;
                     
-                    if (invoke_receiver) {
+                    if (invoke_receiver != OBJ_NULL) {
                         /* Use eval_source_range trick to re-dispatch */
                         InterpVar *tmp = interp_get_or_create_var("__inv_recv");
                         if (tmp) {
@@ -723,12 +723,12 @@ Value parse_message_send(Parser *p) {
         }
 
         /* Built-in: [obj valueForKey:] */
-        if (cstr_eq(sel_name, "valueForKey:") && target.is_id && receiver != 0 && arg_count == 1) {
-            const char *key = (const char *)args[0];
+        if (cstr_eq(sel_name, "valueForKey:") && target.is_id && receiver != OBJ_NULL && arg_count == 1) {
+            const char *key = obj_deref(args[0]);
             /* For collection markers, fall through to collection dispatch
              * which handles valueForKey: as objectForKey: */
-            const char *r = (const char *)receiver;
-            if (is_string_pool_pointer(receiver) &&
+            const char *r = obj_deref(receiver);
+            if (obj_is_valid(receiver) &&
                 (cstr_starts(r, "NSDict:") || cstr_starts(r, "NSMutDict:") ||
                  cstr_starts(r, "NSArr:") || cstr_starts(r, "NSMutArr:") ||
                  cstr_starts(r, "NSSet:"))) {
@@ -741,21 +741,21 @@ Value parse_message_send(Parser *p) {
                         Value *v = instance_var_get(receiver, g_ctx.properties[pi].name);
                         if (v) return *v;
                         if (g_ctx.properties[pi].is_int) return value_from_int(0);
-                        return value_from_id(0);
+                        return value_from_obj(OBJ_NULL);
                     }
                 }
                 /* 2. Try raw ivar access */
                 Value *v = instance_var_get(receiver, key);
                 if (v) return *v;
-                return value_from_id(0);
+                return value_from_obj(OBJ_NULL);
             } else {
-                return value_from_id(0);
+                return value_from_obj(OBJ_NULL);
             }
         }
 
         /* Built-in: [obj setValue:forKey:] */
-        if (cstr_eq(sel_name, "setValue:forKey:") && target.is_id && receiver != 0 && arg_count == 2) {
-            const char *key = (const char *)args[1];
+        if (cstr_eq(sel_name, "setValue:forKey:") && target.is_id && receiver != OBJ_NULL && arg_count == 2) {
+            const char *key = obj_deref(args[1]);
             if (key) {
                 unsigned int pi;
                 /* 1. Try property setter */
@@ -772,19 +772,19 @@ Value parse_message_send(Parser *p) {
         }
 
         /* Built-in: [obj autorelease] → add to current pool */
-        if (cstr_eq(sel_name, "autorelease") && target.is_id && receiver != 0) {
+        if (cstr_eq(sel_name, "autorelease") && target.is_id && receiver != OBJ_NULL) {
             if (g_ctx.pool_depth > 0) {
                 AutoreleasePool *pool = &g_ctx.pools[g_ctx.pool_depth - 1];
                 if (pool->count < MAX_AUTORELEASE_OBJECTS) {
                     pool->object_markers[pool->count++] = receiver;
                 }
             }
-            return value_from_id(receiver);
+            return value_from_obj(receiver);
         }
 
         /* Built-in: [obj class] → return the object's class */
-        if (cstr_eq(sel_name, "class") && target.is_id && receiver != 0) {
-            const char *s = (const char *)receiver;
+        if (cstr_eq(sel_name, "class") && target.is_id && receiver != OBJ_NULL) {
+            const char *s = obj_deref(receiver);
             /* FDObj: markers — return class pointer from variable table */
             if (cstr_starts(s, "FDObj:")) {
                 const char *recv_class_name = s + 6;
@@ -813,9 +813,9 @@ Value parse_message_send(Parser *p) {
             if (cstr_starts(s, "NSMutStr:")) return value_from_class((Class)12);
             /* String pool pointers that don't match any known marker prefix
              * are NSString instances (plain @"" literals stored as C strings). */
-            if (is_string_pool_pointer(receiver)) return value_from_class((Class)2);
+            if (obj_is_valid(receiver)) return value_from_class((Class)2);
             Class cls = (Class)0;
-            cls = object_getClass(receiver);
+            cls = object_getClass((id)obj_deref(receiver));
             return value_from_class(cls);
         }
 
@@ -825,12 +825,12 @@ Value parse_message_send(Parser *p) {
          * lookup above skips them.  Check the interpreter method table
          * for category methods on Foundation classes before falling
          * through to built-in dispatch. */
-        if (target.is_id && receiver != 0 &&
-            is_string_pool_pointer(receiver) &&
-            !cstr_starts((const char *)receiver, "FDObj:")) {
+        if (target.is_id && receiver != OBJ_NULL &&
+            obj_is_valid(receiver) &&
+            !cstr_starts(obj_deref(receiver), "FDObj:")) {
             /* Determine the Foundation class name for this receiver */
             const char *foundation_cls_name = (const char *)0;
-            const char *s = (const char *)receiver;
+            const char *s = obj_deref(receiver);
             /* Plain C strings are NSString instances */
             foundation_cls_name = "NSString";
             /* Check for NSNumber/NSData/collection markers */
@@ -873,8 +873,8 @@ Value parse_message_send(Parser *p) {
         /* ── Foundation built-in dispatch ────────────────────────────── */
 
         /* NSObject: [obj description] → class name */
-        if (cstr_eq(sel_name, "description") && target.is_id && receiver != 0) {
-            const char *s = (const char *)receiver;
+        if (cstr_eq(sel_name, "description") && target.is_id && receiver != OBJ_NULL) {
+            const char *s = obj_deref(receiver);
             /* Check if it's a Foundation class object (FDObj:ClassName) */
             if (cstr_eq_n(s, "FDObj:", 6)) {
                 nslog_append("<", 1);
@@ -887,11 +887,11 @@ Value parse_message_send(Parser *p) {
             } else {
                 /* For real ObjC objects, try object_getClass.
                  * Guard against string pool pointers. */
-                const char *ptr = (const char *)receiver;
+                const char *ptr = obj_deref(receiver);
                 if (ptr >= g_ctx.string_pool && ptr < g_ctx.string_pool + OBJC_INTERP_STRING_POOL_SIZE) {
                     nslog_append("<unknown>", 9);
                 } else {
-                    Class cls = object_getClass(receiver);
+                    Class cls = object_getClass((id)obj_deref(receiver));
                     if (cls) {
                         const char *name = class_getName(cls);
                         if (name) {
@@ -902,25 +902,25 @@ Value parse_message_send(Parser *p) {
                     }
                 }
             }
-            return value_from_id(receiver);
+            return value_from_obj(receiver);
         }
 
         /* NSObject: [obj isEqual:other] → 1 if same pointer */
         if (cstr_eq(sel_name, "isEqual:") && target.is_id && arg_count >= 1) {
             /* NSData: compare by content (not pointer) */
-            if (receiver != 0 && cstr_eq_n((const char *)receiver, "NSData:", 7)) {
-                const char *other = (const char *)args[0];
+            if (receiver != OBJ_NULL && cstr_eq_n(obj_deref(receiver), "NSData:", 7)) {
+                const char *other = obj_deref(args[0]);
                 if (other && cstr_eq_n(other, "NSData:", 7)) {
-                    return value_from_int(cstr_eq((const char *)receiver, other) ? 1 : 0);
+                    return value_from_int(cstr_eq(obj_deref(receiver), other) ? 1 : 0);
                 }
                 return value_from_int(0);
             }
             /* NSNumber: compare by value (not pointer) */
-            if (receiver != 0 && (cstr_eq_n((const char *)receiver, "NSNumber:", 9) ||
-                                  cstr_eq_n((const char *)receiver, "NSFloat:", 8))) {
-                const char *other = (const char *)args[0];
+            if (receiver != OBJ_NULL && (cstr_eq_n(obj_deref(receiver), "NSNumber:", 9) ||
+                                  cstr_eq_n(obj_deref(receiver), "NSFloat:", 8))) {
+                const char *other = obj_deref(args[0]);
                 if (other && (cstr_eq_n(other, "NSNumber:", 9) || cstr_eq_n(other, "NSFloat:", 8))) {
-                    return value_from_int(cstr_eq((const char *)receiver, other) ? 1 : 0);
+                    return value_from_int(cstr_eq(obj_deref(receiver), other) ? 1 : 0);
                 }
                 return value_from_int(0);
             }
@@ -930,7 +930,7 @@ Value parse_message_send(Parser *p) {
         }
 
         /* NSObject: [obj hash] → pointer as int */
-        if (cstr_eq(sel_name, "hash") && target.is_id && receiver != 0) {
+        if (cstr_eq(sel_name, "hash") && target.is_id && receiver != OBJ_NULL) {
             return value_from_int((int)(long)receiver);
         }
 
@@ -953,8 +953,8 @@ Value parse_message_send(Parser *p) {
             /* The argument is a protocol object or a string name.
              * In our interpreter, protocols are name strings in the protocol table.
              * @protocol(Name) returns FDProt:Name markers. */
-            if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
-                const char *arg = (const char *)keyword_args[0].obj_val;
+            if (keyword_args[0].is_id && keyword_args[0].obj_val != OBJ_NULL) {
+                const char *arg = obj_deref(keyword_args[0].obj_val);
                 if (cstr_starts(arg, "FDProt:")) {
                     protocol_name = arg + 7;
                 } else {
@@ -979,7 +979,7 @@ Value parse_message_send(Parser *p) {
                                                       receiver, 0, 0, 1);
                 }
             }
-            return value_from_id(receiver);
+            return value_from_obj(receiver);
         }
 
         /* NSObject: [obj performSelector:sel withObject:obj] → dispatch selector with one arg */
@@ -994,7 +994,7 @@ Value parse_message_send(Parser *p) {
                                                       receiver, perf_args, 1, 1);
                 }
             }
-            return value_from_id(receiver);
+            return value_from_obj(receiver);
         }
 
         /* NSObject: [obj performSelector:sel withObject:obj1 withObject:obj2] → dispatch with two args */
@@ -1010,14 +1010,14 @@ Value parse_message_send(Parser *p) {
                                                       receiver, perf_args, 2, 1);
                 }
             }
-            return value_from_id(receiver);
+            return value_from_obj(receiver);
         }
 
         /* NSString: [NSString stringWithFormat:@"..." args...] */
         if (IS_FOUNDATION_CLASS("NSString") && target.is_class && cstr_eq(sel_name, "stringWithFormat:") && arg_count >= 1) {
             const char *fmt = 0;
-            if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
-                fmt = (const char *)keyword_args[0].obj_val;
+            if (keyword_args[0].is_id && keyword_args[0].obj_val != OBJ_NULL) {
+                fmt = obj_deref(keyword_args[0].obj_val);
             }
             /* Validate format string argument count */
             if (fmt) {
@@ -1049,8 +1049,8 @@ Value parse_message_send(Parser *p) {
         }
 
         /* NSString: [str length] → string length */
-        if (cstr_eq(sel_name, "length") && target.is_id && receiver != 0) {
-            const char *s = (const char *)receiver;
+        if (cstr_eq(sel_name, "length") && target.is_id && receiver != OBJ_NULL) {
+            const char *s = obj_deref(receiver);
             /* NSData: length = hex_len / 2 */
             if (cstr_eq_n(s, "NSData:", 7)) {
                 int hex_len = (int)cstr_len(s + 7);
@@ -1060,8 +1060,8 @@ Value parse_message_send(Parser *p) {
         }
 
         /* NSString: [str intValue] → parse as integer */
-        if (cstr_eq(sel_name, "intValue") && target.is_id && receiver != 0) {
-            const char *s = (const char *)receiver;
+        if (cstr_eq(sel_name, "intValue") && target.is_id && receiver != OBJ_NULL) {
+            const char *s = obj_deref(receiver);
             int val = 0;
             unsigned int i = 0;
             while (s[i] && (s[i] < '0' || s[i] > '9') && s[i] != '-') i++;
@@ -1072,58 +1072,58 @@ Value parse_message_send(Parser *p) {
 
         /* NSString: [NSString stringWithString:str] → copy string */
         if (IS_FOUNDATION_CLASS("NSString") && target.is_class && cstr_eq(sel_name, "stringWithString:") && arg_count >= 1) {
-            if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
-                const char *s = (const char *)keyword_args[0].obj_val;
+            if (keyword_args[0].is_id && keyword_args[0].obj_val != OBJ_NULL) {
+                const char *s = obj_deref(keyword_args[0].obj_val);
                 unsigned int slen = cstr_len(s);
                 char *result = string_pool_alloc(slen + 1);
-                if (result == 0) return value_from_id(0);
+                if (result == 0) return value_from_obj(OBJ_NULL);
                 cstr_copy(result, s, slen + 1);
                 return value_from_id((id)result);
             }
-            return value_from_id(0);
+            return value_from_obj(OBJ_NULL);
         }
 
         /* NSString: [str stringWithString:other] → copy string */
-        if (cstr_eq(sel_name, "stringWithString:") && target.is_id && receiver != 0 && arg_count >= 1) {
-            if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
-                const char *s = (const char *)keyword_args[0].obj_val;
+        if (cstr_eq(sel_name, "stringWithString:") && target.is_id && receiver != OBJ_NULL && arg_count >= 1) {
+            if (keyword_args[0].is_id && keyword_args[0].obj_val != OBJ_NULL) {
+                const char *s = obj_deref(keyword_args[0].obj_val);
                 unsigned int slen = cstr_len(s);
                 char *result = string_pool_alloc(slen + 1);
-                if (result == 0) return value_from_id(receiver);
+                if (result == 0) return value_from_obj(receiver);
                 cstr_copy(result, s, slen + 1);
                 return value_from_id((id)result);
             }
-            return value_from_id(receiver);
+            return value_from_obj(receiver);
         }
 
         /* NSMutableString: [NSMutableString stringWithString:str] → create mutable string */
         if (IS_FOUNDATION_CLASS("NSMutableString") && target.is_class && cstr_eq(sel_name, "stringWithString:") && arg_count >= 1) {
-            if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
-                const char *s = (const char *)keyword_args[0].obj_val;
+            if (keyword_args[0].is_id && keyword_args[0].obj_val != OBJ_NULL) {
+                const char *s = obj_deref(keyword_args[0].obj_val);
                 unsigned int slen = cstr_len(s);
                 /* Create NSMutStr:content marker in string pool */
                 char *result = string_pool_alloc(9 + slen + 1);
-                if (result == 0) return value_from_id(0);
+                if (result == 0) return value_from_obj(OBJ_NULL);
                 cstr_copy(result, "NSMutStr:", 10);
                 cstr_copy(result + 9, s, slen + 1);
                 return value_from_id((id)result);
             }
-            return value_from_id(0);
+            return value_from_obj(OBJ_NULL);
         }
 
         /* NSMutableString: [ms appendString:str] → append to mutable string.
          * Since the string pool is append-only, we create a new marker and
          * update any variable that points to the old marker. */
-        if (cstr_eq(sel_name, "appendString:") && target.is_id && receiver != 0 && arg_count >= 1) {
-            const char *r = (const char *)receiver;
+        if (cstr_eq(sel_name, "appendString:") && target.is_id && receiver != OBJ_NULL && arg_count >= 1) {
+            const char *r = obj_deref(receiver);
             if (cstr_starts(r, "NSMutStr:")) {
                 const char *old_content = r + 9;
                 unsigned int old_len = cstr_len(old_content);
-                if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
-                    const char *append = (const char *)keyword_args[0].obj_val;
+                if (keyword_args[0].is_id && keyword_args[0].obj_val != OBJ_NULL) {
+                    const char *append = obj_deref(keyword_args[0].obj_val);
                     unsigned int append_len = cstr_len(append);
                     char *result = string_pool_alloc(9 + old_len + append_len + 1);
-                    if (result == 0) return value_from_id(receiver);
+                    if (result == 0) return value_from_obj(receiver);
                     cstr_copy(result, "NSMutStr:", 10);
                     cstr_copy(result + 9, old_content, old_len + 1);
                     cstr_copy(result + 9 + old_len, append, append_len + 1);
@@ -1132,25 +1132,25 @@ Value parse_message_send(Parser *p) {
                         unsigned int vi;
                         for (vi = 0; vi < g_ctx.var_count; vi++) {
                             if (g_ctx.vars[vi].is_id && g_ctx.vars[vi].value == receiver) {
-                                g_ctx.vars[vi].value = (id)result;
+                                g_ctx.vars[vi].value = obj_register_ptr(result);
                             }
                         }
                     }
                     return value_from_id((id)result);
                 }
-                return value_from_id(receiver);
+                return value_from_obj(receiver);
             }
         }
 
         /* NSMutableString: [ms setString:str] → replace mutable string content */
-        if (cstr_eq(sel_name, "setString:") && target.is_id && receiver != 0 && arg_count >= 1) {
-            const char *r = (const char *)receiver;
+        if (cstr_eq(sel_name, "setString:") && target.is_id && receiver != OBJ_NULL && arg_count >= 1) {
+            const char *r = obj_deref(receiver);
             if (cstr_starts(r, "NSMutStr:")) {
-                if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
-                    const char *new_content = (const char *)keyword_args[0].obj_val;
+                if (keyword_args[0].is_id && keyword_args[0].obj_val != OBJ_NULL) {
+                    const char *new_content = obj_deref(keyword_args[0].obj_val);
                     unsigned int new_len = cstr_len(new_content);
                     char *result = string_pool_alloc(9 + new_len + 1);
-                    if (result == 0) return value_from_id(receiver);
+                    if (result == 0) return value_from_obj(receiver);
                     cstr_copy(result, "NSMutStr:", 10);
                     cstr_copy(result + 9, new_content, new_len + 1);
                     /* Update any variable pointing to the old marker */
@@ -1158,19 +1158,19 @@ Value parse_message_send(Parser *p) {
                         unsigned int vi;
                         for (vi = 0; vi < g_ctx.var_count; vi++) {
                             if (g_ctx.vars[vi].is_id && g_ctx.vars[vi].value == receiver) {
-                                g_ctx.vars[vi].value = (id)result;
+                                g_ctx.vars[vi].value = obj_register_ptr(result);
                             }
                         }
                     }
                     return value_from_id((id)result);
                 }
-                return value_from_id(receiver);
+                return value_from_obj(receiver);
             }
         }
 
         /* NSNumber: [num longLongValue] → return long as int */
-        if (cstr_eq(sel_name, "longLongValue") && target.is_id && receiver != 0) {
-            const char *s = (const char *)receiver;
+        if (cstr_eq(sel_name, "longLongValue") && target.is_id && receiver != OBJ_NULL) {
+            const char *s = obj_deref(receiver);
             if (cstr_eq_n(s, "NSNumber:", 9)) {
                 int val = 0;
                 unsigned int i = 9;
@@ -1181,13 +1181,13 @@ Value parse_message_send(Parser *p) {
         }
 
         /* NSString: [str UTF8String] → return self (already C string) */
-        if (cstr_eq(sel_name, "UTF8String") && target.is_id && receiver != 0) {
-            return value_from_id(receiver);
+        if (cstr_eq(sel_name, "UTF8String") && target.is_id && receiver != OBJ_NULL) {
+            return value_from_obj(receiver);
         }
 
         /* NSNumber: [num unsignedIntValue] → return unsigned int as int */
-        if (cstr_eq(sel_name, "unsignedIntValue") && target.is_id && receiver != 0) {
-            const char *s = (const char *)receiver;
+        if (cstr_eq(sel_name, "unsignedIntValue") && target.is_id && receiver != OBJ_NULL) {
+            const char *s = obj_deref(receiver);
             if (cstr_eq_n(s, "NSNumber:", 9)) {
                 int val = 0;
                 unsigned int i = 9;
@@ -1198,30 +1198,30 @@ Value parse_message_send(Parser *p) {
         }
 
         /* NSString: [str stringByAppendingString:other] → concatenate */
-        if (cstr_eq(sel_name, "stringByAppendingString:") && target.is_id && receiver != 0 && arg_count >= 1) {
-            const char *a = (const char *)receiver;
-            const char *b = (const char *)args[0];
+        if (cstr_eq(sel_name, "stringByAppendingString:") && target.is_id && receiver != OBJ_NULL && arg_count >= 1) {
+            const char *a = obj_deref(receiver);
+            const char *b = obj_deref(args[0]);
             unsigned int alen = cstr_len(a);
             unsigned int blen = cstr_len(b);
             char *result;
             unsigned int needed = alen + blen + 1;
             result = string_pool_alloc(needed);
-            if (result == 0) return value_from_id(receiver);
+            if (result == 0) return value_from_obj(receiver);
             cstr_copy(result, a, needed);
             cstr_copy(result + alen, b, needed - alen);
             return value_from_id((id)result);
         }
 
         /* NSString: [str stringByAppendingPathComponent:other] → concatenate with / */
-        if (cstr_eq(sel_name, "stringByAppendingPathComponent:") && target.is_id && receiver != 0 && arg_count >= 1) {
-            const char *a = (const char *)receiver;
-            const char *b = (const char *)args[0];
+        if (cstr_eq(sel_name, "stringByAppendingPathComponent:") && target.is_id && receiver != OBJ_NULL && arg_count >= 1) {
+            const char *a = obj_deref(receiver);
+            const char *b = obj_deref(args[0]);
             unsigned int alen = cstr_len(a);
             unsigned int blen = cstr_len(b);
             char *result;
             unsigned int needed = alen + 1 + blen + 1; /* +1 for / separator */
             result = string_pool_alloc(needed);
-            if (result == 0) return value_from_id(receiver);
+            if (result == 0) return value_from_obj(receiver);
             cstr_copy(result, a, needed);
             result[alen] = '/';
             cstr_copy(result + alen + 1, b, needed - alen - 1);
@@ -1229,11 +1229,11 @@ Value parse_message_send(Parser *p) {
         }
 
         /* NSString: [str capitalizedString] → capitalize first letter of each word */
-        if (cstr_eq(sel_name, "capitalizedString") && target.is_id && receiver != 0) {
-            const char *s = (const char *)receiver;
+        if (cstr_eq(sel_name, "capitalizedString") && target.is_id && receiver != OBJ_NULL) {
+            const char *s = obj_deref(receiver);
             int slen = (int)cstr_len(s);
             char *result = string_pool_alloc((unsigned int)slen + 1);
-            if (result == 0) return value_from_id(receiver);
+            if (result == 0) return value_from_obj(receiver);
             {
                 int i = 0;
                 int capitalize_next = 1;
@@ -1253,15 +1253,15 @@ Value parse_message_send(Parser *p) {
         }
 
         /* NSString: [str isEqualToString:other] → string compare */
-        if (cstr_eq(sel_name, "isEqualToString:") && target.is_id && receiver != 0 && arg_count >= 1) {
-            const char *a = (const char *)receiver;
-            const char *b = (const char *)args[0];
+        if (cstr_eq(sel_name, "isEqualToString:") && target.is_id && receiver != OBJ_NULL && arg_count >= 1) {
+            const char *a = obj_deref(receiver);
+            const char *b = obj_deref(args[0]);
             return value_from_int(cstr_eq(a, b) ? 1 : 0);
         }
 
         /* NSString: [str substringFromIndex:n] → extract from index to end */
-        if (cstr_eq(sel_name, "substringFromIndex:") && target.is_id && receiver != 0 && arg_count >= 1) {
-            const char *s = (const char *)receiver;
+        if (cstr_eq(sel_name, "substringFromIndex:") && target.is_id && receiver != OBJ_NULL && arg_count >= 1) {
+            const char *s = obj_deref(receiver);
             int from = keyword_args[0].is_int ? keyword_args[0].int_val : 0;
             int slen = (int)cstr_len(s);
             if (from < 0) from = 0;
@@ -1269,15 +1269,15 @@ Value parse_message_send(Parser *p) {
             {
                 unsigned int needed = (unsigned int)(slen - from) + 1;
                 char *result = string_pool_alloc(needed);
-                if (result == 0) return value_from_id(receiver);
+                if (result == 0) return value_from_obj(receiver);
                 cstr_copy(result, s + from, needed);
                 return value_from_id((id)result);
             }
         }
 
         /* NSString: [str substringToIndex:n] → extract from start to index */
-        if (cstr_eq(sel_name, "substringToIndex:") && target.is_id && receiver != 0 && arg_count >= 1) {
-            const char *s = (const char *)receiver;
+        if (cstr_eq(sel_name, "substringToIndex:") && target.is_id && receiver != OBJ_NULL && arg_count >= 1) {
+            const char *s = obj_deref(receiver);
             int to = keyword_args[0].is_int ? keyword_args[0].int_val : 0;
             int slen = (int)cstr_len(s);
             if (to < 0) to = 0;
@@ -1285,7 +1285,7 @@ Value parse_message_send(Parser *p) {
             {
                 unsigned int needed = (unsigned int)to + 1;
                 char *result = string_pool_alloc(needed);
-                if (result == 0) return value_from_id(receiver);
+                if (result == 0) return value_from_obj(receiver);
                 cstr_copy(result, s, needed);
                 result[to] = '\0';
                 return value_from_id((id)result);
@@ -1293,8 +1293,8 @@ Value parse_message_send(Parser *p) {
         }
 
         /* NSString: [str characterAtIndex:n] → return character as int */
-        if (cstr_eq(sel_name, "characterAtIndex:") && target.is_id && receiver != 0 && arg_count >= 1) {
-            const char *s = (const char *)receiver;
+        if (cstr_eq(sel_name, "characterAtIndex:") && target.is_id && receiver != OBJ_NULL && arg_count >= 1) {
+            const char *s = obj_deref(receiver);
             int idx = keyword_args[0].is_int ? keyword_args[0].int_val : 0;
             int slen = (int)cstr_len(s);
             if (idx < 0 || idx >= slen) return value_from_int(0);
@@ -1302,9 +1302,9 @@ Value parse_message_send(Parser *p) {
         }
 
         /* NSString: [str hasPrefix:prefix] → check if string starts with prefix */
-        if (cstr_eq(sel_name, "hasPrefix:") && target.is_id && receiver != 0 && arg_count >= 1) {
-            const char *s = (const char *)receiver;
-            const char *prefix = (const char *)keyword_args[0].obj_val;
+        if (cstr_eq(sel_name, "hasPrefix:") && target.is_id && receiver != OBJ_NULL && arg_count >= 1) {
+            const char *s = obj_deref(receiver);
+            const char *prefix = obj_deref(keyword_args[0].obj_val);
             int slen = (int)cstr_len(s);
             int plen = (int)cstr_len(prefix);
             if (plen > slen || plen == 0) return value_from_int(plen == 0 ? 1 : 0);
@@ -1312,9 +1312,9 @@ Value parse_message_send(Parser *p) {
         }
 
         /* NSString: [str hasSuffix:suffix] → check if string ends with suffix */
-        if (cstr_eq(sel_name, "hasSuffix:") && target.is_id && receiver != 0 && arg_count >= 1) {
-            const char *s = (const char *)receiver;
-            const char *suffix = (const char *)keyword_args[0].obj_val;
+        if (cstr_eq(sel_name, "hasSuffix:") && target.is_id && receiver != OBJ_NULL && arg_count >= 1) {
+            const char *s = obj_deref(receiver);
+            const char *suffix = obj_deref(keyword_args[0].obj_val);
             int slen = (int)cstr_len(s);
             int sfxlen = (int)cstr_len(suffix);
             if (sfxlen > slen || sfxlen == 0) return value_from_int(sfxlen == 0 ? 1 : 0);
@@ -1322,11 +1322,11 @@ Value parse_message_send(Parser *p) {
         }
 
         /* NSString: [str containsString:substr] → check if string contains substring */
-        if (cstr_eq(sel_name, "containsString:") && target.is_id && receiver != 0 && arg_count >= 1) {
-            const char *s = (const char *)receiver;
+        if (cstr_eq(sel_name, "containsString:") && target.is_id && receiver != OBJ_NULL && arg_count >= 1) {
+            const char *s = obj_deref(receiver);
             const char *substr = 0;
-            if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
-                substr = (const char *)keyword_args[0].obj_val;
+            if (keyword_args[0].is_id && keyword_args[0].obj_val != OBJ_NULL) {
+                substr = obj_deref(keyword_args[0].obj_val);
             }
             if (substr == 0) return value_from_int(0);
             /* strstr returns a pointer to the first occurrence, or NULL */
@@ -1338,11 +1338,11 @@ Value parse_message_send(Parser *p) {
 
         /* NSString: [str rangeOfString:substr] → NSRange {location, length}
          * Returns NSRange as a marker string "NSRange:loc:len" or NSNotFound */
-        if (cstr_eq(sel_name, "rangeOfString:") && target.is_id && receiver != 0 && arg_count >= 1) {
-            const char *s = (const char *)receiver;
+        if (cstr_eq(sel_name, "rangeOfString:") && target.is_id && receiver != OBJ_NULL && arg_count >= 1) {
+            const char *s = obj_deref(receiver);
             const char *substr = 0;
-            if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
-                substr = (const char *)keyword_args[0].obj_val;
+            if (keyword_args[0].is_id && keyword_args[0].obj_val != OBJ_NULL) {
+                substr = obj_deref(keyword_args[0].obj_val);
             }
             if (substr == 0 || cstr_len(substr) == 0) {
                 /* Empty substring: return {0, 0} */
@@ -1384,12 +1384,12 @@ Value parse_message_send(Parser *p) {
         }
 
         /* NSString: [str substringWithRange:range] → substring from NSRange marker */
-        if (cstr_eq(sel_name, "substringWithRange:") && target.is_id && receiver != 0 && arg_count >= 1) {
-            const char *s = (const char *)receiver;
+        if (cstr_eq(sel_name, "substringWithRange:") && target.is_id && receiver != OBJ_NULL && arg_count >= 1) {
+            const char *s = obj_deref(receiver);
             const char *range_marker = 0;
             unsigned int loc = 0, len = 0;
-            if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
-                range_marker = (const char *)keyword_args[0].obj_val;
+            if (keyword_args[0].is_id && keyword_args[0].obj_val != OBJ_NULL) {
+                range_marker = obj_deref(keyword_args[0].obj_val);
             }
             if (range_marker != 0 && cstr_starts(range_marker, "NSRange:")) {
                 /* Parse "NSRange:loc:len" manually (no stdio.h in WASM) */
@@ -1416,11 +1416,11 @@ Value parse_message_send(Parser *p) {
         }
 
         /* NSString: [str uppercaseString] → ASCII uppercase */
-        if (cstr_eq(sel_name, "uppercaseString") && target.is_id && receiver != 0) {
-            const char *s = (const char *)receiver;
+        if (cstr_eq(sel_name, "uppercaseString") && target.is_id && receiver != OBJ_NULL) {
+            const char *s = obj_deref(receiver);
             int slen = (int)cstr_len(s);
             char *result = string_pool_alloc((unsigned int)slen + 1);
-            if (result == 0) return value_from_id(receiver);
+            if (result == 0) return value_from_obj(receiver);
             {
                 int i;
                 for (i = 0; i < slen; i++) {
@@ -1434,11 +1434,11 @@ Value parse_message_send(Parser *p) {
         }
 
         /* NSString: [str lowercaseString] → ASCII lowercase */
-        if (cstr_eq(sel_name, "lowercaseString") && target.is_id && receiver != 0) {
-            const char *s = (const char *)receiver;
+        if (cstr_eq(sel_name, "lowercaseString") && target.is_id && receiver != OBJ_NULL) {
+            const char *s = obj_deref(receiver);
             int slen = (int)cstr_len(s);
             char *result = string_pool_alloc((unsigned int)slen + 1);
-            if (result == 0) return value_from_id(receiver);
+            if (result == 0) return value_from_obj(receiver);
             {
                 int i;
                 for (i = 0; i < slen; i++) {
@@ -1453,14 +1453,14 @@ Value parse_message_send(Parser *p) {
 
         /* NSString: [str stringByReplacingOccurrencesOfString:find withString:replace]
          * Replace all occurrences of find with replace. */
-        if (cstr_eq(sel_name, "stringByReplacingOccurrencesOfString:withString:") && target.is_id && receiver != 0 && arg_count >= 2) {
-            const char *src = (const char *)receiver;
-            const char *find = (const char *)keyword_args[0].obj_val;
-            const char *repl = (const char *)keyword_args[1].obj_val;
+        if (cstr_eq(sel_name, "stringByReplacingOccurrencesOfString:withString:") && target.is_id && receiver != OBJ_NULL && arg_count >= 2) {
+            const char *src = obj_deref(receiver);
+            const char *find = obj_deref(keyword_args[0].obj_val);
+            const char *repl = obj_deref(keyword_args[1].obj_val);
             int src_len = (int)cstr_len(src);
             int find_len = (int)cstr_len(find);
             int repl_len = (int)cstr_len(repl);
-            if (find_len == 0) return value_from_id(receiver);
+            if (find_len == 0) return value_from_obj(receiver);
             {
                 /* Two passes: count matches to size the buffer, then build */
                 int match_count = 0;
@@ -1479,7 +1479,7 @@ Value parse_message_send(Parser *p) {
                 if (final_size < 0) final_size = 0;
                 unsigned int needed = (unsigned int)final_size + 1;
                 char *result = string_pool_alloc(needed);
-                if (result == 0) return value_from_id(receiver);
+                if (result == 0) return value_from_obj(receiver);
                 {
                     int ri = 0;
                     si = 0;
@@ -1500,16 +1500,16 @@ Value parse_message_send(Parser *p) {
         }
 
         /* NSString: [str stringByAppendingFormat:@"..."] → format and append */
-        if (cstr_eq(sel_name, "stringByAppendingFormat:") && target.is_id && receiver != 0 && arg_count >= 1) {
-            const char *base = (const char *)receiver;
+        if (cstr_eq(sel_name, "stringByAppendingFormat:") && target.is_id && receiver != OBJ_NULL && arg_count >= 1) {
+            const char *base = obj_deref(receiver);
             const char *fmt = 0;
-            if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
-                fmt = (const char *)keyword_args[0].obj_val;
+            if (keyword_args[0].is_id && keyword_args[0].obj_val != OBJ_NULL) {
+                fmt = obj_deref(keyword_args[0].obj_val);
             }
             if (fmt != 0) {
                 Value formatted = format_values_to_pool(fmt, &keyword_args[1], arg_count - 1);
-                if (formatted.is_id && formatted.obj_val != 0) {
-                    const char *suffix = (const char *)formatted.obj_val;
+                if (formatted.is_id && formatted.obj_val != OBJ_NULL) {
+                    const char *suffix = obj_deref(formatted.obj_val);
                     int base_len = (int)cstr_len(base);
                     int suffix_len = (int)cstr_len(suffix);
                     char *result = string_pool_alloc((unsigned int)(base_len + suffix_len + 1));
@@ -1522,13 +1522,13 @@ Value parse_message_send(Parser *p) {
                     }
                 }
             }
-            return value_from_id(receiver);
+            return value_from_obj(receiver);
         }
 
         /* NSString: [str componentsSeparatedByString:sep] → NSArray of components */
-        if (cstr_eq(sel_name, "componentsSeparatedByString:") && target.is_id && receiver != 0 && arg_count >= 1) {
-            const char *src = (const char *)receiver;
-            const char *sep = (const char *)keyword_args[0].obj_val;
+        if (cstr_eq(sel_name, "componentsSeparatedByString:") && target.is_id && receiver != OBJ_NULL && arg_count >= 1) {
+            const char *src = obj_deref(receiver);
+            const char *sep = obj_deref(keyword_args[0].obj_val);
             int src_len = (int)cstr_len(src);
             int sep_len = (int)cstr_len(sep);
             unsigned int new_cid = g_ctx.next_coll_id++;
@@ -1607,8 +1607,8 @@ Value parse_message_send(Parser *p) {
         /* NSString: [str stringByTrimmingWhitespace] → trim leading/trailing whitespace
          * Convenience method (not a real ObjC API — that uses
          * stringByTrimmingCharactersInSet: which needs NSCharacterSet). */
-        if (cstr_eq(sel_name, "stringByTrimmingWhitespace") && target.is_id && receiver != 0) {
-            const char *s = (const char *)receiver;
+        if (cstr_eq(sel_name, "stringByTrimmingWhitespace") && target.is_id && receiver != OBJ_NULL) {
+            const char *s = obj_deref(receiver);
             int slen = (int)cstr_len(s);
             int start = 0, end = slen;
             while (start < end && (s[start] == ' ' || s[start] == '\t' || s[start] == '\n' || s[start] == '\r'))
@@ -1619,7 +1619,7 @@ Value parse_message_send(Parser *p) {
                 int comp_len = end - start;
                 unsigned int needed = (unsigned int)comp_len + 1;
                 char *result = string_pool_alloc(needed);
-                if (result == 0) return value_from_id(receiver);
+                if (result == 0) return value_from_obj(receiver);
                 {
                     int i;
                     for (i = 0; i < comp_len; i++) result[i] = s[start + i];
@@ -1641,11 +1641,11 @@ Value parse_message_send(Parser *p) {
         }
 
         /* NSString: [str stringByTrimmingCharactersInSet:charSet] → trim chars in set */
-        if (cstr_eq(sel_name, "stringByTrimmingCharactersInSet:") && target.is_id && receiver != 0 && arg_count >= 1) {
-            const char *s = (const char *)receiver;
+        if (cstr_eq(sel_name, "stringByTrimmingCharactersInSet:") && target.is_id && receiver != OBJ_NULL && arg_count >= 1) {
+            const char *s = obj_deref(receiver);
             const char *cs_marker = 0;
-            if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
-                cs_marker = (const char *)keyword_args[0].obj_val;
+            if (keyword_args[0].is_id && keyword_args[0].obj_val != OBJ_NULL) {
+                cs_marker = obj_deref(keyword_args[0].obj_val);
             }
             int slen = (int)cstr_len(s);
             int start = 0, end = slen;
@@ -1670,7 +1670,7 @@ Value parse_message_send(Parser *p) {
                 int comp_len = end - start;
                 unsigned int needed = (unsigned int)comp_len + 1;
                 char *result = string_pool_alloc(needed);
-                if (result == 0) return value_from_id(receiver);
+                if (result == 0) return value_from_obj(receiver);
                 {
                     int i;
                     for (i = 0; i < comp_len; i++) result[i] = s[start + i];
@@ -1703,7 +1703,7 @@ Value parse_message_send(Parser *p) {
                 buf[pos] = '\0';
                 return value_from_id((id)buf);
             }
-            return value_from_id(args[0]);
+            return value_from_obj(args[0]);
         }
 
         /* NSNumber: [NSNumber numberWithUnsignedInt:n] → wrap unsigned int */
@@ -1725,23 +1725,23 @@ Value parse_message_send(Parser *p) {
                 buf[pos] = '\0';
                 return value_from_id((id)buf);
             }
-            return value_from_id(args[0]);
+            return value_from_obj(args[0]);
         }
 
         /* NSNumber: [NSNumber numberWithLong:n] → wrap long as id */
         if (IS_FOUNDATION_CLASS("NSNumber") && target.is_class && cstr_eq(sel_name, "numberWithLong:") && arg_count >= 1) {
             if (keyword_args[0].is_int) {
-                return value_from_id(args[0]); /* Same as numberWithInt: for interpreter */
+                return value_from_obj(args[0]); /* Same as numberWithInt: for interpreter */
             }
-            return value_from_id(args[0]);
+            return value_from_obj(args[0]);
         }
 
         /* NSNumber: [NSNumber numberWithInteger:n] → wrap NSInteger as id */
         if (IS_FOUNDATION_CLASS("NSNumber") && target.is_class && cstr_eq(sel_name, "numberWithInteger:") && arg_count >= 1) {
             if (keyword_args[0].is_int) {
-                return value_from_id(args[0]); /* Same as numberWithInt: for interpreter */
+                return value_from_obj(args[0]); /* Same as numberWithInt: for interpreter */
             }
-            return value_from_id(args[0]);
+            return value_from_obj(args[0]);
         }
 
         /* NSNumber: [NSNumber numberWithUnsignedLong:n] → wrap unsigned long as id */
@@ -1763,7 +1763,7 @@ Value parse_message_send(Parser *p) {
                 buf[pos] = '\0';
                 return value_from_id((id)buf);
             }
-            return value_from_id(args[0]);
+            return value_from_obj(args[0]);
         }
 
         /* NSNumber: [NSNumber numberWithLongLong:n] → wrap long long as id */
@@ -1787,12 +1787,12 @@ Value parse_message_send(Parser *p) {
                 buf[pos] = '\0';
                 return value_from_id((id)buf);
             }
-            return value_from_id(args[0]);
+            return value_from_obj(args[0]);
         }
 
         /* NSNumber: [num intValue] → unwrap int from NSNumber encoding */
-        if (cstr_eq(sel_name, "intValue") && target.is_id && receiver != 0) {
-            const char *s = (const char *)receiver;
+        if (cstr_eq(sel_name, "intValue") && target.is_id && receiver != OBJ_NULL) {
+            const char *s = obj_deref(receiver);
             if (cstr_eq_n(s, "NSNumber:", 9)) {
                 int val = 0;
                 unsigned int i = 9;
@@ -1805,8 +1805,8 @@ Value parse_message_send(Parser *p) {
         }
 
         /* NSNumber: [num boolValue] → 1 if non-zero */
-        if (cstr_eq(sel_name, "boolValue") && target.is_id && receiver != 0) {
-            const char *s = (const char *)receiver;
+        if (cstr_eq(sel_name, "boolValue") && target.is_id && receiver != OBJ_NULL) {
+            const char *s = obj_deref(receiver);
             if (cstr_eq_n(s, "NSNumber:", 9)) {
                 int val = 0;
                 unsigned int i = 9;
@@ -1817,8 +1817,8 @@ Value parse_message_send(Parser *p) {
         }
 
         /* NSNumber: [num description] → numeric string */
-        if (cstr_eq(sel_name, "description") && target.is_id && receiver != 0) {
-            const char *s = (const char *)receiver;
+        if (cstr_eq(sel_name, "description") && target.is_id && receiver != OBJ_NULL) {
+            const char *s = obj_deref(receiver);
             /* NSData: display as <hex bytes> */
             if (cstr_eq_n(s, "NSData:", 7)) {
                 const char *hex = s + 7;
@@ -1845,7 +1845,7 @@ Value parse_message_send(Parser *p) {
             if (cstr_eq_n(s, "NSFloat:", 8)) {
                 nslog_append(s + 8, cstr_len(s + 8));
             }
-            return value_from_id(receiver);
+            return value_from_obj(receiver);
         }
 
         /* NSNumber: [NSNumber numberWithFloat:f] → wrap float as id */
@@ -1879,7 +1879,7 @@ Value parse_message_send(Parser *p) {
                 }
                 return value_from_id((id)buf);
             }
-            return value_from_id(args[0]);
+            return value_from_obj(args[0]);
         }
 
         /* NSNumber: [NSNumber numberWithDouble:d] → wrap double as id */
@@ -1913,12 +1913,12 @@ Value parse_message_send(Parser *p) {
                 }
                 return value_from_id((id)buf);
             }
-            return value_from_id(args[0]);
+            return value_from_obj(args[0]);
         }
 
         /* NSNumber: [num floatValue] → unwrap float from NSFloat encoding */
-        if (cstr_eq(sel_name, "floatValue") && target.is_id && receiver != 0) {
-            const char *s = (const char *)receiver;
+        if (cstr_eq(sel_name, "floatValue") && target.is_id && receiver != OBJ_NULL) {
+            const char *s = obj_deref(receiver);
             if (cstr_eq_n(s, "NSFloat:", 8)) {
                 double val = 0.0;
                 unsigned int i = 8;
@@ -1940,8 +1940,8 @@ Value parse_message_send(Parser *p) {
         }
 
         /* NSNumber: [num doubleValue] → unwrap double from NSFloat encoding */
-        if (cstr_eq(sel_name, "doubleValue") && target.is_id && receiver != 0) {
-            const char *s = (const char *)receiver;
+        if (cstr_eq(sel_name, "doubleValue") && target.is_id && receiver != OBJ_NULL) {
+            const char *s = obj_deref(receiver);
             if (cstr_eq_n(s, "NSFloat:", 8)) {
                 double val = 0.0;
                 unsigned int i = 8;
@@ -1975,28 +1975,28 @@ Value parse_message_send(Parser *p) {
         }
 
         /* NSNumber: [num stringValue] → numeric string representation */
-        if (cstr_eq(sel_name, "stringValue") && target.is_id && receiver != 0) {
-            const char *s = (const char *)receiver;
+        if (cstr_eq(sel_name, "stringValue") && target.is_id && receiver != OBJ_NULL) {
+            const char *s = obj_deref(receiver);
             if (cstr_eq_n(s, "NSNumber:", 9)) {
                 unsigned int vlen = (unsigned int)cstr_len(s + 9);
                 char *result = string_pool_alloc(vlen + 1);
-                if (result == 0) return value_from_id(receiver);
+                if (result == 0) return value_from_obj(receiver);
                 cstr_copy(result, s + 9, vlen + 1);
                 return value_from_id((id)result);
             }
             if (cstr_eq_n(s, "NSFloat:", 8)) {
                 unsigned int vlen = (unsigned int)cstr_len(s + 8);
                 char *result = string_pool_alloc(vlen + 1);
-                if (result == 0) return value_from_id(receiver);
+                if (result == 0) return value_from_obj(receiver);
                 cstr_copy(result, s + 8, vlen + 1);
                 return value_from_id((id)result);
             }
-            return value_from_id(receiver);
+            return value_from_obj(receiver);
         }
 
         /* NSNumber: [num longValue] → alias for intValue */
-        if (cstr_eq(sel_name, "longValue") && target.is_id && receiver != 0) {
-            const char *s = (const char *)receiver;
+        if (cstr_eq(sel_name, "longValue") && target.is_id && receiver != OBJ_NULL) {
+            const char *s = obj_deref(receiver);
             if (cstr_eq_n(s, "NSNumber:", 9)) {
                 int val = 0;
                 unsigned int i = 9;
@@ -2009,8 +2009,8 @@ Value parse_message_send(Parser *p) {
         }
 
         /* NSNumber: [num integerValue] → alias for intValue */
-        if (cstr_eq(sel_name, "integerValue") && target.is_id && receiver != 0) {
-            const char *s = (const char *)receiver;
+        if (cstr_eq(sel_name, "integerValue") && target.is_id && receiver != OBJ_NULL) {
+            const char *s = obj_deref(receiver);
             if (cstr_eq_n(s, "NSNumber:", 9)) {
                 int val = 0;
                 unsigned int i = 9;
@@ -2023,8 +2023,8 @@ Value parse_message_send(Parser *p) {
         }
 
         /* NSNumber: [num unsignedIntegerValue] → unsigned alias for intValue */
-        if (cstr_eq(sel_name, "unsignedIntegerValue") && target.is_id && receiver != 0) {
-            const char *s = (const char *)receiver;
+        if (cstr_eq(sel_name, "unsignedIntegerValue") && target.is_id && receiver != OBJ_NULL) {
+            const char *s = obj_deref(receiver);
             if (cstr_eq_n(s, "NSNumber:", 9)) {
                 int val = 0;
                 unsigned int i = 9;
@@ -2038,10 +2038,10 @@ Value parse_message_send(Parser *p) {
 
         if (IS_FOUNDATION_CLASS("NSJSONSerialization") && target.is_class) {
             if (cstr_eq(sel_name, "JSONObjectWithData:options:error:") && arg_count >= 1) {
-                id data_obj = keyword_args[0].obj_val;
-                if (data_obj != 0 && cstr_eq_n((const char *)data_obj, "NSData:", 7)) {
+                ObjId data_obj = keyword_args[0].obj_val;
+                if (data_obj != OBJ_NULL && cstr_eq_n(obj_deref(data_obj), "NSData:", 7)) {
                     /* Decode hex data to a string */
-                    const char *hex = ((const char *)data_obj) + 7;
+                    const char *hex = obj_deref(data_obj) + 7;
                     int hex_len = (int)cstr_len(hex);
                     int byte_len = hex_len / 2;
                     char *json_str = string_pool_alloc((unsigned int)byte_len + 1);
@@ -2064,7 +2064,7 @@ Value parse_message_send(Parser *p) {
                         return value_from_id(objc_kernel_host_json_parse(json_str, (unsigned int)byte_len));
                     }
                 }
-                return value_from_id(0); /* Return nil on failure */
+                return value_from_obj(OBJ_NULL); /* Return nil on failure */
             }
             if (cstr_eq(sel_name, "dataWithJSONObject:options:error:") && arg_count >= 1) {
                 static char json_gen_buf[262144]; /* 256KB buffer for JSON stringification */
@@ -2090,7 +2090,7 @@ Value parse_message_send(Parser *p) {
                         return value_from_id((id)buf);
                     }
                 }
-                return value_from_id(0);
+                return value_from_obj(OBJ_NULL);
             }
         }
 
@@ -2099,7 +2099,7 @@ Value parse_message_send(Parser *p) {
         /* NSURL */
         if (IS_FOUNDATION_CLASS("NSURL") && target.is_class) {
             if (cstr_eq(sel_name, "URLWithString:") && arg_count >= 1) {
-                const char *url_str = (const char *)keyword_args[0].obj_val;
+                const char *url_str = obj_deref(keyword_args[0].obj_val);
                 if (url_str) {
                     unsigned int len = cstr_len(url_str);
                     char *buf = string_pool_alloc(len + 7);
@@ -2109,14 +2109,14 @@ Value parse_message_send(Parser *p) {
                         return value_from_id((id)buf);
                     }
                 }
-                return value_from_id(0);
+                return value_from_obj(OBJ_NULL);
             }
         }
 
         /* NSMutableURLRequest */
         if (IS_FOUNDATION_CLASS("NSMutableURLRequest") && target.is_class) {
             if (cstr_eq(sel_name, "requestWithURL:") && arg_count >= 1) {
-                const char *url_marker = (const char *)keyword_args[0].obj_val;
+                const char *url_marker = obj_deref(keyword_args[0].obj_val);
                 if (url_marker && cstr_starts(url_marker, "NSURL:")) {
                     unsigned int cid = g_ctx.next_coll_id++;
                     coll_add_string_val(cid, "url", url_marker + 6);
@@ -2125,12 +2125,12 @@ Value parse_message_send(Parser *p) {
                     coll_add_marker_val(cid, "headers", coll_make_marker("NSMutDict:", headers_cid));
                     return value_from_id(coll_make_marker("NSURLReq:", cid));
                 }
-                return value_from_id(0);
+                return value_from_obj(OBJ_NULL);
             }
         }
         
-        if (target.is_id && receiver != 0 && cstr_starts((const char *)receiver, "NSURLReq:")) {
-            unsigned int cid = coll_id_from_marker((const char *)receiver, "NSURLReq:");
+        if (target.is_id && receiver != OBJ_NULL && cstr_starts(obj_deref(receiver), "NSURLReq:")) {
+            unsigned int cid = coll_id_from_marker(obj_deref(receiver), "NSURLReq:");
             if (cstr_eq(sel_name, "setHTTPMethod:") && arg_count >= 1) {
                 Value key = value_void();
                 Value val = keyword_args[0];
@@ -2139,7 +2139,7 @@ Value parse_message_send(Parser *p) {
                 int idx = coll_find_by_key(cid, &key);
                 if (idx >= 0) g_ctx.coll_entries[idx].value = val;
                 else coll_add(cid, key, val);
-                return value_from_id(receiver);
+                return value_from_obj(receiver);
             }
             if (cstr_eq(sel_name, "setValue:forHTTPHeaderField:") && arg_count >= 2) {
                 Value headers_key = value_void();
@@ -2149,7 +2149,7 @@ Value parse_message_send(Parser *p) {
                 if (h_idx >= 0) {
                     Value headers_dict = g_ctx.coll_entries[h_idx].value;
                     if (headers_dict.is_id) {
-                        unsigned int hcid = coll_id_from_marker((const char *)headers_dict.obj_val, "NSMutDict:");
+                        unsigned int hcid = coll_id_from_marker(obj_deref(headers_dict.obj_val), "NSMutDict:");
                         if (hcid) {
                             Value key = keyword_args[1];
                             Value val = keyword_args[0];
@@ -2159,7 +2159,7 @@ Value parse_message_send(Parser *p) {
                         }
                     }
                 }
-                return value_from_id(receiver);
+                return value_from_obj(receiver);
             }
             if (cstr_eq(sel_name, "setHTTPBody:") && arg_count >= 1) {
                 Value key = value_void();
@@ -2169,7 +2169,7 @@ Value parse_message_send(Parser *p) {
                 int idx = coll_find_by_key(cid, &key);
                 if (idx >= 0) g_ctx.coll_entries[idx].value = val;
                 else coll_add(cid, key, val);
-                return value_from_id(receiver);
+                return value_from_obj(receiver);
             }
         }
 
@@ -2180,10 +2180,10 @@ Value parse_message_send(Parser *p) {
             }
         }
         
-        if (target.is_id && receiver != 0 && cstr_starts((const char *)receiver, "NSURLSession:")) {
+        if (target.is_id && receiver != OBJ_NULL && cstr_starts(obj_deref(receiver), "NSURLSession:")) {
             if (cstr_eq(sel_name, "dataTaskWithRequest:completionHandler:") && arg_count >= 2) {
-                const char *req_marker = (const char *)keyword_args[0].obj_val;
-                const char *blk_marker = (const char *)keyword_args[1].obj_val;
+                const char *req_marker = obj_deref(keyword_args[0].obj_val);
+                const char *blk_marker = obj_deref(keyword_args[1].obj_val);
                 if (req_marker && cstr_starts(req_marker, "NSURLReq:") && blk_marker && cstr_starts(blk_marker, "NSBlock:")) {
                     if (g_ctx.network_task_count < MAX_NETWORK_TASKS) {
                         int task_id = g_ctx.next_network_task_id++;
@@ -2200,13 +2200,13 @@ Value parse_message_send(Parser *p) {
                         return value_from_id(coll_make_marker("NSURLTask:", cid));
                     }
                 }
-                return value_from_id(0);
+                return value_from_obj(OBJ_NULL);
             }
         }
         
-        if (target.is_id && receiver != 0 && cstr_starts((const char *)receiver, "NSURLTask:")) {
+        if (target.is_id && receiver != OBJ_NULL && cstr_starts(obj_deref(receiver), "NSURLTask:")) {
             if (cstr_eq(sel_name, "resume")) {
-                unsigned int cid = coll_id_from_marker((const char *)receiver, "NSURLTask:");
+                unsigned int cid = coll_id_from_marker(obj_deref(receiver), "NSURLTask:");
                 Value key_task = value_void();
                 char *kt = string_pool_alloc(8);
                 if (kt) { cstr_copy(kt, "task_id", 8); key_task = value_from_id((id)kt); }
@@ -2219,7 +2219,7 @@ Value parse_message_send(Parser *p) {
                 
                 if (idx_task >= 0 && idx_req >= 0) {
                     int task_id = g_ctx.coll_entries[idx_task].value.int_val;
-                    const char *req_marker = (const char *)g_ctx.coll_entries[idx_req].value.obj_val;
+                    const char *req_marker = obj_deref(g_ctx.coll_entries[idx_req].value.obj_val);
                     unsigned int req_cid = coll_id_from_marker(req_marker, "NSURLReq:");
                     
                     /* Mark active */
@@ -2243,14 +2243,14 @@ Value parse_message_send(Parser *p) {
                     Value k_headers = value_void(); char *kh = string_pool_alloc(8); if(kh){cstr_copy(kh,"headers",8); k_headers=value_from_id((id)kh);}
                     
                     int i_u = coll_find_by_key(req_cid, &k_url);
-                    if (i_u >= 0) url = (const char *)g_ctx.coll_entries[i_u].value.obj_val;
+                    if (i_u >= 0) url = obj_deref(g_ctx.coll_entries[i_u].value.obj_val);
                     
                     int i_m = coll_find_by_key(req_cid, &k_method);
-                    if (i_m >= 0) method = (const char *)g_ctx.coll_entries[i_m].value.obj_val;
+                    if (i_m >= 0) method = obj_deref(g_ctx.coll_entries[i_m].value.obj_val);
                     
                     int i_b = coll_find_by_key(req_cid, &k_body);
                     if (i_b >= 0) {
-                        const char *data_str = (const char *)g_ctx.coll_entries[i_b].value.obj_val;
+                        const char *data_str = obj_deref(g_ctx.coll_entries[i_b].value.obj_val);
                         if (data_str && cstr_starts(data_str, "NSData:")) {
                             /* hex string NSData:XXXX */
                             const char *hex = data_str + 7;
@@ -2290,7 +2290,7 @@ Value parse_message_send(Parser *p) {
                     /* Tell host to perform the fetch */
                     objc_kernel_host_fetch(task_id, url, method, headers_json[0] ? headers_json : "{}", body, body_len);
                 }
-                return value_from_id(receiver);
+                return value_from_obj(receiver);
             }
         }
 
@@ -2299,7 +2299,7 @@ Value parse_message_send(Parser *p) {
         /* NSURL */
         if (IS_FOUNDATION_CLASS("NSURL") && target.is_class) {
             if (cstr_eq(sel_name, "URLWithString:") && arg_count >= 1) {
-                const char *url_str = (const char *)keyword_args[0].obj_val;
+                const char *url_str = obj_deref(keyword_args[0].obj_val);
                 if (url_str) {
                     unsigned int len = cstr_len(url_str);
                     char *buf = string_pool_alloc(len + 7);
@@ -2309,14 +2309,14 @@ Value parse_message_send(Parser *p) {
                         return value_from_id((id)buf);
                     }
                 }
-                return value_from_id(0);
+                return value_from_obj(OBJ_NULL);
             }
         }
 
         /* NSMutableURLRequest */
         if (IS_FOUNDATION_CLASS("NSMutableURLRequest") && target.is_class) {
             if (cstr_eq(sel_name, "requestWithURL:") && arg_count >= 1) {
-                const char *url_marker = (const char *)keyword_args[0].obj_val;
+                const char *url_marker = obj_deref(keyword_args[0].obj_val);
                 if (url_marker && cstr_starts(url_marker, "NSURL:")) {
                     unsigned int cid = g_ctx.next_coll_id++;
                     coll_add_string_val(cid, "url", url_marker + 6);
@@ -2325,12 +2325,12 @@ Value parse_message_send(Parser *p) {
                     coll_add_marker_val(cid, "headers", coll_make_marker("NSMutDict:", headers_cid));
                     return value_from_id(coll_make_marker("NSURLReq:", cid));
                 }
-                return value_from_id(0);
+                return value_from_obj(OBJ_NULL);
             }
         }
         
-        if (target.is_id && receiver != 0 && cstr_starts((const char *)receiver, "NSURLReq:")) {
-            unsigned int cid = coll_id_from_marker((const char *)receiver, "NSURLReq:");
+        if (target.is_id && receiver != OBJ_NULL && cstr_starts(obj_deref(receiver), "NSURLReq:")) {
+            unsigned int cid = coll_id_from_marker(obj_deref(receiver), "NSURLReq:");
             if (cstr_eq(sel_name, "setHTTPMethod:") && arg_count >= 1) {
                 Value key = value_void();
                 Value val = keyword_args[0];
@@ -2339,7 +2339,7 @@ Value parse_message_send(Parser *p) {
                 int idx = coll_find_by_key(cid, &key);
                 if (idx >= 0) g_ctx.coll_entries[idx].value = val;
                 else coll_add(cid, key, val);
-                return value_from_id(receiver);
+                return value_from_obj(receiver);
             }
             if (cstr_eq(sel_name, "setValue:forHTTPHeaderField:") && arg_count >= 2) {
                 Value headers_key = value_void();
@@ -2349,7 +2349,7 @@ Value parse_message_send(Parser *p) {
                 if (h_idx >= 0) {
                     Value headers_dict = g_ctx.coll_entries[h_idx].value;
                     if (headers_dict.is_id) {
-                        unsigned int hcid = coll_id_from_marker((const char *)headers_dict.obj_val, "NSMutDict:");
+                        unsigned int hcid = coll_id_from_marker(obj_deref(headers_dict.obj_val), "NSMutDict:");
                         if (hcid) {
                             Value key = keyword_args[1];
                             Value val = keyword_args[0];
@@ -2359,7 +2359,7 @@ Value parse_message_send(Parser *p) {
                         }
                     }
                 }
-                return value_from_id(receiver);
+                return value_from_obj(receiver);
             }
             if (cstr_eq(sel_name, "setHTTPBody:") && arg_count >= 1) {
                 Value key = value_void();
@@ -2369,7 +2369,7 @@ Value parse_message_send(Parser *p) {
                 int idx = coll_find_by_key(cid, &key);
                 if (idx >= 0) g_ctx.coll_entries[idx].value = val;
                 else coll_add(cid, key, val);
-                return value_from_id(receiver);
+                return value_from_obj(receiver);
             }
         }
 
@@ -2380,10 +2380,10 @@ Value parse_message_send(Parser *p) {
             }
         }
         
-        if (target.is_id && receiver != 0 && cstr_starts((const char *)receiver, "NSURLSession:")) {
+        if (target.is_id && receiver != OBJ_NULL && cstr_starts(obj_deref(receiver), "NSURLSession:")) {
             if (cstr_eq(sel_name, "dataTaskWithRequest:completionHandler:") && arg_count >= 2) {
-                const char *req_marker = (const char *)keyword_args[0].obj_val;
-                const char *blk_marker = (const char *)keyword_args[1].obj_val;
+                const char *req_marker = obj_deref(keyword_args[0].obj_val);
+                const char *blk_marker = obj_deref(keyword_args[1].obj_val);
                 if (req_marker && cstr_starts(req_marker, "NSURLReq:") && blk_marker && cstr_starts(blk_marker, "NSBlock:")) {
                     if (g_ctx.network_task_count < MAX_NETWORK_TASKS) {
                         int task_id = g_ctx.next_network_task_id++;
@@ -2400,13 +2400,13 @@ Value parse_message_send(Parser *p) {
                         return value_from_id(coll_make_marker("NSURLTask:", cid));
                     }
                 }
-                return value_from_id(0);
+                return value_from_obj(OBJ_NULL);
             }
         }
         
-        if (target.is_id && receiver != 0 && cstr_starts((const char *)receiver, "NSURLTask:")) {
+        if (target.is_id && receiver != OBJ_NULL && cstr_starts(obj_deref(receiver), "NSURLTask:")) {
             if (cstr_eq(sel_name, "resume")) {
-                unsigned int cid = coll_id_from_marker((const char *)receiver, "NSURLTask:");
+                unsigned int cid = coll_id_from_marker(obj_deref(receiver), "NSURLTask:");
                 Value key_task = value_void();
                 char *kt = string_pool_alloc(8);
                 if (kt) { cstr_copy(kt, "task_id", 8); key_task = value_from_id((id)kt); }
@@ -2419,7 +2419,7 @@ Value parse_message_send(Parser *p) {
                 
                 if (idx_task >= 0 && idx_req >= 0) {
                     int task_id = g_ctx.coll_entries[idx_task].value.int_val;
-                    const char *req_marker = (const char *)g_ctx.coll_entries[idx_req].value.obj_val;
+                    const char *req_marker = obj_deref(g_ctx.coll_entries[idx_req].value.obj_val);
                     unsigned int req_cid = coll_id_from_marker(req_marker, "NSURLReq:");
                     
                     /* Mark active */
@@ -2443,14 +2443,14 @@ Value parse_message_send(Parser *p) {
                     Value k_headers = value_void(); char *kh = string_pool_alloc(8); if(kh){cstr_copy(kh,"headers",8); k_headers=value_from_id((id)kh);}
                     
                     int i_u = coll_find_by_key(req_cid, &k_url);
-                    if (i_u >= 0) url = (const char *)g_ctx.coll_entries[i_u].value.obj_val;
+                    if (i_u >= 0) url = obj_deref(g_ctx.coll_entries[i_u].value.obj_val);
                     
                     int i_m = coll_find_by_key(req_cid, &k_method);
-                    if (i_m >= 0) method = (const char *)g_ctx.coll_entries[i_m].value.obj_val;
+                    if (i_m >= 0) method = obj_deref(g_ctx.coll_entries[i_m].value.obj_val);
                     
                     int i_b = coll_find_by_key(req_cid, &k_body);
                     if (i_b >= 0) {
-                        const char *data_str = (const char *)g_ctx.coll_entries[i_b].value.obj_val;
+                        const char *data_str = obj_deref(g_ctx.coll_entries[i_b].value.obj_val);
                         if (data_str && cstr_starts(data_str, "NSData:")) {
                             /* hex string NSData:XXXX */
                             const char *hex = data_str + 7;
@@ -2490,7 +2490,7 @@ Value parse_message_send(Parser *p) {
                     /* Tell host to perform the fetch */
                     objc_kernel_host_fetch(task_id, url, method, headers_json[0] ? headers_json : "{}", body, body_len);
                 }
-                return value_from_id(receiver);
+                return value_from_obj(receiver);
             }
         }
 
@@ -2518,7 +2518,7 @@ Value parse_message_send(Parser *p) {
          * Since we don't have real byte pointers, we accept a string (treating
          * each char as a byte) and encode as "NSData:<hex>". */
         if (IS_FOUNDATION_CLASS("NSData") && target.is_class && cstr_eq(sel_name, "dataWithBytes:length:") && arg_count >= 2) {
-            const char *bytes = (const char *)keyword_args[0].obj_val;
+            const char *bytes = obj_deref(keyword_args[0].obj_val);
             int len = keyword_args[1].is_int ? keyword_args[1].int_val : 0;
             if (len < 0) len = 0;
             {
@@ -2561,7 +2561,7 @@ Value parse_message_send(Parser *p) {
 
         /* NSData: [NSData dataWithData:other] → copy of other data */
         if (IS_FOUNDATION_CLASS("NSData") && target.is_class && cstr_eq(sel_name, "dataWithData:") && arg_count >= 1) {
-            const char *other = (const char *)keyword_args[0].obj_val;
+            const char *other = obj_deref(keyword_args[0].obj_val);
             if (other && cstr_eq_n(other, "NSData:", 7)) {
                 unsigned int needed = (unsigned int)cstr_len(other) + 1;
                 char *buf = string_pool_alloc(needed);
@@ -2576,8 +2576,8 @@ Value parse_message_send(Parser *p) {
         }
 
         /* NSData instance methods — check for NSData: prefix on receiver */
-        if (target.is_id && receiver != 0 && cstr_eq_n((const char *)receiver, "NSData:", 7)) {
-            const char *s = (const char *)receiver;
+        if (target.is_id && receiver != OBJ_NULL && cstr_eq_n(obj_deref(receiver), "NSData:", 7)) {
+            const char *s = obj_deref(receiver);
 
             /* [data bytes] → decode hex back to raw bytes (as string) */
             if (cstr_eq(sel_name, "bytes")) {
@@ -2585,7 +2585,7 @@ Value parse_message_send(Parser *p) {
                 int hex_len = (int)cstr_len(hex);
                 int byte_len = hex_len / 2;
                 char *result = string_pool_alloc((unsigned int)byte_len + 1);
-                if (result == 0) return value_from_id(receiver);
+                if (result == 0) return value_from_obj(receiver);
                 {
                     static const char hex_vals[] = "0123456789abcdef";
                     int i;
@@ -2611,7 +2611,7 @@ Value parse_message_send(Parser *p) {
                 /* Format: <xxxx xxxx ...> with spaces every 8 hex chars */
                 unsigned int needed = 2 + (unsigned int)hex_len + (unsigned int)(hex_len / 8) + 1;
                 char *result = string_pool_alloc(needed);
-                if (result == 0) return value_from_id(receiver);
+                if (result == 0) return value_from_obj(receiver);
                 {
                     int ri = 0;
                     int i;
@@ -2628,7 +2628,7 @@ Value parse_message_send(Parser *p) {
 
             /* [data isEqual:other] → compare data */
             if (cstr_eq(sel_name, "isEqual:") && arg_count >= 1) {
-                const char *other = (const char *)keyword_args[0].obj_val;
+                const char *other = obj_deref(keyword_args[0].obj_val);
                 if (other && cstr_eq_n(other, "NSData:", 7)) {
                     return value_from_int(cstr_eq(s, other) ? 1 : 0);
                 }
@@ -2637,7 +2637,7 @@ Value parse_message_send(Parser *p) {
 
             /* [data isEqualToData:other] → compare data */
             if (cstr_eq(sel_name, "isEqualToData:") && arg_count >= 1) {
-                const char *other = (const char *)keyword_args[0].obj_val;
+                const char *other = obj_deref(keyword_args[0].obj_val);
                 if (other && cstr_eq_n(other, "NSData:", 7)) {
                     return value_from_int(cstr_eq(s, other) ? 1 : 0);
                 }
@@ -2692,7 +2692,7 @@ Value parse_message_send(Parser *p) {
 
             /* [data appendData:other] → append other's bytes (NSMutableData) */
             if (cstr_eq(sel_name, "appendData:") && arg_count >= 1) {
-                const char *other = (const char *)keyword_args[0].obj_val;
+                const char *other = obj_deref(keyword_args[0].obj_val);
                 if (other && cstr_eq_n(other, "NSData:", 7)) {
                     const char *hex1 = s + 7;
                     const char *hex2 = other + 7;
@@ -2700,7 +2700,7 @@ Value parse_message_send(Parser *p) {
                     int len2 = (int)cstr_len(hex2);
                     unsigned int needed = 7 + (unsigned int)(len1 + len2) + 1;
                     char *buf = string_pool_alloc(needed);
-                    if (buf == 0) return value_from_id(receiver);
+                    if (buf == 0) return value_from_obj(receiver);
                     cstr_copy(buf, "NSData:", needed);
                     {
                         int i;
@@ -2710,13 +2710,13 @@ Value parse_message_send(Parser *p) {
                     }
                     return value_from_id((id)buf);
                 }
-                return value_from_id(receiver);
+                return value_from_obj(receiver);
             }
 
             /* [data appendBytes:length:] → append raw bytes (NSMutableData)
              * Accepts a string (each char = byte) and length. */
             if (cstr_eq(sel_name, "appendBytes:length:") && arg_count >= 2) {
-                const char *bytes = (const char *)keyword_args[0].obj_val;
+                const char *bytes = obj_deref(keyword_args[0].obj_val);
                 int len = keyword_args[1].is_int ? keyword_args[1].int_val : 0;
                 const char *hex = s + 7;
                 int hex_len = (int)cstr_len(hex);
@@ -2726,7 +2726,7 @@ Value parse_message_send(Parser *p) {
                     if (len > blen) len = blen;
                     unsigned int needed = 7 + (unsigned int)(hex_len + len * 2) + 1;
                     char *buf = string_pool_alloc(needed);
-                    if (buf == 0) return value_from_id(receiver);
+                    if (buf == 0) return value_from_obj(receiver);
                     cstr_copy(buf, "NSData:", needed);
                     {
                         int i;
@@ -2749,7 +2749,7 @@ Value parse_message_send(Parser *p) {
             if (cstr_eq(sel_name, "copy") && arg_count == 0) {
                 unsigned int needed = (unsigned int)cstr_len(s) + 1;
                 char *buf = string_pool_alloc(needed);
-                if (buf == 0) return value_from_id(receiver);
+                if (buf == 0) return value_from_obj(receiver);
                 cstr_copy(buf, s, needed);
                 return value_from_id((id)buf);
             }
@@ -2760,7 +2760,7 @@ Value parse_message_send(Parser *p) {
         /* [CID sha256Digest:data] → SHA-256 via host bridge
          * Accepts NSData, returns NSData (32 bytes). */
         if (IS_FOUNDATION_CLASS("CID") && target.is_class && cstr_eq(sel_name, "sha256Digest:") && arg_count >= 1) {
-            const char *arg = (const char *)keyword_args[0].obj_val;
+            const char *arg = obj_deref(keyword_args[0].obj_val);
             if (arg && cstr_eq_n(arg, "NSData:", 7)) {
                 const char *hex = arg + 7;
                 int hex_len = (int)cstr_len(hex);
@@ -2813,7 +2813,7 @@ Value parse_message_send(Parser *p) {
         if (IS_FOUNDATION_CLASS("CID") && target.is_class && cstr_eq(sel_name, "sha256:") && arg_count >= 1) {
             /* Delegate to sha256Digest: then wrap in CID */
             /* For now, return the digest as NSData (same as sha256Digest:) */
-            const char *arg = (const char *)keyword_args[0].obj_val;
+            const char *arg = obj_deref(keyword_args[0].obj_val);
             if (arg && cstr_eq_n(arg, "NSData:", 7)) {
                 const char *hex = arg + 7;
                 int hex_len = (int)cstr_len(hex);
@@ -2861,7 +2861,7 @@ Value parse_message_send(Parser *p) {
 
         /* [CID base32Encode:data] → base32 string via host bridge */
         if (IS_FOUNDATION_CLASS("CID") && target.is_class && cstr_eq(sel_name, "base32Encode:") && arg_count >= 1) {
-            const char *arg = (const char *)keyword_args[0].obj_val;
+            const char *arg = obj_deref(keyword_args[0].obj_val);
             if (arg && cstr_eq_n(arg, "NSData:", 7)) {
                 const char *hex = arg + 7;
                 int hex_len = (int)cstr_len(hex);
@@ -2903,7 +2903,7 @@ Value parse_message_send(Parser *p) {
 
         /* [CID base32Decode:string] → NSData via host bridge */
         if (IS_FOUNDATION_CLASS("CID") && target.is_class && cstr_eq(sel_name, "base32Decode:") && arg_count >= 1) {
-            const char *str = (const char *)keyword_args[0].obj_val;
+            const char *str = obj_deref(keyword_args[0].obj_val);
             if (str) {
                 int str_len = (int)cstr_len(str);
                 char out_buf[512];
@@ -2930,7 +2930,7 @@ Value parse_message_send(Parser *p) {
 
         /* [CryptoUtils sha256:data] → NSData via host bridge */
         if (IS_FOUNDATION_CLASS("CryptoUtils") && target.is_class && cstr_eq(sel_name, "sha256:") && arg_count >= 1) {
-            const char *arg = (const char *)keyword_args[0].obj_val;
+            const char *arg = obj_deref(keyword_args[0].obj_val);
             if (arg && cstr_eq_n(arg, "NSData:", 7)) {
                 const char *hex = arg + 7;
                 int hex_len = (int)cstr_len(hex);
@@ -3025,7 +3025,7 @@ Value parse_message_send(Parser *p) {
         if ((IS_FOUNDATION_CLASS("NSDictionary") || IS_FOUNDATION_CLASS("NSMutableDictionary")) &&
             target.is_class && cstr_eq(sel_name, "dictionaryWithDictionary:") && arg_count >= 1) {
             unsigned int new_cid = g_ctx.next_coll_id++;
-            const char *src_s = (const char *)keyword_args[0].obj_val;
+            const char *src_s = obj_deref(keyword_args[0].obj_val);
             unsigned int src_cid = coll_id_from_marker(src_s, "NSDict:");
             if (src_cid == 0) src_cid = coll_id_from_marker(src_s, "NSMutDict:");
             if (src_cid > 0) {
@@ -3043,7 +3043,7 @@ Value parse_message_send(Parser *p) {
         /* NSSet: [NSSet setWithArray:arr] → set from array */
         if (IS_FOUNDATION_CLASS("NSSet") && target.is_class && cstr_eq(sel_name, "setWithArray:") && arg_count >= 1) {
             unsigned int cid = g_ctx.next_coll_id++;
-            const char *arr_s = (const char *)keyword_args[0].obj_val;
+            const char *arr_s = obj_deref(keyword_args[0].obj_val);
             unsigned int arr_cid = coll_id_from_marker(arr_s, "NSArr:");
             if (arr_cid == 0) arr_cid = coll_id_from_marker(arr_s, "NSMutArr:");
             if (arr_cid > 0) {
@@ -3066,10 +3066,10 @@ Value parse_message_send(Parser *p) {
 
         {
             unsigned int cid = 0;
-            const char *s = (const char *)receiver;
+            const char *s = obj_deref(receiver);
 
             /* Try to identify the collection type and ID */
-            if (target.is_id && receiver != 0) {
+            if (target.is_id && receiver != OBJ_NULL) {
                 cid = coll_id_from_marker(s, "NSArr:");
                 if (cid == 0) cid = coll_id_from_marker(s, "NSMutArr:");
                 if (cid == 0) cid = coll_id_from_marker(s, "NSDict:");
@@ -3099,7 +3099,7 @@ Value parse_message_send(Parser *p) {
                     if (coll_add(cid, elem, dummy) != 0) {
                         nslog_append("warning: collection entry table full\n", 38);
                     }
-                    return value_from_id(receiver);
+                    return value_from_obj(receiver);
                 }
 
                 /* [mutArr removeLastObject] → remove last element */
@@ -3109,7 +3109,7 @@ Value parse_message_send(Parser *p) {
                         int idx = coll_get_nth(cid, cnt - 1);
                         if (idx >= 0) coll_remove_at((unsigned int)idx);
                     }
-                    return value_from_id(receiver);
+                    return value_from_obj(receiver);
                 }
 
                 /* [mutArr replaceObjectAtIndex:n withObject:obj] → replace element */
@@ -3118,21 +3118,21 @@ Value parse_message_send(Parser *p) {
                     if (idx >= 0) {
                         g_ctx.coll_entries[(unsigned int)idx].key = keyword_args[1];
                     }
-                    return value_from_id(receiver);
+                    return value_from_obj(receiver);
                 }
 
                 /* [mutArr insertObject:obj atIndex:n] → insert element at index */
                 if (cstr_eq(sel_name, "insertObject:atIndex:") && arg_count >= 2) {
                     Value dummy = value_void();
                     coll_insert_at(cid, (unsigned int)keyword_args[1].int_val, keyword_args[0], dummy);
-                    return value_from_id(receiver);
+                    return value_from_obj(receiver);
                 }
 
                 /* [mutArr removeObjectAtIndex:n] → remove element at index */
                 if (cstr_eq(sel_name, "removeObjectAtIndex:") && arg_count >= 1) {
                     int idx = coll_get_nth(cid, (unsigned int)keyword_args[0].int_val);
                     if (idx >= 0) coll_remove_at((unsigned int)idx);
-                    return value_from_id(receiver);
+                    return value_from_obj(receiver);
                 }
 
                 /* [arr indexOfObject:obj] → find index of object */
@@ -3145,9 +3145,9 @@ Value parse_message_send(Parser *p) {
                             return value_from_int((int)pos);
                         }
                         if (g_ctx.coll_entries[i].key.is_id && keyword_args[0].is_id &&
-                            g_ctx.coll_entries[i].key.obj_val != 0 && keyword_args[0].obj_val != 0 &&
-                            cstr_eq((const char *)g_ctx.coll_entries[i].key.obj_val,
-                                    (const char *)keyword_args[0].obj_val)) {
+                            g_ctx.coll_entries[i].key.obj_val != OBJ_NULL && keyword_args[0].obj_val != OBJ_NULL &&
+                            cstr_eq(obj_deref(g_ctx.coll_entries[i].key.obj_val),
+                                    obj_deref(keyword_args[0].obj_val))) {
                             return value_from_int((int)pos);
                         }
                         pos++;
@@ -3174,19 +3174,19 @@ Value parse_message_send(Parser *p) {
                             nslog_append("warning: collection entry table full\n", 38);
                         }
                     }
-                    return value_from_id(receiver);
+                    return value_from_obj(receiver);
                 }
 
                 /* [mutDict removeObjectForKey:key] → remove entry */
                 if (cstr_eq(sel_name, "removeObjectForKey:") && arg_count >= 1) {
                     int idx = coll_find_by_key(cid, &keyword_args[0]);
                     if (idx >= 0) coll_remove_at((unsigned int)idx);
-                    return value_from_id(receiver);
+                    return value_from_obj(receiver);
                 }
 
                 /* [mutDict addEntriesFromDictionary:other] → merge entries from other dict */
                 if (cstr_eq(sel_name, "addEntriesFromDictionary:") && arg_count >= 1) {
-                    const char *other_s = (const char *)keyword_args[0].obj_val;
+                    const char *other_s = obj_deref(keyword_args[0].obj_val);
                     unsigned int other_cid = coll_id_from_marker(other_s, "NSDict:");
                     if (other_cid == 0) other_cid = coll_id_from_marker(other_s, "NSMutDict:");
                     if (other_cid > 0) {
@@ -3203,7 +3203,7 @@ Value parse_message_send(Parser *p) {
                             }
                         }
                     }
-                    return value_from_id(receiver);
+                    return value_from_obj(receiver);
                 }
 
                 /* [dict allKeys] → array of keys */
@@ -3233,7 +3233,7 @@ Value parse_message_send(Parser *p) {
                 /* [mutColl removeAllObjects] → remove all entries */
                 if (cstr_eq(sel_name, "removeAllObjects")) {
                     coll_remove_all(cid);
-                    return value_from_id(receiver);
+                    return value_from_obj(receiver);
                 }
 
                 /* [dict allValues] → array of values */
@@ -3251,7 +3251,7 @@ Value parse_message_send(Parser *p) {
 
                 /* [dict isEqualToDictionary:other] → compare dicts */
                 if (cstr_eq(sel_name, "isEqualToDictionary:") && arg_count >= 1) {
-                    const char *other_s = (const char *)keyword_args[0].obj_val;
+                    const char *other_s = obj_deref(keyword_args[0].obj_val);
                     unsigned int other_cid = coll_id_from_marker(other_s, "NSDict:");
                     if (other_cid == 0) other_cid = coll_id_from_marker(other_s, "NSMutDict:");
                     if (other_cid == 0) return value_from_int(0);
@@ -3275,8 +3275,8 @@ Value parse_message_send(Parser *p) {
                                 if (g_ctx.coll_entries[i].value.is_float && g_ctx.coll_entries[i].value.float_val != g_ctx.coll_entries[other_idx].value.float_val)
                                     return value_from_int(0);
                                 if (g_ctx.coll_entries[i].value.is_id) {
-                                    const char *a = (const char *)g_ctx.coll_entries[i].value.obj_val;
-                                    const char *b = (const char *)g_ctx.coll_entries[other_idx].value.obj_val;
+                                    const char *a = obj_deref(g_ctx.coll_entries[i].value.obj_val);
+                                    const char *b = obj_deref(g_ctx.coll_entries[other_idx].value.obj_val);
                                     if (a == 0 || b == 0) { if (a != b) return value_from_int(0); }
                                     else if (!cstr_eq(a, b)) return value_from_int(0);
                                 }
@@ -3293,7 +3293,7 @@ Value parse_message_send(Parser *p) {
                         int idx = coll_get_nth(cid, cnt - 1);
                         if (idx >= 0) return g_ctx.coll_entries[idx].key;
                     }
-                    return value_from_id((id)0);
+                    return value_from_obj(OBJ_NULL);
                 }
 
                 /* [arr firstObject] → first element or nil */
@@ -3302,7 +3302,7 @@ Value parse_message_send(Parser *p) {
                         int idx = coll_get_nth(cid, 0);
                         if (idx >= 0) return g_ctx.coll_entries[idx].key;
                     }
-                    return value_from_id((id)0);
+                    return value_from_obj(OBJ_NULL);
                 }
 
                 /* [arr arrayByAddingObject:obj] → new array with object appended */
@@ -3338,14 +3338,14 @@ Value parse_message_send(Parser *p) {
                             nslog_append("warning: collection entry table full\n", 38);
                         }
                     }
-                    return value_from_id(receiver);
+                    return value_from_obj(receiver);
                 }
 
                 /* [arr enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) { ... }]
                  * The block argument is a block marker. We iterate the collection
                  * and invoke the block for each element. */
                 if (cstr_eq(sel_name, "enumerateObjectsUsingBlock:") && arg_count >= 1) {
-                    const char *blk_marker = (const char *)keyword_args[0].obj_val;
+                    const char *blk_marker = obj_deref(keyword_args[0].obj_val);
                     unsigned int bid = block_id_from_marker(blk_marker);
                     BlockImpl *blk = block_get(bid);
                     if (blk) {
@@ -3479,7 +3479,7 @@ Value parse_message_send(Parser *p) {
                             g_ctx.var_count = saved_var_count;
                         }
                     }
-                    return value_from_id(receiver);
+                    return value_from_obj(receiver);
                 }
             }
         }
@@ -3505,14 +3505,14 @@ Value parse_message_send(Parser *p) {
             Class target_cls = 0;
             if (keyword_args[0].is_class) {
                 target_cls = keyword_args[0].cls_val;
-            } else if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
+            } else if (keyword_args[0].is_id && keyword_args[0].obj_val != OBJ_NULL) {
                 target_cls = class_for_fdobj_marker(keyword_args[0].obj_val);
-                if (!target_cls) target_cls = object_getClass(keyword_args[0].obj_val);
+                if (!target_cls) target_cls = object_getClass((id)obj_deref(keyword_args[0].obj_val));
             }
             if (target_cls) {
                 Class recv_cls = 0;
-                const char *r = (const char *)receiver;
-                if (r && is_string_pool_pointer(receiver)) {
+                const char *r = obj_deref(receiver);
+                if (r && obj_is_valid(receiver)) {
                     if (cstr_starts(r, "FDObj:")) {
                         recv_cls = class_for_fdobj_marker(receiver);
                     } else {
@@ -3533,7 +3533,7 @@ Value parse_message_send(Parser *p) {
                         else recv_cls = (Class)2;
                     }
                 } else {
-                    recv_cls = object_getClass(receiver);
+                    recv_cls = object_getClass((id)obj_deref(receiver));
                 }
                 while (recv_cls) {
                     if (recv_cls == target_cls) return value_from_int(1);
@@ -3552,14 +3552,14 @@ Value parse_message_send(Parser *p) {
             Class target_cls = 0;
             if (keyword_args[0].is_class) {
                 target_cls = keyword_args[0].cls_val;
-            } else if (keyword_args[0].is_id && keyword_args[0].obj_val != 0) {
+            } else if (keyword_args[0].is_id && keyword_args[0].obj_val != OBJ_NULL) {
                 target_cls = class_for_fdobj_marker(keyword_args[0].obj_val);
-                if (!target_cls) target_cls = object_getClass(keyword_args[0].obj_val);
+                if (!target_cls) target_cls = object_getClass((id)obj_deref(keyword_args[0].obj_val));
             }
             if (target_cls) {
                 Class recv_cls = 0;
-                const char *r = (const char *)receiver;
-                if (r && is_string_pool_pointer(receiver)) {
+                const char *r = obj_deref(receiver);
+                if (r && obj_is_valid(receiver)) {
                     if (cstr_starts(r, "FDObj:")) {
                         recv_cls = class_for_fdobj_marker(receiver);
                     } else {
@@ -3575,7 +3575,7 @@ Value parse_message_send(Parser *p) {
                         else recv_cls = (Class)2;
                     }
                 } else {
-                    recv_cls = object_getClass(receiver);
+                    recv_cls = object_getClass((id)obj_deref(receiver));
                 }
                 return value_from_int(recv_cls == target_cls ? 1 : 0);
             }
@@ -3587,8 +3587,8 @@ Value parse_message_send(Parser *p) {
          * (C strings in the string pool, or interpreter-managed objects),
          * so copy/mutableCopy can return the receiver directly. */
         if ((cstr_eq(sel_name, "copy") || cstr_eq(sel_name, "mutableCopy")) &&
-            target.is_id && receiver != 0) {
-            return value_from_id(receiver);
+            target.is_id && receiver != OBJ_NULL) {
+            return value_from_obj(receiver);
         }
 
         /* NSObject: retain / release / autorelease — no-ops in interpreter.
@@ -3597,7 +3597,7 @@ Value parse_message_send(Parser *p) {
          * autorelease) or void (for release) to avoid "does not respond"
          * errors when code uses ARC patterns. */
         if (cstr_eq(sel_name, "retain") && target.is_id) {
-            return value_from_id(receiver);
+            return value_from_obj(receiver);
         }
         if (cstr_eq(sel_name, "release") && target.is_id) {
             return value_void();
@@ -3605,7 +3605,7 @@ Value parse_message_send(Parser *p) {
         if (cstr_eq(sel_name, "autorelease") && target.is_id) {
             /* In a real runtime, this adds to the current autorelease pool.
              * Here we just return self — the pool stack exists but is a no-op. */
-            return value_from_id(receiver);
+            return value_from_obj(receiver);
         }
         if (cstr_eq(sel_name, "drain") && target.is_id) {
             /* NSAutoreleasePool drain — no-op */
@@ -3615,14 +3615,14 @@ Value parse_message_send(Parser *p) {
         /* NSObject: drain / release / autorelease ... (existing no-ops) */
 
         /* Fall through: check for forwarding before reporting error */
-        if (target.is_id && receiver != 0 && is_string_pool_pointer(receiver) && cstr_starts((const char *)receiver, "FDObj:")) {
+        if (target.is_id && receiver != OBJ_NULL && obj_is_valid(receiver) && cstr_starts(obj_deref(receiver), "FDObj:")) {
              /* 1. Try forwardingTargetForSelector: */
              SEL fwd_target_sel = sel_registerName("forwardingTargetForSelector:");
              unsigned int mi_target = find_interpreter_method(fwd_target_sel, target, receiver, 0);
              if (mi_target < g_ctx.method_count) {
                  Value sel_val = value_from_sel(sel);
                  Value fwd_target = execute_interpreter_method(p, &g_ctx.methods[mi_target], fwd_target_sel, receiver, &sel_val, 1, 0);
-                 if (fwd_target.is_id && fwd_target.obj_val != 0 && fwd_target.obj_val != receiver) {
+                 if (fwd_target.is_id && fwd_target.obj_val != OBJ_NULL && fwd_target.obj_val != receiver) {
                      /* Re-dispatch to new target using eval_source_range trick */
                      InterpVar *tmp = interp_get_or_create_var("__fwd_target");
                      if (tmp) {
@@ -3680,7 +3680,7 @@ Value parse_message_send(Parser *p) {
             nslog_append(" ", 1);
             nslog_append(sel_name, cstr_len(sel_name));
             nslog_append("] does not respond to selector\n", 31);
-            result = value_from_id(0);
+            result = value_from_obj(OBJ_NULL);
             return result;
         }
     }
