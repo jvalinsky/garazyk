@@ -120,29 +120,63 @@ unsigned int find_interpreter_method(SEL sel, Value target, id receiver,
         }
     }
 
+    /* First pass: search for exact class match (most specific) */
     for (mi = 0; mi < g_ctx.method_count; mi++) {
         MethodImpl *method = &g_ctx.methods[mi];
         if (method->selector != sel) continue;
 
-        /* Check if method matches the target */
         if (target.is_class && method->is_class_method) {
-            /* Class method: check class pointer or name */
             if (method->class_ptr == target.cls_val) return mi;
             if (target_class_name) {
                 const char *method_class_name = class_name_for_ptr(method->class_ptr);
-                if (method_class_name && cstr_eq(method_class_name, target_class_name)) {
-                    return mi;
-                }
+                if (method_class_name && cstr_eq(method_class_name, target_class_name)) return mi;
             }
         } else if ((target.is_id || target.is_int) && !method->is_class_method) {
-            /* Instance method: check class pointer or name */
             if (recv_cls && method->class_ptr == recv_cls) return mi;
             if (target_class_name) {
                 const char *method_class_name = class_name_for_ptr(method->class_ptr);
-                if (method_class_name && cstr_eq(method_class_name, target_class_name)) {
-                    return mi;
+                if (method_class_name && cstr_eq(method_class_name, target_class_name)) return mi;
+            }
+        }
+    }
+
+    /* Second pass: walk superclass chain for inherited methods */
+    if (target_class_name && (target.is_id || target.is_int)) {
+        const char *current = target_class_name;
+        unsigned int depth;
+        for (depth = 0; depth < 16; depth++) {
+            const char *super_name = class_get_superclass_name(current);
+            if (!super_name || super_name[0] == '\0') break;
+            for (mi = 0; mi < g_ctx.method_count; mi++) {
+                MethodImpl *method = &g_ctx.methods[mi];
+                if (method->selector != sel) continue;
+                if (method->is_class_method) continue;
+                {
+                    const char *method_class_name = class_name_for_ptr(method->class_ptr);
+                    if (method_class_name && cstr_eq(method_class_name, super_name)) return mi;
                 }
             }
+            current = super_name;
+        }
+    }
+
+    /* Third pass: class method superclass walk */
+    if (target_class_name && target.is_class) {
+        const char *current = target_class_name;
+        unsigned int depth;
+        for (depth = 0; depth < 16; depth++) {
+            const char *super_name = class_get_superclass_name(current);
+            if (!super_name || super_name[0] == '\0') break;
+            for (mi = 0; mi < g_ctx.method_count; mi++) {
+                MethodImpl *method = &g_ctx.methods[mi];
+                if (method->selector != sel) continue;
+                if (!method->is_class_method) continue;
+                {
+                    const char *method_class_name = class_name_for_ptr(method->class_ptr);
+                    if (method_class_name && cstr_eq(method_class_name, super_name)) return mi;
+                }
+            }
+            current = super_name;
         }
     }
     return g_ctx.method_count;
@@ -203,19 +237,22 @@ unsigned int find_interpreter_method_super(SEL sel, Value target, id receiver,
         current_name = parent_name;
     }
 
-    /* Search for methods matching the selector in any superclass */
-    for (mi = 0; mi < g_ctx.method_count; mi++) {
-        MethodImpl *method = &g_ctx.methods[mi];
+    /* Search for methods matching the selector in superclass order
+     * (most specific first: B before A) to respect overriding. */
+    {
         unsigned int si;
-        if (method->selector != sel || method->source_len == 0) continue;
-        if (method->class_ptr == skip_class) continue;
         for (si = 0; si < super_count; si++) {
-            if (method->class_ptr == super_classes[si]) {
-                if (!method->is_class_method && (target.is_id || target.is_int)) {
-                    return mi;
-                }
-                if (method->is_class_method && target.is_class) {
-                    return mi;
+            for (mi = 0; mi < g_ctx.method_count; mi++) {
+                MethodImpl *method = &g_ctx.methods[mi];
+                if (method->selector != sel || method->source_len == 0) continue;
+                if (method->class_ptr == skip_class) continue;
+                if (method->class_ptr == super_classes[si]) {
+                    if (!method->is_class_method && (target.is_id || target.is_int)) {
+                        return mi;
+                    }
+                    if (method->is_class_method && target.is_class) {
+                        return mi;
+                    }
                 }
             }
         }
