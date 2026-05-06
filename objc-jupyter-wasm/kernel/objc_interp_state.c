@@ -658,3 +658,61 @@ Class class_for_fdobj_marker(id receiver) {
     }
     return (Class)0;
 }
+
+/* ── Struct type system ──────────────────────────────────────────── */
+
+/* Look up a StructDef by name. Returns 0 if not found. */
+StructDef *struct_def_find(const char *name) {
+    unsigned int i;
+    for (i = 0; i < g_ctx.struct_def_count; i++) {
+        if (cstr_eq(g_ctx.struct_defs[i].name, name)) {
+            return &g_ctx.struct_defs[i];
+        }
+    }
+    return 0;
+}
+
+/* Register a built-in struct definition. */
+static void struct_register(const char *name, unsigned int field_count,
+                            const char *field_names[], const int field_types[]) {
+    if (g_ctx.struct_def_count >= MAX_STRUCT_DEFS) return;
+    StructDef *sd = &g_ctx.struct_defs[g_ctx.struct_def_count];
+    cstr_copy(sd->name, name, 64);
+    sd->field_count = field_count;
+    {
+        unsigned int fi;
+        for (fi = 0; fi < field_count && fi < MAX_STRUCT_FIELDS; fi++) {
+            cstr_copy(sd->field_names[fi], field_names[fi], 64);
+            sd->field_types[fi] = field_types[fi];
+        }
+    }
+    g_ctx.struct_def_count++;
+}
+
+/* Register all built-in Foundation struct types. */
+void struct_register_builtin(void) {
+    /* NSRange { location: NSUInteger, length: NSUInteger } */
+    {
+        const char *fn[] = { "location", "length" };
+        const int ft[] = { 0, 0 }; /* int */
+        struct_register("NSRange", 2, fn, ft);
+    }
+    /* CGPoint { x: CGFloat, y: CGFloat } */
+    {
+        const char *fn[] = { "x", "y" };
+        const int ft[] = { 1, 1 }; /* float */
+        struct_register("CGPoint", 2, fn, ft);
+    }
+    /* CGSize { width: CGFloat, height: CGFloat } */
+    {
+        const char *fn[] = { "width", "height" };
+        const int ft[] = { 1, 1 }; /* float */
+        struct_register("CGSize", 2, fn, ft);
+    }
+    /* CGRect { origin: CGPoint, size: CGSize } — stored as 4 floats */
+    {
+        const char *fn[] = { "origin.x", "origin.y", "size.width", "size.height" };
+        const int ft[] = { 1, 1, 1, 1 }; /* float */
+        struct_register("CGRect", 4, fn, ft);
+    }
+}
