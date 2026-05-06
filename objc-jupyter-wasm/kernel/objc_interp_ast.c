@@ -1039,7 +1039,7 @@ Value eval_source_range(unsigned int start, unsigned int len,
      * This is needed for method bodies with multiple statements.
      * For control flow (if/while/for), use the two-phase AST approach.
      * For other statements, evaluate directly. */
-    while (p.lex.current.type != TOK_EOF && !p.error) {
+    while (p.lex.current.type != TOK_EOF && !p.error && !g_ctx.return_pending) {
         Token tok = parser_current(&p);
         /* Two-phase AST approach is needed for control flow (if/while/for/switch/do)
          * and @-keywords that are declarations or control flow (@autoreleasepool,
