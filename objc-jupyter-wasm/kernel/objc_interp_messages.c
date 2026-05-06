@@ -685,7 +685,15 @@ Value parse_message_send(Parser *p) {
         /* Built-in: [obj valueForKey:] */
         if (cstr_eq(sel_name, "valueForKey:") && target.is_id && receiver != 0 && arg_count == 1) {
             const char *key = (const char *)args[0];
-            if (key) {
+            /* For collection markers, fall through to collection dispatch
+             * which handles valueForKey: as objectForKey: */
+            const char *r = (const char *)receiver;
+            if (is_string_pool_pointer(receiver) &&
+                (cstr_starts(r, "NSDict:") || cstr_starts(r, "NSMutDict:") ||
+                 cstr_starts(r, "NSArr:") || cstr_starts(r, "NSMutArr:") ||
+                 cstr_starts(r, "NSSet:"))) {
+                /* Fall through to collection dispatch below */
+            } else if (key) {
                 unsigned int pi;
                 /* 1. Try property getter */
                 for (pi = 0; pi < g_ctx.property_count; pi++) {
@@ -699,8 +707,10 @@ Value parse_message_send(Parser *p) {
                 /* 2. Try raw ivar access */
                 Value *v = instance_var_get(receiver, key);
                 if (v) return *v;
+                return value_from_id(0);
+            } else {
+                return value_from_id(0);
             }
-            return value_from_id(0);
         }
 
         /* Built-in: [obj setValue:forKey:] */
