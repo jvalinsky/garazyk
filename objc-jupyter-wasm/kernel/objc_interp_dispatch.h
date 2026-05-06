@@ -16,4 +16,9 @@ void eval_nslog(struct Parser *p);
 /* Protocol conformance */
 int class_conforms_to_protocol(const char *class_name, const char *protocol_name);
 
+/* Class hierarchy helpers */
+const char *class_get_superclass_name(const char *class_name);
+Class class_ptr_for_name(const char *name);
+const char *class_name_for_ptr(Class cls);
+
 #endif /* OBJC_INTERP_DISPATCH_H */
