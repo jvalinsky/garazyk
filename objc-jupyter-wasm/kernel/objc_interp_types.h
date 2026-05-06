@@ -511,7 +511,10 @@ typedef enum {
     AST_PROTOCOL,  /* @protocol declaration — executed at parse time */
     AST_TRY_CATCH,  /* @try / @catch / @finally */
     AST_THROW,  /* @throw statement */
-    AST_AUTORELEASEPOOL  /* @autoreleasepool { ... } */
+    AST_AUTORELEASEPOOL,  /* @autoreleasepool { ... } */
+    AST_LOGICAL_AND,      /* && — short-circuit */
+    AST_LOGICAL_OR,       /* || — short-circuit */
+    AST_TERNARY           /* ?: — short-circuit */
 } AstNodeType;
 
 typedef struct AstNode AstNode;
@@ -577,6 +580,20 @@ struct AstNode {
             unsigned int source_start;
             unsigned int source_len;
         } source_range;
+        struct { /* AST_LOGICAL_AND, AST_LOGICAL_OR */
+            unsigned int left_start;
+            unsigned int left_len;
+            unsigned int right_start;
+            unsigned int right_len;
+        } logical;
+        struct { /* AST_TERNARY */
+            unsigned int cond_start;
+            unsigned int cond_len;
+            unsigned int true_start;
+            unsigned int true_len;
+            unsigned int false_start;
+            unsigned int false_len;
+        } ternary;
     };
 };
 
