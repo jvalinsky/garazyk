@@ -11,6 +11,7 @@
 #import "AppView/Server/AppViewDatabase.h"
 #import "AppView/Server/AppViewTypes.h"
 #import "AppView/Server/Ingest/AppViewIngestEngine.h"
+#import "Sync/Firehose/Firehose.h"
 
 // ---------------------------------------------------------------------------
 // Tracking delegate
@@ -130,6 +131,36 @@
     XCTAssertNotNil(engine);
     XCTAssertFalse(engine.isRunning);
     XCTAssertEqual(engine.checkpointIntervalMs, 5000u);
+}
+
+- (void)testBackpressureMarksRepoDirtyAndDurable {
+    NSError *err = nil;
+    AppViewRepoSyncState *state = [[AppViewRepoSyncState alloc] initWithDID:@"did:plc:lagged"];
+    state.status = AppViewRepoSyncStatusSynced;
+    state.lastRev = @"rev0";
+    XCTAssertTrue([self.db upsertRepoSyncState:state error:&err]);
+
+    AppViewIngestEngine *engine = [[AppViewIngestEngine alloc]
+        initWithDatabase:self.db relayURLs:@[]];
+    engine.maxLagForBackpressure = 0;
+
+    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    event.seq = 10;
+    event.repo = @"did:plc:lagged";
+    event.rev = @"rev1";
+    event.since = @"rev0";
+    event.ops = @[];
+    event.blocks = [NSData data];
+
+    [engine _handleCommitEvent:event fromRelay:@"wss://test.relay"];
+
+    AppViewRepoSyncState *loaded = [self.db loadRepoSyncStateForDID:@"did:plc:lagged" error:&err];
+    XCTAssertEqual(loaded.status, AppViewRepoSyncStatusDirty);
+    XCTAssertEqual([self.db durableCursorForRelayURL:@"wss://test.relay"], 10LL);
+
+    NSArray<NSDictionary *> *events = [self.db loadStoredEventsAfterCursor:0 limit:10 error:&err];
+    XCTAssertEqual(events.count, 1u);
+    XCTAssertEqualObjects(events[0][@"event_type"], @"dirty_repair");
 }
 
 @end

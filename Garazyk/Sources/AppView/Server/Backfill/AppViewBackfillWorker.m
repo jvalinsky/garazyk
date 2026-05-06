@@ -145,8 +145,6 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
         return;
     }
 
-    // Success: mark synced
-    [_database markRepoSynced:did lastRev:lastRev ?: @"" error:nil];
     PDS_LOG_INFO(@"[AppView BackfillWorker] Completed backfill for %@ (rev=%@)", did, lastRev);
     [_delegate worker:self didCompleteForDID:did lastRev:lastRev ?: @""];
 }
@@ -250,6 +248,17 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
 
     NSString *lastRev = nil;
     NSMutableArray<NSDictionary *> *records = [NSMutableArray array];
+    NSMutableArray<NSDictionary *> *snapshotRecords = [NSMutableArray array];
+    NSMutableArray<NSDictionary *> *snapshotBlocks = [NSMutableArray array];
+
+    for (CARBlock *block in reader.blocks) {
+        if (!block.cid.bytes || !block.data) continue;
+        [snapshotBlocks addObject:@{
+            @"cid_data": block.cid.bytes,
+            @"block_data": block.data,
+            @"content_type": @"application/cbor"
+        }];
+    }
 
     // Find and parse the data MST from commit object
     NSArray<MSTEntry *> *entries = nil;
@@ -353,16 +362,42 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
                     @"collection": collection,
                     @"rkey": rkey ?: @""
                 }];
+
+                NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey ?: @""];
+                NSString *jsonValue = nil;
+                NSData *jsonData = [NSJSONSerialization dataWithJSONObject:mutableRecord.count > 0 ? [mutableRecord copy] : record
+                                                                    options:0
+                                                                      error:nil];
+                if (jsonData) {
+                    jsonValue = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+                }
+                NSMutableDictionary *snapshotRecord = [@{
+                    @"uri": uri,
+                    @"collection": collection,
+                    @"rkey": rkey ?: @"",
+                    @"cid": valueCID.stringValue ?: @""
+                } mutableCopy];
+                if (jsonValue) snapshotRecord[@"value"] = jsonValue;
+                [snapshotRecords addObject:[snapshotRecord copy]];
             }
         }
     }
 
     PDS_LOG_INFO(@"[AppView BackfillWorker] Found %lu records in CAR for %@", (unsigned long)records.count, did);
+    NSError *snapshotError = nil;
+    if (![_database saveRepoSnapshotForDID:did
+                                   lastRev:lastRev ?: @""
+                                   records:snapshotRecords
+                                    blocks:snapshotBlocks
+                                     error:&snapshotError]) {
+        if (error) *error = snapshotError;
+        return nil;
+    }
+
     for (NSDictionary *item in records) {
         NSDictionary *record = item[@"record"];
         NSString *cid = item[@"cid"];
         NSString *collection = item[@"collection"];
-        NSString *rkey = item[@"rkey"];
         
         PDS_LOG_DEBUG(@"[AppView BackfillWorker] Calling indexers for collection=%@", collection);
         BOOL wasIndexed = NO;
@@ -392,31 +427,8 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
                 break;
             }
         }
-        
         if (!wasIndexed) {
-            NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey ?: @""];
-            NSString *handle = nil;
-            NSError *saveErr = nil;
-            NSString *jsonValue = nil;
-            NSData *jsonData = [NSJSONSerialization dataWithJSONObject:record options:0 error:nil];
-            if (jsonData) {
-                jsonValue = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-            }
-            BOOL ok = [_database saveRecordWithURI:uri
-                                            did:did
-                                      collection:collection
-                                            rkey:rkey ?: @""
-                                             cid:cid ?: @""
-                                          handle:handle
-                                           value:jsonValue
-                                      subjectDid:nil
-                                           error:&saveErr];
-            if (!ok) {
-                PDS_LOG_DEBUG(@"[AppView BackfillWorker] Fallback save failed for %@: %@",
-                            uri, saveErr.localizedDescription);
-            } else {
-                PDS_LOG_DEBUG(@"[AppView BackfillWorker] Fallback indexed %@", uri);
-            }
+            PDS_LOG_DEBUG(@"[AppView BackfillWorker] No specialized indexer for %@; generic snapshot already stored", collection);
         }
     }
 

@@ -33,11 +33,73 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString * const AppViewDatabaseErrorDomain;
 
 /*!
+ @protocol AppViewRecordStore
+
+ @abstract Internal durable record/event boundary for AppView indexing.
+ */
+@protocol AppViewRecordStore <NSObject>
+
+/*!
+ @method saveRepoSnapshotForDID:lastRev:records:blocks:error:
+
+ @abstract Persist a verified repo snapshot before specialized materializers run.
+
+ @discussion Each record dictionary must contain uri, collection, rkey, cid, and
+ may contain value and subject_did. Each block dictionary must contain cid_data
+ and block_data. The operation is transactional and also appends an internal
+ historical event plus marks the repo synced.
+ */
+- (BOOL)saveRepoSnapshotForDID:(NSString *)did
+                       lastRev:(NSString *)lastRev
+                       records:(NSArray<NSDictionary *> *)records
+                        blocks:(NSArray<NSDictionary *> *)blocks
+                         error:(NSError **)error;
+
+/*!
+ @method appendStoredEventWithType:seq:did:rev:cid:rawEnvelope:error:
+
+ @abstract Append a durable internal cursor event. Duplicate commit triples are
+ ignored idempotently.
+ */
+- (BOOL)appendStoredEventWithType:(NSString *)eventType
+                              seq:(int64_t)seq
+                              did:(nullable NSString *)did
+                              rev:(nullable NSString *)rev
+                              cid:(nullable NSString *)cid
+                      rawEnvelope:(NSData *)rawEnvelope
+                            error:(NSError **)error;
+
+/*!
+ @method loadStoredEventsAfterCursor:limit:error:
+
+ @abstract Read internal events after a durable cursor, ordered by cursor ASC.
+ */
+- (nullable NSArray<NSDictionary *> *)loadStoredEventsAfterCursor:(int64_t)cursor
+                                                           limit:(NSInteger)limit
+                                                           error:(NSError **)error;
+
+/*!
+ @method durableCursorForRelayURL:
+
+ @abstract Last event seq durable for a relay connection.
+ */
+- (int64_t)durableCursorForRelayURL:(NSString *)relayURL;
+
+/*!
+ @method markDurableCursor:forRelayURL:
+
+ @abstract Advance the in-memory durable cursor after storage succeeds.
+ */
+- (void)markDurableCursor:(int64_t)seq forRelayURL:(NSString *)relayURL;
+
+@end
+
+/*!
  @class AppViewDatabase
  
  @abstract Manages the AppView SQLite database.
  */
-@interface AppViewDatabase : NSObject <PDSQueryDatabase>
+@interface AppViewDatabase : NSObject <PDSQueryDatabase, AppViewRecordStore>
 
 /*!
  @method initWithPath:error:
