@@ -899,8 +899,40 @@ AstNode *parse_statement_ast(Parser *p) {
      *
      * We also detect &&, ||, and ?: at the outermost precedence level
      * (not inside parentheses, brackets, or braces) and create proper
-     * AST nodes for short-circuit evaluation. */
+     * AST nodes for short-circuit evaluation.
+     *
+     * However, if the statement starts with a type keyword (int, float,
+     * id, etc.), it's a variable declaration — the ternary scanner
+     * would incorrectly include the "Type name = " prefix in the
+     * condition source range. Skip ternary/&&/|| detection for
+     * declarations and let the direct parse path handle them. */
     {
+        int starts_with_type = 0;
+        if (tok.type == TOK_IDENTIFIER) {
+            /* C builtin types */
+            if (cstr_eq(tok.text, "int") || cstr_eq(tok.text, "float") ||
+                cstr_eq(tok.text, "double") || cstr_eq(tok.text, "char") ||
+                cstr_eq(tok.text, "void") || cstr_eq(tok.text, "long") ||
+                cstr_eq(tok.text, "short") || cstr_eq(tok.text, "unsigned") ||
+                cstr_eq(tok.text, "signed") || cstr_eq(tok.text, "BOOL") ||
+                cstr_eq(tok.text, "NSInteger") || cstr_eq(tok.text, "CGFloat") ||
+                cstr_eq(tok.text, "NSUInteger") ||
+                /* Storage qualifiers that precede types */
+                cstr_eq(tok.text, "const") || cstr_eq(tok.text, "static") ||
+                cstr_eq(tok.text, "volatile") || cstr_eq(tok.text, "extern") ||
+                cstr_eq(tok.text, "register") || cstr_eq(tok.text, "auto") ||
+                cstr_eq(tok.text, "__block") ||
+                /* ObjC type keywords */
+                cstr_eq(tok.text, "id") || cstr_eq(tok.text, "SEL") ||
+                cstr_eq(tok.text, "Class") || cstr_eq(tok.text, "IMP") ||
+                cstr_eq(tok.text, "struct") || cstr_eq(tok.text, "enum") ||
+                cstr_eq(tok.text, "typedef") ||
+                /* Known Foundation class names */
+                objc_lookUpClass(tok.text) != 0) {
+                starts_with_type = 1;
+            }
+        }
+
         unsigned int start = p->lex.token_start;
         int brace_depth = 0;
         int paren_depth = 0;
@@ -931,8 +963,11 @@ AstNode *parse_statement_ast(Parser *p) {
                 break;
             }
             /* Detect lazy operators at the outermost nesting level.
-             * || has the lowest precedence, so it splits first. */
-            if (paren_depth == 0 && bracket_depth == 0 && brace_depth == 0) {
+             * || has the lowest precedence, so it splits first.
+             * Skip detection for type declarations (starts_with_type)
+             * because the condition source range would incorrectly
+             * include the "Type name = " prefix. */
+            if (paren_depth == 0 && bracket_depth == 0 && brace_depth == 0 && !starts_with_type) {
                 if (!found_or && (tt == TOK_LOGICAL_OR || tt == TOK_OR)) {
                     first_or_pos = p->lex.token_start;
                     found_or = 1;
