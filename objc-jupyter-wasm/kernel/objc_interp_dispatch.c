@@ -78,9 +78,9 @@ int interpreter_method_matches(MethodImpl *method, SEL sel, Value target,
                    cstr_starts(obj_deref(receiver), "FDObj:")) {
             if (class_for_fdobj_marker(receiver) != method->class_ptr) return 0;
         } else if (target.is_id && receiver != OBJ_NULL) {
-            Class recv_cls;
-            recv_cls = object_getClass((id)obj_deref(receiver));
-            if (recv_cls != 0 && method->class_ptr != recv_cls) return 0;
+            /* Skip object_getClass for kernel markers — they're not
+             * real ObjC objects, so we can't dereference them as such.
+             * Fall through to the default match-by-type check. */
         } else {
             return 0;
         }
@@ -109,8 +109,36 @@ unsigned int find_interpreter_method(SEL sel, Value target, ObjId receiver,
         const char *recv_marker = obj_deref(receiver);
         if (obj_is_valid(receiver) && cstr_starts(recv_marker, "FDObj:")) {
             recv_cls = class_for_fdobj_marker(receiver);
+        } else if (recv_marker && cstr_starts(recv_marker, "NSArr:")) {
+            recv_cls = (Class)objc_lookUpClass("NSArray");
+        } else if (recv_marker && cstr_starts(recv_marker, "NSMutArr:")) {
+            recv_cls = (Class)objc_lookUpClass("NSMutableArray");
+        } else if (recv_marker && cstr_starts(recv_marker, "NSDict:")) {
+            recv_cls = (Class)objc_lookUpClass("NSDictionary");
+        } else if (recv_marker && cstr_starts(recv_marker, "NSMutDict:")) {
+            recv_cls = (Class)objc_lookUpClass("NSMutableDictionary");
+        } else if (recv_marker && cstr_starts(recv_marker, "NSSet:")) {
+            recv_cls = (Class)objc_lookUpClass("NSSet");
+        } else if (recv_marker && cstr_starts(recv_marker, "NSBlock:")) {
+            recv_cls = (Class)objc_lookUpClass("NSBlock");
+        } else if (recv_marker && cstr_starts(recv_marker, "NSData:")) {
+            recv_cls = (Class)objc_lookUpClass("NSData");
+        } else if (recv_marker && cstr_starts(recv_marker, "NSURLReq:")) {
+            recv_cls = (Class)objc_lookUpClass("NSURLRequest");
+        } else if (recv_marker && cstr_starts(recv_marker, "NSURLTask:")) {
+            recv_cls = (Class)objc_lookUpClass("NSURLSessionTask");
+        } else if (recv_marker && cstr_starts(recv_marker, "NSNull:")) {
+            recv_cls = (Class)objc_lookUpClass("NSNull");
+        } else if (recv_marker && cstr_starts(recv_marker, "NSCharSet:")) {
+            recv_cls = (Class)objc_lookUpClass("NSCharacterSet");
+        } else if (recv_marker && cstr_starts(recv_marker, "FDProt:")) {
+            recv_cls = (Class)0; /* protocols don't have runtime classes */
         } else {
-            recv_cls = object_getClass((id)recv_marker);
+            /* Not a known kernel marker — skip object_getClass in WASM
+             * since string pool pointers are not valid ObjC objects.
+             * recv_cls stays 0, so method matching falls through to
+             * superclass chain or the built-in message handler. */
+            recv_cls = (Class)0;
         }
         if (recv_cls) {
             target_class_name = class_name_for_ptr(recv_cls);
