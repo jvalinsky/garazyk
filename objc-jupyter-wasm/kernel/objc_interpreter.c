@@ -739,6 +739,7 @@ void objc_interp_init(void) {
             "NSArray", "NSMutableArray", "NSDictionary",
             "NSMutableDictionary", "NSSet", "NSData",
             "NSCharacterSet", "NSJSONSerialization",
+            "NSMutableString",
             "NSURL", "NSMutableURLRequest", "NSURLSession", "NSURLSessionDataTask",
             "CID", "CryptoUtils", "ATProtoCBORSerialization"
         };
@@ -761,6 +762,7 @@ void objc_interp_init(void) {
             "NSString", "NSNumber", "NSArray", "NSMutableArray",
             "NSDictionary", "NSMutableDictionary", "NSSet", "NSData",
             "NSCharacterSet", "NSJSONSerialization",
+            "NSMutableString",
             "NSURL", "NSMutableURLRequest", "NSURLSession", "NSURLSessionDataTask",
             "CID", "CryptoUtils", "ATProtoCBORSerialization"
         };
