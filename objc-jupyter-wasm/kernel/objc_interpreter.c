@@ -718,6 +718,7 @@ void objc_interp_init(void) {
     g_ctx.property_count = 0;
     g_ctx.instance_var_count = 0;
     g_ctx.next_coll_id = 1;
+    coll_init();
     g_ctx.coll_entry_count = 0;
     g_ctx.next_block_id = 1;
     g_ctx.block_count = 0;
@@ -798,6 +799,8 @@ int objc_interp(const char *source, unsigned int length) {
     g_ctx.current_exception = value_void();
     g_ctx.ast_count = 0;
     g_ctx.parse_depth = 0;
+    g_ctx.eval_depth = 0;
+    g_ctx.loop_iterations = 0;
 
     /* Don't reset variable table — it persists across cells */
 
@@ -906,6 +909,7 @@ void objc_interp_full_reset(void) {
      * Unlike objc_interp_reset which preserves variables/methods across cells,
      * this zeroes everything and re-initializes Foundation classes. */
     memset(&g_ctx, 0, sizeof(g_ctx));
+    coll_init();
     g_ctx.next_coll_id = 1;
     g_ctx.next_block_id = 1;
     g_ctx.next_enumerator_id = 1;

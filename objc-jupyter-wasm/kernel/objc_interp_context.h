@@ -59,6 +59,10 @@ typedef struct InterpContext {
 
     /* ── Collection side table ─────────────────────────────── */
     unsigned int next_coll_id;
+    unsigned int coll_generation[MAX_COLLECTIONS]; /* generation counter per slot */
+    int coll_slot_active[MAX_COLLECTIONS];         /* 1 if slot is in use, 0 if free */
+    int coll_free_list;                            /* head of free slot list (-1 = empty) */
+    int coll_free_next[MAX_COLLECTIONS];           /* next pointer for free list */
     CollEntry coll_entries[512];
     unsigned int coll_entry_count;
 
@@ -125,6 +129,15 @@ typedef struct InterpContext {
     unsigned int ast_count;
     int break_pending;
     int continue_pending;
+
+    /* ── Side-effect suppression for short-circuit evaluation ── */
+    int suppress_side_effects; /* when set, message sends and variable mutations are no-ops */
+
+    /* ── AST evaluation depth counter ── */
+    unsigned int eval_depth; /* incremented in eval_ast, checked against MAX_EVAL_DEPTH */
+
+    /* ── Loop iteration guard ── */
+    unsigned int loop_iterations; /* total across all loops in one eval, checked against MAX_LOOP_ITERATIONS */
 } InterpContext;
 
 /* Global interpreter context, defined in objc_interpreter.c */
