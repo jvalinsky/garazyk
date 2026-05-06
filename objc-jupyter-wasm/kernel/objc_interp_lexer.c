@@ -96,6 +96,23 @@ void lexer_skip_whitespace_and_comments(Lexer *lex) {
 }
 
 Token lexer_next_token(Lexer *lex) {
+    /* Early bounds check: if the lexer is already past the source, return EOF
+     * immediately without calling lexer_skip_whitespace_and_comments, which
+     * may access invalid memory when the lexer state is stale. */
+    if (lex->pos >= lex->source_len) {
+        Token tok;
+        lex->token_start = lex->pos; /* update so source-range
+                                       * computations that use
+                                       * token_start as the end
+                                       * boundary include the last
+                                       * token */
+        tok.type = TOK_EOF;
+        tok.line = lex->line;
+        tok.column = lex->column;
+        tok.text[0] = '\0';
+        tok.truncated = 0;
+        return tok;
+    }
     Token tok;
     unsigned int i = 0;
 
