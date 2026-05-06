@@ -4,9 +4,9 @@
 #include "objc_interp_types.h"
 
 /* Method dispatch */
-unsigned int find_interpreter_method(SEL sel, Value target, id receiver, int is_setter);
-unsigned int find_interpreter_method_super(SEL sel, Value target, id receiver, Class skip_class);
-Value execute_interpreter_method(struct Parser *p, MethodImpl *method, SEL sel, id receiver,
+unsigned int find_interpreter_method(SEL sel, Value target, ObjId receiver, int is_setter);
+unsigned int find_interpreter_method_super(SEL sel, Value target, ObjId receiver, Class skip_class);
+Value execute_interpreter_method(struct Parser *p, MethodImpl *method, SEL sel, ObjId receiver,
                                  const Value *keyword_args, unsigned int keyword_count,
                                  int return_receiver_on_void);
 

@@ -27,7 +27,7 @@ extern InterpVar *interp_find_var(const char *name);
 
 /* string pool and FDObj helpers */
 extern int is_string_pool_pointer(id ptr);
-extern Class class_for_fdobj_marker(id receiver);
+extern Class class_for_fdobj_marker(ObjId receiver);
 
 /* Forward declarations for this file */
 const char *class_get_superclass_name(const char *class_name);
@@ -69,22 +69,18 @@ static InterpVar *dispatch_get_or_create_var(const char *name) {
 }
 
 int interpreter_method_matches(MethodImpl *method, SEL sel, Value target,
-                               id receiver, int instance_only) {
+                               ObjId receiver, int instance_only) {
     if (method == 0 || method->selector != sel || method->source_len == 0) return 0;
 
     if (method->class_ptr != (Class)0) {
         if (target.is_class && method->class_ptr == target.cls_val) {
             /* class target matches */
-        } else if (target.is_id && is_string_pool_pointer(receiver) &&
-                   cstr_starts((const char *)receiver, "FDObj:")) {
+        } else if (target.is_id && obj_is_valid(receiver) &&
+                   cstr_starts(obj_deref(receiver), "FDObj:")) {
             if (class_for_fdobj_marker(receiver) != method->class_ptr) return 0;
-        } else if (target.is_id && receiver != 0) {
-            const char *ptr = (const char *)receiver;
+        } else if (target.is_id && receiver != OBJ_NULL) {
             Class recv_cls;
-            if (ptr >= g_ctx.string_pool && ptr < g_ctx.string_pool + OBJC_INTERP_STRING_POOL_SIZE) {
-                return 0;
-            }
-            recv_cls = object_getClass(receiver);
+            recv_cls = object_getClass((id)obj_deref(receiver));
             if (recv_cls != 0 && method->class_ptr != recv_cls) return 0;
         } else {
             return 0;
@@ -99,21 +95,23 @@ int interpreter_method_matches(MethodImpl *method, SEL sel, Value target,
     return 0;
 }
 
-unsigned int find_interpreter_method(SEL sel, Value target, id receiver,
-                                        int instance_only) {
+unsigned int find_interpreter_method(SEL sel, Value target, ObjId receiver,
+                                        int is_setter) {
     unsigned int mi;
     const char *target_class_name = 0;
     Class recv_cls = (Class)0;
+    (void)is_setter;
 
     /* Get target class information */
     if (target.is_class) {
         recv_cls = (Class)target.cls_val;
         target_class_name = class_name_for_ptr(recv_cls);
-    } else if (target.is_id && receiver != 0) {
-        if (is_string_pool_pointer(receiver)) {
+    } else if (target.is_id && receiver != OBJ_NULL) {
+        const char *recv_marker = obj_deref(receiver);
+        if (obj_is_valid(receiver) && cstr_starts(recv_marker, "FDObj:")) {
             recv_cls = class_for_fdobj_marker(receiver);
         } else {
-            recv_cls = object_getClass(receiver);
+            recv_cls = object_getClass((id)recv_marker);
         }
         if (recv_cls) {
             target_class_name = class_name_for_ptr(recv_cls);
@@ -237,9 +235,10 @@ void mark_class_initialized(Class cls) {
  * and search for methods matching the selector in any superclass.
  * This implements [super selector:] by looking up the method in the
  * superclass chain rather than the current class. */
-unsigned int find_interpreter_method_super(SEL sel, Value target, id receiver,
+unsigned int find_interpreter_method_super(SEL sel, Value target, ObjId receiver,
                                            Class skip_class) {
     unsigned int mi;
+    (void)receiver;
     /* Collect the set of superclass class_ptrs by walking the hierarchy */
     Class super_classes[16]; /* max 16 levels of inheritance */
     unsigned int super_count = 0;
@@ -285,7 +284,7 @@ int bind_method_var(const char *name, Value value) {
     return 0;
 }
 
-void inject_synthesized_ivars(id receiver) {
+void inject_synthesized_ivars(ObjId receiver) {
     unsigned int pi;
     for (pi = 0; pi < g_ctx.property_count; pi++) {
         if (g_ctx.properties[pi].synthesized &&
@@ -298,7 +297,7 @@ void inject_synthesized_ivars(id receiver) {
                     interp_set_var_from_value(ivar_var, *stored);
                 } else {
                     interp_set_var_from_value(ivar_var,
-                        g_ctx.properties[pi].is_int ? value_from_int(0) : value_from_id(0));
+                        g_ctx.properties[pi].is_int ? value_from_int(0) : value_from_obj(OBJ_NULL));
                 }
             }
         }
@@ -308,7 +307,7 @@ void inject_synthesized_ivars(id receiver) {
     {
         /* Find the class name for the receiver */
         const char *recv_class = 0;
-        const char *recv_marker = (const char *)receiver;
+        const char *recv_marker = obj_deref(receiver);
         if (cstr_starts(recv_marker, "FDObj:")) {
             recv_class = recv_marker + 6;
         }
@@ -334,7 +333,7 @@ void inject_synthesized_ivars(id receiver) {
                                 interp_set_var_from_value(ivar_var, *stored);
                             } else {
                                 interp_set_var_from_value(ivar_var,
-                                    g_ctx.class_ivars[ci].is_int ? value_from_int(0) : value_from_id(0));
+                                    g_ctx.class_ivars[ci].is_int ? value_from_int(0) : value_from_obj(OBJ_NULL));
                             }
                         }
                     }
@@ -344,7 +343,7 @@ void inject_synthesized_ivars(id receiver) {
     }
 }
 
-void write_back_synthesized_ivars(struct Parser *p, id receiver) {
+void write_back_synthesized_ivars(struct Parser *p, ObjId receiver) {
     unsigned int pi;
     for (pi = 0; pi < g_ctx.property_count; pi++) {
         if (g_ctx.properties[pi].synthesized &&
@@ -363,7 +362,7 @@ void write_back_synthesized_ivars(struct Parser *p, id receiver) {
     /* Also write back explicit class ivars (from @interface { } blocks) */
     {
         const char *recv_class = 0;
-        const char *recv_marker = (const char *)receiver;
+        const char *recv_marker = obj_deref(receiver);
         if (cstr_starts(recv_marker, "FDObj:")) {
             recv_class = recv_marker + 6;
         }
@@ -398,18 +397,18 @@ void write_back_synthesized_ivars(struct Parser *p, id receiver) {
 }
 
 Value execute_interpreter_method(struct Parser *p, MethodImpl *method, SEL sel,
-                                 id receiver, const Value *args,
-                                 unsigned int arg_count,
+                                 ObjId receiver, const Value *keyword_args,
+                                 unsigned int keyword_count,
                                  int return_receiver_on_void) {
     /* When side effects are suppressed (short-circuit evaluation of &&/||/?:),
      * skip method execution entirely and return nil. */
     if (g_ctx.suppress_side_effects) {
-        return value_from_id(0);
+        return value_from_obj(OBJ_NULL);
     }
 
     unsigned int saved_var_count = g_ctx.var_count;
     unsigned int saved_scope_base = g_ctx.var_scope_base;
-    Value return_val = return_receiver_on_void ? value_from_id(receiver) : value_void();
+    Value return_val = return_receiver_on_void ? value_from_obj(receiver) : value_void();
     unsigned int ai;
 
     g_ctx.var_scope_base = g_ctx.var_count;
@@ -421,14 +420,14 @@ Value execute_interpreter_method(struct Parser *p, MethodImpl *method, SEL sel,
         Class saved_class_ptr = g_ctx.current_class_ptr;
         g_ctx.current_class_ptr = method->class_ptr;
 
-    if (bind_method_var("self", value_from_id(receiver)) != 0 ||
+    if (bind_method_var("self", value_from_obj(receiver)) != 0 ||
         bind_method_var("_cmd", value_from_sel(sel)) != 0) {
         parser_error(p, "variable table full (max 1024)");
         goto done;
     }
 
-    for (ai = 0; ai < method->arg_count && ai < 8 && ai < arg_count; ai++) {
-        if (bind_method_var(method->arg_names[ai], args[ai]) != 0) {
+    for (ai = 0; ai < method->arg_count && ai < 8 && ai < keyword_count; ai++) {
+        if (bind_method_var(method->arg_names[ai], keyword_args[ai]) != 0) {
             parser_error(p, "variable table full (max 1024)");
             goto done;
         }
@@ -472,8 +471,8 @@ void eval_nslog(struct Parser *p) {
      * For @"..." literals, the id points to the string pool entry
      * which is a null-terminated C string. */
     fmt = 0;
-    if (fmt_val.is_id && fmt_val.obj_val != 0) {
-        fmt = (const char *)fmt_val.obj_val;
+    if (fmt_val.is_id && fmt_val.obj_val != OBJ_NULL) {
+        fmt = obj_deref(fmt_val.obj_val);
     }
 
     /* Parse remaining arguments (comma-separated) */
@@ -502,8 +501,8 @@ void eval_nslog(struct Parser *p) {
 
     {
         Value result = format_values_to_pool(fmt, args, arg_count);
-        if (result.is_id && result.obj_val != 0) {
-            const char *s = (const char *)result.obj_val;
+        if (result.is_id && result.obj_val != OBJ_NULL) {
+            const char *s = obj_deref(result.obj_val);
             nslog_append(s, cstr_len(s));
         }
     }
