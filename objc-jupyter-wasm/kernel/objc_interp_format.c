@@ -134,10 +134,10 @@ Value format_values_to_pool(const char *fmt, Value *args, int arg_count) {
     int arg_idx = 0;
 
     if (fmt == 0) {
-        char *r = string_pool_alloc(7);
-        if (r == 0) return value_from_obj(OBJ_NULL);
-        cstr_copy(r, "(null)", 7);
-        return value_from_id((id)r);
+        ObjId h = obj_alloc(7);
+        if (h == OBJ_NULL) return value_from_obj(OBJ_NULL);
+        cstr_copy(obj_deref_mut(h), "(null)", 7);
+        return value_from_obj(h);
     }
 
     while (fmt[fi] != '\0' && pos < sizeof(buf) - 1) {
@@ -656,10 +656,10 @@ Value format_values_to_pool(const char *fmt, Value *args, int arg_count) {
 
     {
         unsigned int needed = pos + 1;
-        char *result = string_pool_alloc(needed);
-        if (result == 0) return value_from_obj(OBJ_NULL);
-        cstr_copy(result, buf, needed);
-        return value_from_id((id)result);
+        ObjId h = obj_alloc(needed);
+        if (h == OBJ_NULL) return value_from_obj(OBJ_NULL);
+        cstr_copy(obj_deref_mut(h), buf, needed);
+        return value_from_obj(h);
     }
 }
 

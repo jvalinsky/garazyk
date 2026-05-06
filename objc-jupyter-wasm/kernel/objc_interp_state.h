@@ -74,6 +74,7 @@ int is_string_pool_pointer(id value);
 
 /* Class lookup for FDObj: markers */
 Class class_for_fdobj_marker(ObjId receiver);
+ObjId fdobj_marker_for_class(Class cls);
 
 /* Struct type system */
 StructDef *struct_def_find(const char *name);
@@ -81,6 +82,7 @@ void struct_register_builtin(void);
 
 /* Class lookup for FDObj: markers */
 Class class_for_fdobj_marker(ObjId receiver);
+ObjId fdobj_marker_for_class(Class cls);
 
 /* Interrupt / stream / error helpers */
 int interp_should_interrupt(void);
