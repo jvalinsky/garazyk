@@ -371,17 +371,15 @@ Value parse_message_send(Parser *p) {
             if (target_class_name) {
                 unsigned int name_len = cstr_len(target_class_name);
                 unsigned int needed = 6 + name_len + 1;
-                char *buf = string_pool_alloc(needed);
-                if (buf == 0) {
-                    /* String pool exhausted. Returning a literal sentinel
-                     * here would be misinterpreted by downstream FDObj:
-                     * checks as a Foundation object of class "overflow". */
+                ObjId h = obj_alloc(needed);
+                if (h == OBJ_NULL) {
                     parser_error(p, "string pool exhausted ([alloc])");
                     return value_void();
                 }
+                char *buf = obj_deref_mut(h);
                 cstr_copy(buf, "FDObj:", needed);
                 cstr_copy(buf + 6, target_class_name, needed - 6);
-                return value_from_id((id)buf);
+                return value_from_obj(h);
             }
             return value_from_obj(OBJ_NULL);
         }
@@ -391,14 +389,15 @@ Value parse_message_send(Parser *p) {
             if (target_class_name) {
                 unsigned int name_len = cstr_len(target_class_name);
                 unsigned int needed = 6 + name_len + 1;
-                char *buf = string_pool_alloc(needed);
-                if (buf == 0) {
+                ObjId h = obj_alloc(needed);
+                if (h == OBJ_NULL) {
                     parser_error(p, "string pool exhausted ([new])");
                     return value_void();
                 }
+                char *buf = obj_deref_mut(h);
                 cstr_copy(buf, "FDObj:", needed);
                 cstr_copy(buf + 6, target_class_name, needed - 6);
-                return value_from_id((id)buf);
+                return value_from_obj(h);
             }
             return value_from_obj(OBJ_NULL);
         }
@@ -578,8 +577,9 @@ Value parse_message_send(Parser *p) {
                     g_ctx.enumerators[eid].active = 1;
                     g_ctx.next_enumerator_id++;
                     
-                    char *buf = string_pool_alloc(24);
-                    if (buf) {
+                    ObjId h = obj_alloc(24);
+                    if (h != OBJ_NULL) {
+                        char *buf = obj_deref_mut(h);
                         cstr_copy(buf, "NSEnum:", 24);
                         {
                             char tmp[12]; int ti = 0, v = (int)eid;
@@ -590,7 +590,7 @@ Value parse_message_send(Parser *p) {
                                 buf[7 + j] = '\0';
                             }
                         }
-                        return value_from_id((id)buf);
+                        return value_from_obj(h);
                     }
                 }
                 if (cstr_eq(sel_name, "allObjects")) {
@@ -646,8 +646,9 @@ Value parse_message_send(Parser *p) {
             g_ctx.invocations[inv_id].receiver = 0;
             g_ctx.invocations[inv_id].arg_count = 0;
             g_ctx.next_invocation_id++;
-            char *buf = string_pool_alloc(24);
-            if (buf) {
+            ObjId h = obj_alloc(24);
+            if (h != OBJ_NULL) {
+                char *buf = obj_deref_mut(h);
                 cstr_copy(buf, "FDInv:", 24);
                 {
                     char tmp[12]; int ti = 0, v = (int)inv_id;
@@ -658,7 +659,7 @@ Value parse_message_send(Parser *p) {
                         buf[6 + j] = '\0';
                     }
                 }
-                return value_from_id((id)buf);
+                return value_from_obj(h);
             }
         }
 
@@ -1075,10 +1076,9 @@ Value parse_message_send(Parser *p) {
             if (keyword_args[0].is_id && keyword_args[0].obj_val != OBJ_NULL) {
                 const char *s = obj_deref(keyword_args[0].obj_val);
                 unsigned int slen = cstr_len(s);
-                char *result = string_pool_alloc(slen + 1);
-                if (result == 0) return value_from_obj(OBJ_NULL);
-                cstr_copy(result, s, slen + 1);
-                return value_from_id((id)result);
+                ObjId h = obj_alloc_str(s, slen);
+                if (h != OBJ_NULL) return value_from_obj(h);
+                return value_from_obj(OBJ_NULL);
             }
             return value_from_obj(OBJ_NULL);
         }
@@ -1088,10 +1088,9 @@ Value parse_message_send(Parser *p) {
             if (keyword_args[0].is_id && keyword_args[0].obj_val != OBJ_NULL) {
                 const char *s = obj_deref(keyword_args[0].obj_val);
                 unsigned int slen = cstr_len(s);
-                char *result = string_pool_alloc(slen + 1);
-                if (result == 0) return value_from_obj(receiver);
-                cstr_copy(result, s, slen + 1);
-                return value_from_id((id)result);
+                ObjId h = obj_alloc_str(s, slen);
+                if (h != OBJ_NULL) return value_from_obj(h);
+                return value_from_obj(receiver);
             }
             return value_from_obj(receiver);
         }
@@ -1102,11 +1101,12 @@ Value parse_message_send(Parser *p) {
                 const char *s = obj_deref(keyword_args[0].obj_val);
                 unsigned int slen = cstr_len(s);
                 /* Create NSMutStr:content marker in string pool */
-                char *result = string_pool_alloc(9 + slen + 1);
-                if (result == 0) return value_from_obj(OBJ_NULL);
+                ObjId h = obj_alloc(9 + slen + 1);
+                if (h == OBJ_NULL) return value_from_obj(OBJ_NULL);
+                char *result = obj_deref_mut(h);
                 cstr_copy(result, "NSMutStr:", 10);
                 cstr_copy(result + 9, s, slen + 1);
-                return value_from_id((id)result);
+                return value_from_obj(h);
             }
             return value_from_obj(OBJ_NULL);
         }
@@ -1122,8 +1122,9 @@ Value parse_message_send(Parser *p) {
                 if (keyword_args[0].is_id && keyword_args[0].obj_val != OBJ_NULL) {
                     const char *append = obj_deref(keyword_args[0].obj_val);
                     unsigned int append_len = cstr_len(append);
-                    char *result = string_pool_alloc(9 + old_len + append_len + 1);
-                    if (result == 0) return value_from_obj(receiver);
+                    ObjId h = obj_alloc(9 + old_len + append_len + 1);
+                    if (h == OBJ_NULL) return value_from_obj(receiver);
+                    char *result = obj_deref_mut(h);
                     cstr_copy(result, "NSMutStr:", 10);
                     cstr_copy(result + 9, old_content, old_len + 1);
                     cstr_copy(result + 9 + old_len, append, append_len + 1);
@@ -1132,11 +1133,11 @@ Value parse_message_send(Parser *p) {
                         unsigned int vi;
                         for (vi = 0; vi < g_ctx.var_count; vi++) {
                             if (g_ctx.vars[vi].is_id && g_ctx.vars[vi].value == receiver) {
-                                g_ctx.vars[vi].value = obj_register_ptr(result);
+                                g_ctx.vars[vi].value = h;
                             }
                         }
                     }
-                    return value_from_id((id)result);
+                    return value_from_obj(h);
                 }
                 return value_from_obj(receiver);
             }
@@ -1149,8 +1150,9 @@ Value parse_message_send(Parser *p) {
                 if (keyword_args[0].is_id && keyword_args[0].obj_val != OBJ_NULL) {
                     const char *new_content = obj_deref(keyword_args[0].obj_val);
                     unsigned int new_len = cstr_len(new_content);
-                    char *result = string_pool_alloc(9 + new_len + 1);
-                    if (result == 0) return value_from_obj(receiver);
+                    ObjId h = obj_alloc(9 + new_len + 1);
+                    if (h == OBJ_NULL) return value_from_obj(receiver);
+                    char *result = obj_deref_mut(h);
                     cstr_copy(result, "NSMutStr:", 10);
                     cstr_copy(result + 9, new_content, new_len + 1);
                     /* Update any variable pointing to the old marker */
@@ -1158,11 +1160,11 @@ Value parse_message_send(Parser *p) {
                         unsigned int vi;
                         for (vi = 0; vi < g_ctx.var_count; vi++) {
                             if (g_ctx.vars[vi].is_id && g_ctx.vars[vi].value == receiver) {
-                                g_ctx.vars[vi].value = obj_register_ptr(result);
+                                g_ctx.vars[vi].value = h;
                             }
                         }
                     }
-                    return value_from_id((id)result);
+                    return value_from_obj(h);
                 }
                 return value_from_obj(receiver);
             }
@@ -1203,13 +1205,13 @@ Value parse_message_send(Parser *p) {
             const char *b = obj_deref(args[0]);
             unsigned int alen = cstr_len(a);
             unsigned int blen = cstr_len(b);
-            char *result;
             unsigned int needed = alen + blen + 1;
-            result = string_pool_alloc(needed);
-            if (result == 0) return value_from_obj(receiver);
+            ObjId h = obj_alloc(needed);
+            if (h == OBJ_NULL) return value_from_obj(receiver);
+            char *result = obj_deref_mut(h);
             cstr_copy(result, a, needed);
             cstr_copy(result + alen, b, needed - alen);
-            return value_from_id((id)result);
+            return value_from_obj(h);
         }
 
         /* NSString: [str stringByAppendingPathComponent:other] → concatenate with / */
@@ -1218,22 +1220,23 @@ Value parse_message_send(Parser *p) {
             const char *b = obj_deref(args[0]);
             unsigned int alen = cstr_len(a);
             unsigned int blen = cstr_len(b);
-            char *result;
             unsigned int needed = alen + 1 + blen + 1; /* +1 for / separator */
-            result = string_pool_alloc(needed);
-            if (result == 0) return value_from_obj(receiver);
+            ObjId h = obj_alloc(needed);
+            if (h == OBJ_NULL) return value_from_obj(receiver);
+            char *result = obj_deref_mut(h);
             cstr_copy(result, a, needed);
             result[alen] = '/';
             cstr_copy(result + alen + 1, b, needed - alen - 1);
-            return value_from_id((id)result);
+            return value_from_obj(h);
         }
 
         /* NSString: [str capitalizedString] → capitalize first letter of each word */
         if (cstr_eq(sel_name, "capitalizedString") && target.is_id && receiver != OBJ_NULL) {
             const char *s = obj_deref(receiver);
             int slen = (int)cstr_len(s);
-            char *result = string_pool_alloc((unsigned int)slen + 1);
-            if (result == 0) return value_from_obj(receiver);
+            ObjId h = obj_alloc((unsigned int)slen + 1);
+            if (h == OBJ_NULL) return value_from_obj(receiver);
+            char *result = obj_deref_mut(h);
             {
                 int i = 0;
                 int capitalize_next = 1;
@@ -1249,7 +1252,7 @@ Value parse_message_send(Parser *p) {
                 }
                 result[slen] = '\0';
             }
-            return value_from_id((id)result);
+            return value_from_obj(h);
         }
 
         /* NSString: [str isEqualToString:other] → string compare */
@@ -1267,11 +1270,9 @@ Value parse_message_send(Parser *p) {
             if (from < 0) from = 0;
             if (from > slen) from = slen;
             {
-                unsigned int needed = (unsigned int)(slen - from) + 1;
-                char *result = string_pool_alloc(needed);
-                if (result == 0) return value_from_obj(receiver);
-                cstr_copy(result, s + from, needed);
-                return value_from_id((id)result);
+                ObjId h = obj_alloc_str(s + from, (unsigned int)(slen - from));
+                if (h != OBJ_NULL) return value_from_obj(h);
+                return value_from_obj(receiver);
             }
         }
 
@@ -1283,12 +1284,9 @@ Value parse_message_send(Parser *p) {
             if (to < 0) to = 0;
             if (to > slen) to = slen;
             {
-                unsigned int needed = (unsigned int)to + 1;
-                char *result = string_pool_alloc(needed);
-                if (result == 0) return value_from_obj(receiver);
-                cstr_copy(result, s, needed);
-                result[to] = '\0';
-                return value_from_id((id)result);
+                ObjId h = obj_alloc_str(s, (unsigned int)to);
+                if (h != OBJ_NULL) return value_from_obj(h);
+                return value_from_obj(receiver);
             }
         }
 
@@ -1373,9 +1371,9 @@ Value parse_message_send(Parser *p) {
                     { int j; for (j = lei - 1; j >= 0; j--) buf[bp++] = len_buf[j]; }
                     buf[bp] = '\0';
                     {
-                        char *marker = string_pool_alloc(bp + 1);
-                        if (marker) { cstr_copy(marker, buf, bp + 1); }
-                        return value_from_id((id)marker);
+                        ObjId h = obj_alloc_str(buf, bp);
+                        if (h != OBJ_NULL) return value_from_obj(h);
+                        return value_from_obj(OBJ_NULL);
                     }
                 }
                 /* NSNotFound: location = UINT_MAX, length = 0 */
@@ -1403,12 +1401,13 @@ Value parse_message_send(Parser *p) {
             {
                 int slen = (int)cstr_len(s);
                 if (loc < (unsigned int)slen && loc + len <= (unsigned int)slen) {
-                    char *result = string_pool_alloc((unsigned int)len + 1);
-                    if (result != 0) {
+                    ObjId h = obj_alloc((unsigned int)len + 1);
+                    if (h != OBJ_NULL) {
+                        char *result = obj_deref_mut(h);
                         unsigned int i;
                         for (i = 0; i < len; i++) result[i] = s[loc + i];
                         result[len] = '\0';
-                        return value_from_id((id)result);
+                        return value_from_obj(h);
                     }
                 }
                 return value_from_obj(obj_alloc_str("", 0));
@@ -1419,8 +1418,9 @@ Value parse_message_send(Parser *p) {
         if (cstr_eq(sel_name, "uppercaseString") && target.is_id && receiver != OBJ_NULL) {
             const char *s = obj_deref(receiver);
             int slen = (int)cstr_len(s);
-            char *result = string_pool_alloc((unsigned int)slen + 1);
-            if (result == 0) return value_from_obj(receiver);
+            ObjId h = obj_alloc((unsigned int)slen + 1);
+            if (h == OBJ_NULL) return value_from_obj(receiver);
+            char *result = obj_deref_mut(h);
             {
                 int i;
                 for (i = 0; i < slen; i++) {
@@ -1430,15 +1430,16 @@ Value parse_message_send(Parser *p) {
                 }
                 result[slen] = '\0';
             }
-            return value_from_id((id)result);
+            return value_from_obj(h);
         }
 
         /* NSString: [str lowercaseString] → ASCII lowercase */
         if (cstr_eq(sel_name, "lowercaseString") && target.is_id && receiver != OBJ_NULL) {
             const char *s = obj_deref(receiver);
             int slen = (int)cstr_len(s);
-            char *result = string_pool_alloc((unsigned int)slen + 1);
-            if (result == 0) return value_from_obj(receiver);
+            ObjId h = obj_alloc((unsigned int)slen + 1);
+            if (h == OBJ_NULL) return value_from_obj(receiver);
+            char *result = obj_deref_mut(h);
             {
                 int i;
                 for (i = 0; i < slen; i++) {
@@ -1448,7 +1449,7 @@ Value parse_message_send(Parser *p) {
                 }
                 result[slen] = '\0';
             }
-            return value_from_id((id)result);
+            return value_from_obj(h);
         }
 
         /* NSString: [str stringByReplacingOccurrencesOfString:find withString:replace]
@@ -1478,8 +1479,9 @@ Value parse_message_send(Parser *p) {
                 int final_size = src_len + size_delta;
                 if (final_size < 0) final_size = 0;
                 unsigned int needed = (unsigned int)final_size + 1;
-                char *result = string_pool_alloc(needed);
-                if (result == 0) return value_from_obj(receiver);
+                ObjId h = obj_alloc(needed);
+                if (h == OBJ_NULL) return value_from_obj(receiver);
+                char *result = obj_deref_mut(h);
                 {
                     int ri = 0;
                     si = 0;
@@ -1495,7 +1497,7 @@ Value parse_message_send(Parser *p) {
                     }
                     result[ri] = '\0';
                 }
-                return value_from_id((id)result);
+                return value_from_obj(h);
             }
         }
 
@@ -1512,13 +1514,14 @@ Value parse_message_send(Parser *p) {
                     const char *suffix = obj_deref(formatted.obj_val);
                     int base_len = (int)cstr_len(base);
                     int suffix_len = (int)cstr_len(suffix);
-                    char *result = string_pool_alloc((unsigned int)(base_len + suffix_len + 1));
-                    if (result != 0) {
+                    ObjId h = obj_alloc((unsigned int)(base_len + suffix_len + 1));
+                    if (h != OBJ_NULL) {
+                        char *result = obj_deref_mut(h);
                         int i;
                         for (i = 0; i < base_len; i++) result[i] = base[i];
                         for (i = 0; i < suffix_len; i++) result[base_len + i] = suffix[i];
                         result[base_len + suffix_len] = '\0';
-                        return value_from_id((id)result);
+                        return value_from_obj(h);
                     }
                 }
             }
@@ -1537,15 +1540,13 @@ Value parse_message_send(Parser *p) {
                 /* Empty separator: each char is a component */
                 int i;
                 for (i = 0; i < src_len; i++) {
-                    char *comp = string_pool_alloc(2);
-                    if (comp == 0) {
+                    ObjId comp_h = obj_alloc_str(src + i, 1);
+                    if (comp_h == OBJ_NULL) {
                         coll_remove_all(new_cid);
                         interp_set_resource_error("string pool exhausted while splitting string");
                         return value_void();
                     }
-                    comp[0] = src[i];
-                    comp[1] = '\0';
-                    if (coll_add(new_cid, value_from_id((id)comp), dummy) != 0) {
+                    if (coll_add(new_cid, value_from_obj(comp_h), dummy) != 0) {
                         coll_remove_all(new_cid);
                         interp_set_resource_error("collection entry table full while splitting string");
                         return value_void();
@@ -1558,18 +1559,13 @@ Value parse_message_send(Parser *p) {
                     if (si <= src_len - sep_len && cstr_starts(src + si, sep)) {
                         /* Component from start to si */
                         int comp_len = si - start;
-                        char *comp = string_pool_alloc((unsigned int)comp_len + 1);
-                        if (comp == 0) {
+                        ObjId comp_h = obj_alloc_str(src + start, (unsigned int)comp_len);
+                        if (comp_h == OBJ_NULL) {
                             coll_remove_all(new_cid);
                             interp_set_resource_error("string pool exhausted while splitting string");
                             return value_void();
                         }
-                        {
-                            int j;
-                            for (j = 0; j < comp_len; j++) comp[j] = src[start + j];
-                            comp[comp_len] = '\0';
-                        }
-                        if (coll_add(new_cid, value_from_id((id)comp), dummy) != 0) {
+                        if (coll_add(new_cid, value_from_obj(comp_h), dummy) != 0) {
                             coll_remove_all(new_cid);
                             interp_set_resource_error("collection entry table full while splitting string");
                             return value_void();
@@ -1583,18 +1579,13 @@ Value parse_message_send(Parser *p) {
                 /* Last component */
                 {
                     int comp_len = src_len - start;
-                    char *comp = string_pool_alloc((unsigned int)comp_len + 1);
-                    if (comp == 0) {
+                    ObjId comp_h = obj_alloc_str(src + start, (unsigned int)comp_len);
+                    if (comp_h == OBJ_NULL) {
                         coll_remove_all(new_cid);
                         interp_set_resource_error("string pool exhausted while splitting string");
                         return value_void();
                     }
-                    {
-                        int j;
-                        for (j = 0; j < comp_len; j++) comp[j] = src[start + j];
-                        comp[comp_len] = '\0';
-                    }
-                    if (coll_add(new_cid, value_from_id((id)comp), dummy) != 0) {
+                    if (coll_add(new_cid, value_from_obj(comp_h), dummy) != 0) {
                         coll_remove_all(new_cid);
                         interp_set_resource_error("collection entry table full while splitting string");
                         return value_void();
@@ -1617,15 +1608,9 @@ Value parse_message_send(Parser *p) {
                 end--;
             {
                 int comp_len = end - start;
-                unsigned int needed = (unsigned int)comp_len + 1;
-                char *result = string_pool_alloc(needed);
-                if (result == 0) return value_from_obj(receiver);
-                {
-                    int i;
-                    for (i = 0; i < comp_len; i++) result[i] = s[start + i];
-                    result[comp_len] = '\0';
-                }
-                return value_from_id((id)result);
+                ObjId h = obj_alloc_str(s + start, (unsigned int)comp_len);
+                if (h != OBJ_NULL) return value_from_obj(h);
+                return value_from_obj(receiver);
             }
         }
 
@@ -1668,15 +1653,9 @@ Value parse_message_send(Parser *p) {
             }
             {
                 int comp_len = end - start;
-                unsigned int needed = (unsigned int)comp_len + 1;
-                char *result = string_pool_alloc(needed);
-                if (result == 0) return value_from_obj(receiver);
-                {
-                    int i;
-                    for (i = 0; i < comp_len; i++) result[i] = s[start + i];
-                    result[comp_len] = '\0';
-                }
-                return value_from_id((id)result);
+                ObjId h = obj_alloc_str(s + start, (unsigned int)comp_len);
+                if (h != OBJ_NULL) return value_from_obj(h);
+                return value_from_obj(receiver);
             }
         }
 
@@ -1685,12 +1664,12 @@ Value parse_message_send(Parser *p) {
             /* Store the int value in a string pool buffer.
              * Encoding: "NSNumber:<int_value>" */
             if (keyword_args[0].is_int) {
-                char *buf;
                 int v = keyword_args[0].int_val;
                 int neg = v < 0;
                 unsigned int pos = 9; /* after "NSNumber:" */
-                buf = string_pool_alloc(30);
-                if (buf == 0) return value_from_int(keyword_args[0].int_val);
+                ObjId h = obj_alloc(30);
+                if (h == OBJ_NULL) return value_from_int(keyword_args[0].int_val);
+                char *buf = obj_deref_mut(h);
                 cstr_copy(buf, "NSNumber:", 30);
                 if (neg) { v = -v; buf[pos++] = '-'; }
                 if (v == 0) { buf[pos++] = '0'; }
@@ -1701,7 +1680,7 @@ Value parse_message_send(Parser *p) {
                     while (ti > 0) buf[pos++] = tmp[--ti];
                 }
                 buf[pos] = '\0';
-                return value_from_id((id)buf);
+                return value_from_obj(h);
             }
             return value_from_obj(args[0]);
         }
@@ -1709,11 +1688,11 @@ Value parse_message_send(Parser *p) {
         /* NSNumber: [NSNumber numberWithUnsignedInt:n] → wrap unsigned int */
         if (IS_FOUNDATION_CLASS("NSNumber") && target.is_class && cstr_eq(sel_name, "numberWithUnsignedInt:") && arg_count >= 1) {
             if (keyword_args[0].is_int) {
-                char *buf = string_pool_alloc(30);
                 unsigned int pos = 9;
                 unsigned int v = (unsigned int)keyword_args[0].int_val;
-                buf = string_pool_alloc(30);
-                if (buf == 0) return value_from_int(keyword_args[0].int_val);
+                ObjId h = obj_alloc(30);
+                if (h == OBJ_NULL) return value_from_int(keyword_args[0].int_val);
+                char *buf = obj_deref_mut(h);
                 cstr_copy(buf, "NSNumber:", 30);
                 if (v == 0) { buf[pos++] = '0'; }
                 else {
@@ -1723,7 +1702,7 @@ Value parse_message_send(Parser *p) {
                     while (ti > 0) buf[pos++] = tmp[--ti];
                 }
                 buf[pos] = '\0';
-                return value_from_id((id)buf);
+                return value_from_obj(h);
             }
             return value_from_obj(args[0]);
         }
@@ -1749,9 +1728,10 @@ Value parse_message_send(Parser *p) {
             if (keyword_args[0].is_int) {
                 /* Encode as NSNumber: with unsigned value */
                 unsigned int v = (unsigned int)keyword_args[0].int_val;
-                char *buf = string_pool_alloc(30);
                 unsigned int pos = 9;
-                if (buf == 0) return value_from_int(keyword_args[0].int_val);
+                ObjId h = obj_alloc(30);
+                if (h == OBJ_NULL) return value_from_int(keyword_args[0].int_val);
+                char *buf = obj_deref_mut(h);
                 cstr_copy(buf, "NSNumber:", 30);
                 if (v == 0) { buf[pos++] = '0'; }
                 else {
@@ -1761,7 +1741,7 @@ Value parse_message_send(Parser *p) {
                     while (ti > 0) buf[pos++] = tmp[--ti];
                 }
                 buf[pos] = '\0';
-                return value_from_id((id)buf);
+                return value_from_obj(h);
             }
             return value_from_obj(args[0]);
         }
@@ -1773,8 +1753,9 @@ Value parse_message_send(Parser *p) {
                 int v = keyword_args[0].int_val;
                 int neg = v < 0;
                 unsigned int pos = 9;
-                char *buf = string_pool_alloc(30);
-                if (buf == 0) return value_from_int(v);
+                ObjId h = obj_alloc(30);
+                if (h == OBJ_NULL) return value_from_int(v);
+                char *buf = obj_deref_mut(h);
                 cstr_copy(buf, "NSNumber:", 30);
                 if (neg) { v = -v; buf[pos++] = '-'; }
                 if (v == 0) { buf[pos++] = '0'; }
@@ -1785,7 +1766,7 @@ Value parse_message_send(Parser *p) {
                     while (ti > 0) buf[pos++] = tmp[--ti];
                 }
                 buf[pos] = '\0';
-                return value_from_id((id)buf);
+                return value_from_obj(h);
             }
             return value_from_obj(args[0]);
         }
@@ -1824,8 +1805,9 @@ Value parse_message_send(Parser *p) {
                 const char *hex = s + 7;
                 int hex_len = (int)cstr_len(hex);
                 unsigned int needed = 2 + (unsigned int)hex_len + (unsigned int)(hex_len / 8) + 1;
-                char *result = string_pool_alloc(needed);
-                if (result) {
+                ObjId h = obj_alloc(needed);
+                if (h != OBJ_NULL) {
+                    char *result = obj_deref_mut(h);
                     int ri = 0, i;
                     result[ri++] = '<';
                     for (i = 0; i < hex_len; i++) {
@@ -1834,7 +1816,7 @@ Value parse_message_send(Parser *p) {
                     }
                     result[ri++] = '>';
                     result[ri] = '\0';
-                    return value_from_id((id)result);
+                    return value_from_obj(h);
                 }
             }
             /* NSNumber: display numeric value */
@@ -1851,8 +1833,9 @@ Value parse_message_send(Parser *p) {
         /* NSNumber: [NSNumber numberWithFloat:f] → wrap float as id */
         if (IS_FOUNDATION_CLASS("NSNumber") && target.is_class && cstr_eq(sel_name, "numberWithFloat:") && arg_count >= 1) {
             if (keyword_args[0].is_float) {
-                char *buf = string_pool_alloc(64);
-                if (buf == 0) return value_from_float(keyword_args[0].float_val);
+                ObjId h = obj_alloc(64);
+                if (h == OBJ_NULL) return value_from_float(keyword_args[0].float_val);
+                char *buf = obj_deref_mut(h);
                 cstr_copy(buf, "NSFloat:", 64);
                 {
                     double fv = keyword_args[0].float_val;
@@ -1877,7 +1860,7 @@ Value parse_message_send(Parser *p) {
                     if (buf[pos-1] == '.') pos++; /* keep at least one decimal */
                     buf[pos] = '\0';
                 }
-                return value_from_id((id)buf);
+                return value_from_obj(h);
             }
             return value_from_obj(args[0]);
         }
@@ -1886,8 +1869,9 @@ Value parse_message_send(Parser *p) {
         if (IS_FOUNDATION_CLASS("NSNumber") && target.is_class && cstr_eq(sel_name, "numberWithDouble:") && arg_count >= 1) {
             /* Same encoding as numberWithFloat */
             if (keyword_args[0].is_float) {
-                char *buf = string_pool_alloc(64);
-                if (buf == 0) return value_from_float(keyword_args[0].float_val);
+                ObjId h = obj_alloc(64);
+                if (h == OBJ_NULL) return value_from_float(keyword_args[0].float_val);
+                char *buf = obj_deref_mut(h);
                 cstr_copy(buf, "NSFloat:", 64);
                 {
                     double fv = keyword_args[0].float_val;
@@ -1911,7 +1895,7 @@ Value parse_message_send(Parser *p) {
                     if (buf[pos-1] == '.') pos++;
                     buf[pos] = '\0';
                 }
-                return value_from_id((id)buf);
+                return value_from_obj(h);
             }
             return value_from_obj(args[0]);
         }
@@ -1966,12 +1950,13 @@ Value parse_message_send(Parser *p) {
         if (IS_FOUNDATION_CLASS("NSNumber") && target.is_class && cstr_eq(sel_name, "numberWithBool:") && arg_count >= 1) {
             /* Convert argument to boolean using is_truthy for all value types */
             int v = is_truthy(keyword_args[0]) ? 1 : 0;
-            char *buf = string_pool_alloc(14);
-            if (buf == 0) return value_from_int(v);
+            ObjId h = obj_alloc(14);
+            if (h == OBJ_NULL) return value_from_int(v);
+            char *buf = obj_deref_mut(h);
             cstr_copy(buf, "NSNumber:", 14);
             buf[9] = '0' + v;
             buf[10] = '\0';
-            return value_from_id((id)buf);
+            return value_from_obj(h);
         }
 
         /* NSNumber: [num stringValue] → numeric string representation */
@@ -1979,17 +1964,15 @@ Value parse_message_send(Parser *p) {
             const char *s = obj_deref(receiver);
             if (cstr_eq_n(s, "NSNumber:", 9)) {
                 unsigned int vlen = (unsigned int)cstr_len(s + 9);
-                char *result = string_pool_alloc(vlen + 1);
-                if (result == 0) return value_from_obj(receiver);
-                cstr_copy(result, s + 9, vlen + 1);
-                return value_from_id((id)result);
+                ObjId h = obj_alloc_str(s + 9, vlen);
+                if (h != OBJ_NULL) return value_from_obj(h);
+                return value_from_obj(receiver);
             }
             if (cstr_eq_n(s, "NSFloat:", 8)) {
                 unsigned int vlen = (unsigned int)cstr_len(s + 8);
-                char *result = string_pool_alloc(vlen + 1);
-                if (result == 0) return value_from_obj(receiver);
-                cstr_copy(result, s + 8, vlen + 1);
-                return value_from_id((id)result);
+                ObjId h = obj_alloc_str(s + 8, vlen);
+                if (h != OBJ_NULL) return value_from_obj(h);
+                return value_from_obj(receiver);
             }
             return value_from_obj(receiver);
         }
@@ -2076,8 +2059,9 @@ Value parse_message_send(Parser *p) {
                 /* Now encode as NSData hex string */
                 {
                     unsigned int needed = 7 + pos * 2 + 1;
-                    char *buf = string_pool_alloc(needed);
-                    if (buf) {
+                    ObjId h = obj_alloc(needed);
+                    if (h != OBJ_NULL) {
+                        char *buf = obj_deref_mut(h);
                         static const char hex_chars[] = "0123456789abcdef";
                         unsigned int i;
                         cstr_copy(buf, "NSData:", needed);
@@ -2087,7 +2071,7 @@ Value parse_message_send(Parser *p) {
                             buf[7 + i * 2 + 1] = hex_chars[c & 0x0f];
                         }
                         buf[7 + pos * 2] = '\0';
-                        return value_from_id((id)buf);
+                        return value_from_obj(h);
                     }
                 }
                 return value_from_obj(OBJ_NULL);
@@ -2102,11 +2086,12 @@ Value parse_message_send(Parser *p) {
                 const char *url_str = obj_deref(keyword_args[0].obj_val);
                 if (url_str) {
                     unsigned int len = cstr_len(url_str);
-                    char *buf = string_pool_alloc(len + 7);
-                    if (buf) {
+                    ObjId h = obj_alloc(len + 7);
+                    if (h != OBJ_NULL) {
+                        char *buf = obj_deref_mut(h);
                         cstr_copy(buf, "NSURL:", 7);
                         cstr_copy(buf + 6, url_str, len + 1);
-                        return value_from_id((id)buf);
+                        return value_from_obj(h);
                     }
                 }
                 return value_from_obj(OBJ_NULL);
@@ -2134,8 +2119,7 @@ Value parse_message_send(Parser *p) {
             if (cstr_eq(sel_name, "setHTTPMethod:") && arg_count >= 1) {
                 Value key = value_void();
                 Value val = keyword_args[0];
-                char *k = string_pool_alloc(7);
-                if (k) { cstr_copy(k, "method", 7); key = value_from_id((id)k); }
+                { ObjId kh = obj_alloc_str("method", 6); if (kh != OBJ_NULL) key = value_from_obj(kh); }
                 int idx = coll_find_by_key(cid, &key);
                 if (idx >= 0) g_ctx.coll_entries[idx].value = val;
                 else coll_add(cid, key, val);
@@ -2143,8 +2127,7 @@ Value parse_message_send(Parser *p) {
             }
             if (cstr_eq(sel_name, "setValue:forHTTPHeaderField:") && arg_count >= 2) {
                 Value headers_key = value_void();
-                char *hk = string_pool_alloc(8);
-                if (hk) { cstr_copy(hk, "headers", 8); headers_key = value_from_id((id)hk); }
+                { ObjId hkh = obj_alloc_str("headers", 7); if (hkh != OBJ_NULL) headers_key = value_from_obj(hkh); }
                 int h_idx = coll_find_by_key(cid, &headers_key);
                 if (h_idx >= 0) {
                     Value headers_dict = g_ctx.coll_entries[h_idx].value;
@@ -2164,8 +2147,7 @@ Value parse_message_send(Parser *p) {
             if (cstr_eq(sel_name, "setHTTPBody:") && arg_count >= 1) {
                 Value key = value_void();
                 Value val = keyword_args[0];
-                char *k = string_pool_alloc(5);
-                if (k) { cstr_copy(k, "body", 5); key = value_from_id((id)k); }
+                { ObjId kbv = obj_alloc_str("body", 5); if (kbv != OBJ_NULL) key = value_from_obj(kbv); }
                 int idx = coll_find_by_key(cid, &key);
                 if (idx >= 0) g_ctx.coll_entries[idx].value = val;
                 else coll_add(cid, key, val);
@@ -2208,13 +2190,11 @@ Value parse_message_send(Parser *p) {
             if (cstr_eq(sel_name, "resume")) {
                 unsigned int cid = coll_id_from_marker(obj_deref(receiver), "NSURLTask:");
                 Value key_task = value_void();
-                char *kt = string_pool_alloc(8);
-                if (kt) { cstr_copy(kt, "task_id", 8); key_task = value_from_id((id)kt); }
+                { ObjId kth = obj_alloc_str("task_id", 8); if (kth != OBJ_NULL) key_task = value_from_obj(kth); }
                 int idx_task = coll_find_by_key(cid, &key_task);
                 
                 Value key_req = value_void();
-                char *kr = string_pool_alloc(4);
-                if (kr) { cstr_copy(kr, "req", 4); key_req = value_from_id((id)kr); }
+                { ObjId krh = obj_alloc_str("req", 4); if (krh != OBJ_NULL) key_req = value_from_obj(krh); }
                 int idx_req = coll_find_by_key(cid, &key_req);
                 
                 if (idx_task >= 0 && idx_req >= 0) {
@@ -2237,10 +2217,10 @@ Value parse_message_send(Parser *p) {
                     const char *body = 0;
                     unsigned int body_len = 0;
                     
-                    Value k_url = value_void(); char *ku = string_pool_alloc(4); if(ku){cstr_copy(ku,"url",4); k_url=value_from_id((id)ku);}
-                    Value k_method = value_void(); char *km = string_pool_alloc(7); if(km){cstr_copy(km,"method",7); k_method=value_from_id((id)km);}
-                    Value k_body = value_void(); char *kb = string_pool_alloc(5); if(kb){cstr_copy(kb,"body",5); k_body=value_from_id((id)kb);}
-                    Value k_headers = value_void(); char *kh = string_pool_alloc(8); if(kh){cstr_copy(kh,"headers",8); k_headers=value_from_id((id)kh);}
+                    Value k_url = value_void(); { ObjId kuh = obj_alloc_str("url", 3); if (kuh != OBJ_NULL) k_url = value_from_obj(kuh); }
+                    Value k_method = value_void(); { ObjId kmh = obj_alloc_str("method", 6); if (kmh != OBJ_NULL) k_method = value_from_obj(kmh); }
+                    Value k_body = value_void(); { ObjId kbh = obj_alloc_str("body", 5); if (kbh != OBJ_NULL) k_body = value_from_obj(kbh); }
+                    Value k_headers = value_void(); { ObjId khh = obj_alloc_str("headers", 8); if (khh != OBJ_NULL) k_headers = value_from_obj(khh); }
                     
                     int i_u = coll_find_by_key(req_cid, &k_url);
                     if (i_u >= 0) url = obj_deref(g_ctx.coll_entries[i_u].value.obj_val);
@@ -2302,11 +2282,12 @@ Value parse_message_send(Parser *p) {
                 const char *url_str = obj_deref(keyword_args[0].obj_val);
                 if (url_str) {
                     unsigned int len = cstr_len(url_str);
-                    char *buf = string_pool_alloc(len + 7);
-                    if (buf) {
+                    ObjId h = obj_alloc(len + 7);
+                    if (h != OBJ_NULL) {
+                        char *buf = obj_deref_mut(h);
                         cstr_copy(buf, "NSURL:", 7);
                         cstr_copy(buf + 6, url_str, len + 1);
-                        return value_from_id((id)buf);
+                        return value_from_obj(h);
                     }
                 }
                 return value_from_obj(OBJ_NULL);
@@ -2334,8 +2315,7 @@ Value parse_message_send(Parser *p) {
             if (cstr_eq(sel_name, "setHTTPMethod:") && arg_count >= 1) {
                 Value key = value_void();
                 Value val = keyword_args[0];
-                char *k = string_pool_alloc(7);
-                if (k) { cstr_copy(k, "method", 7); key = value_from_id((id)k); }
+                { ObjId kh = obj_alloc_str("method", 6); if (kh != OBJ_NULL) key = value_from_obj(kh); }
                 int idx = coll_find_by_key(cid, &key);
                 if (idx >= 0) g_ctx.coll_entries[idx].value = val;
                 else coll_add(cid, key, val);
@@ -2343,8 +2323,7 @@ Value parse_message_send(Parser *p) {
             }
             if (cstr_eq(sel_name, "setValue:forHTTPHeaderField:") && arg_count >= 2) {
                 Value headers_key = value_void();
-                char *hk = string_pool_alloc(8);
-                if (hk) { cstr_copy(hk, "headers", 8); headers_key = value_from_id((id)hk); }
+                { ObjId hkh = obj_alloc_str("headers", 8); if (hkh != OBJ_NULL) headers_key = value_from_obj(hkh); }
                 int h_idx = coll_find_by_key(cid, &headers_key);
                 if (h_idx >= 0) {
                     Value headers_dict = g_ctx.coll_entries[h_idx].value;
@@ -2364,8 +2343,7 @@ Value parse_message_send(Parser *p) {
             if (cstr_eq(sel_name, "setHTTPBody:") && arg_count >= 1) {
                 Value key = value_void();
                 Value val = keyword_args[0];
-                char *k = string_pool_alloc(5);
-                if (k) { cstr_copy(k, "body", 5); key = value_from_id((id)k); }
+                { ObjId kbv = obj_alloc_str("body", 5); if (kbv != OBJ_NULL) key = value_from_obj(kbv); }
                 int idx = coll_find_by_key(cid, &key);
                 if (idx >= 0) g_ctx.coll_entries[idx].value = val;
                 else coll_add(cid, key, val);
@@ -2408,13 +2386,11 @@ Value parse_message_send(Parser *p) {
             if (cstr_eq(sel_name, "resume")) {
                 unsigned int cid = coll_id_from_marker(obj_deref(receiver), "NSURLTask:");
                 Value key_task = value_void();
-                char *kt = string_pool_alloc(8);
-                if (kt) { cstr_copy(kt, "task_id", 8); key_task = value_from_id((id)kt); }
+                { ObjId kth = obj_alloc_str("task_id", 8); if (kth != OBJ_NULL) key_task = value_from_obj(kth); }
                 int idx_task = coll_find_by_key(cid, &key_task);
                 
                 Value key_req = value_void();
-                char *kr = string_pool_alloc(4);
-                if (kr) { cstr_copy(kr, "req", 4); key_req = value_from_id((id)kr); }
+                { ObjId krh = obj_alloc_str("req", 4); if (krh != OBJ_NULL) key_req = value_from_obj(krh); }
                 int idx_req = coll_find_by_key(cid, &key_req);
                 
                 if (idx_task >= 0 && idx_req >= 0) {
@@ -2437,10 +2413,10 @@ Value parse_message_send(Parser *p) {
                     const char *body = 0;
                     unsigned int body_len = 0;
                     
-                    Value k_url = value_void(); char *ku = string_pool_alloc(4); if(ku){cstr_copy(ku,"url",4); k_url=value_from_id((id)ku);}
-                    Value k_method = value_void(); char *km = string_pool_alloc(7); if(km){cstr_copy(km,"method",7); k_method=value_from_id((id)km);}
-                    Value k_body = value_void(); char *kb = string_pool_alloc(5); if(kb){cstr_copy(kb,"body",5); k_body=value_from_id((id)kb);}
-                    Value k_headers = value_void(); char *kh = string_pool_alloc(8); if(kh){cstr_copy(kh,"headers",8); k_headers=value_from_id((id)kh);}
+                    Value k_url = value_void(); { ObjId kuh = obj_alloc_str("url", 3); if (kuh != OBJ_NULL) k_url = value_from_obj(kuh); }
+                    Value k_method = value_void(); { ObjId kmh = obj_alloc_str("method", 6); if (kmh != OBJ_NULL) k_method = value_from_obj(kmh); }
+                    Value k_body = value_void(); { ObjId kbh = obj_alloc_str("body", 5); if (kbh != OBJ_NULL) k_body = value_from_obj(kbh); }
+                    Value k_headers = value_void(); { ObjId khh = obj_alloc_str("headers", 8); if (khh != OBJ_NULL) k_headers = value_from_obj(khh); }
                     
                     int i_u = coll_find_by_key(req_cid, &k_url);
                     if (i_u >= 0) url = obj_deref(g_ctx.coll_entries[i_u].value.obj_val);
@@ -2498,20 +2474,22 @@ Value parse_message_send(Parser *p) {
 
         /* NSNull: [NSNull null] → singleton marker */
         if (IS_FOUNDATION_CLASS("NSNull") && target.is_class && cstr_eq(sel_name, "null") && arg_count == 0) {
-            char *buf = string_pool_alloc(8);
-            if (buf == 0) return value_from_obj(obj_alloc_str("NSNull:", 7));
+            ObjId h = obj_alloc(8);
+            if (h == OBJ_NULL) return value_from_obj(obj_alloc_str("NSNull:", 7));
+            char *buf = obj_deref_mut(h);
             cstr_copy(buf, "NSNull:", 8);
-            return value_from_id((id)buf);
+            return value_from_obj(h);
         }
 
         /* ── NSData dispatch ──────────────────────────────────────── */
 
         /* NSData: [NSData data] → empty data */
         if (IS_FOUNDATION_CLASS("NSData") && target.is_class && cstr_eq(sel_name, "data") && arg_count == 0) {
-            char *buf = string_pool_alloc(8);
-            if (buf == 0) return value_from_obj(obj_alloc_str("NSData:", 7));
+            ObjId h = obj_alloc(8);
+            if (h == OBJ_NULL) return value_from_obj(obj_alloc_str("NSData:", 7));
+            char *buf = obj_deref_mut(h);
             cstr_copy(buf, "NSData:", 8);
-            return value_from_id((id)buf);
+            return value_from_obj(h);
         }
 
         /* NSData: [NSData dataWithBytes:ptr length:len] → create from string bytes
@@ -2526,8 +2504,9 @@ Value parse_message_send(Parser *p) {
                 if (len > blen) len = blen;
                 /* Hex encoding: 2 chars per byte + "NSData:" prefix */
                 unsigned int needed = 7 + (unsigned int)len * 2 + 1;
-                char *buf = string_pool_alloc(needed);
-                if (buf == 0) return value_from_obj(obj_alloc_str("NSData:", 7));
+                ObjId h = obj_alloc(needed);
+                if (h == OBJ_NULL) return value_from_obj(obj_alloc_str("NSData:", 7));
+                char *buf = obj_deref_mut(h);
                 cstr_copy(buf, "NSData:", needed);
                 {
                     static const char hex_chars[] = "0123456789abcdef";
@@ -2539,24 +2518,26 @@ Value parse_message_send(Parser *p) {
                     }
                     buf[7 + len * 2] = '\0';
                 }
-                return value_from_id((id)buf);
+                return value_from_obj(h);
             }
         }
 
         /* NSMutableData: [NSMutableData dataWithCapacity:n] → empty mutable data */
         if (IS_FOUNDATION_CLASS("NSMutableData") && target.is_class && cstr_eq(sel_name, "dataWithCapacity:") && arg_count >= 1) {
-            char *buf = string_pool_alloc(8);
-            if (buf == 0) return value_from_obj(obj_alloc_str("NSData:", 7));
+            ObjId h = obj_alloc(8);
+            if (h == OBJ_NULL) return value_from_obj(obj_alloc_str("NSData:", 7));
+            char *buf = obj_deref_mut(h);
             cstr_copy(buf, "NSData:", 8);
-            return value_from_id((id)buf);
+            return value_from_obj(h);
         }
 
         /* NSMutableData: [NSMutableData data] → empty mutable data */
         if (IS_FOUNDATION_CLASS("NSMutableData") && target.is_class && cstr_eq(sel_name, "data") && arg_count == 0) {
-            char *buf = string_pool_alloc(8);
-            if (buf == 0) return value_from_obj(obj_alloc_str("NSData:", 7));
+            ObjId h = obj_alloc(8);
+            if (h == OBJ_NULL) return value_from_obj(obj_alloc_str("NSData:", 7));
+            char *buf = obj_deref_mut(h);
             cstr_copy(buf, "NSData:", 8);
-            return value_from_id((id)buf);
+            return value_from_obj(h);
         }
 
         /* NSData: [NSData dataWithData:other] → copy of other data */
@@ -2564,15 +2545,17 @@ Value parse_message_send(Parser *p) {
             const char *other = obj_deref(keyword_args[0].obj_val);
             if (other && cstr_eq_n(other, "NSData:", 7)) {
                 unsigned int needed = (unsigned int)cstr_len(other) + 1;
-                char *buf = string_pool_alloc(needed);
-                if (buf == 0) return value_from_obj(obj_alloc_str("NSData:", 7));
+                ObjId h = obj_alloc(needed);
+                if (h == OBJ_NULL) return value_from_obj(obj_alloc_str("NSData:", 7));
+                char *buf = obj_deref_mut(h);
                 cstr_copy(buf, other, needed);
-                return value_from_id((id)buf);
+                return value_from_obj(h);
             }
-            char *buf = string_pool_alloc(8);
-            if (buf == 0) return value_from_obj(obj_alloc_str("NSData:", 7));
+            ObjId h = obj_alloc(8);
+            if (h == OBJ_NULL) return value_from_obj(obj_alloc_str("NSData:", 7));
+            char *buf = obj_deref_mut(h);
             cstr_copy(buf, "NSData:", 8);
-            return value_from_id((id)buf);
+            return value_from_obj(h);
         }
 
         /* NSData instance methods — check for NSData: prefix on receiver */
@@ -2584,8 +2567,9 @@ Value parse_message_send(Parser *p) {
                 const char *hex = s + 7;
                 int hex_len = (int)cstr_len(hex);
                 int byte_len = hex_len / 2;
-                char *result = string_pool_alloc((unsigned int)byte_len + 1);
-                if (result == 0) return value_from_obj(receiver);
+                ObjId h = obj_alloc((unsigned int)byte_len + 1);
+                if (h == OBJ_NULL) return value_from_obj(receiver);
+                char *result = obj_deref_mut(h);
                 {
                     static const char hex_vals[] = "0123456789abcdef";
                     int i;
@@ -2601,7 +2585,7 @@ Value parse_message_send(Parser *p) {
                     }
                     result[byte_len] = '\0';
                 }
-                return value_from_id((id)result);
+                return value_from_obj(h);
             }
 
             /* [data description] → display as <hex bytes> */
@@ -2610,8 +2594,9 @@ Value parse_message_send(Parser *p) {
                 int hex_len = (int)cstr_len(hex);
                 /* Format: <xxxx xxxx ...> with spaces every 8 hex chars */
                 unsigned int needed = 2 + (unsigned int)hex_len + (unsigned int)(hex_len / 8) + 1;
-                char *result = string_pool_alloc(needed);
-                if (result == 0) return value_from_obj(receiver);
+                ObjId h = obj_alloc(needed);
+                if (h == OBJ_NULL) return value_from_obj(receiver);
+                char *result = obj_deref_mut(h);
                 {
                     int ri = 0;
                     int i;
@@ -2623,7 +2608,7 @@ Value parse_message_send(Parser *p) {
                     result[ri++] = '>';
                     result[ri] = '\0';
                 }
-                return value_from_id((id)result);
+                return value_from_obj(h);
             }
 
             /* [data isEqual:other] → compare data */
@@ -2676,8 +2661,9 @@ Value parse_message_send(Parser *p) {
                 if (loc + len > hex_len / 2) len = (hex_len / 2) - loc;
                 {
                     unsigned int needed = 7 + (unsigned int)len * 2 + 1;
-                    char *buf = string_pool_alloc(needed);
-                    if (buf == 0) return value_from_obj(obj_alloc_str("NSData:", 7));
+                    ObjId h = obj_alloc(needed);
+                    if (h == OBJ_NULL) return value_from_obj(obj_alloc_str("NSData:", 7));
+                    char *buf = obj_deref_mut(h);
                     cstr_copy(buf, "NSData:", needed);
                     {
                         int i;
@@ -2686,7 +2672,7 @@ Value parse_message_send(Parser *p) {
                         }
                         buf[7 + len * 2] = '\0';
                     }
-                    return value_from_id((id)buf);
+                    return value_from_obj(h);
                 }
             }
 
@@ -2699,8 +2685,9 @@ Value parse_message_send(Parser *p) {
                     int len1 = (int)cstr_len(hex1);
                     int len2 = (int)cstr_len(hex2);
                     unsigned int needed = 7 + (unsigned int)(len1 + len2) + 1;
-                    char *buf = string_pool_alloc(needed);
-                    if (buf == 0) return value_from_obj(receiver);
+                    ObjId h = obj_alloc(needed);
+                    if (h == OBJ_NULL) return value_from_obj(receiver);
+                    char *buf = obj_deref_mut(h);
                     cstr_copy(buf, "NSData:", needed);
                     {
                         int i;
@@ -2708,7 +2695,7 @@ Value parse_message_send(Parser *p) {
                         for (i = 0; i < len2; i++) buf[7 + len1 + i] = hex2[i];
                         buf[7 + len1 + len2] = '\0';
                     }
-                    return value_from_id((id)buf);
+                    return value_from_obj(h);
                 }
                 return value_from_obj(receiver);
             }
@@ -2725,8 +2712,9 @@ Value parse_message_send(Parser *p) {
                     int blen = (int)cstr_len(bytes);
                     if (len > blen) len = blen;
                     unsigned int needed = 7 + (unsigned int)(hex_len + len * 2) + 1;
-                    char *buf = string_pool_alloc(needed);
-                    if (buf == 0) return value_from_obj(receiver);
+                    ObjId h = obj_alloc(needed);
+                    if (h == OBJ_NULL) return value_from_obj(receiver);
+                    char *buf = obj_deref_mut(h);
                     cstr_copy(buf, "NSData:", needed);
                     {
                         int i;
@@ -2741,17 +2729,18 @@ Value parse_message_send(Parser *p) {
                             buf[7 + hex_len + len * 2] = '\0';
                         }
                     }
-                    return value_from_id((id)buf);
+                    return value_from_obj(h);
                 }
             }
 
             /* [data copy] → return a copy of this NSData */
             if (cstr_eq(sel_name, "copy") && arg_count == 0) {
                 unsigned int needed = (unsigned int)cstr_len(s) + 1;
-                char *buf = string_pool_alloc(needed);
-                if (buf == 0) return value_from_obj(receiver);
+                ObjId h = obj_alloc(needed);
+                if (h == OBJ_NULL) return value_from_obj(receiver);
+                char *buf = obj_deref_mut(h);
                 cstr_copy(buf, s, needed);
-                return value_from_id((id)buf);
+                return value_from_obj(h);
             }
         }
 
@@ -2789,8 +2778,9 @@ Value parse_message_send(Parser *p) {
                     if (result_len > 0) {
                         /* result_len is byte count of hash; encode as NSData:hex */
                         unsigned int needed = 7 + (unsigned int)result_len * 2 + 1;
-                        char *buf = string_pool_alloc(needed);
-                        if (buf) {
+                        ObjId h = obj_alloc(needed);
+                        if (h != OBJ_NULL) {
+                            char *buf = obj_deref_mut(h);
                             static const char hc[] = "0123456789abcdef";
                             int i;
                             cstr_copy(buf, "NSData:", needed);
@@ -2800,7 +2790,7 @@ Value parse_message_send(Parser *p) {
                                 buf[7 + i * 2 + 1] = hc[c & 0x0f];
                             }
                             buf[7 + result_len * 2] = '\0';
-                            return value_from_id((id)buf);
+                            return value_from_obj(h);
                         }
                     }
                 }
@@ -2840,8 +2830,9 @@ Value parse_message_send(Parser *p) {
                     int result_len = objc_kernel_host_sha256(raw ? raw : "", (unsigned int)byte_len, out_buf, 64);
                     if (result_len > 0) {
                         unsigned int needed = 7 + (unsigned int)result_len * 2 + 1;
-                        char *buf = string_pool_alloc(needed);
-                        if (buf) {
+                        ObjId h = obj_alloc(needed);
+                        if (h != OBJ_NULL) {
+                            char *buf = obj_deref_mut(h);
                             static const char hc[] = "0123456789abcdef";
                             int i;
                             cstr_copy(buf, "NSData:", needed);
@@ -2851,7 +2842,7 @@ Value parse_message_send(Parser *p) {
                                 buf[7 + i * 2 + 1] = hc[c & 0x0f];
                             }
                             buf[7 + result_len * 2] = '\0';
-                            return value_from_id((id)buf);
+                            return value_from_obj(h);
                         }
                     }
                 }
@@ -2888,12 +2879,13 @@ Value parse_message_send(Parser *p) {
                     int result_len = objc_kernel_host_base32_encode(raw ? raw : "", (unsigned int)byte_len, out_buf, 512);
                     if (result_len > 0) {
                         unsigned int needed = (unsigned int)result_len + 1;
-                        char *buf = string_pool_alloc(needed);
-                        if (buf) {
+                        ObjId h = obj_alloc(needed);
+                        if (h != OBJ_NULL) {
+                            char *buf = obj_deref_mut(h);
                             int i;
                             for (i = 0; i < result_len; i++) buf[i] = out_buf[i];
                             buf[result_len] = '\0';
-                            return value_from_id((id)buf);
+                            return value_from_obj(h);
                         }
                     }
                 }
@@ -2910,8 +2902,9 @@ Value parse_message_send(Parser *p) {
                 int result_len = objc_kernel_host_base32_decode(str, (unsigned int)str_len, out_buf, 512);
                 if (result_len > 0) {
                     unsigned int needed = 7 + (unsigned int)result_len * 2 + 1;
-                    char *buf = string_pool_alloc(needed);
-                    if (buf) {
+                    ObjId h = obj_alloc(needed);
+                    if (h != OBJ_NULL) {
+                        char *buf = obj_deref_mut(h);
                         static const char hc[] = "0123456789abcdef";
                         int i;
                         cstr_copy(buf, "NSData:", needed);
@@ -2921,7 +2914,7 @@ Value parse_message_send(Parser *p) {
                             buf[7 + i * 2 + 1] = hc[c & 0x0f];
                         }
                         buf[7 + result_len * 2] = '\0';
-                        return value_from_id((id)buf);
+                        return value_from_obj(h);
                     }
                 }
             }
@@ -2957,8 +2950,9 @@ Value parse_message_send(Parser *p) {
                     int result_len = objc_kernel_host_sha256(raw ? raw : "", (unsigned int)byte_len, out_buf, 64);
                     if (result_len > 0) {
                         unsigned int needed = 7 + (unsigned int)result_len * 2 + 1;
-                        char *buf = string_pool_alloc(needed);
-                        if (buf) {
+                        ObjId h = obj_alloc(needed);
+                        if (h != OBJ_NULL) {
+                            char *buf = obj_deref_mut(h);
                             static const char hc[] = "0123456789abcdef";
                             int i;
                             cstr_copy(buf, "NSData:", needed);
@@ -2968,7 +2962,7 @@ Value parse_message_send(Parser *p) {
                                 buf[7 + i * 2 + 1] = hc[c & 0x0f];
                             }
                             buf[7 + result_len * 2] = '\0';
-                            return value_from_id((id)buf);
+                            return value_from_obj(h);
                         }
                     }
                 }
@@ -3648,8 +3642,9 @@ Value parse_message_send(Parser *p) {
                  }
                  g_ctx.next_invocation_id++;
 
-                 char *buf = string_pool_alloc(24);
-                 if (buf) {
+                 ObjId h = obj_alloc(24);
+                 if (h != OBJ_NULL) {
+                     char *buf = obj_deref_mut(h);
                      cstr_copy(buf, "FDInv:", 24);
                      {
                          char tmp[12]; int ti = 0, v = (int)inv_id;
@@ -3660,7 +3655,7 @@ Value parse_message_send(Parser *p) {
                              buf[6 + j] = '\0';
                          }
                      }
-                     Value inv_val = value_from_id((id)buf);
+                     Value inv_val = value_from_obj(h);
                      return execute_interpreter_method(p, &g_ctx.methods[mi], fwd_sel, receiver, &inv_val, 1, 0);
                  }
              }
