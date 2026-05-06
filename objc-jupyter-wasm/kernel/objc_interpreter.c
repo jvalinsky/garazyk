@@ -883,6 +883,8 @@ void objc_interp_full_reset(void) {
     memset(&g_ctx, 0, sizeof(g_ctx));
     g_ctx.next_coll_id = 1;
     g_ctx.next_block_id = 1;
+    g_ctx.next_enumerator_id = 1;
+    g_ctx.next_invocation_id = 1;
     objc_interp_init();
 }
 
