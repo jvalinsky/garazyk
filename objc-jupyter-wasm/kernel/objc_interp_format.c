@@ -135,7 +135,7 @@ Value format_values_to_pool(const char *fmt, Value *args, int arg_count) {
 
     if (fmt == 0) {
         char *r = string_pool_alloc(7);
-        if (r == 0) return value_from_id(0);
+        if (r == 0) return value_from_obj(OBJ_NULL);
         cstr_copy(r, "(null)", 7);
         return value_from_id((id)r);
     }
@@ -657,7 +657,7 @@ Value format_values_to_pool(const char *fmt, Value *args, int arg_count) {
     {
         unsigned int needed = pos + 1;
         char *result = string_pool_alloc(needed);
-        if (result == 0) return value_from_id(0);
+        if (result == 0) return value_from_obj(OBJ_NULL);
         cstr_copy(result, buf, needed);
         return value_from_id((id)result);
     }
