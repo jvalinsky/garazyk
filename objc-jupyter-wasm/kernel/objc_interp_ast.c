@@ -1313,10 +1313,11 @@ Value eval_ast(AstNode *node, const char *source) {
                 if (loop_iter_check()) break;
                 InterpVar *var = interp_get_or_create_var(node->for_in.var_name);
                 if (var) {
-                    char *ch_ptr = string_pool_alloc(2);
-                    if (ch_ptr) {
+                    ObjId ch_h = obj_alloc(2);
+                    if (ch_h != OBJ_NULL) {
+                        char *ch_ptr = obj_deref_mut(ch_h);
                         ch_ptr[0] = coll_str[ci]; ch_ptr[1] = '\0';
-                        interp_set_var_from_value(var, value_from_id((id)ch_ptr));
+                        interp_set_var_from_value(var, value_from_obj(ch_h));
                     }
                 }
                 g_ctx.break_pending = 0;

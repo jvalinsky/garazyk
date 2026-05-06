@@ -35,8 +35,9 @@ void objc_kernel_on_fetch_complete(int task_id, int status_code, const char *dat
             Value data_val = value_from_obj(OBJ_NULL);
             if (data && data_len > 0) {
                 unsigned int needed = 7 + data_len * 2 + 1;
-                char *buf = string_pool_alloc(needed);
-                if (buf) {
+                ObjId h = obj_alloc(needed);
+                if (h != OBJ_NULL) {
+                    char *buf = obj_deref_mut(h);
                     static const char hex_chars[] = "0123456789abcdef";
                     unsigned int j;
                     cstr_copy(buf, "NSData:", needed);
@@ -46,12 +47,12 @@ void objc_kernel_on_fetch_complete(int task_id, int status_code, const char *dat
                         buf[7 + j * 2 + 1] = hex_chars[c & 0x0f];
                     }
                     buf[7 + data_len * 2] = '\0';
-                    data_val = value_from_id((id)buf);
+                    data_val = value_from_obj(h);
                 }
             }
 
             /* Construct NSHTTPURLResponse marker (simplified for now) */
-            Value response_val = value_from_id((id)"FDObj:NSHTTPURLResponse"); /* Simplified */
+            Value response_val = value_from_obj(obj_alloc_str("FDObj:NSHTTPURLResponse", 23)); /* Simplified */
             
             /* Error value */
             Value error_val = value_from_obj(OBJ_NULL); /* nil error for now if we got a response */
@@ -221,13 +222,13 @@ int coll_add_string_val(unsigned int coll_id, const char *key_str, const char *v
     Value val = value_void();
     if (key_str) {
         unsigned int len = cstr_len(key_str);
-        char *k = string_pool_alloc(len + 1);
-        if (k) { cstr_copy(k, key_str, len + 1); key = value_from_id((id)k); }
+        ObjId kh = obj_alloc_str(key_str, len);
+        if (kh != OBJ_NULL) key = value_from_obj(kh);
     }
     if (val_str) {
         unsigned int len = cstr_len(val_str);
-        char *v = string_pool_alloc(len + 1);
-        if (v) { cstr_copy(v, val_str, len + 1); val = value_from_id((id)v); }
+        ObjId vh = obj_alloc_str(val_str, len);
+        if (vh != OBJ_NULL) val = value_from_obj(vh);
     }
     return coll_add(coll_id, key, val);
 }
@@ -236,8 +237,8 @@ int coll_add_int_val(unsigned int coll_id, const char *key_str, int val_int) {
     Value key = value_void();
     if (key_str) {
         unsigned int len = cstr_len(key_str);
-        char *k = string_pool_alloc(len + 1);
-        if (k) { cstr_copy(k, key_str, len + 1); key = value_from_id((id)k); }
+        ObjId kh = obj_alloc_str(key_str, len);
+        if (kh != OBJ_NULL) key = value_from_obj(kh);
     }
     return coll_add(coll_id, key, value_from_int(val_int));
 }
@@ -246,8 +247,8 @@ int coll_add_double_val(unsigned int coll_id, const char *key_str, double val_do
     Value key = value_void();
     if (key_str) {
         unsigned int len = cstr_len(key_str);
-        char *k = string_pool_alloc(len + 1);
-        if (k) { cstr_copy(k, key_str, len + 1); key = value_from_id((id)k); }
+        ObjId kh = obj_alloc_str(key_str, len);
+        if (kh != OBJ_NULL) key = value_from_obj(kh);
     }
     return coll_add(coll_id, key, value_from_float(val_double));
 }
@@ -260,8 +261,8 @@ int coll_add_marker_val(unsigned int coll_id, const char *key_str, ObjId marker)
     Value key = value_void();
     if (key_str) {
         unsigned int len = cstr_len(key_str);
-        char *k = string_pool_alloc(len + 1);
-        if (k) { cstr_copy(k, key_str, len + 1); key = value_from_id((id)k); }
+        ObjId kh = obj_alloc_str(key_str, len);
+        if (kh != OBJ_NULL) key = value_from_obj(kh);
     }
     return coll_add(coll_id, key, value_from_obj(marker));
 }
@@ -777,6 +778,26 @@ Class class_for_fdobj_marker(ObjId receiver) {
         }
     }
     return (Class)0;
+}
+
+/* Create an FDObj: marker handle for a class variable.
+ * Returns OBJ_NULL if the class name can't be found. */
+ObjId fdobj_marker_for_class(Class cls) {
+    unsigned int vi;
+    for (vi = 0; vi < g_ctx.var_count; vi++) {
+        if (g_ctx.vars[vi].is_class && g_ctx.vars[vi].cls == cls) {
+            const char *name = g_ctx.vars[vi].name;
+            unsigned int nlen = cstr_len(name);
+            unsigned int needed = 6 + nlen + 1; /* "FDObj:" + name + NUL */
+            ObjId h = obj_alloc(needed);
+            if (h == OBJ_NULL) return OBJ_NULL;
+            char *buf = obj_deref_mut(h);
+            cstr_copy(buf, "FDObj:", 7);
+            cstr_copy(buf + 6, name, nlen + 1);
+            return h;
+        }
+    }
+    return OBJ_NULL;
 }
 
 /* ── Struct type system ──────────────────────────────────────────── */
