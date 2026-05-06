@@ -108,6 +108,33 @@ AstNode *ast_make_source(AstNodeType type, unsigned int start, unsigned int len)
     return n;
 }
 
+AstNode *ast_make_logical(AstNodeType type, unsigned int left_start, unsigned int left_len,
+                          unsigned int right_start, unsigned int right_len) {
+    AstNode *n = ast_alloc();
+    if (!n) return 0;
+    n->type = type;
+    n->logical.left_start = left_start;
+    n->logical.left_len = left_len;
+    n->logical.right_start = right_start;
+    n->logical.right_len = right_len;
+    return n;
+}
+
+AstNode *ast_make_ternary(unsigned int cond_start, unsigned int cond_len,
+                          unsigned int true_start, unsigned int true_len,
+                          unsigned int false_start, unsigned int false_len) {
+    AstNode *n = ast_alloc();
+    if (!n) return 0;
+    n->type = AST_TERNARY;
+    n->ternary.cond_start = cond_start;
+    n->ternary.cond_len = cond_len;
+    n->ternary.true_start = true_start;
+    n->ternary.true_len = true_len;
+    n->ternary.false_start = false_start;
+    n->ternary.false_len = false_len;
+    return n;
+}
+
 AstNode *ast_make_noop(void) {
     AstNode *n = ast_alloc();
     if (!n) return 0;
@@ -868,24 +895,111 @@ AstNode *parse_statement_ast(Parser *p) {
      * actual evaluation happens in eval_ast → eval_source_range.
      * This avoids the double-execution bug where parse_statement
      * evaluates the code during AST construction AND eval_source_range
-     * evaluates it again during evaluation. */
+     * evaluates it again during evaluation.
+     *
+     * We also detect &&, ||, and ?: at the outermost precedence level
+     * (not inside parentheses, brackets, or braces) and create proper
+     * AST nodes for short-circuit evaluation. */
     {
         unsigned int start = p->lex.token_start;
         int brace_depth = 0;
-        /* Skip tokens until we find the statement-ending semicolon.
-         * We need to track brace depth to handle nested blocks. */
+        int paren_depth = 0;
+        int bracket_depth = 0;
+        /* Track the first outermost &&, ||, and ?: positions.
+         * || has lower precedence than &&, which has lower precedence than ?:,
+         * so we check in reverse order of precedence: || first, then &&, then ?:
+         * to find the top-level split point. */
+        unsigned int first_or_pos = 0;   /* position of first || at outermost level */
+        unsigned int first_and_pos = 0;  /* position of first && at outermost level */
+        unsigned int first_question_pos = 0; /* position of first ? at outermost level */
+        unsigned int matching_colon_pos = 0; /* position of : matching first ? */
+        int found_or = 0, found_and = 0, found_ternary = 0;
+
         while (parser_current(p).type != TOK_EOF) {
-            if (parser_current(p).type == TOK_OPEN_BRACE) brace_depth++;
-            else if (parser_current(p).type == TOK_CLOSE_BRACE) {
+            TokenType tt = parser_current(p).type;
+            if (tt == TOK_OPEN_BRACE) brace_depth++;
+            else if (tt == TOK_CLOSE_BRACE) {
                 brace_depth--;
                 if (brace_depth < 0) break; /* end of enclosing block */
             }
-            else if (parser_current(p).type == TOK_SEMICOLON && brace_depth == 0) {
+            else if (tt == TOK_OPEN_PAREN) paren_depth++;
+            else if (tt == TOK_CLOSE_PAREN) paren_depth--;
+            else if (tt == TOK_OPEN_BRACKET) bracket_depth++;
+            else if (tt == TOK_CLOSE_BRACKET) bracket_depth--;
+            else if (tt == TOK_SEMICOLON && brace_depth == 0 && paren_depth == 0 && bracket_depth == 0) {
                 parser_advance(p);
                 break;
             }
+            /* Detect lazy operators at the outermost nesting level.
+             * || has the lowest precedence, so it splits first. */
+            if (paren_depth == 0 && bracket_depth == 0 && brace_depth == 0) {
+                if (!found_or && (tt == TOK_LOGICAL_OR || tt == TOK_OR)) {
+                    first_or_pos = p->lex.token_start;
+                    found_or = 1;
+                }
+                if (!found_or && !found_and && (tt == TOK_LOGICAL_AND || tt == TOK_AND)) {
+                    first_and_pos = p->lex.token_start;
+                    found_and = 1;
+                }
+                if (!found_or && !found_and && !found_ternary && tt == TOK_QUESTION) {
+                    first_question_pos = p->lex.token_start;
+                    found_ternary = 1;
+                }
+                if (found_ternary && !matching_colon_pos && tt == TOK_COLON) {
+                    matching_colon_pos = p->lex.token_start;
+                }
+            }
             parser_advance(p);
         }
+
+        /* If we found a lazy operator at the outermost level, create a
+         * short-circuit AST node instead of a plain source range. */
+        if (found_or) {
+            /* left = source[start .. first_or_pos), right = source after || */
+            unsigned int left_start = start;
+            unsigned int left_len = first_or_pos - start;
+            /* right starts after the || token — we need to find where || ends.
+             * first_or_pos points to the start of the || token (2 chars). */
+            unsigned int right_start = first_or_pos + 2; /* skip "||" */
+            unsigned int right_len = (p->lex.token_start) - right_start;
+            AstNode *node = ast_make_logical(AST_LOGICAL_OR, left_start, left_len,
+                                             right_start, right_len);
+            if (!node && !p->error) {
+                parser_error(p, "AST node limit reached (max 1024)");
+                return 0;
+            }
+            return node;
+        }
+        if (found_and) {
+            unsigned int left_start = start;
+            unsigned int left_len = first_and_pos - start;
+            unsigned int right_start = first_and_pos + 2; /* skip "&&" */
+            unsigned int right_len = (p->lex.token_start) - right_start;
+            AstNode *node = ast_make_logical(AST_LOGICAL_AND, left_start, left_len,
+                                             right_start, right_len);
+            if (!node && !p->error) {
+                parser_error(p, "AST node limit reached (max 1024)");
+                return 0;
+            }
+            return node;
+        }
+        if (found_ternary && matching_colon_pos) {
+            unsigned int cond_start = start;
+            unsigned int cond_len = first_question_pos - start;
+            unsigned int true_start = first_question_pos + 1; /* skip "?" */
+            unsigned int true_len = matching_colon_pos - true_start;
+            unsigned int false_start = matching_colon_pos + 1; /* skip ":" */
+            unsigned int false_len = (p->lex.token_start) - false_start;
+            AstNode *node = ast_make_ternary(cond_start, cond_len,
+                                             true_start, true_len,
+                                             false_start, false_len);
+            if (!node && !p->error) {
+                parser_error(p, "AST node limit reached (max 1024)");
+                return 0;
+            }
+            return node;
+        }
+
         {
             AstNode *node = ast_make_source(AST_EXPR_STMT, start, p->lex.token_start - start);
             if (!node && !p->error) {
@@ -913,9 +1027,11 @@ Value eval_source_range(unsigned int start, unsigned int len,
     Parser p;
     Value last = value_void();
     unsigned int saved_parse_depth = g_ctx.parse_depth;
-    g_ctx.parse_depth = 0;
+    /* Don't reset parse_depth to 0 here — that defeats the recursion budget.
+     * Each eval_source_range call is a re-entry into the parser, so the
+     * depth should accumulate across nested calls. If the saved depth is
+     * already at the limit, we'll catch it in parse_expression_safe. */
     if (len == 0) {
-        g_ctx.parse_depth = saved_parse_depth;
         return value_void();
     }
     parser_init(&p, source + start, len, line_offset);
@@ -986,9 +1102,39 @@ Value eval_source_range(unsigned int start, unsigned int len,
     return last;
 }
 
+/* Maximum depth for AST evaluation recursion.
+ * WASM stack is 1 MB (configured in kernel-wasm.nix); each eval_ast frame
+ * is ~200 bytes, so 256 levels is well within the budget with margin. */
+#define MAX_EVAL_DEPTH 256
+
+/* Maximum total loop iterations across all loops in a single top-level eval.
+ * Prevents runaway infinite loops from consuming all CPU in the browser. */
+#define MAX_LOOP_ITERATIONS 1000000
+
+/* Check loop iteration budget; returns 1 if exceeded. */
+static int loop_iter_check(void) {
+    if (g_ctx.loop_iterations >= MAX_LOOP_ITERATIONS) {
+        g_ctx.error_code = OBJC_INTERP_RESOURCE_ERROR;
+        cstr_copy(g_ctx.error_buffer, "loop iteration limit exceeded (max 1000000)", OBJC_INTERP_ERROR_SIZE);
+        return 1;
+    }
+    g_ctx.loop_iterations++;
+    return 0;
+}
+
 Value eval_ast(AstNode *node, const char *source) {
     Value last = value_void();
     if (!node) return last;
+
+    /* Guard against deep recursion in AST evaluation.
+     * Each recursive call (if/while/for/block/try) increments eval_depth. */
+    if (g_ctx.eval_depth >= MAX_EVAL_DEPTH) {
+        g_ctx.error_code = OBJC_INTERP_RESOURCE_ERROR;
+        cstr_copy(g_ctx.error_buffer, "evaluation depth limit exceeded (max 256)", OBJC_INTERP_ERROR_SIZE);
+        return last;
+    }
+    g_ctx.eval_depth++;
+#define EVAL_RETURN(v) do { g_ctx.eval_depth--; return (v); } while(0)
 
     switch (node->type) {
     case AST_IF: {
@@ -1003,6 +1149,7 @@ Value eval_ast(AstNode *node, const char *source) {
 
     case AST_WHILE: {
         while (1) {
+            if (loop_iter_check()) break;
             Value cond = eval_ast(node->while_stmt.condition, source);
             if (!is_truthy(cond)) break;
             g_ctx.break_pending = 0;
@@ -1016,14 +1163,15 @@ Value eval_ast(AstNode *node, const char *source) {
                 g_ctx.continue_pending = 0;
                 continue; /* re-evaluate condition */
             }
-            if (g_ctx.return_pending || g_ctx.exception_pending) return last;
-            if (interp_should_interrupt()) return last;
+            if (g_ctx.return_pending || g_ctx.exception_pending) EVAL_RETURN(last);
+            if (interp_should_interrupt()) EVAL_RETURN(last);
         }
         break;
     }
 
     case AST_DO_WHILE: {
         do {
+            if (loop_iter_check()) break;
             g_ctx.break_pending = 0;
             g_ctx.continue_pending = 0;
             eval_ast(node->do_while_stmt.body, source);
@@ -1035,8 +1183,8 @@ Value eval_ast(AstNode *node, const char *source) {
                 g_ctx.continue_pending = 0;
                 /* skip to condition check */
             }
-            if (g_ctx.return_pending || g_ctx.exception_pending) return last;
-            if (interp_should_interrupt()) return last;
+            if (g_ctx.return_pending || g_ctx.exception_pending) EVAL_RETURN(last);
+            if (interp_should_interrupt()) EVAL_RETURN(last);
             {
                 Value cond = eval_ast(node->do_while_stmt.condition, source);
                 if (!is_truthy(cond)) break;
@@ -1052,6 +1200,7 @@ Value eval_ast(AstNode *node, const char *source) {
         eval_ast(node->for_stmt.init, source);
 
         while (1) {
+            if (loop_iter_check()) break;
             /* Check condition (empty condition = always true) */
             if (node->for_stmt.condition != 0 && node->for_stmt.condition->source_range.source_len > 0) {
                 Value cond = eval_ast(node->for_stmt.condition, source);
@@ -1070,8 +1219,8 @@ Value eval_ast(AstNode *node, const char *source) {
                 g_ctx.continue_pending = 0;
                 /* Skip to increment */
             }
-            if (g_ctx.return_pending || g_ctx.exception_pending) return last;
-            if (interp_should_interrupt()) return last;
+            if (g_ctx.return_pending || g_ctx.exception_pending) EVAL_RETURN(last);
+            if (interp_should_interrupt()) EVAL_RETURN(last);
 
             /* Increment */
             eval_ast(node->for_stmt.increment, source);
@@ -1106,6 +1255,7 @@ Value eval_ast(AstNode *node, const char *source) {
             unsigned int cnt = coll_count(cid);
             unsigned int idx;
             for (idx = 0; idx < cnt; idx++) {
+                if (loop_iter_check()) break;
                 int entry_idx = coll_get_nth(cid, idx);
                 if (entry_idx < 0) break;
                 InterpVar *var = interp_get_or_create_var(node->for_in.var_name);
@@ -1117,14 +1267,15 @@ Value eval_ast(AstNode *node, const char *source) {
                 eval_ast(node->for_in.body, source);
                 if (g_ctx.break_pending) { g_ctx.break_pending = 0; break; }
                 if (g_ctx.continue_pending) { g_ctx.continue_pending = 0; continue; }
-                if (g_ctx.return_pending || g_ctx.exception_pending) return last;
-                if (interp_should_interrupt()) return last;
+                if (g_ctx.return_pending || g_ctx.exception_pending) EVAL_RETURN(last);
+                if (interp_should_interrupt()) EVAL_RETURN(last);
             }
         } else if (is_nsstring) {
             /* NSString character iteration */
             unsigned int len = (unsigned int)cstr_len(coll_str);
             unsigned int ci;
             for (ci = 0; ci < len; ci++) {
+                if (loop_iter_check()) break;
                 InterpVar *var = interp_get_or_create_var(node->for_in.var_name);
                 if (var) {
                     char *ch_ptr = string_pool_alloc(2);
@@ -1138,8 +1289,8 @@ Value eval_ast(AstNode *node, const char *source) {
                 eval_ast(node->for_in.body, source);
                 if (g_ctx.break_pending) { g_ctx.break_pending = 0; break; }
                 if (g_ctx.continue_pending) { g_ctx.continue_pending = 0; continue; }
-                if (g_ctx.return_pending || g_ctx.exception_pending) return last;
-                if (interp_should_interrupt()) return last;
+                if (g_ctx.return_pending || g_ctx.exception_pending) EVAL_RETURN(last);
+                if (interp_should_interrupt()) EVAL_RETURN(last);
             }
         } else if (coll.is_id && coll.obj_val != 0) {
             /* Protocol-based iteration: objectEnumerator + nextObject */
@@ -1158,6 +1309,7 @@ Value eval_ast(AstNode *node, const char *source) {
 
             if (enumerator.is_id && enumerator.obj_val != 0) {
                 while (1) {
+                    if (loop_iter_check()) break;
                     Value next_obj;
                     InterpVar *tmp = interp_get_or_create_var("__for_in_enum");
                     if (tmp) {
@@ -1180,8 +1332,8 @@ Value eval_ast(AstNode *node, const char *source) {
                     eval_ast(node->for_in.body, source);
                     if (g_ctx.break_pending) { g_ctx.break_pending = 0; break; }
                     if (g_ctx.continue_pending) { g_ctx.continue_pending = 0; continue; }
-                    if (g_ctx.return_pending || g_ctx.exception_pending) return last;
-                    if (interp_should_interrupt()) return last;
+                    if (g_ctx.return_pending || g_ctx.exception_pending) EVAL_RETURN(last);
+                    if (interp_should_interrupt()) EVAL_RETURN(last);
                 }
             }
         }
@@ -1193,8 +1345,8 @@ Value eval_ast(AstNode *node, const char *source) {
         for (i = 0; i < node->block.count; i++) {
             last = eval_ast(node->block.children[i], source);
             if (g_ctx.return_pending || g_ctx.break_pending || g_ctx.continue_pending)
-                return last;
-            if (g_ctx.error_code != OBJC_INTERP_OK) return last;
+                EVAL_RETURN(last);
+            if (g_ctx.error_code != OBJC_INTERP_OK) EVAL_RETURN(last);
         }
         break;
     }
@@ -1205,6 +1357,55 @@ Value eval_ast(AstNode *node, const char *source) {
                                  node->source_range.source_len, source,
                                  count_lines_up_to(source, node->source_range.source_start));
         break;
+
+    case AST_LOGICAL_AND: {
+        /* Short-circuit: evaluate left; if falsy, skip right */
+        Value left = eval_source_range(node->logical.left_start,
+                                       node->logical.left_len, source,
+                                       count_lines_up_to(source, node->logical.left_start));
+        if (!is_truthy(left)) {
+            last = value_from_int(0);
+        } else {
+            Value right = eval_source_range(node->logical.right_start,
+                                            node->logical.right_len, source,
+                                            count_lines_up_to(source, node->logical.right_start));
+            last = value_from_int(is_truthy(right) ? 1 : 0);
+        }
+        break;
+    }
+
+    case AST_LOGICAL_OR: {
+        /* Short-circuit: evaluate left; if truthy, skip right */
+        Value left = eval_source_range(node->logical.left_start,
+                                       node->logical.left_len, source,
+                                       count_lines_up_to(source, node->logical.left_start));
+        if (is_truthy(left)) {
+            last = value_from_int(1);
+        } else {
+            Value right = eval_source_range(node->logical.right_start,
+                                            node->logical.right_len, source,
+                                            count_lines_up_to(source, node->logical.right_start));
+            last = value_from_int(is_truthy(right) ? 1 : 0);
+        }
+        break;
+    }
+
+    case AST_TERNARY: {
+        /* Short-circuit: evaluate condition; only evaluate the selected branch */
+        Value cond = eval_source_range(node->ternary.cond_start,
+                                       node->ternary.cond_len, source,
+                                       count_lines_up_to(source, node->ternary.cond_start));
+        if (is_truthy(cond)) {
+            last = eval_source_range(node->ternary.true_start,
+                                     node->ternary.true_len, source,
+                                     count_lines_up_to(source, node->ternary.true_start));
+        } else {
+            last = eval_source_range(node->ternary.false_start,
+                                     node->ternary.false_len, source,
+                                     count_lines_up_to(source, node->ternary.false_start));
+        }
+        break;
+    }
 
     case AST_NOOP:
         /* Already executed during parse phase — skip */
@@ -1219,7 +1420,7 @@ Value eval_ast(AstNode *node, const char *source) {
         if (g_ctx.try_depth >= MAX_TRY_DEPTH) {
             g_ctx.error_code = OBJC_INTERP_RESOURCE_ERROR;
             cstr_copy(g_ctx.error_buffer, "try-catch nesting too deep (max 16)", OBJC_INTERP_ERROR_SIZE);
-            return last;
+            EVAL_RETURN(last);
         }
         TryFrame *frame = &g_ctx.try_stack[g_ctx.try_depth++];
         frame->exception_pending = 0;
@@ -1360,7 +1561,7 @@ Value eval_ast(AstNode *node, const char *source) {
             node->switch_stmt.expr_start,
             node->switch_stmt.expr_len, source,
             count_lines_up_to(source, node->switch_stmt.expr_start));
-        if (g_ctx.error_code != OBJC_INTERP_OK) return switch_val;
+        if (g_ctx.error_code != OBJC_INTERP_OK) EVAL_RETURN(switch_val);
 
         /* Find matching case */
         int matched_case = -1;
@@ -1390,7 +1591,7 @@ Value eval_ast(AstNode *node, const char *source) {
                         g_ctx.break_pending = 0; /* consume the break — it exits switch, not loop */
                         break;
                     }
-                    if (g_ctx.return_pending || g_ctx.exception_pending) return last;
+                    if (g_ctx.return_pending || g_ctx.exception_pending) EVAL_RETURN(last);
                 }
                 /* Fall through to default if no break */
                 if (!switch_break && !g_ctx.return_pending &&
@@ -1416,5 +1617,7 @@ Value eval_ast(AstNode *node, const char *source) {
     }
     }
 
+    g_ctx.eval_depth--;
+#undef EVAL_RETURN
     return last;
 }

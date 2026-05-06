@@ -244,10 +244,23 @@ static Value parse_logical_and(Parser *p) {
 
     while (parser_current(p).type == TOK_AND) {
         parser_advance(p);
-        {
+        if (!is_truthy(left)) {
+            /* Short-circuit: left is falsy, so && yields 0.
+             * We must still parse the right side to consume tokens,
+             * but suppress side effects (message sends, variable mutations). */
+            int saved_suppress = g_ctx.suppress_side_effects;
+            g_ctx.suppress_side_effects = 1;
+            {
+                Value right = parse_bitwise_or(p);
+                (void)right; /* discard — result is always 0 */
+            }
+            g_ctx.suppress_side_effects = saved_suppress;
+            if (p->error) return left;
+            left = value_from_int(0);
+        } else {
             Value right = parse_bitwise_or(p);
             if (p->error) return right;
-            left = value_from_int(is_truthy(left) && is_truthy(right) ? 1 : 0);
+            left = value_from_int(is_truthy(right) ? 1 : 0);
         }
     }
 
@@ -260,10 +273,22 @@ static Value parse_logical_or(Parser *p) {
 
     while (parser_current(p).type == TOK_OR) {
         parser_advance(p);
-        {
+        if (is_truthy(left)) {
+            /* Short-circuit: left is truthy, so || yields 1.
+             * Parse right side to consume tokens but suppress side effects. */
+            int saved_suppress = g_ctx.suppress_side_effects;
+            g_ctx.suppress_side_effects = 1;
+            {
+                Value right = parse_logical_and(p);
+                (void)right; /* discard — result is always 1 */
+            }
+            g_ctx.suppress_side_effects = saved_suppress;
+            if (p->error) return left;
+            left = value_from_int(1);
+        } else {
             Value right = parse_logical_and(p);
             if (p->error) return right;
-            left = value_from_int(is_truthy(left) || is_truthy(right) ? 1 : 0);
+            left = value_from_int(is_truthy(right) ? 1 : 0);
         }
     }
 
@@ -277,18 +302,50 @@ static Value parse_ternary(Parser *p) {
     if (parser_current(p).type == TOK_QUESTION) {
         parser_advance(p);
         {
-            Value true_val = parse_ternary(p); /* right-associative */
-            if (p->error) return true_val;
-            if (parser_current(p).type != TOK_COLON) {
-                p->error = 1;
-                cstr_copy(g_ctx.error_buffer, "expected ':' in ternary expression", OBJC_INTERP_ERROR_SIZE);
-                return cond;
-            }
-            parser_advance(p); /* skip : */
-            {
-                Value false_val = parse_ternary(p); /* right-associative */
-                if (p->error) return false_val;
-                return is_truthy(cond) ? true_val : false_val;
+            int cond_truthy = is_truthy(cond);
+            if (cond_truthy) {
+                /* Evaluate true branch, skip false branch */
+                Value true_val = parse_ternary(p); /* right-associative */
+                if (p->error) return true_val;
+                if (parser_current(p).type != TOK_COLON) {
+                    p->error = 1;
+                    cstr_copy(g_ctx.error_buffer, "expected ':' in ternary expression", OBJC_INTERP_ERROR_SIZE);
+                    return cond;
+                }
+                parser_advance(p); /* skip : */
+                {
+                    /* Suppress side effects for the false branch */
+                    int saved_suppress = g_ctx.suppress_side_effects;
+                    g_ctx.suppress_side_effects = 1;
+                    {
+                        Value false_val = parse_ternary(p);
+                        (void)false_val;
+                    }
+                    g_ctx.suppress_side_effects = saved_suppress;
+                }
+                if (p->error) return true_val;
+                return true_val;
+            } else {
+                /* Skip true branch, evaluate false branch */
+                int saved_suppress = g_ctx.suppress_side_effects;
+                g_ctx.suppress_side_effects = 1;
+                {
+                    Value true_val = parse_ternary(p);
+                    (void)true_val;
+                }
+                g_ctx.suppress_side_effects = saved_suppress;
+                if (p->error) return cond;
+                if (parser_current(p).type != TOK_COLON) {
+                    p->error = 1;
+                    cstr_copy(g_ctx.error_buffer, "expected ':' in ternary expression", OBJC_INTERP_ERROR_SIZE);
+                    return cond;
+                }
+                parser_advance(p); /* skip : */
+                {
+                    Value false_val = parse_ternary(p); /* right-associative */
+                    if (p->error) return false_val;
+                    return false_val;
+                }
             }
         }
     }
@@ -318,7 +375,9 @@ static Value parse_assignment(Parser *p) {
                     parser_error(p, "assignment target is not a variable");
                     return value_void();
                 }
-                interp_set_var_from_value(var, val);
+                if (!g_ctx.suppress_side_effects) {
+                    interp_set_var_from_value(var, val);
+                }
                 return val;
             }
         }
@@ -342,7 +401,9 @@ static Value parse_assignment(Parser *p) {
                 parser_error(p, "assignment target is not a variable");
                 return value_void();
             }
-            interp_set_var_from_value(var, val);
+            if (!g_ctx.suppress_side_effects) {
+                interp_set_var_from_value(var, val);
+            }
             return val;
         }
         p->lex.current = saved;
@@ -535,13 +596,16 @@ Value parse_type_and_var_decl(Parser *p) {
                 var->is_block_captured = is_block_var;
                 var->is_static = is_static_var; /* mark as static if needed */
 
+                /* When side effects are suppressed, parse initializer but
+                 * don't store the value (variable still exists but is
+                 * zero-initialized). */
                 /* Parse initializer: = block_literal */
                 if (parser_current(p).type == TOK_ASSIGN) {
                     parser_advance(p);
                     init_val = parse_expression(p);
                     if (p->error) return init_val;
 
-                    if (var) {
+                    if (var && !g_ctx.suppress_side_effects) {
                         var->value = init_val.obj_val;
                         var->cls = init_val.cls_val;
                         var->sel = init_val.sel_val;
@@ -557,8 +621,10 @@ Value parse_type_and_var_decl(Parser *p) {
                 }
 
                 /* Default: uninitialized block */
-                var->is_id = 1;
-                var->value = 0;
+                if (!g_ctx.suppress_side_effects) {
+                    var->is_id = 1;
+                    var->value = 0;
+                }
                 return value_void();
             }
         }
@@ -614,13 +680,15 @@ Value parse_type_and_var_decl(Parser *p) {
          * when a variable is redeclared (e.g., 'int i = 1' after 'int i = 0'
          * in a prior cell, where the old variable had is_int=1 but also
          * potentially stale is_id/is_float from state pollution). */
-        var->is_int = 0;
-        var->is_float = 0;
-        var->is_class = 0;
-        var->is_sel = 0;
-        var->is_id = 0;
-        var->is_block_captured = is_block_var;
-        var->is_static = is_static_var; /* mark as static if needed */
+        if (!g_ctx.suppress_side_effects) {
+            var->is_int = 0;
+            var->is_float = 0;
+            var->is_class = 0;
+            var->is_sel = 0;
+            var->is_id = 0;
+            var->is_block_captured = is_block_var;
+            var->is_static = is_static_var; /* mark as static if needed */
+        }
 
         /* Parse initializer */
         if (parser_current(p).type == TOK_ASSIGN) {
@@ -628,7 +696,7 @@ Value parse_type_and_var_decl(Parser *p) {
             init_val = parse_expression(p);
             if (p->error) return init_val;
 
-            if (var) {
+            if (var && !g_ctx.suppress_side_effects) {
                 var->value = init_val.obj_val;
                 var->cls = init_val.cls_val;
                 var->sel = init_val.sel_val;
@@ -644,7 +712,7 @@ Value parse_type_and_var_decl(Parser *p) {
              * declarations like int a = 0, b = 1, c = 2; */
         } else {
             /* Default initialization (no initializer provided) */
-        if (var) {
+        if (var && !g_ctx.suppress_side_effects) {
             if (cstr_eq(type_name, "int") || cstr_eq(type_name, "NSInteger") || cstr_eq(type_name, "NSUInteger")) {
                 var->is_int = 1;
                 var->int_value = 0;
