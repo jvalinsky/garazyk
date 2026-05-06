@@ -62,6 +62,10 @@ int synthesized_ivar_set(id self, const char *var_name, Value val);
 /* String pool pointer check */
 int is_string_pool_pointer(id value);
 
+/* Struct type system */
+StructDef *struct_def_find(const char *name);
+void struct_register_builtin(void);
+
 /* Class lookup for FDObj: markers */
 Class class_for_fdobj_marker(id receiver);
 

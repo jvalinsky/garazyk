@@ -242,6 +242,8 @@ InterpVar *interp_create_var(const char *name) {
     g_ctx.vars[g_ctx.var_count].is_id = 0;
     g_ctx.vars[g_ctx.var_count].is_block_captured = 0;
     g_ctx.vars[g_ctx.var_count].is_static = 0;
+    g_ctx.vars[g_ctx.var_count].is_struct = 0;
+    g_ctx.vars[g_ctx.var_count].struct_instance_id = 0;
     g_ctx.var_count++;
     return &g_ctx.vars[g_ctx.var_count - 1];
 }
@@ -782,6 +784,8 @@ void objc_interp_init(void) {
             }
         }
     }
+    /* Register built-in Foundation struct types (NSRange, CGPoint, CGSize, CGRect) */
+    struct_register_builtin();
     g_ctx.interp_initialized = 1;
 }
 

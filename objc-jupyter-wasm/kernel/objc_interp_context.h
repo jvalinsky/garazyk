@@ -135,6 +135,12 @@ typedef struct InterpContext {
     unsigned int string_pool_offset;
     unsigned int parse_depth;
 
+    /* ── Struct type system ──────────────────────────────── */
+    StructDef struct_defs[MAX_STRUCT_DEFS];
+    unsigned int struct_def_count;
+    StructInstance struct_instances[MAX_STRUCT_INSTANCES];
+    unsigned int struct_instance_count;
+
     /* ── AST arena ──────────────────────────────────────── */
     AstNode ast_arena[1024];
     unsigned int ast_count;
