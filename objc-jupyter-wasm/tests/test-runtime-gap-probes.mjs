@@ -5,6 +5,7 @@
  */
 import { readFile } from 'node:fs/promises';
 import { WASI } from 'node:wasi';
+import crypto from 'node:crypto';
 
 const wasmPath = process.argv[2] || 'result/wasm/kernel.wasm';
 
@@ -26,7 +27,13 @@ let instance;
     json_parse() { return 0; },
     json_stringify() { return 0; },
     fetch() { return 0; },
-    sha256() { return 0; },
+    sha256(data_ptr, data_len, out_ptr, out_cap) {
+      const mem = new Uint8Array(instance.exports.memory.buffer);
+      const data = mem.slice(data_ptr, data_ptr + data_len);
+      const hash = crypto.createHash('sha256').update(data).digest();
+      mem.set(hash.subarray(0, Math.min(hash.length, out_cap)), out_ptr);
+      return hash.length; /* 32 */
+    },
     random_bytes() { return 0; },
     hmac_sha256() { return 0; },
     base32_encode() { return 0; },
@@ -200,7 +207,7 @@ const probes = [
     code: `SEL s = @selector(setObject:forKey:);\nNSLog(@"ok");`,
     expect: 'ok' },
   { cat: '@selector', name: 'performSelector:',
-    code: `@interface Perf : NSObject\n- (int)getValue { return 77; }\n@end\n@implementation Perf @end\nPerf *p = [Perf new];\nint v = (int)[p performSelector:@selector(getValue)];\nNSLog(@"%d", v);`,
+    code: `@interface Perf : NSObject\n- (int)getValue;\n@end\n@implementation Perf\n- (int)getValue { return 77; }\n@end\nPerf *p = [Perf new];\nint v = (int)[p performSelector:@selector(getValue)];\nNSLog(@"%d", v);`,
     expect: '77' },
 
   // ── Introspection ───────────────────────────────────────────
