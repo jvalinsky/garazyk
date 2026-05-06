@@ -743,9 +743,7 @@ Value parse_message_send(Parser *p) {
             if (g_ctx.pool_depth > 0) {
                 AutoreleasePool *pool = &g_ctx.pools[g_ctx.pool_depth - 1];
                 if (pool->count < MAX_AUTORELEASE_OBJECTS) {
-                    /* Store the object marker as a uintptr_t cast to unsigned int.
-                     * String pool pointers are already within 32-bit range. */
-                    pool->object_markers[pool->count++] = (unsigned int)(uintptr_t)receiver;
+                    pool->object_markers[pool->count++] = receiver;
                 }
             }
             return value_from_id(receiver);

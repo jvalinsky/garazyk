@@ -722,12 +722,15 @@ void objc_interp_init(void) {
     g_ctx.coll_entry_count = 0;
     g_ctx.next_block_id = 1;
     g_ctx.block_count = 0;
+    block_init();
     g_ctx.network_task_count = 0;
     g_ctx.next_network_task_id = 1;
     g_ctx.protocol_count = 0;
     g_ctx.try_depth = 0;
     g_ctx.exception_pending = 0;
     g_ctx.current_exception = value_void();
+    invocation_init();
+    association_init();
 
     /* Register Foundation class names as variables with is_class=1.
      * We don't call objc_allocateClassPair (it can cause WASM traps).
@@ -910,6 +913,9 @@ void objc_interp_full_reset(void) {
      * this zeroes everything and re-initializes Foundation classes. */
     memset(&g_ctx, 0, sizeof(g_ctx));
     coll_init();
+    block_init();
+    invocation_init();
+    association_init();
     g_ctx.next_coll_id = 1;
     g_ctx.next_block_id = 1;
     g_ctx.next_enumerator_id = 1;

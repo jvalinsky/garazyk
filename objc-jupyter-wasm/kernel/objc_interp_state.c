@@ -297,6 +297,33 @@ void coll_init(void) {
     }
 }
 
+/* Initialize the block free list. Must be called after memset. */
+void block_init(void) {
+    int i;
+    g_ctx.block_free_list = -1;
+    for (i = 0; i < 32; i++) {
+        g_ctx.block_free_next[i] = -1;
+    }
+}
+
+/* Initialize the invocation free list. Must be called after memset. */
+void invocation_init(void) {
+    int i;
+    g_ctx.invocation_free_list = -1;
+    for (i = 0; i < MAX_INVOCATIONS; i++) {
+        g_ctx.invocation_free_next[i] = -1;
+    }
+}
+
+/* Initialize the association free list. Must be called after memset. */
+void association_init(void) {
+    int i;
+    g_ctx.association_free_list = -1;
+    for (i = 0; i < MAX_ASSOCIATIONS; i++) {
+        g_ctx.association_free_next[i] = -1;
+    }
+}
+
 /* Count entries for a given collection ID. */
 unsigned int coll_count(unsigned int coll_id) {
     unsigned int i, count = 0;

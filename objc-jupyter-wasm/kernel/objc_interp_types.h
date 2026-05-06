@@ -477,7 +477,7 @@ typedef struct {
 #define MAX_AUTORELEASE_OBJECTS 256
 
 typedef struct {
-    unsigned int object_markers[MAX_AUTORELEASE_OBJECTS];
+    id object_markers[MAX_AUTORELEASE_OBJECTS];
     unsigned int count;
 } AutoreleasePool;
 
@@ -602,7 +602,7 @@ struct AstNode {
 
 /* ── String pool ────────────────────────────────────────────────── */
 
-#define OBJC_INTERP_STRING_POOL_SIZE 65536
+#define OBJC_INTERP_STRING_POOL_SIZE 131072
 
 /* ── Parser ────────────────────────────────────────────────────── */
 

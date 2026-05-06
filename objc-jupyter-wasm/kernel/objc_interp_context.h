@@ -70,6 +70,8 @@ typedef struct InterpContext {
     BlockImpl blocks[32];
     unsigned int block_count;
     unsigned int next_block_id;
+    int block_free_list;                        /* head of free slot list (-1 = empty) */
+    int block_free_next[32];                    /* next pointer for free list */
 
     /* ── Network Task Registry ────────────────────────────── */
     PendingNetworkTask network_tasks[MAX_NETWORK_TASKS];
@@ -110,10 +112,14 @@ typedef struct InterpContext {
     /* ── Invocations ────────────────────────────────────── */
     InvocationState invocations[MAX_INVOCATIONS];
     unsigned int next_invocation_id;
+    int invocation_free_list;                   /* head of free slot list (-1 = empty) */
+    int invocation_free_next[MAX_INVOCATIONS];  /* next pointer for free list */
 
     /* ── Associations ───────────────────────────────────── */
     Association associations[MAX_ASSOCIATIONS];
     unsigned int association_count;
+    int association_free_list;                  /* head of free slot list (-1 = empty) */
+    int association_free_next[MAX_ASSOCIATIONS]; /* next pointer for free list */
 
     /* ── KVO ────────────────────────────────────────────── */
     KVOObserver kvo_observers[MAX_KVO_OBSERVERS];
