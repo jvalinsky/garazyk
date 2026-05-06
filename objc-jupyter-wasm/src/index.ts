@@ -5,6 +5,9 @@ import { ObjcKernel } from '../js/objc-kernel';
 import { clearRuntimeCache, fetchRuntimeManifest } from '../js/runtime-support';
 import type { RuntimeManifest } from '../js/runtime-support';
 
+import { cidViewerExtension } from './cid-viewer';
+import atprotoUploadPlugin from './atproto-upload';
+
 type RuntimeState = {
   runtimeManifest: RuntimeManifest;
   runtimeManifestUrl: string;
@@ -117,4 +120,4 @@ const plugin: JupyterFrontEndPlugin<void> = {
   }
 };
 
-export default plugin;
+export default [plugin, cidViewerExtension, atprotoUploadPlugin];
