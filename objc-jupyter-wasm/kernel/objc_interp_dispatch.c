@@ -383,6 +383,12 @@ Value execute_interpreter_method(struct Parser *p, MethodImpl *method, SEL sel,
                                  id receiver, const Value *args,
                                  unsigned int arg_count,
                                  int return_receiver_on_void) {
+    /* When side effects are suppressed (short-circuit evaluation of &&/||/?:),
+     * skip method execution entirely and return nil. */
+    if (g_ctx.suppress_side_effects) {
+        return value_from_id(0);
+    }
+
     unsigned int saved_var_count = g_ctx.var_count;
     unsigned int saved_scope_base = g_ctx.var_scope_base;
     Value return_val = return_receiver_on_void ? value_from_id(receiver) : value_void();
