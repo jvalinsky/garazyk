@@ -1,18 +1,18 @@
 # Objective-C 2.0 Runtime Gap Report — objc-jupyter-wasm Kernel
 
-**Date:** 2026-05-06
-**Kernel version:** HEAD (phases A–G complete per PARSER_STATUS.md)
+**Date:** 2026-05-06 (updated)
+**Kernel version:** HEAD (phases A–H complete per PARSER_STATUS.md)
 **Test commands:**
 - `node tests/test-runtime-v2.mjs result/wasm/kernel.wasm` — ALL PASSED
 - `node tests/kernel-smoke.mjs result/wasm/kernel.wasm` — ALL PASSED
-- `node tests/test-runtime-gap-probes.mjs result/wasm/kernel.wasm` — 40/56 passed (see below)
+- `node tests/test-runtime-gap-probes.mjs result/wasm/kernel.wasm` — **84/84 passed**
 
 ## Methodology
 
 1. Read all kernel source files (dispatch, messages, class parsing, state, types, context, format, lexer, primary, AST, runtime bridge)
 2. Read PARSER_STATUS.md (current reference) and runtime.h (public C ABI)
 3. Run existing test suites (test-runtime-v2, kernel-smoke) — both pass
-4. Write 56 targeted probe snippets covering 20+ feature categories
+4. Write 84 targeted probe snippets covering 20+ feature categories
 5. Execute probes against the WASM kernel via JSON bridge
 6. Classify each feature as **supported / partial / stub / broken / missing**
 
@@ -61,6 +61,9 @@
 | sel_registerName / sel_getName | Probe PASS | `runtime/runtime.c` |
 | NSURL + NSURLRequest | Probe PASS | `objc_interp_messages.c` |
 | NSString compare: | Probe PASS | returns 0 for equal |
+| Fast enumeration (for...in) | Probe PASS | `objc_interp_primary.c` (fixed: coll_create_new) |
+| for-in on dictionary | Probe PASS | `objc_interp_primary.c` (fixed: coll_create_new) |
+| KVC on NSDictionary | Probe PASS | `objc_interp_messages.c` (fixed: coll_create_new) |
 
 ### PARTIAL — Implemented but with known gaps
 
@@ -69,9 +72,6 @@
 | Inheritance chain | PARTIAL | Multi-level inheritance works for class registration, but **method dispatch on subclass instances returns 0** instead of the overridden value | Probe: `[Leaf ident]` returns 0, not 3. `find_interpreter_method` walks class hierarchy but FDObj: marker class resolution may not match. |
 | [super message] | PARTIAL | `find_interpreter_method_super` exists and walks hierarchy, but **returns 0** instead of superclass result | Probe: `[Child val]` returns 0, not 15. Super dispatch code in `objc_interp_dispatch.c` lines 188–224 looks correct — likely a class pointer resolution issue. |
 | @protocol + conformsToProtocol: | PARTIAL | `class_conforms_to_protocol` checks name + required methods, but **returns 0** for conforming classes | Probe: `[s conformsToProtocol:@protocol(Drawable)]` returns 0. The `@protocol(Drawable)` expression may not produce a valid protocol marker. |
-| Fast enumeration (for...in) | PARTIAL | Works for single-element iteration, but **throws exception on second iteration** | Probe: `for (NSString *s in @[@"a",@"b",@"c"])` only gets "a" then crashes. The enumerator state or collection iteration has a bug. |
-| for-in on dictionary | PARTIAL | Only iterates 1 key instead of 2 | Same root cause as fast enumeration bug. |
-| KVC on NSDictionary | PARTIAL | `[dict valueForKey:@"key"]` throws uncaught exception instead of returning value | Probe: NSDictionary KVC returns "(nil)". The KVC dispatch on line 686 checks `target.is_id` but the dictionary marker may not match the property lookup path. |
 
 ### BROKEN — Implemented but produces incorrect results or crashes
 
@@ -119,18 +119,16 @@
 ### P0 — Blocks real-world code patterns
 
 1. **for-loop break/continue** — C-style for, do/while, and break/continue all throw uncaught exceptions. This is the most impactful bug since loops are fundamental.
-2. **Fast enumeration multi-element crash** — `for (id obj in collection)` crashes after first element. Used pervasively in ObjC.
-3. **isKindOfClass: / isMemberOfClass:** — Missing entirely. Polymorphic code depends on these.
-4. **NSMutableString** — Not registered as a Foundation class. Any code using mutable strings will fail.
-5. **Super dispatch returning 0** — `[super method]` exists but doesn't return correct values. Inheritance chains break.
+2. **isKindOfClass: / isMemberOfClass:** — Missing entirely. Polymorphic code depends on these.
+3. **NSMutableString** — Not registered as a Foundation class. Any code using mutable strings will fail.
+4. **Super dispatch returning 0** — `[super method]` exists but doesn't return correct values. Inheritance chains break.
 
 ### P1 — Important for completeness
 
 6. **Protocol conformance check returns 0** — `conformsToProtocol:` doesn't work despite implementation existing.
-7. **KVC on NSDictionary** — `valueForKey:` on dictionaries throws instead of returning value.
-8. **[NSArray copy] returns mutable marker** — Should return immutable copy.
-9. **static local variables** — Parse error prevents use.
-10. **Associated objects** — `objc_setAssociatedObject` not in runtime bridge.
+7. **[NSArray copy] returns mutable marker** — Should return immutable copy.
+8. **static local variables** — Parse error prevents use.
+9. **Associated objects** — `objc_setAssociatedObject` not in runtime bridge.
 
 ### P2 — Nice to have
 
@@ -145,15 +143,21 @@
 ## Recommended Implementation Sequence
 
 1. **Fix for-loop break/continue** — Investigate `g_ctx.break_pending` / `g_ctx.continue_pending` handling in `objc_interp_ast.c`. The smoke test passes C-style for without break/continue, so the bug is specifically in the break/continue path.
-2. **Fix fast enumeration** — The enumerator state in `g_ctx.enumerators[]` may be getting corrupted or the `for-in` loop body re-execution may not properly restore state.
-3. **Add isKindOfClass: / isMemberOfClass:** — Implement in `objc_interp_messages.c` by walking the class hierarchy table (`g_ctx.class_hierarchy_class[]`).
-4. **Register NSMutableString** — Add to Foundation class list in `objc_interpreter.c` and add `stringWithString:` dispatch.
-5. **Fix super dispatch** — Debug `find_interpreter_method_super` — the class pointer resolution for FDObj: markers may not match the method table entries.
-6. **Fix protocol conformance** — Debug `@protocol(Drawable)` expression — it may not produce a valid `FDProt:` marker that `conformsToProtocol:` can match.
-7. **Fix KVC on NSDictionary** — Add `valueForKey:` dispatch for dictionary markers (NSDict:/NSMutDict:) that delegates to `objectForKey:`.
-8. **Fix [NSArray copy]** — Return immutable marker (NSArr:) instead of self when receiver is NSMutArr:.
-9. **Add static local variables** — Extend parser to accept `static` keyword in local variable declarations.
-10. **Add associated objects** — Implement `objc_setAssociatedObject` / `objc_getAssociatedObject` using the `Association` table already defined in types.h.
+2. **Add isKindOfClass: / isMemberOfClass:** — Implement in `objc_interp_messages.c` by walking the class hierarchy table (`g_ctx.class_hierarchy_class[]`).
+3. **Register NSMutableString** — Add to Foundation class list in `objc_interpreter.c` and add `stringWithString:` dispatch.
+4. **Fix super dispatch** — Debug `find_interpreter_method_super` — the class pointer resolution for FDObj: markers may not match the method table entries.
+5. **Fix protocol conformance** — Debug `@protocol(Drawable)` expression — it may not produce a valid `FDProt:` marker that `conformsToProtocol:` can match.
+6. **Fix [NSArray copy]** — Return immutable marker (NSArr:) instead of self when receiver is NSMutArr:.
+7. **Add static local variables** — Extend parser to accept `static` keyword in local variable declarations.
+8. **Add associated objects** — Implement `objc_setAssociatedObject` / `objc_getAssociatedObject` using the `Association` table already defined in types.h.
+
+## Recently Fixed (Phase H, 2026-05-06)
+
+| Fix | Commits | Tests Fixed |
+|-----|---------|-------------|
+| Collection slot activation — `coll_create_new()` for all 23 allocation sites | `a0a93aaa` | 9: subscripts, fast enumeration, KVC, enumerateObjectsUsingBlock, sel_getName, for-in on dictionary, KVC on NSDictionary |
+| Block return values — `return_pending` check, `return_value` usage, `block_id_from_marker` rewrite | `299dca91` | 4: block returning value, block capturing variable, __block mutation, block as method argument |
+| Ternary in variable declarations — skip ternary AST detection for type-prefixed statements | `62e7f9d0` | 1: ternary operator |
 
 ## Resource Limits (from source)
 
@@ -185,4 +189,4 @@
 
 ## Stale Documentation Note
 
-`docs/plans/runtime-feature-review.md` is **stale** — it lists exceptions, autoreleasepool, protocols, `__block`, forwarding, and KVC as missing, but all are implemented and passing per PARSER_STATUS.md phases D–G. This file should be archived or updated.
+`docs/plans/runtime-feature-review.md` has been rewritten (2026-05-06) to reflect current implementation state. Previously it listed exceptions, autoreleasepool, protocols, `__block`, forwarding, and KVC as missing, but all are implemented and passing per PARSER_STATUS.md phases D–H.
