@@ -34,6 +34,7 @@ extern InterpVar *interp_get_or_create_var(const char *name);
 extern void eval_nslog(struct Parser *p);
 
 extern const char *typedef_resolve(const char *name);
+extern const char *sel_getName(SEL);
 extern Value parse_expression(struct Parser *p);
 extern Value parse_unary(struct Parser *p);
 
@@ -702,6 +703,71 @@ Value parse_primary(Parser *p) {
                 }
             }
             return value_void();
+        }
+
+        /* Check for sel_getName */
+        if (cstr_eq(tok.text, "sel_getName")) {
+            parser_advance(p);
+            if (parser_current(p).type == TOK_OPEN_PAREN) {
+                parser_advance(p);
+                Value sel_arg = parse_expression(p);
+                parser_expect(p, TOK_CLOSE_PAREN);
+                if (sel_arg.is_sel && sel_arg.sel_val != 0) {
+                    const char *name = sel_getName(sel_arg.sel_val);
+                    return value_from_id((id)name);
+                }
+            }
+            return value_from_id(0);
+        }
+
+        /* Check for NSStringFromSelector */
+        if (cstr_eq(tok.text, "NSStringFromSelector")) {
+            parser_advance(p);
+            if (parser_current(p).type == TOK_OPEN_PAREN) {
+                parser_advance(p);
+                Value sel_arg = parse_expression(p);
+                parser_expect(p, TOK_CLOSE_PAREN);
+                if (sel_arg.is_sel && sel_arg.sel_val != 0) {
+                    const char *name = sel_getName(sel_arg.sel_val);
+                    if (name) {
+                        char *pool_str = string_pool_alloc((unsigned int)cstr_len(name) + 1);
+                        if (pool_str) cstr_copy(pool_str, name, (unsigned int)cstr_len(name) + 1);
+                        return value_from_id((id)pool_str);
+                    }
+                }
+            }
+            return value_from_id(0);
+        }
+
+        /* Check for class_addMethod */
+        if (cstr_eq(tok.text, "class_addMethod")) {
+            parser_advance(p);
+            if (parser_current(p).type == TOK_OPEN_PAREN) {
+                Value cls_arg, sel_arg, imp_arg, types_arg;
+                parser_advance(p);
+                cls_arg = parse_expression(p);
+                if (parser_current(p).type == TOK_COMMA) parser_advance(p);
+                sel_arg = parse_expression(p);
+                if (parser_current(p).type == TOK_COMMA) parser_advance(p);
+                imp_arg = parse_expression(p);
+                if (parser_current(p).type == TOK_COMMA) parser_advance(p);
+                types_arg = parse_expression(p);
+                parser_expect(p, TOK_CLOSE_PAREN);
+
+                if (g_ctx.method_count < MAX_METHODS && sel_arg.is_sel) {
+                    MethodImpl *m = &g_ctx.methods[g_ctx.method_count];
+                    m->selector = sel_arg.sel_val;
+                    m->class_ptr = cls_arg.is_class ? cls_arg.cls_val : 0;
+                    m->is_class_method = 0;
+                    m->source_len = 0;
+                    m->source[0] = '\0';
+                    m->arg_count = 0;
+                    g_ctx.method_count++;
+                    return value_from_int(1);
+                }
+                return value_from_int(0);
+            }
+            return value_from_int(0);
         }
 
         /* Check for objc_getClass */
