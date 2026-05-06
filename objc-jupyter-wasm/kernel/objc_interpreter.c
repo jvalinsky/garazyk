@@ -771,6 +771,8 @@ int objc_interp(const char *source, unsigned int length) {
     g_ctx.return_pending = 0;
     g_ctx.break_pending = 0;
     g_ctx.continue_pending = 0;
+    g_ctx.exception_pending = 0;
+    g_ctx.current_exception = value_void();
     g_ctx.ast_count = 0;
     g_ctx.parse_depth = 0;
 
