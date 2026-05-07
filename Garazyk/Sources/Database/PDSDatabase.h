@@ -243,6 +243,12 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
 /*! JWT refresh token for obtaining new access tokens. */
 @property (nonatomic, copy, nullable) NSData *refreshJwt;
 
+/*! Account status (e.g., "active", "deactivated"). */
+@property (nonatomic, copy) NSString *status;
+
+/*! Unix timestamp when the account was deactivated. */
+@property (nonatomic, assign) NSTimeInterval deactivatedAt;
+
 /*! Unix timestamp when the account was created. */
 @property (nonatomic, assign) NSTimeInterval createdAt;
 

@@ -26,7 +26,14 @@
            @"    status TEXT NOT NULL DEFAULT 'active',"
            @"    deactivated_at REAL,"
            @"    created_at REAL NOT NULL,"
-           @"    updated_at REAL NOT NULL"
+           @"    updated_at REAL NOT NULL,"
+           @"    tfa_enabled INTEGER DEFAULT 0,"
+           @"    tfa_secret BLOB,"
+           @"    recovery_codes BLOB,"
+           @"    invite_enabled INTEGER DEFAULT 0,"
+           @"    age_assurance TEXT,"
+           @"    age_verified_at TEXT,"
+           @"    webauthn_enabled INTEGER DEFAULT 0"
            @")";
 }
 

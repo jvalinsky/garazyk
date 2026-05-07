@@ -3,6 +3,7 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
+#import "Lexicon/ATProtoLexiconRegistry.h"
 
 @interface PDSRecordServiceTests : XCTestCase
 @property (nonatomic, strong) NSString *testDirectory;
@@ -16,6 +17,11 @@
 
 - (void)setUp {
     [super setUp];
+    
+    // Ensure lexicons are found by setting the environment variable
+    NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
+    NSString *lexiconPath = [cwd stringByAppendingPathComponent:@"Garazyk/Resources/lexicons"];
+    setenv("PDS_LEXICON_PATH", lexiconPath.UTF8String, 1);
     
     self.testDirectory = [NSTemporaryDirectory() stringByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
     [[NSFileManager defaultManager] createDirectoryAtPath:self.testDirectory withIntermediateDirectories:YES attributes:nil error:nil];
@@ -32,6 +38,21 @@
     [store importSigningKey:[NSData dataWithBytes:priv length:32] error:nil];
 
     self.isoFormatter = [[NSISO8601DateFormatter alloc] init];
+
+    // Load lexicons for validation
+    ATProtoLexiconRegistry *registry = [ATProtoLexiconRegistry sharedRegistry];
+    [registry clearCache];
+    NSArray<NSString *> *paths = [registry searchPathsForDirectory:nil];
+    BOOL loaded = NO;
+    for (NSString *path in paths) {
+        if ([registry loadLexiconsFromDirectory:path error:nil]) {
+            loaded = YES;
+            NSLog(@"[PDSRecordServiceTests] Loaded lexicons from %@", path);
+        }
+    }
+    if (!loaded) {
+        NSLog(@"[PDSRecordServiceTests] FAILED to load lexicons from paths: %@", paths);
+    }
 }
 
 - (void)tearDown {
