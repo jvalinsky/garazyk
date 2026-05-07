@@ -88,8 +88,17 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 - (BOOL)startOnPort:(uint16_t)port error:(NSError **)error
     DEPRECATED_MSG_ATTRIBUTE("subscribeRepos uses HTTP upgrade path; this legacy listener is deprecated");
 
+/*! Starts observing account and record change notifications for live firehose events. */
+- (void)startObservingNotifications;
+
+/*! Stops observing account and record change notifications. */
+- (void)stopObservingNotifications;
+
 /*! Stops the handler. */
 - (void)stop;
+
+/*! Waits for queued event persistence and fanout work to drain. */
+- (BOOL)waitForIdleWithTimeout:(NSTimeInterval)timeout;
 
 /*! Accepts a WebSocket-upgraded connection from the main HTTP server. */
 - (void)acceptUpgradedConnection:(id<PDSNetworkConnection>)connection request:(HttpRequest *)request;

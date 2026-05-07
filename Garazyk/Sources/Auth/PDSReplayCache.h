@@ -12,6 +12,7 @@
  */
 
 #import <Foundation/Foundation.h>
+#import "Auth/Crypto/AuthCryptoDPoP.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -38,7 +39,7 @@ NS_ASSUME_NONNULL_BEGIN
     }
  @endcode
  */
-@interface PDSReplayCache : NSObject
+@interface PDSReplayCache : NSObject <AuthCryptoDPoPReplayChecker>
 
 /*!
  @method sharedCache
