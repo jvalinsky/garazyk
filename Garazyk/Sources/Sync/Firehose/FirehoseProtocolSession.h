@@ -14,6 +14,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSData *)encodeCommitEvent:(FirehoseCommitEvent *)event;
 - (NSData *)encodeIdentityEvent:(FirehoseIdentityEvent *)event;
 - (NSData *)encodeAccountEvent:(FirehoseAccountEvent *)event;
+- (NSData *)encodeSyncEvent:(FirehoseSyncEvent *)event;
 - (NSData *)encodeInfoEvent:(FirehoseInfoEvent *)event;
 - (NSData *)encodeErrorEvent:(FirehoseErrorEvent *)event;
 

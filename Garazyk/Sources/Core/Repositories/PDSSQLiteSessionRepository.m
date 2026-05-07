@@ -47,11 +47,13 @@
     __block NSString *did = nil;
     [_servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
         PDSActorStore *store = (PDSActorStore *)reader;
-        NSString *sql = @"SELECT account_did FROM refresh_tokens WHERE token = ?";
+        NSString *sql = @"SELECT account_did FROM refresh_tokens WHERE token = ? AND expires_at > ?";
         sqlite3_stmt *stmt = [store prepareStatement:sql error:blockError];
         if (!stmt) return;
 
+        NSTimeInterval now = [NSDate date].timeIntervalSince1970;
         sqlite3_bind_text(stmt, 1, refreshToken.UTF8String, -1, SQLITE_TRANSIENT);
+        sqlite3_bind_double(stmt, 2, now);
         if (sqlite3_step(stmt) == SQLITE_ROW) {
             const char *didStr = (const char *)sqlite3_column_text(stmt, 0);
             if (didStr) {

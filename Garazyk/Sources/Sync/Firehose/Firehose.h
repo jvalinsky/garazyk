@@ -37,11 +37,17 @@ extern NSInteger const FirehoseErrorCodeSubscriptionClosed;
 
  @constant FirehoseEventKindCommit Repository commit event.
  @constant FirehoseEventKindIdentity Identity update event.
+ @constant FirehoseEventKindAccount Account status event.
+ @constant FirehoseEventKindSync Repository sync event.
+ @constant FirehoseEventKindInfo Informational event.
  @constant FirehoseEventKindError Error event.
  */
 typedef NS_ENUM(NSInteger, FirehoseEventKind) {
     FirehoseEventKindCommit,
     FirehoseEventKindIdentity,
+    FirehoseEventKindAccount,
+    FirehoseEventKindSync,
+    FirehoseEventKindInfo,
     FirehoseEventKindError
 };
 
@@ -223,6 +229,9 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 @optional
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveCommitEvent:(FirehoseCommitEvent *)event;
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveIdentityEvent:(FirehoseIdentityEvent *)event;
+- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveAccountEvent:(FirehoseAccountEvent *)event;
+- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveSyncEvent:(FirehoseSyncEvent *)event;
+- (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveInfoEvent:(FirehoseInfoEvent *)event;
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveErrorEvent:(FirehoseErrorEvent *)event;
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didCloseWithError:(nullable NSError *)error;
 - (void)firehoseSubscriptionDidConnect:(FirehoseSubscription *)subscription;

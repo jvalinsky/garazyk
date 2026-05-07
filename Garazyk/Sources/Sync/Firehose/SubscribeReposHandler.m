@@ -49,6 +49,7 @@ static NSString *const kSubscribeReposInfoOutdatedCursor = @"OutdatedCursor";
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t broadcastFanoutQueue;
 @property(nonatomic, assign) BOOL sequenceInitialized;
 @property(atomic, assign) BOOL stopping;
+@property(atomic, assign) BOOL observingNotifications;
 @property(nonatomic, strong)
     NSMutableSet<WebSocketConnection *> *attachedConnections;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_source_t eventRateLimiter;
@@ -102,6 +103,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         "com.atproto.pds.subscribeRepos.broadcast", DISPATCH_QUEUE_CONCURRENT);
     _sequenceInitialized = NO;
     _stopping = NO;
+    _observingNotifications = NO;
     _attachedConnections = [NSMutableSet set];
     _maxReplayEventsPerConnection = kSubscribeReposMaxReplayEventsDefault;
     _maxPendingSendsPerConnection = kSubscribeReposMaxPendingSendsDefault;
@@ -118,6 +120,20 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         // Timer fires to allow event processing
       });
       dispatch_resume(_eventRateLimiter);
+    }
+
+  }
+  return self;
+}
+
+- (void)dealloc {
+  [self stopObservingNotifications];
+}
+
+- (void)startObservingNotifications {
+  @synchronized(self) {
+    if (self.observingNotifications) {
+      return;
     }
 
     [[NSNotificationCenter defaultCenter]
@@ -141,12 +157,20 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
            selector:@selector(handleAccountLifecycleEvent:)
                name:PDSAccountDeactivatedNotification
              object:nil];
+
+    self.stopping = NO;
+    self.observingNotifications = YES;
   }
-  return self;
 }
 
-- (void)dealloc {
-  [[NSNotificationCenter defaultCenter] removeObserver:self];
+- (void)stopObservingNotifications {
+  @synchronized(self) {
+    if (!self.observingNotifications) {
+      return;
+    }
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+    self.observingNotifications = NO;
+  }
 }
 
 - (BOOL)startOnPort:(uint16_t)port error:(NSError **)error {
@@ -165,6 +189,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     return NO;
   }
 
+  [self startObservingNotifications];
+
   if ([self.delegate
           respondsToSelector:@selector(subscribeReposHandlerDidStart:)]) {
     [self.delegate subscribeReposHandlerDidStart:self];
@@ -178,7 +204,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   PDS_LOG_SYNC_INFO(@"Stopping subscribeRepos WebSocket handler");
 
   self.stopping = YES;
-  [[NSNotificationCenter defaultCenter] removeObserver:self];
+  [self stopObservingNotifications];
 
   // Cancel and release rate limiter
   if (_eventRateLimiter) {
@@ -190,6 +216,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     dispatch_sync(self.syncQueue, ^{
                   });
   }
+  [self waitForIdleWithTimeout:5.0];
 
   NSSet<WebSocketConnection *> *attachedSnapshot = nil;
   @synchronized(_attachedConnections) {
@@ -209,6 +236,27 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   }
 
   PDS_LOG_SYNC_INFO(@"SubscribeRepos WebSocket handler stopped");
+}
+
+- (BOOL)waitForIdleWithTimeout:(NSTimeInterval)timeout {
+  dispatch_group_t group = dispatch_group_create();
+  dispatch_time_t deadline =
+      dispatch_time(DISPATCH_TIME_NOW, (int64_t)(timeout * NSEC_PER_SEC));
+
+  dispatch_group_enter(group);
+  void (^drainFanout)(void) = ^{
+    dispatch_barrier_async(self.broadcastFanoutQueue, ^{
+      dispatch_group_leave(group);
+    });
+  };
+
+  if (dispatch_get_specific(kSubscribeReposEventQueueKey) == NULL) {
+    dispatch_async(self.syncQueue, drainFanout);
+  } else {
+    drainFanout();
+  }
+
+  return dispatch_group_wait(group, deadline) == 0;
 }
 
 - (void)acceptUpgradedConnection:(id<PDSNetworkConnection>)connection
@@ -462,7 +510,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     return;
   }
   __weak typeof(self) weakSelf = self;
-  dispatch_async(self.syncQueue, ^{
+  void (^broadcastWork)(void) = ^{
     __strong typeof(weakSelf) strongSelf = weakSelf;
     if (!strongSelf || strongSelf.stopping) return;
     [strongSelf ensureSequenceInitialized];
@@ -536,7 +584,13 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     [[PDSMetrics sharedMetrics] setFirehoseSeq:(int64_t)strongSelf.session.sequenceNumber];
     PDS_LOG_SYNC_INFO(@"Broadcast %@ event for repo %@, seq %lu", eventType,
                       repoDid, (unsigned long)strongSelf.session.sequenceNumber);
-  });
+  };
+
+  if (dispatch_get_specific(kSubscribeReposEventQueueKey) != NULL) {
+    broadcastWork();
+  } else {
+    dispatch_async(self.syncQueue, broadcastWork);
+  }
 }
 
 
@@ -639,6 +693,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     __strong typeof(weakSelf) strongSelf = weakSelf;
     if (!strongSelf || strongSelf.stopping) return;
     [strongSelf ensureSequenceInitialized];
+    NSUInteger sequenceNumber = [strongSelf nextSequenceNumber];
     FirehoseInfoEvent *event = [[FirehoseInfoEvent alloc] init];
     event.kind = kind;
     event.message = message;
@@ -649,7 +704,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       // Persist info events for replay
       if (strongSelf.serviceDatabases) {
         NSError *persistError = nil;
-        if (![strongSelf.serviceDatabases persistEvent:strongSelf.session.sequenceNumber
+        if (![strongSelf.serviceDatabases persistEvent:(int64_t)sequenceNumber
                                             type:@"info"
                                             data:eventData
                                            error:&persistError]) {
@@ -657,9 +712,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         }
       }
       [strongSelf broadcastEventData:eventData];
-      [[PDSMetrics sharedMetrics] setFirehoseSeq:(int64_t)strongSelf.session.sequenceNumber];
+      [[PDSMetrics sharedMetrics] setFirehoseSeq:(int64_t)sequenceNumber];
       PDS_LOG_SYNC_DEBUG(@"Broadcast info event (%@), seq %lu",
-                          kind, (unsigned long)strongSelf.session.sequenceNumber);
+                          kind, (unsigned long)sequenceNumber);
     }
   });
 }
@@ -1008,4 +1063,3 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 }
 
 @end
-
