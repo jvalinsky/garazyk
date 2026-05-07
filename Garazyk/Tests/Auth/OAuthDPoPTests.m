@@ -1,6 +1,7 @@
 #import <XCTest/XCTest.h>
 #import "Auth/DPoPUtil.h"
 #import "Auth/Crypto/AuthCryptoDPoP.h"
+#import "Auth/PDSReplayCache.h"
 #import "Auth/TestKeyFixtures.h"
 
 
@@ -206,6 +207,36 @@
     BOOL valid = [DPoPUtil verifyDPoP:@"a..c" withPublicKey:NULL method:@"GET" uri:@"https://example.com" nonce:nil error:&error];
     XCTAssertFalse(valid);
     XCTAssertNotNil(error);
+}
+
+- (void)testDPoPReplayDetection {
+    NSError *error = nil;
+    DPoPToken *token = [DPoPUtil createDPoPForMethod:@"POST"
+                                                  uri:@"https://server.example.com/tokens"
+                                               nonce:nil
+                                                 key:_privateKey
+                                               error:&error];
+    XCTAssertNotNil(token, @"Should create DPoP token for replay test");
+
+    // First verification should succeed
+    BOOL firstValid = [DPoPUtil verifyDPoP:token.jwt
+                              withPublicKey:_publicKey
+                                     method:@"POST"
+                                        uri:@"https://server.example.com/tokens"
+                                      nonce:nil
+                                      error:&error];
+    XCTAssertTrue(firstValid, @"First verification should succeed");
+
+    // Second verification of the same JWT should fail (replay detected)
+    error = nil;
+    BOOL replayValid = [DPoPUtil verifyDPoP:token.jwt
+                              withPublicKey:_publicKey
+                                     method:@"POST"
+                                        uri:@"https://server.example.com/tokens"
+                                      nonce:nil
+                                      error:&error];
+    XCTAssertFalse(replayValid, @"Replayed DPoP proof should be rejected");
+    XCTAssertNotNil(error, @"Replay should produce an error");
 }
 
 @end
