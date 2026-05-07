@@ -261,12 +261,9 @@ blobFileChunkProducer(NSString *path, unsigned long long startOffset,
         return NO;
     }
 
-    NSError *providerError = nil;
-    if (![self.provider deleteBlobDataForCID:cid error:&providerError]) {
-        PDS_LOG_ERROR_C(PDSLogComponentBlob,
-            @"Failed to delete blob data from provider for CID %@: %@",
-            cid.stringValue, providerError);
-    }
+    // Note: We do NOT delete from the provider here because other users might
+    // still reference this blob (ATProto blobs are deduplicated).
+    // Garbage collection of unreferenced blobs is handled separately.
 
     return YES;
 }
@@ -325,18 +322,16 @@ blobFileChunkProducer(NSString *path, unsigned long long startOffset,
         return NO;
     }
 
-    if (data.length >= 12) {
-        if (![validator validateMagicNumbers:data forMimeType:mimeType error:&mimeError]) {
-            if (error) {
-                *error = [NSError errorWithDomain:BlobStorageErrorDomain
-                                             code:BlobStorageErrorInvalidMIMEType
-                                         userInfo:@{
-                    NSLocalizedDescriptionKey: mimeError.localizedDescription ?: @"Magic number mismatch",
-                    NSUnderlyingErrorKey: mimeError ?: [NSNull null]
-                }];
-            }
-            return NO;
+    if (![validator validateMagicNumbers:data forMimeType:mimeType error:&mimeError]) {
+        if (error) {
+            *error = [NSError errorWithDomain:BlobStorageErrorDomain
+                                         code:BlobStorageErrorInvalidMIMEType
+                                     userInfo:@{
+                NSLocalizedDescriptionKey: mimeError.localizedDescription ?: @"Magic number mismatch",
+                NSUnderlyingErrorKey: mimeError ?: [NSNull null]
+            }];
         }
+        return NO;
     }
 
     return YES;
