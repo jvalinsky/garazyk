@@ -1202,6 +1202,12 @@ if(BUILD_TESTS)
   file(GLOB_RECURSE TEST_OBJC_SOURCES "Garazyk/Tests/**/*.m")
   list(APPEND TEST_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Tests/test_main.m")
   list(APPEND TEST_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Tests/Database/PDSDatabaseLRUTests.m")
+  list(APPEND TEST_OBJC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Tests/Core/ATProtoDagCBOREdgeCaseTests.m")
+  list(APPEND TEST_OBJC_SOURCES
+    "Garazyk/Tests/Core/ATProtoTIDTests.m"
+    "Garazyk/Tests/Core/ATProtoCIDTests.m"
+  )
+  list(REMOVE_DUPLICATES TEST_OBJC_SOURCES)
 
   # garazyk-ui sources (needed for tests)
   list(APPEND TEST_OBJC_SOURCES
