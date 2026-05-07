@@ -448,19 +448,27 @@ const probes = [
   { cat: 'NSData', name: 'NSData dataByAppendingData:',
     code: `NSData *a = [NSData dataWithBytes:"he" length:2];\nNSData *b = [NSData dataWithBytes:"llo" length:3];\nNSData *c = [a dataByAppendingData:b];\nNSLog(@"%d", [c length]);`,
     expect: '5' },
-  { cat: 'NSData', name: 'NSMutableData NOT supported',
-    code: `NSMutableData *d = [NSMutableData data];`,
-    expectError: true },
+  { cat: 'NSData', name: 'NSMutableData creation and length',
+    code: `NSMutableData *d = [NSMutableData data];\n[d appendBytes:"hello" length:5];\nNSLog(@"%d", [d length]);`,
+    expect: '5' },
 
   // ── NSMutableSet ────────────────────────────────────────────────
-  { cat: 'Collections', name: 'NSMutableSet NOT supported',
-    code: `NSMutableSet *s = [NSMutableSet set];`,
-    expectError: true },
+  { cat: 'Collections', name: 'NSMutableSet addObject and containsObject',
+    code: `NSMutableSet *s = [NSMutableSet set];\n[s addObject:@\"hello\"];\n[s addObject:@\"world\"];\nNSLog(@"%d %d", [s count], [s containsObject:@\"hello\"]);`,
+    expect: '2 1' },
+
+  // ── Array initializers ─────────────────────────────────────────
+  { cat: 'Parser', name: 'unsigned char array initializer',
+    code: `unsigned char bytes[2] = {216, 42};\nNSLog(@"%d", [bytes length]);`,
+    expect: '2' },
+  { cat: 'Parser', name: 'char array initializer',
+    code: `char tag[3] = {65, 84, 80};\nNSLog(@"%d", [tag length]);`,
+    expect: '3' },
 
   // ── Dot syntax property assignment ──────────────────────────────
-  { cat: 'Properties', name: 'Dot syntax property assignment NOT supported',
-    code: `@interface DotTest : NSObject\n@property (nonatomic, strong) NSString *name;\n@end\n@implementation DotTest @end\nDotTest *d = [[DotTest alloc] init];\nd.name = @"test";`,
-    expectError: true },
+  { cat: 'Properties', name: 'Dot syntax property assignment (object type)',
+    code: `@interface DotTest : NSObject\n@property (nonatomic, strong) NSString *name;\n@end\n@implementation DotTest @end\nDotTest *d = [[DotTest alloc] init];\nd.name = @"test";\nNSLog(@"%@", d.name);`,
+    expect: 'test' },
 ];
 
 // ── Runner ─────────────────────────────────────────────────────────

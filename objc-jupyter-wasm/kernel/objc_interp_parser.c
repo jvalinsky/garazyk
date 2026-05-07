@@ -657,6 +657,144 @@ Value parse_type_and_var_decl(Parser *p) {
         }
         parser_advance(p);
 
+        /* Check for C array declarator: name[N]
+         * Only valid for char/unsigned char types — desugars to NSData.
+         * We track the array size for brace initializer validation. */
+        {
+            int is_char_array = 0;
+            int array_size = 0;
+            if (parser_current(p).type == TOK_OPEN_BRACKET &&
+                cstr_eq(type_name, "char")) {
+                /* Save position to backtrack if this isn't an array declarator */
+                unsigned int saved_pos = p->lex.pos;
+                unsigned int saved_token_start = p->lex.token_start;
+                unsigned int saved_line = p->lex.line;
+                unsigned int saved_column = p->lex.column;
+                Token saved_tok = parser_current(p);
+                parser_advance(p); /* consume [ */
+
+                /* Parse constant integer expression for array size */
+                if (parser_current(p).type == TOK_INT_LITERAL) {
+                    /* Parse integer from token text */
+                    int sz = 0;
+                    const char *s = parser_current(p).text;
+                    while (*s >= '0' && *s <= '9') sz = sz * 10 + (*s++ - '0');
+                    array_size = sz;
+                    parser_advance(p);
+                    if (parser_current(p).type == TOK_CLOSE_BRACKET) {
+                        parser_advance(p); /* consume ] */
+                        is_char_array = 1;
+                    } else {
+                        /* Not an array declarator — backtrack */
+                        p->lex.pos = saved_pos;
+                        p->lex.token_start = saved_token_start;
+                        p->lex.line = saved_line;
+                        p->lex.column = saved_column;
+                        p->lex.current = saved_tok;
+                    }
+                } else if (parser_current(p).type == TOK_CLOSE_BRACKET) {
+                    /* name[] — unsized array, size determined by initializer */
+                    parser_advance(p); /* consume ] */
+                    is_char_array = 1;
+                    array_size = 0; /* will be set from initializer */
+                } else {
+                    /* Not an array declarator — backtrack */
+                    p->lex.pos = saved_pos;
+                    p->lex.token_start = saved_token_start;
+                    p->lex.line = saved_line;
+                    p->lex.column = saved_column;
+                    p->lex.current = saved_tok;
+                }
+            }
+
+            if (is_char_array) {
+                /* Char array declaration — create variable and handle brace initializer */
+                var = interp_get_or_create_var(var_name_buf);
+                if (var == 0) {
+                    parser_error(p, "variable table full (max 1024)");
+                    return value_void();
+                }
+                var->is_int = 0;
+                var->is_float = 0;
+                var->is_class = 0;
+                var->is_sel = 0;
+                if (parser_current(p).type == TOK_ASSIGN) {
+                    parser_advance(p); /* consume = */
+                }
+
+                if (parser_current(p).type == TOK_OPEN_BRACE) {
+                    /* Parse {expr, expr, ...} brace initializer */
+                    parser_advance(p); /* consume { */
+                    {
+                        /* Build hex-encoded NSData from byte values */
+                        char hex_buf[512]; /* max 256 bytes */
+                        int hex_idx = 0;
+
+                        while (parser_current(p).type != TOK_CLOSE_BRACE &&
+                               parser_current(p).type != TOK_EOF &&
+                               !p->error) {
+                            Value bv = parse_expression(p);
+                            if (p->error) break;
+                            {
+                                int val = bv.is_int ? bv.int_val : 0;
+                                static const char hex_chars[] = "0123456789abcdef";
+                                if (hex_idx + 2 < (int)sizeof(hex_buf)) {
+                                    hex_buf[hex_idx++] = hex_chars[(val >> 4) & 0x0f];
+                                    hex_buf[hex_idx++] = hex_chars[val & 0x0f];
+                                }
+                            }
+                            if (parser_current(p).type == TOK_COMMA) {
+                                parser_advance(p);
+                            } else {
+                                break;
+                            }
+                        }
+                        hex_buf[hex_idx] = '\0';
+
+                        if (parser_current(p).type == TOK_CLOSE_BRACE) {
+                            parser_advance(p); /* consume } */
+                        }
+
+                        /* Create NSData: marker from hex */
+                        {
+                            unsigned int needed = 7 + (unsigned int)hex_idx + 1;
+                            ObjId h = obj_alloc(needed);
+                            if (h != OBJ_NULL) {
+                                char *buf = obj_deref_mut(h);
+                                cstr_copy(buf, "NSData:", needed);
+                                cstr_copy(buf + 7, hex_buf, (unsigned int)hex_idx + 1);
+                            }
+                            if (var && !g_ctx.suppress_side_effects) {
+                                var->is_id = 1;
+                                var->value = h;
+                                var->is_int = 0;
+                                var->is_float = 0;
+                                var->is_class = 0;
+                                var->is_sel = 0;
+                            }
+                        }
+                    }
+                    goto after_initializer;
+                }
+
+                /* No brace initializer — default to empty NSData */
+                if (var && !g_ctx.suppress_side_effects) {
+                    ObjId h = obj_alloc(8);
+                    if (h != OBJ_NULL) {
+                        char *buf = obj_deref_mut(h);
+                        cstr_copy(buf, "NSData:", 8);
+                    }
+                    var->is_id = 1;
+                    var->value = h;
+                    var->is_int = 0;
+                    var->is_float = 0;
+                    var->is_class = 0;
+                    var->is_sel = 0;
+                }
+                goto after_initializer;
+            }
+        }
+
         /* For static variables, check if one already exists (persistent across cells) */
         if (is_static_var) {
             var = interp_find_var(var_name_buf);
