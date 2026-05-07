@@ -23,7 +23,57 @@
 @property(nonatomic, assign) int failureCount;
 @property(nonatomic, assign) int testCount;
 @property(nonatomic, assign) int unexpectedFailureCount;
+@property(nonatomic, strong) NSMutableDictionary<NSString *, NSDate *> *testStartTimes;
+@property(nonatomic, strong) NSMutableArray<NSDictionary<NSString *, id> *> *methodTimings;
 @end
+
+static NSString *PDSClassNameFromTestCase(XCTestCase *testCase) {
+#ifdef __APPLE__
+  NSString *name = testCase.name ?: @"";
+#else
+  NSString *name = @"";
+#endif
+  if (([name hasPrefix:@"-["] || [name hasPrefix:@"+["]) &&
+      [name hasSuffix:@"]"] && name.length > 3) {
+    NSString *inner = [name substringWithRange:NSMakeRange(2, name.length - 3)];
+    NSArray<NSString *> *parts =
+        [inner componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    if (parts.count > 0 && parts[0].length > 0) {
+      return parts[0];
+    }
+  }
+
+  NSRange slash = [name rangeOfString:@"/"];
+  if (slash.location != NSNotFound && slash.location > 0) {
+    return [name substringToIndex:slash.location];
+  }
+
+  return NSStringFromClass([testCase class]);
+}
+
+static NSString *PDSMethodNameFromTestCase(XCTestCase *testCase) {
+#ifdef __APPLE__
+  NSString *name = testCase.name ?: @"";
+#else
+  NSString *name = @"";
+#endif
+  if (([name hasPrefix:@"-["] || [name hasPrefix:@"+["]) &&
+      [name hasSuffix:@"]"] && name.length > 3) {
+    NSString *inner = [name substringWithRange:NSMakeRange(2, name.length - 3)];
+    NSArray<NSString *> *parts =
+        [inner componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    if (parts.count > 1 && parts[1].length > 0) {
+      return parts[1];
+    }
+  }
+
+  NSRange slash = [name rangeOfString:@"/"];
+  if (slash.location != NSNotFound && NSMaxRange(slash) < name.length) {
+    return [name substringFromIndex:NSMaxRange(slash)];
+  }
+
+  return name.length > 0 ? name : @"unknown";
+}
 
 #ifdef __APPLE__
 @implementation SimpleTestObserver
@@ -33,12 +83,16 @@
     _failureCount = 0;
     _testCount = 0;
     _unexpectedFailureCount = 0;
+    _testStartTimes = [NSMutableDictionary dictionary];
+    _methodTimings = [NSMutableArray array];
   }
   return self;
 }
 
 - (void)testCaseWillStart:(XCTestCase *)testCase {
   self.testCount++;
+  NSString *key = [NSString stringWithFormat:@"%p", testCase];
+  self.testStartTimes[key] = [NSDate date];
 }
 
 - (void)testCase:(XCTestCase *)testCase
@@ -47,6 +101,18 @@
                     atLine:(NSUInteger)lineNumber {
   self.failureCount++;
   NSLog(@"FAIL: %@ at %@:%lu: %@", testCase.name, filePath, (unsigned long)lineNumber, description);
+}
+
+- (void)testCaseDidFinish:(XCTestCase *)testCase {
+  NSString *key = [NSString stringWithFormat:@"%p", testCase];
+  NSDate *start = self.testStartTimes[key];
+  [self.testStartTimes removeObjectForKey:key];
+  NSTimeInterval elapsed = start ? -[start timeIntervalSinceNow] : 0;
+  [self.methodTimings addObject:@{
+    @"class" : PDSClassNameFromTestCase(testCase),
+    @"method" : PDSMethodNameFromTestCase(testCase),
+    @"duration" : @(elapsed)
+  }];
 }
 @end
 #else
@@ -57,6 +123,8 @@
     _failureCount = 0;
     _testCount = 0;
     _unexpectedFailureCount = 0;
+    _testStartTimes = [NSMutableDictionary dictionary];
+    _methodTimings = [NSMutableArray array];
   }
   return self;
 }
@@ -82,6 +150,292 @@ NSArray *discoverTestMethodsForClass(Class testClass) {
   }
   free(methodList);
   return [methods copy];
+}
+
+static BOOL PDSEnvEnabled(const char *name) {
+  const char *value = getenv(name);
+  if (!value) {
+    return NO;
+  }
+  NSString *stringValue =
+      [[[NSString stringWithUTF8String:value] lowercaseString]
+          stringByTrimmingCharactersInSet:[NSCharacterSet
+                                              whitespaceAndNewlineCharacterSet]];
+  return [stringValue isEqualToString:@"1"] ||
+         [stringValue isEqualToString:@"true"] ||
+         [stringValue isEqualToString:@"yes"] ||
+         [stringValue isEqualToString:@"on"];
+}
+
+static NSDictionary<NSString *, id> *PDSParseTestFilter(NSString *testFilter) {
+  if (testFilter.length == 0) {
+    return nil;
+  }
+
+  NSMutableSet<NSString *> *classes = [NSMutableSet set];
+  NSMutableDictionary<NSString *, NSMutableSet<NSString *> *> *methodsByClass =
+      [NSMutableDictionary dictionary];
+  NSCharacterSet *trimSet = [NSCharacterSet whitespaceAndNewlineCharacterSet];
+
+  for (NSString *rawToken in [testFilter componentsSeparatedByString:@","]) {
+    NSString *token = [rawToken stringByTrimmingCharactersInSet:trimSet];
+    if (token.length == 0) {
+      continue;
+    }
+
+    NSRange slash = [token rangeOfString:@"/"];
+    if (slash.location == NSNotFound) {
+      [classes addObject:token];
+      continue;
+    }
+
+    NSString *className = [[token substringToIndex:slash.location]
+        stringByTrimmingCharactersInSet:trimSet];
+    NSString *methodName = [[token substringFromIndex:NSMaxRange(slash)]
+        stringByTrimmingCharactersInSet:trimSet];
+    if (className.length == 0) {
+      continue;
+    }
+
+    [classes addObject:className];
+    if (methodName.length > 0) {
+      NSMutableSet<NSString *> *methods = methodsByClass[className];
+      if (!methods) {
+        methods = [NSMutableSet set];
+        methodsByClass[className] = methods;
+      }
+      [methods addObject:methodName];
+    }
+  }
+
+  return @{
+    @"classes" : classes,
+    @"methods" : methodsByClass
+  };
+}
+
+static BOOL PDSFilterIncludesClass(NSDictionary<NSString *, id> *filter,
+                                   NSString *className) {
+  if (!filter) {
+    return YES;
+  }
+  NSSet<NSString *> *classes = filter[@"classes"];
+  return [classes containsObject:className];
+}
+
+static BOOL PDSFilterIncludesMethod(NSDictionary<NSString *, id> *filter,
+                                    NSString *className,
+                                    NSString *methodName) {
+  if (!filter) {
+    return YES;
+  }
+  NSDictionary<NSString *, NSSet<NSString *> *> *methodsByClass =
+      filter[@"methods"];
+  NSSet<NSString *> *methods = methodsByClass[className];
+  if (!methods) {
+    return YES;
+  }
+  return [methods containsObject:methodName];
+}
+
+static NSSet<NSString *> *PDSIntegrationTestClasses(void) {
+  static NSSet<NSString *> *classes = nil;
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    classes = [NSSet setWithArray:@[
+      @"PDSPLCIntegrationTests",
+      @"PDSIntegrationTests",
+      @"CommitChainTests",
+      @"RelayIntegrationTests",
+      @"OAuthIntegrationTests",
+      @"EmailIntegrationTests",
+      @"FirehoseIntegrationTests",
+      @"FollowersCountIntegrationTests",
+      @"MultiTenantDatabaseTests",
+      @"PDSDatabaseIntegrationTests",
+      @"XrpcIntegrationTests",
+      @"E2EDockerTests",
+      @"UILabIntegrationTests",
+      @"ATProtoVideoTranscoderIntegrationTests",
+      @"ATProtoVideoThumbnailGeneratorIntegrationTests",
+      @"ATProtoVideoWorkerIntegrationTests",
+      @"SSLPinningTests"
+    ]];
+  });
+  return classes;
+}
+
+static NSSet<NSString *> *PDSSocketTestClasses(void) {
+  static NSSet<NSString *> *classes = nil;
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    classes = [NSSet setWithArray:@[
+      @"HealthEndpointIntegrationTests",
+      @"HttpServerTests",
+      @"OAuth2EndpointTests",
+      @"PDSApplicationTests",
+      @"PDSHttpServerBuilderTests",
+      @"PLCServerTests",
+      @"PDSWebSocketServerTests",
+      @"PDSWebSocketTransportTests",
+      @"WebSocketServerTests"
+    ]];
+  });
+  return classes;
+}
+
+static NSString *PDSSkipReasonForClass(NSString *className) {
+  BOOL runIntegration = PDSEnvEnabled("PDS_RUN_INTEGRATION_TESTS");
+  BOOL runSocket = runIntegration || PDSEnvEnabled("PDS_RUN_SOCKET_TESTS");
+
+  if ([PDSSocketTestClasses() containsObject:className] && !runSocket) {
+    return @"set PDS_RUN_SOCKET_TESTS=1";
+  }
+  if ([PDSIntegrationTestClasses() containsObject:className] &&
+      !runIntegration) {
+    return @"set PDS_RUN_INTEGRATION_TESTS=1";
+  }
+  return nil;
+}
+
+static BOOL PDSClassIsSubclassOf(Class testClass, Class parentClass) {
+  for (Class current = testClass; current; current = class_getSuperclass(current)) {
+    if (current == parentClass) {
+      return YES;
+    }
+  }
+  return NO;
+}
+
+static NSSet<NSString *> *PDSRuntimeTestClassNames(void) {
+  int count = objc_getClassList(NULL, 0);
+  if (count <= 0) {
+    return [NSSet set];
+  }
+
+  Class *classes = (__unsafe_unretained Class *)calloc((NSUInteger)count, sizeof(Class));
+  if (!classes) {
+    return [NSSet set];
+  }
+
+  count = objc_getClassList(classes, count);
+  NSMutableSet<NSString *> *names = [NSMutableSet set];
+  Class testCaseClass = [XCTestCase class];
+  for (int i = 0; i < count; i++) {
+    Class candidate = classes[i];
+    if (!candidate || candidate == testCaseClass ||
+        !PDSClassIsSubclassOf(candidate, testCaseClass)) {
+      continue;
+    }
+    NSString *className = NSStringFromClass(candidate);
+    if (![className hasSuffix:@"Tests"]) {
+      continue;
+    }
+    if ([discoverTestMethodsForClass(candidate) count] == 0) {
+      continue;
+    }
+    [names addObject:className];
+  }
+  free(classes);
+  return names;
+}
+
+static BOOL PDSRunRegistrationAudit(NSArray<NSString *> *registeredClasses) {
+  NSMutableSet<NSString *> *registered =
+      [NSMutableSet setWithArray:registeredClasses];
+  NSSet<NSString *> *runtime = PDSRuntimeTestClassNames();
+
+  NSMutableSet<NSString *> *missing = [runtime mutableCopy];
+  [missing minusSet:registered];
+
+  NSMutableSet<NSString *> *stale = [registered mutableCopy];
+  [stale minusSet:runtime];
+
+  NSArray<NSString *> *missingSorted =
+      [[missing allObjects] sortedArrayUsingSelector:@selector(compare:)];
+  NSArray<NSString *> *staleSorted =
+      [[stale allObjects] sortedArrayUsingSelector:@selector(compare:)];
+
+  if (missingSorted.count == 0 && staleSorted.count == 0) {
+    fprintf(stderr, "Registration audit passed: runner and runtime test classes match\n");
+    return YES;
+  }
+
+  fprintf(stderr, "Registration audit failed\n");
+  if (missingSorted.count > 0) {
+    fprintf(stderr, "Runtime test classes missing from runner (%lu):\n",
+            (unsigned long)missingSorted.count);
+    for (NSString *name in missingSorted) {
+      fprintf(stderr, "  %s\n", name.UTF8String);
+    }
+  }
+  if (staleSorted.count > 0) {
+    fprintf(stderr, "Runner classes not present at runtime (%lu):\n",
+            (unsigned long)staleSorted.count);
+    for (NSString *name in staleSorted) {
+      fprintf(stderr, "  %s\n", name.UTF8String);
+    }
+  }
+  return NO;
+}
+
+static void PDSPrintTimingSummary(SimpleTestObserver *observer) {
+  NSArray<NSDictionary<NSString *, id> *> *methodTimings =
+      observer.methodTimings ?: @[];
+  if (methodTimings.count == 0) {
+    return;
+  }
+
+  NSMutableDictionary<NSString *, NSNumber *> *classTotals =
+      [NSMutableDictionary dictionary];
+  NSMutableDictionary<NSString *, NSNumber *> *classCounts =
+      [NSMutableDictionary dictionary];
+  for (NSDictionary<NSString *, id> *record in methodTimings) {
+    NSString *className = record[@"class"] ?: @"(unknown)";
+    NSTimeInterval duration = [record[@"duration"] doubleValue];
+    classTotals[className] = @([classTotals[className] doubleValue] + duration);
+    classCounts[className] = @([classCounts[className] unsignedIntegerValue] + 1);
+  }
+
+  NSArray<NSString *> *classesByDuration =
+      [[classTotals allKeys] sortedArrayUsingComparator:^NSComparisonResult(
+                              NSString *lhs, NSString *rhs) {
+        double left = [classTotals[lhs] doubleValue];
+        double right = [classTotals[rhs] doubleValue];
+        if (left > right) return NSOrderedAscending;
+        if (left < right) return NSOrderedDescending;
+        return [lhs compare:rhs];
+      }];
+
+  NSArray<NSDictionary<NSString *, id> *> *methodsByDuration =
+      [methodTimings sortedArrayUsingComparator:^NSComparisonResult(
+                         NSDictionary<NSString *, id> *lhs,
+                         NSDictionary<NSString *, id> *rhs) {
+        double left = [lhs[@"duration"] doubleValue];
+        double right = [rhs[@"duration"] doubleValue];
+        if (left > right) return NSOrderedAscending;
+        if (left < right) return NSOrderedDescending;
+        return [lhs[@"method"] compare:rhs[@"method"]];
+      }];
+
+  fprintf(stderr, "\n=== Test Timing Summary ===\n");
+  fprintf(stderr, "Class timings:\n");
+  for (NSString *className in classesByDuration) {
+    fprintf(stderr, "  %7.3fs  %4lu  %s\n",
+            [classTotals[className] doubleValue],
+            (unsigned long)[classCounts[className] unsignedIntegerValue],
+            className.UTF8String);
+  }
+
+  fprintf(stderr, "Slowest test methods:\n");
+  NSUInteger limit = MIN((NSUInteger)20, methodsByDuration.count);
+  for (NSUInteger i = 0; i < limit; i++) {
+    NSDictionary<NSString *, id> *record = methodsByDuration[i];
+    fprintf(stderr, "  %7.3fs  %s/%s\n",
+            [record[@"duration"] doubleValue],
+            [record[@"class"] UTF8String],
+            [record[@"method"] UTF8String]);
+  }
 }
 
 int main(int argc, char *argv[]) {
@@ -144,7 +498,6 @@ int main(int argc, char *argv[]) {
     }
 
     NSArray *testClasses = @[
-      @"MSTViewerHandlerTests",
       @"PDSAccountServiceTests",
       @"MSTInteropTests",
       @"CARInteropTests",
@@ -161,6 +514,7 @@ int main(int argc, char *argv[]) {
       @"OAuthDPoPTests",
       @"JWTTests",
       @"OAuth2Tests",
+      @"RefreshSecurityTests",
       @"SubscribeReposHandlerTests",
       @"GetServiceAuthMethodTests",
       @"XrpcHandlerTests",
@@ -187,9 +541,7 @@ int main(int argc, char *argv[]) {
       @"PDSPLCIntegrationTests",
       @"PDSAdminServiceTests",
       @"PDSAdminControllerTests",
-      @"PDSAdminHandlerTests",
       @"PDSBlobAuditManagerTests",
-      @"AdminPartialHandlerTests",
       @"PDSAdminAuthTests",
       @"PDSAuthzManagerTests",
       @"AdminMiddlewareTests",
@@ -226,6 +578,7 @@ int main(int argc, char *argv[]) {
       @"PDSInputValidatorTests",
       @"XrpcErrorResponseTests",
       @"BlobXrpcTests",
+      @"BlobStorageTests",
       @"CloudStorageBlobProviderTests",
       @"CBORSecurityTests",
       @"JWTSecurityTests",
@@ -250,15 +603,13 @@ int main(int argc, char *argv[]) {
       @"RelayRepoStateManagerTests",
       @"RelayIntegrationTests",
       @"SessionStoreTests",
-      @"ExploreCacheTests",
-      @"ExploreHandlerTests",
       @"AppDelegateTests",
       @"HttpServerTests",
       @"PDSHttpServerBuilderTests",
-      @"PDSHttpAdminRoutePackTests",
       @"WebSocketServerTests",
       @"MSTPersistenceTests",
       @"MSTRebalancingTests",
+      @"MSTUTF8Tests",
       @"HttpResponseTests",
       @"PDSConfigurationTests",
       @"PDSPhoneVerificationProviderTests",
@@ -308,7 +659,6 @@ int main(int argc, char *argv[]) {
       @"WebSocketConnectionTests",
       @"AdminModerationAuthTests",
       @"OAuthIntegrationTests",
-      @"OAuthDemoHandlerConfigurationTests",
       @"CommitChainTests",
       @"FirehoseIntegrationTests",
       @"E2EDockerTests",
@@ -371,14 +721,14 @@ int main(int argc, char *argv[]) {
       @"XrpcAppBskyGraphTests",
       @"XrpcAppBskyNotificationTests",
       @"XrpcAppBskyNotificationPackTests",
-      @"XrpcAppBskyVideoTests",
+      @"ATProtoVideoXrpcPackTests",
       @"PDSVideoJobsTests",
-      @"PDSVideoTranscoderTests",
-      @"PDSVideoTranscoderIntegrationTests",
-      @"PDSVideoThumbnailGeneratorTests",
-      @"PDSVideoThumbnailGeneratorIntegrationTests",
-      @"PDSVideoWorkerTests",
-      @"PDSVideoWorkerIntegrationTests",
+      @"ATProtoVideoTranscoderTests",
+      @"ATProtoVideoTranscoderIntegrationTests",
+      @"ATProtoVideoThumbnailGeneratorTests",
+      @"ATProtoVideoThumbnailGeneratorIntegrationTests",
+      @"ATProtoVideoWorkerTests",
+      @"ATProtoVideoWorkerIntegrationTests",
       @"XrpcAppBskyBookmarksTests",
       @"XrpcAppBskyContactTests",
       @"XrpcAppBskyDraftsTests",
@@ -388,6 +738,31 @@ int main(int argc, char *argv[]) {
       @"CBORSerializationTests",
       @"ATProtoValidatorTests",
       @"ATProtoBase32Tests",
+      @"ATProtoCoreTests",
+      @"ATProtoDagCBORTests",
+      @"AppViewRelevanceSetTests",
+      @"DeploymentReadinessTests",
+      @"EmailIntegrationTests",
+      @"FederationClientTests",
+      @"FollowersCountIntegrationTests",
+      @"MSTDiffTests",
+      @"MimeTypeValidatorTests",
+      @"MultiTenantDatabaseTests",
+      @"OAuth2EndpointTests",
+      @"OAuth2IntrospectionTests",
+      @"PDSApplicationTests",
+      @"PDSCLIHealthCommandTests",
+      @"PDSCLINukeCommandTests",
+      @"PDSDatabaseIntegrationTests",
+      @"PDSHttpPDSAdminRoutePackTests",
+      @"PDSLoggerPerformanceTests",
+      @"RelayAPIHandlerTests",
+      @"RelayDownstreamHandlerTests",
+      @"SecurityHardeningTests",
+      @"XrpcAppBskyGraphHelpersTests",
+      @"XrpcChatBskyGroupTests",
+      @"XrpcIntegrationTests",
+      @"XrpcToolsOzoneTests",
       @"UIAuthManagerTests",
       @"UIBackendClientTests",
       @"UIServerRuntimeTests",
@@ -412,16 +787,26 @@ int main(int argc, char *argv[]) {
         break;
       }
     }
+    NSDictionary<NSString *, id> *parsedFilter = PDSParseTestFilter(testFilter);
+
+    if (PDSEnvEnabled("PDS_TEST_REGISTRATION_AUDIT")) {
+      return PDSRunRegistrationAudit(testClasses) ? 0 : 2;
+    }
 
     XCTestSuite *mainSuite = [XCTestSuite testSuiteWithName:@"All Tests"];
+    NSMutableArray<NSString *> *skippedClasses = [NSMutableArray array];
 
     for (NSString *className in testClasses) {
       // Apply filter if present
-      if (testFilter) {
-        NSArray *filters = [testFilter componentsSeparatedByString:@","];
-        if (![filters containsObject:className]) {
-          continue;
-        }
+      if (!PDSFilterIncludesClass(parsedFilter, className)) {
+        continue;
+      }
+
+      NSString *skipReason = PDSSkipReasonForClass(className);
+      if (skipReason) {
+        [skippedClasses addObject:
+            [NSString stringWithFormat:@"%@ (%@)", className, skipReason]];
+        continue;
       }
 
       Class testClass = NSClassFromString(className);
@@ -429,18 +814,27 @@ int main(int argc, char *argv[]) {
         NSArray *methodNames = discoverTestMethodsForClass(testClass);
         if (methodNames.count > 0) {
           XCTestSuite *classSuite = [XCTestSuite testSuiteWithName:className];
+          NSUInteger addedMethodCount = 0;
           for (NSString *methodName in methodNames) {
+            if (!PDSFilterIncludesMethod(parsedFilter, className, methodName)) {
+              continue;
+            }
             SEL selector = NSSelectorFromString(methodName);
             XCTestCase *testCase =
                 [[testClass alloc] initWithSelector:selector];
             [classSuite addTest:testCase];
+            addedMethodCount++;
           }
-          [mainSuite addTest:classSuite];
+          if (addedMethodCount > 0) {
+            [mainSuite addTest:classSuite];
+          } else if (parsedFilter) {
+            NSLog(@"Warning: No selected test methods found for %@", className);
+          }
         }
       } else {
         // Only warn if we are not filtering, or if this is the specific class
         // we asked for
-        if (!testFilter || [className isEqualToString:testFilter]) {
+        if (!parsedFilter || PDSFilterIncludesClass(parsedFilter, className)) {
           NSLog(@"Warning: Test class %@ not found", className);
         }
       }
@@ -450,10 +844,17 @@ int main(int argc, char *argv[]) {
     NSLog(@"Test suites: %lu", (unsigned long)mainSuite.tests.count);
 
     [mainSuite performTest:nil];
+    PDSPrintTimingSummary(observer);
 
     NSLog(@"\n=== Test Suite Finished ===");
     NSLog(@"Tests run: %d", observer.testCount);
     NSLog(@"Failures: %d\n", observer.failureCount);
+    if (skippedClasses.count > 0) {
+      NSLog(@"Skipped gated test classes: %lu", (unsigned long)skippedClasses.count);
+      for (NSString *skipped in skippedClasses) {
+        NSLog(@"  %@", skipped);
+      }
+    }
 
     return observer.failureCount > 0 ? 1 : 0;
   }

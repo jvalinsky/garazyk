@@ -13,7 +13,9 @@ NSString * const PDSDatabaseIntegrationTestErrorDomain = @"com.atproto.pds.integ
 @implementation PDSDatabaseIntegrationTestUtilities
 
 + (nullable PDSDatabase *)createInMemoryDatabaseWithError:(NSError **)error {
-    PDSDatabase *database = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:@":memory:"]];
+    NSString *dbName = [NSString stringWithFormat:@"test-db-%@.sqlite", [[NSUUID UUID] UUIDString]];
+    NSString *tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:dbName];
+    PDSDatabase *database = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:tempPath]];
     if (![database openWithError:error]) {
         return nil;
     }

@@ -73,6 +73,7 @@
 - (void)handlePongFrame:(NSData *)payload;
 - (void)closeWithCode:(NSInteger)code reason:(NSString *)reason;
 - (void)sendFrame:(NSData *)frame;
+- (void)waitForWriteQueue:(void (^)(void))completion;
 @end
 
 @interface WebSocketStateCharacterizationTests : XCTestCase
@@ -100,9 +101,15 @@
 
 - (void)testHeartbeatTimeoutClosesConnection {
     // Simulate ping sent, wait timeout
-    NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
     [self.connection.heartbeatPolicy pingSent:now - 11.0]; // 10s timeout
     [self.connection tickHeartbeat];
+    
+    // Wait for async close on writeQueue
+    XCTestExpectation *exp = [self expectationWithDescription:@"Wait for close"];
+    [self.connection waitForWriteQueue:^{ [exp fulfill]; }];
+    [self waitForExpectations:@[exp] timeout:1.0];
+
     // This calls closeWithCode:1001 reason:@"Heartbeat timeout"
     XCTAssertEqual(self.connection.closeCode, 1001);
     XCTAssertEqualObjects(self.connection.closeReason, @"Heartbeat timeout");
@@ -112,15 +119,26 @@
 - (void)testStateTransitions {
     XCTAssertEqual(self.connection.state, WebSocketConnectionStateConnecting);
     
-    // We mock connected state
     self.connection.state = WebSocketConnectionStateConnected;
     XCTAssertEqual(self.connection.state, WebSocketConnectionStateConnected);
     
     [self.connection closeWithCode:1000 reason:@"Normal"];
+    
+    // Wait for async close
+    XCTestExpectation *exp = [self expectationWithDescription:@"Wait for close"];
+    [self.connection waitForWriteQueue:^{ [exp fulfill]; }];
+    [self waitForExpectations:@[exp] timeout:1.0];
+    
     XCTAssertEqual(self.connection.state, WebSocketConnectionStateClosing);
     
     // Test double close is idempotent
     [self.connection closeWithCode:1002 reason:@"Error"];
+    
+    // Wait for async close
+    XCTestExpectation *exp2 = [self expectationWithDescription:@"Wait for second close"];
+    [self.connection waitForWriteQueue:^{ [exp2 fulfill]; }];
+    [self waitForExpectations:@[exp2] timeout:1.0];
+    
     XCTAssertEqual(self.connection.closeCode, 1000, @"Should keep original close code");
 }
 
@@ -152,9 +170,14 @@
 - (void)testMissingPongTriggersTimeoutClosesConnection {
     self.connection.state = WebSocketConnectionStateConnected;
     
-    NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
     [self.connection.heartbeatPolicy pingSent:now - 20.0];
     [self.connection tickHeartbeat]; // Should trigger timeout
+    
+    // Wait for async close
+    XCTestExpectation *exp = [self expectationWithDescription:@"Wait for close"];
+    [self.connection waitForWriteQueue:^{ [exp fulfill]; }];
+    [self waitForExpectations:@[exp] timeout:1.0];
     
     XCTAssertEqual(self.connection.closeCode, 1001);
     XCTAssertEqualObjects(self.connection.closeReason, @"Heartbeat timeout");
@@ -163,7 +186,7 @@
 - (void)testPongResetsWaitingValidatesCloseCodeIsDifferent {
     self.connection.state = WebSocketConnectionStateConnected;
 
-    NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
     [self.connection.heartbeatPolicy pingSent:now - 20.0];
     [self.connection handlePongFrame:[NSData data]]; // Clears waitingForPong
 

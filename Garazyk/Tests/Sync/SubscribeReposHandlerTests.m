@@ -82,13 +82,20 @@
     if (![self.controller.serviceDatabases serviceDatabaseWithError:&error]) {
         XCTFail(@"Failed to init DB: %@", error);
     }
+
+    // This suite installs its own handler against the controller databases.
+    // Stop the application-owned handler so account/record notifications do not
+    // double-write the same sequencer rows during tests.
+    [self.controller.subscribeReposHandler stop];
     
     self.handler = [[SubscribeReposHandler alloc]
         initWithServiceDatabases:self.controller.serviceDatabases
                 userDatabasePool:self.controller.userDatabasePool];
+    [self.handler startObservingNotifications];
 }
 
 - (void)tearDown {
+    [self waitForHandlerIdle];
     [self.handler stop];
     [self.controller stopServer];
     [XrpcDispatcher resetSharedDispatcher];
@@ -97,6 +104,17 @@
     @autoreleasepool { }  // Drain to ensure deallocs before file deletion
     [[NSFileManager defaultManager] removeItemAtPath:self.tempDir error:nil];
     [super tearDown];
+}
+
+- (void)waitForHandlerIdle {
+    [self waitForHandler:self.handler idleWithTimeout:1.0];
+}
+
+- (void)waitForHandler:(SubscribeReposHandler *)handler idleWithTimeout:(NSTimeInterval)timeout {
+    if (!handler) {
+        return;
+    }
+    XCTAssertTrue([handler waitForIdleWithTimeout:timeout], @"Timed out waiting for subscribeRepos queues to drain");
 }
 
 - (void)testBroadcastCommitWithOpsValidatesMaxSeqIsGreater {
@@ -125,14 +143,10 @@
                                                        blobs:blobs], 
                       @"Should handle broadcast with ops and blobs");
                       
-    XCTestExpectation *persistExp = [self expectationWithDescription:@"Event persisted"];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        NSError *err = nil;
-        int64_t maxSeq = [self.controller.serviceDatabases getMaxEventSequence:&err];
-        XCTAssertGreaterThan(maxSeq, 0);
-        [persistExp fulfill];
-    });
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForHandlerIdle];
+    NSError *err = nil;
+    int64_t maxSeq = [self.controller.serviceDatabases getMaxEventSequence:&err];
+    XCTAssertGreaterThan(maxSeq, 0);
 }
 
 #ifndef GNUSTEP
@@ -158,13 +172,7 @@
     testConn.simulatedPendingSendCount = self.handler.maxPendingSendsPerConnection + 1;
     
     [self.handler broadcastRepositoryCommit:commit forRepo:@"did:plc:test" ops:ops blobs:@[]];
-    
-    // Wait for async dispatch
-    XCTestExpectation *expectation = [self expectationWithDescription:@"Backpressure check"];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [expectation fulfill];
-    });
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForHandlerIdle];
     
     XCTAssertTrue(testConn.didClose, @"Connection should be closed due to count backpressure");
     XCTAssertEqual(testConn.closedCode, 1008);
@@ -177,12 +185,7 @@
     testConn2.simulatedPendingSendBytes = self.handler.maxPendingBytesPerConnection + 1;
     
     [self.handler broadcastRepositoryCommit:commit forRepo:@"did:plc:test" ops:ops blobs:@[]];
-    
-    XCTestExpectation *expectation2 = [self expectationWithDescription:@"Backpressure check bytes"];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [expectation2 fulfill];
-    });
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForHandlerIdle];
     
     XCTAssertTrue(testConn2.didClose, @"Connection should be closed due to bytes backpressure");
     XCTAssertEqual(testConn2.closedCode, 1008);
@@ -191,43 +194,34 @@
 
 #ifndef GNUSTEP
 - (void)testBroadcastPersistsEvent {
-    XCTestExpectation *expectation = [self expectationWithDescription:@"Event persisted"];
-    
     EventFormatter *formatter = [[EventFormatter alloc] init];
     
     [self.handler broadcastIdentityChange:@"did:plc:test_persist" handle:@"test.bsky.social"];
-    
-    // Wait a bit for async dispatch
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        NSError *error = nil;
-        int64_t maxSeq = [self.controller.serviceDatabases getMaxEventSequence:&error];
-        XCTAssertNil(error);
-        XCTAssertGreaterThan(maxSeq, 0);
-        
-        NSArray *events = [self.controller.serviceDatabases getEventsSince:0 limit:1 error:&error];
-        XCTAssertNil(error);
-        XCTAssertEqual(events.count, 1);
-        
-        NSDictionary *event = events[0];
-        XCTAssertEqualObjects(event[@"type"], @"identity");
-        XCTAssertEqualObjects(event[@"seq"], @(maxSeq));
-        
-        // Decode stream event data using proper decoder
-        NSData *data = event[@"data"];
-        NSInteger op = 0;
-        NSString *msgType = nil;
-        NSDictionary *payload = [formatter decodeEventFromData:data op:&op msgType:&msgType error:&error];
-        XCTAssertNil(error);
-        XCTAssertNotNil(payload);
-        XCTAssertEqual(op, 1); // kXRPCStreamOpMessage
-        XCTAssertEqualObjects(msgType, @"#identity");
-        XCTAssertEqualObjects(payload[@"did"], @"did:plc:test_persist");
-        XCTAssertEqualObjects(payload[@"handle"], @"test.bsky.social");
-        
-        [expectation fulfill];
-    });
-    
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForHandlerIdle];
+
+    NSError *error = nil;
+    int64_t maxSeq = [self.controller.serviceDatabases getMaxEventSequence:&error];
+    XCTAssertNil(error);
+    XCTAssertGreaterThan(maxSeq, 0);
+
+    NSArray *events = [self.controller.serviceDatabases getEventsSince:0 limit:1 error:&error];
+    XCTAssertNil(error);
+    XCTAssertEqual(events.count, 1);
+
+    NSDictionary *event = events[0];
+    XCTAssertEqualObjects(event[@"type"], @"identity");
+    XCTAssertEqualObjects(event[@"seq"], @(maxSeq));
+
+    NSData *data = event[@"data"];
+    NSInteger op = 0;
+    NSString *msgType = nil;
+    NSDictionary *payload = [formatter decodeEventFromData:data op:&op msgType:&msgType error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(payload);
+    XCTAssertEqual(op, 1); // kXRPCStreamOpMessage
+    XCTAssertEqualObjects(msgType, @"#identity");
+    XCTAssertEqualObjects(payload[@"did"], @"did:plc:test_persist");
+    XCTAssertEqualObjects(payload[@"handle"], @"test.bsky.social");
 }
 #endif
 
@@ -239,25 +233,13 @@
     [self.handler broadcastInfo:@"info1" message:@"msg1"];
     [self.handler broadcastInfo:@"info2" message:@"msg2"];
     [self.handler broadcastInfo:@"info3" message:@"msg3"];
-    
-    // Wait for persistence
-    XCTestExpectation *persistExp = [self expectationWithDescription:@"Events persisted"];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [persistExp fulfill];
-    });
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForHandlerIdle];
     
     // 2. Simulate connection with cursor=1 (should get info2 and info3)
     MockWebSocketConnection *conn = [[MockWebSocketConnection alloc] init];
     conn.mockQueryParams = @{@"cursor": @"1"};
     [self.handler sendInitialRepositoryStateToConnection:conn cursor:@"1"];
-    
-    // Wait for async replay
-    XCTestExpectation *replayExp = [self expectationWithDescription:@"Replay finished"];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [replayExp fulfill];
-    });
-    [self waitForExpectationsWithTimeout:2.0 handler:nil];
+    [self waitForHandlerIdle];
     
     // Verify received messages using proper stream decoder
     XCTAssertEqual(conn.sentMessages.count, 2, "Should receive 2 events (info2, info3)");
@@ -289,20 +271,12 @@
     EventFormatter *formatter = [[EventFormatter alloc] init];
     [self.handler broadcastInfo:@"seed" message:@"seed"];
 
-    XCTestExpectation *persistExp = [self expectationWithDescription:@"Seed persisted"];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [persistExp fulfill];
-    });
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForHandlerIdle];
 
     MockWebSocketConnection *conn = [[MockWebSocketConnection alloc] init];
     [self.handler sendInitialRepositoryStateToConnection:conn cursor:@"999999"];
 
-    XCTestExpectation *replayExp = [self expectationWithDescription:@"Future cursor handled"];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [replayExp fulfill];
-    });
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForHandlerIdle];
 
     XCTAssertTrue(conn.didClose);
     XCTAssertEqual(conn.sentMessages.count, 1U);
@@ -348,12 +322,7 @@
                                       error:&error];
     XCTAssertTrue(putV1);
     XCTAssertNil(error);
-
-    XCTestExpectation *firstCommitExp = [self expectationWithDescription:@"First commit persisted"];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.25 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [firstCommitExp fulfill];
-    });
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForHandlerIdle];
 
     NSArray<NSDictionary *> *eventsAfterV1 = [self.controller.serviceDatabases getEventsSince:0 limit:50 error:&error];
     XCTAssertNil(error);
@@ -393,12 +362,7 @@
                                       error:&error];
     XCTAssertTrue(putV2);
     XCTAssertNil(error);
-
-    XCTestExpectation *secondCommitExp = [self expectationWithDescription:@"Second commit persisted"];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.25 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [secondCommitExp fulfill];
-    });
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForHandlerIdle];
 
     NSArray<NSDictionary *> *allEvents = [self.controller.serviceDatabases getEventsSince:0 limit:100 error:&error];
     XCTAssertNil(error);
@@ -440,21 +404,11 @@
     [self.handler broadcastInfo:@"info1" message:@"msg1"];
     [self.handler broadcastInfo:@"info2" message:@"msg2"];
     [self.handler broadcastInfo:@"info3" message:@"msg3"];
-
-    XCTestExpectation *persistExp = [self expectationWithDescription:@"Events persisted"];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.25 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [persistExp fulfill];
-    });
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForHandlerIdle];
 
     MockWebSocketConnection *conn = [[MockWebSocketConnection alloc] init];
     [self.handler sendInitialRepositoryStateToConnection:conn cursor:@"1"];
-
-    XCTestExpectation *replayExp = [self expectationWithDescription:@"Too slow handled"];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [replayExp fulfill];
-    });
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForHandlerIdle];
 
     XCTAssertFalse(conn.didClose);
     XCTAssertEqual(conn.sentMessages.count, 2U);
@@ -496,12 +450,7 @@
     [attached addObject:conn];
 
     [self.handler broadcastInfo:@"backpressure" message:@"test"];
-
-    XCTestExpectation *broadcastExp = [self expectationWithDescription:@"Broadcast finished"];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.25 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [broadcastExp fulfill];
-    });
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForHandlerIdle];
 
     XCTAssertTrue(conn.didClose);
     XCTAssertEqual(conn.sentMessages.count, 1U);
@@ -524,43 +473,28 @@
                      @"Should handle identity broadcast with handle");
     XCTAssertNoThrow([self.handler broadcastIdentityChange:@"did:plc:test2" handle:nil],
                      @"Should handle identity broadcast without handle");
-                     
-    XCTestExpectation *persistExp = [self expectationWithDescription:@"Event persisted"];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        NSError *err = nil;
-        int64_t maxSeq = [self.controller.serviceDatabases getMaxEventSequence:&err];
-        XCTAssertGreaterThan(maxSeq, 0);
-        [persistExp fulfill];
-    });
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForHandlerIdle];
+    NSError *err = nil;
+    int64_t maxSeq = [self.controller.serviceDatabases getMaxEventSequence:&err];
+    XCTAssertGreaterThan(maxSeq, 0);
 }
 
 - (void)testBroadcastAccountTakedownValidatesMaxSeqIsGreater {
     XCTAssertNoThrow([self.handler broadcastAccountTakedown:@"did:plc:malicious"],
                      @"Should handle account takedown broadcast");
-                     
-    XCTestExpectation *persistExp = [self expectationWithDescription:@"Event persisted"];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        NSError *err = nil;
-        int64_t maxSeq = [self.controller.serviceDatabases getMaxEventSequence:&err];
-        XCTAssertGreaterThan(maxSeq, 0);
-        [persistExp fulfill];
-    });
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForHandlerIdle];
+    NSError *err = nil;
+    int64_t maxSeq = [self.controller.serviceDatabases getMaxEventSequence:&err];
+    XCTAssertGreaterThan(maxSeq, 0);
 }
 
 - (void)testBroadcastInfoEventValidatesMaxSeqIsGreater {
     XCTAssertNoThrow([self.handler broadcastInfo:@"OutdatedCursor" message:@"Requested sequence too far back"],
                       @"Should handle info event broadcast");
-                      
-    XCTestExpectation *persistExp = [self expectationWithDescription:@"Event persisted"];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        NSError *err = nil;
-        int64_t maxSeq = [self.controller.serviceDatabases getMaxEventSequence:&err];
-        XCTAssertGreaterThan(maxSeq, 0);
-        [persistExp fulfill];
-    });
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForHandlerIdle];
+    NSError *err = nil;
+    int64_t maxSeq = [self.controller.serviceDatabases getMaxEventSequence:&err];
+    XCTAssertGreaterThan(maxSeq, 0);
 }
 
 #ifndef GNUSTEP
@@ -570,12 +504,7 @@
     // 1. Broadcast two events (Seq 1, 2)
     [self.handler broadcastInfo:@"info1" message:@"msg1"];
     [self.handler broadcastInfo:@"info2" message:@"msg2"];
-    
-    XCTestExpectation *persistExp = [self expectationWithDescription:@"Events 1&2 persisted"];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [persistExp fulfill];
-    });
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForHandlerIdle];
     
     // 2. Backdate events 1 & 2 in DB to allow pruning
     // Events are stored in the sequencer pool, not the service pool
@@ -599,23 +528,13 @@
     
     // 4. Broadcast Event 3
     [self.handler broadcastInfo:@"info3" message:@"msg3"];
-    
-    XCTestExpectation *persistExp2 = [self expectationWithDescription:@"Event 3 persisted"];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [persistExp2 fulfill];
-    });
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForHandlerIdle];
     
     // 5. Connect with cursor 1 (which refers to a pruned event)
     MockWebSocketConnection *conn = [[MockWebSocketConnection alloc] init];
     // backlog = (Current Seq 3) - (Cursor 1) = 2. Should be fine.
     [self.handler sendInitialRepositoryStateToConnection:conn cursor:@"1"];
-    
-    XCTestExpectation *replayExp = [self expectationWithDescription:@"Replay finished"];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [replayExp fulfill];
-    });
-    [self waitForExpectationsWithTimeout:2.0 handler:nil];
+    [self waitForHandlerIdle];
     
     // 6. Verify we receive OutdatedCursor notice followed by Event 3
     XCTAssertFalse(conn.didClose);
@@ -639,12 +558,7 @@
 - (void)testSequenceInitializationFromDisk {
     // 1. Broadcast an event with current handler
     [self.handler broadcastInfo:@"init1" message:@"msg1"];
-    
-    XCTestExpectation *persistExp = [self expectationWithDescription:@"Init persisted"];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [persistExp fulfill];
-    });
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForHandlerIdle];
     
     // Verify seq is 1
     int64_t maxSeq = [self.controller.serviceDatabases getMaxEventSequence:nil];
@@ -662,12 +576,7 @@
     
     // 4. Broadcast new event
     [newHandler broadcastInfo:@"init2" message:@"msg2"];
-    
-    XCTestExpectation *persistExp2 = [self expectationWithDescription:@"Init2 persisted"];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [persistExp2 fulfill];
-    });
-    [self waitForExpectationsWithTimeout:1.0 handler:nil];
+    [self waitForHandler:newHandler idleWithTimeout:1.0];
     
     // 5. Verify seq incremented to 2 (not reset to 1)
     maxSeq = [self.controller.serviceDatabases getMaxEventSequence:nil];

@@ -19,6 +19,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy) NSString *refreshJwt1;
 @property (nonatomic, copy) NSString *adminAccessJwt;
 
+- (BOOL)requiresAdminAuthFixture;
+
 - (PDSServiceDatabases *)serviceDatabases;
 
 - (NSString *)iso8601String;

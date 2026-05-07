@@ -314,4 +314,19 @@
     XCTAssertNotNil(error, @"Should return error for invalid metadata type");
 }
 
+/**
+ * Test: client_id is loopback URL (allowed)
+ */
+- (void)testClientIDLoopback {
+    NSMutableDictionary *metadata = [self validATProtoPublicClientMetadata];
+    metadata[@"client_id"] = @"http://127.0.0.1:8080";
+
+    NSError *error = nil;
+    NSDictionary *result = [self.handler validateClientMetadata:metadata error:&error];
+
+    XCTAssertNotNil(result, @"Should allow loopback client_id");
+    XCTAssertNil(error, @"Should not return error for loopback client_id");
+    XCTAssertEqualObjects(result[@"client_id"], @"http://127.0.0.1:8080");
+}
+
 @end

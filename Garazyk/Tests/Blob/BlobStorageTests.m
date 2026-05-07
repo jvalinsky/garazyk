@@ -64,7 +64,9 @@
 
 - (void)testBlobValidationValidImage {
     NSError *error = nil;
-    NSData *validImageData = [@"fake-image-data" dataUsingEncoding:NSUTF8StringEncoding];
+    // Valid JPEG magic bytes: FF D8 FF E0 ...
+    uint8_t jpegBytes[] = {0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01};
+    NSData *validImageData = [NSData dataWithBytes:jpegBytes length:sizeof(jpegBytes)];
     BOOL isValid = [self.blobStorage validateBlob:validImageData mimeType:@"image/jpeg" error:&error];
 
     XCTAssertTrue(isValid, @"Valid image should pass validation");
@@ -73,7 +75,8 @@
 
 - (void)testBlobValidationInvalidMimeType {
     NSError *error = nil;
-    NSData *validImageData = [@"fake-image-data" dataUsingEncoding:NSUTF8StringEncoding];
+    uint8_t jpegBytes[] = {0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01};
+    NSData *validImageData = [NSData dataWithBytes:jpegBytes length:sizeof(jpegBytes)];
     BOOL isInvalid = ![self.blobStorage validateBlob:validImageData mimeType:@"invalid/type" error:&error];
 
     XCTAssertTrue(isInvalid, @"Invalid MIME type should fail validation");
@@ -99,9 +102,10 @@
 }
 
 - (void)testBlobUploadDuplicate {
+    NSError *error = nil;
+    self.uploadedCID = [self.blobStorage uploadBlob:self.testData mimeType:@"text/plain" did:self.testDID error:&error];
     XCTAssertNotNil(self.uploadedCID, @"Upload should succeed first");
 
-    NSError *error = nil;
     CID *duplicateCID = [self.blobStorage uploadBlob:self.testData mimeType:@"text/plain" did:self.testDID error:&error];
 
     XCTAssertNotNil(duplicateCID, @"Duplicate CID should not be nil");
@@ -109,9 +113,10 @@
 }
 
 - (void)testBlobRetrieval {
+    NSError *error = nil;
+    self.uploadedCID = [self.blobStorage uploadBlob:self.testData mimeType:@"text/plain" did:self.testDID error:&error];
     XCTAssertNotNil(self.uploadedCID, @"Upload should succeed first");
 
-    NSError *error = nil;
     NSData *retrievedData = [self.blobStorage getBlobWithCID:self.uploadedCID did:self.testDID error:&error];
 
     XCTAssertNotNil(retrievedData, @"Retrieved data should not be nil");
@@ -130,18 +135,19 @@
 }
 
 - (void)testBlobListing {
+    NSError *error = nil;
+    self.uploadedCID = [self.blobStorage uploadBlob:self.testData mimeType:@"text/plain" did:self.testDID error:&error];
     XCTAssertNotNil(self.uploadedCID, @"Upload should succeed first");
 
-    NSError *error = nil;
     NSArray *blobList = [self.blobStorage listBlobsForDID:self.testDID limit:10 cursor:nil error:&error];
 
     XCTAssertNotNil(blobList, @"Blob list should not be nil");
     XCTAssertEqual(blobList.count, 1, @"Should have exactly 1 blob listed");
 
-    NSDictionary *blobInfo = blobList.firstObject;
-    XCTAssertEqualObjects(blobInfo[@"cid"], self.uploadedCID.stringValue, @"CID should match");
-    XCTAssertEqualObjects(blobInfo[@"mimeType"], @"text/plain", @"MIME type should match");
-    XCTAssertEqualObjects(blobInfo[@"size"], @(self.testData.length), @"Size should match");
+    PDSDatabaseBlob *blobInfo = blobList.firstObject;
+    XCTAssertEqualObjects(blobInfo.cid, [self.uploadedCID bytes], @"CID should match");
+    XCTAssertEqualObjects(blobInfo.mimeType, @"text/plain", @"MIME type should match");
+    XCTAssertEqual(blobInfo.size, self.testData.length, @"Size should match");
 }
 
 - (void)testBlobListingEmptyDID {
@@ -153,12 +159,14 @@
 }
 
 - (void)testBlobDeletion {
+    NSError *error = nil;
+    self.uploadedCID = [self.blobStorage uploadBlob:self.testData mimeType:@"text/plain" did:self.testDID error:&error];
     XCTAssertNotNil(self.uploadedCID, @"Upload should succeed first");
 
-    NSError *error = nil;
-    BOOL deleted = [self.blobStorage deleteBlobWithCID:self.uploadedCID did:self.testDID error:&error];
+    BOOL success = [self.blobStorage deleteBlobWithCID:self.uploadedCID did:self.testDID error:&error];
 
-    XCTAssertTrue(deleted, @"Blob deletion should succeed");
+
+    XCTAssertTrue(success, @"Blob deletion should succeed");
     XCTAssertNil(error, @"No error should occur during deletion");
 }
 
@@ -188,14 +196,21 @@
 
 - (void)testBlobDIDIsolation {
     NSString *otherDID = @"did:web:other.example.com";
-
     NSError *error = nil;
+
+    // Upload for testDID
+    [self.blobStorage uploadBlob:self.testData mimeType:@"text/plain" did:self.testDID error:&error];
+
+    // Upload for otherDID
+    [self.blobStorage uploadBlob:self.testData mimeType:@"text/plain" did:otherDID error:&error];
+
     NSArray *testDIDList = [self.blobStorage listBlobsForDID:self.testDID limit:10 cursor:nil error:&error];
     NSArray *otherDIDList = [self.blobStorage listBlobsForDID:otherDID limit:10 cursor:nil error:&error];
 
-    XCTAssertEqual(testDIDList.count, 0, @"Original DID should have no blobs after deletion");
+    XCTAssertEqual(testDIDList.count, 1, @"Test DID should have 1 blob");
     XCTAssertEqual(otherDIDList.count, 1, @"Other DID should have 1 blob");
 }
+
 
 - (void)testBlobMimeTypeWhitelist {
     NSError *error = nil;

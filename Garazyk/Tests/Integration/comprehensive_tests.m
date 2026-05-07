@@ -23,7 +23,9 @@
     [super setUp];
 
     // Initialize test database
-    self.database = [[PDSDatabase alloc] initWithPath:@":memory:"];
+    NSString *dbName = [NSString stringWithFormat:@"test-comprehensive-%@.sqlite", [[NSUUID UUID] UUIDString]];
+    NSString *dbPath = [NSTemporaryDirectory() stringByAppendingPathComponent:dbName];
+    self.database = [[PDSDatabase alloc] initWithPath:dbPath];
     XCTAssertNotNil(self.database, @"Database should initialize");
 
     // Initialize resolvers

@@ -23,8 +23,10 @@
 - (void)setUp {
     [super setUp];
     
-    // Setup in-memory DB
-    self.database = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:@":memory:"]];
+    // Setup temporary DB
+    NSString *dbName = [NSString stringWithFormat:@"test-conformance-%@.sqlite", [[NSUUID UUID] UUIDString]];
+    NSURL *dbURL = [NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:dbName]];
+    self.database = [PDSDatabase databaseAtURL:dbURL];
     [self.database openWithError:nil];
     
     // Setup Minter with static key for testing

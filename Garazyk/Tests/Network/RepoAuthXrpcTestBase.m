@@ -9,6 +9,10 @@
 
 @implementation RepoAuthXrpcTestBase
 
+- (BOOL)requiresAdminAuthFixture {
+    return NO;
+}
+
 - (void)setUp {
     [super setUp];
 
@@ -52,21 +56,23 @@
     XCTAssertNotNil(self.accessJwt1);
     XCTAssertNotNil(self.refreshJwt1);
 
-    NSDictionary *adminAccount = [self.controller createAccountForEmail:@"adminrepo@example.com"
-                                                               password:@"password"
-                                                                 handle:@"administrator.repoauth.test"
-                                                                    did:nil
-                                                                  error:&error];
-    XCTAssertNil(error);
-    XCTAssertNotNil(adminAccount[@"did"]);
+    if ([self requiresAdminAuthFixture]) {
+        NSDictionary *adminAccount = [self.controller createAccountForEmail:@"adminrepo@example.com"
+                                                                   password:@"password"
+                                                                     handle:@"administrator.repoauth.test"
+                                                                        did:nil
+                                                                      error:&error];
+        XCTAssertNil(error);
+        XCTAssertNotNil(adminAccount[@"did"]);
 
-    [PDSAdminAuth sharedAuth].dataDirectory = self.tempURL.path;
-    [PDSAdminAuth sharedAuth].controller = self.controller;
-    NSError *authError = nil;
-    BOOL adminAuthSuccess = [[PDSAdminAuth sharedAuth] authenticateWithPassword:@"password" error:&authError];
-    XCTAssertTrue(adminAuthSuccess, @"Admin authentication failed: %@", authError);
-    self.adminAccessJwt = [PDSAdminAuth sharedAuth].adminToken;
-    XCTAssertNotNil(self.adminAccessJwt);
+        [PDSAdminAuth sharedAuth].dataDirectory = self.tempURL.path;
+        [PDSAdminAuth sharedAuth].controller = self.controller;
+        NSError *authError = nil;
+        BOOL adminAuthSuccess = [[PDSAdminAuth sharedAuth] authenticateWithPassword:@"password" error:&authError];
+        XCTAssertTrue(adminAuthSuccess, @"Admin authentication failed: %@", authError);
+        self.adminAccessJwt = [PDSAdminAuth sharedAuth].adminToken;
+        XCTAssertNotNil(self.adminAccessJwt);
+    }
 }
 
 - (void)tearDown {

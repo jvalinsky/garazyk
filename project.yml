@@ -241,6 +241,7 @@ targets:
               -DCMAKE_OBJCXX_COMPILER="${XCODE_CLANGXX}" \
               -DBUILD_SECP256K1=ON \
               -DBUILD_TESTS=ON \
+              -DENABLE_COVERAGE=OFF \
               -DBUILD_FUZZERS=OFF
             cmake --build . --target AllTests --parallel $(sysctl -n hw.ncpu)
 

@@ -1186,14 +1186,17 @@ endif()
 #=============================
 
 option(BUILD_TESTS "Build test targets" ON)
+option(ENABLE_COVERAGE "Build test targets with LLVM source coverage instrumentation" OFF)
 if(BUILD_TESTS)
   enable_testing()
   
-  # Enable LLVM Source-Based Code Coverage
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
-  set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
+  if(ENABLE_COVERAGE)
+    message(STATUS "Building tests with LLVM source coverage instrumentation")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
+    set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
+  endif()
 
   # Test sources
   file(GLOB_RECURSE TEST_OBJC_SOURCES "Garazyk/Tests/**/*.m")
