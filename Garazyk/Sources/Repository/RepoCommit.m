@@ -184,6 +184,14 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
         return nil;
     }
     commit.version = [commitMap[@"version"] integerValue];
+    if (commit.version != 3) {
+        if (error) {
+            *error = [NSError errorWithDomain:RepoCommitErrorDomain
+                                         code:-4
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Unsupported repo version (expected 3)"}];
+        }
+        return nil;
+    }
 
     // data (optional) - CID-link
     id dataValue = commitMap[@"data"];
@@ -212,11 +220,17 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
         commit.prevCID = [CID cidFromString:(NSString *)prevValue];
     }
 
-    // sig (optional, for signed commits)
+    // sig (required for valid repo commits)
     id sigValue = commitMap[@"sig"];
-    if ([sigValue isKindOfClass:[NSData class]]) {
-        commit.signature = (NSData *)sigValue;
+    if (![sigValue isKindOfClass:[NSData class]]) {
+        if (error) {
+            *error = [NSError errorWithDomain:RepoCommitErrorDomain
+                                         code:-4
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Commit signature ('sig') is missing or invalid"}];
+        }
+        return nil;
     }
+    commit.signature = (NSData *)sigValue;
 
     return commit;
 }
