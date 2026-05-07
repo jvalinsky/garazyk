@@ -1,7 +1,9 @@
 /*!
  @file PDSHttpRoutePackTypes.h
 
- @abstract Shared type definitions for HTTP route pack registration helpers.
+ @abstract Declares shared types used by HTTP route-pack registration components.
+
+ @discussion Provides common type definitions and contracts used across route-pack modules to ensure consistent registration signatures and wiring behavior.
  */
 
 #import <Foundation/Foundation.h>

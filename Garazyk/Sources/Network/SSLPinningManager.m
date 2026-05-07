@@ -1,3 +1,11 @@
+/*!
+ @file SSLPinningManager.m
+
+ @abstract Implements TLS certificate/public-key pinning checks for outbound trust decisions.
+
+ @discussion Enforces pinning policy by comparing peer certificate/public-key material to configured trust anchors. Supplies transport-security validation outcomes without owning request routing or application auth.
+ */
+
 #import "SSLPinningManager.h"
 #import "App/PDSConfiguration.h"
 #import <Security/Security.h>

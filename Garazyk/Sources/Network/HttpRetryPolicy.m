@@ -1,3 +1,11 @@
+/*!
+ @file HttpRetryPolicy.m
+
+ @abstract Implements retry eligibility and backoff decisions for network operations.
+
+ @discussion Applies policy rules to status/error signals and returns deterministic retry decisions with delay guidance. Centralizes resilience behavior and avoids embedding retry heuristics across call sites.
+ */
+
 #import "Network/HttpRetryPolicy.h"
 #import <math.h>
 

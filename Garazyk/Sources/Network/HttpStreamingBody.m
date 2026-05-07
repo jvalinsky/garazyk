@@ -1,3 +1,11 @@
+/*!
+ @file HttpStreamingBody.m
+
+ @abstract Implements streaming HTTP body support for incremental request payload processing.
+
+ @discussion Provides streaming body state and producer/consumer semantics for large or incremental payload handling. Supports transport/dispatch layers without owning route or business decisions.
+ */
+
 #import "HttpStreamingBody.h"
 #import "Compat/Foundation/NSDataCompat.h"
 

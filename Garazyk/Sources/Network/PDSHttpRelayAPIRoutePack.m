@@ -1,3 +1,11 @@
+/*!
+ @file PDSHttpRelayAPIRoutePack.m
+
+ @abstract Registers relay API HTTP routes for relay-facing operational and sync endpoints.
+
+ @discussion Maps relay API paths into the HTTP router and delegates execution to relay/runtime components. Maintains route namespace and registration concerns separate from relay business logic.
+ */
+
 #import "Network/PDSHttpRelayAPIRoutePack.h"
 
 #import "Debug/PDSLogger.h"

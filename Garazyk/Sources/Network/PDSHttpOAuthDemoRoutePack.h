@@ -1,7 +1,9 @@
 /*!
  @file PDSHttpOAuthDemoRoutePack.h
 
- @abstract Registers OAuth demo routes on an HTTP server.
+ @abstract Declares OAuth demo route-pack registration entry points.
+
+ @discussion Specifies interfaces for registering OAuth demonstration endpoints in the HTTP router for interactive or local demo usage.
  */
 
 #import <Foundation/Foundation.h>

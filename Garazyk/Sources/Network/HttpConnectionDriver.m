@@ -1,3 +1,11 @@
+/*!
+ @file HttpConnectionDriver.m
+
+ @abstract Implements connection-level orchestration for HTTP request processing.
+
+ @discussion Drives read/parse/dispatch/write sequencing for a single connection, including lifecycle transitions and failure handling paths. Delegates parsing and routing details to specialized components.
+ */
+
 #import "Network/HttpConnectionDriver.h"
 
 #import "Network/HttpProtocolSession.h"

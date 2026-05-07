@@ -1,3 +1,11 @@
+/*!
+ @file HttpChunkedBodyParser.m
+
+ @abstract Implements parser logic for HTTP chunked transfer-encoded request bodies.
+
+ @discussion Processes chunk-size framing and chunk data sequencing according to HTTP chunked transfer rules, including malformed framing detection. Supplies parsed body data to higher layers without handling route logic.
+ */
+
 #import "HttpChunkedBodyParser.h"
 
 static const NSUInteger kDefaultMaxBodySize = 50 * 1024 * 1024;

@@ -1,7 +1,9 @@
 /*!
  @file PDSHttpOAuthRoutePack.h
 
- @abstract Registers OAuth and WebAuthn route pack on an HTTP server.
+ @abstract Declares OAuth protocol route-pack registration entry points.
+
+ @discussion Specifies interfaces for binding core OAuth HTTP endpoints into server routing while delegating protocol execution to auth handlers.
  */
 
 #import <Foundation/Foundation.h>

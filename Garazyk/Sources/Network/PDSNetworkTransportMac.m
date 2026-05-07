@@ -1,3 +1,11 @@
+/*!
+ @file PDSNetworkTransportMac.m
+
+ @abstract Implements macOS network transport integration for server connection handling.
+
+ @discussion Provides platform-specific transport wiring for macOS using system networking facilities and forwards connection data into protocol/session layers. Keeps business and routing logic out of transport code.
+ */
+
 #import "PDSNetworkTransportMac.h"
 #import "Debug/PDSLogger.h"
 #import <Foundation/Foundation.h>

@@ -1,3 +1,11 @@
+/*!
+ @file HttpRouter.m
+
+ @abstract Implements HTTP route registration and request-to-handler matching behavior.
+
+ @discussion Resolves incoming method/path combinations to registered handler functions using routing precedence rules. Delegates execution to handlers and does not implement endpoint-specific business logic.
+ */
+
 #import "HttpRouter.h"
 #import "Compat/PDSTypes.h"
 #import "HttpRequest.h"

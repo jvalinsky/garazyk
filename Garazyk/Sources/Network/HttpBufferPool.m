@@ -1,3 +1,11 @@
+/*!
+ @file HttpBufferPool.m
+
+ @abstract Implements reusable buffer pooling for HTTP I/O efficiency and allocation control.
+
+ @discussion Manages buffer reuse semantics to reduce allocation churn during high-throughput network processing. Provides infrastructure support to transport/parser layers without owning protocol decisions.
+ */
+
 #import "HttpBufferPool.h"
 #import "Compat/PDSTypes.h"
 #import "HttpRequest.h"

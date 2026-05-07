@@ -1,3 +1,11 @@
+/*!
+ @file HttpRouteTrie.m
+
+ @abstract Implements trie-based route matching structures for HTTP path resolution.
+
+ @discussion Provides prefix/path-segment indexing used by router logic to locate matching handlers efficiently. Owns route-structure mechanics without executing endpoint domain behavior.
+ */
+
 #import "HttpRouteTrie.h"
 #import "Compat/PDSTypes.h"
 #import "HttpRouter.h"
