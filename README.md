@@ -62,7 +62,7 @@ Local-network stack for development and testing:
 docker compose up
 ```
 
-Includes PDS, Admin UI, and supporting services. See [Deployment Guide](docs/DEPLOYMENT_GUIDE.md) and [Service Orchestration](docs/guides/SERVICE_ORCHESTRATION_GUIDE.md).
+Includes PDS, Admin UI, and supporting services. See [Docs Site Deployment Guide](docs/DEPLOYMENT_GUIDE.md) and [Service Orchestration](docs/guides/SERVICE_ORCHESTRATION_GUIDE.md).
 
 ## Documentation
 
