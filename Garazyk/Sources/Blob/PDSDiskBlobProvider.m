@@ -64,28 +64,21 @@ NSString * const PDSDiskBlobProviderErrorDomain = @"com.atproto.pds.diskblobprov
         return nil;
     }
     
-    // Check file size before loading into memory
-    NSError *attrsError = nil;
-    NSDictionary *attrs = [_fileManager attributesOfItemAtPath:blobURL.path error:&attrsError];
-    if (!attrs) {
-        if (error) {
-            *error = attrsError;
-        }
-        return nil;
-    }
-    
-    unsigned long long fileSize = [attrs[NSFileSize] unsignedLongLongValue];
-    static const unsigned long long maxBlobSize = 5 * 1024 * 1024; // 5MB limit
-    if (fileSize > maxBlobSize) {
+    // Efficiently load data (mapped if possible)
+    return [NSData dataWithContentsOfURL:blobURL options:NSDataReadingMappedIfSafe error:error];
+}
+
+- (nullable NSInputStream *)retrieveBlobStreamForCID:(CID *)cid error:(NSError **)error {
+    NSURL *blobURL = [self blobURLForCID:cid];
+    if (![_fileManager fileExistsAtPath:blobURL.path]) {
         if (error) {
             *error = [NSError errorWithDomain:PDSDiskBlobProviderErrorDomain
-                                         code:3 // FileTooLarge
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Blob file exceeds memory limit"}];
+                                         code:2 // FileNotFound
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Blob file not found on disk"}];
         }
         return nil;
     }
-    
-    return [NSData dataWithContentsOfURL:blobURL options:0 error:error];
+    return [NSInputStream inputStreamWithURL:blobURL];
 }
 
 - (BOOL)deleteBlobDataForCID:(CID *)cid error:(NSError **)error {

@@ -38,6 +38,13 @@
 + (BOOL)validatePlcOperationToken:(NSString *)token forDid:(NSString *)did;
 @end
 
+static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
+    NSString *plcUrl = configuration.plcURL;
+    return [plcUrl isEqualToString:@"mock"] ||
+           [plcUrl isEqualToString:@"skip"] ||
+           plcUrl.length == 0;
+}
+
 @implementation XrpcIdentityMethods
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
@@ -323,38 +330,36 @@
         }
 
         id prev = [NSNull null];
-        NSString *plcUrl = configuration.plcURL;
-        if ([plcUrl isEqualToString:@"mock"] || plcUrl.length == 0) {
-            plcUrl = @"http://127.0.0.1:2582";
-        }
-        
-        DIDPLCResolver *plcResolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
-        NSError *auditError = nil;
-        NSArray *auditLog = [plcResolver resolveAuditLogForDID:did error:&auditError];
-        
-        if (auditLog && auditLog.count > 0) {
-            NSMutableArray *ops = [NSMutableArray array];
-            for (id opDict in auditLog) {
-                if ([opDict isKindOfClass:[NSDictionary class]]) {
-                    PLCOperation *op = [PLCOperation operationFromDictionary:opDict error:nil];
-                    if (op) [ops addObject:op];
+        if (!XrpcIdentityUsesMockPLC(configuration)) {
+            NSString *plcUrl = configuration.plcURL;
+            DIDPLCResolver *plcResolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
+            NSError *auditError = nil;
+            NSArray *auditLog = [plcResolver resolveAuditLogForDID:did error:&auditError];
+
+            if (auditLog && auditLog.count > 0) {
+                NSMutableArray *ops = [NSMutableArray array];
+                for (id opDict in auditLog) {
+                    if ([opDict isKindOfClass:[NSDictionary class]]) {
+                        PLCOperation *op = [PLCOperation operationFromDictionary:opDict error:nil];
+                        if (op) [ops addObject:op];
+                    }
                 }
-            }
-            
-            if (ops.count > 0) {
-                NSError *replayError = nil;
-                PLCDIDState *state = [PLCStateReplayer replayHistory:ops error:&replayError];
-                if (state && state.tombstoned) {
-                    response.statusCode = HttpStatusBadRequest;
-                    [response setJsonBody:@{@"error": @"AccountTombstoned", @"message": @"Cannot update tombstoned DID"}];
-                    return;
-                }
-                
-                PLCOperation *lastOp = ops.lastObject;
-                if (lastOp) {
-                    NSString *lastCid = [PLCOperation calculateCIDForOperation:[lastOp toDictionary] error:nil];
-                    if (lastCid) {
-                        prev = lastCid;
+
+                if (ops.count > 0) {
+                    NSError *replayError = nil;
+                    PLCDIDState *state = [PLCStateReplayer replayHistory:ops error:&replayError];
+                    if (state && state.tombstoned) {
+                        response.statusCode = HttpStatusBadRequest;
+                        [response setJsonBody:@{@"error": @"AccountTombstoned", @"message": @"Cannot update tombstoned DID"}];
+                        return;
+                    }
+
+                    PLCOperation *lastOp = ops.lastObject;
+                    if (lastOp) {
+                        NSString *lastCid = [PLCOperation calculateCIDForOperation:[lastOp toDictionary] error:nil];
+                        if (lastCid) {
+                            prev = lastCid;
+                        }
                     }
                 }
             }
@@ -490,10 +495,14 @@
             }
         }
 
-        NSString *plcUrl = configuration.plcURL;
-        if ([plcUrl isEqualToString:@"mock"] || plcUrl.length == 0) {
-            plcUrl = @"http://127.0.0.1:2582";
+        if (XrpcIdentityUsesMockPLC(configuration)) {
+            PDS_LOG_INFO(@"Skipping PLC audit and submission (mock mode) for DID %@", did);
+            response.statusCode = HttpStatusOK;
+            [response setJsonBody:@{}];
+            return;
         }
+
+        NSString *plcUrl = configuration.plcURL;
 
         DIDPLCResolver *plcResolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
         NSError *auditError = nil;
@@ -524,13 +533,6 @@
             [opToSubmit removeObjectForKey:@"did"];
         }
         opToSubmit[@"did"] = did;
-
-        if ([configuration.plcURL isEqualToString:@"mock"]) {
-            PDS_LOG_INFO(@"Skipping PLC submission (mock mode) for DID %@", did);
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:@{}];
-            return;
-        }
 
         NSData *postData = [NSJSONSerialization dataWithJSONObject:opToSubmit options:0 error:&auditError];
         if (!postData) {
@@ -682,7 +684,7 @@
 
             // 3. Identity Update / Validation
             PDS_LOG_DEBUG(@"updateHandle: Starting PLC/DID update for did=%@", did);
-            if ([configuration.plcURL isEqualToString:@"mock"]) {
+            if (XrpcIdentityUsesMockPLC(configuration)) {
                 PDS_LOG_DB_DEBUG(@"Skipping PLC handle update (mock mode) for DID %@", did);
             } else if ([did hasPrefix:@"did:plc:"]) {
                 NSString *plcUrl = configuration.plcURL;

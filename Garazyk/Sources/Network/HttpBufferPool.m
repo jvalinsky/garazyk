@@ -44,8 +44,38 @@ static const NSUInteger kDefaultBufferSize = 4096;
         for (NSNumber *size in _sizeClasses) {
             _bufferPools[size] = [NSMutableArray array];
         }
+        
+        [self setupAutoPrune];
     }
     return self;
+}
+
+- (void)setupAutoPrune {
+    __weak typeof(self) weakSelf = self;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(300 * NSEC_PER_SEC)), 
+                   dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0), ^{
+        HttpBufferPool *strongSelf = weakSelf;
+        if (strongSelf) {
+            [strongSelf autoPrune];
+            [strongSelf setupAutoPrune];
+        }
+    });
+}
+
+- (void)autoPrune {
+    dispatch_async(self.poolQueue, ^{
+        for (NSMutableArray *pool in self.bufferPools.allValues) {
+            if (pool.count > 4) { // Keep a small minimum
+                [pool removeObjectsInRange:NSMakeRange(0, pool.count / 2)];
+            }
+        }
+        if (self.requestPool.count > 4) {
+            [self.requestPool removeObjectsInRange:NSMakeRange(0, self.requestPool.count / 2)];
+        }
+        if (self.responsePool.count > 4) {
+            [self.responsePool removeObjectsInRange:NSMakeRange(0, self.responsePool.count / 2)];
+        }
+    });
 }
 
 - (NSMutableData *)acquireBufferOfSize:(NSUInteger)size {
