@@ -440,6 +440,27 @@ const probes = [
   { cat: 'Cross-cell persistence', name: 'Class persists across cells',
     code: `@interface Persist : NSObject\n@property int x;\n@end\n@implementation Persist @end`,
     expect: '' },
+
+  // ── NSData / NSMutableData ──────────────────────────────────────
+  { cat: 'NSData', name: 'NSData dataWithBytes:length:',
+    code: `NSData *d = [NSData dataWithBytes:"hello" length:5];\nNSLog(@"%d", [d length]);`,
+    expect: '5' },
+  { cat: 'NSData', name: 'NSData dataByAppendingData:',
+    code: `NSData *a = [NSData dataWithBytes:"he" length:2];\nNSData *b = [NSData dataWithBytes:"llo" length:3];\nNSData *c = [a dataByAppendingData:b];\nNSLog(@"%d", [c length]);`,
+    expect: '5' },
+  { cat: 'NSData', name: 'NSMutableData NOT supported',
+    code: `NSMutableData *d = [NSMutableData data];`,
+    expectError: true },
+
+  // ── NSMutableSet ────────────────────────────────────────────────
+  { cat: 'Collections', name: 'NSMutableSet NOT supported',
+    code: `NSMutableSet *s = [NSMutableSet set];`,
+    expectError: true },
+
+  // ── Dot syntax property assignment ──────────────────────────────
+  { cat: 'Properties', name: 'Dot syntax property assignment NOT supported',
+    code: `@interface DotTest : NSObject\n@property (nonatomic, strong) NSString *name;\n@end\n@implementation DotTest @end\nDotTest *d = [[DotTest alloc] init];\nd.name = @"test";`,
+    expectError: true },
 ];
 
 // ── Runner ─────────────────────────────────────────────────────────
@@ -453,7 +474,9 @@ for (const probe of probes) {
   if (!results[cat]) results[cat] = [];
 
   let passed;
-  if (probe.expectAbsent) {
+  if (probe.expectError) {
+    passed = result.status === 'error';
+  } else if (probe.expectAbsent) {
     passed = !result.output.includes(probe.expect);
   } else if (probe.expect === '') {
     // Empty expectation: pass if no error
