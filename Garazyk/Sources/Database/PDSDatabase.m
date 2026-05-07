@@ -1184,7 +1184,7 @@ static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
     }
     account.handle = [ATProtoHandleValidator normalizeHandle:account.handle];
 
-    NSString *sql = @"INSERT INTO accounts (did, handle, email, password_hash, password_salt, access_jwt, refresh_jwt, created_at, updated_at, tfa_enabled, tfa_secret, recovery_codes, invite_enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    NSString *sql = @"INSERT INTO accounts (did, handle, email, password_hash, password_salt, access_jwt, refresh_jwt, status, deactivated_at, created_at, updated_at, tfa_enabled, tfa_secret, recovery_codes, invite_enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
@@ -1205,13 +1205,19 @@ static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
     [self bindData:account.passwordSalt toStatement:stmt index:5];
     [self bindData:account.accessJwt toStatement:stmt index:6];
     [self bindData:account.refreshJwt toStatement:stmt index:7];
-    sqlite3_bind_text(stmt, 8, [self iso8601StringFromDate:[NSDate dateWithTimeIntervalSince1970:account.createdAt]].UTF8String, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 9, [self iso8601StringFromDate:[NSDate date]].UTF8String, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 8, account.status.UTF8String ?: "active", -1, SQLITE_STATIC);
+    if (account.deactivatedAt > 0) {
+        sqlite3_bind_double(stmt, 9, account.deactivatedAt);
+    } else {
+        sqlite3_bind_null(stmt, 9);
+    }
+    sqlite3_bind_text(stmt, 10, [self iso8601StringFromDate:[NSDate dateWithTimeIntervalSince1970:account.createdAt]].UTF8String, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 11, [self iso8601StringFromDate:[NSDate date]].UTF8String, -1, SQLITE_STATIC);
     // 2FA columns (defaults)
-    sqlite3_bind_int(stmt, 10, account.tfaEnabled ? 1 : 0);
-    [self bindData:account.tfaSecret toStatement:stmt index:11];
-    [self bindData:account.recoveryCodes toStatement:stmt index:12];
-    sqlite3_bind_int(stmt, 13, account.inviteEnabled ? 1 : 0);
+    sqlite3_bind_int(stmt, 12, account.tfaEnabled ? 1 : 0);
+    [self bindData:account.tfaSecret toStatement:stmt index:13];
+    [self bindData:account.recoveryCodes toStatement:stmt index:14];
+    sqlite3_bind_int(stmt, 15, account.inviteEnabled ? 1 : 0);
 
     rc = sqlite3_step(stmt);
 
@@ -1687,44 +1693,55 @@ static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
     if (blobBytes > 0) {
         account.refreshJwt = [NSData dataWithBytes:sqlite3_column_blob(stmt, 6) length:blobBytes];
     }
+
+    const char *statusText = (const char *)sqlite3_column_text(stmt, 7);
+    if (statusText) {
+        account.status = @(statusText);
+    } else {
+        account.status = @"active";
+    }
+
+    if (sqlite3_column_type(stmt, 8) != SQLITE_NULL) {
+        account.deactivatedAt = sqlite3_column_double(stmt, 8);
+    }
     
-    const char *createdAtText = (const char *)sqlite3_column_text(stmt, 7);
+    const char *createdAtText = (const char *)sqlite3_column_text(stmt, 9);
     if (createdAtText) {
         account.createdAt = [[NSDateFormatter atproto_iso8601Formatter] dateFromString:@(createdAtText)].timeIntervalSince1970;
     }
     
-    const char *updatedAtText = (const char *)sqlite3_column_text(stmt, 8);
+    const char *updatedAtText = (const char *)sqlite3_column_text(stmt, 10);
     if (updatedAtText) {
         account.updatedAt = [[NSDateFormatter atproto_iso8601Formatter] dateFromString:@(updatedAtText)].timeIntervalSince1970;
     }
     
     // 2FA
-    account.tfaEnabled = (sqlite3_column_int(stmt, 9) != 0);
+    account.tfaEnabled = (sqlite3_column_int(stmt, 11) != 0);
     
-    blobBytes = sqlite3_column_bytes(stmt, 10);
+    blobBytes = sqlite3_column_bytes(stmt, 12);
     if (blobBytes > 0) {
-        account.tfaSecret = [NSData dataWithBytes:sqlite3_column_blob(stmt, 10) length:blobBytes];
+        account.tfaSecret = [NSData dataWithBytes:sqlite3_column_blob(stmt, 12) length:blobBytes];
     }
     
-    blobBytes = sqlite3_column_bytes(stmt, 11);
+    blobBytes = sqlite3_column_bytes(stmt, 13);
     if (blobBytes > 0) {
-        account.recoveryCodes = [NSData dataWithBytes:sqlite3_column_blob(stmt, 11) length:blobBytes];
+        account.recoveryCodes = [NSData dataWithBytes:sqlite3_column_blob(stmt, 13) length:blobBytes];
     }
     
-    account.inviteEnabled = (sqlite3_column_int(stmt, 12) != 0);
+    account.inviteEnabled = (sqlite3_column_int(stmt, 14) != 0);
 
-    account.webauthnEnabled = (sqlite3_column_int(stmt, 13) != 0);
-
-    // Age assurance (columns 14, 15)
-    const char *ageAssuranceText = (const char *)sqlite3_column_text(stmt, 14);
+    // Age assurance (columns 15, 16)
+    const char *ageAssuranceText = (const char *)sqlite3_column_text(stmt, 15);
     if (ageAssuranceText) {
         account.ageAssurance = @(ageAssuranceText);
     }
 
-    const char *ageVerifiedAtText = (const char *)sqlite3_column_text(stmt, 15);
+    const char *ageVerifiedAtText = (const char *)sqlite3_column_text(stmt, 16);
     if (ageVerifiedAtText) {
         account.ageVerifiedAt = @(ageVerifiedAtText);
     }
+
+    account.webauthnEnabled = (sqlite3_column_int(stmt, 17) != 0);
     
     return account;
 }
@@ -1743,20 +1760,26 @@ static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
         record.value = @(valueText);
     }
 
-    // Column 6: subject_did (TEXT)
-    const char *subjectDidText = (const char *)sqlite3_column_text(stmt, 6);
+    // Column 6: rev (TEXT)
+    const char *revText = (const char *)sqlite3_column_text(stmt, 6);
+    if (revText) {
+        record.rev = @(revText);
+    }
+
+    // Column 7: subject_did (TEXT)
+    const char *subjectDidText = (const char *)sqlite3_column_text(stmt, 7);
     if (subjectDidText) {
         record.subjectDid = @(subjectDidText);
     }
 
-    // Column 7: created_at (TEXT)
-    const char *createdAtText = (const char *)sqlite3_column_text(stmt, 7);
+    // Column 8: created_at (TEXT)
+    const char *createdAtText = (const char *)sqlite3_column_text(stmt, 8);
     if (createdAtText) {
         record.createdAt = [[NSDateFormatter atproto_iso8601Formatter] dateFromString:@(createdAtText)];
     }
 
-    // Column 8: indexed_at (TEXT)
-    const char *indexedAtText = (const char *)sqlite3_column_text(stmt, 8);
+    // Column 9: indexed_at (TEXT)
+    const char *indexedAtText = (const char *)sqlite3_column_text(stmt, 9);
     if (indexedAtText) {
         record.indexedAt = [[NSDateFormatter atproto_iso8601Formatter] dateFromString:@(indexedAtText)];
     }

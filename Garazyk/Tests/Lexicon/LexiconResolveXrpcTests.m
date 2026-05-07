@@ -53,6 +53,12 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
         NSLog(@"Testing resolution of %lu registered XRPC methods", (unsigned long)methodHandlers.count);
 
         for (NSString *methodId in methodHandlers.allKeys) {
+            // Skip internal/non-standard methods (starting with _) as they don't have lexicons
+            if ([methodId hasPrefix:@"_"]) {
+                NSLog(@"Skipping internal method: %@", methodId);
+                continue;
+            }
+
             NSString *path = [NSString stringWithFormat:@"/xrpc/com.atproto.lexicon.resolveLexicon?def=%@",
                              [methodId stringByAddingPercentEncodingWithAllowedCharacters:
                               [NSCharacterSet URLQueryAllowedCharacterSet]]];
