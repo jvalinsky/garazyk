@@ -18,7 +18,6 @@ title: Documentation Map
 - [Admin UI Documentation](./admin-ui-documentation)
 - [Source-Adjacent Documentation](./source-adjacent-documentation)
 - [Tooling and Skills Documentation](./tooling-and-skills-documentation)
-- [Repository Documentation Index](../repo-index/index)
 
 ## Archive and Historical Material
 
@@ -26,23 +25,8 @@ title: Documentation Map
 - [General Archive](../archive/README)
 - [Legacy Plans Directory](../plans/README)
 
-## Validation and Metadata
-
-- [Doc Registry (JSON)](../metadata/doc-registry.json)
-- [Doc Registry Schema (JSON)](../metadata/doc-registry.schema.json)
-- [Link Graph (JSON)](../metadata/doc-link-graph.json)
-- [Orphan Report (JSON)](../metadata/doc-orphans.json)
-- [Backlinks](../repo-index/backlinks)
-
 ## Related
 
 - [Setup](../01-getting-started/setup)
 - [Testing Map](./testing-map)
-- [Contributing Guide](../../CONTRIBUTING.md)
-
-## Related
-
-- [Documentation Map](documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
 
