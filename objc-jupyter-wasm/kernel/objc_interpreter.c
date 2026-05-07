@@ -744,7 +744,7 @@ void objc_interp_init(void) {
         static const char * const foundation_classes[] = {
             "NSObject", "NSString", "NSNumber",
             "NSArray", "NSMutableArray", "NSDictionary",
-            "NSMutableDictionary", "NSSet", "NSData",
+            "NSMutableDictionary", "NSSet", "NSMutableSet", "NSData", "NSMutableData",
             "NSCharacterSet", "NSJSONSerialization",
             "NSMutableString",
             "NSURL", "NSMutableURLRequest", "NSURLSession", "NSURLSessionDataTask",
@@ -768,7 +768,7 @@ void objc_interp_init(void) {
     {
         static const char * const foundation_subclasses[] = {
             "NSString", "NSNumber", "NSArray", "NSMutableArray",
-            "NSDictionary", "NSMutableDictionary", "NSSet", "NSData",
+            "NSDictionary", "NSMutableDictionary", "NSSet", "NSMutableSet", "NSData", "NSMutableData",
             "NSCharacterSet", "NSJSONSerialization",
             "NSMutableString",
             "NSURL", "NSMutableURLRequest", "NSURLSession", "NSURLSessionDataTask",

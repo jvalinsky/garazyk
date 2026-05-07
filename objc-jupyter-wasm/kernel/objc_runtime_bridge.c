@@ -1031,18 +1031,43 @@ static const FoundationSelector foundation_selectors[] = {
     {"NSMutableDictionary", "addEntriesFromDictionary:"},
 
     /* NSSet */
+    {"NSSet", "set"},
     {"NSSet", "setWithArray:"},
+    {"NSSet", "setWithObject:"},
     {"NSSet", "containsObject:"},
     {"NSSet", "count"},
+    {"NSSet", "allObjects"},
+
+    /* NSMutableSet */
+    {"NSMutableSet", "set"},
+    {"NSMutableSet", "setWithCapacity:"},
+    {"NSMutableSet", "setWithArray:"},
+    {"NSMutableSet", "setWithObject:"},
+    {"NSMutableSet", "addObject:"},
+    {"NSMutableSet", "removeObject:"},
+    {"NSMutableSet", "containsObject:"},
+    {"NSMutableSet", "count"},
+    {"NSMutableSet", "removeAllObjects"},
 
     /* NSData */
     {"NSData", "data"},
     {"NSData", "dataWithBytes:length:"},
+    {"NSData", "dataWithData:"},
     {"NSData", "length"},
     {"NSData", "bytes"},
     {"NSData", "description"},
     {"NSData", "isEqual:"},
     {"NSData", "isEqualToData:"},
+    {"NSData", "dataByAppendingData:"},
+
+    /* NSMutableData */
+    {"NSMutableData", "data"},
+    {"NSMutableData", "dataWithCapacity:"},
+    {"NSMutableData", "dataWithBytes:length:"},
+    {"NSMutableData", "appendData:"},
+    {"NSMutableData", "appendBytes:length:"},
+    {"NSMutableData", "length"},
+    {"NSMutableData", "bytes"},
 
     /* NSJSONSerialization */
     {"NSJSONSerialization", "JSONObjectWithData:options:error:"},
@@ -1064,7 +1089,7 @@ static const FoundationSelector foundation_selectors[] = {
 static const char *foundation_class_names[] = {
     "NSObject", "NSString", "NSNumber",
     "NSArray", "NSMutableArray", "NSDictionary",
-    "NSMutableDictionary", "NSSet", "NSData",
+    "NSMutableDictionary", "NSSet", "NSMutableSet", "NSData", "NSMutableData",
     "NSCharacterSet", "NSJSONSerialization",
     "NSURL", "NSMutableURLRequest", "NSURLSession", "NSURLSessionDataTask"
 };
