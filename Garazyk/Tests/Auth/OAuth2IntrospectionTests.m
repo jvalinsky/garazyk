@@ -26,7 +26,8 @@
     [super setUp];
 
     NSError *dbError = nil;
-    NSURL *dbURL = [NSURL fileURLWithPath:@":memory:"];
+    NSString *dbName = [NSString stringWithFormat:@"test-introspection-%@.sqlite", [[NSUUID UUID] UUIDString]];
+    NSURL *dbURL = [NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:dbName]];
     self.database = [PDSDatabase databaseAtURL:dbURL];
     [self.database openWithError:&dbError];
     XCTAssertNil(dbError);

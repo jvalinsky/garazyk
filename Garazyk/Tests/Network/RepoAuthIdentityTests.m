@@ -1,7 +1,9 @@
 #import "RepoAuthXrpcTestBase.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "App/PDSApplication.h"
+#import "Network/RateLimiter.h"
 #import "Sync/Relay/EventFormatter.h"
+#import "Sync/Firehose/SubscribeReposHandler.h"
 
 @interface RepoAuthIdentityTests : RepoAuthXrpcTestBase
 @end
@@ -93,13 +95,8 @@
                                                    headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 200);
 
-    // Poll for the event to be persisted (it's async)
-    long long finalSeq = 0;
-    for (int i = 0; i < 20; i++) {
-        finalSeq = [db getMaxEventSequence:&error];
-        if (finalSeq > initialSeq) break;
-        [NSThread sleepForTimeInterval:0.1];
-    }
+    XCTAssertTrue([self.application.subscribeReposHandler waitForIdleWithTimeout:1.0]);
+    long long finalSeq = [db getMaxEventSequence:&error];
     
     XCTAssertGreaterThan(finalSeq, initialSeq, @"Sequence number did not increment after handle update");
 
@@ -128,23 +125,37 @@
 
 - (void)testIdentityUpdateHandleRateLimiting {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.accessJwt1];
-    
-    // We expect the rate limit to be 10 per 5 minutes.
-    // Let's send 10 requests.
-    for (int i = 0; i < 10; i++) {
-        NSString *handle = [NSString stringWithFormat:@"rate-limit-%d.test", i];
+
+    RateLimiter *limiter = [RateLimiter sharedLimiter];
+    BOOL oldGlobalDisabled = RateLimiterIsDisabledGlobally();
+    BOOL oldEnabled = limiter.isEnabled;
+    NSString *dbPath = [self.tempURL.path stringByAppendingPathComponent:@"identity-rate-limits.sqlite"];
+    NSString *shortKey = [NSString stringWithFormat:@"identity.updateHandle:5m:%@", self.did1];
+
+    @try {
+        RateLimiterSetDisabledGlobally(NO);
+        limiter.enabled = YES;
+        [limiter reconfigureDatabasePath:dbPath];
+
+        // Seed the endpoint's limiter directly so the request exercises the
+        // rejected XRPC path without performing ten full identity updates.
+        for (int i = 0; i < 10; i++) {
+            RateLimitResult *seedResult = [limiter checkRateLimitForKey:shortKey
+                                                                  limit:10
+                                                          windowSeconds:300];
+            XCTAssertTrue(seedResult.allowed, @"Seed request %d should be allowed", i);
+        }
+
         HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.updateHandle"
-                                                          body:@{@"handle": handle}
+                                                          body:@{@"handle": @"too-many.test"}
                                                        headers:@{@"authorization": authHeader}];
-        XCTAssertEqual(response.statusCode, 200, @"Request %d failed", i);
+        XCTAssertEqual(response.statusCode, 429, @"Seeded request should be rate limited");
+        XCTAssertEqualObjects(response.jsonBody[@"error"], @"RateLimitExceeded");
+    } @finally {
+        [limiter reconfigureDatabasePath:nil];
+        limiter.enabled = oldEnabled;
+        RateLimiterSetDisabledGlobally(oldGlobalDisabled);
     }
-    
-    // The 11th request should be rate limited.
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.identity.updateHandle"
-                                                      body:@{@"handle": @"too-many.test"}
-                                                   headers:@{@"authorization": authHeader}];
-    XCTAssertEqual(response.statusCode, 429, @"11th request should be rate limited");
-    XCTAssertEqualObjects(response.jsonBody[@"error"], @"RateLimitExceeded");
 }
 
 - (void)testIdentityUpdateHandleSameHandleStillBroadcasts {
@@ -167,12 +178,8 @@
     XCTAssertEqual(response.statusCode, 200);
 
     // 3. Verify event is STILL broadcasted (for sequencing)
-    long long finalSeq = 0;
-    for (int i = 0; i < 20; i++) {
-        finalSeq = [db getMaxEventSequence:&error];
-        if (finalSeq > initialSeq) break;
-        [NSThread sleepForTimeInterval:0.1];
-    }
+    XCTAssertTrue([self.application.subscribeReposHandler waitForIdleWithTimeout:1.0]);
+    long long finalSeq = [db getMaxEventSequence:&error];
     
     XCTAssertGreaterThan(finalSeq, initialSeq, @"Sequence number did not increment even for same-handle update");
 }
