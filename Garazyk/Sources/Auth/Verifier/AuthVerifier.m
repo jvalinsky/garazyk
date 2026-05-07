@@ -9,6 +9,9 @@
 #import "Auth/Verifier/AuthVerifier.h"
 #import "Auth/JWT.h"
 #import "Auth/Crypto/AuthCryptoDPoP.h"
+#import "Auth/Crypto/AuthCryptoJWK.h"
+#import "Auth/PDSKeyProtocol.h"
+#import "Auth/PDSReplayCache.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Debug/PDSLogger.h"
@@ -192,7 +195,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
                                               nonce:nil
                                        requireNonce:self.nonceStore != nil
                                      nonceValidator:(id<AuthCryptoDPoPNonceValidator>)self.nonceStore
-                                      replayChecker:nil
+                                      replayChecker:[PDSReplayCache sharedCache]
                                       outThumbprint:&dpopThumbprint
                                               error:&dpopError];
 
@@ -280,14 +283,72 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
             return nil;
         }
     } else if (self.keyResolver && [self.keyResolver isIssuerAllowed:issuer]) {
-        NSDictionary *jwks = [self.keyResolver jwksForIssuer:issuer error:nil];
+        NSError *jwksError = nil;
+        NSDictionary *jwks = [self.keyResolver jwksForIssuer:issuer error:&jwksError];
         if (!jwks) {
             if (error) {
                 *error = [NSError errorWithDomain:AuthVerifierErrorDomain
                                              code:AuthVerifierErrorInvalidIssuer
-                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to fetch JWKS"}];
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Failed to fetch JWKS: %@", jwksError.localizedDescription]}];
             }
             [[PDSMetrics sharedMetrics] incrementAuthFailure:@"invalid_issuer"];
+            return nil;
+        }
+
+        // Verify signature using the fetched JWKS
+        NSString *kid = jwt.header.kid;
+        NSDictionary *targetKey = nil;
+        NSArray *keys = jwks[@"keys"];
+        if ([keys isKindOfClass:[NSArray class]]) {
+            for (NSDictionary *key in keys) {
+                if (!kid || [key[@"kid"] isEqualToString:kid]) {
+                    targetKey = key;
+                    break;
+                }
+            }
+        }
+
+        if (!targetKey) {
+            if (error) {
+                *error = [NSError errorWithDomain:AuthVerifierErrorDomain
+                                             code:AuthVerifierErrorInvalidSignature
+                                         userInfo:@{NSLocalizedDescriptionKey: @"No matching key found in JWKS"}];
+            }
+            [[PDSMetrics sharedMetrics] incrementAuthFailure:@"invalid_signature"];
+            return nil;
+        }
+
+        NSError *verifyError = nil;
+        id<PDSPublicKeyProtocol> pubKey = [AuthCryptoJWK publicKeyFromJWK:targetKey error:&verifyError];
+        if (!pubKey) {
+            if (error) {
+                *error = [NSError errorWithDomain:AuthVerifierErrorDomain
+                                             code:AuthVerifierErrorInvalidSignature
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Invalid key in JWKS: %@", verifyError.localizedDescription]}];
+            }
+            [[PDSMetrics sharedMetrics] incrementAuthFailure:@"invalid_signature"];
+            return nil;
+        }
+
+        NSData *signingInput = [jwt.signingInput dataUsingEncoding:NSUTF8StringEncoding];
+        NSData *signature = [JWT base64URLDecode:jwt.encodedSignature error:nil];
+        if (![pubKey verifySignature:signature forData:signingInput error:&verifyError]) {
+            if (error) {
+                *error = [NSError errorWithDomain:AuthVerifierErrorDomain
+                                             code:AuthVerifierErrorInvalidSignature
+                                         userInfo:@{NSLocalizedDescriptionKey: @"JWT signature verification failed for remote issuer"}];
+            }
+            [[PDSMetrics sharedMetrics] incrementAuthFailure:@"invalid_signature"];
+            return nil;
+        }
+
+        // After successful signature check, we still need to validate standard claims
+        JWTVerifier *claimsVerifier = [[JWTVerifier alloc] init];
+        claimsVerifier.expectedIssuer = issuer;
+        claimsVerifier.expectedAudience = self.expectedAudience;
+        claimsVerifier.allowedAlgorithms = @[@"ES256", @"RS256"];
+        if (![claimsVerifier validateClaims:jwt.payload ofJWT:jwt error:&verifyError]) {
+            if (error) *error = verifyError;
             return nil;
         }
     } else {
