@@ -47,6 +47,8 @@ static NSString *const kSubscribeReposInfoOutdatedCursor = @"OutdatedCursor";
 @property(nonatomic, strong) PDSDatabasePool *userDatabasePool;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t syncQueue;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t broadcastFanoutQueue;
+@property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t stateQueue;
+@property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t connectionsQueue;
 @property(nonatomic, assign) BOOL sequenceInitialized;
 @property(atomic, assign) BOOL stopping;
 @property(atomic, assign) BOOL observingNotifications;
@@ -101,6 +103,10 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                                 kSubscribeReposEventQueueKey, NULL);
     _broadcastFanoutQueue = dispatch_queue_create(
         "com.atproto.pds.subscribeRepos.broadcast", DISPATCH_QUEUE_CONCURRENT);
+    _stateQueue = dispatch_queue_create(
+        "com.atproto.firehose.state", DISPATCH_QUEUE_SERIAL);
+    _connectionsQueue = dispatch_queue_create(
+        "com.atproto.firehose.connections", DISPATCH_QUEUE_SERIAL);
     _sequenceInitialized = NO;
     _stopping = NO;
     _observingNotifications = NO;
@@ -131,7 +137,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 }
 
 - (void)startObservingNotifications {
-  @synchronized(self) {
+  dispatch_sync(_stateQueue, ^{
     if (self.observingNotifications) {
       return;
     }
@@ -160,17 +166,17 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
     self.stopping = NO;
     self.observingNotifications = YES;
-  }
+  });
 }
 
 - (void)stopObservingNotifications {
-  @synchronized(self) {
+  dispatch_sync(_stateQueue, ^{
     if (!self.observingNotifications) {
       return;
     }
     [[NSNotificationCenter defaultCenter] removeObserver:self];
     self.observingNotifications = NO;
-  }
+  });
 }
 
 - (BOOL)startOnPort:(uint16_t)port error:(NSError **)error {
@@ -218,10 +224,10 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   }
   [self waitForIdleWithTimeout:5.0];
 
-  NSSet<WebSocketConnection *> *attachedSnapshot = nil;
-  @synchronized(_attachedConnections) {
+  __block NSSet<WebSocketConnection *> *attachedSnapshot = nil;
+  dispatch_sync(_connectionsQueue, ^{
     attachedSnapshot = [_attachedConnections copy];
-  }
+  });
   for (WebSocketConnection *connection in attachedSnapshot) {
     [self detachConnection:connection];
     [connection close];
@@ -270,11 +276,11 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     webSocketConnection.remoteAddress = request.remoteAddress;
   }
   webSocketConnection.delegate = self;
-  NSUInteger count = 0;
-  @synchronized(_attachedConnections) {
+  __block NSUInteger count = 0;
+  dispatch_sync(_connectionsQueue, ^{
     [_attachedConnections addObject:webSocketConnection];
     count = _attachedConnections.count;
-  }
+  });
   [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)count];
   [self.relayMetrics recordDownstreamConnected];
 
@@ -297,11 +303,11 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       @"[%@] Accepted new WebSocket connection for subscribeRepos",
       connection.remoteAddress);
 
-  NSUInteger count = 0;
-  @synchronized(_attachedConnections) {
+  __block NSUInteger count = 0;
+  dispatch_sync(_connectionsQueue, ^{
     [_attachedConnections addObject:connection];
     count = _attachedConnections.count;
-  }
+  });
   [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)count];
   [self.relayMetrics recordDownstreamConnected];
 
@@ -726,10 +732,10 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 }
 
 - (void)broadcastEventData:(NSData *)eventData {
-  NSArray<WebSocketConnection *> *snapshot;
-  @synchronized(_attachedConnections) {
+  __block NSArray<WebSocketConnection *> *snapshot;
+  dispatch_sync(_connectionsQueue, ^{
     snapshot = [_attachedConnections allObjects];
-  }
+  });
   PDS_LOG_SYNC_DEBUG(@"Broadcasting event to %lu subscribers",
                      (unsigned long)snapshot.count);
   if (snapshot.count == 0) {
@@ -987,15 +993,15 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 }
 
 - (void)detachConnection:(WebSocketConnection *)connection {
-  BOOL removed = NO;
-  NSUInteger count = 0;
-  @synchronized(_attachedConnections) {
+  __block BOOL removed = NO;
+  __block NSUInteger count = 0;
+  dispatch_sync(_connectionsQueue, ^{
     if ([_attachedConnections containsObject:connection]) {
       [_attachedConnections removeObject:connection];
       removed = YES;
       count = _attachedConnections.count;
     }
-  }
+  });
   if (removed) {
     [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)count];
     [self.relayMetrics recordDownstreamDisconnected];
@@ -1027,7 +1033,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 }
 
 - (void)ensureSequenceInitialized {
-  @synchronized(self) {
+  dispatch_sync(_stateQueue, ^{
     if (self.sequenceInitialized) {
       return;
     }
@@ -1046,16 +1052,16 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     self.sequenceInitialized = YES;
     PDS_LOG_SYNC_INFO(@"Initialized sequence number to %lu",
                       (unsigned long)self.session.sequenceNumber);
-  }
+  });
 }
 
 - (void)skipPersistence {
-  @synchronized(self) {
+  dispatch_sync(_stateQueue, ^{
     if (self.sequenceInitialized) return;
     self.session = [[FirehoseProtocolSession alloc] initWithSequenceNumber:0];
     self.sequenceInitialized = YES;
     PDS_LOG_SYNC_INFO(@"Firehose persistence disabled. Starting from sequence 0.");
-  }
+  });
 }
 
 + (NSString *)rfc3339Timestamp {
