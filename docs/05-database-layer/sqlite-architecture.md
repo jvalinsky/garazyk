@@ -1,58 +1,34 @@
----
-title: SQLite Architecture
----
-
 # SQLite Architecture
 
-## Overview
+Garazyk utilizes SQLite as a distributed, application-level storage system. Operational data is bifurcated into shared service databases and isolated per-actor stores.
 
-Garazyk uses SQLite as an application-level storage system rather than as one monolithic database file. Shared operational data lives in service databases, while per-actor repository data lives in isolated actor stores opened through the database pool.
+## Architectural Choices
+- **Tenant Isolation**: Actor repository state is isolated into individual database files.
+- **Shared Infrastructure**: Sessions, account metadata, DID caches, and sequencer data reside in shared service stores.
+- **Concurrency Control**: Write-Ahead Logging (WAL) mode enables concurrent reads and writes.
+- **Data Access**: The storage layer enforces the use of prepared statements and explicit transaction boundaries.
 
-## Why SQLite Fits This Repo
+## Database Families
 
-The design depends on a few concrete choices:
+### Service Databases
+Service databases manage shared operational state for the entire process. This includes user accounts, authentication sessions, and configuration.
 
-- per-actor isolation for repository state
-- shared stores for sessions, account metadata, DID cache, and sequencer data
-- WAL mode for practical read/write concurrency
-- prepared statements and explicit transactions in the storage layer
+### Actor Databases
+Actor databases store the repository, blocks, and blob metadata for a single DID. These are managed and opened via the `PDSDatabasePool`.
 
-The interesting part is not "SQLite exists." The interesting part is how the repo splits ownership across store families.
+This boundary ensures that repository-level mutations are isolated from global service state.
 
-## The Two Main Store Families
+## Implementation Guidelines
+When modifying persistence logic, identify:
+1. **Ownership**: Which database family owns the target data?
+2. **Scope**: Is the operation scoped to a single actor or the entire runtime?
+3. **Atomicity**: Does the operation require cross-database consistency or specific transaction ordering?
 
-Keep this distinction clear:
-
-- service databases hold shared operational state for the whole process
-- actor databases hold one DID's repository, blocks, blob metadata, and related state
-
-That boundary explains why a healthy account lookup does not prove a repository write path is healthy.
-
-## What Contributors Usually Need To Know
-
-When changing persistence code, the first questions are:
-
-- which store family owns this data?
-- is the operation local to one actor or shared across the whole runtime?
-- does the change rely on transaction ordering, not just schema shape?
-
-Those questions lead you to the right deep dive much faster than reading raw schema dumps.
-
-## Related Deep Dives
-
+## Related
 - [Shared vs Actor Database Boundary](./shared-vs-actor-database-boundary)
 - [Transactions, WAL, and Concurrency](./transactions-wal-and-concurrency)
-
-## Related Reading
-
 - [Service Databases](./service-databases)
 - [Actor Databases](./actor-databases)
 - [WAL Mode](./wal-mode)
 - [Migrations](./migrations)
-
-## Related
-
-- [Documentation Map](../11-reference/documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
 

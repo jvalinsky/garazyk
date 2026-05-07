@@ -1,14 +1,8 @@
----
-title: Shared vs Actor Database Boundary
----
-
 # Shared vs Actor Database Boundary
 
-## Goal
+Garazyk bifurcates storage into shared service databases and isolated per-actor stores. This split ensures process-wide data is decoupled from individual repository state.
 
-This page explains the storage split between shared service databases and per-actor stores. It covers how the pool opens them and identifies why failures in one path do not necessarily affect the other.
-
-## Full Flow
+## Architecture
 
 ```mermaid
 flowchart TD
@@ -27,56 +21,39 @@ flowchart TD
 ```
 
 ## Storage Isolation
+- **Service Databases**: Manage process-wide data, including the sequencer and DID cache.
+- **Actor Stores**: Manage repository, block, and blob metadata for a single DID.
 
-The runtime uses multiple SQLite files instead of a single monolith:
+Queries against the shared service database operate independently of actor-specific stores.
 
-- Shared service databases hold process-wide data.
-- Actor stores hold repository and blob state for a single DID.
-- The sequencer and DID cache are shared operational stores.
+## Implementation Path
 
-This design isolates per-actor repository work. A successful query against `service.sqlite` does not guarantee the health of a specific actor store.
+### Account and Service Lookup
+`ServiceDatabases.m` utilizes a dedicated pool for the `__service__` synthetic DID to manage shared stores.
 
-## Walkthrough: Account Lookup Versus Record Write
+### Per-Actor Operations
+`DatabasePool.m` uses `storeForDid:` to resolve sharded actor paths. It instantiates or reuses an `ActorStore` for the specific DID.
 
-1. Account lookup: `Garazyk/Sources/Database/Service/ServiceDatabases.m` uses `servicePool` with the synthetic DID `__service__` to open the shared store.
-2. Record write: `Garazyk/Sources/Database/Pool/DatabasePool.m` uses `storeForDid:` to resolve a per-actor path (sharded by DID prefix) and opens or reuses an `ActorStore`.
+## Data Placement Guidelines
 
-Shared identity and account state live in one place; repository state, commit blocks, and blob metadata live in another.
+### Service Databases
+- Account metadata and invite codes.
+- Authentication sessions and same-handle early returns.
+- DID cache and sequencer event sequencing.
+- Global operational configuration.
 
-## Data Placement
+### Actor Stores
+- Repository records and the Merkle Search Tree (MST) root.
+- IPLD blocks and commit tombstones.
+- Blob metadata and per-actor repository state.
 
-Use these defaults for new features:
-
-- Service databases: accounts, invites, sessions, DID cache, sequencer events, shared operational state.
-- Actor stores: records, repo root, tombstones, blob metadata, IPLD blocks, repository state.
-
-If you are unsure where data belongs, determine if it is global operational state or a single actor's repository truth.
-
-## Debugging
-
-- Check `Garazyk/Sources/Database/Service/ServiceDatabases.m` if account or session lookups fail while repo reads work.
-- Check `Garazyk/Sources/Database/Pool/DatabasePool.m` if DID-specific paths fail to open.
-- Check `Garazyk/Sources/Database/ActorStore/ActorStore.m` if per-actor repository state is missing or corrupt.
-- Check data-path configuration for incorrect base directories or sharding paths.
-
-## Relevant Tests
-
-- `Garazyk/Tests/Database/Pool/DatabasePoolTests.m`
-- `Garazyk/Tests/Database/Integration/DatabaseMigrationTests.m`
-- `Garazyk/Tests/App/Services/PDSRecordServiceTests.m`
-- `Garazyk/Tests/Auth/SessionStoreTests.m`
-
-## Appendix
-
-### Key Questions
-
-1. Is this shared operational state or actor-specific repository state?
-2. Should the data survive independently of an actor database?
-3. Does the bug affect one DID or every request?
+## Debugging Surfaces
+- **Global Failures**: Investigate `ServiceDatabases.m` for account, session, or sequencer issues.
+- **Path Resolution**: Investigate `DatabasePool.m` if DID-specific storage paths fail to resolve or open.
+- **State Corruption**: Investigate `ActorStore.m` for repository or block integrity failures.
 
 ## Related
-
-- [Documentation Map](../11-reference/documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
+- [SQLite Architecture](./sqlite-architecture)
+- [Database Pool Tests](../11-reference/testing-map)
+- [Repository Basics](../07-repository-protocol/repository-basics)
 
