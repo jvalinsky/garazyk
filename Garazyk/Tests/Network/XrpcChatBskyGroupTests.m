@@ -34,7 +34,8 @@
 
 // Helper method to create a test user
 - (NSDictionary *)createTestUser {
-    NSString *uniqueHandle = [NSString stringWithFormat:@"testuser%@", [[NSUUID UUID] UUIDString]];
+    NSString *uuid = [[[NSUUID UUID] UUIDString] stringByReplacingOccurrencesOfString:@"-" withString:@""];
+    NSString *uniqueHandle = [NSString stringWithFormat:@"testuser%@.test", [uuid lowercaseString]];
 
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.server.createAccount"
                                                       body:@{
