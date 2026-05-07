@@ -24,9 +24,56 @@ source "$SCRIPT_DIR/lib/common.sh"
 
 # ── Configuration ──────────────────────────────────────────────────────────
 
+SKIP_SEED=false
+STOP_ONLY=false
+KEEP_RUNNING=false
+COLLECT_DIAGNOSTICS=false
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --skip-seed) SKIP_SEED=true ;;
+        --stop)      STOP_ONLY=true ;;
+        --keep-running) KEEP_RUNNING=true ;;
+        --collect-diagnostics) COLLECT_DIAGNOSTICS=true ;;
+        --run-id)
+            [[ $# -ge 2 ]] || error_exit "--run-id requires a value" 2
+            ATPROTO_E2E_RUN_ID="$2"
+            shift
+            ;;
+        --diagnostics-dir)
+            [[ $# -ge 2 ]] || error_exit "--diagnostics-dir requires a value" 2
+            ATPROTO_E2E_DIAGNOSTICS_DIR="$2"
+            shift
+            ;;
+        --help|-h)
+            echo "Usage: $0 [--skip-seed] [--keep-running] [--stop] [--collect-diagnostics] [--run-id ID] [--diagnostics-dir DIR]"
+            echo ""
+            echo "  --skip-seed            Start services without seeding data"
+            echo "  --keep-running         Keep services running after smoke checks"
+            echo "  --stop                 Stop services for this run id"
+            echo "  --collect-diagnostics  Capture health responses and service logs"
+            echo "  --run-id ID            Reuse or name the shared e2e run directory"
+            echo "  --diagnostics-dir DIR  Write diagnostics to DIR"
+            exit 0
+            ;;
+        *)
+            error_exit "Unknown argument: $1" 2
+            ;;
+    esac
+    shift
+done
+
+if [[ "$STOP_ONLY" == "true" || "$COLLECT_DIAGNOSTICS" == "true" ]]; then
+    atproto_e2e_load_latest_run_id "full-suite"
+fi
+atproto_e2e_init_run
+if [[ "$STOP_ONLY" != "true" && "$COLLECT_DIAGNOSTICS" != "true" ]]; then
+    atproto_e2e_store_latest_run_id "full-suite"
+fi
+
 PROJECT_ROOT="$(resolve_project_root "$SCRIPT_DIR")"
 BUILD_DIR="$(resolve_build_dir "$PROJECT_ROOT")"
-DEMO_ROOT="${DEMO_ROOT:-/tmp/atproto-demo}"
+DEMO_ROOT="${DEMO_ROOT:-$ATPROTO_E2E_RUN_DIR/data/full-suite}"
 
 # Service URLs (from common.sh SERVICE_URLS)
 PLC_URL="$SERVICE_URL_PLC"
@@ -45,12 +92,18 @@ CHAT_ADMIN_SECRET="${CHAT_ADMIN_SECRET:-localdevadmin}"
 VIDEO_ADMIN_SECRET="${VIDEO_ADMIN_SECRET:-localdevadmin}"
 UI_ADMIN_PASSWORD="${UI_ADMIN_PASSWORD:-localdev}"
 
-LOG_DIR="$DEMO_ROOT/logs"
-PID_FILE="$DEMO_ROOT/pids.txt"
+LOG_DIR="$ATPROTO_E2E_LOG_DIR"
+PID_FILE="$ATPROTO_E2E_PID_FILE"
+
+collect_full_suite_diagnostics() {
+    atproto_collect_diagnostics "$ATPROTO_E2E_DIAGNOSTICS_DIR"
+}
 
 # ── Cleanup ────────────────────────────────────────────────────────────────
 
 cleanup() {
+    local status="${1:-0}"
+    local allow_stray_cleanup="${2:-false}"
     # Stop children recorded in PID_FILE first. The shared cleanup then handles
     # any service process that survived an interrupted or partially failed run.
     log_info "Stopping all services..."
@@ -58,42 +111,49 @@ cleanup() {
         while read -r line; do
             if [[ "$line" =~ ^PID=([0-9]+)$ ]]; then
                 kill "${BASH_REMATCH[1]}" 2>/dev/null || true
+                wait "${BASH_REMATCH[1]}" 2>/dev/null || true
             fi
         done < "$PID_FILE"
     fi
-    kill_stray_processes
+    if [[ "$allow_stray_cleanup" == "true" ]]; then
+        log_warn "Using compatibility cleanup for matching local service ports"
+        kill_stray_processes
+    fi
     sleep 1
     rm -f "$PID_FILE"
+    if [[ "$status" -ne 0 ]]; then
+        collect_full_suite_diagnostics || true
+    fi
     log_ok "All services stopped"
 }
 
-# ── Parse Args ──────────────────────────────────────────────────────────────
-
-SKIP_SEED=false
-STOP_ONLY=false
-
-for arg in "$@"; do
-    case "$arg" in
-        --skip-seed) SKIP_SEED=true ;;
-        --stop)      STOP_ONLY=true ;;
-        --help|-h)
-            echo "Usage: $0 [--skip-seed] [--stop]"
-            echo ""
-            echo "  --skip-seed   Start services without seeding data"
-            echo "  --stop        Stop all running services"
-            exit 0
-            ;;
-    esac
-done
-
 if [[ "$STOP_ONLY" == "true" ]]; then
-    cleanup
+    cleanup 0 true
+    exit 0
+fi
+
+if [[ "$COLLECT_DIAGNOSTICS" == "true" ]]; then
+    collect_full_suite_diagnostics
     exit 0
 fi
 
 # ── Signal Handlers ─────────────────────────────────────────────────────────
 
-trap cleanup EXIT INT TERM
+on_exit() {
+    local status=$?
+    cleanup "$status" false
+    exit "$status"
+}
+
+on_interrupt() {
+    log_warn "Interrupted; collecting diagnostics before shutdown"
+    collect_full_suite_diagnostics || true
+    cleanup 130 false
+    exit 130
+}
+
+trap on_exit EXIT
+trap on_interrupt INT TERM
 
 # ── Pre-flight ──────────────────────────────────────────────────────────────
 
@@ -110,7 +170,8 @@ sleep 1
 # Recreate disposable service state and log directories for a deterministic
 # demo. Persistent/local production data should never be pointed at DEMO_ROOT.
 rm -rf "$DEMO_ROOT"
-mkdir -p "$DEMO_ROOT"/{plc,pds,relay,appview,chat,video,ui,logs}
+mkdir -p "$DEMO_ROOT"/{plc,pds,relay,appview,chat,video,ui}
+mkdir -p "$LOG_DIR"
 > "$PID_FILE"
 
 # ── 1. Start PLC ────────────────────────────────────────────────────────────
@@ -250,14 +311,7 @@ APPVIEW_PLC_URL="$PLC_URL" \
 echo "PID=$!" >> "$PID_FILE"
 
 log_info "Waiting for AppView backfill status endpoint..."
-for i in {1..40}; do
-    if curl -s -H "Authorization: Bearer $APPVIEW_ADMIN_SECRET" \
-        "$APPVIEW_URL/admin/backfill/status" >/dev/null 2>&1; then
-        log_ok "AppView is up"
-        break
-    fi
-    sleep 0.5
-done
+wait_for_service appview 60
 
 # ── 5.5. Start Chat Service ────────────────────────────────────────────────
 
@@ -268,8 +322,7 @@ CHAT_ADMIN_SECRET="$CHAT_ADMIN_SECRET" \
     > "$LOG_DIR/chat.log" 2>&1 &
 echo "PID=$!" >> "$PID_FILE"
 
-wait_for_http "$CHAT_URL/_health" "Chat" 30 || \
-    log_warn "Chat service health check failed — chat tab may not work"
+wait_for_http "$CHAT_URL/_health" "Chat" 30
 
 # ── 5.6. Start Video Service (jelcz) ───────────────────────────────────────
 
@@ -282,8 +335,7 @@ JELCZ_PDS_URL="$PDS_URL" \
     > "$LOG_DIR/video.log" 2>&1 &
 echo "PID=$!" >> "$PID_FILE"
 
-wait_for_http "$VIDEO_URL/_health" "Video" 30 || \
-    log_warn "Video service health check failed — video tab may not work"
+wait_for_http "$VIDEO_URL/_health" "Video" 30
 
 # ── 6. Start Admin UI (wired to all backends) ──────────────────────────────
 
@@ -315,10 +367,10 @@ if [[ "$SKIP_SEED" != "true" ]]; then
 
     export PDS_URL CHAT_URL PDS_DATA_DIR="$DEMO_ROOT/pds" BUILD_DIR
     if [[ -f "$SCRIPT_DIR/seed_full_suite.py" ]]; then
-        python3 "$SCRIPT_DIR/seed_full_suite.py" && log_ok "Seeding completed" || \
-            log_warn "Seeding script had errors (see output above)"
+        python3 "$SCRIPT_DIR/seed_full_suite.py"
+        log_ok "Seeding completed"
     else
-        log_warn "seed_full_suite.py not found, skipping seed"
+        error_exit "seed_full_suite.py not found"
     fi
 
     # Give AppView time to consume relay events generated by the seeder.
@@ -389,9 +441,15 @@ log_info "  bob.test   / bobpass    (5 posts, profile, follows)"
 log_info "  carol.test / carolpass  (5 posts, profile, follows)"
 echo ""
 log_info "Logs: $LOG_DIR/"
-log_info "Stop: ./scripts/full_suite_demo.sh --stop"
-log_info "      (or Ctrl+C)"
+log_info "Diagnostics: $ATPROTO_E2E_DIAGNOSTICS_DIR"
+if [[ "$KEEP_RUNNING" == "true" ]]; then
+    log_info "Stop: ./scripts/full_suite_demo.sh --stop --run-id $ATPROTO_E2E_RUN_ID"
+    log_info "      (or Ctrl+C)"
+else
+    log_info "Smoke completed; cleaning up now. Use --keep-running to leave services up."
+fi
 echo ""
 
-# Keep running
-wait
+if [[ "$KEEP_RUNNING" == "true" ]]; then
+    wait
+fi
