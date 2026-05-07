@@ -26,7 +26,7 @@
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.moderation.emitEvent"
                                                       body:@{@"event": @{}}
                                                    headers:@{@"authorization": authHeader}];
-    XCTAssertEqual(response.statusCode, 401);
+    XCTAssertEqual(response.statusCode, 403);
 }
 
 - (void)testEmitModerationEventSuccessfully {
@@ -139,19 +139,20 @@
 
 - (void)testScheduleActionSuccessfully {
     NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
-    NSDictionary *action = @{@"type": @"takedown", @"subject": self.userDid};
+    NSDictionary *action = @{@"$type": @"takedown", @"comment": @"spam"};
+    NSDictionary *scheduling = @{@"executeAfter": @"PT1H"};
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.moderation.scheduleAction"
-                                                      body:@{@"action": action}
+                                                      body:@{@"action": action, @"subjects": @[self.userDid], @"scheduling": scheduling}
                                                    headers:@{@"authorization": adminAuthHeader}];
     XCTAssertEqual(response.statusCode, 200);
-    XCTAssertNotNil(response.jsonBody[@"id"]);
+    XCTAssertNotNil(response.jsonBody[@"succeeded"]);
 }
 
 #pragma mark - Team Management Tests
 
 - (void)testAddTeamMemberRequiresAuth {
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.team.addMember"
-                                                      body:@{@"email": @"member@example.com", @"role": @"moderator"}
+                                                      body:@{@"did": self.userDid, @"role": @"moderator"}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
 }
@@ -159,7 +160,7 @@
 - (void)testAddTeamMemberSuccessfully {
     NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.team.addMember"
-                                                      body:@{@"email": @"member@example.com", @"role": @"moderator"}
+                                                      body:@{@"did": self.userDid, @"email": @"member@example.com", @"role": @"moderator"}
                                                    headers:@{@"authorization": adminAuthHeader}];
     XCTAssertEqual(response.statusCode, 200);
     XCTAssertNotNil(response.jsonBody[@"id"]);
@@ -196,7 +197,7 @@
 #pragma mark - Set Management Tests
 
 - (void)testCreateSetRequiresAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.set.create"
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.set.upsertSet"
                                                       body:@{@"name": @"blocklist"}
                                                    headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
@@ -204,7 +205,7 @@
 
 - (void)testCreateSetSuccessfully {
     NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.set.create"
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.set.upsertSet"
                                                       body:@{@"name": @"blocklist"}
                                                    headers:@{@"authorization": adminAuthHeader}];
     XCTAssertEqual(response.statusCode, 200);
@@ -213,35 +214,35 @@
 
 - (void)testUpdateSetSuccessfully {
     NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.set.update"
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.set.upsertSet"
                                                       body:@{@"id": @"set123", @"name": @"updated-list"}
                                                    headers:@{@"authorization": adminAuthHeader}];
     XCTAssertEqual(response.statusCode, 200);
-    XCTAssertTrue([response.jsonBody[@"success"] boolValue]);
+    XCTAssertEqualObjects(response.jsonBody[@"id"], @"set123");
 }
 
 - (void)testDeleteSetSuccessfully {
     NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.set.delete"
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.set.deleteSet"
                                                       body:@{@"id": @"set123"}
                                                    headers:@{@"authorization": adminAuthHeader}];
     XCTAssertEqual(response.statusCode, 200);
-    XCTAssertTrue([response.jsonBody[@"success"] boolValue]);
+    XCTAssertEqual([(NSDictionary *)response.jsonBody count], 0);
 }
 
 - (void)testGetSetSuccessfully {
     NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/tools.ozone.set.get"
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/tools.ozone.set.getValues"
                                              queryString:@"id=set123"
                                              queryParams:@{@"id": @"set123"}
                                                  headers:@{@"authorization": adminAuthHeader}];
     XCTAssertEqual(response.statusCode, 200);
-    XCTAssertNotNil(response.jsonBody[@"set"]);
+    XCTAssertNotNil(response.jsonBody[@"values"]);
 }
 
 - (void)testListSetsSuccessfully {
     NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/tools.ozone.set.list"
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/tools.ozone.set.querySets"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{@"authorization": adminAuthHeader}];
@@ -251,11 +252,17 @@
 
 - (void)testAddSetValuesSuccessfully {
     NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *createResponse = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.set.upsertSet"
+                                                            body:@{@"name": @"blocklist-values"}
+                                                         headers:@{@"authorization": adminAuthHeader}];
+    NSString *setId = createResponse.jsonBody[@"id"];
+    XCTAssertNotNil(setId);
+
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.set.addValues"
-                                                      body:@{@"id": @"set123", @"values": @[@"did:plc:abc"]}
+                                                      body:@{@"id": setId, @"values": @[@"did:plc:abc"]}
                                                    headers:@{@"authorization": adminAuthHeader}];
     XCTAssertEqual(response.statusCode, 200);
-    XCTAssertTrue([response.jsonBody[@"success"] boolValue]);
+    XCTAssertEqual([(NSDictionary *)response.jsonBody count], 0);
 }
 
 #pragma mark - Communication Template Tests
@@ -308,7 +315,7 @@
 
 - (void)testGrantVerificationSuccessfully {
     NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.verification.grantVerification"
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.verification.grantVerifications"
                                                       body:@{@"did": self.userDid}
                                                    headers:@{@"authorization": adminAuthHeader}];
     XCTAssertEqual(response.statusCode, 200);
@@ -317,7 +324,7 @@
 
 - (void)testRevokeVerificationSuccessfully {
     NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.verification.revokeVerification"
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.verification.revokeVerifications"
                                                       body:@{@"did": self.userDid}
                                                    headers:@{@"authorization": adminAuthHeader}];
     XCTAssertEqual(response.statusCode, 200);
@@ -416,8 +423,14 @@
 
 - (void)testRemoveRuleSuccessfully {
     NSString *adminAuthHeader = [NSString stringWithFormat:@"Bearer %@", self.adminJwt];
+    HttpResponse *createResponse = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.safelink.addRule"
+                                                            body:@{@"url": @"remove.example.com", @"action": @"block"}
+                                                         headers:@{@"authorization": adminAuthHeader}];
+    NSString *ruleId = createResponse.jsonBody[@"id"];
+    XCTAssertNotNil(ruleId);
+
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/tools.ozone.safelink.removeRule"
-                                                      body:@{@"id": @"rule123"}
+                                                      body:@{@"id": ruleId}
                                                    headers:@{@"authorization": adminAuthHeader}];
     XCTAssertEqual(response.statusCode, 200);
     XCTAssertTrue([response.jsonBody[@"success"] boolValue]);
