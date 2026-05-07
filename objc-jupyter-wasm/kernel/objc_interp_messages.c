@@ -42,6 +42,42 @@ static void append_json_str(char *buf, unsigned int *pos, unsigned int max_len, 
                 buf[(*pos)++] = '\\';
                 buf[(*pos)++] = *s;
             }
+        } else if (*s == '\n') {
+            if (*pos < max_len - 2) {
+                buf[(*pos)++] = '\\';
+                buf[(*pos)++] = 'n';
+            }
+        } else if (*s == '\r') {
+            if (*pos < max_len - 2) {
+                buf[(*pos)++] = '\\';
+                buf[(*pos)++] = 'r';
+            }
+        } else if (*s == '\t') {
+            if (*pos < max_len - 2) {
+                buf[(*pos)++] = '\\';
+                buf[(*pos)++] = 't';
+            }
+        } else if (*s == '\b') {
+            if (*pos < max_len - 2) {
+                buf[(*pos)++] = '\\';
+                buf[(*pos)++] = 'b';
+            }
+        } else if (*s == '\f') {
+            if (*pos < max_len - 2) {
+                buf[(*pos)++] = '\\';
+                buf[(*pos)++] = 'f';
+            }
+        } else if ((unsigned char)*s < 32) {
+            /* Other control characters: \u00xx */
+            if (*pos < max_len - 6) {
+                buf[(*pos)++] = '\\';
+                buf[(*pos)++] = 'u';
+                buf[(*pos)++] = '0';
+                buf[(*pos)++] = '0';
+                static const char hex[] = "0123456789abcdef";
+                buf[(*pos)++] = hex[(*s >> 4) & 0xf];
+                buf[(*pos)++] = hex[*s & 0xf];
+            }
         } else {
             buf[(*pos)++] = *s;
         }
@@ -54,17 +90,51 @@ static void append_json_value(char *buf, unsigned int *pos, unsigned int max_len
         char nbuf[32];
         int val = v.int_val;
         unsigned int npos = 0;
-        if (val < 0) { if (*pos < max_len) buf[(*pos)++] = '-'; val = -val; }
-        if (val == 0) { if (*pos < max_len) buf[(*pos)++] = '0'; }
+        unsigned int uval;
+        if (val < 0) { 
+            if (*pos < max_len) buf[(*pos)++] = '-'; 
+            uval = (unsigned int)(-(val + 1)) + 1u;
+        } else {
+            uval = (unsigned int)val;
+        }
+        
+        if (uval == 0) { if (*pos < max_len) buf[(*pos)++] = '0'; }
         else {
-            int t = val;
+            unsigned int t = uval;
             while (t > 0) { npos++; t /= 10; }
-            t = val;
+            t = uval;
             { unsigned int d = npos; do { d--; nbuf[d] = '0' + (t % 10); t /= 10; } while (t > 0); }
             { unsigned int i; for(i=0; i<npos && *pos<max_len; i++) buf[(*pos)++] = nbuf[i]; }
         }
     } else if (v.is_float) {
-        if (*pos < max_len - 3) { buf[(*pos)++] = '0'; buf[(*pos)++] = '.'; buf[(*pos)++] = '0'; } /* simplified float */
+        double fv = v.float_val;
+        int negative = 0;
+        if (fv < 0.0) { negative = 1; fv = -fv; }
+        if (negative && *pos < max_len) buf[(*pos)++] = '-';
+        
+        unsigned long ipart = (unsigned long)fv;
+        double fpart = fv - (double)ipart;
+        
+        if (ipart == 0) {
+            if (*pos < max_len) buf[(*pos)++] = '0';
+        } else {
+            char ibuf[20]; int ii = 0;
+            while (ipart > 0) { ibuf[ii++] = '0' + (ipart % 10); ipart /= 10; }
+            while (ii > 0 && *pos < max_len) buf[(*pos)++] = ibuf[--ii];
+        }
+        
+        if (*pos < max_len) buf[(*pos)++] = '.';
+        
+        for (int d = 0; d < 6 && *pos < max_len - 1; d++) {
+            fpart *= 10.0;
+            int digit = (int)fpart;
+            buf[(*pos)++] = '0' + digit;
+            fpart -= digit;
+        }
+        while (*pos > 0 && buf[*pos-1] == '0') (*pos)--;
+        if (*pos > 0 && buf[*pos-1] == '.') {
+            if (*pos < max_len) buf[(*pos)++] = '0';
+        }
     } else if (v.is_id) {
         const char *s = obj_deref(v.obj_val);
         if (s == 0 || cstr_starts(s, "NSNull:")) {
@@ -2704,6 +2774,30 @@ Value parse_message_send(Parser *p) {
 
             /* [data appendData:other] → append other's bytes (NSMutableData) */
             if (cstr_eq(sel_name, "appendData:") && arg_count >= 1) {
+                const char *other = obj_deref(keyword_args[0].obj_val);
+                if (other && cstr_eq_n(other, "NSData:", 7)) {
+                    const char *hex1 = s + 7;
+                    const char *hex2 = other + 7;
+                    int len1 = (int)cstr_len(hex1);
+                    int len2 = (int)cstr_len(hex2);
+                    unsigned int needed = 7 + (unsigned int)(len1 + len2) + 1;
+                    ObjId h = obj_alloc(needed);
+                    if (h == OBJ_NULL) return value_from_obj(receiver);
+                    char *buf = obj_deref_mut(h);
+                    cstr_copy(buf, "NSData:", needed);
+                    {
+                        int i;
+                        for (i = 0; i < len1; i++) buf[7 + i] = hex1[i];
+                        for (i = 0; i < len2; i++) buf[7 + len1 + i] = hex2[i];
+                        buf[7 + len1 + len2] = '\0';
+                    }
+                    return value_from_obj(h);
+                }
+                return value_from_obj(receiver);
+            }
+
+            /* [data dataByAppendingData:other] → return new NSData with both (immutable) */
+            if (cstr_eq(sel_name, "dataByAppendingData:") && arg_count >= 1) {
                 const char *other = obj_deref(keyword_args[0].obj_val);
                 if (other && cstr_eq_n(other, "NSData:", 7)) {
                     const char *hex1 = s + 7;
