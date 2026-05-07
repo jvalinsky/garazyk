@@ -90,6 +90,7 @@ static NSMutableDictionary *sPendingConsents = nil;
 static NSMutableDictionary *sPasskeyChallenges = nil;
 static dispatch_queue_t sPasskeyChallengeQueue = nil;
 static dispatch_queue_t sAuthGlobalsQueue = nil;
+static dispatch_queue_t sClientMetadataQueue = nil;
 static const NSTimeInterval kPendingConsentTTLSeconds = 300.0;
 static const NSTimeInterval kPasskeyChallengeTTLSeconds = 300.0;
 static const NSUInteger kMaxPendingConsents = 1024;
@@ -132,6 +133,11 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     dispatch_once(&sAuthGlobalsQueueOnceToken, ^{
       sAuthGlobalsQueue = dispatch_queue_create(
           "com.atproto.oauth2.globals", DISPATCH_QUEUE_SERIAL);
+    });
+    static dispatch_once_t sClientMetadataQueueOnceToken;
+    dispatch_once(&sClientMetadataQueueOnceToken, ^{
+      sClientMetadataQueue = dispatch_queue_create(
+          "com.atproto.oauth2.client.metadata", DISPATCH_QUEUE_SERIAL);
     });
     self.oauthServer = [[OAuth2Server alloc] initWithDatabase:database];
     self.oauthServer.jwtMinter = self.minter;
@@ -235,10 +241,10 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
       sClientMetadataCache.countLimit = 1000;
     });
 
-    NSDictionary *cached = nil;
-    @synchronized(sClientMetadataCache) {
+    __block NSDictionary *cached = nil;
+    dispatch_sync(sClientMetadataQueue, ^{
       cached = [sClientMetadataCache objectForKey:clientID];
-    }
+    });
     if (cached) {
       PDS_LOG_AUTH_INFO(@"Found cached metadata for client: %@", clientID);
       completion(cached, nil);
@@ -262,7 +268,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
                                 NSString *metadataClientID =
                                     validatedClient[@"client_id"];
                                 if ([metadataClientID isEqualToString:clientID]) {
-                                  dispatch_sync(sAuthGlobalsQueue, ^{
+                                  dispatch_sync(sClientMetadataQueue, ^{
                                     [sClientMetadataCache
                                          setObject:validatedClient
                                             forKey:clientID];
@@ -1901,9 +1907,9 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   if ([decision isEqualToString:@"deny"]) {
     NSString *sessionTokenForDeny = params[@"session_token"];
     if (sessionTokenForDeny.length > 0) {
-      @synchronized(sPendingConsents) {
+      dispatch_sync(sAuthGlobalsQueue, ^{
         [sPendingConsents removeObjectForKey:sessionTokenForDeny];
-      }
+      });
     }
     NSString *redirectUri = params[@"redirect_uri"];
     if (redirectUri.length > 0) {
@@ -1975,11 +1981,11 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     return;
   }
 
-  NSDictionary *consentSession = nil;
-  @synchronized(sPendingConsents) {
+  __block NSDictionary *consentSession = nil;
+  dispatch_sync(sAuthGlobalsQueue, ^{
     [self cleanupExpiredPendingConsentsLocked];
     consentSession = sPendingConsents[sessionToken];
-  }
+  });
 
   if (!consentSession) {
     response.statusCode = 403;
@@ -1992,9 +1998,9 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
 
   NSDate *expires = consentSession[@"expires"];
   if ([expires compare:[NSDate date]] == NSOrderedAscending) {
-    @synchronized(sPendingConsents) {
+    dispatch_sync(sAuthGlobalsQueue, ^{
       [sPendingConsents removeObjectForKey:sessionToken];
-    }
+    });
     response.statusCode = 403;
     [response setJsonBody:@{
       @"error" : @"access_denied",
@@ -2004,9 +2010,9 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   }
 
   // Clean up used token
-  @synchronized(sPendingConsents) {
+  dispatch_sync(sAuthGlobalsQueue, ^{
     [sPendingConsents removeObjectForKey:sessionToken];
-  }
+  });
 
   NSError *clientError = nil;
   NSDictionary *client = [self validatedClientForClientID:clientID
@@ -2426,7 +2432,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
 
   NSString *sessionToken = [[NSUUID UUID] UUIDString];
   NSString *sessionHandle = handle.length > 0 ? handle : did;
-  @synchronized(sPendingConsents) {
+  dispatch_sync(sAuthGlobalsQueue, ^{
     [self cleanupExpiredPendingConsentsLocked];
     [self enforcePendingConsentCapacityLocked];
     sPendingConsents[sessionToken] = @{
@@ -2436,7 +2442,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
       @"expires" :
           [NSDate dateWithTimeIntervalSinceNow:kPendingConsentTTLSeconds]
     };
-  }
+  });
 
   return sessionToken;
 }
@@ -3474,9 +3480,9 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
 }
 
 - (void)clearPendingConsentsForTesting {
-  @synchronized(sPendingConsents) {
+  dispatch_sync(sAuthGlobalsQueue, ^{
     [sPendingConsents removeAllObjects];
-  }
+  });
 }
 
 - (BOOL)requestShouldTrustForwardedHeaders:(HttpRequest *)request {
