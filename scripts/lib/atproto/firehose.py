@@ -64,12 +64,17 @@ class FirehoseClient:
         duration_s: float = 10.0,
         cursor: Optional[int] = None,
         max_errors: int = 3,
+        recv_timeout: float = 15.0,
     ) -> None:
         """Subscribe to the firehose and invoke callback for each parsed event.
 
         Connection setup is retried a few times because local demo stacks can
         take a moment to bind the WebSocket route after the HTTP health endpoint
         starts responding.
+
+        recv_timeout sets the per-message timeout. If no frame arrives within
+        recv_timeout seconds, the subscription ends cleanly instead of blocking
+        forever on a silent connection.
         """
         try:
             import websockets
@@ -90,17 +95,24 @@ class FirehoseClient:
                 async with websockets.connect(url, open_timeout=5, ping_timeout=5) as ws:
                     logger.info("Firehose connected")
                     error_count = 0 # Reset on success
-                    firehose_connected = True
                     deadline = asyncio.get_event_loop().time() + duration_s
-                    async for message in ws:
-                        logger.debug("Received firehose message: %d bytes", len(message))
+                    while True:
+                        try:
+                            message = await asyncio.wait_for(
+                                ws.recv(), timeout=recv_timeout,
+                            )
+                        except asyncio.TimeoutError:
+                            logger.info("Firehose recv timeout (%.0fs), ending collection", recv_timeout)
+                            return
+                        if isinstance(message, bytes):
+                            logger.debug("Received firehose message: %d bytes", len(message))
                         if asyncio.get_event_loop().time() > deadline:
                             logger.info("Firehose collection duration reached")
                             return # Normal exit
                         event = _parse_message(message)
                         if event and callback:
                             callback(event)
-                    return # Socket closed normally
+                    return # Unreachable, but defensive
             except Exception as exc:
                 error_count += 1
                 logger.warning("Firehose connection attempt %d failed: %s", error_count, exc)
