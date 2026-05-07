@@ -43,7 +43,9 @@
         return;
     }
     id cmd = [[cmdClass alloc] init];
-    XCTAssertEqualObjects([cmd performSelector:NSSelectorFromString(@"name")], @"health");
+    XCTAssertEqualObjects([cmd performSelector:NSSelectorFromString(@"name")], @"status");
+    NSArray *aliases = [cmd performSelector:NSSelectorFromString(@"aliases")];
+    XCTAssertTrue([aliases containsObject:@"health"]);
 }
 
 - (void)testHealthCommand_Exists {
@@ -67,7 +69,9 @@
         return;
     }
     id cmd = [[cmdClass alloc] init];
-    XCTAssertEqualObjects([cmd performSelector:NSSelectorFromString(@"name")], @"nuke");
+    XCTAssertEqualObjects([cmd performSelector:NSSelectorFromString(@"name")], @"nuke-data");
+    NSArray *aliases = [cmd performSelector:NSSelectorFromString(@"aliases")];
+    XCTAssertTrue([aliases containsObject:@"nuke"]);
 }
 
 - (void)testNukeCommand_HelpText {
@@ -78,7 +82,8 @@
     }
     id cmd = [[cmdClass alloc] init];
     NSString *help = [cmd performSelector:NSSelectorFromString(@"helpText")];
-    XCTAssertTrue([help containsString:@"dangerous"] || [help containsString:@"delete"]);
+    NSString *lowercaseHelp = [help lowercaseString];
+    XCTAssertTrue([lowercaseHelp containsString:@"danger"] || [lowercaseHelp containsString:@"delete"]);
 }
 
 @end

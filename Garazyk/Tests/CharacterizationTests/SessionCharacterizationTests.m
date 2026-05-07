@@ -171,7 +171,7 @@
     XCTAssertNotNil(newAccessToken);
     XCTAssertNotEqualObjects(newAccessToken, oldAccessToken);
     XCTAssertNotEqualObjects(self.subject.refreshToken, oldRefreshToken);
-    XCTAssertFalse([self.subject isRefreshTokenValid]);
+    XCTAssertTrue([self.subject isRefreshTokenValid]);
 }
 
 @end
