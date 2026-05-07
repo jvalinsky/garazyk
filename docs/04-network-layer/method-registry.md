@@ -1,77 +1,37 @@
----
-title: Method Registry
----
-
 # Method Registry
 
-## Overview
-
-`XrpcMethodRegistry` defines the public XRPC surface using domain-specific registration helpers. It maps service dependencies to registered NSIDs.
+`XrpcMethodRegistry` defines the public XRPC interface and manages service dependency injection for domain handlers.
 
 ## Responsibilities
+The registry manages:
+- **NSID Mapping**: Associating NSIDs with specific handler implementations.
+- **Domain Delegation**: Distributing method registration to domain-specific modules.
+- **Dependency Management**: Injecting required services into domain handlers during the boot sequence.
 
-The registry determines:
+The registry operates as a functional component of the application startup path, ensuring all protocol methods are correctly wired before the HTTP server begins accepting requests.
 
-- The NSIDs available in the runtime.
-- The domain module responsible for each method.
-- The service dependencies required for registration.
-- The method families wired during startup.
+## Registration Sequence
+The order of registration determines method availability and handling priority for overlapping NSIDs. `XrpcMethodRegistry.m` initializes domain modules in this order:
+1. **Server Methods**: `com.atproto.server.*`
+2. **Identity Methods**: `com.atproto.identity.*`
+3. **Repo Methods**: `com.atproto.repo.*`
+4. **Sync Methods**: `com.atproto.sync.*`
+5. **AppView Methods**: `app.bsky.*`
+6. **Admin Methods**: `com.atproto.admin.*`
+7. **Label Methods**: `com.atproto.label.*`
+8. **Moderation Methods**: `com.atproto.moderation.*`
 
-The registry is part of the application boot sequence, not just a lookup table.
+## Implementation Boundary
+The registry does not define endpoint logic or protocol semantics. It serves strictly as a wiring layer.
+- **Missing Method**: Verify the NSID is included in the registration sequence.
+- **Miswired Service**: Check the dependency injection within the relevant domain module registration.
+- **Logic Error**: Investigate the domain handler or service layer; the registry is not responsible for runtime execution behavior.
 
-## Registration Order
-
-Registration order determines how `XrpcDispatcher` handles overlapping NSIDs. `XrpcMethodRegistry.m` follows this sequence:
-
-1. **XrpcServerMethods** (`com.atproto.server.*`)
-2. **XrpcIdentityMethods** (`com.atproto.identity.*`)
-3. **XrpcRepoMethods** (`com.atproto.repo.*`)
-4. **XrpcSyncMethods** (`com.atproto.sync.*`)
-5. **XrpcAppBskyMethods** (`app.bsky.*`)
-6. **XrpcAdminMethods** (`com.atproto.admin.*`)
-7. **XrpcLabelMethods** (`com.atproto.label.*`)
-8. **XrpcModerationMethods** (`com.atproto.moderation.*`)
-
-## Why This Matters
-
-Endpoint behavior may fail in the live runtime even if unit tests pass. The registry helps identify:
-
-- Unregistered methods.
-- Broken dependencies within a domain family.
-- The registration module responsible for an auth or dispatch issue.
-
-The registry confirms whether an endpoint is missing, miswired, or failing later in the stack.
-
-## Boundaries
-
-The registry does not define endpoint semantics. It is not the place to debug:
-
-- record validation.
-- JWT or DPoP proof verification.
-- repository commit construction.
-- blob provider behavior.
-
-These reside in the domain module and service layer.
-
-## When To Read The Deep Dives
-
-Use the registry docs for the static map. Use the deep dives when you need the live request path from route to service call.
-
-## Related Deep Dives
-
+## Related
 - [HTTP Request and Route Pipeline](./http-request-and-route-pipeline)
 - [From NSID to Service Call](./from-nsid-to-service-call)
-
-## Related Reading
-
 - [XRPC Dispatch](./xrpc-dispatch)
 - [Domain Methods](./domain-methods)
 - [Services Overview](../03-application-layer/services-overview)
 - [Startup and Boot Sequence](../01-getting-started/startup-and-boot-sequence)
-
-## Related
-
-- [Documentation Map](../11-reference/documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
 

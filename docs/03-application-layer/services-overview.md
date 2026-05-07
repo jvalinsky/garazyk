@@ -1,101 +1,63 @@
----
-title: Services Overview
----
-
 # Services Overview
 
-## Overview
+The service layer translates protocol requests into application logic. `PDSApplication` is the composition root, managing infrastructure, core services, and route wiring.
 
-The service layer translates protocol requests into application logic. Understanding this layer explains why the codebase uses multiple services rather than a single large controller.
+## Architecture
 
-`PDSApplication` acts as the composition root. It configures shared infrastructure, builds core services, wires HTTP routes, and provides a compatibility facade around the legacy `PDSController`.
-
-## Purpose
-
-The service split separates three concerns:
-
-- Handlers parse requests and shape responses.
-- Services coordinate business logic.
-- Storage and repository code manage persistence.
-
-This split simplifies testing and replacement of individual stack components.
+Garazyk separates concerns into three layers:
+- **Handlers**: Parse requests and shape responses.
+- **Services**: Coordinate business logic and subsystem interactions.
+- **Persistence**: Manage database and repository state.
 
 ## Service Composition
 
-At startup, `PDSApplication` builds shared infrastructure:
+`PDSApplication` initializes shared infrastructure:
+- Configuration and logging.
+- Rate limiting and JWT infrastructure.
+- Service databases and the actor database pool.
 
-- configuration
-- logging
-- rate limiting
-- service databases
-- user database pool
-- JWT infrastructure
-
-It then builds application services and controllers:
-
-- account service
-- record service
-- blob service
-- repository service
-- admin service (via controller)
-- subscribeRepos handler
-- relay service
-- age assurance service
-- chat moderation service
+It then assembles the application services:
+- **Account Service**: Manages accounts and authentication.
+- **Record Service**: Handles record CRUD.
+- **Blob Service**: Manages binary data and storage.
+- **Repository Service**: Oversees MST and repository integrity.
+- **Admin/Safety Services**: Age assurance, chat moderation, and administrative controls.
+- **Relay Service**: Handles firehose and notification propagation.
 
 ### Standalone Servers
-
-The repository also implements standalone servers for global AT Protocol roles:
-
-- **Syrena (AppView)**: Consumes the global firehose to build read-models.
+Garazyk implements standalone servers for specialized protocol roles:
+- **Syrena (AppView)**: Consumes the firehose to build read-models.
 - **Zuk (Relay)**: Aggregates data from multiple PDS instances.
-- **Campagnola (PLC)**: A standalone directory server for `did:plc`.
+- **Campagnola (PLC)**: Implements the `did:plc` directory server.
 
-Most services depend on the database pools, configuration, and authentication infrastructure.
+## Request Execution Flow
+1. **Routing**: Matches the request in the HTTP builder or XRPC layer.
+2. **Pre-processing**: Auth and validation run in middleware or helpers.
+3. **Coordination**: The handler calls the relevant domain service.
+4. **Persistence**: The service executes repository or database operations.
+5. **Response**: The handler shapes the final payload.
 
-## Request Path
+## Implementation Guidelines
 
-Most HTTP or XRPC work follows this path:
+### PDSController
+`PDSController` is a legacy facade. New implementation should target services directly.
 
-1. Register routes in the HTTP builder or XRPC layer.
-2. Perform authentication and validation in helpers.
-3. Call the relevant service for the operation.
-4. Execute repository, database, or storage work.
-5. Shape the response in the handler layer.
+### Service Boundaries
+Add or extend services for logic that:
+- Spans multiple handlers or protocol namespaces.
+- Coordinates multiple persistence layers.
+- Requires a testable boundary independent of transport.
 
-This sequence identifies where to look when behavior is incorrect.
-
-## PDSController Legacy
-
-`PDSController` is a legacy facade over `PDSApplication`. New code should call services directly.
-
-## Adding a Service
-
-Add or extend a service when behavior:
-
-- spans multiple handlers or protocols.
-- coordinates multiple persistence concerns.
-- requires a testable boundary independent of HTTP.
-
-The service layer creates meaningful seams, not just indirection. Trivial helpers do not require their own service.
-
-## Related Reading
-
-- [Request Lifecycle](../01-getting-started/request-lifecycle)
-- [Deep Dive: Runtime Flow](./runtime-flow-walkthrough)
-- [Syrena AppView Server](./appview-server)
-- [Zuk Relay Server](./relay-server)
-- [Trust, Safety, and Compliance](./safety-and-compliance)
-- [Chat Service](./chat-service)
-- [Blob Service](./blob-service)
-- [Repository Service](./repository-service)
-- [Relay Service](./relay-service)
-- [Auth Helpers](../04-network-layer/auth-helpers)
-
+Services must represent a meaningful architectural seam. Trivial logic remains in handlers or helpers.
 
 ## Related
 
+- [Request Lifecycle](../01-getting-started/request-lifecycle)
+- [Runtime Flow Walkthrough](./runtime-flow-walkthrough)
+- [Syrena AppView](./appview-server)
+- [Zuk Relay](./relay-server)
+- [Safety and Compliance](./safety-and-compliance)
+- [Blob Service](./blob-service)
+- [Repository Service](./repository-service)
 - [Documentation Map](../11-reference/documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
 
