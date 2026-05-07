@@ -231,21 +231,24 @@
 
 - (NSData *)serializeToCBOR:(NSMapTable<MSTNode *, CID *> *)cache {
     NSMutableArray<CBORValue *> *entriesCBOR = [NSMutableArray array];
-    NSString *prevKey = @"";
+    NSData *prevKeyData = [NSData data];
     
     for (MSTNodeEntry *entry in self.internalEntries) {
+        NSData *fullKeyData = [entry.fullKey dataUsingEncoding:NSUTF8StringEncoding];
         NSUInteger p = 0;
-        NSUInteger minLen = MIN(prevKey.length, entry.fullKey.length);
+        NSUInteger minLen = MIN(prevKeyData.length, fullKeyData.length);
+        
+        const uint8_t *prevBytes = prevKeyData.bytes;
+        const uint8_t *currBytes = fullKeyData.bytes;
         
         for (NSUInteger i = 0; i < minLen; i++) {
-            if ([prevKey characterAtIndex:i] == [entry.fullKey characterAtIndex:i]) {
+            if (prevBytes[i] == currBytes[i]) {
                 p++;
             } else {
                 break;
             }
         }
         
-        NSData *fullKeyData = [entry.fullKey dataUsingEncoding:NSUTF8StringEncoding];
         NSData *kSuffix = [fullKeyData subdataWithRange:NSMakeRange(p, fullKeyData.length - p)];
         
         // TreeEntry spec order: k, p, t, v
@@ -267,7 +270,7 @@
         dict[[CBORValue textString:@"v"]] = [CBORValue tag:42 value:[CBORValue byteString:vData]];
         
         [entriesCBOR addObject:[CBORValue map:dict]];
-        prevKey = entry.fullKey;
+        prevKeyData = fullKeyData;
     }
     
     // NodeData spec order: e, l
@@ -286,10 +289,7 @@
 }
 
 - (void)split:(NSString *)key left:(MSTNode **)leftOut right:(MSTNode **)rightOut {
-    NSInteger idx = 0;
-    while (idx < self.internalEntries.count && [self.internalEntries[idx].fullKey compare:key] == NSOrderedAscending) {
-        idx++;
-    }
+    NSInteger idx = [self binarySearchIndexForKey:key];
     
     NSArray *leftData = [self.internalEntries subarrayWithRange:NSMakeRange(0, idx)];
     NSArray *rightData = [self.internalEntries subarrayWithRange:NSMakeRange(idx, self.internalEntries.count - idx)];
@@ -773,7 +773,7 @@
         : @[];
 
     NSMutableArray<MSTNodeEntry *> *entries = [NSMutableArray array];
-    NSString *prevKey = @"";
+    NSData *prevKeyData = [NSData data];
 
     for (CBORValue *entryMap in entriesArray) {
         if (entryMap.type != CBORTypeMap) {
@@ -785,12 +785,13 @@
 
         CBORValue *prefixValue = entryMap.map[[CBORValue textString:@"p"]];
         NSUInteger prefixLen = prefixValue.unsignedInteger.unsignedIntegerValue;
-        NSUInteger safePrefixLen = MIN(prefixLen, prevKey.length);
-        NSString *prefix = [prevKey substringToIndex:safePrefixLen];
-
-        NSString *suffix = [[NSString alloc] initWithData:suffixData encoding:NSUTF8StringEncoding] ?: @"";
-        NSString *fullKey = [prefix stringByAppendingString:suffix];
-        prevKey = fullKey;
+        NSUInteger safePrefixLen = MIN(prefixLen, prevKeyData.length);
+        
+        NSMutableData *fullKeyData = [NSMutableData dataWithData:[prevKeyData subdataWithRange:NSMakeRange(0, safePrefixLen)]];
+        [fullKeyData appendData:suffixData];
+        
+        NSString *fullKey = [[NSString alloc] initWithData:fullKeyData encoding:NSUTF8StringEncoding] ?: @"";
+        prevKeyData = [fullKeyData copy];
 
         CBORValue *valueTag = entryMap.map[[CBORValue textString:@"v"]];
         CBORValue *valueBytes = valueTag.tagValue;
@@ -1320,10 +1321,7 @@ asDeleteIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
     [path addObject:node];
     
     // Binary search for key position
-    NSInteger idx = 0;
-    while (idx < node.internalEntries.count && [node.internalEntries[idx].fullKey compare:key] == NSOrderedAscending) {
-        idx++;
-    }
+    NSInteger idx = [node binarySearchIndexForKey:key];
     
     // Check if we found the key at this level
     if (idx < node.internalEntries.count && [node.internalEntries[idx].fullKey isEqualToString:key]) {

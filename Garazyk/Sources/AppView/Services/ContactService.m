@@ -8,6 +8,7 @@
 #import "Debug/PDSLogger.h"
 #import "AppView/Services/ActorService.h"
 #import "Database/PDSDatabase.h"
+#import "App/PDSConfiguration.h"
 #import <CommonCrypto/CommonCrypto.h>
 
 @implementation ContactService {
@@ -238,9 +239,21 @@
 #pragma mark - Private Helpers
 
 - (NSString *)hashPhone:(NSString *)phone {
-    // Simplified - in production, use proper secure hashing
-    NSData *data = [phone dataUsingEncoding:NSUTF8StringEncoding];
-    NSData *hash = [self sha256:data];
+    // Derive salt from master secret (M8)
+    NSString *masterSecret = [PDSConfiguration sharedConfiguration].masterSecret;
+    if (masterSecret.length == 0) {
+        PDS_LOG_WARN(@"ContactService: masterSecret is missing, using weak fallback salt");
+        masterSecret = @"pds_contact_weak_salt_v1";
+    }
+    
+    // Add a static salt component to prevent masterSecret leakage in case of hash collisions
+    NSString *salt = [NSString stringWithFormat:@"%@_phone_v1", masterSecret];
+    
+    NSMutableData *saltedData = [NSMutableData data];
+    [saltedData appendData:[phone dataUsingEncoding:NSUTF8StringEncoding]];
+    [saltedData appendData:[salt dataUsingEncoding:NSUTF8StringEncoding]];
+    
+    NSData *hash = [self sha256:saltedData];
     return [hash base64EncodedStringWithOptions:0];
 }
 
