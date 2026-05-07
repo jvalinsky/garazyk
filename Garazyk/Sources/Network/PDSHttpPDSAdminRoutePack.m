@@ -1,3 +1,11 @@
+/*!
+ @file PDSHttpPDSAdminRoutePack.m
+
+ @abstract Registers operational admin HTTP routes for PDS management surfaces.
+
+ @discussion Adds administrative route bindings used for operational control and diagnostics, routing requests to admin-capable handlers. This layer owns endpoint wiring and guards, not underlying admin domain processing.
+ */
+
 #import "Network/PDSHttpPDSAdminRoutePack.h"
 
 #import "Admin/PDSAdminAuth.h"
