@@ -24,9 +24,10 @@ Run narrative-driven simulation scripts against the local ATProto service networ
    python scripts/scenarios/run_scenario.py --list       # List available
    ```
 
-3. **Review results:**
+3. **Review results and diagnostics:**
    - Terminal: colored PASS/FAIL/SKIP table per scenario
-   - JSON: `scripts/scenarios/reports/<timestamp>-<scenario>.json`
+   - JSON: `/tmp/garazyk-atproto-e2e/<run-id>/reports/<timestamp>-<scenario>.json`
+   - Diagnostics: `/tmp/garazyk-atproto-e2e/<run-id>/diagnostics/`
 
 4. **Tear down:**
    ```bash
@@ -68,7 +69,8 @@ Run narrative-driven simulation scripts against the local ATProto service networ
 - **Scenarios**: `scripts/scenarios/scenarios/01_*.py` through `10_*.py`
 - **Infrastructure**: `scripts/scenarios/setup_local_network.sh`, `teardown_local_network.sh`
 - **Docker override**: `docker/local-network/docker-compose.scenarios.yml` (adds second PDS)
-- **Reports**: `scripts/scenarios/reports/` (JSON output)
+- **Reports**: `/tmp/garazyk-atproto-e2e/<run-id>/reports/` (JSON output)
+- **Diagnostics**: `/tmp/garazyk-atproto-e2e/<run-id>/diagnostics/` (health, logs, compose status)
 - **Documentation**: `scripts/scenarios/README.md`
 
 ## Adding a New Scenario
@@ -90,6 +92,11 @@ Options:
   --pds2          Start second PDS for federation scenarios
   --verbose       Enable debug output
   --no-json       Don't write JSON report files
+  --run-id ID     Reuse or name the shared e2e run directory
+  --setup         Start the local network before running
+  --keep-running  Leave services running after setup/run
+  --collect-diagnostics
+                  Capture diagnostics without running scenarios
 ```
 
 ## Exit Codes
