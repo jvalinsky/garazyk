@@ -6,6 +6,10 @@
 
 @implementation RepoAuthTempTests
 
+- (BOOL)requiresAdminAuthFixture {
+    return YES;
+}
+
 - (void)testTempRevokeAccountCredentialsReturns401WithoutAuth {
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/com.atproto.temp.revokeAccountCredentials"
                                                       body:@{@"account": self.did1}

@@ -9,6 +9,7 @@
 @property (nonatomic, strong) HttpServer *server;
 @property (nonatomic, strong) PDSController *controller;
 @property (nonatomic, copy) NSString *tempDir;
+@property (nonatomic, assign) BOOL serverStarted;
 @end
 
 @implementation HealthEndpointIntegrationTests
@@ -39,7 +40,8 @@
     }];
     
     NSError *error = nil;
-    XCTAssertTrue([self.server startWithError:&error], @"Failed to start server: %@", error);
+    self.serverStarted = [self.server startWithError:&error];
+    XCTAssertTrue(self.serverStarted, @"Failed to start server: %@", error);
 }
 
 - (void)tearDown {
@@ -50,16 +52,33 @@
 }
 
 - (void)testXRPCHealthEndpoint {
+    if (!self.serverStarted) {
+        return;
+    }
     NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"http://localhost:%hu/xrpc/_health", self.server.port]];
     
     XCTestExpectation *expectation = [self expectationWithDescription:@"Health check"];
     
     [[[NSURLSession sharedSession] dataTaskWithURL:url completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         XCTAssertNil(error);
+        if (error) {
+            [expectation fulfill];
+            return;
+        }
+
         NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+        XCTAssertTrue([httpResponse isKindOfClass:[NSHTTPURLResponse class]]);
         XCTAssertEqual(httpResponse.statusCode, 200);
-        
-        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+
+        XCTAssertNotNil(data);
+        if (!data) {
+            [expectation fulfill];
+            return;
+        }
+
+        NSError *jsonError = nil;
+        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
+        XCTAssertNil(jsonError);
         XCTAssertNotNil(json);
         XCTAssertEqualObjects(json[@"status"], @"healthy");
         XCTAssertNotNil(json[@"version"]);
@@ -72,16 +91,33 @@
 }
 
 - (void)testRootHealthEndpoint {
+    if (!self.serverStarted) {
+        return;
+    }
     NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"http://localhost:%hu/_health", self.server.port]];
     
     XCTestExpectation *expectation = [self expectationWithDescription:@"Root health check"];
     
     [[[NSURLSession sharedSession] dataTaskWithURL:url completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         XCTAssertNil(error);
+        if (error) {
+            [expectation fulfill];
+            return;
+        }
+
         NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+        XCTAssertTrue([httpResponse isKindOfClass:[NSHTTPURLResponse class]]);
         XCTAssertEqual(httpResponse.statusCode, 200);
-        
-        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+
+        XCTAssertNotNil(data);
+        if (!data) {
+            [expectation fulfill];
+            return;
+        }
+
+        NSError *jsonError = nil;
+        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
+        XCTAssertNil(jsonError);
         XCTAssertNotNil(json);
         XCTAssertEqualObjects(json[@"status"], @"healthy");
         

@@ -76,6 +76,7 @@
     req.grantType = @"authorization_code";
     req.code = @"auth-code";
     req.redirectUri = @"https://cb.com";
+    req.codeVerifier = @"verifier";
     req.dpopJwt = @"dpop-proof";
     
     NSError *error = nil;
@@ -103,6 +104,7 @@
     req.grantType = @"authorization_code";
     req.code = @"code";
     req.redirectUri = @"uri";
+    req.codeVerifier = @"verifier";
     req.dpopJwt = nil;
     
     NSError *error = nil;

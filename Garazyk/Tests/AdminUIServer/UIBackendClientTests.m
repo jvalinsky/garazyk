@@ -48,12 +48,12 @@
                                 bearerToken:(nullable NSString *)token
                                  statusCode:(NSInteger *)statusCode
                                       error:(NSError **)error {
-    [self.capturedRequests addObject:@{
-        @"url": url.absoluteString ?: @"",
-        @"method": method ?: @"",
-        @"body": body ?: @{},
-        @"token": token ?: @""
-    }];
+    NSMutableDictionary *req = [NSMutableDictionary dictionary];
+    req[@"url"] = url.absoluteString ?: @"";
+    req[@"method"] = method ?: @"";
+    req[@"body"] = body ?: @{};
+    req[@"token"] = token ?: @"";
+    [self.capturedRequests addObject:[req copy]];
     if (statusCode) {
         *statusCode = 200;
     }
@@ -67,11 +67,11 @@
                       bearerToken:(nullable NSString *)token
                        statusCode:(NSInteger *)statusCode
                             error:(NSError **)error {
-    [self.capturedRequests addObject:@{
-        @"url": url.absoluteString ?: @"",
-        @"method": method ?: @"",
-        @"token": token ?: @""
-    }];
+    NSMutableDictionary *req = [NSMutableDictionary dictionary];
+    req[@"url"] = url.absoluteString ?: @"";
+    req[@"method"] = method ?: @"";
+    req[@"token"] = token ?: @"";
+    [self.capturedRequests addObject:[req copy]];
     if (statusCode) {
         *statusCode = 200;
     }
@@ -98,6 +98,7 @@
     self.config.relayBaseURL = [NSURL URLWithString:@"http://localhost:7002"];
     self.config.appViewBaseURL = [NSURL URLWithString:@"http://localhost:3000"];
     self.config.chatBaseURL = [NSURL URLWithString:@"http://localhost:5000"];
+    self.config.videoBaseURL = [NSURL URLWithString:@"http://localhost:5001"];
     self.config.pdsAdminToken = @"admin-token-pds";
     self.config.plcAdminToken = @"admin-token-plc";
     self.config.relayAdminToken = @"admin-token-relay";

@@ -47,6 +47,7 @@
 - (void)handleReceivedData:(NSData *)data;
 - (void)closeWithCode:(NSInteger)code reason:(NSString *)reason;
 - (void)sendPong:(NSData *)payload;
+- (void)waitForWriteQueue:(void (^)(void))completion;
 @end
 
 @interface WebSocketFrameCharacterizationTests : XCTestCase
@@ -121,6 +122,9 @@
     // Close code 1000 (0x03E8), reason "OK"
     uint8_t frame[] = {0x88, 0x04, 0x03, 0xE8, 'O', 'K'};
     [self.connection handleReceivedData:[NSData dataWithBytes:frame length:sizeof(frame)]];
+    XCTestExpectation *exp = [self expectationWithDescription:@"Wait for close"];
+    [self.connection waitForWriteQueue:^{ [exp fulfill]; }];
+    [self waitForExpectations:@[exp] timeout:1.0];
     [self waitForMainQueue];
     // Wait for the close dispatch. It dispatches after 5s or state change. But wait, handleCloseFrame calls closeWithCode:reason:.
     // This transitions to Closing and dispatches after 5s. Let's just check the property or wait.
@@ -131,6 +135,9 @@
 - (void)testCloseFrameEmptyPayload {
     uint8_t frame[] = {0x88, 0x00};
     [self.connection handleReceivedData:[NSData dataWithBytes:frame length:sizeof(frame)]];
+    XCTestExpectation *exp = [self expectationWithDescription:@"Wait for close"];
+    [self.connection waitForWriteQueue:^{ [exp fulfill]; }];
+    [self waitForExpectations:@[exp] timeout:1.0];
     [self waitForMainQueue];
     XCTAssertEqual(self.connection.closeCode, 0);
     XCTAssertEqualObjects(self.connection.closeReason, @"");
@@ -141,6 +148,9 @@
     // Opcode=2, Len=127, 8-byte length = 17MB
     uint8_t frame[] = {0x82, 0x7F, 0x00, 0x00, 0x00, 0x00, 0x01, 0x10, 0x00, 0x00};
     [self.connection handleReceivedData:[NSData dataWithBytes:frame length:sizeof(frame)]];
+    XCTestExpectation *exp = [self expectationWithDescription:@"Wait for close"];
+    [self.connection waitForWriteQueue:^{ [exp fulfill]; }];
+    [self waitForExpectations:@[exp] timeout:1.0];
     [self waitForMainQueue];
     XCTAssertEqual(self.connection.closeCode, 1009);
     XCTAssertEqualObjects(self.connection.closeReason, @"Frame too large");
