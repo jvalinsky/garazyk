@@ -75,6 +75,7 @@ def main() -> None:
     now = now_iso()
     sessions: list[dict] = []
     dids: dict[str, str] = {}  # handle -> did, used to build follows and chat memberships
+    seed_errors: list[str] = []
 
     # ── Create Accounts ──────────────────────────────────────────────
 
@@ -118,6 +119,7 @@ def main() -> None:
             print(f"  [SEED]   ✓ Profile created")
         except XrpcError as e:
             print(f"  [SEED]   ✗ Profile failed: {e}")
+            seed_errors.append(f"profile {handle}: {e}")
 
         # Posts provide feed, author-feed, and notification source material.
         # We keep their URIs for future like/reply expansion.
@@ -134,6 +136,7 @@ def main() -> None:
                 print(f"  [SEED]   ✓ Post #{i+1}")
             except XrpcError as e:
                 print(f"  [SEED]   ✗ Post #{i+1} failed: {e}")
+                seed_errors.append(f"post {handle} #{i+1}: {e}")
 
         # Follow records create a non-trivial social graph for timeline and
         # graph endpoint checks.
@@ -149,6 +152,7 @@ def main() -> None:
                 print(f"  [SEED]   ✓ Followed {target_handle.split('.')[0]}")
             except XrpcError as e:
                 print(f"  [SEED]   ✗ Follow failed: {e}")
+                seed_errors.append(f"follow {handle}->{target_handle}: {e}")
 
         # Placeholder for likes. The surrounding control flow is left intact so
         # post URI collection can be expanded without restructuring the seeder.
@@ -168,6 +172,7 @@ def main() -> None:
             print(f"  [SEED]   ✓ List created")
         except XrpcError as e:
             print(f"  [SEED]   ✗ List failed: {e}")
+            seed_errors.append(f"list {handle}: {e}")
 
         # Feed generators exercise a record type that requires the actor DID in
         # the payload, not just in the repo parameter.
@@ -182,6 +187,7 @@ def main() -> None:
             print(f"  [SEED]   ✓ Feed generator created")
         except XrpcError as e:
             print(f"  [SEED]   ✗ Feed generator failed: {e}")
+            seed_errors.append(f"feed generator {handle}: {e}")
 
         print(f"  [SEED]   Done with {handle}")
 
@@ -311,10 +317,12 @@ def main() -> None:
     print("  [CHAT] Seeding DM conversations...")
     handles = list(dids.keys())
     chat_count = 0
+    expected_chat_count = 0
 
     for (h1, h2), messages in CONVERSATIONS.items():
         if h1 not in dids or h2 not in dids:
             continue
+        expected_chat_count += len(messages)
         name1 = h1.split(".")[0].capitalize()
         name2 = h2.split(".")[0].capitalize()
         print(f"  [CHAT]   {name1} <-> {name2} ({len(messages)} messages)")
@@ -322,6 +330,7 @@ def main() -> None:
         jwt1 = next((s["accessJwt"] for s in sessions if s["did"] == dids[h1]), None)
         if not jwt1:
             print(f"  [CHAT]     No JWT for {h1}, skipping")
+            seed_errors.append(f"chat {h1}<->{h2}: missing JWT for {h1}")
             continue
 
         try:
@@ -330,24 +339,34 @@ def main() -> None:
             convo_id = convo_data.get("id", "")
             if not convo_id:
                 print(f"  [CHAT]     No convo ID returned, skipping")
+                seed_errors.append(f"chat {h1}<->{h2}: no convo id returned")
                 continue
         except XrpcError as e:
             print(f"  [CHAT]     Failed to create convo: {e}")
+            seed_errors.append(f"chat {h1}<->{h2}: failed to create convo: {e}")
             continue
 
+        sent_for_convo = 0
         for sender_handle, text in messages:
             jwt = next((s["accessJwt"] for s in sessions if s["did"] == dids[sender_handle]), None)
             if not jwt:
+                seed_errors.append(f"chat {h1}<->{h2}: missing JWT for sender {sender_handle}")
                 continue
             try:
                 send_message(chat_client, jwt, convo_id, text)
                 chat_count += 1
+                sent_for_convo += 1
             except XrpcError as e:
                 print(f"  [CHAT]     Send failed: {e}")
+                seed_errors.append(f"chat {h1}<->{h2}: send failed for {sender_handle}: {e}")
                 break
             time.sleep(0.05)
 
-        print(f"  [CHAT]     ✓ {len(messages)} messages sent")
+        if sent_for_convo == len(messages):
+            print(f"  [CHAT]     ✓ {sent_for_convo}/{len(messages)} messages sent")
+        else:
+            print(f"  [CHAT]     ✗ {sent_for_convo}/{len(messages)} messages sent")
+            seed_errors.append(f"chat {h1}<->{h2}: sent {sent_for_convo}/{len(messages)} messages")
 
     # Group chat with all 3 accounts
     if len(handles) >= 3:
@@ -359,6 +378,8 @@ def main() -> None:
                 convo = get_convo_for_members(chat_client, jwt0, group_dids)
                 convo_data = convo.get("convo", convo)
                 group_convo_id = convo_data.get("id", "")
+                if not group_convo_id:
+                    raise XrpcError("chat.bsky.convo.getConvoForMembers", 200, "missing group convo id")
 
                 group_messages = [
                     (handles[0], "Team chat is live! Let's coordinate the deployment here."),
@@ -378,23 +399,33 @@ def main() -> None:
                     (handles[1], "See you all then."),
                 ]
 
+                expected_chat_count += len(group_messages)
+                sent_for_group = 0
                 for sender_handle, text in group_messages:
                     jwt = next((s["accessJwt"] for s in sessions if s["did"] == dids[sender_handle]), None)
                     if not jwt:
+                        seed_errors.append(f"group chat: missing JWT for sender {sender_handle}")
                         continue
                     try:
                         send_message(chat_client, jwt, group_convo_id, text)
                         chat_count += 1
+                        sent_for_group += 1
                     except XrpcError as e:
                         print(f"  [CHAT]     Send failed: {e}")
+                        seed_errors.append(f"group chat: send failed for {sender_handle}: {e}")
                         break
                     time.sleep(0.05)
 
-                print(f"  [CHAT]     ✓ {len(group_messages)} group messages sent")
+                if sent_for_group == len(group_messages):
+                    print(f"  [CHAT]     ✓ {sent_for_group}/{len(group_messages)} group messages sent")
+                else:
+                    print(f"  [CHAT]     ✗ {sent_for_group}/{len(group_messages)} group messages sent")
+                    seed_errors.append(f"group chat: sent {sent_for_group}/{len(group_messages)} messages")
             except XrpcError as e:
                 print(f"  [CHAT]     Group chat failed: {e}")
+                seed_errors.append(f"group chat: {e}")
 
-    print(f"  [CHAT]   Total chat messages sent: {chat_count}")
+    print(f"  [CHAT]   Total chat messages sent: {chat_count}/{expected_chat_count}")
 
     # ── Summary ──────────────────────────────────────────────────
 
@@ -409,13 +440,20 @@ def main() -> None:
     print()
     print(f"  DM conversations: {len(CONVERSATIONS)}")
     total_dm_msgs = sum(len(msgs) for msgs in CONVERSATIONS.values())
-    print(f"  DM messages: {total_dm_msgs}")
+    print(f"  DM messages expected: {total_dm_msgs}")
+    print(f"  Chat messages sent: {chat_count}/{expected_chat_count}")
     print(f"  Group chat: 1 (15 messages)")
     print()
     print(f"  PDS: {BASE_URL}")
     print(f"  Chat: {CHAT_URL}")
     print(f"  Admin UI: http://127.0.0.1:2590/admin")
     print()
+
+    if seed_errors:
+        print("  [FAILED] Seed completed with errors:", file=sys.stderr)
+        for err in seed_errors:
+            print(f"  - {err}", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
