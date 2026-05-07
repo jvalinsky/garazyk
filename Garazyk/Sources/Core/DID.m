@@ -93,7 +93,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
 
 @implementation DIDResolver {
     NSURLSession *_session;
-    dispatch_queue_t _didQueue;
+    dispatch_queue_t _cacheQueue;
     // _staleTTL and _maxTTL are synthesized properties
     // _cacheTimestamps is synthesized property
 }
@@ -116,7 +116,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
 - (instancetype)init {
     self = [super init];
     if (self) {
-        _didQueue = dispatch_queue_create("com.atproto.did", DISPATCH_QUEUE_SERIAL);
+        _cacheQueue = dispatch_queue_create("com.atproto.did.cache", DISPATCH_QUEUE_SERIAL);
         NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
         config.timeoutIntervalForRequest = 10.0;
         config.timeoutIntervalForResource = 15.0;
@@ -274,17 +274,18 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
 #pragma mark - Private Methods
 
 - (nullable NSDictionary *)cachedEntryForDID:(NSString *)did status:(DIDCacheStatus *)outStatus {
-    @synchronized(self) {
+    __block NSDictionary *result = nil;
+    dispatch_sync(_cacheQueue, ^{
         NSDictionary *document = [self.cache objectForKey:did];
         if (!document) {
             *outStatus = DIDCacheStatusExpired;
-            return nil;
+            return;
         }
 
         NSNumber *timestamp = _cacheTimestamps[did];
         if (!timestamp) {
             *outStatus = DIDCacheStatusExpired;
-            return nil;
+            return;
         }
 
         NSTimeInterval age = [[NSDate date] timeIntervalSince1970] - [timestamp doubleValue];
@@ -292,22 +293,23 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
             *outStatus = DIDCacheStatusExpired;
             [self.cache removeObjectForKey:did];
             [_cacheTimestamps removeObjectForKey:did];
-            return nil;
+            return;
         } else if (age > _staleTTL) {
             *outStatus = DIDCacheStatusStale;
         } else {
             *outStatus = DIDCacheStatusFresh;
         }
 
-        return @{@"document": document};
-    }
+        result = @{@"document": document};
+    });
+    return result;
 }
 
 - (void)cacheDocument:(DIDDocument *)document forDID:(NSString *)did {
-    @synchronized(self) {
+    dispatch_sync(_cacheQueue, ^{
         [self.cache setObject:document forKey:did];
         _cacheTimestamps[did] = @([[NSDate date] timeIntervalSince1970]);
-    }
+    });
 }
 
 - (nullable NSDictionary *)resolveAtprotoDataForDID:(NSString *)did error:(NSError **)error {
@@ -413,10 +415,10 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
 - (void)refreshCacheForDID:(NSString *)did {
     [self resolveDID:did forceRefresh:YES completion:^(DIDDocument *document, NSError *error) {
         if (document) {
-            @synchronized(self) {
+            dispatch_sync(self->_cacheQueue, ^{
                 [self.cache setObject:document forKey:did];
-                _cacheTimestamps[did] = @([[NSDate date] timeIntervalSince1970]);
-            }
+                self->_cacheTimestamps[did] = @([[NSDate date] timeIntervalSince1970]);
+            });
         }
     }];
 }
