@@ -1,3 +1,11 @@
+/*!
+ @file WebSocketUpgradeHandler.m
+
+ @abstract Implements HTTP-to-WebSocket upgrade handling for eligible connection requests.
+
+ @discussion Evaluates upgrade preconditions, negotiates WebSocket handshake transitions, and routes successful upgrades into WebSocket session handling. Owns upgrade-path mechanics, not downstream message business logic.
+ */
+
 #import "WebSocketUpgradeHandler.h"
 #import "HttpRequest.h"
 #import "HttpResponse.h"

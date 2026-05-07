@@ -1,7 +1,9 @@
 /*!
  @file PDSHttpWellKnownRoutePack.h
 
- @abstract Registers `.well-known` route pack on an HTTP server.
+ @abstract Declares well-known route-pack registration entry points.
+
+ @discussion Specifies interfaces for registering standardized discovery endpoints under well-known HTTP paths used by clients and federated services.
  */
 
 #import <Foundation/Foundation.h>

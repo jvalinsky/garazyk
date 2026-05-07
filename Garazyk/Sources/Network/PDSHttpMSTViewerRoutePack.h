@@ -1,7 +1,9 @@
 /*!
  @file PDSHttpMSTViewerRoutePack.h
 
- @abstract Registers MST viewer routes on an HTTP server.
+ @abstract Declares MST viewer route-pack registration entry points.
+
+ @discussion Specifies interfaces used to register MST viewer HTTP endpoints with the server router. Defines registration contracts, not MST data processing behavior.
  */
 
 #import <Foundation/Foundation.h>

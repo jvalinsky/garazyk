@@ -1,3 +1,11 @@
+/*!
+ @file HttpResponseSender.m
+
+ @abstract Implements response emission behavior for HTTP connection write paths.
+
+ @discussion Handles serialization and write-side response delivery behavior after handler execution, including output framing expectations for the HTTP layer. Does not decide routing or endpoint business results.
+ */
+
 #import "Network/HttpResponseSender.h"
 
 @implementation HttpResponseSender
