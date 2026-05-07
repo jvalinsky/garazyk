@@ -49,6 +49,8 @@ NSString * const kPDSAccountTableCreateSQL =
     @"password_salt BLOB,"
     @"access_jwt BLOB,"
     @"refresh_jwt BLOB,"
+    @"status TEXT NOT NULL DEFAULT 'active',"
+    @"deactivated_at REAL,"
     @"created_at TEXT NOT NULL,"
     @"updated_at TEXT NOT NULL,"
     @"tfa_enabled INTEGER DEFAULT 0,"
@@ -56,7 +58,8 @@ NSString * const kPDSAccountTableCreateSQL =
     @"recovery_codes BLOB,"
     @"invite_enabled INTEGER DEFAULT 0,"
     @"age_assurance TEXT,"
-    @"age_verified_at TEXT"
+    @"age_verified_at TEXT,"
+    @"webauthn_enabled INTEGER DEFAULT 0"
     @")";
 
 NSString * const kPDSRepoTableCreateSQL =
@@ -76,6 +79,7 @@ NSString * const kPDSRecordTableCreateSQL =
     @"rkey TEXT NOT NULL,"
     @"cid TEXT NOT NULL,"
     @"value TEXT,"
+    @"rev TEXT,"
     @"subject_did TEXT,"
     @"created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),"
     @"indexed_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),"

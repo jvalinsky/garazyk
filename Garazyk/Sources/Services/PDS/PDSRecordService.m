@@ -233,10 +233,21 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
         return NO;
     }
 
+    // Validate rkey format
+    NSError *rkeyError = nil;
+    if (![ATProtoValidator validateRkey:rkey error:&rkeyError]) {
+        PDS_LOG_ERROR(@"[PDSRecordService] Invalid rkey: %@", rkey);
+        if (error) *error = rkeyError;
+        return NO;
+    }
+
     // Lexicon validation
     if (mode != PDSValidationModeOff) {
+        ATProtoLexiconRegistry *registry = [ATProtoLexiconRegistry sharedRegistry];
+        PDS_LOG_INFO(@"[PDSRecordService] Using lexicon registry: %p (loaded NSIDs: %lu)", registry, (unsigned long)registry.loadedNSIDs.count);
+
         ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc]
-            initWithRegistry:[ATProtoLexiconRegistry sharedRegistry]];
+            initWithRegistry:registry];
 
         // Map PDSValidationMode to ATProtoValidationMode
         ATProtoValidationMode validationMode;
@@ -592,6 +603,13 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                 return nil;
             }
 
+            // Validate rkey format
+            NSError *rkeyError = nil;
+            if (![ATProtoValidator validateRkey:rkey error:&rkeyError]) {
+                if (error) *error = rkeyError;
+                return nil;
+            }
+
             // Lexicon validation
             if (mode != PDSValidationModeOff) {
                 ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc]
@@ -681,6 +699,14 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                 }
                 return nil;
             }
+
+            // Validate rkey format
+            NSError *rkeyError = nil;
+            if (![ATProtoValidator validateRkey:rkey error:&rkeyError]) {
+                if (error) *error = rkeyError;
+                return nil;
+            }
+
             if (!record) {
                 if (error) {
                     *error = [NSError errorWithDomain:@"com.atproto.repo.applyWrites"
@@ -803,6 +829,14 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                 }
                 return nil;
             }
+
+            // Validate rkey format
+            NSError *rkeyError = nil;
+            if (![ATProtoValidator validateRkey:rkey error:&rkeyError]) {
+                if (error) *error = rkeyError;
+                return nil;
+            }
+
             NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
             PDSDatabaseRecord *existingRecord = [self.databasePool getRecord:uri forDid:did error:nil];
             BOOL recordExists = (existingRecord != nil);

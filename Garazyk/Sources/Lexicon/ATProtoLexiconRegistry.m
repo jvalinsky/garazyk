@@ -107,31 +107,37 @@
         return NO;
     }
 
-    // Cache the schema
-    dispatch_barrier_async(self.registryQueue, ^{
-        self.schemas[schema.nsid] = schema;
-    });
-
-    PDS_LOG_DEBUG(@"[LexiconRegistry] Loaded lexicon: %@", schema.nsid);
-
+    [self registerSchema:schema];
     return YES;
 }
 
 - (void)registerSchema:(ATProtoLexiconSchema *)schema {
-    if (!schema || !schema.nsid) return;
+    if (!schema || !schema.nsid) {
+        PDS_LOG_WARN(@"[LexiconRegistry] Attempted to register nil schema or schema with nil NSID");
+        return;
+    }
     
     dispatch_barrier_async(self.registryQueue, ^{
         self.schemas[schema.nsid] = schema;
     });
     
-    PDS_LOG_DEBUG(@"[LexiconRegistry] Registered schema: %@", schema.nsid);
+    PDS_LOG_INFO(@"[LexiconRegistry] Registered schema: %@", schema.nsid);
 }
 
 - (nullable ATProtoLexiconSchema *)schemaForNSID:(NSString *)nsid {
+    if (!nsid) return nil;
+    
     __block ATProtoLexiconSchema *schema = nil;
     dispatch_sync(self.registryQueue, ^{
         schema = self.schemas[nsid];
     });
+    
+    if (!schema) {
+        PDS_LOG_WARN(@"[LexiconRegistry] Schema NOT FOUND for NSID: %@", nsid);
+    } else {
+        PDS_LOG_DEBUG(@"[LexiconRegistry] Schema found for NSID: %@", nsid);
+    }
+    
     return schema;
 }
 

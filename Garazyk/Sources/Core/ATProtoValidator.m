@@ -225,4 +225,34 @@
     return YES;
 }
 
++ (BOOL)validateRkey:(NSString *)rkey error:(NSError **)error {
+    if (!rkey) {
+        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:30 userInfo:@{NSLocalizedDescriptionKey: @"rkey cannot be nil"}];
+        return NO;
+    }
+
+    if (rkey.length < 1 || rkey.length > 512) {
+        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:31 userInfo:@{NSLocalizedDescriptionKey: @"rkey length must be between 1 and 512 characters"}];
+        return NO;
+    }
+
+    if ([rkey isEqualToString:@"."] || [rkey isEqualToString:@".."]) {
+        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:32 userInfo:@{NSLocalizedDescriptionKey: @"rkey cannot be '.' or '..'"}];
+        return NO;
+    }
+
+    static NSRegularExpression *rkeyRegex = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        rkeyRegex = [NSRegularExpression regularExpressionWithPattern:@"^[a-zA-Z0-9._~-]+$" options:0 error:nil];
+    });
+
+    if ([rkeyRegex numberOfMatchesInString:rkey options:0 range:NSMakeRange(0, rkey.length)] == 0) {
+        if (error) *error = [NSError errorWithDomain:@"ATProtoValidator" code:33 userInfo:@{NSLocalizedDescriptionKey: @"rkey contains invalid characters"}];
+        return NO;
+    }
+
+    return YES;
+}
+
 @end
