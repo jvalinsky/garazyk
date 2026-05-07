@@ -10,6 +10,7 @@
 #import "Core/NSDateFormatter+ATProto.h"
 
 #import <sqlite3.h>
+#import "Database/Utils/PDSSQLiteUtils.h"
 
 NSString * const AppViewDatabaseErrorDomain = @"AppViewDatabaseErrorDomain";
 
@@ -431,7 +432,7 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
 
         // Populate in-memory relevance cache
         const char *sql = "SELECT did FROM appview_relevance WHERE expires_at IS NULL OR expires_at > ?";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
             NSString *now = iso8601Now();
             sqlite3_bind_text(stmt, 1, now.UTF8String, -1, SQLITE_TRANSIENT);
@@ -441,7 +442,6 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
                     [self->_relevanceCache addObject:[NSString stringWithUTF8String:did]];
                 }
             }
-            sqlite3_finalize(stmt);
         }
     });
 
@@ -460,7 +460,7 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
     dispatch_sync(_queue, ^{
         const char *sql =
             "INSERT OR REPLACE INTO appview_checkpoints(relay_url, seq, saved_at) VALUES(?,?,?)";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         int rc = sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL);
         if (rc == SQLITE_OK) {
             NSString *now = iso8601Now();
@@ -468,7 +468,6 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             sqlite3_bind_int64(stmt, 2, checkpoint.seq);
             sqlite3_bind_text(stmt, 3, now.UTF8String, -1, SQLITE_TRANSIENT);
             rc = sqlite3_step(stmt);
-            sqlite3_finalize(stmt);
         }
         if (rc != SQLITE_DONE && rc != SQLITE_OK) {
             innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
@@ -487,7 +486,7 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
 
     dispatch_sync(_queue, ^{
         const char *sql = "SELECT seq, saved_at FROM appview_checkpoints WHERE relay_url = ?";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
             sqlite3_bind_text(stmt, 1, relayURL.UTF8String, -1, SQLITE_TRANSIENT);
             if (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -496,7 +495,6 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
                 const char *savedAt = (const char *)sqlite3_column_text(stmt, 1);
                 if (savedAt) result.savedAt = iso8601Parse([NSString stringWithUTF8String:savedAt]);
             }
-            sqlite3_finalize(stmt);
         }
     });
 
@@ -521,7 +519,7 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             "   last_backfill_at = excluded.last_backfill_at,"
             "   error_count = excluded.error_count,"
             "   last_error = excluded.last_error";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         int rc = sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL);
         if (rc == SQLITE_OK) {
             sqlite3_bind_text(stmt, 1, state.did.UTF8String, -1, SQLITE_TRANSIENT);
@@ -542,7 +540,6 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             else
                 sqlite3_bind_null(stmt, 6);
             rc = sqlite3_step(stmt);
-            sqlite3_finalize(stmt);
         }
         if (rc != SQLITE_DONE && rc != SQLITE_OK) {
             innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
@@ -563,7 +560,7 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
         const char *sql =
             "SELECT status, last_rev, last_backfill_at, error_count, last_error"
             " FROM appview_repo_sync_state WHERE did = ?";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
             sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
             if (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -577,7 +574,6 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
                 const char *err   = (const char *)sqlite3_column_text(stmt, 4);
                 if (err) result.lastError = [NSString stringWithUTF8String:err];
             }
-            sqlite3_finalize(stmt);
         }
     });
 
@@ -601,7 +597,7 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             " WHERE status = ?"
             " ORDER BY error_count ASC, last_backfill_at ASC NULLS FIRST"
             " LIMIT ?";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
             sqlite3_bind_int(stmt,  1, (int)status);
             sqlite3_bind_int64(stmt, 2, limit);
@@ -619,7 +615,6 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
                 if (err) s.lastError = [NSString stringWithUTF8String:err];
                 [results addObject:s];
             }
-            sqlite3_finalize(stmt);
         }
     });
 
@@ -636,12 +631,11 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
 
     dispatch_sync(_queue, ^{
         const char *sql = "SELECT COUNT(*) FROM appview_repo_sync_state WHERE status = ?";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
             sqlite3_bind_int(stmt, 1, (int)status);
             if (sqlite3_step(stmt) == SQLITE_ROW)
                 count = sqlite3_column_int64(stmt, 0);
-            sqlite3_finalize(stmt);
         }
     });
 
@@ -662,15 +656,14 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
         for (NSString *did in dids) {
             const char *sql =
                 "UPDATE appview_repo_sync_state SET status = ? WHERE did = ? AND status = ?";
-            sqlite3_stmt *stmt = NULL;
+            PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
             if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
                 sqlite3_bind_int(stmt,  1, (int)AppViewRepoSyncStatusProcessing);
                 sqlite3_bind_text(stmt, 2, did.UTF8String, -1, SQLITE_TRANSIENT);
                 sqlite3_bind_int(stmt,  3, (int)AppViewRepoSyncStatusPending);
                 sqlite3_step(stmt);
                 int changes = sqlite3_changes(self->_db);
-                sqlite3_finalize(stmt);
-                if (changes > 0) [transitioned addObject:did];
+                    if (changes > 0) [transitioned addObject:did];
             }
         }
 
@@ -688,7 +681,7 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             "UPDATE appview_repo_sync_state"
             " SET status = ?, last_rev = ?, last_backfill_at = ?, error_count = 0, last_error = NULL"
             " WHERE did = ?";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
             NSString *now = iso8601Now();
             sqlite3_bind_int(stmt,  1, (int)AppViewRepoSyncStatusSynced);
@@ -696,7 +689,6 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             sqlite3_bind_text(stmt, 3, now.UTF8String, -1, SQLITE_TRANSIENT);
             sqlite3_bind_text(stmt, 4, did.UTF8String, -1, SQLITE_TRANSIENT);
             int rc = sqlite3_step(stmt);
-            sqlite3_finalize(stmt);
             if (rc != SQLITE_DONE) ok = NO;
         }
     });
@@ -708,12 +700,11 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
     dispatch_sync(_queue, ^{
         const char *sql =
             "UPDATE appview_repo_sync_state SET status = ? WHERE did = ?";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
             sqlite3_bind_int(stmt,  1, (int)AppViewRepoSyncStatusDirty);
             sqlite3_bind_text(stmt, 2, did.UTF8String, -1, SQLITE_TRANSIENT);
             int rc = sqlite3_step(stmt);
-            sqlite3_finalize(stmt);
             if (rc != SQLITE_DONE) ok = NO;
         }
     });
@@ -727,12 +718,11 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             "UPDATE appview_repo_sync_state"
             " SET error_count = error_count + 1, last_error = ?"
             " WHERE did = ?";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
             sqlite3_bind_text(stmt, 1, message.UTF8String, -1, SQLITE_TRANSIENT);
             sqlite3_bind_text(stmt, 2, did.UTF8String, -1, SQLITE_TRANSIENT);
             int rc = sqlite3_step(stmt);
-            sqlite3_finalize(stmt);
             if (rc != SQLITE_DONE) ok = NO;
         }
     });
@@ -750,7 +740,7 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             "INSERT OR IGNORE INTO appview_pending_deltas"
             "(did, seq, commit_cid, rev, raw_envelope, enqueued_at)"
             " VALUES(?,?,?,?,?,?)";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
             NSString *now = iso8601Now();
             sqlite3_bind_text(stmt, 1, delta.did.UTF8String, -1, SQLITE_TRANSIENT);
@@ -760,7 +750,6 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             bindDataOrZeroBlob(stmt, 5, delta.rawEnvelope);
             sqlite3_bind_text(stmt, 6, now.UTF8String, -1, SQLITE_TRANSIENT);
             int rc = sqlite3_step(stmt);
-            sqlite3_finalize(stmt);
             if (rc != SQLITE_DONE) ok = NO;
         }
     });
@@ -777,7 +766,7 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
         const char *selectSQL =
             "SELECT seq, commit_cid, rev, raw_envelope FROM appview_pending_deltas"
             " WHERE did = ? ORDER BY seq ASC";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, selectSQL, -1, &stmt, NULL) == SQLITE_OK) {
             sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
             while (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -795,16 +784,14 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
                     rawEnvelope:envelope];
                 [results addObject:d];
             }
-            sqlite3_finalize(stmt);
         }
 
         // Delete them
         const char *deleteSQL = "DELETE FROM appview_pending_deltas WHERE did = ?";
-        sqlite3_stmt *delStmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *delStmt = NULL;
         if (sqlite3_prepare_v2(self->_db, deleteSQL, -1, &delStmt, NULL) == SQLITE_OK) {
             sqlite3_bind_text(delStmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
             sqlite3_step(delStmt);
-            sqlite3_finalize(delStmt);
         }
 
         sqlite3_exec(self->_db, "COMMIT", NULL, NULL, NULL);
@@ -817,11 +804,10 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
     __block NSInteger count = 0;
     dispatch_sync(_queue, ^{
         const char *sql = "SELECT COUNT(*) FROM appview_pending_deltas WHERE did = ?";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
             sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
             if (sqlite3_step(stmt) == SQLITE_ROW) count = sqlite3_column_int64(stmt, 0);
-            sqlite3_finalize(stmt);
         }
     });
     return count;
@@ -842,7 +828,7 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
         const char *sql =
             "INSERT OR IGNORE INTO appview_event_log(seq, did, rev, cid, raw_envelope, created_at)"
             " VALUES(?,?,?,?,?,?)";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
             NSString *now = iso8601Now();
             sqlite3_bind_int64(stmt, 1, seq);
@@ -855,7 +841,6 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             bindDataOrZeroBlob(stmt, 5, rawEnvelope);
             sqlite3_bind_text(stmt, 6, now.UTF8String, -1, SQLITE_TRANSIENT);
             int rc = sqlite3_step(stmt);
-            sqlite3_finalize(stmt);
             if (rc != SQLITE_DONE) ok = NO;
         }
     });
@@ -869,7 +854,7 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
     dispatch_sync(_queue, ^{
         const char *sql =
             "SELECT 1 FROM appview_event_log WHERE did IS ? AND rev IS ? AND cid IS ? LIMIT 1";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
             if (did) sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
             else     sqlite3_bind_null(stmt, 1);
@@ -878,7 +863,6 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             if (cid) sqlite3_bind_text(stmt, 3, cid.UTF8String, -1, SQLITE_TRANSIENT);
             else     sqlite3_bind_null(stmt, 3);
             found = (sqlite3_step(stmt) == SQLITE_ROW);
-            sqlite3_finalize(stmt);
         }
     });
     return found;
@@ -890,12 +874,11 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
         NSString *cutoffStr = [NSDateFormatter atproto_stringFromDate:cutoff];
 
         const char *sql = "DELETE FROM appview_event_log WHERE created_at < ?";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
             sqlite3_bind_text(stmt, 1, cutoffStr.UTF8String, -1, SQLITE_TRANSIENT);
             sqlite3_step(stmt);
             deleted = sqlite3_changes(self->_db);
-            sqlite3_finalize(stmt);
         }
     });
     return deleted;
@@ -919,7 +902,7 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
         const char *sql =
             "INSERT OR IGNORE INTO appview_cursor_events(event_type, seq, did, rev, cid, raw_envelope, created_at)"
             " VALUES(?,?,?,?,?,?,?)";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         int rc = sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL);
         if (rc == SQLITE_OK) {
             NSString *now = iso8601Now();
@@ -934,7 +917,6 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             bindDataOrZeroBlob(stmt, 6, rawEnvelope);
             sqlite3_bind_text(stmt, 7, now.UTF8String, -1, SQLITE_TRANSIENT);
             rc = sqlite3_step(stmt);
-            sqlite3_finalize(stmt);
         }
         if (rc != SQLITE_DONE && rc != SQLITE_OK) {
             ok = NO;
@@ -958,7 +940,7 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
         const char *sql =
             "SELECT cursor, event_type, seq, did, rev, cid, raw_envelope, created_at"
             " FROM appview_cursor_events WHERE cursor > ? ORDER BY cursor ASC LIMIT ?";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         int rc = sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL);
         if (rc != SQLITE_OK) {
             innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
@@ -986,7 +968,6 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             if (createdAt) event[@"created_at"] = @(createdAt);
             [events addObject:[event copy]];
         }
-        sqlite3_finalize(stmt);
     });
 
     if (innerError && error) *error = innerError;
@@ -1025,7 +1006,7 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             "   reason = excluded.reason,"
             "   expires_at = excluded.expires_at,"
             "   added_at = excluded.added_at";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
             sqlite3_bind_text(stmt, 1, membership.did.UTF8String, -1, SQLITE_TRANSIENT);
             sqlite3_bind_int(stmt,  2, (int)membership.reason);
@@ -1038,7 +1019,6 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             sqlite3_bind_text(stmt, 4, iso8601Now().UTF8String, -1, SQLITE_TRANSIENT);
 
             int rc = sqlite3_step(stmt);
-            sqlite3_finalize(stmt);
             if (rc != SQLITE_DONE) { ok = NO; return; }
         }
         // Update cache
@@ -1055,7 +1035,7 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
     __block AppViewRelevanceMembership *result = nil;
     dispatch_sync(_queue, ^{
         const char *sql = "SELECT reason, expires_at, added_at FROM appview_relevance WHERE did = ?";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
             sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
             if (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -1066,7 +1046,6 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
                 const char *addedStr = (const char *)sqlite3_column_text(stmt, 2);
                 if (addedStr) result.addedAt = iso8601Parse([NSString stringWithUTF8String:addedStr]);
             }
-            sqlite3_finalize(stmt);
         }
     });
     return result;
@@ -1086,25 +1065,23 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
         NSString *now = iso8601Now();
         const char *sql =
             "DELETE FROM appview_relevance WHERE expires_at IS NOT NULL AND expires_at <= ?";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
             sqlite3_bind_text(stmt, 1, now.UTF8String, -1, SQLITE_TRANSIENT);
             sqlite3_step(stmt);
             deleted = sqlite3_changes(self->_db);
-            sqlite3_finalize(stmt);
         }
         // Rebuild cache
         [self->_relevanceCache removeAllObjects];
         const char *sel =
             "SELECT did FROM appview_relevance WHERE expires_at IS NULL OR expires_at > ?";
-        sqlite3_stmt *sel_stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *sel_stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sel, -1, &sel_stmt, NULL) == SQLITE_OK) {
             sqlite3_bind_text(sel_stmt, 1, now.UTF8String, -1, SQLITE_TRANSIENT);
             while (sqlite3_step(sel_stmt) == SQLITE_ROW) {
                 const char *did = (const char *)sqlite3_column_text(sel_stmt, 0);
                 if (did) [self->_relevanceCache addObject:[NSString stringWithUTF8String:did]];
             }
-            sqlite3_finalize(sel_stmt);
         }
     });
     return deleted;
@@ -1115,7 +1092,7 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
     dispatch_sync(_queue, ^{
         const char *sql =
             "SELECT did FROM appview_relevance WHERE expires_at IS NULL OR expires_at > ?";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
             NSString *now = iso8601Now();
             sqlite3_bind_text(stmt, 1, now.UTF8String, -1, SQLITE_TRANSIENT);
@@ -1123,7 +1100,6 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
                 const char *did = (const char *)sqlite3_column_text(stmt, 0);
                 if (did) [results addObject:[NSString stringWithUTF8String:did]];
             }
-            sqlite3_finalize(stmt);
         }
     });
     return [results copy];
@@ -1146,7 +1122,7 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
         const char *sql =
             "INSERT INTO appview_dead_letter(collection, seq, did, rev, cid, raw_record, validation_error, created_at)"
             " VALUES(?,?,?,?,?,?,?,?)";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
             NSString *now = iso8601Now();
             sqlite3_bind_text(stmt, 1, collection.UTF8String, -1, SQLITE_TRANSIENT);
@@ -1160,7 +1136,6 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             sqlite3_bind_text(stmt, 7, validationError.UTF8String, -1, SQLITE_TRANSIENT);
             sqlite3_bind_text(stmt, 8, now.UTF8String, -1, SQLITE_TRANSIENT);
             int rc = sqlite3_step(stmt);
-            sqlite3_finalize(stmt);
             if (rc != SQLITE_DONE) ok = NO;
         }
     });
@@ -1184,7 +1159,7 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             return;
         }
 
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         int rc = sqlite3_prepare_v2(self->_db, sql.UTF8String, -1, &stmt, NULL);
         if (rc != SQLITE_OK) {
             innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
@@ -1204,7 +1179,6 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             }
             [results addObject:row];
         }
-        sqlite3_finalize(stmt);
     });
 
     if (innerError && error) *error = innerError;
@@ -1225,7 +1199,7 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             return;
         }
 
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         int rc = sqlite3_prepare_v2(self->_db, sql.UTF8String, -1, &stmt, NULL);
         if (rc != SQLITE_OK) {
             innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
@@ -1242,7 +1216,6 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
                             userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithUTF8String:sqlite3_errmsg(self->_db)]}];
             ok = NO;
         }
-        sqlite3_finalize(stmt);
     });
 
     if (!ok && error) *error = innerError;
@@ -1274,7 +1247,7 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
     __block PDSDatabaseBlock *block = nil;
     dispatch_sync(_queue, ^{
         const char *sql = "SELECT cid, repo_did, block_data, content_type, size, created_at FROM blocks WHERE cid = ? AND repo_did = ?";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
             sqlite3_bind_blob(stmt, 1, cid.bytes, (int)cid.length, SQLITE_TRANSIENT);
             sqlite3_bind_text(stmt, 2, repoDid.UTF8String, -1, SQLITE_TRANSIENT);
@@ -1298,7 +1271,6 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
                 const char *createdAt = (const char *)sqlite3_column_text(stmt, 5);
                 if (createdAt) block.createdAt = iso8601Parse(@(createdAt));
             }
-            sqlite3_finalize(stmt);
         }
     });
     return block;
@@ -1398,7 +1370,7 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
         const char *insertBlockSQL =
             "INSERT OR REPLACE INTO blocks(cid, repo_did, block_data, content_type, size, created_at)"
             " VALUES(?,?,?,?,?,?)";
-        sqlite3_stmt *blockStmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *blockStmt = NULL;
         rc = sqlite3_prepare_v2(self->_db, insertBlockSQL, -1, &blockStmt, NULL);
         if (rc != SQLITE_OK) {
             innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
@@ -1424,7 +1396,6 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             sqlite3_clear_bindings(blockStmt);
             if (rc != SQLITE_DONE) break;
         }
-        sqlite3_finalize(blockStmt);
         if (rc != SQLITE_DONE && blocks.count > 0) {
             innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
                                          userInfo:@{NSLocalizedDescriptionKey: @"Failed to store snapshot blocks"}];
@@ -1437,15 +1408,13 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             "INSERT OR REPLACE INTO records(uri, did, collection, rkey, cid, handle, value, subject_did, indexed_at)"
             " VALUES(?,?,?,?,?,?,?,?,?)";
         const char *insertURIToTempSQL = "INSERT OR IGNORE INTO appview_snapshot_uris(uri) VALUES(?)";
-        sqlite3_stmt *recordStmt = NULL;
-        sqlite3_stmt *tempStmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *recordStmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *tempStmt = NULL;
         rc = sqlite3_prepare_v2(self->_db, insertRecordSQL, -1, &recordStmt, NULL);
         if (rc == SQLITE_OK) rc = sqlite3_prepare_v2(self->_db, insertURIToTempSQL, -1, &tempStmt, NULL);
         if (rc != SQLITE_OK) {
             innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
                                          userInfo:@{NSLocalizedDescriptionKey: @"Failed to prepare record snapshot insert"}];
-            if (recordStmt) sqlite3_finalize(recordStmt);
-            if (tempStmt) sqlite3_finalize(tempStmt);
             sqlite3_exec(self->_db, "ROLLBACK", NULL, NULL, NULL);
             ok = NO;
             return;
@@ -1485,8 +1454,6 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             sqlite3_clear_bindings(tempStmt);
             if (rc != SQLITE_DONE) break;
         }
-        sqlite3_finalize(recordStmt);
-        sqlite3_finalize(tempStmt);
         if (rc != SQLITE_DONE && records.count > 0) {
             innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
                                          userInfo:@{NSLocalizedDescriptionKey: @"Failed to store snapshot records"}];
@@ -1497,12 +1464,11 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
 
         const char *deleteSQL =
             "DELETE FROM records WHERE did = ? AND uri NOT IN (SELECT uri FROM appview_snapshot_uris)";
-        sqlite3_stmt *deleteStmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *deleteStmt = NULL;
         rc = sqlite3_prepare_v2(self->_db, deleteSQL, -1, &deleteStmt, NULL);
         if (rc == SQLITE_OK) {
             sqlite3_bind_text(deleteStmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
             rc = sqlite3_step(deleteStmt);
-            sqlite3_finalize(deleteStmt);
         }
         if (rc != SQLITE_DONE && rc != SQLITE_OK) {
             innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
@@ -1516,7 +1482,7 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
         const char *eventSQL =
             "INSERT OR IGNORE INTO appview_cursor_events(event_type, seq, did, rev, cid, raw_envelope, created_at)"
             " VALUES('historical_snapshot', 0, ?, ?, ?, ?, ?)";
-        sqlite3_stmt *eventStmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *eventStmt = NULL;
         rc = sqlite3_prepare_v2(self->_db, eventSQL, -1, &eventStmt, NULL);
         if (rc == SQLITE_OK) {
             NSData *rawEnvelope = [lastRev dataUsingEncoding:NSUTF8StringEncoding] ?: [NSData data];
@@ -1527,7 +1493,6 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             bindDataOrZeroBlob(eventStmt, 4, rawEnvelope);
             sqlite3_bind_text(eventStmt, 5, now.UTF8String, -1, SQLITE_TRANSIENT);
             rc = sqlite3_step(eventStmt);
-            sqlite3_finalize(eventStmt);
         }
         if (rc != SQLITE_DONE && rc != SQLITE_OK) {
             innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
@@ -1546,7 +1511,7 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             " last_backfill_at = excluded.last_backfill_at,"
             " error_count = 0,"
             " last_error = NULL";
-        sqlite3_stmt *stateStmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stateStmt = NULL;
         rc = sqlite3_prepare_v2(self->_db, stateSQL, -1, &stateStmt, NULL);
         if (rc == SQLITE_OK) {
             NSString *now = iso8601Now();
@@ -1555,7 +1520,6 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             sqlite3_bind_text(stateStmt, 3, lastRev.UTF8String, -1, SQLITE_TRANSIENT);
             sqlite3_bind_text(stateStmt, 4, now.UTF8String, -1, SQLITE_TRANSIENT);
             rc = sqlite3_step(stateStmt);
-            sqlite3_finalize(stateStmt);
         }
         if (rc != SQLITE_DONE && rc != SQLITE_OK) {
             innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
@@ -1585,13 +1549,12 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
     __block NSInteger count = 0;
     dispatch_sync(_queue, ^{
         const char *sql = "SELECT COUNT(*) FROM records WHERE collection = ?";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
             sqlite3_bind_text(stmt, 1, collection.UTF8String, -1, SQLITE_TRANSIENT);
             if (sqlite3_step(stmt) == SQLITE_ROW) {
                 count = sqlite3_column_int64(stmt, 0);
             }
-            sqlite3_finalize(stmt);
         }
     });
     return count;
@@ -1601,12 +1564,11 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
     __block NSInteger count = 0;
     dispatch_sync(_queue, ^{
         const char *sql = "SELECT COUNT(*) FROM blocks";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
             if (sqlite3_step(stmt) == SQLITE_ROW) {
                 count = sqlite3_column_int64(stmt, 0);
             }
-            sqlite3_finalize(stmt);
         }
     });
     return count;
@@ -1627,14 +1589,13 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
     __block NSString *did = nil;
     dispatch_sync(_queue, ^{
         const char *sql = "SELECT did FROM handles WHERE handle = ?";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
             sqlite3_bind_text(stmt, 1, handle.UTF8String, -1, SQLITE_TRANSIENT);
             if (sqlite3_step(stmt) == SQLITE_ROW) {
                 const char *val = (const char *)sqlite3_column_text(stmt, 0);
                 if (val) did = [NSString stringWithUTF8String:val];
             }
-            sqlite3_finalize(stmt);
         }
     });
     return did;
@@ -1644,14 +1605,13 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
     __block NSString *handle = nil;
     dispatch_sync(_queue, ^{
         const char *sql = "SELECT handle FROM handles WHERE did = ?";
-        sqlite3_stmt *stmt = NULL;
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
         if (sqlite3_prepare_v2(self->_db, sql, -1, &stmt, NULL) == SQLITE_OK) {
             sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
             if (sqlite3_step(stmt) == SQLITE_ROW) {
                 const char *val = (const char *)sqlite3_column_text(stmt, 0);
                 if (val) handle = [NSString stringWithUTF8String:val];
             }
-            sqlite3_finalize(stmt);
         }
     });
     return handle;
