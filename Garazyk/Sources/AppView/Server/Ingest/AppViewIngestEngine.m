@@ -348,7 +348,8 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     NSError *err = nil;
     AppViewRepoSyncState *syncState = [_database loadRepoSyncStateForDID:did error:&err];
     if (syncState && syncState.status == AppViewRepoSyncStatusSynced &&
-        event.since.length > 0 && syncState.lastRev.length > 0 &&
+        [event.since isKindOfClass:[NSString class]] && event.since.length > 0 &&
+        [syncState.lastRev isKindOfClass:[NSString class]] && syncState.lastRev.length > 0 &&
         ![event.since isEqualToString:syncState.lastRev]) {
         PDS_LOG_WARN(@"[AppView Ingest] Gap for %@: event.since=%@ stored=%@", did, event.since, syncState.lastRev);
         [self _persistDirtyRepairMarkerForDID:did seq:seq rev:rev cid:cid relayURL:relayURL reason:@"continuity_gap"];
@@ -481,13 +482,13 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                     }
                 } else if ([subject isKindOfClass:[NSDictionary class]]) {
                     // Handle StrongRef (uri) or RepoRef (did)
-                    NSString *uri = subject[@"uri"];
-                    if ([uri hasPrefix:@"at://"]) {
-                        NSArray *uriParts = [uri componentsSeparatedByString:@"/"];
+                    id uriVal = subject[@"uri"];
+                    if ([uriVal isKindOfClass:[NSString class]] && [uriVal hasPrefix:@"at://"]) {
+                        NSArray *uriParts = [uriVal componentsSeparatedByString:@"/"];
                         if (uriParts.count > 2) subjectDid = uriParts[2];
                     } else {
-                        NSString *didVal = subject[@"did"];
-                        if ([didVal hasPrefix:@"did:"]) {
+                        id didVal = subject[@"did"];
+                        if ([didVal isKindOfClass:[NSString class]] && [didVal hasPrefix:@"did:"]) {
                             subjectDid = didVal;
                         }
                     }
