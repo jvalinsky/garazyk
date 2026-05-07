@@ -73,15 +73,22 @@
 
 - (void)testUploadBlobWithDifferentMimeTypes {
     NSError *error = nil;
-    NSArray *mimeTypes = @[@"image/png", @"image/jpeg", @"video/mp4", @"application/octet-stream"];
+    NSDictionary<NSString *, NSData *> *fixtures = @{
+        @"image/png": [NSData dataWithBytes:(const uint8_t[]){0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A} length:8],
+        @"image/jpeg": [NSData dataWithBytes:(const uint8_t[]){0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46} length:10],
+        @"video/mp4": [NSData dataWithBytes:"ftypisom" length:8],
+        @"application/octet-stream": [@"test data" dataUsingEncoding:NSUTF8StringEncoding]
+    };
     
-    for (NSString *mimeType in mimeTypes) {
-        NSData *data = [@"test data" dataUsingEncoding:NSUTF8StringEncoding];
+    for (NSString *mimeType in fixtures) {
+        error = nil;
+        NSData *data = fixtures[mimeType];
         NSDictionary *result = [self.blobService uploadBlob:data
                                                     forDid:self.testDID
                                                    mimeType:mimeType
                                                      error:&error];
-        XCTAssertNotNil(result);
+        XCTAssertNotNil(result, @"Upload should succeed for %@: %@", mimeType, error.localizedDescription);
+        XCTAssertNil(error);
         XCTAssertEqualObjects(result[@"blob"][@"mimeType"], mimeType);
     }
 }

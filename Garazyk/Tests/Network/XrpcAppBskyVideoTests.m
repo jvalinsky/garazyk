@@ -1,5 +1,6 @@
 #import "AdminAuthXrpcTestBase.h"
 #import "Database/PDSDatabase.h"
+#import "Database/Service/ServiceDatabases.h"
 #import "Video/VideoXrpcPack.h"
 
 // Expose private class methods for testing
@@ -34,15 +35,18 @@
 }
 
 - (void)testGetJobStatusWithValidJob {
-    // Create a job directly in the database
-    PDSDatabase *db = self.application.legacyController.database;
-    [db createVideoJobWithId:@"test-job-status"
-                         did:self.userDid
-                      blobCid:@"bafyreitest123"
-                     mimeType:@"video/mp4"
-                     fileSize:@(2048)
-              serviceAuthToken:nil
-                         error:nil];
+    // Create a job directly in the same service database used by the video XRPC pack.
+    NSError *dbError = nil;
+    PDSDatabase *db = [self.application.serviceDatabases serviceDatabaseWithError:&dbError];
+    XCTAssertNotNil(db, @"service database should be available: %@", dbError.localizedDescription);
+    BOOL created = [db createVideoJobWithId:@"test-job-status"
+                                        did:self.userDid
+                                     blobCid:@"bafyreitest123"
+                                    mimeType:@"video/mp4"
+                                    fileSize:@(2048)
+                             serviceAuthToken:nil
+                                        error:&dbError];
+    XCTAssertTrue(created, @"video job should be created: %@", dbError.localizedDescription);
 
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.video.getJobStatus"
                                              queryString:@""
