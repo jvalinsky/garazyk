@@ -506,26 +506,46 @@ static const NSUInteger kMaxDecodeDepth = 64;
     }
 }
 
++ (void)_setDecodingError:(NSError **)error message:(NSString *)message {
+    if (error) {
+        *error = [NSError errorWithDomain:ATProtoDagCBORErrorDomain
+                                     code:ATProtoDagCBORErrorCodeDecodingFailed
+                                 userInfo:@{NSLocalizedDescriptionKey: message ?: @"CBOR decoding failed"}];
+    }
+}
+
 + (nullable NSNumber *)_decodeLength:(uint8_t)additionalInfo bytes:(const uint8_t *)bytes length:(NSUInteger)length index:(NSUInteger *)index error:(NSError **)error {
     uint64_t value = 0;
     
     if (additionalInfo < 24) {
         value = additionalInfo;
     } else if (additionalInfo == 24) {
-        if (*index >= length) return nil;
+        if (*index >= length) {
+            [self _setDecodingError:error message:@"Truncated CBOR length"];
+            return nil;
+        }
         value = bytes[*index];
         (*index)++;
     } else if (additionalInfo == 25) {
-        if (*index + 1 >= length) return nil;
+        if (*index + 1 >= length) {
+            [self _setDecodingError:error message:@"Truncated CBOR length"];
+            return nil;
+        }
         value = ((uint64_t)bytes[*index] << 8) | bytes[*index + 1];
         *index += 2;
     } else if (additionalInfo == 26) {
-        if (*index + 3 >= length) return nil;
+        if (*index + 3 >= length) {
+            [self _setDecodingError:error message:@"Truncated CBOR length"];
+            return nil;
+        }
         value = ((uint64_t)bytes[*index] << 24) | ((uint64_t)bytes[*index + 1] << 16) |
                 ((uint64_t)bytes[*index + 2] << 8) | bytes[*index + 3];
         *index += 4;
     } else if (additionalInfo == 27) {
-        if (*index + 7 >= length) return nil;
+        if (*index + 7 >= length) {
+            [self _setDecodingError:error message:@"Truncated CBOR length"];
+            return nil;
+        }
         value = 0;
         for (int i = 0; i < 8; i++) {
             value = (value << 8) | bytes[*index + i];
