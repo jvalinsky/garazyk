@@ -15,24 +15,33 @@ extern const char *sel_getName(SEL sel);
 
 /* Helper: write integer to buffer, return chars written */
 static int int_to_buf(char *buf, int capacity, int val) {
-    int neg = val < 0;
     int i = 0;
     int start;
-    if (neg) val = -val;
+    unsigned int uval;
+    int neg = val < 0;
+    
+    if (neg) {
+        uval = (unsigned int)(-(val + 1)) + 1u;
+    } else {
+        uval = (unsigned int)val;
+    }
+    
     if (capacity <= 1) return 0;
     start = neg ? 1 : 0;
-    if (val == 0) { buf[0] = '0'; return 1; }
-    while (val > 0 && i + start < capacity - 1) {
-        buf[start + i] = '0' + (val % 10);
-        val /= 10;
+    if (neg && capacity > 1) buf[0] = '-';
+    
+    if (uval == 0) { buf[start] = '0'; return start + 1; }
+    while (uval > 0 && i + start < capacity - 1) {
+        buf[start + i] = '0' + (uval % 10);
+        uval /= 10;
         i++;
     }
-    if (neg && start + i < capacity) { buf[start + i] = '-'; i++; }
-    /* Reverse digits */
-    { int lo = 0, hi = i - 1;
+    
+    /* Reverse digits of the number part */
+    { int lo = start, hi = start + i - 1;
       while (lo < hi) { char t = buf[lo]; buf[lo] = buf[hi]; buf[hi] = t; lo++; hi--; } }
-    buf[i] = '\0';
-    return i;
+    buf[start + i] = '\0';
+    return start + i;
 }
 
 /* ── NSLog implementation ────────────────────────────────────────── */
@@ -319,13 +328,19 @@ Value format_values_to_pool(const char *fmt, Value *args, int arg_count) {
                             /* Format int as decimal */
                             int val = v.int_val;
                             int neg = val < 0;
-                            if (neg) val = -val;
+                            unsigned int uval;
+                            if (neg) {
+                                uval = (unsigned int)(-(val + 1)) + 1u;
+                            } else {
+                                uval = (unsigned int)val;
+                            }
                             char tmp[12]; int ti = 0;
-                            if (val == 0) tmp[ti++] = '0';
-                            else { while (val > 0) { tmp[ti++] = '0' + (val % 10); val /= 10; } }
+                            if (uval == 0) tmp[ti++] = '0';
+                            else { while (uval > 0) { tmp[ti++] = '0' + (uval % 10); uval /= 10; } }
                             if (neg && pos < sizeof(buf)-1) buf[pos++] = '-';
                             while (ti > 0 && pos < sizeof(buf)-1) buf[pos++] = tmp[--ti];
-                        } else {
+                        }
+ else {
                             const char *nil_s = "(nil)";
                             while (*nil_s && pos < sizeof(buf)-1) buf[pos++] = *nil_s++;
                         }
@@ -338,6 +353,7 @@ Value format_values_to_pool(const char *fmt, Value *args, int arg_count) {
                     if (arg_idx < arg_count) {
                         Value v = args[arg_idx++];
                         long val;
+                        unsigned long uval;
                         int neg;
                         char tmp[22]; int ti = 0;
                         int sign_len = 0;
@@ -352,12 +368,17 @@ Value format_values_to_pool(const char *fmt, Value *args, int arg_count) {
                             val = 0;
                         }
                         neg = val < 0;
-                        if (neg) { val = -val; sign_len = 1; }
+                        if (neg) {
+                            uval = (unsigned long)(-(val + 1)) + 1ul;
+                            sign_len = 1;
+                        } else {
+                            uval = (unsigned long)val;
+                        }
                         if (flag_plus && !neg) sign_len = 1;
                         else if (flag_space && !neg) sign_len = 1;
 
-                        if (val == 0) tmp[ti++] = '0';
-                        else { while (val > 0) { tmp[ti++] = '0' + (int)(val % 10); val /= 10; } }
+                        if (uval == 0) tmp[ti++] = '0';
+                        else { while (uval > 0) { tmp[ti++] = '0' + (int)(uval % 10); uval /= 10; } }
 
                         /* Width padding */
                         if (width > 0 && !flag_left_align) {
