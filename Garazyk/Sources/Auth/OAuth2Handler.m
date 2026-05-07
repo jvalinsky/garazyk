@@ -2795,27 +2795,8 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
 
   NSDictionary *params = [self parseFormUrlEncodedString:body];
 
-  // Validate client from database
   NSString *clientID = params[@"client_id"];
   NSString *token = params[@"token"];
-
-  NSError *clientError = nil;
-  NSDictionary *client = [self validatedClientForClientID:clientID
-                                                     error:&clientError];
-  if (!client) {
-    if ([self isClientValidationTimeoutError:clientError]) {
-      [self setOAuthErrorResponse:response
-                           status:503
-                            error:@"server_error"
-                 errorDescription:@"Timed out while validating client"];
-    } else {
-      [self setOAuthErrorResponse:response
-                           status:401
-                            error:@"invalid_client"
-                 errorDescription:clientError.localizedDescription ?: @"Invalid client"];
-    }
-    return;
-  }
 
   if (!token) {
     response.statusCode = 400;
@@ -2866,7 +2847,8 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
         introspection[@"sub"] = payload.sub;
       if (payload.aud)
         introspection[@"aud"] = payload.aud;
-      introspection[@"client_id"] = clientID;
+      if (clientID)
+        introspection[@"client_id"] = clientID;
       if (payload.scope)
         introspection[@"scope"] = payload.scope;
       if (payload.iat)
@@ -2896,7 +2878,8 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
       NSMutableDictionary *introspection = [NSMutableDictionary dictionary];
       introspection[@"active"] = @YES;
       introspection[@"token_type"] = @"refresh_token";
-      introspection[@"client_id"] = clientID;
+      if (clientID)
+        introspection[@"client_id"] = clientID;
       if (session.did)
         introspection[@"sub"] = session.did;
       if (session.handle)
@@ -2917,7 +2900,8 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
       NSMutableDictionary *introspection = [NSMutableDictionary dictionary];
       introspection[@"active"] = @YES;
       introspection[@"token_type"] = @"bearer";
-      introspection[@"client_id"] = clientID;
+      if (clientID)
+        introspection[@"client_id"] = clientID;
       if (session.did)
         introspection[@"sub"] = session.did;
       if (session.handle)
