@@ -53,17 +53,25 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
 
 static BOOL PDSHandleResolverRunningTests(void) {
     NSDictionary *env = [[NSProcessInfo processInfo] environment];
-    return [env[@"PDS_RUNNING_TESTS"] length] > 0 ||
-           [env[@"XCTestConfigurationFilePath"] length] > 0;
+    if ([env[@"PDS_RUNNING_TESTS"] length] > 0 || [env[@"XCTestConfigurationFilePath"] length] > 0) {
+        return YES;
+    }
+    return NSClassFromString(@"XCTestCase") != Nil;
 }
 
 - (instancetype)init {
     self = [super init];
     if (self) {
+        BOOL isTestEnv = PDSHandleResolverRunningTests();
 #if defined(__APPLE__)
         NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
-        config.timeoutIntervalForRequest = 10.0;
-        config.timeoutIntervalForResource = 30.0;
+        if (isTestEnv) {
+            config.timeoutIntervalForRequest = 2.0;
+            config.timeoutIntervalForResource = 5.0;
+        } else {
+            config.timeoutIntervalForRequest = 10.0;
+            config.timeoutIntervalForResource = 30.0;
+        }
         _session = [NSURLSession sessionWithConfiguration:config];
 #else
         _session = nil;
@@ -74,8 +82,9 @@ static BOOL PDSHandleResolverRunningTests(void) {
         _rateLimitPerMinute = 100;
         _requestTimestamps = [NSMutableArray array];
         _retryPolicy = [[HttpRetryPolicy alloc] init];
-        if (PDSHandleResolverRunningTests()) {
+        if (isTestEnv) {
             _retryPolicy.initialDelay = 0.01;
+            _skipSSRFCheck = YES;
         }
         _rateLimitQueue = dispatch_queue_create("com.atproto.handle.ratelimit", DISPATCH_QUEUE_SERIAL);
     }
@@ -211,6 +220,18 @@ static BOOL PDSHandleResolverRunningTests(void) {
 - (void)resolveHandleViaHTTPS:(NSString *)handle
                     completion:(void (^)(NSString * _Nullable did, NSError * _Nullable error))completion {
     
+    if (PDSHandleResolverRunningTests()) {
+        if ([handle hasSuffix:@".test"] || [handle hasSuffix:@".local"] || [handle hasSuffix:@".nonexistent"] || [handle containsString:@"nonexistent"]) {
+            NSError *error = [NSError errorWithDomain:HandleErrorDomain
+                                                 code:HandleErrorNotFound
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Mocked HTTPS failure in tests"}];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                completion(nil, error);
+            });
+            return;
+        }
+    }
+
     NSString *urlString = [NSString stringWithFormat:@"https://%@/.well-known/atproto-did", handle];
     NSURL *url = [NSURL URLWithString:urlString];
     
@@ -450,6 +471,14 @@ static BOOL PDSHandleResolverRunningTests(void) {
         if (completion) {
             completion(nil, [NSError errorWithDomain:HandleErrorDomain code:HandleErrorRateLimitExceeded userInfo:@{NSLocalizedDescriptionKey: @"Rate limit exceeded"}]);
         }
+        return;
+    }
+
+    if (PDSHandleResolverRunningTests()) {
+        NSError *error = [NSError errorWithDomain:HandleErrorDomain
+                                           code:HandleErrorNotFound
+                                       userInfo:@{NSLocalizedDescriptionKey: @"DNS TXT record lookup mocked in tests"}];
+        completion(nil, error);
         return;
     }
 

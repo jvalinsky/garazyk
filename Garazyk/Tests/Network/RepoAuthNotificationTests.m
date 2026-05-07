@@ -413,6 +413,16 @@
 - (NSData *)mp4FixtureDataWithSize:(NSUInteger)size {
     NSMutableData *data = [NSMutableData dataWithLength:size];
     arc4random_buf(data.mutableBytes, size);
+    
+    // Add valid MP4 header (ftyp box at offset 4)
+    if (size >= 12) {
+        uint8_t *bytes = (uint8_t *)data.mutableBytes;
+        bytes[4] = 'f';
+        bytes[5] = 't';
+        bytes[6] = 'y';
+        bytes[7] = 'p';
+    }
+    
     return [data copy];
 }
 

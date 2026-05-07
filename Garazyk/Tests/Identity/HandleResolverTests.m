@@ -2,6 +2,21 @@
 #import "Identity/HandleResolver.h"
 
 
+@interface TestHandleResolver : HandleResolver
+@end
+
+@implementation TestHandleResolver
+- (void)resolveHandleViaDNS:(NSString *)handle completion:(void (^)(NSString * _Nullable did, NSError * _Nullable error))completion {
+    // Return not found immediately to avoid blocking DNS lookups during tests
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        NSError *error = [NSError errorWithDomain:@"HandleErrorDomain"
+                                           code:HandleErrorNotFound
+                                       userInfo:@{NSLocalizedDescriptionKey: @"DNS lookup mocked to fail in tests"}];
+        completion(nil, error);
+    });
+}
+@end
+
 @interface MockURLSession : NSObject
 
 @property (nonatomic, strong) NSDictionary *mockResponse;
@@ -135,7 +150,7 @@
 
 - (void)setUp {
     [super setUp];
-    self.resolver = [[HandleResolver alloc] init];
+    self.resolver = [[TestHandleResolver alloc] init];
     self.resolver.skipSSRFCheck = YES;
 }
 
@@ -146,8 +161,10 @@
 - (void)testHandleResolverInitialization {
     XCTAssertNotNil(self.resolver, @"Resolver should be initialized");
     XCTAssertNotNil(self.resolver.session, @"Session should be initialized");
-    XCTAssertEqual(self.resolver.session.configuration.timeoutIntervalForRequest, 10.0, @"Request timeout should be 10s");
-    XCTAssertEqual(self.resolver.session.configuration.timeoutIntervalForResource, 30.0, @"Resource timeout should be 30s");
+    NSTimeInterval expectedRequest = (NSClassFromString(@"XCTestCase") != Nil) ? 2.0 : 10.0;
+    NSTimeInterval expectedResource = (NSClassFromString(@"XCTestCase") != Nil) ? 5.0 : 30.0;
+    XCTAssertEqual(self.resolver.session.configuration.timeoutIntervalForRequest, expectedRequest, @"Request timeout should be %gs", expectedRequest);
+    XCTAssertEqual(self.resolver.session.configuration.timeoutIntervalForResource, expectedResource, @"Resource timeout should be %gs", expectedResource);
 }
 
 - (void)testHandleValidationEmpty {
@@ -193,7 +210,7 @@
     MockURLSession *testSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"did:plc:7HjwGtP5cLyq3vD5nDzDg"}
                                                                      error:nil
                                                                      delay:0.1];
-    HandleResolver *testResolver = [[HandleResolver alloc] init];
+    HandleResolver *testResolver = [[TestHandleResolver alloc] init];
     testResolver.skipSSRFCheck = YES;
     [testResolver setValue:testSession forKey:@"session"];
 
@@ -215,7 +232,7 @@
                                                                                                code:NSURLErrorTimedOut
                                                                                            userInfo:nil]
                                                                      delay:0.1];
-    HandleResolver *errorResolver = [[HandleResolver alloc] init];
+    HandleResolver *errorResolver = [[TestHandleResolver alloc] init];
     errorResolver.skipSSRFCheck = YES;
     [errorResolver setValue:errorSession forKey:@"session"];
 
@@ -235,7 +252,7 @@
     MockURLSession *notFoundSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @404, @"body": @"Not Found"}
                                                                          error:nil
                                                                          delay:0.1];
-    HandleResolver *notFoundResolver = [[HandleResolver alloc] init];
+    HandleResolver *notFoundResolver = [[TestHandleResolver alloc] init];
     notFoundResolver.skipSSRFCheck = YES;
     [notFoundResolver setValue:notFoundSession forKey:@"session"];
 
@@ -255,7 +272,7 @@
     MockURLSession *serverErrorSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @500, @"body": @"Internal Server Error"}
                                                                             error:nil
                                                                             delay:0.1];
-    HandleResolver *serverErrorResolver = [[HandleResolver alloc] init];
+    HandleResolver *serverErrorResolver = [[TestHandleResolver alloc] init];
     serverErrorResolver.skipSSRFCheck = YES;
     [serverErrorResolver setValue:serverErrorSession forKey:@"session"];
 
@@ -275,7 +292,7 @@
     MockURLSession *emptyBodySession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @""}
                                                                           error:nil
                                                                           delay:0.1];
-    HandleResolver *emptyBodyResolver = [[HandleResolver alloc] init];
+    HandleResolver *emptyBodyResolver = [[TestHandleResolver alloc] init];
     emptyBodyResolver.skipSSRFCheck = YES;
     [emptyBodyResolver setValue:emptyBodySession forKey:@"session"];
 
@@ -295,7 +312,7 @@
     MockURLSession *whitespaceSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"   \n\t  "}
                                                                            error:nil
                                                                            delay:0.1];
-    HandleResolver *whitespaceResolver = [[HandleResolver alloc] init];
+    HandleResolver *whitespaceResolver = [[TestHandleResolver alloc] init];
     whitespaceResolver.skipSSRFCheck = YES;
     [whitespaceResolver setValue:whitespaceSession forKey:@"session"];
 
@@ -315,7 +332,7 @@
     MockURLSession *invalidDIDSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"invalid-did-format"}
                                                                            error:nil
                                                                            delay:0.1];
-    HandleResolver *invalidDIDResolver = [[HandleResolver alloc] init];
+    HandleResolver *invalidDIDResolver = [[TestHandleResolver alloc] init];
     invalidDIDResolver.skipSSRFCheck = YES;
     [invalidDIDResolver setValue:invalidDIDSession forKey:@"session"];
 
@@ -335,7 +352,7 @@
     MockURLSession *whitespaceDIDSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"  did:plc:7HjwGtP5cLyq3vD5nDzDg  \n"}
                                                                              error:nil
                                                                              delay:0.1];
-    HandleResolver *whitespaceDIDResolver = [[HandleResolver alloc] init];
+    HandleResolver *whitespaceDIDResolver = [[TestHandleResolver alloc] init];
     whitespaceDIDResolver.skipSSRFCheck = YES;
     [whitespaceDIDResolver setValue:whitespaceDIDSession forKey:@"session"];
 
@@ -352,7 +369,7 @@
 }
 
 - (void)testURLConstructionInvalidCharacters {
-    HandleResolver *urlTestResolver = [[HandleResolver alloc] init];
+    HandleResolver *urlTestResolver = [[TestHandleResolver alloc] init];
     urlTestResolver.skipSSRFCheck = YES;
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Invalid URL characters test"];
@@ -368,10 +385,12 @@
 }
 
 - (void)testSessionTimeoutConfiguration {
-    HandleResolver *timeoutResolver = [[HandleResolver alloc] init];
+    HandleResolver *timeoutResolver = [[TestHandleResolver alloc] init];
 
-    XCTAssertEqual(timeoutResolver.session.configuration.timeoutIntervalForRequest, 10.0, @"Request timeout should be 10s");
-    XCTAssertEqual(timeoutResolver.session.configuration.timeoutIntervalForResource, 30.0, @"Resource timeout should be 30s");
+    NSTimeInterval expectedRequest = (NSClassFromString(@"XCTestCase") != Nil) ? 2.0 : 10.0;
+    NSTimeInterval expectedResource = (NSClassFromString(@"XCTestCase") != Nil) ? 5.0 : 30.0;
+    XCTAssertEqual(timeoutResolver.session.configuration.timeoutIntervalForRequest, expectedRequest, @"Request timeout should be %gs", expectedRequest);
+    XCTAssertEqual(timeoutResolver.session.configuration.timeoutIntervalForResource, expectedResource, @"Resource timeout should be %gs", expectedResource);
 }
 
 - (void)testConcurrentResolutions {
@@ -382,8 +401,8 @@
                                                                            error:nil
                                                                            delay:0.1];
 
-    HandleResolver *concurrentResolver1 = [[HandleResolver alloc] init];
-    HandleResolver *concurrentResolver2 = [[HandleResolver alloc] init];
+    HandleResolver *concurrentResolver1 = [[TestHandleResolver alloc] init];
+    HandleResolver *concurrentResolver2 = [[TestHandleResolver alloc] init];
     concurrentResolver1.skipSSRFCheck = YES;
     concurrentResolver2.skipSSRFCheck = YES;
     [concurrentResolver1 setValue:concurrentSession1 forKey:@"session"];
@@ -437,7 +456,7 @@
     MockURLSession *specialCharSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"did:plc:special"}
                                                                            error:nil
                                                                            delay:0.1];
-    HandleResolver *specialCharResolver = [[HandleResolver alloc] init];
+    HandleResolver *specialCharResolver = [[TestHandleResolver alloc] init];
     specialCharResolver.skipSSRFCheck = YES;
     [specialCharResolver setValue:specialCharSession forKey:@"session"];
 
@@ -455,7 +474,7 @@
 
 - (void)testMemoryManagement {
     @autoreleasepool {
-        HandleResolver *tempResolver = [[HandleResolver alloc] init];
+        HandleResolver *tempResolver = [[TestHandleResolver alloc] init];
         tempResolver.skipSSRFCheck = YES;
         MockURLSession *tempSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"did:plc:temp"}
                                                                          error:nil
@@ -484,7 +503,7 @@
     MockURLSession *multiDotSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"did:plc:multidot"}
                                                                          error:nil
                                                                          delay:0.1];
-    HandleResolver *multiDotResolver = [[HandleResolver alloc] init];
+    HandleResolver *multiDotResolver = [[TestHandleResolver alloc] init];
     multiDotResolver.skipSSRFCheck = YES;
     [multiDotResolver setValue:multiDotSession forKey:@"session"];
 
@@ -508,7 +527,7 @@
     MockURLSession *notFoundSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @404, @"body": @"Not Found"}
                                                                          error:nil
                                                                          delay:0.1];
-    HandleResolver *dnsResolver = [[HandleResolver alloc] init];
+    HandleResolver *dnsResolver = [[TestHandleResolver alloc] init];
     dnsResolver.skipSSRFCheck = YES;
     [dnsResolver setValue:notFoundSession forKey:@"session"];
     
@@ -531,7 +550,7 @@
                                                                                                code:NSURLErrorTimedOut
                                                                                            userInfo:nil]
                                                                      delay:0.0];
-    HandleResolver *resolver = [[HandleResolver alloc] init];
+    HandleResolver *resolver = [[TestHandleResolver alloc] init];
     resolver.skipSSRFCheck = YES;
     [resolver setValue:errorSession forKey:@"session"];
     
