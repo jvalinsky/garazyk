@@ -62,6 +62,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     payload.did = dictionary[@"did"];
     payload.handle = dictionary[@"handle"];
     payload.scope = dictionary[@"scope"];
+    payload.token_use = dictionary[@"token_use"];
     payload.cnf = dictionary[@"cnf"];
 
     id expValue = dictionary[@"exp"];
@@ -91,6 +92,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     if (self.did) dict[@"did"] = self.did;
     if (self.handle) dict[@"handle"] = self.handle;
     if (self.scope) dict[@"scope"] = self.scope;
+    if (self.token_use) dict[@"token_use"] = self.token_use;
     if (self.cnf) dict[@"cnf"] = self.cnf;
     if (self.exp) dict[@"exp"] = @([self.exp timeIntervalSince1970]);
     if (self.iat) dict[@"iat"] = @([self.iat timeIntervalSince1970]);
@@ -552,6 +554,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     payload.did = did;
     payload.handle = handle;
     payload.scope = [scopes componentsJoinedByString:@" "];
+    payload.token_use = @"access";
     payload.iat = [NSDate date];
     payload.exp = [NSDate dateWithTimeIntervalSinceNow:self.defaultExpiration];
     payload.jti = [[NSUUID UUID] UUIDString];
@@ -603,6 +606,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     payload.did = did;
     payload.handle = handle;
     payload.scope = [scopes componentsJoinedByString:@" "];
+    payload.token_use = @"refresh";
     payload.iat = [NSDate date];
     payload.exp = [NSDate dateWithTimeIntervalSinceNow:86400 * 30];
     payload.jti = [[NSUUID UUID] UUIDString];
