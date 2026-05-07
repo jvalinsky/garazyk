@@ -73,11 +73,17 @@ pip install requests websockets
 # Basic: PLC + PDS + Relay + AppView
 ./scripts/scenarios/setup_local_network.sh
 
+# Give a run an explicit id so setup, diagnostics, and teardown target the same stack
+./scripts/scenarios/setup_local_network.sh --run-id local-debug
+
 # With second PDS for federation scenarios
 ./scripts/scenarios/setup_local_network.sh --pds2
 
 # Just wait for an already-running network
 ./scripts/scenarios/setup_local_network.sh --wait-only
+
+# Collect diagnostics without changing service state
+./scripts/scenarios/setup_local_network.sh --collect-diagnostics --run-id local-debug
 ```
 
 ### Run Scenarios
@@ -95,8 +101,11 @@ python scripts/scenarios/run_scenario.py --pds2
 # List available scenarios
 python scripts/scenarios/run_scenario.py --list
 
-# Start network, run scenarios, then tear down
-python scripts/scenarios/run_scenario.py --teardown
+# Start network, run scenarios, collect failure diagnostics, then tear down
+python scripts/scenarios/run_scenario.py --setup --teardown
+
+# Keep services running after setup for manual inspection
+python scripts/scenarios/run_scenario.py --setup-only --keep-running --run-id local-debug
 
 # Verbose output
 python scripts/scenarios/run_scenario.py --verbose
@@ -109,10 +118,13 @@ python scripts/scenarios/run_scenario.py --no-json
 
 ```bash
 # Stop, preserve data
-./scripts/scenarios/teardown_local_network.sh
+./scripts/scenarios/teardown_local_network.sh --run-id local-debug
 
 # Stop and wipe all data
-./scripts/scenarios/teardown_local_network.sh --wipe
+./scripts/scenarios/teardown_local_network.sh --wipe --run-id local-debug
+
+# Capture diagnostics before teardown
+./scripts/scenarios/teardown_local_network.sh --collect-diagnostics --run-id local-debug
 ```
 
 ## Output
@@ -144,7 +156,9 @@ Each scenario prints a colored PASS/FAIL/SKIP table:
 
 ### JSON Reports
 
-Machine-readable reports are written to `scripts/scenarios/reports/`:
+Machine-readable reports are written to the run directory by default:
+`/tmp/garazyk-atproto-e2e/<run-id>/reports/`. Each report includes run
+metadata, service URLs, and the diagnostics directory.
 
 ```json
 {
@@ -157,9 +171,29 @@ Machine-readable reports are written to `scripts/scenarios/reports/`:
     {"name": "Create account", "status": "passed", "detail": "did=did:plc:abc123", "duration_ms": 0}
   ],
   "summary": {"passed": 10, "failed": 0, "skipped": 0, "total": 10},
-  "ok": true
+  "ok": true,
+  "metadata": {
+    "run_id": "20260507t180000z-12345",
+    "run_dir": "/tmp/garazyk-atproto-e2e/20260507t180000z-12345",
+    "diagnostics_dir": "/tmp/garazyk-atproto-e2e/20260507t180000z-12345/diagnostics"
+  }
 }
 ```
+
+### Diagnostics
+
+Every supported runner writes diagnostics under
+`/tmp/garazyk-atproto-e2e/<run-id>/diagnostics/` unless
+`--diagnostics-dir` is provided. Bundles include:
+
+- `run-metadata.*` with run id, repo state, service URLs, and compose project
+- `http/*.txt` health/admin endpoint captures with tokens redacted
+- `docker/ps.txt`, `docker/config.txt`, and redacted Docker logs for compose runs
+- `service-logs/*.log` and `pids.txt` for local binary runs
+
+Use `--collect-diagnostics` on `setup_local_network.sh`,
+`teardown_local_network.sh`, `run_scenario.py`, `full_suite_demo.sh`, or
+the e2e wrappers to capture the current state without rerunning tests.
 
 ## Architecture
 

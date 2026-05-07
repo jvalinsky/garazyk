@@ -10,7 +10,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.local
-    container_name: local-pds2
     entrypoint: ["/usr/local/bin/kaszlak"]
     command:
       - "serve"
@@ -22,7 +21,7 @@ services:
     volumes:
       - local_pds2_data:/var/lib/atprotopds
       - ./pds2-config.json:/var/lib/atprotopds/config.json:ro
-      - /tmp/pds2_keys:/var/lib/atprotopds/keys
+      - local_pds2_keys:/var/lib/atprotopds/keys
     environment:
       - TZ=UTC
       - PDS_LEXICON_PATH=/usr/share/atprotopds/lexicons
@@ -44,3 +43,4 @@ services:
 
 volumes:
   local_pds2_data:
+  local_pds2_keys:

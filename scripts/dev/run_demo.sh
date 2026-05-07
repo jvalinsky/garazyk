@@ -89,7 +89,7 @@ log_info "Servers running. Running seed script..."
 export PDS_URL="$PDS_URL"
 export PDS_DATA_DIR="$DATA_DIR"
 export PDS_BIN="$PDS_BIN"
-python3 scripts/demo_seed.py
+python3 "$SCRIPT_DIR/demo_seed.py"
 
 log_ok "Demo complete."
 log_info "Servers are still running at $PDS_URL"

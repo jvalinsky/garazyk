@@ -7,10 +7,11 @@ Existing scenario scripts that import from scenarios.lib continue to work.
 import sys
 from pathlib import Path
 
-# Add scripts/ to sys.path so scripts.lib.atproto is importable
-_scripts_dir = str(Path(__file__).resolve().parent.parent.parent)
-if _scripts_dir not in sys.path:
-    sys.path.insert(0, _scripts_dir)
+# Add project root to sys.path so scripts.lib.atproto is importable
+# __init__.py -> lib/ -> scenarios/ -> scripts/ -> project_root
+_project_root = str(Path(__file__).resolve().parent.parent.parent.parent)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
 
 from scripts.lib.atproto import (
     XrpcClient,
@@ -19,6 +20,8 @@ from scripts.lib.atproto import (
     CHARACTERS,
     get_character,
     get_characters_by_role,
+    get_characters_by_pds,
+    reset_characters,
     assert_success,
     assert_contains,
     assert_status,
@@ -28,6 +31,9 @@ from scripts.lib.atproto import (
     StepStatus,
 )
 
+# Re-export PDS URL constants for scenario convenience
+from scripts.lib.atproto.characters import PDS1, PDS2  # noqa: F401
+
 __all__ = [
     "XrpcClient",
     "XrpcError",
@@ -35,6 +41,10 @@ __all__ = [
     "CHARACTERS",
     "get_character",
     "get_characters_by_role",
+    "get_characters_by_pds",
+    "reset_characters",
+    "PDS1",
+    "PDS2",
     "assert_success",
     "assert_contains",
     "assert_status",

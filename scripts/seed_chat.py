@@ -100,6 +100,7 @@ def main() -> None:
 
     dids = {h: s["did"] for h, s in sessions.items()}
     jwts = {h: s["accessJwt"] for h, s in sessions.items()}
+    errors: list[str] = []
 
     # ── DM Conversations ──────────────────────────────────────────────
     # Create pairwise DMs between the first three accounts. Limiting the set
@@ -111,6 +112,8 @@ def main() -> None:
 
     dm_convo_ids: dict[tuple, str] = {}
     dm_messages: dict[tuple, list[tuple]] = {}  # (handle, text) pairs
+    expected_dm_messages = 0
+    sent_dm_messages = 0
 
     for h1, h2 in dm_pairs:
         pair = (h1, h2)
@@ -121,6 +124,10 @@ def main() -> None:
         convo = get_convo_for_members(client, jwts[h1], [dids[h1], dids[h2]])
         convo_data = convo.get("convo", convo)
         convo_id = convo_data.get("id", "")
+        if not convo_id:
+            errors.append(f"DM {h1}<->{h2}: no convo id returned")
+            print("  FAILED: no convo id returned")
+            continue
         dm_convo_ids[pair] = convo_id
         print(f"  Convo ID: {convo_id}")
 
@@ -133,11 +140,18 @@ def main() -> None:
             (h2, f"Yes! The new XRPC methods are awesome!"),
         ]
         dm_messages[pair] = []
+        expected_dm_messages += len(messages)
 
         for sender, text in messages:
-            msg = send_message(client, jwts[sender], convo_id, text)
+            try:
+                msg = send_message(client, jwts[sender], convo_id, text)
+            except XrpcError as exc:
+                errors.append(f"DM {h1}<->{h2}: send failed for {sender}: {exc}")
+                print(f"  FAILED send from {sender}: {exc}")
+                break
             msg_id = msg.get("id", "?")
             dm_messages[pair].append((sender, text))
+            sent_dm_messages += 1
             short_id = msg_id[:30] + "..." if len(msg_id) > 30 else msg_id
             print(f"  [{sender}]: {text}")
             print(f"    msg_id: {short_id}")
@@ -145,27 +159,40 @@ def main() -> None:
 
     # ── Group Chat ────────────────────────────────────────────────────
     group_convo_id = ""
+    expected_group_messages = 0
+    sent_group_messages = 0
     if len(HANDLES) >= 3:
         print(f"\n=== Group Chat: {', '.join(HANDLES[:3])} ===")
         group_dids = [dids[h] for h in HANDLES[:3]]
         group_convo = get_convo_for_members(client, jwts[HANDLES[0]], group_dids)
         group_data = group_convo.get("convo", group_convo)
         group_convo_id = group_data.get("id", "")
-        print(f"  Convo ID: {group_convo_id}")
+        if not group_convo_id:
+            errors.append("Group chat: no convo id returned")
+            print("  FAILED: no group convo id returned")
+        else:
+            print(f"  Convo ID: {group_convo_id}")
 
-        group_messages = [
-            (HANDLES[0], "Hey team! Group chat is live!"),
-            (HANDLES[1], "Awesome! Love this decentralized chat"),
-            (HANDLES[2], "Count me in! This is the future"),
-            (HANDLES[0], "Let's coordinate the relay deployment here"),
-            (HANDLES[1], "Relay-to-chat pipeline is next!"),
-            (HANDLES[2], "I'll handle the PLC integration side"),
-        ]
+            group_messages = [
+                (HANDLES[0], "Hey team! Group chat is live!"),
+                (HANDLES[1], "Awesome! Love this decentralized chat"),
+                (HANDLES[2], "Count me in! This is the future"),
+                (HANDLES[0], "Let's coordinate the relay deployment here"),
+                (HANDLES[1], "Relay-to-chat pipeline is next!"),
+                (HANDLES[2], "I'll handle the PLC integration side"),
+            ]
+            expected_group_messages = len(group_messages)
 
-        for sender, text in group_messages:
-            msg = send_message(client, jwts[sender], group_convo_id, text)
-            print(f"  [{sender}]: {text}")
-            time.sleep(0.1)
+            for sender, text in group_messages:
+                try:
+                    send_message(client, jwts[sender], group_convo_id, text)
+                except XrpcError as exc:
+                    errors.append(f"Group chat: send failed for {sender}: {exc}")
+                    print(f"  FAILED send from {sender}: {exc}")
+                    break
+                sent_group_messages += 1
+                print(f"  [{sender}]: {text}")
+                time.sleep(0.1)
 
     # ── Verification ──────────────────────────────────────────────────
     print("\n=== Verification ===")
@@ -186,6 +213,11 @@ def main() -> None:
         msgs = get_messages(client, jwts[first_pair[0]], convo_id)
         msg_list = msgs.get("messages", [])
         print(f"\n  Messages in {first_pair[0]} <-> {first_pair[1]}: {len(msg_list)}")
+        expected_first_pair = len(dm_messages.get(first_pair, []))
+        if len(msg_list) < expected_first_pair:
+            errors.append(
+                f"DM {first_pair[0]}<->{first_pair[1]}: read {len(msg_list)} messages, expected at least {expected_first_pair}"
+            )
         for m in msg_list:
             sender = m.get("senderDid", "?")[-25:]
             text = m.get("text", "")[:50]
@@ -197,6 +229,10 @@ def main() -> None:
         msgs = get_messages(client, jwts[HANDLES[0]], group_convo_id)
         msg_list = msgs.get("messages", [])
         print(f"\n  Messages in group chat: {len(msg_list)}")
+        if len(msg_list) < sent_group_messages:
+            errors.append(
+                f"Group chat: read {len(msg_list)} messages, expected at least {sent_group_messages}"
+            )
         for m in msg_list:
             sender = m.get("senderDid", "?")[-25:]
             text = m.get("text", "")[:50]
@@ -207,10 +243,15 @@ def main() -> None:
     print(f"  Accounts: {len(sessions)}")
     print(f"  DM conversations: {len(dm_convo_ids)}")
     total_dm_msgs = sum(len(v) for v in dm_messages.values())
-    print(f"  DM messages sent: {total_dm_msgs}")
+    print(f"  DM messages sent: {sent_dm_messages}/{expected_dm_messages}")
     if len(HANDLES) >= 3:
-        print(f"  Group conversation: 1")
-        print(f"  Group messages sent: {len(group_messages)}")
+        print(f"  Group conversation: {1 if group_convo_id else 0}")
+        print(f"  Group messages sent: {sent_group_messages}/{expected_group_messages}")
+    if errors:
+        print("  FAILED:")
+        for err in errors:
+            print(f"  - {err}")
+        sys.exit(1)
     print("  Done!")
 
 
