@@ -722,8 +722,11 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
             return;
         }
 
+        NSMutableDictionary *templateInput = [body mutableCopy];
+        templateInput[@"text"] = body[@"contentMarkdown"];
+
         NSError *error = nil;
-        NSString *templateId = [moderationService createCommunicationTemplate:body createdBy:adminDid error:&error];
+        NSString *templateId = [moderationService createCommunicationTemplate:templateInput createdBy:adminDid error:&error];
         if (error) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
