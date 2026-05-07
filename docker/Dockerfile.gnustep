@@ -2,9 +2,8 @@
 # Multi-stage Dockerfile for ATProtoPDS (GNUstep/Linux)
 # =============================================================================
 # Stage 1: Build GNUstep runtime from source (libobjc2 + gnustep-make + gnustep-base)
-# Stage 2: Build Cappuccino UI (Objective-J via Node.js)
-# Stage 3: Build the PDS project
-# Stage 4: Minimal runtime image
+# Stage 2: Build the PDS project
+# Stage 3: Minimal runtime image
 #
 # Prerequisites:
 #   git submodule update --init   (secp256k1 must be checked out)
@@ -97,37 +96,7 @@ RUN git clone --depth 1 https://github.com/gnustep/libs-base.git && \
     ldconfig
 
 # ---------------------------------------------------------------------------
-# Stage 2: Build Cappuccino UI (Objective-J)
-# ---------------------------------------------------------------------------
-FROM node:18-slim AS builder-cappuccino-ui
-
-WORKDIR /src
-
-# Copy only the CappuccinoUI directory for better cache utilization
-COPY Garazyk/Sources/App/CappuccinoUI/package.json \
-    Garazyk/Sources/App/CappuccinoUI/package-lock.json \
-    ./Garazyk/Sources/App/CappuccinoUI/
-
-RUN cd Garazyk/Sources/App/CappuccinoUI && npm ci
-
-# Copy the rest of the CappuccinoUI source
-COPY Garazyk/Sources/App/CappuccinoUI/ ./Garazyk/Sources/App/CappuccinoUI/
-
-# Generate frameworks and build release (ignore errors - fallback to source)
-# The Objective-J runtime will compile .j files on-the-fly in the browser
-RUN cd Garazyk/Sources/App/CappuccinoUI && \
-    (npx capp gen --frameworks --force . 2>/dev/null || true) && \
-    (npx jake release 2>/dev/null || true)
-
-# Copy all CappuccinoUI source files to runtime (Objective-J compiles on-the-fly in browser)
-RUN mkdir -p /tmp/cappuccino-runtime && \
-    cp -R Garazyk/Sources/App/CappuccinoUI/Frameworks /tmp/cappuccino-runtime/ 2>/dev/null || true && \
-    cp Garazyk/Sources/App/CappuccinoUI/*.j /tmp/cappuccino-runtime/ && \
-    cp Garazyk/Sources/App/CappuccinoUI/Info.plist /tmp/cappuccino-runtime/ 2>/dev/null || true && \
-    cp Garazyk/Sources/App/CappuccinoUI/index.html /tmp/cappuccino-runtime/
-
-# ---------------------------------------------------------------------------
-# Stage 3: Build ATProtoPDS
+# Stage 2: Build ATProtoPDS
 # ---------------------------------------------------------------------------
 FROM ubuntu:22.04 AS builder
 
@@ -230,10 +199,6 @@ COPY --from=builder /src/build/bin/kaszlak /usr/local/bin/kaszlak
 COPY --from=builder /src/build/bin/campagnola /usr/local/bin/campagnola
 COPY --from=builder /src/build/bin/zuk /usr/local/bin/zuk
 COPY --from=builder /src/build/bin/syrena /usr/local/bin/syrena
-
-# Copy Cappuccino UI (Objective-J) - the main UI for PDS
-COPY --from=builder-cappuccino-ui /tmp/cappuccino-runtime/ \
-    /usr/share/atprotopds/assets/CappuccinoUI/
 
 # Copy PLC static UI assets used by campagnola root routes
 COPY --from=builder /src/Garazyk/Sources/PLC/Assets \
