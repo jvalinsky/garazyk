@@ -22,13 +22,6 @@ This hub maps Admin UI documentation into the canonical `docs/` path and points 
 - [Tutorial 7a: Objective-J for Contributors](../10-tutorials/tutorial-7a-objective-j-intro)
 - [Tutorial 7b: Admin UI Architecture](../10-tutorials/tutorial-7b-admin-ui)
 
-## Root Entrypoints
-
-- [ADMINUI_START_HERE.md](../../ADMINUI_START_HERE.md)
-- [ADMINUI_QUICKSTART.md](../../ADMINUI_QUICKSTART.md)
-- [ADMINUI_PROJECT_COMPLETE.md](../../ADMINUI_PROJECT_COMPLETE.md)
-- [ADMINUI_DEPLOYMENT_GUIDE.md](../../ADMINUI_DEPLOYMENT_GUIDE.md)
-
 ## Source-Adjacent Admin UI Docs
 
 - [Admin UI Architecture](../../Garazyk/Sources/Admin/ADMINUI_ARCHITECTURE.md)
@@ -42,10 +35,5 @@ This hub maps Admin UI documentation into the canonical `docs/` path and points 
 
 - [Source-Adjacent Documentation](./source-adjacent-documentation)
 - [Tooling and Skills Documentation](./tooling-and-skills-documentation)
-- [Repository Documentation Index](../repo-index/index)
-
-## Related
-
-- [Documentation Map](documentation-map.md)
+- [Documentation Map](./documentation-map)
 - [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)

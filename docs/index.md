@@ -55,5 +55,4 @@ Before committing behavioral changes, identify:
 - [Overview](01-getting-started/overview)
 - [Architecture Overview](01-getting-started/architecture-overview)
 - [Documentation Map](11-reference/documentation-map.md)
-- [Repository Documentation Index](repo-index/index.md)
 
