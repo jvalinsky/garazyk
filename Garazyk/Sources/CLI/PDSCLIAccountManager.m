@@ -67,6 +67,12 @@
         return issuer;
     }
     NSString *host = [self pdsHostnameForContext:context];
+    // Include the port when available so PLC validation accepts the endpoint.
+    // PLC requires http://localhost:PORT (not bare http://localhost).
+    NSNumber *portNum = config[@"server"][@"port"];
+    if (portNum && [portNum integerValue] > 0) {
+        return [NSString stringWithFormat:@"http://%@:%ld", host, (long)[portNum integerValue]];
+    }
     return [NSString stringWithFormat:@"http://%@", host];
 }
 
