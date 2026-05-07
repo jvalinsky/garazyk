@@ -1,6 +1,6 @@
 # Objective-C 2.0 Runtime Gap Report — objc-jupyter-wasm Kernel
 
-**Date:** 2026-05-06 (updated)
+**Date:** 2026-05-07 (updated)
 **Kernel version:** HEAD (phases A–H complete per PARSER_STATUS.md)
 **Test commands:**
 - `node tests/test-runtime-v2.mjs result/wasm/kernel.wasm` — ALL PASSED
