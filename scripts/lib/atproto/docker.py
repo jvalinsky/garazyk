@@ -8,11 +8,13 @@ verification before scenarios begin.
 
 from __future__ import annotations
 
+import os
 import logging
 import subprocess
 import time
-import os
-from typing import Optional
+from pathlib import Path
+
+from .diagnostics import E2ERunContext, create_run_context
 
 logger = logging.getLogger("atproto.scenario")
 
@@ -47,13 +49,27 @@ def _find_repo_root() -> str:
     except subprocess.CalledProcessError:
         return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 
-def start_local_network(with_pds2: bool = False, use_binary: bool = False) -> None:
+def _append_context_args(cmd: list[str], context: E2ERunContext | None) -> None:
+    if context is None:
+        return
+    cmd.extend(["--run-id", context.run_id])
+    cmd.extend(["--diagnostics-dir", str(context.diagnostics_dir)])
+
+
+def start_local_network(
+    with_pds2: bool = False,
+    use_binary: bool = False,
+    *,
+    context: E2ERunContext | None = None,
+) -> None:
     """Start the local network and wait for required services to be healthy.
 
     with_pds2 enables the federation topology. use_binary selects local
     binaries instead of Docker Compose, which is useful when testing uncommitted
     service changes.
     """
+    if context is None:
+        context = create_run_context()
     repo_root = _find_repo_root()
     setup_script = os.path.join(repo_root, "scripts/scenarios/setup_local_network.sh")
 
@@ -62,6 +78,7 @@ def start_local_network(with_pds2: bool = False, use_binary: bool = False) -> No
         cmd = [setup_script, "--binary"]
         if with_pds2:
             cmd.append("--pds2")
+        _append_context_args(cmd, context)
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode != 0:
             raise RuntimeError(f"Binary setup failed: {result.stderr}")
@@ -70,27 +87,22 @@ def start_local_network(with_pds2: bool = False, use_binary: bool = False) -> No
         cmd = [setup_script]
         if with_pds2:
             cmd.append("--pds2")
+        _append_context_args(cmd, context)
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode != 0:
             raise RuntimeError(f"Docker setup failed: {result.stderr}")
 
-    # The shell script already waits, but we verify here too
-    services_to_wait = ["plc", "pds", "relay", "appview"]
-    if with_pds2:
-        services_to_wait.append("pds2")
+    logger.info("Local network is healthy. Run directory: %s", context.run_dir)
 
-    for service in services_to_wait:
-        port = SERVICE_PORTS[service]
-        health_url = SERVICES[service][1].format(port=port)
-        headers = {}
-        if service == "appview":
-            headers["Authorization"] = "Bearer localdevadmin"
-        _wait_for_healthy_url(health_url, service, headers=headers, timeout=30)
-
-    logger.info("Local network is healthy!")
-
-def stop_local_network(use_binary: bool = False) -> None:
+def stop_local_network(
+    use_binary: bool = False,
+    *,
+    context: E2ERunContext | None = None,
+    collect_diagnostics: bool = False,
+) -> None:
     """Stop the local-network environment started by start_local_network."""
+    if context is None:
+        context = create_run_context()
     repo_root = _find_repo_root()
     setup_script = os.path.join(repo_root, "scripts/scenarios/setup_local_network.sh")
 
@@ -98,12 +110,35 @@ def stop_local_network(use_binary: bool = False) -> None:
     cmd = [setup_script, "--teardown"]
     if use_binary:
         cmd.append("--binary")
+    if collect_diagnostics:
+        cmd.append("--collect-diagnostics")
+    _append_context_args(cmd, context)
 
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
         logger.warning("Teardown had issues: %s", result.stderr)
     else:
         logger.info("Local network stopped.")
+
+
+def collect_local_network_diagnostics(
+    *,
+    use_binary: bool = False,
+    context: E2ERunContext | None = None,
+) -> Path:
+    """Ask the shell harness to collect local-network diagnostics."""
+    if context is None:
+        context = create_run_context()
+    repo_root = _find_repo_root()
+    setup_script = os.path.join(repo_root, "scripts/scenarios/setup_local_network.sh")
+    cmd = [setup_script, "--collect-diagnostics"]
+    if use_binary:
+        cmd.append("--binary")
+    _append_context_args(cmd, context)
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        logger.warning("Diagnostic collection had issues: %s", result.stderr)
+    return context.diagnostics_dir
 
 def get_service_url(service: str) -> str:
     """Return the default localhost URL for a named scenario service."""

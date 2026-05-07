@@ -7,8 +7,8 @@ fixtures, reporting, seeding, and service configuration.
 """
 
 from .client import XrpcClient, XrpcError
-from .assertions import assert_success, assert_contains, assert_status, assert_error
-from .characters import Character, CHARACTERS, get_character, get_characters_by_role
+from .assertions import assert_success, assert_contains, assert_status, assert_error, assert_xrpc_raises
+from .characters import Character, CHARACTERS, get_character, get_characters_by_role, get_characters_by_pds, reset_characters
 from .report import ScenarioResult, StepResult, StepStatus
 from .seed import (
     create_account_or_login,
@@ -21,6 +21,13 @@ from .seed import (
     send_message,
     wait_for_http,
     wait_for_server,
+)
+from .diagnostics import (
+    E2ERunContext,
+    collect_diagnostics,
+    create_run_context,
+    default_run_id,
+    sanitize_run_id,
 )
 from .config import (
     SERVICE_PORTS,
@@ -48,11 +55,14 @@ __all__ = [
     "assert_contains",
     "assert_status",
     "assert_error",
+    "assert_xrpc_raises",
     # Characters
     "Character",
     "CHARACTERS",
     "get_character",
     "get_characters_by_role",
+    "get_characters_by_pds",
+    "reset_characters",
     # Report
     "ScenarioResult",
     "StepResult",
@@ -68,6 +78,12 @@ __all__ = [
     "send_message",
     "wait_for_http",
     "wait_for_server",
+    # Diagnostics
+    "E2ERunContext",
+    "collect_diagnostics",
+    "create_run_context",
+    "default_run_id",
+    "sanitize_run_id",
     # Config
     "SERVICE_PORTS",
     "SERVICE_URLS",

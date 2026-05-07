@@ -154,13 +154,13 @@ SERVICE_BINARY_VIDEO="jelcz"
 SERVICE_BINARY_UI="garazyk-ui"
 
 # Health paths
-SERVICE_HEALTH_PLC="/_health"
-SERVICE_HEALTH_PDS="/xrpc/com.atproto.server.describeServer"
-SERVICE_HEALTH_RELAY="/api/relay/health"
-SERVICE_HEALTH_APPVIEW="/admin/backfill/status"
-SERVICE_HEALTH_CHAT="/_health"
-SERVICE_HEALTH_VIDEO="/_health"
-SERVICE_HEALTH_UI="/admin"
+SERVICE_HEALTH_PLC="${PLC_HEALTH_PATH:-/_health}"
+SERVICE_HEALTH_PDS="${PDS_HEALTH_PATH:-/xrpc/com.atproto.server.describeServer}"
+SERVICE_HEALTH_RELAY="${RELAY_HEALTH_PATH:-/api/relay/health}"
+SERVICE_HEALTH_APPVIEW="${APPVIEW_HEALTH_PATH:-/admin/backfill/status}"
+SERVICE_HEALTH_CHAT="${CHAT_HEALTH_PATH:-/_health}"
+SERVICE_HEALTH_VIDEO="${VIDEO_HEALTH_PATH:-/_health}"
+SERVICE_HEALTH_UI="${UI_HEALTH_PATH:-/admin}"
 
 # Health URLs
 SERVICE_HEALTH_URL_PLC="$SERVICE_URL_PLC$SERVICE_HEALTH_PLC"
@@ -178,6 +178,181 @@ _LIB_ALL_SERVICES="plc pds relay appview chat video ui"
 # Usage: _svc_port plc  →  $SERVICE_PORT_PLC
 #        _svc_url pds   →  $SERVICE_URL_PDS
 _svc_var() { eval echo "\"\${$1:-}\""; }
+
+# ── E2E run context and diagnostics ─────────────────────────────────────────
+
+atproto_e2e_sanitize_run_id() {
+    printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]_.-' '-'
+}
+
+atproto_e2e_default_run_id() {
+    printf '%s-%s' "$(date -u +%Y%m%dT%H%M%SZ)" "$$"
+}
+
+atproto_e2e_load_latest_run_id() {
+    local name="$1"
+    local base_dir="${ATPROTO_E2E_BASE_DIR:-/tmp/garazyk-atproto-e2e}"
+    local latest_file="$base_dir/latest-$name-run-id"
+    if [[ -z "${ATPROTO_E2E_RUN_ID:-}" && -f "$latest_file" ]]; then
+        ATPROTO_E2E_RUN_ID="$(head -n 1 "$latest_file")"
+        export ATPROTO_E2E_RUN_ID
+    fi
+}
+
+atproto_e2e_store_latest_run_id() {
+    local name="$1"
+    local base_dir="${ATPROTO_E2E_BASE_DIR:-/tmp/garazyk-atproto-e2e}"
+    mkdir -p "$base_dir"
+    printf '%s\n' "$ATPROTO_E2E_RUN_ID" > "$base_dir/latest-$name-run-id"
+}
+
+# Initialize the shared run directory used by scenario, demo, and e2e scripts.
+#
+# Callers may set ATPROTO_E2E_RUN_ID, ATPROTO_E2E_RUN_DIR, or
+# ATPROTO_E2E_DIAGNOSTICS_DIR before calling this function. The function
+# exports the resolved values so child Python seeders and helper scripts write
+# into the same run context.
+atproto_e2e_init_run() {
+    local requested_run_id="${ATPROTO_E2E_RUN_ID:-}"
+    if [[ -z "$requested_run_id" ]]; then
+        requested_run_id="$(atproto_e2e_default_run_id)"
+    fi
+
+    ATPROTO_E2E_RUN_ID="$(atproto_e2e_sanitize_run_id "$requested_run_id")"
+    ATPROTO_E2E_BASE_DIR="${ATPROTO_E2E_BASE_DIR:-/tmp/garazyk-atproto-e2e}"
+    ATPROTO_E2E_RUN_DIR="${ATPROTO_E2E_RUN_DIR:-$ATPROTO_E2E_BASE_DIR/$ATPROTO_E2E_RUN_ID}"
+    ATPROTO_E2E_DIAGNOSTICS_DIR="${ATPROTO_E2E_DIAGNOSTICS_DIR:-$ATPROTO_E2E_RUN_DIR/diagnostics}"
+    ATPROTO_E2E_LOG_DIR="${ATPROTO_E2E_LOG_DIR:-$ATPROTO_E2E_RUN_DIR/logs}"
+    ATPROTO_E2E_PID_FILE="${ATPROTO_E2E_PID_FILE:-$ATPROTO_E2E_RUN_DIR/pids.txt}"
+    local compose_run_id
+    compose_run_id="$(printf '%s' "$ATPROTO_E2E_RUN_ID" | tr '._' '--' | tr -c '[:alnum:]-' '-')"
+    ATPROTO_E2E_COMPOSE_PROJECT="${ATPROTO_E2E_COMPOSE_PROJECT:-garazyk-e2e-$compose_run_id}"
+
+    export ATPROTO_E2E_RUN_ID
+    export ATPROTO_E2E_BASE_DIR
+    export ATPROTO_E2E_RUN_DIR
+    export ATPROTO_E2E_DIAGNOSTICS_DIR
+    export ATPROTO_E2E_LOG_DIR
+    export ATPROTO_E2E_PID_FILE
+    export ATPROTO_E2E_COMPOSE_PROJECT
+
+    mkdir -p "$ATPROTO_E2E_RUN_DIR" "$ATPROTO_E2E_DIAGNOSTICS_DIR" "$ATPROTO_E2E_LOG_DIR"
+}
+
+atproto_redact_stream() {
+    sed -E \
+        -e 's/(Authorization:[[:space:]]*Bearer )[A-Za-z0-9._~+\/=-]+/\1[REDACTED]/g' \
+        -e 's/("(accessJwt|refreshJwt|token|password|secret|masterSecret|adminPassword)"[[:space:]]*:[[:space:]]*")[^"]+"/\1[REDACTED]"/g' \
+        -e 's/((JWT|TOKEN|PASSWORD|SECRET|MASTER_SECRET|ADMIN_SECRET)=)[^[:space:]]+/\1[REDACTED]/g'
+}
+
+atproto_write_run_metadata() {
+    local output_dir="${1:-$ATPROTO_E2E_DIAGNOSTICS_DIR}"
+    mkdir -p "$output_dir"
+    {
+        printf 'run_id=%s\n' "${ATPROTO_E2E_RUN_ID:-unknown}"
+        printf 'run_dir=%s\n' "${ATPROTO_E2E_RUN_DIR:-unknown}"
+        printf 'diagnostics_dir=%s\n' "${ATPROTO_E2E_DIAGNOSTICS_DIR:-unknown}"
+        printf 'compose_project=%s\n' "${ATPROTO_E2E_COMPOSE_PROJECT:-}"
+        printf 'repo_root=%s\n' "${REPO_ROOT:-}"
+        printf 'build_dir=%s\n' "${BUILD_DIR:-}"
+        printf 'created_at_utc=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        if command -v git >/dev/null 2>&1 && [[ -n "${REPO_ROOT:-}" ]]; then
+            git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null | sed 's/^/git_commit=/' || true
+            git -C "$REPO_ROOT" status --short 2>/dev/null | sed 's/^/git_status=/' || true
+        fi
+    } | atproto_redact_stream > "$output_dir/run-metadata.txt"
+}
+
+atproto_collect_http_endpoint() {
+    local output_dir="$1"
+    local name="$2"
+    local url="$3"
+    shift 3
+
+    local http_dir="$output_dir/http"
+    local raw_path="$http_dir/$name.raw"
+    local redacted_path="$http_dir/$name.txt"
+    mkdir -p "$http_dir"
+
+    {
+        printf 'url=%s\n' "$url"
+        curl -sS -L --max-time 8 -w '\nhttp_status=%{http_code}\ncontent_type=%{content_type}\n' "$@" "$url" || true
+    } > "$raw_path" 2>&1
+    atproto_redact_stream < "$raw_path" > "$redacted_path"
+    rm -f "$raw_path"
+}
+
+atproto_copy_service_logs() {
+    local output_dir="$1"
+    local log_dir="${2:-${ATPROTO_E2E_LOG_DIR:-}}"
+
+    if [[ -n "$log_dir" && -d "$log_dir" ]]; then
+        mkdir -p "$output_dir/service-logs"
+        cp -p "$log_dir"/*.log "$output_dir/service-logs/" 2>/dev/null || true
+    fi
+    if [[ -n "${ATPROTO_E2E_PID_FILE:-}" && -f "$ATPROTO_E2E_PID_FILE" ]]; then
+        cp -p "$ATPROTO_E2E_PID_FILE" "$output_dir/pids.txt" 2>/dev/null || true
+    fi
+}
+
+# Collect a diagnostic bundle for the standard local ATProto service ports.
+#
+# Usage:
+#   atproto_collect_diagnostics <dir> [compose_dir compose_project compose_file...]
+#
+# The docker section is optional. HTTP captures are redacted; service log files
+# are copied locally so developers can inspect exact process output when needed.
+atproto_collect_diagnostics() {
+    local output_dir="${1:-$ATPROTO_E2E_DIAGNOSTICS_DIR}"
+    shift || true
+    local compose_dir="${1:-}"
+    local compose_project="${2:-${ATPROTO_E2E_COMPOSE_PROJECT:-}}"
+    if (( $# >= 2 )); then
+        shift 2
+    else
+        set --
+    fi
+    local compose_files=("$@")
+
+    mkdir -p "$output_dir"
+    atproto_write_run_metadata "$output_dir"
+    atproto_copy_service_logs "$output_dir"
+
+    atproto_collect_http_endpoint "$output_dir" "plc-health" "$SERVICE_URL_PLC/_health"
+    atproto_collect_http_endpoint "$output_dir" "pds-describe-server" "$SERVICE_URL_PDS/xrpc/com.atproto.server.describeServer"
+    atproto_collect_http_endpoint "$output_dir" "relay-health" "$SERVICE_URL_RELAY/api/relay/health"
+    atproto_collect_http_endpoint "$output_dir" "relay-upstreams" "$SERVICE_URL_RELAY/api/relay/upstreams"
+    atproto_collect_http_endpoint "$output_dir" "appview-backfill-status" "$SERVICE_URL_APPVIEW/admin/backfill/status" \
+        -H "Authorization: Bearer ${APPVIEW_ADMIN_SECRET:-localdevadmin}"
+    atproto_collect_http_endpoint "$output_dir" "pds2-describe-server" "$SERVICE_URL_CHAT/xrpc/com.atproto.server.describeServer"
+    atproto_collect_http_endpoint "$output_dir" "chat-health" "$SERVICE_URL_CHAT/_health"
+    atproto_collect_http_endpoint "$output_dir" "video-health" "$SERVICE_URL_VIDEO/_health"
+    atproto_collect_http_endpoint "$output_dir" "ui-admin" "$SERVICE_URL_UI/admin"
+
+    if [[ -n "$compose_dir" ]] && (( ${#compose_files[@]} > 0 )) && command -v docker >/dev/null 2>&1; then
+        mkdir -p "$output_dir/docker"
+        local compose_cmd=(docker compose)
+        if [[ -n "$compose_project" ]]; then
+            compose_cmd+=(-p "$compose_project")
+        fi
+        local compose_file
+        for compose_file in "${compose_files[@]}"; do
+            compose_cmd+=(-f "$compose_file")
+        done
+
+        (
+            cd "$compose_dir"
+            "${compose_cmd[@]}" ps --all > "$output_dir/docker/ps.txt" 2>&1 || true
+            "${compose_cmd[@]}" config > "$output_dir/docker/config.txt" 2>&1 || true
+            "${compose_cmd[@]}" logs --no-color --timestamps --tail=300 > "$output_dir/docker/logs.raw" 2>&1 || true
+        )
+        atproto_redact_stream < "$output_dir/docker/logs.raw" > "$output_dir/docker/logs.txt"
+        rm -f "$output_dir/docker/logs.raw"
+    fi
+
+    log_info "Diagnostics written to $output_dir"
+}
 
 # ── Health check ────────────────────────────────────────────────────────────
 
@@ -213,8 +388,10 @@ wait_for_http() {
 wait_for_service() {
     local service_key="$1"
     local timeout="${2:-30}"
-    local url="$(_svc_var "SERVICE_HEALTH_URL_$(echo "$service_key" | tr '[:lower:]' '[:upper:]')")"
-    local label="${service_key^^}"
+    local service_upper
+    service_upper="$(echo "$service_key" | tr '[:lower:]' '[:upper:]')"
+    local url="$(_svc_var "SERVICE_HEALTH_URL_$service_upper")"
+    local label="$service_upper"
 
     if [[ -z "$url" ]]; then
         log_error "Unknown service key: $service_key"
