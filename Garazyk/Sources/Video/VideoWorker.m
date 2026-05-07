@@ -108,20 +108,22 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
         return;
     }
 
-    @synchronized(self.processingJobIds) {
-        if (self.processingJobIds.count >= self.maxConcurrentJobs) {
-            return;
-        }
+    __block BOOL atCapacity = NO;
+    dispatch_sync(_stateQueue, ^{
+        atCapacity = self.processingJobIds.count >= self.maxConcurrentJobs;
+    });
+    if (atCapacity) {
+        return;
     }
 
     if (!self.jobStore) {
         return;
     }
 
-    NSInteger availableSlots = 0;
-    @synchronized(self.processingJobIds) {
+    __block NSInteger availableSlots = 0;
+    dispatch_sync(_stateQueue, ^{
         availableSlots = self.maxConcurrentJobs - self.processingJobIds.count;
-    }
+    });
     NSError *error = nil;
     NSArray<NSDictionary *> *pendingJobs = [self.jobStore queryPendingJobsWithLimit:availableSlots
                                                                                error:&error];
@@ -395,9 +397,9 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
     if (retryCount < 3) {
         PDS_LOG_WARN(@"Job %@ failed, retrying (%ld/3): %@", jobId, (long)retryCount + 1, error);
         [self.jobStore incrementVideoJobRetry:jobId error:nil];
-        @synchronized(self.processingJobIds) {
+        dispatch_sync(_stateQueue, ^{
             [self.processingJobIds removeObject:jobId];
-        }
+        });
     } else {
         PDS_LOG_ERROR(@"Job %@ failed permanently after %ld retries: %@", jobId, (long)retryCount, error);
         [self failJob:jobId error:error];
