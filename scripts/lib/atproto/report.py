@@ -56,6 +56,7 @@ class ScenarioResult:
     steps: list[StepResult] = field(default_factory=list)
     started_at: Optional[float] = None
     finished_at: Optional[float] = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def start(self) -> None:
         self.started_at = time.time()
@@ -168,6 +169,7 @@ class ScenarioResult:
                 "total": self.total,
             },
             "ok": self.ok,
+            "metadata": self.metadata,
         }
 
     def to_json(self, indent: int = 2) -> str:
