@@ -362,6 +362,8 @@
     return 0;
   }
 
+  [subscribeReposHandler startObservingNotifications];
+
   PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
   NSString *displayHost = config.serverHost ?: @"localhost";
   if ([displayHost isEqualToString:@"0.0.0.0"]) {

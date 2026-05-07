@@ -198,8 +198,10 @@ static BOOL didDocumentContainsHandle(DIDDocument *doc, NSString *handle) {
         // For did:plc, prefer fresh data from PLC directory
         if ([method isEqualToString:@"plc"]) {
             NSString *plcUrl = configuration.plcURL;
-            if ([plcUrl isEqualToString:@"mock"] || plcUrl.length == 0) {
-                plcUrl = @"http://127.0.0.1:2582";
+            if ([plcUrl isEqualToString:@"mock"] ||
+                [plcUrl isEqualToString:@"skip"] ||
+                plcUrl.length == 0) {
+                return localDoc;
             }
 
             DIDPLCResolver *plcResolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
