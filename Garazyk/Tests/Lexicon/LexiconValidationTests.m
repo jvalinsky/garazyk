@@ -98,4 +98,207 @@
     // XCTAssertTrue([error.localizedDescription containsString:@"maxGraphemes"]); // Depending on implementation
 }
 
+- (void)testUnknownNSIDInRequiredMode {
+    ATProtoLexiconRegistry *registry = [[ATProtoLexiconRegistry alloc] init];
+    ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc] initWithRegistry:registry];
+
+    NSDictionary *record = @{
+        @"$type": @"com.example.unknown",
+        @"value": @"test"
+    };
+    NSError *error = nil;
+    BOOL result = [validator validateRecord:record
+                                collection:@"com.example.unknown"
+                                      mode:ATProtoValidationModeRequired
+                                     error:&error];
+    XCTAssertFalse(result, @"Unknown NSID should fail in required mode");
+    XCTAssertNotNil(error);
+}
+
+- (void)testUnknownNSIDInOptimisticMode {
+    ATProtoLexiconRegistry *registry = [[ATProtoLexiconRegistry alloc] init];
+    ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc] initWithRegistry:registry];
+
+    NSDictionary *record = @{
+        @"$type": @"com.example.unknown",
+        @"value": @"test"
+    };
+    NSError *error = nil;
+    BOOL result = [validator validateRecord:record
+                                collection:@"com.example.unknown"
+                                      mode:ATProtoValidationModeOptimistic
+                                     error:&error];
+    XCTAssertTrue(result, @"Unknown NSID should pass in optimistic mode");
+}
+
+- (void)testValidationModeOff {
+    ATProtoLexiconRegistry *registry = [[ATProtoLexiconRegistry alloc] init];
+    ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc] initWithRegistry:registry];
+
+    NSDictionary *record = @{
+        @"$type": @"com.example.anything",
+        @"value": @"test"
+    };
+    NSError *error = nil;
+    BOOL result = [validator validateRecord:record
+                                collection:@"com.example.anything"
+                                      mode:ATProtoValidationModeOff
+                                     error:&error];
+    XCTAssertTrue(result, @"Off mode should always pass");
+}
+
+- (void)testSchemaWithArrayConstraints {
+    NSString *json = @"{ \"lexicon\": 1, \"id\": \"com.example.arrays\", \"defs\": { \"main\": { \"type\": \"object\", \"properties\": { \"items\": { \"type\": \"array\", \"items\": { \"type\": \"string\" }, \"minItems\": 1, \"maxItems\": 5 } } } } }";
+    NSData *data = [json dataUsingEncoding:NSUTF8StringEncoding];
+    NSError *error = nil;
+    ATProtoLexiconSchema *schema = [ATProtoLexiconSchema schemaFromJSONData:data error:&error];
+
+    XCTAssertNotNil(schema);
+    XCTAssertNil(error);
+
+    ATProtoLexiconRegistry *registry = [[ATProtoLexiconRegistry alloc] init];
+    [registry registerSchema:schema];
+    ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc] initWithRegistry:registry];
+
+    // Valid array
+    NSDictionary *validRecord = @{
+        @"$type": @"com.example.arrays",
+        @"items": @[@"a", @"b", @"c"]
+    };
+    BOOL result = [validator validateRecord:validRecord
+                                collection:@"com.example.arrays"
+                                      mode:ATProtoValidationModeRequired
+                                     error:&error];
+    XCTAssertTrue(result, @"Array within bounds should pass");
+
+    // Empty array (violates minItems: 1)
+    NSDictionary *emptyArrayRecord = @{
+        @"$type": @"com.example.arrays",
+        @"items": @[]
+    };
+    error = nil;
+    result = [validator validateRecord:emptyArrayRecord
+                           collection:@"com.example.arrays"
+                                 mode:ATProtoValidationModeRequired
+                                error:&error];
+    XCTAssertFalse(result, @"Empty array should fail minItems constraint");
+
+    // Array too long (violates maxItems: 5)
+    NSDictionary *longArrayRecord = @{
+        @"$type": @"com.example.arrays",
+        @"items": @[@"1", @"2", @"3", @"4", @"5", @"6"]
+    };
+    error = nil;
+    result = [validator validateRecord:longArrayRecord
+                           collection:@"com.example.arrays"
+                                 mode:ATProtoValidationModeRequired
+                                error:&error];
+    XCTAssertFalse(result, @"Array exceeding maxItems should fail");
+}
+
+- (void)testStringFormatValidation {
+    NSString *json = @"{ \"lexicon\": 1, \"id\": \"com.example.formats\", \"defs\": { \"main\": { \"type\": \"object\", \"properties\": { \"uri\": { \"type\": \"string\", \"format\": \"at-uri\" }, \"datetime\": { \"type\": \"string\", \"format\": \"datetime\" }, \"did\": { \"type\": \"string\", \"format\": \"did\" }, \"handle\": { \"type\": \"string\", \"format\": \"handle\" } } } } }";
+    NSData *data = [json dataUsingEncoding:NSUTF8StringEncoding];
+    NSError *error = nil;
+    ATProtoLexiconSchema *schema = [ATProtoLexiconSchema schemaFromJSONData:data error:&error];
+
+    XCTAssertNotNil(schema);
+    XCTAssertNil(error);
+
+    ATProtoLexiconRegistry *registry = [[ATProtoLexiconRegistry alloc] init];
+    [registry registerSchema:schema];
+    ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc] initWithRegistry:registry];
+
+    // Valid at-uri
+    NSDictionary *validAtUri = @{
+        @"$type": @"com.example.formats",
+        @"uri": @"at://did:plc:example/app.bsky.feed.post/123",
+        @"datetime": @"2025-01-01T12:00:00.000Z",
+        @"did": @"did:plc:example",
+        @"handle": @"example.com"
+    };
+    BOOL result = [validator validateRecord:validAtUri
+                                collection:@"com.example.formats"
+                                      mode:ATProtoValidationModeRequired
+                                     error:&error];
+    XCTAssertTrue(result, @"Valid format strings should pass");
+
+    // Invalid at-uri
+    NSDictionary *invalidAtUri = @{
+        @"$type": @"com.example.formats",
+        @"uri": @"not-an-at-uri",
+        @"datetime": @"2025-01-01T12:00:00.000Z",
+        @"did": @"did:plc:example",
+        @"handle": @"example.com"
+    };
+    error = nil;
+    result = [validator validateRecord:invalidAtUri
+                           collection:@"com.example.formats"
+                                 mode:ATProtoValidationModeRequired
+                                error:&error];
+    XCTAssertFalse(result, @"Invalid at-uri format should fail");
+}
+
+- (void)testBlobRefValidation {
+    NSString *json = @"{ \"lexicon\": 1, \"id\": \"com.example.blob\", \"defs\": { \"main\": { \"type\": \"object\", \"properties\": { \"avatar\": { \"type\": \"blob\", \"accept\": [\"image/png\", \"image/jpeg\"], \"maxSize\": 1000000 } } } } }";
+    NSData *data = [json dataUsingEncoding:NSUTF8StringEncoding];
+    NSError *error = nil;
+    ATProtoLexiconSchema *schema = [ATProtoLexiconSchema schemaFromJSONData:data error:&error];
+
+    XCTAssertNotNil(schema);
+    XCTAssertNil(error);
+
+    ATProtoLexiconRegistry *registry = [[ATProtoLexiconRegistry alloc] init];
+    [registry registerSchema:schema];
+    ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc] initWithRegistry:registry];
+
+    // Valid blob ref
+    NSDictionary *validBlob = @{
+        @"$type": @"com.example.blob",
+        @"avatar": @{
+            @"$type": @"blob",
+            @"ref": @{ @"$link": @"bafkreiexample" },
+            @"mimeType": @"image/png",
+            @"size": @500000
+        }
+    };
+    BOOL result = [validator validateRecord:validBlob
+                                collection:@"com.example.blob"
+                                      mode:ATProtoValidationModeRequired
+                                     error:&error];
+    XCTAssertTrue(result, @"Valid blob ref should pass");
+
+    // Missing ref
+    NSDictionary *missingRef = @{
+        @"$type": @"com.example.blob",
+        @"avatar": @{
+            @"$type": @"blob",
+            @"mimeType": @"image/png",
+            @"size": @500000
+        }
+    };
+    error = nil;
+    result = [validator validateRecord:missingRef
+                           collection:@"com.example.blob"
+                                 mode:ATProtoValidationModeRequired
+                                error:&error];
+    XCTAssertFalse(result, @"Blob ref missing $ref should fail");
+
+    // Missing mimeType
+    NSDictionary *missingMime = @{
+        @"$type": @"com.example.blob",
+        @"avatar": @{
+            @"$type": @"blob",
+            @"ref": @{ @"$link": @"bafkreiexample" },
+            @"size": @500000
+        }
+    };
+    error = nil;
+    result = [validator validateRecord:missingMime
+                           collection:@"com.example.blob"
+                                 mode:ATProtoValidationModeRequired
+                                error:&error];
+    XCTAssertFalse(result, @"Blob ref missing mimeType should fail");
+}
+
 @end
