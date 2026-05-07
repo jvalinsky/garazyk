@@ -493,3 +493,37 @@
 **Evidence:** UIServerRuntime.m (540+ lines), UIBackendClient.m (760+ lines), system.css (20KB)
 **Connects to:** Admin UI Remaining Features (Node #56), UI Split Goal (Node #400)
 **Status:** active
+
+---
+
+## AllTests Runtime Reduction
+> Node #939 | Status: completed
+
+**Current state:** Default AllTests completes in 224.61s (2676 tests, 162 failures, 25 gated classes skipped) without socket crashes or temp-dir I/O flood. Coverage builds work with ENABLE_COVERAGE=ON. Remaining 162 failures are existing broader suite issues (schema/lexicon/endpoint expectations), not runtime harness problems.
+
+**Evolution:**
+1. Initial state: AllTests slow (~154s before crash), RepoAuthIdentityTests ~56.8s, testIdentityUpdateHandleRateLimiting ~35.6s, SubscribeReposHandlerTests with temp-dir I/O errors
+2. **PIVOT:** Add environment-gated test suites (PDS_RUN_INTEGRATION_TESTS=1, PDS_RUN_SOCKET_TESTS=1) to skip slow tests by default while preserving opt-in coverage
+3. **PIVOT:** Make coverage instrumentation opt-in with CMake ENABLE_COVERAGE=OFF by default, removing overhead from developer builds
+4. Reworked RepoAuthIdentityTests to seed rate-limiter state instead of ten full identity update flows with real delays
+5. Added deterministic SubscribeRepos drain hooks and teardown waits for background queues
+6. Extended test_main.m with per-class/per-method timing output and -XCTest Class/method filtering
+7. Fixed HealthEndpointIntegrationTests startup failure to fail cleanly instead of parsing nil data
+
+**Evidence:**
+- test_main.m: per-class/per-method timing, -XCTest filtering
+- RepoAuthIdentityTests.m: seeded limiter state (0.67s vs ~35.6s)
+- SubscribeReposHandlerTests.m: deterministic drain hooks, teardown waits
+- HealthEndpointIntegrationTests.m: clean startup failure handling
+- CMakeLists.txt: ENABLE_COVERAGE option (default OFF)
+- PDS_TEST_REGISTRATION_AUDIT=1: fixed test registration drift
+
+**Key Results:**
+- testIdentityUpdateHandleRateLimiting: 0.67s (was ~35.6s)
+- RepoAuthIdentityTests: 3.28s (was ~56.8s)
+- SubscribeReposHandlerTests: 0.88s, no temp-dir I/O errors
+- RateLimiterTests: 0.09s
+- Default AllTests: 224.61s, no socket crashes
+
+**Connects to:** Test Coverage Expansion (Node #264), Test Failure Remediation (Node #141)
+**Status:** completed

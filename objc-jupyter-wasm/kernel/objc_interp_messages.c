@@ -506,7 +506,9 @@ Value parse_message_send(Parser *p) {
                                  cstr_eq(recv_cls, "NSDictionary") ||
                                  cstr_eq(recv_cls, "NSMutableDictionary") ||
                                  cstr_eq(recv_cls, "NSSet") ||
+                                 cstr_eq(recv_cls, "NSMutableSet") ||
                                  cstr_eq(recv_cls, "NSData") ||
+                                 cstr_eq(recv_cls, "NSMutableData") ||
                                  cstr_eq(recv_cls, "NSObject"));
             if (!is_foundation) {
                 unsigned int mi = find_interpreter_method(sel, target, receiver, 0);
@@ -588,6 +590,16 @@ Value parse_message_send(Parser *p) {
                 if (cstr_eq(cls_name, "NSSet")) {
                     return value_from_obj(coll_make_marker("NSSet:", cid));
                 }
+                if (cstr_eq(cls_name, "NSMutableSet")) {
+                    return value_from_obj(coll_make_marker("NSMutSet:", cid));
+                }
+                if (cstr_eq(cls_name, "NSMutableData")) {
+                    ObjId h = obj_alloc(8);
+                    if (h == OBJ_NULL) return value_from_obj(receiver);
+                    char *buf = obj_deref_mut(h);
+                    cstr_copy(buf, "NSMutData:", 11);
+                    return value_from_obj(h);
+                }
             }
             return value_from_obj(receiver);
         }
@@ -638,6 +650,7 @@ Value parse_message_send(Parser *p) {
             else if (cstr_starts(s, "NSDict:")) cid = coll_id_from_marker(s, "NSDict:");
             else if (cstr_starts(s, "NSMutDict:")) cid = coll_id_from_marker(s, "NSMutDict:");
             else if (cstr_starts(s, "NSSet:")) cid = coll_id_from_marker(s, "NSSet:");
+            else if (cstr_starts(s, "NSMutSet:")) cid = coll_id_from_marker(s, "NSMutSet:");
 
             if (cid > 0) {
                 if (cstr_eq(sel_name, "objectEnumerator")) {
@@ -802,7 +815,7 @@ Value parse_message_send(Parser *p) {
             if (obj_is_valid(receiver) &&
                 (cstr_starts(r, "NSDict:") || cstr_starts(r, "NSMutDict:") ||
                  cstr_starts(r, "NSArr:") || cstr_starts(r, "NSMutArr:") ||
-                 cstr_starts(r, "NSSet:"))) {
+                 cstr_starts(r, "NSSet:") || cstr_starts(r, "NSMutSet:"))) {
                 /* Fall through to collection dispatch below */
             } else if (key) {
                 unsigned int pi;
@@ -870,8 +883,11 @@ Value parse_message_send(Parser *p) {
             /* Tagged Foundation string pool objects — return their sentinel class.
              * Class IDs must match objc_interpreter.c foundation_classes[]:
              * NSObject=1, NSString=2, NSNumber=3, NSArray=4, NSMutableArray=5,
-             * NSDictionary=6, NSMutableDictionary=7, NSSet=8, NSData=9,
-             * NSCharacterSet=10 */
+             * NSDictionary=6, NSMutableDictionary=7, NSSet=8, NSMutableSet=9,
+             * NSData=10, NSMutableData=11, NSCharacterSet=12, NSJSONSerialization=13,
+             * NSMutableString=14, NSURL=15, NSMutableURLRequest=16,
+             * NSURLSession=17, NSURLSessionDataTask=18, CID=19, CryptoUtils=20,
+             * ATProtoCBORSerialization=21, NSNull=22 */
             if (cstr_starts(s, "NSNumber:")) return value_from_class((Class)3);
             if (cstr_starts(s, "NSFloat:")) return value_from_class((Class)3);
             if (cstr_starts(s, "NSArr:")) return value_from_class((Class)4);
@@ -879,9 +895,11 @@ Value parse_message_send(Parser *p) {
             if (cstr_starts(s, "NSDict:")) return value_from_class((Class)6);
             if (cstr_starts(s, "NSMutDict:")) return value_from_class((Class)7);
             if (cstr_starts(s, "NSSet:")) return value_from_class((Class)8);
-            if (cstr_starts(s, "NSData:")) return value_from_class((Class)9);
+            if (cstr_starts(s, "NSMutSet:")) return value_from_class((Class)9);
+            if (cstr_starts(s, "NSData:")) return value_from_class((Class)10);
+            if (cstr_starts(s, "NSMutData:")) return value_from_class((Class)11);
             if (cstr_starts(s, "NSBlock:")) return value_from_class((Class)20);
-            if (cstr_starts(s, "NSMutStr:")) return value_from_class((Class)12);
+            if (cstr_starts(s, "NSMutStr:")) return value_from_class((Class)14);
             /* String pool pointers that don't match any known marker prefix
              * are NSString instances (plain @"" literals stored as C strings). */
             if (obj_is_valid(receiver)) return value_from_class((Class)2);
@@ -917,8 +935,12 @@ Value parse_message_send(Parser *p) {
                 foundation_cls_name = "NSMutableDictionary";
             else if (cstr_starts(s, "NSSet:"))
                 foundation_cls_name = "NSSet";
+            else if (cstr_starts(s, "NSMutSet:"))
+                foundation_cls_name = "NSMutableSet";
             else if (cstr_starts(s, "NSData:"))
                 foundation_cls_name = "NSData";
+            else if (cstr_starts(s, "NSMutData:"))
+                foundation_cls_name = "NSMutableData";
             else if (cstr_starts(s, "NSBlock:"))
                 foundation_cls_name = "NSBlock";
 
@@ -978,11 +1000,20 @@ Value parse_message_send(Parser *p) {
 
         /* NSObject: [obj isEqual:other] → 1 if same pointer */
         if (cstr_eq(sel_name, "isEqual:") && target.is_id && arg_count >= 1) {
-            /* NSData: compare by content (not pointer) */
-            if (receiver != OBJ_NULL && cstr_eq_n(obj_deref(receiver), "NSData:", 7)) {
+            /* NSData/NSMutableData: compare by content (not pointer) */
+            if (receiver != OBJ_NULL &&
+                (cstr_eq_n(obj_deref(receiver), "NSData:", 7) || cstr_eq_n(obj_deref(receiver), "NSMutData:", 10))) {
+                const char *s = obj_deref(receiver);
+                int recv_prefix = cstr_eq_n(s, "NSMutData:", 10) ? 10 : 7;
+                const char *hex1 = s + recv_prefix;
                 const char *other = obj_deref(args[0]);
-                if (other && cstr_eq_n(other, "NSData:", 7)) {
-                    return value_from_int(cstr_eq(obj_deref(receiver), other) ? 1 : 0);
+                if (other && (cstr_eq_n(other, "NSData:", 7) || cstr_eq_n(other, "NSMutData:", 10))) {
+                    int other_prefix = cstr_eq_n(other, "NSMutData:", 10) ? 10 : 7;
+                    const char *hex2 = other + other_prefix;
+                    int hlen1 = (int)cstr_len(hex1);
+                    int hlen2 = (int)cstr_len(hex2);
+                    if (hlen1 != hlen2) return value_from_int(0);
+                    return value_from_int(cstr_eq(hex1, hex2) ? 1 : 0);
                 }
                 return value_from_int(0);
             }
@@ -1122,9 +1153,13 @@ Value parse_message_send(Parser *p) {
         /* NSString: [str length] → string length */
         if (cstr_eq(sel_name, "length") && target.is_id && receiver != OBJ_NULL) {
             const char *s = obj_deref(receiver);
-            /* NSData: length = hex_len / 2 */
+            /* NSData/NSMutableData: length = hex_len / 2 */
             if (cstr_eq_n(s, "NSData:", 7)) {
                 int hex_len = (int)cstr_len(s + 7);
+                return value_from_int(hex_len / 2);
+            }
+            if (cstr_eq_n(s, "NSMutData:", 10)) {
+                int hex_len = (int)cstr_len(s + 10);
                 return value_from_int(hex_len / 2);
             }
             return value_from_int((int)cstr_len(s));
@@ -1896,9 +1931,10 @@ Value parse_message_send(Parser *p) {
         /* NSNumber: [num description] → numeric string */
         if (cstr_eq(sel_name, "description") && target.is_id && receiver != OBJ_NULL) {
             const char *s = obj_deref(receiver);
-            /* NSData: display as <hex bytes> */
-            if (cstr_eq_n(s, "NSData:", 7)) {
-                const char *hex = s + 7;
+            /* NSData/NSMutableData: display as <hex bytes> */
+            if (cstr_eq_n(s, "NSData:", 7) || cstr_eq_n(s, "NSMutData:", 10)) {
+                int prefix_len = cstr_eq_n(s, "NSMutData:", 10) ? 10 : 7;
+                const char *hex = s + prefix_len;
                 int hex_len = (int)cstr_len(hex);
                 unsigned int needed = 2 + (unsigned int)hex_len + (unsigned int)(hex_len / 8) + 1;
                 ObjId h = obj_alloc(needed);
@@ -2118,9 +2154,10 @@ Value parse_message_send(Parser *p) {
         if (IS_FOUNDATION_CLASS("NSJSONSerialization") && target.is_class) {
             if (cstr_eq(sel_name, "JSONObjectWithData:options:error:") && arg_count >= 1) {
                 ObjId data_obj = keyword_args[0].obj_val;
-                if (data_obj != OBJ_NULL && cstr_eq_n(obj_deref(data_obj), "NSData:", 7)) {
+                if (data_obj != OBJ_NULL && (cstr_eq_n(obj_deref(data_obj), "NSData:", 7) || cstr_eq_n(obj_deref(data_obj), "NSMutData:", 10))) {
                     /* Decode hex data to a string */
-                    const char *hex = obj_deref(data_obj) + 7;
+                    int data_prefix = cstr_eq_n(obj_deref(data_obj), "NSMutData:", 10) ? 10 : 7;
+                    const char *hex = obj_deref(data_obj) + data_prefix;
                     int hex_len = (int)cstr_len(hex);
                     int byte_len = hex_len / 2;
                     char *json_str = string_pool_alloc((unsigned int)byte_len + 1);
@@ -2620,31 +2657,63 @@ Value parse_message_send(Parser *p) {
 
         /* NSMutableData: [NSMutableData dataWithCapacity:n] → empty mutable data */
         if (IS_FOUNDATION_CLASS("NSMutableData") && target.is_class && cstr_eq(sel_name, "dataWithCapacity:") && arg_count >= 1) {
-            ObjId h = obj_alloc(8);
-            if (h == OBJ_NULL) return value_from_obj(obj_alloc_str("NSData:", 7));
+            ObjId h = obj_alloc(11);
+            if (h == OBJ_NULL) return value_from_obj(obj_alloc_str("NSMutData:", 10));
             char *buf = obj_deref_mut(h);
-            cstr_copy(buf, "NSData:", 8);
+            cstr_copy(buf, "NSMutData:", 11);
             return value_from_obj(h);
         }
 
         /* NSMutableData: [NSMutableData data] → empty mutable data */
         if (IS_FOUNDATION_CLASS("NSMutableData") && target.is_class && cstr_eq(sel_name, "data") && arg_count == 0) {
-            ObjId h = obj_alloc(8);
-            if (h == OBJ_NULL) return value_from_obj(obj_alloc_str("NSData:", 7));
+            ObjId h = obj_alloc(11);
+            if (h == OBJ_NULL) return value_from_obj(obj_alloc_str("NSMutData:", 10));
             char *buf = obj_deref_mut(h);
-            cstr_copy(buf, "NSData:", 8);
+            cstr_copy(buf, "NSMutData:", 11);
             return value_from_obj(h);
+        }
+
+        /* NSMutableData: [NSMutableData dataWithBytes:ptr length:len] → mutable data from bytes */
+        if (IS_FOUNDATION_CLASS("NSMutableData") && target.is_class && cstr_eq(sel_name, "dataWithBytes:length:") && arg_count >= 2) {
+            const char *bytes = obj_deref(keyword_args[0].obj_val);
+            int len = keyword_args[1].is_int ? keyword_args[1].int_val : 0;
+            if (len < 0) len = 0;
+            {
+                int blen = (int)cstr_len(bytes);
+                if (len > blen) len = blen;
+                unsigned int needed = 10 + (unsigned int)len * 2 + 1;
+                ObjId h = obj_alloc(needed);
+                if (h == OBJ_NULL) return value_from_obj(obj_alloc_str("NSMutData:", 10));
+                char *buf = obj_deref_mut(h);
+                cstr_copy(buf, "NSMutData:", needed);
+                {
+                    static const char hex_chars[] = "0123456789abcdef";
+                    int i;
+                    for (i = 0; i < len; i++) {
+                        unsigned char c = (unsigned char)bytes[i];
+                        buf[10 + i * 2] = hex_chars[(c >> 4) & 0x0f];
+                        buf[10 + i * 2 + 1] = hex_chars[c & 0x0f];
+                    }
+                    buf[10 + len * 2] = '\0';
+                }
+                return value_from_obj(h);
+            }
         }
 
         /* NSData: [NSData dataWithData:other] → copy of other data */
         if (IS_FOUNDATION_CLASS("NSData") && target.is_class && cstr_eq(sel_name, "dataWithData:") && arg_count >= 1) {
             const char *other = obj_deref(keyword_args[0].obj_val);
-            if (other && cstr_eq_n(other, "NSData:", 7)) {
-                unsigned int needed = (unsigned int)cstr_len(other) + 1;
+            if (other && (cstr_eq_n(other, "NSData:", 7) || cstr_eq_n(other, "NSMutData:", 10))) {
+                /* Copy hex payload into a new immutable NSData */
+                int other_prefix = cstr_eq_n(other, "NSMutData:", 10) ? 10 : 7;
+                const char *hex = other + other_prefix;
+                int hex_len = (int)cstr_len(hex);
+                unsigned int needed = 7 + (unsigned int)hex_len + 1;
                 ObjId h = obj_alloc(needed);
                 if (h == OBJ_NULL) return value_from_obj(obj_alloc_str("NSData:", 7));
                 char *buf = obj_deref_mut(h);
-                cstr_copy(buf, other, needed);
+                cstr_copy(buf, "NSData:", needed);
+                cstr_copy(buf + 7, hex, (unsigned int)hex_len + 1);
                 return value_from_obj(h);
             }
             ObjId h = obj_alloc(8);
@@ -2654,13 +2723,16 @@ Value parse_message_send(Parser *p) {
             return value_from_obj(h);
         }
 
-        /* NSData instance methods — check for NSData: prefix on receiver */
-        if (target.is_id && receiver != OBJ_NULL && cstr_eq_n(obj_deref(receiver), "NSData:", 7)) {
+        /* NSData / NSMutableData instance methods — check for NSData: or NSMutData: prefix on receiver */
+        if (target.is_id && receiver != OBJ_NULL &&
+            (cstr_eq_n(obj_deref(receiver), "NSData:", 7) || cstr_eq_n(obj_deref(receiver), "NSMutData:", 10))) {
             const char *s = obj_deref(receiver);
+            int is_mut = cstr_eq_n(s, "NSMutData:", 10);
+            int prefix_len = is_mut ? 10 : 7;
 
             /* [data bytes] → decode hex back to raw bytes (as string) */
             if (cstr_eq(sel_name, "bytes")) {
-                const char *hex = s + 7;
+                const char *hex = s + prefix_len;
                 int hex_len = (int)cstr_len(hex);
                 int byte_len = hex_len / 2;
                 ObjId h = obj_alloc((unsigned int)byte_len + 1);
@@ -2686,7 +2758,7 @@ Value parse_message_send(Parser *p) {
 
             /* [data description] → display as <hex bytes> */
             if (cstr_eq(sel_name, "description")) {
-                const char *hex = s + 7;
+                const char *hex = s + prefix_len;
                 int hex_len = (int)cstr_len(hex);
                 /* Format: <xxxx xxxx ...> with spaces every 8 hex chars */
                 unsigned int needed = 2 + (unsigned int)hex_len + (unsigned int)(hex_len / 8) + 1;
@@ -2710,8 +2782,15 @@ Value parse_message_send(Parser *p) {
             /* [data isEqual:other] → compare data */
             if (cstr_eq(sel_name, "isEqual:") && arg_count >= 1) {
                 const char *other = obj_deref(keyword_args[0].obj_val);
-                if (other && cstr_eq_n(other, "NSData:", 7)) {
-                    return value_from_int(cstr_eq(s, other) ? 1 : 0);
+                if (other && (cstr_eq_n(other, "NSData:", 7) || cstr_eq_n(other, "NSMutData:", 10))) {
+                    /* Compare hex payload regardless of mutability marker */
+                    const char *hex1 = s + prefix_len;
+                    int hlen1 = (int)cstr_len(hex1);
+                    int other_prefix = cstr_eq_n(other, "NSMutData:", 10) ? 10 : 7;
+                    const char *hex2 = other + other_prefix;
+                    int hlen2 = (int)cstr_len(hex2);
+                    if (hlen1 != hlen2) return value_from_int(0);
+                    return value_from_int(cstr_eq(hex1, hex2) ? 1 : 0);
                 }
                 return value_from_int(0);
             }
@@ -2719,15 +2798,21 @@ Value parse_message_send(Parser *p) {
             /* [data isEqualToData:other] → compare data */
             if (cstr_eq(sel_name, "isEqualToData:") && arg_count >= 1) {
                 const char *other = obj_deref(keyword_args[0].obj_val);
-                if (other && cstr_eq_n(other, "NSData:", 7)) {
-                    return value_from_int(cstr_eq(s, other) ? 1 : 0);
+                if (other && (cstr_eq_n(other, "NSData:", 7) || cstr_eq_n(other, "NSMutData:", 10))) {
+                    const char *hex1 = s + prefix_len;
+                    int hlen1 = (int)cstr_len(hex1);
+                    int other_prefix = cstr_eq_n(other, "NSMutData:", 10) ? 10 : 7;
+                    const char *hex2 = other + other_prefix;
+                    int hlen2 = (int)cstr_len(hex2);
+                    if (hlen1 != hlen2) return value_from_int(0);
+                    return value_from_int(cstr_eq(hex1, hex2) ? 1 : 0);
                 }
                 return value_from_int(0);
             }
 
             /* [data byteAtIndex:i] → return integer value of byte at index */
             if (cstr_eq(sel_name, "byteAtIndex:") && arg_count >= 1) {
-                const char *hex = s + 7;
+                const char *hex = s + prefix_len;
                 int hex_len = (int)cstr_len(hex);
                 int idx = keyword_args[0].is_int ? keyword_args[0].int_val : 0;
                 if (idx < 0 || idx * 2 + 1 >= hex_len) return value_from_int(0);
@@ -2747,7 +2832,7 @@ Value parse_message_send(Parser *p) {
             /* [data subdataWithRange:] → extract subrange as new NSData
              * Accepts two integer args: location and length (simulating NSRange). */
             if (cstr_eq(sel_name, "subdataWithRange:") && arg_count >= 2) {
-                const char *hex = s + 7;
+                const char *hex = s + prefix_len;
                 int hex_len = (int)cstr_len(hex);
                 int loc = keyword_args[0].is_int ? keyword_args[0].int_val : 0;
                 int len = keyword_args[1].is_int ? keyword_args[1].int_val : 0;
@@ -2772,24 +2857,28 @@ Value parse_message_send(Parser *p) {
                 }
             }
 
-            /* [data appendData:other] → append other's bytes (NSMutableData) */
+            /* [data appendData:other] → append other's bytes (NSMutableData)
+             * Returns NSMutData: if receiver is mutable, NSData: otherwise. */
             if (cstr_eq(sel_name, "appendData:") && arg_count >= 1) {
                 const char *other = obj_deref(keyword_args[0].obj_val);
-                if (other && cstr_eq_n(other, "NSData:", 7)) {
-                    const char *hex1 = s + 7;
-                    const char *hex2 = other + 7;
+                if (other && (cstr_eq_n(other, "NSData:", 7) || cstr_eq_n(other, "NSMutData:", 10))) {
+                    const char *hex1 = s + prefix_len;
+                    int other_prefix = cstr_eq_n(other, "NSMutData:", 10) ? 10 : 7;
+                    const char *hex2 = other + other_prefix;
                     int len1 = (int)cstr_len(hex1);
                     int len2 = (int)cstr_len(hex2);
-                    unsigned int needed = 7 + (unsigned int)(len1 + len2) + 1;
+                    const char *out_prefix = is_mut ? "NSMutData:" : "NSData:";
+                    int out_prefix_len = is_mut ? 10 : 7;
+                    unsigned int needed = (unsigned int)out_prefix_len + (unsigned int)(len1 + len2) + 1;
                     ObjId h = obj_alloc(needed);
                     if (h == OBJ_NULL) return value_from_obj(receiver);
                     char *buf = obj_deref_mut(h);
-                    cstr_copy(buf, "NSData:", needed);
+                    cstr_copy(buf, out_prefix, needed);
                     {
                         int i;
-                        for (i = 0; i < len1; i++) buf[7 + i] = hex1[i];
-                        for (i = 0; i < len2; i++) buf[7 + len1 + i] = hex2[i];
-                        buf[7 + len1 + len2] = '\0';
+                        for (i = 0; i < len1; i++) buf[out_prefix_len + i] = hex1[i];
+                        for (i = 0; i < len2; i++) buf[out_prefix_len + len1 + i] = hex2[i];
+                        buf[out_prefix_len + len1 + len2] = '\0';
                     }
                     return value_from_obj(h);
                 }
@@ -2799,9 +2888,10 @@ Value parse_message_send(Parser *p) {
             /* [data dataByAppendingData:other] → return new NSData with both (immutable) */
             if (cstr_eq(sel_name, "dataByAppendingData:") && arg_count >= 1) {
                 const char *other = obj_deref(keyword_args[0].obj_val);
-                if (other && cstr_eq_n(other, "NSData:", 7)) {
-                    const char *hex1 = s + 7;
-                    const char *hex2 = other + 7;
+                if (other && (cstr_eq_n(other, "NSData:", 7) || cstr_eq_n(other, "NSMutData:", 10))) {
+                    const char *hex1 = s + prefix_len;
+                    int other_prefix = cstr_eq_n(other, "NSMutData:", 10) ? 10 : 7;
+                    const char *hex2 = other + other_prefix;
                     int len1 = (int)cstr_len(hex1);
                     int len2 = (int)cstr_len(hex2);
                     unsigned int needed = 7 + (unsigned int)(len1 + len2) + 1;
@@ -2821,45 +2911,64 @@ Value parse_message_send(Parser *p) {
             }
 
             /* [data appendBytes:length:] → append raw bytes (NSMutableData)
-             * Accepts a string (each char = byte) and length. */
+             * Accepts a string (each char = byte) and length.
+             * Returns NSMutData: if receiver is mutable, NSData: otherwise. */
             if (cstr_eq(sel_name, "appendBytes:length:") && arg_count >= 2) {
                 const char *bytes = obj_deref(keyword_args[0].obj_val);
                 int len = keyword_args[1].is_int ? keyword_args[1].int_val : 0;
-                const char *hex = s + 7;
+                const char *hex = s + prefix_len;
                 int hex_len = (int)cstr_len(hex);
+                const char *out_prefix = is_mut ? "NSMutData:" : "NSData:";
+                int out_prefix_len = is_mut ? 10 : 7;
                 if (len < 0) len = 0;
                 {
                     int blen = (int)cstr_len(bytes);
                     if (len > blen) len = blen;
-                    unsigned int needed = 7 + (unsigned int)(hex_len + len * 2) + 1;
+                    unsigned int needed = (unsigned int)out_prefix_len + (unsigned int)(hex_len + len * 2) + 1;
                     ObjId h = obj_alloc(needed);
                     if (h == OBJ_NULL) return value_from_obj(receiver);
                     char *buf = obj_deref_mut(h);
-                    cstr_copy(buf, "NSData:", needed);
+                    cstr_copy(buf, out_prefix, needed);
                     {
                         int i;
-                        for (i = 0; i < hex_len; i++) buf[7 + i] = hex[i];
+                        for (i = 0; i < hex_len; i++) buf[out_prefix_len + i] = hex[i];
                         {
                             static const char hex_chars[] = "0123456789abcdef";
                             for (i = 0; i < len; i++) {
                                 unsigned char c = (unsigned char)bytes[i];
-                                buf[7 + hex_len + i * 2] = hex_chars[(c >> 4) & 0x0f];
-                                buf[7 + hex_len + i * 2 + 1] = hex_chars[c & 0x0f];
+                                buf[out_prefix_len + hex_len + i * 2] = hex_chars[(c >> 4) & 0x0f];
+                                buf[out_prefix_len + hex_len + i * 2 + 1] = hex_chars[c & 0x0f];
                             }
-                            buf[7 + hex_len + len * 2] = '\0';
+                            buf[out_prefix_len + hex_len + len * 2] = '\0';
                         }
                     }
                     return value_from_obj(h);
                 }
             }
 
-            /* [data copy] → return a copy of this NSData */
+            /* [data copy] → return an immutable copy */
             if (cstr_eq(sel_name, "copy") && arg_count == 0) {
-                unsigned int needed = (unsigned int)cstr_len(s) + 1;
+                const char *hex = s + prefix_len;
+                int hex_len = (int)cstr_len(hex);
+                unsigned int needed = 7 + (unsigned int)hex_len + 1;
                 ObjId h = obj_alloc(needed);
                 if (h == OBJ_NULL) return value_from_obj(receiver);
                 char *buf = obj_deref_mut(h);
-                cstr_copy(buf, s, needed);
+                cstr_copy(buf, "NSData:", needed);
+                cstr_copy(buf + 7, hex, (unsigned int)hex_len + 1);
+                return value_from_obj(h);
+            }
+
+            /* [data mutableCopy] → return a mutable copy */
+            if (cstr_eq(sel_name, "mutableCopy") && arg_count == 0) {
+                const char *hex = s + prefix_len;
+                int hex_len = (int)cstr_len(hex);
+                unsigned int needed = 10 + (unsigned int)hex_len + 1;
+                ObjId h = obj_alloc(needed);
+                if (h == OBJ_NULL) return value_from_obj(receiver);
+                char *buf = obj_deref_mut(h);
+                cstr_copy(buf, "NSMutData:", needed);
+                cstr_copy(buf + 10, hex, (unsigned int)hex_len + 1);
                 return value_from_obj(h);
             }
         }
@@ -2870,8 +2979,9 @@ Value parse_message_send(Parser *p) {
          * Accepts NSData, returns NSData (32 bytes). */
         if (IS_FOUNDATION_CLASS("CID") && target.is_class && cstr_eq(sel_name, "sha256Digest:") && arg_count >= 1) {
             const char *arg = obj_deref(keyword_args[0].obj_val);
-            if (arg && cstr_eq_n(arg, "NSData:", 7)) {
-                const char *hex = arg + 7;
+            if (arg && (cstr_eq_n(arg, "NSData:", 7) || cstr_eq_n(arg, "NSMutData:", 10))) {
+                int arg_prefix = cstr_eq_n(arg, "NSMutData:", 10) ? 10 : 7;
+                const char *hex = arg + arg_prefix;
                 int hex_len = (int)cstr_len(hex);
                 int byte_len = hex_len / 2;
                 /* Decode hex to raw bytes in a temp buffer, call host, encode result */
@@ -2924,8 +3034,9 @@ Value parse_message_send(Parser *p) {
             /* Delegate to sha256Digest: then wrap in CID */
             /* For now, return the digest as NSData (same as sha256Digest:) */
             const char *arg = obj_deref(keyword_args[0].obj_val);
-            if (arg && cstr_eq_n(arg, "NSData:", 7)) {
-                const char *hex = arg + 7;
+            if (arg && (cstr_eq_n(arg, "NSData:", 7) || cstr_eq_n(arg, "NSMutData:", 10))) {
+                int arg_prefix = cstr_eq_n(arg, "NSMutData:", 10) ? 10 : 7;
+                const char *hex = arg + arg_prefix;
                 int hex_len = (int)cstr_len(hex);
                 int byte_len = hex_len / 2;
                 char *raw = (char *)0;
@@ -2973,8 +3084,9 @@ Value parse_message_send(Parser *p) {
         /* [CID base32Encode:data] → base32 string via host bridge */
         if (IS_FOUNDATION_CLASS("CID") && target.is_class && cstr_eq(sel_name, "base32Encode:") && arg_count >= 1) {
             const char *arg = obj_deref(keyword_args[0].obj_val);
-            if (arg && cstr_eq_n(arg, "NSData:", 7)) {
-                const char *hex = arg + 7;
+            if (arg && (cstr_eq_n(arg, "NSData:", 7) || cstr_eq_n(arg, "NSMutData:", 10))) {
+                int arg_prefix = cstr_eq_n(arg, "NSMutData:", 10) ? 10 : 7;
+                const char *hex = arg + arg_prefix;
                 int hex_len = (int)cstr_len(hex);
                 int byte_len = hex_len / 2;
                 char *raw = (char *)0;
@@ -3044,8 +3156,9 @@ Value parse_message_send(Parser *p) {
         /* [CryptoUtils sha256:data] → NSData via host bridge */
         if (IS_FOUNDATION_CLASS("CryptoUtils") && target.is_class && cstr_eq(sel_name, "sha256:") && arg_count >= 1) {
             const char *arg = obj_deref(keyword_args[0].obj_val);
-            if (arg && cstr_eq_n(arg, "NSData:", 7)) {
-                const char *hex = arg + 7;
+            if (arg && (cstr_eq_n(arg, "NSData:", 7) || cstr_eq_n(arg, "NSMutData:", 10))) {
+                int arg_prefix = cstr_eq_n(arg, "NSMutData:", 10) ? 10 : 7;
+                const char *hex = arg + arg_prefix;
                 int hex_len = (int)cstr_len(hex);
                 int byte_len = hex_len / 2;
                 char *raw = (char *)0;
@@ -3176,6 +3289,60 @@ Value parse_message_send(Parser *p) {
             return value_from_obj(coll_make_marker("NSSet:", cid));
         }
 
+        /* NSSet: [NSSet set] → empty set */
+        if (IS_FOUNDATION_CLASS("NSSet") && target.is_class && cstr_eq(sel_name, "set") && arg_count == 0) {
+            unsigned int cid = coll_create_new();
+            return value_from_obj(coll_make_marker("NSSet:", cid));
+        }
+
+        /* NSSet: [NSSet setWithObject:obj] → set with one object */
+        if (IS_FOUNDATION_CLASS("NSSet") && target.is_class && cstr_eq(sel_name, "setWithObject:") && arg_count >= 1) {
+            unsigned int cid = coll_create_new();
+            Value dummy = value_void();
+            coll_add(cid, keyword_args[0], dummy);
+            return value_from_obj(coll_make_marker("NSSet:", cid));
+        }
+
+        /* NSMutableSet: [NSMutableSet set] → empty mutable set */
+        if (IS_FOUNDATION_CLASS("NSMutableSet") && target.is_class && cstr_eq(sel_name, "set") && arg_count == 0) {
+            unsigned int cid = coll_create_new();
+            return value_from_obj(coll_make_marker("NSMutSet:", cid));
+        }
+
+        /* NSMutableSet: [NSMutableSet setWithCapacity:n] → empty mutable set */
+        if (IS_FOUNDATION_CLASS("NSMutableSet") && target.is_class && cstr_eq(sel_name, "setWithCapacity:") && arg_count >= 1) {
+            unsigned int cid = coll_create_new();
+            return value_from_obj(coll_make_marker("NSMutSet:", cid));
+        }
+
+        /* NSMutableSet: [NSMutableSet setWithArray:arr] → mutable set from array */
+        if (IS_FOUNDATION_CLASS("NSMutableSet") && target.is_class && cstr_eq(sel_name, "setWithArray:") && arg_count >= 1) {
+            unsigned int cid = coll_create_new();
+            const char *arr_s = obj_deref(keyword_args[0].obj_val);
+            unsigned int arr_cid = coll_id_from_marker(arr_s, "NSArr:");
+            if (arr_cid == 0) arr_cid = coll_id_from_marker(arr_s, "NSMutArr:");
+            if (arr_cid > 0) {
+                unsigned int i;
+                for (i = 0; i < g_ctx.coll_entry_count; i++) {
+                    if (g_ctx.coll_entries[i].coll_id == arr_cid) {
+                        int existing = coll_find_by_key(cid, &g_ctx.coll_entries[i].key);
+                        if (existing < 0) {
+                            coll_add(cid, g_ctx.coll_entries[i].key, g_ctx.coll_entries[i].value);
+                        }
+                    }
+                }
+            }
+            return value_from_obj(coll_make_marker("NSMutSet:", cid));
+        }
+
+        /* NSMutableSet: [NSMutableSet setWithObject:obj] → mutable set with one object */
+        if (IS_FOUNDATION_CLASS("NSMutableSet") && target.is_class && cstr_eq(sel_name, "setWithObject:") && arg_count >= 1) {
+            unsigned int cid = coll_create_new();
+            Value dummy = value_void();
+            coll_add(cid, keyword_args[0], dummy);
+            return value_from_obj(coll_make_marker("NSMutSet:", cid));
+        }
+
         /* ── Instance method dispatch on collection objects ────── */
 
         {
@@ -3189,6 +3356,7 @@ Value parse_message_send(Parser *p) {
                 if (cid == 0) cid = coll_id_from_marker(s, "NSDict:");
                 if (cid == 0) cid = coll_id_from_marker(s, "NSMutDict:");
                 if (cid == 0) cid = coll_id_from_marker(s, "NSSet:");
+                if (cid == 0) cid = coll_id_from_marker(s, "NSMutSet:");
             }
 
             if (cid > 0) {
@@ -3337,6 +3505,26 @@ Value parse_message_send(Parser *p) {
                 if (cstr_eq(sel_name, "containsObject:") && arg_count >= 1) {
                     int idx = coll_find_by_key(cid, &keyword_args[0]);
                     return value_from_int(idx >= 0 ? 1 : 0);
+                }
+
+                /* [mutSet removeObject:obj] → remove object from set */
+                if (cstr_eq(sel_name, "removeObject:") && arg_count >= 1) {
+                    int idx = coll_find_by_key(cid, &keyword_args[0]);
+                    if (idx >= 0) {
+                        coll_remove_at((unsigned int)idx);
+                    }
+                    return value_from_obj(receiver);
+                }
+
+                /* [mutSet addObject:obj] → add object to set (no duplicates) */
+                if (cstr_eq(sel_name, "addObject:") && arg_count >= 1 &&
+                    (cstr_starts(s, "NSMutSet:") || cstr_starts(s, "NSSet:"))) {
+                    int existing = coll_find_by_key(cid, &keyword_args[0]);
+                    if (existing < 0) {
+                        Value dummy = value_void();
+                        coll_add(cid, keyword_args[0], dummy);
+                    }
+                    return value_from_obj(receiver);
                 }
 
                 /* [dict setObject:forKey: — alternate keyword arg parsing
@@ -3633,15 +3821,18 @@ Value parse_message_send(Parser *p) {
                         /* Foundation tagged objects — map marker prefix to sentinel class.
                          * Must match objc_interpreter.c foundation_classes[] order:
                          * NSObject=1, NSString=2, NSNumber=3, NSArray=4, NSMutableArray=5,
-                         * NSDictionary=6, NSMutableDictionary=7, NSSet=8, NSData=9 */
+                         * NSDictionary=6, NSMutableDictionary=7, NSSet=8, NSMutableSet=9,
+                         * NSData=10, NSMutableData=11, NSMutableString=14 */
                         if (cstr_starts(r, "NSNumber:") || cstr_starts(r, "NSFloat:")) recv_cls = (Class)3;
                         else if (cstr_starts(r, "NSArr:")) recv_cls = (Class)4;
                         else if (cstr_starts(r, "NSMutArr:")) recv_cls = (Class)5;
                         else if (cstr_starts(r, "NSDict:")) recv_cls = (Class)6;
                         else if (cstr_starts(r, "NSMutDict:")) recv_cls = (Class)7;
                         else if (cstr_starts(r, "NSSet:")) recv_cls = (Class)8;
-                        else if (cstr_starts(r, "NSData:")) recv_cls = (Class)9;
-                        else if (cstr_starts(r, "NSMutStr:")) recv_cls = (Class)12;
+                        else if (cstr_starts(r, "NSMutSet:")) recv_cls = (Class)9;
+                        else if (cstr_starts(r, "NSData:")) recv_cls = (Class)10;
+                        else if (cstr_starts(r, "NSMutData:")) recv_cls = (Class)11;
+                        else if (cstr_starts(r, "NSMutStr:")) recv_cls = (Class)14;
                         else if (cstr_starts(r, "NSBlock:")) recv_cls = (Class)20;
                         /* String pool pointers without NSStr: prefix are NSString */
                         else recv_cls = (Class)2;
@@ -3683,8 +3874,10 @@ Value parse_message_send(Parser *p) {
                         else if (cstr_starts(r, "NSDict:")) recv_cls = (Class)6;
                         else if (cstr_starts(r, "NSMutDict:")) recv_cls = (Class)7;
                         else if (cstr_starts(r, "NSSet:")) recv_cls = (Class)8;
-                        else if (cstr_starts(r, "NSData:")) recv_cls = (Class)9;
-                        else if (cstr_starts(r, "NSMutStr:")) recv_cls = (Class)12;
+                        else if (cstr_starts(r, "NSMutSet:")) recv_cls = (Class)9;
+                        else if (cstr_starts(r, "NSData:")) recv_cls = (Class)10;
+                        else if (cstr_starts(r, "NSMutData:")) recv_cls = (Class)11;
+                        else if (cstr_starts(r, "NSMutStr:")) recv_cls = (Class)14;
                         else if (cstr_starts(r, "NSBlock:")) recv_cls = (Class)20;
                         else recv_cls = (Class)2;
                     }
