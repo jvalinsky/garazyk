@@ -1,14 +1,8 @@
----
-title: macOS vs GNUstep Boundary
----
-
 # macOS vs GNUstep Boundary
 
-## Goal
+Garazyk maintains a strict boundary between shared Objective-C logic and platform-specific implementations for macOS and GNUstep. This split manages divergence in security frameworks, networking stacks, and Foundation behavior.
 
-This page explains where Garazyk uses compatibility shims versus true platform-specific implementations, and highlights runtime differences.
-
-## Full Flow
+## Architecture
 
 ```mermaid
 flowchart TD
@@ -26,58 +20,35 @@ flowchart TD
     Shared --> Data
 ```
 
-## Why This Boundary Is Not Just `#if`
+## Platform Divergence
 
-The platform split affects what the runtime guarantees:
+### Security and Cryptography
+- **macOS**: Utilizes `Security.framework` and Keychain APIs directly for key management and signing.
+- **GNUstep**: Falls back to OpenSSL-backed implementations (`PDSOpenSSLActorKeyManager`) when Apple-specific security APIs are unavailable.
 
-- macOS can use Keychain and Security-framework APIs directly,
-- GNUstep must fall back to compatibility layers and OpenSSL-backed code,
-- networking and Foundation behavior are not identical across both runtimes,
-- some APIs exist as declarations on GNUstep but are not reliable enough to trust in the same way.
+### Networking
+- **macOS**: Leverages modern networking frameworks and system transport optimizations.
+- **GNUstep**: Utilizes `NSURLConnection` on background queues or BSD sockets directly to ensure compatibility across Linux distributions.
 
-Therefore, a change can compile on both platforms but fail on one.
+### Foundation and Runtime
+- **Memory Management**: ARC behavior and CoreFoundation bridging often require explicit macros in `PDSTypes.h` to maintain cross-platform stability.
+- **API Availability**: Some Foundation APIs declared in GNUstep may lack the implementation depth or performance characteristics of their macOS counterparts.
 
-## Walkthrough: Two Real Seams
+## Implementation Seams
+- **`AuthCryptoJWK.m`**: Manages cryptographic primitive abstraction.
+- **`HandleResolver.m`**: Implements platform-specific DNS and HTTP resolution paths.
+- **`PDSTypes.h`**: Defines compatibility macros and type aliases for cross-platform builds.
 
-Two concrete examples illustrate the boundary:
-
-1. `Garazyk/Sources/Auth/PDSAppleActorKeyManager.m` can use Keychain-backed storage on macOS, but it must fall back when Keychain APIs are unavailable on GNUstep.
-2. `Garazyk/Sources/Identity/HandleResolver.m` documents a GNUstep path that uses `NSURLConnection` on a background queue instead of assuming the macOS networking stack.
-
-`AuthCryptoJWK.m` and `PDSTypes.h` further demonstrate why compatibility work needs deliberate review.
-
-## What Contributors Should Verify
-
-- Did you introduce a framework call that only exists on macOS?
-- Did you assume Keychain or `SecKey` behavior that GNUstep does not provide?
-- Did you add a CoreFoundation ownership pattern that depends on Apple runtime details?
-- Did you assume one networking path exists everywhere?
-
-Answering these questions catches most accidental regressions.
-
-## Where To Debug When This Breaks
-
-- Start in `Garazyk/Sources/Compat/PDSTypes.h` and the compat headers for macro and type issues.
-- Start in the Apple and OpenSSL key-manager implementations when signing or key loading diverges by platform.
-- Start in `Garazyk/Sources/Identity/HandleResolver.m` when network behavior differs between macOS and GNUstep.
-- Start in `Garazyk/Sources/Database/PDSDatabase.m` when SQLite or Foundation interaction changes by platform.
-
-## Tests That Should Fail If This Changes
-
-- `Garazyk/Tests/App/PDSApplicationTests.m`
-- `Garazyk/Tests/Auth/OAuth2HandlerTests.m`
-- `Garazyk/Tests/Database/Integration/DatabaseMigrationTests.m`
-- the Linux/GNUstep CI build and test jobs
-
-## Appendix
-
-### Practical rule
-
-Changes touching crypto, networking, CoreFoundation bridging, or compatibility macros require explicit cross-platform review.
+## Verification Requirements
+Review changes for:
+- Reliance on macOS-only frameworks or `SecKey` behavior.
+- CoreFoundation ownership patterns that assume Apple-specific runtime details.
+- Networking assumptions that bypass the compatibility layer.
+- Threading or synchronization primitives that diverge in behavior between Apple and GNUstep runtimes.
 
 ## Related
-
+- [Compatibility Layer](./compatibility-layer)
+- [ARC Runtime](./arc-runtime)
+- [Network Transport](./network-transport)
 - [Documentation Map](../11-reference/documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
 

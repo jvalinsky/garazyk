@@ -1,18 +1,11 @@
----
-title: Testing Guide
----
-
 # Testing Guide
 
-This page is the older detailed testing guide. For contributor workflow decisions, start with [Testing Map](11-reference/testing-map), [Test Selection Workflow](11-reference/test-selection-workflow), and [Test Organization](11-reference/test-organization).
+This guide details the technical execution and security coverage of the Garazyk test suite. For selection strategy and organization, see the [Testing Map](11-reference/testing-map).
 
-> [!IMPORTANT]
-> Dated pass-rate reports are historical. Verify the current tree with `xcodegen generate`, `xcodebuild -scheme AllTests build`, and `./build/tests/AllTests`.
-
-## Running Tests
+## Execution
 
 ### macOS (Xcode)
-The macOS path uses XcodeGen and the generated `Garazyk.xcodeproj`.
+The macOS suite utilizes XcodeGen and a custom runner.
 
 **Command Line:**
 ```bash
@@ -21,14 +14,8 @@ xcodebuild -scheme AllTests build
 ./build/tests/AllTests
 ```
 
-**IDE:**
-1. Run `xcodegen generate`.
-2. Open `Garazyk.xcodeproj`.
-2. Select the `AllTests` scheme.
-3. Build the scheme, then run `./build/tests/AllTests` for the custom runner.
-
-## Linux (GNUstep)
-Linux support is provided via GNUstep. Use an out-of-source CMake build directory.
+### Linux (GNUstep)
+Linux execution utilizes a CMake build with GNUstep.
 
 ```bash
 cmake -S . -B build-linux -DCMAKE_BUILD_TYPE=Debug
@@ -36,67 +23,43 @@ cmake --build build-linux -j
 ./build-linux/tests/AllTests
 ```
 
-New Objective-C test classes must be registered in `Garazyk/Tests/test_main.m`; otherwise they can compile without running.
+**Registration Requirement**: New Objective-C test classes must be added to `testClasses` in `Garazyk/Tests/test_main.m` to be included in the runner execution.
 
-## Identity & Authentication
+## Identity and Authentication
 
-This section covers identity resolution, authentication flows, and core security primitives.
+### Identity Resolution
+The suite verifies the resolution of ATProto handles to DIDs and DID Documents via `HandleResolver` and `DIDResolver`.
+- **Standards Compliance**: Validates handle syntax and HTTPS well-known resolution against ATProto specifications.
+- **SSRF Protection**: `HandleResolverSSRFTests` confirms the blocking of private IP ranges (10.x, 127.x, 169.254.x, IPv6) during resolution.
+- **Input Hardening**: Verifies rejection of malformed segments and excessive input lengths.
 
-### Identity System
+### Authentication Primitives
+- **JWT Lifecycle**: Tests the minting and verification of access and refresh tokens, session revocation, and rotation logic.
+- **Cryptographic Enforcement**: `JWTSecurityTests` enforces the rejection of the "none" algorithm and unverified signatures.
+- **Key Management**: `KeyRotationTests` validates that tokens from previous active keys remain valid during transition periods.
+- **Core Crypto**: Validates SHA256, HMAC-SHA256, and random number generation against RFC 4231 test vectors.
 
-**HandleResolver & DIDResolver**
-*   **What it tests:** Resolution of ATProto handles to DIDs and DIDs to DID Documents. Verifies handle syntax, HTTPS well-known resolution, and caching mechanisms.
-*   **Why it exists:** Ensures user identities can be reliably discovered and verified across the network, adhering to the ATProto Identity specifications.
-*   **Sources:** [ATProto DID Specification](https://atproto.com/specs/did), [ATProto Handle Specification](https://atproto.com/specs/handle).
-*   **Security Verifications:**
-    *   **SSRF Protection:** Explicitly blocks resolution to private IP ranges (10.x, 127.x, 169.254.x, IPv6 link-local) to prevent Server-Side Request Forgery (`HandleResolverSSRFTests`).
-    *   **Input Validation:** Rejects invalid characters, excessive lengths, and malformed segments.
+### OAuth 2.0 and DPoP
+Tests the full authorization code flow, including `/oauth/authorize` and `/oauth/token`.
+- **PKCE**: `OAuthPKCETests` enforces Proof Key for Code Exchange to prevent authorization code injection.
+- **DPoP**: `OAuthDPoPTests` verifies cryptographic binding of tokens to client keys to mitigate replay attacks.
+- **State Integrity**: Enforces state parameter verification to prevent CSRF.
 
-### Authentication Core
+## Security Verifications
 
-**JWT & Session Management**
-*   **What it tests:** Minting and verifying JSON Web Tokens (access and refresh tokens), session lifecycle (creation, lookup, revocation), and token refresh flows.
-*   **Why it exists:** Manages secure, stateless user sessions and ensures tokens are cryptographically bound and time-limited.
-*   **Sources:** RFC 7519 (JWT).
-*   **Security Verifications:**
-    *   **Algorithm Enforcement:** Explicitly rejects the "none" algorithm and unverified signatures (`JWTSecurityTests`).
-    *   **Claim Validation:** Enforces `iss` (issuer), `aud` (audience), and `exp` (expiration) checks.
-    *   **Key Rotation:** Verifies that tokens signed by rotated keys are accepted during transition periods (`KeyRotationTests`).
+### Input Validation
+`PDSInputValidatorTests` ensures all external inputs (DIDs, handles, record keys) are sanitized.
+- **Path Traversal**: Blocks malformed file paths.
+- **SQL Injection**: Validates removal of dangerous characters before persistence.
+- **Parser Hardening**: `CBORSecurityTests` verifies resistance to allocation bombs, deep nesting, and buffer overreads.
 
-**Cryptography**
-*   **What it tests:** Core cryptographic primitives including SHA256, HMAC-SHA256, and random number generation.
-*   **Why it exists:** Provides the foundational security layer for all higher-level auth protocols.
-*   **Sources:** RFC 4231 (HMAC Test Vectors).
-*   **Security Verifications:** Validates output against standard test vectors to ensure correct implementation of cryptographic algorithms.
+### Access Control
+- **Repository Isolation**: `PDSAuthzManagerTests` verifies the rejection of cross-repository writes.
+- **Admin Privileges**: Ensures administrative endpoints require validated admin credentials.
 
-### OAuth 2.0 & OIDC
-
-**OAuth Endpoints & Handlers**
-*   **What it tests:** The full OAuth 2.0 authorization code flow, including `/oauth/authorize`, `/oauth/token`, and `/oauth/revoke` endpoints.
-*   **Why it exists:** Enables third-party clients to authenticate users safely without handling credentials.
-*   **Sources:** RFC 6749 (OAuth 2.0), RFC 7636 (PKCE), RFC 9449 (DPoP).
-*   **Security Verifications:**
-    *   **PKCE:** Enforces Proof Key for Code Exchange to prevent authorization code injection (`OAuthPKCETests`).
-    *   **DPoP:** Verifies "Demonstrating Proof-of-Possession" to bind tokens to client keys, preventing replay attacks if tokens are stolen (`OAuthDPoPTests`).
-    *   **State Parameter:** Enforces state checks to prevent CSRF.
-
-### Security Primitives
-
-**Input Validation & Authorization**
-*   **What it tests:** Validation of all external inputs (DIDs, handles, record keys) and authorization checks for repository access and admin actions.
-*   **Why it exists:** Prevents common web vulnerabilities and ensures users can only modify their own data.
-*   **Security Verifications:**
-    *   **Sanitization:** Tests removal of dangerous characters from SQL inputs, file paths (path traversal), and JSON fields (XSS) (`PDSInputValidatorTests`).
-    *   **Access Control:** Verifies that cross-repo writes are rejected and admin endpoints require admin privileges (`PDSAuthzManagerTests`).
-    *   **CBOR Hardening:** Tests resistance to "zip bombs" (large allocations), deep nesting (stack overflows), and buffer overreads in CBOR decoding (`CBORSecurityTests`).
-
-**MFA & Hardware Tokens**
-*   **What it tests:** Time-based One-Time Passwords (TOTP) and WebAuthn (Passkeys) registration and assertion flows.
-*   **Why it exists:** Supports Multi-Factor Authentication for enhanced account security.
-*   **Sources:** RFC 6238 (TOTP), W3C WebAuthn Level 3.
-*   **Security Verifications:**
-    *   **Attestation:** Verifies FIDO2 attestation objects and challenges during registration (`WebAuthnVerifierTests`).
-    *   **Time Windows:** Enforces strict time windows for TOTP codes to prevent replay.
+### MFA and TOTP
+- **Hardware Tokens**: `WebAuthnVerifierTests` validates FIDO2 attestation and registration challenges.
+- **TOTP**: Enforces strict time windows and prevents code reuse.
 
 ## Core & Repository Layer
 
