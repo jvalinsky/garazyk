@@ -459,6 +459,16 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
 
 @implementation OAuth2Server
 
+- (void)setIssuer:(NSString *)issuer {
+    _issuer = [issuer copy];
+    if (self.jwtMinter) {
+        self.jwtMinter.issuer = _issuer;
+        if (!self.jwtMinter.audience) {
+            self.jwtMinter.audience = _issuer;
+        }
+    }
+}
+
 - (instancetype)initWithDatabase:(nullable PDSDatabase *)database {
     self = [super init];
     if (self) {
@@ -876,6 +886,12 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
                                            scope:scope
                                dpopKeyThumbprint:request.dpopKeyThumbprint];
 
+    // Store refresh token in database (H3)
+    [self.database storeRefreshToken:session.refreshToken
+                      forAccountDid:session.did
+                          expiresAt:session.refreshTokenExpiresAt
+                              error:nil];
+
     [[PDSMetrics sharedMetrics] incrementOAuthTokenGrant:@"authorization_code"];
     [[PDSMetrics sharedMetrics] setActiveAuthSessions:(NSInteger)self.activeSessions.count];
     completion(session, nil);
@@ -883,6 +899,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
 
 - (void)processRefreshTokenGrant:(OAuth2TokenRequest *)request
                       completion:(OAuth2TokenCompletion)completion {
+    // 1. Try to find active session in memory
     Session *existingSession = nil;
     for (Session *session in self.activeSessions.allValues) {
         if ([session.refreshToken isEqualToString:request.refreshToken]) {
@@ -891,16 +908,40 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         }
     }
 
-    if (!existingSession) {
-        NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
-                                             code:OAuth2ErrorInvalidGrant
-                                         userInfo:@{NSLocalizedDescriptionKey: @"Invalid refresh token"}];
-        completion(nil, error);
-        return;
+    NSString *did = nil;
+    if (existingSession) {
+        did = existingSession.did;
+    } else {
+        // 2. Fallback to database for server-side persistence (H3/H4)
+        NSError *dbError = nil;
+        did = [self.database accountDidForRefreshToken:request.refreshToken error:&dbError];
+        if (!did) {
+            PDS_LOG_AUTH_WARN(@"Invalid or expired refresh token (not found in memory or DB): %@", request.refreshToken);
+            NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                                 code:OAuth2ErrorInvalidGrant
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Invalid or expired refresh token"}];
+            completion(nil, error);
+            return;
+        }
     }
 
-    if ([existingSession.refreshTokenExpiresAt compare:[NSDate date]] == NSOrderedAscending) {
+    // 3. Verify token_use claim if it's a JWT (H3)
+    NSError *jwtError = nil;
+    JWT *refreshTokenJWT = [JWT jwtWithToken:request.refreshToken error:&jwtError];
+    if (refreshTokenJWT) {
+        if (![refreshTokenJWT.payload.token_use isEqualToString:@"refresh"]) {
+            PDS_LOG_AUTH_ERROR(@"Token usage mismatch: expected 'refresh', got '%@'", refreshTokenJWT.payload.token_use ?: @"none");
+            NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                                 code:OAuth2ErrorInvalidGrant
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Invalid token use"}];
+            completion(nil, error);
+            return;
+        }
+    }
+
+    if (existingSession && [existingSession.refreshTokenExpiresAt compare:[NSDate date]] == NSOrderedAscending) {
         [self.activeSessions removeObjectForKey:existingSession.sessionID];
+        [self.database revokeSession:request.refreshToken error:nil];
         NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                              code:OAuth2ErrorTokenExpired
                                          userInfo:@{NSLocalizedDescriptionKey: @"Refresh token expired"}];
@@ -908,13 +949,34 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         return;
     }
 
-    NSString *newScope = request.scope ?: existingSession.scope;
-    Session *newSession = [self createSessionForDID:existingSession.did
-                                             handle:existingSession.handle
+    // 4. Issue new tokens
+    NSError *accountError = nil;
+    PDSDatabaseAccount *account = [self.database getAccountByDid:did error:&accountError];
+    if (!account) {
+        NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
+                                             code:OAuth2ErrorInvalidGrant
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Account not found"}];
+        completion(nil, error);
+        return;
+    }
+
+    NSString *newScope = request.scope ?: (existingSession ? existingSession.scope : OAuth2ScopeAtproto);
+    Session *newSession = [self createSessionForDID:did
+                                             handle:account.handle
                                               scope:newScope
                                   dpopKeyThumbprint:nil];
 
-    [self.activeSessions removeObjectForKey:existingSession.sessionID];
+    // 5. Cleanup old session
+    if (existingSession) {
+        [self.activeSessions removeObjectForKey:existingSession.sessionID];
+    }
+    [self.database revokeSession:request.refreshToken error:nil];
+
+    // 6. Store new refresh token (H3)
+    [self.database storeRefreshToken:newSession.refreshToken
+                      forAccountDid:newSession.did
+                          expiresAt:newSession.refreshTokenExpiresAt
+                              error:nil];
 
     [[PDSMetrics sharedMetrics] incrementOAuthTokenGrant:@"refresh_token"];
     [[PDSMetrics sharedMetrics] setActiveAuthSessions:(NSInteger)self.activeSessions.count];

@@ -169,7 +169,25 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
     self.accessTokenExpiresAt = self.accessTokenData.expiresAt;
 
     NSTimeInterval refreshTokenLifetime = 86400 * 30;
-    self.refreshTokenData = [SessionToken tokenWithValue:[[NSUUID UUID] UUIDString]
+    NSString *refreshTokenValue = nil;
+    if (self.minter) {
+        NSError *error = nil;
+        NSArray<NSString *> *scopes = [self.scope componentsSeparatedByString:@" "];
+        JWT *jwt = [self.minter mintRefreshTokenForDID:self.did
+                                                 handle:self.handle
+                                                 scopes:scopes
+                                                  error:&error];
+        if (jwt) {
+            refreshTokenValue = [jwt encodedToken];
+        } else {
+            PDS_LOG_AUTH_WARN(@"Failed to mint JWT refresh token (falling back to UUID): %@", error);
+            refreshTokenValue = [[NSUUID UUID] UUIDString];
+        }
+    } else {
+        refreshTokenValue = [[NSUUID UUID] UUIDString];
+    }
+
+    self.refreshTokenData = [SessionToken tokenWithValue:refreshTokenValue
                                                  expiresIn:refreshTokenLifetime
                                                      scope:self.scope
                                              isRefreshToken:YES];
@@ -249,17 +267,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
 }
 
 - (NSString *)refreshAccessToken {
-    NSTimeInterval accessTokenLifetime = 3600;
-    self.accessTokenData = [SessionToken tokenWithValue:[[NSUUID UUID] UUIDString]
-                                              expiresIn:accessTokenLifetime
-                                                  scope:self.scope
-                                          isRefreshToken:NO];
-    self.accessToken = self.accessTokenData.value;
-    self.accessTokenExpiresAt = self.accessTokenData.expiresAt;
-
-    self.refreshToken = [[NSUUID UUID] UUIDString];
-    self.refreshTokenData = nil;
-
+    [self mintTokens];
     return self.accessToken;
 }
 

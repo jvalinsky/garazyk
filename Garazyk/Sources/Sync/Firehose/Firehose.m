@@ -19,6 +19,7 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
 
 @interface Firehose () <WebSocketConnectionDelegate>
 @property (nonatomic, strong, readwrite) NSURL *serverURL;
+@property (nonatomic, assign, readwrite) int64_t cursor;
 @property (nonatomic, assign, readwrite) BOOL isConnected;
 @property (nonatomic, strong, readwrite, nullable) WebSocketConnection *connection;
 @property (nonatomic, strong, readwrite) NSMutableSet<FirehoseSubscription *> *subscriptions;
@@ -41,6 +42,7 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
 - (FirehoseSubscription *)subscribeWithCursor:(int64_t)cursor
                                    collections:(nullable NSArray<NSString *> *)collections
                                      delegate:(nullable id<FirehoseSubscriptionDelegate>)delegate {
+    self.cursor = cursor;
     FirehoseSubscription *subscription = [[FirehoseSubscription alloc] initWithCursor:cursor
                                                                            collections:collections];
     subscription.delegate = delegate;
@@ -63,6 +65,10 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
     NSNumber *portNum = self.serverURL.port;
     uint16_t port = portNum ? (uint16_t)[portNum intValue] : ([self.serverURL.scheme.lowercaseString isEqualToString:@"https"] ? 443 : 80);
     NSString *path = @"/xrpc/com.atproto.sync.subscribeRepos";
+    
+    if (self.cursor > 0) {
+        path = [path stringByAppendingFormat:@"?cursor=%lld", self.cursor];
+    }
 
     PDS_LOG_SYNC_INFO(@"Firehose: Connecting to %@:%u%@ (scheme: %@)", host, port, path, self.serverURL.scheme);
 
@@ -105,6 +111,21 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
                 case FirehoseEventKindIdentity:
                     if ([subscription.delegate respondsToSelector:@selector(firehoseSubscription:didReceiveIdentityEvent:)]) {
                         [subscription.delegate firehoseSubscription:subscription didReceiveIdentityEvent:event];
+                    }
+                    break;
+                case FirehoseEventKindAccount:
+                    if ([subscription.delegate respondsToSelector:@selector(firehoseSubscription:didReceiveAccountEvent:)]) {
+                        [subscription.delegate firehoseSubscription:subscription didReceiveAccountEvent:event];
+                    }
+                    break;
+                case FirehoseEventKindSync:
+                    if ([subscription.delegate respondsToSelector:@selector(firehoseSubscription:didReceiveSyncEvent:)]) {
+                        [subscription.delegate firehoseSubscription:subscription didReceiveSyncEvent:event];
+                    }
+                    break;
+                case FirehoseEventKindInfo:
+                    if ([subscription.delegate respondsToSelector:@selector(firehoseSubscription:didReceiveInfoEvent:)]) {
+                        [subscription.delegate firehoseSubscription:subscription didReceiveInfoEvent:event];
                     }
                     break;
                 case FirehoseEventKindError:
@@ -172,6 +193,25 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
         event.active = [payload[@"active"] boolValue];
         event.status = payload[@"status"];
         event.time = payload[@"time"];
+
+        [self sendEventToSubscriptions:event kind:FirehoseEventKindAccount];
+
+    } else if ([msgType isEqualToString:@"#sync"]) {
+        FirehoseSyncEvent *event = [[FirehoseSyncEvent alloc] init];
+        event.did = payload[@"did"];
+        event.seq = [payload[@"seq"] longLongValue];
+        event.blocks = payload[@"blocks"];
+        event.rev = payload[@"rev"];
+        event.time = payload[@"time"];
+
+        [self sendEventToSubscriptions:event kind:FirehoseEventKindSync];
+
+    } else if ([msgType isEqualToString:@"#info"]) {
+        FirehoseInfoEvent *event = [[FirehoseInfoEvent alloc] init];
+        event.kind = payload[@"kind"];
+        event.message = payload[@"message"];
+
+        [self sendEventToSubscriptions:event kind:FirehoseEventKindInfo];
     }
 }
 
