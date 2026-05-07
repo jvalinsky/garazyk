@@ -1507,12 +1507,12 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
 
 - (NSArray<NSDictionary *> *)serviceProbeSpecifications {
     return @[
-        @{@"name": @"pds", @"baseURL": self.configuration.pdsBaseURL, @"xrpcPath": @"/xrpc/com.atproto.server.describeServer", @"token": self.configuration.pdsAdminToken ?: [NSNull null]},
-        @{@"name": @"plc", @"baseURL": self.configuration.plcBaseURL, @"xrpcPath": @"/_health", @"token": self.configuration.plcAdminToken ?: [NSNull null]},
-        @{@"name": @"relay", @"baseURL": self.configuration.relayBaseURL, @"xrpcPath": @"/api/relay/health", @"token": self.configuration.relayAdminToken ?: [NSNull null]},
-        @{@"name": @"appview", @"baseURL": self.configuration.appViewBaseURL, @"xrpcPath": @"/admin/ingest/health", @"token": self.configuration.appViewAdminToken ?: [NSNull null]},
-        @{@"name": @"chat", @"baseURL": self.configuration.chatBaseURL, @"xrpcPath": @"/_health", @"token": self.configuration.chatAdminToken ?: [NSNull null]},
-        @{@"name": @"video", @"baseURL": self.configuration.videoBaseURL, @"xrpcPath": @"/_health", @"token": self.configuration.videoAdminToken ?: [NSNull null]}
+        @{@"name": @"pds", @"baseURL": self.configuration.pdsBaseURL ?: [NSNull null], @"xrpcPath": @"/xrpc/com.atproto.server.describeServer", @"token": self.configuration.pdsAdminToken ?: [NSNull null]},
+        @{@"name": @"plc", @"baseURL": self.configuration.plcBaseURL ?: [NSNull null], @"xrpcPath": @"/_health", @"token": self.configuration.plcAdminToken ?: [NSNull null]},
+        @{@"name": @"relay", @"baseURL": self.configuration.relayBaseURL ?: [NSNull null], @"xrpcPath": @"/api/relay/health", @"token": self.configuration.relayAdminToken ?: [NSNull null]},
+        @{@"name": @"appview", @"baseURL": self.configuration.appViewBaseURL ?: [NSNull null], @"xrpcPath": @"/admin/ingest/health", @"token": self.configuration.appViewAdminToken ?: [NSNull null]},
+        @{@"name": @"chat", @"baseURL": self.configuration.chatBaseURL ?: [NSNull null], @"xrpcPath": @"/_health", @"token": self.configuration.chatAdminToken ?: [NSNull null]},
+        @{@"name": @"video", @"baseURL": self.configuration.videoBaseURL ?: [NSNull null], @"xrpcPath": @"/_health", @"token": self.configuration.videoAdminToken ?: [NSNull null]}
     ];
 }
 
@@ -1751,12 +1751,11 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
     NSTimeInterval latency = ([[NSDate date] timeIntervalSince1970] - start) * 1000.0;
 
     if (status >= 200 && status < 300) {
-        NSMutableDictionary *result = [NSMutableDictionary dictionaryWithDictionary:@{
-            @"name": name,
-            @"status": @"online",
-            @"url": [baseURL absoluteString],
-            @"latency_ms": [NSString stringWithFormat:@"%.0f", latency]
-        }];
+        NSMutableDictionary *result = [NSMutableDictionary dictionary];
+        result[@"name"] = name ?: @"unknown";
+        result[@"status"] = @"online";
+        result[@"url"] = [baseURL absoluteString] ?: @"";
+        result[@"latency_ms"] = [NSString stringWithFormat:@"%.0f", latency];
         
         if (data) {
             id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
@@ -1776,12 +1775,12 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
         }
         return [result copy];
     } else {
-        return @{
-            @"name": name,
-            @"status": status == 0 ? @"offline" : @"error",
-            @"url": [baseURL absoluteString],
-            @"error": error.localizedDescription ?: [NSString stringWithFormat:@"HTTP %ld", (long)status]
-        };
+        NSMutableDictionary *result = [NSMutableDictionary dictionary];
+        result[@"name"] = name ?: @"unknown";
+        result[@"status"] = status == 0 ? @"offline" : @"error";
+        result[@"url"] = [baseURL absoluteString] ?: @"";
+        result[@"error"] = error.localizedDescription ?: [NSString stringWithFormat:@"HTTP %ld", (long)status];
+        return [result copy];
     }
 }
 

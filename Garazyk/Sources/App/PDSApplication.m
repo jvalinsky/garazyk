@@ -521,6 +521,8 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     PDS_LOG_CORE_INFO(@"HTTP server started on port %lu", (unsigned long)_httpPort);
     PDS_LOG_CORE_INFO(@"subscribeRepos WebSocket upgrades available on HTTP port %lu", (unsigned long)_httpPort);
     
+    [_subscribeReposHandler startObservingNotifications];
+
     _running = YES;
     [_relayService start];
 

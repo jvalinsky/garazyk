@@ -32,7 +32,7 @@
 
 - (NSArray<WSSessionAction *> *)feedData:(NSData *)data {
   return [self feedData:data
-             receivedAt:[NSDate timeIntervalSinceReferenceDate]];
+             receivedAt:[[NSDate date] timeIntervalSince1970]];
 }
 
 - (NSArray<WSSessionAction *> *)feedData:(NSData *)data
