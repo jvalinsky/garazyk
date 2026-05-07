@@ -28,14 +28,17 @@
     NSFileManager *fm = [NSFileManager defaultManager];
     NSString *cwd = fm.currentDirectoryPath;
     NSString *base = @"Garazyk/Tests/fixtures/atproto-interop-tests";
+    NSString *sourceFile = @__FILE__;
+    NSString *testsDirectory = [[sourceFile stringByDeletingLastPathComponent] stringByDeletingLastPathComponent];
+    NSString *sourceRoot = [testsDirectory stringByDeletingLastPathComponent];
     
     NSArray<NSString *> *candidates = @[
-        [base stringByAppendingPathComponent:relativePath],
-        [@"Tests/fixtures/atproto-interop-tests" stringByAppendingPathComponent:relativePath],
+        [[cwd stringByAppendingPathComponent:base] stringByAppendingPathComponent:relativePath],
+        [[cwd stringByAppendingPathComponent:@"Tests/fixtures/atproto-interop-tests"] stringByAppendingPathComponent:relativePath],
+        [[[sourceRoot stringByAppendingPathComponent:@"Tests/fixtures/atproto-interop-tests"] stringByAppendingPathComponent:relativePath] stringByStandardizingPath]
     ];
 
-    for (NSString *candidate in candidates) {
-        NSString *path = [cwd stringByAppendingPathComponent:candidate];
+    for (NSString *path in candidates) {
         if ([fm fileExistsAtPath:path]) {
             return path;
         }
