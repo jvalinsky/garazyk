@@ -207,12 +207,12 @@ typedef NS_ENUM(NSInteger, MSTPersistenceErrorCode) {
         return nil;
     }
 
-    if (value.type != CBORTypeTag || !value.tagValue || value.tagValue.type != CBORTypeByteString) {
+    if (value.type != CBORTypeTag || [value.tag unsignedIntegerValue] != 42 || !value.tagValue || value.tagValue.type != CBORTypeByteString) {
         if (allowNil) return nil;
         if (error) {
             *error = [NSError errorWithDomain:MSTPersistenceErrorDomain
                                          code:MSTPersistenceErrorCodeCBORFormat
-                                     userInfo:@{NSLocalizedDescriptionKey: @"CID tagged value is malformed"}];
+                                     userInfo:@{NSLocalizedDescriptionKey: @"CID tagged value is malformed or missing tag 42"}];
         }
         return nil;
     }
