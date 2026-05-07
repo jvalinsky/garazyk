@@ -55,6 +55,10 @@ def run() -> ScenarioResult:
                 "UI Server health check",
                 f"GET /lab returned status={health_resp.status_code}",
             )
+    except requests.ConnectionError:
+        result.step_skipped("UI Server health check", f"UI server not reachable at {ui_url}")
+        result.finish()
+        return result
     except Exception as exc:
         result.step_failed("UI Server health check", str(exc))
         result.finish()

@@ -261,6 +261,26 @@ if [[ "$BINARY_MODE" == "true" ]]; then
     wait_for_admin_http "$SERVICE_URL_APPVIEW/admin/backfill/status" "AppView" 60 || \
         error_exit "AppView failed to start within 60s"
 
+    # ── Start UI Server ────────────────────────────────────────────────────
+    if [[ -x "$BUILD_BIN/$SERVICE_BINARY_UI" ]]; then
+        log_info "Starting UI server on port $SERVICE_PORT_UI..."
+        UI_DATA="$DATA_ROOT/ui"
+        mkdir -p "$UI_DATA"
+        GARAZYK_UI_PDS_URL="$SERVICE_URL_PDS" \
+        GARAZYK_UI_PLC_URL="$SERVICE_URL_PLC" \
+        GARAZYK_UI_RELAY_URL="$SERVICE_URL_RELAY" \
+        GARAZYK_UI_APPVIEW_URL="$SERVICE_URL_APPVIEW" \
+        GARAZYK_UI_ADMIN_PASSWORD="changeme" \
+        "$BUILD_BIN/$SERVICE_BINARY_UI" serve --port "$SERVICE_PORT_UI" \
+            > "$ATPROTO_E2E_LOG_DIR/ui.log" 2>&1 &
+        echo "UI_PID=$!" >> "$PID_FILE"
+        sleep 2
+        wait_for_http "$SERVICE_URL_UI/lab" "UI Server" 30 || \
+            log_warn "UI Server not healthy (scenario 11 will fail)"
+    else
+        log_warn "UI server binary not found; scenario 11 will be skipped"
+    fi
+
     # ── Start PDS2 (optional) ────────────────────────────────────────────────
     if [[ "$WITH_PDS2" == "true" ]]; then
         PDS2_DATA="$DATA_ROOT/pds2"
@@ -282,6 +302,7 @@ if [[ "$BINARY_MODE" == "true" ]]; then
     echo "  PDS:     $SERVICE_URL_PDS"
     echo "  Relay:   $SERVICE_URL_RELAY"
     echo "  AppView: $SERVICE_URL_APPVIEW"
+    echo "  UI:      $SERVICE_URL_UI"
     if [[ "$WITH_PDS2" == "true" ]]; then
         echo "  PDS2:    $SERVICE_URL_CHAT"
     fi
