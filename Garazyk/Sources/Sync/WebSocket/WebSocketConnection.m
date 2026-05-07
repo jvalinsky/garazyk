@@ -19,6 +19,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 @interface WebSocketConnection () {
     NSString *_handshakeKey;
     BOOL _waitingForHandshakeResponse;
+    BOOL _isReading;
 }
 
 @property(nonatomic, assign, readwrite) WebSocketConnectionState state;
@@ -214,8 +215,13 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
   return self.session.heartbeatPolicy;
 }
 
+- (void)waitForWriteQueue:(void (^)(void))completion {
+    dispatch_async(self.writeQueue, completion);
+}
+
 - (void)handlePDSStateChange:(PDSNetworkConnectionState)state
-                       error:(NSError *_Nullable)error {
+                       error:(NSError *)error {
+
   PDS_LOG_SYNC_DEBUG(@"WebSocket connection %p state change: %ld", self, (long)state);
   dispatch_async(dispatch_get_main_queue(), ^{
     switch (state) {
@@ -267,6 +273,9 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 }
 
 - (void)startReading {
+  if (_isReading) return;
+  _isReading = YES;
+
   __weak typeof(self) weakSelf = self;
   [self.connection
       receiveWithMinimumLength:1
@@ -276,6 +285,8 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
                       __strong typeof(weakSelf) strongSelf = weakSelf;
                       if (!strongSelf)
                         return;
+
+                      strongSelf->_isReading = NO;
 
                       if (data) {
                         dispatch_async(dispatch_get_main_queue(), ^{
@@ -343,16 +354,54 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
     PDS_LOG_SYNC_DEBUG(@"WebSocket received %lu bytes from wire", (unsigned long)data.length);
     NSArray<WSSessionAction *> *actions = [self.session
       feedData:data
-      receivedAt:[NSDate timeIntervalSinceReferenceDate]];
+      receivedAt:[[NSDate date] timeIntervalSince1970]];
     for (WSSessionAction *action in actions) {
         [self processAction:action];
     }
+}
+
+- (NSString *)computeAcceptKey:(NSString *)clientKey {
+    static NSString * const GUID = @"258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+    NSString *input = [clientKey stringByAppendingString:GUID];
+    NSData *data = [input dataUsingEncoding:NSUTF8StringEncoding];
+    
+    unsigned char hash[CC_SHA1_DIGEST_LENGTH];
+    CC_SHA1(data.bytes, (CC_LONG)data.length, hash);
+    
+    NSData *hashData = [NSData dataWithBytes:hash length:CC_SHA1_DIGEST_LENGTH];
+    return [hashData base64EncodedStringWithOptions:0];
 }
 
 - (void)handleHandshakeResponse:(NSData *)data {
     // Very basic 101 parser
     NSString *resp = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     if ([resp hasPrefix:@"HTTP/1.1 101"] || [resp hasPrefix:@"HTTP/1.0 101"]) {
+        // Verify Sec-WebSocket-Accept (M10)
+        NSString *expectedAccept = [self computeAcceptKey:_handshakeKey];
+        NSString *headerSearch = [NSString stringWithFormat:@"Sec-WebSocket-Accept: %@", expectedAccept];
+        
+        // Use a more robust check for the header (case-insensitive and handling different line endings)
+        BOOL acceptMatched = NO;
+        NSArray *lines = [resp componentsSeparatedByString:@"\r\n"];
+        for (NSString *line in lines) {
+            if ([line.lowercaseString hasPrefix:@"sec-websocket-accept:"]) {
+                NSString *value = [[line substringFromIndex:21] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+                if ([value isEqualToString:expectedAccept]) {
+                    acceptMatched = YES;
+                    break;
+                }
+            }
+        }
+        
+        if (!acceptMatched) {
+            PDS_LOG_SYNC_ERROR(@"WebSocket: Handshake failed - Invalid Sec-WebSocket-Accept header");
+            [self notifyError:[NSError errorWithDomain:WebSocketConnectionErrorDomain 
+                                                  code:WebSocketConnectionErrorCodeConnectionClosed 
+                                              userInfo:@{NSLocalizedDescriptionKey: @"WebSocket handshake failed: Invalid Accept key"}]];
+            [self close];
+            return;
+        }
+
         PDS_LOG_SYNC_INFO(@"WebSocket: Handshake successful");
         _waitingForHandshakeResponse = NO;
         self.state = WebSocketConnectionStateConnected;
@@ -437,32 +486,33 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 }
 
 - (void)closeWithCode:(NSInteger)code reason:(NSString *)reason {
-  if (self.state == WebSocketConnectionStateClosing ||
-      self.state == WebSocketConnectionStateClosed) {
-    return;
-  }
-
-  self.state = WebSocketConnectionStateClosing;
-  self.closeCode = code;
-  self.closeReason = reason;
   dispatch_async(self.writeQueue, ^{
+    if (self.state == WebSocketConnectionStateClosing ||
+        self.state == WebSocketConnectionStateClosed) {
+      return;
+    }
+
+    self.state = WebSocketConnectionStateClosing;
+    self.closeCode = code;
+    self.closeReason = reason;
+
     [self.messageQueue removeAllObjects];
     self.queuedSendBytes = 0;
-  });
 
-  NSData *frame = [self.session.codec closeFrame:code reason:reason];
-  [self writeData:frame];
+    NSData *frame = [self.session.codec closeFrame:code reason:reason];
+    [self writeData:frame];
 
-  dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)),
-                 dispatch_get_main_queue(), ^{
-                   if (self.state != WebSocketConnectionStateClosed) {
-                     self.state = WebSocketConnectionStateClosed;
-                     if (self.connection) {
-                       [self.connection cancel];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+                     if (self.state != WebSocketConnectionStateClosed) {
+                       self.state = WebSocketConnectionStateClosed;
+                       if (self.connection) {
+                         [self.connection cancel];
+                       }
+                       [self notifyCloseWithCode:code reason:reason];
                      }
-                     [self notifyCloseWithCode:code reason:reason];
-                   }
-                 });
+                   });
+  });
 }
 
 - (void)sendMessage:(NSData *)data {
@@ -616,7 +666,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 }
 
 - (void)tickHeartbeat {
-  NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
+  NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
   NSArray<WSSessionAction *> *actions = [self.session tick:now];
   for (WSSessionAction *action in actions) {
     [self processAction:action];

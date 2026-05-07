@@ -33,6 +33,15 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable NSData *)retrieveBlobDataForCID:(CID *)cid error:(NSError **)error;
 
 /*!
+ @method retrieveBlobStreamForCID:error:
+ @abstract Returns an input stream for reading blob data.
+ @param cid The CID to retrieve.
+ @param error Output error if operation fails.
+ @return An NSInputStream for the blob, or nil on failure.
+ */
+- (nullable NSInputStream *)retrieveBlobStreamForCID:(CID *)cid error:(NSError **)error;
+
+/*!
  @method deleteBlobDataForCID:error:
  @abstract Deletes blob data for the given CID.
  @param cid The CID to delete.
