@@ -1,108 +1,59 @@
----
-title: ATProto Basics
----
-
 # ATProto Basics
 
-## Overview
+Garazyk implements AT Protocol primitives with a focus on:
+- **Identity**: DID-anchored accounts with handle aliases.
+- **Repositories**: Content-addressed user data stores.
+- **Records**: Namespaced entries within repositories (e.g., `app.bsky.feed.post`).
+- **Blobs**: Binary objects referenced by CID, stored outside the repository.
+- **XRPC**: The protocol's primary method-dispatch interface.
 
-To understand Garazyk's AT Protocol implementation, remember:
-
-- identity is DID-first
-- handles are aliases, not primary keys
-- records live in per-user repositories
-- blobs are separate from records and referenced by CID
-- XRPC surfaces are the protocol boundary
-
-This page focuses on the parts of ATProto that show up directly in this
-repository.
-
-## Identity: DID First, Handle Second
-
-Accounts are anchored by DIDs. Handles are human-friendly names that resolve to
-or are associated with those DIDs.
-
-In Garazyk today, the supported DID methods are:
-
+## Identity
+Accounts are identified by DIDs. Handles are human-friendly aliases that resolve to these DIDs. Garazyk supports:
 - `did:plc`
 - `did:web`
 
-Higher-level behavior depends on the DID method.
+## Repositories and Records
+Each account owns a single repository. Records are grouped by collection NSIDs. Implementation in this repository covers:
+- Record CRUD operations.
+- Repository state materialization via MST and CAR machinery.
+- Sync and firehose event streams.
 
-## Repositories And Records
+## Blobs
+Binary objects are stored separately from records and referenced by CID. This separation decouples binary storage from repository integrity and lifecycle management.
 
-Each account has a repository. Records are namespaced entries inside that
-repository, typically grouped by collection NSIDs such as
-`app.bsky.feed.post`.
-
-Repository work in this tree includes:
-
-- create, update, and delete records
-- materialize repository state through MST and CAR machinery
-- expose sync and firehose views of that state
-
-Record code, repository service code, and sync code sit together in the architecture.
-
-## Blobs Are Adjacent, Not Embedded
-
-Large binary objects are stored separately from records and are referenced by
-blob objects containing CID links. That keeps repositories from turning into
-opaque binary stores and lets the server manage blob storage with a separate
-lifecycle.
-
-Separating blobs from records simplifies repository and storage code.
-
-## XRPC Is The Protocol Surface
-
-ATProto methods are exposed through XRPC namespaces such as:
-
+## XRPC Interface
+ATProto methods are grouped into namespaces:
 - `com.atproto.server.*`
 - `com.atproto.repo.*`
 - `com.atproto.sync.*`
 - `com.atproto.identity.*`
 
-To trace behavior:
+To trace a request:
+1. Identify the XRPC method.
+2. Review the authentication and validation path.
+3. Follow the method to its owning service.
+4. Inspect the underlying repository, database, or identity logic.
 
-1. find the XRPC method
-2. read its auth and validation path
-3. follow the owning service
-4. inspect repository, database, blob, or identity code underneath
+## Sync and Relays
+Garazyk handles synchronization and relay notifications through:
+- Repository export and block retrieval.
+- `subscribeRepos` event delivery.
+- Relay crawl notifications.
 
-## Sync And Relay Concepts
-
-ATProto also includes sync and relay behavior. In this repository, that shows up
-primarily as:
-
-- repository export and block retrieval
-- `subscribeRepos` delivery
-- crawl notifications to configured relays
-
-A relay crawl hint differs from a firehose stream.
-
-## How Garazyk Maps The Model
-
-The current codebase is structured so the protocol model maps cleanly to
-implementation seams:
-
-- auth helpers own token and DPoP verification
-- services own application behavior
-- repository and blob layers own persistence and content addressing
-- identity and PLC code own DID resolution and updates
-
-This mapping lets the docs emphasize architecture and request flow over payload dumps.
-
-## Related Reading
-
-- [Codebase Map](../01-getting-started/codebase-map)
-- [Request Lifecycle](../01-getting-started/request-lifecycle)
-- [IPLD and Multiformats Series](./ipld-foundations/)
-- [Protocol Flow Walkthrough](./protocol-flow-walkthrough)
-- [PLC Directory](./plc-directory)
-- [Cryptography](./cryptography)
+## Implementation Mapping
+Garazyk maps protocol concepts to specific architectural layers:
+- **Auth**: Token and DPoP verification.
+- **Services**: Application behavior and coordination.
+- **Repository/Blob**: Persistence and content addressing.
+- **Identity/PLC**: DID resolution and updates.
 
 ## Related
 
+- [Codebase Map](../01-getting-started/codebase-map)
+- [Request Lifecycle](../01-getting-started/request-lifecycle)
+- [IPLD Foundations](./ipld-foundations/)
+- [Protocol Flow Walkthrough](./protocol-flow-walkthrough)
+- [PLC Directory](./plc-directory)
+- [Cryptography](./cryptography)
 - [Documentation Map](../11-reference/documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
 
