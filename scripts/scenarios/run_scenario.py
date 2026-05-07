@@ -10,24 +10,36 @@ Usage:
     python run_scenario.py --teardown         # Stop network after running
     python run_scenario.py --pds2             # Start second PDS for federation
     python run_scenario.py --verbose          # Debug output
+    python run_scenario.py --timeout 60      # Kill scenarios after 60s
 """
 
 from __future__ import annotations
 
 import argparse
 import importlib
+import json
 import logging
+import os
+import signal
 import sys
 import time
 from pathlib import Path
 
-# Add lib to path
-sys.path.insert(0, str(Path(__file__).parent))
+# Add scenario-local compatibility shims and repository helpers to path.
+SCRIPT_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPT_DIR.parent.parent
+sys.path.insert(0, str(SCRIPT_DIR))
+sys.path.insert(0, str(REPO_ROOT))
 
 from lib.report import ScenarioResult, StepStatus
+from scripts.lib.atproto import SERVICE_URLS, create_run_context
+from scripts.lib.atproto.docker import (
+    collect_local_network_diagnostics,
+    start_local_network,
+    stop_local_network,
+)
 
-SCENARIOS_DIR = Path(__file__).parent / "scenarios"
-REPORTS_DIR = Path(__file__).parent / "reports"
+SCENARIOS_DIR = SCRIPT_DIR / "scenarios"
 
 # Scenario registry: (id, module_name, description, needs_pds2)
 SCENARIO_REGISTRY = [
@@ -56,8 +68,25 @@ def list_scenarios() -> None:
     print()
 
 
-def run_scenario(scenario_id: str, verbose: bool = False) -> ScenarioResult:
-    """Import and run a single scenario by ID."""
+def _run_scenario_in_process(module_name: str) -> ScenarioResult:
+    """Import and execute a scenario module inside a subprocess.
+
+    This function runs inside a child process spawned by
+    run_scenario(). It must not share state with the parent.
+    """
+    mod = importlib.import_module(module_name)
+    return mod.run()
+
+
+def run_scenario(scenario_id: str, verbose: bool = False, timeout: int = 120) -> ScenarioResult:
+    """Import and run a single scenario by ID.
+
+    timeout sets the maximum wall-clock seconds a scenario may run
+    before being killed. A timed-out scenario is reported as a
+    single failed step rather than hanging the entire runner.
+    """
+    import concurrent.futures
+
     # Find the scenario in the registry
     entry = None
     for sid, module_name, desc, _ in SCENARIO_REGISTRY:
@@ -82,7 +111,7 @@ def run_scenario(scenario_id: str, verbose: bool = False) -> ScenarioResult:
     level = logging.DEBUG if verbose else logging.INFO
     logging.basicConfig(level=level, format="%(name)s: %(message)s")
 
-    # Import the scenario module
+    # Import the scenario module (lightweight check before spawning process)
     try:
         mod = importlib.import_module(module_name)
     except ImportError as exc:
@@ -99,12 +128,22 @@ def run_scenario(scenario_id: str, verbose: bool = False) -> ScenarioResult:
         return result
 
     try:
-        result = mod.run()
+        with concurrent.futures.ProcessPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_run_scenario_in_process, module_name)
+            result = future.result(timeout=timeout)
+    except concurrent.futures.TimeoutError:
+        print(f"ERROR: Scenario {sid} timed out after {timeout}s")
+        result = ScenarioResult(scenario_name=desc)
+        result.step_failed(f"Scenario {sid} timeout", f"exceeded {timeout}s wall-clock limit")
     except Exception as exc:
         print(f"ERROR: Scenario {sid} crashed: {exc}")
         result = ScenarioResult(scenario_name=desc)
         result.step_failed(f"Scenario {sid} execution", str(exc))
 
+    if result.started_at is None:
+        result.started_at = time.time()
+    if result.finished_at is None:
+        result.finished_at = time.time()
     return result
 
 
@@ -126,6 +165,11 @@ def main() -> None:
         "--setup-only",
         action="store_true",
         help="Start the local network and exit without running scenarios",
+    )
+    parser.add_argument(
+        "--setup",
+        action="store_true",
+        help="Start the local network before running scenarios",
     )
     parser.add_argument(
         "--teardown",
@@ -152,11 +196,53 @@ def main() -> None:
         action="store_true",
         help="Don't write JSON report files",
     )
+    parser.add_argument(
+        "--run-id",
+        default=os.environ.get("ATPROTO_E2E_RUN_ID", ""),
+        help="Run id used for logs, reports, diagnostics, and compose project naming",
+    )
+    parser.add_argument(
+        "--diagnostics-dir",
+        default=os.environ.get("ATPROTO_E2E_DIAGNOSTICS_DIR", ""),
+        help="Directory for diagnostic bundles",
+    )
+    parser.add_argument(
+        "--reports-dir",
+        default=os.environ.get("ATPROTO_E2E_REPORTS_DIR", ""),
+        help="Directory for scenario JSON reports",
+    )
+    parser.add_argument(
+        "--collect-diagnostics",
+        action="store_true",
+        help="Collect diagnostics for the current run and exit",
+    )
+    parser.add_argument(
+        "--keep-running",
+        action="store_true",
+        help="Leave services running after setup or scenario execution",
+    )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=120,
+        help="Per-scenario wall-clock timeout in seconds (default: 120)",
+    )
 
     args = parser.parse_args()
+    context = create_run_context(
+        run_id=args.run_id or None,
+        diagnostics_dir=args.diagnostics_dir or None,
+    )
+    reports_dir = Path(args.reports_dir) if args.reports_dir else context.reports_dir
+    reports_dir.mkdir(parents=True, exist_ok=True)
 
     if args.list:
         list_scenarios()
+        return
+
+    if args.collect_diagnostics:
+        collect_local_network_diagnostics(use_binary=args.binary, context=context)
+        print(f"Diagnostics: {context.diagnostics_dir}")
         return
 
     # Determine which scenarios to run
@@ -168,35 +254,95 @@ def main() -> None:
 
     # Setup
     if args.setup_only:
-        from lib.docker import start_local_network
         print(f"Starting local network (setup only, binary={args.binary})...")
-        start_local_network(with_pds2=args.pds2, use_binary=args.binary)
-        print("Network is running. Press Ctrl+C to stop.")
+        start_local_network(with_pds2=args.pds2, use_binary=args.binary, context=context)
+        print(f"Run directory: {context.run_dir}")
+        if args.keep_running:
+            print("Network is running. Stop it with:")
+            stop_cmd = [
+                str(SCRIPT_DIR / "setup_local_network.sh"),
+                "--teardown",
+                "--run-id",
+                context.run_id,
+            ]
+            if args.binary:
+                stop_cmd.append("--binary")
+            print("  " + " ".join(stop_cmd))
+            return
+        print("Network is running. Press Ctrl+C to stop and collect diagnostics.")
         try:
             while True:
                 time.sleep(1)
         except KeyboardInterrupt:
             pass
+        finally:
+            stop_local_network(use_binary=args.binary, context=context, collect_diagnostics=True)
         return
+
+    network_started = False
+    interrupted = False
+
+    def _handle_signal(signum: int, _frame: object) -> None:
+        nonlocal interrupted
+        interrupted = True
+        print(f"\nInterrupted by signal {signum}; collecting diagnostics...", file=sys.stderr)
+        collect_local_network_diagnostics(use_binary=args.binary, context=context)
+        if network_started and not args.keep_running:
+            stop_local_network(
+                use_binary=args.binary,
+                context=context,
+                collect_diagnostics=False,
+            )
+        raise KeyboardInterrupt
+
+    signal.signal(signal.SIGINT, _handle_signal)
+    signal.signal(signal.SIGTERM, _handle_signal)
 
     # Run scenarios
     results: list[ScenarioResult] = []
-    for sid in scenario_ids:
-        print(f"\n{'='*60}")
-        print(f"  Running scenario {sid}...")
-        print(f"{'='*60}")
-        result = run_scenario(sid, verbose=args.verbose)
-        result.print_summary()
-        if not args.no_json:
-            report_path = result.write_report(str(REPORTS_DIR))
-            print(f"  Report: {report_path}")
-        results.append(result)
+    report_paths: list[str] = []
+    try:
+        if args.setup:
+            start_local_network(with_pds2=args.pds2, use_binary=args.binary, context=context)
+            network_started = True
 
-    # Teardown
-    if args.teardown:
-        from lib.docker import stop_local_network
-        print("\nTearing down local network...")
-        stop_local_network(use_binary=args.binary)
+        for sid in scenario_ids:
+            print(f"\n{'='*60}")
+            print(f"  Running scenario {sid}...")
+            print(f"{'='*60}")
+            result = run_scenario(sid, verbose=args.verbose, timeout=args.timeout)
+            result.metadata.update(
+                {
+                    "run_id": context.run_id,
+                    "run_dir": str(context.run_dir),
+                    "diagnostics_dir": str(context.diagnostics_dir),
+                    "service_urls": SERVICE_URLS,
+                    "scenario_id": sid,
+                    "binary_mode": args.binary,
+                    "pds2": args.pds2,
+                }
+            )
+            result.print_summary()
+            if not args.no_json:
+                report_path = result.write_report(str(reports_dir))
+                report_paths.append(report_path)
+                print(f"  Report: {report_path}")
+            results.append(result)
+    except KeyboardInterrupt:
+        if not interrupted:
+            collect_local_network_diagnostics(use_binary=args.binary, context=context)
+        raise SystemExit(130)
+    finally:
+        should_collect = any(r.failed for r in results)
+        if should_collect:
+            collect_local_network_diagnostics(use_binary=args.binary, context=context)
+        if (args.teardown or args.setup) and not args.keep_running:
+            print("\nTearing down local network...")
+            stop_local_network(
+                use_binary=args.binary,
+                context=context,
+                collect_diagnostics=False,
+            )
 
     # Final summary
     total_passed = sum(r.passed for r in results)
@@ -215,6 +361,28 @@ def main() -> None:
     print(f"{'-'*60}")
     print(f"  Total: {total_passed} passed, {total_failed} failed, {total_skipped} skipped")
     print(f"{'='*60}")
+
+    overall = {
+        "run_id": context.run_id,
+        "run_dir": str(context.run_dir),
+        "diagnostics_dir": str(context.diagnostics_dir),
+        "reports_dir": str(reports_dir),
+        "scenario_ids": scenario_ids,
+        "binary_mode": args.binary,
+        "pds2": args.pds2,
+        "report_paths": report_paths,
+        "summary": {
+            "passed": total_passed,
+            "failed": total_failed,
+            "skipped": total_skipped,
+        },
+        "ok": total_failed == 0,
+    }
+    (reports_dir / "overall-summary.json").write_text(
+        json.dumps(overall, indent=2), encoding="utf-8"
+    )
+    if total_failed > 0:
+        print(f"  Diagnostics: {context.diagnostics_dir}")
 
     sys.exit(1 if total_failed > 0 else 0)
 
