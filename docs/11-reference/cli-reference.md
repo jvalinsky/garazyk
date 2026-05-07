@@ -241,14 +241,7 @@ If this page drifts again, regenerate it from the registered command implementat
 ## Related Reading
 
 - [Setup](../01-getting-started/setup)
-- [Build Guide](../../BUILD.md)
 - [Config Reference](./config-reference)
 - [Testing Map](./testing-map)
 - [Relay Service](../03-application-layer/relay-service)
-
-## Related
-
-- [Documentation Map](documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
 

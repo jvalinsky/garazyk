@@ -234,15 +234,7 @@ Development defaults and secure deployment defaults are not the same thing. Prod
 
 - [Codebase Map](./codebase-map)
 - [Request Lifecycle](./request-lifecycle)
-- [Build Guide](../../BUILD.md)
-- [Contributing Guide](../../CONTRIBUTING.md)
 - [Config Reference](../11-reference/config-reference)
 - [CLI Reference](../11-reference/cli-reference)
 - [Testing Map](../11-reference/testing-map)
 - [Tutorial 6: Deployment](../10-tutorials/tutorial-6-deployment)
-
-## Related
-
-- [Documentation Map](../11-reference/documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)

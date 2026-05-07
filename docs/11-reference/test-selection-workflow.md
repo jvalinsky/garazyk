@@ -76,5 +76,4 @@ If you forget that step, a test can compile and still never run. Any test-select
 
 - [Documentation Map](documentation-map.md)
 - [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
 
