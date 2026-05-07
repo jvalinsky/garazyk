@@ -814,13 +814,18 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     }
 
     if (hasCursor && parsedCursor > strongSelf.session.sequenceNumber) {
-      [strongSelf
-          sendErrorFrameWithCode:kSubscribeReposErrorFutureCursor
-                         message:@"requested cursor is ahead of server sequence"
-                    toConnection:connection];
-      [strongSelf detachConnection:connection];
-      [connection closeWithCode:1008 reason:kSubscribeReposErrorFutureCursor];
-      return;
+      PDS_LOG_SYNC_WARN(
+          @"Future cursor %lu is ahead of server sequence %lu; "
+          @"sending OutdatedCursor info and starting from current head for connection %@",
+          (unsigned long)parsedCursor,
+          (unsigned long)strongSelf.session.sequenceNumber,
+          connection);
+      [strongSelf sendInfoEvent:kSubscribeReposInfoOutdatedCursor
+                       message:@"requested cursor is ahead of server sequence; "
+                               @"starting from current head"
+                  toConnection:connection];
+      // Treat as no cursor: start streaming from current head instead of closing.
+      hasCursor = NO;
     }
 
     if (!hasCursor) {
