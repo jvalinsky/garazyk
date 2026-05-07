@@ -6,11 +6,29 @@
 #import "Repository/CBOR.h"
 #import "Repository/MST.h"
 #import "Auth/JWT.h"
+#import "Auth/Secp256k1.h"
 
 @interface ATProtoCoreTests : XCTestCase
 @end
 
 @implementation ATProtoCoreTests
+
+- (JWTMinter *)testMinterWithPublicKey:(NSData **)publicKeyOut {
+    NSError *keyError = nil;
+    Secp256k1KeyPair *keyPair = [Secp256k1KeyPair generateKeyPair:&keyError];
+    XCTAssertNotNil(keyPair, @"Failed to generate test key pair: %@", keyError);
+    if (!keyPair) return nil;
+
+    JWTMinter *minter = [[JWTMinter alloc] init];
+    minter.issuer = @"test-issuer";
+    minter.signingAlgorithm = @"ES256K";
+    minter.privateKey = keyPair.privateKey;
+    minter.publicKey = keyPair.publicKey;
+    if (publicKeyOut) {
+        *publicKeyOut = keyPair.publicKey;
+    }
+    return minter;
+}
 
 - (void)setUp {
     [super setUp];
@@ -23,8 +41,8 @@
 #pragma mark - CID Tests
 
 - (void)testCIDCreation {
-    NSData *multihash = [CID sha256Digest:[@"hello world" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *cid = [CID cidWithMultihash:multihash codec:0x71];
+    NSData *digest = [CID sha256Digest:[@"hello world" dataUsingEncoding:NSUTF8StringEncoding]];
+    CID *cid = [CID cidWithDigest:digest codec:0x71];
 
     XCTAssertNotNil(cid);
     XCTAssertEqual(cid.version, 1);
@@ -33,8 +51,8 @@
 }
 
 - (void)testCIDStringValue {
-    NSData *multihash = [CID sha256Digest:[@"test" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *cid = [CID cidWithMultihash:multihash codec:0x71];
+    NSData *digest = [CID sha256Digest:[@"test" dataUsingEncoding:NSUTF8StringEncoding]];
+    CID *cid = [CID cidWithDigest:digest codec:0x71];
     NSString *stringValue = [cid stringValue];
 
     XCTAssertNotNil(stringValue);
@@ -42,17 +60,17 @@
 }
 
 - (void)testCIDEquality {
-    NSData *multihash = [CID sha256Digest:[@"same data" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *cid1 = [CID cidWithMultihash:multihash codec:0x71];
-    CID *cid2 = [CID cidWithMultihash:multihash codec:0x71];
+    NSData *digest = [CID sha256Digest:[@"same data" dataUsingEncoding:NSUTF8StringEncoding]];
+    CID *cid1 = [CID cidWithDigest:digest codec:0x71];
+    CID *cid2 = [CID cidWithDigest:digest codec:0x71];
 
     XCTAssertEqualObjects(cid1, cid2);
     XCTAssertTrue([cid1 isEqualToCID:cid2]);
 }
 
 - (void)testCIDBytesReturnsNonEmptyData {
-    NSData *multihash = [CID sha256Digest:[@"bytes test" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *cid = [CID cidWithMultihash:multihash codec:0x71];
+    NSData *digest = [CID sha256Digest:[@"bytes test" dataUsingEncoding:NSUTF8StringEncoding]];
+    CID *cid = [CID cidWithDigest:digest codec:0x71];
     NSData *bytes = [cid bytes];
 
     XCTAssertNotNil(bytes);
@@ -160,8 +178,8 @@
 }
 
 - (void)testCIDValidLength {
-    NSData *multihash = [CID sha256Digest:[@"test" dataUsingEncoding:NSUTF8StringEncoding]];
-    CID *cid = [CID cidWithMultihash:multihash codec:0x71];
+    NSData *digest = [CID sha256Digest:[@"test" dataUsingEncoding:NSUTF8StringEncoding]];
+    CID *cid = [CID cidWithDigest:digest codec:0x71];
     NSString *stringValue = cid.stringValue;
     
     XCTAssertLessThanOrEqual(stringValue.length, 256, @"Valid CID should be <= 256 chars");
@@ -179,7 +197,7 @@
 
     XCTAssertNotNil(tid1);
     XCTAssertNotNil(tid2);
-    XCTAssertEqual(tid1.length, 14);
+    XCTAssertEqual(tid1.length, 13);
 }
 
 - (void)testTIDUniqueness {
@@ -224,8 +242,9 @@
     NSData *encoded = [value encode];
 
     XCTAssertNotNil(encoded);
-    XCTAssertEqual(encoded.length, 1);
-    XCTAssertEqual(((uint8_t *)encoded.bytes)[0], 42);
+    XCTAssertEqual(encoded.length, 2);
+    XCTAssertEqual(((uint8_t *)encoded.bytes)[0], 0x18);
+    XCTAssertEqual(((uint8_t *)encoded.bytes)[1], 42);
 }
 
 - (void)testEncodeTextStringReturnsNonEmptyData {
@@ -343,8 +362,7 @@
 #pragma mark - JWT Tests
 
 - (void)testJWTMintingProducesThreeParts {
-    JWTMinter *minter = [[JWTMinter alloc] init];
-    minter.issuer = @"test-issuer";
+    JWTMinter *minter = [self testMinterWithPublicKey:nil];
 
     NSString *token = [minter signPayload:@{
         @"sub": @"did:web:test.com",
@@ -358,8 +376,7 @@
 }
 
 - (void)testJWTParsing {
-    JWTMinter *minter = [[JWTMinter alloc] init];
-    minter.issuer = @"test-issuer";
+    JWTMinter *minter = [self testMinterWithPublicKey:nil];
 
     NSString *token = [minter signPayload:@{
         @"sub": @"did:web:test.com",
@@ -375,11 +392,12 @@
 }
 
 - (void)testJWTVerificationSucceeds {
+    NSData *publicKey = nil;
+    JWTMinter *minter = [self testMinterWithPublicKey:&publicKey];
+
     JWTVerifier *verifier = [[JWTVerifier alloc] init];
     verifier.expectedIssuer = @"test-issuer";
-
-    JWTMinter *minter = [[JWTMinter alloc] init];
-    minter.issuer = @"test-issuer";
+    verifier.publicKey = publicKey;
 
     NSString *token = [minter signPayload:@{
         @"sub": @"did:web:test.com",
@@ -397,11 +415,12 @@
 }
 
 - (void)testJWTExpiredToken {
+    NSData *publicKey = nil;
+    JWTMinter *minter = [self testMinterWithPublicKey:&publicKey];
+
     JWTVerifier *verifier = [[JWTVerifier alloc] init];
     verifier.expectedIssuer = @"test-issuer";
-
-    JWTMinter *minter = [[JWTMinter alloc] init];
-    minter.issuer = @"test-issuer";
+    verifier.publicKey = publicKey;
 
     NSString *token = [minter signPayload:@{
         @"sub": @"did:web:test.com",
@@ -421,8 +440,7 @@
 }
 
 - (void)testAccessTokenMinting {
-    JWTMinter *minter = [[JWTMinter alloc] init];
-    minter.issuer = @"test-issuer";
+    JWTMinter *minter = [self testMinterWithPublicKey:nil];
 
     JWT *token = [minter mintAccessTokenForDID:@"did:web:test.com"
                                         handle:@"test.bsky.social"
