@@ -176,10 +176,11 @@ def _parse_message(message: bytes) -> Optional[FirehoseEvent]:
 
             # ATProto DAG-CBOR uses tag 42 for CIDs.
             # We want to ignore tags for the purpose of finding 'seq'.
+            # Return the tag's raw value rather than trying to re-decode it.
             def tag_decoder(decoder, tag):
-                return decoder.decode()
+                return tag.value
 
-            decoder = cbor2.decoder.CBORDecoder(BytesIO(message), tag_hook=tag_decoder)
+            decoder = cbor2.CBORDecoder(BytesIO(message), tag_hook=tag_decoder)
 
             header = decoder.decode()
             # body might be missing in some frames (info/error)
