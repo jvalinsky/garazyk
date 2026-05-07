@@ -3,8 +3,8 @@
 ## Overview
 The Objective-C interpreter in `kernel.wasm` uses a custom recursive-descent parser for Objective-C and C syntax. This document tracks implemented features, known gaps, and in-progress fixes.
 
-## Current Status (as of 2026-05-06)
-- **Notebook Tests:** 95/101 cells passing
+## Current Status (as of 2026-05-07)
+- **Notebook Tests:** 138/152 cells passing (22 notebooks, 14 skipped exercise placeholders)
 - **Smoke Tests:** 80+ feature blocks
 - **Runtime Gap Probes:** 84/84 passed
 - **Runtime Expansion:** Phase D-H completed (Exceptions, Protocols, Blocks, Forwarding, KVC, Collection/Block/Ternary fixes)
@@ -37,7 +37,9 @@ The Objective-C interpreter in `kernel.wasm` uses a custom recursive-descent par
 - ✓ NSDictionary/NSMutableDictionary: dictionary, setObject:forKey:, objectForKey:, count, objectEnumerator
 - ✓ NSSet/NSMutableSet: set, addObject:, removeObject:, containsObject:, count, objectEnumerator
 - ✓ NSNumber: numberWithInt:, numberWithFloat:, numberWithBool:, intValue, floatValue, boolValue
-- ✓ NSData: basic allocation and access
+- ✓ NSData: dataWithBytes:length:, dataByAppendingData:, length, bytes
+- ✗ NSMutableData: NOT supported — use NSData + dataByAppendingData: instead
+- ✗ NSMutableSet: NOT supported — use NSMutableArray + containsObject: instead
 - ✓ Fast Enumeration: for (type var in collection) for built-ins and custom objects (via objectEnumerator)
 
 ### Control Flow
@@ -89,6 +91,28 @@ The Objective-C interpreter in `kernel.wasm` uses a custom recursive-descent par
 
 ### Type Modifiers NOT YET SUPPORTED
 - Complex types (`struct`, `union`) — not fully implemented (except via `typedef NS_ENUM`)
+
+## Known Parser Limitations
+
+### Array Initializers in Method Bodies
+Array initializer syntax `unsigned char bytes[2] = {0x18, 0x2a};` fails inside method bodies.
+Workaround: assign each element separately:
+```objc
+unsigned char b0 = 0x18;
+unsigned char b1 = 0x2a;
+NSData *d0 = [NSData dataWithBytes:&b0 length:1];
+NSData *d1 = [NSData dataWithBytes:&b1 length:1];
+return [d0 dataByAppendingData:d1];
+```
+
+### Dot Syntax Property Assignment
+Dot syntax for property assignment (`obj.prop = value;`) is not supported.
+Use bracket syntax: `[obj setProp:value];` or `[obj setProp:value]`.
+
+### NSMutableData / NSMutableSet
+`NSMutableData` and `NSMutableSet` are not recognized by the runtime.
+Use `NSData` with `dataByAppendingData:` for concatenation, and `NSMutableArray`
+with `containsObject:` for set-like behavior.
 
 ## Architecture
 
