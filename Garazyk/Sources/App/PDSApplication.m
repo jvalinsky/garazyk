@@ -170,6 +170,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
         
         [self initializeInfrastructure];
         [self initializeServices];
+        [self loadLexicons];
 
         _legacyController = [[PDSController alloc] initWithApplication:self];
         [PDSAdminAuth sharedAuth].controller = _legacyController;
@@ -191,6 +192,28 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
         _sequencerPoolSizeOverride = sequencerMaxSize;
     }
     return self;
+}
+
+#pragma mark - Lexicons
+
+- (void)loadLexicons {
+    ATProtoLexiconRegistry *registry = [ATProtoLexiconRegistry sharedRegistry];
+    NSArray<NSString *> *searchPaths = [registry searchPathsForDirectory:self.dataDirectory];
+    
+    BOOL loadedAny = NO;
+    for (NSString *path in searchPaths) {
+        NSError *error = nil;
+        if ([registry loadLexiconsFromDirectory:path error:&error]) {
+            loadedAny = YES;
+            PDS_LOG_INFO_C(PDSLogComponentCore, @"Loaded lexicons from %@", path);
+        } else if (error) {
+            PDS_LOG_WARN_C(PDSLogComponentCore, @"Failed to load lexicons from %@: %@", path, error.localizedDescription);
+        }
+    }
+    
+    if (!loadedAny) {
+        PDS_LOG_WARN_C(PDSLogComponentCore, @"No lexicons found in any search path: %@", searchPaths);
+    }
 }
 
 #pragma mark - Configuration Helpers

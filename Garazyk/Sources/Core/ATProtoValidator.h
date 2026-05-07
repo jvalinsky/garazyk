@@ -78,6 +78,17 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (BOOL)validateNSID:(NSString *)nsid error:(NSError **)error;
 
+/*!
+ @method validateRkey:error:
+ 
+ @abstract Validates an ATProto record key (rkey).
+ 
+ @param rkey The rkey string to validate.
+ @param error On return, contains an error if validation failed.
+ @return YES if valid, NO otherwise.
+ */
++ (BOOL)validateRkey:(NSString *)rkey error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END
