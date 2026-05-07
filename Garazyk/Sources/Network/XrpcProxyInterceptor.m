@@ -3,6 +3,7 @@
 #import "App/PDSConfiguration.h"
 #import "Auth/JWT.h"
 #import "Core/DID.h"
+#import "Debug/PDSLogger.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
@@ -96,8 +97,28 @@ static NSDictionary *proxyServiceEntryFromDocument(DIDDocument *document,
   return nil;
 }
 
+static BOOL isInternalRequest(HttpRequest *request) {
+  NSString *ip = request.remoteAddress;
+  if (!ip) return NO;
+  if ([ip isEqualToString:@"127.0.0.1"] || [ip isEqualToString:@"::1"] || [ip isEqualToString:@"localhost"]) {
+    return YES;
+  }
+  if ([ip hasPrefix:@"10."] || [ip hasPrefix:@"192.168."]) {
+    return YES;
+  }
+  if ([ip hasPrefix:@"172."]) {
+    NSArray<NSString *> *parts = [ip componentsSeparatedByString:@"."];
+    if (parts.count >= 2) {
+      NSInteger second = [parts[1] integerValue];
+      if (second >= 16 && second <= 31) return YES;
+    }
+  }
+  return NO;
+}
+
 static NSURL *proxyBaseURLFromDescriptor(NSString *descriptor,
                                          PDSConfiguration *config,
+                                         BOOL isTrusted,
                                          NSError **error) {
   NSString *trimmedDescriptor = trimmedNonEmptyString(descriptor);
   if (trimmedDescriptor.length == 0) {
@@ -114,6 +135,16 @@ static NSURL *proxyBaseURLFromDescriptor(NSString *descriptor,
 
   NSURL *directURL = [NSURL URLWithString:trimmedDescriptor];
   if (directURL.scheme.length > 0 && directURL.host.length > 0) {
+    if (!isTrusted) {
+      if (error) {
+        *error = [NSError errorWithDomain:@"XrpcProxy"
+                                     code:6
+                                 userInfo:@{
+                                   NSLocalizedDescriptionKey : @"Absolute URLs are only allowed for internal proxy requests"
+                                 }];
+      }
+      return nil;
+    }
     return directURL;
   }
 
@@ -261,13 +292,14 @@ static BOOL proxyXrpcRequest(HttpRequest *request, HttpResponse *response,
                              NSString *methodId, NSString *proxyDescriptor,
                              PDSConfiguration *config,
                              BOOL explicitProxyHeader,
+                             BOOL isTrusted,
                              JWTMinter *jwtMinter,
                              id<PDSAdminController> adminController,
                              PDSServiceDatabases *serviceDatabases,
                              PDSDatabasePool *userDatabasePool) {
   NSError *targetError = nil;
   NSURL *baseURL =
-      proxyBaseURLFromDescriptor(proxyDescriptor, config, &targetError);
+      proxyBaseURLFromDescriptor(proxyDescriptor, config, isTrusted, &targetError);
   if (!baseURL) {
     response.statusCode = explicitProxyHeader ? HttpStatusBadRequest : 502;
     [response setJsonBody:@{
@@ -474,8 +506,10 @@ static BOOL proxyXrpcRequest(HttpRequest *request, HttpResponse *response,
           if (hasLocalHandler && forceLocal) {
             return NO;
           }
+          BOOL isTrusted = isInternalRequest(request);
           return proxyXrpcRequest(request, response, methodId,
                                   explicitProxyTarget, configuration, YES,
+                                  isTrusted,
                                   jwtMinter, adminController, serviceDatabases,
                                   userDatabasePool);
         }
@@ -492,6 +526,7 @@ static BOOL proxyXrpcRequest(HttpRequest *request, HttpResponse *response,
                 [[request headerForKey:@"x-objpds-proxy-hop"] integerValue] == 0) {
               return proxyXrpcRequest(request, response, methodId,
                                       fallbackDescriptor, configuration, NO,
+                                      YES, // Configured AppView is always trusted
                                       jwtMinter, adminController, serviceDatabases,
                                       userDatabasePool);
             }
@@ -510,8 +545,9 @@ static BOOL proxyXrpcRequest(HttpRequest *request, HttpResponse *response,
         }
 
         return proxyXrpcRequest(request, response, methodId, fallbackDescriptor,
-                                configuration, NO, jwtMinter, adminController,
-                                serviceDatabases, userDatabasePool);
+                                configuration, NO, YES, // Configured AppView is always trusted
+                                jwtMinter, adminController, serviceDatabases,
+                                userDatabasePool);
       };
 }
 

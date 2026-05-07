@@ -489,6 +489,13 @@ static void registerMethodsWithDispatcherUsingServices(
   [XrpcLexiconResolver registerResolveLexiconMethodOnDispatcher:dispatcher
                                                    configuration:config];
 
+  [XrpcProxyInterceptor installOnDispatcher:dispatcher
+                              configuration:config
+                                  jwtMinter:jwtMinter
+                            adminController:adminController
+                           serviceDatabases:serviceDatabases
+                           userDatabasePool:userDatabasePool];
+
 
   // Register domain modules in order
   [XrpcServerMethods registerWithDispatcher:dispatcher

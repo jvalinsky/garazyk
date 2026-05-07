@@ -26,6 +26,7 @@
      _sequenceNumber++;
      seq = _sequenceNumber;
    });
+  event.seq = seq;
   NSError *error = nil;
   NSData *data = [self.eventFormatter encodeCommitEvent:event error:&error];
   if (!data) {
@@ -40,6 +41,7 @@
      _sequenceNumber++;
      seq = _sequenceNumber;
    });
+  event.seq = seq;
   NSError *error = nil;
   NSData *data = [self.eventFormatter encodeIdentityEvent:event error:&error];
   if (!data) {
@@ -54,6 +56,7 @@
      _sequenceNumber++;
      seq = _sequenceNumber;
    });
+  event.seq = seq;
   NSError *error = nil;
   NSData *data = [self.eventFormatter encodeAccountEvent:event error:&error];
   if (!data) {
@@ -62,12 +65,22 @@
   return data;
 }
 
-- (NSData *)encodeInfoEvent:(FirehoseInfoEvent *)event {
+- (NSData *)encodeSyncEvent:(FirehoseSyncEvent *)event {
    __block NSUInteger seq;
    dispatch_sync(_sequenceQueue, ^{
      _sequenceNumber++;
      seq = _sequenceNumber;
    });
+  event.seq = seq;
+  NSError *error = nil;
+  NSData *data = [self.eventFormatter encodeSyncEvent:event error:&error];
+  if (!data) {
+    PDS_LOG_SYNC_ERROR(@"Failed to encode sync event: %@", error);
+  }
+  return data;
+}
+
+- (NSData *)encodeInfoEvent:(FirehoseInfoEvent *)event {
   NSError *error = nil;
   NSData *data = [self.eventFormatter encodeInfoEvent:event error:&error];
   if (!data) {
