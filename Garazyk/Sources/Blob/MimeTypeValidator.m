@@ -520,7 +520,25 @@ static const NSUInteger kMaxOtherSize = 5 * 1024 * 1024;
 
     NSString *sniffed = [self sniffMimeTypeFromData:data];
 
-    if (sniffed && ![sniffed isEqualToString:normalized]) {
+    if (!sniffed) {
+        // If it's a type we should definitely be able to sniff, but couldn't, it's a mismatch.
+        if ([normalized isEqualToString:@"image/jpeg"] ||
+            [normalized isEqualToString:@"image/png"] ||
+            [normalized isEqualToString:@"image/gif"] ||
+            [normalized isEqualToString:@"application/pdf"]) {
+            if (error) {
+                *error = [NSError errorWithDomain:MimeTypeErrorDomain
+                                             code:MimeTypeErrorMagicNumberMismatch
+                                         userInfo:@{
+                    NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Magic number mismatch: claimed %@ but could not detect valid header", normalized]
+                }];
+            }
+            return NO;
+        }
+        return YES;
+    }
+
+    if (![sniffed isEqualToString:normalized]) {
         BOOL matchesCategory = NO;
         if ([normalized hasPrefix:@"image/"] && [sniffed hasPrefix:@"image/"]) matchesCategory = YES;
         else if ([normalized hasPrefix:@"video/"] && [sniffed hasPrefix:@"video/"]) matchesCategory = YES;
@@ -545,11 +563,15 @@ static const NSUInteger kMaxOtherSize = 5 * 1024 * 1024;
 }
 
 - (nullable NSString *)sniffMimeTypeFromData:(NSData *)data {
-    if (data.length < 12) {
+    if (!data || data.length == 0) {
         return nil;
     }
 
     const uint8_t *bytes = data.bytes;
+
+    if (data.length >= 2) {
+        if (bytes[0] == 0x42 && bytes[1] == 0x4D) return @"image/bmp";
+    }
 
     if (data.length >= 4) {
         uint32_t magic = (bytes[0] << 24) | (bytes[1] << 16) | (bytes[2] << 8) | bytes[3];
@@ -557,12 +579,14 @@ static const NSUInteger kMaxOtherSize = 5 * 1024 * 1024;
         if (magic == 0x89504E47) return @"image/png";
         if (magic == 0xFFD8FFDB || magic == 0xFFD8FFE0 || magic == 0xFFD8FFE1) return @"image/jpeg";
         if (magic == 0x47494638) return @"image/gif";
-        if (magic == 0x424D) return @"image/bmp";
         if (magic == 0x49492A00 || magic == 0x4D4D002A) return @"image/tiff";
-        if (magic == 0x52574446) return @"image/webp";
+        if (magic == 0x52494646) { // "RIFF"
+             // Handled below with more data
+        }
         if (magic == 0x4F676753) return @"audio/ogg";
         if (magic == 0x664C6143) return @"audio/flac";
         if (magic == 0x1A45DFA3) return @"video/webm";
+        if (magic == 0x25504446) return @"application/pdf"; // "%PDF"
     }
 
     if (data.length >= 8) {
@@ -584,14 +608,17 @@ static const NSUInteger kMaxOtherSize = 5 * 1024 * 1024;
         if (bytes[0] == 0x49 && bytes[1] == 0x44 && bytes[2] == 0x33) {
             return @"audio/mpeg";
         }
-        if (memcmp(bytes, "RIFF", 4) == 0 && data.length >= 12) {
+        if (memcmp(bytes, "RIFF", 4) == 0) {
             if (memcmp(bytes + 8, "WEBP", 4) == 0) return @"image/webp";
             if (memcmp(bytes + 8, "AVI ", 4) == 0) return @"video/avi";
             if (memcmp(bytes + 8, "WAVE", 4) == 0) return @"audio/wav";
         }
-        if (memcmp(bytes, "%PDF", 4) == 0) return @"application/pdf";
-        if (memcmp(bytes, "{", 1) == 0 || memcmp(bytes, "{\"", 2) == 0) {
-            return @"application/json";
+    }
+    
+    if (data.length >= 1) {
+        if (bytes[0] == '{') {
+             // Basic JSON check
+             return @"application/json";
         }
     }
 

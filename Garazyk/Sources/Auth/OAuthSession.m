@@ -144,6 +144,15 @@ NSString * const OAuthErrorDomain = @"com.atproto.pds.oauth";
             }
             return NO;
         }
+        
+        if (!self.codeVerifier || self.codeVerifier.length == 0) {
+            if (error) {
+                *error = [NSError errorWithDomain:OAuthErrorDomain
+                                             code:OAuthErrorInvalidRequest
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Missing code_verifier (PKCE is mandated)"}];
+            }
+            return NO;
+        }
     }
 
     if (!self.dpopJwt || self.dpopJwt.length == 0) {
@@ -336,15 +345,13 @@ NSString * const OAuthErrorDomain = @"com.atproto.pds.oauth";
         return @{@"error": @"invalid_grant"};
     }
 
-    if (request.codeVerifier) {
-        if (![PKCEUtil verifyCodeChallenge:validSession.codeChallenge withVerifier:request.codeVerifier]) {
-            if (error) {
-                *error = [NSError errorWithDomain:OAuthErrorDomain
-                                             code:OAuthErrorInvalidRequest
-                                         userInfo:@{NSLocalizedDescriptionKey: @"Invalid code verifier"}];
-            }
-            return @{@"error": @"invalid_grant"};
+    if (![PKCEUtil verifyCodeChallenge:validSession.codeChallenge withVerifier:request.codeVerifier]) {
+        if (error) {
+            *error = [NSError errorWithDomain:OAuthErrorDomain
+                                         code:OAuthErrorInvalidRequest
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid code verifier"}];
         }
+        return @{@"error": @"invalid_grant"};
     }
 
     NSString *accessToken = [[NSUUID UUID] UUIDString];
