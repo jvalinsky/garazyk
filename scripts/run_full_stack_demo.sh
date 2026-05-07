@@ -83,15 +83,7 @@ export APPVIEW_ADMIN_SECRET="$APPVIEW_ADMIN_SECRET"
 export PDS_ADMIN_SECRET="$PDS_ADMIN_SECRET"
 "$APPVIEW_BIN" serve --port "$SERVICE_PORT_APPVIEW" --data-dir "$DEMO_ROOT/appview" --relay "$RELAY_URL" --verbose > "$DEMO_ROOT/appview.log" 2>&1 &
 
-for i in {1..20}; do
-    # AppView's admin status endpoint is the first useful readiness signal for
-    # this flow because backfill checks and forced indexing both depend on it.
-    if curl -s -H "Authorization: Bearer $APPVIEW_ADMIN_SECRET" "$APPVIEW_URL/admin/backfill/status" >/dev/null; then
-        log_ok "AppView is up"
-        break
-    fi
-    sleep 0.5
-done
+wait_for_service appview 30
 
 sleep 2
 
@@ -99,7 +91,7 @@ log_info "Seeding PDS with accounts and records via XRPC..."
 export PDS_URL="$PDS_URL"
 export PDS_DATA_DIR="$DEMO_ROOT/pds"
 export PDS_BIN="$PDS_BIN"
-python3 scripts/demo_seed.py
+python3 "$SCRIPT_DIR/dev/demo_seed.py"
 
 log_info "Waiting for indexing..."
 # AppView indexes asynchronously from the relay. The fixed wait keeps this

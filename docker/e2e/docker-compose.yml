@@ -7,7 +7,6 @@ services:
       dockerfile: docker/Dockerfile.gnustep
       target: runtime
     image: nspds:local
-    container_name: e2e-plc
     ports:
       - "2580:2580"
     environment:
@@ -29,7 +28,9 @@ services:
       retries: 10
       start_period: 10s
     networks:
-      - e2e_network
+      e2e_network:
+        aliases:
+          - e2e-plc
 
   pds:
     build:
@@ -37,7 +38,6 @@ services:
       dockerfile: docker/Dockerfile.gnustep
       target: runtime
     image: nspds:local
-    container_name: e2e-pds
     ports:
       - "2583:2583"
     volumes:
@@ -63,7 +63,9 @@ services:
       retries: 10
       start_period: 15s
     networks:
-      - e2e_network
+      e2e_network:
+        aliases:
+          - e2e-pds
 
   relay:
     build:
@@ -71,7 +73,6 @@ services:
       dockerfile: docker/Dockerfile.gnustep
       target: runtime
     image: nspds:local
-    container_name: e2e-relay
     ports:
       - "2584:2584"
     volumes:
@@ -97,7 +98,9 @@ services:
       retries: 10
       start_period: 10s
     networks:
-      - e2e_network
+      e2e_network:
+        aliases:
+          - e2e-relay
 
   appview:
     build:
@@ -105,7 +108,6 @@ services:
       dockerfile: docker/Dockerfile.gnustep
       target: runtime
     image: nspds:local
-    container_name: e2e-appview
     ports:
       - "3200:3200"
     environment:
@@ -135,7 +137,9 @@ services:
       retries: 10
       start_period: 15s
     networks:
-      - e2e_network
+      e2e_network:
+        aliases:
+          - e2e-appview
 
 networks:
   e2e_network:
@@ -143,10 +147,6 @@ networks:
 
 volumes:
   plc_data:
-    name: e2e_plc_data
   pds_data:
-    name: e2e_pds_data
   relay_data:
-    name: e2e_relay_data
   appview_data:
-    name: e2e_appview_data

@@ -6,7 +6,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.local
-    container_name: local-plc
     entrypoint: ["/usr/local/bin/campagnola"]
     command:
       - "serve"
@@ -35,7 +34,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.local
-    container_name: local-pds
     command:
       - "serve"
       - "--config"
@@ -70,7 +68,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.local
-    container_name: local-relay
     entrypoint: ["/usr/local/bin/zuk"]
     command:
       - "serve"
@@ -102,7 +99,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.local
-    container_name: local-appview
     entrypoint: ["/usr/local/bin/syrena"]
     command:
       - "serve"
