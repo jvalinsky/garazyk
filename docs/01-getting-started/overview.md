@@ -4,24 +4,16 @@ title: Getting Started with PDS
 
 # Getting Started with PDS
 
-## What Garazyk Is
+Garazyk is an Objective-C Personal Data Server (PDS) for the AT Protocol. It serves XRPC endpoints, manages per-account repositories, streams firehose events, and provides contributor tools like the Explorer and browser-based Admin UI.
 
-Garazyk is an Objective-C Personal Data Server for the AT Protocol. It serves ATProto endpoints, stores per-account repositories, exposes a firehose stream, and provides contributor tools like the Explorer and browser UI.
+## Architecture
 
-This guide helps contributors and operators understand the subsystems and navigate the codebase.
-
-## Goals
-
-The codebase focuses on:
+Garazyk emphasizes:
 
 - Direct control over transport, routing, and persistence in a small runtime.
-- Cross-platform support for macOS and GNUstep.
-- ATProto concepts like DIDs, repos, sync, and auth grounded in the repository.
-- Clear boundaries between request handling, services, and storage.
-
-Learn these boundaries first to make the rest of the codebase easier to read.
-
-## Architecture At A Glance
+- Native cross-platform support for macOS and GNUstep.
+- ATProto primitives (DIDs, repos, sync, auth) implemented directly in the repository.
+- Explicit boundaries between request handling, services, and storage.
 
 ```mermaid
 flowchart TD
@@ -41,37 +33,25 @@ flowchart TD
     Services --> Sync
 ```
 
-## How To Read This Guide
+## Reading Path
 
-Use the site in this order:
+1. [Setup](./setup)
+2. [Codebase Map](./codebase-map)
+3. [Request Lifecycle](./request-lifecycle)
+4. [AT Protocol Basics](../02-core-concepts/atproto-basics)
+5. [Services Overview](../03-application-layer/services-overview)
 
-1. learn the request path and the codebase map
-2. understand the service and storage boundaries
-3. use the detailed guides when you need one concrete runtime flow
-4. use tutorials when you want a contributor walkthrough
-
-The docs are intentionally split this way so the top-level pages stay readable without hiding the implementation detail you need later.
-
-## Recommended Starting Path
-
-- [Setup](./setup)
-- [Codebase Map](./codebase-map)
-- [Request Lifecycle](./request-lifecycle)
-- [AT Protocol Basics](../02-core-concepts/atproto-basics)
-- [Services Overview](../03-application-layer/services-overview)
-
-## Go Deeper
+## Implementation Details
 
 - [Startup and Boot Sequence](./startup-and-boot-sequence)
 - [Local Debug Workflow](./local-debug-workflow)
 - [HTTP Request and Route Pipeline](../04-network-layer/http-request-and-route-pipeline)
 - [Shared vs Actor Database Boundary](../05-database-layer/shared-vs-actor-database-boundary)
 
-## Next Steps
+## Troubleshooting
 
-- If you are new to the repo, continue with [Setup](./setup) and [Codebase Map](./codebase-map).
-- If you are chasing a bug, start with [Request Lifecycle](./request-lifecycle) and [Troubleshooting](../11-reference/troubleshooting).
-- If you want a guided implementation path, use the [Tutorials](../10-tutorials/index).
+- [Troubleshooting](../11-reference/troubleshooting)
+- [Tutorials](../10-tutorials/index)
 
 ## Related
 
