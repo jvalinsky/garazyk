@@ -27,40 +27,131 @@ BINARY_MODE=false
 WITH_PDS2=false
 WAIT_ONLY=false
 TEARDOWN=false
+KEEP_RUNNING=false
+COLLECT_DIAGNOSTICS=false
 
-for arg in "$@"; do
+while [[ $# -gt 0 ]]; do
     # Keep argument parsing intentionally simple: scenario automation passes a
     # small fixed flag set and all per-service values come from common.sh envs.
-    case "$arg" in
+    case "$1" in
         --binary)    BINARY_MODE=true ;;
         --pds2)      WITH_PDS2=true ;;
         --wait-only) WAIT_ONLY=true ;;
         --teardown)  TEARDOWN=true ;;
+        --keep-running) KEEP_RUNNING=true ;;
+        --collect-diagnostics) COLLECT_DIAGNOSTICS=true ;;
+        --run-id)
+            [[ $# -ge 2 ]] || error_exit "--run-id requires a value" 2
+            ATPROTO_E2E_RUN_ID="$2"
+            shift
+            ;;
+        --diagnostics-dir)
+            [[ $# -ge 2 ]] || error_exit "--diagnostics-dir requires a value" 2
+            ATPROTO_E2E_DIAGNOSTICS_DIR="$2"
+            shift
+            ;;
         --help|-h)
-            echo "Usage: $0 [--binary] [--pds2] [--wait-only] [--teardown]"
+            echo "Usage: $0 [--binary] [--pds2] [--wait-only] [--teardown] [--run-id ID] [--diagnostics-dir DIR]"
             echo ""
-            echo "  --binary     Start services from build/bin/ (no Docker)"
-            echo "  --pds2       Also start a second PDS on port $SERVICE_PORT_CHAT (for federation scenarios)"
-            echo "  --wait-only  Don't start services, just wait for them to be healthy"
-            echo "  --teardown   Stop all services"
+            echo "  --binary               Start services from build/bin/ (no Docker)"
+            echo "  --pds2                 Also start a second PDS on port $SERVICE_PORT_CHAT"
+            echo "  --wait-only            Don't start services, just wait for them to be healthy"
+            echo "  --teardown             Stop services for this run"
+            echo "  --keep-running         Mark this run as intentionally long-lived"
+            echo "  --collect-diagnostics  Capture health, logs, and compose state"
+            echo "  --run-id ID            Reuse or name the shared e2e run directory"
+            echo "  --diagnostics-dir DIR  Write diagnostics to DIR"
             exit 0
             ;;
+        *)
+            error_exit "Unknown argument: $1" 2
+            ;;
     esac
+    shift
 done
 
-# ── Python deps for scenario runner ─────────────────────────────────────────
-# requests is required by lib/client.py; websockets is needed for the firehose
-# scenario. Install once into the user's site-packages so run_scenario.py works
-# out of the box. Skipped during teardown.
-if [[ "$TEARDOWN" != "true" ]]; then
-    REQ_FILE="$SCRIPT_DIR/requirements.txt"
-    if [[ -f "$REQ_FILE" ]]; then
-        if ! python3 -c "import websockets, requests" >/dev/null 2>&1; then
-            log_info "Installing scenario Python dependencies (requests, websockets)..."
-            python3 -m pip install --user -q -r "$REQ_FILE" || \
-                log_warn "pip install failed; firehose tests may skip"
-        fi
+if [[ "$TEARDOWN" == "true" || "$COLLECT_DIAGNOSTICS" == "true" ]]; then
+    atproto_e2e_load_latest_run_id "scenario"
+fi
+atproto_e2e_init_run
+if [[ "$TEARDOWN" != "true" && "$COLLECT_DIAGNOSTICS" != "true" && "$WAIT_ONLY" != "true" ]]; then
+    atproto_e2e_store_latest_run_id "scenario"
+fi
+
+COMPOSE_FILES=("$COMPOSE_DIR/docker-compose.yml")
+if [[ "$WITH_PDS2" == "true" || "$TEARDOWN" == "true" || "$COLLECT_DIAGNOSTICS" == "true" ]]; then
+    COMPOSE_FILES+=("$COMPOSE_DIR/docker-compose.scenarios.yml")
+fi
+
+build_compose_cmd() {
+    COMPOSE_CMD=(docker compose -p "$ATPROTO_E2E_COMPOSE_PROJECT")
+    local compose_file
+    for compose_file in "${COMPOSE_FILES[@]}"; do
+        COMPOSE_CMD+=(-f "$compose_file")
+    done
+}
+
+build_compose_cmd
+
+collect_local_diagnostics() {
+    atproto_collect_diagnostics "$ATPROTO_E2E_DIAGNOSTICS_DIR" \
+        "$COMPOSE_DIR" "$ATPROTO_E2E_COMPOSE_PROJECT" "${COMPOSE_FILES[@]}"
+}
+
+stop_binary_services() {
+    if [[ -f "$ATPROTO_E2E_PID_FILE" ]]; then
+        while read -r line; do
+            if [[ "$line" =~ ^[A-Z0-9_]+_PID=([0-9]+)$ ]]; then
+                kill "${BASH_REMATCH[1]}" 2>/dev/null || true
+                wait "${BASH_REMATCH[1]}" 2>/dev/null || true
+            fi
+        done < "$ATPROTO_E2E_PID_FILE"
     fi
+    rm -f "$ATPROTO_E2E_PID_FILE"
+}
+
+stop_docker_services() {
+    "${COMPOSE_CMD[@]}" down -v --remove-orphans 2>/dev/null || true
+}
+
+on_exit() {
+    local status=$?
+    if [[ "$status" -ne 0 ]]; then
+        log_warn "setup_local_network.sh failed; collecting diagnostics"
+        collect_local_diagnostics || true
+    fi
+}
+
+on_interrupt() {
+    log_warn "Interrupted; collecting diagnostics and stopping owned services"
+    collect_local_diagnostics || true
+    if [[ "$BINARY_MODE" == "true" ]]; then
+        stop_binary_services
+    else
+        stop_docker_services
+    fi
+    exit 130
+}
+
+trap on_exit EXIT
+trap on_interrupt INT TERM
+
+check_scenario_python_dependencies() {
+    if ! python3 -c "import requests" >/dev/null 2>&1; then
+        error_exit "Missing Python dependency: requests (install with: python3 -m pip install -r $SCRIPT_DIR/requirements.txt)" 3
+    fi
+    if ! python3 -c "import websockets" >/dev/null 2>&1; then
+        log_warn "Optional Python dependency missing: websockets (scenario 09 may skip firehose checks)"
+    fi
+}
+
+if [[ "$COLLECT_DIAGNOSTICS" == "true" && "$TEARDOWN" != "true" ]]; then
+    collect_local_diagnostics
+    exit 0
+fi
+
+if [[ "$TEARDOWN" != "true" ]]; then
+    check_scenario_python_dependencies
 fi
 
 wait_for_admin_http() {
@@ -86,14 +177,15 @@ wait_for_admin_http() {
 
 # ── Teardown ────────────────────────────────────────────────────────────────
 if [[ "$TEARDOWN" == "true" ]]; then
+    if [[ "$COLLECT_DIAGNOSTICS" == "true" ]]; then
+        collect_local_diagnostics || true
+    fi
     if [[ "$BINARY_MODE" == "true" ]]; then
         log_info "Stopping binary services..."
-        kill_stray_processes plc pds relay appview
-        pkill -f "$SERVICE_BINARY_PDS serve.*$SERVICE_PORT_CHAT" 2>/dev/null || true
-        rm -f /tmp/atproto-scenario-pids.txt
+        stop_binary_services
     else
         log_info "Stopping Docker services..."
-        docker compose -f "$COMPOSE_DIR/docker-compose.yml" down -v 2>/dev/null || true
+        stop_docker_services
     fi
     log_ok "Teardown complete"
     exit 0
@@ -107,7 +199,8 @@ if [[ "$BINARY_MODE" == "true" ]]; then
 
     # Binary mode is disposable by design. Starting from an empty data root keeps
     # scenario runs independent and avoids stale repo/account state.
-    DATA_ROOT="/tmp/atproto-run-data"
+    DATA_ROOT="$ATPROTO_E2E_RUN_DIR/data"
+    stop_binary_services
     rm -rf "$DATA_ROOT"
     mkdir -p "$DATA_ROOT"
 
@@ -119,7 +212,7 @@ if [[ "$BINARY_MODE" == "true" ]]; then
 
     # PID file gives teardown a stable list of processes even after this script
     # exits and the scenario runner continues in a separate Python process.
-    PID_FILE="/tmp/atproto-scenario-pids.txt"
+    PID_FILE="$ATPROTO_E2E_PID_FILE"
     echo "# ATProto scenario PIDs (started $(date))" > "$PID_FILE"
 
     # Disable host-specific secure storage so local binary scenarios can run in
@@ -131,14 +224,14 @@ if [[ "$BINARY_MODE" == "true" ]]; then
 
     # ── Start PLC ────────────────────────────────────────────────────────────
     log_info "Starting PLC on port $SERVICE_PORT_PLC..."
-    "$BUILD_BIN/$SERVICE_BINARY_PLC" serve --port "$SERVICE_PORT_PLC" --data-dir "$PLC_DATA" > /tmp/plc.log 2>&1 &
+    "$BUILD_BIN/$SERVICE_BINARY_PLC" serve --port "$SERVICE_PORT_PLC" --data-dir "$PLC_DATA" > "$ATPROTO_E2E_LOG_DIR/plc.log" 2>&1 &
     echo "PLC_PID=$!" >> "$PID_FILE"
     sleep 2
     wait_for_http "$SERVICE_URL_PLC/_health" "PLC" 30
 
     # ── Start PDS ────────────────────────────────────────────────────────────
     log_info "Starting PDS on port $SERVICE_PORT_PDS..."
-    "$BUILD_BIN/$SERVICE_BINARY_PDS" serve --config "$CONFIG_DIR/pds-config.json" --port "$SERVICE_PORT_PDS" --data-dir "$PDS_DATA" > /tmp/pds.log 2>&1 &
+    "$BUILD_BIN/$SERVICE_BINARY_PDS" serve --config "$CONFIG_DIR/pds-config.json" --port "$SERVICE_PORT_PDS" --data-dir "$PDS_DATA" > "$ATPROTO_E2E_LOG_DIR/pds.log" 2>&1 &
     echo "PDS_PID=$!" >> "$PID_FILE"
     sleep 3
     wait_for_http "$SERVICE_URL_PDS/xrpc/com.atproto.server.describeServer" "PDS" 60
@@ -147,7 +240,7 @@ if [[ "$BINARY_MODE" == "true" ]]; then
     log_info "Starting Relay on port $SERVICE_PORT_RELAY..."
     "$BUILD_BIN/$SERVICE_BINARY_RELAY" serve --port "$SERVICE_PORT_RELAY" \
         --upstream "${SERVICE_URL_PDS/http/ws}/xrpc/com.atproto.sync.subscribeRepos" \
-        --data-dir "$RELAY_DATA" > /tmp/relay.log 2>&1 &
+        --data-dir "$RELAY_DATA" > "$ATPROTO_E2E_LOG_DIR/relay.log" 2>&1 &
     echo "RELAY_PID=$!" >> "$PID_FILE"
     sleep 2
     wait_for_http "$SERVICE_URL_RELAY/api/relay/health" "Relay" 30
@@ -160,11 +253,13 @@ if [[ "$BINARY_MODE" == "true" ]]; then
     "$BUILD_BIN/$SERVICE_BINARY_APPVIEW" serve \
         --relay "${SERVICE_URL_PDS/http/ws}/xrpc/com.atproto.sync.subscribeRepos" \
         --port "$SERVICE_PORT_APPVIEW" \
-        --data-dir "$APPVIEW_DATA" > /tmp/appview.log 2>&1 &
+        --data-dir "$APPVIEW_DATA" > "$ATPROTO_E2E_LOG_DIR/appview.log" 2>&1 &
     echo "APPVIEW_PID=$!" >> "$PID_FILE"
     sleep 3
-    # AppView health check uses admin endpoint
-    wait_for_admin_http "$SERVICE_URL_APPVIEW/admin/backfill/status" "AppView" 60
+    # AppView health check uses admin endpoint — this is fatal because
+    # scenarios that proxy app.bsky.* endpoints will fail without it.
+    wait_for_admin_http "$SERVICE_URL_APPVIEW/admin/backfill/status" "AppView" 60 || \
+        error_exit "AppView failed to start within 60s"
 
     # ── Start PDS2 (optional) ────────────────────────────────────────────────
     if [[ "$WITH_PDS2" == "true" ]]; then
@@ -172,13 +267,15 @@ if [[ "$BINARY_MODE" == "true" ]]; then
         mkdir -p "$PDS2_DATA"
         log_info "Starting PDS2 on port $SERVICE_PORT_CHAT..."
         PDS_MASTER_SECRET="test-master-secret-456" \
-        "$BUILD_BIN/$SERVICE_BINARY_PDS" serve --config "$CONFIG_DIR/pds2-config.json" --port "$SERVICE_PORT_CHAT" --data-dir "$PDS2_DATA" > /tmp/pds2.log 2>&1 &
+        "$BUILD_BIN/$SERVICE_BINARY_PDS" serve --config "$CONFIG_DIR/pds2-config.json" --port "$SERVICE_PORT_CHAT" --data-dir "$PDS2_DATA" > "$ATPROTO_E2E_LOG_DIR/pds2.log" 2>&1 &
         echo "PDS2_PID=$!" >> "$PID_FILE"
         sleep 3
         wait_for_http "$SERVICE_URL_CHAT/xrpc/com.atproto.server.describeServer" "PDS2" 60
     fi
 
     echo ""
+    log_info "Waiting for services to settle..."
+    sleep 5
     log_ok "Binary network is ready!"
     echo ""
     echo "  PLC:     $SERVICE_URL_PLC"
@@ -189,7 +286,8 @@ if [[ "$BINARY_MODE" == "true" ]]; then
         echo "  PDS2:    $SERVICE_URL_CHAT"
     fi
     echo ""
-    echo "  Logs: /tmp/{plc,pds,relay,appview}.log"
+    echo "  Run:  $ATPROTO_E2E_RUN_DIR"
+    echo "  Logs: $ATPROTO_E2E_LOG_DIR"
     echo "  PIDs: $PID_FILE"
     echo ""
     echo "  To stop: $0 --teardown --binary"
@@ -200,26 +298,31 @@ fi
 # ── Docker mode ──────────────────────────────────────────────────────────────
 if [[ "$WAIT_ONLY" != "true" ]]; then
     log_info "Starting local network (Docker)..."
-    # Build the compose command as an array so optional topology files do not
-    # require eval or string-splitting.
-    COMPOSE_CMD=(docker compose -f "$COMPOSE_DIR/docker-compose.yml")
     if [[ "$WITH_PDS2" == "true" ]]; then
-        COMPOSE_CMD+=(-f "$COMPOSE_DIR/docker-compose.scenarios.yml")
         log_info "Including second PDS (port $SERVICE_PORT_CHAT)"
     fi
+    stop_docker_services
     "${COMPOSE_CMD[@]}" up -d
 fi
 
-wait_for_http "$SERVICE_URL_PLC/_health" "PLC" 60
-wait_for_http "$SERVICE_URL_PDS/xrpc/com.atproto.server.describeServer" "PDS" 60
-wait_for_http "$SERVICE_URL_RELAY/api/relay/health" "Relay" 60
-wait_for_http "$SERVICE_URL_APPVIEW/_health" "AppView" 90
+wait_for_service plc 60
+wait_for_service pds 60
+wait_for_service relay 60
+wait_for_service appview 90 || error_exit "AppView failed to start within 90s"
 
 if [[ "$WITH_PDS2" == "true" ]]; then
     wait_for_http "$SERVICE_URL_CHAT/xrpc/com.atproto.server.describeServer" "PDS2" 60
 fi
 
 echo ""
+log_info "Waiting for services to settle..."
+sleep 5
+echo ""
+echo "  Run:     $ATPROTO_E2E_RUN_DIR"
+echo "  Project: $ATPROTO_E2E_COMPOSE_PROJECT"
+if [[ "$KEEP_RUNNING" == "true" ]]; then
+    echo "  Stop:    $0 --teardown --run-id $ATPROTO_E2E_RUN_ID"
+fi
 log_ok "Local network is ready!"
 echo ""
 echo "  PLC:     $SERVICE_URL_PLC"
