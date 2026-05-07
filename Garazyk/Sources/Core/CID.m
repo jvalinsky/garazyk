@@ -216,6 +216,11 @@ static const NSUInteger kMaxVarintSize = 9;
     }
     offset += mhLenSize;
 
+    // ATProto repositories only accept sha2-256 multihashes.
+    if (mhCode != 0x12 || mhLen != 32) {
+        return nil;
+    }
+
     // Overflow-safe bounds check. 128 is a defense-in-depth cap — real
     // multihashes never exceed 64 bytes and we reject hostile oversized values.
     if (mhLen > 128 || mhLen > (uint64_t)(length - offset)) {
