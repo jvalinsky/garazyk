@@ -6,7 +6,7 @@ This project uses the `deciduous` tool for decision tracking. See AGENTS.md for 
 
 ### Issue tracker
 
-Issues tracked as local markdown files under `.scratch/`. See `docs/agents/issue-tracker.md`.
+Issues tracked as local markdown files. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
