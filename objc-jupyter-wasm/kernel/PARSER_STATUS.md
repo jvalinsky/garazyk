@@ -6,7 +6,7 @@ The Objective-C interpreter in `kernel.wasm` uses a custom recursive-descent par
 ## Current Status (as of 2026-05-07)
 - **Notebook Tests:** 138/152 cells passing (22 notebooks, 14 skipped exercise placeholders)
 - **Smoke Tests:** 80+ feature blocks
-- **Runtime Gap Probes:** 84/84 passed
+- **Runtime Gap Probes:** 91/91 passed
 - **Runtime Expansion:** Phase D-H completed (Exceptions, Protocols, Blocks, Forwarding, KVC, Collection/Block/Ternary fixes)
 
 ## Implemented Features
@@ -37,9 +37,9 @@ The Objective-C interpreter in `kernel.wasm` uses a custom recursive-descent par
 - ✓ NSDictionary/NSMutableDictionary: dictionary, setObject:forKey:, objectForKey:, count, objectEnumerator
 - ✓ NSSet/NSMutableSet: set, addObject:, removeObject:, containsObject:, count, objectEnumerator
 - ✓ NSNumber: numberWithInt:, numberWithFloat:, numberWithBool:, intValue, floatValue, boolValue
-- ✓ NSData: dataWithBytes:length:, dataByAppendingData:, length, bytes
-- ✗ NSMutableData: NOT supported — use NSData + dataByAppendingData: instead
-- ✗ NSMutableSet: NOT supported — use NSMutableArray + containsObject: instead
+- ✓ NSData: dataWithBytes:length:, dataByAppendingData:, length, bytes, subdataWithRange:, byteAtIndex:, isEqualToData:, description, bytes
+- ✓ NSMutableData: data, dataWithCapacity:, dataWithBytes:length:, appendData:, appendBytes:length:, length, bytes, copy, mutableCopy
+- ✓ NSMutableSet: set, setWithCapacity:, setWithArray:, setWithObject:, addObject:, removeObject:, containsObject:, count, removeAllObjects
 - ✓ Fast Enumeration: for (type var in collection) for built-ins and custom objects (via objectEnumerator)
 
 ### Control Flow
@@ -81,7 +81,7 @@ The Objective-C interpreter in `kernel.wasm` uses a custom recursive-descent par
 ### Builtin Types Recognized
 - Primitives: int, void, char, float, double, long, BOOL
 - Objective-C: id, Class, SEL, Protocol
-- Foundation: NSString, NSArray, NSDictionary, NSSet, NSNumber, NSData, NSInvocation, NSEnumerator
+- Foundation: NSString, NSArray, NSDictionary, NSSet, NSMutableSet, NSNumber, NSData, NSMutableData, NSInvocation, NSEnumerator
 - Classes: Any user-defined @interface class
 
 ### Type Modifiers SUPPORTED
@@ -94,25 +94,21 @@ The Objective-C interpreter in `kernel.wasm` uses a custom recursive-descent par
 
 ## Known Parser Limitations
 
-### Array Initializers in Method Bodies
-Array initializer syntax `unsigned char bytes[2] = {0x18, 0x2a};` fails inside method bodies.
-Workaround: assign each element separately:
-```objc
-unsigned char b0 = 0x18;
-unsigned char b1 = 0x2a;
-NSData *d0 = [NSData dataWithBytes:&b0 length:1];
-NSData *d1 = [NSData dataWithBytes:&b1 length:1];
-return [d0 dataByAppendingData:d1];
-```
+### Array Initializers
+Array initializer syntax `unsigned char bytes[2] = {0xd8, 0x2a};` is now supported for
+`char` and `unsigned char` types. The array is desugared to an `NSData:` hex-encoded
+marker object, so it works with all NSData methods (length, bytes, etc.).
+
+Limitations:
+- Only `char` and `unsigned char` array types are supported (not `int[]`, etc.)
+- Array size must be a compile-time constant
+- Hex literal values (0xNN) are supported in brace initializers
 
 ### Dot Syntax Property Assignment
-Dot syntax for property assignment (`obj.prop = value;`) is not supported.
-Use bracket syntax: `[obj setProp:value];` or `[obj setProp:value]`.
-
-### NSMutableData / NSMutableSet
-`NSMutableData` and `NSMutableSet` are not recognized by the runtime.
-Use `NSData` with `dataByAppendingData:` for concatenation, and `NSMutableArray`
-with `containsObject:` for set-like behavior.
+Dot syntax for property assignment (`obj.prop = value;`) works for `int` and
+other primitive properties, but may fail for `NSString *` and other object-type
+properties in some contexts. Use bracket syntax as a safe fallback:
+`[obj setProp:value];`.
 
 ## Architecture
 
@@ -129,7 +125,7 @@ Covers: Exceptions, Protocols, Blocks, Forwarding, KVC, Autoreleasepool.
 
 ### Runtime Gap Probes
 Run with: `node tests/test-runtime-gap-probes.mjs result/wasm/kernel.wasm`
-84 targeted probes across 20+ feature categories. All passing.
+91 targeted probes across 20+ feature categories. All passing.
 
 ## Future Work
 1. **Method Swizzling**: Support for `method_exchangeImplementations` on interpreted methods.
