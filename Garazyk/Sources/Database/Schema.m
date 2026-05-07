@@ -613,6 +613,7 @@ NSString * const kPDSVideoJobsTableCreateSQL =
     @"updated_at TEXT NOT NULL,"
     @"completed_at TEXT,"
     @"expires_at TEXT,"
+    @"service_auth_token TEXT,"
     @"retry_count INTEGER DEFAULT 0"
     @")";
 

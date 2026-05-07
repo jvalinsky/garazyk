@@ -239,9 +239,9 @@
     }
 
     NSError *queryError = nil;
-    NSArray *result = [self.database executeParameterizedQuery:query params:args error:&queryError];
+    BOOL success = [self.database executeParameterizedUpdate:query params:args error:&queryError];
 
-    if (queryError) {
+    if (!success || queryError) {
         if (error) {
             *error = [NSError errorWithDomain:@"NotificationService" code:500 userInfo:@{NSLocalizedDescriptionKey: @"Failed to mark notifications as read", NSUnderlyingErrorKey: queryError}];
         }
@@ -413,10 +413,7 @@
 
     // Upsert notification preferences
     NSString *query = @"INSERT OR REPLACE INTO notification_preferences (did, preferences) VALUES (?, ?)";
-    NSArray *rows = [self.database executeParameterizedQuery:query params:@[actorDID, prefsJson] error:error];
-
-    (void)rows;
-    return (error && *error) ? NO : YES;
+    return [self.database executeParameterizedUpdate:query params:@[actorDID, prefsJson] error:error];
 }
 
 @end
