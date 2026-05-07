@@ -102,276 +102,95 @@ The `XrpcDispatcher` handles cryptographic token binding at the edge. `XrpcAuthH
 ## Layer Descriptions
 
 ### 1. HTTP Server Layer
-
 **Location:** `Garazyk/Sources/Network/HttpServer.m`
 
-The HTTP server is a custom implementation that:
-- Listens on port 2583 (configurable)
-- Handles HTTP/1.1 requests using the `HttpProtocolSession` state machine.
-- Supports WebSocket upgrades for the firehose using `WebSocketProtocolSession`.
-- Implements TLS termination (in production, usually behind nginx).
-- Routes requests to XRPC dispatcher.
-
-**Key Classes:**
-- `HttpServer` — Main server implementation
-- `HttpRequest` — Request parsing
-- `HttpResponse` — Response building
-- `HttpRoute` — Route registration
+The custom HTTP server:
+- Listens on port 2583.
+- Processes HTTP/1.1 requests using the `HttpProtocolSession` state machine.
+- Supports WebSocket upgrades for the firehose via `WebSocketProtocolSession`.
+- Implements TLS termination (typically behind nginx in production).
+- Routes requests to the XRPC dispatcher.
 
 ### 2. XRPC Dispatcher Layer
-
 **Location:** `Garazyk/Sources/Network/XrpcDispatcher.m`
 
 The XRPC dispatcher:
-- Routes incoming RPC calls by NSID (e.g., `com.atproto.repo.createRecord`)
-- Verifies authentication (JWT tokens, DPoP proofs)
-- Enforces rate limiting
-- Handles error responses
-- Serializes responses (CBOR or JSON)
-
-**Key Classes:**
-- `XrpcDispatcher` — Main dispatcher
-- `XrpcRequest` — Request parsing
-- `XrpcResponse` — Response building
-- `XrpcAuthHelper` — Authentication verification
-- `XrpcErrorHelper` — Error standardization
+- Routes RPC calls by NSID (e.g., `com.atproto.repo.createRecord`).
+- Verifies authentication (JWT, DPoP).
+- Enforces rate limiting and handles error shaping.
+- Serializes responses into CBOR or JSON.
 
 ### 3. Method Registry Layer
-
 **Location:** `Garazyk/Sources/Network/XrpcMethodRegistry.m`
 
 The method registry:
-- Maintains a mapping of NSIDs to handler functions
-- Delegates registration to domain-specific modules
-- Provides method lookup during dispatch
-
-**Key Classes:**
-- `XrpcMethodRegistry` — Registry management
-- `XrpcServerMethods` — `com.atproto.server.*` handlers
-- `XrpcRepoMethods` — `com.atproto.repo.*` handlers
-- `XrpcSyncMethods` — `com.atproto.sync.*` handlers
-- `XrpcIdentityMethods` — `com.atproto.identity.*` handlers
-- `XrpcAdminMethods` — `com.atproto.admin.*` handlers
-- `XrpcLabelMethods` — `com.atproto.label.*` handlers
-- `XrpcAppBskyMethods` — `app.bsky.*` handlers
+- Maps NSIDs to handler functions.
+- Manages registration for domain-specific modules.
+- Provides method lookup during dispatch.
 
 ### 4. Service Layer
-
 **Location:** `Garazyk/Sources/Services/`
 
-The service layer implements business logic:
+Services implement domain logic:
+- **PDSAccountService**: Account creation, authentication, and token management.
+- **PDSRecordService**: Record CRUD within repositories.
+- **PDSBlobService**: Blob storage and quotas.
+- **PDSRepositoryService**: MST management and commit integrity.
+- **PDSAdminController**: Moderation, labeling, and takedowns.
+- **PDSRelayService**: Notification propagation to relays.
 
-- **PDSAccountService** — Account creation, authentication, token refresh
-- **PDSRecordService** — Record CRUD operations within repositories
-- **PDSBlobService** — Blob upload, retrieval, and deletion
-- **PDSRepositoryService** — MST management, commit processing, repository sync
-- **PDSAdminController** — Takedowns, moderation, labeling
-- **PDSRelayService** — Notifications to external relays
-
-Each service is accessed through the `PDSApplication` facade.
+Access services through the `PDSApplication` facade.
 
 ### 5. Database Layer
-
 **Location:** `Garazyk/Sources/Database/`
 
-The database layer uses SQLite with two types of databases:
+Garazyk uses SQLite with two distinct database types:
 
-**Service Databases (Shared):**
-- Single shared database for all service-level data
-- Contains: users, DIDs, configuration, sequencer state
-- Accessed by: Account Service, Admin Service
+**Service Databases (Shared)**
+- Stores system-wide data: users, DIDs, and configuration.
+- Accessed by Account and Admin services.
 
-**Actor Databases (Per-User):**
-- One database per user (actor)
-- Contains: user's records, blobs, MST state
-- Managed by: PDSDatabasePool
-- Accessed by: Record Service, Repository Service
-
-**Key Classes:**
-- `PDSServiceDatabases` — Shared database management
-- `PDSDatabasePool` — Per-user database pool
-- `PDSActorDatabase` — Individual actor database
-- `PDSMigration` — Schema versioning
+**Actor Databases (Per-User)**
+- One database per actor.
+- Stores records, blobs, and MST state.
+- Managed by `PDSDatabasePool`.
 
 ## Request Flow
 
-A typical request flows through the system:
-
-```text
-
-1. Client sends HTTP request
-   GET /xrpc/com.atproto.repo.getRecord?did=did:plc:xxx&collection=app.bsky.feed.post&rkey=abc123
-
-2. HttpServer receives request
-   - Parses HTTP headers and body
-   - Identifies XRPC endpoint
-
-3. XrpcDispatcher routes request
-   - Extracts NSID: com.atproto.repo.getRecord
-   - Verifies authentication (JWT token)
-   - Checks rate limits
-
-4. XrpcMethodRegistry looks up handler
-   - Finds XrpcRepoMethods.handleGetRecord
-
-5. Domain handler processes request
-   - Validates parameters
-   - Calls service layer
-
-6. Service layer executes business logic
-   - PDSRecordService.getRecord
-   - Queries actor database
-   - Deserializes record
-
-7. Response is serialized
-   - Converts to CBOR or JSON
-   - Adds HTTP headers
-
-8. HttpServer sends response
-   - HTTP 200 OK
-   - Response body
-```
-
-## Data Flow
-
-### Record Creation Flow
-
-```text
-
-Client Request (createRecord)
-    ↓
-XrpcDispatcher (auth verification)
-    ↓
-XrpcRepoMethods.handleCreateRecord
-    ↓
-PDSRecordService.createRecord
-    ↓
-PDSRepositoryService.updateMST
-    ↓
-PDSActorDatabase (insert record + update MST)
-    ↓
-PDSRelayService (notify external relays)
-    ↓
-Response to client
-```
-
-### Firehose Flow
-
-```text
-
-Client WebSocket Connection (subscribeRepos)
-    ↓
-XrpcDispatcher (upgrade to WebSocket)
-    ↓
-SubscribeReposHandler (WebSocket handler)
-    ↓
-CommitBroadcaster (listens for commits)
-    ↓
-When record is created/updated:
-    - Commit is generated
-    - Broadcast to all connected clients
-    - Backpressure handling
-    ↓
-Client receives commit event
-```
-
-## Component Interactions
-
-### Service Initialization
-
-When the PDS starts:
-
-```text
-
-1. PDSApplication.init
-   - Load configuration
-   - Initialize service databases
-   - Create database pool
-   - Initialize all services
-   - Register XRPC methods
-   - Start HTTP server
-```
-
-### Authentication Flow
-
-For each request:
-
-```text
-
-1. Extract JWT token from Authorization header
-2. Verify JWT signature with public key
-3. Check token expiration
-4. Extract DID and scope from token
-5. If DPoP required, verify DPoP proof
-6. Proceed with request or return 401 Unauthorized
-```
-
-### Database Access Pattern
-
-For each database operation:
-
-```text
-
-1. Get database connection from pool
-2. Begin transaction (if needed)
-3. Execute query with prepared statement
-4. Bind parameters
-5. Fetch results
-6. Commit or rollback transaction
-7. Return results to caller
-```
+1. **Client** sends HTTP request.
+2. **HttpServer** parses headers and body.
+3. **XrpcDispatcher** resolves the NSID and verifies auth.
+4. **XrpcMethodRegistry** finds the specific handler.
+5. **Domain Handler** validates parameters and calls services.
+6. **Service Layer** executes logic (e.g., querying the actor database).
+7. **HttpServer** serializes and sends the response.
 
 ## Key Design Patterns
 
-### 1. Facade Pattern
-`PDSApplication` provides a single interface to all services, simplifying client code.
+### Facade
+`PDSApplication` provides a single entry point for all services.
 
-### 2. Registry Pattern
-`XrpcMethodRegistry` maintains a registry of NSID → handler mappings, allowing dynamic method registration.
+### Registry
+`XrpcMethodRegistry` maps NSIDs to handlers for modular method registration.
 
-### 3. Pool Pattern
-`PDSDatabasePool` manages a pool of per-user databases, avoiding the overhead of creating new databases for each request.
+### Pool
+`PDSDatabasePool` manages connections to per-user databases.
 
-### 4. Service Locator Pattern
-Services are accessed through `PDSApplication`, which acts as a service locator.
+### Strategy
+Authentication (JWT, DPoP, OAuth) is implemented as interchangeable helpers.
 
-### 5. Strategy Pattern
-Different authentication strategies (JWT, DPoP, OAuth) are implemented as separate helpers.
-
-## Concurrency Model
+## Concurrency and Errors
 
 The PDS uses:
-- **Thread-safe database access** — SQLite with WAL mode for concurrent reads
-- **Async/await patterns** — Completion blocks for async operations
-- **Lock-free data structures** — Where possible, to minimize contention
-
-## Error Handling
-
-Errors are standardized through `XrpcErrorHelper`:
-
-```objc
-// Example error response
-{
-  "error": "InvalidRequest",
-  "message": "Invalid DID format"
-}
-```
-
-Common error codes:
-- `InvalidRequest` — Malformed request
-- `Unauthorized` — Authentication failed
-- `Forbidden` — Permission denied
-- `NotFound` — Resource not found
-- `Conflict` — Resource already exists
-- `InternalServerError` — Server error
+- **Thread-safe DB Access**: SQLite WAL mode for concurrent reads.
+- **Async Patterns**: Completion blocks for non-blocking operations.
+- **Standardized Errors**: `XrpcErrorHelper` ensures consistent protocol error shapes.
 
 ## Next Steps
 
-- **[Setup Guide](setup)** — Platform-specific setup
-- **[Core Concepts](../02-core-concepts/atproto-basics)** — AT Protocol fundamentals
-- **[Application Layer](../03-application-layer/pds-application)** — Service architecture
-- **[Network Layer](../04-network-layer/http-server)** — HTTP and XRPC details
-- **[MST Implementation Details](../11-reference/mst-implementation.md)** — Detailed look at the Merkle Search Tree mechanics
+- [Setup Guide](setup)
+- [Core Concepts](../02-core-concepts/atproto-basics)
+- [MST Mechanics](../11-reference/mst-implementation.md)
 
 ## Related
 
