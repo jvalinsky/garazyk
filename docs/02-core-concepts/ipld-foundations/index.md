@@ -1,26 +1,10 @@
----
-title: IPLD and Multiformats Series
----
-
 # IPLD and Multiformats Series
 
-## Overview
-
-ATProto did not invent its entire repository vocabulary from scratch. It
-borrows heavily from the IPLD, multiformats, and IPFS ecosystem, then narrows
-those primitives into a much stricter interoperability profile.
-
-This series exists to explain that borrowed stack directly:
-
-- what IPLD contributes
-- what multiformats contribute
-- what CAR contributes
-- where ATProto follows those specs closely
-- where ATProto intentionally constrains them further
-
-The goal is not to turn Garazyk contributors into generic IPFS experts. The
-goal is to make the borrowed pieces legible enough that repository, sync, and
-CID behavior stop feeling magical.
+ATProto utilizes a specific subset of the IPLD and multiformats ecosystem to ensure repository interoperability. This series details the implementation of these primitives:
+- **IPLD Data Model**: The foundational representation of data.
+- **DAG-CBOR**: Deterministic binary encoding.
+- **CIDs and Multiformats**: Content addressing and identifier standards.
+- **CAR Files**: Portable block archives for transport and sync.
 
 ```mermaid
 flowchart TD
@@ -30,52 +14,36 @@ flowchart TD
   Archive --> Atproto["ATProto repository and sync profile"]
 ```
 
-## Read This Series In Order
-
+## Series Index
 1. [IPLD Data Model and Merkle DAGs](./ipld-data-model-and-merkle-dags)
 2. [CBOR and DAG-CBOR](./cbor-and-dag-cbor)
 3. [CIDs and Multiformats](./cids-and-multiformats)
 4. [CAR Files](./car-files)
 5. [ATProto's IPLD Profile](./atproto-ipld-profile)
 
-That order moves from abstract model to concrete wire and storage formats, then
-back up to the ATProto-specific subset.
+## Implementation Coverage
+In Garazyk, these primitives govern the behavior of:
+- Repository records and MST nodes.
+- CID generation and block validation.
+- CAR construction for synchronization and export.
 
-## How This Connects Back To Garazyk
+Relevant classes include `CID`, `MST`, `RepoCommit`, `CARWriter`, and `CARReader`.
 
-In Garazyk's codebase, these ideas show up most clearly in:
+## Constraint Rationale
+The IPLD and multiformats specifications are intentionally broad. ATProto constrains this flexibility to ensure federated interoperability:
+- **Strict Codec Selection**: Only DAG-CBOR is permitted for repository data.
+- **Fixed Hashing**: SHA-256 is the standard multihash.
+- **Determinstic Encodings**: Specific multibase and multicodec profiles are enforced.
 
-- repository records and MST nodes encoded as DAG-CBOR-like blocks
-- CIDs created from canonical block bytes
-- CAR responses built for sync and export paths
-- repository and sync code that assumes the ATProto-blessed CID subset
-
-If you are debugging `CID`, `MST`, `RepoCommit`, `CARWriter`, `CARReader`, or
-the sync handlers, this series is the conceptual backdrop.
-
-## Why ATProto Narrows The Borrowed Stack
-
-The original IPLD and multiformats work is intentionally flexible:
-
-- many codecs can exist
-- many hash functions can be registered
-- many multibase encodings can be valid
-- CAR can represent arbitrary block collections
-
-ATProto narrows that freedom because federated interoperability is more
-important than maximum format choice. If two independent implementations do not
-pick the same canonical subset, the content-addressed guarantees stop being
-useful.
+Nairrowing the supported stack ensures that different implementations produce identical, verifiable repository states.
 
 ## Sources
-
 - [IPLD Data Model](https://ipld.io/docs/data-model/)
-- [RFC 8949: Concise Binary Object Representation (CBOR)](https://www.rfc-editor.org/rfc/rfc8949.html)
+- [RFC 8949: CBOR](https://www.rfc-editor.org/rfc/rfc8949.html)
 - [DAG-CBOR Specification](https://ipld.io/specs/codecs/dag-cbor/spec/)
 - [CAR v1 Specification](https://ipld.io/specs/transport/car/carv1/)
 - [CID Specification](https://github.com/multiformats/cid)
 - [AT Protocol Data Model](https://atproto.com/specs/data-model)
-- [AT Protocol Repository Specification](https://atproto.com/specs/repository)
 
 ## Related
 
