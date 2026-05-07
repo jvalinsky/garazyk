@@ -2858,7 +2858,8 @@ Value parse_message_send(Parser *p) {
             }
 
             /* [data appendData:other] → append other's bytes (NSMutableData)
-             * Returns NSMutData: if receiver is mutable, NSData: otherwise. */
+             * For NSMutData: receivers, mutates in-place by updating pool_offset.
+             * For NSData: receivers, returns a new NSData. */
             if (cstr_eq(sel_name, "appendData:") && arg_count >= 1) {
                 const char *other = obj_deref(keyword_args[0].obj_val);
                 if (other && (cstr_eq_n(other, "NSData:", 7) || cstr_eq_n(other, "NSMutData:", 10))) {
@@ -2867,18 +2868,21 @@ Value parse_message_send(Parser *p) {
                     const char *hex2 = other + other_prefix;
                     int len1 = (int)cstr_len(hex1);
                     int len2 = (int)cstr_len(hex2);
-                    const char *out_prefix = is_mut ? "NSMutData:" : "NSData:";
-                    int out_prefix_len = is_mut ? 10 : 7;
-                    unsigned int needed = (unsigned int)out_prefix_len + (unsigned int)(len1 + len2) + 1;
+                    unsigned int needed = (unsigned int)prefix_len + (unsigned int)(len1 + len2) + 1;
                     ObjId h = obj_alloc(needed);
                     if (h == OBJ_NULL) return value_from_obj(receiver);
                     char *buf = obj_deref_mut(h);
-                    cstr_copy(buf, out_prefix, needed);
+                    cstr_copy(buf, s, (unsigned int)prefix_len + 1); /* copy prefix */
                     {
                         int i;
-                        for (i = 0; i < len1; i++) buf[out_prefix_len + i] = hex1[i];
-                        for (i = 0; i < len2; i++) buf[out_prefix_len + len1 + i] = hex2[i];
-                        buf[out_prefix_len + len1 + len2] = '\0';
+                        for (i = 0; i < len1; i++) buf[prefix_len + i] = hex1[i];
+                        for (i = 0; i < len2; i++) buf[prefix_len + len1 + i] = hex2[i];
+                        buf[prefix_len + len1 + len2] = '\0';
+                    }
+                    /* For mutable data: update receiver's pool_offset to point to new data */
+                    if (is_mut && receiver < MAX_OBJECTS && g_ctx.objects[receiver].active) {
+                        g_ctx.objects[receiver].pool_offset = g_ctx.objects[h].pool_offset;
+                        return value_from_obj(receiver);
                     }
                     return value_from_obj(h);
                 }
@@ -2912,35 +2916,39 @@ Value parse_message_send(Parser *p) {
 
             /* [data appendBytes:length:] → append raw bytes (NSMutableData)
              * Accepts a string (each char = byte) and length.
-             * Returns NSMutData: if receiver is mutable, NSData: otherwise. */
+             * For NSMutData: receivers, mutates in-place by updating pool_offset.
+             * For NSData: receivers, returns a new NSData. */
             if (cstr_eq(sel_name, "appendBytes:length:") && arg_count >= 2) {
                 const char *bytes = obj_deref(keyword_args[0].obj_val);
                 int len = keyword_args[1].is_int ? keyword_args[1].int_val : 0;
                 const char *hex = s + prefix_len;
                 int hex_len = (int)cstr_len(hex);
-                const char *out_prefix = is_mut ? "NSMutData:" : "NSData:";
-                int out_prefix_len = is_mut ? 10 : 7;
                 if (len < 0) len = 0;
                 {
                     int blen = (int)cstr_len(bytes);
                     if (len > blen) len = blen;
-                    unsigned int needed = (unsigned int)out_prefix_len + (unsigned int)(hex_len + len * 2) + 1;
+                    unsigned int needed = (unsigned int)prefix_len + (unsigned int)(hex_len + len * 2) + 1;
                     ObjId h = obj_alloc(needed);
                     if (h == OBJ_NULL) return value_from_obj(receiver);
                     char *buf = obj_deref_mut(h);
-                    cstr_copy(buf, out_prefix, needed);
+                    cstr_copy(buf, s, (unsigned int)prefix_len + 1); /* copy prefix */
                     {
                         int i;
-                        for (i = 0; i < hex_len; i++) buf[out_prefix_len + i] = hex[i];
+                        for (i = 0; i < hex_len; i++) buf[prefix_len + i] = hex[i];
                         {
                             static const char hex_chars[] = "0123456789abcdef";
                             for (i = 0; i < len; i++) {
                                 unsigned char c = (unsigned char)bytes[i];
-                                buf[out_prefix_len + hex_len + i * 2] = hex_chars[(c >> 4) & 0x0f];
-                                buf[out_prefix_len + hex_len + i * 2 + 1] = hex_chars[c & 0x0f];
+                                buf[prefix_len + hex_len + i * 2] = hex_chars[(c >> 4) & 0x0f];
+                                buf[prefix_len + hex_len + i * 2 + 1] = hex_chars[c & 0x0f];
                             }
-                            buf[out_prefix_len + hex_len + len * 2] = '\0';
+                            buf[prefix_len + hex_len + len * 2] = '\0';
                         }
+                    }
+                    /* For mutable data: update receiver's pool_offset to point to new data */
+                    if (is_mut && receiver < MAX_OBJECTS && g_ctx.objects[receiver].active) {
+                        g_ctx.objects[receiver].pool_offset = g_ctx.objects[h].pool_offset;
+                        return value_from_obj(receiver);
                     }
                     return value_from_obj(h);
                 }
