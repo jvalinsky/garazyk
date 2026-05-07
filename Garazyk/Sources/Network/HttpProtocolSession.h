@@ -1,3 +1,11 @@
+/*!
+ @file HttpProtocolSession.h
+
+ @abstract Defines protocol-session state and operations for HTTP request handling.
+
+ @discussion Declares session-level abstractions for incremental protocol processing across a connection. Separates session state ownership from transport primitives and endpoint business behavior.
+ */
+
 #import <Foundation/Foundation.h>
 #import "Network/Http1Parser.h"
 #import "Network/Http1PipelinePolicy.h"

@@ -1,3 +1,11 @@
+/*!
+ @file HttpRetryPolicy.h
+
+ @abstract Defines retry-decision policy interfaces for network requests and transient failures.
+
+ @discussion Declares policy inputs and outputs used to evaluate whether an operation should retry, fail, or back off based on status codes and error classes. Separates retry semantics from caller transport code.
+ */
+
 #import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN

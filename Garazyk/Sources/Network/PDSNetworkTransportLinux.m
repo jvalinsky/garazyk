@@ -1,3 +1,11 @@
+/*!
+ @file PDSNetworkTransportLinux.m
+
+ @abstract Implements Linux network transport integration for server connection handling.
+
+ @discussion Provides platform-specific transport wiring for Linux environments, bridging socket/runtime behavior into protocol/session layers. Focuses on transport mechanics rather than endpoint execution.
+ */
+
 #import "PDSNetworkTransportLinux.h"
 #import <Foundation/Foundation.h>
 

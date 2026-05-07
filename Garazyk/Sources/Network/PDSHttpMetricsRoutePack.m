@@ -1,3 +1,11 @@
+/*!
+ @file PDSHttpMetricsRoutePack.m
+
+ @abstract Registers HTTP routes for metrics and observability endpoint exposure.
+
+ @discussion Adds metrics-related routes to the server router and delegates runtime handling to metrics-capable components. Owns route wiring and namespace shape rather than metric collection logic.
+ */
+
 #import "Network/PDSHttpMetricsRoutePack.h"
 
 #import "Metrics/PDSMetrics.h"

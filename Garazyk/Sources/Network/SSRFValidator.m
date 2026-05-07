@@ -1,3 +1,11 @@
+/*!
+ @file SSRFValidator.m
+
+ @abstract Implements SSRF protection checks for host resolution and address classification.
+
+ @discussion Performs hostname and IP-level safety evaluation to reject non-public or disallowed targets. Provides security guard decisions used by network callers prior to external fetch operations.
+ */
+
 #import "Network/SSRFValidator.h"
 #include <arpa/inet.h>
 #include <sys/socket.h>

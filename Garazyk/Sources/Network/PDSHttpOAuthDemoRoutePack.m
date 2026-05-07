@@ -1,3 +1,11 @@
+/*!
+ @file PDSHttpOAuthDemoRoutePack.m
+
+ @abstract Registers HTTP routes for OAuth demo and interactive auth demonstration flows.
+
+ @discussion Binds OAuth demonstration endpoints into the HTTP router for local/demo usage and forwards execution to dedicated handlers. Route registration is owned here; OAuth protocol business rules remain elsewhere.
+ */
+
 #import "Network/PDSHttpOAuthDemoRoutePack.h"
 
 #import "App/OAuthDemo/OAuthDemoHandler.h"

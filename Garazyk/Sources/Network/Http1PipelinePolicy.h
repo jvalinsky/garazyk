@@ -1,3 +1,11 @@
+/*!
+ @file Http1PipelinePolicy.h
+
+ @abstract Defines policy decisions for HTTP/1.x request pipelining behavior.
+
+ @discussion Declares controls for whether sequential requests may be processed or must be serialized under current connection state. Encapsulates pipelining safety criteria separately from parser and business logic.
+ */
+
 #import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN

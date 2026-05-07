@@ -1,3 +1,11 @@
+/*!
+ @file HttpConnectionDriver.h
+
+ @abstract Coordinates per-connection HTTP processing lifecycle and dispatch handoff.
+
+ @discussion Declares the driver contract that bridges low-level connection reads/writes with protocol parsing and request dispatch flow. Owns connection-level orchestration boundaries, not endpoint domain logic.
+ */
+
 #import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN

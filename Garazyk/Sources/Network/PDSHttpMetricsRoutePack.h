@@ -1,7 +1,9 @@
 /*!
  @file PDSHttpMetricsRoutePack.h
 
- @abstract Registers metrics routes on an HTTP server.
+ @abstract Declares metrics route-pack registration entry points.
+
+ @discussion Specifies interfaces for attaching metrics and observability endpoints to HTTP routing. Owns route registration surface definition only.
  */
 
 #import <Foundation/Foundation.h>

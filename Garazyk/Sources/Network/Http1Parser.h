@@ -1,3 +1,11 @@
+/*!
+ @file Http1Parser.h
+
+ @abstract Parses HTTP/1.x request bytes into structured parse state and message components.
+
+ @discussion Defines parser interfaces and contracts for HTTP/1.x line/header/body parsing. Exposes deterministic parse outcomes used by higher-level session and dispatch layers, without owning socket I/O or route execution.
+ */
+
 #import <Foundation/Foundation.h>
 #import "Network/HttpRequest.h"
 

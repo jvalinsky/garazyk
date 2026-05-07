@@ -1,9 +1,9 @@
 /*!
  @file PDSHttpServerBuilder.m
 
- @abstract Implementation of HTTP server builder.
+ @abstract Builds and wires HTTP server runtime components and route packs.
 
- @copyright Copyright (c) 2025-2026 Jack Valinsky
+ @discussion Constructs the HTTP server instance, installs route packs, and applies runtime configuration for transport and routing layers before request serving begins.
  */
 
 #import "PDSHttpServerBuilder.h"

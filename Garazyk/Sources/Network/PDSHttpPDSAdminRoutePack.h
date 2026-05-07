@@ -1,7 +1,9 @@
 /*!
  @file PDSHttpPDSAdminRoutePack.h
 
- @abstract Registers private PDS operational admin routes.
+ @abstract Declares PDS admin route-pack registration entry points.
+
+ @discussion Specifies interfaces for registering operational administrative HTTP routes and integrating them with server runtime configuration.
  */
 
 #import <Foundation/Foundation.h>

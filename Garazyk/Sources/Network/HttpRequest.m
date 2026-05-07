@@ -1,3 +1,11 @@
+/*!
+ @file HttpRequest.m
+
+ @abstract Implements HTTP request model behavior and request data accessors.
+
+ @discussion Provides concrete request object behavior used across dispatch and handler layers, including metadata and query/header/body access patterns. Acts as a data model, not a transport or routing engine.
+ */
+
 #import "Network/HttpRequest.h"
 #import "Network/HttpParsing.h"
 #import <stdint.h>

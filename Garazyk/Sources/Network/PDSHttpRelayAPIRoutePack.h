@@ -1,7 +1,9 @@
 /*!
  @file PDSHttpRelayAPIRoutePack.h
 
- @abstract Registers relay API routes on an HTTP server.
+ @abstract Declares relay API route-pack registration entry points.
+
+ @discussion Specifies interfaces for registering relay-facing API routes used by sync and operational relay surfaces.
  */
 
 #import <Foundation/Foundation.h>

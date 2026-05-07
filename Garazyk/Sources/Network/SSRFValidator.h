@@ -1,3 +1,11 @@
+/*!
+ @file SSRFValidator.h
+
+ @abstract Defines SSRF validation interfaces for host and address safety checks.
+
+ @discussion Declares validation APIs used to block private, loopback, or otherwise unsafe network destinations before outbound requests are attempted. Encapsulates SSRF boundary checks for reuse.
+ */
+
 #import <Foundation/Foundation.h>
 #include <netinet/in.h>
 

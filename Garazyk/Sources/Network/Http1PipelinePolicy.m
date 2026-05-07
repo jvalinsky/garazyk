@@ -1,3 +1,11 @@
+/*!
+ @file Http1PipelinePolicy.m
+
+ @abstract Implements HTTP/1.x pipelining policy evaluation for connection safety.
+
+ @discussion Applies protocol-aware checks to determine safe request pipeline handling on a connection. Centralizes policy decisions while leaving parsing, transport I/O, and endpoint execution to other layers.
+ */
+
 #import "Network/Http1PipelinePolicy.h"
 
 @implementation Http1PipelinePolicy

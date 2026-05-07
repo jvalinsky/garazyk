@@ -1,3 +1,11 @@
+/*!
+ @file PDSHttpMSTViewerRoutePack.m
+
+ @abstract Registers HTTP routes for MST viewer pages and related inspection endpoints.
+
+ @discussion Wires MST viewer route handlers into the HTTP server namespace so runtime components can render and serve MST inspection content. This file defines route exposure and registration flow, not MST business processing internals.
+ */
+
 #import "Network/PDSHttpMSTViewerRoutePack.h"
 
 #import "App/MSTViewer/MSTViewerHandler.h"

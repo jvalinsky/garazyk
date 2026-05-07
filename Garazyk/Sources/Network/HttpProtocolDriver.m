@@ -1,9 +1,9 @@
 /*!
  @file HttpProtocolDriver.m
 
- @abstract Implementation of HttpProtocolDriver.
+ @abstract Implements protocol-driver flow between parsed HTTP messages and dispatch execution.
 
- @copyright Copyright (c) 2025-2026 Jack Valinsky
+ @discussion Bridges parser/session outputs into dispatch invocation paths and response completion flow, maintaining protocol-level control state without endpoint business logic.
  */
 
 #import "HttpProtocolDriver.h"

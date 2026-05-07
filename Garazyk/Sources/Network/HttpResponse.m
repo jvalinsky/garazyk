@@ -1,3 +1,11 @@
+/*!
+ @file HttpResponse.m
+
+ @abstract Implements HTTP response model behavior and response metadata handling.
+
+ @discussion Provides concrete response object state, header/body access, and serialization-facing metadata used by sender layers. Acts as a transport-facing data model and does not own routing or business logic decisions.
+ */
+
 #import "Network/HttpResponse.h"
 #import <stdint.h>
 

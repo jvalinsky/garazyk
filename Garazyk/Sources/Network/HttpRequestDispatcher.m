@@ -1,3 +1,11 @@
+/*!
+ @file HttpRequestDispatcher.m
+
+ @abstract Implements request-dispatch flow from routed request to handler execution.
+
+ @discussion Performs dispatch-time control flow that invokes selected handlers and coordinates response completion semantics. Owns dispatch mechanics rather than protocol parsing or transport I/O.
+ */
+
 #import "Network/HttpRequestDispatcher.h"
 
 #import "Debug/PDSLogger.h"

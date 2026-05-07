@@ -1,3 +1,11 @@
+/*!
+ @file Http1Parser.m
+
+ @abstract Implements HTTP/1.x parser state transitions and token extraction logic.
+
+ @discussion Executes request-line, header, and body parsing with explicit state progression and malformed-input detection. Produces parser results consumed by protocol/session layers and does not perform application routing.
+ */
+
 #import "Network/Http1Parser.h"
 #import "Network/HttpParsing.h"
 #import "Network/HttpChunkedBodyParser.h"

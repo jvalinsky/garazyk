@@ -1,3 +1,11 @@
+/*!
+ @file RateLimiter.m
+
+ @abstract Implements request rate-limiting policy enforcement for protected operations.
+
+ @discussion Tracks request activity and evaluates limits to prevent abuse or overload according to configured policy thresholds. Enforces control decisions while leaving authentication and business outcomes to callers.
+ */
+
 #import "Network/RateLimiter.h"
 #import "Compat/PDSTypes.h"
 #import "Network/HttpResponse.h"

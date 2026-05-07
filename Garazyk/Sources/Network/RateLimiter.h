@@ -1,3 +1,11 @@
+/*!
+ @file RateLimiter.h
+
+ @abstract Declares rate-limiting interfaces for request-throttling policy enforcement.
+
+ @discussion Defines APIs and configuration surfaces for evaluating and recording request rates under policy limits. Exposes control primitives used by handlers without embedding endpoint-specific logic.
+ */
+
 /**
  * @file RateLimiter.h
  * @brief API rate limiting for PDS operations

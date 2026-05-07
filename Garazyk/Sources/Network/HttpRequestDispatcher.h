@@ -1,3 +1,11 @@
+/*!
+ @file HttpRequestDispatcher.h
+
+ @abstract Defines request-dispatch contracts that bind parsed HTTP requests to route handlers.
+
+ @discussion Declares dispatcher interfaces for handing normalized request objects to routing components and returning response outcomes. Keeps dispatch orchestration separate from endpoint business logic.
+ */
+
 #import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN

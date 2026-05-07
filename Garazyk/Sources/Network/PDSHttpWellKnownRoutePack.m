@@ -1,3 +1,11 @@
+/*!
+ @file PDSHttpWellKnownRoutePack.m
+
+ @abstract Registers well-known HTTP routes for discovery and protocol metadata exposure.
+
+ @discussion Adds standardized well-known endpoint paths used by clients and federated services for discovery. Focuses on route registration and dispatch wiring, leaving payload generation to handlers.
+ */
+
 #import "Network/PDSHttpWellKnownRoutePack.h"
 
 #import "App/PDSConfiguration.h"

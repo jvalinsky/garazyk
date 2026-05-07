@@ -1,9 +1,9 @@
 /*!
  @file HttpConnectionIOCoordinator.m
 
- @abstract Implementation of HttpConnectionIOCoordinator.
+ @abstract Coordinates low-level HTTP connection I/O sequencing and buffer handoff.
 
- @copyright Copyright (c) 2025-2026 Jack Valinsky
+ @discussion Orchestrates read/write coordination between connection drivers and protocol/session components, including ordering and lifecycle transitions for connection I/O events.
  */
 
 #import "HttpConnectionIOCoordinator.h"

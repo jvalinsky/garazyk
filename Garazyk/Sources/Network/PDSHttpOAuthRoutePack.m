@@ -1,3 +1,11 @@
+/*!
+ @file PDSHttpOAuthRoutePack.m
+
+ @abstract Registers core OAuth-related HTTP routes for authentication protocol endpoints.
+
+ @discussion Wires OAuth endpoint paths into server routing and delegates implementation to auth/runtime handlers. Establishes endpoint exposure and integration points without implementing token/state logic directly.
+ */
+
 #import "Network/PDSHttpOAuthRoutePack.h"
 
 #import "App/PDSApplication.h"
