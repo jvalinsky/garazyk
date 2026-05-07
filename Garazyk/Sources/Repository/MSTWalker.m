@@ -75,6 +75,8 @@
 
 /// Stack of states for backtracking when stepping out of subtrees
 @property (nonatomic, strong) NSMutableArray<MSTWalkerStatus *> *stack;
+@property (nonatomic, strong) NSArray<MSTNodeEntry *> *flatEntries;
+@property (nonatomic, assign) NSUInteger flatIndex;
 
 @end
 
@@ -87,20 +89,30 @@
     if (self) {
         _root = root;
         _stack = [NSMutableArray array];
+        NSMutableArray<MSTNodeEntry *> *entries = [NSMutableArray array];
+        [self collectEntriesFromNode:root into:entries];
+        _flatEntries = [entries copy];
+        _flatIndex = 0;
         
-        if (root == nil) {
+        if (_flatEntries.count == 0) {
             _status = [MSTWalkerStatus doneStatus];
         } else {
-            // At root: walking is nil, curr is the root node treated as tree entry
-            _status = [MSTWalkerStatus progressWithEntry:nil
-                                                  walking:nil
+            _status = [MSTWalkerStatus progressWithEntry:_flatEntries[0]
+                                                  walking:root
                                                     index:0
-                                               isTreeNode:YES];
-            // We need a way to represent "at root tree"
-            // Store the root as a special case - curr is nil but we know we're at tree
+                                               isTreeNode:NO];
         }
     }
     return self;
+}
+
+- (void)collectEntriesFromNode:(MSTNode *)node into:(NSMutableArray<MSTNodeEntry *> *)entries {
+    if (!node) return;
+    [self collectEntriesFromNode:node.internalLeft into:entries];
+    for (MSTNodeEntry *entry in node.internalEntries) {
+        [entries addObject:entry];
+        [self collectEntriesFromNode:entry.internalTree into:entries];
+    }
 }
 
 - (NSUInteger)layer {
@@ -130,6 +142,19 @@
 - (void)stepOver {
     if (self.status.isDone) return;
     
+    if (self.flatEntries.count > 0) {
+        self.flatIndex++;
+        if (self.flatIndex >= self.flatEntries.count) {
+            self.status = [MSTWalkerStatus doneStatus];
+        } else {
+            self.status = [MSTWalkerStatus progressWithEntry:self.flatEntries[self.flatIndex]
+                                                      walking:self.root
+                                                        index:self.flatIndex
+                                                   isTreeNode:NO];
+        }
+        return;
+    }
+
     MSTNode *walking = self.status.walkingNode;
     
     // If walking is nil, we're at the root - stepping over means done
