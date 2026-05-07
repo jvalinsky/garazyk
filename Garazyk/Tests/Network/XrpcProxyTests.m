@@ -278,7 +278,7 @@
     self.upstreamServer = [HttpServer serverWithPort:0];
 
     [self.upstreamServer setValue:^(HttpRequest *request, HttpResponse *response) {
-        [NSThread sleepForTimeInterval:35.0];
+        [NSThread sleepForTimeInterval:3.0];
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"delayed": @YES}];
     } forKey:@"requestHandler"];
