@@ -15,6 +15,7 @@
 #import "Auth/Crypto/AuthCryptoBase64URL.h"
 #import "Auth/Crypto/AuthCryptoJWK.h"
 #import "Auth/Crypto/AuthCryptoECDSA.h"
+#import "Auth/PDSReplayCache.h"
 #import <CommonCrypto/CommonDigest.h>
 #import <Security/Security.h>
 
@@ -190,7 +191,7 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
                                        nonce:nonce
                                 requireNonce:NO
                               nonceValidator:nil
-                               replayChecker:nil
+                               replayChecker:(id<AuthCryptoDPoPReplayChecker>)[PDSReplayCache sharedCache]
                                outThumbprint:&thumbprint
                                        error:error];
     if (!valid) return NO;
