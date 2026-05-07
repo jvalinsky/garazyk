@@ -9,8 +9,8 @@
 @implementation MSTDiffTests
 
 - (CID *)testCID:(NSString *)suffix {
-    NSString *cidStr = [NSString stringWithFormat:@"bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz45%@", suffix];
-    return [CID cidFromString:cidStr];
+    NSData *data = [[NSString stringWithFormat:@"mst-diff-test-%@", suffix ?: @""] dataUsingEncoding:NSUTF8StringEncoding];
+    return [CID sha256:data];
 }
 
 - (CID *)defaultTestCID {
