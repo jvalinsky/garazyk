@@ -67,8 +67,16 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
         NSString *actorDID = XrpcChatActorDIDForRequest(request, response, jwtMinter, adminController);
         if (!actorDID) return;
 
-        NSDictionary *body = request.jsonBody;
-        NSArray *members = body[@"members"];
+        // getConvoForMembers is a query (GET); members arrive as repeated
+        // query parameters. Some clients send ?members=a&members=b, others
+        // ?members[]=a&members[]=b. Check both key forms.
+        id membersParam = request.queryParams[@"members"] ?: request.queryParams[@"members[]"];
+        NSArray *members = nil;
+        if ([membersParam isKindOfClass:[NSArray class]]) {
+            members = (NSArray *)membersParam;
+        } else if ([membersParam isKindOfClass:[NSString class]]) {
+            members = @[(NSString *)membersParam];
+        }
         if (!members || members.count < 2) {
             [XrpcErrorHelper setValidationError:response message:@"At least two members required"];
             return;
