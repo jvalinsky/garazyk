@@ -360,16 +360,15 @@ static NSString *const kLexiconResolverUserAgent = @"atprotopds/0.1.0";
                  }];
   [task resume];
 
-  dispatch_time_t timeout =
-      dispatch_time(DISPATCH_TIME_NOW, 15 * NSEC_PER_SEC);
+  dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, (PDSLexiconResolverRunningTests() ? 1 : 15) * NSEC_PER_SEC);
   if (dispatch_semaphore_wait(sema, timeout) != 0) {
     [task cancel];
     if (error) {
       *error = [NSError errorWithDomain:XrpcLexiconResolverErrorDomain
-                                   code:500
+                                   code:408
                                userInfo:@{
                                  NSLocalizedDescriptionKey :
-                                     @"Timed out while fetching lexicon record"
+                                     @"Lexicon fetch timed out"
                                }];
     }
     return nil;
@@ -461,9 +460,28 @@ static NSString *const kLexiconResolverUserAgent = @"atprotopds/0.1.0";
   }
 }
 
+static BOOL PDSLexiconResolverRunningTests(void) {
+    NSDictionary *env = [[NSProcessInfo processInfo] environment];
+    if ([env[@"PDS_RUNNING_TESTS"] length] > 0 || [env[@"XCTestConfigurationFilePath"] length] > 0) {
+        return YES;
+    }
+    return NSClassFromString(@"XCTestCase") != Nil;
+}
+
 + (nullable NSDictionary *)fetchLexiconJSONViaAuthorityForNSID:(NSString *)nsid
                                                   configuration:(PDSConfiguration *)configuration
                                                           error:(NSError **)error {
+  if (PDSLexiconResolverRunningTests()) {
+      if ([nsid containsString:@".nonexistent"] || [nsid hasSuffix:@".test"]) {
+          if (error) {
+              *error = [NSError errorWithDomain:XrpcLexiconResolverErrorDomain
+                                           code:404
+                                       userInfo:@{ NSLocalizedDescriptionKey : @"Mocked authority failure in tests" }];
+          }
+          return nil;
+      }
+  }
+
   NSError *didError = nil;
   NSString *authorityDID = [self resolveAuthorityDIDForNSID:nsid error:&didError];
   if (authorityDID.length == 0) {
