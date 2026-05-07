@@ -54,7 +54,7 @@
                  outThumbprint:(NSString **)outThumbprint;
 - (NSDictionary *)validateClientMetadata:(NSDictionary *)metadata
                                    error:(NSError **)error;
-- (BOOL)isLoopbackRedirect:(NSString *)redirectURI;
+- (BOOL)isLoopbackURL:(NSString *)urlString;
 - (NSDictionary *)consumePARRequestForURI:(NSString *)requestURI
                                  clientID:(NSString *)clientID
                                     error:(NSError **)error;
@@ -227,7 +227,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
 
   // Not in DB and not in request - check if it's a URL-based client_id for
   // dynamic discovery
-  if ([clientID hasPrefix:@"http://"] || [clientID hasPrefix:@"https://"]) {
+  if ([clientID hasPrefix:@"https://"] || [self isLoopbackURL:clientID]) {
     PDS_LOG_AUTH_INFO(@"Attempting dynamic client discovery for: %@", clientID);
 
     dispatch_once(&sClientCacheOnceToken, ^{
@@ -394,14 +394,13 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     return nil;
   }
 
-  if (![clientID hasPrefix:@"https://"]) {
+  if (![clientID hasPrefix:@"https://"] && ![self isLoopbackURL:clientID]) {
     if (error) {
       *error = [NSError errorWithDomain:@"OAuth2"
                                    code:400
                                userInfo:@{
                                  NSLocalizedDescriptionKey :
-                                     @"client_id must be an HTTPS URL per "
-                                     @"ATProto OAuth specification"
+                                     @"client_id must be an HTTPS URL or a loopback address"
                                }];
     }
     return nil;
@@ -415,7 +414,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
                                    code:400
                                userInfo:@{
                                  NSLocalizedDescriptionKey :
-                                     @"client_id must be a valid HTTPS URL"
+                                     @"client_id must be a valid URL"
                                }];
     }
     return nil;
@@ -1318,10 +1317,10 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   return publicKey;
 }
 
-- (BOOL)isLoopbackRedirect:(NSString *)redirectURI {
-  if (!redirectURI)
+- (BOOL)isLoopbackURL:(NSString *)urlString {
+  if (!urlString)
     return NO;
-  NSURL *url = [NSURL URLWithString:redirectURI];
+  NSURL *url = [NSURL URLWithString:urlString];
   if (!url || !url.host)
     return NO;
   if (![[url.scheme lowercaseString] isEqualToString:@"http"])
@@ -1361,7 +1360,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     return NO;
   }
 
-  BOOL isLoopback = [self isLoopbackRedirect:redirectURI];
+  BOOL isLoopback = [self isLoopbackURL:redirectURI];
 
   // Scheme validation: HTTPS required unless it's a loopback redirect (RFC
   // 8252)
@@ -1425,7 +1424,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
 
     // Loopback port wildcard matching per RFC 8252 §7.3:
     // If the allowed URI is a loopback address, match ignoring port.
-    if (isLoopback && [self isLoopbackRedirect:allowedURI]) {
+    if (isLoopback && [self isLoopbackURL:allowedURI]) {
       NSURL *allowedURL = [NSURL URLWithString:allowedURI];
       if (allowedURL &&
           [[url.host lowercaseString]
