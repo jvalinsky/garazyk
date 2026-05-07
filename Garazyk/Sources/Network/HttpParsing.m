@@ -1,3 +1,11 @@
+/*!
+ @file HttpParsing.m
+
+ @abstract Implements shared HTTP parsing helpers used by parser/session layers.
+
+ @discussion Provides reusable parsing support routines for protocol components, including normalization and validation helpers. Serves parser infrastructure without owning connection or routing flow.
+ */
+
 #import "Network/HttpParsing.h"
 
 @implementation HttpParsing

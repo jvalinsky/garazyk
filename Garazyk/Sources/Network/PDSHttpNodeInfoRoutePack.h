@@ -1,7 +1,9 @@
 /*!
  @file PDSHttpNodeInfoRoutePack.h
 
- @abstract Registers NodeInfo routes on an HTTP server.
+ @abstract Declares node-info route-pack registration entry points.
+
+ @discussion Specifies interfaces for registering node information and diagnostics HTTP routes with the server runtime.
  */
 
 #import <Foundation/Foundation.h>

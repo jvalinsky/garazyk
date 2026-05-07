@@ -1,3 +1,11 @@
+/*!
+ @file PDSHttpNodeInfoRoutePack.m
+
+ @abstract Registers HTTP routes that expose node information and diagnostics views.
+
+ @discussion Configures node-info route bindings for server/runtime diagnostics surfaces and delegates request handling to node-info components. Defines registration boundaries, not diagnostic data computation.
+ */
+
 #import "Network/PDSHttpNodeInfoRoutePack.h"
 
 #import "App/NodeInfo/NodeInfoHandler.h"

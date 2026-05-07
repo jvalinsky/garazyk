@@ -1,3 +1,11 @@
+/*!
+ @file HttpProtocolSession.m
+
+ @abstract Implements HTTP protocol session state management and progression.
+
+ @discussion Maintains protocol-session context as requests are parsed and processed, coordinating transitions between parser outputs and dispatch inputs. Does not implement route business semantics.
+ */
+
 #import "Network/HttpProtocolSession.h"
 #import "Debug/PDSLogger.h"
 
