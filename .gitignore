@@ -27,7 +27,6 @@ vendor/secp256k1/
 *~
 *.tmp
 *.temp
-.claude/settings.local.json
 .ruff_cache/
 
 #tmp_*
@@ -56,8 +55,23 @@ xcuserdata/
 docs/.vitepress/dist/
 docs/.vitepress/cache/
 
-# Codex/OpenCode local state
-.opencode/
+# AI / Agentic Development Tools
+# Per github/gitignore PR #4719: ignore user-local config, keep project-level config
+
+# Claude Code — local user settings only (project commands/skills/hooks are committed)
+.claude/settings.local.json
+.claude/**/*.log
+
+# OpenCode — local caches only (project skills/plans are committed)
+.opencode/node_modules/
+.opencode/package-lock.json
+.opencode/bun.lock
+
+# Agent scratch directories (ephemeral session output)
+.scratch/
+.scratchpad/
+
+# Deciduous local state
 .deciduous/deciduous.db
 
 # Data, Logs and State
