@@ -126,7 +126,7 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
                                                           delegate:self
                                                      delegateQueue:nil];
     NSURLSessionDataTask *task =
-        [session performSafeDataTaskWithRequest:request
+        [session dataTaskWithRequest:request
                    completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         NSNumber *taskID = @(task.taskIdentifier);
         NSError *redirectError = nil;
