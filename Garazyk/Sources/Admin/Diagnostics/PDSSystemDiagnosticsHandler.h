@@ -25,9 +25,9 @@ NS_ASSUME_NONNULL_BEGIN
  * @brief Processes diagnostics API requests.
  *
  * Routes to feature-specific handlers based on path:
- * - /admin/api/diagnostics/sequencer/* → PDSSequencerHealthHandler
- * - /admin/api/diagnostics/blobs/* → PDSBlobAuditHandler
- * - /admin/api/diagnostics/ratelimits/* → PDSRateLimitAdminHandler
+ * - /admin/api/diagnostics/sequencer/ * → PDSSequencerHealthHandler
+ * - /admin/api/diagnostics/blobs/ * → PDSBlobAuditHandler
+ * - /admin/api/diagnostics/ratelimits/ * → PDSRateLimitAdminHandler
  *
  * @param method HTTP method
  * @param path Request path

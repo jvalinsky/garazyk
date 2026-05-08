@@ -7,6 +7,11 @@
 #import "Compat/PDSTypes.h"
 #import <sqlite3.h>
 
+// Suppress -Wobjc-string-concatenation: multi-line SQL string literals
+// inside NSArray expressions are intentional C string concatenation,
+// not missing commas.
+#pragma clang diagnostic ignored "-Wobjc-string-concatenation"
+
 NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 #pragma mark - V2 Ozone Schema Migration

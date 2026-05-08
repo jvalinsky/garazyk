@@ -451,7 +451,7 @@
         NSString *popularQuery = @"SELECT subject_did, COUNT(*) as cnt FROM bsky_graph_follows "
                                  @"GROUP BY subject_did ORDER BY cnt DESC LIMIT ?";
         NSArray *popularRows = [self.database executeParameterizedQuery:popularQuery
-                                                                  params:@((NSInteger)(limit * 2))
+                                                                  params:@[@((NSInteger)(limit * 2))]
                                                                    error:nil];
         for (NSDictionary *row in popularRows) {
             NSString *did = row[@"subject_did"];
