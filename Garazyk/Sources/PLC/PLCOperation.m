@@ -273,11 +273,17 @@ static BOOL isBase32Char(unichar c) {
 - (NSDictionary *)toDIDDocument {
     NSMutableArray *verificationMethods = [NSMutableArray array];
     [self.verificationMethods enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *multibase, BOOL *stop) {
+        // Strip did:key: prefix if present — the DID document spec requires
+        // just the multibase-encoded public key, not the full did:key URI.
+        NSString *rawMultibase = multibase;
+        if ([rawMultibase hasPrefix:@"did:key:"]) {
+            rawMultibase = [rawMultibase substringFromIndex:@"did:key:".length];
+        }
         [verificationMethods addObject:@{
             @"id": [NSString stringWithFormat:@"%@#%@", self.did, key],
             @"type": @"Multikey",
             @"controller": self.did,
-            @"publicKeyMultibase": multibase
+            @"publicKeyMultibase": rawMultibase
         }];
     }];
     
