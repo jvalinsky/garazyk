@@ -106,6 +106,11 @@ static NSNumber *moderationAppliedOverrideForAction(NSString *normalizedAction) 
 
 @implementation PDSAdminService
 
+- (instancetype)init {
+    [self doesNotRecognizeSelector:_cmd];
+    return nil;
+}
+
 - (instancetype)initWithDatabase:(PDSDatabase *)database databasePool:(nullable PDSDatabasePool *)databasePool {
     self = [super init];
     if (self) {

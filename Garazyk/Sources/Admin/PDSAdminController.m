@@ -19,6 +19,11 @@
 
 @implementation PDSAdminController
 
+- (instancetype)init {
+    [self doesNotRecognizeSelector:_cmd];
+    return nil;
+}
+
 #pragma mark - Initialization
 
 - (instancetype)initWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases
