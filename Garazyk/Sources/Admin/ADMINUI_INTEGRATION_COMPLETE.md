@@ -158,7 +158,7 @@ PDSAdminHandler.handleRequestPacketWithMethod:path:headers:body:
 
 ### 1. Build the project
 ```bash
-cd /Users/jack/Software/garazyk
+cd .
 xcodebuild -project ATProtoPDS.xcodeproj -scheme PDS
 ```
 

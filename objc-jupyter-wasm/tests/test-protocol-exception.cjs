@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-const wasmCode = fs.readFileSync('/Users/jack/Software/garazyk/objc-jupyter-wasm/result/wasm/kernel.wasm');
+const wasmCode = fs.readFileSync('../../../objc-jupyter-wasm/result/wasm/kernel.wasm');
 
 const memory = new WebAssembly.Memory({ initial: 256 });
 

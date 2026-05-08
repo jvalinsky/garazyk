@@ -1,5 +1,6 @@
 #import "Auth/OAuth2Handler.h"
 #import "Auth/OAuth2.h"
+#import "Auth/OAuthClientAuthPolicy.h"
 #import "Auth/Session.h"
 #import "Auth/CryptoUtils.h"
 #import "Auth/WebAuthnVerifier.h"
@@ -13,6 +14,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
+#import "Network/PDSSafeHTTPClient.h"
 #import "Network/SSRFValidator.h"
 
 #import "App/PDSConfiguration.h"
@@ -2603,9 +2605,9 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     return;
 
   } else {
-    // Traditional client_secret authentication
+    // Traditional client_secret authentication (constant-time comparison)
     if (clientSecret && expectedSecret &&
-        ![clientSecret isEqualToString:expectedSecret]) {
+        ![OAuthClientAuthPolicy validateClientSecret:clientSecret againstExpected:expectedSecret]) {
       response.statusCode = 401;
       [response setJsonBody:@{
         @"error" : @"invalid_client",
@@ -3046,8 +3048,8 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     return;
 
   } else {
-    // Traditional client_secret authentication
-    if (expectedSecret && ![clientSecret isEqualToString:expectedSecret]) {
+    // Traditional client_secret authentication (constant-time comparison)
+    if (expectedSecret && ![OAuthClientAuthPolicy validateClientSecret:clientSecret againstExpected:expectedSecret]) {
       response.statusCode = 401;
       [response setJsonBody:@{
         @"error" : @"invalid_client",
@@ -3764,83 +3766,90 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     return;
   }
 
-  // SSRF Protection: Validate host before fetching
-  NSError *ssrfError = nil;
-  if (![SSRFValidator validateHostResolvesToPublicIP:host error:&ssrfError]) {
-    NSInteger oauthErrorCode = 500;
-    NSString *oauthMessage = @"DNS resolution failed";
-    if (ssrfError.code == SSRFValidatorErrorInvalidHost) {
-      oauthErrorCode = 400;
-      oauthMessage = @"Empty hostname";
-    } else if (ssrfError.code == SSRFValidatorErrorPrivateAddress) {
-      oauthErrorCode = 403;
-      oauthMessage = @"SSRF Protection: Host resolves to private IP address";
-    }
-
-    NSMutableDictionary *userInfo =
-        [NSMutableDictionary dictionaryWithObject:oauthMessage
-                                           forKey:NSLocalizedDescriptionKey];
-    if (ssrfError) {
-      userInfo[NSUnderlyingErrorKey] = ssrfError;
-    }
-    NSError *oauthError = [NSError errorWithDomain:@"OAuth2"
-                                              code:oauthErrorCode
-                                          userInfo:userInfo];
-
-    PDS_LOG_AUTH_ERROR(@"Blocked SSRF attempt for dynamic discovery: %@ (%@)",
-                       urlStr, ssrfError.localizedDescription);
-    completion(nil, oauthError);
-    return;
-  }
-
+  // SSRF Protection: PDSSafeHTTPClient validates host and fetches atomically,
+  // eliminating the validate-before-fetch TOCTOU gap.
   NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
   [request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
   request.timeoutInterval = 10.0;
 
   PDS_LOG_AUTH_DEBUG(@"Fetching dynamic client metadata from %@", urlStr);
 
-  NSURLSessionDataTask *task = [[NSURLSession sharedSession]
-      dataTaskWithRequest:request
-        completionHandler:^(NSData *data, NSURLResponse *response,
-                            NSError *err) {
-          if (err) {
-            completion(nil, err);
-          } else {
-            NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
-            if (httpResponse.statusCode == 200 && data) {
-              NSError *jsonError = nil;
-              id json = [NSJSONSerialization JSONObjectWithData:data
-                                                        options:0
-                                                          error:&jsonError];
-              if ([json isKindOfClass:[NSDictionary class]]) {
-                completion(json, nil);
-              } else {
-                completion(nil, jsonError ?: [NSError
-                                     errorWithDomain:@"OAuth2"
-                                                code:400
-                                            userInfo:@{
-                                              NSLocalizedDescriptionKey :
-                                                  @"Client metadata is not a "
-                                                  @"JSON object"
-                                            }]);
-              }
-            } else {
-              completion(nil, [NSError
-                                  errorWithDomain:@"OAuth2"
-                                             code:httpResponse.statusCode
-                                         userInfo:@{
-                                           NSLocalizedDescriptionKey :
-                                               [NSString
-                                                   stringWithFormat:
-                                                       @"Failed to fetch "
-                                                       @"client metadata: %ld",
-                                                       (long)httpResponse
-                                                           .statusCode]
-                                         }]);
-            }
-          }
-        }];
-  [task resume];
+  PDSSafeHTTPClientOptions *safeOptions = [[PDSSafeHTTPClientOptions alloc] init];
+  safeOptions.timeout = 10.0;
+  safeOptions.maxResponseBytes = 256 * 1024; // 256 KB
+  safeOptions.allowHTTP = NO;
+  safeOptions.allowPrivateHosts = NO;
+  safeOptions.followRedirects = YES;
+
+  [[PDSSafeHTTPClient sharedClient] dataTaskWithRequest:request
+                                                 options:safeOptions
+                                              completion:^(NSData *data, NSHTTPURLResponse *httpResponse, NSError *err) {
+    // Map PDSSafeHTTPClient SSRF errors to OAuth error codes
+    if (err && [err.domain isEqualToString:PDSSafeHTTPClientErrorDomain]) {
+      NSInteger oauthErrorCode = 500;
+      NSString *oauthMessage = @"Failed to fetch client metadata";
+      if (err.code == PDSSafeHTTPClientErrorSSRFBlocked) {
+        oauthErrorCode = 403;
+        oauthMessage = @"SSRF Protection: Host resolves to private IP address";
+        PDS_LOG_AUTH_ERROR(@"Blocked SSRF attempt for dynamic discovery: %@", urlStr);
+      } else if (err.code == PDSSafeHTTPClientErrorInvalidURL) {
+        oauthErrorCode = 400;
+        oauthMessage = @"Invalid client_id URL";
+      } else if (err.code == PDSSafeHTTPClientErrorUnsupportedScheme) {
+        oauthErrorCode = 400;
+        oauthMessage = @"Only HTTPS is allowed for client metadata";
+      } else if (err.code == PDSSafeHTTPClientErrorRedirectBlocked) {
+        oauthErrorCode = 403;
+        oauthMessage = @"SSRF Protection: Redirect target resolves to private IP address";
+        PDS_LOG_AUTH_ERROR(@"Blocked SSRF redirect attempt for dynamic discovery: %@", urlStr);
+      }
+      NSError *oauthError = [NSError errorWithDomain:@"OAuth2"
+                                                 code:oauthErrorCode
+                                             userInfo:@{
+                                               NSLocalizedDescriptionKey: oauthMessage,
+                                               NSUnderlyingErrorKey: err
+                                             }];
+      completion(nil, oauthError);
+      return;
+    }
+
+    if (err) {
+      completion(nil, err);
+      return;
+    }
+
+    if (httpResponse.statusCode == 200 && data) {
+      NSError *jsonError = nil;
+      id json = [NSJSONSerialization JSONObjectWithData:data
+                                                  options:0
+                                                    error:&jsonError];
+      if ([json isKindOfClass:[NSDictionary class]]) {
+        completion(json, nil);
+      } else {
+        completion(nil, jsonError ?: [NSError
+                             errorWithDomain:@"OAuth2"
+                                        code:400
+                                    userInfo:@{
+                                      NSLocalizedDescriptionKey :
+                                          @"Client metadata is not a "
+                                          @"JSON object"
+                                    }]);
+      }
+    } else {
+      completion(nil, [NSError
+                          errorWithDomain:@"OAuth2"
+                                     code:httpResponse.statusCode
+                                 userInfo:@{
+                                   NSLocalizedDescriptionKey :
+                                       [NSString
+                                           stringWithFormat:
+                                               @"Failed to fetch "
+                                               @"client metadata: %ld",
+                                               (long)httpResponse
+                                                   .statusCode]
+                                 }]);
+    }
+  }];
 }
 
 @end

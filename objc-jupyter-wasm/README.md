@@ -46,7 +46,7 @@ Compile service / CI artifact cache
 ### Build
 
 ```bash
-cd /Users/jack/Software/garazyk
+cd .
 
 # Build the current smoke slice
 bash scripts/build-all.sh

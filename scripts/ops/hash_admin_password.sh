@@ -85,14 +85,16 @@ SALT=$(openssl rand -hex $SALT_BYTES)
 PBKDF2_OUTPUT=$(echo -n "$PASSWORD" | openssl enc -aes-256-cbc -S "$SALT" -P -pbkdf2 -iter $ITERATIONS -md sha256 -pass stdin 2>/dev/null || echo "")
 
 if [ -z "$PBKDF2_OUTPUT" ]; then
-    # Fallback: use dgst with manual PBKDF2 (less efficient but works)
-    # Use OpenSSL EVP_BytesToKey equivalent
-    echo -e "${YELLOW}Using OpenSSL EVP_BytesToKey for compatibility...${NC}"
+    # Fallback: use Python hashlib for secure PBKDF2 derivation
+    echo -e "${YELLOW}Using Python hashlib for PBKDF2...${NC}"
 
-    # This is a simplified approach - for production, consider using Python with hashlib:
-    # python3 -c "import hashlib; print(hashlib.pbkdf2_hmac('sha256', b'$PASSWORD', bytes.fromhex('$SALT'), $ITERATIONS).hex())"
+    if ! command -v python3 &> /dev/null; then
+        echo -e "${RED}ERROR: python3 is required for the fallback hashing but not installed${NC}" >&2
+        exit 1
+    fi
 
-    HASH=$(echo -n "$PASSWORD" | openssl dgst -sha256 -binary | od -A n -t x1 -v | tr -d ' \n')
+    # Derive hash using Python's hashlib.pbkdf2_hmac
+    HASH=$(python3 -c "import hashlib; print(hashlib.pbkdf2_hmac('sha256', b'$PASSWORD', bytes.fromhex('$SALT'), $ITERATIONS).hex())")
 else
     # Extract the key (hash) from PBKDF2 output
     HASH=$(echo "$PBKDF2_OUTPUT" | grep '^key=' | cut -d= -f2)
