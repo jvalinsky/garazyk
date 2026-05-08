@@ -1712,12 +1712,12 @@ static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
     
     const char *createdAtText = (const char *)sqlite3_column_text(stmt, 9);
     if (createdAtText) {
-        account.createdAt = [[NSDateFormatter atproto_iso8601Formatter] dateFromString:@(createdAtText)].timeIntervalSince1970;
+        account.createdAt = [NSDateFormatter atproto_dateFromString:@(createdAtText)].timeIntervalSince1970;
     }
     
     const char *updatedAtText = (const char *)sqlite3_column_text(stmt, 10);
     if (updatedAtText) {
-        account.updatedAt = [[NSDateFormatter atproto_iso8601Formatter] dateFromString:@(updatedAtText)].timeIntervalSince1970;
+        account.updatedAt = [NSDateFormatter atproto_dateFromString:@(updatedAtText)].timeIntervalSince1970;
     }
     
     // 2FA
@@ -2641,12 +2641,12 @@ static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
 
 - (NSString *)iso8601StringFromDate:(NSDate *)date {
     if (!date) return @"";
-    return [[NSDateFormatter atproto_iso8601Formatter] stringFromDate:date];
+    return [NSDateFormatter atproto_stringFromDate:date];
 }
 
 - (NSDate *)dateFromIso8601String:(NSString *)string {
     if (!string) return nil;
-    return [[NSDateFormatter atproto_iso8601Formatter] dateFromString:string];
+    return [NSDateFormatter atproto_dateFromString:string];
 }
 
 
