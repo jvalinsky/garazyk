@@ -428,7 +428,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/:did/log" handler:^(HttpRequest *req, HttpResponse *resp) {
-        [weakSelf handleGetLog:req response:resp includeNullified:NO includeMetadata:YES];
+        [weakSelf handleGetLog:req response:resp includeNullified:NO includeMetadata:NO];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/:did/data" handler:^(HttpRequest *req, HttpResponse *resp) {
@@ -664,8 +664,35 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
 }
 
 - (void)handleGetData:(HttpRequest *)req response:(HttpResponse *)resp {
-    // Spec says "basically just an op". Reusing getLatestLog logic.
-    [self handleGetLatestLog:req response:resp];
+    // Per did-method-plc spec, /:did/data returns the current DID state data
+    // (operation content without sig/prev/type), plus the did field.
+    NSString *did = req.pathParameters[@"did"];
+    if (!did) {
+        resp.statusCode = HttpStatusBadRequest;
+        [resp setJsonBody:@{@"error": @"Missing DID"}];
+        return;
+    }
+
+    NSError *error = nil;
+    PLCOperation *op = [self.store getLatestOperationForDID:did error:&error];
+    if (error) {
+        [[PLCMetrics sharedMetrics] recordError];
+        resp.statusCode = HttpStatusInternalServerError;
+        [resp setJsonBody:@{@"error": error.localizedDescription}];
+        return;
+    }
+
+    if (!op) {
+        resp.statusCode = HttpStatusNotFound;
+        [resp setJsonBody:@{@"error": @"DID not found"}];
+        return;
+    }
+
+    // Return op.data (unsigned content) + did, excluding sig/prev/type
+    NSMutableDictionary *data = [op.data mutableCopy];
+    data[@"did"] = did;
+    resp.statusCode = HttpStatusOK;
+    [resp setJsonBody:[data copy]];
 }
 
 - (void)handleExport:(HttpRequest *)req response:(HttpResponse *)resp {
