@@ -93,6 +93,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                                                             error:(NSError **)error;
 
 @property (nonatomic, strong) NSMutableDictionary<NSString *, MST *> *mstCacheByDid;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSDictionary *> *statsCacheByDid;
 #if defined(GNUSTEP)
 @property (nonatomic, assign) dispatch_queue_t mstCacheQueue;
 #else
@@ -108,6 +109,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
         self.databasePool = databasePool;
         self.recordRepository = [[PDSSQLiteRecordRepository alloc] initWithDatabasePool:databasePool];
         _mstCacheByDid = [NSMutableDictionary dictionary];
+        _statsCacheByDid = [NSMutableDictionary dictionary];
         _mstCacheQueue = dispatch_queue_create("com.atproto.pds.recordservice.mstcache", DISPATCH_QUEUE_SERIAL);
     }
     return self;
@@ -1280,8 +1282,12 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                                              code:-3
                                          userInfo:@{NSLocalizedDescriptionKey: @"Failed to compute updated MST root"}];
             [[MSTCacheManager sharedManager] removeMSTForDid:did];
+            [self.statsCacheByDid removeObjectForKey:did];
             return;
         }
+
+        // Always invalidate stats cache on successful write
+        [self.statsCacheByDid removeObjectForKey:did];
 
         NSString *rev = [store latestMutationRevisionWithError:nil];
         if (rev.length == 0) {
@@ -1381,6 +1387,12 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
 }
 
 - (nullable NSDictionary *)getRepoStatsForDid:(NSString *)did error:(NSError **)error {
+    __block NSDictionary *cached = nil;
+    dispatch_sync(self.mstCacheQueue, ^{
+        cached = self.statsCacheByDid[did];
+    });
+    if (cached) return cached;
+
     PDSActorStore *store = [self.databasePool storeForDid:did error:error];
     if (!store) {
         PDS_LOG_DB_ERROR(@"[PDSRecordService] Failed to get store for DID: %@", did);
@@ -1421,11 +1433,17 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
         return nil;
     }
     
-    return @{
+    NSDictionary *result = @{
         @"did": did,
         @"collections": results,
         @"recordCount": @(totalCount)
     };
+
+    dispatch_sync(self.mstCacheQueue, ^{
+        self.statsCacheByDid[did] = result;
+    });
+
+    return result;
 }
 
 #pragma mark - Private Helpers

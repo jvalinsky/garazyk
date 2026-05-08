@@ -813,17 +813,27 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
 
         // Add MST proof path
         MST *mst = [repositoryService loadMSTForDid:did error:nil];
-        if (mst) {
-          NSString *mstKey =
-              [NSString stringWithFormat:@"%@/%@", collection, rkey];
-          NSArray<MSTNode *> *proofNodes = [mst getProofNodesForKey:mstKey];
+        if (mst && store) {
+          NSString *mstKey = [NSString stringWithFormat:@"%@/%@", collection, rkey];
+          
+          // Provide block provider to load subtrees if needed
+          MSTBlockProvider blockProvider = ^NSData * _Nullable (CID *targetCid) {
+              return [store getBlockForCID:targetCid.bytes forDid:did error:nil];
+          };
+          
+          NSArray<MSTNode *> *proofNodes = [mst getProofNodesForKey:mstKey blockProvider:blockProvider];
 
-          NSMapTable<MSTNode *, CID *> *cache =
-              [NSMapTable strongToStrongObjectsMapTable];
+          NSMapTable<MSTNode *, CID *> *cache = [NSMapTable strongToStrongObjectsMapTable];
           for (MSTNode *node in proofNodes) {
             CID *nodeCID = [node getCID:cache];
             if (nodeCID) {
-              NSData *nodeData = [node serializeToCBOR:cache];
+              // Fetch original block from DB to ensure CID consistency
+              NSData *nodeData = [store getBlockForCID:nodeCID.bytes forDid:did error:nil];
+              if (!nodeData) {
+                  // Fallback to re-serialization if original not found
+                  nodeData = [node serializeToCBOR:cache];
+              }
+              
               if (nodeData) {
                 [writer addBlock:[CARBlock blockWithCID:nodeCID data:nodeData]];
               }
