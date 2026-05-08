@@ -223,7 +223,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
         return;
     }
     
-    NSString *urlString = [NSString stringWithFormat:@"%@/%@/log/audit", self.plcUrl, did];
+    NSString *urlString = [NSString stringWithFormat:@"%@/%@/log", self.plcUrl, did];
     NSURL *url = [NSURL URLWithString:urlString];
     if (!url) {
         NSError *err = [NSError errorWithDomain:DIDPLCResolverErrorDomain code:DIDPLCResolverErrorInvalidDID userInfo:@{NSLocalizedDescriptionKey: @"Invalid constructed PLC URL"}];
