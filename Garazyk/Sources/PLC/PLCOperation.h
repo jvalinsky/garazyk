@@ -53,12 +53,39 @@ NS_ASSUME_NONNULL_BEGIN
 /*!
  @method calculateDIDForData:
 
- @abstract Calculates the DID from operation data.
+ @abstract Calculates the DID from unsigned operation data.
 
- @param data The operation data dictionary.
+ @discussion
+    This method hashes the unsigned operation data. Per the did-method-plc
+    specification (v0.3.0), the DID MUST be derived from the SIGNED operation
+    (including the `sig` field). Use calculateDIDForSignedOperation: instead.
+
+    This method is retained only for backward compatibility with legacy
+    test vectors and MUST NOT be used for new DID creation.
+
+ @param data The unsigned operation data dictionary.
  @return The DID string derived from the data.
  */
 + (NSString *)calculateDIDForData:(NSDictionary *)data;
+
+/*!
+ @method calculateDIDForSignedOperation:
+
+ @abstract Calculates the DID from a signed operation.
+
+ @discussion
+    Per the did-method-plc specification (v0.3.0), the DID is derived from
+    the SHA-256 hash of the DAG-CBOR encoding of the SIGNED operation,
+    including the `sig` field:
+
+        did:plc:<first 24 chars of base32(SHA-256(DAG-CBOR(signedOp)))>
+
+    This is the correct and spec-compliant way to derive a DID.
+
+ @param signedOperation The complete signed operation dictionary (including `sig`).
+ @return The DID string derived from the signed operation.
+ */
++ (NSString *)calculateDIDForSignedOperation:(NSDictionary *)signedOperation;
 
 /*!
  @method calculateCIDForOperation:error:
