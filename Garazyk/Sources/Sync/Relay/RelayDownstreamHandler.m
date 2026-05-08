@@ -127,7 +127,7 @@
 - (void)upstreamManager:(RelayUpstreamManager *)manager
         didReceiveCursor:(int64_t)cursor
              fromUpstream:(NSString *)url {
-    PDS_LOG_SYNC_INFO(@"RelayDownstreamHandler: Received cursor %lld from upstream %@", cursor, url);
+    PDS_LOG_SYNC_INFO(@"RelayDownstreamHandler: Received cursor %lld from upstream %@", (long long)cursor, url);
     // We don't necessarily update our local sequence based on upstream cursor
 }
 
