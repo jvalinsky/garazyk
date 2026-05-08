@@ -336,6 +336,8 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
  */
 - (nullable NSDictionary *)resolveDID:(NSString *)did;
 
+- (NSArray<NSDictionary *> *)enumerateValidCachedDIDsWithError:(NSError **)error;
+
 #pragma mark - Event Persistence
 
 /*!
