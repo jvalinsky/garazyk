@@ -204,6 +204,7 @@
 
   // Ensure PDSAdminAuth has data directory for admin DID persistence
   [PDSAdminAuth sharedAuth].dataDirectory = dataDir;
+  [PDSAdminAuth sharedAuth].controller = controller;
 
   // Use the handler from the controller
   SubscribeReposHandler *subscribeReposHandler = controller.subscribeReposHandler;
