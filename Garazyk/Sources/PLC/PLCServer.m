@@ -605,7 +605,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
             [resp setJsonBody:@{@"error": @"Genesis operation must have null prev"}];
             return;
         }
-        NSString *expectedDid = [PLCOperation calculateDIDForData:op.data];
+        NSString *expectedDid = [PLCOperation calculateDIDForSignedOperation:[op toDictionary]];
         if (expectedDid.length > 0 && ![expectedDid isEqualToString:did]) {
             PDS_LOG_CORE_ERROR(@"PLC genesis DID mismatch for %@: expected %@", did, expectedDid);
             [[PLCMetrics sharedMetrics] recordError];
