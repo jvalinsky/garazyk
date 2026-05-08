@@ -69,7 +69,7 @@
         
         dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
         
-        NSURLSessionDataTask *task = [self.session dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable taskError) {
+        NSURLSessionDataTask *task = [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable taskError) {
             NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
             
             if (taskError) {

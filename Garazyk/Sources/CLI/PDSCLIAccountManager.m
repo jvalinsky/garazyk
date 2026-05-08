@@ -413,7 +413,7 @@
     __block NSError *reqError = nil;
     __block BOOL success = NO;
     
-    [[[NSURLSession sharedSession] dataTaskWithRequest:req completionHandler:^(NSData *data, NSURLResponse *resp, NSError *err) {
+    [[[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:req options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *resp, NSError *err) {
         if (err) {
             reqError = err;
         } else {
@@ -624,7 +624,7 @@
     
     dispatch_semaphore_t sema = dispatch_semaphore_create(0);
     __block BOOL success = NO;
-    [[[NSURLSession sharedSession] dataTaskWithRequest:req completionHandler:^(NSData *data, NSURLResponse *resp, NSError *err) {
+    [[[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:req options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *resp, NSError *err) {
         if (!err && [(NSHTTPURLResponse *)resp statusCode] == 200) {
             success = YES;
         } else {

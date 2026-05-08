@@ -304,7 +304,7 @@ static BOOL PDSHandleResolverRunningTests(void) {
                         options:(PDSSafeHTTPClientOptions *)options
                         attempt:(NSInteger)attempt
                      completion:(void (^)(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error))completion {
-    [[PDSSafeHTTPClient sharedClient] dataTaskWithRequest:request
+    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
                                                    options:options
                                                 completion:^(NSData *data, NSHTTPURLResponse *response, NSError *error) {
         NSInteger statusCode = response ? response.statusCode : 0;
