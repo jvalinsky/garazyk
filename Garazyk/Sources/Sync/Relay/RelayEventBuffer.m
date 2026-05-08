@@ -23,6 +23,16 @@
     dispatch_queue_t _bufferQueue;
 }
 
+- (instancetype)initWithRetentionHours:(NSUInteger)hours {
+    [self doesNotRecognizeSelector:_cmd];
+    return nil;
+}
+
+- (instancetype)init {
+    [self doesNotRecognizeSelector:_cmd];
+    return nil;
+}
+
 - (instancetype)initWithRetentionHours:(NSUInteger)hours maxEvents:(NSUInteger)maxEvents {
     self = [super init];
     if (self) {

@@ -20,6 +20,11 @@ static BOOL isValidDID(NSString *did) {
     SubscribeReposHandler *_subscribeReposHandler;
 }
 
+- (instancetype)init {
+    [self doesNotRecognizeSelector:_cmd];
+    return nil;
+}
+
 - (instancetype)initWithRepoStateManager:(RelayRepoStateManager *)repoStateManager
                   subscribeReposHandler:(nullable SubscribeReposHandler *)subscribeReposHandler
 {

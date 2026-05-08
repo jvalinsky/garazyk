@@ -24,6 +24,11 @@
     dispatch_queue_t _managerQueue;
 }
 
+- (instancetype)init {
+    [self doesNotRecognizeSelector:_cmd];
+    return nil;
+}
+
 - (instancetype)initWithInitialURLs:(NSArray<NSString *> *)urls {
     self = [super init];
     if (self) {

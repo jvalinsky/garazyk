@@ -16,6 +16,11 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
 
 @implementation DIDPLCResolver
 
+- (instancetype)init {
+    [self doesNotRecognizeSelector:_cmd];
+    return nil;
+}
+
 - (instancetype)initWithPlcUrl:(NSString *)url {
     self = [super init];
     if (self) {

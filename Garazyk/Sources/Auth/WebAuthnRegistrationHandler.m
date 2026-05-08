@@ -18,6 +18,16 @@ static NSTimeInterval kChallengeTimeoutSeconds = 300.0;
     dispatch_queue_t _challengeQueue;
 }
 
+- (instancetype)init {
+    [self doesNotRecognizeSelector:_cmd];
+    return nil;
+}
+
++ (instancetype)new {
+    [self doesNotRecognizeSelector:_cmd];
+    return nil;
+}
+
 - (instancetype)initWithDatabase:(PDSDatabase *)database serverOrigin:(NSString *)serverOrigin {
     self = [super init];
     if (self) {

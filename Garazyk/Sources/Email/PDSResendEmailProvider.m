@@ -23,6 +23,16 @@ static NSString *const kResendAPIKeySecretName = @"RESEND_API_KEY";
 @synthesize apiEndpoint = _apiEndpoint;
 @synthesize secretsProvider = _secretsProvider;
 
+- (instancetype)init {
+    [self doesNotRecognizeSelector:_cmd];
+    return nil;
+}
+
++ (instancetype)new {
+    [self doesNotRecognizeSelector:_cmd];
+    return nil;
+}
+
 - (instancetype)initWithSecretsProvider:(id<PDSSecretsProvider>)secretsProvider
                             fromAddress:(NSString *)fromAddress
                             apiEndpoint:(nullable NSString *)apiEndpoint {

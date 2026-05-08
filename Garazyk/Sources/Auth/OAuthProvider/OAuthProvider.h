@@ -195,6 +195,8 @@ typedef void (^OAuthProviderTokenCompletion)(OAuthProviderTokenResponse * _Nulla
  */
 @interface OAuthProviderServer : NSObject
 
+- (instancetype)init NS_UNAVAILABLE;
+
 /*!
  @brief The issuer URL for this authorization server.
  */

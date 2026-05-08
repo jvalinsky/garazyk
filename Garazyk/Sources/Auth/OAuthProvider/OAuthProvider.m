@@ -150,12 +150,8 @@ NSString * const OAuthProviderErrorDomain = @"com.atproto.oauthprovider";
 }
 
 - (instancetype)init {
-    return [self initWithStorage:nil
-                   clientRegistry:nil
-                     tokenSigner:nil
-               userAuthenticator:nil
-                     didResolver:nil
-                 handleResolver:nil];
+    [self doesNotRecognizeSelector:_cmd];
+    return nil;
 }
 
 #pragma mark - PAR

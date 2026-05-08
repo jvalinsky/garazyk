@@ -13,7 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface PLCPersistentStore ()
 
 @property (nonatomic, copy, readwrite) NSString *dbPath;
-@property (nonatomic, assign, readwrite) sqlite3 *db;
+@property (nonatomic, assign, readwrite, nullable) sqlite3 *db;
 @property (nonatomic, assign, readwrite, getter=isOpen) BOOL open;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSValue *> *stmtCache;
 

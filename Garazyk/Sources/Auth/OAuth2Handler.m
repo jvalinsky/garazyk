@@ -110,6 +110,11 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   JWTMinter *_minter;
 }
 
+- (instancetype)init {
+  [self doesNotRecognizeSelector:_cmd];
+  return nil;
+}
+
 - (void)setMinter:(JWTMinter *)minter {
   _minter = minter;
   self.oauthServer.jwtMinter = minter;

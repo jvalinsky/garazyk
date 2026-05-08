@@ -15,6 +15,11 @@ NSString * const PLCSyncClientErrorDomain = @"com.atproto.plc.syncclient";
     dispatch_queue_t _syncQueue;
 }
 
+- (instancetype)init {
+    [self doesNotRecognizeSelector:_cmd];
+    return nil;
+}
+
 - (instancetype)initWithUpstreamURL:(NSString *)url {
     self = [super init];
     if (self) {

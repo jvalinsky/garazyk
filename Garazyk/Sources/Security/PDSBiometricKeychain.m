@@ -15,6 +15,11 @@ static NSString * const kKeyType = @"kaszlak.signing.key";
 
 @implementation PDSBiometricKeychain
 
+- (instancetype)init {
+    [self doesNotRecognizeSelector:_cmd];
+    return nil;
+}
+
 + (instancetype)sharedInstance {
     static PDSBiometricKeychain *shared = nil;
     static dispatch_once_t onceToken;

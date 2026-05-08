@@ -75,7 +75,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (nullable NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
                                       jwtMinter:(JWTMinter *)jwtMinter
-                                adminController:(id<PDSAdminController>)adminController
+                                adminController:(nullable id<PDSAdminController>)adminController
                                         request:(HttpRequest *)request
                                        response:(nullable HttpResponse *)response;
 

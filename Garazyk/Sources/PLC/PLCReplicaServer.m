@@ -14,6 +14,13 @@
 
 - (instancetype)initWithStore:(id<PLCStore>)store
                       auditor:(PLCAuditor *)auditor
+                         port:(NSUInteger)port {
+    [self doesNotRecognizeSelector:_cmd];
+    return nil;
+}
+
+- (instancetype)initWithStore:(id<PLCStore>)store
+                      auditor:(PLCAuditor *)auditor
                          port:(NSUInteger)port
                  readOnlyMode:(BOOL)readOnly {
     self = [super initWithStore:store auditor:auditor port:port];

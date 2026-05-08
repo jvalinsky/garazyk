@@ -10,6 +10,11 @@
 
 @implementation RelayEventFilter
 
+- (instancetype)init {
+    [self doesNotRecognizeSelector:_cmd];
+    return nil;
+}
+
 - (instancetype)initWithAllowedCollections:(nullable NSArray<NSString *> *)collections
                           allowedRepos:(nullable NSArray<NSString *> *)repos
                           blockedActors:(nullable NSArray<NSString *> *)actors {

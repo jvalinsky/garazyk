@@ -41,7 +41,7 @@ NS_ASSUME_NONNULL_BEGIN
  @result YES on success, otherwise NO.
  */
 - (BOOL)appendOperation:(PLCOperation *)op
-           nullifyCIDs:(NSArray<NSString *> *)nullified
+           nullifyCIDs:(nullable NSArray<NSString *> *)nullified
                  error:(NSError **)error;
 
 /*!

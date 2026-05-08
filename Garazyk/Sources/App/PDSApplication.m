@@ -115,6 +115,11 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     XrpcDispatcher *_xrpcDispatcher;
 }
 
+- (instancetype)init {
+    [self doesNotRecognizeSelector:_cmd];
+    return nil;
+}
+
 #pragma mark - Singleton
 
 + (instancetype)sharedApplication {

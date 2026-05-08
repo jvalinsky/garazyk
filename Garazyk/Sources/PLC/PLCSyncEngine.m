@@ -32,6 +32,11 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
     dispatch_queue_t _validationQueue;
 }
 
+- (instancetype)init {
+    [self doesNotRecognizeSelector:_cmd];
+    return nil;
+}
+
 - (instancetype)initWithStore:(PLCReplicaStore *)store
                        client:(PLCSyncClient *)client
                       auditor:(PLCAuditor *)auditor {

@@ -37,6 +37,11 @@
     dispatch_queue_t _validationQueue;
 }
 
+- (instancetype)init {
+    [self doesNotRecognizeSelector:_cmd];
+    return nil;
+}
+
 - (instancetype)initWithValidationMode:(RelayValidationMode)mode {
     self = [super init];
     if (self) {
