@@ -6,6 +6,10 @@
 #import "Database/Utils/PDSSQLiteUtils.h"
 #import <sqlite3.h>
 
+@interface PDSHealthCheck ()
+@property (nonatomic, strong) PDSServiceDatabases *serviceDatabases;
+@end
+
 @implementation PDSHealthCheck
 
 + (instancetype)sharedInstance {
@@ -15,6 +19,20 @@
         shared = [[PDSHealthCheck alloc] init];
     });
     return shared;
+}
+
+- (instancetype)initWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases {
+    self = [super init];
+    if (self) {
+        _serviceDatabases = serviceDatabases;
+    }
+    return self;
+}
+
+- (void)configureWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases {
+    if (serviceDatabases) {
+        _serviceDatabases = serviceDatabases;
+    }
 }
 
 - (NSDictionary<NSString *, id> *)performHealthCheck {
@@ -47,7 +65,7 @@
         [warnings addObject:[NSString stringWithFormat:@"High fragmentation: %lu%%", (unsigned long)fragmentation]];
     }
     
-    NSDictionary *metrics = [[PDSServiceDatabases sharedInstance].servicePool collectMetrics];
+    NSDictionary *metrics = [self.serviceDatabases.servicePool collectMetrics];
     result[@"pool_metrics"] = metrics;
     
     NSUInteger openHandles = [metrics[@"open_file_handles"] unsignedIntegerValue];
@@ -65,7 +83,7 @@
 }
 
 - (PDSHealthStatus)checkDatabaseIntegrity:(NSError **)error {
-    PDSServiceDatabases *serviceDb = [PDSServiceDatabases sharedInstance];
+    PDSServiceDatabases *serviceDb = self.serviceDatabases;
     PDSActorStore *store = [serviceDb.servicePool storeForDid:@"__service__" error:nil];
     
     if (!store || !store.isOpen) {
@@ -109,7 +127,7 @@
 }
 
 - (BOOL)checkForeignKeys:(NSError **)error {
-    PDSServiceDatabases *serviceDb = [PDSServiceDatabases sharedInstance];
+    PDSServiceDatabases *serviceDb = self.serviceDatabases;
     PDSActorStore *store = [serviceDb.servicePool storeForDid:@"__service__" error:nil];
     
     if (!store) {
@@ -144,7 +162,7 @@
 - (NSDictionary<NSString *, NSNumber *> *)getTableSizes {
     NSMutableDictionary *sizes = [NSMutableDictionary dictionary];
     
-    PDSServiceDatabases *serviceDb = [PDSServiceDatabases sharedInstance];
+    PDSServiceDatabases *serviceDb = self.serviceDatabases;
     PDSActorStore *store = [serviceDb.servicePool storeForDid:@"__service__" error:nil];
     
     if (store && store.isOpen) {
@@ -168,7 +186,7 @@
 }
 
 - (NSUInteger)getFragmentationPercent {
-    PDSServiceDatabases *serviceDb = [PDSServiceDatabases sharedInstance];
+    PDSServiceDatabases *serviceDb = self.serviceDatabases;
     PDSActorStore *store = [serviceDb.servicePool storeForDid:@"__service__" error:nil];
     
     if (!store || !store.isOpen) {
@@ -193,11 +211,11 @@
     
     metrics[@"timestamp"] = @([[NSDate date] timeIntervalSince1970]);
     
-    PDSServiceDatabases *serviceDb = [PDSServiceDatabases sharedInstance];
+    PDSServiceDatabases *serviceDb = self.serviceDatabases;
     
     metrics[@"service_pool"] = [serviceDb.servicePool collectMetrics];
     metrics[@"did_cache_pool"] = [serviceDb.didCachePool collectMetrics];
-    metrics[@"sequencer_pool"] = [serviceDb.sequencerPool collectMetrics];
+    metrics[@"sequencer_pool"] = [self.serviceDatabases.sequencerPool collectMetrics];
     
     metrics[@"warnings"] = [self getWarnings];
     metrics[@"errors"] = [self getErrors];
