@@ -32,7 +32,7 @@ extern NSString * const PDSOpenSSLES256KeyErrorDomain;
 @property (nonatomic, assign, readonly) BOOL isPrivateKey;
 
 /// Creates from raw EC key (takes ownership).
-- (nullable instancetype)initWithECKey:(void *)ecKey
+- (nullable instancetype)initWithECKey:(nullable void *)ecKey
                                   keyID:(NSString *)keyID
                                   error:(NSError **)error;
 

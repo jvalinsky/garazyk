@@ -105,7 +105,7 @@ static void normalizeLowS(ECDSA_SIG *sig, const EC_GROUP *group) {
     return [self initWithECKey:NULL keyID:@"" error:nil];
 }
 
-- (instancetype)initWithECKey:(void *)ecKey
+- (instancetype)initWithECKey:(nullable void *)ecKey
                          keyID:(NSString *)keyID
                          error:(NSError **)error {
     self = [super init];
@@ -301,7 +301,7 @@ static void normalizeLowS(ECDSA_SIG *sig, const EC_GROUP *group) {
         // Derive public key from private key
         const EC_GROUP *group = EC_KEY_get0_group(ecKey);
         EC_POINT *pubPoint = EC_POINT_new(group);
-        if (EC_POINT_mul(group, pubPoint, NULL, EC_KEY_get0_private_key(ecKey), NULL, NULL) != 1) {
+        if (EC_POINT_mul(group, pubPoint, EC_KEY_get0_private_key(ecKey), NULL, NULL, NULL) != 1) {
             EC_KEY_free(ecKey);
             EC_POINT_free(pubPoint);
             BN_free(d);
