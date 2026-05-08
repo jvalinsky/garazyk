@@ -479,7 +479,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
     [request setValue:@"application/did+ld+json,application/json" forHTTPHeaderField:@"Accept"];
     
-    NSURLSessionDataTask *task = [_session dataTaskWithRequest:request
+    NSURLSessionDataTask *task = [_session performSafeDataTaskWithRequest:request
                                           completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         
         if (error) {
@@ -555,7 +555,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
     [request setValue:@"application/did+ld+json,application/json" forHTTPHeaderField:@"Accept"];
     
-    NSURLSessionDataTask *task = [_session dataTaskWithRequest:request
+    NSURLSessionDataTask *task = [_session performSafeDataTaskWithRequest:request
                                           completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
 
         if (error) {
@@ -651,7 +651,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     __block NSString *resolvedDID = nil;
     __block NSError *requestError = nil;
 
-    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request
+    NSURLSessionDataTask *task = [[NSURLSession sharedSession] performSafeDataTaskWithRequest:request
         completionHandler:^(NSData *data, NSURLResponse *resp, NSError *err) {
             if (err) {
                 requestError = err;
