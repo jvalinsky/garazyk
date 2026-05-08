@@ -35,6 +35,10 @@ typedef NS_ENUM(NSInteger, PDSHealthStatus) {
 
 + (instancetype)sharedInstance;
 
+- (instancetype)initWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases;
+
+- (void)configureWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases;
+
 - (NSDictionary<NSString *, id> *)performHealthCheck;
 
 - (PDSHealthStatus)checkDatabaseIntegrity:(NSError **)error;

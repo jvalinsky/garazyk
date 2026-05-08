@@ -12,6 +12,7 @@
 #import <Foundation/Foundation.h>
 
 @class PDSConfiguration;
+@class PDSServiceDatabases;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -51,7 +52,8 @@ typedef NS_ENUM(NSInteger, PDSReadinessError) {
  @return YES if all checks pass, NO otherwise (server should not start).
  */
 + (BOOL)performReadinessChecksWithConfig:(PDSConfiguration *)config
-                                   error:(NSError **)error;
+                           serviceDatabases:(PDSServiceDatabases *)serviceDatabases
+                                       error:(NSError **)error;
 
 @end
 

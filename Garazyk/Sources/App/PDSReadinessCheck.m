@@ -15,11 +15,12 @@ NSString * const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
 @implementation PDSReadinessCheck
 
 + (BOOL)performReadinessChecksWithConfig:(PDSConfiguration *)config
-                                   error:(NSError **)error {
+                           serviceDatabases:(PDSServiceDatabases *)serviceDatabases
+                                       error:(NSError **)error {
     PDS_LOG_CORE_INFO(@"Starting server readiness checks...");
 
     // 1. Database connection pool initialization
-    if (![self checkDatabasePools:config error:error]) {
+    if (![self checkDatabasePools:config serviceDatabases:serviceDatabases error:error]) {
         PDS_LOG_CORE_ERROR(@"Database pool readiness check failed");
         return NO;
     }
@@ -31,7 +32,7 @@ NSString * const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
     }
 
     // 3. Signing key availability
-    if (![self checkSigningKeys:config error:error]) {
+    if (![self checkSigningKeys:config serviceDatabases:serviceDatabases error:error]) {
         PDS_LOG_CORE_ERROR(@"Signing key readiness check failed");
         return NO;
     }
@@ -54,10 +55,9 @@ NSString * const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
 
 #pragma mark - Individual Checks
 
-+ (BOOL)checkDatabasePools:(PDSConfiguration *)config error:(NSError **)error {
++ (BOOL)checkDatabasePools:(PDSConfiguration *)config serviceDatabases:(PDSServiceDatabases *)serviceDatabases error:(NSError **)error {
     // Attempt to acquire connection from service pool
     @try {
-        PDSServiceDatabases *serviceDatabases = [PDSServiceDatabases sharedInstance];
         NSError *dbError = nil;
         PDSDatabase *db = [serviceDatabases serviceDatabaseWithError:&dbError];
 
@@ -138,9 +138,8 @@ NSString * const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
     return NO;
 }
 
-+ (BOOL)checkSigningKeys:(PDSConfiguration *)config error:(NSError **)error {
++ (BOOL)checkSigningKeys:(PDSConfiguration *)config serviceDatabases:(PDSServiceDatabases *)serviceDatabases error:(NSError **)error {
     @try {
-        PDSServiceDatabases *serviceDatabases = [PDSServiceDatabases sharedInstance];
         NSError *dbError = nil;
         PDSDatabase *db = [serviceDatabases serviceDatabaseWithError:&dbError];
         if (!db) {
