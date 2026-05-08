@@ -288,35 +288,84 @@ int main(int argc, const char * argv[]) {
         }
 
 
-        id<PLCStore> store = nil;
-        if (dbPath) {
-            NSError *storeError = nil;
-            store = [PLCPersistentStore storeWithPath:dbPath error:&storeError];
-            if (!store) {
-                PDS_LOG_CORE_ERROR(@"Failed to open persistent store at %@: %@", dbPath, storeError.localizedDescription);
-                return 1;
-            }
-            printf("Using persistent store at %s\n", [dbPath UTF8String]);
-        } else {
-            store = [[PLCMockStore alloc] init];
-            printf("Using in-memory mock store\n");
+        if (replicaMode && !upstreamURL) {
+            upstreamURL = @"https://plc.directory";
+            printf("No --upstream specified, defaulting to %s\n", [upstreamURL UTF8String]);
         }
 
-        PLCAuditor *auditor = [[PLCAuditor alloc] initWithStore:store];
-
         id server;
-        if (replicaMode || [command isEqualToString:@"replica"]) {
-            printf("Starting PLC replica server on port %lu\n", (unsigned long)port);
-            server = [[PLCReplicaServer alloc] initWithStore:store auditor:auditor port:port readOnlyMode:YES];
+        PLCSyncEngine *syncEngine = nil;
+
+        if (replicaMode) {
+            // Replica mode: use PLCReplicaStore + PLCSyncEngine for upstream sync
+            NSString *replicaDBPath = dbPath;
+            if (!replicaDBPath && dataDir) {
+                replicaDBPath = [dataDir stringByAppendingPathComponent:@"plc-replica.db"];
+            }
+            if (!replicaDBPath) {
+                replicaDBPath = [NSFileManager.defaultManager.currentDirectoryPath
+                    stringByAppendingPathComponent:@"plc-replica.db"];
+            }
+
+            NSError *storeError = nil;
+            PLCReplicaStore *replicaStore = [PLCReplicaStore storeWithPath:replicaDBPath
+                                                                     error:&storeError];
+            if (!replicaStore) {
+                PDS_LOG_CORE_ERROR(@"Failed to open replica store at %@: %@",
+                                    replicaDBPath, storeError.localizedDescription);
+                return 1;
+            }
+            printf("Using replica store at %s\n", [replicaDBPath UTF8String]);
+
+            PLCAuditor *auditor = [[PLCAuditor alloc] initWithStore:replicaStore];
+            PLCSyncClient *syncClient = [[PLCSyncClient alloc] initWithUpstreamURL:upstreamURL];
+            syncEngine = [[PLCSyncEngine alloc] initWithStore:replicaStore
+                                                       client:syncClient
+                                                      auditor:auditor];
+            syncEngine.batchSize = 1000;
+            syncEngine.pollInterval = 5.0;
+
+            printf("Starting PLC replica server on port %lu (upstream: %s)\n",
+                   (unsigned long)port, [upstreamURL UTF8String]);
+            server = [[PLCReplicaServer alloc] initWithStore:replicaStore
+                                                      auditor:auditor
+                                                         port:port
+                                                 readOnlyMode:YES];
         } else {
+            // Primary mode: standalone PLC server
+            id<PLCStore> store = nil;
+            if (dbPath) {
+                NSError *storeError = nil;
+                store = [PLCPersistentStore storeWithPath:dbPath error:&storeError];
+                if (!store) {
+                    PDS_LOG_CORE_ERROR(@"Failed to open persistent store at %@: %@",
+                                        dbPath, storeError.localizedDescription);
+                    return 1;
+                }
+                printf("Using persistent store at %s\n", [dbPath UTF8String]);
+            } else {
+                store = [[PLCMockStore alloc] init];
+                printf("Using in-memory mock store\n");
+            }
+
+            PLCAuditor *auditor = [[PLCAuditor alloc] initWithStore:store];
             printf("Starting PLC server on port %lu\n", (unsigned long)port);
-            server = [[PLCServer alloc] initWithStore:store auditor:auditor host:host port:port];
+            server = [[PLCServer alloc] initWithStore:store
+                                               auditor:auditor
+                                                  host:host
+                                                  port:port];
         }
 
         NSError *error = nil;
         if (![server startWithError:&error]) {
-            PDS_LOG_CORE_ERROR(@"Failed to start PLC server: %@", error.localizedDescription ?: @"unknown error");
+            PDS_LOG_CORE_ERROR(@"Failed to start PLC server: %@",
+                                error.localizedDescription ?: @"unknown error");
             return 1;
+        }
+
+        if (syncEngine) {
+            [syncEngine start];
+            printf("Sync engine started (upstream: %s)\n", [upstreamURL UTF8String]);
         }
 
         printf("PLC server listening on port %lu\n", (unsigned long)port);
