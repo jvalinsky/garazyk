@@ -705,7 +705,7 @@ static NSData *LexiconBase64URLDecode(NSString *string) {
     // Length checks
     if (constraints.maxLength && length > [constraints.maxLength unsignedIntegerValue]) {
         if (error) {
-            *error = [ATProtoLexiconError constraintError:@"maxLength"
+            *error = [ATProtoLexiconError constraintError:@"maxItems"
                                                     field:context
                                                     value:@(length)
                                                  expected:[NSString stringWithFormat:@"%@", constraints.maxLength]];
@@ -715,7 +715,7 @@ static NSData *LexiconBase64URLDecode(NSString *string) {
 
     if (constraints.minLength && length < [constraints.minLength unsignedIntegerValue]) {
         if (error) {
-            *error = [ATProtoLexiconError constraintError:@"minLength"
+            *error = [ATProtoLexiconError constraintError:@"minItems"
                                                     field:context
                                                     value:@(length)
                                                  expected:[NSString stringWithFormat:@"%@", constraints.minLength]];
@@ -854,7 +854,26 @@ static NSData *LexiconBase64URLDecode(NSString *string) {
         return NO;
     }
 
+    // Per ATProto spec, blob refs must include "ref" and "mimeType"
+    if (!blob[@"ref"]) {
+        if (error) {
+            *error = [ATProtoLexiconError errorWithCode:ATProtoLexiconErrorInvalidFieldValue
+                                                message:[NSString stringWithFormat:@"Blob missing required 'ref' field in '%@'", context]
+                                                context:context];
+        }
+        return NO;
+    }
+
     NSString *mimeType = blob[@"mimeType"];
+    if (!mimeType || ![mimeType isKindOfClass:[NSString class]] || mimeType.length == 0) {
+        if (error) {
+            *error = [ATProtoLexiconError errorWithCode:ATProtoLexiconErrorInvalidFieldValue
+                                                message:[NSString stringWithFormat:@"Blob missing required 'mimeType' field in '%@'", context]
+                                                context:context];
+        }
+        return NO;
+    }
+
     NSNumber *size = blob[@"size"];
 
     // MIME type check
