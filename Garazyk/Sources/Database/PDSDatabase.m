@@ -12,6 +12,11 @@
 #import <Security/Security.h>
 #endif
 
+// Suppress -Wblock-capture-autoreleasing: all block captures in this file
+// use dispatch_sync (via safeExecuteSync:), which completes before the
+// method returns, so the autorelease pool is still valid.
+#pragma clang diagnostic ignored "-Wblock-capture-autoreleasing"
+
 NSString * const PDSDatabaseErrorDomain = @"com.atproto.pds.database";
 static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
 
