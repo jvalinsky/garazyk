@@ -2,6 +2,7 @@
 #import "Compat/PDSTypes.h"
 #import "Debug/PDSLogger.h"
 #import "PDSRecordService.h"
+#import "Network/PDSSafeHTTPClient.h"
 
 #ifndef MSEC_PER_SEC
 #define MSEC_PER_SEC 1000ULL
@@ -9,31 +10,6 @@
 
 static const NSTimeInterval kRelayNotifyDebounceSeconds = 1.0;
 static const NSTimeInterval kRelayNotifyThresholdSeconds = 20.0 * 60.0;
-
-#pragma mark - NSURLSession Transport Adapter
-
-@interface PDSRelayURLSessionTransport : NSObject <PDSRelayTransport>
-@property (nonatomic, strong) NSURLSession *session;
-@end
-
-@implementation PDSRelayURLSessionTransport
-
-- (instancetype)init {
-  self = [super init];
-  if (self) {
-    _session = [NSURLSession
-        sessionWithConfiguration:[NSURLSessionConfiguration
-                                     ephemeralSessionConfiguration]];
-  }
-  return self;
-}
-
-- (void)sendRequest:(NSURLRequest *)request
-   completionHandler:(void (^)(NSData * _Nullable, NSURLResponse * _Nullable, NSError * _Nullable))handler {
-  [[self.session dataTaskWithRequest:request completionHandler:handler] resume];
-}
-
-@end
 
 @interface PDSRelayService ()
 
@@ -46,15 +22,34 @@ static const NSTimeInterval kRelayNotifyThresholdSeconds = 20.0 * 60.0;
 
 @end
 
+#pragma mark - Safe HTTP Transport
+
+@interface PDSRelaySafeHTTPTransport : NSObject <PDSRelayTransport>
+@end
+
+@implementation PDSRelaySafeHTTPTransport
+
+- (void)sendRequest:(NSURLRequest *)request
+   completionHandler:(void (^)(NSData * _Nullable, NSURLResponse * _Nullable,
+                                NSError * _Nullable))handler {
+  [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
+                                                           options:nil
+                                                        completion:handler];
+}
+
+@end
+
+#pragma mark -
+
 @implementation PDSRelayService
 
 - (instancetype)initWithRelays:(NSArray<NSString *> *)relays
-                      hostname:(NSString *)hostname {
+                       hostname:(NSString *)hostname {
   self = [super init];
   if (self) {
     _relays = [relays copy];
     _hostname = [hostname copy];
-    _transport = [[PDSRelayURLSessionTransport alloc] init];
+    _transport = [[PDSRelaySafeHTTPTransport alloc] init];
     _pendingDids = [NSMutableSet set];
     _queue = dispatch_queue_create("com.atproto.pds.relay.service",
                                    DISPATCH_QUEUE_SERIAL);
@@ -71,6 +66,11 @@ static const NSTimeInterval kRelayNotifyThresholdSeconds = 20.0 * 60.0;
            object:nil];
   PDS_LOG_INFO(@"PDSRelayService started with %lu relays",
                (unsigned long)self.relays.count);
+
+  // Notify all configured relays to crawl this PDS on startup
+  for (NSString *relayHost in self.relays) {
+    [self notifyRelay:relayHost];
+  }
 }
 
 - (void)stop {

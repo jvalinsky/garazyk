@@ -527,3 +527,35 @@
 
 **Connects to:** Test Coverage Expansion (Node #264), Test Failure Remediation (Node #141)
 **Status:** completed
+
+---
+
+## PDS Production Fixes: Database Path, Timeouts, PLC Resolution
+> Node #1105 | Status: completed
+
+**Current state:** PDS (kaszlak) running on DEPLOY_HOST with correct database path, systemd auto-restart, and functional describeRepo (2.2s uncached, 4ms cached). Firehose active with relay WebSocket connections. Per-actor storage architecture confirmed.
+
+**Evolution:**
+1. **Root cause:** `PDSHealthCheck`/`PDSReadinessCheck` used `[PDSServiceDatabases sharedInstance]` which hardcoded `~/.local/share/ATProtoPDS/`, ignoring configured `data_dir: DEPLOY_DIR/pds-data`. Sequencer and DID cache at wrong path were empty.
+2. **Fix:** Added `configureWithServiceDatabases:` to PDSHealthCheck, injected from PDSApplication. Same for PDSReadinessCheck. Pre-populate DIDResolver in-memory cache from persistent did_cache at startup. Created systemd service. Removed stale databases at wrong path.
+3. **GNUstep NSURLSession bug:** Completion handler never fires on timeout, causing `resolveDIDSync:` to block full 30s semaphore. Added `dispatch_after` fallback with unique tracking IDs (GNUstep reuses `taskIdentifier`). Reduces timeout from 30s to `effective.timeout` (configurable).
+4. **PLC HTTPS hangs:** NSURLSession cannot complete HTTPS requests to plc.directory on GNUstep. Added `#ifdef GNUSTEP` path that falls back to `/usr/bin/curl` via `NSTask`. NSURLSession timeout reduced to 2s since curl fallback is ~0.2s. Total: 2.2s for uncached DID resolution.
+5. **Storage discovery:** Records stored in per-actor SQLite files at `{dataDir}/plc/{prefix}/{did}` (no `.db` extension). Main service DB's `records`/`repos`/`blocks` tables are unused legacy schema.
+
+**Evidence:**
+- `PDSSafeHTTPClient.m`: dispatch_after timeout fallback, completedTrackingIDs guard
+- `DID.m`: processPLCResponseData helper, curl NSTask fallback, reduced timeout on GNUstep
+- `PDSApplication.m`: health check wiring, DID cache pre-population
+- `ServiceDatabases.m/h`: enumerateValidCachedDIDsWithError, fixed deprecated attribute
+- `PDSHealthCheck.m/h`: configureWithServiceDatabases
+- `PDSCLIServeCommand.m`: fixed nil check for dataDir config override
+- Systemd: `/etc/systemd/system/kaszlak.service`
+
+**Key Results:**
+- describeRepo (uncached): 30s → **2.2s**
+- describeRepo (cached): 20ms → **4-19ms**
+- Health endpoint: correct `db_path: DEPLOY_DIR/pds-data/service/service.db`
+- Firehose: active relay WebSocket connections, keepalive pings
+- Disk: 33% used (was 91%)
+
+**Connects to:** garazyk PDS Operations (Node #1090)
