@@ -44,12 +44,11 @@ static const NSTimeInterval kKeyRefreshInterval = 3600.0; // Re-fetch JWKS every
     __block NSError *fetchError = nil;
     __block NSInteger statusCode = 0;
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:
-        completionHandler:^(NSData *_Nullable d, NSURLResponse *_Nullable r, NSError *_Nullable e) {
-            data = d;
-            fetchError = e;
-            if ([r isKindOfClass:[NSHTTPURLResponse class]]) {
-                statusCode = [(NSHTTPURLResponse *)r statusCode];
+    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
+            data = data;
+            fetchError = error;
+            if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
+                statusCode = [(NSHTTPURLResponse *)response statusCode];
             }
             dispatch_semaphore_signal(semaphore);
         }];
