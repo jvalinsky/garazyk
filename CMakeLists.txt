@@ -1468,14 +1468,6 @@ echo \"Running all tests...\"
 echo \"Tests complete.\"
 ")
 
-# Make scripts executable
-file(COPY "${CMAKE_BINARY_DIR}/run-fuzzers-limited.sh" DESTINATION "${CMAKE_BINARY_DIR}/scripts/" FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-file(COPY "${CMAKE_BINARY_DIR}/run-fuzzers-extended.sh" DESTINATION "${CMAKE_BINARY_DIR}/scripts/" FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-file(COPY "${CMAKE_BINARY_DIR}/run-clang-tidy.sh" DESTINATION "${CMAKE_BINARY_DIR}/scripts/" FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-file(COPY "${CMAKE_BINARY_DIR}/run-format.sh" DESTINATION "${CMAKE_BINARY_DIR}/scripts/" FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-file(COPY "${CMAKE_BINARY_DIR}/run-scan-build.sh" DESTINATION "${CMAKE_BINARY_DIR}/scripts/" FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-file(COPY "${CMAKE_BINARY_DIR}/run-tests.sh" DESTINATION "${CMAKE_BINARY_DIR}/scripts/" FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-
 # Add custom targets for convenience
 add_custom_target(run-fuzzers-limited COMMAND "${CMAKE_BINARY_DIR}/scripts/run-fuzzers-limited.sh"
   COMMENT "Running fuzzers with limited runs"
@@ -1485,18 +1477,6 @@ add_custom_target(run-fuzzers-limited COMMAND "${CMAKE_BINARY_DIR}/scripts/run-f
 add_custom_target(run-fuzzers-extended COMMAND "${CMAKE_BINARY_DIR}/scripts/run-fuzzers-extended.sh"
   COMMENT "Running comprehensive fuzzing session"
   DEPENDS fuzz_xrpc fuzz_cbor fuzz_http fuzz_jwt fuzz_dpop fuzz_mime fuzz_sqlite fuzz_lexicon fuzz_mst
-)
-
-add_custom_target(clang-tidy COMMAND "${CMAKE_BINARY_DIR}/scripts/run-clang-tidy.sh"
-  COMMENT "Running clang-tidy static analysis"
-)
-
-add_custom_target(format COMMAND "${CMAKE_BINARY_DIR}/scripts/run-format.sh"
-  COMMENT "Formatting source files"
-)
-
-add_custom_target(scan-build COMMAND "${CMAKE_BINARY_DIR}/scripts/run-scan-build.sh"
-  COMMENT "Running Clang Static Analyzer"
 )
 
 add_custom_target(run-tests COMMAND "${CMAKE_BINARY_DIR}/scripts/run-tests.sh"
