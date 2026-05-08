@@ -10,7 +10,7 @@
 
 #import <XCTest/XCTest.h>
 #import "Security/PDSSecurityCompare.h"
-#import "Security/PDSLogRedactor.h"
+#import "Debug/PDSLogRedactor.h"
 #import "Auth/OAuthClientAuthPolicy.h"
 #import "Security/PDSKeyEnvelope.h"
 #import "Auth/CryptoUtils.h"
