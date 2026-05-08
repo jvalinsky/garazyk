@@ -15,6 +15,7 @@
 #import "Core/CID.h"
 #import "App/PDSConfiguration.h"
 #import "Debug/PDSLogger.h"
+#import "Network/PDSSafeHTTPClient.h"
 
 NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
 static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
