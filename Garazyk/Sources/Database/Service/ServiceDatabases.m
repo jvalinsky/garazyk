@@ -828,7 +828,7 @@ static NSString *refreshTokenSessionID(NSString *refreshToken) {
     // Defense-in-depth: warn if seq is invalid (should be positive per ATProto spec)
     if (seq <= 0) {
         PDS_LOG_SYNC_WARN(@"persistEvent called with invalid seq=%lld for type=%@; "
-                           @"this indicates a sequence number bug", seq, type);
+                           @"this indicates a sequence number bug", (long long)seq, type);
     }
     __block BOOL success = NO;
     [self.sequencerPool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {

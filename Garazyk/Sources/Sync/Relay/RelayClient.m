@@ -86,7 +86,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
     components.path = path;
 
     if (self.currentSeq > 0) {
-        components.query = [NSString stringWithFormat:@"cursor=%lld", self.currentSeq];
+        components.query = [NSString stringWithFormat:@"cursor=%lld", (long long)self.currentSeq];
     }
 
     return components.URL;
