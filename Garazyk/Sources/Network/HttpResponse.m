@@ -79,7 +79,7 @@ NS_ASSUME_NONNULL_END
         case HttpStatusCreated: return @"Created";
         case HttpStatusAccepted: return @"Accepted";
         case HttpStatusNoContent: return @"No Content";
-        case 302: return @"Found";
+        case HttpStatusFound: return @"Found";
         case HttpStatusBadRequest: return @"Bad Request";
         case HttpStatusUnauthorized: return @"Unauthorized";
         case HttpStatusForbidden: return @"Forbidden";
