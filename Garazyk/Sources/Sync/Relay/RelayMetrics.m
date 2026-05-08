@@ -164,45 +164,45 @@
         
         [metrics appendString:@"# HELP relay_upstream_connections Number of upstream PDS connections\n"];
         [metrics appendFormat:@"# TYPE relay_upstream_connections gauge\n"];
-        [metrics appendFormat:@"relay_upstream_connections %lld\n\n", self.upstreamConnections];
+        [metrics appendFormat:@"relay_upstream_connections %lld\n\n", (long long)self.upstreamConnections];
         
         [metrics appendString:@"# HELP relay_downstream_connections Number of downstream consumer connections\n"];
         [metrics appendFormat:@"# TYPE relay_downstream_connections gauge\n"];
-        [metrics appendFormat:@"relay_downstream_connections %lld\n\n", self.downstreamConnections];
+        [metrics appendFormat:@"relay_downstream_connections %lld\n\n", (long long)self.downstreamConnections];
         
         [metrics appendString:@"# HELP relay_events_received_total Total events received from upstreams\n"];
         [metrics appendFormat:@"# TYPE relay_events_received_total counter\n"];
-        [metrics appendFormat:@"relay_events_received_total %lld\n\n", self.eventsReceived];
+        [metrics appendFormat:@"relay_events_received_total %lld\n\n", (long long)self.eventsReceived];
         
         [metrics appendString:@"# HELP relay_events_validated_total Total events that passed validation\n"];
         [metrics appendFormat:@"# TYPE relay_events_validated_total counter\n"];
-        [metrics appendFormat:@"relay_events_validated_total %lld\n\n", self.eventsValidated];
+        [metrics appendFormat:@"relay_events_validated_total %lld\n\n", (long long)self.eventsValidated];
         
         [metrics appendString:@"# HELP relay_events_forwarded_total Total events forwarded to downstreams\n"];
         [metrics appendFormat:@"# TYPE relay_events_forwarded_total counter\n"];
-        [metrics appendFormat:@"relay_events_forwarded_total %lld\n\n", self.eventsForwarded];
+        [metrics appendFormat:@"relay_events_forwarded_total %lld\n\n", (long long)self.eventsForwarded];
         
         [metrics appendString:@"# HELP relay_events_dropped_total Total events dropped (validation failure in strict mode)\n"];
         [metrics appendFormat:@"# TYPE relay_events_dropped_total counter\n"];
-        [metrics appendFormat:@"relay_events_dropped_total %lld\n\n", self.eventsDropped];
+        [metrics appendFormat:@"relay_events_dropped_total %lld\n\n", (long long)self.eventsDropped];
         
         [metrics appendString:@"# HELP relay_mst_validation_total MST validation results\n"];
         [metrics appendFormat:@"# TYPE relay_mst_validation_total counter\n"];
-        [metrics appendFormat:@"relay_mst_validation_total{result=\"success\"} %lld\n", self.mstValidationSuccess];
-        [metrics appendFormat:@"relay_mst_validation_total{result=\"failure\"} %lld\n\n", self.mstValidationFailure];
+        [metrics appendFormat:@"relay_mst_validation_total{result=\"success\"} %lld\n", (long long)self.mstValidationSuccess];
+        [metrics appendFormat:@"relay_mst_validation_total{result=\"failure\"} %lld\n\n", (long long)self.mstValidationFailure];
         
         [metrics appendString:@"# HELP relay_signature_validation_total Signature validation results\n"];
         [metrics appendFormat:@"# TYPE relay_signature_validation_total counter\n"];
-        [metrics appendFormat:@"relay_signature_validation_total{result=\"success\"} %lld\n", self.signatureValidationSuccess];
-        [metrics appendFormat:@"relay_signature_validation_total{result=\"failure\"} %lld\n\n", self.signatureValidationFailure];
+        [metrics appendFormat:@"relay_signature_validation_total{result=\"success\"} %lld\n", (long long)self.signatureValidationSuccess];
+        [metrics appendFormat:@"relay_signature_validation_total{result=\"failure\"} %lld\n\n", (long long)self.signatureValidationFailure];
         
         [metrics appendString:@"# HELP relay_current_sequence Current highest sequence number\n"];
         [metrics appendFormat:@"# TYPE relay_current_sequence gauge\n"];
-        [metrics appendFormat:@"relay_current_sequence %lld\n\n", self.currentSequence];
+        [metrics appendFormat:@"relay_current_sequence %lld\n\n", (long long)self.currentSequence];
         
         [metrics appendString:@"# HELP relay_reconnection_total Total reconnection attempts\n"];
         [metrics appendFormat:@"# TYPE relay_reconnection_total counter\n"];
-        [metrics appendFormat:@"relay_reconnection_total %lld\n", self.reconnectionCount];
+        [metrics appendFormat:@"relay_reconnection_total %lld\n", (long long)self.reconnectionCount];
         
         output = [metrics copy];
     });

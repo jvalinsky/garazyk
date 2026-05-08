@@ -125,7 +125,7 @@ static NSUInteger PLCReadVarint(const uint8_t *bytes, NSUInteger maxLength, uint
         if (error) {
             *error = [NSError errorWithDomain:PLCDIDKeyErrorDomain
                                          code:6
-                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Unsupported multicodec: 0x%llx", multicodec]}];
+                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Unsupported multicodec: 0x%llx", (unsigned long long)multicodec]}];
         }
         return nil;
     }
