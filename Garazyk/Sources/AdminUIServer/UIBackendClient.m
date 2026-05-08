@@ -1,6 +1,7 @@
 #import "AdminUIServer/UIBackendClient.h"
 #import "AdminUIServer/UIServiceConfig.h"
 #import "Debug/PDSLogger.h"
+#import "Network/PDSSafeHTTPClient.h"
 
 static NSString *UIBackendEscapedPathSegment(NSString *segment) {
     if (![segment isKindOfClass:[NSString class]]) {
@@ -1614,13 +1615,12 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
     __block NSError *requestError = nil;
     dispatch_semaphore_t sem = dispatch_semaphore_create(0);
 
-    NSURLSession *session = [NSURLSession sharedSession];
-    [[session performSafeDataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *err) {
+    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *response, NSError *err) {
         responseData = data;
         httpResponse = [response isKindOfClass:[NSHTTPURLResponse class]] ? (NSHTTPURLResponse *)response : nil;
         requestError = err;
         dispatch_semaphore_signal(sem);
-    }] resume];
+    }];
 
     dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(35.0 * NSEC_PER_SEC)));
 
@@ -1709,13 +1709,12 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
     __block NSError *requestError = nil;
     dispatch_semaphore_t sem = dispatch_semaphore_create(0);
 
-    NSURLSession *session = [NSURLSession sharedSession];
-    [[session performSafeDataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *err) {
+    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *response, NSError *err) {
         responseData = data;
         httpResponse = [response isKindOfClass:[NSHTTPURLResponse class]] ? (NSHTTPURLResponse *)response : nil;
         requestError = err;
         dispatch_semaphore_signal(sem);
-    }] resume];
+    }];
 
     dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(35.0 * NSEC_PER_SEC)));
 
@@ -1796,14 +1795,13 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
     __block NSInteger statusCode = 0;
     dispatch_semaphore_t sem = dispatch_semaphore_create(0);
 
-    NSURLSession *session = [NSURLSession sharedSession];
-    [[session performSafeDataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *response, NSError *error) {
         if (!error && [response isKindOfClass:[NSHTTPURLResponse class]]) {
             statusCode = ((NSHTTPURLResponse *)response).statusCode;
         }
         (void)data;
         dispatch_semaphore_signal(sem);
-    }] resume];
+    }];
 
     dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(6.0 * NSEC_PER_SEC)));
     return statusCode;

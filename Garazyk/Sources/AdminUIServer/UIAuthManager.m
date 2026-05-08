@@ -8,6 +8,7 @@
 #if !TARGET_OS_LINUX
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
+#import <CommonCrypto/CommonCryptor.h>
 #import <Security/SecRandom.h>
 #else
 #import "Compat/PlatformShims/CommonCrypto/CommonDigest.h"
@@ -73,8 +74,8 @@ static NSString *generateCSPRNGToken(NSUInteger byteCount) {
 @property (nonatomic, copy) NSString *passwordHash;
 /// Active sessions: keyed by token hash, value is session entry with expiry
 @property (nonatomic, strong) NSMutableDictionary<NSString *, UIAuthSessionEntry *> *activeSessions;
-/// CSRF nonces: keyed by nonce hash, value is expiry time
-@property (nonatomic, strong) NSMutableDictionary<NSString *, NSTimeInterval> *csrfNonces;
+/// CSRF nonces: keyed by nonce hash, value is expiry time (wrapped in NSNumber)
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *csrfNonces;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t stateQueue;
 
 @end
@@ -252,7 +253,7 @@ static NSString *generateCSPRNGToken(NSUInteger byteCount) {
     NSString *nonceHash = sha256Hex(nonceHeader);
     __block BOOL valid = NO;
     dispatch_sync(self.stateQueue, ^{
-        NSTimeInterval expiry = self.csrfNonces[nonceHash].doubleValue;
+        NSTimeInterval expiry = [self.csrfNonces[nonceHash] doubleValue];
         if (expiry > 0 && [[NSDate date] timeIntervalSince1970] < expiry) {
             valid = YES;
             // Remove used nonce (one-time use)

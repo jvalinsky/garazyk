@@ -9,6 +9,7 @@
 #import "Identity/ATProtoHandleValidator.h"
 #import "Auth/Secp256k1.h"
 #import "Auth/CryptoUtils.h"
+#import "Network/PDSSafeHTTPClient.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/CID.h"
 #import "PLC/PLCOperation.h"
@@ -413,7 +414,7 @@
     __block NSError *reqError = nil;
     __block BOOL success = NO;
     
-    [[[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:req options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *resp, NSError *err) {
+    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:req options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *resp, NSError *err) {
         if (err) {
             reqError = err;
         } else {
@@ -426,7 +427,7 @@
             }
         }
         dispatch_semaphore_signal(sema);
-    }] resume];
+    }];
     
     dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
     
@@ -624,7 +625,7 @@
     
     dispatch_semaphore_t sema = dispatch_semaphore_create(0);
     __block BOOL success = NO;
-    [[[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:req options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *resp, NSError *err) {
+    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:req options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *resp, NSError *err) {
         if (!err && [(NSHTTPURLResponse *)resp statusCode] == 200) {
             success = YES;
         } else {
@@ -632,7 +633,7 @@
             if (context.verbose) PDS_LOG_ERROR(@"PLC Post Failed: %ld %@", (long)[(NSHTTPURLResponse *)resp statusCode], body);
         }
         dispatch_semaphore_signal(sema);
-    }] resume];
+    }];
     dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
 
     return success;
