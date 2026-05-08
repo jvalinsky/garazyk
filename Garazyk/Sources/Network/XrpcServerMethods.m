@@ -480,9 +480,10 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
                                                                   did:nil
                                                                 error:&error];
 
-        if (error) {
+        if (error || !result) {
             response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"AccountCreationFailed", @"message": error.localizedDescription}];
+            [response setJsonBody:@{@"error": @"AccountCreationFailed",
+                                    @"message": error.localizedDescription ?: @"Account creation failed without a result"}];
             return;
         }
 
