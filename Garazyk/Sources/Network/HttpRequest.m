@@ -98,11 +98,15 @@ static BOOL PDSHttpRequestIsTrustedProxyAddress(NSString *remoteAddress) {
       if (normalizedQueryString.length == 0) {
         normalizedQueryString = embeddedQuery;
       }
-      if (normalizedQueryParams.count == 0) {
-        NSDictionary<NSString *, id> *parsed =
-            [HttpParsing parseQueryString:normalizedQueryString];
-        normalizedQueryParams = parsed ?: @{};
-      }
+    }
+
+    // Parse queryString into queryParams when no explicit queryParams were
+    // provided. This handles the case where callers pass a queryString but
+    // an empty queryParams dictionary.
+    if (normalizedQueryParams.count == 0 && normalizedQueryString.length > 0) {
+      NSDictionary<NSString *, id> *parsed =
+          [HttpParsing parseQueryString:normalizedQueryString];
+      normalizedQueryParams = parsed ?: @{};
     }
 
     _method = method;
