@@ -39,6 +39,7 @@
 #import "Admin/Diagnostics/Analytics/PDSSequencerAnalyticsCollector.h"
 #import "Admin/Diagnostics/PDSSequencerHealthHandler.h"
 #import "Core/PDSServiceContainer.h"
+#import "Core/DID.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Debug/PDSLogger.h"
 #import "Email/PDSEmailProvider.h"
@@ -301,7 +302,17 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     _serviceDatabases.refreshTokenTTLSeconds = _configuration.refreshTokenTtlSeconds;
     
     [[PDSHealthCheck sharedInstance] configureWithServiceDatabases:_serviceDatabases];
-     
+
+    // Pre-populate DIDResolver in-memory cache from persistent did_cache pool
+    {
+        DIDResolver *resolver = [DIDResolver sharedResolver];
+        NSArray *cachedDIDs = [_serviceDatabases enumerateValidCachedDIDsWithError:nil];
+        for (NSDictionary *entry in cachedDIDs) {
+            [resolver seedCacheWithDID:entry[@"did"] documentJSON:entry[@"document"]];
+        }
+        PDS_LOG_INFO_C(PDSLogComponentCore, @"Pre-populated DIDResolver cache with %lu entries from persistent store", (unsigned long)cachedDIDs.count);
+    }
+
     _userDatabasePool = [[PDSDatabasePool alloc] initWithDbDirectory:_dataDirectory maxSize:userMaxSize];
     _userDatabasePool.masterSecret = _configuration.masterSecret;
      
