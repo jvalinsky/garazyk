@@ -13,6 +13,7 @@
 
 #import "Identity/HandleResolver.h"
 #import "Identity/ATProtoHandleValidator.h"
+#import "Network/PDSSafeHTTPClient.h"
 #import "Network/SSRFValidator.h"
 #import "Network/HttpRetryPolicy.h"
 
@@ -42,11 +43,10 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
     dispatch_queue_t _rateLimitQueue;
 }
 @property (nonatomic, strong) HttpRetryPolicy *retryPolicy;
-#if defined(__APPLE__)
-- (void)executeHandleHTTPSRequest:(NSURLRequest *)request
-                          attempt:(NSInteger)attempt
-                       completion:(void (^)(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error))completion;
-#endif
+- (void)executeSafeHTTPSRequest:(NSURLRequest *)request
+                        options:(PDSSafeHTTPClientOptions *)options
+                        attempt:(NSInteger)attempt
+                     completion:(void (^)(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error))completion;
 @end
 
 @implementation HandleResolver
@@ -63,19 +63,6 @@ static BOOL PDSHandleResolverRunningTests(void) {
     self = [super init];
     if (self) {
         BOOL isTestEnv = PDSHandleResolverRunningTests();
-#if defined(__APPLE__)
-        NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
-        if (isTestEnv) {
-            config.timeoutIntervalForRequest = 2.0;
-            config.timeoutIntervalForResource = 5.0;
-        } else {
-            config.timeoutIntervalForRequest = 10.0;
-            config.timeoutIntervalForResource = 30.0;
-        }
-        _session = [NSURLSession sessionWithConfiguration:config];
-#else
-        _session = nil;
-#endif
         _resolutionCache = [[NSCache alloc] init];
         _failureCache = [[NSCache alloc] init];
         _cacheExpirationInterval = 300.0;
@@ -84,7 +71,6 @@ static BOOL PDSHandleResolverRunningTests(void) {
         _retryPolicy = [[HttpRetryPolicy alloc] init];
         if (isTestEnv) {
             _retryPolicy.initialDelay = 0.01;
-            _skipSSRFCheck = YES;
         }
         _rateLimitQueue = dispatch_queue_create("com.atproto.handle.ratelimit", DISPATCH_QUEUE_SERIAL);
     }
@@ -123,30 +109,9 @@ static BOOL PDSHandleResolverRunningTests(void) {
     /*! Normalize handle to standard format. */
     handle = [ATProtoHandleValidator normalizeHandle:handle];
 
-    /*! Prevent SSRF attacks by validating public IP resolution. */
-    if (!self.skipSSRFCheck) {
-        NSError *ssrfError = nil;
-        if (![SSRFValidator validateHostResolvesToPublicIP:handle error:&ssrfError]) {
-            NSInteger mappedCode = HandleErrorNetworkError;
-            NSString *mappedMessage = ssrfError.localizedDescription ?: @"Failed to resolve hostname";
-            if (ssrfError.code == SSRFValidatorErrorPrivateAddress) {
-                mappedCode = HandleErrorSSRFAttempt;
-                mappedMessage = @"Handle resolves to private IP address (SSRF protection)";
-            }
-
-            NSMutableDictionary *userInfo = [NSMutableDictionary dictionaryWithObject:mappedMessage
-                                                                               forKey:NSLocalizedDescriptionKey];
-            if (ssrfError) {
-                userInfo[NSUnderlyingErrorKey] = ssrfError;
-            }
-
-            NSError *mappedError = [NSError errorWithDomain:HandleErrorDomain
-                                                       code:mappedCode
-                                                   userInfo:userInfo];
-            completion(nil, mappedError);
-            return;
-        }
-    }
+    /*! Prevent SSRF attacks — validation is handled by PDSSafeHTTPClient
+        during the actual HTTPS request, eliminating the validate-before-fetch
+        TOCTOU gap. The client will reject requests to private IP addresses. */
 
     /*! Use ATProto well-known endpoint for DID resolution. */
     NSString *urlString = [NSString stringWithFormat:@"https://%@/.well-known/atproto-did", handle];
@@ -219,7 +184,7 @@ static BOOL PDSHandleResolverRunningTests(void) {
 
 - (void)resolveHandleViaHTTPS:(NSString *)handle
                     completion:(void (^)(NSString * _Nullable did, NSError * _Nullable error))completion {
-    
+
     if (PDSHandleResolverRunningTests()) {
         if ([handle hasSuffix:@".test"] || [handle hasSuffix:@".local"] || [handle hasSuffix:@".nonexistent"] || [handle containsString:@"nonexistent"]) {
             NSError *error = [NSError errorWithDomain:HandleErrorDomain
@@ -234,7 +199,7 @@ static BOOL PDSHandleResolverRunningTests(void) {
 
     NSString *urlString = [NSString stringWithFormat:@"https://%@/.well-known/atproto-did", handle];
     NSURL *url = [NSURL URLWithString:urlString];
-    
+
     if (!url) {
         NSError *error = [NSError errorWithDomain:HandleErrorDomain
                                           code:HandleErrorInvalidFormat
@@ -242,13 +207,55 @@ static BOOL PDSHandleResolverRunningTests(void) {
         completion(nil, error);
         return;
     }
-    
-#if defined(__APPLE__)
+
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
-    [self executeHandleHTTPSRequest:request
-                            attempt:0
-                         completion:^(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
+
+    PDSSafeHTTPClientOptions *safeOptions = [[PDSSafeHTTPClientOptions alloc] init];
+    safeOptions.timeout = 10.0;
+    safeOptions.maxResponseBytes = 1024; // DID responses are tiny
+    safeOptions.allowHTTP = NO;
+    safeOptions.allowPrivateHosts = PDSHandleResolverRunningTests();
+    safeOptions.followRedirects = YES;
+
+    [self executeSafeHTTPSRequest:request
+                           options:safeOptions
+                           attempt:0
+                        completion:^(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
+        // Map PDSSafeHTTPClient SSRF errors to HandleErrorDomain
+        if (error && [error.domain isEqualToString:PDSSafeHTTPClientErrorDomain]) {
+            if (error.code == PDSSafeHTTPClientErrorSSRFBlocked ||
+                error.code == PDSSafeHTTPClientErrorRedirectBlocked) {
+                NSError *ssrfError = [NSError errorWithDomain:HandleErrorDomain
+                                                        code:HandleErrorSSRFAttempt
+                                                    userInfo:@{
+                                                        NSLocalizedDescriptionKey: @"Handle resolves to private IP address (SSRF protection)",
+                                                        NSUnderlyingErrorKey: error
+                                                    }];
+                completion(nil, ssrfError);
+                return;
+            }
+            if (error.code == PDSSafeHTTPClientErrorUnsupportedScheme) {
+                NSError *schemeError = [NSError errorWithDomain:HandleErrorDomain
+                                                           code:HandleErrorInvalidFormat
+                                                       userInfo:@{
+                                                           NSLocalizedDescriptionKey: @"Only HTTPS is allowed for handle resolution",
+                                                           NSUnderlyingErrorKey: error
+                                                       }];
+                completion(nil, schemeError);
+                return;
+            }
+            // Other safe client errors (invalid URL, response too large) map to network error
+            NSError *networkError = [NSError errorWithDomain:HandleErrorDomain
+                                                       code:HandleErrorNetworkError
+                                                   userInfo:@{
+                                                       NSLocalizedDescriptionKey: error.localizedDescription ?: @"Network error during handle resolution",
+                                                       NSUnderlyingErrorKey: error
+                                                   }];
+            completion(nil, networkError);
+            return;
+        }
+
         if (error) {
             completion(nil, error);
             return;
@@ -291,73 +298,16 @@ static BOOL PDSHandleResolverRunningTests(void) {
 
         completion(did, nil);
     }];
-    
-#else
-    /*! Linux (GNUstep): Use NSURLConnection with synchronous request on background queue. */
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        NSURLRequest *request = [NSURLRequest requestWithURL:url];
-        NSURLResponse *response = nil;
-        NSError *error = nil;
-        NSData *data = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
-        
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (error) {
-                completion(nil, error);
-                return;
-            }
-            
-            NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
-            if (httpResponse.statusCode != 200) {
-                NSError *resolveError = [NSError errorWithDomain:HandleErrorDomain
-                                                          code:HandleErrorNotFound
-                                                      userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"HTTP %ld when resolving handle", (long)httpResponse.statusCode]}];
-                completion(nil, resolveError);
-                return;
-            }
-            
-            if (!data) {
-                NSError *resolveError = [NSError errorWithDomain:HandleErrorDomain
-                                                          code:HandleErrorResolutionFailed
-                                                      userInfo:@{NSLocalizedDescriptionKey: @"No data received from handle resolution"}];
-                completion(nil, resolveError);
-                return;
-            }
-            
-            NSString *did = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-            did = [did stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-            
-            if (!did || did.length == 0) {
-                NSError *resolveError = [NSError errorWithDomain:HandleErrorDomain
-                                                          code:HandleErrorResolutionFailed
-                                                      userInfo:@{NSLocalizedDescriptionKey: @"Empty DID in handle resolution response"}];
-                completion(nil, resolveError);
-                return;
-            }
-            
-            if (![did hasPrefix:@"did:"]) {
-                NSError *resolveError = [NSError errorWithDomain:HandleErrorDomain
-                                                          code:HandleErrorResolutionFailed
-                                                      userInfo:@{NSLocalizedDescriptionKey: @"Response does not contain a valid DID"}];
-                completion(nil, resolveError);
-                return;
-            }
-            
-            completion(did, nil);
-        });
-    });
-#endif
 }
 
-#if defined(__APPLE__)
-- (void)executeHandleHTTPSRequest:(NSURLRequest *)request
-                          attempt:(NSInteger)attempt
-                       completion:(void (^)(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error))completion {
-    NSURLSessionDataTask *task = [self.session dataTaskWithRequest:request
-                                                 completionHandler:^(NSData * _Nullable data,
-                                                                     NSURLResponse * _Nullable response,
-                                                                     NSError * _Nullable error) {
-        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
-        NSInteger statusCode = httpResponse ? httpResponse.statusCode : 0;
+- (void)executeSafeHTTPSRequest:(NSURLRequest *)request
+                        options:(PDSSafeHTTPClientOptions *)options
+                        attempt:(NSInteger)attempt
+                     completion:(void (^)(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error))completion {
+    [[PDSSafeHTTPClient sharedClient] dataTaskWithRequest:request
+                                                   options:options
+                                                completion:^(NSData *data, NSHTTPURLResponse *response, NSError *error) {
+        NSInteger statusCode = response ? response.statusCode : 0;
         HttpRetryResult *retryResult = [self.retryPolicy evaluateStatusCode:statusCode
                                                                 networkError:error
                                                                attemptNumber:attempt];
@@ -365,9 +315,10 @@ static BOOL PDSHandleResolverRunningTests(void) {
         if (retryResult.decision == HttpRetryDecisionRetryAfter) {
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(retryResult.retryDelay * NSEC_PER_SEC)),
                            dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-                [self executeHandleHTTPSRequest:request
-                                        attempt:attempt + 1
-                                     completion:completion];
+                [self executeSafeHTTPSRequest:request
+                                      options:options
+                                      attempt:attempt + 1
+                                   completion:completion];
             });
             return;
         }
@@ -377,11 +328,9 @@ static BOOL PDSHandleResolverRunningTests(void) {
             return;
         }
 
-        completion(data, httpResponse, nil);
+        completion(data, response, nil);
     }];
-    [task resume];
 }
-#endif
 
 - (void)resolveHandles:(NSArray<NSString *> *)handles
              completion:(void (^)(NSDictionary<NSString *, NSString *> * _Nullable results, NSError * _Nullable error))completion {

@@ -22,7 +22,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-search_dir="$root/ATProtoPDS/Sources"
+search_dir="$root/Garazyk/Sources"
 
 if [ ! -d "$search_dir" ]; then
   search_dir="$root"
