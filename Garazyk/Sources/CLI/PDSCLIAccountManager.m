@@ -190,6 +190,14 @@
 
     NSString *pdsHostname = [self pdsHostnameForContext:context];
     NSString *pdsEndpoint = [self pdsServiceEndpointForContext:context];
+
+    if ([PDSConfiguration sharedConfiguration].masterSecret.length == 0) {
+        if (context.verbose) {
+            PDS_LOG_ERROR(@"PDS_MASTER_SECRET not configured");
+        }
+        [db close];
+        return NO;
+    }
     
     // Generate Identity Keys
     Secp256k1 *signer = [Secp256k1 shared];
@@ -225,14 +233,32 @@
 
     // Save keys to ActorStore
     PDSDatabasePool *pool = [[PDSDatabasePool alloc] initWithDbDirectory:[self dataDirForContext:context] maxSize:10];
-    PDSActorStore *store = [pool storeForDid:did error:&error];
-    if (store) {
-        [store importSigningKey:keyPair.privateKey error:nil];
-        [store storeRotationKeyPrivate:rotationKeyPair.privateKey
+    NSError *storeError = nil;
+    PDSActorStore *store = [pool storeForDid:did error:&storeError];
+    if (!store) {
+        if (context.verbose) {
+            PDS_LOG_ERROR(@"Failed to open ActorStore to save keys: %@", storeError.localizedDescription);
+        }
+        [db close];
+        return NO;
+    }
+
+    if (![store importSigningKey:keyPair.privateKey error:&storeError]) {
+        if (context.verbose) {
+            PDS_LOG_ERROR(@"Failed to import signing key: %@", storeError.localizedDescription);
+        }
+        [db close];
+        return NO;
+    }
+
+    if (![store storeRotationKeyPrivate:rotationKeyPair.privateKey
                               publicKey:rotationKeyPair.compressedPublicKey
-                                  error:nil];
-    } else if (context.verbose) {
-        PDS_LOG_ERROR(@"Failed to open ActorStore to save keys: %@", error.localizedDescription);
+                                  error:&storeError]) {
+        if (context.verbose) {
+            PDS_LOG_ERROR(@"Failed to store rotation key: %@", storeError.localizedDescription);
+        }
+        [db close];
+        return NO;
     }
 
     if (context.verbose) {
@@ -333,7 +359,7 @@
         @"prev": [NSNull null]
     };
 
-    // 4. Sign the operation first (DID is derived from the SIGNED genesis op)
+    // 4. Encode and sign the genesis operation.
     NSError *cborError = nil;
     NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:opData error:&cborError];
     if (!cborData) {
@@ -358,10 +384,9 @@
     NSMutableDictionary *signedOp = [opData mutableCopy];
     signedOp[@"sig"] = [CryptoUtils base64URLEncode:signature];
     
-    // 5. Generate DID from the SIGNED genesis operation
-    // Per the did:plc spec, the DID is SHA-256(DAG-CBOR(signedGenesisOp))[:15] in base32lower
-    NSString *did = [PLCOperation calculateDIDForData:signedOp];
-    PDS_LOG_INFO(@"Calculated DID from signed genesis op: %@", did);
+    // 5. Generate DID from the unsigned operation data, matching PLC validation.
+    NSString *did = [PLCOperation calculateDIDForData:opData];
+    PDS_LOG_INFO(@"Calculated DID from unsigned genesis op: %@", did);
     
     // 6. POST genesis operation to PLC Server
     PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
