@@ -52,10 +52,10 @@
 
     // For this test, we just provide a dummy signature
     PLCOperation *op = [[PLCOperation alloc] init];
-    op.did = [PLCOperation calculateDIDForData:opData];
     op.sig = @"invalid_signature";
     op.data = opData;
     op.prev = nil;
+    op.did = [PLCOperation calculateDIDForSignedOperation:[op toDictionary]];
 
     [self.store appendOperation:op nullifyCIDs:@[] error:nil];
 
@@ -83,10 +83,10 @@
     NSData *op1Sig = [keyPair signHash:op1Hash error:nil];
 
     PLCOperation *op1 = [[PLCOperation alloc] init];
-    op1.did = [PLCOperation calculateDIDForData:op1Data];
     op1.sig = [self base64URLEncode:op1Sig];
     op1.data = op1Data;
     op1.prev = nil;
+    op1.did = [PLCOperation calculateDIDForSignedOperation:[op1 toDictionary]];
     [self.store appendOperation:op1 nullifyCIDs:@[] error:nil];
 
     // 2. Second operation with WRONG prev hash
@@ -134,10 +134,10 @@
     NSData *op1Sig = [key1 signHash:op1Hash error:nil];
 
     PLCOperation *op1 = [[PLCOperation alloc] init];
-    op1.did = [PLCOperation calculateDIDForData:op1Data];
     op1.sig = [self base64URLEncode:op1Sig];
     op1.data = op1Data;
     op1.prev = nil;
+    op1.did = [PLCOperation calculateDIDForSignedOperation:[op1 toDictionary]];
     [self.store appendOperation:op1 nullifyCIDs:@[] error:nil];
 
     // 2. Second operation signed by key1, rotating to key2
@@ -201,10 +201,10 @@
     NSData *op1Sig = [keyPair signHash:op1Hash error:nil];
 
     PLCOperation *op1 = [[PLCOperation alloc] init];
-    op1.did = [PLCOperation calculateDIDForData:op1Data];
     op1.sig = [self base64URLEncode:op1Sig];
     op1.data = op1Data;
     op1.prev = nil;
+    op1.did = [PLCOperation calculateDIDForSignedOperation:[op1 toDictionary]];
     [self.store appendOperation:op1 nullifyCIDs:@[] error:nil];
 
     NSString *prevCid = [PLCOperation calculateCIDForOperation:[op1 toDictionary] error:nil];
@@ -309,10 +309,10 @@
     XCTAssertNotNil(rawSig, @"Low-S normalization failed: %@", normalizeError);
     
     PLCOperation *op = [[PLCOperation alloc] init];
-    op.did = [PLCOperation calculateDIDForData:opData];
     op.sig = [self base64URLEncode:rawSig];
     op.data = opData;
     op.prev = nil;
+    op.did = [PLCOperation calculateDIDForSignedOperation:[op toDictionary]];
     
     [self.store appendOperation:op nullifyCIDs:@[] error:nil];
     
