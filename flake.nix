@@ -26,6 +26,9 @@
           gnumake
           cmake
           sqlite
+          shellcheck
+          shfmt
+          jq
         ];
 
         devTools = with pkgs; [
@@ -33,6 +36,8 @@
           lldb
           bear
         ];
+
+        formatter = pkgs.nixpkgs-fmt;
 
         darwinFrameworks = pkgs.lib.optionals isDarwin (with pkgs; [
           xcbuild
@@ -66,14 +71,28 @@
         '';
 
       in {
+        inherit formatter;
+
         devShells.default = pkgs.mkShell {
           buildInputs = gnustepPackages ++ darwinFrameworks;
           nativeBuildInputs = buildTools ++ devTools;
-
+          
+          # Add script check target
           shellHook = ''
             echo "Objective-C development environment (${system})"
             echo "  clang --version: $(clang --version | head -1)"
+            echo "  Script check enabled: run 'nix flake check'"
             ${if isLinux then linuxShellHook else darwinShellHook}
+          '';
+        };
+
+        checks = {
+          shell-check = pkgs.runCommand "shell-check" { buildInputs = [ pkgs.shellcheck ]; } ''
+            FILES=$(find . -name "*.sh" -not -path "./vendor/*" -not -path "./build/*" -print0)
+            if [ -n "$FILES" ]; then
+              echo "$FILES" | xargs -0 shellcheck
+            fi
+            touch $out
           '';
         };
 
