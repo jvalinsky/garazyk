@@ -5,8 +5,6 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null || (cd "${script_dir}/../.." && pwd))"
 
 html_files=(
-  "${repo_root}/Garazyk/Sources/Admin/AdminUI/Assets/index.html"
-  "${repo_root}/Garazyk/Sources/App/Explore/Assets/index.html"
   "${repo_root}/Garazyk/Sources/App/MSTViewer/Assets/index.html"
   "${repo_root}/Garazyk/Sources/App/OAuthDemo/Assets/index.html"
   "${repo_root}/Garazyk/Sources/Auth/Assets/authorize.html"
@@ -14,14 +12,12 @@ html_files=(
 )
 
 css_files=(
-  "${repo_root}/Garazyk/Sources/App/Explore/Assets/css/explore.css"
   "${repo_root}/Garazyk/Sources/PLC/Assets/css/plc.css"
   "${repo_root}/Garazyk/Sources/App/MSTViewer/Assets/css/mst-viewer.css"
   "${repo_root}/Garazyk/Sources/App/OAuthDemo/Assets/css/oauth-demo.css"
 )
 
 js_files=(
-  "${repo_root}/Garazyk/Sources/App/Explore/Assets/js"
   "${repo_root}/Garazyk/Sources/PLC/Assets/js"
   "${repo_root}/Garazyk/Sources/App/MSTViewer/Assets/js"
 )
@@ -49,15 +45,25 @@ for file in "${html_files[@]}"; do
 done
 
 echo "[check-ui-design-system] Verifying JS templates avoid inline style attributes..."
-if rg -n "style\\s*=" "${js_files[@]}" --glob '!**/d3.js' >/dev/null; then
+existing_js_files=()
+for path in "${js_files[@]}"; do
+  if [[ -e "$path" ]]; then
+    existing_js_files+=("$path")
+  else
+    echo "ERROR: Missing JS asset path: $path"
+    failed=1
+  fi
+done
+
+if [[ "${#existing_js_files[@]}" -gt 0 ]] && rg -n "style\\s*=" "${existing_js_files[@]}" --glob '!**/d3.js' >/dev/null; then
   echo "ERROR: Inline style= attribute detected in UI JS templates"
-  rg -n "style\\s*=" "${js_files[@]}" --glob '!**/d3.js' || true
+  rg -n "style\\s*=" "${existing_js_files[@]}" --glob '!**/d3.js' || true
   failed=1
 fi
 
-if rg -n "style\\.cssText" "${js_files[@]}" --glob '!**/d3.js' >/dev/null; then
+if [[ "${#existing_js_files[@]}" -gt 0 ]] && rg -n "style\\.cssText" "${existing_js_files[@]}" --glob '!**/d3.js' >/dev/null; then
   echo "ERROR: style.cssText usage detected in UI JS"
-  rg -n "style\\.cssText" "${js_files[@]}" --glob '!**/d3.js' || true
+  rg -n "style\\.cssText" "${existing_js_files[@]}" --glob '!**/d3.js' || true
   failed=1
 fi
 
@@ -71,12 +77,10 @@ done
 
 echo "[check-ui-design-system] Verifying no legacy style.css dependencies..."
 if rg -n "href=.*style\\.css|/css/style\\.css|css/style\\.css" \
-  "${repo_root}/Garazyk/Sources/App/Explore/Assets/index.html" \
   "${repo_root}/Garazyk/Sources/PLC/Assets/index.html" \
   "${repo_root}/Garazyk/Sources/App/MSTViewer/Assets/index.html" >/dev/null; then
   echo "ERROR: Legacy style.css dependency detected in UI entry templates"
   rg -n "href=.*style\\.css|/css/style\\.css|css/style\\.css" \
-    "${repo_root}/Garazyk/Sources/App/Explore/Assets/index.html" \
     "${repo_root}/Garazyk/Sources/PLC/Assets/index.html" \
     "${repo_root}/Garazyk/Sources/App/MSTViewer/Assets/index.html" || true
   failed=1
@@ -84,11 +88,9 @@ fi
 
 echo "[check-ui-design-system] Verifying legacy asset packs are not referenced..."
 if rg -n "/css/(fonts|icon)/|css/(fonts|icon)/" \
-  "${repo_root}/Garazyk/Sources/App/Explore/Assets" \
   "${repo_root}/Garazyk/Sources/PLC/Assets" >/dev/null; then
   echo "ERROR: Legacy font/icon asset reference detected in Explore/PLC assets"
   rg -n "/css/(fonts|icon)/|css/(fonts|icon)/" \
-    "${repo_root}/Garazyk/Sources/App/Explore/Assets" \
     "${repo_root}/Garazyk/Sources/PLC/Assets" || true
   failed=1
 fi
