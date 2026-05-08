@@ -3,6 +3,11 @@
 #import "Debug/PDSLogger.h"
 #import "Compat/PDSTypes.h"
 
+// Suppress -Wblock-capture-autoreleasing: the error out-parameter captured
+// by the completion block is written before dispatch_semaphore_signal,
+// and the caller waits on the semaphore, so the autorelease pool is valid.
+#pragma clang diagnostic ignored "-Wblock-capture-autoreleasing"
+
 #ifdef LINUX
 #define PDS_THUMB_TASK_SET_EXECUTABLE(task, path) task.launchPath = path
 #define PDS_THUMB_TASK_LAUNCH(task, error) ([task launch], YES)
