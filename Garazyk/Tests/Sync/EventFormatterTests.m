@@ -240,6 +240,75 @@
     XCTAssertEqual(EventFormatterErrorCodeDecodingFailed, 5001);
 }
 
+#pragma mark - Seq Round-Trip Tests
+
+- (void)testCommitEventSeqRoundTrip {
+    NSError *error = nil;
+    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    event.seq = 42;
+    event.repo = @"did:plc:seqroundtrip";
+    event.commit = [CID cidWithDigest:[@"seqrt" dataUsingEncoding:NSUTF8StringEncoding] codec:0x71];
+    event.rev = @"3kseqrt";
+    event.time = @"2024-01-01T00:00:00Z";
+    event.ops = @[];
+    event.blobs = @[];
+
+    NSData *encoded = [self.formatter encodeCommitEvent:event error:&error];
+    XCTAssertNotNil(encoded);
+    XCTAssertNil(error);
+
+    NSInteger op = 0;
+    NSString *msgType = nil;
+    NSDictionary *decoded = [self.formatter decodeEventFromData:encoded op:&op msgType:&msgType error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(decoded);
+    XCTAssertEqualObjects(msgType, @"#commit");
+    XCTAssertEqualObjects(decoded[@"seq"], @42, @"seq should survive round-trip");
+}
+
+- (void)testIdentityEventSeqRoundTrip {
+    NSError *error = nil;
+    FirehoseIdentityEvent *event = [[FirehoseIdentityEvent alloc] init];
+    event.seq = 99;
+    event.did = @"did:plc:identityseqrt";
+    event.time = @"2024-01-01T00:00:00Z";
+    event.handle = @"handle.bsky.social";
+
+    NSData *encoded = [self.formatter encodeIdentityEvent:event error:&error];
+    XCTAssertNotNil(encoded);
+    XCTAssertNil(error);
+
+    NSInteger op = 0;
+    NSString *msgType = nil;
+    NSDictionary *decoded = [self.formatter decodeEventFromData:encoded op:&op msgType:&msgType error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(decoded);
+    XCTAssertEqualObjects(msgType, @"#identity");
+    XCTAssertEqualObjects(decoded[@"seq"], @99, @"seq should survive round-trip");
+}
+
+- (void)testAccountEventSeqRoundTrip {
+    NSError *error = nil;
+    FirehoseAccountEvent *event = [[FirehoseAccountEvent alloc] init];
+    event.seq = 777;
+    event.did = @"did:plc:accountseqrt";
+    event.active = NO;
+    event.status = @"deactivated";
+    event.time = @"2024-01-01T00:00:00Z";
+
+    NSData *encoded = [self.formatter encodeAccountEvent:event error:&error];
+    XCTAssertNotNil(encoded);
+    XCTAssertNil(error);
+
+    NSInteger op = 0;
+    NSString *msgType = nil;
+    NSDictionary *decoded = [self.formatter decodeEventFromData:encoded op:&op msgType:&msgType error:&error];
+    XCTAssertNil(error);
+    XCTAssertNotNil(decoded);
+    XCTAssertEqualObjects(msgType, @"#account");
+    XCTAssertEqualObjects(decoded[@"seq"], @777, @"seq should survive round-trip");
+}
+
 - (void)testOpsCIDRoundTrip {
     // Verify that CID objects in ops survive encode→decode round-trip
     NSError *error = nil;
