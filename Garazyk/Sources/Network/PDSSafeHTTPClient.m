@@ -30,7 +30,8 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
 @interface PDSSafeHTTPClient () <NSURLSessionTaskDelegate>
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSError *> *redirectErrors;
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, PDSSafeHTTPClientOptions *> *taskOptions;
-@property (nonatomic, strong) NSMutableSet<NSNumber *> *completedTasks;
+@property (nonatomic, strong) NSMutableSet<NSNumber *> *completedTrackingIDs;
+@property (nonatomic, assign) NSUInteger nextTrackingID;
 @property (nonatomic, strong) NSLock *stateLock;
 @end
 
@@ -50,7 +51,8 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
     if (self) {
         _redirectErrors = [NSMutableDictionary dictionary];
         _taskOptions = [NSMutableDictionary dictionary];
-        _completedTasks = [NSMutableSet set];
+        _completedTrackingIDs = [NSMutableSet set];
+        _nextTrackingID = 0;
         _stateLock = [[NSLock alloc] init];
     }
     return self;
@@ -122,6 +124,11 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
         return;
     }
 
+    // Assign a unique tracking ID to handle GNUstep taskIdentifier reuse
+    [self.stateLock lock];
+    NSNumber *trackingID = @(++_nextTrackingID);
+    [self.stateLock unlock];
+
     NSURLSessionConfiguration *configuration = [NSURLSessionConfiguration ephemeralSessionConfiguration];
     configuration.timeoutIntervalForRequest = effective.timeout;
     configuration.timeoutIntervalForResource = effective.timeout;
@@ -137,9 +144,9 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
                    completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         NSNumber *taskID = @(task.taskIdentifier);
         [self.stateLock lock];
-        BOOL alreadyHandled = [self.completedTasks containsObject:taskID];
+        BOOL alreadyHandled = [self.completedTrackingIDs containsObject:trackingID];
         if (!alreadyHandled) {
-            [self.completedTasks addObject:taskID];
+            [self.completedTrackingIDs addObject:trackingID];
         }
         NSError *redirectError = self.redirectErrors[taskID];
         [self.redirectErrors removeObjectForKey:taskID];
@@ -181,10 +188,9 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(effective.timeout * NSEC_PER_SEC)),
                    dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         [self.stateLock lock];
-        BOOL alreadyHandled = [self.completedTasks containsObject:taskID];
+        BOOL alreadyHandled = [self.completedTrackingIDs containsObject:trackingID];
         if (!alreadyHandled) {
-            [self.completedTasks addObject:taskID];
-            [self.redirectErrors removeObjectForKey:taskID];
+            [self.completedTrackingIDs addObject:trackingID];
             [self.taskOptions removeObjectForKey:taskID];
         }
         [self.stateLock unlock];
