@@ -130,7 +130,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
 }
 
 - (void)executeRequest:(NSURLRequest *)request attempt:(NSInteger)attempt transform:(id (^)(NSData *data, NSError **error))transform completion:(void (^)(id _Nullable result, NSError * _Nullable error))completion {
-    NSURLSessionDataTask *task = [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         
         NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
         NSInteger statusCode = httpResponse ? httpResponse.statusCode : 0;
@@ -296,7 +296,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     __block NSInteger code = 0;
     __block NSError *netError = nil;
     
-    NSURLSessionDataTask *task = [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *response, NSError *err) {
+    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *response, NSError *err) {
         responseData = data;
         if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
             code = [(NSHTTPURLResponse *)response statusCode];
