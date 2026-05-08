@@ -301,33 +301,11 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
             perDidRotationKey = [store rotationKeyDecryptedWithError:nil];
         }
 
+        // 1. Initial Defaults
         NSArray *rotationKeys = [rotationKeysValue isKindOfClass:[NSArray class]] ? rotationKeysValue : nil;
-        if (rotationKeys.count == 0) {
-            rotationKeys = @[serverRotationKey];
-        }
-
         NSDictionary *verificationMethods = [verificationMethodsValue isKindOfClass:[NSDictionary class]] ? verificationMethodsValue : nil;
-        if (verificationMethods.count == 0) {
-            verificationMethods = @{@"atproto": signingDidKey};
-        }
-
         NSArray *alsoKnownAs = [alsoKnownAsValue isKindOfClass:[NSArray class]] ? alsoKnownAsValue : nil;
-        if (alsoKnownAs.count == 0) {
-            PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:nil];
-            if (account.handle.length > 0) {
-                alsoKnownAs = @[[NSString stringWithFormat:@"at://%@", account.handle]];
-            } else {
-                alsoKnownAs = @[];
-            }
-        }
-
         NSDictionary *services = [servicesValue isKindOfClass:[NSDictionary class]] ? servicesValue : nil;
-        if (services.count == 0) {
-            services = [XrpcIdentityHelper defaultPdsServiceForConfig:configuration];
-        }
-        if (!services) {
-            services = @{};
-        }
 
         id prev = [NSNull null];
         if (!XrpcIdentityUsesMockPLC(configuration)) {
@@ -338,10 +316,17 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
 
             if (auditLog && auditLog.count > 0) {
                 NSMutableArray *ops = [NSMutableArray array];
+                NSString *lastEnvelopeCid = nil;
                 for (id opDict in auditLog) {
                     if ([opDict isKindOfClass:[NSDictionary class]]) {
-                        PLCOperation *op = [PLCOperation operationFromDictionary:opDict error:nil];
-                        if (op) [ops addObject:op];
+                        NSDictionary *innerOp = opDict[@"operation"] ?: opDict;
+                        PLCOperation *op = [PLCOperation operationFromDictionary:innerOp error:nil];
+                        if (op) {
+                            [ops addObject:op];
+                            if (opDict[@"cid"] && [opDict[@"cid"] isKindOfClass:[NSString class]]) {
+                                lastEnvelopeCid = opDict[@"cid"];
+                            }
+                        }
                     }
                 }
 
@@ -354,15 +339,49 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
                         return;
                     }
 
-                    PLCOperation *lastOp = ops.lastObject;
-                    if (lastOp) {
-                        NSString *lastCid = [PLCOperation calculateCIDForOperation:[lastOp toDictionary] error:nil];
-                        if (lastCid) {
-                            prev = lastCid;
+                    if (lastEnvelopeCid) {
+                        prev = lastEnvelopeCid;
+                    } else {
+                        PLCOperation *lastOp = ops.lastObject;
+                        if (lastOp) {
+                            NSString *lastCid = [PLCOperation calculateCIDForOperation:[lastOp toDictionary] error:nil];
+                            if (lastCid) {
+                                prev = lastCid;
+                            }
                         }
+                    }
+
+                    // Use state as defaults if not provided in request
+                    if (state) {
+                        if (rotationKeys.count == 0) rotationKeys = state.rotationKeys;
+                        if (verificationMethods.count == 0) verificationMethods = state.verificationMethods;
+                        if (alsoKnownAs.count == 0) alsoKnownAs = state.alsoKnownAs;
+                        if (services.count == 0) services = state.services;
                     }
                 }
             }
+        }
+
+        // 2. Final Fallbacks
+        if (rotationKeys.count == 0) {
+            rotationKeys = @[serverRotationKey];
+        }
+        if (verificationMethods.count == 0) {
+            verificationMethods = @{@"atproto": signingDidKey};
+        }
+        if (alsoKnownAs.count == 0) {
+            PDSDatabaseAccount *account = [serviceDatabases getAccountByDid:did error:nil];
+            if (account.handle.length > 0) {
+                alsoKnownAs = @[[NSString stringWithFormat:@"at://%@", account.handle]];
+            } else {
+                alsoKnownAs = @[];
+            }
+        }
+        if (services.count == 0) {
+            services = [XrpcIdentityHelper defaultPdsServiceForConfig:configuration];
+        }
+        if (!services) {
+            services = @{};
         }
 
         NSDictionary *operationData = @{
@@ -662,7 +681,8 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
                 isLocal = YES;
             } else {
                 for (NSString *domain in configuration.availableUserDomains) {
-                    if ([normalizedHandle hasSuffix:[NSString stringWithFormat:@".%@", domain]] || [normalizedHandle isEqualToString:domain]) {
+                    NSString *suffix = [domain hasPrefix:@"."] ? domain : [NSString stringWithFormat:@".%@", domain];
+                    if ([normalizedHandle hasSuffix:suffix] || [normalizedHandle isEqualToString:domain]) {
                         isLocal = YES;
                         break;
                     }
