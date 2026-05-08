@@ -23,9 +23,8 @@
     NSError *error = nil;
     FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
     event.repo = @"did:plc:abc123";
-    // Create a dummy CID for testing
-    NSData *digest = [@"test" dataUsingEncoding:NSUTF8StringEncoding];
-    event.commit = [CID cidWithDigest:digest codec:0x71];
+    // Create a valid CID using SHA-256 (required for CBOR tag 42 round-trip)
+    event.commit = [CID sha256:[@"test" dataUsingEncoding:NSUTF8StringEncoding]];
     event.ops = @[@{@"action": @"create", @"path": @"/app.bsky.feed.post/123"}];
     event.blobs = @[];  // Empty array for now
     
@@ -39,8 +38,7 @@
     NSError *error = nil;
     FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
     event.repo = @"did:plc:abc123";
-    NSData *digest = [@"test2" dataUsingEncoding:NSUTF8StringEncoding];
-    event.commit = [CID cidWithDigest:digest codec:0x71];
+    event.commit = [CID sha256:[@"test2" dataUsingEncoding:NSUTF8StringEncoding]];
     event.rev = @"3k3k3k3k3k3k3";
     event.time = @"2024-01-01T00:00:00Z";
     event.ops = @[];
@@ -117,8 +115,7 @@
     NSError *error = nil;
     FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
     event.repo = @"did:plc:abc123";
-    NSData *digest = [@"test3" dataUsingEncoding:NSUTF8StringEncoding];
-    event.commit = [CID cidWithDigest:digest codec:0x71];
+    event.commit = [CID sha256:[@"test3" dataUsingEncoding:NSUTF8StringEncoding]];
     event.ops = @[@{@"action": @"create"}];
     event.blobs = @[];
 
@@ -314,12 +311,10 @@
     event.repo = @"did:plc:roundtrip";
     event.rev = @"3kroundtrip";
     event.time = @"2024-01-01T00:00:00Z";
-    NSData *digest = [@"roundtrip-test" dataUsingEncoding:NSUTF8StringEncoding];
-    event.commit = [CID cidWithDigest:digest codec:0x71];
+    event.commit = [CID sha256:[@"roundtrip-test" dataUsingEncoding:NSUTF8StringEncoding]];
 
     // Create a CID for the op's record
-    NSData *recordDigest = [@"record-cid-test" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *recordCID = [CID cidWithDigest:recordDigest codec:0x71];
+    CID *recordCID = [CID sha256:[@"record-cid-test" dataUsingEncoding:NSUTF8StringEncoding]];
     XCTAssertNotNil(recordCID, @"Precondition: record CID must be created");
 
     event.ops = @[@{
@@ -365,8 +360,7 @@
     event.repo = @"did:plc:deletetest";
     event.rev = @"3kdeletetest";
     event.time = @"2024-01-01T00:00:00Z";
-    NSData *digest = [@"delete-test" dataUsingEncoding:NSUTF8StringEncoding];
-    event.commit = [CID cidWithDigest:digest codec:0x71];
+    event.commit = [CID sha256:[@"delete-test" dataUsingEncoding:NSUTF8StringEncoding]];
 
     event.ops = @[@{
         @"action": @"delete",
