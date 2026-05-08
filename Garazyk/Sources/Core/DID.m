@@ -593,8 +593,13 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
     [request setValue:@"application/did+ld+json,application/json" forHTTPHeaderField:@"Accept"];
 
+    PDSSafeHTTPClientOptions *httpOptions = [PDSSafeHTTPClientOptions defaultOptions];
+#if defined(GNUSTEP)
+    httpOptions.timeout = 2.0;
+#endif
+
     [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
-                                                   options:[PDSSafeHTTPClientOptions defaultOptions]
+                                                   options:httpOptions
                                                 completion:^(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
 
         if (!error && response.statusCode == 200 && data.length > 0) {
