@@ -1,11 +1,17 @@
-#import "Auth/PDSKeyEnvelope.h"
+#import "Security/PDSKeyEnvelope.h"
 #import "Security/PDSSecurityCompare.h"
+#import "Compat/PDSTypes.h"
 
-#if !TARGET_OS_LINUX
+#if PDS_PLATFORM_APPLE
 #import <CommonCrypto/CommonCryptor.h>
 #import <CommonCrypto/CommonDigest.h>
 #import <CommonCrypto/CommonHMAC.h>
 #import <Security/Security.h>
+#else
+#import "CommonCrypto/CommonCryptor.h"
+#import "CommonCrypto/CommonDigest.h"
+#import "CommonCrypto/CommonHMAC.h"
+#import "Security/Security.h"
 #endif
 
 static const uint8_t kPDSKeyEnvelopeMagic[] = {
@@ -33,13 +39,24 @@ static const NSUInteger kPDSKeyEnvelopeMACLength = CC_SHA256_DIGEST_LENGTH;
     return [NSData dataWithBytes:mac length:sizeof(mac)];
 }
 
-+ (nullable NSData *)encryptData:(NSData *)data withKey:(NSData *)key {
-    if (key.length != kCCKeySizeAES256 || !data) {
++ (nullable NSData *)seal:(NSData *)data
+                  withKey:(NSData *)key
+                    error:(NSError **)error {
+    if (key.length != kCCKeySizeAES256) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSKeyEnvelope" code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid key size (must be 32 bytes)"}];
+        }
         return nil;
     }
+    if (!data) return nil;
 
     uint8_t iv[kPDSKeyEnvelopeIVLength];
     if (SecRandomCopyBytes(kSecRandomDefault, sizeof(iv), iv) != errSecSuccess) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSKeyEnvelope" code:-2
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to generate random IV"}];
+        }
         return nil;
     }
 
@@ -58,6 +75,10 @@ static const NSUInteger kPDSKeyEnvelopeMACLength = CC_SHA256_DIGEST_LENGTH;
                                      bufferSize,
                                      &encryptedBytes);
     if (status != kCCSuccess) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSKeyEnvelope" code:-3
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Encryption failed"}];
+        }
         return nil;
     }
     ciphertext.length = encryptedBytes;
@@ -72,26 +93,47 @@ static const NSUInteger kPDSKeyEnvelopeMACLength = CC_SHA256_DIGEST_LENGTH;
     return envelope;
 }
 
-+ (nullable NSData *)decryptData:(NSData *)data withKey:(NSData *)key {
-    if (key.length != kCCKeySizeAES256 || ![self isVersionedEnvelope:data]) {
++ (nullable NSData *)openEnvelope:(NSData *)envelope
+                         withKey:(NSData *)key
+                           error:(NSError **)error {
+    if (key.length != kCCKeySizeAES256) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSKeyEnvelope" code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid key size"}];
+        }
         return nil;
     }
-    if (data.length < kPDSKeyEnvelopeMagicLength + kPDSKeyEnvelopeIVLength + kPDSKeyEnvelopeMACLength) {
+    if (![self isVersionedEnvelope:envelope]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSKeyEnvelope" code:-4
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid envelope magic or version"}];
+        }
+        return nil;
+    }
+    if (envelope.length < kPDSKeyEnvelopeMagicLength + kPDSKeyEnvelopeIVLength + kPDSKeyEnvelopeMACLength) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSKeyEnvelope" code:-5
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Envelope too short"}];
+        }
         return nil;
     }
 
-    NSUInteger authenticatedLength = data.length - kPDSKeyEnvelopeMACLength;
-    NSData *authenticated = [data subdataWithRange:NSMakeRange(0, authenticatedLength)];
+    NSUInteger authenticatedLength = envelope.length - kPDSKeyEnvelopeMACLength;
+    NSData *authenticated = [envelope subdataWithRange:NSMakeRange(0, authenticatedLength)];
     NSData *expectedMAC = [self hmacForData:authenticated key:[self macKeyForKey:key]];
-    NSData *actualMAC = [data subdataWithRange:NSMakeRange(authenticatedLength, kPDSKeyEnvelopeMACLength)];
+    NSData *actualMAC = [envelope subdataWithRange:NSMakeRange(authenticatedLength, kPDSKeyEnvelopeMACLength)];
     if (![PDSSecurityCompare constantTimeEqualData:expectedMAC data:actualMAC]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSKeyEnvelope" code:-6
+                                     userInfo:@{NSLocalizedDescriptionKey: @"MAC verification failed"}];
+        }
         return nil;
     }
 
     NSRange ivRange = NSMakeRange(kPDSKeyEnvelopeMagicLength, kPDSKeyEnvelopeIVLength);
-    NSData *iv = [data subdataWithRange:ivRange];
+    NSData *iv = [envelope subdataWithRange:ivRange];
     NSUInteger cipherOffset = NSMaxRange(ivRange);
-    NSData *ciphertext = [data subdataWithRange:NSMakeRange(cipherOffset, authenticatedLength - cipherOffset)];
+    NSData *ciphertext = [envelope subdataWithRange:NSMakeRange(cipherOffset, authenticatedLength - cipherOffset)];
 
     size_t bufferSize = ciphertext.length + kCCBlockSizeAES128;
     NSMutableData *plaintext = [NSMutableData dataWithLength:bufferSize];
@@ -108,6 +150,10 @@ static const NSUInteger kPDSKeyEnvelopeMACLength = CC_SHA256_DIGEST_LENGTH;
                                      bufferSize,
                                      &decryptedBytes);
     if (status != kCCSuccess) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSKeyEnvelope" code:-7
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Decryption failed"}];
+        }
         return nil;
     }
     plaintext.length = decryptedBytes;
