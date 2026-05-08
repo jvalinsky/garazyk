@@ -53,7 +53,6 @@ static const NSTimeInterval kKeyRefreshInterval = 3600.0; // Re-fetch JWKS every
             }
             dispatch_semaphore_signal(semaphore);
         }];
-    [task resume];
     dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
 
     if (!data || (statusCode != 0 && (statusCode < 200 || statusCode >= 300))) {
