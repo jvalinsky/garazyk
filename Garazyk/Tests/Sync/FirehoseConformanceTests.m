@@ -19,11 +19,8 @@
     // Create a dummy commit event with recordCBOR in ops
     NSData *dummyRecordData = [@"{\"text\":\"hello\"}" dataUsingEncoding:NSUTF8StringEncoding];
     
-    // Valid dummy CID
-    CID *dummyCID = [CID cidWithDigest:[@"dummy" dataUsingEncoding:NSUTF8StringEncoding] codec:0x71]; // simple constructor if available, or just mocking
-    // Actually cidWithDigest needs 32 bytes usually? Or just data.
-    // Let's use a known valid string if cidFromString works, or ensure no invalid chars.
-    // "bafyreidc5uu727733k3g34fd6k3d34d34d34d34d34d34d34d34d34" -> 1 is invalid.
+    // Valid CID using SHA-256 (required for CBOR tag 42 round-trip)
+    CID *dummyCID = [CID sha256:[@"dummy" dataUsingEncoding:NSUTF8StringEncoding]];
     
     NSDictionary *opWithCBOR = @{
         @"action": @"create",
@@ -79,7 +76,7 @@
     FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
     event.seq = 124;
     event.repo = @"did:plc:test";
-    event.commit = [CID cidWithDigest:[@"size-test-cid" dataUsingEncoding:NSUTF8StringEncoding] codec:0x71];
+    event.commit = [CID sha256:[@"size-test-cid" dataUsingEncoding:NSUTF8StringEncoding]];
     event.rev = @"3k3k3k3k3k3k3";
     event.blocks = hugeData;
     event.ops = @[];
