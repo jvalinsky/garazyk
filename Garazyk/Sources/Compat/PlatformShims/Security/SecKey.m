@@ -111,7 +111,7 @@ CFDataRef SecKeyCopyExternalRepresentation(SecKeyRef key, CFErrorRef *error) {
         // i2d_RSAPublicKey for public, i2d_RSAPrivateKey for private
         // How do we know if it's public or private?
         // Check if private components exist
-        RSA *rsa = EVP_PKEY_get0_RSA(key->pkey); // Deprecated in 3.0, but fine for now
+        RSA *rsa = (RSA *)EVP_PKEY_get0_RSA(key->pkey); // Deprecated in 3.0, but fine for now
         if (RSA_check_key(rsa) == 1) { // Has private components
              len = i2d_RSAPrivateKey(rsa, &buf);
         } else {
@@ -119,7 +119,7 @@ CFDataRef SecKeyCopyExternalRepresentation(SecKeyRef key, CFErrorRef *error) {
         }
     } else if (type == EVP_PKEY_EC) {
         // EC: Apple uses X9.62 for public (04...)
-        EC_KEY *ec = EVP_PKEY_get0_EC_KEY(key->pkey);
+        EC_KEY *ec = (EC_KEY *)EVP_PKEY_get0_EC_KEY(key->pkey);
         const EC_GROUP *group = EC_KEY_get0_group(ec);
         const EC_POINT *point = EC_KEY_get0_public_key(ec);
         

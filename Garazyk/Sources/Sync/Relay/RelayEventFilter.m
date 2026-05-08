@@ -27,16 +27,16 @@
     return self;
 }
 
-- (void)setAllowedCollections:(nullable NSArray<NSString *> *)collections {
-    self.allowedCollections = collections ? [NSSet setWithArray:collections] : nil;
+- (void)setAllowedCollections:(nullable NSSet<NSString *> *)collections {
+    _allowedCollections = collections;
 }
 
-- (void)setAllowedRepos:(nullable NSArray<NSString *> *)repos {
-    self.allowedRepos = repos ? [NSSet setWithArray:repos] : nil;
+- (void)setAllowedRepos:(nullable NSSet<NSString *> *)repos {
+    _allowedRepos = repos;
 }
 
-- (void)setBlockedActors:(nullable NSArray<NSString *> *)actors {
-    self.blockedActors = actors ? [NSSet setWithArray:actors] : nil;
+- (void)setBlockedActors:(nullable NSSet<NSString *> *)actors {
+    _blockedActors = actors;
 }
 
 - (void)clearFilters {

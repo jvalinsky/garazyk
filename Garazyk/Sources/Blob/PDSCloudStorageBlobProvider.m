@@ -386,25 +386,25 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
                           dataLen:strlen(dateStamp.UTF8String)];
 
     // kRegion = HMAC-SHA256(kDate, Region)
-    NSData *kRegion = [self hmacSha256:(char *)kDate.bytes
+    NSData *kRegion = [self hmacSha256:(const char *)kDate.bytes
                                length:(int)kDate.length
                                  data:self.region.UTF8String
                              dataLen:strlen(self.region.UTF8String)];
 
     // kService = HMAC-SHA256(kRegion, "s3")
-    NSData *kService = [self hmacSha256:(char *)kRegion.bytes
+    NSData *kService = [self hmacSha256:(const char *)kRegion.bytes
                                 length:(int)kRegion.length
                                   data:"s3"
                               dataLen:2];
 
     // kSigning = HMAC-SHA256(kService, "aws4_request")
-    NSData *kSigning = [self hmacSha256:(char *)kService.bytes
+    NSData *kSigning = [self hmacSha256:(const char *)kService.bytes
                                length:(int)kService.length
                                  data:"aws4_request"
                              dataLen:12];
 
     // signature = HMAC-SHA256(kSigning, stringToSign)
-    NSData *signature = [self hmacSha256:(char *)kSigning.bytes
+    NSData *signature = [self hmacSha256:(const char *)kSigning.bytes
                                 length:(int)kSigning.length
                                   data:stringToSign.UTF8String
                               dataLen:strlen(stringToSign.UTF8String)];
@@ -414,7 +414,7 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
 
 #pragma mark - Crypto Helpers
 
-- (NSData *)hmacSha256:(char *)key length:(int)keyLen data:(char *)data dataLen:(int)dataLen {
+- (NSData *)hmacSha256:(const char *)key length:(int)keyLen data:(const char *)data dataLen:(int)dataLen {
     unsigned char result[CC_SHA256_DIGEST_LENGTH];
     CCHmac(kCCHmacAlgSHA256, key, keyLen, data, dataLen, result);
     return [NSData dataWithBytes:result length:CC_SHA256_DIGEST_LENGTH];

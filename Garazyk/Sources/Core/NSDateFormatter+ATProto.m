@@ -8,6 +8,11 @@
 
 #import "NSDateFormatter+ATProto.h"
 
+// Suppress -Warc-performSelector-leaks: the dynamic selectors used here
+// (stringFromDate: and dateFromString:) are known to return autoreleased
+// objects, so there is no leak risk.
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+
 // Force static linkers to retain this category object file in Linux builds.
 void NSDateFormatterLinkATProtoCategory(void) {
     static int linked = 0;

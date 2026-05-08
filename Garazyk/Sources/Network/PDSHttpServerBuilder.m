@@ -60,7 +60,8 @@
 - (NSArray<NSString *> *)getCorsAllowedOrigins {
   PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
   NSArray<NSString *> *defaultOrigins = @[ @"*" ];
-  NSArray<NSString *> *origins = [config stringForKey:@"cors.allowed_origins"];
+  NSString *originsStr = [config stringForKey:@"cors.allowed_origins"];
+  NSArray<NSString *> *origins = originsStr ? [originsStr componentsSeparatedByString:@","] : nil;
   return origins ?: defaultOrigins;
 }
 

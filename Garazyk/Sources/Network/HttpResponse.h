@@ -26,6 +26,7 @@ typedef NS_ENUM(NSInteger, HttpStatusCode) {
     HttpStatusCreated = 201,
     HttpStatusAccepted = 202,
     HttpStatusNoContent = 204,
+    HttpStatusFound = 302,
     HttpStatusBadRequest = 400,
     HttpStatusUnauthorized = 401,
     HttpStatusForbidden = 403,

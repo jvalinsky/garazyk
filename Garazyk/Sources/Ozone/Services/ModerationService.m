@@ -811,8 +811,11 @@
             // Reverse takedown reopens
             @"tools.ozone.moderation.defs#modEventReverseTakedown": @"tools.ozone.moderation.defs#reviewOpen",
             // Comment and label don't change state
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wobjc-literal-conversion"
             @"tools.ozone.moderation.defs#modEventComment": [NSNull null],
             @"tools.ozone.moderation.defs#modEventLabel": [NSNull null],
+#pragma clang diagnostic pop
         };
     });
     id result = stateMap[action];

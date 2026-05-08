@@ -103,6 +103,8 @@ typedef void (^HttpIOErrorHandler)(NSError *error);
                            protocol:(HttpProtocolDriver *)driver
                        responseSender:(HttpResponseSender *)sender NS_DESIGNATED_INITIALIZER;
 
+- (instancetype)init NS_UNAVAILABLE;
+
 /*!
  @method start
 
