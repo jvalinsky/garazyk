@@ -78,6 +78,11 @@ typedef NS_ENUM(NSInteger, XRPCStreamOpKind) {
 - (nullable NSData *)encodeErrorEvent:(FirehoseErrorEvent *)event
                                 error:(NSError **)error;
 
+/*! Encodes a stream event with a given type and payload dictionary. */
+- (nullable NSData *)encodeStreamEventWithType:(NSString *)msgType
+                                       payload:(NSDictionary *)payload
+                                         error:(NSError **)error;
+
 /*! Decodes an event from CBOR data, returning header and body separately. */
 - (nullable NSDictionary *)decodeEventFromData:(NSData *)data
                                            op:(nullable NSInteger *)op
