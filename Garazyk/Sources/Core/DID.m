@@ -480,7 +480,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
     [request setValue:@"application/did+ld+json,application/json" forHTTPHeaderField:@"Accept"];
     
-    [[PDSSafeHTTPClient sharedClient] dataTaskWithRequest:request
+    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
                                                    options:[PDSSafeHTTPClientOptions defaultOptions]
                                                 completion:^(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
         
@@ -555,7 +555,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
     [request setValue:@"application/did+ld+json,application/json" forHTTPHeaderField:@"Accept"];
     
-    [[PDSSafeHTTPClient sharedClient] dataTaskWithRequest:request
+    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
                                                    options:[PDSSafeHTTPClientOptions defaultOptions]
                                                 completion:^(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
 
