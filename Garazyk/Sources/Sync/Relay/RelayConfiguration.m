@@ -17,6 +17,16 @@ NSString * const RelayConfigurationErrorDomain = @"com.atproto.relay.configurati
 
 @implementation RelayConfiguration
 
+- (instancetype)init {
+    [self doesNotRecognizeSelector:_cmd];
+    return nil;
+}
+
++ (instancetype)configuration {
+    [self doesNotRecognizeSelector:_cmd];
+    return nil;
+}
+
 - (instancetype)initWithUpstreamURLs:(NSArray<NSString *> *)upstreamURLs
                     downstreamPort:(uint16_t)port
                      retentionHours:(NSUInteger)hours
