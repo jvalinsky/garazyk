@@ -420,7 +420,6 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
         }
 
         NSMutableDictionary *operation = [operationData mutableCopy];
-        operation[@"did"] = did;
         operation[@"sig"] = [CryptoUtils base64URLEncode:sig];
 
         response.statusCode = HttpStatusOK;
@@ -548,10 +547,9 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
         }
 
         NSMutableDictionary *opToSubmit = [operation mutableCopy];
-        if (opToSubmit[@"did"]) {
-            [opToSubmit removeObjectForKey:@"did"];
-        }
-        opToSubmit[@"did"] = did;
+        // Per spec, "did" is NOT a valid field in the operation body.
+        // It lives in the URL path, not the operation data.
+        [opToSubmit removeObjectForKey:@"did"];
 
         NSData *postData = [NSJSONSerialization dataWithJSONObject:opToSubmit options:0 error:&auditError];
         if (!postData) {
