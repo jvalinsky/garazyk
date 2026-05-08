@@ -76,6 +76,40 @@ static BOOL isBase32Char(unichar c) {
     return [NSString stringWithFormat:@"did:plc:%@", base32];
 }
 
++ (NSString *)calculateDIDForSignedOperation:(NSDictionary *)signedOperation {
+    // Per did-method-plc spec v0.3.0:
+    //   did:plc:<first 24 chars of base32(SHA-256(DAG-CBOR(signedOp)))>
+    // The signed operation includes the `sig` field.
+    NSError *error = nil;
+    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:signedOperation error:&error];
+    if (!cborData || cborData.length > 7500) {
+        return @"";
+    }
+    
+    NSMutableString *hexStr = [NSMutableString stringWithCapacity:cborData.length * 2];
+    const unsigned char *bytes = cborData.bytes;
+    for (NSUInteger i = 0; i < cborData.length; i++) {
+        [hexStr appendFormat:@"%02x", bytes[i]];
+    }
+    PDS_LOG_INFO(@"DID derivation (signed) CBOR hex (%lu bytes): %@", (unsigned long)cborData.length, hexStr);
+    
+    NSData *hash = [CID rawSha256:cborData];
+    
+    NSMutableString *hashHex = [NSMutableString stringWithCapacity:hash.length * 2];
+    const unsigned char *hashBytes = hash.bytes;
+    for (NSUInteger i = 0; i < hash.length; i++) {
+        [hashHex appendFormat:@"%02x", hashBytes[i]];
+    }
+    PDS_LOG_INFO(@"DID derivation (signed) SHA256: %@", hashHex);
+    
+    NSString *base32 = [ATProtoBase32 encodeData:hash];
+    PDS_LOG_INFO(@"DID derivation (signed) base32 full: %@", base32);
+    if (base32.length > 24) {
+        base32 = [base32 substringToIndex:24];
+    }
+    return [NSString stringWithFormat:@"did:plc:%@", base32];
+}
+
 + (BOOL)isValidDidPlc:(NSString *)did {
     if (!did || did.length != 32 || ![did hasPrefix:@"did:plc:"]) {
         return NO;
@@ -156,9 +190,15 @@ static BOOL isBase32Char(unichar c) {
         op.prev = prev;
     }
     
+    // Build op.data from all dict keys except wrapper-level fields.
+    // Per spec, "did" is NOT a valid field in any operation type — it lives
+    // at the wrapper level, not inside the operation body. "sig" is stored
+    // separately in op.sig. "cid" is audit-log metadata, not operation data.
     NSMutableDictionary *data = [NSMutableDictionary dictionary];
     [dict enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
-        if (![key isEqualToString:@"sig"]) {
+        if (![key isEqualToString:@"sig"] &&
+            ![key isEqualToString:@"did"] &&
+            ![key isEqualToString:@"cid"]) {
             data[key] = obj;
         }
     }];
