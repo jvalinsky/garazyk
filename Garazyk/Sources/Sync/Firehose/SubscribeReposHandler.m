@@ -60,7 +60,6 @@ static NSString *const kSubscribeReposInfoOutdatedCursor = @"OutdatedCursor";
 @property(nonatomic, assign) NSUInteger maxPendingBytesPerConnection;
 @property(nonatomic, strong)
     NSMutableDictionary<NSString *, NSString *> *lastCommitRevByDID;
-@property (nonatomic, strong) dispatch_semaphore_t backfillSemaphore;
 
 - (void)ensureSequenceInitialized;
 - (BOOL)parseCursorString:(nullable NSString *)cursor
@@ -83,7 +82,9 @@ static NSString *const kSubscribeReposInfoOutdatedCursor = @"OutdatedCursor";
 
 @end
 
-@implementation SubscribeReposHandler
+@implementation SubscribeReposHandler {
+    dispatch_semaphore_t _backfillSemaphore;
+}
 
 static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
@@ -868,7 +869,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return;
 
-        dispatch_semaphore_wait(strongSelf.backfillSemaphore, DISPATCH_TIME_FOREVER);
+        dispatch_semaphore_wait(strongSelf->_backfillSemaphore, DISPATCH_TIME_FOREVER);
         
         @try {
             if (!strongSelf.serviceDatabases) {
@@ -924,7 +925,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
             }
             PDS_LOG_SYNC_INFO(@"Async worker finished: backfill complete for connection %@", connection.remoteAddress);
         } @finally {
-            dispatch_semaphore_signal(strongSelf.backfillSemaphore);
+            dispatch_semaphore_signal(strongSelf->_backfillSemaphore);
         }
     });
 }
