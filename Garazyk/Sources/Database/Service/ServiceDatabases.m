@@ -825,6 +825,11 @@ static NSString *refreshTokenSessionID(NSString *refreshToken) {
 
 - (BOOL)persistEvent:(int64_t)seq
  type:(NSString *)type data:(NSData *)data error:(NSError **)error {
+    // Defense-in-depth: warn if seq is invalid (should be positive per ATProto spec)
+    if (seq <= 0) {
+        PDS_LOG_SYNC_WARN(@"persistEvent called with invalid seq=%lld for type=%@; "
+                           @"this indicates a sequence number bug", seq, type);
+    }
     __block BOOL success = NO;
     [self.sequencerPool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
         PDSActorStore *store = (PDSActorStore *)transactor;
