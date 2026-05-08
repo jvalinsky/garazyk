@@ -689,8 +689,12 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     }
 
     // Return op.data (unsigned content) + did, excluding sig/prev/type
+    // Per did-method-plc spec, /:did/data returns the current DID state:
+    // {did, rotationKeys, verificationMethods, alsoKnownAs, services}
     NSMutableDictionary *data = [op.data mutableCopy];
     data[@"did"] = did;
+    [data removeObjectForKey:@"prev"];
+    [data removeObjectForKey:@"type"];
     resp.statusCode = HttpStatusOK;
     [resp setJsonBody:[data copy]];
 }
