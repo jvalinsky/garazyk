@@ -95,7 +95,7 @@
     if (error) {
         [self printError:[NSString stringWithFormat:@"Failed to serialize JSON: %@", error.localizedDescription]];
     } else {
-        printf("%s\n", data.bytes);
+        printf("%s\n", (const char *)data.bytes);
     }
 }
 

@@ -905,7 +905,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       if (patchedData) {
         eventData = patchedData;
         PDS_LOG_SYNC_DEBUG(@"Patched stale seq %lld -> %lld in replayed %@ event",
-                            [payload[@"seq"] longLongValue], dbSeq, msgType);
+                            [payload[@"seq"] longLongValue], (long long)dbSeq, msgType);
       }
     }
 

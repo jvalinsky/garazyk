@@ -67,7 +67,7 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
     NSString *path = @"/xrpc/com.atproto.sync.subscribeRepos";
     
     if (self.cursor > 0) {
-        path = [path stringByAppendingFormat:@"?cursor=%lld", self.cursor];
+        path = [path stringByAppendingFormat:@"?cursor=%lld", (long long)self.cursor];
     }
 
     PDS_LOG_SYNC_INFO(@"Firehose: Connecting to %@:%u%@ (scheme: %@)", host, port, path, self.serverURL.scheme);

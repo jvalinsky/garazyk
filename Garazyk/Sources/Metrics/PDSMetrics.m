@@ -428,7 +428,7 @@ static const NSUInteger kHistogramBucketCount = sizeof(kHistogramBuckets) / size
 
     [output appendString:@"\n# HELP pds_firehose_seq Current firehose sequence number\n"];
     [output appendString:@"# TYPE pds_firehose_seq gauge\n"];
-    [output appendFormat:@"pds_firehose_seq %lld\n", firehoseSeqVal];
+    [output appendFormat:@"pds_firehose_seq %lld\n", (long long)firehoseSeqVal];
 
     if (firehoseEventsSnap.count > 0) {
         [output appendString:@"\n# HELP pds_firehose_events_total Total firehose events by kind\n"];

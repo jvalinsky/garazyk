@@ -95,7 +95,7 @@ static inline int set_reuseaddr(int fd) {
             *error = [NSError errorWithDomain:WebSocketServerErrorDomain
                                        code:WebSocketServerErrorCodeListenerFailed
                                    userInfo:@{NSLocalizedDescriptionKey :
-                                             [NSString stringWithFormat:@"getaddrinfo: %s", gai_err] }];
+                                             [NSString stringWithFormat:@"getaddrinfo: %s", gai_strerror(gai_err)] }];
         }
         return NO;
     }
