@@ -124,9 +124,17 @@
             return;
         }
         if (error) {
-            PDS_LOG_ERROR(@"Proxy request failed to upstream %@: %@", baseURL, error);
-            response.statusCode = HttpStatusServiceUnavailable;
-            [response setJsonBody:@{@"error": @"UpstreamError", @"message": @"Failed to contact upstream service"}];
+            // NSURLSession timeout errors should return 504, not 503
+            if ([error.domain isEqualToString:NSURLErrorDomain] &&
+                error.code == NSURLErrorTimedOut) {
+                PDS_LOG_ERROR(@"Proxy request timed out (NSURLConnection): %@", request.path);
+                response.statusCode = 504;
+                [response setJsonBody:@{@"error": @"UpstreamTimeout", @"message": @"Upstream AppView did not respond within the timeout window"}];
+            } else {
+                PDS_LOG_ERROR(@"Proxy request failed to upstream %@: %@", baseURL, error);
+                response.statusCode = HttpStatusServiceUnavailable;
+                [response setJsonBody:@{@"error": @"UpstreamError", @"message": @"Failed to contact upstream service"}];
+            }
         } else if ([urlResponse isKindOfClass:[NSHTTPURLResponse class]]) {
             NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)urlResponse;
             response.statusCode = (HttpStatusCode)httpResponse.statusCode;
