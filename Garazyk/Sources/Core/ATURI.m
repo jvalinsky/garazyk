@@ -9,6 +9,11 @@ NSString *const ATURIErrorDomain = @"com.atproto.uri";
 
 @implementation ATURI
 
+- (instancetype)init {
+    [self doesNotRecognizeSelector:_cmd];
+    return nil;
+}
+
 + (nullable instancetype)uriWithString:(NSString *)string error:(NSError **)error {
     if (!string || ![string hasPrefix:@"at://"]) {
         if (error) *error = [NSError errorWithDomain:ATURIErrorDomain code:400 userInfo:@{NSLocalizedDescriptionKey: @"Invalid AT URI prefix"}];
@@ -84,6 +89,11 @@ NSString *const ATURIErrorDomain = @"com.atproto.uri";
 @end
 
 @implementation ATDID
+
+- (instancetype)init {
+    [self doesNotRecognizeSelector:_cmd];
+    return nil;
+}
 
 + (nullable instancetype)didWithString:(NSString *)string error:(NSError **)error {
     if (!string || ![string hasPrefix:@"did:"]) {

@@ -27,6 +27,11 @@
 
 @implementation RelayDownstreamHandler
 
+- (instancetype)init {
+    [self doesNotRecognizeSelector:_cmd];
+    return nil;
+}
+
 #pragma mark - Initialization
 
 - (instancetype)initWithEventBuffer:(RelayEventBuffer *)buffer

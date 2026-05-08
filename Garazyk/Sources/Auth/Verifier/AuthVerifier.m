@@ -66,6 +66,11 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
 
 @implementation AuthVerifier
 
+- (instancetype)init {
+    [self doesNotRecognizeSelector:_cmd];
+    return nil;
+}
+
 - (instancetype)initWithKeyResolver:(nullable id<TokenKeyResolver>)keyResolver
                       accountPolicy:(id<AccountPolicy>)accountPolicy
                          nonceStore:(nullable id<DPoPNonceStore>)nonceStore {
