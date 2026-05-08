@@ -77,6 +77,14 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
         } else if ([membersParam isKindOfClass:[NSString class]]) {
             members = @[(NSString *)membersParam];
         }
+        if ((!members || members.count == 0) && [request.jsonBody isKindOfClass:[NSDictionary class]]) {
+            id bodyMembers = request.jsonBody[@"members"];
+            if ([bodyMembers isKindOfClass:[NSArray class]]) {
+                members = (NSArray *)bodyMembers;
+            } else if ([bodyMembers isKindOfClass:[NSString class]]) {
+                members = @[(NSString *)bodyMembers];
+            }
+        }
         if (!members || members.count < 2) {
             [XrpcErrorHelper setValidationError:response message:@"At least two members required"];
             return;
