@@ -5,6 +5,7 @@
 #import "Lexicon/ATProtoLexiconSchema.h"
 #import "Lexicon/ATProtoLexiconDef.h"
 #import "App/PDSConfiguration.h"
+#import "Network/PDSSafeHTTPClient.h"
 #import "Network/SSRFValidator.h"
 #import "Network/HttpRetryPolicy.h"
 
@@ -36,10 +37,6 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
 - (instancetype)init {
     self = [super init];
     if (self) {
-        NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
-        config.timeoutIntervalForRequest = 30.0;
-        config.timeoutIntervalForResource = 60.0;
-        _session = [NSURLSession sessionWithConfiguration:config];
         _retryPolicy = [[HttpRetryPolicy alloc] init];
         if (PDSFederationRunningTests()) {
             _retryPolicy.initialDelay = 0.01;
@@ -54,12 +51,17 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
 - (void)executeRequestWithRetry:(NSURLRequest *)request
                         attempt:(NSInteger)attempt
                      completion:(void (^)(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error))completion {
-    NSURLSessionDataTask *task = [self.session dataTaskWithRequest:request
-                                                 completionHandler:^(NSData * _Nullable data,
-                                                                     NSURLResponse * _Nullable response,
-                                                                     NSError * _Nullable error) {
-        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
-        NSInteger statusCode = httpResponse ? httpResponse.statusCode : 0;
+    PDSSafeHTTPClientOptions *safeOptions = [[PDSSafeHTTPClientOptions alloc] init];
+    safeOptions.timeout = 30.0;
+    safeOptions.maxResponseBytes = 10 * 1024 * 1024; // 10 MB
+    safeOptions.allowHTTP = NO;
+    safeOptions.allowPrivateHosts = NO;
+    safeOptions.followRedirects = YES;
+
+    [[PDSSafeHTTPClient sharedClient] dataTaskWithRequest:request
+                                                   options:safeOptions
+                                                completion:^(NSData *data, NSHTTPURLResponse *response, NSError *error) {
+        NSInteger statusCode = response ? response.statusCode : 0;
         HttpRetryResult *retryResult = [self.retryPolicy evaluateStatusCode:statusCode
                                                                 networkError:error
                                                                attemptNumber:attempt];
@@ -92,7 +94,7 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
                                                             userInfo:@{
                                                                 NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Remote server returned HTTP %ld", (long)statusCode]
                                                             }];
-                completion(nil, httpResponse, federationError);
+                completion(nil, response, federationError);
                 return;
             }
         }
@@ -103,13 +105,12 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
                                                         userInfo:@{
                                                             NSLocalizedDescriptionKey: @"No data received from remote server"
                                                         }];
-            completion(nil, httpResponse, federationError);
+            completion(nil, response, federationError);
             return;
         }
 
-        completion(data, httpResponse, nil);
+        completion(data, response, nil);
     }];
-    [task resume];
 }
 
 - (void)forwardXrpcRequest:(NSString *)method
@@ -134,22 +135,8 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
         pdsEndpoint = [NSString stringWithFormat:@"https://%@", pdsEndpoint];
     }
 
-    // SSRF protection: validate PDS endpoint resolves to public IP
-    NSURL *pdsURL = [NSURL URLWithString:pdsEndpoint];
-    NSString *pdsHost = pdsURL.host;
-    NSError *ssrfError = nil;
-    if (![SSRFValidator validateHostResolvesToPublicIP:pdsHost error:&ssrfError]) {
-        NSMutableDictionary *userInfo = [NSMutableDictionary dictionaryWithObject:(ssrfError.localizedDescription ?: @"PDS endpoint failed SSRF validation")
-                                                                           forKey:NSLocalizedDescriptionKey];
-        if (ssrfError) {
-            userInfo[NSUnderlyingErrorKey] = ssrfError;
-        }
-        NSError *federationError = [NSError errorWithDomain:FederationErrorDomain
-                                                       code:FederationErrorNetworkError
-                                                   userInfo:userInfo];
-        completion(nil, federationError);
-        return;
-    }
+    // SSRF protection is handled by PDSSafeHTTPClient during the actual request,
+    // eliminating the validate-before-fetch TOCTOU gap.
 
     // Construct the XRPC URL
     NSString *xrpcPath = [NSString stringWithFormat:@"/xrpc/%@", method];
@@ -250,12 +237,18 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
 
     request.HTTPBody = body;
 
-    NSURLSessionDataTask *task = [self.session dataTaskWithRequest:request
-                                             completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
-        completion(data, (NSHTTPURLResponse *)response, error);
-    }];
+    PDSSafeHTTPClientOptions *safeOptions = [[PDSSafeHTTPClientOptions alloc] init];
+    safeOptions.timeout = 30.0;
+    safeOptions.maxResponseBytes = 10 * 1024 * 1024; // 10 MB
+    safeOptions.allowHTTP = NO;
+    safeOptions.allowPrivateHosts = NO;
+    safeOptions.followRedirects = YES;
 
-    [task resume];
+    [[PDSSafeHTTPClient sharedClient] dataTaskWithRequest:request
+                                                   options:safeOptions
+                                                completion:^(NSData *data, NSHTTPURLResponse *response, NSError *error) {
+        completion(data, response, error);
+    }];
 }
 
 - (void)forwardXrpcBinaryRequest:(NSString *)method
@@ -280,21 +273,8 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
         pdsEndpoint = [NSString stringWithFormat:@"https://%@", pdsEndpoint];
     }
 
-    // SSRF protection: validate PDS endpoint resolves to public IP
-    NSURL *binaryPdsURL = [NSURL URLWithString:pdsEndpoint];
-    NSError *ssrfError = nil;
-    if (![SSRFValidator validateHostResolvesToPublicIP:binaryPdsURL.host error:&ssrfError]) {
-        NSMutableDictionary *userInfo = [NSMutableDictionary dictionaryWithObject:(ssrfError.localizedDescription ?: @"PDS endpoint failed SSRF validation")
-                                                                           forKey:NSLocalizedDescriptionKey];
-        if (ssrfError) {
-            userInfo[NSUnderlyingErrorKey] = ssrfError;
-        }
-        NSError *federationError = [NSError errorWithDomain:FederationErrorDomain
-                                                       code:FederationErrorNetworkError
-                                                   userInfo:userInfo];
-        completion(nil, federationError);
-        return;
-    }
+    // SSRF protection is handled by PDSSafeHTTPClient during the actual request,
+    // eliminating the validate-before-fetch TOCTOU gap.
 
     // Construct the XRPC URL
     NSString *xrpcPath = [NSString stringWithFormat:@"/xrpc/%@", method];
