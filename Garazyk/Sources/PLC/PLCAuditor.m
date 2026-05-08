@@ -113,7 +113,7 @@ static NSData *PLCBase64URLDecode(NSString *string) {
         return NO;
     }
 
-    NSString *expectedDid = [PLCOperation calculateDIDForData:first.data];
+    NSString *expectedDid = [PLCOperation calculateDIDForSignedOperation:[first toDictionary]];
     if (expectedDid.length > 0 && ![expectedDid isEqualToString:did]) {
         if (error) {
             *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
@@ -228,7 +228,7 @@ static NSData *PLCBase64URLDecode(NSString *string) {
             [[PLCMetrics sharedMetrics] recordVerificationFailure];
             return NO;
         }
-        NSString *expectedDid = [PLCOperation calculateDIDForData:op.data];
+        NSString *expectedDid = [PLCOperation calculateDIDForSignedOperation:[op toDictionary]];
         if (expectedDid.length > 0 && ![expectedDid isEqualToString:op.did]) {
             if (error) {
                 *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
@@ -543,6 +543,14 @@ static NSData *PLCBase64URLDecode(NSString *string) {
 
 - (NSDictionary *)unsignedDataForOperation:(PLCOperation *)op {
     NSMutableDictionary *data = [op.data mutableCopy] ?: [NSMutableDictionary dictionary];
+    
+    // Strip wrapper-level and non-operation fields defensively.
+    // Per spec, "did" and "cid" are not valid operation data fields.
+    // "sig" must be absent for signature verification (the unsigned bytes
+    // are what gets signed, not bytes with sig:null).
+    [data removeObjectForKey:@"did"];
+    [data removeObjectForKey:@"cid"];
+    [data removeObjectForKey:@"sig"];
     
     // Explicitly handle 'prev' field normalization for genesis operations
     id prev = op.prev ?: data[@"prev"];
