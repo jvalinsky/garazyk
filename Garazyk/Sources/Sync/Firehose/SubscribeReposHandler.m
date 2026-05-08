@@ -60,6 +60,7 @@ static NSString *const kSubscribeReposInfoOutdatedCursor = @"OutdatedCursor";
 @property(nonatomic, assign) NSUInteger maxPendingBytesPerConnection;
 @property(nonatomic, strong)
     NSMutableDictionary<NSString *, NSString *> *lastCommitRevByDID;
+@property (nonatomic, strong) dispatch_semaphore_t backfillSemaphore;
 
 - (void)ensureSequenceInitialized;
 - (BOOL)parseCursorString:(nullable NSString *)cursor
@@ -74,6 +75,11 @@ static NSString *const kSubscribeReposInfoOutdatedCursor = @"OutdatedCursor";
 - (nullable NSNumber *)oldestPersistedSequenceNumber;
 - (NSUInteger)effectiveReplayCursorForRequestedCursor:(NSUInteger)requestedCursor
                                               outdated:(BOOL *)outdated;
+- (void)replayEventsAfterCursor:(NSUInteger)cursor
+                   toConnection:(WebSocketConnection *)connection;
+- (void)sendInfoEvent:(NSString *)kind
+               message:(NSString *)message
+          toConnection:(WebSocketConnection *)connection;
 
 @end
 
@@ -115,6 +121,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     _maxPendingSendsPerConnection = kSubscribeReposMaxPendingSendsDefault;
     _maxPendingBytesPerConnection = kSubscribeReposMaxPendingBytesDefault;
     _lastCommitRevByDID = [NSMutableDictionary dictionary];
+    _backfillSemaphore = dispatch_semaphore_create(3); // Allow max 3 concurrent backfills
 
     // Initialize backpressure rate limiter (100 events/sec)
     _eventRateLimiter = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, _syncQueue);
@@ -854,39 +861,29 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   });
 }
 
-@interface SubscribeReposHandler ()
-@property (nonatomic, strong) dispatch_semaphore_t backfillSemaphore;
-@end
-
-@implementation SubscribeReposHandler
-
-- (instancetype)initWithServiceDatabases:(nullable PDSServiceDatabases *)serviceDatabases {
-    if (self = [super init]) {
-        _serviceDatabases = serviceDatabases;
-        _backfillSemaphore = dispatch_semaphore_create(3);
-    }
-    return self;
-}
-
 - (void)replayEventsAfterCursor:(NSUInteger)cursor
                    toConnection:(WebSocketConnection *)connection {
+    __weak typeof(self) weakSelf = self;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        dispatch_semaphore_wait(self.backfillSemaphore, DISPATCH_TIME_FOREVER);
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
+
+        dispatch_semaphore_wait(strongSelf.backfillSemaphore, DISPATCH_TIME_FOREVER);
         
         @try {
-            if (!self.serviceDatabases) {
+            if (!strongSelf.serviceDatabases) {
                 PDS_LOG_SYNC_WARN(@"Cannot replay events: no service databases");
                 return;
             }
 
-            NSUInteger limit = self.maxReplayEventsPerConnection;
+            NSUInteger limit = strongSelf.maxReplayEventsPerConnection;
             if (limit == 0) {
                 limit = 1000;
             }
 
             NSError *error = nil;
             NSArray<NSDictionary *> *events =
-                [self.serviceDatabases getEventsSince:(int64_t)cursor
+                [strongSelf.serviceDatabases getEventsSince:(int64_t)cursor
                                                 limit:(NSInteger)limit
                                                 error:&error];
             if (error) {
@@ -894,12 +891,12 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                 return;
             }
 
-            PDS_LOG_SYNC_INFO(@"Replaying %lu events after cursor %lu",
-                              (unsigned long)events.count, (unsigned long)cursor);
+            PDS_LOG_SYNC_INFO(@"Replaying %lu events after cursor %lu for connection %@",
+                              (unsigned long)events.count, (unsigned long)cursor, connection.remoteAddress);
 
             for (NSDictionary *eventDict in events) {
                 int64_t dbSeq = [eventDict[@"seq"] longLongValue];
-                NSData *eventData = eventDict[@"data"];
+                NSData *eventData = eventDict[@"event_data"]; // Fixed key: was 'data' but ServiceDatabases uses 'event_data'
                 if (![eventData isKindOfClass:[NSData class]] || eventData.length == 0) {
                     continue;
                 }
@@ -907,14 +904,14 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                 NSInteger op = 0;
                 NSString *msgType = nil;
                 NSError *decodeError = nil;
-                NSDictionary *payload = [self.session.eventFormatter
+                NSDictionary *payload = [strongSelf.session.eventFormatter
                     decodeEventFromData:eventData op:&op msgType:&msgType error:&decodeError];
 
                 if (payload && msgType && ![msgType isEqualToString:@"#info"] &&
                     payload[@"seq"] && [payload[@"seq"] longLongValue] != dbSeq) {
                     NSMutableDictionary *patchedPayload = [payload mutableCopy];
                     patchedPayload[@"seq"] = @(dbSeq);
-                    NSData *patchedData = [self.session.eventFormatter
+                    NSData *patchedData = [strongSelf.session.eventFormatter
                         encodeStreamEventWithType:msgType payload:patchedPayload error:nil];
                     if (patchedData) {
                         eventData = patchedData;
@@ -925,8 +922,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
                 [connection sendMessage:eventData];
             }
+            PDS_LOG_SYNC_INFO(@"Async worker finished: backfill complete for connection %@", connection.remoteAddress);
         } @finally {
-            dispatch_semaphore_signal(self.backfillSemaphore);
+            dispatch_semaphore_signal(strongSelf.backfillSemaphore);
         }
     });
 }
