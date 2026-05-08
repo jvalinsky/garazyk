@@ -3,6 +3,11 @@
 #include <string.h>
 #include <stdlib.h>
 
+#ifdef LINUX
+/* arc4random compat provided by SecRandom.m on Linux */
+extern uint32_t arc4random(void);
+#endif
+
 const char* secp256k1_error_string(Secp256k1Error error) {
     switch (error) {
         case Secp256k1ErrorNone:
@@ -159,7 +164,7 @@ Secp256k1Error secp256k1_wrapper_public_key_from_private_key(const Secp256k1Priv
 void secp256k1_wrapper_public_key_serialize_compressed(const Secp256k1PublicKey *public_key,
                                                         uint8_t *out_compressed33) {
     secp256k1_pubkey pubkey;
-    secp256k1_ec_pubkey_parse(get_context(), &pubkey, public_key->data, 65);
+    (void)secp256k1_ec_pubkey_parse(get_context(), &pubkey, public_key->data, 65);
 
     size_t output_len = 33;
     secp256k1_ec_pubkey_serialize(get_context(), out_compressed33, &output_len, &pubkey, SECP256K1_EC_COMPRESSED);

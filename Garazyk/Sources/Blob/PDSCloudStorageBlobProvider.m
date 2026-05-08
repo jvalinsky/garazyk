@@ -474,4 +474,14 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
     return nil;
 }
 
+- (nullable NSInputStream *)retrieveBlobStreamForCID:(CID *)cid error:(NSError **)error {
+    // Cloud storage does not support streaming retrieval; use retrieveBlobForCID:error: instead.
+    if (error) {
+        *error = [NSError errorWithDomain:PDSCloudStorageBlobProviderErrorDomain
+                                     code:501 // Not Implemented
+                                 userInfo:@{NSLocalizedDescriptionKey: @"retrieveBlobStreamForCID is not supported for Cloud Storage"}];
+    }
+    return nil;
+}
+
 @end
