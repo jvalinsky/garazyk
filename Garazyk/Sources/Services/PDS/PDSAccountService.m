@@ -172,6 +172,15 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     }
     handle = [ATProtoHandleValidator normalizeHandle:handle];
 
+    if (self.databasePool && [PDSConfiguration sharedConfiguration].masterSecret.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"com.atproto.server"
+                                         code:1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"PDS_MASTER_SECRET not configured"}];
+        }
+        return nil;
+    }
+
     NSString *resolvedDid;
     Secp256k1KeyPair *userKeyPair = [[Secp256k1 shared] generateKeyPairWithError:error];
     if (!userKeyPair) return nil;
@@ -739,12 +748,24 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
             innerError = error;
         } else if (httpResponse && (httpResponse.statusCode != 200 && httpResponse.statusCode != 202)) {
             NSNumber *bodyBytes = @((unsigned long long)(data.length));
+            NSString *bodyString = nil;
+            if (data.length > 0) {
+                bodyString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                if (bodyString.length > 2048) {
+                    bodyString = [[bodyString substringToIndex:2048] stringByAppendingString:@"..."];
+                }
+            }
+            NSString *message = [NSString stringWithFormat:@"PLC registration failed with status %ld", (long)httpResponse.statusCode];
+            NSMutableDictionary *userInfo = [@{
+                NSLocalizedDescriptionKey: bodyString.length > 0 ? [message stringByAppendingFormat:@": %@", bodyString] : message,
+                @"response_body_bytes": bodyBytes
+            } mutableCopy];
+            if (bodyString.length > 0) {
+                userInfo[@"response_body"] = bodyString;
+            }
             innerError = [NSError errorWithDomain:@"PLCRegistration" 
                                              code:httpResponse.statusCode 
-                                         userInfo:@{
-                                             NSLocalizedDescriptionKey: [NSString stringWithFormat:@"PLC registration failed with status %ld", (long)httpResponse.statusCode],
-                                             @"response_body_bytes": bodyBytes
-                                         }];
+                                         userInfo:userInfo];
         } else if (!httpResponse) {
             innerError = [NSError errorWithDomain:@"PLCRegistration" 
                                              code:-1 
@@ -755,10 +776,27 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
         dispatch_semaphore_signal(sema);
     }] resume];
     
-    dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(10 * NSEC_PER_SEC)));
+    long waitResult = dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(10 * NSEC_PER_SEC)));
+    if (waitResult != 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PLCRegistration"
+                                         code:NSURLErrorTimedOut
+                                     userInfo:@{NSLocalizedDescriptionKey: @"PLC registration timed out after 10 seconds"}];
+        }
+        return nil;
+    }
     
     if (innerError) {
         if (error) *error = innerError;
+        return nil;
+    }
+
+    if (!resultDid) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PLCRegistration"
+                                         code:-2
+                                     userInfo:@{NSLocalizedDescriptionKey: @"PLC registration completed without returning a DID"}];
+        }
         return nil;
     }
     
