@@ -125,6 +125,8 @@ typedef NS_ENUM(NSUInteger, MSTDiffOperationType) {
 
 @end
 
+typedef NSData * _Nullable (^MSTBlockProvider)(CID *cid);
+
 /*!
  @class MSTNode
 
@@ -234,6 +236,8 @@ typedef NS_ENUM(NSUInteger, MSTDiffOperationType) {
  @return Array of MSTNode objects forming the proof path.
  */
 - (nullable NSArray<MSTNode *> *)getProofNodesForKey:(NSString *)key;
+- (nullable NSArray<MSTNode *> *)getProofNodesForKey:(NSString *)key
+                                       blockProvider:(nullable MSTBlockProvider)blockProvider;
 
 /*!
  @method serializeNode:
