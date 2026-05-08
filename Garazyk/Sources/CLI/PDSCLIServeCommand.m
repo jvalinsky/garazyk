@@ -129,8 +129,9 @@
       }
       // Update data directory from config if not overridden by CLI
       if (config.dataDirectory.length > 0 &&
-          [context.dataDir
-              isEqualToString:[PDSConfiguration defaultDataDirectory]]) {
+          (context.dataDir == nil ||
+           [context.dataDir
+               isEqualToString:[PDSConfiguration defaultDataDirectory]])) {
         context.dataDir = config.dataDirectory;
       }
     }
