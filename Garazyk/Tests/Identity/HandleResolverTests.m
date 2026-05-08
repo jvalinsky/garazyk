@@ -2,21 +2,6 @@
 #import "Identity/HandleResolver.h"
 
 
-@interface TestHandleResolver : HandleResolver
-@end
-
-@implementation TestHandleResolver
-- (void)resolveHandleViaDNS:(NSString *)handle completion:(void (^)(NSString * _Nullable did, NSError * _Nullable error))completion {
-    // Return not found immediately to avoid blocking DNS lookups during tests
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        NSError *error = [NSError errorWithDomain:@"HandleErrorDomain"
-                                           code:HandleErrorNotFound
-                                       userInfo:@{NSLocalizedDescriptionKey: @"DNS lookup mocked to fail in tests"}];
-        completion(nil, error);
-    });
-}
-@end
-
 @interface MockURLSession : NSObject
 
 @property (nonatomic, strong) NSDictionary *mockResponse;
@@ -30,6 +15,39 @@
 - (NSURLSessionDataTask *)dataTaskWithRequest:(NSURLRequest *)request
                             completionHandler:(void (^)(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error))completionHandler;
 
+@end
+
+@interface TestHandleResolver : HandleResolver
+@property (nonatomic, strong) MockURLSession *mockSession;
+@end
+
+@implementation TestHandleResolver
+- (void)executeSafeHTTPSRequest:(NSURLRequest *)request
+                        options:(id)options
+                        attempt:(NSInteger)attempt
+                     completion:(void (^)(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error))completion {
+    if (!self.mockSession) {
+        NSError *error = [NSError errorWithDomain:HandleErrorDomain
+                                             code:HandleErrorNetworkError
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Missing mock HTTPS session"}];
+        completion(nil, nil, error);
+        return;
+    }
+
+    NSURLSessionDataTask *task = [self.mockSession dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        completion(data, (NSHTTPURLResponse *)response, error);
+    }];
+    [task resume];
+}
+
+- (void)resolveHandleViaDNS:(NSString *)handle completion:(void (^)(NSString * _Nullable did, NSError * _Nullable error))completion {
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        NSError *error = [NSError errorWithDomain:HandleErrorDomain
+                                             code:HandleErrorNotFound
+                                         userInfo:@{NSLocalizedDescriptionKey: @"DNS lookup mocked to fail in tests"}];
+        completion(nil, error);
+    });
+}
 @end
 
 @interface MockDataTask : NSObject
@@ -209,9 +227,7 @@
                                                                      error:nil
                                                                      delay:0.1];
     HandleResolver *testResolver = [[TestHandleResolver alloc] init];
-    // PDSSafeHTTPClient handles SSRF in test mode automatically
-    // Session injection removed — tests using MockURLSession need adaptation
-    // for PDSSafeHTTPClient mock infrastructure
+    ((TestHandleResolver *)testResolver).mockSession = testSession;
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Valid handle test"];
 
@@ -232,9 +248,7 @@
                                                                                            userInfo:nil]
                                                                      delay:0.1];
     HandleResolver *errorResolver = [[TestHandleResolver alloc] init];
-    // PDSSafeHTTPClient handles SSRF in test mode automatically
-    // Session injection removed — tests using MockURLSession need adaptation
-    // for PDSSafeHTTPClient mock infrastructure
+    ((TestHandleResolver *)errorResolver).mockSession = errorSession;
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Network error test"];
 
@@ -253,9 +267,7 @@
                                                                          error:nil
                                                                          delay:0.1];
     HandleResolver *notFoundResolver = [[TestHandleResolver alloc] init];
-    // PDSSafeHTTPClient handles SSRF in test mode automatically
-    // Session injection removed — tests using MockURLSession need adaptation
-    // for PDSSafeHTTPClient mock infrastructure
+    ((TestHandleResolver *)notFoundResolver).mockSession = notFoundSession;
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"404 error test"];
 
@@ -274,9 +286,7 @@
                                                                             error:nil
                                                                             delay:0.1];
     HandleResolver *serverErrorResolver = [[TestHandleResolver alloc] init];
-    // PDSSafeHTTPClient handles SSRF in test mode automatically
-    // Session injection removed — tests using MockURLSession need adaptation
-    // for PDSSafeHTTPClient mock infrastructure
+    ((TestHandleResolver *)serverErrorResolver).mockSession = serverErrorSession;
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"500 error test"];
 
@@ -295,9 +305,7 @@
                                                                           error:nil
                                                                           delay:0.1];
     HandleResolver *emptyBodyResolver = [[TestHandleResolver alloc] init];
-    // PDSSafeHTTPClient handles SSRF in test mode automatically
-    // Session injection removed — tests using MockURLSession need adaptation
-    // for PDSSafeHTTPClient mock infrastructure
+    ((TestHandleResolver *)emptyBodyResolver).mockSession = emptyBodySession;
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Empty body test"];
 
@@ -316,9 +324,7 @@
                                                                            error:nil
                                                                            delay:0.1];
     HandleResolver *whitespaceResolver = [[TestHandleResolver alloc] init];
-    // PDSSafeHTTPClient handles SSRF in test mode automatically
-    // Session injection removed — tests using MockURLSession need adaptation
-    // for PDSSafeHTTPClient mock infrastructure
+    ((TestHandleResolver *)whitespaceResolver).mockSession = whitespaceSession;
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Whitespace only test"];
 
@@ -337,9 +343,7 @@
                                                                            error:nil
                                                                            delay:0.1];
     HandleResolver *invalidDIDResolver = [[TestHandleResolver alloc] init];
-    // PDSSafeHTTPClient handles SSRF in test mode automatically
-    // Session injection removed — tests using MockURLSession need adaptation
-    // for PDSSafeHTTPClient mock infrastructure
+    ((TestHandleResolver *)invalidDIDResolver).mockSession = invalidDIDSession;
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Invalid DID test"];
 
@@ -358,9 +362,7 @@
                                                                              error:nil
                                                                              delay:0.1];
     HandleResolver *whitespaceDIDResolver = [[TestHandleResolver alloc] init];
-    // PDSSafeHTTPClient handles SSRF in test mode automatically
-    // Session injection removed — tests using MockURLSession need adaptation
-    // for PDSSafeHTTPClient mock infrastructure
+    ((TestHandleResolver *)whitespaceDIDResolver).mockSession = whitespaceDIDSession;
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"DID with whitespace test"];
 
@@ -407,9 +409,8 @@
 
     HandleResolver *concurrentResolver1 = [[TestHandleResolver alloc] init];
     HandleResolver *concurrentResolver2 = [[TestHandleResolver alloc] init];
-    // PDSSafeHTTPClient handles SSRF in test mode automatically
-    // Session injection removed — tests using MockURLSession need adaptation
-    // for PDSSafeHTTPClient mock infrastructure
+    ((TestHandleResolver *)concurrentResolver1).mockSession = concurrentSession1;
+    ((TestHandleResolver *)concurrentResolver2).mockSession = concurrentSession2;
 
     XCTestExpectation *expectation1 = [self expectationWithDescription:@"Concurrent resolution 1"];
     XCTestExpectation *expectation2 = [self expectationWithDescription:@"Concurrent resolution 2"];
@@ -460,9 +461,7 @@
                                                                            error:nil
                                                                            delay:0.1];
     HandleResolver *specialCharResolver = [[TestHandleResolver alloc] init];
-    // PDSSafeHTTPClient handles SSRF in test mode automatically
-    // Session injection removed — tests using MockURLSession need adaptation
-    // for PDSSafeHTTPClient mock infrastructure
+    ((TestHandleResolver *)specialCharResolver).mockSession = specialCharSession;
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Special characters test"];
 
@@ -483,8 +482,7 @@
         MockURLSession *tempSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"did:plc:temp"}
                                                                          error:nil
                                                                          delay:0.1];
-        // Session injection removed — tests using MockURLSession need adaptation
-        // for PDSSafeHTTPClient mock infrastructure
+        ((TestHandleResolver *)tempResolver).mockSession = tempSession;
 
         XCTestExpectation *expectation = [self expectationWithDescription:@"Memory management test"];
 
@@ -509,9 +507,7 @@
                                                                          error:nil
                                                                          delay:0.1];
     HandleResolver *multiDotResolver = [[TestHandleResolver alloc] init];
-    // PDSSafeHTTPClient handles SSRF in test mode automatically
-    // Session injection removed — tests using MockURLSession need adaptation
-    // for PDSSafeHTTPClient mock infrastructure
+    ((TestHandleResolver *)multiDotResolver).mockSession = multiDotSession;
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Multiple dots test"];
 
@@ -534,9 +530,7 @@
                                                                          error:nil
                                                                          delay:0.1];
     HandleResolver *dnsResolver = [[TestHandleResolver alloc] init];
-    // PDSSafeHTTPClient handles SSRF in test mode automatically
-    // Session injection removed — tests using MockURLSession need adaptation
-    // for PDSSafeHTTPClient mock infrastructure
+    ((TestHandleResolver *)dnsResolver).mockSession = notFoundSession;
     
     XCTestExpectation *expectation = [self expectationWithDescription:@"DNS fallback test"];
     
@@ -558,9 +552,7 @@
                                                                                            userInfo:nil]
                                                                      delay:0.0];
     HandleResolver *resolver = [[TestHandleResolver alloc] init];
-    // PDSSafeHTTPClient handles SSRF in test mode automatically
-    // Session injection removed — tests using MockURLSession need adaptation
-    // for PDSSafeHTTPClient mock infrastructure
+    ((TestHandleResolver *)resolver).mockSession = errorSession;
     
     NSString *handle = @"backoff.test.example.com";
     

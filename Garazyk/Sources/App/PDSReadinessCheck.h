@@ -55,6 +55,9 @@ typedef NS_ENUM(NSInteger, PDSReadinessError) {
                            serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                                        error:(NSError **)error;
 
++ (BOOL)performReadinessChecksWithConfig:(PDSConfiguration *)config
+                                   error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END

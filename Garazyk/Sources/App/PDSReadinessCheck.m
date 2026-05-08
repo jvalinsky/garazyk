@@ -15,6 +15,15 @@ NSString * const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
 @implementation PDSReadinessCheck
 
 + (BOOL)performReadinessChecksWithConfig:(PDSConfiguration *)config
+                                   error:(NSError **)error {
+    PDSServiceDatabases *serviceDatabases = [[PDSServiceDatabases alloc] initWithDirectory:config.dataDirectory
+                                                                            serviceMaxSize:100
+                                                                           didCacheMaxSize:1000
+                                                                         sequencerMaxSize:100];
+    return [self performReadinessChecksWithConfig:config serviceDatabases:serviceDatabases error:error];
+}
+
++ (BOOL)performReadinessChecksWithConfig:(PDSConfiguration *)config
                            serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                                        error:(NSError **)error {
     PDS_LOG_CORE_INFO(@"Starting server readiness checks...");
