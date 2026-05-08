@@ -76,7 +76,7 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
 
  @return Shared PDSServiceDatabases instance.
  */
-+ (instancetype)sharedInstance DEPRECATED_MSG_ATTRIBUTE("Use initWithDirectory:serviceMaxSize:didCacheMaxSize:sequencerMaxSize: instead");
++ (instancetype)sharedInstance __attribute__((deprecated("Use initWithDirectory:serviceMaxSize:didCacheMaxSize:sequencerMaxSize: instead")));
 
 /*!
  @method serviceDatabaseWithError:
