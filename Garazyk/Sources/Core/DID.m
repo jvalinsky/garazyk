@@ -545,78 +545,101 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     }];
 }
 
+- (void)processPLCResponseData:(NSData *)data did:(NSString *)did completion:(void (^)(DIDDocument *_Nullable, NSError *_Nullable))completion {
+    if (!data || data.length == 0) {
+        completion(nil, [NSError errorWithDomain:DIDErrorDomain
+                                           code:DIDErrorResolutionFailed
+                                       userInfo:@{NSLocalizedDescriptionKey: @"No data received from PLC DID resolution"}]);
+        return;
+    }
+
+    NSError *jsonError;
+    NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
+    if (jsonError) {
+        completion(nil, [NSError errorWithDomain:DIDErrorDomain
+                                           code:DIDErrorInvalidDocument
+                                       userInfo:@{NSLocalizedDescriptionKey: @"Invalid JSON in PLC DID document",
+                                                  NSUnderlyingErrorKey: jsonError}]);
+        return;
+    }
+
+    DIDDocument *document = [DIDDocument documentWithJSON:json error:&jsonError];
+    if (!document) {
+        completion(nil, [NSError errorWithDomain:DIDErrorDomain
+                                           code:DIDErrorInvalidDocument
+                                       userInfo:@{NSLocalizedDescriptionKey: @"Invalid PLC DID document structure",
+                                                  NSUnderlyingErrorKey: jsonError}]);
+        return;
+    }
+
+    [self cacheDocument:document forDID:did];
+    completion(document, nil);
+}
+
 - (void)resolveDIDPLC:(NSString *)did completion:(void (^)(DIDDocument * _Nullable, NSError * _Nullable))completion {
-    // did:plc:<id> -> https://plc.directory/<did>
     NSString *urlString = [NSString stringWithFormat:@"%@/%@", self.plcURL, did];
     NSURL *url = [NSURL URLWithString:urlString];
 
     if (!url) {
-        NSError *error = [NSError errorWithDomain:DIDErrorDomain
-                                          code:DIDErrorInvalidIdentifier
-                                      userInfo:@{NSLocalizedDescriptionKey: @"Invalid URL constructed from PLC DID"}];
-        completion(nil, error);
+        completion(nil, [NSError errorWithDomain:DIDErrorDomain
+                                           code:DIDErrorInvalidIdentifier
+                                       userInfo:@{NSLocalizedDescriptionKey: @"Invalid URL constructed from PLC DID"}]);
         return;
     }
 
     PDS_LOG_CORE_DEBUG(@"Resolving did:plc URL: %@", urlString ?: @"");
-    
+
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
     [request setValue:@"application/did+ld+json,application/json" forHTTPHeaderField:@"Accept"];
-    
+
     [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
                                                    options:[PDSSafeHTTPClientOptions defaultOptions]
                                                 completion:^(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
 
-        if (error) {
-            NSError *resolveError = [NSError errorWithDomain:DIDErrorDomain
-                                                      code:DIDErrorNetworkError
-                                                  userInfo:@{NSLocalizedDescriptionKey: @"Network error during PLC DID resolution",
-                                                            NSUnderlyingErrorKey: error}];
-            completion(nil, resolveError);
+        if (!error && response.statusCode == 200 && data.length > 0) {
+            [self processPLCResponseData:data did:did completion:completion];
             return;
         }
 
-        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
-        if (httpResponse.statusCode != 200) {
-            NSError *resolveError = [NSError errorWithDomain:DIDErrorDomain
-                                                      code:DIDErrorResolutionFailed
-                                                  userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"HTTP %ld when resolving PLC DID", (long)httpResponse.statusCode]}];
-            completion(nil, resolveError);
-            return;
+#if defined(GNUSTEP)
+        PDS_LOG_CORE_DEBUG(@"NSURLSession failed, trying curl fallback: %@", urlString ?: @"");
+
+        NSTask *curlTask = [[NSTask alloc] init];
+        [curlTask setLaunchPath:@"/usr/bin/curl"];
+        [curlTask setArguments:@[
+            @"-s", @"--max-time", @"10",
+            @"-H", @"Accept: application/did+ld+json,application/json",
+            urlString
+        ]];
+
+        NSPipe *outPipe = [NSPipe pipe];
+        [curlTask setStandardOutput:outPipe];
+        [curlTask setStandardError:[NSFileHandle fileHandleWithNullDevice]];
+
+        @try {
+            [curlTask launch];
+            [curlTask waitUntilExit];
+
+            if (curlTask.terminationStatus == 0) {
+                NSData *curlData = [[outPipe fileHandleForReading] readDataToEndOfFile];
+                if (curlData.length > 0) {
+                    [self processPLCResponseData:curlData did:did completion:completion];
+                    return;
+                }
+            }
+        } @catch (NSException *exception) {
+            PDS_LOG_CORE_WARN(@"curl fallback exception: %@", exception.reason);
         }
 
-        if (!data) {
-            NSError *resolveError = [NSError errorWithDomain:DIDErrorDomain
-                                                      code:DIDErrorResolutionFailed
-                                                  userInfo:@{NSLocalizedDescriptionKey: @"No data received from PLC DID resolution"}];
-            completion(nil, resolveError);
-            return;
-        }
+        PDS_LOG_CORE_WARN(@"All PLC resolution methods failed for DID: %@", did);
+#endif
 
-        NSError *jsonError;
-        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
-        if (jsonError) {
-            NSError *resolveError = [NSError errorWithDomain:DIDErrorDomain
-                                                      code:DIDErrorInvalidDocument
-                                                  userInfo:@{NSLocalizedDescriptionKey: @"Invalid JSON in PLC DID document",
-                                                            NSUnderlyingErrorKey: jsonError}];
-            completion(nil, resolveError);
-            return;
-        }
-
-        DIDDocument *document = [DIDDocument documentWithJSON:json error:&jsonError];
-        if (!document) {
-            NSError *resolveError = [NSError errorWithDomain:DIDErrorDomain
-                                                      code:DIDErrorInvalidDocument
-                                                  userInfo:@{NSLocalizedDescriptionKey: @"Invalid PLC DID document structure",
-                                                            NSUnderlyingErrorKey: jsonError}];
-            completion(nil, resolveError);
-            return;
-        }
-
-        [self cacheDocument:document forDID:did];
-        completion(document, nil);
+        NSError *underlying = error ?: [NSError errorWithDomain:NSURLErrorDomain code:NSURLErrorTimedOut userInfo:nil];
+        completion(nil, [NSError errorWithDomain:DIDErrorDomain
+                                           code:DIDErrorNetworkError
+                                       userInfo:@{NSLocalizedDescriptionKey: @"Network error during PLC DID resolution",
+                                                  NSUnderlyingErrorKey: underlying}]);
     }];
 }
 
