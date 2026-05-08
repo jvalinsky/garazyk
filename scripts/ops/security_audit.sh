@@ -7,8 +7,13 @@
 # 1. No hardcoded OAuth test clients outside DEBUG
 # 2. No weak SHA-256 password hashing
 # 3. PBKDF2 with sufficient iterations
-# 4. SSRF protection cannot be disabled
-# 5. Redirect URIs use HTTPS in production
+# 4. All outbound HTTP uses PDSSafeHTTPClient (no raw NSURLSession)
+# 5. PDSLogRedactor wired into PDSLogger
+# 6. OAuthClientAuthPolicy used for client auth validation
+# 7. PDSKeyEnvelope used for key encryption
+# 8. PDSSecurityCompare used for secret comparisons
+# 9. Redirect URIs use HTTPS in production
+# 10. No skipSSRFCheck property (removed)
 #
 
 set -e
@@ -49,19 +54,13 @@ warn() {
 
 # Check 1: No hardcoded test-client outside DEBUG blocks
 echo "Checking for hardcoded OAuth credentials..."
-# This is a more sophisticated check that looks for test-client not within DEBUG guards
-# We check files and ensure test-client only appears in DEBUG-protected sections
 HAS_UNPROTECTED_TESTCLIENT=0
 
 while IFS= read -r file; do
     if [ -f "$file" ]; then
-        # Check if file contains test-client
         if grep -q "test-client" "$file"; then
-            # Extract the seedTestClient method and check it's protected
             if grep -A20 "seedTestClient" "$file" | head -1 | grep -q "seedTestClient"; then
-                # Check if #ifndef DEBUG or #else appears before test-client in the method
                 if ! (grep -B5 '"test-client"' "$file" | grep -E "#(ifndef DEBUG|else)"); then
-                    # Check if it's the call site wrapped in #ifdef DEBUG
                     if ! (grep -B2 "seedTestClient" "$file" | grep -q "#ifdef DEBUG"); then
                         HAS_UNPROTECTED_TESTCLIENT=1
                         echo "   Unprotected test-client in: $file"
@@ -95,7 +94,6 @@ echo "Checking PBKDF2 iteration count..."
 if grep -rn "600000" --include="*.m" "$PROJECT_ROOT/Garazyk/Sources/" | grep -i "iteration"; then
     pass "PBKDF2 using recommended 600,000 iterations"
 elif grep -rn "CCKeyDerivationPBKDF" --include="*.m" "$PROJECT_ROOT/Garazyk/Sources/"; then
-    # Found PBKDF2 but not 600k iterations
     ITER_COUNT=$(grep -rn "iterations.*=" --include="*.m" "$PROJECT_ROOT/Garazyk/Sources/" | grep -oE "[0-9]+" | sort -n | tail -1)
     if [ -n "$ITER_COUNT" ]; then
         if [ "$ITER_COUNT" -ge 600000 ]; then
@@ -112,27 +110,132 @@ else
 fi
 echo ""
 
-# Check 4: SSRF protection cannot be disabled
-echo "Checking SSRF protection..."
-if grep -rn "skipSSRFCheck.*=.*YES" --include="*.m" "$PROJECT_ROOT/Garazyk/Sources/" | grep -v "//"; then
-    fail "Found code that sets skipSSRFCheck = YES"
-    echo "   SSRF protection should not be disabled in production"
-elif grep -rn "skipSSRFCheck.*=" --include="*.m" "$PROJECT_ROOT/Garazyk/Sources/" | grep -v "//"; then
-    fail "Found code that modifies skipSSRFCheck"
-    echo "   skipSSRFCheck should be readonly"
+# Check 4: No skipSSRFCheck property (removed in Phase 2)
+echo "Checking skipSSRFCheck removal..."
+if grep -rn "skipSSRFCheck" --include="*.h" --include="*.m" "$PROJECT_ROOT/Garazyk/Sources/"; then
+    fail "Found skipSSRFCheck property — should be removed (use PDSSafeHTTPClient.allowPrivateHosts)"
+    echo "   skipSSRFCheck was removed; tests should use allowPrivateHosts instead"
 else
-    pass "SSRF protection cannot be disabled"
-fi
-
-# Verify skipSSRFCheck is readonly
-if grep -rn "readonly.*skipSSRFCheck" --include="*.h" "$PROJECT_ROOT/Garazyk/Sources/"; then
-    pass "skipSSRFCheck is marked readonly in header"
-else
-    warn "skipSSRFCheck should be marked readonly in HandleResolver.h"
+    pass "skipSSRFCheck property removed from codebase"
 fi
 echo ""
 
-# Check 5: HTTP redirect URIs in production
+# Check 5: Outbound HTTP uses PDSSafeHTTPClient
+echo "Checking outbound HTTP client security..."
+# Files that should import PDSSafeHTTPClient
+REQUIRED_SAFE_CLIENT_FILES=(
+    "XrpcProxyInterceptor.m"
+    "FederationClient.m"
+    "XrpcLexiconResolver.m"
+    "OAuth2Handler.m"
+    "HandleResolver.m"
+)
+MISSING_SAFE_CLIENT=0
+for file in "${REQUIRED_SAFE_CLIENT_FILES[@]}"; do
+    FOUND=$(find "$PROJECT_ROOT/Garazyk/Sources/" -name "$file" -exec grep -l "PDSSafeHTTPClient" {} \;)
+    if [ -z "$FOUND" ]; then
+        fail "PDSSafeHTTPClient not imported in $file"
+        MISSING_SAFE_CLIENT=$((MISSING_SAFE_CLIENT + 1))
+    fi
+done
+if [ $MISSING_SAFE_CLIENT -eq 0 ]; then
+    pass "All outbound HTTP files use PDSSafeHTTPClient"
+fi
+echo ""
+
+# Check 6: No raw NSURLSession dataTaskWithRequest in outbound files
+echo "Checking for raw NSURLSession usage in outbound files..."
+OUTBOUND_FILES=(
+    "XrpcProxyInterceptor.m"
+    "FederationClient.m"
+    "XrpcLexiconResolver.m"
+    "HandleResolver.m"
+)
+RAW_SESSION_USAGE=0
+for file in "${OUTBOUND_FILES[@]}"; do
+    FOUND=$(find "$PROJECT_ROOT/Garazyk/Sources/" -name "$file" -exec grep -l "dataTaskWithRequest" {} \; 2>/dev/null || true)
+    if [ -n "$FOUND" ]; then
+        fail "Raw NSURLSession dataTaskWithRequest found in $file (should use PDSSafeHTTPClient)"
+        RAW_SESSION_USAGE=$((RAW_SESSION_USAGE + 1))
+    fi
+done
+if [ $RAW_SESSION_USAGE -eq 0 ]; then
+    pass "No raw NSURLSession usage in outbound request files"
+fi
+echo ""
+
+# Check 7: PDSLogRedactor wired into PDSLogger
+echo "Checking log redaction..."
+if grep -q "PDSLogRedactor" "$PROJECT_ROOT/Garazyk/Sources/Debug/PDSLogger.m"; then
+    pass "PDSLogRedactor integrated into PDSLogger"
+else
+    fail "PDSLogRedactor not integrated into PDSLogger"
+    echo "   PDSLogger must apply redaction to all log output"
+fi
+echo ""
+
+# Check 8: OAuthClientAuthPolicy used for client auth
+echo "Checking OAuth client authentication policy..."
+if grep -q "OAuthClientAuthPolicy" "$PROJECT_ROOT/Garazyk/Sources/Auth/OAuthProvider/OAuthProvider.m"; then
+    pass "OAuthClientAuthPolicy used in OAuthProvider"
+else
+    fail "OAuthClientAuthPolicy not used in OAuthProvider"
+    echo "   Client authentication should use OAuthClientAuthPolicy for validation"
+fi
+
+if grep -q "OAuthClientAuthPolicy" "$PROJECT_ROOT/Garazyk/Sources/Auth/OAuth2Handler.m"; then
+    pass "OAuthClientAuthPolicy used in OAuth2Handler"
+else
+    fail "OAuthClientAuthPolicy not used in OAuth2Handler"
+    echo "   Client secret comparison should use OAuthClientAuthPolicy.validateClientSecret"
+fi
+echo ""
+
+# Check 9: PDSKeyEnvelope used for key encryption
+echo "Checking key envelope encryption..."
+if grep -q "PDSKeyEnvelope" "$PROJECT_ROOT/Garazyk/Sources/Database/ActorStore/ActorStore.m"; then
+    pass "PDSKeyEnvelope used in ActorStore"
+else
+    fail "PDSKeyEnvelope not used in ActorStore"
+    echo "   Key encryption should use PDSKeyEnvelope (encrypt-then-MAC)"
+fi
+
+if grep -q "PDSKeyEnvelope" "$PROJECT_ROOT/Garazyk/Sources/PLC/PLCRotationKeyManager.m"; then
+    pass "PDSKeyEnvelope used in PLCRotationKeyManager"
+else
+    fail "PDSKeyEnvelope not used in PLCRotationKeyManager"
+    echo "   Key encryption should use PDSKeyEnvelope (encrypt-then-MAC)"
+fi
+echo ""
+
+# Check 10: PDSSecurityCompare used for secret comparisons
+echo "Checking constant-time secret comparisons..."
+# Check that no isEqualToString is used for refresh tokens
+if grep -rn "refreshToken isEqualToString" --include="*.m" "$PROJECT_ROOT/Garazyk/Sources/Auth/"; then
+    fail "Found non-constant-time refresh token comparison (isEqualToString)"
+    echo "   Use PDSSecurityCompare.constantTimeEqualString for secret comparisons"
+else
+    pass "No non-constant-time refresh token comparisons"
+fi
+
+# Check that no isEqualToString is used for client_secret in OAuth2Handler
+if grep -n "clientSecret isEqualToString" "$PROJECT_ROOT/Garazyk/Sources/Auth/OAuth2Handler.m" 2>/dev/null; then
+    fail "Found non-constant-time client_secret comparison in OAuth2Handler"
+    echo "   Use OAuthClientAuthPolicy.validateClientSecret for client secret checks"
+else
+    pass "No non-constant-time client_secret comparisons"
+fi
+
+# Check that UIAuthManager uses PDSSecurityCompare
+if grep -q "PDSSecurityCompare" "$PROJECT_ROOT/Garazyk/Sources/AdminUIServer/UIAuthManager.m"; then
+    pass "UIAuthManager uses PDSSecurityCompare"
+else
+    fail "UIAuthManager does not use PDSSecurityCompare"
+    echo "   Password and token comparisons must use constant-time comparison"
+fi
+echo ""
+
+# Check 11: HTTP redirect URIs in production
 echo "Checking redirect URI security..."
 if grep -rn '"http://' --include="*.m" "$PROJECT_ROOT/Garazyk/Sources/Database/" | grep redirect_uri | grep -v "localhost" | grep -v "127.0.0.1"; then
     warn "Found HTTP redirect URIs (should use HTTPS in production)"
@@ -142,7 +245,7 @@ else
 fi
 echo ""
 
-# Check 6: Comprehensive private IP range blocking
+# Check 12: Comprehensive private IP range blocking
 echo "Checking SSRF IP range coverage..."
 REQUIRED_RANGES=(
     "0x0A000000"  # 10.0.0.0/8
@@ -156,38 +259,35 @@ REQUIRED_RANGES=(
     "0xF0000000"  # 240.0.0.0/4 (reserved)
 )
 
+# Check SSRFValidator (the canonical location) and PDSSafeHTTPClient
+SSRF_FILE=$(find "$PROJECT_ROOT/Garazyk/Sources/" -name "SSRFValidator.m" | head -1)
 MISSING_RANGES=0
 for range in "${REQUIRED_RANGES[@]}"; do
-    if ! grep -q "$range" "$PROJECT_ROOT/Garazyk/Sources/Identity/HandleResolver.m"; then
+    if [ -n "$SSRF_FILE" ] && ! grep -q "$range" "$SSRF_FILE"; then
         warn "Missing IP range check: $range"
         MISSING_RANGES=$((MISSING_RANGES + 1))
     fi
 done
 
 if [ $MISSING_RANGES -eq 0 ]; then
-    pass "All critical IP ranges are blocked"
+    pass "All critical IP ranges are blocked in SSRFValidator"
 else
     warn "Missing $MISSING_RANGES IP range checks"
 fi
 echo ""
 
-# Check 7: IPv4-mapped IPv6 address checking
+# Check 13: IPv4-mapped IPv6 address checking
 echo "Checking IPv6 SSRF protection..."
-if grep -q "IPv4-mapped" "$PROJECT_ROOT/Garazyk/Sources/Identity/HandleResolver.m"; then
-    if grep -q "::ffff:0:0/96" "$PROJECT_ROOT/Garazyk/Sources/Identity/HandleResolver.m"; then
-        pass "IPv4-mapped IPv6 addresses are checked"
-    else
-        warn "IPv4-mapped IPv6 comment found but implementation unclear"
-    fi
+if [ -n "$SSRF_FILE" ] && grep -q "IPv4-mapped" "$SSRF_FILE"; then
+    pass "IPv4-mapped IPv6 addresses are checked"
 else
-    warn "IPv4-mapped IPv6 address checking not found"
+    warn "IPv4-mapped IPv6 address checking not found in SSRFValidator"
     echo "   Add ::ffff:0:0/96 range checking to prevent IPv6 SSRF bypass"
 fi
 echo ""
 
-# Check 8: DEBUG-only test client seeding
+# Check 14: DEBUG-only test client seeding
 echo "Checking test client seeding protection..."
-# Check OAuth2Handler.m has #ifdef DEBUG before seedTestClient call
 if grep -B3 "seedTestClient" "$PROJECT_ROOT/Garazyk/Sources/Auth/OAuth2Handler.m" | grep -q "#ifdef DEBUG"; then
     pass "Test client seeding protected by DEBUG flag in OAuth2Handler"
 else
@@ -195,7 +295,6 @@ else
     echo "   The seedTestClient call should be wrapped in #ifdef DEBUG"
 fi
 
-# Check PDSDatabase.m seedTestClient method blocks in release
 if grep -A5 -- "- (BOOL)seedTestClient" "$PROJECT_ROOT/Garazyk/Sources/Database/PDSDatabase.m" | grep -q "#ifndef DEBUG"; then
     pass "seedTestClient returns error in release builds"
 else
@@ -204,13 +303,54 @@ else
 fi
 echo ""
 
-# Check 9: Redirect URI scheme validation
+# Check 15: Redirect URI scheme validation
 echo "Checking redirect URI scheme validation..."
 if grep -q "url.scheme.*https" "$PROJECT_ROOT/Garazyk/Sources/Auth/OAuth2Handler.m"; then
     pass "Redirect URI scheme validation present"
 else
     warn "Redirect URI scheme validation not found"
     echo "   Should enforce HTTPS in production builds"
+fi
+echo ""
+
+# Check 16: UIAuthManager session security
+echo "Checking UIAuthManager session security..."
+if grep -q "PBKDF2\|pbkdf2\|CCKeyDerivationPBKDF" "$PROJECT_ROOT/Garazyk/Sources/AdminUIServer/UIAuthManager.m"; then
+    pass "UIAuthManager uses PBKDF2 password hashing"
+else
+    fail "UIAuthManager does not use PBKDF2 password hashing"
+    echo "   Plaintext password storage is a critical vulnerability"
+fi
+
+if grep -q "SecRandomCopyBytes" "$PROJECT_ROOT/Garazyk/Sources/AdminUIServer/UIAuthManager.m"; then
+    pass "UIAuthManager uses CSPRNG for session tokens"
+else
+    warn "UIAuthManager may not use CSPRNG for session tokens"
+    echo "   NSUUID is not a CSPRNG — use SecRandomCopyBytes"
+fi
+
+if grep -q "sessionTTL\|expiryTime" "$PROJECT_ROOT/Garazyk/Sources/AdminUIServer/UIAuthManager.m"; then
+    pass "UIAuthManager has session TTL/expiry"
+else
+    warn "UIAuthManager may not have session TTL"
+    echo "   Sessions should expire after a reasonable time"
+fi
+echo ""
+
+# Check 17: SQL injection protection
+echo "Checking SQL injection protection..."
+if grep -q "isValidColumnType" "$PROJECT_ROOT/Garazyk/Sources/Database/ActorStore/ActorStore.m"; then
+    pass "addColumnIfNeeded validates column types"
+else
+    warn "addColumnIfNeeded may not validate column types"
+    echo "   Free-form type strings in ALTER TABLE are an injection vector"
+fi
+
+if grep -A5 "SELECT name FROM sqlite_master" "$PROJECT_ROOT/Garazyk/Sources/Database/ActorStore/ActorStore.m" | grep -q "sqlite3_bind_text"; then
+    pass "Table name check uses parameterized query"
+else
+    warn "Table name check may use string interpolation"
+    echo "   sqlite_master queries should use parameterized queries"
 fi
 echo ""
 

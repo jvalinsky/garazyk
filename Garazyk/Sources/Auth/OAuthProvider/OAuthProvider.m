@@ -7,6 +7,7 @@
  */
 
 #import "Auth/OAuthProvider/OAuthProvider.h"
+#import "Auth/OAuthClientAuthPolicy.h"
 #import "Auth/Crypto/AuthCryptoDPoP.h"
 #import "Auth/Crypto/AuthCryptoJWK.h"
 #import "Auth/Crypto/AuthCryptoBase64URL.h"
@@ -132,12 +133,7 @@ NSString * const OAuthProviderErrorDomain = @"com.atproto.oauthprovider";
         _parExpiresIn = 60;
         _authCodeExpiresIn = 600;
 
-        _supportedTokenEndpointAuthMethods = @[
-            @"none",
-            @"client_secret_post",
-            @"client_secret_basic",
-            @"private_key_jwt"
-        ];
+        _supportedTokenEndpointAuthMethods = [OAuthClientAuthPolicy supportedTokenEndpointAuthMethods];
 
         if (!storage) {
             _inMemoryPARs = [NSMutableDictionary dictionary];
@@ -308,7 +304,8 @@ NSString * const OAuthProviderErrorDomain = @"com.atproto.oauthprovider";
         [self processAuthorizationCodeGrant:request completion:completion];
     } else if ([request.grantType isEqualToString:@"refresh_token"]) {
         [self processRefreshTokenGrant:request completion:completion];
-    } else if ([request.grantType isEqualToString:@"client_credentials"]) {
+    } else if ([request.grantType isEqualToString:@"client_credentials"] &&
+               [[OAuthClientAuthPolicy supportedGrantTypes] containsObject:@"client_credentials"]) {
         [self processClientCredentialsGrant:request completion:completion];
     } else {
         completion(nil, [self errorWithCode:OAuthProviderErrorUnsupportedGrantType
@@ -549,7 +546,7 @@ NSString * const OAuthProviderErrorDomain = @"com.atproto.oauthprovider";
     metadata[@"registration_endpoint"] = [NSString stringWithFormat:@"%@/oauth/register", self.issuer ?: @"https://example.com"];
     metadata[@"response_types_supported"] = @[@"code"];
     metadata[@"response_modes_supported"] = @[@"query", @"fragment"];
-    metadata[@"grant_types_supported"] = @[@"authorization_code", @"refresh_token", @"client_credentials"];
+    metadata[@"grant_types_supported"] = [OAuthClientAuthPolicy supportedGrantTypes];
     metadata[@"token_endpoint_auth_methods_supported"] = self.supportedTokenEndpointAuthMethods;
     metadata[@"code_challenge_methods_supported"] = @[@"S256"];
     metadata[@"revocation_endpoint"] = [NSString stringWithFormat:@"%@/oauth/revoke", self.issuer ?: @"https://example.com"];

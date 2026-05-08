@@ -16,6 +16,7 @@
 #import "Database/Schema/PDSSchemaManager.h"
 #import "Database/Migrations/PDSMigrationManager.h"
 #import "Auth/Secp256k1.h"
+#import "Auth/PDSKeyEnvelope.h"
 #import "Debug/PDSLogger.h"
 #import "PDSActorStoreInternal.h"
 #import "PDSActorStore+Account.h"
@@ -1571,14 +1572,9 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
         return NO;
     }
     
-    // Encrypt the private key using AES-256-CBC
-    NSData *encryptedKey = [self encryptData:privateKey withKey:encryptionKey];
+    // Encrypt the private key using PDSKeyEnvelope (encrypt-then-MAC)
+    NSData *encryptedKey = [PDSKeyEnvelope seal:privateKey withKey:encryptionKey error:error];
     if (!encryptedKey) {
-        if (error) {
-            *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
-                                         code:-1
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to encrypt private key"}];
-        }
         return NO;
     }
     
@@ -1672,8 +1668,26 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
         return nil;
     }
     
-    // Decrypt the private key
-    NSData *privateKey = [self decryptData:encryptedKey withKey:decryptionKey];
+    // Decrypt the private key — try PDSKeyEnvelope first, fall back to legacy CBC
+    NSData *privateKey = nil;
+    if ([PDSKeyEnvelope isVersionedEnvelope:encryptedKey]) {
+        NSError *envelopeError = nil;
+        privateKey = [PDSKeyEnvelope openEnvelope:encryptedKey withKey:decryptionKey error:&envelopeError];
+        if (!privateKey) {
+            if (error) {
+                *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                             code:-1
+                                         userInfo:@{
+                                             NSLocalizedDescriptionKey: @"Failed to decrypt rotation key envelope",
+                                             NSUnderlyingErrorKey: envelopeError
+                                         }];
+            }
+            return nil;
+        }
+    } else {
+        // Legacy AES-256-CBC decryption (keys encrypted before envelope upgrade)
+        privateKey = [self decryptData:encryptedKey withKey:decryptionKey];
+    }
     if (!privateKey || privateKey.length != 32) {
         if (error) {
             *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
@@ -1786,6 +1800,22 @@ static BOOL isValidColumnName(NSString *name) {
     return name && [validColumns containsObject:name];
 }
 
+static BOOL isValidColumnType(NSString *type) {
+    static NSSet *validTypes = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        validTypes = [NSSet setWithObjects:
+            @"TEXT", @"INTEGER", @"REAL", @"BLOB", @"BOOLEAN",
+            @"TEXT NOT NULL", @"INTEGER NOT NULL", @"REAL NOT NULL", @"BLOB NOT NULL",
+            @"TEXT DEFAULT NULL", @"INTEGER DEFAULT 0", @"INTEGER DEFAULT 1",
+            @"REAL DEFAULT 0.0", @"BLOB DEFAULT NULL",
+            @"INTEGER PRIMARY KEY AUTOINCREMENT",
+            @"TEXT UNIQUE", @"INTEGER UNIQUE",
+            nil];
+    });
+    return type && [validTypes containsObject:type.uppercaseString];
+}
+
 - (BOOL)addColumnIfNeeded:(NSString *)tableName column:(NSString *)columnName type:(NSString *)type {
     // Validate table and column names against whitelist
     if (!isValidTableName(tableName)) {
@@ -1796,16 +1826,17 @@ static BOOL isValidColumnName(NSString *name) {
         PDS_LOG_DB_ERROR(@"Invalid column name: %@", columnName);
         return NO;
     }
-    if (!type || type.length == 0) {
-        PDS_LOG_DB_ERROR(@"Invalid column type");
+    if (!isValidColumnType(type)) {
+        PDS_LOG_DB_ERROR(@"Invalid column type: %@", type);
         return NO;
     }
 
-    // First, check if the table exists
-    NSString *tableCheckSql = [NSString stringWithFormat:@"SELECT name FROM sqlite_master WHERE type='table' AND name='%@'", tableName];
+    // First, check if the table exists (parameterized query)
     sqlite3_stmt *tableStmt;
     BOOL tableExists = NO;
+    NSString *tableCheckSql = @"SELECT name FROM sqlite_master WHERE type='table' AND name=?";
     if (sqlite3_prepare_v2(_db, tableCheckSql.UTF8String, -1, &tableStmt, NULL) == SQLITE_OK) {
+        sqlite3_bind_text(tableStmt, 1, tableName.UTF8String, -1, SQLITE_TRANSIENT);
         if (sqlite3_step(tableStmt) == SQLITE_ROW) {
             tableExists = YES;
         }

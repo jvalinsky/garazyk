@@ -1,5 +1,5 @@
 const fs = require('fs');
-const wasmCode = fs.readFileSync('/Users/jack/Software/garazyk/objc-jupyter-wasm/result/wasm/kernel.wasm');
+const wasmCode = fs.readFileSync('../../../objc-jupyter-wasm/result/wasm/kernel.wasm');
 
 /* Mock WASI snapshot preview 1 — needed by the WASM module */
 const wasiSnapshot = {

@@ -47,16 +47,6 @@ typedef NS_ENUM(NSInteger, HandleError) {
  */
 @interface HandleResolver : NSObject
 
-/*! URL session for HTTP requests (platform-specific). */
-#if defined(__APPLE__)
-@property (nonatomic, strong) NSURLSession *session;
-#else
-@property (nonatomic, strong) NSURLConnection *session;
-#endif
-
-/*! Skip SSRF checks (for testing only). */
-@property (nonatomic, assign) BOOL skipSSRFCheck;
-
 /*! Cache of resolved handle -> DID mappings. */
 @property (nonatomic, strong) NSCache<NSString *, NSString *> *resolutionCache;
 

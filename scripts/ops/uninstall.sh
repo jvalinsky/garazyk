@@ -64,7 +64,7 @@ remove_config() {
     if [[ "${REMOVE_CONFIG:-false}" == "true" ]]; then
         rm -rf /usr/local/etc/kaszlak && log_info "Removed configuration" || log_warn "Config directory not found"
     else
-        log_info "Skipped config removal (use --purge to remove)")
+        log_info "Skipped config removal (use --purge to remove)"
     fi
 }
 
@@ -79,7 +79,7 @@ remove_user() {
             dscl . -delete "/Groups/_pds" && log_info "Removed group '_pds'" || log_warn "Failed to remove group"
         fi
     else
-        log_info "Skipped user removal (use --remove-user to remove)")
+        log_info "Skipped user removal (use --remove-user to remove)"
     fi
 }
 

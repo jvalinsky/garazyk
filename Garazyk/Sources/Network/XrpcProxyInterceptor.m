@@ -9,6 +9,7 @@
 #import "Database/Service/ServiceDatabases.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "Network/PDSSafeHTTPClient.h"
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcHandler.h"
 
@@ -414,31 +415,20 @@ static BOOL proxyXrpcRequest(HttpRequest *request, HttpResponse *response,
     }
   }
 
-  NSURLSessionConfiguration *sessionConfig =
-      [NSURLSessionConfiguration ephemeralSessionConfiguration];
-  sessionConfig.timeoutIntervalForRequest = 30.0;
-  NSURLSession *session = [NSURLSession sessionWithConfiguration:sessionConfig
-                                                        delegate:nil
-                                                   delegateQueue:nil];
+  PDSSafeHTTPClientOptions *safeOptions = [[PDSSafeHTTPClientOptions alloc] init];
+  safeOptions.timeout = 30.0;
+  safeOptions.maxResponseBytes = 10 * 1024 * 1024; // 10 MB
+  safeOptions.allowHTTP = NO;
+  safeOptions.allowPrivateHosts = isTrusted;
+  safeOptions.followRedirects = YES;
 
-  dispatch_semaphore_t sem = dispatch_semaphore_create(0);
-  __block NSHTTPURLResponse *upstreamResponse = nil;
-  __block NSData *upstreamBody = nil;
-  __block NSError *proxyError = nil;
-
-  NSURLSessionDataTask *task = [session
-      dataTaskWithRequest:upstreamRequest
-        completionHandler:^(NSData *data, NSURLResponse *resp, NSError *error) {
-          upstreamBody = data;
-          upstreamResponse = ([resp isKindOfClass:[NSHTTPURLResponse class]])
-                                 ? (NSHTTPURLResponse *)resp
-                                 : nil;
-          proxyError = error;
-          dispatch_semaphore_signal(sem);
-        }];
-  [task resume];
-  dispatch_semaphore_wait(sem, DISPATCH_TIME_FOREVER);
-  [session finishTasksAndInvalidate];
+  NSHTTPURLResponse *upstreamResponse = nil;
+  NSError *proxyError = nil;
+  NSData *upstreamBody = [[PDSSafeHTTPClient sharedClient]
+      sendSynchronousRequest:upstreamRequest
+                     options:safeOptions
+                    response:&upstreamResponse
+                       error:&proxyError];
 
   if (!upstreamResponse) {
     response.statusCode = 502;

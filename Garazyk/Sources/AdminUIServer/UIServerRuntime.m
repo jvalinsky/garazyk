@@ -156,8 +156,8 @@ static NSUInteger UISafeLength(id value) {
             return;
         }
         NSString *token = [weakSelf.authManager createSessionToken];
-        // Omit Secure flag to allow HTTP localhost deployment; in production with TLS this should be added
-        NSString *cookie = [NSString stringWithFormat:@"ui_admin_token=%@; Path=/; Max-Age=28800; HttpOnly; SameSite=Strict", token];
+        // Use secure cookie helper — omit Secure flag for HTTP localhost
+        NSString *cookie = [weakSelf.authManager cookieHeaderValueForToken:token secure:NO];
         [response setHeader:cookie forKey:@"Set-Cookie"];
         response.statusCode = 200;
         [response setJsonBody:@{@"ok": @YES}];

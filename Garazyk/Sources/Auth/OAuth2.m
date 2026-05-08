@@ -15,6 +15,7 @@
 #import "Auth/Session.h"
 #import "Auth/TOTPService.h"
 #import "Auth/WebAuthnVerifier.h"
+#import "Security/PDSSecurityCompare.h"
 #import "Auth/Base32Utils.h"
 #import "Auth/CryptoUtils.h"
 #import "Auth/PDSReplayCache.h"
@@ -902,7 +903,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
     // 1. Try to find active session in memory
     Session *existingSession = nil;
     for (Session *session in self.activeSessions.allValues) {
-        if ([session.refreshToken isEqualToString:request.refreshToken]) {
+        if ([PDSSecurityCompare constantTimeEqualString:session.refreshToken string:request.refreshToken]) {
             existingSession = session;
             break;
         }
@@ -1054,7 +1055,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
     // Find session with this refresh token
     Session *foundSession = nil;
     for (Session *session in self.activeSessions.allValues) {
-        if ([session.refreshToken isEqualToString:refreshToken]) {
+        if ([PDSSecurityCompare constantTimeEqualString:session.refreshToken string:refreshToken]) {
             foundSession = session;
             break;
         }
@@ -1098,7 +1099,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
     dispatch_sync(self.sessionQueue, ^{
         NSString *foundSessionId = nil;
         for (Session *session in self.activeSessions.allValues) {
-            if ([session.refreshToken isEqualToString:token]) {
+            if ([PDSSecurityCompare constantTimeEqualString:session.refreshToken string:token]) {
                 foundSessionId = session.sessionID;
                 break;
             }

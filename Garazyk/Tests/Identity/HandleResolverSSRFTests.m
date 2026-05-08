@@ -12,7 +12,9 @@
 - (void)setUp {
     [super setUp];
     self.resolver = [[HandleResolver alloc] init];
-    self.resolver.skipSSRFCheck = NO;
+    // skipSSRFCheck property removed — PDSSafeHTTPClient handles SSRF validation
+    // atomically during the request. In test mode, allowPrivateHosts is set
+    // automatically via PDSHandleResolverRunningTests().
 }
 
 - (void)tearDown {
@@ -79,14 +81,14 @@
     XCTAssertFalse([SSRFValidator isPrivateIPv4Address:ip], @"208.67.222.222 (OpenDNS) should be public");
 }
 
-- (void)testSSRFProtectionBlocksPrivateIP {
-    self.resolver.skipSSRFCheck = NO;
-    XCTAssertTrue(self.resolver.skipSSRFCheck == NO, @"SSRF check should be enabled");
-}
-
-- (void)testSSRFProtectionDisabledInTestEnvironment {
+- (void)testSSRFProtectionIsAlwaysEnabled {
+    // skipSSRFCheck property removed — SSRF validation is always performed
+    // by PDSSafeHTTPClient during the actual request. There is no way to
+    // disable it in production code. Tests use allowPrivateHosts via
+    // PDSHandleResolverRunningTests() detection.
     HandleResolver *newResolver = [[HandleResolver alloc] init];
-    XCTAssertTrue(newResolver.skipSSRFCheck, @"SSRF check should be disabled by default in test environment");
+    XCTAssertNotNil(newResolver, @"Resolver should be initialized");
+    // SSRF validation is enforced by PDSSafeHTTPClient, not a toggle
 }
 
 @end

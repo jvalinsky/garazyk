@@ -1,5 +1,6 @@
 #import "PLCRotationKeyManager.h"
 #import "Auth/Secp256k1.h"
+#import "Auth/PDSKeyEnvelope.h"
 #import "Core/PDSDataPaths.h"
 #import "Debug/PDSLogger.h"
 #import "Auth/CryptoUtils.h"
@@ -102,22 +103,26 @@ static NSString *PLCRotationKeyStorageDirectory(void) {
             privateKeyData = keyData;
             PDS_LOG_INFO(@"Detected legacy unencrypted rotation key.");
             
-            // Migrate to encrypted if master secret is available
+            // Migrate to envelope encryption if master secret is available
             NSData *encKey = [self encryptionKeyWithError:nil];
             if (encKey) {
-                NSData *encrypted = [CryptoUtils encryptData:privateKeyData withKey:encKey];
+                NSData *encrypted = [PDSKeyEnvelope seal:privateKeyData withKey:encKey error:nil];
                 if (encrypted) {
                     if ([encrypted writeToFile:keyPath atomically:YES]) {
-                        PDS_LOG_INFO(@"Successfully migrated rotation key to encrypted storage.");
+                        PDS_LOG_INFO(@"Successfully migrated rotation key to envelope encryption.");
                         [self ensureSecurePermissionsForPath:keyPath isDirectory:NO];
                     }
                 }
             }
         } else if (keyData.length > 32) {
-            // Likely encrypted key
+            // Encrypted key — try envelope first, fall back to legacy CBC
             NSData *encKey = [self encryptionKeyWithError:error];
             if (encKey) {
-                privateKeyData = [CryptoUtils decryptData:keyData withKey:encKey];
+                if ([PDSKeyEnvelope isVersionedEnvelope:keyData]) {
+                    privateKeyData = [PDSKeyEnvelope openEnvelope:keyData withKey:encKey error:nil];
+                } else {
+                    privateKeyData = [CryptoUtils decryptData:keyData withKey:encKey];
+                }
                 if (!privateKeyData) {
                     PDS_LOG_ERROR(@"Failed to decrypt rotation key. Possible invalid master secret.");
                     if (error && !*error) {
@@ -173,7 +178,7 @@ static NSString *PLCRotationKeyStorageDirectory(void) {
         NSData *dataToSave = self.rotationKeyPair.privateKey;
         NSData *encKey = [self encryptionKeyWithError:nil];
         if (encKey) {
-            NSData *encrypted = [CryptoUtils encryptData:dataToSave withKey:encKey];
+            NSData *encrypted = [PDSKeyEnvelope seal:dataToSave withKey:encKey error:nil];
             if (encrypted) {
                 dataToSave = encrypted;
             }
