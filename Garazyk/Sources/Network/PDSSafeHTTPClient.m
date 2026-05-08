@@ -102,7 +102,7 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
     return YES;
 }
 
-- (void)dataTaskWithRequest:(NSURLRequest *)request
+- (void)performSafeDataTaskWithRequest:(NSURLRequest *)request
                     options:(PDSSafeHTTPClientOptions *)options
                  completion:(void (^)(NSData *, NSHTTPURLResponse *, NSError *))completion {
     if (!completion) {
@@ -126,7 +126,7 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
                                                           delegate:self
                                                      delegateQueue:nil];
     NSURLSessionDataTask *task =
-        [session dataTaskWithRequest:request
+        [session performSafeDataTaskWithRequest:request
                    completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         NSNumber *taskID = @(task.taskIdentifier);
         NSError *redirectError = nil;
@@ -172,7 +172,7 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
     __block NSHTTPURLResponse *resultResponse = nil;
     __block NSError *resultError = nil;
 
-    [self dataTaskWithRequest:request options:options completion:^(NSData *data, NSHTTPURLResponse *httpResponse, NSError *requestError) {
+    [self performSafeDataTaskWithRequest:request options:options completion:^(NSData *data, NSHTTPURLResponse *httpResponse, NSError *requestError) {
         resultData = data;
         resultResponse = httpResponse;
         resultError = requestError;

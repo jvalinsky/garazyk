@@ -3781,7 +3781,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   safeOptions.allowPrivateHosts = NO;
   safeOptions.followRedirects = YES;
 
-  [[PDSSafeHTTPClient sharedClient] dataTaskWithRequest:request
+  [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
                                                  options:safeOptions
                                               completion:^(NSData *data, NSHTTPURLResponse *httpResponse, NSError *err) {
     // Map PDSSafeHTTPClient SSRF errors to OAuth error codes

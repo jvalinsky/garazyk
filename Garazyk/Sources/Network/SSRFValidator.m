@@ -42,12 +42,15 @@ NSErrorDomain const SSRFValidatorErrorDomain = @"com.atproto.pds.ssrfvalidator";
     if (memcmp(&ip6, &in6addr_loopback, sizeof(struct in6_addr)) == 0) return YES;
     if ((bytes[0] & 0xFE) == 0xFC) return YES;            // fc00::/7
     if (bytes[0] == 0xFE && (bytes[1] & 0xC0) == 0x80) return YES; // fe80::/10
-    if (memcmp(bytes, (uint8_t[]){0,0,0,0,0,0,0,0,0,0,0xFF,0xFF}, 12) == 0) {
+    
+    // IPv4-mapped IPv6 ::ffff:0:0/96
+    if (memcmp(bytes, (uint8_t[]){0,0,0,0,0,0,0,0,0,0,0xFF,0xFF,0,0,0,0}, 12) == 0) {
         uint32_t ipv4;
         memcpy(&ipv4, bytes + 12, sizeof(ipv4));
         ipv4 = ntohl(ipv4);
         return [self isPrivateIPv4Address:ipv4];
     }
+    
     return NO;
 }
 

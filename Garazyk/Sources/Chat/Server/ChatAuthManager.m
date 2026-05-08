@@ -43,7 +43,7 @@ static const NSTimeInterval kKeyRefreshInterval = 3600.0; // Re-fetch JWKS every
     __block NSError *fetchError = nil;
     __block NSInteger statusCode = 0;
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request
+    NSURLSessionDataTask *task = [[NSURLSession sharedSession] performSafeDataTaskWithRequest:request
         completionHandler:^(NSData *_Nullable d, NSURLResponse *_Nullable r, NSError *_Nullable e) {
             data = d;
             fetchError = e;

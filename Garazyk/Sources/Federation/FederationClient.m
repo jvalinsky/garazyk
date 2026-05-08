@@ -58,7 +58,7 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
     safeOptions.allowPrivateHosts = NO;
     safeOptions.followRedirects = YES;
 
-    [[PDSSafeHTTPClient sharedClient] dataTaskWithRequest:request
+    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
                                                    options:safeOptions
                                                 completion:^(NSData *data, NSHTTPURLResponse *response, NSError *error) {
         NSInteger statusCode = response ? response.statusCode : 0;
@@ -244,7 +244,7 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
     safeOptions.allowPrivateHosts = NO;
     safeOptions.followRedirects = YES;
 
-    [[PDSSafeHTTPClient sharedClient] dataTaskWithRequest:request
+    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
                                                    options:safeOptions
                                                 completion:^(NSData *data, NSHTTPURLResponse *response, NSError *error) {
         completion(data, response, error);

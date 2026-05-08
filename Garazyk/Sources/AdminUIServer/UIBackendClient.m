@@ -1615,7 +1615,7 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
     dispatch_semaphore_t sem = dispatch_semaphore_create(0);
 
     NSURLSession *session = [NSURLSession sharedSession];
-    [[session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *err) {
+    [[session performSafeDataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *err) {
         responseData = data;
         httpResponse = [response isKindOfClass:[NSHTTPURLResponse class]] ? (NSHTTPURLResponse *)response : nil;
         requestError = err;
@@ -1710,7 +1710,7 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
     dispatch_semaphore_t sem = dispatch_semaphore_create(0);
 
     NSURLSession *session = [NSURLSession sharedSession];
-    [[session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *err) {
+    [[session performSafeDataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *err) {
         responseData = data;
         httpResponse = [response isKindOfClass:[NSHTTPURLResponse class]] ? (NSHTTPURLResponse *)response : nil;
         requestError = err;
@@ -1797,7 +1797,7 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
     dispatch_semaphore_t sem = dispatch_semaphore_create(0);
 
     NSURLSession *session = [NSURLSession sharedSession];
-    [[session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+    [[session performSafeDataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         if (!error && [response isKindOfClass:[NSHTTPURLResponse class]]) {
             statusCode = ((NSHTTPURLResponse *)response).statusCode;
         }
