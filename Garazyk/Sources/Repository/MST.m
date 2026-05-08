@@ -12,12 +12,16 @@
 
 @interface MSTNodeEntry ()
 @property (nonatomic, strong, readwrite, nullable) MSTNode *internalTree;
+@property (nonatomic, strong, readwrite, nullable) CID *treeCID;
 @property (nonatomic, copy, readwrite) NSString *fullKey;
 @end
 
 @interface MSTNode ()
 @property (nonatomic, assign, readwrite) uint32_t level;
 @property (nonatomic, strong, readwrite, nullable) MSTNode *internalLeft;
+@property (nonatomic, strong, readwrite, nullable) CID *leftCID;
+@property (nonatomic, strong, readwrite, nullable) CID *originalCID;
+@property (nonatomic, strong, readwrite, nullable) NSData *originalCBOR;
 @property (nonatomic, strong, readwrite) NSMutableArray<MSTNodeEntry *> *internalEntries;
 - (instancetype)initWithLevel:(uint32_t)level;
 - (CID *)getCID:(NSMapTable<MSTNode *, CID *> *)cache;
@@ -223,6 +227,12 @@
     CID *cached = [cache objectForKey:self];
     if (cached) return cached;
     
+    // Preserve original CID if the node hasn't been modified
+    if (self.originalCID) {
+        [cache setObject:self.originalCID forKey:self];
+        return self.originalCID;
+    }
+    
     NSData *cbor = [self serializeToCBOR:cache];
     CID *cid = [CID cidWithDigest:[CID sha256Digest:cbor] codec:0x71];
     [cache setObject:cid forKey:self];
@@ -230,6 +240,9 @@
 }
 
 - (NSData *)serializeToCBOR:(NSMapTable<MSTNode *, CID *> *)cache {
+    // Preserve original CBOR if the node hasn't been modified
+    if (self.originalCBOR) return self.originalCBOR;
+
     NSMutableArray<CBORValue *> *entriesCBOR = [NSMutableArray array];
     NSData *prevKeyData = [NSData data];
     
@@ -261,6 +274,10 @@
             NSMutableData *tData = [NSMutableData dataWithBytes:"\x00" length:1];
             [tData appendData:tCID.bytes];
             dict[[CBORValue textString:@"t"]] = [CBORValue tag:42 value:[CBORValue byteString:tData]];
+        } else if (entry.treeCID) {
+            NSMutableData *tData = [NSMutableData dataWithBytes:"\x00" length:1];
+            [tData appendData:entry.treeCID.bytes];
+            dict[[CBORValue textString:@"t"]] = [CBORValue tag:42 value:[CBORValue byteString:tData]];
         } else {
             dict[[CBORValue textString:@"t"]] = [CBORValue nilValue];
         }
@@ -280,6 +297,10 @@
         CID *lCID = [self.internalLeft getCID:cache];
         NSMutableData *lData = [NSMutableData dataWithBytes:"\x00" length:1];
         [lData appendData:lCID.bytes];
+        nodeDict[[CBORValue textString:@"l"]] = [CBORValue tag:42 value:[CBORValue byteString:lData]];
+    } else if (self.leftCID) {
+        NSMutableData *lData = [NSMutableData dataWithBytes:"\x00" length:1];
+        [lData appendData:self.leftCID.bytes];
         nodeDict[[CBORValue textString:@"l"]] = [CBORValue tag:42 value:[CBORValue byteString:lData]];
     } else {
         nodeDict[[CBORValue textString:@"l"]] = [CBORValue nilValue];
@@ -389,6 +410,7 @@
 @interface MST ()
 @property (nonatomic, strong, readwrite) MSTNode *root;
 @property (nonatomic, strong, readwrite) NSData *emptyTreeHash;
+@property (nonatomic, copy, nullable) MSTBlockProvider blockProvider;
 @end
 
 @implementation MST
@@ -761,7 +783,18 @@
 
 + (nullable instancetype)deserializeFromCBOR:(NSData *)data {
     if (!data) return nil;
+    
+    MSTNode *rootNode = [self deserializeNodeFromCBOR:data];
+    if (!rootNode) return nil;
+    
+    // Store original CBOR and compute CID to preserve it
+    rootNode.originalCBOR = data;
+    rootNode.originalCID = [CID cidWithDigest:[CID sha256Digest:data] codec:0x71];
+    
+    return [[MST alloc] initWithRootNode:rootNode];
+}
 
++ (nullable MSTNode *)deserializeNodeFromCBOR:(NSData *)data {
     CBORValue *rootValue = [CBORValue decode:data];
     if (!rootValue || rootValue.type != CBORTypeMap) {
         return nil;
@@ -799,18 +832,46 @@
             continue;
         }
 
-        NSData *cidBytes = [valueBytes.byteString subdataWithRange:NSMakeRange(1, valueBytes.byteString.length - 1)];
-        CID *valueCID = [CID cidFromBytes:cidBytes];
+        NSData *vCidBytes = [valueBytes.byteString subdataWithRange:NSMakeRange(1, valueBytes.byteString.length - 1)];
+        CID *valueCID = [CID cidFromBytes:vCidBytes];
         if (!valueCID) {
             continue;
         }
 
+        CID *treeCID = nil;
+        CBORValue *treeTag = entryMap.map[[CBORValue textString:@"t"]];
+        if (treeTag && treeTag.type == CBORTypeTag) {
+            NSData *tCidBytes = treeTag.tagValue.byteString;
+            if (tCidBytes.length > 1) {
+                treeCID = [CID cidFromBytes:[tCidBytes subdataWithRange:NSMakeRange(1, tCidBytes.length - 1)]];
+            }
+        }
+
         MSTNodeEntry *entry = [[MSTNodeEntry alloc] initWithKey:fullKey value:valueCID tree:nil];
+        entry.treeCID = treeCID;
         [entries addObject:entry];
     }
 
-    MSTNode *rootNode = [[MSTNode alloc] initWithLevel:0 left:nil entries:entries];
-    return [[MST alloc] initWithRootNode:rootNode];
+    CID *leftCID = nil;
+    CBORValue *leftTag = rootValue.map[[CBORValue textString:@"l"]];
+    if (leftTag && leftTag.type == CBORTypeTag) {
+        NSData *lCidBytes = leftTag.tagValue.byteString;
+        if (lCidBytes.length > 1) {
+            leftCID = [CID cidFromBytes:[lCidBytes subdataWithRange:NSMakeRange(1, lCidBytes.length - 1)]];
+        }
+    }
+
+    // Determine level based on the first key's depth (approximation for deserialized nodes)
+    uint32_t level = 0;
+    if (entries.count > 0) {
+        level = [MST keyDepth:entries[0].fullKey];
+    }
+
+    MSTNode *node = [[MSTNode alloc] initWithLevel:level left:nil entries:entries];
+    node.leftCID = leftCID;
+    node.originalCBOR = data;
+    node.originalCID = [CID cidWithDigest:[CID sha256Digest:data] codec:0x71];
+    return node;
 }
 
 #pragma mark - Visualization & Export
@@ -1180,15 +1241,26 @@ asDeleteIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
 #pragma mark - Proof Operations
 
 - (nullable NSArray<MSTNode *> *)getProofNodesForKey:(NSString *)key {
+    return [self getProofNodesForKey:key blockProvider:nil];
+}
+
+- (nullable NSArray<MSTNode *> *)getProofNodesForKey:(NSString *)key
+                                       blockProvider:(nullable MSTBlockProvider)blockProvider {
     if (!self.root) return nil;
     
     NSMutableArray<MSTNode *> *proofPath = [NSMutableArray array];
-    [self collectProofNodes:self.root forKey:key into:proofPath];
+    [self collectProofNodes:self.root
+                     forKey:key
+                       into:proofPath
+              blockProvider:blockProvider ?: self.blockProvider];
     
     return proofPath.count > 0 ? [proofPath copy] : nil;
 }
 
-- (BOOL)collectProofNodes:(MSTNode *)node forKey:(NSString *)key into:(NSMutableArray<MSTNode *> *)path {
+- (BOOL)collectProofNodes:(MSTNode *)node
+                   forKey:(NSString *)key
+                     into:(NSMutableArray<MSTNode *> *)path
+            blockProvider:(nullable MSTBlockProvider)blockProvider {
     if (!node) return NO;
     
     [path addObject:node];
@@ -1197,14 +1269,41 @@ asDeleteIntoOperations:(NSMutableArray<MSTDiffOperation *> *)operations {
     NSInteger idx = [node binarySearchIndexForKey:key];
     
     // Check if we found the key at this level
-    if (idx < node.internalEntries.count && [node.internalEntries[idx].fullKey isEqualToString:key]) {
+    if (idx < (NSInteger)node.internalEntries.count && [node.internalEntries[idx].fullKey isEqualToString:key]) {
         return YES; // Found the key
     }
     
     // Recurse into appropriate subtree
-    MSTNode *subtree = (idx == 0) ? node.internalLeft : node.internalEntries[idx-1].internalTree;
+    MSTNode *subtree = nil;
+    CID *subtreeCID = nil;
+    
+    if (idx == 0) {
+        subtree = node.internalLeft;
+        subtreeCID = node.leftCID;
+    } else {
+        MSTNodeEntry *entry = node.internalEntries[idx - 1];
+        subtree = entry.internalTree;
+        subtreeCID = entry.treeCID;
+    }
+    
+    // Lazy-load subtree if needed
+    if (!subtree && subtreeCID && blockProvider) {
+        NSData *data = blockProvider(subtreeCID);
+        if (data) {
+            subtree = [MST deserializeNodeFromCBOR:data];
+            if (subtree) {
+                // Cache it back for future use during this traversal
+                if (idx == 0) {
+                    node.internalLeft = subtree;
+                } else {
+                    node.internalEntries[idx - 1].internalTree = subtree;
+                }
+            }
+        }
+    }
+    
     if (subtree) {
-        return [self collectProofNodes:subtree forKey:key into:path];
+        return [self collectProofNodes:subtree forKey:key into:path blockProvider:blockProvider];
     }
     
     // Key not found - remove this node from path
