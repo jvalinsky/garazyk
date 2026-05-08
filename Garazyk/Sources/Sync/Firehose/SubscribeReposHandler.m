@@ -807,11 +807,6 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       return;
     }
 
-    // Per ATProto spec, if no cursor is provided, the stream starts from the current head.
-    if (!hasCursor) {
-      PDS_LOG_SYNC_INFO(@"No cursor provided; starting stream from current head.");
-    }
-
     // Per ATProto event-stream spec: "cursor is higher than current seq ("in the future"):
     // server sends an error message and closes connection"
     if (hasCursor && parsedCursor > strongSelf.session.sequenceNumber) {
@@ -828,106 +823,103 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       return;
     }
 
+    NSUInteger requestedReplayCursor = hasCursor ? parsedCursor : 0;
     if (!hasCursor) {
-      PDS_LOG_SYNC_INFO(@"No cursor provided; client is now listening for live events.");
+      PDS_LOG_SYNC_INFO(@"No cursor provided; replaying retained events before switching to live updates.");
     } else if (parsedCursor == 0) {
-      PDS_LOG_SYNC_INFO(@"Client requested cursor=0; replaying all events from the beginning.");
+      PDS_LOG_SYNC_INFO(@"Client requested cursor=0; replaying all retained events from the beginning.");
     }
 
-    if (hasCursor) {
-      BOOL outdated = NO;
-      NSUInteger replayCursor =
-          [strongSelf effectiveReplayCursorForRequestedCursor:parsedCursor
-                                               outdated:&outdated];
-      if (outdated) {
-        PDS_LOG_SYNC_WARN(@"Outdated cursor %lu adjusted to %lu for connection %@",
-                          (unsigned long)parsedCursor,
-                          (unsigned long)replayCursor, connection);
-        [strongSelf sendInfoEvent:kSubscribeReposInfoOutdatedCursor
-                    message:@"Requested cursor exceeded limit. Possibly missing events"
-               toConnection:connection];
-      }
+    BOOL outdated = NO;
+    NSUInteger replayCursor =
+        [strongSelf effectiveReplayCursorForRequestedCursor:requestedReplayCursor
+                                             outdated:&outdated];
+    if (outdated && hasCursor) {
+      PDS_LOG_SYNC_WARN(@"Outdated cursor %lu adjusted to %lu for connection %@",
+                        (unsigned long)requestedReplayCursor,
+                        (unsigned long)replayCursor, connection);
+      [strongSelf sendInfoEvent:kSubscribeReposInfoOutdatedCursor
+                  message:@"Requested cursor exceeded limit. Possibly missing events"
+             toConnection:connection];
+    }
 
-      if (replayCursor >= strongSelf.session.sequenceNumber) {
-        PDS_LOG_SYNC_INFO(@"Cursor %lu is up to date at server sequence %lu.",
-                          (unsigned long)replayCursor,
-                          (unsigned long)strongSelf.session.sequenceNumber);
-      } else {
-        PDS_LOG_SYNC_INFO(@"Backfill requested (backlog: %lu). Replaying events from cursor %lu.",
-                          (unsigned long)(strongSelf.session.sequenceNumber - replayCursor),
-                          (unsigned long)replayCursor);
-        [strongSelf replayEventsAfterCursor:replayCursor toConnection:connection];
-      }
+    if (replayCursor >= strongSelf.session.sequenceNumber) {
+      PDS_LOG_SYNC_INFO(@"Cursor %lu is up to date at server sequence %lu; client is listening for live events.",
+                        (unsigned long)replayCursor,
+                        (unsigned long)strongSelf.session.sequenceNumber);
+    } else {
+      PDS_LOG_SYNC_INFO(@"Backfill requested (backlog: %lu). Replaying events from cursor %lu.",
+                        (unsigned long)(strongSelf.session.sequenceNumber - replayCursor),
+                        (unsigned long)replayCursor);
+      [strongSelf replayEventsAfterCursor:replayCursor toConnection:connection];
     }
   });
 }
 
 - (void)replayEventsAfterCursor:(NSUInteger)cursor
                    toConnection:(WebSocketConnection *)connection {
-    __weak typeof(self) weakSelf = self;
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        __strong typeof(weakSelf) strongSelf = weakSelf;
-        if (!strongSelf) return;
+    dispatch_semaphore_wait(_backfillSemaphore, DISPATCH_TIME_FOREVER);
 
-        dispatch_semaphore_wait(strongSelf->_backfillSemaphore, DISPATCH_TIME_FOREVER);
-        
-        @try {
-            if (!strongSelf.serviceDatabases) {
-                PDS_LOG_SYNC_WARN(@"Cannot replay events: no service databases");
-                return;
-            }
-
-            NSUInteger limit = strongSelf.maxReplayEventsPerConnection;
-            if (limit == 0) {
-                limit = 1000;
-            }
-
-            NSError *error = nil;
-            NSArray<NSDictionary *> *events =
-                [strongSelf.serviceDatabases getEventsSince:(int64_t)cursor
-                                                limit:(NSInteger)limit
-                                                error:&error];
-            if (error) {
-                PDS_LOG_SYNC_ERROR(@"Failed to read events for replay: %@", error);
-                return;
-            }
-
-            PDS_LOG_SYNC_INFO(@"Replaying %lu events after cursor %lu for connection %@",
-                              (unsigned long)events.count, (unsigned long)cursor, connection.remoteAddress);
-
-            for (NSDictionary *eventDict in events) {
-                int64_t dbSeq = [eventDict[@"seq"] longLongValue];
-                NSData *eventData = eventDict[@"event_data"]; // Fixed key: was 'data' but ServiceDatabases uses 'event_data'
-                if (![eventData isKindOfClass:[NSData class]] || eventData.length == 0) {
-                    continue;
-                }
-
-                NSInteger op = 0;
-                NSString *msgType = nil;
-                NSError *decodeError = nil;
-                NSDictionary *payload = [strongSelf.session.eventFormatter
-                    decodeEventFromData:eventData op:&op msgType:&msgType error:&decodeError];
-
-                if (payload && msgType && ![msgType isEqualToString:@"#info"] &&
-                    payload[@"seq"] && [payload[@"seq"] longLongValue] != dbSeq) {
-                    NSMutableDictionary *patchedPayload = [payload mutableCopy];
-                    patchedPayload[@"seq"] = @(dbSeq);
-                    NSData *patchedData = [strongSelf.session.eventFormatter
-                        encodeStreamEventWithType:msgType payload:patchedPayload error:nil];
-                    if (patchedData) {
-                        eventData = patchedData;
-                        PDS_LOG_SYNC_DEBUG(@"Patched stale seq %lld -> %lld in replayed %@ event",
-                                           [payload[@"seq"] longLongValue], (long long)dbSeq, msgType);
-                    }
-                }
-
-                [connection sendMessage:eventData];
-            }
-            PDS_LOG_SYNC_INFO(@"Async worker finished: backfill complete for connection %@", connection.remoteAddress);
-        } @finally {
-            dispatch_semaphore_signal(strongSelf->_backfillSemaphore);
+    @try {
+        if (!self.serviceDatabases) {
+            PDS_LOG_SYNC_WARN(@"Cannot replay events: no service databases");
+            return;
         }
-    });
+
+        NSUInteger limit = self.maxReplayEventsPerConnection;
+        if (limit == 0) {
+            limit = 1000;
+        }
+
+        NSError *error = nil;
+        NSArray<NSDictionary *> *events =
+            [self.serviceDatabases getEventsSince:(int64_t)cursor
+                                            limit:(NSInteger)limit
+                                            error:&error];
+        if (error) {
+            PDS_LOG_SYNC_ERROR(@"Failed to read events for replay: %@", error);
+            return;
+        }
+
+        PDS_LOG_SYNC_INFO(@"Replaying %lu events after cursor %lu for connection %@",
+                          (unsigned long)events.count, (unsigned long)cursor, connection.remoteAddress);
+
+        for (NSDictionary *eventDict in events) {
+            int64_t dbSeq = [eventDict[@"seq"] longLongValue];
+            NSData *eventData = eventDict[@"data"];
+            if (![eventData isKindOfClass:[NSData class]]) {
+                eventData = eventDict[@"event_data"];
+            }
+            if (![eventData isKindOfClass:[NSData class]] || eventData.length == 0) {
+                PDS_LOG_SYNC_WARN(@"Skipping replay event %lld: missing event data", (long long)dbSeq);
+                continue;
+            }
+
+            NSInteger op = 0;
+            NSString *msgType = nil;
+            NSError *decodeError = nil;
+            NSDictionary *payload = [self.session.eventFormatter
+                decodeEventFromData:eventData op:&op msgType:&msgType error:&decodeError];
+
+            if (payload && msgType && ![msgType isEqualToString:@"#info"] &&
+                payload[@"seq"] && [payload[@"seq"] longLongValue] != dbSeq) {
+                NSMutableDictionary *patchedPayload = [payload mutableCopy];
+                patchedPayload[@"seq"] = @(dbSeq);
+                NSData *patchedData = [self.session.eventFormatter
+                    encodeStreamEventWithType:msgType payload:patchedPayload error:nil];
+                if (patchedData) {
+                    eventData = patchedData;
+                    PDS_LOG_SYNC_DEBUG(@"Patched stale seq %lld -> %lld in replayed %@ event",
+                                       [payload[@"seq"] longLongValue], (long long)dbSeq, msgType);
+                }
+            }
+
+            [connection sendMessage:eventData];
+        }
+        PDS_LOG_SYNC_INFO(@"Backfill complete for connection %@", connection.remoteAddress);
+    } @finally {
+        dispatch_semaphore_signal(_backfillSemaphore);
+    }
 }
 
 - (void)sendInfoEvent:(NSString *)kind
