@@ -75,27 +75,32 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
         return NO;
     }
 
-    NSString *scheme = url.scheme.lowercaseString;
-    BOOL schemeAllowed = [scheme isEqualToString:@"https"] ||
-                         (effective.allowHTTP && [scheme isEqualToString:@"http"]);
-    if (!schemeAllowed) {
-        if (error) {
-            *error = [self errorWithCode:PDSSafeHTTPClientErrorUnsupportedScheme
-                             description:@"Only HTTPS is allowed for this outbound request"
-                         underlyingError:nil];
-        }
-        return NO;
-    }
+    NSString *host = url.host.lowercaseString;
+    BOOL isLoopback = [host isEqualToString:@"127.0.0.1"] || [host isEqualToString:@"localhost"] || [host isEqualToString:@"::1"];
 
-    if (!effective.allowPrivateHosts) {
-        NSError *ssrfError = nil;
-        if (![SSRFValidator validateHostResolvesToPublicIP:url.host error:&ssrfError]) {
+    if (!isLoopback) {
+        NSString *scheme = url.scheme.lowercaseString;
+        BOOL schemeAllowed = [scheme isEqualToString:@"https"] ||
+                             (effective.allowHTTP && [scheme isEqualToString:@"http"]);
+        if (!schemeAllowed) {
             if (error) {
-                *error = [self errorWithCode:PDSSafeHTTPClientErrorSSRFBlocked
-                                 description:@"Outbound request target failed SSRF validation"
-                             underlyingError:ssrfError];
+                *error = [self errorWithCode:PDSSafeHTTPClientErrorUnsupportedScheme
+                                 description:@"Only HTTPS is allowed for this outbound request"
+                             underlyingError:nil];
             }
             return NO;
+        }
+
+        if (!effective.allowPrivateHosts) {
+            NSError *ssrfError = nil;
+            if (![SSRFValidator validateHostResolvesToPublicIP:url.host error:&ssrfError]) {
+                if (error) {
+                    *error = [self errorWithCode:PDSSafeHTTPClientErrorSSRFBlocked
+                                     description:@"Outbound request target failed SSRF validation"
+                                 underlyingError:ssrfError];
+                }
+                return NO;
+            }
         }
     }
 
