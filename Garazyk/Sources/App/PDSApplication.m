@@ -17,6 +17,7 @@
 #import "Services/PDS/PDSRepositoryService.h"
 #import "Admin/Diagnostics/BlobAudit/PDSBlobAuditManager.h"
 #import "Database/Service/ServiceDatabases.h"
+#import "Database/Monitoring/PDSHealthCheck.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/PDSRepositoryFactory.h"
 #import "Services/PDS/PDSRelayService.h"
@@ -294,10 +295,12 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
                                           : 100);
     
     _serviceDatabases = [[PDSServiceDatabases alloc] initWithDirectory:_dataDirectory
-                                                          serviceMaxSize:serviceMaxSize
-                                                        didCacheMaxSize:didCacheSize
-                                                      sequencerMaxSize:sequencerSize];
+                                                           serviceMaxSize:serviceMaxSize
+                                                         didCacheMaxSize:didCacheSize
+                                                       sequencerMaxSize:sequencerSize];
     _serviceDatabases.refreshTokenTTLSeconds = _configuration.refreshTokenTtlSeconds;
+    
+    [[PDSHealthCheck sharedInstance] configureWithServiceDatabases:_serviceDatabases];
      
     _userDatabasePool = [[PDSDatabasePool alloc] initWithDbDirectory:_dataDirectory maxSize:userMaxSize];
     _userDatabasePool.masterSecret = _configuration.masterSecret;
@@ -501,7 +504,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
 
     // Startup readiness checks
     NSError *readinessError = nil;
-    if (![PDSReadinessCheck performReadinessChecksWithConfig:_configuration error:&readinessError]) {
+    if (![PDSReadinessCheck performReadinessChecksWithConfig:_configuration serviceDatabases:_serviceDatabases error:&readinessError]) {
         PDS_LOG_CORE_ERROR(@"Server failed readiness checks: %@", readinessError);
         if (error) *error = readinessError;
         return NO;
