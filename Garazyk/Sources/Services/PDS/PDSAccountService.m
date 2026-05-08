@@ -775,11 +775,6 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
             resultDid = did;
         }
         dispatch_semaphore_signal(sema);
-    }
-    
-    long waitResult = dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(10 * NSEC_PER_SEC)));
-    if (waitResult != 0) {
-        if (error) {
             *error = [NSError errorWithDomain:@"PLCRegistration"
                                          code:NSURLErrorTimedOut
                                      userInfo:@{NSLocalizedDescriptionKey: @"PLC registration timed out after 10 seconds"}];
