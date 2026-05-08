@@ -1,4 +1,5 @@
 #import "Debug/PDSLogger.h"
+#import "Debug/PDSLogRedactor.h"
 #import "Compat/PDSTypes.h"
 
 #if defined(__APPLE__) && __has_include(<os/log.h>)
@@ -164,6 +165,9 @@ NSString * const PDSLogComponentCLI = @"CLI";
             component:(NSString *)component
                  file:(const char *)file
                  line:(NSInteger)line {
+    // Redact sensitive values (tokens, secrets, passwords, cookies) before any output
+    NSString *safeFormatted = [PDSLogRedactor redactString:formatted];
+
     dispatch_async(self.logQueue, ^{
         @autoreleasepool {
         NSString *timestamp = [self.dateFormatter stringFromDate:[NSDate date]] ?: @"";
@@ -175,7 +179,7 @@ NSString * const PDSLogComponentCLI = @"CLI";
         [self rotateLogIfNeeded];
 
 #if PDS_HAS_OS_LOG
-        [self logToOSLogWithLevel:level formatted:formatted component:component];
+        [self logToOSLogWithLevel:level formatted:safeFormatted component:component];
 #endif
 
         NSString *logMessage = nil;
@@ -188,7 +192,7 @@ NSString * const PDSLogComponentCLI = @"CLI";
                 [textMessage appendFormat:@" [%@]", component];
             }
 
-            [textMessage appendFormat:@" [%@:%ld] %@", fileBaseName, (long)line, formatted];
+            [textMessage appendFormat:@" [%@:%ld] %@", fileBaseName, (long)line, safeFormatted];
 
             NSString *corrID = self.correlationID;
             if (corrID) {
@@ -226,7 +230,7 @@ NSString * const PDSLogComponentCLI = @"CLI";
                 jsonDict[@"component"] = component;
             }
 
-            jsonDict[@"message"] = formatted;
+            jsonDict[@"message"] = safeFormatted;
 
             NSString *corrID = self.correlationID;
             if (corrID) {

@@ -18,7 +18,6 @@ typedef NS_ENUM(NSInteger, FederationErrorCode) {
 @interface FederationClient : NSObject
 
 @property (nonatomic, strong, nullable) id didResolver;
-@property (nonatomic, strong, nullable) NSURLSession *session;
 
 /// Forward an XRPC request to the appropriate remote PDS based on DID resolution
 /// @param method The XRPC method name (e.g., "com.atproto.repo.getRecord")

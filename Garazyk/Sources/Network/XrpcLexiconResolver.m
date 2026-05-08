@@ -9,6 +9,7 @@
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "Network/PDSSafeHTTPClient.h"
 #import "Network/SSRFValidator.h"
 #import "Network/XrpcHandler.h"
 
@@ -337,44 +338,41 @@ static NSString *const kLexiconResolverUserAgent = @"atprotopds/0.1.0";
   [request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
   [request setValue:kLexiconResolverUserAgent forHTTPHeaderField:@"User-Agent"];
 
-  NSURLSessionConfiguration *sessionConfig =
-      [NSURLSessionConfiguration ephemeralSessionConfiguration];
-  sessionConfig.timeoutIntervalForRequest = 10.0;
-  sessionConfig.timeoutIntervalForResource = 10.0;
-  NSURLSession *session = [NSURLSession sessionWithConfiguration:sessionConfig];
+  PDSSafeHTTPClientOptions *safeOptions = [[PDSSafeHTTPClientOptions alloc] init];
+  safeOptions.timeout = 10.0;
+  safeOptions.maxResponseBytes = 1024 * 1024; // 1 MB
+  safeOptions.allowHTTP = NO;
+  safeOptions.allowPrivateHosts = NO;
+  safeOptions.followRedirects = YES;
 
-  dispatch_semaphore_t sema = dispatch_semaphore_create(0);
-  __block NSData *responseData = nil;
-  __block NSHTTPURLResponse *httpResponse = nil;
-  __block NSError *requestError = nil;
+  NSHTTPURLResponse *httpResponse = nil;
+  NSError *requestError = nil;
+  NSData *responseData = [[PDSSafeHTTPClient sharedClient]
+      sendSynchronousRequest:request
+                     options:safeOptions
+                    response:&httpResponse
+                       error:&requestError];
 
-  NSURLSessionDataTask *task =
-      [session dataTaskWithRequest:request
-                 completionHandler:^(NSData *_Nullable data,
-                                     NSURLResponse *_Nullable response,
-                                     NSError *_Nullable networkError) {
-                   responseData = data;
-                   httpResponse = (NSHTTPURLResponse *)response;
-                   requestError = networkError;
-                   dispatch_semaphore_signal(sema);
-                 }];
-  [task resume];
-
-  dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW, (PDSLexiconResolverRunningTests() ? 1 : 15) * NSEC_PER_SEC);
-  if (dispatch_semaphore_wait(sema, timeout) != 0) {
-    [task cancel];
+  if (statusCode) {
+    *statusCode = httpResponse.statusCode;
+  }
+  if (requestError) {
+    if (error) {
+      *error = requestError;
+    }
+    return nil;
+  }
+  if (!responseData) {
     if (error) {
       *error = [NSError errorWithDomain:XrpcLexiconResolverErrorDomain
-                                   code:408
+                                   code:500
                                userInfo:@{
                                  NSLocalizedDescriptionKey :
-                                     @"Lexicon fetch timed out"
+                                     @"Empty lexicon record response"
                                }];
     }
     return nil;
   }
-
-  [session invalidateAndCancel];
 
   if (statusCode) {
     *statusCode = httpResponse.statusCode;
@@ -520,23 +518,19 @@ static BOOL PDSLexiconResolverRunningTests(void) {
 
   NSURLComponents *endpointComponents =
       [NSURLComponents componentsWithString:pdsEndpoint];
-  NSError *ssrfError = nil;
-  if (endpointComponents.host.length == 0 ||
-      ![SSRFValidator validateHostResolvesToPublicIP:endpointComponents.host
-                                               error:&ssrfError]) {
+  if (endpointComponents.host.length == 0) {
     if (error) {
-      NSMutableDictionary *userInfo = [NSMutableDictionary dictionaryWithObject:
-          @"Lexicon authority resolved to a non-public endpoint"
-          forKey:NSLocalizedDescriptionKey];
-      if (ssrfError) {
-        userInfo[NSUnderlyingErrorKey] = ssrfError;
-      }
       *error = [NSError errorWithDomain:XrpcLexiconResolverErrorDomain
                                    code:500
-                               userInfo:userInfo];
+                               userInfo:@{
+                                 NSLocalizedDescriptionKey :
+                                     @"Lexicon authority endpoint has no host"
+                               }];
     }
     return nil;
   }
+  // SSRF protection is handled by PDSSafeHTTPClient during the actual fetch,
+  // eliminating the validate-before-fetch TOCTOU gap.
 
   NSError *urlError = nil;
   NSURL *recordURL = [self lexiconRecordURLForEndpoint:pdsEndpoint
