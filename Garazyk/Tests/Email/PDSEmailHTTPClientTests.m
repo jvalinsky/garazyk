@@ -47,6 +47,15 @@
     return task;
 }
 
+- (void)performSafeDataTaskWithRequest:(NSURLRequest *)request
+                               options:(id)options
+                            completion:(void (^)(NSData * _Nullable, NSHTTPURLResponse * _Nullable, NSError * _Nullable))completion {
+    NSURLSessionDataTask *task = [self dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        completion(data, (NSHTTPURLResponse *)response, error);
+    }];
+    [task resume];
+}
+
 @end
 
 @interface PDSEmailHTTPClientTests : XCTestCase
@@ -57,7 +66,7 @@
 - (PDSEmailHTTPClient *)clientWithSession:(TestHTTPSession *)session {
     NSURL *baseURL = [NSURL URLWithString:@"https://api.example.com"];
     PDSEmailHTTPClient *client = [[PDSEmailHTTPClient alloc] initWithBaseURL:baseURL apiKey:@"test-api-key"];
-    [client setValue:session forKey:@"session"];
+    [client setValue:session forKey:@"safeHTTPClient"];
     return client;
 }
 
