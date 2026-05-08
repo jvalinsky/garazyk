@@ -672,6 +672,7 @@ int main(int argc, char *argv[]) {
       @"PDSResendEmailProviderTests",
       @"ProductionSecurityTests",
       @"FirehoseConformanceTests",
+      @"FirehoseProtocolSessionTests",
       @"ServiceDatabasesPruningTests",
       @"CoverageGapTests",
       @"DIDPLCResolverTests",

@@ -242,18 +242,16 @@
 
 #pragma mark - Seq Round-Trip Tests
 
-- (void)testCommitEventSeqRoundTrip {
+- (void)testSyncEventSeqRoundTrip {
     NSError *error = nil;
-    FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+    FirehoseSyncEvent *event = [[FirehoseSyncEvent alloc] init];
     event.seq = 42;
-    event.repo = @"did:plc:seqroundtrip";
-    event.commit = [CID cidWithDigest:[@"seqrt" dataUsingEncoding:NSUTF8StringEncoding] codec:0x71];
+    event.did = @"did:plc:seqroundtrip";
     event.rev = @"3kseqrt";
     event.time = @"2024-01-01T00:00:00Z";
-    event.ops = @[];
-    event.blobs = @[];
+    event.blocks = [NSData data];
 
-    NSData *encoded = [self.formatter encodeCommitEvent:event error:&error];
+    NSData *encoded = [self.formatter encodeSyncEvent:event error:&error];
     XCTAssertNotNil(encoded);
     XCTAssertNil(error);
 
@@ -262,7 +260,7 @@
     NSDictionary *decoded = [self.formatter decodeEventFromData:encoded op:&op msgType:&msgType error:&error];
     XCTAssertNil(error);
     XCTAssertNotNil(decoded);
-    XCTAssertEqualObjects(msgType, @"#commit");
+    XCTAssertEqualObjects(msgType, @"#sync");
     XCTAssertEqualObjects(decoded[@"seq"], @42, @"seq should survive round-trip");
 }
 
