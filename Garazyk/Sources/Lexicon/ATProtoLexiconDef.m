@@ -159,8 +159,9 @@
 + (ATProtoLexiconArrayConstraints *)parseArrayConstraints:(NSDictionary *)json error:(NSError **)error {
     ATProtoLexiconArrayConstraints *constraints = [[ATProtoLexiconArrayConstraints alloc] init];
 
-    constraints.minLength = json[@"minLength"];
-    constraints.maxLength = json[@"maxLength"];
+    // ATProto lexicon spec uses minItems/maxItems for arrays
+    constraints.minLength = json[@"minItems"] ?: json[@"minLength"];
+    constraints.maxLength = json[@"maxItems"] ?: json[@"maxLength"];
 
     // Parse items definition
     if (json[@"items"]) {

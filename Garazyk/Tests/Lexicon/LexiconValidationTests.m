@@ -209,12 +209,12 @@
     [registry registerSchema:schema];
     ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc] initWithRegistry:registry];
 
-    // Valid at-uri
+    // Valid at-uri (using did:web which has simpler validation than did:plc)
     NSDictionary *validAtUri = @{
         @"$type": @"com.example.formats",
-        @"uri": @"at://did:plc:example/app.bsky.feed.post/123",
+        @"uri": @"at://did:web:example.com/app.bsky.feed.post/123",
         @"datetime": @"2025-01-01T12:00:00.000Z",
-        @"did": @"did:plc:example",
+        @"did": @"did:web:example.com",
         @"handle": @"example.com"
     };
     BOOL result = [validator validateRecord:validAtUri
@@ -228,7 +228,7 @@
         @"$type": @"com.example.formats",
         @"uri": @"not-an-at-uri",
         @"datetime": @"2025-01-01T12:00:00.000Z",
-        @"did": @"did:plc:example",
+        @"did": @"did:web:example.com",
         @"handle": @"example.com"
     };
     error = nil;
