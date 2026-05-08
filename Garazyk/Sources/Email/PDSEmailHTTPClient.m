@@ -5,7 +5,7 @@
 @interface PDSEmailHTTPClient ()
 @property (nonatomic, strong, readwrite) NSURL *baseURL;
 @property (nonatomic, strong, readwrite) NSString *apiKey;
-@property (nonatomic, strong) NSURLSession *session;
+@property (nonatomic, strong) id safeHTTPClient;
 @end
 
 @implementation PDSEmailHTTPClient
@@ -18,8 +18,7 @@
         _timeoutInterval = 30.0;
         _maxRetries = 3;
         
-        NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
-        _session = [NSURLSession sessionWithConfiguration:config];
+        _safeHTTPClient = [PDSSafeHTTPClient sharedClient];
     }
     return self;
 }
@@ -70,7 +69,7 @@
         
         dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
         
-        [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable taskError) {
+        [self.safeHTTPClient performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable taskError) {
             NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
             
             if (taskError) {
