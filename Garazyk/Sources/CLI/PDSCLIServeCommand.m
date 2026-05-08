@@ -11,6 +11,7 @@
 #import "Network/PDSHttpServerBuilder.h"
 #import "Database/Monitoring/PDSHealthCheck.h"
 #import "PDSCLIDefinitions.h"
+#import "Services/PDS/PDSRelayService.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
 
 @interface PDSCLIServeCommand : PDSBaseCommand
@@ -365,6 +366,9 @@
   }
 
   [subscribeReposHandler startObservingNotifications];
+
+  // Start relay service to notify external relays to crawl this PDS
+  [[controller relayService] start];
 
   PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
   NSString *displayHost = config.serverHost ?: @"localhost";

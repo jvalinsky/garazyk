@@ -78,12 +78,10 @@
     XCTAssertNotNil(svc.transport, @"Default transport should be created");
 }
 
-- (void)testDefaultTransportIsNSURLSession {
+- (void)testDefaultTransportConformsToProtocol {
     PDSRelayService *svc = [[PDSRelayService alloc] initWithRelays:@[]
-                                                          hostname:@"test"];
+                                                           hostname:@"test"];
     XCTAssertNotNil(svc.transport);
-    // Verify it's a valid transport (we can't check class since PDSRelayURLSessionTransport
-    // is private, but we can verify it conforms to the protocol)
     XCTAssertTrue([svc.transport conformsToProtocol:@protocol(PDSRelayTransport)]);
 }
 
