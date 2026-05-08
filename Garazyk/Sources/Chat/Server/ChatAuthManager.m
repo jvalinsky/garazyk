@@ -16,6 +16,18 @@
 
 static const NSTimeInterval kKeyRefreshInterval = 3600.0; // Re-fetch JWKS every hour
 
+static NSString *ChatAuthURLByAppendingPath(NSString *baseURL, NSString *path) {
+    NSString *trimmedBase = [baseURL stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    NSString *trimmedPath = [path stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"/"]];
+    if (trimmedBase.length == 0 || trimmedPath.length == 0) {
+        return nil;
+    }
+    if ([trimmedBase hasSuffix:@"/"]) {
+        return [trimmedBase stringByAppendingString:trimmedPath];
+    }
+    return [NSString stringWithFormat:@"%@/%@", trimmedBase, trimmedPath];
+}
+
 @implementation ChatAuthManager
 
 + (instancetype)sharedManager {
@@ -44,8 +56,8 @@ static const NSTimeInterval kKeyRefreshInterval = 3600.0; // Re-fetch JWKS every
     __block NSError *fetchError = nil;
     __block NSInteger statusCode = 0;
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
-            data = data;
+    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData * _Nullable responseData, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
+            data = responseData;
             fetchError = error;
             if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
                 statusCode = [(NSHTTPURLResponse *)response statusCode];
@@ -100,8 +112,8 @@ static const NSTimeInterval kKeyRefreshInterval = 3600.0; // Re-fetch JWKS every
     }
 
     NSArray<NSString *> *jwksURLs = @[
-        [url stringByAppendingPathComponent:@"oauth/jwks"],
-        [url stringByAppendingPathComponent:@".well-known/jwks.json"],
+        ChatAuthURLByAppendingPath(url, @"oauth/jwks"),
+        ChatAuthURLByAppendingPath(url, @".well-known/jwks.json"),
     ];
 
     NSDictionary *jwk = nil;
