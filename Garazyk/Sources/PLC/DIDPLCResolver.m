@@ -179,7 +179,6 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
         completion(result, nil);
     }];
     
-    [task resume];
 }
 
 - (nullable NSArray *)resolveAuditLogForDID:(NSString *)did error:(NSError **)error {
@@ -304,7 +303,6 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
         netError = err;
         dispatch_semaphore_signal(semaphore);
     }];
-    [task resume];
     
     dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, (int64_t)((self.timeout + 2.0) * NSEC_PER_SEC)));
     
