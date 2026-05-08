@@ -308,9 +308,8 @@ int main(int argc, const char * argv[]) {
             }
 
             NSError *storeError = nil;
-            PLCReplicaStore *replicaStore = [PLCReplicaStore storeWithPath:replicaDBPath
-                                                                     error:&storeError];
-            if (!replicaStore) {
+            PLCReplicaStore *replicaStore = [[PLCReplicaStore alloc] initWithPath:replicaDBPath];
+            if (![replicaStore openWithError:&storeError]) {
                 PDS_LOG_CORE_ERROR(@"Failed to open replica store at %@: %@",
                                     replicaDBPath, storeError.localizedDescription);
                 return 1;
