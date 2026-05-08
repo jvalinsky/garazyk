@@ -57,7 +57,7 @@ static PDSServiceDatabases *gTestServiceDatabases = nil;
 }
 
 - (void)testHealthCheckHealthy {
-    PDSHealthCheck *healthCheck = [PDSHealthCheck sharedInstance];
+    PDSHealthCheck *healthCheck = [[PDSHealthCheck alloc] initWithServiceDatabases:gTestServiceDatabases];
     NSDictionary *result = [healthCheck performHealthCheck];
     
     XCTAssertEqualObjects(result[@"status"], @"healthy");
@@ -80,7 +80,7 @@ static PDSServiceDatabases *gTestServiceDatabases = nil;
     // Note: We can't just re-init the existing object easily, but we can try to open it via the health check which calls sqlite3_open
     // Actually, PDSServiceDatabases uses a pool. We closed the pool, so next access should try to open a new connection.
     
-    PDSHealthCheck *healthCheck = [PDSHealthCheck sharedInstance];
+    PDSHealthCheck *healthCheck = [[PDSHealthCheck alloc] initWithServiceDatabases:gTestServiceDatabases];
     NSDictionary *result = [healthCheck performHealthCheck];
     
     // Should be critical or warning depending on how SQLite fails to open a garbage file
@@ -88,8 +88,10 @@ static PDSServiceDatabases *gTestServiceDatabases = nil;
     XCTAssertNotEqualObjects(result[@"status"], @"healthy");
     XCTAssertEqual([result[@"database_integrity"] integerValue], (NSInteger)PDSHealthStatusCritical);
     XCTAssertTrue([result[@"errors"] count] > 0);
-    NSString *errorMsg = result[@"errors"][0];
-    NSLog(@"Corruption error: %@", errorMsg);
+    if ([result[@"errors"] count] > 0) {
+        NSString *errorMsg = result[@"errors"][0];
+        NSLog(@"Corruption error: %@", errorMsg);
+    }
 }
 
 - (void)testHealthCheckMissingDatabase {
@@ -99,7 +101,7 @@ static PDSServiceDatabases *gTestServiceDatabases = nil;
     NSString *dbPath = [[self.tempDir stringByAppendingPathComponent:@"service"] stringByAppendingPathComponent:@"service.db"];
     [[NSFileManager defaultManager] removeItemAtPath:dbPath error:nil];
     
-    PDSHealthCheck *healthCheck = [PDSHealthCheck sharedInstance];
+    PDSHealthCheck *healthCheck = [[PDSHealthCheck alloc] initWithServiceDatabases:gTestServiceDatabases];
     NSDictionary *result = [healthCheck performHealthCheck];
     
     // If DB is missing, it might try to create it? 
