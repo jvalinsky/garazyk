@@ -655,9 +655,9 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     NSMutableDictionary *signedData = [unsignedData mutableCopy];
     signedData[@"sig"] = [CryptoUtils base64URLEncode:sig];
     
-    // Calculate DID from the UNSIGNED operation
-    NSString *did = [PLCOperation calculateDIDForData:unsignedData];
-    PDS_LOG_AUTH_DEBUG(@"[PDS ACCOUNT] Calculated DID %@ for unsigned data: %@", did, unsignedData);
+    // Calculate DID from the SIGNED operation (per did-method-plc spec v0.3.0)
+    NSString *did = [PLCOperation calculateDIDForSignedOperation:signedData];
+    PDS_LOG_AUTH_DEBUG(@"[PDS ACCOUNT] Calculated DID %@ for signed operation", did);
     
     return did;
 }
