@@ -775,13 +775,10 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
             resultDid = did;
         }
         dispatch_semaphore_signal(sema);
-            *error = [NSError errorWithDomain:@"PLCRegistration"
-                                         code:NSURLErrorTimedOut
-                                     userInfo:@{NSLocalizedDescriptionKey: @"PLC registration timed out after 10 seconds"}];
-        }
-        return nil;
-    }
-    
+    }];
+
+    dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
+
     if (innerError) {
         if (error) *error = innerError;
         return nil;
@@ -790,12 +787,12 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     if (!resultDid) {
         if (error) {
             *error = [NSError errorWithDomain:@"PLCRegistration"
-                                         code:-2
-                                     userInfo:@{NSLocalizedDescriptionKey: @"PLC registration completed without returning a DID"}];
+                                         code:NSURLErrorTimedOut
+                                     userInfo:@{NSLocalizedDescriptionKey: @"PLC registration timed out after 10 seconds"}];
         }
         return nil;
     }
-    
+
     return resultDid;
 }
 
