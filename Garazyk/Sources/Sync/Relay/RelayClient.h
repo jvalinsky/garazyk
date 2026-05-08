@@ -74,7 +74,7 @@ extern NSInteger const RelayClientErrorCodeAuthenticationFailed;
 @property (nonatomic, assign, readonly) NSInteger maxReconnectAttempts;
 
 - (instancetype)initWithServerURL:(NSURL *)serverURL;
-- (instancetype)initWithServerURL:(NSURL *)serverURL accessToken:(NSString *)accessToken;
+- (instancetype)initWithServerURL:(NSURL *)serverURL accessToken:(nullable NSString *)accessToken;
 
 /*! Connects to the relay server. */
 - (void)connect;
