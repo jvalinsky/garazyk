@@ -182,7 +182,6 @@ NSString * const PLCSyncClientErrorDomain = @"com.atproto.plc.syncclient";
             }
         }];
         
-        [task resume];
     });
 }
 
@@ -285,7 +284,6 @@ NSString * const PLCSyncClientErrorDomain = @"com.atproto.plc.syncclient";
         dispatch_semaphore_signal(semaphore);
     }];
     
-    [task resume];
     
     dispatch_time_t waitTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(self.timeout * NSEC_PER_SEC));
     if (dispatch_semaphore_wait(semaphore, waitTime) != 0) {

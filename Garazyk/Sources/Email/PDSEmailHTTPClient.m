@@ -140,7 +140,6 @@
             dispatch_semaphore_signal(semaphore);
         }];
         
-        [task resume];
         dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
         
         if (success) {
