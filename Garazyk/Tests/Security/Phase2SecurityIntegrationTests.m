@@ -12,7 +12,7 @@
 #import "Security/PDSSecurityCompare.h"
 #import "Security/PDSLogRedactor.h"
 #import "Auth/OAuthClientAuthPolicy.h"
-#import "Auth/PDSKeyEnvelope.h"
+#import "Security/PDSKeyEnvelope.h"
 #import "Auth/CryptoUtils.h"
 #import "AdminUIServer/UIAuthManager.h"
 #import "Network/PDSSafeHTTPClient.h"

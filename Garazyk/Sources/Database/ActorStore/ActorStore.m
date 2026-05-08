@@ -16,7 +16,7 @@
 #import "Database/Schema/PDSSchemaManager.h"
 #import "Database/Migrations/PDSMigrationManager.h"
 #import "Auth/Secp256k1.h"
-#import "Auth/PDSKeyEnvelope.h"
+#import "Security/PDSKeyEnvelope.h"
 #import "Debug/PDSLogger.h"
 #import "PDSActorStoreInternal.h"
 #import "PDSActorStore+Account.h"

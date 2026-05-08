@@ -1,6 +1,6 @@
 #import "PLCRotationKeyManager.h"
 #import "Auth/Secp256k1.h"
-#import "Auth/PDSKeyEnvelope.h"
+#import "Security/PDSKeyEnvelope.h"
 #import "Core/PDSDataPaths.h"
 #import "Debug/PDSLogger.h"
 #import "Auth/CryptoUtils.h"
