@@ -479,8 +479,9 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
     [request setValue:@"application/did+ld+json,application/json" forHTTPHeaderField:@"Accept"];
     
-    NSURLSessionDataTask *task = [_session performSafeDataTaskWithRequest:request
-                                          completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+    [[PDSSafeHTTPClient sharedClient] dataTaskWithRequest:request
+                                                   options:[PDSSafeHTTPClientOptions defaultOptions]
+                                                completion:^(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
         
         if (error) {
             NSError *resolveError = [NSError errorWithDomain:DIDErrorDomain
@@ -532,8 +533,6 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
         [self cacheDocument:document forDID:did];
         completion(document, nil);
     }];
-    
-    [task resume];
 }
 
 - (void)resolveDIDPLC:(NSString *)did completion:(void (^)(DIDDocument * _Nullable, NSError * _Nullable))completion {
@@ -555,8 +554,9 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
     [request setValue:@"application/did+ld+json,application/json" forHTTPHeaderField:@"Accept"];
     
-    NSURLSessionDataTask *task = [_session performSafeDataTaskWithRequest:request
-                                          completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+    [[PDSSafeHTTPClient sharedClient] dataTaskWithRequest:request
+                                                   options:[PDSSafeHTTPClientOptions defaultOptions]
+                                                completion:^(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
 
         if (error) {
             NSError *resolveError = [NSError errorWithDomain:DIDErrorDomain
@@ -608,8 +608,6 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
         [self cacheDocument:document forDID:did];
         completion(document, nil);
     }];
-
-    [task resume];
 }
 
 - (nullable NSString *)resolveHandleSync:(NSString *)handle error:(NSError **)error {
@@ -642,60 +640,55 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     }
 
     // Synchronous network request
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url
-                                                           cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
-                                                       timeoutInterval:10.0];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     request.HTTPMethod = @"GET";
 
-    dispatch_semaphore_t sem = dispatch_semaphore_create(0);
-    __block NSString *resolvedDID = nil;
-    __block NSError *requestError = nil;
+    PDSSafeHTTPClientOptions *options = [PDSSafeHTTPClientOptions defaultOptions];
+    options.timeout = 10.0;
 
-    NSURLSessionDataTask *task = [[NSURLSession sharedSession] performSafeDataTaskWithRequest:request
-        completionHandler:^(NSData *data, NSURLResponse *resp, NSError *err) {
-            if (err) {
-                requestError = err;
-                dispatch_semaphore_signal(sem);
-                return;
-            }
-
-            NSHTTPURLResponse *httpResponse = [resp isKindOfClass:[NSHTTPURLResponse class]] ? (NSHTTPURLResponse *)resp : nil;
-            if (!httpResponse || httpResponse.statusCode != 200) {
-                requestError = [NSError errorWithDomain:DIDErrorDomain
-                                                    code:DIDErrorResolutionFailed
-                                                userInfo:@{NSLocalizedDescriptionKey: @"Handle resolution failed"}];
-                dispatch_semaphore_signal(sem);
-                return;
-            }
-
-            NSString *responseString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-            if (!responseString) {
-                requestError = [NSError errorWithDomain:DIDErrorDomain
-                                                    code:DIDErrorInvalidDocument
-                                                userInfo:@{NSLocalizedDescriptionKey: @"Invalid response encoding"}];
-                dispatch_semaphore_signal(sem);
-                return;
-            }
-
-            // Response should be a DID string
-            responseString = [responseString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-            if ([responseString hasPrefix:@"did:"]) {
-                resolvedDID = responseString;
-            } else {
-                requestError = [NSError errorWithDomain:DIDErrorDomain
-                                                    code:DIDErrorInvalidDocument
-                                                userInfo:@{NSLocalizedDescriptionKey: @"Response is not a valid DID"}];
-            }
-            dispatch_semaphore_signal(sem);
-        }];
-
-    [task resume];
-    dispatch_semaphore_wait(sem, dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
-
-    if (requestError && error) {
-        *error = requestError;
+    NSHTTPURLResponse *httpResponse = nil;
+    NSError *requestError = nil;
+    NSData *data = [[PDSSafeHTTPClient sharedClient] sendSynchronousRequest:request
+                                                                    options:options
+                                                                   response:&httpResponse
+                                                                      error:&requestError];
+    
+    if (requestError) {
+        if (error) *error = requestError;
+        return nil;
     }
-    return resolvedDID;
-}
+
+    if (!httpResponse || httpResponse.statusCode != 200) {
+        if (error) {
+            *error = [NSError errorWithDomain:DIDErrorDomain
+                                        code:DIDErrorResolutionFailed
+                                    userInfo:@{NSLocalizedDescriptionKey: @"Handle resolution failed"}];
+        }
+        return nil;
+    }
+
+    NSString *responseString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    if (!responseString) {
+        if (error) {
+            *error = [NSError errorWithDomain:DIDErrorDomain
+                                        code:DIDErrorInvalidDocument
+                                    userInfo:@{NSLocalizedDescriptionKey: @"Invalid response encoding"}];
+        }
+        return nil;
+    }
+
+    // Response should be a DID string
+    responseString = [responseString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    if ([responseString hasPrefix:@"did:"]) {
+        return responseString;
+    } else {
+        if (error) {
+            *error = [NSError errorWithDomain:DIDErrorDomain
+                                        code:DIDErrorInvalidDocument
+                                    userInfo:@{NSLocalizedDescriptionKey: @"Response is not a valid DID"}];
+        }
+        return nil;
+    }
+
 
 @end
