@@ -3,7 +3,7 @@
     "host": "127.0.0.1",
     "port": 2583,
     "issuer": "http://localhost:2583",
-    "available_user_domains": [".test"]
+    "available_user_domains": ["test"]
   },
      "appview": {
        "url": "http://127.0.0.1:3200",
