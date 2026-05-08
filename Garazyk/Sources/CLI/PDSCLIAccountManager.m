@@ -178,6 +178,29 @@
 
     if (context.verbose) {
         PDS_LOG_INFO(@"Creating account: email=%@, handle=%@", email, handle);
+        
+        // Diagnostic: calculate DID for sokol (unsigned — for reference only)
+        NSDictionary *sokolData = @{
+            @"type": @"plc_operation",
+            @"rotationKeys": @[
+                @"did:key:zQ3shVYhPrMqPfSKzxjf6SbqPk2BB8fnd4ZmDVShn4q2AL8ia",
+                @"did:key:zQ3shrbgWndeXWeFoD4f6Mcjrb3cmQpChVCQj1es4eRDpF88j"
+            ],
+            @"verificationMethods": @{
+                @"atproto": @"did:key:zQ3shm52keiDKL496VTbQmTFdpRZJTz4jTwKvFBKdd3hCCkJU"
+            },
+            @"alsoKnownAs": @[@"at://sokol.garazyk.xyz"],
+            @"services": @{
+                @"atproto_pds": @{
+                    @"type": @"AtprotoPersonalDataServer",
+                    @"endpoint": @"https://pds.garazyk.xyz"
+                }
+            },
+            @"prev": [NSNull null]
+        };
+        NSString *sokolDid = [PLCOperation calculateDIDForData:sokolData];
+        PDS_LOG_INFO(@"Diagnostic: Calculated DID for sokol (unsigned, non-spec): %@", sokolDid);
+        PDS_LOG_INFO(@"Diagnostic: Note: spec-compliant DID requires signed operation");
     }
 
     PDSDatabaseAccount *existing = [db getAccountByHandle:handle error:&error];
@@ -204,7 +227,7 @@
     Secp256k1 *signer = [Secp256k1 shared];
     NSError *keyError = nil;
     Secp256k1KeyPair *keyPair = [signer generateKeyPairWithError:&keyError];
-    
+
     if (!keyPair) {
         if (context.verbose) {
             PDS_LOG_ERROR(@"Failed to generate keypair: %@", keyError.localizedDescription);
@@ -375,8 +398,19 @@
     }
     
     NSError *sigError = nil;
-    // Genesis operations must be signed by a rotation key, not the atproto signing key
-    NSData *signature = [[Secp256k1 shared] signHash:sha256Hash withPrivateKey:rotationKeyPair.privateKey error:&sigError];
+    NSData *signature = nil;
+    
+    // Sign with the server rotation key if available (matches PDSAccountService behavior)
+    if (serverRotationKey) {
+        if (![keyManager signHash:sha256Hash result:&signature error:&sigError]) {
+            if (error) *error = sigError;
+            return nil;
+        }
+    } else {
+        // Fallback to the user's rotation key
+        signature = [[Secp256k1 shared] signHash:sha256Hash withPrivateKey:rotationKeyPair.privateKey error:&sigError];
+    }
+    
     if (!signature) {
         if (error) *error = sigError;
         return nil;
@@ -385,9 +419,9 @@
     NSMutableDictionary *signedOp = [opData mutableCopy];
     signedOp[@"sig"] = [CryptoUtils base64URLEncode:signature];
     
-    // 5. Generate DID from the unsigned operation data, matching PLC validation.
-    NSString *did = [PLCOperation calculateDIDForData:opData];
-    PDS_LOG_INFO(@"Calculated DID from unsigned genesis op: %@", did);
+    // 5. Generate DID from the signed operation (per did-method-plc spec v0.3.0).
+    NSString *did = [PLCOperation calculateDIDForSignedOperation:signedOp];
+    PDS_LOG_INFO(@"Calculated DID from signed genesis op: %@", did);
     
     // 6. POST genesis operation to PLC Server
     PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
@@ -405,6 +439,11 @@
     PDS_LOG_INFO(@"Posting genesis op to: %@", urlStr);
     
     // Post to PLC server
+    PDSSafeHTTPClientOptions *httpOptions = [PDSSafeHTTPClientOptions defaultOptions];
+#if defined(GNUSTEP)
+    httpOptions.timeout = 2.0;
+#endif
+
     NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlStr]];
     req.HTTPMethod = @"POST";
     [req setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
@@ -414,7 +453,7 @@
     __block NSError *reqError = nil;
     __block BOOL success = NO;
     
-    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:req options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *resp, NSError *err) {
+    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:req options:httpOptions completion:^(NSData *data, NSURLResponse *resp, NSError *err) {
         if (err) {
             reqError = err;
         } else {
@@ -431,10 +470,63 @@
     
     dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
     
+#if defined(GNUSTEP)
+    if (!success) {
+        PDS_LOG_INFO(@"NSURLSession POST to PLC failed, trying curl fallback: %@", urlStr);
+        NSData *jsonPayload = [NSJSONSerialization dataWithJSONObject:signedOp options:0 error:nil];
+        NSString *payloadStr = [[NSString alloc] initWithData:jsonPayload encoding:NSUTF8StringEncoding];
+
+        NSTask *curlTask = [[NSTask alloc] init];
+        [curlTask setLaunchPath:@"/usr/bin/curl"];
+        [curlTask setArguments:@[
+            @"-s", @"-w", @"\n%{http_code}",
+            @"--max-time", @"15",
+            @"-X", @"POST",
+            @"-H", @"Content-Type: application/json",
+            @"-d", payloadStr,
+            urlStr
+        ]];
+
+        NSPipe *outPipe = [NSPipe pipe];
+        [curlTask setStandardOutput:outPipe];
+        [curlTask setStandardError:[NSFileHandle fileHandleWithNullDevice]];
+
+        @try {
+            [curlTask launch];
+            [curlTask waitUntilExit];
+
+            if (curlTask.terminationStatus == 0) {
+                NSData *curlData = [[outPipe fileHandleForReading] readDataToEndOfFile];
+                NSString *responseStr = [[NSString alloc] initWithData:curlData encoding:NSUTF8StringEncoding];
+                if (responseStr.length > 0) {
+                    NSArray *lines = [responseStr componentsSeparatedByString:@"\n"];
+                    NSString *httpCodeStr = [lines lastObject];
+                    NSInteger httpCode = [httpCodeStr integerValue];
+                    if (httpCode == 200 || httpCode == 201) {
+                        success = YES;
+                    } else {
+                        NSString *body = [responseStr substringToIndex:responseStr.length - httpCodeStr.length - 1];
+                        if (body.length == 0) body = responseStr;
+                        reqError = [NSError errorWithDomain:@"PDSCLI" code:httpCode userInfo:@{NSLocalizedDescriptionKey: body ?: @"Unknown error"}];
+                        PDS_LOG_WARN(@"curl POST to PLC returned HTTP %ld: %@", (long)httpCode, body);
+                    }
+                }
+            }
+        } @catch (NSException *exception) {
+            PDS_LOG_WARN(@"curl fallback exception: %@", exception.reason);
+        }
+
+        if (!success) {
+            if (error) *error = reqError;
+            return nil;
+        }
+    }
+#else
     if (!success) {
         if (error) *error = reqError;
         return nil;
     }
+#endif
     
     return did;
 }
