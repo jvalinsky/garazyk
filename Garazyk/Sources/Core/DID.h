@@ -139,6 +139,8 @@ typedef NS_ENUM(NSUInteger, DIDCacheStatus) {
 
 - (nullable NSDictionary *)resolveAtprotoDataForDID:(NSString *)did error:(NSError **)error;
 
+- (void)seedCacheWithDID:(NSString *)did documentJSON:(NSDictionary *)json;
+
 /*!
  @method resolveHandleSync:error:
  @abstract Resolve a handle to its DID synchronously.

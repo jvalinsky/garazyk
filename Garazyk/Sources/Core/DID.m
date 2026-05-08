@@ -140,6 +140,15 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     completionHandler(nil);
 }
 
+- (void)seedCacheWithDID:(NSString *)did documentJSON:(NSDictionary *)json {
+    if (!did || !json) return;
+    NSError *error = nil;
+    DIDDocument *doc = [DIDDocument documentWithJSON:json error:&error];
+    if (doc) {
+        [self cacheDocument:doc forDID:did];
+    }
+}
+
 - (void)resolveDID:(NSString *)did completion:(void (^)(NSDictionary *document, NSError *error))completion {
     // Check cache first with TTL logic
     DIDCacheStatus status;

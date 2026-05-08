@@ -734,6 +734,28 @@ static NSString *refreshTokenSessionID(NSString *refreshToken) {
     return document;
 }
 
+- (NSArray<NSDictionary *> *)enumerateValidCachedDIDsWithError:(NSError **)error {
+    __block NSMutableArray *results = [NSMutableArray array];
+    [self.didCachePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)reader;
+        NSString *sql = @"SELECT did, document FROM did_cache WHERE expires_at > ?";
+        PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = [store prepareStatement:sql error:innerError];
+        if (!stmt) return;
+        sqlite3_bind_double(stmt, 1, [[NSDate date] timeIntervalSince1970]);
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            const char *didText = (const char *)sqlite3_column_text(stmt, 0);
+            if (!didText) continue;
+            NSString *did = [NSString stringWithUTF8String:didText];
+            NSData *jsonData = [NSData dataWithBytes:sqlite3_column_blob(stmt, 1) length:sqlite3_column_bytes(stmt, 1)];
+            if (!jsonData) continue;
+            NSDictionary *doc = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:nil];
+            if (!doc) continue;
+            [results addObject:@{@"did": did, @"document": doc}];
+        }
+    } error:error];
+    return results;
+}
+
 #pragma mark - Event Persistence
 
 - (BOOL)logHostingEvent:(NSString *)did type:(NSString *)type details:(nullable NSDictionary *)details createdBy:(nullable NSString *)createdBy error:(NSError **)error {
