@@ -34,6 +34,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSDatabaseRecord;
 @class PDSDatabaseBlob;
 @class PDSAccountService;
+@protocol PDSAccountService;
 @class PDSBlobService;
 @class PDSRepositoryService;
 @class PDSRelayService;
@@ -79,7 +80,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, strong, readonly) PDSDatabasePool *userDatabasePool;
 
 /*! Account management service. */
-@property(nonatomic, strong, readonly) PDSAccountService *accountService;
+@property(nonatomic, strong, readonly, nullable) id<PDSAccountService> accountService;
 
 /*! Record management service. */
 @property(nonatomic, strong, readonly) PDSRecordService *recordService;
