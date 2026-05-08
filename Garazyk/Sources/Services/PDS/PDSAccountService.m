@@ -742,7 +742,7 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     __block NSString *resultDid = nil;
     __block NSError *innerError = nil;
     
-    [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+    [[[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
         if (error) {
             innerError = error;

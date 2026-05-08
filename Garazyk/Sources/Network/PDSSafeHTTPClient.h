@@ -32,7 +32,7 @@ typedef NS_ENUM(NSInteger, PDSSafeHTTPClientErrorCode) {
             options:(nullable PDSSafeHTTPClientOptions *)options
               error:(NSError **)error;
 
-- (void)dataTaskWithRequest:(NSURLRequest *)request
+- (void)performSafeDataTaskWithRequest:(NSURLRequest *)request
                     options:(nullable PDSSafeHTTPClientOptions *)options
                  completion:(void (^)(NSData * _Nullable data,
                                       NSHTTPURLResponse * _Nullable response,
