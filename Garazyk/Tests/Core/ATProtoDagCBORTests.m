@@ -169,9 +169,8 @@
 - (void)testEncodeCIDLink {
     NSError *error = nil;
     
-    // Create a test CID
-    NSData *digest = [@"test digest here" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *cid = [CID cidWithDigest:digest codec:0x71]; // DAG-CBOR codec
+    // Create a test CID using SHA-256 (required for CBOR tag 42 round-trip)
+    CID *cid = [CID sha256:[@"test digest here" dataUsingEncoding:NSUTF8StringEncoding]];
     XCTAssertNotNil(cid);
     
     NSData *encoded = [ATProtoDagCBOR encodeObject:cid error:&error];
@@ -200,9 +199,8 @@
 - (void)testConvert$LinkToCID {
     NSError *error = nil;
     
-    // Create a test CID
-    NSData *digest = [@"test" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *cid = [CID cidWithDigest:digest codec:0x71];
+    // Create a test CID using SHA-256 (required for CBOR tag 42 round-trip)
+    CID *cid = [CID sha256:[@"test" dataUsingEncoding:NSUTF8StringEncoding]];
     NSString *cidString = cid.stringValue;
     
     // JSON object with $link wrapper
@@ -254,9 +252,8 @@
 - (void)testDecodeAsJSONConvertsLinksAndBytes {
     NSError *error = nil;
     
-    // Create a CID
-    NSData *digest = [@"test" dataUsingEncoding:NSUTF8StringEncoding];
-    CID *cid = [CID cidWithDigest:digest codec:0x71];
+    // Create a CID using SHA-256 (required for CBOR tag 42 round-trip)
+    CID *cid = [CID sha256:[@"test" dataUsingEncoding:NSUTF8StringEncoding]];
     
     // Create a dict with CID and byte data
     NSDictionary *original = @{

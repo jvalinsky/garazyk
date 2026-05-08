@@ -101,8 +101,7 @@
 
     FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
     event.repo = @"did:plc:testseq";
-    NSData *digest = [@"seq-test" dataUsingEncoding:NSUTF8StringEncoding];
-    event.commit = [CID cidWithDigest:digest codec:0x71];
+    event.commit = [CID sha256:[@"seq-test" dataUsingEncoding:NSUTF8StringEncoding]];
     event.rev = @"3kseqtest";
     event.time = @"2024-01-01T00:00:00Z";
     event.ops = @[];
