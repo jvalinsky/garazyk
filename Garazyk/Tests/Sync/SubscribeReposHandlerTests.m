@@ -229,20 +229,20 @@
 - (void)testReplayWithCursor {
     EventFormatter *formatter = [[EventFormatter alloc] init];
     
-    // 1. Create some events
-    [self.handler broadcastInfo:@"info1" message:@"msg1"];
-    [self.handler broadcastInfo:@"info2" message:@"msg2"];
-    [self.handler broadcastInfo:@"info3" message:@"msg3"];
+    // 1. Create some persisted events (identity events are persisted, info events are not)
+    [self.handler broadcastIdentityChange:@"did:plc:replay1" handle:@"replay1.bsky.social"];
+    [self.handler broadcastIdentityChange:@"did:plc:replay2" handle:@"replay2.bsky.social"];
+    [self.handler broadcastIdentityChange:@"did:plc:replay3" handle:@"replay3.bsky.social"];
     [self waitForHandlerIdle];
     
-    // 2. Simulate connection with cursor=1 (should get info2 and info3)
+    // 2. Simulate connection with cursor=1 (should get events 2 and 3)
     MockWebSocketConnection *conn = [[MockWebSocketConnection alloc] init];
     conn.mockQueryParams = @{@"cursor": @"1"};
     [self.handler sendInitialRepositoryStateToConnection:conn cursor:@"1"];
     [self waitForHandlerIdle];
     
     // Verify received messages using proper stream decoder
-    XCTAssertEqual(conn.sentMessages.count, 2, "Should receive 2 events (info2, info3)");
+    XCTAssertEqual(conn.sentMessages.count, 2, "Should receive 2 events (identity2, identity3)");
     
     if (conn.sentMessages.count >= 2) {
         NSInteger op1 = 0, op2 = 0;
@@ -258,10 +258,10 @@
         XCTAssertNotNil(msg2);
         XCTAssertEqual(op1, 1); // kXRPCStreamOpMessage
         XCTAssertEqual(op2, 1);
-        XCTAssertEqualObjects(type1, @"#info");
-        XCTAssertEqualObjects(type2, @"#info");
-        XCTAssertEqualObjects(msg1[@"name"], @"info2");
-        XCTAssertEqualObjects(msg2[@"name"], @"info3");
+        XCTAssertEqualObjects(type1, @"#identity");
+        XCTAssertEqualObjects(type2, @"#identity");
+        XCTAssertEqualObjects(msg1[@"did"], @"did:plc:replay2");
+        XCTAssertEqualObjects(msg2[@"did"], @"did:plc:replay3");
     }
 }
 #endif
@@ -269,7 +269,8 @@
 #ifndef GNUSTEP
 - (void)testReplayWithFutureCursorSendsFutureCursorError {
     EventFormatter *formatter = [[EventFormatter alloc] init];
-    [self.handler broadcastInfo:@"seed" message:@"seed"];
+    // Seed a persisted event so the session has a non-zero sequence
+    [self.handler broadcastIdentityChange:@"did:plc:future_cursor_test" handle:@"future.bsky.social"];
 
     [self waitForHandlerIdle];
 
@@ -278,7 +279,7 @@
 
     [self waitForHandlerIdle];
 
-    XCTAssertTrue(conn.didClose);
+    XCTAssertTrue(conn.didClose, @"Future cursor should cause connection to close per ATProto spec");
     XCTAssertEqual(conn.sentMessages.count, 1U);
     NSInteger op = 0;
     NSString *msgType = nil;
@@ -401,16 +402,19 @@
     self.handler.maxReplayEventsPerConnection = 1;
     EventFormatter *formatter = [[EventFormatter alloc] init];
 
-    [self.handler broadcastInfo:@"info1" message:@"msg1"];
-    [self.handler broadcastInfo:@"info2" message:@"msg2"];
-    [self.handler broadcastInfo:@"info3" message:@"msg3"];
+    // Create persisted events (identity events are persisted, info events are ephemeral)
+    [self.handler broadcastIdentityChange:@"did:plc:backlog1" handle:@"backlog1.bsky.social"];
+    [self.handler broadcastIdentityChange:@"did:plc:backlog2" handle:@"backlog2.bsky.social"];
+    [self.handler broadcastIdentityChange:@"did:plc:backlog3" handle:@"backlog3.bsky.social"];
     [self waitForHandlerIdle];
 
+    // Connect with cursor=1 — the backlog (seq 3 - seq 1 = 2) exceeds maxReplayEventsPerConnection (1)
     MockWebSocketConnection *conn = [[MockWebSocketConnection alloc] init];
     [self.handler sendInitialRepositoryStateToConnection:conn cursor:@"1"];
     [self waitForHandlerIdle];
 
     XCTAssertFalse(conn.didClose);
+    // Should receive: OutdatedCursor info + the latest event (replay limited to 1)
     XCTAssertEqual(conn.sentMessages.count, 2U);
 
     NSInteger infoOp = 0;
@@ -434,8 +438,8 @@
                                                           error:&eventDecodeError];
     XCTAssertNil(eventDecodeError);
     XCTAssertEqual(eventOp, 1);
-    XCTAssertEqualObjects(eventType, @"#info");
-    XCTAssertEqualObjects(eventPayload[@"name"], @"info3");
+    XCTAssertEqualObjects(eventType, @"#identity");
+    XCTAssertEqualObjects(eventPayload[@"did"], @"did:plc:backlog3");
 }
 #endif
 
@@ -488,30 +492,34 @@
     XCTAssertGreaterThan(maxSeq, 0);
 }
 
-- (void)testBroadcastInfoEventValidatesMaxSeqIsGreater {
-    XCTAssertNoThrow([self.handler broadcastInfo:@"OutdatedCursor" message:@"Requested sequence too far back"],
-                      @"Should handle info event broadcast");
+- (void)testBroadcastInfoEventDoesNotConsumeSequence {
+    // Per ATProto spec: "it is common to have an #info message type that is not persisted"
+    // Info events should NOT consume a sequence number and should NOT be persisted.
+    int64_t maxSeqBefore = [self.controller.serviceDatabases getMaxEventSequence:nil];
+    
+    [self.handler broadcastInfo:@"OutdatedCursor" message:@"Requested sequence too far back"];
     [self waitForHandlerIdle];
-    NSError *err = nil;
-    int64_t maxSeq = [self.controller.serviceDatabases getMaxEventSequence:&err];
-    XCTAssertGreaterThan(maxSeq, 0);
+    
+    int64_t maxSeqAfter = [self.controller.serviceDatabases getMaxEventSequence:nil];
+    
+    // Info events should NOT increment the max sequence
+    XCTAssertEqual(maxSeqAfter, maxSeqBefore,
+                   @"Info events should not consume a sequence number or be persisted");
 }
 
 #ifndef GNUSTEP
 - (void)testReplayWithPrunedEventsHandlesGap {
     EventFormatter *formatter = [[EventFormatter alloc] init];
     
-    // 1. Broadcast two events (Seq 1, 2)
-    [self.handler broadcastInfo:@"info1" message:@"msg1"];
-    [self.handler broadcastInfo:@"info2" message:@"msg2"];
+    // 1. Broadcast two persisted events (Seq 1, 2)
+    [self.handler broadcastIdentityChange:@"did:plc:prune1" handle:@"prune1.bsky.social"];
+    [self.handler broadcastIdentityChange:@"did:plc:prune2" handle:@"prune2.bsky.social"];
     [self waitForHandlerIdle];
     
     // 2. Backdate events 1 & 2 in DB to allow pruning
-    // Events are stored in the sequencer pool, not the service pool
     PDSDatabasePool *pool = self.controller.serviceDatabases.sequencerPool;
     [pool transactWithDid:@"__service__" block:^(id transactor, NSError **err) {
         PDSActorStore *store = (PDSActorStore *)transactor;
-        // Backdate to 2 hours ago
         NSTimeInterval oldTime = [[NSDate dateWithTimeIntervalSinceNow:-7200] timeIntervalSince1970];
         NSString *sql = [NSString stringWithFormat:@"UPDATE events SET created_at = %f WHERE seq <= 2", oldTime];
         sqlite3_exec(store.db, sql.UTF8String, NULL, NULL, NULL);
@@ -527,12 +535,11 @@
     XCTAssertEqual(events.count, 0, @"Events should be pruned");
     
     // 4. Broadcast Event 3
-    [self.handler broadcastInfo:@"info3" message:@"msg3"];
+    [self.handler broadcastIdentityChange:@"did:plc:prune3" handle:@"prune3.bsky.social"];
     [self waitForHandlerIdle];
     
     // 5. Connect with cursor 1 (which refers to a pruned event)
     MockWebSocketConnection *conn = [[MockWebSocketConnection alloc] init];
-    // backlog = (Current Seq 3) - (Cursor 1) = 2. Should be fine.
     [self.handler sendInitialRepositoryStateToConnection:conn cursor:@"1"];
     [self waitForHandlerIdle];
     
@@ -547,17 +554,17 @@
         NSDictionary *msg1 = [formatter decodeEventFromData:conn.sentMessages[0] op:&op1 msgType:&type1 error:nil];
         NSDictionary *msg2 = [formatter decodeEventFromData:conn.sentMessages[1] op:&op2 msgType:&type2 error:nil];
         XCTAssertEqualObjects(type1, @"#info");
-        XCTAssertEqualObjects(type2, @"#info");
+        XCTAssertEqualObjects(type2, @"#identity");
         XCTAssertEqualObjects(msg1[@"name"], @"OutdatedCursor");
-        XCTAssertEqualObjects(msg2[@"name"], @"info3");
+        XCTAssertEqualObjects(msg2[@"did"], @"did:plc:prune3");
     }
 }
 #endif
 
 #ifndef GNUSTEP
 - (void)testSequenceInitializationFromDisk {
-    // 1. Broadcast an event with current handler
-    [self.handler broadcastInfo:@"init1" message:@"msg1"];
+    // 1. Broadcast a persisted event with current handler
+    [self.handler broadcastIdentityChange:@"did:plc:init1" handle:@"init1.bsky.social"];
     [self waitForHandlerIdle];
     
     // Verify seq is 1
@@ -574,8 +581,8 @@
             initWithServiceDatabases:self.controller.serviceDatabases
                     userDatabasePool:self.controller.userDatabasePool];
     
-    // 4. Broadcast new event
-    [newHandler broadcastInfo:@"init2" message:@"msg2"];
+    // 4. Broadcast new persisted event
+    [newHandler broadcastIdentityChange:@"did:plc:init2" handle:@"init2.bsky.social"];
     [self waitForHandler:newHandler idleWithTimeout:1.0];
     
     // 5. Verify seq incremented to 2 (not reset to 1)
