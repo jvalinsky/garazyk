@@ -872,50 +872,62 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
     dispatch_semaphore_wait(self.backfillSemaphore, DISPATCH_TIME_FOREVER);
     
-    // ... original logic ...
     @try {
-        // [Existing implementation logic...]
+        if (!self.serviceDatabases) {
+            PDS_LOG_SYNC_WARN(@"Cannot replay events: no service databases");
+            return;
+        }
+
+        NSUInteger limit = self.maxReplayEventsPerConnection;
+        if (limit == 0) {
+            limit = 1000; // Default safety limit
+        }
+
+        NSError *error = nil;
+        NSArray<NSDictionary *> *events =
+            [self.serviceDatabases getEventsSince:(int64_t)cursor
+                                            limit:(NSInteger)limit
+                                            error:&error];
+        if (error) {
+            PDS_LOG_SYNC_ERROR(@"Failed to read events for replay: %@", error);
+            return;
+        }
+
+        PDS_LOG_SYNC_INFO(@"Replaying %lu events after cursor %lu",
+                          (unsigned long)events.count, (unsigned long)cursor);
+
+        for (NSDictionary *eventDict in events) {
+            int64_t dbSeq = [eventDict[@"seq"] longLongValue];
+            NSData *eventData = eventDict[@"data"];
+            if (![eventData isKindOfClass:[NSData class]] || eventData.length == 0) {
+                continue;
+            }
+
+            NSInteger op = 0;
+            NSString *msgType = nil;
+            NSError *decodeError = nil;
+            NSDictionary *payload = [self.session.eventFormatter
+                decodeEventFromData:eventData op:&op msgType:&msgType error:&decodeError];
+
+            if (payload && msgType && ![msgType isEqualToString:@"#info"] &&
+                payload[@"seq"] && [payload[@"seq"] longLongValue] != dbSeq) {
+                NSMutableDictionary *patchedPayload = [payload mutableCopy];
+                patchedPayload[@"seq"] = @(dbSeq);
+                NSData *patchedData = [self.session.eventFormatter
+                    encodeStreamEventWithType:msgType payload:patchedPayload error:nil];
+                if (patchedData) {
+                    eventData = patchedData;
+                    PDS_LOG_SYNC_DEBUG(@"Patched stale seq %lld -> %lld in replayed %@ event",
+                                       [payload[@"seq"] longLongValue], (long long)dbSeq, msgType);
+                }
+            }
+
+            [connection sendMessage:eventData];
+        }
     } @finally {
         dispatch_semaphore_signal(self.backfillSemaphore);
     }
   });
-}
-
-  PDS_LOG_SYNC_INFO(@"Replaying %lu events after cursor %lu",
-                     (unsigned long)events.count, (unsigned long)cursor);
-
-  for (NSDictionary *eventDict in events) {
-    int64_t dbSeq = [eventDict[@"seq"] longLongValue];
-    NSData *eventData = eventDict[@"data"];
-    if (![eventData isKindOfClass:[NSData class]] || eventData.length == 0) {
-      continue;
-    }
-
-    // Defense-in-depth: validate and patch seq in CBOR payload to match DB row.
-    // If the stored CBOR has stale seq (e.g., seq=0 from a prior bug), re-encode
-    // with the correct seq from the DB row before sending to the relay.
-    NSInteger op = 0;
-    NSString *msgType = nil;
-    NSError *decodeError = nil;
-    NSDictionary *payload = [self.session.eventFormatter
-        decodeEventFromData:eventData op:&op msgType:&msgType error:&decodeError];
-
-    if (payload && msgType && ![msgType isEqualToString:@"#info"] &&
-        payload[@"seq"] && [payload[@"seq"] longLongValue] != dbSeq) {
-      // Re-encode with corrected seq
-      NSMutableDictionary *patchedPayload = [payload mutableCopy];
-      patchedPayload[@"seq"] = @(dbSeq);
-      NSData *patchedData = [self.session.eventFormatter
-          encodeStreamEventWithType:msgType payload:patchedPayload error:nil];
-      if (patchedData) {
-        eventData = patchedData;
-        PDS_LOG_SYNC_DEBUG(@"Patched stale seq %lld -> %lld in replayed %@ event",
-                            [payload[@"seq"] longLongValue], (long long)dbSeq, msgType);
-      }
-    }
-
-    [connection sendMessage:eventData];
-  }
 }
 
 - (void)sendInfoEvent:(NSString *)kind
