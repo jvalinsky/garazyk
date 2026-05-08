@@ -30,6 +30,7 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
 @interface PDSSafeHTTPClient () <NSURLSessionTaskDelegate>
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSError *> *redirectErrors;
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, PDSSafeHTTPClientOptions *> *taskOptions;
+@property (nonatomic, strong) NSMutableSet<NSNumber *> *completedTasks;
 @property (nonatomic, strong) NSLock *stateLock;
 @end
 
@@ -49,6 +50,7 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
     if (self) {
         _redirectErrors = [NSMutableDictionary dictionary];
         _taskOptions = [NSMutableDictionary dictionary];
+        _completedTasks = [NSMutableSet set];
         _stateLock = [[NSLock alloc] init];
     }
     return self;
@@ -130,16 +132,24 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
     NSURLSession *session = [NSURLSession sessionWithConfiguration:configuration
                                                           delegate:self
                                                      delegateQueue:nil];
-    NSURLSessionDataTask *task =
+    __block NSURLSessionDataTask *task =
         [session dataTaskWithRequest:request
                    completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         NSNumber *taskID = @(task.taskIdentifier);
-        NSError *redirectError = nil;
         [self.stateLock lock];
-        redirectError = self.redirectErrors[taskID];
+        BOOL alreadyHandled = [self.completedTasks containsObject:taskID];
+        if (!alreadyHandled) {
+            [self.completedTasks addObject:taskID];
+        }
+        NSError *redirectError = self.redirectErrors[taskID];
         [self.redirectErrors removeObjectForKey:taskID];
         [self.taskOptions removeObjectForKey:taskID];
         [self.stateLock unlock];
+
+        if (alreadyHandled) {
+            [session finishTasksAndInvalidate];
+            return;
+        }
 
         [session finishTasksAndInvalidate];
 
@@ -153,19 +163,43 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
         }
         if (effective.maxResponseBytes > 0 && data.length > effective.maxResponseBytes) {
             NSError *sizeError = [[self class] errorWithCode:PDSSafeHTTPClientErrorResponseTooLarge
-                                                 description:@"Outbound response exceeded size limit"
-                                             underlyingError:nil];
+                                                  description:@"Outbound response exceeded size limit"
+                                              underlyingError:nil];
             completion(nil, (NSHTTPURLResponse *)response, sizeError);
             return;
         }
         completion(data, (NSHTTPURLResponse *)response, nil);
     }];
 
+    NSNumber *taskID = @(task.taskIdentifier);
     [self.stateLock lock];
-    self.taskOptions[@(task.taskIdentifier)] = effective;
+    self.taskOptions[taskID] = effective;
     [self.stateLock unlock];
 
     [task resume];
+
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(effective.timeout * NSEC_PER_SEC)),
+                   dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        [self.stateLock lock];
+        BOOL alreadyHandled = [self.completedTasks containsObject:taskID];
+        if (!alreadyHandled) {
+            [self.completedTasks addObject:taskID];
+            [self.redirectErrors removeObjectForKey:taskID];
+            [self.taskOptions removeObjectForKey:taskID];
+        }
+        [self.stateLock unlock];
+
+        if (alreadyHandled) {
+            return;
+        }
+
+        [task cancel];
+        [session finishTasksAndInvalidate];
+        NSError *timeoutError = [NSError errorWithDomain:NSURLErrorDomain
+                                                    code:NSURLErrorTimedOut
+                                                userInfo:@{NSLocalizedDescriptionKey: @"Safe HTTP request timed out"}];
+        completion(nil, nil, timeoutError);
+    });
 }
 
 - (NSData *)sendSynchronousRequest:(NSURLRequest *)request
