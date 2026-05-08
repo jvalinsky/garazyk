@@ -35,6 +35,33 @@ The orchestrator delegates work to the subagents in `.agents/agents/`. Use one s
 | `atproto-coverage-auditor` | `Lexicons/` and XRPC registration. |
 | `pr-reviewer` | Branch and pull request reviews. |
 
+## Project Skills
+
+Skills are located in `.agents/skills/`. The LLM loads them on-demand via the `skill` tool when a task matches their description.
+
+| Skill | When to Use |
+|---|---|
+| `gnustep-compat` | Platform detection, GNUstep bugs/workarounds, compat shims, Docker build |
+| `garazyk-testing` | Test infrastructure, mock patterns, environment gating, registration |
+| `garazyk-database` | SQLite connection pooling, WAL config, migrations, actor store |
+| `atproto-coverage-audit` | XRPC endpoint stub detection, schema sync against lexicons |
+| `atproto-scenario-testing` | Narrative-driven scenarios against local ATProto services |
+| `better-code-objc` | ARC, nullability, generics, GCD, NSError patterns |
+| `better-code-opencode` | Correctness, Clarity, Changeability, Primitives over Features |
+| `better-code-security-design` | Sink prevention, source-to-sink tracing, safe primitives |
+| `debugging-objc-crashes` | Systematic macOS ObjC crash diagnosis |
+| `deslop` | Remove AI writing patterns from prose |
+| `objc-architecture-audit` | Portability, XRPC contracts, service boundaries, parser hardening |
+| `objc-concurrency-audit` | Data races, deadlocks, re-entrancy, queue contracts |
+| `objc-security-audit` | SQL injection, crypto, secrets, log redaction |
+| `professional-bash-scripting` | Maintainable, secure bash scripts |
+| `rewriting-code-comments` | HeaderDoc standards, remove AI-isms |
+| `slop-detector` | Low-effort LLM code patterns, boilerplate, fragile code |
+| `sqlite-sql-best-practices` | SQLite correctness, query perf, index design, migrations |
+| `using-deciduous` | Track goals/decisions in the deciduous decision graph |
+| `web-ui-audit` | Accessibility (WCAG), JS patterns, frontend security |
+| `expand_md_topic` | Expand markdown outlines into comprehensive docs |
+
 ## Development Rules
 
 1. **Builds**: Use out-of-source builds.
