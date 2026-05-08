@@ -2,6 +2,11 @@
 #import "PDSEmailHTTPClient.h"
 #import "Debug/PDSLogger.h"
 
+// Suppress -Wblock-capture-autoreleasing: the error out-parameter captured
+// by dispatch_sync in httpClientWithError: is safe because dispatch_sync
+// completes before the method returns.
+#pragma clang diagnostic ignored "-Wblock-capture-autoreleasing"
+
 static NSString *const kDefaultResendEndpoint = @"https://api.resend.com";
 static NSString *const kResendAPIKeySecretName = @"RESEND_API_KEY";
 

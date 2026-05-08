@@ -5,6 +5,11 @@
 #import "Core/CID.h"
 #import "Debug/PDSLogger.h"
 
+// Suppress -Wblock-capture-autoreleasing: the error out-parameter captured
+// by the completion block is written before dispatch_semaphore_signal,
+// and the caller waits on the semaphore, so the autorelease pool is valid.
+#pragma clang diagnostic ignored "-Wblock-capture-autoreleasing"
+
 NSString * const ATProtoVideoTranscoderErrorDomain = @"com.atproto.video.transcoder";
 
 @interface ATProtoVideoTranscoder ()

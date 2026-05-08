@@ -5,6 +5,10 @@
 #import "Compat/PDSTypes.h"
 #import <sqlite3.h>
 
+// Suppress -Wblock-capture-autoreleasing: all block captures in this file
+// use dispatch_sync, which completes before the method returns.
+#pragma clang diagnostic ignored "-Wblock-capture-autoreleasing"
+
 NSString * const JelczDatabaseErrorDomain = @"com.atproto.jelcz.database";
 
 static const char *kJelczDatabaseQueueKey = "kJelczDatabaseQueueKey";
