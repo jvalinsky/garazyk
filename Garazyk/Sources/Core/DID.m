@@ -690,6 +690,6 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
         }
         return nil;
     }
-
+}
 
 @end
