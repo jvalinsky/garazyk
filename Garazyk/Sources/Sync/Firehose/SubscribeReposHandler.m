@@ -699,7 +699,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     __strong typeof(weakSelf) strongSelf = weakSelf;
     if (!strongSelf || strongSelf.stopping) return;
     [strongSelf ensureSequenceInitialized];
-    NSUInteger sequenceNumber = [strongSelf nextSequenceNumber];
+    // Per ATProto spec: "it is common to have an #info message type that is not persisted"
+    // and "Not all message types need to include seq". Info events should NOT consume
+    // a sequence number and should NOT be persisted.
     FirehoseInfoEvent *event = [[FirehoseInfoEvent alloc] init];
     event.kind = kind;
     event.message = message;
@@ -707,20 +709,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     NSData *eventData = [strongSelf.session encodeInfoEvent:event];
 
     if (eventData) {
-      // Persist info events for replay
-      if (strongSelf.serviceDatabases) {
-        NSError *persistError = nil;
-        if (![strongSelf.serviceDatabases persistEvent:(int64_t)sequenceNumber
-                                            type:@"info"
-                                            data:eventData
-                                           error:&persistError]) {
-          PDS_LOG_SYNC_ERROR(@"Failed to persist info event: %@", persistError);
-        }
-      }
+      // Info events are ephemeral — do NOT persist for replay
       [strongSelf broadcastEventData:eventData];
-      [[PDSMetrics sharedMetrics] setFirehoseSeq:(int64_t)sequenceNumber];
-      PDS_LOG_SYNC_DEBUG(@"Broadcast info event (%@), seq %lu",
-                          kind, (unsigned long)sequenceNumber);
+      PDS_LOG_SYNC_DEBUG(@"Broadcast info event (%@)", kind);
     }
   });
 }
@@ -813,19 +804,20 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       PDS_LOG_SYNC_INFO(@"No cursor provided; starting stream from current head.");
     }
 
+    // Per ATProto event-stream spec: "cursor is higher than current seq ("in the future"):
+    // server sends an error message and closes connection"
     if (hasCursor && parsedCursor > strongSelf.session.sequenceNumber) {
       PDS_LOG_SYNC_WARN(
           @"Future cursor %lu is ahead of server sequence %lu; "
-          @"sending OutdatedCursor info and starting from current head for connection %@",
+          @"sending FutureCursor error and closing connection %@",
           (unsigned long)parsedCursor,
           (unsigned long)strongSelf.session.sequenceNumber,
           connection);
-      [strongSelf sendInfoEvent:kSubscribeReposInfoOutdatedCursor
-                       message:@"requested cursor is ahead of server sequence; "
-                               @"starting from current head"
-                  toConnection:connection];
-      // Treat as no cursor: start streaming from current head instead of closing.
-      hasCursor = NO;
+      [strongSelf sendErrorFrameWithCode:kSubscribeReposErrorFutureCursor
+                                 message:@"Cursor is ahead of server sequence"
+                            toConnection:connection];
+      [connection closeWithCode:1008 reason:kSubscribeReposErrorFutureCursor];
+      return;
     }
 
     if (!hasCursor) {
@@ -888,10 +880,35 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                      (unsigned long)events.count, (unsigned long)cursor);
 
   for (NSDictionary *eventDict in events) {
+    int64_t dbSeq = [eventDict[@"seq"] longLongValue];
     NSData *eventData = eventDict[@"data"];
     if (![eventData isKindOfClass:[NSData class]] || eventData.length == 0) {
       continue;
     }
+
+    // Defense-in-depth: validate and patch seq in CBOR payload to match DB row.
+    // If the stored CBOR has stale seq (e.g., seq=0 from a prior bug), re-encode
+    // with the correct seq from the DB row before sending to the relay.
+    NSInteger op = 0;
+    NSString *msgType = nil;
+    NSError *decodeError = nil;
+    NSDictionary *payload = [self.session.eventFormatter
+        decodeEventFromData:eventData op:&op msgType:&msgType error:&decodeError];
+
+    if (payload && msgType && ![msgType isEqualToString:@"#info"] &&
+        payload[@"seq"] && [payload[@"seq"] longLongValue] != dbSeq) {
+      // Re-encode with corrected seq
+      NSMutableDictionary *patchedPayload = [payload mutableCopy];
+      patchedPayload[@"seq"] = @(dbSeq);
+      NSData *patchedData = [self.session.eventFormatter
+          encodeStreamEventWithType:msgType payload:patchedPayload error:nil];
+      if (patchedData) {
+        eventData = patchedData;
+        PDS_LOG_SYNC_DEBUG(@"Patched stale seq %lld -> %lld in replayed %@ event",
+                            [payload[@"seq"] longLongValue], dbSeq, msgType);
+      }
+    }
+
     [connection sendMessage:eventData];
   }
 }
