@@ -169,7 +169,7 @@
     
     NSMutableDictionary *payload = [opData mutableCopy];
     payload[@"sig"] = [self base64URLEncode:sig];
-    NSString *did = [PLCOperation calculateDIDForData:opData];
+    NSString *did = [PLCOperation calculateDIDForSignedOperation:payload];
 
     PLCOperation *op = [[PLCOperation alloc] init];
     op.did = did;
@@ -209,7 +209,7 @@
     
     NSMutableDictionary *payload = [opData mutableCopy];
     payload[@"sig"] = [self base64URLEncode:sig];
-    NSString *did = [PLCOperation calculateDIDForData:opData];
+    NSString *did = [PLCOperation calculateDIDForSignedOperation:payload];
 
     NSData *body = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
     HttpRequest *req = [self requestWithMethod:HttpMethodPOST
@@ -245,7 +245,7 @@
     
     NSMutableDictionary *payload = [opData mutableCopy];
     payload[@"sig"] = [self base64URLEncode:sig];
-    NSString *did = [PLCOperation calculateDIDForData:opData];
+    NSString *did = [PLCOperation calculateDIDForSignedOperation:payload];
 
     NSData *body = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
     HttpRequest *req = [self requestWithMethod:HttpMethodPOST

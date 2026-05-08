@@ -25,16 +25,18 @@
         @"alsoKnownAs": @[@"at://handle.example.com"],
         @"services": @{}
     };
-    
+
     NSError *error = nil;
     PLCOperation *op = [PLCOperation operationFromDictionary:json error:&error];
-    
+
     XCTAssertNil(error);
     XCTAssertNotNil(op);
     XCTAssertEqualObjects(op.did, @"did:plc:abcdefghijklmnopqrstuvwx");
     XCTAssertEqualObjects(op.prev, @"cid:456");
     XCTAssertEqualObjects(op.sig, @"sig789");
     XCTAssertEqualObjects(op.data[@"type"], @"plc_operation");
+    // Per spec, "did" is NOT a valid operation data field — it should be stripped
+    XCTAssertNil(op.data[@"did"], @"did should not appear in op.data");
 }
 
 - (void)testParseFromDictionaryMissingOptionalPrev {
@@ -82,16 +84,24 @@
         @"verificationMethods": @{@"atproto": didKey},
         @"alsoKnownAs": @[@"at://oldhandle.bsky.social"],
         @"services": @{},
-        @"prev": [NSNull null]
+        @"prev": [NSNull null],
+        @"sig": @"test_sig"
     };
-    
-    NSString *did = [PLCOperation calculateDIDForData:createData];
-    
+
+    NSString *did = [PLCOperation calculateDIDForSignedOperation:createData];
+
     PLCOperation *createOp = [[PLCOperation alloc] init];
     createOp.did = did;
     createOp.prev = nil;
     createOp.sig = @"test_sig";
-    createOp.data = createData;
+    createOp.data = @{
+        @"type": @"plc_operation",
+        @"rotationKeys": @[didKey],
+        @"verificationMethods": @{@"atproto": didKey},
+        @"alsoKnownAs": @[@"at://oldhandle.bsky.social"],
+        @"services": @{},
+        @"prev": [NSNull null]
+    };
     
     NSError *cidError = nil;
     NSString *prevCid = [PLCOperation calculateCIDForOperation:[createOp toDictionary] error:&cidError];
@@ -133,16 +143,24 @@
         @"verificationMethods": @{@"atproto": didKey},
         @"alsoKnownAs": @[@"at://handle1.bsky.social"],
         @"services": @{},
-        @"prev": [NSNull null]
+        @"prev": [NSNull null],
+        @"sig": @"test_sig"
     };
-    
-    NSString *did = [PLCOperation calculateDIDForData:createData];
-    
+
+    NSString *did = [PLCOperation calculateDIDForSignedOperation:createData];
+
     PLCOperation *createOp = [[PLCOperation alloc] init];
     createOp.did = did;
     createOp.prev = nil;
     createOp.sig = @"test_sig";
-    createOp.data = createData;
+    createOp.data = @{
+        @"type": @"plc_operation",
+        @"rotationKeys": @[didKey],
+        @"verificationMethods": @{@"atproto": didKey},
+        @"alsoKnownAs": @[@"at://handle1.bsky.social"],
+        @"services": @{},
+        @"prev": [NSNull null]
+    };
     
     NSError *cidError = nil;
     NSString *prevCid1 = [PLCOperation calculateCIDForOperation:[createOp toDictionary] error:&cidError];
@@ -222,6 +240,10 @@
 }
 
 - (void)testDIDCalculationTestVector {
+    // The indigo/plc test vector uses unsigned data, which produces a DID
+    // that does NOT match plc.directory (which hashes signed operations).
+    // We retain the unsigned test vector for CBOR encoding regression testing,
+    // but the spec-compliant DID derivation uses calculateDIDForSignedOperation:.
     NSDictionary *opData = @{
         @"type": @"create",
         @"signingKey": @"did:key:zDnaeRSYs7c2NpcNA5NRAUqS8DCkLWDyNLnATi28D6w7no7hX",
@@ -230,24 +252,46 @@
         @"service": @"bsky.social",
         @"prev": [NSNull null]
     };
-    
-    NSString *calculatedDID = [PLCOperation calculateDIDForData:opData];
-    
-    XCTAssertEqualObjects(calculatedDID, @"did:plc:taybjzkanfb23appusr452ga");
+
+    // Legacy unsigned derivation (retained for backward compatibility)
+    NSString *unsignedDID = [PLCOperation calculateDIDForData:opData];
+    XCTAssertEqualObjects(unsignedDID, @"did:plc:taybjzkanfb23appusr452ga",
+        @"Legacy unsigned DID derivation should match indigo test vector");
+
+    // Signed derivation produces a different DID (spec-compliant).
+    // With a known signature, the DID would be deterministic.
+    // Here we just verify that the signed method works and produces a valid DID.
+    NSDictionary *signedOp = @{
+        @"type": @"create",
+        @"signingKey": @"did:key:zDnaeRSYs7c2NpcNA5NRAUqS8DCkLWDyNLnATi28D6w7no7hX",
+        @"recoveryKey": @"did:key:zDnaeRSYs7c2NpcNA5NRAUqS8DCkLWDyNLnATi28D6w7no7hX",
+        @"handle": @"why.bsky.social",
+        @"service": @"bsky.social",
+        @"prev": [NSNull null],
+        @"sig": @"DyaPWDItkJnVkN1izINSW-fdjUzP9BkIKlD7SnzD5axfK_870ZZ-1EYcrQLQtP9VkWcp2cdbyIHprjPfeUs8WQ"
+    };
+    NSString *signedDID = [PLCOperation calculateDIDForSignedOperation:signedOp];
+    XCTAssertTrue([signedDID hasPrefix:@"did:plc:"],
+        @"Signed DID derivation should produce valid did:plc");
+    XCTAssertNotEqualObjects(signedDID, unsignedDID,
+        @"Signed and unsigned DID derivation must produce different results");
 }
 
 - (void)testDIDCalculationWithPLCOperation {
-    NSDictionary *opData = @{
+    // Per spec, DID is derived from the signed operation (including sig).
+    // We test with a synthetic signed operation.
+    NSDictionary *signedOp = @{
         @"type": @"plc_operation",
         @"rotationKeys": @[@"did:key:zDnaeRSYs7c2NpcNA5NRAUqS8DCkLWDyNLnATi28D6w7no7hX"],
         @"verificationMethods": @{@"atproto": @"did:key:zDnaeRSYs7c2NpcNA5NRAUqS8DCkLWDyNLnATi28D6w7no7hX"},
         @"alsoKnownAs": @[@"at://test.bsky.social"],
         @"services": @{@"atproto_pds": @{@"type": @"AtprotoPersonalDataServer", @"endpoint": @"https://pds.example.com"}},
-        @"prev": [NSNull null]
+        @"prev": [NSNull null],
+        @"sig": @"test_signature_placeholder"
     };
-    
-    NSString *calculatedDID = [PLCOperation calculateDIDForData:opData];
-    
+
+    NSString *calculatedDID = [PLCOperation calculateDIDForSignedOperation:signedOp];
+
     XCTAssertTrue([calculatedDID hasPrefix:@"did:plc:"], @"DID should have did:plc: prefix");
     XCTAssertEqual(calculatedDID.length, 32, @"DID should be 32 characters (did:plc: + 24 char hash)");
 }
