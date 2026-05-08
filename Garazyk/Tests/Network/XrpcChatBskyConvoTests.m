@@ -45,21 +45,38 @@
     return nil;
 }
 
+// Helper: create a conversation via GET query (getConvoForMembers is a query endpoint)
+- (NSString *)createConvoWithAuth:(NSString *)authHeader {
+    NSString *queryString = [NSString stringWithFormat:@"members=%@&members=%@", self.userDid, self.secondUserDid];
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
+                                             queryString:queryString
+                                             queryParams:@{}
+                                                 headers:@{@"authorization": authHeader}];
+    if (response.statusCode == 200 && response.jsonBody[@"convo"]) {
+        return response.jsonBody[@"convo"][@"id"];
+    }
+    return nil;
+}
+
 #pragma mark - getConvoForMembers Tests
 
 - (void)testGetConvoForMembersRequiresAuth {
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
-                                                      body:@{@"members": @[self.userDid, self.secondUserDid]}
-                                                   headers:@{}];
+    NSString *queryString = [NSString stringWithFormat:@"members=%@&members=%@", self.userDid, self.secondUserDid];
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
+                                             queryString:queryString
+                                             queryParams:@{}
+                                                 headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
     XCTAssertEqualObjects(response.jsonBody[@"error"], @"AuthRequired");
 }
 
 - (void)testGetConvoForMembersCreatesConversation {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
-                                                      body:@{@"members": @[self.userDid, self.secondUserDid]}
-                                                   headers:@{@"authorization": authHeader}];
+    NSString *queryString = [NSString stringWithFormat:@"members=%@&members=%@", self.userDid, self.secondUserDid];
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
+                                             queryString:queryString
+                                             queryParams:@{}
+                                                 headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 200);
     XCTAssertNotNil(response.jsonBody[@"convo"]);
     XCTAssertNotNil(response.jsonBody[@"convo"][@"id"]);
@@ -67,27 +84,32 @@
 
 - (void)testGetConvoForMembersRequiresTwoMembers {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
-                                                      body:@{@"members": @[self.userDid]}
-                                                   headers:@{@"authorization": authHeader}];
+    NSString *queryString = [NSString stringWithFormat:@"members=%@", self.userDid];
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
+                                             queryString:queryString
+                                             queryParams:@{}
+                                                 headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 400);
     XCTAssertEqualObjects(response.jsonBody[@"error"], @"InvalidRequest");
 }
 
 - (void)testGetConvoForMembersReturnsSamConversationOnSecondCall {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+    NSString *queryString = [NSString stringWithFormat:@"members=%@&members=%@", self.userDid, self.secondUserDid];
 
     // First call
-    HttpResponse *response1 = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
-                                                       body:@{@"members": @[self.userDid, self.secondUserDid]}
-                                                    headers:@{@"authorization": authHeader}];
+    HttpResponse *response1 = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
+                                              queryString:queryString
+                                              queryParams:@{}
+                                                  headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response1.statusCode, 200);
     NSString *convoId1 = response1.jsonBody[@"convo"][@"id"];
 
     // Second call with same members
-    HttpResponse *response2 = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
-                                                       body:@{@"members": @[self.userDid, self.secondUserDid]}
-                                                    headers:@{@"authorization": authHeader}];
+    HttpResponse *response2 = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
+                                              queryString:queryString
+                                              queryParams:@{}
+                                                  headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response2.statusCode, 200);
     NSString *convoId2 = response2.jsonBody[@"convo"][@"id"];
 
@@ -107,10 +129,8 @@
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
 
     // Create conversation
-    HttpResponse *createResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
-                                                            body:@{@"members": @[self.userDid, self.secondUserDid]}
-                                                         headers:@{@"authorization": authHeader}];
-    NSString *convoId = createResponse.jsonBody[@"convo"][@"id"];
+    NSString *convoId = [self createConvoWithAuth:authHeader];
+    XCTAssertNotNil(convoId, @"Failed to create conversation");
 
     // Accept conversation
     HttpResponse *acceptResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.acceptConvo"
@@ -133,10 +153,8 @@
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
 
     // Create conversation
-    HttpResponse *createResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
-                                                            body:@{@"members": @[self.userDid, self.secondUserDid]}
-                                                         headers:@{@"authorization": authHeader}];
-    NSString *convoId = createResponse.jsonBody[@"convo"][@"id"];
+    NSString *convoId = [self createConvoWithAuth:authHeader];
+    XCTAssertNotNil(convoId, @"Failed to create conversation");
 
     // Leave conversation
     HttpResponse *leaveResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.leaveConvo"
@@ -210,11 +228,9 @@
 - (void)testAddReactionToMessage {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
 
-    // Create message first
-    HttpResponse *createConvoResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
-                                                                 body:@{@"members": @[self.userDid, self.secondUserDid]}
-                                                              headers:@{@"authorization": authHeader}];
-    NSString *convoId = createConvoResponse.jsonBody[@"convo"][@"id"];
+    // Create conversation
+    NSString *convoId = [self createConvoWithAuth:authHeader];
+    XCTAssertNotNil(convoId, @"Failed to create conversation");
 
     // Add reaction
     HttpResponse *reactionResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.addReaction"
@@ -247,10 +263,8 @@
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
 
     // Create conversation
-    HttpResponse *createResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
-                                                            body:@{@"members": @[self.userDid, self.secondUserDid]}
-                                                         headers:@{@"authorization": authHeader}];
-    NSString *convoId = createResponse.jsonBody[@"convo"][@"id"];
+    NSString *convoId = [self createConvoWithAuth:authHeader];
+    XCTAssertNotNil(convoId, @"Failed to create conversation");
 
     // Update read
     HttpResponse *readResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.updateRead"
@@ -263,10 +277,8 @@
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
 
     // Create conversation
-    HttpResponse *createResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
-                                                            body:@{@"members": @[self.userDid, self.secondUserDid]}
-                                                         headers:@{@"authorization": authHeader}];
-    NSString *convoId = createResponse.jsonBody[@"convo"][@"id"];
+    NSString *convoId = [self createConvoWithAuth:authHeader];
+    XCTAssertNotNil(convoId, @"Failed to create conversation");
 
     // Mark all as read
     HttpResponse *allReadResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.updateAllRead"
@@ -281,10 +293,8 @@
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
 
     // Create conversation
-    HttpResponse *createResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
-                                                            body:@{@"members": @[self.userDid, self.secondUserDid]}
-                                                         headers:@{@"authorization": authHeader}];
-    NSString *convoId = createResponse.jsonBody[@"convo"][@"id"];
+    NSString *convoId = [self createConvoWithAuth:authHeader];
+    XCTAssertNotNil(convoId, @"Failed to create conversation");
 
     // Mute conversation
     HttpResponse *muteResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.muteConvo"
@@ -297,10 +307,8 @@
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
 
     // Create conversation
-    HttpResponse *createResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
-                                                            body:@{@"members": @[self.userDid, self.secondUserDid]}
-                                                         headers:@{@"authorization": authHeader}];
-    NSString *convoId = createResponse.jsonBody[@"convo"][@"id"];
+    NSString *convoId = [self createConvoWithAuth:authHeader];
+    XCTAssertNotNil(convoId, @"Failed to create conversation");
 
     // Unmute conversation
     HttpResponse *unmuteResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.unmuteConvo"
@@ -322,10 +330,8 @@
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
 
     // Create conversation
-    HttpResponse *createResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
-                                                            body:@{@"members": @[self.userDid, self.secondUserDid]}
-                                                         headers:@{@"authorization": authHeader}];
-    NSString *convoId = createResponse.jsonBody[@"convo"][@"id"];
+    NSString *convoId = [self createConvoWithAuth:authHeader];
+    XCTAssertNotNil(convoId, @"Failed to create conversation");
 
     // Send batch
     HttpResponse *batchResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.sendMessageBatch"
@@ -348,10 +354,8 @@
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
 
     // Create conversation
-    HttpResponse *createResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
-                                                            body:@{@"members": @[self.userDid, self.secondUserDid]}
-                                                         headers:@{@"authorization": authHeader}];
-    NSString *convoId = createResponse.jsonBody[@"convo"][@"id"];
+    NSString *convoId = [self createConvoWithAuth:authHeader];
+    XCTAssertNotNil(convoId, @"Failed to create conversation");
 
     // Lock conversation
     HttpResponse *lockResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.lockConvo"
@@ -364,10 +368,8 @@
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
 
     // Create conversation
-    HttpResponse *createResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
-                                                            body:@{@"members": @[self.userDid, self.secondUserDid]}
-                                                         headers:@{@"authorization": authHeader}];
-    NSString *convoId = createResponse.jsonBody[@"convo"][@"id"];
+    NSString *convoId = [self createConvoWithAuth:authHeader];
+    XCTAssertNotNil(convoId, @"Failed to create conversation");
 
     // Unlock conversation
     HttpResponse *unlockResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.unlockConvo"
@@ -385,12 +387,10 @@
 
 - (void)testGetLogSuccess {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    
+
     // Create some activity
-    [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.getConvoForMembers"
-                             body:@{@"members": @[self.userDid, self.secondUserDid]}
-                          headers:@{@"authorization": authHeader}];
-    
+    [self createConvoWithAuth:authHeader];
+
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/chat.bsky.convo.getLog"
                                               queryString:@""
                                               queryParams:@{}
