@@ -52,6 +52,7 @@
 #import "Repository/CAR.h"
 #import "Security/PDSAuthzManager.h"
 #import "Services/Core/PDSPhoneVerificationProvider.h"
+#import "Registration/PDSRegistrationGate.h"
 #import <CommonCrypto/CommonKeyDerivation.h>
 
 static NSString *const kTempFetchLabelsDeprecationWarning =
@@ -497,6 +498,16 @@ static void registerMethodsWithDispatcherUsingServices(
                            userDatabasePool:userDatabasePool];
 
 
+  // Create registration gate from configuration
+  NSError *gateError = nil;
+  id<PDSRegistrationGate> registrationGate =
+      [PDSRegistrationGateFactory gateFromConfiguration:config
+                                       serviceDatabases:serviceDatabases
+                                                  error:&gateError];
+  if (gateError) {
+    PDS_LOG_ERROR(@"Failed to create registration gate: %@", gateError);
+  }
+
   // Register domain modules in order
   [XrpcServerMethods registerWithDispatcher:dispatcher
                                   jwtMinter:jwtMinter
@@ -506,7 +517,8 @@ static void registerMethodsWithDispatcherUsingServices(
                            serviceDatabases:serviceDatabases
                            userDatabasePool:userDatabasePool
                               configuration:config
-                   enforceDidWebServiceAuth:NO];
+                   enforceDidWebServiceAuth:NO
+                           registrationGate:registrationGate];
 
   [XrpcIdentityMethods registerWithDispatcher:dispatcher
                                     jwtMinter:jwtMinter
