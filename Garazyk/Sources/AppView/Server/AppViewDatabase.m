@@ -99,6 +99,19 @@ static NSString * const kSchemaV1 = @""
 "CREATE INDEX IF NOT EXISTS idx_dead_letter_did ON appview_dead_letter(did);"
 "CREATE INDEX IF NOT EXISTS idx_dead_letter_created ON appview_dead_letter(created_at);"
 
+"CREATE TABLE IF NOT EXISTS dead_letter_hooks ("
+"  id INTEGER PRIMARY KEY AUTOINCREMENT,"
+"  hook_id TEXT NOT NULL,"
+"  uri TEXT NOT NULL,"
+"  did TEXT NOT NULL,"
+"  collection TEXT NOT NULL,"
+"  event_type TEXT NOT NULL,"
+"  error_message TEXT,"
+"  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))"
+");"
+"CREATE INDEX IF NOT EXISTS idx_dead_letter_hooks_hook_id ON dead_letter_hooks(hook_id);"
+"CREATE INDEX IF NOT EXISTS idx_dead_letter_hooks_created ON dead_letter_hooks(created_at);"
+
 // ATProto Record/Block Materialization
 "CREATE TABLE IF NOT EXISTS records ("
 "  uri TEXT PRIMARY KEY,"
@@ -1571,6 +1584,142 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             }
         }
     });
+    return count;
+}
+
+#pragma mark - Generic Record Queries
+
+- (nullable NSDictionary *)getRecordWithURI:(NSString *)uri
+                                       did:(NSString *)did
+                                collection:(NSString *)collection
+                                      rkey:(NSString *)rkey
+                                    error:(NSError **)error {
+    NSString *sql = @"SELECT uri, did, collection, rkey, cid, value, handle, subject_did, indexed_at FROM records WHERE uri = ?";
+    NSArray *rows = [self executeParameterizedQuery:sql params:@[uri] error:error];
+    if (!rows || rows.count == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:404
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Record not found"}];
+        }
+        return nil;
+    }
+
+    NSDictionary *row = rows.firstObject;
+    NSString *value = row[@"value"];
+    NSDictionary *record = nil;
+    if (value && value.length > 0) {
+        record = [NSJSONSerialization JSONObjectWithData:[value dataUsingEncoding:NSUTF8StringEncoding]
+                                                options:0
+                                                  error:nil];
+        if (![record isKindOfClass:[NSDictionary class]]) {
+            record = nil;
+        }
+    }
+
+    return @{
+        @"uri": row[@"uri"] ?: uri,
+        @"cid": row[@"cid"] ?: @"",
+        @"value": record ?: @{},
+        @"did": row[@"did"] ?: did,
+        @"collection": row[@"collection"] ?: collection,
+        @"rkey": row[@"rkey"] ?: rkey
+    };
+}
+
+- (nullable NSDictionary *)listRecordsForCollection:(NSString *)collection
+                                                did:(nullable NSString *)did
+                                              limit:(NSInteger)limit
+                                             cursor:(nullable NSString *)cursor
+                                              error:(NSError **)error {
+    limit = MAX(1, MIN(limit, 100));
+
+    NSMutableString *sql = [NSMutableString stringWithString:
+        @"SELECT uri, did, collection, rkey, cid, value, handle, indexed_at FROM records WHERE collection = ?"];
+    NSMutableArray *params = [NSMutableArray arrayWithObject:collection];
+
+    if (did.length > 0) {
+        [sql appendString:@" AND did = ?"];
+        [params addObject:did];
+    }
+
+    if (cursor.length > 0) {
+        // Cursor is the last rkey from the previous page
+        [sql appendString:@" AND rkey > ?"];
+        [params addObject:cursor];
+    }
+
+    [sql appendString:@" ORDER BY rkey ASC LIMIT ?"];
+    [params addObject:@(limit + 1)]; // Fetch one extra to detect next page
+
+    NSArray *rows = [self executeParameterizedQuery:sql params:params error:error];
+    if (!rows) return nil;
+
+    BOOL hasMore = rows.count > (NSUInteger)limit;
+    NSArray *resultRows = hasMore ? [rows subarrayWithRange:NSMakeRange(0, (NSUInteger)limit)] : rows;
+
+    NSMutableArray *records = [NSMutableArray array];
+    NSString *nextCursor = nil;
+
+    for (NSUInteger i = 0; i < resultRows.count; i++) {
+        NSDictionary *row = resultRows[i];
+        NSString *value = row[@"value"];
+        NSDictionary *record = nil;
+        if (value && value.length > 0) {
+            record = [NSJSONSerialization JSONObjectWithData:[value dataUsingEncoding:NSUTF8StringEncoding]
+                                                    options:0
+                                                      error:nil];
+            if (![record isKindOfClass:[NSDictionary class]]) {
+                record = nil;
+            }
+        }
+
+        [records addObject:@{
+            @"uri": row[@"uri"] ?: @"",
+            @"cid": row[@"cid"] ?: @"",
+            @"value": record ?: @{},
+            @"did": row[@"did"] ?: @"",
+            @"collection": row[@"collection"] ?: collection,
+            @"rkey": row[@"rkey"] ?: @""
+        }];
+
+        // Use the last rkey as the next cursor
+        if (i == resultRows.count - 1 && hasMore) {
+            nextCursor = row[@"rkey"];
+        }
+    }
+
+    NSMutableDictionary *result = [NSMutableDictionary dictionaryWithObject:records forKey:@"records"];
+    if (nextCursor) {
+        result[@"cursor"] = nextCursor;
+    }
+    return [result copy];
+}
+
+- (nullable NSArray<NSString *> *)indexedCollectionsWithError:(NSError **)error {
+    NSString *sql = @"SELECT DISTINCT collection FROM records ORDER BY collection";
+    NSArray *rows = [self executeParameterizedQuery:sql params:@[] error:error];
+    if (!rows) return nil;
+
+    NSMutableArray *collections = [NSMutableArray array];
+    for (NSDictionary *row in rows) {
+        NSString *collection = row[@"collection"];
+        if (collection.length > 0) {
+            [collections addObject:collection];
+        }
+    }
+    return [collections copy];
+}
+
+- (NSInteger)recordCountForCollection:(NSString *)collection error:(NSError **)error {
+    __block NSInteger count = -1;
+    NSString *sql = @"SELECT COUNT(*) AS cnt FROM records WHERE collection = ?";
+    NSArray *rows = [self executeParameterizedQuery:sql params:@[collection] error:error];
+    if (rows && rows.count > 0) {
+        NSNumber *cnt = rows.firstObject[@"cnt"];
+        if ([cnt isKindOfClass:[NSNumber class]]) {
+            count = [cnt integerValue];
+        }
+    }
     return count;
 }
 

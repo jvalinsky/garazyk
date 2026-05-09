@@ -388,6 +388,67 @@ extern NSString * const AppViewDatabaseErrorDomain;
  */
 - (NSInteger)getTotalBlocksCountWithError:(NSError **)error;
 
+#pragma mark - Generic Record Queries
+
+/*!
+ @method getRecordWithURI:did:collection:rkey:error:
+
+ @abstract Retrieve a single record by its components.
+
+ @param uri        The AT URI of the record.
+ @param did        The DID of the repo.
+ @param collection The collection NSID.
+ @param rkey       The record key.
+ @param error      On failure, describes the problem.
+
+ @return Dictionary with uri, cid, value, did, collection, rkey; or nil if not found.
+ */
+- (nullable NSDictionary *)getRecordWithURI:(NSString *)uri
+                                       did:(NSString *)did
+                                collection:(NSString *)collection
+                                      rkey:(NSString *)rkey
+                                    error:(NSError **)error;
+
+/*!
+ @method listRecordsForCollection:did:limit:cursor:error:
+
+ @abstract Paginated list of records in a collection, optionally filtered by DID.
+
+ @param collection The collection NSID.
+ @param did       Optional DID filter (nil for all repos).
+ @param limit     Maximum records to return (1-100).
+ @param cursor    Pagination cursor (nil for first page).
+ @param error     On failure, describes the problem.
+
+ @return Dictionary with "records" array and optional "cursor" for next page.
+ */
+- (nullable NSDictionary *)listRecordsForCollection:(NSString *)collection
+                                                did:(nullable NSString *)did
+                                              limit:(NSInteger)limit
+                                             cursor:(nullable NSString *)cursor
+                                              error:(NSError **)error;
+
+/*!
+ @method indexedCollectionsWithError:
+
+ @abstract Return all collections that have indexed records.
+
+ @return Array of collection NSID strings.
+ */
+- (nullable NSArray<NSString *> *)indexedCollectionsWithError:(NSError **)error;
+
+/*!
+ @method recordCountForCollection:error:
+
+ @abstract Count records in a specific collection.
+
+ @param collection The collection NSID.
+ @param error      On failure, describes the problem.
+
+ @return Count of records, or -1 on error.
+ */
+- (NSInteger)recordCountForCollection:(NSString *)collection error:(NSError **)error;
+
 #pragma mark - Handle Resolution
 
 /*!

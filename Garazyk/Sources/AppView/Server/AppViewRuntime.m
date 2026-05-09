@@ -18,6 +18,9 @@
 #import "AppView/Server/Indexers/AppViewNotificationIndexer.h"
 #import "AppView/Server/Indexers/AppViewBookmarkIndexer.h"
 #import "AppView/Server/Indexers/AppViewGroupIndexer.h"
+#import "AppView/Server/Indexers/AppViewGenericIndexer.h"
+#import "AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h"
+#import "AppView/Server/Lexicon/AppViewCustomQueryRegistry.h"
 #import "AppView/Services/FeedService.h"
 #import "AppView/Services/ActorService.h"
 #import "AppView/Services/GraphService.h"
@@ -30,6 +33,8 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Auth/JWT.h"
+#import "Lexicon/ATProtoLexiconRegistry.h"
+#import "Lexicon/ATProtoLexiconValidator.h"
 #import "Debug/PDSLogger.h"
 
 @interface AppViewRuntime () <AppViewIngestEngineDelegate,
@@ -49,6 +54,10 @@
 @property (nonatomic, strong) NotificationService *notificationService;
 @property (nonatomic, strong) BookmarkService *bookmarkService;
 @property (nonatomic, strong) AgeAssuranceService *ageAssuranceService;
+@property (nonatomic, strong) AppViewLexiconEndpointGenerator *lexiconEndpointGenerator;
+@property (nonatomic, strong) AppViewCustomQueryRegistry *customQueryRegistry;
+@property (nonatomic, strong) ATProtoLexiconRegistry *lexiconRegistry;
+@property (nonatomic, strong) ATProtoLexiconValidator *lexiconValidator;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 
 @end
@@ -132,6 +141,25 @@ static AppViewRuntime *_sharedRuntime = nil;
     // Run migrations
     if (![_database runMigrations:error]) return NO;
 
+    // Load lexicon schemas
+    _lexiconRegistry = [ATProtoLexiconRegistry sharedRegistry];
+    NSString *lexiconDataDir = [config.dataDirectory stringByAppendingPathComponent:@"lexicons"];
+    NSArray<NSString *> *searchPaths = [_lexiconRegistry searchPathsForDirectory:lexiconDataDir];
+    NSError *lexiconErr = nil;
+    for (NSString *path in searchPaths) {
+        [_lexiconRegistry loadLexiconsFromDirectory:path error:&lexiconErr];
+        if (lexiconErr) {
+            PDS_LOG_WARN(@"[AppViewRuntime] Lexicon load error from %@: %@",
+                         path, lexiconErr.localizedDescription);
+            lexiconErr = nil; // Continue loading from other paths
+        }
+    }
+    PDS_LOG_INFO(@"[AppViewRuntime] Loaded %lu lexicon schemas",
+                 (unsigned long)[_lexiconRegistry loadedNSIDs].count);
+
+    // Build lexicon validator
+    _lexiconValidator = [[ATProtoLexiconValidator alloc] initWithRegistry:_lexiconRegistry];
+
     // Build relevance set
     _relevanceSet = [[AppViewRelevanceSet alloc]
         initWithDatabase:_database
@@ -149,7 +177,37 @@ static AppViewRuntime *_sharedRuntime = nil;
     AppViewBookmarkIndexer *bookmarkIdx = [[AppViewBookmarkIndexer alloc] initWithDatabase:_database
                                                                   bookmarkService:_bookmarkService];
     AppViewGroupIndexer *groupIdx = [[AppViewGroupIndexer alloc] initWithDatabase:_database];
-    _indexers = @[actorIdx, feedIdx, graphIdx, notifIdx, bookmarkIdx, groupIdx];
+
+    // Build the set of collections claimed by domain-specific indexers
+    // so the generic indexer knows what to skip
+    NSSet *domainCollections = [NSSet setWithArray:@[
+        @"app.bsky.actor.profile",
+        @"app.bsky.feed.post",
+        @"app.bsky.feed.repost",
+        @"app.bsky.feed.like",
+        @"app.bsky.feed.generator",
+        @"app.bsky.feed.threadgate",
+        @"app.bsky.feed.postgate",
+        @"app.bsky.graph.follow",
+        @"app.bsky.graph.block",
+        @"app.bsky.graph.list",
+        @"app.bsky.graph.listitem",
+        @"app.bsky.graph.listblock",
+        @"app.bsky.graph.starterpack",
+        @"app.bsky.graph.verification",
+        @"app.bsky.notification.declaration",
+        @"app.bsky.bookmark.bookmark",
+        @"chat.bsky.convo.message",
+        @"chat.bsky.group.message",
+    ]];
+
+    AppViewGenericIndexer *genericIdx = [[AppViewGenericIndexer alloc]
+        initWithRegistry:_lexiconRegistry
+               database:_database
+             validator:_lexiconValidator
+   domainIndexerCollections:domainCollections];
+
+    _indexers = @[actorIdx, feedIdx, graphIdx, notifIdx, bookmarkIdx, groupIdx, genericIdx];
 
     // Build ingest engine
     _ingestEngine = [[AppViewIngestEngine alloc]
@@ -210,12 +268,30 @@ static AppViewRuntime *_sharedRuntime = nil;
                                                                               jwtMinter:jwtMinter];
     [xrpcPack registerRoutesWithServer:_httpServer];
 
+    // Register dynamic lexicon-driven endpoints
+    _customQueryRegistry = [[AppViewCustomQueryRegistry alloc] init];
+    _lexiconEndpointGenerator = [[AppViewLexiconEndpointGenerator alloc]
+        initWithRegistry:_lexiconRegistry
+               database:_database
+            httpServer:_httpServer
+       customHandlers:_customQueryRegistry];
+    NSError *lexiconRouteErr = nil;
+    if (![_lexiconEndpointGenerator registerDynamicEndpointsWithError:&lexiconRouteErr]) {
+        PDS_LOG_WARN(@"[AppViewRuntime] Lexicon endpoint registration failed: %@",
+                     lexiconRouteErr.localizedDescription ?: @"unknown");
+        // Non-fatal: dynamic endpoints unavailable but core routes still work
+    }
+
     // Register admin routes
     _adminRoutePack = [[AppViewAdminRoutePack alloc]
         initWithOrchestrator:_orchestrator
                 ingestEngine:_ingestEngine
                     database:_database
                  adminSecret:config.adminSecret];
+    [_adminRoutePack setLexiconRegistry:_lexiconRegistry];
+    [_adminRoutePack setHookRegistry:nil]; // TODO: wire hook registry
+    [_adminRoutePack setCustomQueryRegistry:_customQueryRegistry];
+    [_adminRoutePack setLexiconEndpointGenerator:_lexiconEndpointGenerator];
     [_adminRoutePack registerRoutesWithServer:_httpServer];
 
     NSError *listenErr = nil;
