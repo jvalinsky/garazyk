@@ -739,11 +739,18 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
     request.HTTPBody = postData;
     
+    PDSSafeHTTPClientOptions *httpOptions = [PDSSafeHTTPClientOptions defaultOptions];
+#if defined(GNUSTEP)
+    // On GNUstep, NSURLSession cannot make outbound HTTPS requests.
+    // Use a short timeout so it fails fast and falls back to curl.
+    httpOptions.timeout = 2.0;
+#endif
+    
     dispatch_semaphore_t sema = dispatch_semaphore_create(0);
     __block NSString *resultDid = nil;
     __block NSError *innerError = nil;
     
-    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:httpOptions completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
         if (error) {
             innerError = error;
@@ -778,6 +785,59 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     }];
 
     dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC));
+
+#if defined(GNUSTEP)
+    // On GNUstep, NSURLSession cannot make outbound HTTPS requests.
+    // Fall back to curl if the NSURLSession attempt failed or timed out.
+    if (!resultDid) {
+        NSString *urlStr = [NSString stringWithFormat:@"%@/%@", plcURLString, did];
+        PDS_LOG_AUTH_INFO(@"NSURLSession POST to PLC failed, trying curl fallback: %@", urlStr);
+        NSString *payloadStr = [[NSString alloc] initWithData:postData encoding:NSUTF8StringEncoding];
+
+        NSTask *curlTask = [[NSTask alloc] init];
+        [curlTask setLaunchPath:@"/usr/bin/curl"];
+        [curlTask setArguments:@[
+            @"-s", @"-w", @"\n%{http_code}",
+            @"--max-time", @"15",
+            @"-X", @"POST",
+            @"-H", @"Content-Type: application/json",
+            @"-d", payloadStr,
+            urlStr
+        ]];
+
+        NSPipe *outPipe = [NSPipe pipe];
+        [curlTask setStandardOutput:outPipe];
+        [curlTask setStandardError:[NSFileHandle fileHandleWithNullDevice]];
+
+        @try {
+            [curlTask launch];
+            [curlTask waitUntilExit];
+
+            if (curlTask.terminationStatus == 0) {
+                NSData *curlData = [[outPipe fileHandleForReading] readDataToEndOfFile];
+                NSString *responseStr = [[NSString alloc] initWithData:curlData encoding:NSUTF8StringEncoding];
+                if (responseStr.length > 0) {
+                    NSArray *lines = [responseStr componentsSeparatedByString:@"\n"];
+                    NSString *httpCodeStr = [lines lastObject];
+                    NSInteger httpCode = [httpCodeStr integerValue];
+                    if (httpCode == 200 || httpCode == 201 || httpCode == 202) {
+                        resultDid = did;
+                        innerError = nil;
+                    } else {
+                        NSString *body = [responseStr substringToIndex:responseStr.length - httpCodeStr.length - 1];
+                        if (body.length == 0) body = responseStr;
+                        innerError = [NSError errorWithDomain:@"PLCRegistration"
+                                                        code:httpCode
+                                                    userInfo:@{NSLocalizedDescriptionKey: body ?: @"Unknown error"}];
+                        PDS_LOG_AUTH_WARN(@"curl POST to PLC returned HTTP %ld: %@", (long)httpCode, body);
+                    }
+                }
+            }
+        } @catch (NSException *exception) {
+            PDS_LOG_AUTH_WARN(@"curl fallback exception: %@", exception.reason);
+        }
+    }
+#endif
 
     if (innerError) {
         if (error) *error = innerError;
