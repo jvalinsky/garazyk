@@ -78,16 +78,28 @@ typedef NS_ENUM(NSInteger, AppViewOAuth2MiddlewareErrorCode) {
 - (nullable NSString *)extractBearerToken:(HttpRequest *)request;
 
 /*!
- @method validateDPoPProof:forToken:
+ @method validateDPoPProof:token:tokenJkt:outThumbprint:error:
 
- @abstract Validate the DPoP proof for the given token.
+ @abstract Validate the DPoP proof and enforce cnf.jkt binding.
 
- @param request The HTTP request containing the DPoP header.
- @param token   The Bearer token to validate the proof against.
+ @discussion Uses the canonical AuthCryptoDPoP verifier (RFC 9449) to
+ verify the proof, then checks that the proof key thumbprint matches
+ the access token's cnf.jkt claim. Rejects DPoP-bound tokens sent
+ without a proof, and proofs that don't match the token binding.
 
- @return YES if the DPoP proof is valid or not required, NO if invalid.
+ @param request       The HTTP request containing the DPoP header.
+ @param token         The Bearer token string.
+ @param tokenJkt      The cnf.jkt from the access token (nil if not DPoP-bound).
+ @param outThumbprint Output parameter for the proof's JWK thumbprint.
+ @param error         Output parameter for validation errors.
+
+ @return YES if the DPoP proof is valid and binding matches, NO otherwise.
  */
-- (BOOL)validateDPoPProof:(HttpRequest *)request forToken:(NSString *)token;
+- (BOOL)validateDPoPProof:(HttpRequest *)request
+                    token:(NSString *)token
+                tokenJkt:(nullable NSString *)tokenJkt
+           outThumbprint:(NSString *_Nullable *_Nullable)outThumbprint
+                   error:(NSError **)error;
 
 @end
 
