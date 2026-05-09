@@ -59,8 +59,8 @@
                                                              configuration:@{}];
 
     NSError *error = nil;
-    BOOL result = [provider requestVerificationForPhoneNumber:@"+1234567890" error:&error];
-    XCTAssertFalse(result);
+    NSString *sessionID = [provider requestVerificationForPhoneNumber:@"+1234567890" error:&error];
+    XCTAssertNil(sessionID);
     XCTAssertEqual(error.code, PDSTwilioProviderErrorMissingAccountSID);
 }
 
@@ -74,8 +74,8 @@
                                                              configuration:@{}];
 
     NSError *error = nil;
-    BOOL result = [provider requestVerificationForPhoneNumber:@"+1234567890" error:&error];
-    XCTAssertFalse(result);
+    NSString *sessionID = [provider requestVerificationForPhoneNumber:@"+1234567890" error:&error];
+    XCTAssertNil(sessionID);
     XCTAssertEqual(error.code, PDSTwilioProviderErrorMissingAuthToken);
 }
 
@@ -89,8 +89,8 @@
                                                              configuration:@{}];
 
     NSError *error = nil;
-    BOOL result = [provider requestVerificationForPhoneNumber:@"+1234567890" error:&error];
-    XCTAssertFalse(result);
+    NSString *sessionID = [provider requestVerificationForPhoneNumber:@"+1234567890" error:&error];
+    XCTAssertNil(sessionID);
     XCTAssertEqual(error.code, PDSTwilioProviderErrorMissingServiceSID);
 }
 
@@ -105,8 +105,8 @@
                                                              configuration:@{}];
 
     NSError *error = nil;
-    BOOL result = [provider requestVerificationForPhoneNumber:@"" error:&error];
-    XCTAssertFalse(result);
+    NSString *sessionID = [provider requestVerificationForPhoneNumber:@"" error:&error];
+    XCTAssertNil(sessionID);
     XCTAssertEqual(error.code, PDSTwilioProviderErrorInvalidPhoneNumber);
 }
 
@@ -121,8 +121,8 @@
                                                              configuration:@{}];
 
     NSError *error = nil;
-    BOOL result = [provider requestVerificationForPhoneNumber:nil error:&error];
-    XCTAssertFalse(result);
+    NSString *sessionID = [provider requestVerificationForPhoneNumber:nil error:&error];
+    XCTAssertNil(sessionID);
     XCTAssertEqual(error.code, PDSTwilioProviderErrorInvalidPhoneNumber);
 }
 
@@ -174,6 +174,15 @@
                                                              configuration:@{}];
 
     XCTAssertTrue([provider respondsToSelector:@selector(verifyCode:forPhoneNumber:error:)]);
+}
+
+- (void)testProviderSupportsVerifyCodeWithSessionIDMethod {
+    PDSMockTwilioSecretsProvider *secrets = [[PDSMockTwilioSecretsProvider alloc] init];
+    PDSTwilioPhoneVerificationProvider *provider =
+        [[PDSTwilioPhoneVerificationProvider alloc] initWithSecretsProvider:secrets
+                                                             configuration:@{}];
+
+    XCTAssertTrue([provider respondsToSelector:@selector(verifyCode:forPhoneNumber:sessionID:error:)]);
 }
 
 @end
