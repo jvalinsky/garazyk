@@ -101,6 +101,9 @@ typedef NS_ENUM(NSInteger, HttpStatusCode) {
 @property (class, nonatomic, copy, readonly) NSString *xFrameOptions;
 @property (class, nonatomic, copy, readonly) NSString *contentSecurityPolicy;
 
+/*! The default Server header value included in all responses. Set once at startup. */
+@property (class, nonatomic, copy) NSString *defaultServerHeader;
+
 /*! Creates an empty response. */
 + (instancetype)response;
 

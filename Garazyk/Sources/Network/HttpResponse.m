@@ -15,6 +15,7 @@ NS_ASSUME_NONNULL_BEGIN
 static NSString *const kXContentTypeOptions = @"nosniff";
 static NSString *const kXFrameOptions = @"DENY";
 static NSString *const kContentSecurityPolicy = @"default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:;";
+static NSString *_defaultServerHeader = nil;
 
 static NSDateFormatter *HttpResponseDateFormatter(void) {
     static NSDateFormatter *formatter = nil;
@@ -251,6 +252,12 @@ NS_ASSUME_NONNULL_END
 
     /*! Add Date header */
     [self setHeader:[HttpResponseDateFormatter() stringFromDate:[NSDate date]] forKey:@"Date"];
+
+    /*! Add Server header if configured */
+    NSString *serverHeader = [HttpResponse defaultServerHeader];
+    if (serverHeader.length > 0 && ![self headerForKey:@"Server"]) {
+        [self setHeader:serverHeader forKey:@"Server"];
+    }
 }
 
 - (NSData *)serializeHeadersForBodyLength:(NSUInteger)bodyLength {
@@ -289,6 +296,9 @@ NS_ASSUME_NONNULL_END
 + (NSString *)xContentTypeOptions { return kXContentTypeOptions; }
 + (NSString *)xFrameOptions { return kXFrameOptions; }
 + (NSString *)contentSecurityPolicy { return kContentSecurityPolicy; }
+
++ (NSString *)defaultServerHeader { return _defaultServerHeader; }
++ (void)setDefaultServerHeader:(NSString *)value { _defaultServerHeader = [value copy]; }
 
 + (void)applySecurityHeaders:(NSMutableDictionary *)headers {
     headers[@"x-content-type-options"] = self.xContentTypeOptions;

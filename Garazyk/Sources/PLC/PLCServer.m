@@ -371,6 +371,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
         _auditor = auditor;
         _adminSecret = [adminSecret copy];
         _httpServer = [HttpServer serverWithHost:host port:port];
+        [HttpResponse setDefaultServerHeader:@"campagnola/1.0.0 (garazyk)"];
         [self setupRoutes];
     }
     return self;
