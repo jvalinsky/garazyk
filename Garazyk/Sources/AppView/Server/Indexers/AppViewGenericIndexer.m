@@ -161,11 +161,9 @@
 
     // Delete from the records table
     NSString *query = @"DELETE FROM records WHERE uri = ?";
-    NSArray *rows = [self.database executeParameterizedQuery:query
-                                                      params:@[uri]
-                                                       error:error];
-    (void)rows; // DELETE returns no rows
-    return (error && *error) ? NO : YES;
+    return [self.database executeParameterizedUpdate:query
+                                              params:@[uri]
+                                               error:error];
 }
 
 @end
