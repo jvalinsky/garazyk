@@ -34,6 +34,9 @@ COPY staging/bin/campagnola /usr/local/bin/campagnola
 COPY staging/bin/zuk /usr/local/bin/zuk
 COPY staging/bin/syrena /usr/local/bin/syrena
 
+COPY staging/lib /usr/local/lib
+RUN ldconfig
+
 COPY staging/lexicons /usr/share/atprotopds/lexicons
 COPY staging/PLC-assets /usr/share/atprotopds/assets/PLC
 
