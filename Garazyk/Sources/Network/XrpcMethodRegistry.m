@@ -1,4 +1,5 @@
 #import "Network/XrpcMethodRegistry.h"
+#import "Security/PDSSecurityCompare.h"
 #import "Admin/PDSAdminAuth.h"
 #import "Admin/PDSAdminController.h"
 #import "App/PDSApplication.h"
@@ -381,7 +382,7 @@ static NSCache<NSString *, NSDictionary *> *plcOperationTokenCache(void) {
     [cache removeObjectForKey:did];
     return NO;
   }
-  if (![expected isEqualToString:token]) {
+  if (![PDSSecurityCompare constantTimeEqualString:expected string:token]) {
     return NO;
   }
 

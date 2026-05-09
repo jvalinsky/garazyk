@@ -82,4 +82,18 @@
     return [self redactString:components.string ?: urlString];
 }
 
++ (NSString *)maskToken:(NSString *)token {
+    if (![token isKindOfClass:[NSString class]] || token.length == 0) {
+        return @"<empty>";
+    }
+    
+    if (token.length <= 12) {
+        return @"<redacted>";
+    }
+    
+    NSString *prefix = [token substringToIndex:4];
+    NSString *suffix = [token substringFromIndex:token.length - 4];
+    return [NSString stringWithFormat:@"%@...%@", prefix, suffix];
+}
+
 @end

@@ -136,7 +136,8 @@ async function loadDID(did) {
         // Switch to summary if not already there
         switchSection('summary');
     } catch (err) {
-        summaryContent.innerHTML = `<p class="error">Failed to load DID: ${err.message}</p>`;
+        summaryContent.innerHTML = '<p class="error">Failed to load DID: <span class="error-text"></span></p>';
+        summaryContent.querySelector('.error-text').textContent = err.message;
     }
 }
 

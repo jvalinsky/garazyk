@@ -7,6 +7,7 @@
  */
 
 #import "Auth/OAuthProvider/OAuthProvider.h"
+#import "Debug/PDSLogRedactor.h"
 #import "Auth/OAuthClientAuthPolicy.h"
 #import "Auth/Crypto/AuthCryptoDPoP.h"
 #import "Auth/Crypto/AuthCryptoJWK.h"

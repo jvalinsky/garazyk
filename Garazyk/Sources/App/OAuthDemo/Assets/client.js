@@ -332,7 +332,8 @@ async function handleCallback() {
         showSession(data);
     } catch (err) {
         log(`Fetch error: ${err.message}`);
-        elements.tokenStatus.innerHTML = `<span class="error">${err.message}</span>`;
+        elements.tokenStatus.innerHTML = '<span class="error"></span>';
+        elements.tokenStatus.querySelector('.error').textContent = err.message;
     }
 }
 
@@ -515,4 +516,6 @@ window.oauthDemo = {
     createPostWithReply,
     listRecords,
     getSessionDid: getStoredDid
+};
+
 };

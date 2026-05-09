@@ -11,6 +11,7 @@
  */
 
 #import "Auth/OAuth2.h"
+#import "Debug/PDSLogRedactor.h"
 #import "Auth/JWT.h"
 #import "Auth/Session.h"
 #import "Auth/TOTPService.h"
@@ -917,7 +918,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         NSError *dbError = nil;
         did = [self.database accountDidForRefreshToken:request.refreshToken error:&dbError];
         if (!did) {
-            PDS_LOG_AUTH_WARN(@"Invalid or expired refresh token (not found in memory or DB): %@", request.refreshToken);
+            PDS_LOG_AUTH_WARN(@"Invalid or expired refresh token (not found in memory or DB): %@", [PDSLogRedactor maskToken:request.refreshToken]);
             NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                                  code:OAuth2ErrorInvalidGrant
                                              userInfo:@{NSLocalizedDescriptionKey: @"Invalid or expired refresh token"}];
@@ -1005,7 +1006,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
 
 - (nullable Session *)getSessionByAccessToken:(NSString *)accessToken {
     for (Session *session in self.activeSessions.allValues) {
-        if ([session.accessToken isEqualToString:accessToken]) {
+        if ([PDSSecurityCompare constantTimeEqualString:session.accessToken string:accessToken]) {
             return session;
         }
     }

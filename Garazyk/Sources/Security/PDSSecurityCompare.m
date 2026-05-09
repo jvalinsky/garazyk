@@ -1,4 +1,5 @@
 #import "Security/PDSSecurityCompare.h"
+#import "Auth/CryptoUtils.h"
 
 @implementation PDSSecurityCompare
 
@@ -37,7 +38,16 @@
     if (!aData || !bData) {
         return NO;
     }
-    return [self constantTimeEqualData:aData data:bData];
+    
+    // Hash both strings to obscure length and provide a fixed-size 32-byte comparison
+    NSData *aHash = [CryptoUtils sha256:aData];
+    NSData *bHash = [CryptoUtils sha256:bData];
+    
+    if (!aHash || !bHash) {
+        return NO;
+    }
+
+    return [self constantTimeEqualData:aHash data:bHash];
 }
 
 @end
