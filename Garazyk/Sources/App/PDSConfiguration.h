@@ -114,6 +114,60 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 /*! @abstract Whether invite codes are required for registration. */
 @property (nonatomic, readonly) BOOL inviteCodeRequired;
 
+/*! @abstract Whether phone verification is required for registration. */
+@property (nonatomic, readonly) BOOL phoneVerificationRequired;
+
+/*! @abstract Whether CAPTCHA verification is required for registration. */
+@property (nonatomic, readonly) BOOL captchaRequired;
+
+/*! @abstract CAPTCHA provider name (`none`, `turnstile`, `hcaptcha`). */
+@property (nonatomic, readonly) NSString *captchaProvider;
+
+/*! @abstract CAPTCHA site key for client-side rendering. */
+@property (nonatomic, readonly, nullable) NSString *captchaSiteKey;
+
+/*! @abstract CAPTCHA secret key for server-side verification. */
+@property (nonatomic, readonly, nullable) NSString *captchaSecretKey;
+
+/*! @abstract Whether only OAuth-based registration is allowed (blocks direct API signup). */
+@property (nonatomic, readonly) BOOL oauthOnlyRegistration;
+
+/*! @abstract Check whether a named registration gate is enabled in config. */
+- (BOOL)isRegistrationGateEnabled:(NSString *)gateIdentifier;
+
+#pragma mark - Provider Configuration
+
+/*!
+ @abstract The structured `providers` config section.
+ @discussion
+    Contains provider-specific configuration keyed by domain:
+    "email", "phone_verification", "captcha", etc.
+    Values use the `env:VAR_NAME` convention for secrets.
+    Takes precedence over legacy top-level config keys.
+ */
+@property (nonatomic, readonly, nullable) NSDictionary<NSString *, NSDictionary *> *providersConfig;
+
+/*!
+ @method providerConfigForKey:
+ @abstract Returns the provider config dictionary for a given domain.
+ @param key Provider domain key (e.g. "email", "phone_verification", "captcha").
+ @return The config dictionary for the domain, or nil if not configured.
+ @discussion
+    Looks up from the `providers` section first, then falls back to
+    legacy top-level config keys for backward compatibility.
+ */
+- (nullable NSDictionary *)providerConfigForKey:(NSString *)key;
+
+/*!
+ @method resolveSecretValue:
+ @abstract Resolve a config value that may use the `env:VAR_NAME` convention.
+ @param value The config value string. If it starts with "env:", the remainder
+    is treated as an environment variable name and its value is returned.
+    Otherwise, the value is returned as-is.
+ @return The resolved value, or nil if the env var doesn't exist.
+ */
+- (nullable NSString *)resolveSecretValue:(NSString *)value;
+
 /*! @abstract Available user domains for registration. If nil, defaults to canonical hostname. */
 @property (nonatomic, readonly, nullable) NSArray<NSString *> *availableUserDomains;
 
