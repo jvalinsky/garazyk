@@ -2,11 +2,21 @@
 #import "PLC/PLCAuditor.h"
 #import "PLC/PLCMockStore.h"
 #import "PLC/PLCOperation.h"
+#import "PLC/PLCDIDKey.h"
 #import "Auth/Secp256k1.h"
 #import "Auth/CryptoUtils.h"
 #import "Auth/Crypto/AuthCryptoECDSA.h"
 #import "Core/CID.h"
+#import "Core/ATProtoCBORSerialization.h"
 #import <Security/Security.h>
+
+// Expose private PLCAuditor methods for testing
+@interface PLCAuditor (Testing)
+- (nullable NSString *)verifySignatureForOperation:(PLCOperation *)op
+                                        allowedKeys:(NSArray<NSString *> *)allowedKeys
+                                              error:(NSError **)error;
+- (NSDictionary *)unsignedDataForOperation:(PLCOperation *)op;
+@end
 
 @interface PLCAuditorTests : XCTestCase
 @property (nonatomic, strong) PLCMockStore *store;
@@ -384,6 +394,196 @@
     memcpy(rawPtr + 32 + (32 - sLen), sBytes, sLen);
     
     return raw;
+}
+
+#pragma mark - PLC Directory Reference Operation Tests
+
+/// Helper: convert NSData to hex string for comparison with reference output.
+- (NSString *)hexStringFromData:(NSData *)data {
+    const uint8_t *bytes = data.bytes;
+    NSMutableString *hex = [NSMutableString stringWithCapacity:data.length * 2];
+    for (NSUInteger i = 0; i < data.length; i++) {
+        [hex appendFormat:@"%02x", bytes[i]];
+    }
+    return hex;
+}
+
+/// Test that our CBOR encoding matches the reference @ipld/dag-cbor output
+/// for a real legacy "create" operation from plc.directory.
+- (void)testLegacyCreateOperationCBORMatchesReference {
+    // Real operation from plc.directory export (did:plc:ragtjsm2j2vknwkz3zp4oxrd)
+    NSDictionary *opDict = @{
+        @"sig": @"DyaPWDItkJnVkN1izINSW-fdjUzP9BkIKlD7SnzD5axfK_870ZZ-1EYcrQLQtP9VkWcp2cdbyIHprjPfeUs8WQ",
+        @"prev": [NSNull null],
+        @"type": @"create",
+        @"handle": @"paul.bsky.social",
+        @"service": @"https://bsky.social",
+        @"signingKey": @"did:key:zQ3shP5TBe1sQfSttXty15FAEHV1DZgcxRZNxvEWnPfLFwLxJ",
+        @"recoveryKey": @"did:key:zQ3shhCGUqDKjStzuDxPkTxN6ujddP4RkEKJJouJGRRkaLGbg"
+    };
+
+    PLCOperation *op = [PLCOperation operationFromDictionary:opDict error:nil];
+    XCTAssertNotNil(op, @"operationFromDictionary should parse legacy create op");
+
+    // Get unsigned data (strips sig, did, cid)
+    NSDictionary *unsignedData = [self.auditor unsignedDataForOperation:op];
+    XCTAssertNotNil(unsignedData);
+
+    // CBOR-encode the unsigned data
+    NSError *cborError = nil;
+    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:unsignedData error:&cborError];
+    XCTAssertNotNil(cborData, @"CBOR encoding should succeed: %@", cborError);
+    NSString *cborHex = [self hexStringFromData:cborData];
+
+    // Reference CBOR hex from @ipld/dag-cbor (Node.js):
+    // a66470726576f66474797065666372656174656668616e646c65707061756c2e62736b792e736f6369616c67736572766963657368747470733a2f2f62736b792e736f6369616c6a7369676e696e674b657978396469643a6b65793a7a513373685035544265317351665374745874793135464145485631445a676378525a4e787645576e50664c46774c784a6b7265636f766572794b657978396469643a6b65793a7a513373686843475571444b6a53747a754478506b54784e36756a64645034526b454b4a4a6f754a4752526b614c476267
+    NSString *referenceCBORHex = @"a66470726576f66474797065666372656174656668616e646c65707061756c2e62736b792e736f6369616c67736572766963657368747470733a2f2f62736b792e736f6369616c6a7369676e696e674b657978396469643a6b65793a7a513373685035544265317351665374745874793135464145485631445a676378525a4e787645576e50664c46774c784a6b7265636f766572794b657978396469643a6b65793a7a513373686843475571444b6a53747a754478506b54784e36756a64645034526b454b4a4a6f754a4752526b614c476267";
+
+    XCTAssertEqualObjects(cborHex, referenceCBORHex,
+        @"CBOR encoding must match @ipld/dag-cbor reference. Got: %@", cborHex);
+
+    // Verify SHA-256 hash matches reference
+    NSData *hash = [CryptoUtils sha256:cborData];
+    NSString *hashHex = [self hexStringFromData:hash];
+    NSString *referenceHashHex = @"8fe117c12e21f8e40cd83d95df85c9589c880619a93e96de1da31d17c84f60c9";
+
+    XCTAssertEqualObjects(hashHex, referenceHashHex,
+        @"SHA-256 hash must match reference. Got: %@", hashHex);
+}
+
+/// Test that our CBOR encoding matches the reference @ipld/dag-cbor output
+/// for a real "plc_operation" from plc.directory.
+- (void)testPlcOperationCBORMatchesReference {
+    // Real operation from plc.directory export (did:plc:dyyok4rfpeuuvmqy22kwrwbc)
+    NSDictionary *opDict = @{
+        @"sig": @"hjZD_Usv6W5_R1UC0lKeT7hShj-HJXpJtAmkpSFUvMFp-ecf6sSVaErNfiUZlGwQ3NUWAVJinu9voBHlThxh6g",
+        @"prev": [NSNull null],
+        @"type": @"plc_operation",
+        @"services": @{
+            @"atproto_pds": @{
+                @"type": @"AtprotoPersonalDataServer",
+                @"endpoint": @"https://amanita.us-east.host.bsky.network"
+            }
+        },
+        @"alsoKnownAs": @[@"at://6v12v.bsky.social"],
+        @"rotationKeys": @[
+            @"did:key:zQ3shhCGUqDKjStzuDxPkTxN6ujddP4RkEKJJouJGRRkaLGbg",
+            @"did:key:zQ3shpKnbdPx3g3CmPf5cRVTPe1HtSwVn5ish3wSnDPQCbLJK"
+        ],
+        @"verificationMethods": @{
+            @"atproto": @"did:key:zQ3shQpHTWXusL1Snk6yEYn6oV8q7ePZmFdcrYGLqDjatxAZW"
+        }
+    };
+
+    PLCOperation *op = [PLCOperation operationFromDictionary:opDict error:nil];
+    XCTAssertNotNil(op, @"operationFromDictionary should parse plc_operation");
+
+    NSDictionary *unsignedData = [self.auditor unsignedDataForOperation:op];
+    XCTAssertNotNil(unsignedData);
+
+    NSError *cborError = nil;
+    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:unsignedData error:&cborError];
+    XCTAssertNotNil(cborData, @"CBOR encoding should succeed: %@", cborError);
+    NSString *cborHex = [self hexStringFromData:cborData];
+
+    // Reference CBOR hex from @ipld/dag-cbor (Node.js):
+    NSString *referenceCBORHex = @"a66470726576f664747970656d706c635f6f7065726174696f6e687365727669636573a16b617470726f746f5f706473a264747970657819417470726f746f506572736f6e616c4461746153657276657268656e64706f696e74782968747470733a2f2f616d616e6974612e75732d656173742e686f73742e62736b792e6e6574776f726b6b616c736f4b6e6f776e4173817661743a2f2f36763132762e62736b792e736f6369616c6c726f746174696f6e4b6579738278396469643a6b65793a7a513373686843475571444b6a53747a754478506b54784e36756a64645034526b454b4a4a6f754a4752526b614c47626778396469643a6b65793a7a51337368704b6e62645078336733436d5066356352565450653148745377566e356973683377536e44505143624c4a4b73766572696669636174696f6e4d6574686f6473a167617470726f746f78396469643a6b65793a7a5133736851704854575875734c31536e6b367945596e366f5638713765505a6d4664637259474c71446a617478415a57";
+
+    XCTAssertEqualObjects(cborHex, referenceCBORHex,
+        @"CBOR encoding must match @ipld/dag-cbor reference. Got: %@", cborHex);
+
+    NSData *hash = [CryptoUtils sha256:cborData];
+    NSString *hashHex = [self hexStringFromData:hash];
+    NSString *referenceHashHex = @"58839a04feb4d0eae2feae37c8d37eb352abd30a342b6bc2ff92f36d065aeff7";
+
+    XCTAssertEqualObjects(hashHex, referenceHashHex,
+        @"SHA-256 hash must match reference. Got: %@", hashHex);
+}
+
+/// Test that a real legacy "create" operation from plc.directory verifies correctly.
+- (void)testLegacyCreateOperationSignatureVerification {
+    // Real operation from plc.directory export (did:plc:ragtjsm2j2vknwkz3zp4oxrd)
+    NSDictionary *opDict = @{
+        @"sig": @"DyaPWDItkJnVkN1izINSW-fdjUzP9BkIKlD7SnzD5axfK_870ZZ-1EYcrQLQtP9VkWcp2cdbyIHprjPfeUs8WQ",
+        @"prev": [NSNull null],
+        @"type": @"create",
+        @"handle": @"paul.bsky.social",
+        @"service": @"https://bsky.social",
+        @"signingKey": @"did:key:zQ3shP5TBe1sQfSttXty15FAEHV1DZgcxRZNxvEWnPfLFwLxJ",
+        @"recoveryKey": @"did:key:zQ3shhCGUqDKjStzuDxPkTxN6ujddP4RkEKJJouJGRRkaLGbg"
+    };
+
+    PLCOperation *op = [PLCOperation operationFromDictionary:opDict error:nil];
+    XCTAssertNotNil(op);
+
+    // Per the PLC spec, legacy create operations are signed by the signingKey.
+    // The normalized rotationKeys for a create op are [recoveryKey, signingKey].
+    NSArray *rotationKeys = @[
+        @"did:key:zQ3shhCGUqDKjStzuDxPkTxN6ujddP4RkEKJJouJGRRkaLGbg",
+        @"did:key:zQ3shP5TBe1sQfSttXty15FAEHV1DZgcxRZNxvEWnPfLFwLxJ"
+    ];
+
+    NSError *error = nil;
+    NSString *verifiedKey = [self.auditor verifySignatureForOperation:op allowedKeys:rotationKeys error:&error];
+    XCTAssertNotNil(verifiedKey, @"Signature should verify against one of the rotation keys. Error: %@", error);
+    // The signingKey should be the one that verifies (not the recoveryKey)
+    XCTAssertEqualObjects(verifiedKey, @"did:key:zQ3shP5TBe1sQfSttXty15FAEHV1DZgcxRZNxvEWnPfLFwLxJ",
+        @"Legacy create operations are signed by the signingKey");
+}
+
+/// Test that a real "plc_operation" from plc.directory verifies correctly.
+- (void)testPlcOperationSignatureVerification {
+    NSDictionary *opDict = @{
+        @"sig": @"hjZD_Usv6W5_R1UC0lKeT7hShj-HJXpJtAmkpSFUvMFp-ecf6sSVaErNfiUZlGwQ3NUWAVJinu9voBHlThxh6g",
+        @"prev": [NSNull null],
+        @"type": @"plc_operation",
+        @"services": @{
+            @"atproto_pds": @{
+                @"type": @"AtprotoPersonalDataServer",
+                @"endpoint": @"https://amanita.us-east.host.bsky.network"
+            }
+        },
+        @"alsoKnownAs": @[@"at://6v12v.bsky.social"],
+        @"rotationKeys": @[
+            @"did:key:zQ3shhCGUqDKjStzuDxPkTxN6ujddP4RkEKJJouJGRRkaLGbg",
+            @"did:key:zQ3shpKnbdPx3g3CmPf5cRVTPe1HtSwVn5ish3wSnDPQCbLJK"
+        ],
+        @"verificationMethods": @{
+            @"atproto": @"did:key:zQ3shQpHTWXusL1Snk6yEYn6oV8q7ePZmFdcrYGLqDjatxAZW"
+        }
+    };
+
+    PLCOperation *op = [PLCOperation operationFromDictionary:opDict error:nil];
+    XCTAssertNotNil(op);
+
+    NSArray *rotationKeys = @[
+        @"did:key:zQ3shhCGUqDKjStzuDxPkTxN6ujddP4RkEKJJouJGRRkaLGbg",
+        @"did:key:zQ3shpKnbdPx3g3CmPf5cRVTPe1HtSwVn5ish3wSnDPQCbLJK"
+    ];
+
+    NSError *error = nil;
+    NSString *verifiedKey = [self.auditor verifySignatureForOperation:op allowedKeys:rotationKeys error:&error];
+    XCTAssertNotNil(verifiedKey, @"Signature should verify against one of the rotation keys. Error: %@", error);
+}
+
+/// Test DID derivation for a real legacy "create" operation.
+- (void)testLegacyCreateOperationDIDDerivation {
+    NSDictionary *opDict = @{
+        @"sig": @"DyaPWDItkJnVkN1izINSW-fdjUzP9BkIKlD7SnzD5axfK_870ZZ-1EYcrQLQtP9VkWcp2cdbyIHprjPfeUs8WQ",
+        @"prev": [NSNull null],
+        @"type": @"create",
+        @"handle": @"paul.bsky.social",
+        @"service": @"https://bsky.social",
+        @"signingKey": @"did:key:zQ3shP5TBe1sQfSttXty15FAEHV1DZgcxRZNxvEWnPfLFwLxJ",
+        @"recoveryKey": @"did:key:zQ3shhCGUqDKjStzuDxPkTxN6ujddP4RkEKJJouJGRRkaLGbg"
+    };
+
+    PLCOperation *op = [PLCOperation operationFromDictionary:opDict error:nil];
+    XCTAssertNotNil(op);
+
+    NSString *derivedDID = [PLCOperation calculateDIDForSignedOperation:[op toDictionary]];
+    XCTAssertEqualObjects(derivedDID, @"did:plc:ragtjsm2j2vknwkz3zp4oxrd",
+        @"DID derivation must match the expected DID from plc.directory");
 }
 
 @end
