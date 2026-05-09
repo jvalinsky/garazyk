@@ -19,7 +19,8 @@
 
 #import <Foundation/Foundation.h>
 
-@protocol PDSPhoneVerificationProvider;
+#import "Services/Core/PDSPhoneVerificationProvider.h"
+
 @protocol PDSSecretsProvider;
 
 NS_ASSUME_NONNULL_BEGIN
