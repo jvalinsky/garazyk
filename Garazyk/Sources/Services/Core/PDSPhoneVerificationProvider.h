@@ -40,6 +40,25 @@ typedef NS_ENUM(NSInteger, PDSPhoneVerificationProviderErrorCode) {
  */
 - (BOOL)requestVerificationForPhoneNumber:(NSString *)phoneNumber error:(NSError **)error;
 
+@optional
+
+/*!
+ @method verifyCode:forPhoneNumber:error:
+
+ @abstract Verifies a code sent to the given phone number.
+
+ @discussion
+    Implementations that use a hosted verification service (e.g. Twilio Verify)
+    should implement this method to validate the code server-side. Providers
+    that only send codes (e.g. raw SMS) may leave this unimplemented.
+
+ @param code The verification code entered by the user.
+ @param phoneNumber The phone number that received the code.
+ @param error On failure, set to a verification error.
+ @result YES if the code is valid, NO otherwise.
+ */
+- (BOOL)verifyCode:(NSString *)code forPhoneNumber:(NSString *)phoneNumber error:(NSError **)error;
+
 @end
 
 /*!
