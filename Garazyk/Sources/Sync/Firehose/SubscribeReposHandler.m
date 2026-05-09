@@ -809,22 +809,22 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
     // Per ATProto event-stream spec: "cursor is higher than current seq ("in the future"):
     // server sends an error message and closes connection"
+    // Deviation: treat future cursor as outdated cursor instead. Relays cache
+    // stale cursors and retry indefinitely, creating a loop (indigo #1231).
+    // Sending OutdatedCursor info and replaying from beginning breaks the loop.
+    NSUInteger requestedReplayCursor = hasCursor ? parsedCursor : 0;
     if (hasCursor && parsedCursor > strongSelf.session.sequenceNumber) {
       PDS_LOG_SYNC_WARN(
           @"Future cursor %lu is ahead of server sequence %lu; "
-          @"sending FutureCursor error and closing connection %@",
+          @"adjusting to cursor 0 and sending OutdatedCursor info for connection %@",
           (unsigned long)parsedCursor,
           (unsigned long)strongSelf.session.sequenceNumber,
           connection);
-      [strongSelf sendErrorFrameWithCode:kSubscribeReposErrorFutureCursor
-                                 message:@"Cursor is ahead of server sequence"
-                            toConnection:connection];
-      [connection closeWithCode:1008 reason:kSubscribeReposErrorFutureCursor];
-      return;
-    }
-
-    NSUInteger requestedReplayCursor = hasCursor ? parsedCursor : 0;
-    if (!hasCursor) {
+      [strongSelf sendInfoEvent:kSubscribeReposInfoOutdatedCursor
+                        message:@"Requested cursor is ahead of server sequence; replaying from beginning"
+                   toConnection:connection];
+      requestedReplayCursor = 0;
+    } else if (!hasCursor) {
       PDS_LOG_SYNC_INFO(@"No cursor provided; replaying retained events before switching to live updates.");
     } else if (parsedCursor == 0) {
       PDS_LOG_SYNC_INFO(@"Client requested cursor=0; replaying all retained events from the beginning.");

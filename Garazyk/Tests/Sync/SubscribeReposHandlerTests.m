@@ -267,7 +267,7 @@
 #endif
 
 #ifndef GNUSTEP
-- (void)testReplayWithFutureCursorSendsFutureCursorError {
+- (void)testReplayWithFutureCursorSendsOutdatedCursorInfo {
     EventFormatter *formatter = [[EventFormatter alloc] init];
     // Seed a persisted event so the session has a non-zero sequence
     [self.handler broadcastIdentityChange:@"did:plc:future_cursor_test" handle:@"future.bsky.social"];
@@ -279,8 +279,8 @@
 
     [self waitForHandlerIdle];
 
-    XCTAssertTrue(conn.didClose, @"Future cursor should cause connection to close per ATProto spec");
-    XCTAssertEqual(conn.sentMessages.count, 1U);
+    XCTAssertFalse(conn.didClose, @"Future cursor should NOT close connection; treated as outdated cursor");
+    // First message should be an OutdatedCursor info event (op=1, not error op=-1)
     NSInteger op = 0;
     NSString *msgType = nil;
     NSError *decodeError = nil;
@@ -289,9 +289,9 @@
                                                    msgType:&msgType
                                                      error:&decodeError];
     XCTAssertNil(decodeError);
-    XCTAssertEqual(op, -1);
-    XCTAssertEqualObjects(msgType, @"#error");
-    XCTAssertEqualObjects(payload[@"error"], @"FutureCursor");
+    XCTAssertEqual(op, 1, @"Info events use op=1");
+    XCTAssertEqualObjects(msgType, @"#info");
+    XCTAssertEqualObjects(payload[@"name"], @"OutdatedCursor");
 }
 #endif
 
