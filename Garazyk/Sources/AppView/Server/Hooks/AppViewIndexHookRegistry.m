@@ -26,7 +26,7 @@
         _database = database;
         _hooks = [NSMutableDictionary dictionary];
         _hookQueue = dispatch_queue_create("com.garazyk.appview.index-hooks",
-                                           DISPATCH_QUEUE_SERIAL);
+                                           DISPATCH_QUEUE_CONCURRENT);
     }
     return self;
 }
@@ -36,7 +36,7 @@
     NSString *identifier = [hook hookIdentifier];
     if (!identifier) return;
 
-    dispatch_sync(self.hookQueue, ^{
+    dispatch_barrier_async(self.hookQueue, ^{
         self.hooks[identifier] = hook;
     });
 
@@ -46,7 +46,7 @@
 - (void)unregisterHook:(NSString *)hookIdentifier {
     if (!hookIdentifier) return;
 
-    dispatch_sync(self.hookQueue, ^{
+    dispatch_barrier_async(self.hookQueue, ^{
         [self.hooks removeObjectForKey:hookIdentifier];
     });
 
