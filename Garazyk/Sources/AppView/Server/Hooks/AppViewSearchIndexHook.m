@@ -5,6 +5,7 @@
  */
 
 #import "AppView/Server/Hooks/AppViewSearchIndexHook.h"
+#import "Network/PDSSafeHTTPClient.h"
 #import "Debug/PDSLogger.h"
 
 @interface AppViewSearchIndexHook ()
@@ -99,16 +100,22 @@
         request.HTTPBody = body;
     }
 
-    // Use NSURLSession for fire-and-forget async POST
-    NSURLSessionDataTask *task = [[NSURLSession sharedSession]
-        dataTaskWithRequest:request
-          completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+    // Use PDSSafeHTTPClient for SSRF protection and GNUstep socket leak fix
+    PDSSafeHTTPClientOptions *options = [[PDSSafeHTTPClientOptions alloc] init];
+    options.timeout = 10.0;
+    options.maxResponseBytes = 0; // Don't need response body
+    options.allowHTTP = YES;       // Search endpoints may be internal
+    options.allowPrivateHosts = YES;
+    options.followRedirects = NO;
+
+    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
+                                                             options:options
+                                                          completion:^(NSData *data, NSURLResponse *response, NSError *error) {
         if (error) {
             PDS_LOG_DEBUG(@"[SearchIndexHook] POST to %@ failed: %@",
                           self.searchEndpoint, error.localizedDescription);
         }
     }];
-    [task resume];
 }
 
 @end
