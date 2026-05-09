@@ -1,0 +1,18 @@
+{
+  "name": "garazyk-plc-tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PLC protocol verification and analysis tools for the Garazyk ATProto stack",
+  "type": "module",
+  "scripts": {
+    "verify": "node verify_plc_operation.mjs",
+    "simulate": "node simulate_plc_sync.mjs",
+    "audit": "node audit_plc_export.mjs"
+  },
+  "dependencies": {
+    "@atproto/crypto": "^0.4.5",
+    "@ipld/dag-cbor": "^9.2.6",
+    "@noble/hashes": "^1.6.1",
+    "multiformats": "^13.4.2"
+  }
+}
