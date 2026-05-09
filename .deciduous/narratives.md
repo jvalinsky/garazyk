@@ -559,3 +559,72 @@
 - Disk: 33% used (was 91%)
 
 **Connects to:** garazyk PDS Operations (Node #1090)
+
+## Session 2026-05-08 (second half): Fix relay transport and add startup requestCrawl
+
+### Problem
+PDSRelayService never started (PDSCLIServeCommand didn't call `start`), and when it would start, its `PDSRelayURLSessionTransport` used raw NSURLSession without timeout safety — same GNUstep bug that plagued PDSSafeHTTPClient. Also, relay service only notified relays on record changes, never on startup.
+
+### Changes
+1. **PDSCLIServeCommand.m**: Added `#import "Services/PDS/PDSRelayService.h"` to fix forward declaration compilation error. `[[controller relayService] start]` was already added in prior edit.
+2. **PDSRelayService.m**: Replaced `PDSRelayURLSessionTransport` (deleted class, raw NSURLSession) with `PDSRelaySafeHTTPTransport` — a private class wrapping `PDSSafeHTTPClient` for timeout-safe HTTP. Added startup `requestCrawl` notification loop in `start` method.
+3. **PDSRelayServiceTests.m**: Updated test name from `testDefaultTransportIsNSURLSession` to `testDefaultTransportConformsToProtocol`, removed stale comment referencing deleted class.
+
+### Verification
+- Local build: kaszlak target succeeds
+- Server deploy: git pull, cmake rebuild, systemctl restart — all green
+- Logs confirm: "PDSRelayService started with 1 relays" then "Successfully notified relay https://bsky.network"
+- Health endpoint responds at pds.garazyk.xyz/health
+
+### Remaining
+- External relays (bsky.network, blacksky.community) may still not crawl this PDS — that depends on their acceptance of requestCrawl from a small PDS. Next step could be checking if blacksky.community has a manual crawl request form, or configuring additional relays in the PDS config.
+
+## Session 2026-05-08 (third half): Test fix plan and full suite verification
+
+### Problem
+Four test files failed after the SafeHTTP migration (email, handle resolver, health check, readiness check), with 25 gated test classes skipped by environment flags. Chat seeding also failed due to JWKS URL construction, response capture, and missing JSON body members parsing.
+
+### Changes
+
+1. **PDSEmailHTTPClient.m**: Made SafeHTTP injectable via property-backed ivar so email tests can use their mock client.
+2. **PDSEmailHTTPClientTests.m**: Adapted the test mock to the SafeHTTP path.
+3. **HandleResolverTests.m**: Restored deterministic mocked HTTPS behavior with `executeSafeHTTPSRequest:` override on TestHandleResolver.
+4. **PDSHealthCheckTests.m**: Used `alloc`/`init` instead of `sharedInstance` to isolate tests from singleton state.
+5. **PDSReadinessCheck.h/.m**: Added `+performReadinessChecksWithConfig:error:` convenience selector for deployment readiness tests.
+6. **ChatAuthManager.m**: Preserved `http://` when building JWKS URLs with custom path appender; fixed shadowed variable to capture JWKS response data.
+7. **XrpcChatBskyConvoPack.m**: Accepted `members` from JSON request body for chat seeding.
+8. **check_ui_design_system.sh**: Removed stale Admin/Explore asset paths; added explicit JS path checking before ripgrep.
+
+### Verification
+- `xcodegen generate`: passed
+- `xcodebuild -scheme AllTests build`: passed
+- `scripts/test/run-tests.sh`: passed — 2683 tests, 0 failures, 25 gated
+
+### Nodes
+- #1118–#1127: Test fix and seed session
+- #1128: Cleanup legacy config/skill/plugin files
+- #1129: Refactor SubscribeReposHandler replay and clean FederationClientTests
+- #1130: Inject SafeHTTP dependency into PDSEmailHTTPClient
+- #1131: Adapt HandleResolver/PDSHealthCheck tests for SafeHTTP
+- #1132: Fix ChatAuthManager JWKS and convo members parsing
+- #1133: Fix import path and check_ui script paths
+- #1134: Committed all changes in logical groups
+
+## Session 2026-05-08 (fourth half): Codebase skill gap analysis and implementation
+
+### Problem
+The deciduous graph showed GNUstep compat issues (45+ nodes) and test remediation (511 mentions) as top recurring pain points, but no project-specific skills existed for either. The AGENTS.md also lacked a consolidated skill reference.
+
+### Changes
+1. **gnustep-compat SKILL.md**: 10 known GNUstep workarounds (NSURLSession timeout, curl NSTask fallback, CFRelease, arc4random, SecItemLinuxStore, CommonCrypto shims, NSTask API, os/log, OSAtomic, LAContext) with quick-reference symptom→fix table and Docker build guide.
+2. **garazyk-testing SKILL.md**: Test registration (test_main.m array), environment gating (PDS_RUN_INTEGRATION_TESTS, PDS_RUN_SOCKET_TESTS, PDS_RUNNING_TESTS), 4 mock patterns (subclass override/KVC injection/swizzle/direct init), runner commands, quick reference.
+3. **garazyk-database SKILL.md**: Verified existing (created by subagent). Covers connection pooling, WAL config, migrations, actor store patterns, LRU cache, concurrency contracts.
+4. **build-test.ts**: Custom tool wrapping xcodegen + xcodebuild + run-tests.sh with skipBuild and filter args.
+5. **AGENTS.md**: Added full project skills reference table (20 skills with descriptions).
+
+### Verification
+- All 3 SKILL.md files have valid frontmatter (name, description)
+- build-test.ts uses `@opencode-ai/plugin` tool() helper
+- AGENTS.md updated with skill table
+- Deciduous nodes #1135 (action) and #1136 (outcome) logged
+- Graph synced to docs/graph-data.json
