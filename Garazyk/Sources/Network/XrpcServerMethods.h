@@ -18,6 +18,7 @@
 @protocol PDSAccountService;
 @protocol PDSAdminController;
 @protocol PDSEmailProvider;
+@protocol PDSRegistrationGate;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -59,7 +60,8 @@ NS_ASSUME_NONNULL_BEGIN
               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
               userDatabasePool:(PDSDatabasePool *)userDatabasePool
                  configuration:(PDSConfiguration *)config
-    enforceDidWebServiceAuth:(BOOL)enforceDidWebServiceAuth;
+    enforceDidWebServiceAuth:(BOOL)enforceDidWebServiceAuth
+            registrationGate:(nullable id<PDSRegistrationGate>)registrationGate;
 
 @end
 
