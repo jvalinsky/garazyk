@@ -1,4 +1,5 @@
 #import "Auth/OAuth2Handler.h"
+#import "Security/PDSSecurityCompare.h"
 #import "Auth/OAuth2.h"
 #import "Auth/OAuthClientAuthPolicy.h"
 #import "Auth/Session.h"
@@ -2183,7 +2184,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
       }
     }
   }
-  if (!csrfHeader || !csrfCookie || ![csrfHeader isEqualToString:csrfCookie]) {
+  if (!csrfHeader || !csrfCookie || ![PDSSecurityCompare constantTimeEqualString:csrfHeader string:csrfCookie]) {
     response.statusCode = 403;
     [response setJsonBody:@{@"ok" : @NO, @"error" : @"Invalid CSRF token"}];
     return;
@@ -2361,7 +2362,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
       }
     }
   }
-  if (!csrfHeader || !csrfCookie || ![csrfHeader isEqualToString:csrfCookie]) {
+  if (!csrfHeader || !csrfCookie || ![PDSSecurityCompare constantTimeEqualString:csrfHeader string:csrfCookie]) {
     response.statusCode = 403;
     [response setJsonBody:@{@"ok" : @NO, @"error" : @"Invalid CSRF token"}];
     return;
