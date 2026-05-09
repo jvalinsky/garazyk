@@ -401,12 +401,14 @@ async function updateHandleFlow() {
             newHandleInput.value = '';
         } else {
             const errorData = await response.json();
-            resultDiv.innerHTML = `<div class="alert alert-destructive">Error: ${errorData.error || 'Failed to update handle'}</div>`;
+            resultDiv.innerHTML = '<div class="alert alert-destructive">Error: <span class="error-text"></span></div>';
+            resultDiv.querySelector('.error-text').textContent = errorData.error || 'Failed to update handle';
         }
     } catch (error) {
         console.error('Error updating handle:', error);
-        document.getElementById('lab-update-result').innerHTML =
-            `<div class="alert alert-destructive">Error: ${error.message}</div>`;
+        const resultEl = document.getElementById('lab-update-result');
+        resultEl.innerHTML = '<div class="alert alert-destructive">Error: <span class="error-text"></span></div>';
+        resultEl.querySelector('.error-text').textContent = error.message;
     }
 }
 
