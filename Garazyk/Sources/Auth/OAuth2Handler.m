@@ -3767,19 +3767,42 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     return;
   }
 
-  // SSRF Protection: PDSSafeHTTPClient validates host and fetches atomically,
-  // eliminating the validate-before-fetch TOCTOU gap.
-  NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+  PDS_LOG_AUTH_DEBUG(@"Fetching dynamic client metadata from %@", urlStr);
+
+  // For E2E tests in Docker, we may need to map the client's public URL (e.g. localhost)
+  // to an internal container name (e.g. oauth-client).
+  NSString *effectiveUrlStr = urlStr;
+  const char *envHostMap = getenv("GARAZYK_OAUTH_HOST_MAP");
+  if (envHostMap) {
+      NSString *hostMap = [NSString stringWithUTF8String:envHostMap];
+      NSArray *parts = [hostMap componentsSeparatedByString:@"="];
+      if (parts.count == 2) {
+          effectiveUrlStr = [urlStr stringByReplacingOccurrencesOfString:parts[0]
+                                                              withString:parts[1]];
+          if (![effectiveUrlStr isEqualToString:urlStr]) {
+              PDS_LOG_AUTH_DEBUG(@"Mapped OAuth client URL: %@ -> %@", urlStr, effectiveUrlStr);
+          }
+      }
+  }
+
+  NSURL *fetchUrl = [NSURL URLWithString:effectiveUrlStr];
+  NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:fetchUrl];
   [request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
   request.timeoutInterval = 10.0;
-
-  PDS_LOG_AUTH_DEBUG(@"Fetching dynamic client metadata from %@", urlStr);
 
   PDSSafeHTTPClientOptions *safeOptions = [[PDSSafeHTTPClientOptions alloc] init];
   safeOptions.timeout = 10.0;
   safeOptions.maxResponseBytes = 256 * 1024; // 256 KB
-  safeOptions.allowHTTP = NO;
-  safeOptions.allowPrivateHosts = NO;
+  
+  // In development/test environments, we allow fetching metadata from local/private hosts.
+  BOOL allowPrivate = NO;
+  const char *envAllowPrivate = getenv("GARAZYK_ALLOW_PRIVATE_OAUTH_CLIENTS");
+  if (envAllowPrivate && (strcmp(envAllowPrivate, "1") == 0 || strcmp(envAllowPrivate, "true") == 0)) {
+    allowPrivate = YES;
+  }
+  
+  safeOptions.allowHTTP = allowPrivate;
+  safeOptions.allowPrivateHosts = allowPrivate;
   safeOptions.followRedirects = YES;
 
   [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
