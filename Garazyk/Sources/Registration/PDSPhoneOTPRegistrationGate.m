@@ -57,7 +57,29 @@
     }
 
     // If a phone verification provider is available and supports
-    // verifyCode:forPhoneNumber:error:, use it for server-side validation.
+    // verifyCode:forPhoneNumber:sessionID:error:, use it for server-side validation.
+    NSString *sessionID = body[@"verificationSessionID"];
+    if (_provider && [_provider respondsToSelector:@selector(verifyCode:forPhoneNumber:sessionID:error:)]) {
+        NSError *verifyError = nil;
+        BOOL verified = [(id<PDSPhoneVerificationProvider>)_provider verifyCode:phoneCode
+                                                                forPhoneNumber:phoneNumber
+                                                                     sessionID:sessionID
+                                                                          error:&verifyError];
+        if (!verified) {
+            if (error) {
+                *error = [NSError errorWithDomain:PDSRegistrationGateErrorDomain
+                                             code:PDSRegistrationGateErrorInvalidPhoneVerification
+                                         userInfo:@{
+                                             NSLocalizedDescriptionKey:
+                                                 verifyError.localizedDescription ?: @"Phone verification code is invalid"
+                                         }];
+            }
+            return NO;
+        }
+        return YES;
+    }
+
+    // Fallback: try the legacy verifyCode:forPhoneNumber:error: method
     if (_provider && [_provider respondsToSelector:@selector(verifyCode:forPhoneNumber:error:)]) {
         NSError *verifyError = nil;
         BOOL verified = [(id<PDSPhoneVerificationProvider>)_provider verifyCode:phoneCode

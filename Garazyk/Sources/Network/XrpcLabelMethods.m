@@ -9,6 +9,7 @@
 #import "Admin/PDSAdminController.h"
 #import "App/PDSConfiguration.h"
 #import "Services/Core/PDSPhoneVerificationProvider.h"
+#import "Email/PDSEnvironmentSecretsProvider.h"
 #import "Identity/ATProtoHandleValidator.h"
 
 // Deprecation constants for temp.fetchLabels
@@ -357,8 +358,11 @@ static NSDictionary *labelLookupParamsFromRequest(HttpRequest *request, NSString
 
         NSError *providerError = nil;
         NSString *providerName = configuration.phoneVerificationProvider ?: @"none";
+        PDSEnvironmentSecretsProvider *secretsProvider = [[PDSEnvironmentSecretsProvider alloc] init];
         id<PDSPhoneVerificationProvider> provider = [PDSPhoneVerificationProviderFactory providerWithName:providerName
-                                                                                                     error:&providerError];
+                                                                                           configuration:@{}
+                                                                                          secretsProvider:secretsProvider
+                                                                                                    error:&providerError];
         if (!provider) {
             if ([providerError.domain isEqualToString:PDSPhoneVerificationProviderErrorDomain]
                 && providerError.code == PDSPhoneVerificationProviderErrorNotConfigured) {
@@ -388,7 +392,8 @@ static NSDictionary *labelLookupParamsFromRequest(HttpRequest *request, NSString
         }
 
         NSError *requestError = nil;
-        if (![provider requestVerificationForPhoneNumber:phoneNumber error:&requestError]) {
+        NSString *sessionID = [provider requestVerificationForPhoneNumber:phoneNumber error:&requestError];
+        if (!sessionID) {
             response.statusCode = HttpStatusInternalServerError;
             [response setJsonBody:@{
                 @"error": @"PhoneVerificationRequestFailed",
@@ -398,7 +403,11 @@ static NSDictionary *labelLookupParamsFromRequest(HttpRequest *request, NSString
         }
 
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{}];
+        NSMutableDictionary *responseBody = [NSMutableDictionary dictionary];
+        if (sessionID.length > 0) {
+            responseBody[@"sessionID"] = sessionID;
+        }
+        [response setJsonBody:responseBody];
     }];
     
     // com.atproto.temp.addReservedHandle - Admin endpoint to reserve handles

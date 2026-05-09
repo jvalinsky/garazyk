@@ -6,10 +6,10 @@
 
 @implementation PDSCustomPhoneVerificationProvider
 
-- (BOOL)requestVerificationForPhoneNumber:(NSString *)phoneNumber error:(NSError **)error {
+- (nullable NSString *)requestVerificationForPhoneNumber:(NSString *)phoneNumber error:(NSError **)error {
     (void)phoneNumber;
     (void)error;
-    return YES;
+    return @"";  // Empty string = success, no session ID
 }
 
 @end
@@ -119,8 +119,8 @@
     XCTAssertNotNil(provider);
 
     error = nil;
-    BOOL result = [provider requestVerificationForPhoneNumber:@"+15551234567" error:&error];
-    XCTAssertTrue(result);
+    NSString *sessionID = [provider requestVerificationForPhoneNumber:@"+15551234567" error:&error];
+    XCTAssertNotNil(sessionID);
     XCTAssertNil(error);
 }
 
