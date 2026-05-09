@@ -30,7 +30,6 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
 
 @implementation PLCSyncEngine {
     dispatch_queue_t _syncQueue;
-    dispatch_queue_t _validationQueue;
 }
 
 - (instancetype)init {
@@ -61,7 +60,6 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
         _consecutiveErrorCycles = 0;
         
         _syncQueue = dispatch_queue_create("com.atproto.plc.syncengine", DISPATCH_QUEUE_SERIAL);
-        _validationQueue = dispatch_queue_create("com.atproto.plc.syncengine.validation", DISPATCH_QUEUE_CONCURRENT);
     }
     return self;
 }
@@ -320,43 +318,35 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
 }
 
 - (NSUInteger)validateAndIngestOperations:(NSArray<PLCOperation *> *)operations {
-    __block NSUInteger validCount = 0;
-    __block NSUInteger failedCount = 0;
+    NSUInteger validCount = 0;
+    NSUInteger failedCount = 0;
     
-    dispatch_group_t validationGroup = dispatch_group_create();
-    
-    NSMutableArray<PLCOperation *> *validatedOps = [NSMutableArray array];
-    NSLock *validatedOpsLock = [[NSLock alloc] init];
-    
+    // Validate and ingest operations sequentially so each operation
+    // sees the store state that includes all previously validated
+    // operations from this batch.  Concurrent validation caused
+    // non-genesis operations to fail because their predecessors
+    // (in the same batch) had not been stored yet.
     for (PLCOperation *op in operations) {
-        dispatch_group_async(validationGroup, _validationQueue, ^{
-            NSError *validationError = nil;
-            BOOL valid = [self.auditor verifyOperation:op error:&validationError];
-            
-            if (valid) {
-                [validatedOpsLock lock];
-                [validatedOps addObject:op];
-                [validatedOpsLock unlock];
-            } else {
-                OSAtomicIncrement64((int64_t *)&failedCount);
-                PDS_LOG_CORE_ERROR(@"PLC replica: operation validation failed for DID %@: %@", op.did, validationError.localizedDescription);
-            }
-        });
-    }
-    
-    dispatch_group_wait(validationGroup, DISPATCH_TIME_FOREVER);
-    
-    validCount = validatedOps.count;
-    self.totalOperationsFailed += failedCount;
-    
-    for (PLCOperation *op in validatedOps) {
-        NSError *appendError = nil;
-        BOOL stored = [self.store appendOperation:op nullifyCIDs:nil error:&appendError];
+        NSError *validationError = nil;
+        BOOL valid = [self.auditor verifyOperation:op error:&validationError];
         
-        if (!stored) {
-            PDS_LOG_CORE_ERROR(@"PLC replica: failed to append operation for DID %@: %@", op.did, appendError.localizedDescription);
+        if (valid) {
+            NSError *appendError = nil;
+            BOOL stored = [self.store appendOperation:op nullifyCIDs:nil error:&appendError];
+            
+            if (stored) {
+                validCount++;
+            } else {
+                failedCount++;
+                PDS_LOG_CORE_ERROR(@"PLC replica: failed to append operation for DID %@: %@", op.did, appendError.localizedDescription);
+            }
+        } else {
+            failedCount++;
+            PDS_LOG_CORE_ERROR(@"PLC replica: operation validation failed for DID %@: %@", op.did, validationError.localizedDescription);
         }
     }
+    
+    self.totalOperationsFailed += failedCount;
     
     return validCount;
 }
