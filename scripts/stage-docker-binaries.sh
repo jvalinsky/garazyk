@@ -92,6 +92,12 @@ for binary in "${BINARIES[@]}"; do
     chmod +x "$STAGING_DIR/bin/$binary"
 done
 
+echo "[stage] Extracting libraries..."
+mkdir -p "$STAGING_DIR/lib"
+# Copy GNUstep and Dispatch libraries
+docker cp "$CONTAINER_ID:/usr/GNUstep/Local/Library/Libraries/." "$STAGING_DIR/lib/"
+docker cp "$CONTAINER_ID:/usr/GNUstep/Local/lib/." "$STAGING_DIR/lib/" || true
+
 # Copy lexicons if not already present
 if [[ ! -d "$STAGING_DIR/lexicons" ]]; then
     echo "[stage] Copying lexicons..."
