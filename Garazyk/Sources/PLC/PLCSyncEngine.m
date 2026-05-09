@@ -24,6 +24,7 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
 @property (nonatomic, assign) BOOL shouldStop;
 @property (nonatomic, assign) BOOL isPaused;
 @property (nonatomic, assign) NSUInteger currentRetryCount;
+@property (nonatomic, assign) NSUInteger consecutiveErrorCycles;
 
 @end
 
@@ -57,6 +58,7 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
         _shouldStop = NO;
         _isPaused = NO;
         _currentRetryCount = 0;
+        _consecutiveErrorCycles = 0;
         
         _syncQueue = dispatch_queue_create("com.atproto.plc.syncengine", DISPATCH_QUEUE_SERIAL);
         _validationQueue = dispatch_queue_create("com.atproto.plc.syncengine.validation", DISPATCH_QUEUE_CONCURRENT);
@@ -285,6 +287,10 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
     [self.store updateLastSyncTimestamp:self.lastSyncDate error:nil];
     [self updateSyncMetrics];
     
+    // Reset error tracking on successful sync
+    self.currentRetryCount = 0;
+    self.consecutiveErrorCycles = 0;
+    
     if ([self.delegate respondsToSelector:@selector(syncEngine:didIngestOperations:count:)]) {
         dispatch_async(dispatch_get_main_queue(), ^{
             [self.delegate syncEngine:self didIngestOperations:ops count:validCount];
@@ -361,7 +367,21 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
     NSTimeInterval delay = MIN(pow(2, self.currentRetryCount), self.maxRetryDelay);
     
     if (self.currentRetryCount >= self.maxRetries) {
-        PDS_LOG_CORE_ERROR(@"PLC replica: sync failed after %lu retries: %@", (unsigned long)self.currentRetryCount, error.localizedDescription);
+        self.consecutiveErrorCycles++;
+        
+        // Apply increasing cooldown between error cycles to prevent
+        // connection storms when the upstream is persistently unavailable.
+        // After each full retry cycle, wait longer before restarting:
+        // 1st cycle: maxRetryDelay, 2nd: 2x, 3rd: 4x, capped at 5 minutes.
+        static const NSTimeInterval kMaxCooldown = 300.0;
+        NSTimeInterval cooldown = MIN(self.maxRetryDelay * pow(2, self.consecutiveErrorCycles - 1),
+                                      kMaxCooldown);
+        
+        PDS_LOG_CORE_ERROR(@"PLC replica: sync failed after %lu retries (cycle %lu, cooldown %.0fs): %@",
+                         (unsigned long)self.currentRetryCount,
+                         (unsigned long)self.consecutiveErrorCycles,
+                         cooldown,
+                         error.localizedDescription);
         
         [self updateState:PLCSyncStateError];
         
@@ -373,7 +393,7 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
         
         self.currentRetryCount = 0;
         
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), _syncQueue, ^{
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(cooldown * NSEC_PER_SEC)), _syncQueue, ^{
             if (!self.shouldStop && self.state == PLCSyncStateError) {
                 [self resume];
             }
