@@ -55,6 +55,7 @@ SCENARIO_REGISTRY = [
     ("10", "scenarios.10_performance_resilience", "Performance & Resilience", False),
     ("11", "scenarios.11_lab_oauth_login", "Lab OAuth2 Login", False),
     ("12", "scenarios.12_account_migration", "Account Migration & PLC Audit", True),
+    ("13", "scenarios.13_oauth_client_e2e", "E2E OAuth2 Client Integration", False),
 ]
 
 
