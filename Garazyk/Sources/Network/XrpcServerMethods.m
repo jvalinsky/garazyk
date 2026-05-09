@@ -12,6 +12,7 @@
 #import "Network/XrpcErrorHelper.h"
 #import "Network/XrpcMethodRegistry.h"
 #import "Network/XrpcServiceAuthHelper.h"
+#import "Registration/PDSRegistrationGate.h"
 #import "App/PDSConfiguration.h"
 #import "Services/PDS/PDSAccountService.h"
 #import "Services/PDS/PDSRepositoryService.h"
@@ -328,14 +329,17 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
               userDatabasePool:(PDSDatabasePool *)userDatabasePool
                  configuration:(PDSConfiguration *)config
-    enforceDidWebServiceAuth:(BOOL)enforceDidWebServiceAuth {
-    
+    enforceDidWebServiceAuth:(BOOL)enforceDidWebServiceAuth
+            registrationGate:(nullable id<PDSRegistrationGate>)registrationGate {
+
     // Register com.atproto.server.describeServer
-    [self registerDescribeServerWithDispatcher:dispatcher configuration:config];
-    
+    [self registerDescribeServerWithDispatcher:dispatcher
+                                   configuration:config
+                                registrationGate:registrationGate];
+
     // Register _health endpoint for diagnostics
     [self registerHealthEndpointWithDispatcher:dispatcher];
-    
+
     // Register account and session methods
     [self registerAccountAndSessionMethodsWithDispatcher:dispatcher
                                                jwtMinter:jwtMinter
@@ -345,22 +349,32 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
                                         serviceDatabases:serviceDatabases
                                         userDatabasePool:userDatabasePool
                                            configuration:config
-                              enforceDidWebServiceAuth:enforceDidWebServiceAuth];
+                              enforceDidWebServiceAuth:enforceDidWebServiceAuth
+                                      registrationGate:registrationGate];
 }
 
 #pragma mark - Endpoint Registration Methods
 
 + (void)registerDescribeServerWithDispatcher:(XrpcDispatcher *)dispatcher
-                               configuration:(PDSConfiguration *)config {
+                               configuration:(PDSConfiguration *)config
+                            registrationGate:(nullable id<PDSRegistrationGate>)registrationGate {
     [dispatcher registerComAtprotoServerDescribeServer:^(HttpRequest *request, HttpResponse *response) {
         NSString *issuer = [config canonicalIssuerWithPortHint:0];
         NSString *hostname = [config canonicalHostname];
         NSString *serverDid = XrpcDidWebIdentifierFromIssuer(issuer, hostname);
         NSArray *availableUserDomains = config.availableUserDomains ?: (hostname.length > 0 ? @[hostname] : @[]);
 
+        // Determine gate flags from the registration gate
+        BOOL inviteCodeRequired = config.inviteCodeRequired;
+        BOOL phoneVerificationRequired = config.phoneVerificationRequired;
+        if ([registrationGate respondsToSelector:@selector(containsGateWithIdentifier:)]) {
+            inviteCodeRequired = [(id)registrationGate containsGateWithIdentifier:@"invite_code"];
+            phoneVerificationRequired = [(id)registrationGate containsGateWithIdentifier:@"phone_otp"];
+        }
+
         NSDictionary *result = @{
-            @"inviteCodeRequired": @(config.inviteCodeRequired),
-            @"phoneVerificationRequired": @NO,
+            @"inviteCodeRequired": @(inviteCodeRequired),
+            @"phoneVerificationRequired": @(phoneVerificationRequired),
             @"availableUserDomains": availableUserDomains,
             @"links": @{
                 @"privacyPolicy": config.privacyPolicyURL ?: @"",
@@ -383,7 +397,8 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
                                        serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                                        userDatabasePool:(PDSDatabasePool *)userDatabasePool
                                           configuration:(PDSConfiguration *)config
-                             enforceDidWebServiceAuth:(BOOL)enforceDidWebServiceAuth {
+                             enforceDidWebServiceAuth:(BOOL)enforceDidWebServiceAuth
+                                     registrationGate:(nullable id<PDSRegistrationGate>)registrationGate {
     // This method will be implemented in multiple parts due to size constraints
     // Part 1: createAccount, createSession, getSession, refreshSession, deleteSession
     [self registerAccountCreationAndSessionEndpoints:dispatcher
@@ -393,7 +408,8 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
                                    repositoryService:repositoryService
                                     serviceDatabases:serviceDatabases
                                        configuration:config
-                          enforceDidWebServiceAuth:enforceDidWebServiceAuth];
+                          enforceDidWebServiceAuth:enforceDidWebServiceAuth
+                                  registrationGate:registrationGate];
     
     // Part 2: Invite codes
     [self registerInviteCodeEndpoints:dispatcher
@@ -431,7 +447,8 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
                                   repositoryService:(PDSRepositoryService *)repositoryService
                                    serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                                       configuration:(PDSConfiguration *)config
-                         enforceDidWebServiceAuth:(BOOL)enforceDidWebServiceAuth {
+                         enforceDidWebServiceAuth:(BOOL)enforceDidWebServiceAuth
+                                 registrationGate:(nullable id<PDSRegistrationGate>)registrationGate {
     [dispatcher registerComAtprotoServerCreateAccount:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody;
         NSString *email = body[@"email"];
@@ -451,19 +468,38 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
             return;
         }
 
-        if (config.inviteCodeRequired) {
-            NSString *inviteCode = body[@"inviteCode"];
-            if (!inviteCode || inviteCode.length == 0) {
+        // Registration gate validation
+        if (registrationGate) {
+            NSError *gateError = nil;
+            if (![registrationGate validateRegistrationRequest:body
+                                                 configuration:config
+                                                         error:&gateError]) {
                 response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"InvalidInviteCode", @"message": @"Invite code required"}];
+                NSString *errorCode = @"InvalidRequest";
+                NSString *errorMessage = gateError.localizedDescription ?: @"Registration rejected";
+                if ([gateError.domain isEqualToString:PDSRegistrationGateErrorDomain]) {
+                    switch (gateError.code) {
+                        case PDSRegistrationGateErrorInviteCodeRequired:
+                        case PDSRegistrationGateErrorInvalidInviteCode:
+                            errorCode = @"InvalidInviteCode";
+                            break;
+                        case PDSRegistrationGateErrorPhoneVerificationRequired:
+                        case PDSRegistrationGateErrorInvalidPhoneVerification:
+                            errorCode = @"PhoneVerificationRequired";
+                            break;
+                        case PDSRegistrationGateErrorCaptchaRequired:
+                        case PDSRegistrationGateErrorInvalidCaptcha:
+                            errorCode = @"InvalidCaptcha";
+                            break;
+                        case PDSRegistrationGateErrorOAuthOnlyRegistration:
+                            errorCode = @"OAuthOnlyRegistration";
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                [response setJsonBody:@{@"error": errorCode, @"message": errorMessage}];
                 return;
-            }
-            
-            NSError *inviteError = nil;
-            if (![serviceDatabases useInviteCode:inviteCode error:&inviteError]) {
-                 response.statusCode = HttpStatusBadRequest;
-                 [response setJsonBody:@{@"error": @"InvalidInviteCode", @"message": inviteError.localizedDescription ?: @"Invalid or expired invite code"}];
-                 return;
             }
         }
 
