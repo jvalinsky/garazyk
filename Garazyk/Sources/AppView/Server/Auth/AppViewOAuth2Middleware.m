@@ -8,6 +8,8 @@
 #import "AppView/Server/AppViewDatabase.h"
 #import "Network/HttpRequest.h"
 #import "Auth/JWT.h"
+#import "Auth/Crypto/AuthCryptoDPoP.h"
+#import "Auth/Crypto/CryptoUtils.h"
 #import "Debug/PDSLogger.h"
 #import "Compat/PDSTypes.h"
 
@@ -90,17 +92,28 @@ NSErrorDomain const AppViewOAuth2MiddlewareErrorDomain = @"AppViewOAuth2Middlewa
 
     // Validate DPoP proof if present
     NSString *dpopHeader = [request headerForKey:@"DPoP"];
+    NSString *tokenJkt = jwt.payload.cnf[@"jkt"];
+
     if (dpopHeader.length > 0) {
-        if (![self validateDPoPProof:request forToken:token]) {
-            if (error) {
-                *error = [NSError errorWithDomain:AppViewOAuth2MiddlewareErrorDomain
-                                             code:AppViewOAuth2ErrorDPoPKeyMismatch
-                                         userInfo:@{
-                    NSLocalizedDescriptionKey: @"DPoP proof validation failed"
-                }];
-            }
+        // DPoP proof present — must verify proof and check cnf.jkt binding
+        NSString *dpopThumbprint = nil;
+        if (![self validateDPoPProof:request
+                              token:token
+                          tokenJkt:tokenJkt
+                        outThumbprint:&dpopThumbprint
+                             error:error]) {
             return NO;
         }
+    } else if (tokenJkt.length > 0) {
+        // Token is DPoP-bound but no DPoP proof provided
+        if (error) {
+            *error = [NSError errorWithDomain:AppViewOAuth2MiddlewareErrorDomain
+                                         code:AppViewOAuth2ErrorDPoPKeyMismatch
+                                     userInfo:@{
+                NSLocalizedDescriptionKey: @"DPoP-bound token requires DPoP proof"
+            }];
+        }
+        return NO;
     }
 
     if (callerDID) *callerDID = jwt.payload.sub;
@@ -119,53 +132,72 @@ NSErrorDomain const AppViewOAuth2MiddlewareErrorDomain = @"AppViewOAuth2Middlewa
     return token.length > 0 ? token : nil;
 }
 
-- (BOOL)validateDPoPProof:(HttpRequest *)request forToken:(NSString *)token {
+- (BOOL)validateDPoPProof:(HttpRequest *)request
+                    token:(NSString *)token
+                tokenJkt:(nullable NSString *)tokenJkt
+           outThumbprint:(NSString *_Nullable *_Nullable)outThumbprint
+                   error:(NSError **)error {
     NSString *dpopHeader = [request headerForKey:@"DPoP"];
-    if (dpopHeader.length == 0) return YES; // No DPoP header = no proof required
+    if (dpopHeader.length == 0) {
+        // No DPoP header — only valid if token is not DPoP-bound (checked by caller)
+        return YES;
+    }
 
-    // Parse the DPoP proof as a JWT
-    NSError *error = nil;
-    JWT *dpopJWT = [JWT jwtWithToken:dpopHeader error:&error];
-    if (!dpopJWT) {
-        PDS_LOG_DEBUG(@"[OAuth2Middleware] Invalid DPoP proof JWT: %@",
-                      error.localizedDescription ?: @"unknown");
+    // Build the expected DPoP URL from the request
+    NSString *method = [request methodString] ?: @"GET";
+    NSString *scheme = [request headerForKey:@"X-Forwarded-Proto"] ?: @"https";
+    NSString *host = [request headerForKey:@"Host"] ?: @"localhost";
+    NSString *path = [request path] ?: @"/";
+    NSString *urlStr = [NSString stringWithFormat:@"%@://%@%@", scheme, host, path];
+    NSURL *dpopURL = [NSURL URLWithString:urlStr];
+
+    // Verify the DPoP proof using the canonical verifier (RFC 9449)
+    NSString *dpopThumbprint = nil;
+    NSError *dpopError = nil;
+    BOOL validProof = [AuthCryptoDPoP verifyProof:dpopHeader
+                                           method:method
+                                              url:dpopURL
+                                            nonce:nil
+                                     requireNonce:NO
+                                   nonceValidator:nil
+                                    replayChecker:nil
+                                    outThumbprint:&dpopThumbprint
+                                            error:&dpopError];
+
+    if (!validProof) {
+        PDS_LOG_AUTH_DEBUG(@"[OAuth2Middleware] DPoP proof verification failed: %@",
+                           dpopError.localizedDescription ?: @"unknown");
+        if (error) {
+            *error = [NSError errorWithDomain:AppViewOAuth2MiddlewareErrorDomain
+                                         code:AppViewOAuth2ErrorInvalidDPoPProof
+                                     userInfo:@{
+                NSLocalizedDescriptionKey: dpopError.localizedDescription ?: @"DPoP proof invalid"
+            }];
+        }
         return NO;
     }
 
-    // Verify the DPoP proof claims:
-    // - htu (HTTP target URI) must match the request URL
-    // - htm (HTTP method) must match the request method
-    // - iat (issued at) must be recent (within 60 seconds)
-    // - jwk must match the cnf.jwk from the access token
+    if (outThumbprint) *outThumbprint = dpopThumbprint;
 
-    NSDictionary *claims = [dpopJWT.payload toDictionary];
-    NSString *htm = claims[@"htm"];
-    NSString *htu = claims[@"htu"];
-    NSNumber *iatNum = claims[@"iat"];
-
-    // Validate HTTP method
-    if (htm && ![htm isEqualToString:@"GET"] && ![htm isEqualToString:@"POST"]) {
-        PDS_LOG_DEBUG(@"[OAuth2Middleware] DPoP htm mismatch: %@", htm);
-        // Not fatal — just log
-    }
-
-    // Validate issued-at is recent
-    if (iatNum) {
-        NSTimeInterval proofTime = [iatNum doubleValue];
-        NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
-        if (fabs(now - proofTime) > 60.0) {
-            PDS_LOG_DEBUG(@"[OAuth2Middleware] DPoP proof too old: %.0f seconds",
-                          now - proofTime);
+    // Enforce DPoP binding: cnf.jkt from access token must match proof thumbprint
+    if (tokenJkt.length > 0) {
+        if (![CryptoUtils constantTimeCompare:tokenJkt to:dpopThumbprint]) {
+            PDS_LOG_AUTH_DEBUG(@"[OAuth2Middleware] DPoP thumbprint mismatch");
+            if (error) {
+                *error = [NSError errorWithDomain:AppViewOAuth2MiddlewareErrorDomain
+                                             code:AppViewOAuth2ErrorDPoPKeyMismatch
+                                         userInfo:@{
+                    NSLocalizedDescriptionKey: @"DPoP proof key does not match token binding"
+                }];
+            }
             return NO;
         }
+    } else {
+        // No cnf.jkt on token but DPoP proof provided — accept
+        // (token was not DPoP-bound at issuance, but client sent proof anyway)
+        PDS_LOG_AUTH_DEBUG(@"[OAuth2Middleware] DPoP proof accepted for non-DPoP-bound token");
     }
 
-    // TODO: Verify cnf.jwk from access token matches DPoP proof jwk
-    // This requires parsing the access token's cnf claim
-    // For now, we accept the proof if it's well-formed
-
-    (void)htu;
-    (void)token;
     return YES;
 }
 
