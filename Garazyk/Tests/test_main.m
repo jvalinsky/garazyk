@@ -461,6 +461,25 @@ int main(int argc, char *argv[]) {
     if (getenv("PDS_PLC_URL") == NULL) {
       setenv("PDS_PLC_URL", "skip", 1);
     }
+    // Isolate PLC rotation keys from the user's real key store.
+    // Without this, sharedManager reads from the machine's default path and
+    // fails to decrypt an existing key encrypted with a different secret.
+    if (getenv("PDS_PLC_KEYS_DIR") == NULL) {
+      NSString *tempKeysDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"garazyk-test-plc-keys"];
+      [[NSFileManager defaultManager] createDirectoryAtPath:tempKeysDir
+                                withIntermediateDirectories:YES
+                                                 attributes:nil
+                                                      error:NULL];
+      setenv("PDS_PLC_KEYS_DIR", tempKeysDir.UTF8String, 1);
+    }
+    if (getenv("PDS_DATA_DIR") == NULL) {
+      NSString *tempDataDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"garazyk-test-data"];
+      [[NSFileManager defaultManager] createDirectoryAtPath:tempDataDir
+                                withIntermediateDirectories:YES
+                                                 attributes:nil
+                                                      error:NULL];
+      setenv("PDS_DATA_DIR", tempDataDir.UTF8String, 1);
+    }
 
     // Disable rate limiting for tests
     RateLimiterSetDisabledGlobally(YES);
