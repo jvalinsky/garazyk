@@ -276,6 +276,7 @@ static NSSet<NSString *> *PDSSocketTestClasses(void) {
       @"PDSApplicationTests",
       @"PDSHttpServerBuilderTests",
       @"PLCServerTests",
+      @"PLCReplicaServerTests",
       @"PDSWebSocketServerTests",
       @"PDSWebSocketTransportTests",
       @"WebSocketServerTests"
@@ -507,6 +508,7 @@ int main(int argc, char *argv[]) {
       @"PLCStoreTests",
       @"PLCAuditorTests",
       @"PLCServerTests",
+      @"PLCReplicaServerTests",
       @"OAuthPKCETests",
       @"OAuthConformanceTests",
       @"OAuthPublicClientTests",
