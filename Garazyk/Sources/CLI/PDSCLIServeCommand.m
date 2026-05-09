@@ -219,6 +219,9 @@
   serverBuilder.serviceDatabases = controller.serviceDatabases;
   serverBuilder.subscribeReposHandler = subscribeReposHandler;
 
+  // Set the Server header for all PDS responses
+  [HttpResponse setDefaultServerHeader:@"kaszlak/1.0.0 (garazyk)"];
+
   // Calculate canonical issuer with the actual port
   NSString *canonicalIssuer = [[PDSConfiguration sharedConfiguration] canonicalIssuerWithPortHint:port];
   serverBuilder.issuer = canonicalIssuer;
