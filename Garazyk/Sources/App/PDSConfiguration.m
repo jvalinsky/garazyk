@@ -94,6 +94,8 @@ static BOOL PDSConfigRunningUnderTests(void) {
 @implementation PDSConfiguration {
   NSDictionary *_config;
   NSString *_phoneVerificationProvider;
+  NSDictionary *_registrationConfig;
+  NSDictionary *_providersConfig;
   PDSDataPaths *_dataPaths;
 }
 
@@ -161,6 +163,12 @@ static BOOL PDSConfigRunningUnderTests(void) {
     _accessTokenTtlSeconds = 3600;
     _refreshTokenTtlSeconds = 604800;
     _inviteCodeRequired = NO;
+    _phoneVerificationRequired = NO;
+    _captchaRequired = NO;
+    _captchaProvider = @"none";
+    _captchaSiteKey = nil;
+    _captchaSecretKey = nil;
+    _oauthOnlyRegistration = NO;
     _availableUserDomains = nil;
     _phoneVerificationProvider = @"none";
     _emailProviderType = @"none";
@@ -478,8 +486,75 @@ static BOOL PDSConfigRunningUnderTests(void) {
     if ([self dictionary:session hasValueForKey:@"refresh_token_ttl_seconds"])
       _refreshTokenTtlSeconds =
           [session[@"refresh_token_ttl_seconds"] unsignedIntegerValue];
+    // Backward compat: top-level invite_code_required in session section
     if ([self dictionary:session hasValueForKey:@"invite_code_required"])
       _inviteCodeRequired = [session[@"invite_code_required"] boolValue];
+  }
+
+  // Registration gate configuration (new structured section)
+  NSDictionary *registration = config[@"registration"];
+  if (registration) {
+    _registrationConfig = registration;
+    if ([self dictionary:registration hasValueForKey:@"invite_code_required"])
+      _inviteCodeRequired = [registration[@"invite_code_required"] boolValue];
+    if ([self dictionary:registration hasValueForKey:@"phone_verification_required"])
+      _phoneVerificationRequired = [registration[@"phone_verification_required"] boolValue];
+    if ([self dictionary:registration hasValueForKey:@"captcha_required"])
+      _captchaRequired = [registration[@"captcha_required"] boolValue];
+    if ([self dictionary:registration hasValueForKey:@"oauth_only_registration"])
+      _oauthOnlyRegistration = [registration[@"oauth_only_registration"] boolValue];
+
+    NSString *captchaProvider = registration[@"captcha_provider"];
+    if ([captchaProvider isKindOfClass:[NSString class]]) {
+      NSString *trimmed = [captchaProvider stringByTrimmingCharactersInSet:
+                           [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+      if (trimmed.length > 0) {
+        _captchaProvider = trimmed.lowercaseString;
+      }
+    }
+    _captchaSiteKey = registration[@"captcha_site_key"];
+    _captchaSecretKey = registration[@"captcha_secret_key"];
+  }
+
+  // Structured providers section (takes precedence over legacy keys)
+  NSDictionary *providers = config[@"providers"];
+  if (providers && [providers isKindOfClass:[NSDictionary class]]) {
+    _providersConfig = providers;
+
+    // Override email provider type from providers section
+    NSDictionary *emailProviders = providers[@"email"];
+    if ([emailProviders isKindOfClass:[NSDictionary class]]) {
+      NSString *emailType = emailProviders[@"type"];
+      if ([emailType isKindOfClass:[NSString class]] && emailType.length > 0) {
+        _emailProviderType = emailType.lowercaseString;
+      }
+    }
+
+    // Override phone verification provider from providers section
+    NSDictionary *phoneProviders = providers[@"phone_verification"];
+    if ([phoneProviders isKindOfClass:[NSDictionary class]]) {
+      NSString *phoneType = phoneProviders[@"type"];
+      if ([phoneType isKindOfClass:[NSString class]] && phoneType.length > 0) {
+        _phoneVerificationProvider = phoneType.lowercaseString;
+      }
+    }
+
+    // Override CAPTCHA config from providers section
+    NSDictionary *captchaProviders = providers[@"captcha"];
+    if ([captchaProviders isKindOfClass:[NSDictionary class]]) {
+      NSString *captchaType = captchaProviders[@"type"];
+      if ([captchaType isKindOfClass:[NSString class]] && captchaType.length > 0) {
+        _captchaProvider = captchaType.lowercaseString;
+      }
+      NSString *siteKey = captchaProviders[@"site_key"];
+      if ([siteKey isKindOfClass:[NSString class]]) {
+        _captchaSiteKey = [self resolveSecretValue:siteKey];
+      }
+      NSString *secretKey = captchaProviders[@"secret_key"];
+      if ([secretKey isKindOfClass:[NSString class]]) {
+        _captchaSecretKey = [self resolveSecretValue:secretKey];
+      }
+    }
   }
 
   NSDictionary *phoneVerification = config[@"phone_verification"];
@@ -1092,6 +1167,44 @@ static BOOL PDSConfigRunningUnderTests(void) {
                                           whitespaceAndNewlineCharacterSet]]
       lowercaseString];
   return trimmed.length > 0 ? trimmed : @"none";
+}
+
+- (BOOL)isRegistrationGateEnabled:(NSString *)gateIdentifier {
+  if (!_registrationConfig) return NO;
+  NSString *key = [NSString stringWithFormat:@"%@_required", gateIdentifier];
+  NSNumber *value = _registrationConfig[key];
+  if ([value isKindOfClass:[NSNumber class]]) {
+    return [value boolValue];
+  }
+  return NO;
+}
+
+- (nullable NSDictionary *)providerConfigForKey:(NSString *)key {
+    if (!key || key.length == 0) return nil;
+
+    // Try the structured providers section first
+    if (_providersConfig) {
+        NSDictionary *config = _providersConfig[key];
+        if ([config isKindOfClass:[NSDictionary class]]) {
+            return config;
+        }
+    }
+    return nil;
+}
+
+- (nullable NSString *)resolveSecretValue:(NSString *)value {
+    if (!value || value.length == 0) return nil;
+
+    // env:VAR_NAME convention — read from environment variable
+    if ([value hasPrefix:@"env:"]) {
+        NSString *envVar = [value substringFromIndex:4];
+        if (envVar.length == 0) return nil;
+        NSString *envValue = [[NSProcessInfo processInfo].environment objectForKey:envVar];
+        return envValue;
+    }
+
+    // Plain value — return as-is
+    return value;
 }
 
 @end
