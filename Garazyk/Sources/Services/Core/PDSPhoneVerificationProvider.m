@@ -1,4 +1,8 @@
 #import "Services/Core/PDSPhoneVerificationProvider.h"
+#import "PhoneVerification/PDSTwilioPhoneVerificationProvider.h"
+#import "PhoneVerification/PDSVonagePhoneVerificationProvider.h"
+#import "PhoneVerification/PDSPlivoPhoneVerificationProvider.h"
+#import "PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.h"
 
 NSString * const PDSPhoneVerificationProviderErrorDomain = @"com.atproto.pds.phoneverificationprovider";
 
@@ -7,10 +11,10 @@ NSString * const PDSPhoneVerificationProviderErrorDomain = @"com.atproto.pds.pho
 
 @implementation PDSMockPhoneVerificationProvider
 
-- (BOOL)requestVerificationForPhoneNumber:(NSString *)phoneNumber error:(NSError **)error {
+- (nullable NSString *)requestVerificationForPhoneNumber:(NSString *)phoneNumber error:(NSError **)error {
     (void)phoneNumber;
     (void)error;
-    return YES;
+    return @"";
 }
 
 @end
@@ -73,7 +77,10 @@ NSString * const PDSPhoneVerificationProviderErrorDomain = @"com.atproto.pds.pho
     });
 }
 
-+ (nullable id<PDSPhoneVerificationProvider>)providerWithName:(NSString *)providerName error:(NSError **)error {
++ (nullable id<PDSPhoneVerificationProvider>)providerWithName:(NSString *)providerName
+                                                 configuration:(NSDictionary *)configuration
+                                                secretsProvider:(nullable id)secretsProvider
+                                                          error:(NSError **)error {
     NSString *provider = [self normalizedProviderName:providerName];
     if (provider.length == 0 || [provider isEqualToString:@"none"]) {
         if (error) {
@@ -88,6 +95,60 @@ NSString * const PDSPhoneVerificationProviderErrorDomain = @"com.atproto.pds.pho
         return [[PDSMockPhoneVerificationProvider alloc] init];
     }
 
+    // Built-in providers that require secrets
+    if ([provider isEqualToString:@"twilio"]) {
+        if (!secretsProvider) {
+            if (error) {
+                *error = [NSError errorWithDomain:PDSPhoneVerificationProviderErrorDomain
+                                             code:PDSPhoneVerificationProviderErrorNotConfigured
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Twilio provider requires a secrets provider"}];
+            }
+            return nil;
+        }
+        return [[PDSTwilioPhoneVerificationProvider alloc] initWithSecretsProvider:secretsProvider
+                                                                   configuration:configuration ?: @{}];
+    }
+
+    if ([provider isEqualToString:@"vonage"]) {
+        if (!secretsProvider) {
+            if (error) {
+                *error = [NSError errorWithDomain:PDSPhoneVerificationProviderErrorDomain
+                                             code:PDSPhoneVerificationProviderErrorNotConfigured
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Vonage provider requires a secrets provider"}];
+            }
+            return nil;
+        }
+        return [[PDSVonagePhoneVerificationProvider alloc] initWithSecretsProvider:secretsProvider
+                                                                   configuration:configuration ?: @{}];
+    }
+
+    if ([provider isEqualToString:@"plivo"]) {
+        if (!secretsProvider) {
+            if (error) {
+                *error = [NSError errorWithDomain:PDSPhoneVerificationProviderErrorDomain
+                                             code:PDSPhoneVerificationProviderErrorNotConfigured
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Plivo provider requires a secrets provider"}];
+            }
+            return nil;
+        }
+        return [[PDSPlivoPhoneVerificationProvider alloc] initWithSecretsProvider:secretsProvider
+                                                                  configuration:configuration ?: @{}];
+    }
+
+    if ([provider isEqualToString:@"telegram"]) {
+        if (!secretsProvider) {
+            if (error) {
+                *error = [NSError errorWithDomain:PDSPhoneVerificationProviderErrorDomain
+                                             code:PDSPhoneVerificationProviderErrorNotConfigured
+                                         userInfo:@{NSLocalizedDescriptionKey: @"Telegram Gateway provider requires a secrets provider"}];
+            }
+            return nil;
+        }
+        return [[PDSTelegramGatewayPhoneVerificationProvider alloc] initWithSecretsProvider:secretsProvider
+                                                                             configuration:configuration ?: @{}];
+    }
+
+    // Custom providers registered via registerProviderClass:forName:
     __block Class providerClass = Nil;
     dispatch_sync([self registryQueue], ^{
         providerClass = [self customProviderRegistry][provider];
@@ -115,6 +176,13 @@ NSString * const PDSPhoneVerificationProviderErrorDomain = @"com.atproto.pds.pho
                                  }];
     }
     return nil;
+}
+
++ (nullable id<PDSPhoneVerificationProvider>)providerWithName:(NSString *)providerName error:(NSError **)error {
+    return [self providerWithName:providerName
+                    configuration:nil
+                   secretsProvider:nil
+                             error:error];
 }
 
 @end

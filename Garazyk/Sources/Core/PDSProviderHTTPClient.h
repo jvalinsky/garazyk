@@ -104,12 +104,28 @@ typedef NS_ENUM(NSInteger, PDSProviderHTTPClientErrorCode) {
                               error:(NSError **)error;
 
 /*!
+ @method postFormPath:params:error:
+ @abstract Sends a POST request with form-encoded body.
+ @discussion
+    Some provider APIs (e.g. Vonage Verify) use application/x-www-form-urlencoded
+    instead of JSON. This method URL-encodes the parameters and sets the
+    appropriate Content-Type header.
+ @param path The path component to append to the base URL.
+ @param params The form parameters to URL-encode as the request body.
+ @param error On failure, set to a client or HTTP error.
+ @result The parsed JSON response as a dictionary, or nil on error.
+ */
+- (nullable NSDictionary *)postFormPath:(NSString *)path
+                                 params:(NSDictionary *)params
+                                  error:(NSError **)error;
+
+/*!
  @method getPath:params:error:
  @abstract Sends a GET request with query parameters.
  @param path The path component to append to the base URL.
  @param params Query parameters to include in the URL.
  @param error On failure, set to a client or HTTP error.
- @return The parsed JSON response as a dictionary, or nil on error.
+ @result The parsed JSON response as a dictionary, or nil on error.
  */
 - (nullable NSDictionary *)getPath:(NSString *)path
                             params:(nullable NSDictionary *)params

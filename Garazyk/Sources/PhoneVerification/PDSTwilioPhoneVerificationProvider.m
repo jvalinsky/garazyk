@@ -126,7 +126,7 @@ NSString *const PDSTwilioProviderErrorDomain = @"com.atproto.pds.twilioprovider"
 
 #pragma mark - PDSPhoneVerificationProvider
 
-- (BOOL)requestVerificationForPhoneNumber:(NSString *)phoneNumber error:(NSError **)error {
+- (nullable NSString *)requestVerificationForPhoneNumber:(NSString *)phoneNumber error:(NSError **)error {
     if (!phoneNumber || phoneNumber.length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:PDSTwilioProviderErrorDomain
@@ -135,13 +135,13 @@ NSString *const PDSTwilioProviderErrorDomain = @"com.atproto.pds.twilioprovider"
                                          NSLocalizedDescriptionKey: @"Missing phone number"
                                      }];
         }
-        return NO;
+        return nil;
     }
 
     NSError *initError = nil;
     if (![self ensureInitializedWithError:&initError]) {
         if (error) *error = initError;
-        return NO;
+        return nil;
     }
 
     PDS_LOG_INFO(@"[Twilio] Sending verification to: %@", phoneNumber);
@@ -166,15 +166,20 @@ NSString *const PDSTwilioProviderErrorDomain = @"com.atproto.pds.twilioprovider"
                                              requestError.localizedDescription ?: @"Failed to send verification"
                                      }];
         }
-        return NO;
+        return nil;
     }
 
     NSString *status = response[@"status"];
     PDS_LOG_INFO(@"[Twilio] Verification sent to %@ (status: %@)", phoneNumber, status);
-    return YES;
+    // Twilio does not use session IDs — return empty string on success
+    return @"";
 }
 
 - (BOOL)verifyCode:(NSString *)code forPhoneNumber:(NSString *)phoneNumber error:(NSError **)error {
+    return [self verifyCode:code forPhoneNumber:phoneNumber sessionID:nil error:error];
+}
+
+- (BOOL)verifyCode:(NSString *)code forPhoneNumber:(NSString *)phoneNumber sessionID:(nullable NSString *)sessionID error:(NSError **)error {
     if (!code || code.length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:PDSTwilioProviderErrorDomain

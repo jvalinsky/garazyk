@@ -106,6 +106,39 @@ NSString *const PDSProviderHTTPClientErrorDomain = @"com.atproto.pds.providerhtt
     return [self executeRequestWithRetry:request error:error];
 }
 
+#pragma mark - Form POST
+
+- (nullable NSDictionary *)postFormPath:(NSString *)path
+                                 params:(NSDictionary *)params
+                                  error:(NSError **)error {
+    NSURL *url = [self.baseURL URLByAppendingPathComponent:path];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+    request.HTTPMethod = @"POST";
+    [request setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
+    [request setValue:self.authHeader forHTTPHeaderField:@"Authorization"];
+    request.timeoutInterval = self.timeoutInterval;
+
+    // URL-encode parameters
+    NSMutableArray<NSString *> *parts = [NSMutableArray array];
+    [params enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+        if ([key isKindOfClass:[NSString class]] && [obj isKindOfClass:[NSString class]]) {
+            NSString *encodedKey = [self urlEncode:key];
+            NSString *encodedValue = [self urlEncode:obj];
+            [parts addObject:[NSString stringWithFormat:@"%@=%@", encodedKey, encodedValue]];
+        }
+    }];
+    NSString *formBody = [parts componentsJoinedByString:@"&"];
+    request.HTTPBody = [formBody dataUsingEncoding:NSUTF8StringEncoding];
+
+    return [self executeRequestWithRetry:request error:error];
+}
+
+- (NSString *)urlEncode:(NSString *)string {
+    NSCharacterSet *allowed = [NSCharacterSet characterSetWithCharactersInString:
+        @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~"];
+    return [string stringByAddingPercentEncodingWithAllowedCharacters:allowed];
+}
+
 #pragma mark - GET
 
 - (nullable NSDictionary *)getPath:(NSString *)path

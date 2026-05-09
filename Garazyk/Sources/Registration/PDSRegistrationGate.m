@@ -13,6 +13,9 @@
 #import "Registration/PDSOAuthOnlyRegistrationGate.h"
 #import "App/PDSConfiguration.h"
 #import "Database/Service/ServiceDatabases.h"
+#import "Services/Core/PDSPhoneVerificationProvider.h"
+#import "Email/PDSEnvironmentSecretsProvider.h"
+#import "Debug/PDSLogger.h"
 
 NSString *const PDSRegistrationGateErrorDomain = @"com.atproto.pds.registrationgate";
 
@@ -131,8 +134,28 @@ static NSMutableDictionary<NSString *, Class> *sCustomGateClasses = nil;
 
     // Phone OTP gate
     if (configuration.phoneVerificationRequired) {
+        NSString *providerName = configuration.phoneVerificationProvider ?: @"none";
+        id<PDSPhoneVerificationProvider> phoneProvider = nil;
+
+        if (![providerName isEqualToString:@"none"] && ![providerName isEqualToString:@"mock"]) {
+            PDSEnvironmentSecretsProvider *secretsProvider = [[PDSEnvironmentSecretsProvider alloc] init];
+            NSError *providerError = nil;
+            phoneProvider = [PDSPhoneVerificationProviderFactory providerWithName:providerName
+                                                                   configuration:@{}
+                                                                  secretsProvider:secretsProvider
+                                                                            error:&providerError];
+            if (!phoneProvider) {
+                PDS_LOG_WARN(@"[RegistrationGate] Failed to create phone verification provider '%@': %@",
+                             providerName, providerError.localizedDescription);
+            }
+        } else if ([providerName isEqualToString:@"mock"]) {
+            NSError *providerError = nil;
+            phoneProvider = [PDSPhoneVerificationProviderFactory providerWithName:providerName
+                                                                           error:&providerError];
+        }
+
         PDSPhoneOTPRegistrationGate *phoneGate =
-            [[PDSPhoneOTPRegistrationGate alloc] initWithPhoneVerificationProvider:nil];
+            [[PDSPhoneOTPRegistrationGate alloc] initWithPhoneVerificationProvider:phoneProvider];
         [composite addGate:phoneGate];
     }
 
