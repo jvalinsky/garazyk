@@ -8,6 +8,7 @@
 #import "AppView/Server/AppViewDatabase.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "Network/PDSSafeHTTPClient.h"
 #import "Debug/PDSLogger.h"
 
 NSErrorDomain const AppViewWriteProxyErrorDomain = @"AppViewWriteProxy";
@@ -116,7 +117,7 @@ NSErrorDomain const AppViewWriteProxyErrorDomain = @"AppViewWriteProxy";
                                                              options:0
                                                                error:nil];
 
-    // 6. Execute the proxied request
+    // 6. Execute the proxied request via PDSSafeHTTPClient (SSRF protection)
     NSURL *url = [NSURL URLWithString:pdsURL];
     NSMutableURLRequest *urlRequest = [NSMutableURLRequest requestWithURL:url];
     urlRequest.HTTPMethod = @"POST";
@@ -124,29 +125,49 @@ NSErrorDomain const AppViewWriteProxyErrorDomain = @"AppViewWriteProxy";
     [urlRequest setValue:authHeader forHTTPHeaderField:@"Authorization"];
     urlRequest.HTTPBody = proxyBodyData;
 
-    // TODO: Use PDSSafeHTTPClient for SSRF protection
-    // For now, use NSURLSession
-    dispatch_semaphore_t sema = dispatch_semaphore_create(0);
-    __block NSHTTPURLResponse *urlResponse = nil;
-    __block NSData *responseData = nil;
-    __block NSError *requestError = nil;
+    // Forward DPoP proof if present
+    NSString *dpopHeader = [request headerForKey:@"DPoP"];
+    if (dpopHeader.length > 0) {
+        [urlRequest setValue:dpopHeader forHTTPHeaderField:@"DPoP"];
+    }
 
-    NSURLSessionDataTask *task = [[NSURLSession sharedSession]
-        dataTaskWithRequest:urlRequest
-          completionHandler:^(NSData *data, NSURLResponse *resp, NSError *err) {
-        urlResponse = (NSHTTPURLResponse *)resp;
-        responseData = data;
-        requestError = err;
-        dispatch_semaphore_signal(sema);
-    }];
-    [task resume];
-    dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
+    PDSSafeHTTPClientOptions *safeOptions = [[PDSSafeHTTPClientOptions alloc] init];
+    safeOptions.timeout = 30.0;
+    safeOptions.maxResponseBytes = 256 * 1024; // 256 KB
+    safeOptions.allowHTTP = NO;
+    safeOptions.allowPrivateHosts = NO;
+    safeOptions.followRedirects = NO;
+
+    NSHTTPURLResponse *urlResponse = nil;
+    NSError *requestError = nil;
+    NSData *responseData = [[PDSSafeHTTPClient sharedClient]
+        sendSynchronousRequest:urlRequest
+                       options:safeOptions
+                      response:&urlResponse
+                         error:&requestError];
 
     // 7. Return the PDS response
     if (requestError) {
         PDS_LOG_WARN(@"[WriteProxy] PDS request failed for %@: %@",
                      nsid, requestError.localizedDescription);
-        response.statusCode = 502;
+
+        // Map SSRF errors to 502, other errors to their natural code
+        NSInteger errorCode = 502;
+        if ([requestError.domain isEqualToString:PDSSafeHTTPClientErrorDomain]) {
+            switch (requestError.code) {
+                case PDSSafeHTTPClientErrorInvalidURL:
+                case PDSSafeHTTPClientErrorUnsupportedScheme:
+                    errorCode = 400;
+                    break;
+                case PDSSafeHTTPClientErrorSSRFBlocked:
+                    errorCode = 403;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        response.statusCode = errorCode;
         [response setJsonBody:@{
             @"error": @"UpstreamError",
             @"message": requestError.localizedDescription
