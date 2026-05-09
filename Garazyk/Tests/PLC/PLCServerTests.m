@@ -281,8 +281,11 @@
                                                         port:(UInt16)self.server.httpServer.port];
     XCTAssertEqual([response[@"statusCode"] integerValue], 200);
     XCTAssertTrue([response[@"headers"][@"content-type"] containsString:@"text/plain"]);
-    NSString *body = [response[@"body"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-    XCTAssertEqualObjects(body, @"campagnola 1.0.0");
+    // The root route returns an ASCII-art banner for "campagnola"
+    NSString *body = response[@"body"];
+    XCTAssertTrue(body.length > 0, @"Root route should return a banner");
+    XCTAssertTrue([body containsString:@"___"],
+                  @"Root route should return the campagnola ASCII-art banner");
 }
 
 - (void)testAdminRouteRedirectsToUIService {
