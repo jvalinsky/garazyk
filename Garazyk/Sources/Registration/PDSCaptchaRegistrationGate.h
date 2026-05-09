@@ -1,0 +1,33 @@
+/*!
+ @file PDSCaptchaRegistrationGate.h
+
+ @abstract CAPTCHA registration gate (Turnstile/hCaptcha).
+
+ @discussion
+    Validates that a createAccount request includes a valid CAPTCHA
+    token. Supports Cloudflare Turnstile and hCaptcha verification
+    via server-side siteverify endpoint.
+
+ @copyright Copyright (c) 2025-2026 Jack Valinsky
+ */
+
+#import <Foundation/Foundation.h>
+#import "Registration/PDSRegistrationGate.h"
+
+NS_ASSUME_NONNULL_BEGIN
+
+/*!
+ @class PDSCaptchaRegistrationGate
+
+ @abstract Requires a valid CAPTCHA token for account registration.
+ */
+@interface PDSCaptchaRegistrationGate : NSObject <PDSRegistrationGate>
+
+/*! Initialize with CAPTCHA provider and site/secret keys. */
+- (instancetype)initWithProvider:(NSString *)provider
+                         siteKey:(nullable NSString *)siteKey
+                       secretKey:(nullable NSString *)secretKey;
+
+@end
+
+NS_ASSUME_NONNULL_END

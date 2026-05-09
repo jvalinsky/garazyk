@@ -792,7 +792,10 @@ int main(int argc, char *argv[]) {
       @"UIBackendClientTests",
       @"UIServerRuntimeTests",
       @"UILabAuthTests",
-      @"UILabIntegrationTests"
+      @"UILabIntegrationTests",
+      @"PDSRegistrationGateTests",
+      @"PDSProviderRegistryTests",
+      @"PDSTwilioPhoneVerificationProviderTests"
     ];
 
     SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
