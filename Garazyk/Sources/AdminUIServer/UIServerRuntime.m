@@ -93,6 +93,7 @@ static NSUInteger UISafeLength(id value) {
         return NO;
     }
 
+    [HttpResponse setDefaultServerHeader:@"garazyk-ui/1.0.0"];
     [self registerRoutes];
 
     NSError *startError = nil;

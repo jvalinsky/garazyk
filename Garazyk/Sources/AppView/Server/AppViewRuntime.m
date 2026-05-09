@@ -168,6 +168,7 @@ static AppViewRuntime *_sharedRuntime = nil;
 
     // Build HTTP server for query API + admin
     _httpServer = [HttpServer serverWithPort:(uint16_t)config.httpPort];
+    [HttpResponse setDefaultServerHeader:@"garazyk-appview/1.0.0"];
 
     // Root serves ASCII service banner
     [_httpServer addRoute:@"GET" path:@"/" handler:^(HttpRequest *req, HttpResponse *res) {
