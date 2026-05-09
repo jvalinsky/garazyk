@@ -5,6 +5,7 @@
  */
 
 #import "AppView/Server/Hooks/AppViewWebhookHook.h"
+#import "Network/PDSSafeHTTPClient.h"
 #import "Debug/PDSLogger.h"
 
 @interface AppViewWebhookHook ()
@@ -85,16 +86,22 @@
         request.HTTPBody = body;
     }
 
-    // Fire-and-forget async POST via NSURLSession
-    NSURLSessionDataTask *task = [[NSURLSession sharedSession]
-        dataTaskWithRequest:request
-          completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+    // Use PDSSafeHTTPClient for SSRF protection and GNUstep socket leak fix
+    PDSSafeHTTPClientOptions *options = [[PDSSafeHTTPClientOptions alloc] init];
+    options.timeout = 10.0;
+    options.maxResponseBytes = 0; // Don't need response body
+    options.allowHTTP = YES;       // Webhooks may be internal
+    options.allowPrivateHosts = YES;
+    options.followRedirects = NO;
+
+    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
+                                                             options:options
+                                                          completion:^(NSData *data, NSURLResponse *response, NSError *error) {
         if (error) {
             PDS_LOG_DEBUG(@"[WebhookHook] POST to %@ failed: %@",
                           self.webhookURL, error.localizedDescription);
         }
     }];
-    [task resume];
 }
 
 @end
