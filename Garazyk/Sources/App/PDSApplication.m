@@ -43,11 +43,8 @@
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Debug/PDSLogger.h"
 #import "Email/PDSEmailProvider.h"
-#import "Email/PDSMockEmailProvider.h"
-#import "Email/PDSSMTPEmailProvider.h"
-#import "Email/PDSResendEmailProvider.h"
-#import "Email/PDSKeychainSecretsProvider.h"
-#import "Email/PDSEnvironmentSecretsProvider.h"
+#import "Email/PDSEmailProviderFactory.h"
+#import "Email/PDSSecretsProvider.h"
 #import "Admin/PDSAdminAuth.h"
 
 @interface PDSApplication ()
@@ -399,34 +396,15 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     
     // Initialize Account Service
     id<PDSEmailProvider> emailProvider = nil;
-    if (_configuration) {
-        if ([_configuration.emailProviderType isEqualToString:@"mock"]) {
-            emailProvider = [[PDSMockEmailProvider alloc] init];
-        } else if ([_configuration.emailProviderType isEqualToString:@"smtp"]) {
-            emailProvider = [[PDSSMTPEmailProvider alloc] initWithHost:_configuration.emailSmtpHost ?: @"localhost"
-                                                                  port:_configuration.emailSmtpPort
-                                                              username:_configuration.emailSmtpUsername
-                                                              password:_configuration.emailSmtpPassword
-                                                                useTLS:_configuration.emailSmtpUseTLS];
-            PDS_LOG_WARN(@"SMTP email provider is configured, but SMTP delivery is not implemented. Email sends will fail closed.");
-        } else if ([_configuration.emailProviderType isEqualToString:@"resend"]) {
-            if (_configuration.resendFromAddress.length > 0) {
-                id<PDSSecretsProvider> secretsProvider = nil;
-                NSString *source = _configuration.resendAPIKeySource ?: @"env";
-                if ([source isEqualToString:@"keychain"]) {
-                    secretsProvider = [[PDSKeychainSecretsProvider alloc]
-                        initWithService:_configuration.resendKeychainService ?: @"com.atproto.pds.resend"];
-                } else {
-                    secretsProvider = [[PDSEnvironmentSecretsProvider alloc] init];
-                }
-                emailProvider = [[PDSResendEmailProvider alloc]
-                    initWithSecretsProvider:secretsProvider
-                                fromAddress:_configuration.resendFromAddress
-                                apiEndpoint:_configuration.resendAPIEndpoint];
-                PDS_LOG_INFO(@"Initialized Resend email provider (source: %@, from: %@)", source, _configuration.resendFromAddress);
-            } else {
-                PDS_LOG_WARN(@"Resend email provider requested but no from address configured (set PDS_EMAIL_RESEND_FROM).");
-            }
+    if (_configuration && _configuration.emailProviderType.length > 0 &&
+        ![_configuration.emailProviderType isEqualToString:@"none"]) {
+        NSError *emailError = nil;
+        emailProvider = [PDSEmailProviderFactory providerWithName:_configuration.emailProviderType
+                                                   configuration:_configuration
+                                                  secretsProvider:nil
+                                                            error:&emailError];
+        if (!emailProvider && emailError) {
+            PDS_LOG_WARN(@"Failed to initialize email provider: %@", emailError);
         }
     }
     _emailProvider = emailProvider;
