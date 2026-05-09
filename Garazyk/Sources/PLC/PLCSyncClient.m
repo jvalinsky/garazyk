@@ -4,10 +4,9 @@
 
 NSString * const PLCSyncClientErrorDomain = @"com.atproto.plc.syncclient";
 
-@interface PLCSyncClient () <NSURLSessionTaskDelegate>
+@interface PLCSyncClient ()
 
 @property (nonatomic, copy) NSString *upstreamURL;
-@property (nonatomic, strong) NSURLSession *session;
 @property (nonatomic, strong) HttpRetryPolicy *retryPolicy;
 
 @end
@@ -27,31 +26,19 @@ NSString * const PLCSyncClientErrorDomain = @"com.atproto.plc.syncclient";
         if (!url || url.length == 0) {
             return nil;
         }
-        
+
         if (![url hasPrefix:@"http://"] && ![url hasPrefix:@"https://"]) {
             url = [NSString stringWithFormat:@"https://%@", url];
         }
-        
+
         _upstreamURL = [url copy];
         _timeout = 30.0;
         _maxRetries = 3;
-        
-        NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
-        config.timeoutIntervalForRequest = _timeout;
-        config.timeoutIntervalForResource = _timeout * 2;
-#if !defined(GNUSTEP)
-        config.waitsForConnectivity = YES;
-#endif
-        
-        _session = [NSURLSession sessionWithConfiguration:config delegate:self delegateQueue:nil];
+
         _retryPolicy = [[HttpRetryPolicy alloc] init];
         _syncQueue = dispatch_queue_create("com.atproto.plc.syncclient", DISPATCH_QUEUE_SERIAL);
     }
     return self;
-}
-
-- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task willPerformHTTPRedirection:(NSHTTPURLResponse *)response newRequest:(NSURLRequest *)request completionHandler:(void (^)(NSURLRequest * _Nullable))completionHandler {
-    completionHandler(nil);
 }
 
 - (void)fetchOperationsAfterCursor:(NSInteger)cursor
