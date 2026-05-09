@@ -3,6 +3,10 @@
 #import "AppView/Server/Ingest/AppViewIngestEngine.h"
 #import "AppView/Server/AppViewDatabase.h"
 #import "AppView/Server/AppViewTypes.h"
+#import "AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h"
+#import "AppView/Server/Lexicon/AppViewCustomQueryRegistry.h"
+#import "AppView/Server/Hooks/AppViewIndexHookRegistry.h"
+#import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -14,6 +18,10 @@
 @property (nonatomic, strong) AppViewIngestEngine *ingestEngine;
 @property (nonatomic, strong) AppViewDatabase *database;
 @property (nonatomic, copy, nullable) NSString *adminSecret;
+@property (nonatomic, strong, nullable) ATProtoLexiconRegistry *lexiconRegistry;
+@property (nonatomic, strong, nullable) AppViewIndexHookRegistry *hookRegistry;
+@property (nonatomic, strong, nullable) AppViewCustomQueryRegistry *customQueryRegistry;
+@property (nonatomic, strong, nullable) AppViewLexiconEndpointGenerator *lexiconEndpointGenerator;
 
 @end
 
@@ -116,6 +124,84 @@
                  if (!strongSelf) return;
                  if (![strongSelf validateAuth:request response:response]) return;
                  [strongSelf handleMetricsStats:response];
+             }];
+
+    // --- Lexicon Admin ---
+
+    // GET /admin/lexicons
+    [server addRoute:@"GET"
+                path:@"/admin/lexicons"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 AppViewAdminRoutePack *strongSelf = weakSelf;
+                 if (!strongSelf) return;
+                 if (![strongSelf validateAuth:request response:response]) return;
+                 [strongSelf handleLexiconList:response];
+             }];
+
+    // GET /admin/lexicons/collections
+    [server addRoute:@"GET"
+                path:@"/admin/lexicons/collections"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 AppViewAdminRoutePack *strongSelf = weakSelf;
+                 if (!strongSelf) return;
+                 if (![strongSelf validateAuth:request response:response]) return;
+                 [strongSelf handleIndexedCollections:response];
+             }];
+
+    // --- Hooks Admin ---
+
+    // GET /admin/hooks
+    [server addRoute:@"GET"
+                path:@"/admin/hooks"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 AppViewAdminRoutePack *strongSelf = weakSelf;
+                 if (!strongSelf) return;
+                 if (![strongSelf validateAuth:request response:response]) return;
+                 [strongSelf handleHookList:response];
+             }];
+
+    // GET /admin/hooks/dead-letter
+    [server addRoute:@"GET"
+                path:@"/admin/hooks/dead-letter"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 AppViewAdminRoutePack *strongSelf = weakSelf;
+                 if (!strongSelf) return;
+                 if (![strongSelf validateAuth:request response:response]) return;
+                 [strongSelf handleDeadLetterHooks:request response:response];
+             }];
+
+    // --- Records Admin ---
+
+    // GET /admin/records
+    [server addRoute:@"GET"
+                path:@"/admin/records"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 AppViewAdminRoutePack *strongSelf = weakSelf;
+                 if (!strongSelf) return;
+                 if (![strongSelf validateAuth:request response:response]) return;
+                 [strongSelf handleRecordBrowse:request response:response];
+             }];
+
+    // --- Custom Handlers Admin ---
+
+    // GET /admin/handlers
+    [server addRoute:@"GET"
+                path:@"/admin/handlers"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 AppViewAdminRoutePack *strongSelf = weakSelf;
+                 if (!strongSelf) return;
+                 if (![strongSelf validateAuth:request response:response]) return;
+                 [strongSelf handleCustomHandlerList:response];
+             }];
+
+    // GET /admin/endpoints
+    [server addRoute:@"GET"
+                path:@"/admin/endpoints"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 AppViewAdminRoutePack *strongSelf = weakSelf;
+                 if (!strongSelf) return;
+                 if (![strongSelf validateAuth:request response:response]) return;
+                 [strongSelf handleEndpointList:response];
              }];
 }
 
@@ -302,6 +388,172 @@
     if (self.orchestrator) {
         result[@"queue_depth"] = @(self.orchestrator.queueDepth);
         result[@"active_workers"] = @(self.orchestrator.activeWorkers);
+    }
+
+    response.statusCode = 200;
+    [response setJsonBody:[result copy]];
+}
+
+#pragma mark - Setters
+
+- (void)setLexiconRegistry:(nullable ATProtoLexiconRegistry *)registry {
+    _lexiconRegistry = registry;
+}
+
+- (void)setHookRegistry:(nullable AppViewIndexHookRegistry *)hookRegistry {
+    _hookRegistry = hookRegistry;
+}
+
+- (void)setCustomQueryRegistry:(nullable AppViewCustomQueryRegistry *)customQueryRegistry {
+    _customQueryRegistry = customQueryRegistry;
+}
+
+- (void)setLexiconEndpointGenerator:(nullable AppViewLexiconEndpointGenerator *)generator {
+    _lexiconEndpointGenerator = generator;
+}
+
+#pragma mark - Lexicon Admin Handlers
+
+- (void)handleLexiconList:(HttpResponse *)response {
+    if (!self.lexiconRegistry) {
+        response.statusCode = 200;
+        [response setJsonBody:@{@"nsids": @[], @"count": @(0)}];
+        return;
+    }
+
+    NSArray<NSString *> *nsids = [self.lexiconRegistry loadedNSIDs];
+    response.statusCode = 200;
+    [response setJsonBody:@{
+        @"nsids": nsids ?: @[],
+        @"count": @(nsids.count)
+    }];
+}
+
+- (void)handleIndexedCollections:(HttpResponse *)response {
+    NSError *error = nil;
+    NSArray<NSString *> *collections = [self.database indexedCollectionsWithError:&error];
+    if (error) {
+        response.statusCode = 500;
+        [response setJsonBody:@{@"error": @"InternalError",
+                                @"message": error.localizedDescription ?: @"unknown"}];
+        return;
+    }
+
+    NSMutableArray *result = [NSMutableArray array];
+    for (NSString *collection in collections) {
+        NSInteger count = [self.database recordCountForCollection:collection error:nil];
+        [result addObject:@{
+            @"collection": collection,
+            @"count": @(count)
+        }];
+    }
+
+    response.statusCode = 200;
+    [response setJsonBody:@{@"collections": result}];
+}
+
+#pragma mark - Hooks Admin Handlers
+
+- (void)handleHookList:(HttpResponse *)response {
+    if (!self.hookRegistry) {
+        response.statusCode = 200;
+        [response setJsonBody:@{@"hooks": @[], @"count": @(0)}];
+        return;
+    }
+
+    response.statusCode = 200;
+    [response setJsonBody:@{
+        @"count": @([self.hookRegistry registeredHookCount])
+    }];
+}
+
+- (void)handleDeadLetterHooks:(HttpRequest *)request response:(HttpResponse *)response {
+    NSString *limitStr = [request queryParamForKey:@"limit"] ?: @"25";
+    NSInteger limit = [limitStr integerValue];
+    if (limit <= 0) limit = 25;
+    if (limit > 100) limit = 100;
+
+    NSString *sql = @"SELECT id, hook_id, uri, did, collection, event_type, error_message, created_at "
+                     @"FROM dead_letter_hooks ORDER BY created_at DESC LIMIT ?";
+    NSError *error = nil;
+    NSArray *rows = [self.database executeParameterizedQuery:sql params:@[@(limit)] error:&error];
+    if (error) {
+        response.statusCode = 500;
+        [response setJsonBody:@{@"error": @"InternalError",
+                                @"message": error.localizedDescription ?: @"unknown"}];
+        return;
+    }
+
+    response.statusCode = 200;
+    [response setJsonBody:@{@"entries": rows ?: @[]}];
+}
+
+#pragma mark - Records Admin Handlers
+
+- (void)handleRecordBrowse:(HttpRequest *)request response:(HttpResponse *)response {
+    NSString *collection = [request queryParamForKey:@"collection"];
+    NSString *did = [request queryParamForKey:@"did"];
+    NSString *limitStr = [request queryParamForKey:@"limit"] ?: @"25";
+    NSString *cursor = [request queryParamForKey:@"cursor"];
+
+    NSInteger limit = [limitStr integerValue];
+    if (limit <= 0) limit = 25;
+    if (limit > 100) limit = 100;
+
+    if (!collection || collection.length == 0) {
+        response.statusCode = 400;
+        [response setJsonBody:@{@"error": @"BadRequest",
+                                @"message": @"collection parameter required"}];
+        return;
+    }
+
+    NSError *error = nil;
+    NSDictionary *result = [self.database listRecordsForCollection:collection
+                                                              did:did
+                                                            limit:limit
+                                                           cursor:cursor
+                                                            error:&error];
+    if (error) {
+        response.statusCode = 500;
+        [response setJsonBody:@{@"error": @"InternalError",
+                                @"message": error.localizedDescription ?: @"unknown"}];
+        return;
+    }
+
+    response.statusCode = 200;
+    [response setJsonBody:result ?: @{ @"records": @[] }];
+}
+
+#pragma mark - Custom Handlers Admin Handlers
+
+- (void)handleCustomHandlerList:(HttpResponse *)response {
+    if (!self.customQueryRegistry) {
+        response.statusCode = 200;
+        [response setJsonBody:@{@"handlers": @[], @"count": @(0)}];
+        return;
+    }
+
+    NSArray<NSString *> *nsids = [self.customQueryRegistry registeredNSIDs];
+    response.statusCode = 200;
+    [response setJsonBody:@{
+        @"nsids": nsids ?: @[],
+        @"count": @(nsids.count)
+    }];
+}
+
+- (void)handleEndpointList:(HttpResponse *)response {
+    NSMutableDictionary *result = [NSMutableDictionary dictionary];
+
+    if (self.lexiconEndpointGenerator) {
+        result[@"dynamic_endpoint_count"] = @([self.lexiconEndpointGenerator registeredEndpointCount]);
+    } else {
+        result[@"dynamic_endpoint_count"] = @(0);
+    }
+
+    if (self.customQueryRegistry) {
+        result[@"custom_handler_count"] = @([self.customQueryRegistry registeredNSIDs].count);
+    } else {
+        result[@"custom_handler_count"] = @(0);
     }
 
     response.statusCode = 200;
