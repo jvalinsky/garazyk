@@ -60,7 +60,12 @@
     XCTAssertEqual(signResponse.statusCode, 200);
     NSDictionary *operation = signResponse.jsonBody[@"operation"];
     XCTAssertNotNil(operation);
-    XCTAssertEqualObjects(operation[@"did"], self.did1);
+    // PLC operations don't include "did" — it's derived from the operation content.
+    // Verify the operation contains the required PLC operation fields.
+    XCTAssertNotNil(operation[@"sig"], @"Signed PLC operation must include sig");
+    XCTAssertNotNil(operation[@"type"], @"Signed PLC operation must include type");
+    XCTAssertNotNil(operation[@"rotationKeys"], @"Signed PLC operation must include rotationKeys");
+    XCTAssertNotNil(operation[@"verificationMethods"], @"Signed PLC operation must include verificationMethods");
     NSString *sig = operation[@"sig"];
     XCTAssertNotNil(sig);
     XCTAssertFalse([sig containsString:@"="]);
