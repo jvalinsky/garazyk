@@ -7,6 +7,7 @@ result/
 # Build directories
 build/
 build-*/
+build_data/
 DerivedData/
 node_modules/
 
