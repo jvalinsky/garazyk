@@ -1,0 +1,419 @@
+# objc-jupyter-wasm: Next Steps Plan
+
+## Current State
+
+The browser-smoke milestone is complete. What works:
+- `kernel.wasm`: Freestanding C ABI with JSON request/reply, validated via Node + browser Playwright tests
+- `libobjc2.wasm`: Minimal libobjc2-shaped smoke runtime (stubs for `objc_getClass`, `sel_registerName`, `objc_msgSend`, etc.)
+- `libobjc2-real-subset.wasm`: Pinned GNUstep libobjc2 v2.3 source probe — proves headers compile for WASM
+- JS/TS layer: `ObjcKernel` (BaseKernel subclass) → Worker → `ObjcWasmKernel` (WASM loader) → C ABI
+- JupyterLite extension: `src/index.ts` registers the kernel with JupyterLab via `@jupyterlite/kernel`
+- Nix: 4 derivations, 4 checks, 3 dev shells, `jupyterlite-smoke-site` derivation
+- Build scripts: `scripts/build-all.sh` orchestrates the 3-step build
+
+What doesn't work yet:
+- The kernel echoes code without executing it — no real ObjC evaluation
+- No JupyterLite notebook UI integration — the smoke site is a standalone HTML page
+- No `clang.wasm` — the in-browser compiler layer is a blocker script
+- Demo notebooks are aspirational — they use `NSString`, `NSArray`, `@property` etc. which don't exist
+
+## Architecture Gap Analysis
+
+```
+Current (smoke):
+  Browser → Worker → kernel.wasm (echo) → JSON reply
+
+Target (full):
+  Browser → JupyterLite → ObjcKernel → Worker → kernel.wasm (real eval)
+                                                     ├── libobjc2.wasm (runtime)
+                                                     ├── clang.wasm (compiler)
+                                                     └── Foundation.wasm (framework)
+```
+
+The path from smoke to full has three independent workstreams:
+1. **JupyterLite integration** — get the kernel into the actual notebook UI
+2. **Runtime upgrade** — replace the smoke runtime with real libobjc2
+3. **Compiler layer** — build clang.wasm for in-browser ObjC compilation
+
+These can proceed in parallel. The JupyterLite integration is the highest-impact, lowest-risk next step because it makes the existing smoke kernel visible in the real notebook UI, creating a tight feedback loop for all subsequent work.
+
+---
+
+## Phase A: JupyterLite Notebook Integration (754)
+
+**Goal**: Open `hello.ipynb` in JupyterLite, select the Objective-C kernel, execute a cell, and see the smoke reply in the notebook UI.
+
+**Why first**: This is the smallest slice that demonstrates end-to-end notebook flow. It doesn't require any changes to the WASM ABI — the existing smoke kernel is sufficient. It validates the entire JupyterLite extension packaging path.
+
+### A1. Install JupyterLite dependencies and build the extension
+
+**Files**: `package.json`, `pyproject.toml`, `objc_jupyter_wasm/`
+
+Steps:
+1. `cd objc-jupyter-wasm && npm install` — install `@jupyterlab/application`, `@jupyterlite/kernel`, `@jupyterlab/builder`, `typescript`
+2. `npm run build:lib` — compile `src/index.ts` + `js/objc-kernel.ts` → `lib/`
+3. `npm run build:labextension` — run `jupyter labextension build .` to produce the federated extension
+4. `npm run build:assets` — copy `kernel.wasm` + `libobjc2.wasm` into `objc_jupyter_wasm/labextension/static/kernel/`
+
+**Risk**: The `@jupyterlab/builder` requires a JupyterLab environment. May need `pip install jupyterlab>=4,<5` first.
+
+### A2. Build a JupyterLite site with the Objective-C kernel
+
+**Files**: New `scripts/build-jupyterlite-site.sh`, possibly `jupyterlite_config.py`
+
+Steps:
+1. `pip install jupyterlite-core>=0.4,<0.8`
+2. Create a `jupyterlite_config.py` that:
+   - Adds the `objc-jupyter-wasm` labextension
+   - Includes the `demo/` notebooks as content
+   - Sets the kernelspec for `objective-c`
+3. Run `jupyter lite build` to produce a static site in `dist/`
+4. The site should include the compiled extension, WASM assets, and demo notebooks
+
+**Key insight**: JupyterLite uses `jupyter lite build` to assemble a static site from extensions + content. The `@jupyterlite/kernel` package provides `BaseKernel` which our `ObjcKernel` extends. The extension registers the kernel via `IKernelSpecs` in `src/index.ts`.
+
+### A3. Validate end-to-end notebook flow
+
+Steps:
+1. Serve the built site: `python -m http.server 8080 --directory dist/`
+2. Open `http://localhost:8080/lab` in a browser
+3. Navigate to `demo/hello.ipynb`
+4. Select the Objective-C kernel
+5. Execute the first cell — should see the smoke echo reply
+6. Write a Playwright test that automates this flow
+
+**Acceptance criteria**:
+- JupyterLite Lab UI loads
+- Objective-C kernel appears in kernel selector
+- Cell execution returns smoke output
+- `kernel_info_request` returns correct metadata
+
+### A4. Add Nix derivation for the JupyterLite site
+
+**Files**: `flake.nix`, new `nix/jupyterlite-site.nix`
+
+Steps:
+1. Add a `jupyterlite-site` derivation that:
+   - Installs Python + jupyterlite-core + the objc-jupyter-wasm labextension
+   - Runs `jupyter lite build`
+   - Outputs the static site
+2. Add a Nix check that validates the site contains the kernel extension
+
+### A5. Clean up the smoke-site path
+
+**Files**: `scripts/build-smoke-site.mjs`, `scripts/build-jupyterlite-smoke.sh`, `flake.nix`
+
+The `jupyterlite-smoke-site` derivation and the standalone smoke HTML page are now redundant once the real JupyterLite site works. Options:
+- Keep the smoke site as a CI-fast path (no Python/JupyterLab needed)
+- Remove it once the JupyterLite site builds reliably
+
+**Recommendation**: Keep both. The smoke site is fast (Node-only, no Python) and good for CI. The JupyterLite site is the full experience.
+
+---
+
+## Phase B: Real Objective-C Evaluation (755)
+
+**Goal**: Replace the echo evaluator with real ObjC code execution in the browser.
+
+This is the hardest phase. It requires either:
+- **Path B1**: In-browser compilation (clang.wasm) — compile ObjC source → WASM → execute
+- **Path B2**: Interpreter/REPL approach — interpret ObjC AST without compilation
+- **Path B3**: Hybrid — pre-compile a Foundation subset, interpret user code against it
+
+### B1. clang.wasm — In-Browser Compiler (hard, long-term)
+
+This is the "right" answer but has significant dependencies:
+
+**Prerequisites**:
+- LLVM 22+ (PR #169043 landed in LLVM 22, nixpkgs has LLVM 21)
+- Emscripten 5.0.6+ (bundles LLVM 22)
+- GNUstep libobjc2 ported to WASM/Emscripten
+- wasi-libc or emscripten's libc for standard library support
+
+**Steps**:
+1. **Upgrade LLVM in Nix**: Either overlay LLVM 22 or use Emscripten 5.0.6 (which bundles LLVM 22)
+2. **Port libobjc2 to WASM**: The `libobjc2-real-subset` probe proved headers compile. Now port the actual source files:
+   - Start with `objc/runtime.h` functions: `objc_getClass`, `sel_registerName`, `objc_msgSend`, `class_addMethod`, etc.
+   - Handle platform-specific code: `pthread_mutex_t` → JS atomics, `malloc` → WASM linear memory, `mmap` → no-op
+   - Test with wasmtime first (WASI), then Emscripten (browser)
+3. **Build clang as a library**: Use Emscripten to compile `clang -cc1` (the frontend) to WASM. This is how xeus-clang and Compiler Explorer work. The key is to compile only the frontend, not the full driver.
+4. **Wire the compiler into the kernel**: When a cell is executed:
+   - Write the ObjC source to the virtual filesystem
+   - Call `clang -cc1` to compile it to a WASM module
+   - Load and instantiate the compiled module
+   - Execute the entry point
+   - Capture stdout/stderr via WASI `fd_write`
+5. **State persistence across cells**: The hardest part. Options:
+   - Each cell compiles to a separate WASM module that imports a shared runtime
+   - Maintain a growing WASM module that accumulates definitions
+   - Use an interpreter for the REPL layer and only compile complete `@implementation` blocks
+
+**Estimated effort**: 2-4 weeks of focused work.
+
+### B2. Interpreter Approach (medium, pragmatic)
+
+Instead of compiling ObjC, interpret it:
+
+1. Write a minimal ObjC interpreter in C that can:
+   - Parse `@interface`/`@implementation` declarations
+   - Parse message sends `[obj method:arg]`
+   - Parse `NSLog(...)`, string literals, basic expressions
+   - Maintain a class registry and method dispatch table
+2. Compile the interpreter to WASM (it's just C, no LLVM 22 needed)
+3. The kernel passes user code to the interpreter, which evaluates it against the runtime
+
+**Pros**: No LLVM 22 dependency, no Emscripten complexity, works with current Nix build
+**Cons**: Can only interpret a subset of ObjC, no real Foundation classes
+
+### B3. Full libobjc2 Port + Thin Interpreter (chosen approach)
+
+Port the real GNUstep libobjc2 runtime to WASM, then write a thin interpreter that evaluates ObjC source against it.
+
+**Why this over the minimal interpreter**: The real runtime provides correct method dispatch, class registration, protocol conformance, and ARC support. A thin interpreter on top gives us REPL-like evaluation without needing clang.wasm. The interpreter only needs to parse ObjC syntax and call into the runtime — all the hard runtime semantics come from libobjc2 for free.
+
+#### B3a. Identify and stub platform dependencies
+
+**Files**: `nix/libobjc2-real-subset.nix` → upgrade to `nix/libobjc2-wasm-full.nix`
+
+GNUstep libobjc2 v2.3 has these platform-dependent areas:
+
+| Platform API | WASM replacement | Difficulty |
+|-------------|-----------------|------------|
+| `pthread_mutex_t` | Single-threaded stub (WASM has no threads) | Easy |
+| `pthread_rwlock_t` | Single-threaded stub | Easy |
+| `pthread_key_t` (TLS) | Global variable (single-threaded) | Easy |
+| `mmap`/`mprotect` | `malloc` + alignment | Medium |
+| `sysconf(_SC_NPROCESSORS_ONLN)` | Return 1 | Easy |
+| `__builtin_expect` | No-op macro | Easy |
+| `objc_thread_register` | No-op | Easy |
+| `dlopen`/`dlsym` | Not needed (statically linked) | N/A |
+| Signal handling | No-op (WASM has no signals) | Easy |
+| `assert` | WASM `trap` or abort | Easy |
+
+Steps:
+1. Create a `wasm_compat.h` header with all stubs
+2. Create a `wasm_compat.c` with implementations
+3. Add `-include wasm_compat.h` to the clang flags
+4. Compile libobjc2 source files one by one, fixing errors as they appear
+5. Start with the core files: `runtime.c`, `class.c`, `selector.c`, `method.c`, `msg.c`
+6. Skip: `block_trampolines.c` (blocks need LLVM 22 ObjC codegen), `arc.mm` (ARC needs compiler support), `eh_personality.c` (exception handling needs wasm-exceptions)
+
+#### B3b. Compile libobjc2 to WASM with real method dispatch
+
+**Files**: `nix/libobjc2-wasm-full.nix`, `runtime/` (upgrade)
+
+Steps:
+1. Replace `libobjc2_smoke.c` with the real libobjc2 source files
+2. The Nix derivation compiles each `.c` file with `--target=wasm32-wasi -ffreestanding -nostdlib -I. -include wasm_compat.h`
+3. Link all `.o` files into `libobjc2.a`
+4. Build `libobjc2.wasm` with the real exports:
+   - `objc_getClass`, `objc_lookupClass`, `objc_allocateClassPair`
+   - `sel_registerName`, `sel_getName`
+   - `objc_msgSend`, `objc_msgSend_super`
+   - `class_addMethod`, `class_addIvar`, `class_addProtocol`
+   - `class_copyMethodList`, `class_copyIvarList`, `class_copyProtocolList`
+   - `class_createInstance`, `object_dispose`
+   - `protocol_getName`, `objc_getProtocol`
+5. Validate with `wasm-validate` and a Node smoke test that:
+   - Allocates a class
+   - Adds a method
+   - Sends a message
+   - Gets the result
+
+#### B3c. Write a thin ObjC interpreter
+
+**Files**: New `kernel/objc_interpreter.c`, `kernel/objc_interpreter.h`
+
+The interpreter is a recursive-descent parser that:
+1. Tokenizes ObjC source (identifiers, keywords, literals, operators, brackets)
+2. Recognizes:
+   - `@interface ClassName : SuperClass { ivars } methodDeclarations @end`
+   - `@implementation ClassName methodDefinitions @end`
+   - Message sends: `[target selector:arg1 key2:arg2]`
+   - Variable declarations: `Type *name = expr;`
+   - Assignments: `name = expr;`
+   - `NSLog(@"format", args...)` → captured to ring buffer
+   - Return statements, basic arithmetic, string literals
+3. Evaluates against the real libobjc2 runtime:
+   - `@interface` → `objc_allocateClassPair` + `class_addIvar`
+   - `@implementation` → `class_addMethod` with a C function pointer
+   - Message sends → `objc_msgSend`
+   - `NSLog` → writes to a ring buffer
+4. Serializes results back as JSON for the kernel ABI
+
+The interpreter does NOT need to:
+- Handle preprocessor directives
+- Handle `#import`
+- Handle C structs or unions
+- Handle blocks (requires LLVM 22)
+- Handle ARC (requires compiler support)
+
+#### B3d. Wire the interpreter into the kernel ABI
+
+**Files**: `kernel/objc_runtime_bridge.c`, `nix/kernel-wasm.nix`
+
+Steps:
+1. Add `libobjc2-wasm` back as a `buildInput` in `kernel-wasm.nix`
+2. Link `kernel.wasm` against `libobjc2.a`
+3. In `objc_kernel_execute_json`, replace the echo code with:
+   ```c
+   int eval_result = objc_interpret(parsed_code_buffer, code_length);
+   if (eval_result != 0) {
+       return write_error_json(response_buffer, ...);
+   }
+   // Read ring buffer for NSLog output
+   // Format execute reply with real data
+   ```
+4. The kernel now needs to export the runtime's memory alongside its own — merge memory or use `--import-memory`
+
+---
+
+## Phase C: Foundation Framework & Cross-Cell State (756)
+
+**Goal**: Demo notebooks work as written — `NSString`, `NSArray`, cross-cell variable persistence.
+
+### C1. NSLog capture to IOPub stream
+
+**Files**: `kernel/objc_runtime_bridge.c`, `js/wasm-loader.js`, `js/objc-worker.js`
+
+The kernel ABI's `streams` field already supports this (the smoke kernel returns `streams: [{name: "stdout", text: "..."}]`). The real implementation needs:
+1. A ring buffer in WASM memory where `NSLog` writes
+2. After execution, the kernel reads the ring buffer and includes it in the JSON reply
+3. The worker posts `stream` messages before the `execute_reply`
+
+### C2. Cross-cell state persistence
+
+**Files**: `kernel/objc_runtime_bridge.c`, `runtime/libobjc2_smoke.c`
+
+The kernel's `execution_count` persists across calls. The same pattern needs to work for:
+- Global variables (static storage in WASM memory)
+- Registered classes (the runtime's class table)
+- Allocated objects (heap in WASM linear memory)
+
+Since WASM linear memory persists across calls, this "just works" as long as the runtime doesn't reset state between calls. The current `objc_kernel_init` zeros everything — it should only be called once (on load), not per-cell.
+
+### C3. Exception handling
+
+**Files**: `kernel/objc_runtime_bridge.c`
+
+When the interpreter hits an error (unrecognized selector, nil dereference, etc.):
+1. Catch the error in the interpreter
+2. Format it as a Jupyter error reply: `{status: "error", ename: "NSInvalidArgumentException", evalue: "...", traceback: [...]}`
+3. The kernel already supports this format — the error path is already wired
+
+---
+
+## Phase D: Developer Experience (post-756)
+
+### D1. Code completion with real ObjC knowledge
+
+Replace the static completion list (`@interface`, `NSString`, etc.) with:
+- Runtime class introspection (list registered classes)
+- Selector completion (list registered selectors)
+- Foundation class method completion
+
+### D2. Object inspection
+
+`inspectRequest` currently returns `found: false`. Implement:
+- `inspect NSString` → class documentation
+- `inspect myObject` → ivar list, method list, superclass chain
+- Use the runtime's `class_copyMethodList`, `class_copyIvarList`, etc.
+
+### D3. isCompleteRequest with real ObjC parsing
+
+Replace the `;`/`@end` heuristic with a proper parser that tracks:
+- Open `@interface`/`@implementation` blocks
+- Unclosed braces
+- String literals
+- Preprocessor directives
+
+### D4. Syntax highlighting
+
+Add a CodeMirror mode for Objective-C (the kernel spec already declares `codemirror_mode: "clike"` which gives basic highlighting, but ObjC-specific keywords like `@interface`, `@property`, `NSLog` won't be highlighted).
+
+---
+
+## Phase E: clang.wasm — Full In-Browser Compilation (long-term)
+
+This is the ultimate goal but depends on LLVM 22+ in Nix and a full libobjc2 port.
+
+### E1. Get LLVM 22 into the Nix build
+
+Options:
+1. Overlay LLVM 22 from nixpkgs-unstable once it ships
+2. Use Emscripten 5.0.6 (bundles LLVM 22) for the ObjC path
+3. Build LLVM 22 from source in Nix (expensive, ~2hr build)
+
+### E2. Port libobjc2 to WASM/Emscripten
+
+The `libobjc2-real-subset` probe proved headers compile. Now:
+1. Identify platform-dependent source files (threads, mmap, TLS)
+2. Stub or replace with WASM equivalents:
+   - `pthread_mutex_t` → JS `Atomics.wait`/`notify` or single-threaded stubs
+   - `mmap` → `malloc` + `align`
+   - Thread-local storage → global state (WASM is single-threaded in browser)
+3. Compile the full runtime with Emscripten
+4. Validate with wasmtime (WASI) and in-browser (Emscripten)
+
+### E3. Build clang frontend as WASM
+
+1. Compile `clang -cc1` with Emscripten (frontend only, ~30MB WASM)
+2. Expose a C API: `clang_compile(source, flags, output_callback)`
+3. Wire into the kernel: cell execution → compile → instantiate → run
+
+### E4. Foundation framework
+
+Port GNUstep Foundation (or a subset) to WASM:
+1. `NSString`, `NSArray`, `NSDictionary`, `NSNumber`
+2. `NSObject` root class with `alloc`/`init`/`dealloc`
+3. `NSLog` with WASI `fd_write` capture
+4. Autorelease pool (simplified for single-threaded WASM)
+
+---
+
+## Recommended Execution Order
+
+**Decision**: Phase A (JupyterLite) and Phase B (runtime) in parallel. For the ObjC evaluation path, port the full GNUstep libobjc2 runtime to WASM first, then write a thin interpreter layer on top.
+
+| Priority | Phase | Description | Effort | Dependencies |
+|----------|-------|-------------|--------|-------------|
+| **1a** | A1-A3 | JupyterLite notebook integration | 2-3 days | None |
+| **1b** | B-port | Port full libobjc2 to WASM | 1-2 weeks | None (parallel with A) |
+| **2** | A4-A5 | Nix derivation for JupyterLite site | 1 day | A1-A3 |
+| **3** | B-interp | Thin interpreter on top of real libobjc2 | 3-5 days | B-port |
+| **4** | C1-C3 | NSLog capture, cross-cell state, exceptions | 3-5 days | B-interp |
+| **5** | D1-D3 | Code completion, inspection, isComplete | 3-5 days | B-interp |
+| **6** | E1 | LLVM 22 in Nix | 1-2 weeks | nixpkgs update |
+| **7** | E3-E4 | clang.wasm + Foundation | 2-4 weeks | E1 |
+
+Phases A and B-port proceed in parallel. B-interp depends on B-port. Phase C depends on B-interp. The clang.wasm path (E) is deferred until LLVM 22 is available in nixpkgs.
+
+---
+
+## Key Files to Modify (Phase A)
+
+| File | Change |
+|------|--------|
+| `objc-jupyter-wasm/package.json` | Ensure `@jupyterlite/kernel` version matches JupyterLite |
+| `objc-jupyter-wasm/src/index.ts` | May need URL path fix for WASM assets in JupyterLite |
+| `objc-jupyter-wasm/js/objc-kernel.ts` | Fix `wasmUrl` to use JupyterLite asset path |
+| `objc-jupyter-wasm/js/objc-worker.js` | May need WASM URL resolution fix |
+| `objc-jupyter-wasm/js/wasm-loader.js` | May need to handle JupyterLite's static asset serving |
+| `objc-jupyter-wasm/scripts/build-jupyterlite-site.sh` | New: build a full JupyterLite site |
+| `objc-jupyter-wasm/jupyterlite_config.py` | New: JupyterLite build configuration |
+| `objc-jupyter-wasm/flake.nix` | Add `jupyterlite-site` derivation |
+| `objc-jupyter-wasm/nix/jupyterlite-site.nix` | New: Nix derivation for the full site |
+| `objc-jupyter-wasm/tests/jupyterlite-smoke.mjs` | New: Playwright test for notebook UI |
+
+## Key Files to Modify (Phase B3)
+
+| File | Change |
+|------|--------|
+| `objc-jupyter-wasm/kernel/objc_runtime_bridge.c` | Replace echo evaluator with interpreter call |
+| `objc-jupyter-wasm/kernel/objc_interpreter.c` | New: minimal ObjC interpreter |
+| `objc-jupyter-wasm/kernel/objc_interpreter.h` | New: interpreter API |
+| `objc-jupyter-wasm/runtime/libobjc2_smoke.c` | Replace stubs with real method dispatch |
+| `objc-jupyter-wasm/runtime/include/objc/runtime.h` | Add `objc_msgSend` proper signature, `class_createInstance` |
+| `objc-jupyter-wasm/nix/kernel-wasm.nix` | Add `libobjc2-wasm` back as buildInput, link it |
+| `objc-jupyter-wasm/nix/libobjc2-wasm.nix` | Add new runtime source files |
+| `objc-jupyter-wasm/tests/kernel-smoke.mjs` | Add interpreter tests |

@@ -1,0 +1,25 @@
+# UI Service Split Master Scratchpad
+
+Date: 2026-04-26
+
+## Goal
+
+Split UI and HTMX surfaces out of ATProto service binaries into a dedicated UI
+server, while preserving protocol and metrics behaviors on backend services.
+
+## Decision Nodes
+
+- Goal node:
+- Decision nodes:
+
+## Action Nodes
+
+- Phase 1:
+- Phase 2:
+- Phase 3:
+- Phase 4:
+
+## Outcome
+
+- Outcome node:
+

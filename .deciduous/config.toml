@@ -1,0 +1,9 @@
+# Deciduous Configuration
+# This file controls branch detection and grouping behavior
+
+[branch]
+# Branches considered "main" - nodes on these branches won't trigger feature-branch grouping
+main_branches = ["main", "master"]
+
+# Automatically detect and store git branch when creating nodes
+auto_detect = true

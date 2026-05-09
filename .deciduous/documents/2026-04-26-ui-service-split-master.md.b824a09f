@@ -1,0 +1,34 @@
+# UI Service Split Master Scratchpad
+
+Date: 2026-04-26
+
+## Goal
+
+Split UI and HTMX surfaces out of ATProto service binaries into a dedicated UI
+server, while preserving protocol and metrics behaviors on backend services.
+
+## Decision Nodes
+
+- Goal node: 400
+- Decision nodes:
+  - 401 Use staged cutover for UI split
+  - 402 Remove all service HTML and HTMX UI traces
+  - 403 Enforce ASCII one-line service root response
+  - 404 Track PDS PLC Relay AppView and chat logical indicators
+  - 405 Use XRPC-first backend API policy
+  - 406 Use UI-owned admin auth model
+  - 407 Provide legacy /admin redirects during transition
+  - 408 Use config-driven UI server host and port
+  - 409 Deliver core-first phased parity
+  - 410 Scope v1 to dashboard plus key operations
+
+## Action Nodes
+
+- Phase 1: 411
+- Phase 2: 412
+- Phase 3: 413
+- Phase 4: 414
+
+## Outcome
+
+- Outcome node:

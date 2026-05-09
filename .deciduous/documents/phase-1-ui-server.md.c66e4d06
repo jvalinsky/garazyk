@@ -1,0 +1,17 @@
+# Phase 1 - UI Server
+
+Date: 2026-04-26
+
+## Scope
+
+- New dedicated UI server binary.
+- HTMX shell and partial APIs.
+- Backend adapter clients and service indicator lights.
+
+## Node Links
+
+- Action node:
+- Related decisions:
+
+## Notes
+

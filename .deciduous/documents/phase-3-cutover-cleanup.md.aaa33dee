@@ -1,0 +1,17 @@
+# Phase 3 - Cutover and Cleanup
+
+Date: 2026-04-26
+
+## Scope
+
+- ASCII service roots.
+- Legacy `/admin*` transition behavior.
+- Final cleanup and test/docs alignment.
+
+## Node Links
+
+- Action node:
+- Related decisions:
+
+## Notes
+

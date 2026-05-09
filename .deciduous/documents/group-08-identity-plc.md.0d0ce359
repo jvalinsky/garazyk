@@ -1,0 +1,22 @@
+# Group 08-identity-plc: Identity & PLC
+
+## Directories
+Identity/, PLC/
+
+## Audit Status
+- [ ] Audit complete
+- [ ] Rewrite complete
+
+## File Inventory
+
+| File | Quality | Issues |
+|------|---------|--------|
+| _(populated during audit)_ | | |
+
+## Rewrite Decisions
+
+_(populated during rewrite)_
+
+## Before/After Samples
+
+_(populated during rewrite)_

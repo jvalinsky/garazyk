@@ -1,0 +1,38 @@
+# Documentation Deslop: Phased Deep Rewrite Plan
+
+## Background & Motivation
+The documentation currently contains residues of AI-generated structural tropes and phrases (e.g., "ecosystem", "leverage", "not just X. Y.", and meta-commentary like "In this section"). While much of the prose is well-structured, these tells dilute the impact and technical precision of the content. A deep rewrite is necessary to align the documentation with the strict `deslop` guidelines (directness, rhythm, trust, authenticity, and density).
+
+## Scope & Impact
+This revision will touch multiple files across the `docs/` directory. Because the documentation acts as the source of truth for architecture and development, rewriting must preserve all technical facts while stripping away filler, smoothing out sentence lengths, and enforcing active voice.
+**Impact:** High readabilty and improved trust for new contributors. No code will be affected.
+
+## Proposed Solution
+We will perform a phased deep rewrite of the core documentation modules, focusing on structural pacing, removing rhetorical questions, excising passive voice, and eliminating filler words. We will apply the 10 Core Rules from the `deslop` skill.
+
+## Phased Implementation Plan
+
+### Phase 1: High-Visibility & Core Concepts
+- Rewrite `docs/index.md` and `docs/README.md`.
+- Rewrite `docs/01-getting-started/` (Architecture Overview, Request Lifecycle).
+- Rewrite `docs/02-core-concepts/` (ATProto Basics, IPLD, Cryptography).
+
+### Phase 2: Application Layer & Tutorials
+- Rewrite `docs/03-application-layer/` and `docs/04-network-layer/` focusing on cutting "how we navigate the landscape" phrasing.
+- Perform a targeted deslop on `docs/10-tutorials/` ensuring the tone places the reader "in the room" without pedagogical voice or hand-holding ("Let's break this down").
+
+### Phase 3: Reference & Operational Docs
+- Sweep through `docs/05-database-layer/` through `docs/09-platform-compatibility/`.
+- Clean up `docs/TESTING.md`, `DEPLOYMENT_GUIDE.md`, and other high-level operational documents.
+
+## Verification
+- Run a grep check for remaining banned phrases (`ecosystem`, `leverage`, `seamless`, `robust`, `not just`, `Here's the thing`).
+- Use the 1-10 dimension scoring from the `deslop` guide on revised passages to ensure they hit >35/50.
+- Verify Markdown formatting and links remain valid via visual spot checks.
+
+## Alternatives Considered
+- **Targeted Hitlist:** Replacing words only via regex. Rejected because it does not fix structural rhythm or sentence length issues.
+- **Comprehensive Single Pass:** Editing all files simultaneously. Rejected due to the high volume of text, which could lead to context loss and missed tropes.
+
+## Rollback
+- Revert the markdown file changes via `git checkout docs/` or specific commits if any technical meaning is accidentally altered during the rewrite.

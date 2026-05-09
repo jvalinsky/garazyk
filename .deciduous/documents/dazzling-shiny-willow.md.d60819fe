@@ -1,0 +1,302 @@
+# OAuth2 Overhaul Plan: Concurrency, Scalability, Provider Migration
+
+Three interdependent workstreams for the OAuth2 subsystem, ordered by dependency.
+
+---
+
+## Phase A: Concurrency Fixes (Phase 3 of refactor plan)
+
+### A1. Replace @synchronized(sPendingConsents) with single dispatch queue
+
+**Current state:** 7 `@synchronized(sPendingConsents)` blocks in OAuth2Handler.m, plus `dispatch_sync(sPasskeyChallengeQueue)` for sPasskeyChallenges. Mixed locking model creates deadlock risk if lock order ever reverses.
+
+**Change:** Replace both `sPendingConsents` and `sPasskeyChallenges` with a single serial dispatch queue (`_oauthStateQueue`). This eliminates the cross-locking risk entirely — one queue, one lock order, no deadlock possible.
+
+**Files:**
+- `Auth/OAuth2Handler.m` — Replace all 7 `@synchronized(sPendingConsents)` blocks with `dispatch_sync(self->_oauthStateQueue, ...)`. Replace all `dispatch_sync(sPasskeyChallengeQueue, ...)` with `dispatch_sync(self->_oauthStateQueue, ...)`. Remove `sPasskeyChallengeQueue` static. Remove `sPasskeyChallengeOnceToken`. Convert `sPendingConsents` and `sPasskeyChallenges` to instance variables (see A2).
+
+**Specific block replacements:**
+| Line | Current | Replacement |
+|------|---------|-------------|
+| 1890 | `@synchronized(sPendingConsents) { remove }` | `dispatch_sync(self->_oauthStateQueue, ^{ remove })` |
+| 1965 | `@synchronized(sPendingConsents) { read }` | `dispatch_sync(self->_oauthStateQueue, ^{ read })` |
+| 1981 | `@synchronized(sPendingConsents) { remove }` | `dispatch_sync(self->_oauthStateQueue, ^{ remove })` |
+| 1993 | `@synchronized(sPendingConsents) { remove }` | `dispatch_sync(self->_oauthStateQueue, ^{ remove })` |
+| 2415 | `@synchronized(sPendingConsents) { write + cleanup + capacity }` | `dispatch_sync(self->_oauthStateQueue, ^{ write + cleanup + capacity })` |
+| 3470 | `@synchronized(sPendingConsents) { read count }` | `dispatch_sync(self->_oauthStateQueue, ^{ read count })` |
+| 3477 | `@synchronized(sPendingConsents) { removeAll }` | `dispatch_sync(self->_oauthStateQueue, ^{ removeAll })` |
+| 2111 | `dispatch_sync(sPasskeyChallengeQueue, ^{ write })` | `dispatch_sync(self->_oauthStateQueue, ^{ write })` |
+| 2455 | `dispatch_sync(sPasskeyChallengeQueue, ^{ read+delete })` | `dispatch_sync(self->_oauthStateQueue, ^{ read+delete })` |
+
+**Queue creation** (in `-initWithDatabase:`):
+```objc
+_oauthStateQueue = dispatch_queue_create("com.atproto.oauth2.state", DISPATCH_QUEUE_SERIAL);
+```
+
+### A2. De-static sPendingConsents and sPasskeyChallenges
+
+**Current state:** Both are `static NSMutableDictionary *` — process-global, shared across all OAuth2Handler instances. Prevents test isolation and horizontal scaling.
+
+**Change:** Make them instance variables on OAuth2Handler. Initialize in `-initWithDatabase:`. This is a prerequisite for Phase B (scalability) and makes tests deterministic.
+
+**Files:**
+- `Auth/OAuth2Handler.m` — Move `sPendingConsents` → `_pendingConsents`, `sPasskeyChallenges` → `_passkeyChallenges`
+- `Auth/OAuth2Handler.h` — No change needed (private ivars in .m extension)
+- `Garazyk/Tests/Auth/OAuth2Handler+Testing.h` — Update `pendingConsentCountForTesting` / `clearPendingConsentsForTesting` to use instance access
+
+### A3. Fix OAuth2Server race conditions
+
+**Current state:** `activeSessions` is protected by `sessionQueue` in some methods (`revokeSession:`, `revokeAllSessionsForDid:`) but accessed without protection in others.
+
+**Unprotected access points (all in OAuth2.m):**
+| Method | Line | Access |
+|--------|------|--------|
+| `processRefreshTokenGrant:` | 877 | Iterates `self.activeSessions.allValues` |
+| `processRefreshTokenGrant:` | 893, 907 | Mutates `self.activeSessions` |
+| `processDPoPGrant:` | 916 | Calls `getSessionByAccessToken:` |
+| `getSessionByAccessToken:` | 934 | Iterates `self.activeSessions.allValues` |
+| `createSessionForDID:handle:scope:dpopKeyThumbprint:` | 952 | Writes `self.activeSessions[session.sessionID]` |
+| `refreshAccessToken:scope:dpopJWK:completion:` | 984, 1002 | Iterates and mutates |
+| `processAuthorizationCodeGrant:` | 870 | Calls `createSessionForDID:` then reads `.count` |
+
+**Change:** Wrap all these in `dispatch_sync(self.sessionQueue, ...)`. The `processAuthorizationCodeGrant:` and `processRefreshTokenGrant:` methods need their entire body inside the queue block since they read, check, create, and mutate sessions atomically.
+
+**Important:** `processAuthorizationCodeGrant:` calls `verifyCodeVerifier:` and `verifyPKCEChallenge:` which are pure computation — no shared state. These can stay outside the queue. Only the session dict access needs queue protection.
+
+**Pattern for grant methods:**
+```objc
+- (void)processRefreshTokenGrant:(OAuth2TokenRequest *)request
+                      completion:(OAuth2TokenCompletion)completion {
+    dispatch_sync(self.sessionQueue, ^{
+        Session *existingSession = nil;
+        for (Session *session in self.activeSessions.allValues) {
+            if ([session.refreshToken isEqualToString:request.refreshToken]) {
+                existingSession = session;
+                break;
+            }
+        }
+        if (!existingSession) { /* error */ return; }
+        // ... rest of logic inside queue block ...
+        Session *newSession = [self createSessionForDID:...];
+        [self.activeSessions removeObjectForKey:existingSession.sessionID];
+        completion(newSession, nil);
+    });
+}
+```
+
+### A4. Fix OAuth2Handler direct activeSessions access
+
+**Current state:** `handleRevokeRequest:` and `handleIntrospectRequest:` in OAuth2Handler.m iterate `self.oauthServer.activeSessions` directly, bypassing sessionQueue.
+
+**Change:** Add methods to OAuth2Server that encapsulate the sessionQueue-protected operations:
+
+```objc
+// OAuth2.h — new methods
+- (void)revokeSessionByToken:(NSString *)token
+                    clientID:(NSString *)clientID
+                  completion:(void (^)(BOOL found, NSError *_Nullable error))completion;
+
+- (void)introspectToken:(NSString *)token
+               clientID:(NSString *)clientID
+             completion:(void (^)(NSDictionary *_Nullable introspection, NSError *_Nullable error))completion;
+```
+
+OAuth2Handler calls these instead of iterating activeSessions directly. This keeps the lock discipline inside OAuth2Server where sessionQueue lives.
+
+**Files:**
+- `Auth/OAuth2.h` — Add method declarations
+- `Auth/OAuth2.m` — Implement with sessionQueue protection
+- `Auth/OAuth2Handler.m` — Replace direct activeSessions iteration with new OAuth2Server methods
+
+### A5. Replace remaining safe @synchronized blocks (8 files)
+
+These are independent of the OAuth2 work and can be done in parallel:
+
+| File | Lock Object | Replacement Queue |
+|------|-------------|-----------------|
+| PLCMetrics.m | self.operationCounts etc. | `com.atproto.plc.metrics` |
+| DID.m | self (DIDResolver cache) | `com.atproto.did.resolver` |
+| DID.m | results (batch) | `com.atproto.did.batch` |
+| HandleResolver.m | results / self.requestTimestamps | `com.atproto.handle.resolver` |
+| FirehoseProtocolSession.m | self | `com.atproto.firehose.session` |
+| RelayEventValidator.m | self | `com.atproto.relay.validator` |
+| PDSResendEmailProvider.m | self | `com.atproto.email.resend` |
+| PDSVideoTranscoder.m | self.activeExports | `com.atproto.video.transcoder` |
+| PDSVideoWorker.m | self.processingJobIds | `com.atproto.video.worker` |
+
+**Note:** SubscribeReposHandler (7 blocks, 2 lock objects) is deferred — needs separate audit of _attachedConnections vs self nesting before replacement.
+
+---
+
+## Phase B: Session Persistence & Scalability
+
+### B1. Extend OAuthProviderStorage for sessions
+
+**Current state:** `activeSessions` in OAuth2Server is an in-memory NSMutableDictionary. Sessions are lost on restart. No horizontal scaling possible. The existing `SessionStore`/`PDSSessionStorage` abstraction exists but we're extending `OAuthProviderStorage` instead to keep a single storage protocol for the OAuthProviderServer migration path.
+
+**Change:** Add session management methods to the `OAuthProviderStorage` protocol:
+
+```objc
+#pragma mark - Sessions
+
+- (BOOL)storeSession:(NSDictionary *)sessionData
+            sessionID:(NSString *)sessionID
+                error:(NSError **)error;
+
+- (nullable NSDictionary *)loadSessionByAccessToken:(NSString *)accessToken
+                                              error:(NSError **)error;
+
+- (nullable NSDictionary *)loadSessionByRefreshToken:(NSString *)refreshToken
+                                               error:(NSError **)error;
+
+- (nullable NSDictionary *)loadSessionByID:(NSString *)sessionID
+                                    error:(NSError **)error;
+
+- (BOOL)revokeSessionByID:(NSString *)sessionID
+                    error:(NSError **)error;
+
+- (BOOL)deleteSessionByID:(NSString *)sessionID
+                    error:(NSError **)error;
+
+- (NSArray<NSDictionary *> *)allActiveSessions:(NSError **)error;
+```
+
+Then implement in `PDSAuthStorage`:
+- **In-memory mode** (testing): NSMutableDictionary with serial queue (same pattern as existing PAR/code/refreshToken dicts)
+- **SQLite mode** (production): Port schema from `PDSSQLiteSessionStorage` — sessions table with indexes on access_token, refresh_token, did
+
+**OAuth2Server migration:** Replace `self.activeSessions[...]` with calls to `self.storage` (the `id<OAuthProviderStorage>`). This bridges Phase B and Phase C — OAuth2Server starts using the storage protocol, and when OAuthProviderServer replaces it, the same storage implementation is already in place.
+
+**Steps:**
+1. Add session methods to `OAuthProviderStorage` protocol in `OAuthProviderProtocols.h`
+2. Implement in `PDSAuthStorage` (in-memory + SQLite modes)
+3. Add `id<OAuthProviderStorage> storage` property to `OAuth2Server`
+4. Replace all `self.activeSessions[...]` with `self.storage` calls
+5. Remove `activeSessions` property from OAuth2Server (or deprecate)
+6. Keep `sessionQueue` for atomicity (check-then-mutate operations need queue protection even with thread-safe storage)
+
+**Files:**
+- `Auth/OAuthProvider/OAuthProviderProtocols.h` — Add session methods to protocol
+- `Auth/PDS/PDSAuth.h/.m` — Implement session storage in PDSAuthStorage
+- `Auth/OAuth2.h` — Add storage property, deprecate activeSessions
+- `Auth/OAuth2.m` — Replace all activeSessions usage with storage calls
+- `Auth/OAuth2Handler.m` — Update any remaining activeSessions references
+
+### B2. Move pending consents and passkey challenges to instance storage
+
+**Already done in A2** (de-static). These are short-lived (5-min TTL) and don't need persistence — losing them on restart just means users re-authenticate, which is acceptable. Instance variables are sufficient.
+
+### B3. Make sClientMetadataCache an instance variable
+
+**Current state:** Static NSCache with `dispatch_once` initialization. Shared across all handler instances.
+
+**Change:** Move to instance variable. NSCache is already thread-safe, so no queue needed.
+
+**Files:**
+- `Auth/OAuth2Handler.m` — Move `sClientMetadataCache` → `_clientMetadataCache`
+
+---
+
+## Phase C: OAuthProviderServer Migration
+
+### C1. Complete PDSAuth protocol implementations
+
+**Current gaps:**
+
+| Protocol | Implementation | Status |
+|----------|---------------|--------|
+| OAuthProviderStorage | PDSAuthStorage | Complete (in-memory). SQLite backend added in B1. |
+| OAuthProviderClientRegistry | PDSAuthClientRegistry | **Stub** — returns hardcoded redirect URIs, no real client validation, no private_key_jwt support |
+| OAuthProviderTokenSigner | PDSAuthTokenSigner | Complete |
+| OAuthProviderUserAuthenticator | PDSAuthUserAuthenticator | **Stub** — `authenticateLogin:` returns nil |
+| OAuthProviderDIDResolver | (none) | Not implemented |
+| OAuthProviderHandleResolver | (none) | Not implemented |
+
+**Work items:**
+1. **PDSAuthClientRegistry** — Wire to PDSDatabase for registered client lookup. Add URL discovery (fetch client metadata from HTTPS client_id). Add `client:supportsAuthMethod:` and `clientIDFromJWTAssertion:error:`. Port the 3-tier validation from OAuth2Handler's `validatedClientForClientID:error:`.
+2. **PDSAuthUserAuthenticator** — Wire to PDSAccountService for credential verification. Port the sign-in logic from OAuth2Handler's `handleAuthorizeSignIn:`.
+3. **PDSAuthDIDResolver** — New class wrapping DIDResolver.
+4. **PDSAuthHandleResolver** — New class wrapping HandleResolver.
+
+**Files:**
+- `Auth/PDS/PDSAuth.m` — Complete PDSAuthClientRegistry, PDSAuthUserAuthenticator
+- `Auth/PDS/PDSAuth.h` — Update headers
+- New: `Auth/PDS/PDSAuthDIDResolver.h/.m`
+- New: `Auth/PDS/PDSAuthHandleResolver.h/.m`
+
+### C2. Swap OAuth2Server backend in OAuth2Handler
+
+**Current state:** OAuth2Handler owns HTTP routing, consent UI, passkey flow, HTML templates, AND delegates to OAuth2Server for business logic.
+
+**Change:** Add an `oauthProvider` property to OAuth2Handler alongside the existing `oauthServer`. Feature-flag which backend is used. When the flag is on, OAuth2Handler calls OAuthProviderServer instead of OAuth2Server for token issuance, authorization, PAR, revocation, and introspection.
+
+**Why this approach (not a new OAuthProviderRoutes class):** OAuth2Handler is 3800 lines of HTTP routing, consent UI, passkey flow, and HTML templates. The business logic calls to OAuth2Server are ~200 lines. Swapping those calls to OAuthProviderServer is a small, focused change. Creating a new class would mean duplicating the 3600 lines of HTTP/UI/passkey code that has nothing to do with the server backend.
+
+**Specific dispatch points:**
+| OAuth2Handler method | Current call | OAuthProviderServer equivalent |
+|---------------------|-------------|------------------------------|
+| `handlePARRequest:` | Direct DB + validation | `processPAR:completion:` |
+| `handleAuthorizeConfirm:` | `oauthServer.handleAuthorizationRequest:` | `processAuthorizationRequest:completion:` |
+| `handleTokenRequest:` | `oauthServer.handleTokenRequest:` | `processTokenRequest:completion:` |
+| `handleRevokeRequest:` | New `revokeSessionByToken:` (from A4) | `revokeToken:tokenTypeHint:completion:` |
+| `handleIntrospectRequest:` | New `introspectToken:` (from A4) | `introspectToken:completion:` |
+
+**Files:**
+- `Auth/OAuth2Handler.h` — Add `OAuthProviderServer *oauthProvider` property
+- `Auth/OAuth2Handler.m` — Add conditional dispatch: if `self.oauthProvider` is set, use it; otherwise fall back to `self.oauthServer`
+- `Network/PDSHttpOAuthRoutePack.m` — Create OAuthProviderServer with PDSAuth adapters, set on handler
+
+### C3. Feature flag and gradual rollout
+
+**Flag:** `PDS_USE_OAUTH_PROVIDER` env var (or PDSConfiguration property).
+
+**Rollout stages:**
+1. **Off by default** — OAuth2Server remains the active path. OAuthProviderServer is created but unused.
+2. **Shadow mode** — Both servers process requests. OAuthProviderServer results are logged but not returned. Compare outputs for parity.
+3. **Opt-in** — Set flag to use OAuthProviderServer for real requests.
+4. **Default on** — OAuthProviderServer becomes the default. OAuth2Server kept as fallback.
+5. **Deprecation** — Remove OAuth2Server after one release cycle.
+
+### C4. Delete OAuth2Server
+
+Once OAuthProviderServer is the active path and all tests pass:
+1. Remove `OAuth2Server` class from `OAuth2.h/.m`
+2. Remove `oauthServer` property from `OAuth2Handler`
+3. Remove `activeSessions`, `authorizationCodes`, `sessionQueue`, `authorizationQueue` from the codebase
+4. Clean up `OAuth2.m` to only contain data models (OAuth2AuthorizationRequest, etc.) if they're still used, or delete entirely
+
+---
+
+## Execution Order
+
+```
+A1 → A2 → A3 → A4   (concurrency fixes — sequential, A1+A2 can be one commit)
+A5                     (independent safe replacements — parallel with A3/A4)
+B1 → B2 → B3          (scalability — after A3/A4, since session access must be correct first)
+C1 → C2 → C3          (provider migration — after B1, since storage protocol is extended there)
+C4                     (deletion — after C3 shadow mode validates parity)
+```
+
+**Estimated commits:**
+1. A1+A2: Replace @synchronized + de-static state (OAuth2Handler.m)
+2. A3+A4: Fix OAuth2Server race conditions + add revoke/introspect methods (OAuth2.h/.m, OAuth2Handler.m)
+3. A5: Replace safe @synchronized blocks in 8 files (parallel, can be separate commits)
+4. B1+B2+B3: Extend OAuthProviderStorage for sessions + de-static remaining globals (OAuthProviderProtocols.h, PDSAuth.h/.m, OAuth2.h/.m, OAuth2Handler.m)
+5. C1: Complete PDSAuth protocol implementations (PDSAuth.h/.m, new files)
+6. C2: Wire OAuthProviderServer into OAuth2Handler (OAuth2Handler.h/.m, PDSHttpOAuthRoutePack.m)
+7. C3: Feature flag + shadow mode
+8. C4: Delete OAuth2Server (after validation)
+
+**Critical files to read before each step:**
+- Step 1: OAuth2Handler.m (full), OAuth2Handler+Testing.h
+- Step 2: OAuth2.h, OAuth2.m (full), OAuth2Handler.m (handleRevokeRequest, handleIntrospectRequest)
+- Step 3: Each of the 8+ files individually
+- Step 4: OAuthProviderProtocols.h, PDSAuth.h/.m, Session.m (PDSSQLiteSessionStorage schema), OAuth2.h/.m
+- Step 5: PDSAuth.h/.m, OAuthProviderProtocols.h, OAuthProvider.h/.m, OAuth2Handler.m (validatedClientForClientID, handleAuthorizeSignIn)
+- Step 6: PDSHttpOAuthRoutePack.m, OAuth2Handler.h/.m, PDSConfiguration.h
+- Step 7: PDSConfiguration.h/.m, OAuth2Handler.m
+- Step 8: Full grep for OAuth2Server references
+
+**Test validation after each step:**
+- Run `AllTests` binary — all 2349 tests must pass
+- Specifically: OAuth2Tests, OAuthSessionTests, OAuthDPoPTests, OAuth2IntrospectionTests, OAuth2EndpointTests, OAuthConformanceTests, OAuthPKCETests, OAuth2ATProtoClientTests, OAuthPublicClientTests, OAuth2PreservationTests, OAuthServerMetadataTests, OAuth2ClientMetadataValidationTests, OAuthIntegrationTests

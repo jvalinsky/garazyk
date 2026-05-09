@@ -1,0 +1,41 @@
+# Deep Security Review: Vertical Slices Strategy
+
+## Background & Objective
+Perform a comprehensive security review of the Garazyk Objective-C ATProto codebase. To ensure high confidence and minimal false positives, the audit will be executed in "Deep Vertical Slices," focusing on one security domain at a time. All findings must be rigorously verified using authoritative web searches before claiming a vulnerability. The entire process will be tracked using the `deciduous` decision graph.
+
+## Methodology: Deep Vertical Slices
+For each security domain, we will execute the following cycle:
+1. **Track**: Create a `deciduous` goal for the domain (e.g., "Audit Crypto Security").
+2. **Scan**: Run the specific `objc-security-audit` script or perform manual `web-ui-audit` checklist review.
+3. **Verify (Web Search)**: For each identified risk, perform targeted web searches (e.g., Apple Developer Docs, OWASP, SQLite org, ATProto Spec) to confirm the vulnerability's exact mechanism and the recommended modern mitigation. We will never guess; every claim requires external citation.
+4. **Log**: Record the verified outcome as an action/outcome in `deciduous`.
+
+## Implementation Phases
+
+### Phase 1: Context & Tracking Setup
+- Initialize the root `deciduous` goal: `deciduous add goal "Comprehensive Security Audit" -d "Deep vertical slice review of all security domains with web search verification" -c 90`
+- Link this plan to the root goal: `deciduous doc attach <NODE_ID> plans/security-audit-vertical-slices.md`
+
+### Phase 2: Slice 1 - Cryptography & Auth
+- **Action**: Run `./.agents/skills/objc-security-audit/scripts/scan_crypto.sh . /tmp/audit-crypto`
+- **Verification**: Search for Apple's latest guidelines on `SecRandomCopyBytes`, CommonCrypto deprecations, and ATProto signature requirements.
+- **Tracking**: Log findings and links to official docs as outcomes in `deciduous`.
+
+### Phase 3: Slice 2 - SQLite & Injection
+- **Action**: Run `./.agents/skills/objc-security-audit/scripts/scan_sql_injection.sh . /tmp/audit-sql`
+- **Verification**: Search SQLite documentation for proper statement binding and concurrency limits in WAL mode. Verify Objective-C `sqlite3_` wrappers against known injection vectors.
+- **Tracking**: Log findings to the domain's deciduous goal.
+
+### Phase 4: Slice 3 - Secrets & Log Redaction
+- **Action**: Run `scan_secrets.sh` and `scan_log_redaction.sh`.
+- **Verification**: Cross-reference found patterns with ATProto credential handling specs. Search for macOS secure enclave and keychain best practices.
+- **Tracking**: Document hardcoded secrets or PII leaks in `deciduous`.
+
+### Phase 5: Slice 4 - Web UI & Frontend
+- **Action**: Manually review HTML/JS/CSS in the Admin UI against the `web-ui-audit` checklists.
+- **Verification**: Use web searches to confirm XSS/CSRF payload viability in modern browser contexts (e.g., CSP bypasses, HTMX security posture).
+- **Tracking**: Log frontend vulnerabilities in `deciduous`.
+
+### Phase 6: Synthesis & Remediation Strategy
+- Compile all verified findings into a central `SECURITY_REPORT.md`.
+- Close all `deciduous` goals: `deciduous status <NODE_ID> completed`.

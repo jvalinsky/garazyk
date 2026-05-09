@@ -1,0 +1,92 @@
+# Comprehensive Remediation Plan: Garazyk ATProto PDS
+
+**Goal ID:** 925
+**Objective:** Systematically address all Critical (P0), High (P1), and Medium (P2) findings identified in the comprehensive review (`.scratch/review-comprehensive.md`).
+
+## Methodology & Best Practices
+1. **No Shortcuts:** Every change must include a read of the surrounding code/tests, the application of correct boundary logic, and follow up testing.
+2. **Best Practices:**
+   - **Boundary Enforcement:** Always check the *result* of authentication/authorization, not just the *presence* of headers.
+   - **Zero Trust:** Remote entities (JWT issuers, incoming proxy headers, client inputs) must be cryptographically or structurally verified.
+   - **Strict Schema Adherence:** Code structures must precisely mirror the database schema in use.
+   - **Safe Primitives:** Utilize established cryptographic verification paths (e.g., proper JWKS initialization) rather than rolling ad-hoc checks.
+3. **Evidence-based Implementation:** Do not guess API behaviors. We will always read the source file and relevant ATProto specs before editing.
+4. **Deciduous Tracking:** Every major phase and decision is tracked in the local Deciduous graph. This file is attached to root goal `925`.
+
+---
+
+## Phase 1: Critical Priorities (P0) - Active Exploit Risks
+*These address arbitrary auth bypass, token forgery, protocol-breaking firehose issues, SSRF, and catastrophic schema drift.*
+
+### C1. Ozone Admin Auth Gate Bypass
+- **Target File:** `Garazyk/Sources/Network/XrpcToolsOzonePack.m`
+- **Issue:** Method checks for `Authorization` header presence (`!authHeader`) instead of the parsed `adminDid` result.
+- **Action:**
+  - Read `XrpcToolsOzonePack.m` to identify all endpoints (`12+` instances).
+  - Modify the guard clause to verify the extracted DID is valid and not null.
+  - Extract into a centralized helper `ensureAdminAccess:` if possible to ensure consistency across endpoints.
+
+### C2. Remote-issuer JWTs Unverified
+- **Target File:** `Garazyk/Sources/Auth/Verifier/AuthVerifier.m`
+- **Issue:** Remote JWTs fetch JWKS but bypass the cryptographic signature check.
+- **Action:**
+  - Read `AuthVerifier.m` to trace the remote JWT validation flow.
+  - Instantiate `JWTVerifier` with the returned JWKS payload.
+  - Require `[verifier verifySignature]` == YES before parsing claims.
+
+### C3. Firehose Sequence Numbers Unassigned
+- **Target File:** `Garazyk/Sources/Sync/Firehose/FirehoseProtocolSession.m`
+- **Issue:** `_sequenceNumber` increments but `event.seq = seq;` is never executed before encoding. Breaks replay.
+- **Action:**
+  - Read `encodeCommitEvent:`, `encodeIdentityEvent:`, `encodeAccountEvent:`, and `encodeInfoEvent:`.
+  - Add explicit assignment of the captured `seq` to the event before serialization.
+
+### C4. Client-Controlled `atproto-proxy` SSRF
+- **Target File:** `Garazyk/Sources/Network/XrpcProxyInterceptor.m`
+- **Issue:** Unrestricted client proxying to arbitrary targets.
+- **Action:**
+  - Read `XrpcProxyInterceptor.m`.
+  - Implement a trust boundary check: only honor `atproto-proxy` if the request originates from a trusted internal IP.
+  - Reject absolute URLs from external clients; ensure internal handlers cannot be bypassed.
+
+### C5. AppView Schema Mismatch
+- **Target File:** `Garazyk/Sources/AppView/Server/AppViewRuntime.m`, `AppViewDatabase.m`
+- **Issue:** Services query PDS-style tables that are absent in `AppViewDatabase`.
+- **Action:**
+  - Read both `AppViewRuntime.m` and `AppViewDatabase.m`.
+  - Map missing tables required by `DraftService`, `ContactService`, `NotificationService`, etc.
+  - Re-align schema or route queries correctly.
+
+---
+
+## Phase 2: High Priorities (P1) - Security & Stability
+
+### Architecture & Protocol Integrity
+- **H1. Missing Firehose Events:** Add `FirehoseEventKindAccount` to `FirehoseEventKind` enum. Plumb `#account`, `#sync`, and `#info` dispatch via delegate methods in `Firehose.m`.
+- **H3/H4. Refresh Token Security:** Store refresh tokens server-side with a `token_use = refresh` claim. Reject tokens missing this claim. Add `expires_at > now` checks in `PDSSQLiteSessionRepository.m`.
+- **H5. DPoP Replay Protection:** Pass a concrete `replayChecker` to `verifyProof:...` instead of `nil` in `AuthVerifier.m`.
+- **H10. HTTPS Client IDs:** Enforce strictly HTTPS schemas in `PDSAuthClientRegistry.m` (excepting localhost/loopback).
+
+### Stability & System Limits
+- **H2. WebSocket Heartbeat Epochs:** Standardize time intervals (e.g., `timeIntervalSince1970`) across `WebSocketConnection.m` and `WebSocketProtocolSession.m`.
+- **H7. Large Blob Retrieval:** Implement file-handle streaming in `PDSDiskBlobProvider.m` to bypass the 5MB in-memory cap.
+- **H8/H9. WebSocket Concurrency:** Implement explicit re-entrancy guards in `startReading`. Ensure `closeWithCode:` synchronizes safely on `writeQueue`.
+- **H12. NotificationService Write Fix:** Change `markNotificationsAsReadForActor:` from a read-query to an update-query.
+
+---
+
+## Phase 3: Medium Priorities (P2) - Hardening
+
+1. **Protocol Compliance:**
+   - **M1:** Fix `MST.m` UTF-8 byte offset bugs for non-ASCII keys.
+   - **M2:** Validate DAG-CBOR CID tag-42 markers (`MSTPersistence.m`).
+   - **M3:** Reject unsigned commits and enforce `version == 3` (`RepoCommit.m`).
+   - **M4:** Stricter `ATURI.m` component parsing.
+2. **Security & Cryptography:**
+   - **M5:** Remove <12 byte magic-number bypass (`BlobStorage.m`).
+   - **M7:** Mandate PKCE in legacy OAuth (`OAuthSession.m`).
+   - **M8:** Apply a proper salt to phone numbers in `ContactService.m`.
+   - **M10:** Verify `Sec-WebSocket-Accept` handshake.
+3. **System Hardening:**
+   - **M11, M13, M14:** WebSocket URL cursor, Binary Search over O(n), Auto-prune buffers.
+   - **M15, M16, M17:** WASM serialization (floats, JSON escaping, INT_MIN).
