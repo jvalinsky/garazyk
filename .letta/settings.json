@@ -296,7 +296,14 @@
       "Bash(mkdir -p /Users/jack/Software/garazyk/docs/reviews /Users/jack/Software/garazyk/docs/ops /Users/jack/Software/garazyk/objc-jupyter-wasm/docs/issues)",
       "Bash(cmake --build build --target kaszlak campagnola zuk syrena -j$(sysctl -n hw.ncpu) 2)",
       "Bash(cmake --install build --prefix build 2)",
-      "Bash(deciduous link 1067 1069 -r \"prerequisite\")"
+      "Bash(deciduous link 1067 1069 -r \"prerequisite\")",
+      "Bash(cmake .. 2)",
+      "Bash(make -j8 kaszlak 2)",
+      "Bash(cmake --build . --target kaszlak -j8 2)",
+      "Bash(mkdir -p /Users/jack/Software/garazyk/Garazyk/Tests/PhoneVerification)",
+      "Bash(ssh DEPLOY_HOST \"top -b -n1 | head -30\")",
+      "Bash(deciduous search \"provider\" 2)",
+      "Bash(deciduous graph 2)"
     ]
   }
 }
