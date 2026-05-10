@@ -377,16 +377,53 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     return self;
 }
 
+- (void)setCorsHeaders:(HttpResponse *)response forRequest:(HttpRequest *)request {
+    NSString *origin = [request headerForKey:@"Origin"];
+    if (origin && ([origin hasPrefix:@"http://127.0.0.1"] || [origin hasPrefix:@"http://localhost"])) {
+        [response setHeader:origin forKey:@"Access-Control-Allow-Origin"];
+        [response setHeader:@"true" forKey:@"Access-Control-Allow-Credentials"];
+    } else if (origin) {
+        [response setHeader:origin forKey:@"Access-Control-Allow-Origin"];
+        [response setHeader:@"true" forKey:@"Access-Control-Allow-Credentials"];
+    } else {
+        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+    }
+
+    [response setHeader:@"GET, POST, OPTIONS, HEAD" forKey:@"Access-Control-Allow-Methods"];
+    [response setHeader:@"DPoP, Authorization, Content-Type, *" forKey:@"Access-Control-Allow-Headers"];
+    [response setHeader:@"DPoP-Nonce, WWW-Authenticate" forKey:@"Access-Control-Expose-Headers"];
+    [response setHeader:@"true" forKey:@"Access-Control-Allow-Private-Network"];
+    [response setHeader:@"86400" forKey:@"Access-Control-Max-Age"];
+    [response setHeader:@"Origin" forKey:@"Vary"];
+}
+
 - (void)setupRoutes {
     __weak typeof(self) weakSelf = self;
 
+    // OPTIONS preflight routes for CORS
+    RequestHandler optionsHandler = ^(HttpRequest *req, HttpResponse *resp) {
+        [weakSelf setCorsHeaders:resp forRequest:req];
+        resp.statusCode = HttpStatusOK;
+    };
+    [self.httpServer addRoute:@"OPTIONS" path:@"/" handler:optionsHandler];
+    [self.httpServer addRoute:@"OPTIONS" path:@"/_health" handler:optionsHandler];
+    [self.httpServer addRoute:@"OPTIONS" path:@"/_list" handler:optionsHandler];
+    [self.httpServer addRoute:@"OPTIONS" path:@"/_metrics" handler:optionsHandler];
+    [self.httpServer addRoute:@"OPTIONS" path:@"/export" handler:optionsHandler];
+    [self.httpServer addRoute:@"OPTIONS" path:@"/:did" handler:optionsHandler];
+    [self.httpServer addRoute:@"OPTIONS" path:@"/:did/log" handler:optionsHandler];
+    [self.httpServer addRoute:@"OPTIONS" path:@"/:did/log/last" handler:optionsHandler];
+    [self.httpServer addRoute:@"OPTIONS" path:@"/:did/data" handler:optionsHandler];
+
     [self.httpServer addRoute:@"GET" path:@"/_health" handler:^(HttpRequest *req, HttpResponse *resp) {
+        [weakSelf setCorsHeaders:resp forRequest:req];
         [[PLCMetrics sharedMetrics] recordRequest];
         resp.statusCode = HttpStatusOK;
         [resp setJsonBody:@{@"status": @"ok"}];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/_list" handler:^(HttpRequest *req, HttpResponse *resp) {
+        [weakSelf setCorsHeaders:resp forRequest:req];
         [[PLCMetrics sharedMetrics] recordRequest];
         NSError *error = nil;
         NSArray<NSString *> *dids = [weakSelf.store getAllDIDsWithError:&error];
@@ -401,6 +438,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/_metrics" handler:^(HttpRequest *req, HttpResponse *resp) {
+        [weakSelf setCorsHeaders:resp forRequest:req];
         [[PLCMetrics sharedMetrics] recordRequest];
         NSString *metrics = [[PLCMetrics sharedMetrics] renderMetrics];
         resp.statusCode = HttpStatusOK;
@@ -415,34 +453,41 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/" handler:^(HttpRequest *req, HttpResponse *resp) {
+        [weakSelf setCorsHeaders:resp forRequest:req];
         resp.statusCode = HttpStatusOK;
         resp.contentType = @"text/plain; charset=utf-8";
         [resp setBodyString:@"___                                                _        \n  / (_)                                              | |       \n |      __,   _  _  _     _   __,   __,  _  _    __  | |  __,  \n |     /  |  / |/ |/ |  |/ \\_/  |  /  | / |/ |  /  \\_|/  /  |  \n  \\___/\\_/|_/  |  |  |_/|__/ \\_/|_/\\_/|/  |  |_/\\__/ |__/\\_/|_/\n                       /|            /|                        \n                       \\|            \\| \n"];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/export" handler:^(HttpRequest *req, HttpResponse *resp) {
+        [weakSelf setCorsHeaders:resp forRequest:req];
         [weakSelf handleExport:req response:resp];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/:did/log/last" handler:^(HttpRequest *req, HttpResponse *resp) {
+        [weakSelf setCorsHeaders:resp forRequest:req];
         [weakSelf handleGetLatestLog:req response:resp];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/:did/log" handler:^(HttpRequest *req, HttpResponse *resp) {
+        [weakSelf setCorsHeaders:resp forRequest:req];
         [weakSelf handleGetLog:req response:resp includeNullified:NO includeMetadata:NO];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/:did/data" handler:^(HttpRequest *req, HttpResponse *resp) {
+        [weakSelf setCorsHeaders:resp forRequest:req];
         [weakSelf handleGetData:req response:resp];
     }];
 
     [self.httpServer addRoute:@"POST" path:@"/:did" handler:^(HttpRequest *req, HttpResponse *resp) {
+        [weakSelf setCorsHeaders:resp forRequest:req];
         [[PLCMetrics sharedMetrics] recordRequest];
         [weakSelf handlePostDID:req response:resp];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/:did" handler:^(HttpRequest *req, HttpResponse *resp) {
-        NSString *did = req.pathParameters[@"did"];
+        [weakSelf setCorsHeaders:resp forRequest:req];
+        NSString *did = [req.pathParameters[@"did"] stringByRemovingPercentEncoding];
         if ([did hasPrefix:@"did:plc:"]) {
             [[PLCMetrics sharedMetrics] recordRequest];
             [weakSelf handleGetDID:req response:resp];
@@ -455,7 +500,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
 }
 
 - (void)handleGetDID:(HttpRequest *)req response:(HttpResponse *)resp {
-    NSString *did = req.pathParameters[@"did"];
+    NSString *did = [req.pathParameters[@"did"] stringByRemovingPercentEncoding];
     if (!did) {
         resp.statusCode = HttpStatusBadRequest;
         [resp setJsonBody:@{@"error": @"Missing DID"}];
@@ -494,14 +539,14 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
     
     resp.statusCode = HttpStatusOK;
     [resp setJsonBody:[state toDIDDocument]];
-    resp.contentType = @"application/did+ld+json; charset=utf-8";
+    resp.contentType = @"application/did+json; charset=utf-8";
 }
 
 - (void)handleGetLog:(HttpRequest *)req
            response:(HttpResponse *)resp
   includeNullified:(BOOL)includeNullified
     includeMetadata:(BOOL)includeMetadata {
-    NSString *did = req.pathParameters[@"did"];
+    NSString *did = [req.pathParameters[@"did"] stringByRemovingPercentEncoding];
     if (!did) {
         [[PLCMetrics sharedMetrics] recordError];
         resp.statusCode = HttpStatusBadRequest;
@@ -547,7 +592,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
 }
 
 - (void)handlePostDID:(HttpRequest *)req response:(HttpResponse *)resp {
-    NSString *did = req.pathParameters[@"did"];
+    NSString *did = [req.pathParameters[@"did"] stringByRemovingPercentEncoding];
     if (!did) {
         resp.statusCode = HttpStatusBadRequest;
         [resp setJsonBody:@{@"error": @"Missing DID"}];
@@ -638,7 +683,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
 }
 
 - (void)handleGetLatestLog:(HttpRequest *)req response:(HttpResponse *)resp {
-    NSString *did = req.pathParameters[@"did"];
+    NSString *did = [req.pathParameters[@"did"] stringByRemovingPercentEncoding];
     if (!did) {
         resp.statusCode = HttpStatusBadRequest;
         [resp setJsonBody:@{@"error": @"Missing DID"}];
@@ -667,7 +712,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
 - (void)handleGetData:(HttpRequest *)req response:(HttpResponse *)resp {
     // Per did-method-plc spec, /:did/data returns the current DID state data
     // (operation content without sig/prev/type), plus the did field.
-    NSString *did = req.pathParameters[@"did"];
+    NSString *did = [req.pathParameters[@"did"] stringByRemovingPercentEncoding];
     if (!did) {
         resp.statusCode = HttpStatusBadRequest;
         [resp setJsonBody:@{@"error": @"Missing DID"}];

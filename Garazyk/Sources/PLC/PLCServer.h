@@ -14,6 +14,8 @@
 #import "PLC/PLCStore.h"
 #import "PLC/PLCAuditor.h"
 #import "Network/HttpServer.h"
+#import "Network/HttpRequest.h"
+#import "Network/HttpResponse.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -108,6 +110,21 @@ NS_ASSUME_NONNULL_BEGIN
  @abstract Stops the HTTP server.
  */
 - (void)stop;
+
+/*!
+ @method setCorsHeaders:forRequest:
+
+ @abstract Sets CORS response headers for cross-origin requests.
+
+ @discussion
+    Adds Access-Control-Allow-Origin, Allow-Methods, Allow-Headers,
+    Max-Age, and Vary headers to the response. Called automatically
+    by all PLC route handlers and OPTIONS preflight routes.
+
+ @param response The HTTP response to add CORS headers to.
+ @param request The incoming HTTP request (used to read the Origin header).
+ */
+- (void)setCorsHeaders:(HttpResponse *)response forRequest:(HttpRequest *)request;
 
 @end
 
