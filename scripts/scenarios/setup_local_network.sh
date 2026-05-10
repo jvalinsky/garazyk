@@ -114,6 +114,48 @@ stop_docker_services() {
     "${COMPOSE_CMD[@]}" down -v --remove-orphans 2>/dev/null || true
 }
 
+# Tear down stale garazyk-e2e Docker compose projects from previous runs.
+#
+# Each e2e run gets a unique compose project name (garazyk-e2e-<timestamp>-<pid>).
+# If a previous run crashes or is interrupted, its containers survive and hold
+# the service ports, causing the next run to fail with "port already allocated".
+# This function finds any garazyk-e2e containers bound to our known ports and
+# tears down their entire compose project.
+stop_stale_docker_e2e() {
+    # Collect the ports we need.
+    local needed_ports=("$SERVICE_PORT_PLC" "$SERVICE_PORT_PDS" "$SERVICE_PORT_RELAY" "$SERVICE_PORT_APPVIEW" "8080")
+    if [[ "$WITH_PDS2" == "true" ]]; then
+        needed_ports+=("$SERVICE_PORT_CHAT")
+    fi
+
+    # Find garazyk-e2e containers holding any of our ports.
+    local stale_projects=()
+    for port in "${needed_ports[@]}"; do
+        local container_id
+        container_id=$(docker ps --filter "publish=$port" --filter "name=garazyk-e2e" --format "{{.ID}}" 2>/dev/null || true)
+        if [[ -n "$container_id" ]]; then
+            while read -r cid; do
+                [[ -z "$cid" ]] && continue
+                local project
+                project=$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' "$cid" 2>/dev/null || true)
+                if [[ -n "$project" && "$project" != "$ATPROTO_E2E_COMPOSE_PROJECT" && " ${stale_projects[*]} " != *" $project "* ]]; then
+                    stale_projects+=("$project")
+                fi
+            done <<< "$container_id"
+        fi
+    done
+
+    if (( ${#stale_projects[@]} == 0 )); then
+        return 0
+    fi
+
+    log_warn "Found stale e2e containers holding needed ports: ${stale_projects[*]}"
+    for project in "${stale_projects[@]}"; do
+        log_info "Tearing down stale compose project: $project"
+        docker compose -p "$project" -f "$COMPOSE_DIR/docker-compose.yml" down -v --remove-orphans 2>/dev/null || true
+    done
+}
+
 on_exit() {
     local status=$?
     if [[ "$status" -ne 0 ]]; then
@@ -217,6 +259,7 @@ if [[ "$BINARY_MODE" == "true" ]]; then
 
     # Disable host-specific secure storage so local binary scenarios can run in
     # non-interactive shells and CI without Keychain/biometric prompts.
+    export PDS_RUNNING_TESTS=true
     export PDS_USE_BIOMETRIC_PROTECTION=false
     export PDS_USE_KEYCHAIN=false
     export PDS_MASTER_SECRET="test-master-secret-123"
@@ -322,6 +365,7 @@ if [[ "$WAIT_ONLY" != "true" ]]; then
     if [[ "$WITH_PDS2" == "true" ]]; then
         log_info "Including second PDS (port $SERVICE_PORT_CHAT)"
     fi
+    stop_stale_docker_e2e
     stop_docker_services
     "${COMPOSE_CMD[@]}" up -d
 fi
