@@ -185,6 +185,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
 @property (nonatomic, strong) NSTimer *checkpointTimer;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *lagByRelay;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *backpressureStateByRelay;
 @property (nonatomic, assign) int64_t highestSeenSeq;
 
 - (void)_persistDirtyRepairMarkerForDID:(NSString *)did
@@ -207,6 +208,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     _checkpointIntervalMs  = 5000;
     _isRunning             = NO;
     _lagByRelay            = [NSMutableDictionary dictionary];
+    _backpressureStateByRelay = [NSMutableDictionary dictionary];
     _eventQueue            = dispatch_queue_create("dev.garazyk.appview.ingest.events",
                                                    DISPATCH_QUEUE_SERIAL);
     _checkpointQueue       = dispatch_queue_create("dev.garazyk.appview.ingest.checkpoint",
@@ -274,6 +276,17 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
             } else {
                 conn.lastCheckpointSeq = durableSeq;
             }
+
+            // Check if we can resume a paused relay (hysteresis: resume
+            // when lag drops below half the backpressure threshold).
+            int64_t lag = _highestSeenSeq - conn.lastCheckpointSeq;
+            if (lag < self.maxLagForBackpressure / 2 &&
+                [self.backpressureStateByRelay[conn.relayURL] integerValue] == 1) {
+                [conn.client resumeReading];
+                self.backpressureStateByRelay[conn.relayURL] = @0;
+                PDS_LOG_INFO(@"[AppView Ingest] Backpressure: RESUMING relay %@ (lag=%lld)",
+                             conn.relayURL, (long long)lag);
+            }
         }
     });
 }
@@ -301,6 +314,15 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     return NO;
 }
 
+- (nullable AppViewRelayConnection *)_connectionForRelayURL:(NSString *)relayURL {
+    for (AppViewRelayConnection *conn in _connections) {
+        if ([conn.relayURL isEqualToString:relayURL]) {
+            return conn;
+        }
+    }
+    return nil;
+}
+
 - (void)_timerFired {
     [self flushCheckpoints];
 }
@@ -310,6 +332,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
 // ---------------------------------------------------------------------------
 
 - (void)_handleCommitEvent:(FirehoseCommitEvent *)event fromRelay:(NSString *)relayURL {
+    @autoreleasepool {
     NSString *did = event.repo;
     NSString *rev = event.rev;
     NSString *cid = event.commit ? [event.commit stringValue] : nil;
@@ -322,10 +345,18 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
         return;
     }
 
-    // Backpressure marks the repo dirty and persists a repair marker instead of
-    // advancing past unseen data.
+    // Backpressure: pause the relay instead of dropping events.
+    // TCP backpressure propagates to the relay, which slows or stops sending.
     if ([self _shouldApplyBackpressure:seq fromRelay:relayURL]) {
-        PDS_LOG_WARN(@"[AppView Ingest] Backpressure active, marking repo dirty at seq=%lld from %@", (long long)seq, relayURL);
+        AppViewRelayConnection *conn = [self _connectionForRelayURL:relayURL];
+        if (conn && !conn.client.isReadingPaused) {
+            [conn.client pauseReading];
+            self.backpressureStateByRelay[relayURL] = @1;
+            PDS_LOG_WARN(@"[AppView Ingest] Backpressure: PAUSING relay %@ (lag=%lld)",
+                         relayURL, (long long)(_highestSeenSeq - conn.lastCheckpointSeq));
+        }
+        // Still persist the repair marker — it will be processed
+        // when we resume and catch up via the repair worker.
         [self _persistDirtyRepairMarkerForDID:did seq:seq rev:rev cid:cid relayURL:relayURL reason:@"backpressure"];
         return;
     }
@@ -563,9 +594,11 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     }
 
     [_database markDurableCursor:seq forRelayURL:relayURL];
+    } // @autoreleasepool
 }
 
 - (void)_handleIdentityEvent:(FirehoseIdentityEvent *)event fromRelay:(NSString *)relayURL {
+    @autoreleasepool {
     NSData *dummy = [NSData data];
     NSError *storeError = nil;
     if (![_database appendStoredEventWithType:@"identity"
@@ -601,6 +634,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
         });
     }
     [_database markDurableCursor:event.seq forRelayURL:relayURL];
+    } // @autoreleasepool
 }
 
 - (void)_persistDirtyRepairMarkerForDID:(NSString *)did
