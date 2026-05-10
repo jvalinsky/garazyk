@@ -86,3 +86,21 @@ class XrpcClient:
 
     def wait_for_healthy(self, timeout: int = 30) -> None:
         return self._transport.wait_for_healthy(timeout)
+
+    # ── Common passthroughs ──────────────────────────────────────────
+
+    def xrpc_get(self, method: str, params: Optional[dict] = None,
+                 token: Optional[str] = None) -> dict:
+        return self._transport.get(method, params=params, token=token)
+
+    def xrpc_post(self, method: str, body: Optional[dict] = None,
+                  token: Optional[str] = None) -> dict:
+        return self._transport.post(method, body=body, token=token)
+
+    def http_get(self, path: str, params: Optional[dict] = None,
+                 token: Optional[str] = None) -> dict:
+        return self._transport.http_get(path, params=params, token=token)
+
+    def http_post(self, path: str, body: Optional[dict] = None,
+                  token: Optional[str] = None) -> dict:
+        return self._transport.http_post(path, body=body, token=token)
