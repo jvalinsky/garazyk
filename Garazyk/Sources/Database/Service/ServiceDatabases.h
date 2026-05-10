@@ -45,7 +45,7 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
 
  Usage:
  @code
- PDSServiceDatabases *dbs = [PDSServiceDatabases sharedInstance];
+ PDSServiceDatabases *dbs = [[PDSServiceDatabases alloc] initWithDirectory:@"/var/lib/pds" serviceMaxSize:10 didCacheMaxSize:5 sequencerMaxSize:5];
  PDSDatabaseAccount *account = [dbs getAccountByDid:@"did:plc:..." error:nil];
  @endcode
  */
@@ -65,18 +65,6 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
 
 /*! Policy value for refresh token expiry (seconds). Defaults to 30 days. */
 @property (nonatomic, assign) NSUInteger refreshTokenTTLSeconds;
-
-/*!
- @method sharedInstance
-
- @abstract Get singleton service databases instance.
-
- @discussion Returns a shared instance configured with default pool sizes.
- For custom configuration, use initWithDirectory:serviceMaxSize:didCacheMaxSize:sequencerMaxSize:.
-
- @return Shared PDSServiceDatabases instance.
- */
-+ (instancetype)sharedInstance __attribute__((deprecated("Use initWithDirectory:serviceMaxSize:didCacheMaxSize:sequencerMaxSize: instead")));
 
 /*!
  @method serviceDatabaseWithError:

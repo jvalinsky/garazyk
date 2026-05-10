@@ -54,19 +54,6 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
 + (instancetype)databaseAtURL:(NSURL *)url;
 
 /*!
- @method sharedDatabase
-
- @abstract Returns the shared singleton database instance.
-
- @discussion Deprecated. Use PDSServiceDatabases.serviceDatabaseWithError: instead,
- which returns a queue-serialized, cached connection.
-
- @return The shared PDSDatabase instance.
- */
-+ (instancetype)sharedDatabase __attribute__((deprecated("Use PDSServiceDatabases.serviceDatabaseWithError: instead")));
-
-
-/*!
  @method openWithError:
  
  @abstract Opens the database connection and runs any pending migrations.

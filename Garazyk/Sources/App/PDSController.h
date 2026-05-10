@@ -280,11 +280,6 @@ NS_ASSUME_NONNULL_BEGIN
 // They will be removed in a future version. Please migrate to the new APIs.
 // =============================================================================
 
-/*! @deprecated Use serviceDatabases and userDatabasePool instead. */
-@property(nonatomic, strong, readonly, nullable)
-    id database DEPRECATED_MSG_ATTRIBUTE(
-        "Use serviceDatabases and userDatabasePool instead");
-
 /*! @deprecated Use loginWithHandle:password:error: instead. */
 - (nullable NSDictionary *)createSessionForIdentifier:(NSString *)identifier
                                              password:(NSString *)password
@@ -298,17 +293,6 @@ NS_ASSUME_NONNULL_BEGIN
                                (NSString *)refreshToken
                                                     error:(NSError **)error
     DEPRECATED_MSG_ATTRIBUTE("Use refreshAccessToken:error: instead");
-
-/*! @deprecated Use getRepoContents:since:error: with nil sinceRev instead. */
-- (nullable NSData *)getRepoDataForDid:(NSString *)did
-                                 error:(NSError **)error
-    DEPRECATED_MSG_ATTRIBUTE(
-        "Use getRepoContents:since:error: with nil sinceRev instead");
-
-/*! @deprecated Use getRepoRoot:error: instead. */
-- (nullable NSString *)getRepoHeadForDid:(NSString *)did
-                                   error:(NSError **)error
-    DEPRECATED_MSG_ATTRIBUTE("Use getRepoRoot:error: instead");
 
 /*! @deprecated Use putRecord:rkey:value:forDid:validationMode:error: instead.
  */
@@ -343,17 +327,6 @@ NS_ASSUME_NONNULL_BEGIN
                      error:(NSError **)error
     DEPRECATED_MSG_ATTRIBUTE("Use deleteRecord:rkey:forDid:error: instead");
 
-/*! @deprecated Use putRecord:rkey:value:forDid:validationMode:error: instead.
- */
-- (BOOL)putRecordForDid:(NSString *)did
-             collection:(NSString *)collection
-                   rkey:(NSString *)rkey
-                 record:(NSDictionary *)record
-         validationMode:(PDSValidationMode)mode
-                  error:(NSError **)error
-    DEPRECATED_MSG_ATTRIBUTE(
-        "Use putRecord:rkey:value:forDid:validationMode:error: instead");
-
 /*! @deprecated Use uploadBlob:forDid:mimeType:error: instead (parameter order
  * changed). */
 - (nullable NSDictionary *)uploadBlob:(NSData *)blobData
@@ -368,29 +341,6 @@ NS_ASSUME_NONNULL_BEGIN
                                     error:(NSError **)error
     DEPRECATED_MSG_ATTRIBUTE(
         "Use blobService.getBlobWithCID:did:error: instead");
-
-/*! @deprecated Use blobService.listBlobsForDID:limit:cursor:error: instead. */
-- (nullable NSArray *)listBlobsForDID:(NSString *)did
-                                limit:(NSUInteger)limit
-                               cursor:(nullable NSString *)cursor
-                                error:(NSError **)error
-    DEPRECATED_MSG_ATTRIBUTE(
-        "Use blobService.listBlobsForDID:limit:cursor:error: instead");
-
-/*! @deprecated Use blobService.deleteBlobWithCID:did:error: instead. */
-- (BOOL)deleteBlobWithCID:(NSString *)cid
-                      did:(NSString *)did
-                    error:(NSError **)error
-    DEPRECATED_MSG_ATTRIBUTE(
-        "Use blobService.deleteBlobWithCID:did:error: instead");
-
-/*! @deprecated Use putRecord/deleteRecord in a loop instead. */
-- (nullable NSDictionary *)applyWrites:(NSArray *)writes
-                                  repo:(NSString *)repo
-                              validate:(BOOL)validate
-                            swapCommit:(nullable NSString *)swapCommit
-                                 error:(NSError **)error
-    DEPRECATED_MSG_ATTRIBUTE("Use putRecord/deleteRecord in a loop instead");
 
 /*! @deprecated This is a composite method - use getRepoRoot, accountService,
  * and recordService instead. */

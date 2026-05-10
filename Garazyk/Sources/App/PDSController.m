@@ -110,10 +110,6 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
   return self.httpPort;
 }
 
-- (id)database {
-  return nil;
-}
-
 - (instancetype)initWithApplication:(PDSApplication *)application {
   self = [super init];
   if (self) {
@@ -344,19 +340,6 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
   return [result copy];
 }
 
-- (nullable NSData *)getRepoDataForDid:(NSString *)did error:(NSError **)error {
-  return [self getRepoContents:did since:nil error:error];
-}
-
-- (nullable NSString *)getRepoHeadForDid:(NSString *)did
-                                   error:(NSError **)error {
-  NSDictionary *latest =
-      [_repositoryService getLatestCommitForDid:did error:error];
-  if (!latest)
-    return nil;
-  return latest[@"cid"];
-}
-
 #pragma mark - Record Operations
 
 - (nullable NSDictionary *)getRecord:(NSString *)uri
@@ -492,20 +475,6 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
   return [self deleteRecord:collection rkey:rkey forDid:did error:error];
 }
 
-- (BOOL)putRecordForDid:(NSString *)did
-             collection:(NSString *)collection
-                   rkey:(NSString *)rkey
-                 record:(NSDictionary *)record
-         validationMode:(PDSValidationMode)mode
-                  error:(NSError **)error {
-  return [self putRecord:collection
-                    rkey:rkey
-                   value:record
-                  forDid:did
-          validationMode:mode
-                   error:error];
-}
-
 #pragma mark - Blob Operations
 
 - (nullable NSData *)getBlob:(NSData *)cid
@@ -537,36 +506,6 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
                                       did:(NSString *)did
                                     error:(NSError **)error {
   return [_blobService getBlobWithCID:cid did:did error:error];
-}
-
-- (nullable NSArray *)listBlobsForDID:(NSString *)did
-                                limit:(NSUInteger)limit
-                               cursor:(nullable NSString *)cursor
-                                error:(NSError **)error {
-  return
-      [_blobService listBlobsForDID:did limit:limit cursor:cursor error:error];
-}
-
-- (BOOL)deleteBlobWithCID:(NSString *)cid
-                      did:(NSString *)did
-                    error:(NSError **)error {
-  return [_blobService deleteBlobWithCID:cid did:did error:error];
-}
-
-#pragma mark - Write Operations (for backward compatibility)
-
-- (nullable NSDictionary *)applyWrites:(NSArray *)writes
-                                  repo:(NSString *)repo
-                              validate:(BOOL)validate
-                            swapCommit:(nullable NSString *)swapCommit
-                                 error:(NSError **)error {
-  PDSValidationMode mode =
-      validate ? PDSValidationModeRequired : PDSValidationModeOff;
-  return [_recordService applyWrites:writes
-                              forDid:repo
-                      validationMode:mode
-                          swapCommit:swapCommit
-                               error:error];
 }
 
 #pragma mark - Health & Metrics

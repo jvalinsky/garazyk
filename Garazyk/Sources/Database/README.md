@@ -121,7 +121,7 @@ Three separate SQLite databases for service state:
 
 **Usage**:
 ```objc
-PDSServiceDatabases *serviceDb = [PDSServiceDatabases sharedInstance];
+PDSServiceDatabases *serviceDb = [[PDSServiceDatabases alloc] initWithDirectory:@"/var/lib/pds" serviceMaxSize:10 didCacheMaxSize:5 sequencerMaxSize:5];
 [serviceDb createAccount:account error:&error];
 [serviceDb getAccountByDid:did error:&error];
 [serviceDb cacheDID:did document:doc expiresAt:expires];
