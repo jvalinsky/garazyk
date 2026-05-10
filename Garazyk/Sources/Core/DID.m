@@ -613,7 +613,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
         NSTask *curlTask = [[NSTask alloc] init];
         [curlTask setLaunchPath:@"/usr/bin/curl"];
         [curlTask setArguments:@[
-            @"-s", @"--max-time", @"10",
+            @"-s", @"--noproxy", @"*", @"--max-time", @"10",
             @"-H", @"Accept: application/did+ld+json,application/json",
             urlString
         ]];
