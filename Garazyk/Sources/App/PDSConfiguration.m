@@ -249,12 +249,14 @@ static BOOL PDSConfigRunningUnderTests(void) {
           [self boolFromEnv:@"PDS_USE_BIOMETRIC_PROTECTION"
                     default:_useBiometricProtection];
     }
+    PDS_LOG_INFO_C(PDSLogComponentCore, @"Biometric protection: %@", _useBiometricProtection ? @"ENABLED" : @"DISABLED");
 
     _useKeychain = runningUnderTests ? NO : YES;
     if ([self envVarExists:@"PDS_USE_KEYCHAIN"]) {
       _useKeychain = [self boolFromEnv:@"PDS_USE_KEYCHAIN"
                                default:_useKeychain];
     }
+    PDS_LOG_INFO_C(PDSLogComponentCore, @"Keychain integration: %@", _useKeychain ? @"ENABLED" : @"DISABLED");
 
     _masterSecret = [self resolveEnvOverrideForKey:@"PDS_MASTER_SECRET" default:nil];
 

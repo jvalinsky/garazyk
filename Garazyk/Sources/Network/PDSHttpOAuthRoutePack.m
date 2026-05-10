@@ -12,6 +12,7 @@
 #import "App/PDSConfiguration.h"
 #import "App/PDSController.h"
 #import "Auth/JWT.h"
+#import "Auth/OAuth2.h"
 #import "Auth/OAuth2Handler.h"
 #import "Auth/WebAuthnRegistrationHandler.h"
 #import "Database/PDSDatabase.h"
@@ -45,6 +46,10 @@
   OAuth2Handler *oauthHandler = [[OAuth2Handler alloc] initWithDatabase:db];
   oauthHandler.minter = jwtMinter;
   oauthHandler.dataDirectory = dataDirectory;
+
+  PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+  oauthHandler.oauthServer.issuer = config.issuer;
+
   if (application.accountService) {
     oauthHandler.accountService = application.accountService;
   } else if (controller.accountService) {
@@ -53,7 +58,6 @@
   [oauthHandler registerRoutesWithServer:server];
   PDS_LOG_DEBUG(@"PDSHttpOAuthRoutePack: OAuth routes registered");
 
-  PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
   WebAuthnRegistrationHandler *webauthnHandler =
       [[WebAuthnRegistrationHandler alloc] initWithDatabase:db
                                                 serverOrigin:config.issuer];
