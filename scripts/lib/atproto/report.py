@@ -11,7 +11,9 @@ import os
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional
+from typing import Any, Callable, Optional
+
+from .client import XrpcError
 
 
 class StepStatus(str, Enum):
@@ -50,6 +52,10 @@ class ScenarioResult:
     The runner records start/finish timestamps here, then uses ok/exit_code to
     decide the process status. Skipped steps are reported but do not fail the
     scenario; this supports optional service coverage such as firehose or chat.
+
+    Artifacts are structured JSON blobs (lists of created DIDs, URIs, etc.)
+    that get written into the report for post-run analysis. Each scenario can
+    record artifacts with record_artifact(name, data) after XRPC operations.
     """
 
     scenario_name: str
@@ -57,6 +63,7 @@ class ScenarioResult:
     started_at: Optional[float] = None
     finished_at: Optional[float] = None
     metadata: dict[str, Any] = field(default_factory=dict)
+    _artifacts: dict[str, Any] = field(default_factory=dict)
 
     def start(self) -> None:
         self.started_at = time.time()
@@ -84,6 +91,15 @@ class ScenarioResult:
 
     def step_skipped(self, name: str, detail: str = "", duration_ms: int = 0) -> StepResult:
         return self.step(name, StepStatus.SKIPPED, detail, duration_ms)
+
+    def record_artifact(self, name: str, data: Any) -> None:
+        """Record a structured JSON artifact for post-run analysis.
+
+        Artifacts are included in the JSON report under an ``artifacts`` key.
+        Use this to export lists of created DIDs, URIs, response summaries,
+        or any other data a reviewer may need without re-running.
+        """
+        self._artifacts[name] = data
 
     @property
     def passed(self) -> int:
@@ -152,7 +168,7 @@ class ScenarioResult:
 
     def to_dict(self) -> dict[str, Any]:
         """Return the stable JSON-serializable report structure."""
-        return {
+        d: dict[str, Any] = {
             "scenario": self.scenario_name,
             "started_at": self.started_at,
             "finished_at": self.finished_at,
@@ -171,6 +187,9 @@ class ScenarioResult:
             "ok": self.ok,
             "metadata": self.metadata,
         }
+        if self._artifacts:
+            d["artifacts"] = self._artifacts
+        return d
 
     def to_json(self, indent: int = 2) -> str:
         return json.dumps(self.to_dict(), indent=indent)
@@ -203,3 +222,52 @@ def _status_color(status: StepStatus) -> str:
     elif status == StepStatus.FAILED:
         return "\033[0;31m"
     return "\033[1;33m"
+
+
+def timed_call(
+    result: ScenarioResult,
+    name: str,
+    fn: Callable[[], Any],
+    detail_fn: Optional[Callable[[Any], str]] = None,
+    skip_on_status: Optional[set[int]] = None,
+) -> Any:
+    """Execute a callable, timing it, and record the step as passed or failed.
+
+    ``fn`` is a zero-argument callable (use ``lambda`` or ``functools.partial``
+    to capture arguments). ``detail_fn`` receives the return value and should
+    return a detail string for the report. Returns ``fn``'s return value on
+    success, or ``None`` on XrpcError/AssertionError.
+
+    ``skip_on_status`` — a set of HTTP status codes that cause the step to be
+    recorded as ``SKIP`` rather than ``FAIL``. Use ``{404}`` for AppView-only
+    endpoints that may not be available.
+
+    The elapsed time in milliseconds is recorded in the step for performance
+    analysis. A failed step stores the exception message as its detail.
+
+    Example::
+
+        post = timed_call(
+            result, "Create post",
+            lambda: client.create_record(did, collection, record, token),
+            detail_fn=lambda r: f"uri={r['uri']}",
+        )
+    """
+    start = time.perf_counter()
+    try:
+        data = fn()
+        elapsed = int((time.perf_counter() - start) * 1000)
+        detail = detail_fn(data) if detail_fn else ""
+        result.step_passed(name, detail, elapsed)
+        return data
+    except XrpcError as exc:
+        elapsed = int((time.perf_counter() - start) * 1000)
+        if skip_on_status and exc.status in skip_on_status:
+            result.step_skipped(name, f"AppView endpoint: {exc.body}", elapsed)
+            return None
+        result.step_failed(name, f"status={exc.status} {exc.body}", elapsed)
+        return None
+    except AssertionError as exc:
+        elapsed = int((time.perf_counter() - start) * 1000)
+        result.step_failed(name, str(exc), elapsed)
+        return None
