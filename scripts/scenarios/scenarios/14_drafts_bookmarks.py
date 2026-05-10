@@ -13,11 +13,12 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+_project_root = str(Path(__file__).resolve().parent.parent.parent.parent)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
 
-from lib.client import XrpcClient, XrpcError
-from lib.characters import get_character, PDS1
-from lib.report import ScenarioResult, timed_call
+from scripts.lib.atproto import XrpcClient, get_character, PDS1, ScenarioResult, timed_call
+
 
 
 def _now() -> str:
@@ -42,7 +43,7 @@ def run() -> ScenarioResult:
         char = get_character(name)
         session = timed_call(
             result, f"Create account: {char.name}",
-            lambda c=char: client.create_account(c.handle, c.email, c.password),
+            lambda c=char: client.accounts.create_account(c.handle, c.email, c.password),
             detail_fn=lambda s, n=name: f"did={s['did']}",
         )
         if session:
@@ -50,7 +51,7 @@ def run() -> ScenarioResult:
             char.access_jwt = session["accessJwt"]
             dids.append(session["did"])
             timed_call(result, f"Set profile: {char.name}",
-                       lambda c=char: client.create_record(
+                       lambda c=char: client.records.create_record(
                            c.did, "app.bsky.actor.profile",
                            {"$type": "app.bsky.actor.profile", "displayName": c.name},
                            c.access_jwt),
@@ -73,7 +74,7 @@ def run() -> ScenarioResult:
 
     resp = timed_call(
         result, "Luna creates draft",
-        lambda: client.create_draft(luna_draft_content, luna.access_jwt),
+        lambda: client.drafts.create_draft(luna_draft_content, luna.access_jwt),
         detail_fn=lambda r: f"id={r.get('id') or r.get('draft', {}).get('id', '')}",
         skip_on_status={404},
     )
@@ -85,7 +86,7 @@ def run() -> ScenarioResult:
 
     drafts = timed_call(
         result, "Luna lists drafts",
-        lambda: client.get_drafts(luna.access_jwt),
+        lambda: client.drafts.get_drafts(luna.access_jwt),
         skip_on_status={404},
     )
 
@@ -95,7 +96,7 @@ def run() -> ScenarioResult:
         updated_content["tags"] = ["astronomy", "nebula"]
         timed_call(
             result, "Luna edits draft",
-            lambda: client.update_draft(luna_draft_id, updated_content, luna.access_jwt),
+            lambda: client.drafts.update_draft(luna_draft_id, updated_content, luna.access_jwt),
             detail_fn=lambda r: f"id={luna_draft_id}",
         )
 
@@ -103,7 +104,7 @@ def run() -> ScenarioResult:
     if luna_draft_id:
         post = timed_call(
             result, "Luna publishes post from draft",
-            lambda: client.create_record(
+            lambda: client.records.create_record(
                 luna.did, "app.bsky.feed.post",
                 {"$type": "app.bsky.feed.post",
                  "text": "Just captured the most stunning image of the Orion Nebula! #astronomy",
@@ -117,13 +118,13 @@ def run() -> ScenarioResult:
 
         timed_call(
             result, "Luna deletes draft (cleanup)",
-            lambda: client.delete_draft(luna_draft_id, luna.access_jwt),
+            lambda: client.drafts.delete_draft(luna_draft_id, luna.access_jwt),
             detail_fn=lambda r: f"id={luna_draft_id}",
         )
 
         timed_call(
             result, "Luna verifies 0 drafts",
-            lambda: client.get_drafts(luna.access_jwt),
+            lambda: client.drafts.get_drafts(luna.access_jwt),
             skip_on_status={404},
         )
 
@@ -132,7 +133,7 @@ def run() -> ScenarioResult:
                               "Thoughts on CBOR encoding in distributed systems"]):
         resp = timed_call(
             result, f"Marcus creates draft {i+1}",
-            lambda t=text: client.create_draft({"text": t}, marcus.access_jwt),
+            lambda t=text: client.drafts.create_draft({"text": t}, marcus.access_jwt),
             detail_fn=lambda r, idx=i: f"id={r.get('id') or r.get('draft', {}).get('id', '')}",
         )
         if resp:
@@ -141,27 +142,27 @@ def run() -> ScenarioResult:
 
     drafts = timed_call(
         result, "Marcus lists drafts",
-        lambda: client.get_drafts(marcus.access_jwt),
+        lambda: client.drafts.get_drafts(marcus.access_jwt),
         skip_on_status={404},
     )
 
     if len(marcus_draft_ids) >= 1:
         timed_call(
             result, "Marcus deletes draft",
-            lambda: client.delete_draft(marcus_draft_ids[0], marcus.access_jwt),
+            lambda: client.drafts.delete_draft(marcus_draft_ids[0], marcus.access_jwt),
             detail_fn=lambda r: f"id={marcus_draft_ids[0]}",
         )
 
     timed_call(
         result, "Marcus verifies draft count",
-        lambda: client.get_drafts(marcus.access_jwt),
+        lambda: client.drafts.get_drafts(marcus.access_jwt),
         skip_on_status={404},
     )
 
     if luna_draft_id:
         timed_call(
             result, "Reject update with bad draft id",
-            lambda: client.update_draft("nonexistent-id", {"text": "x"}, luna.access_jwt),
+            lambda: client.drafts.update_draft("nonexistent-id", {"text": "x"}, luna.access_jwt),
             skip_on_status={404},
         )
 
@@ -169,28 +170,28 @@ def run() -> ScenarioResult:
     if luna_post_uri:
         timed_call(
             result, "Quiet bookmarks Luna's post",
-            lambda: client.xrpc_post("app.bsky.bookmark.createBookmark",
+            lambda: client.raw.xrpc_post("app.bsky.bookmark.createBookmark",
                                      {"uri": luna_post_uri}, token=quiet.access_jwt),
             detail_fn=lambda r: f"uri={luna_post_uri}",
         )
 
         timed_call(
             result, "Quiet lists bookmarks",
-            lambda: client.xrpc_get("app.bsky.bookmark.getBookmarks",
+            lambda: client.raw.xrpc_get("app.bsky.bookmark.getBookmarks",
                                     {"limit": 50}, token=quiet.access_jwt),
             skip_on_status={404},
         )
 
         timed_call(
             result, "Quiet deletes bookmark",
-            lambda: client.xrpc_post("app.bsky.bookmark.deleteBookmark",
+            lambda: client.raw.xrpc_post("app.bsky.bookmark.deleteBookmark",
                                      {"uri": luna_post_uri}, token=quiet.access_jwt),
             detail_fn=lambda r: f"uri={luna_post_uri}",
         )
 
         timed_call(
             result, "Quiet verifies 0 bookmarks",
-            lambda: client.xrpc_get("app.bsky.bookmark.getBookmarks",
+            lambda: client.raw.xrpc_get("app.bsky.bookmark.getBookmarks",
                                     {"limit": 50}, token=quiet.access_jwt),
             skip_on_status={404},
         )

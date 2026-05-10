@@ -9,7 +9,7 @@ fixtures, reporting, seeding, and service configuration.
 from .transport import XrpcError
 from .client import XrpcClient
 from .assertions import assert_success, assert_contains, assert_status, assert_error, assert_xrpc_raises
-from .characters import Character, CHARACTERS, get_character, get_characters_by_role, get_characters_by_pds, reset_characters
+from .characters import Character, CHARACTERS, get_character, get_characters_by_role, get_characters_by_pds, reset_characters, PDS1, PDS2
 from .report import ScenarioResult, StepResult, StepStatus, timed_call
 from .types import Session, RecordRef, Profile
 from .seed import (
@@ -69,6 +69,8 @@ __all__ = [
     "get_characters_by_role",
     "get_characters_by_pds",
     "reset_characters",
+    "PDS1",
+    "PDS2",
     # Report
     "ScenarioResult",
     "StepResult",

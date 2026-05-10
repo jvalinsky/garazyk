@@ -12,11 +12,12 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+_project_root = str(Path(__file__).resolve().parent.parent.parent.parent)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
 
-from lib.client import XrpcClient
-from lib.characters import get_character, PDS1
-from lib.report import ScenarioResult, timed_call
+from scripts.lib.atproto import XrpcClient, get_character, PDS1, ScenarioResult, timed_call
+
 
 
 def run() -> ScenarioResult:
@@ -37,7 +38,7 @@ def run() -> ScenarioResult:
         char = get_character(name)
         session = timed_call(
             result, f"Create account: {char.name}",
-            lambda c=char: client.create_account(c.handle, c.email, c.password),
+            lambda c=char: client.accounts.create_account(c.handle, c.email, c.password),
             detail_fn=lambda s, n=name: f"did={s['did']}",
         )
         if session:
@@ -61,7 +62,7 @@ def run() -> ScenarioResult:
         # ── Start phone verification ────────────────────────────────
         timed_call(
             result, "Luna starts phone verification",
-            lambda: client.start_phone_verification("+15551234567", luna.access_jwt),
+            lambda: client.contact.start_phone_verification("+15551234567", luna.access_jwt),
             detail_fn=lambda r: f"verificationId={r.get('verificationId', '')}",
             skip_on_status={404},
         )
@@ -69,7 +70,7 @@ def run() -> ScenarioResult:
         # ── Verify phone ────────────────────────────────────────────
         timed_call(
             result, "Luna verifies phone code",
-            lambda: client.verify_phone("+15551234567", "123456", luna.access_jwt),
+            lambda: client.contact.verify_phone("+15551234567", "123456", luna.access_jwt),
             detail_fn=lambda r: f"got_token={bool(r.get('token', ''))}",
             skip_on_status={404},
         )
@@ -77,7 +78,7 @@ def run() -> ScenarioResult:
         # ── Import contacts ─────────────────────────────────────────
         timed_call(
             result, "Luna imports contacts",
-            lambda: client.import_contacts(
+            lambda: client.contact.import_contacts(
                 ["+15551111111", "+15552222222", "+15553333333"],
                 "test-import-token", luna.access_jwt,
             ),
@@ -88,7 +89,7 @@ def run() -> ScenarioResult:
         # ── Get contact matches ─────────────────────────────────────
         timed_call(
             result, "Luna gets contact matches",
-            lambda: client.get_contact_matches(luna.access_jwt),
+            lambda: client.contact.get_contact_matches(luna.access_jwt),
             detail_fn=lambda r: f"matches={len(r if isinstance(r, list) else r.get('matches', []))}",
             skip_on_status={404},
         )
@@ -96,7 +97,7 @@ def run() -> ScenarioResult:
         # ── Get sync status ─────────────────────────────────────────
         timed_call(
             result, "Luna gets sync status",
-            lambda: client.get_contact_sync_status(luna.access_jwt),
+            lambda: client.contact.get_contact_sync_status(luna.access_jwt),
             detail_fn=lambda r: f"keys={list(r.keys())}",
             skip_on_status={404},
         )
@@ -104,7 +105,7 @@ def run() -> ScenarioResult:
         # ── Remove contact data ─────────────────────────────────────
         timed_call(
             result, "Luna removes contact data",
-            lambda: client.remove_contact_data(luna.access_jwt),
+            lambda: client.contact.remove_contact_data(luna.access_jwt),
             skip_on_status={404},
         )
     else:
@@ -119,7 +120,7 @@ def run() -> ScenarioResult:
     # ── Get age assurance config ────────────────────────────────────
     timed_call(
         result, "Get age assurance config",
-        lambda: client.get_age_assurance_config(),
+        lambda: client.age_assurance.get_age_assurance_config(),
         detail_fn=lambda r: f"keys={list(r.keys())}",
         skip_on_status={404},
     )
@@ -128,7 +129,7 @@ def run() -> ScenarioResult:
     if marcus.access_jwt:
         timed_call(
             result, "Marcus begins age assurance",
-            lambda: client.begin_age_assurance(
+            lambda: client.age_assurance.begin_age_assurance(
                 email=marcus.email, language="en",
                 country_code="US", region_code="CA",
                 token=marcus.access_jwt,
@@ -143,7 +144,7 @@ def run() -> ScenarioResult:
     if marcus.access_jwt:
         timed_call(
             result, "Marcus age assurance state",
-            lambda: client.get_age_assurance_state(
+            lambda: client.age_assurance.get_age_assurance_state(
                 country_code="US", region_code="CA",
                 token=marcus.access_jwt,
             ),

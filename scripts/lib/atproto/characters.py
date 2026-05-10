@@ -46,35 +46,6 @@ class Character:
         return f"Character({self.name!r}, {self.handle!r}, did={self.did!r})"
 
 
-# ── Run ID: short hex suffix for unique handles per process ────────
-
-_RUN_ID: str = os.environ.get(
-    "ATPROTO_SCENARIO_RUN_ID",
-    format(int(time.time() * 100) % 0xFFFF, "04x"),
-)
-
-
-def _unique_handle(base_handle: str) -> str:
-    """Append the run ID before the TLD to make handles unique per run.
-
-    E.g. "luna.test" -> "luna-a3f2.test"
-         "nova.second.test" -> "nova-a3f2.second.test"
-    """
-    parts = base_handle.rsplit(".", 1)
-    if len(parts) == 2:
-        return f"{parts[0]}-{_RUN_ID}.{parts[1]}"
-    return f"{base_handle}-{_RUN_ID}"
-
-
-def _unique_email(base_email: str) -> str:
-    """Append the run ID to the local part of the email.
-
-    E.g. "luna@test.com" -> "luna-a3f2@test.com"
-    """
-    local, domain = base_email.split("@", 1)
-    return f"{local}-{_RUN_ID}@{domain}"
-
-
 # ── PDS endpoints ──────────────────────────────────────────────────
 
 PDS1 = "http://localhost:2583"

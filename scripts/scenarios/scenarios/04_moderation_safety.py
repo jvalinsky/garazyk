@@ -1,7 +1,7 @@
 """Scenario 4: "Trollface Strikes" — Moderation & Safety
 
 Trollface posts spam and harasses Luna. Luna reports the post.
-Admin Sentinel reviews the report. Mod Justice applies a label via Ozone.
+Admin Sentinel reviews the report. Mod Justice applies a takedown via Ozone.
 Admin takes down Trollface's account. Trollface's content becomes
 inaccessible.
 
@@ -15,16 +15,13 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+_project_root = str(Path(__file__).resolve().parent.parent.parent.parent)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
 
-from lib.client import XrpcClient, XrpcError
-from lib.characters import get_character, PDS1
-from lib.assertions import assert_success, assert_contains, assert_xrpc_raises
-from lib.report import ScenarioResult, StepStatus
+from scripts.lib.atproto import XrpcClient, get_character, PDS1, ScenarioResult, timed_call
 
-# Admin password used by setup_local_network.sh when starting the PDS in
-# binary mode (see PDS_ADMIN_PASSWORD export there). Tests obtain the admin
-# bearer via POST /admin/login.
+
 _DEFAULT_ADMIN_PASSWORD = "test-admin-password"
 
 
@@ -38,26 +35,20 @@ def run() -> ScenarioResult:
 
     client = XrpcClient(PDS1)
 
-    # Wait for server
-    try:
-        client.wait_for_healthy(timeout=30)
-        result.step_passed("Server health check")
-    except RuntimeError as exc:
-        result.step_failed("Server health check", str(exc))
+    timed_call(result, "Server health check",
+               lambda: client.wait_for_healthy(timeout=30))
+    if result.failed > 0:
         result.finish()
         return result
 
-    # ── Create accounts ──────────────────────────────────────────────
     char_names = ["luna", "troll", "admin", "mod"]
     for name in char_names:
         char = get_character(name)
-        try:
-            session = client.create_account(char.handle, char.email, char.password)
-            char.did = session["did"]
-            char.access_jwt = session["accessJwt"]
-            result.step_passed(f"Create account: {char.name}", f"did={char.did}")
-        except XrpcError as exc:
-            result.step_failed(f"Create account: {char.name}", str(exc))
+        timed_call(
+            result, f"Create account: {char.name}",
+            lambda c=char: client.accounts.create_account(c.handle, c.email, c.password),
+            detail_fn=lambda s, n=name: f"did={s['did']}",
+        )
 
     luna = get_character("luna")
     troll = get_character("troll")
@@ -69,243 +60,155 @@ def run() -> ScenarioResult:
         result.finish()
         return result
 
-    # ── Obtain admin bearer via /admin/login ─────────────────────────
     admin_password = os.environ.get("PDS_ADMIN_PASSWORD", _DEFAULT_ADMIN_PASSWORD)
-    admin_token = None
-    try:
-        admin_token = client.admin_login(admin_password)
-        result.step_passed("Admin login", "obtained admin bearer")
-    except XrpcError as exc:
-        result.step_failed("Admin login", str(exc))
+    admin_token = timed_call(
+        result, "Admin login",
+        lambda: client.accounts.admin_login(admin_password),
+        detail_fn=lambda t: "obtained admin bearer",
+    )
 
-    # ── Set up profiles ──────────────────────────────────────────────
     for name in char_names:
         char = get_character(name)
-        try:
-            client.create_record(
-                char.did,
-                "app.bsky.actor.profile",
-                {"$type": "app.bsky.actor.profile", "displayName": char.name, "description": char.persona},
-                char.access_jwt,
-            )
-        except XrpcError:
-            pass
-
-    # ── Luna posts something nice ────────────────────────────────────
-    luna_post = None
-    try:
-        luna_post = client.create_record(
-            luna.did,
-            "app.bsky.feed.post",
-            {
-                "$type": "app.bsky.feed.post",
-                "text": "Beautiful night for stargazing! The Milky Way is visible tonight. ✨",
-                "createdAt": _now(),
-            },
-            luna.access_jwt,
+        timed_call(
+            result, f"Set profile: {char.name}",
+            lambda c=char: client.records.create_record(
+                c.did, "app.bsky.actor.profile",
+                {"$type": "app.bsky.actor.profile", "displayName": c.name, "description": c.persona},
+                c.access_jwt),
         )
-        result.step_passed("Luna posts stargazing content")
-    except XrpcError as exc:
-        result.step_failed("Luna posts stargazing content", str(exc))
 
-    # ── Trollface posts spam ─────────────────────────────────────────
-    troll_spam = None
-    try:
-        troll_spam = client.create_record(
-            troll.did,
-            "app.bsky.feed.post",
-            {
-                "$type": "app.bsky.feed.post",
-                "text": "BUY CRYPTO NOW!!! FREE MONEY!!! CLICK HERE!!! 🚨🚨🚨",
-                "createdAt": _now(),
-            },
-            troll.access_jwt,
-        )
-        result.step_passed("Trollface posts spam")
-    except XrpcError as exc:
-        result.step_failed("Trollface posts spam", str(exc))
+    luna_post = timed_call(
+        result, "Luna posts stargazing content",
+        lambda: client.records.create_record(
+            luna.did, "app.bsky.feed.post",
+            {"$type": "app.bsky.feed.post", "text": "Beautiful night for stargazing! The Milky Way is visible tonight.",
+             "createdAt": _now()},
+            luna.access_jwt),
+    )
 
-    # ── Trollface posts harassment targeting Luna ────────────────────
+    troll_spam = timed_call(
+        result, "Trollface posts spam",
+        lambda: client.records.create_record(
+            troll.did, "app.bsky.feed.post",
+            {"$type": "app.bsky.feed.post", "text": "BUY CRYPTO NOW!!! FREE MONEY!!! CLICK HERE!!!",
+             "createdAt": _now()},
+            troll.access_jwt),
+    )
+
     troll_harass = None
     if luna_post:
-        try:
-            troll_harass = client.create_record(
-                troll.did,
-                "app.bsky.feed.post",
-                {
-                    "$type": "app.bsky.feed.post",
-                    "text": "Your stargazing is stupid and nobody cares. Get a life, loser!",
-                    "createdAt": _now(),
-                    "reply": {
-                        "root": {"uri": luna_post["uri"], "cid": luna_post["cid"]},
-                        "parent": {"uri": luna_post["uri"], "cid": luna_post["cid"]},
-                    },
-                },
-                troll.access_jwt,
-            )
-            result.step_passed("Trollface harasses Luna")
-        except XrpcError as exc:
-            result.step_failed("Trollface harasses Luna", str(exc))
+        troll_harass = timed_call(
+            result, "Trollface harasses Luna",
+            lambda: client.records.create_record(
+                troll.did, "app.bsky.feed.post",
+                {"$type": "app.bsky.feed.post",
+                 "text": "Your stargazing is stupid and nobody cares. Get a life, loser!",
+                 "createdAt": _now(),
+                 "reply": {"root": {"uri": luna_post["uri"], "cid": luna_post["cid"]},
+                           "parent": {"uri": luna_post["uri"], "cid": luna_post["cid"]}}},
+                troll.access_jwt),
+        )
 
-    # ── Luna reports the harassment ──────────────────────────────────
-    report_id = None
     if troll_harass:
-        try:
-            report = client.create_report(
+        timed_call(
+            result, "Luna reports harassment",
+            lambda: client.admin.create_report(
                 reason_type="com.atproto.moderation.defs#reasonRude",
-                subject={
-                    "$type": "com.atproto.repo.strongRef",
-                    "uri": troll_harass["uri"],
-                    "cid": troll_harass["cid"],
-                },
+                subject={"$type": "com.atproto.repo.strongRef",
+                         "uri": troll_harass["uri"], "cid": troll_harass["cid"]},
                 reason="Targeted harassment and personal attacks",
-                token=luna.access_jwt,
-            )
-            report_id = report.get("id")
-            result.step_passed("Luna reports harassment", f"report_id={report_id}")
-        except XrpcError as exc:
-            result.step_failed("Luna reports harassment", str(exc))
+                token=luna.access_jwt),
+            detail_fn=lambda r: f"report_id={r.get('id')}",
+        )
     else:
         result.step_failed("Luna reports harassment", "No harassment post to report")
 
-    # ── Luna also reports the spam ───────────────────────────────────
     if troll_spam:
-        try:
-            spam_report = client.create_report(
+        timed_call(
+            result, "Luna reports spam",
+            lambda: client.admin.create_report(
                 reason_type="com.atproto.moderation.defs#reasonSpam",
-                subject={
-                    "$type": "com.atproto.repo.strongRef",
-                    "uri": troll_spam["uri"],
-                    "cid": troll_spam["cid"],
-                },
+                subject={"$type": "com.atproto.repo.strongRef",
+                         "uri": troll_spam["uri"], "cid": troll_spam["cid"]},
                 reason="Spam content — crypto scam",
-                token=luna.access_jwt,
-            )
-            result.step_passed("Luna reports spam", f"report_id={spam_report.get('id')}")
-        except XrpcError as exc:
-            result.step_failed("Luna reports spam", str(exc))
+                token=luna.access_jwt),
+            detail_fn=lambda r: f"report_id={r.get('id')}",
+        )
 
-    # ── Admin checks subject status ─────────────────────────────────
     if admin_token:
-        try:
-            status = client.get_subject_status(troll.did, admin_token)
-            result.step_passed("Admin checks Trollface status", f"status={status}")
-        except XrpcError as exc:
-            result.step_failed("Admin checks Trollface status", str(exc))
+        timed_call(
+            result, "Admin checks Trollface status",
+            lambda: client.admin.get_subject_status(troll.did, admin_token),
+            detail_fn=lambda s: f"status={s}",
+        )
     else:
         result.step_failed("Admin checks Trollface status", "No admin token")
 
-    # ── Mod reviews reports via Ozone ────────────────────────────────
-    # Upstream Ozone replaced queryReports with queryEvents filtered by the
-    # modEventReport type — use that.
     if admin_token:
-        try:
-            events = client.xrpc_get(
+        timed_call(
+            result, "Mod queries reports via Ozone",
+            lambda: client.raw.xrpc_get(
                 "tools.ozone.moderation.queryEvents",
-                {
-                    "types": "tools.ozone.moderation.defs#modEventReport",
-                    "subject": troll.did,
-                },
-                token=admin_token,
-            )
-            event_list = events.get("events", [])
-            result.step_passed("Mod queries reports via Ozone", f"count={len(event_list)}")
-        except XrpcError as exc:
-            result.step_failed("Mod queries reports via Ozone", str(exc))
+                {"types": "tools.ozone.moderation.defs#modEventReport", "subject": troll.did},
+                token=admin_token),
+            detail_fn=lambda e: f"count={len(e.get('events', []))}",
+        )
     else:
         result.step_failed("Mod queries reports via Ozone", "No admin token")
 
-    # ── Mod applies takedown via Ozone ───────────────────────────────
     if troll_harass and admin_token:
-        try:
-            client.xrpc_post(
+        timed_call(
+            result, "Mod applies takedown via Ozone",
+            lambda: client.raw.xrpc_post(
                 "tools.ozone.moderation.emitEvent",
-                {
-                    "event": {
-                        "$type": "tools.ozone.moderation.defs#modEventTakedown",
-                        "comment": "Harassment and spam — takedown applied by Mod Justice",
-                    },
-                    "subject": {
-                        "$type": "com.atproto.admin.defs#repoRef",
-                        "did": troll.did,
-                    },
-                    "createdBy": mod.did,
-                },
-                token=admin_token,
-            )
-            result.step_passed("Mod applies takedown via Ozone")
-        except XrpcError as exc:
-            result.step_failed("Mod applies takedown via Ozone", str(exc))
+                {"event": {"$type": "tools.ozone.moderation.defs#modEventTakedown",
+                           "comment": "Harassment and spam — takedown applied by Mod Justice"},
+                 "subject": {"$type": "com.atproto.admin.defs#repoRef", "did": troll.did},
+                 "createdBy": mod.did},
+                token=admin_token),
+        )
 
-    # ── Admin applies takedown on the account ───────────────────────
     if admin_token:
-        try:
-            client.update_subject_status(
+        timed_call(
+            result, "Admin applies takedown on Trollface",
+            lambda: client.admin.update_subject_status(
                 subject={"$type": "com.atproto.admin.defs#repoRef", "did": troll.did},
                 takedown={"applied": True, "ref": "takedown-harassment-spam"},
-                token=admin_token,
-            )
-            result.step_passed("Admin applies takedown on Trollface")
-        except XrpcError as exc:
-            result.step_failed("Admin applies takedown on Trollface", str(exc))
+                token=admin_token),
+        )
     else:
         result.step_failed("Admin applies takedown on Trollface", "No admin token")
 
-    # ── Verify labels ────────────────────────────────────────────────
     if admin_token:
-        try:
-            labels = client.get_labels(
+        timed_call(
+            result, "Labels query",
+            lambda: client.admin.get_labels(
                 [troll_harass["uri"]] if troll_harass else [],
-                token=admin_token,
-            )
-            result.step_passed("Labels query", f"labels={labels}")
-        except XrpcError as exc:
-            result.step_failed("Labels query", str(exc))
+                token=admin_token),
+            detail_fn=lambda l: f"labels={l}",
+        )
     else:
         result.step_failed("Labels query", "No admin token")
 
-    # ── Verify taken-down content is inaccessible ────────────────────
     if troll_harass:
-        try:
-            client.get_record(
-                troll.did,
-                "app.bsky.feed.post",
-                troll_harass["uri"].split("/")[-1],
-            )
-            result.step_failed(
-                "Taken-down content is inaccessible",
-                "getRecord returned 200 for taken-down account",
-            )
-        except XrpcError as exc:
-            if exc.status == 410 and isinstance(exc.body, dict) and \
-                    exc.body.get("error") == "AccountTakedown":
-                result.step_passed(
-                    "Taken-down content is inaccessible",
-                    "410 AccountTakedown",
-                )
-            else:
-                result.step_failed(
-                    "Taken-down content is inaccessible",
-                    f"unexpected error: status={exc.status} body={exc.body!r}",
-                )
+        err = timed_call(
+            result, "Taken-down content is inaccessible",
+            lambda: client.records.get_record(
+                troll.did, "app.bsky.feed.post", troll_harass["uri"].split("/")[-1]),
+            expect_failure="AccountTakedown",
+        )
     else:
         result.step_failed("Taken-down content check", "No harassment post to verify")
 
-    # ── Admin posts community notice ──────────────────────────────────
-    try:
-        client.create_record(
-            admin.did,
-            "app.bsky.feed.post",
-            {
-                "$type": "app.bsky.feed.post",
-                "text": "We've taken action against a spam/harassment account. Stay safe, everyone! 🛡️",
-                "createdAt": _now(),
-            },
-            admin.access_jwt,
-        )
-        result.step_passed("Admin posts community notice")
-    except XrpcError as exc:
-        result.step_failed("Admin posts community notice", str(exc))
+    timed_call(
+        result, "Admin posts community notice",
+        lambda: client.records.create_record(
+            admin.did, "app.bsky.feed.post",
+            {"$type": "app.bsky.feed.post",
+             "text": "We've taken action against a spam/harassment account. Stay safe, everyone!",
+             "createdAt": _now()},
+            admin.access_jwt),
+    )
 
     result.finish()
     return result

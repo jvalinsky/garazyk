@@ -18,12 +18,12 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+_project_root = str(Path(__file__).resolve().parent.parent.parent.parent)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
 
-from lib.client import XrpcClient
-from lib.characters import get_character, PDS1
-from lib.config import SERVICE_URLS, APPVIEW_ADMIN_SECRET
-from lib.report import ScenarioResult, timed_call
+from scripts.lib.atproto import XrpcClient, get_character, PDS1, SERVICE_URLS, APPVIEW_ADMIN_SECRET, ScenarioResult, timed_call
+
 
 
 def _now() -> str:
@@ -60,7 +60,7 @@ def run() -> ScenarioResult:
         char = get_character(name)
         session = timed_call(
             result, f"Create account: {char.name}",
-            lambda c=char: client.create_account(c.handle, c.email, c.password),
+            lambda c=char: client.accounts.create_account(c.handle, c.email, c.password),
             detail_fn=lambda s, n=name: f"did={s['did']}",
         )
         if session:
@@ -77,7 +77,7 @@ def run() -> ScenarioResult:
     for name in active:
         char = get_character(name)
         timed_call(result, f"Set profile: {char.name}",
-                   lambda c=char: client.create_record(
+                   lambda c=char: client.records.create_record(
                        c.did, "app.bsky.actor.profile",
                        {"$type": "app.bsky.actor.profile", "displayName": c.name},
                        c.access_jwt),
@@ -87,7 +87,7 @@ def run() -> ScenarioResult:
     if luna.did and luna.access_jwt:
         timed_call(
             result, "Luna creates a post",
-            lambda: client.create_record(
+            lambda: client.records.create_record(
                 luna.did, "app.bsky.feed.post",
                 {"$type": "app.bsky.feed.post",
                  "text": "Write proxy test post from Luna",
