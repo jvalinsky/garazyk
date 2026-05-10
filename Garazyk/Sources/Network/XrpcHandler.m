@@ -121,14 +121,15 @@ static XrpcDispatcher *_sharedInstance = nil;
         allowedOrigins = @[@"*"];
     }
 
-    NSString *origin = [request headerForKey:@"Origin"];
-
-    if (origin && [allowedOrigins containsObject:@"*"]) {
-        [response setHeader:origin forKey:@"Access-Control-Allow-Origin"];
+    NSString *origin = [request headerForKey: @"Origin"];
+    if (origin && ([allowedOrigins containsObject: @"*"] || [origin hasPrefix: @"http://127.0.0.1"] || [origin hasPrefix: @"http://localhost"])) {
+        [response setHeader:origin forKey: @"Access-Control-Allow-Origin"];
+        [response setHeader: @"true" forKey: @"Access-Control-Allow-Credentials"];
     } else if (origin && [allowedOrigins containsObject:origin]) {
-        [response setHeader:origin forKey:@"Access-Control-Allow-Origin"];
-    } else if (!origin && [allowedOrigins containsObject:@"*"]) {
-        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+        [response setHeader:origin forKey: @"Access-Control-Allow-Origin"];
+        [response setHeader: @"true" forKey: @"Access-Control-Allow-Credentials"];
+    } else if (!origin && [allowedOrigins containsObject: @"*"]) {
+        [response setHeader: @"*" forKey: @"Access-Control-Allow-Origin"];
     }
 
     NSString *allowedMethods = [config stringForKey:@"cors.allowed_methods"] ?: @"GET, POST, PUT, DELETE, OPTIONS, HEAD";
@@ -139,6 +140,7 @@ static XrpcDispatcher *_sharedInstance = nil;
     [response setHeader:allowedHeaders forKey:@"Access-Control-Allow-Headers"];
     [response setHeader:[NSString stringWithFormat:@"%ld", (long)maxAge] forKey:@"Access-Control-Max-Age"];
     [response setHeader:@"DPoP-Nonce, WWW-Authenticate" forKey:@"Access-Control-Expose-Headers"];
+    [response setHeader:@"true" forKey:@"Access-Control-Allow-Private-Network"];
     [response setHeader:@"Origin" forKey:@"Vary"];
 }
 
