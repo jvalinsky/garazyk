@@ -1,4 +1,5 @@
 #import "Core/MSTCacheManager.h"
+#import "Core/MSTAtomicReference.h"
 #import "Repository/MST.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Core/CID.h"
@@ -7,7 +8,7 @@
 #import "Compat/PDSTypes.h"
 
 @interface MSTCacheManager ()
-@property (nonatomic, strong) NSMutableDictionary<NSString *, MST *> *cache;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, MSTAtomicReference *> *cache;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t queue;
 @end
 
@@ -32,27 +33,45 @@
 }
 
 - (nullable MST *)mstForDid:(NSString *)did {
-    __block MST *result = nil;
+    // Fast path: dictionary lookup on serial queue, then atomic snapshot read
+    __block MSTAtomicReference *ref = nil;
     dispatch_sync(self.queue, ^{
-        result = self.cache[did];
+        ref = self.cache[did];
     });
-    return result;
+    // The atomic reference provides thread-safe snapshot access via pthread_mutex
+    // No need to hold the queue while reading the MST
+    return [ref currentSnapshot];
 }
 
 - (void)setMST:(MST *)mst forDid:(NSString *)did {
     dispatch_sync(self.queue, ^{
-        self.cache[did] = mst;
+        MSTAtomicReference *ref = self.cache[did];
+        if (ref) {
+            // Atomic swap — readers always see a consistent snapshot
+            [ref swapMST:mst];
+        } else {
+            // Create new reference and store
+            ref = [[MSTAtomicReference alloc] initWithMST:mst];
+            self.cache[did] = ref;
+        }
     });
 }
 
 - (void)removeMSTForDid:(NSString *)did {
     dispatch_sync(self.queue, ^{
-        [self.cache removeObjectForKey:did];
+        MSTAtomicReference *ref = self.cache[did];
+        if (ref) {
+            [ref clear];  // Release the MST
+            [self.cache removeObjectForKey:did];
+        }
     });
 }
 
 - (void)removeAllMSTs {
     dispatch_sync(self.queue, ^{
+        for (MSTAtomicReference *ref in self.cache.allValues) {
+            [ref clear];
+        }
         [self.cache removeAllObjects];
     });
 }
