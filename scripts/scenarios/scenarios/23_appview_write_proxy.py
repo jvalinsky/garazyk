@@ -208,8 +208,8 @@ def run() -> ScenarioResult:
 
     # ── Record artifacts ─────────────────────────────────────────────
     result.record_artifact("accounts", {
-        c.name: {"did": get_character(c.name).did}
-        for c in [get_character(n) for n in char_names] if c.did
+        n: {"did": get_character(n).did}
+        for n in char_names if get_character(n).did
     })
     result.record_artifact("write_proxy_oauth2", {
         "write_proxy_wired": False,
