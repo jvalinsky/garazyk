@@ -16,6 +16,7 @@
           websockets
           cbor2
           playwright
+          psutil
         ]);
 
       in {

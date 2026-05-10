@@ -64,6 +64,10 @@ SCENARIO_REGISTRY = [
     ("21", "scenarios.21_appview_lexicon_endpoints", "AppView Lexicon-Driven Endpoints", False),
     ("22", "scenarios.22_appview_hooks", "AppView Index Hooks & Dead Letter", False),
     ("23", "scenarios.23_appview_write_proxy", "AppView Write Proxy & OAuth2", False),
+    ("24", "scenarios.24_concurrent_write_throughput", "Concurrent Write Throughput (Instrumented)", False),
+    ("25", "scenarios.25_firehose_fanout_scale", "Firehose Fan-Out at Scale (Instrumented)", False),
+    ("26", "scenarios.26_appview_ingest_load", "AppView Ingest Under Load (Instrumented)", False),
+    ("27", "scenarios.27_fullstack_soak", "Full-Stack Soak Test (Instrumented)", False),
     ("10", "scenarios.10_performance_resilience", "Performance & Resilience", False),
 ]
 
