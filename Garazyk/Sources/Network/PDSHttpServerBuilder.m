@@ -192,14 +192,15 @@
 
 - (void)setCorsHeaders:(HttpResponse *)response forRequest:(HttpRequest *)request {
   NSArray<NSString *> *allowedOrigins = [self getCorsAllowedOrigins];
-  NSString *origin = [request headerForKey:@"Origin"];
-
-  if (origin && [allowedOrigins containsObject:@"*"]) {
-    [response setHeader:origin forKey:@"Access-Control-Allow-Origin"];
+  NSString *origin = [request headerForKey: @"Origin"];
+  if (origin && ([allowedOrigins containsObject: @"*"] || [origin hasPrefix: @"http://127.0.0.1"] || [origin hasPrefix: @"http://localhost"])) {
+    [response setHeader:origin forKey: @"Access-Control-Allow-Origin"];
+    [response setHeader: @"true" forKey: @"Access-Control-Allow-Credentials"];
   } else if (origin && [allowedOrigins containsObject:origin]) {
-    [response setHeader:origin forKey:@"Access-Control-Allow-Origin"];
-  } else if (!origin && [allowedOrigins containsObject:@"*"]) {
-    [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+    [response setHeader:origin forKey: @"Access-Control-Allow-Origin"];
+    [response setHeader: @"true" forKey: @"Access-Control-Allow-Credentials"];
+  } else if (!origin && [allowedOrigins containsObject: @"*"]) {
+    [response setHeader: @"*" forKey: @"Access-Control-Allow-Origin"];
   }
 
   [response setHeader:[self getCorsAllowedMethods]
@@ -207,6 +208,8 @@
   [response setHeader:[self getCorsAllowedHeaders]
                forKey:@"Access-Control-Allow-Headers"];
   [response setHeader:[self getCorsMaxAge] forKey:@"Access-Control-Max-Age"];
+  [response setHeader:@"DPoP-Nonce, WWW-Authenticate"
+               forKey:@"Access-Control-Expose-Headers"];
   [response setHeader:@"Origin" forKey:@"Vary"];
 }
 

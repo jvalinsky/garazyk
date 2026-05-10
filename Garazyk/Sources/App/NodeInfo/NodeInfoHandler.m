@@ -121,8 +121,10 @@
 
   if (origin && [allowedOrigins containsObject:@"*"]) {
     [response setHeader:origin forKey:@"Access-Control-Allow-Origin"];
+    [response setHeader:@"true" forKey:@"Access-Control-Allow-Credentials"];
   } else if (origin && [allowedOrigins containsObject:origin]) {
     [response setHeader:origin forKey:@"Access-Control-Allow-Origin"];
+    [response setHeader:@"true" forKey:@"Access-Control-Allow-Credentials"];
   } else if (!origin && [allowedOrigins containsObject:@"*"]) {
     [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
   }
