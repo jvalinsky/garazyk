@@ -11,6 +11,7 @@
  */
 
 #import <Foundation/Foundation.h>
+#import "AppView/Server/Hooks/AppViewIndexHook.h"
 
 @protocol PDSQueryDatabase;
 
@@ -25,7 +26,7 @@ NS_ASSUME_NONNULL_BEGIN
  Results are lightweight (DIDs/URIs only) matching the unspecced skeleton lexicon format.
  Index is populated from the records table on startup if empty.
  */
-@interface SearchIndexService : NSObject
+@interface SearchIndexService : NSObject <AppViewIndexHook>
 
 /*! Initialize with database connection. */
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database;

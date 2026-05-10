@@ -97,6 +97,9 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Get details for a specific starter pack. */
 - (nullable NSDictionary *)getStarterPack:(NSString *)starterPackURI error:(NSError **)error;
 
+/*! Get views for a list of starter packs. */
+- (nullable NSArray<NSDictionary *> *)getStarterPacks:(NSArray<NSString *> *)uris error:(NSError **)error;
+
 /*! Get starter packs created by an actor. */
 - (nullable NSDictionary *)getStarterPacksForActor:(NSString *)actorDID
                                              limit:(NSInteger)limit
