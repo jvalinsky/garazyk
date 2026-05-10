@@ -9,7 +9,7 @@
 #import "Network/HttpRequest.h"
 #import "Auth/JWT.h"
 #import "Auth/Crypto/AuthCryptoDPoP.h"
-#import "Auth/Crypto/CryptoUtils.h"
+#import "Auth/CryptoUtils.h"
 #import "Debug/PDSLogger.h"
 #import "Compat/PDSTypes.h"
 
