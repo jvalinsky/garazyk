@@ -95,6 +95,12 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
                              appViewDatabase:appViewDatabase
                                    jwtMinter:jwtMinter
                              adminController:adminController];
+
+  DraftService *draftService = [[DraftService alloc] initWithDatabase:appViewDatabase];
+  [XrpcAppBskyDraftsPack registerWithDispatcher:dispatcher
+                                    draftService:draftService
+                                       jwtMinter:jwtMinter
+                                 adminController:adminController];
 }
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
@@ -165,11 +171,6 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
                                                               jwtMinter:jwtMinter
                                                         adminController:adminController];
 
-  DraftService *draftService = [[DraftService alloc] initWithDatabase:appViewDatabase];
-  [XrpcAppBskyDraftsPack registerWithDispatcher:dispatcher
-                                    draftService:draftService
-                                       jwtMinter:jwtMinter
-                                 adminController:adminController];
   [XrpcAppBskyAgeAssurancePack registerWithDispatcher:dispatcher ageAssuranceService:ageAssuranceService];
   [XrpcAppBskyContactPack registerWithDispatcher:dispatcher contactService:contactService jwtMinter:jwtMinter adminController:adminController];
   // Register video XRPC endpoints (only in internal mode)

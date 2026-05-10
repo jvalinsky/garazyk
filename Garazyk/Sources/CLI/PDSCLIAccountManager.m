@@ -480,7 +480,8 @@
         [curlTask setLaunchPath:@"/usr/bin/curl"];
         [curlTask setArguments:@[
             @"-s", @"-w", @"\n%{http_code}",
-            @"--max-time", @"15",
+            @"--noproxy", @"*",
+            @"--max-time", @"5",
             @"-X", @"POST",
             @"-H", @"Content-Type: application/json",
             @"-d", payloadStr,
