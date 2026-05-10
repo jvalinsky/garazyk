@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .client import XrpcError
+from .transport import XrpcError
 
 
 def assert_success(response: dict | Any, operation: str) -> dict:

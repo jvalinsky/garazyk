@@ -6,10 +6,12 @@ call sites short while preserving module boundaries for client transport,
 fixtures, reporting, seeding, and service configuration.
 """
 
-from .client import XrpcClient, XrpcError
+from .transport import XrpcError
+from .client import XrpcClient
 from .assertions import assert_success, assert_contains, assert_status, assert_error, assert_xrpc_raises
 from .characters import Character, CHARACTERS, get_character, get_characters_by_role, get_characters_by_pds, reset_characters
 from .report import ScenarioResult, StepResult, StepStatus, timed_call
+from .types import Session, RecordRef, Profile
 from .seed import (
     create_account_or_login,
     create_record_idempotent,
@@ -50,6 +52,10 @@ __all__ = [
     # Client
     "XrpcClient",
     "XrpcError",
+    # Types
+    "Session",
+    "RecordRef",
+    "Profile",
     # Assertions
     "assert_success",
     "assert_contains",

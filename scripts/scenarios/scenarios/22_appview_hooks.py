@@ -22,7 +22,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from lib.client import XrpcClient, XrpcError
+from lib.client import XrpcClient
 from lib.characters import get_character, PDS1
 from lib.config import SERVICE_URLS, APPVIEW_ADMIN_SECRET
 from lib.report import ScenarioResult, timed_call
@@ -115,16 +115,12 @@ def run() -> ScenarioResult:
     )
 
     hook_count = hook_data.get("count", 0) if hook_data else 0
-    if hook_count == 0:
-        result.step_skipped(
-            "Hook firing test",
-            "Hook registry not wired (setHookRegistry:nil in AppViewRuntime.m:292)",
-        )
-    else:
-        result.step_skipped(
-            "Hook firing test",
-            "Hook firing tests not yet implemented (registry wired with count={hook_count})",
-        )
+    reason = (
+        "Hook registry not wired (setHookRegistry:nil)"
+        if hook_count == 0
+        else f"Hook firing tests not yet implemented (registry wired with count={hook_count})"
+    )
+    result.step_skipped("Hook firing test", reason)
 
     # ── Dead letter table ───────────────────────────────────────────
     dl_data = timed_call(
