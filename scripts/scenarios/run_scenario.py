@@ -63,6 +63,9 @@ SCENARIO_REGISTRY = [
     ("18", "scenarios.18_admin_operations", "AppView Admin Operations", False),
     ("19", "scenarios.19_contact_age_assurance", "Contact Management & Age Assurance", False),
     ("20", "scenarios.20_unspecced_search", "Unspecced Search & Discovery", False),
+    ("21", "scenarios.21_appview_lexicon_endpoints", "AppView Lexicon-Driven Endpoints", False),
+    ("22", "scenarios.22_appview_hooks", "AppView Index Hooks & Dead Letter", False),
+    ("23", "scenarios.23_appview_write_proxy", "AppView Write Proxy & OAuth2", False),
 ]
 
 
