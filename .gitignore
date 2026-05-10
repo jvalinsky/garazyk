@@ -94,6 +94,7 @@ docs/tutorial-site.tar.gz
 # Python virtual environments
 search_venv/
 *.egg-info/
+__pycache__/
 
 # Runtime cache directories
 cache/
