@@ -198,19 +198,24 @@ static NSString * const kSchemaV1 = @""
 ");"
 
 "CREATE TABLE IF NOT EXISTS bookmarks ("
-"    uri TEXT NOT NULL,"
-"    actor_did TEXT NOT NULL,"
-"    created_at INTEGER,"
-"    PRIMARY KEY (uri, actor_did)"
+"    id INTEGER PRIMARY KEY AUTOINCREMENT,"
+"    did TEXT NOT NULL,"
+"    uri TEXT NOT NULL UNIQUE,"
+"    subject_uri TEXT NOT NULL,"
+"    subject_cid TEXT,"
+"    created_at TEXT NOT NULL,"
+"    UNIQUE(did, subject_uri)"
 ");"
 
 "CREATE TABLE IF NOT EXISTS starter_packs ("
 "    uri TEXT PRIMARY KEY,"
 "    did TEXT NOT NULL,"
+"    rkey TEXT NOT NULL,"
+"    cid TEXT NOT NULL,"
 "    name TEXT NOT NULL,"
 "    description TEXT,"
 "    list_uri TEXT,"
-"    created_at INTEGER,"
+"    created_at TEXT,"
 "    updated_at INTEGER"
 ");"
 
@@ -237,6 +242,22 @@ static NSString * const kSchemaV1 = @""
 "  handle     TEXT,"
 "  email      TEXT,"
 "  created_at TEXT"
+");"
+
+"CREATE TABLE IF NOT EXISTS actor_preferences ("
+"  did         TEXT PRIMARY KEY,"
+"  preferences BLOB NOT NULL,"
+"  created_at  REAL NOT NULL,"
+"  updated_at  REAL NOT NULL,"
+"  FOREIGN KEY (did) REFERENCES accounts(did)"
+");"
+
+"CREATE TABLE IF NOT EXISTS actor_mutes ("
+"  id          INTEGER PRIMARY KEY AUTOINCREMENT,"
+"  did         TEXT NOT NULL,"
+"  muted_did   TEXT NOT NULL,"
+"  created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),"
+"  UNIQUE(did, muted_did)"
 ");"
 
 "CREATE TABLE IF NOT EXISTS labels ("
@@ -304,6 +325,49 @@ static NSString * const kSchemaV1 = @""
 "  did         TEXT PRIMARY KEY,"
 "  preferences TEXT"
 ");"
+
+"CREATE TABLE IF NOT EXISTS age_assurance_states ("
+"    id TEXT PRIMARY KEY,"
+"    did TEXT NOT NULL,"
+"    status TEXT NOT NULL,"
+"    email TEXT,"
+"    country_code TEXT,"
+"    region_code TEXT,"
+"    language TEXT,"
+"    token TEXT,"
+"    created_at INTEGER,"
+"    updated_at INTEGER"
+");"
+
+"CREATE TABLE IF NOT EXISTS search_actors("
+"  rowid INTEGER PRIMARY KEY,"
+"  did TEXT NOT NULL,"
+"  display_name TEXT,"
+"  handle TEXT,"
+"  description TEXT"
+");"
+
+"CREATE TABLE IF NOT EXISTS search_posts("
+"  rowid INTEGER PRIMARY KEY,"
+"  uri TEXT NOT NULL,"
+"  did TEXT NOT NULL,"
+"  text TEXT"
+");"
+
+"CREATE TABLE IF NOT EXISTS search_starter_packs("
+"  rowid INTEGER PRIMARY KEY,"
+"  uri TEXT NOT NULL,"
+"  did TEXT NOT NULL,"
+"  name TEXT"
+");"
+
+"CREATE VIRTUAL TABLE IF NOT EXISTS fts_actors USING fts5(did, display_name, handle, description, content=search_actors, content_rowid=rowid);"
+"CREATE VIRTUAL TABLE IF NOT EXISTS fts_posts USING fts5(uri, did, text, content=search_posts, content_rowid=rowid);"
+"CREATE VIRTUAL TABLE IF NOT EXISTS fts_starter_packs USING fts5(uri, did, name, content=search_starter_packs, content_rowid=rowid);"
+
+"CREATE INDEX IF NOT EXISTS idx_search_actors_did ON search_actors(did);"
+"CREATE INDEX IF NOT EXISTS idx_search_posts_uri ON search_posts(uri);"
+"CREATE INDEX IF NOT EXISTS idx_search_starter_packs_uri ON search_starter_packs(uri);"
 ;
 
 // ---------------------------------------------------------------------------
@@ -1662,10 +1726,17 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
 
     for (NSUInteger i = 0; i < resultRows.count; i++) {
         NSDictionary *row = resultRows[i];
-        NSString *value = row[@"value"];
+        id valueObj = row[@"value"];
+        NSData *data = nil;
+        if ([valueObj isKindOfClass:[NSData class]]) {
+            data = valueObj;
+        } else if ([valueObj isKindOfClass:[NSString class]]) {
+            data = [(NSString *)valueObj dataUsingEncoding:NSUTF8StringEncoding];
+        }
+
         NSDictionary *record = nil;
-        if (value && value.length > 0) {
-            record = [NSJSONSerialization JSONObjectWithData:[value dataUsingEncoding:NSUTF8StringEncoding]
+        if (data && data.length > 0) {
+            record = [NSJSONSerialization JSONObjectWithData:data
                                                     options:0
                                                       error:nil];
             if (![record isKindOfClass:[NSDictionary class]]) {

@@ -10,6 +10,10 @@
 #import "AppView/Services/GraphService.h"
 #import "AppView/Services/NotificationService.h"
 #import "AppView/Services/AgeAssuranceService.h"
+#import "AppView/Services/DraftService.h"
+#import "AppView/Services/BookmarkService.h"
+#import "AppView/Services/ContactService.h"
+#import "AppView/Services/SearchIndexService.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/DID.h"
 
@@ -22,13 +26,19 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
     return MIN(MAX(limit, 1), maxLimit);
 }
 
-@implementation AppViewXRpcRoutePack
-{
+#import "AppView/Server/WriteProxy/AppViewWriteProxy.h"
+
+@implementation AppViewXRpcRoutePack {
     FeedService *_feedService;
     ActorService *_actorService;
     GraphService *_graphService;
     NotificationService *_notificationService;
     AgeAssuranceService *_ageAssuranceService;
+    DraftService *_draftService;
+    BookmarkService *_bookmarkService;
+    ContactService *_contactService;
+    SearchIndexService *_searchIndexService;
+    AppViewWriteProxy *_writeProxy;
     id<PDSQueryDatabase> _database;
     JWTMinter *_jwtMinter;
 }
@@ -38,17 +48,26 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
                        graphService:(nullable GraphService *)graphService
                  notificationService:(NotificationService *)notificationService
                 ageAssuranceService:(nullable AgeAssuranceService *)ageAssuranceService
+                        draftService:(nullable DraftService *)draftService
+                     bookmarkService:(nullable BookmarkService *)bookmarkService
+                      contactService:(nullable ContactService *)contactService
+                  searchIndexService:(nullable SearchIndexService *)searchIndexService
+                         writeProxy:(nullable AppViewWriteProxy *)writeProxy
                           database:(nullable id<PDSQueryDatabase>)database
                          jwtMinter:(nullable JWTMinter *)jwtMinter
 {
     self = [super init];
-    if (self)
-    {
+    if (self) {
         _feedService = feedService;
         _actorService = actorService;
         _graphService = graphService;
         _notificationService = notificationService;
         _ageAssuranceService = ageAssuranceService;
+        _draftService = draftService;
+        _bookmarkService = bookmarkService;
+        _contactService = contactService;
+        _searchIndexService = searchIndexService;
+        _writeProxy = writeProxy;
         _database = database;
         _jwtMinter = jwtMinter;
     }
@@ -93,6 +112,27 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
                 path:@"/xrpc/app.bsky.actor.putPreferences"
              handler:^(HttpRequest *request, HttpResponse *response) {
                  [self handlePutPreferences:request response:response];
+             }];
+
+    // --- app.bsky.draft ---
+    [server addRoute:@"GET"
+                path:@"/xrpc/app.bsky.draft.getDrafts"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self handleGetDrafts:request response:response];
+             }];
+
+    // --- app.bsky.bookmark ---
+    [server addRoute:@"GET"
+                path:@"/xrpc/app.bsky.bookmark.getBookmarks"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self handleGetBookmarks:request response:response];
+             }];
+
+    // --- app.bsky.graph (additional) ---
+    [server addRoute:@"GET"
+                path:@"/xrpc/app.bsky.graph.getStarterPacks"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self handleGetStarterPacksBulk:request response:response];
              }];
 
     [server addRoute:@"GET"
@@ -195,7 +235,7 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
                  }];
 
         [server addRoute:@"GET"
-                    path:@"/xrpc/app.bsky.graph.getStarterPacks"
+                    path:@"/xrpc/app.bsky.graph.getActorStarterPacks"
                  handler:^(HttpRequest *request, HttpResponse *response) {
                      [self handleGetStarterPacks:request response:response];
                  }];
@@ -210,6 +250,68 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
                     path:@"/xrpc/app.bsky.graph.unmuteActor"
                  handler:^(HttpRequest *request, HttpResponse *response) {
                      [self handleUnmuteActor:request response:response];
+                 }];
+
+        // --- app.bsky.contact ---
+        [server addRoute:@"POST"
+                    path:@"/xrpc/app.bsky.contact.startPhoneVerification"
+                 handler:^(HttpRequest *request, HttpResponse *response) {
+                     [self handleStartPhoneVerification:request response:response];
+                 }];
+
+        [server addRoute:@"POST"
+                    path:@"/xrpc/app.bsky.contact.verifyPhone"
+                 handler:^(HttpRequest *request, HttpResponse *response) {
+                     [self handleVerifyPhone:request response:response];
+                 }];
+
+        [server addRoute:@"POST"
+                    path:@"/xrpc/app.bsky.contact.importContacts"
+                 handler:^(HttpRequest *request, HttpResponse *response) {
+                     [self handleImportContacts:request response:response];
+                 }];
+
+        [server addRoute:@"GET"
+                    path:@"/xrpc/app.bsky.contact.getMatches"
+                 handler:^(HttpRequest *request, HttpResponse *response) {
+                     [self handleGetContactMatches:request response:response];
+                 }];
+
+        [server addRoute:@"POST"
+                    path:@"/xrpc/app.bsky.contact.dismissMatch"
+                 handler:^(HttpRequest *request, HttpResponse *response) {
+                     [self handleDismissContactMatch:request response:response];
+                 }];
+
+        [server addRoute:@"GET"
+                    path:@"/xrpc/app.bsky.contact.getSyncStatus"
+                 handler:^(HttpRequest *request, HttpResponse *response) {
+                     [self handleGetContactSyncStatus:request response:response];
+                 }];
+
+        [server addRoute:@"POST"
+                    path:@"/xrpc/app.bsky.contact.removeData"
+                 handler:^(HttpRequest *request, HttpResponse *response) {
+                     [self handleRemoveContactData:request response:response];
+                 }];
+
+    }
+
+    if (_writeProxy) {
+        [server addRoute:@"POST"
+                    path:@"/xrpc/com.atproto.repo.createRecord"
+                 handler:^(HttpRequest *request, HttpResponse *response) {
+                     [self handleProxyWrite:request response:response nsid:@"com.atproto.repo.createRecord"];
+                 }];
+        [server addRoute:@"POST"
+                    path:@"/xrpc/com.atproto.repo.putRecord"
+                 handler:^(HttpRequest *request, HttpResponse *response) {
+                     [self handleProxyWrite:request response:response nsid:@"com.atproto.repo.putRecord"];
+                 }];
+        [server addRoute:@"POST"
+                    path:@"/xrpc/com.atproto.repo.deleteRecord"
+                 handler:^(HttpRequest *request, HttpResponse *response) {
+                     [self handleProxyWrite:request response:response nsid:@"com.atproto.repo.deleteRecord"];
                  }];
     }
 
@@ -266,6 +368,25 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
                 path:@"/xrpc/app.bsky.notification.putPreferences"
              handler:^(HttpRequest *request, HttpResponse *response) {
                  [self handlePutNotificationPreferences:request response:response];
+             }];
+
+    // --- app.bsky.unspecced search ---
+    [server addRoute:@"GET"
+                path:@"/xrpc/app.bsky.unspecced.searchActorsSkeleton"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self handleSearchActorsSkeleton:request response:response];
+             }];
+
+    [server addRoute:@"GET"
+                path:@"/xrpc/app.bsky.unspecced.searchPostsSkeleton"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self handleSearchPostsSkeleton:request response:response];
+             }];
+
+    [server addRoute:@"GET"
+                path:@"/xrpc/app.bsky.unspecced.searchStarterPacksSkeleton"
+             handler:^(HttpRequest *request, HttpResponse *response) {
+                 [self handleSearchStarterPacksSkeleton:request response:response];
              }];
 
     // --- com.atproto.* (proxied convenience endpoints) ---
@@ -868,19 +989,27 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
 
 - (void)handleGetRelationships:(HttpRequest *)request response:(HttpResponse *)response
 {
-    NSString *actorDID = [self requireAuth:request response:response];
-    if (!actorDID) return;
-
-    NSString *target = [request queryParamForKey:@"target"];
-    if (!target || target.length == 0)
+    NSString *actorDID = [request queryParamForKey:@"actor"];
+    if (!actorDID || ![actorDID isKindOfClass:[NSString class]] || actorDID.length == 0)
     {
         response.statusCode = 400;
-        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"target parameter is required" }];
+        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"actor parameter is required" }];
         return;
     }
 
+    id targetObj = [request queryParamForKey:@"others"] ?: [request queryParamForKey:@"subjects"] ?: [request queryParamForKey:@"target"];
+    if (!targetObj)
+    {
+        response.statusCode = 400;
+        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"others parameter is required" }];
+        return;
+    }
+
+    NSArray *others = [targetObj isKindOfClass:[NSArray class]] ? (NSArray *)targetObj : @[targetObj];
+    NSString *primaryTarget = others.firstObject;
+
     NSError *error = nil;
-    NSDictionary *result = [_graphService getRelationship:actorDID withActor:target error:&error];
+    NSDictionary *result = [_graphService getRelationship:actorDID withActor:primaryTarget error:&error];
     if (error) { response.statusCode = 500; [response setJsonBody:@{ @"error": @"InternalServerError", @"message": error.localizedDescription ?: @"Failed" }]; return; }
     response.statusCode = 200;
     [response setJsonBody:@{ @"relationships": result ? @[result] : @[] }];
@@ -1107,14 +1236,14 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
 
     NSError *jsonError = nil;
     NSDictionary *body = [NSJSONSerialization JSONObjectWithData:bodyData options:0 error:&jsonError];
-    NSString *deviceToken = body[@"deviceToken"];
+    NSString *deviceToken = body[@"token"];
     NSString *platformToken = body[@"platformToken"];
     NSString *serviceEndpoint = body[@"serviceEndpoint"];
 
     if (!deviceToken || deviceToken.length == 0)
     {
         response.statusCode = 400;
-        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"deviceToken required" }];
+        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"token required" }];
         return;
     }
 
@@ -1236,16 +1365,19 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
         return;
     }
 
-    NSArray *preferences = body[@"preferences"];
-    if (!preferences)
+    if (body[@"priority"] == nil)
     {
         response.statusCode = 400;
-        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"preferences field required" }];
+        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"priority field required" }];
         return;
     }
+    
+    BOOL priority = [body[@"priority"] boolValue];
 
     NSError *error = nil;
-    BOOL success = [_notificationService putPreferencesForActor:actorDID preferences:preferences error:&error];
+    // We store priority as a preference dictionary
+    NSDictionary *prefsObj = @{@"priority": @(priority)};
+    BOOL success = [_notificationService putPreferencesForActor:actorDID preferences:(NSArray *)prefsObj error:&error];
 
     if (!success)
     {
@@ -1328,12 +1460,19 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
 
     NSDictionary *row = rows.firstObject;
     NSString *cid = row[@"cid"];
-    NSString *value = row[@"value"];
+    id valueObj = row[@"value"];
+
+    NSData *data = nil;
+    if ([valueObj isKindOfClass:[NSData class]]) {
+        data = valueObj;
+    } else if ([valueObj isKindOfClass:[NSString class]]) {
+        data = [(NSString *)valueObj dataUsingEncoding:NSUTF8StringEncoding];
+    }
 
     NSDictionary *record = nil;
-    if (value && value.length > 0)
+    if (data && data.length > 0)
     {
-        record = [NSJSONSerialization JSONObjectWithData:[value dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+        record = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
     }
 
     response.statusCode = 200;
@@ -1531,6 +1670,274 @@ static NSInteger parseLimitParam(HttpRequest *request, NSInteger defaultLimit, N
             @"computedAt": [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]]
         }
     }];
+}
+
+- (void)handleProxyWrite:(HttpRequest *)request response:(HttpResponse *)response nsid:(NSString *)nsid
+{
+    NSString *callerDID = [self requireAuth:request response:response];
+    if (!callerDID) return;
+
+    [_writeProxy proxyWriteRequest:request response:response nsid:nsid callerDID:callerDID];
+}
+
+#pragma mark - Draft Handlers
+
+- (void)handleGetDrafts:(HttpRequest *)request response:(HttpResponse *)response {
+    NSString *actorDID = [self requireAuth:request response:response];
+    if (!actorDID) return;
+
+    NSError *error = nil;
+    NSArray *drafts = [_draftService getDraftsForDID:actorDID error:&error];
+    if (error) {
+        response.statusCode = 500;
+        [response setJsonBody:@{ @"error": @"InternalServerError", @"message": error.localizedDescription ?: @"Failed" }];
+        return;
+    }
+    response.statusCode = 200;
+    [response setJsonBody:@{ @"drafts": drafts ?: @[] }];
+}
+
+#pragma mark - Bookmark Handlers
+
+- (void)handleGetBookmarks:(HttpRequest *)request response:(HttpResponse *)response {
+    NSString *actorDID = [self requireAuth:request response:response];
+    if (!actorDID) return;
+
+    NSInteger limit = parseLimitParam(request, 50, 100);
+    NSString *cursor = [request queryParamForKey:@"cursor"];
+
+    NSError *error = nil;
+    NSDictionary *result = [_bookmarkService getBookmarksForActor:actorDID limit:limit cursor:cursor error:&error];
+    if (error) {
+        response.statusCode = 500;
+        [response setJsonBody:@{ @"error": @"InternalServerError", @"message": error.localizedDescription ?: @"Failed" }];
+        return;
+    }
+    response.statusCode = 200;
+    [response setJsonBody:result ?: @{}];
+}
+
+#pragma mark - Graph Handlers (Extended)
+
+- (void)handleGetStarterPacksBulk:(HttpRequest *)request response:(HttpResponse *)response {
+    id urisParam = [request queryParamForKey:@"uris"];
+    NSArray *uris = [urisParam isKindOfClass:[NSArray class]] ? (NSArray *)urisParam : (urisParam ? @[urisParam] : @[]);
+
+    NSError *error = nil;
+    NSArray *packs = [_graphService getStarterPacks:uris error:&error];
+    if (error) {
+        response.statusCode = 500;
+        [response setJsonBody:@{ @"error": @"InternalServerError", @"message": error.localizedDescription ?: @"Failed" }];
+        return;
+    }
+    response.statusCode = 200;
+    [response setJsonBody:@{ @"starterPacks": packs ?: @[] }];
+}
+
+#pragma mark - Contact Handlers
+
+- (void)handleStartPhoneVerification:(HttpRequest *)request response:(HttpResponse *)response {
+    NSString *actorDID = [self requireAuth:request response:response];
+    if (!actorDID) return;
+
+    NSDictionary *body = request.jsonBody;
+    NSString *phone = body[@"phoneNumber"];
+    if (!phone) {
+        response.statusCode = 400;
+        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"phoneNumber is required" }];
+        return;
+    }
+
+    NSError *error = nil;
+    NSString *vId = [_contactService startPhoneVerification:phone actor:actorDID error:&error];
+    if (error) {
+        response.statusCode = 500;
+        [response setJsonBody:@{ @"error": @"InternalServerError", @"message": error.localizedDescription ?: @"Failed" }];
+        return;
+    }
+    response.statusCode = 200;
+    [response setJsonBody:@{ @"id": vId ?: @"" }];
+}
+
+- (void)handleVerifyPhone:(HttpRequest *)request response:(HttpResponse *)response {
+    NSString *actorDID = [self requireAuth:request response:response];
+    if (!actorDID) return;
+
+    NSDictionary *body = request.jsonBody;
+    NSString *phone = body[@"phoneNumber"];
+    NSString *code = body[@"code"];
+    if (!phone || !code) {
+        response.statusCode = 400;
+        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"phoneNumber and code are required" }];
+        return;
+    }
+
+    NSError *error = nil;
+    NSString *token = [_contactService verifyPhone:phone code:code actor:actorDID error:&error];
+    if (error) {
+        response.statusCode = 401;
+        [response setJsonBody:@{ @"error": @"AuthenticationFailed", @"message": error.localizedDescription ?: @"Failed" }];
+        return;
+    }
+    response.statusCode = 200;
+    [response setJsonBody:@{ @"token": token ?: @"" }];
+}
+
+- (void)handleImportContacts:(HttpRequest *)request response:(HttpResponse *)response {
+    NSString *actorDID = [self requireAuth:request response:response];
+    if (!actorDID) return;
+
+    NSDictionary *body = request.jsonBody;
+    NSArray *contacts = body[@"contacts"];
+    NSString *token = body[@"token"];
+    if (!contacts || !token) {
+        response.statusCode = 400;
+        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"contacts and token are required" }];
+        return;
+    }
+
+    NSError *error = nil;
+    NSDictionary *result = [_contactService importContacts:contacts token:token actor:actorDID error:&error];
+    if (error) {
+        response.statusCode = error.code == 401 ? 401 : 500;
+        [response setJsonBody:@{ @"error": error.code == 401 ? @"AuthenticationFailed" : @"InternalServerError", @"message": error.localizedDescription ?: @"Failed" }];
+        return;
+    }
+    response.statusCode = 200;
+    [response setJsonBody:result ?: @{}];
+}
+
+- (void)handleGetContactMatches:(HttpRequest *)request response:(HttpResponse *)response {
+    NSString *actorDID = [self requireAuth:request response:response];
+    if (!actorDID) return;
+
+    NSError *error = nil;
+    NSArray *matches = [_contactService getMatchesForActor:actorDID error:&error];
+    if (error) {
+        response.statusCode = 500;
+        [response setJsonBody:@{ @"error": @"InternalServerError", @"message": error.localizedDescription ?: @"Failed" }];
+        return;
+    }
+    response.statusCode = 200;
+    [response setJsonBody:@{ @"matches": matches ?: @[] }];
+}
+
+- (void)handleDismissContactMatch:(HttpRequest *)request response:(HttpResponse *)response {
+    NSString *actorDID = [self requireAuth:request response:response];
+    if (!actorDID) return;
+
+    NSDictionary *body = request.jsonBody;
+    NSString *matchDID = body[@"did"];
+    if (!matchDID) {
+        response.statusCode = 400;
+        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"did is required" }];
+        return;
+    }
+
+    NSError *error = nil;
+    BOOL ok = [_contactService dismissMatch:matchDID actor:actorDID error:&error];
+    if (!ok) {
+        response.statusCode = 500;
+        [response setJsonBody:@{ @"error": @"InternalServerError", @"message": error.localizedDescription ?: @"Failed" }];
+        return;
+    }
+    response.statusCode = 200;
+    [response setJsonBody:@{}];
+}
+
+- (void)handleGetContactSyncStatus:(HttpRequest *)request response:(HttpResponse *)response {
+    NSString *actorDID = [self requireAuth:request response:response];
+    if (!actorDID) return;
+
+    NSError *error = nil;
+    NSDictionary *status = [_contactService getSyncStatusForActor:actorDID error:&error];
+    if (error) {
+        response.statusCode = 500;
+        [response setJsonBody:@{ @"error": @"InternalServerError", @"message": error.localizedDescription ?: @"Failed" }];
+        return;
+    }
+    response.statusCode = 200;
+    [response setJsonBody:status ?: @{}];
+}
+
+- (void)handleRemoveContactData:(HttpRequest *)request response:(HttpResponse *)response {
+    NSString *actorDID = [self requireAuth:request response:response];
+    if (!actorDID) return;
+
+    NSError *error = nil;
+    BOOL ok = [_contactService removeDataForActor:actorDID error:&error];
+    if (!ok) {
+        response.statusCode = 500;
+        [response setJsonBody:@{ @"error": @"InternalServerError", @"message": error.localizedDescription ?: @"Failed" }];
+        return;
+    }
+    response.statusCode = 200;
+    [response setJsonBody:@{}];
+}
+
+#pragma mark - Search Skeleton Handlers
+
+- (void)handleSearchActorsSkeleton:(HttpRequest *)request response:(HttpResponse *)response {
+    NSString *query = [request queryParamForKey:@"q"];
+    if (!query) {
+        response.statusCode = 400;
+        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"q parameter is required" }];
+        return;
+    }
+    NSInteger limit = parseLimitParam(request, 50, 100);
+    NSString *cursor = [request queryParamForKey:@"cursor"];
+
+    NSError *error = nil;
+    NSDictionary *result = [_searchIndexService searchActors:query limit:limit cursor:cursor error:&error];
+    if (error) {
+        response.statusCode = 500;
+        [response setJsonBody:@{ @"error": @"InternalServerError", @"message": error.localizedDescription ?: @"Failed" }];
+        return;
+    }
+    response.statusCode = 200;
+    [response setJsonBody:result ?: @{}];
+}
+
+- (void)handleSearchPostsSkeleton:(HttpRequest *)request response:(HttpResponse *)response {
+    NSString *query = [request queryParamForKey:@"q"];
+    if (!query) {
+        response.statusCode = 400;
+        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"q parameter is required" }];
+        return;
+    }
+    NSInteger limit = parseLimitParam(request, 50, 100);
+    NSString *cursor = [request queryParamForKey:@"cursor"];
+
+    NSError *error = nil;
+    NSDictionary *result = [_searchIndexService searchPosts:query limit:limit cursor:cursor error:&error];
+    if (error) {
+        response.statusCode = 500;
+        [response setJsonBody:@{ @"error": @"InternalServerError", @"message": error.localizedDescription ?: @"Failed" }];
+        return;
+    }
+    response.statusCode = 200;
+    [response setJsonBody:result ?: @{}];
+}
+
+- (void)handleSearchStarterPacksSkeleton:(HttpRequest *)request response:(HttpResponse *)response {
+    NSString *query = [request queryParamForKey:@"q"];
+    if (!query) {
+        response.statusCode = 400;
+        [response setJsonBody:@{ @"error": @"InvalidRequest", @"message": @"q parameter is required" }];
+        return;
+    }
+    NSInteger limit = parseLimitParam(request, 50, 100);
+    NSString *cursor = [request queryParamForKey:@"cursor"];
+
+    NSError *error = nil;
+    NSDictionary *result = [_searchIndexService searchStarterPacks:query limit:limit cursor:cursor error:&error];
+    if (error) {
+        response.statusCode = 500;
+        [response setJsonBody:@{ @"error": @"InternalServerError", @"message": error.localizedDescription ?: @"Failed" }];
+        return;
+    }
+    response.statusCode = 200;
+    [response setJsonBody:result ?: @{}];
 }
 
 @end
