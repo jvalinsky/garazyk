@@ -49,11 +49,14 @@ def run() -> ScenarioResult:
     char_names = ["luna", "marcus", "rosa", "volt"]
     for name in char_names:
         char = get_character(name)
-        timed_call(
+        session = timed_call(
             result, f"Create account: {char.name}",
             lambda c=char: client.accounts.create_account(c.handle, c.email, c.password),
             detail_fn=lambda s, n=name: f"did={s['did']}",
         )
+        if session:
+            char.did = session["did"]
+            char.access_jwt = session["accessJwt"]
 
     luna = get_character("luna")
     marcus = get_character("marcus")
