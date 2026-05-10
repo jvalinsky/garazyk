@@ -145,39 +145,4 @@
     return 0;
 }
 
-#pragma mark - Internal Helpers (REPLACED BY SubscribeReposHandler re-sequencing)
-
-- (void)broadcastCommitEvent:(FirehoseCommitEvent *)commitEvent {
-    // Deprecated - use subscribeReposHandler directly to ensure sequencing
-}
-
-- (void)broadcastIdentityEvent:(FirehoseIdentityEvent *)identityEvent {
-    // Deprecated
-}
-
-- (void)broadcastAccountEvent:(FirehoseAccountEvent *)accountEvent {
-    // Deprecated
-}
-
-- (NSData *)formatCommitEventForWire:(FirehoseCommitEvent *)event {
-    EventFormatter *formatter = [[EventFormatter alloc] init];
-    NSError *error = nil;
-    NSData *data = [formatter encodeCommitEvent:event error:&error];
-    return data;
-}
-
-- (NSData *)formatIdentityEventForWire:(FirehoseIdentityEvent *)event {
-    EventFormatter *formatter = [[EventFormatter alloc] init];
-    NSError *error = nil;
-    NSData *data = [formatter encodeIdentityEvent:event error:&error];
-    return data;
-}
-
-- (NSData *)formatAccountEventForWire:(FirehoseAccountEvent *)event {
-    EventFormatter *formatter = [[EventFormatter alloc] init];
-    NSError *error = nil;
-    NSData *data = [formatter encodeAccountEvent:event error:&error];
-    return data;
-}
-
 @end
