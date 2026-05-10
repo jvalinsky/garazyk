@@ -31,10 +31,7 @@ extern NSErrorDomain const PDSValidationErrorDomain;
  @constant PDSValidationErrorInvalidDID Invalid DID format.
  @constant PDSValidationErrorInvalidHandle Invalid handle format.
  @constant PDSValidationErrorInvalidURI Invalid URI format.
- @constant PDSValidationErrorPathTraversal Path traversal attempt detected.
  @constant PDSValidationErrorNullByteInjection Null byte injection attempt.
- @constant PDSValidationErrorSQLInjectionPattern SQL injection pattern detected.
- @constant PDSValidationErrorXSSPattern XSS pattern detected.
  */
 typedef NS_ENUM(NSInteger, PDSValidationError) {
     PDSValidationErrorEmptyString = 1000,
@@ -46,10 +43,7 @@ typedef NS_ENUM(NSInteger, PDSValidationError) {
     PDSValidationErrorInvalidDID = 1006,
     PDSValidationErrorInvalidHandle = 1007,
     PDSValidationErrorInvalidURI = 1008,
-    PDSValidationErrorPathTraversal = 1009,
     PDSValidationErrorNullByteInjection = 1010,
-    PDSValidationErrorSQLInjectionPattern = 1011,
-    PDSValidationErrorXSSPattern = 1012,
 };
 
 /*!
@@ -92,26 +86,8 @@ typedef NS_ENUM(NSInteger, PDSValidationError) {
 /*! Validates an AT URI. */
 - (BOOL)isValidATURI:(NSString *)uri;
 
-/*! Sanitizes input for SQL queries. @deprecated Use parameterized queries instead. */
-- (nullable NSString *)sanitizeSQLInput:(NSString *)input error:(NSError **)error DEPRECATED_MSG_ATTRIBUTE("Use parameterized queries instead.");
-
-/*! Sanitizes input for file paths. @deprecated Use strict whitelist validation instead. */
-- (nullable NSString *)sanitizePathInput:(NSString *)input error:(NSError **)error DEPRECATED_MSG_ATTRIBUTE("Use strict whitelist validation instead.");
-
-/*! Sanitizes input for JSON fields. @deprecated Lexicon validation handles this at the application layer. */
-- (nullable NSString *)sanitizeJSONField:(NSString *)input error:(NSError **)error DEPRECATED_MSG_ATTRIBUTE("Lexicon validation handles this at the application layer.");
-
-/*! Checks for SQL injection patterns. @deprecated Fragile blacklist-based security. */
-- (BOOL)containsSQLInjectionPattern:(NSString *)input DEPRECATED_MSG_ATTRIBUTE("Fragile blacklist-based security. Use parameterized queries.");
-
-/*! Checks for path traversal patterns. @deprecated Use strict whitelist validation instead. */
-- (BOOL)containsPathTraversalPattern:(NSString *)input DEPRECATED_MSG_ATTRIBUTE("Use strict whitelist validation instead.");
-
 /*! Checks for null byte injection. */
 - (BOOL)containsNullByte:(NSString *)input;
-
-/*! Checks for XSS patterns. @deprecated Lexicon validation handles this. */
-- (BOOL)containsXSSPattern:(NSString *)input DEPRECATED_MSG_ATTRIBUTE("Lexicon validation handles this.");
 
 /*! Validates and clamps a limit parameter. */
 - (NSInteger)validateLimitParameter:(NSInteger)limit maxLimit:(NSInteger)maxLimit;
