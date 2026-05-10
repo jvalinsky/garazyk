@@ -31,6 +31,21 @@ from .diagnostics import (
     default_run_id,
     sanitize_run_id,
 )
+from .instrumentation import (
+    InstrumentationReport,
+    MetricsTimeSeries,
+    OperationStats,
+    OperationTimer,
+    PhaseTimer,
+    ProcessMonitor,
+    ProcessStats,
+    PrometheusScraper,
+    StorageMonitor,
+    StorageStats,
+    CpuProfiler,
+    CpuStats,
+)
+from .dashboard import generate_dashboard_html
 from .config import (
     SERVICE_PORTS,
     SERVICE_URLS,
@@ -93,6 +108,21 @@ __all__ = [
     "create_run_context",
     "default_run_id",
     "sanitize_run_id",
+    # Instrumentation
+    "InstrumentationReport",
+    "MetricsTimeSeries",
+    "OperationStats",
+    "OperationTimer",
+    "PhaseTimer",
+    "ProcessMonitor",
+    "ProcessStats",
+    "PrometheusScraper",
+    "StorageMonitor",
+    "StorageStats",
+    "CpuProfiler",
+    "CpuStats",
+    # Dashboard
+    "generate_dashboard_html",
     # Config
     "SERVICE_PORTS",
     "SERVICE_URLS",
