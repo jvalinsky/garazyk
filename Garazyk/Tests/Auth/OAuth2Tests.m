@@ -54,6 +54,49 @@
     [self waitForExpectationsWithTimeout:2.0 handler:nil];
 }
 
+- (void)testAuthorizationRedirectFragmentMode {
+    self.server.issuer = @"https://pds.example.com";
+
+    OAuth2AuthorizationRequest *request = [[OAuth2AuthorizationRequest alloc] init];
+    request.clientID = @"test-client";
+    request.redirectURI = @"https://client.example.com/callback";
+    request.responseType = @"code";
+    request.state = @"state-456";
+    request.responseMode = @"fragment";
+
+    XCTestExpectation *expectation = [self expectationWithDescription:@"authorization redirect fragment"];
+    [self.server handleAuthorizationRequest:request
+                                 completion:^(NSURL * _Nullable authorizationURL,
+                                              NSString * _Nullable authorizationCode,
+                                              NSError * _Nullable error) {
+        XCTAssertNil(error);
+        XCTAssertNotNil(authorizationURL);
+        XCTAssertNotNil(authorizationCode);
+
+        NSURLComponents *components = [NSURLComponents componentsWithURL:authorizationURL
+                                                 resolvingAgainstBaseURL:NO];
+        // Fragment mode: response params in the fragment, not query
+        XCTAssertNil(components.queryItems);
+        XCTAssertNotNil(components.fragment);
+
+        // Parse fragment as query-string params
+        NSURLComponents *fragComponents = [NSURLComponents componentsWithString:[NSString stringWithFormat:@"https://dummy?%@", components.fragment]];
+        NSMutableDictionary<NSString *, NSString *> *fragParams = [NSMutableDictionary dictionary];
+        for (NSURLQueryItem *item in fragComponents.queryItems) {
+            if (item.name) {
+                fragParams[item.name] = item.value ?: @"";
+            }
+        }
+
+        XCTAssertEqualObjects(fragParams[@"code"], authorizationCode);
+        XCTAssertEqualObjects(fragParams[@"state"], @"state-456");
+        XCTAssertEqualObjects(fragParams[@"iss"], @"https://pds.example.com");
+        [expectation fulfill];
+    }];
+
+    [self waitForExpectationsWithTimeout:2.0 handler:nil];
+}
+
 - (void)testAuthorizationResponseParsesIssuerParameter {
     NSURL *url = [NSURL URLWithString:@"https://client.example.com/callback?code=abc123&state=state-xyz&iss=https%3A%2F%2Fpds.example.com"];
     NSError *error = nil;

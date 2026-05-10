@@ -39,6 +39,7 @@
   XCTAssertEqualObjects(dict[@"require_request_uri_registration"], @YES);
   XCTAssertEqualObjects(dict[@"client_id_metadata_document_supported"], @YES);
   XCTAssertTrue([dict[@"response_modes_supported"] containsObject:@"query"]);
+  XCTAssertTrue([dict[@"response_modes_supported"] containsObject:@"fragment"]);
   XCTAssertTrue([dict[@"scopes_supported"] containsObject:@"atproto"]);
   XCTAssertTrue(
       [dict[@"scopes_supported"] containsObject:@"transition:generic"]);
