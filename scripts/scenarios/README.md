@@ -64,6 +64,13 @@ pip install requests websockets
 | 08 | OAuth2 & Sessions | OAuth flows, token refresh, revocation | PDS | No |
 | 09 | Firehose Streaming | WebSocket subscription, event sequencing | PDS, Relay, AppView | No |
 | 10 | Performance & Resilience | Burst posting, batch writes, error handling | PDS, Relay, AppView | No |
+| 14 | Drafts & Bookmarks Workflow | Draft CRUD, publish from draft, bookmark lifecycle | PDS, AppView | No |
+| 15 | Mutes, Relationships & Starter Packs | Mute/unmute, getRelationships, starter pack CRUD | PDS, AppView | No |
+| 16 | Notification Management | updateSeen, registerPush, preferences, activity subscriptions | PDS, AppView | No |
+| 17 | Actor Preferences & Discovery | putPreferences, searchActorsTypeahead, getActorLikes, getRepostedBy | PDS, AppView | No |
+| 18 | AppView Admin Operations | Ingest health, backfill, metrics, lexicons, records, hooks | AppView | No |
+| 19 | Contact & Age Assurance | Phone verification, contact import/matches, age assurance flow | PDS, AppView | No |
+| 20 | Unspecced Search & Discovery | searchActorsSkeleton, searchPostsSkeleton, searchStarterPacksSkeleton | PDS, AppView | No |
 
 ## Running Scenarios
 
@@ -291,7 +298,7 @@ if __name__ == "__main__":
 ## Endpoint Coverage
 
 | Namespace | Scenarios | Key Endpoints |
-|---|---|---|
+|---|---|---|---|
 | `com.atproto.server.*` | 1, 8 | createAccount, createSession, getSession, refreshSession, deleteSession, describeServer |
 | `com.atproto.identity.*` | 1, 5 | resolveHandle, updateHandle |
 | `com.atproto.repo.*` | 3, 7, 10 | createRecord, getRecord, deleteRecord, uploadBlob, applyWrites, listRecords |
@@ -299,14 +306,20 @@ if __name__ == "__main__":
 | `com.atproto.moderation.*` | 4 | createReport |
 | `com.atproto.admin.*` | 4 | getSubjectStatus, updateSubjectStatus |
 | `com.atproto.label.*` | 4 | getLabels, queryLabels |
-| `app.bsky.actor.*` | 1, 2, 3 | getProfile, getProfiles, searchActors, profile record |
-| `app.bsky.feed.*` | 3, 10 | post, like, repost, bookmark, getTimeline, getAuthorFeed, getPostThread, getLikes |
-| `app.bsky.graph.*` | 2 | follow, block, getFollows, getFollowers, getBlocks |
-| `app.bsky.notification.*` | 3 | listNotifications, getUnreadCount |
+| `app.bsky.actor.*` | 1, 2, 3, 17 | getProfile, getProfiles, searchActors, searchActorsTypeahead, getPreferences, putPreferences, getSuggestions, profile record |
+| `app.bsky.feed.*` | 3, 10, 17 | post, like, repost, bookmark, getTimeline, getAuthorFeed, getPostThread, getLikes, getActorLikes, getPosts, getRepostedBy, getFeed |
+| `app.bsky.graph.*` | 2, 15 | follow, block, getFollows, getFollowers, getBlocks, getMutes, muteActor, unmuteActor, getRelationships, getStarterPack, getActorStarterPacks, getStarterPacks |
+| `app.bsky.graph.starterpack` | 15, 20 | starterpack record, getStarterPack, getActorStarterPacks, getStarterPacks |
+| `app.bsky.notification.*` | 3, 16 | listNotifications, getUnreadCount, updateSeen, registerPush, unregisterPush, getPreferences, putPreferences, listActivitySubscriptions, putActivitySubscription |
+| `app.bsky.draft.*` | 14 | createDraft, updateDraft, getDrafts, deleteDraft |
+| `app.bsky.bookmark.*` | 3, 14 | getBookmarks, createBookmark, deleteBookmark |
+| `app.bsky.contact.*` | 19 | startPhoneVerification, verifyPhone, importContacts, getMatches, dismissMatch, getSyncStatus, removeData |
+| `app.bsky.ageassurance.*` | 19 | begin, getConfig, getState |
+| `app.bsky.unspecced.*` | 20 | searchActorsSkeleton, searchPostsSkeleton, searchStarterPacksSkeleton |
 | `chat.bsky.convo.*` | 6 | getConvo, sendMessage, getList, getMessages, muteConvo |
 | `chat.bsky.group.*` | 6 | createGroup, getGroup, addMember |
 | `tools.ozone.*` | 4 | queryReports, emitEvent |
 | OAuth2 | 8 | /oauth/authorize, /oauth/token, /oauth/revoke |
 | PLC | 1, 5 | DID creation, resolution |
 | Relay API | 5, 9, 10 | /api/relay/health, /api/relay/upstreams |
-| AppView Admin | 3, 5, 9 | /admin/backfill/status |
+| AppView Admin | 3, 5, 9, 18 | /admin/backfill/status, /admin/backfill/queue, /admin/backfill/repos, /admin/backfill/scope/rebuild, /admin/ingest/health, /admin/appview/metrics/stats, /admin/lexicons, /admin/lexicons/collections, /admin/records, /admin/hooks, /admin/hooks/dead-letter, /admin/handlers, /admin/endpoints |
