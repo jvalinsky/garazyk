@@ -45,15 +45,6 @@ static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
 
 @implementation PDSDatabase
 
-+ (instancetype)sharedDatabase {
-    static PDSDatabase *sharedInstance = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        sharedInstance = [[PDSDatabase alloc] init];
-    });
-    return sharedInstance;
-}
-
 - (instancetype)init {
     self = [super init];
     if (self) {
