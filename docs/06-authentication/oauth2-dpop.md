@@ -41,6 +41,8 @@ When this flow breaks, the usual buckets are:
 - `use_dpop_nonce` challenge handling
 - issuer, audience, or public URL mismatch behind a proxy
 - session rotation or refresh state drift
+- **Content-Type mismatch**: The token endpoint accepts both `application/json` and `application/x-www-form-urlencoded`. The atcute browser library sends JSON; sending form-url-encoded to a handler that only parses JSON (or vice versa) causes silent field loss (e.g., "missing client_id").
+- **CSS `!important` collision**: The shared DesignSystem CSS defines `.hidden { display: none !important; }`. JS that sets `element.style.display = 'block'` cannot override `!important`. Use `classList.remove('hidden')` instead.
 
 Those are different debugging paths, which is why the deep dives exist.
 
