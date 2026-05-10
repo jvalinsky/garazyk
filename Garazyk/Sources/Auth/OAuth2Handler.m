@@ -3023,6 +3023,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
 
   [response setJsonBody:jwks];
   response.statusCode = 200;
+  [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
 }
 
 - (void)handlePARRequest:(HttpRequest *)request

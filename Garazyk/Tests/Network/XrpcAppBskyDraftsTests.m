@@ -64,19 +64,17 @@
 #pragma mark - deleteDraft Tests
 
 - (void)testDeleteDraftRequiresAuth {
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.draft.deleteDraft"
-                                             queryString:@"id=draft1"
-                                             queryParams:@{@"id": @"draft1"}
-                                                 headers:@{}];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.draft.deleteDraft"
+                                                      body:@{@"uri": @"at://did:plc:test/app.bsky.draft/draft1"}
+                                                   headers:@{}];
     XCTAssertEqual(response.statusCode, 401);
 }
 
 - (void)testDeleteDraftSuccess {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
-    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.draft.deleteDraft"
-                                             queryString:@"id=draft1"
-                                             queryParams:@{@"id": @"draft1"}
-                                                 headers:@{@"authorization": authHeader}];
+    HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/app.bsky.draft.deleteDraft"
+                                                      body:@{@"uri": @"at://did:plc:test/app.bsky.draft/draft1"}
+                                                   headers:@{@"authorization": authHeader}];
     // Deleting a non-existent draft should still return 200 (idempotent)
     XCTAssertEqual(response.statusCode, 200);
 }
