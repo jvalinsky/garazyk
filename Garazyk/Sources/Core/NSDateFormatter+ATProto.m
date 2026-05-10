@@ -7,6 +7,7 @@
  */
 
 #import "NSDateFormatter+ATProto.h"
+#import <pthread.h>
 
 // Suppress -Warc-performSelector-leaks: the dynamic selectors used here
 // (stringFromDate: and dateFromString:) are known to return autoreleased
@@ -27,6 +28,69 @@ void NSDateFormatterLinkATProtoCategory(void) {
 #define AT_NSISO8601DateFormatWithInternetDateTime 1907
 #define AT_NSISO8601DateFormatWithFractionalSeconds 2048
 
+#pragma mark - Thread-Local Formatter Storage
+
+/// NSDateFormatter is NOT thread-safe on GNUstep (backed by ICU SimpleDateFormat).
+/// A shared singleton causes SIGSEGV in __dynamic_cast when multiple threads
+/// parse dates concurrently. We use pthread_key_t for thread-local storage
+/// of per-thread formatters, which works with ARC-managed ObjC objects.
+
+/// Destructor for pthread_key_t: releases the ObjC object when the thread exits.
+static void atproto_formatter_destructor(void *ptr) {
+    if (ptr) {
+        id obj = (__bridge_transfer id)ptr;
+        // ARC releases the object when it goes out of scope
+        (void)obj;
+    }
+}
+
+/// pthread_once init routine for the NSDateFormatter key.
+static void atproto_init_iso8601_formatter_key(void) {
+    static pthread_key_t key;
+    pthread_key_create(&key, atproto_formatter_destructor);
+    // Store in a global so we can retrieve it
+    // (We use a different approach below instead)
+}
+
+// Use dispatch_once for key initialization (portable across macOS and GNUstep)
+// and pthread_key_t for thread-local storage.
+
+static pthread_key_t _atproto_iso8601_formatter_key;
+static dispatch_once_t _atproto_iso8601_formatter_key_once;
+static void atproto_init_iso8601_formatter_key_dispatch(void *ctx) {
+    pthread_key_create((pthread_key_t *)ctx, atproto_formatter_destructor);
+}
+static pthread_key_t atproto_iso8601_formatter_key(void) {
+    dispatch_once_f(&_atproto_iso8601_formatter_key_once,
+                    &_atproto_iso8601_formatter_key,
+                    atproto_init_iso8601_formatter_key_dispatch);
+    return _atproto_iso8601_formatter_key;
+}
+
+static pthread_key_t _atproto_iso8601_internal_key;
+static dispatch_once_t _atproto_iso8601_internal_key_once;
+static void atproto_init_iso8601_internal_key_dispatch(void *ctx) {
+    pthread_key_create((pthread_key_t *)ctx, atproto_formatter_destructor);
+}
+static pthread_key_t atproto_iso8601_internal_key(void) {
+    dispatch_once_f(&_atproto_iso8601_internal_key_once,
+                    &_atproto_iso8601_internal_key,
+                    atproto_init_iso8601_internal_key_dispatch);
+    return _atproto_iso8601_internal_key;
+}
+
+static pthread_key_t _atproto_iso8601_internal_nofrac_key;
+static dispatch_once_t _atproto_iso8601_internal_nofrac_key_once;
+static void atproto_init_iso8601_internal_nofrac_key_dispatch(void *ctx) {
+    pthread_key_create((pthread_key_t *)ctx, atproto_formatter_destructor);
+}
+static pthread_key_t atproto_iso8601_internal_nofrac_key(void) {
+    dispatch_once_f(&_atproto_iso8601_internal_nofrac_key_once,
+                    &_atproto_iso8601_internal_nofrac_key,
+                    atproto_init_iso8601_internal_nofrac_key_dispatch);
+    return _atproto_iso8601_internal_nofrac_key;
+}
+
 @implementation NSDateFormatter (ATProto)
 
 + (BOOL)isNSISO8601DateFormatterAvailable {
@@ -35,59 +99,60 @@ void NSDateFormatterLinkATProtoCategory(void) {
 
 + (id)atproto_iso8601FormatterInternal {
     Class isoClass = NSClassFromString(@"NSISO8601DateFormatter");
-    if (isoClass) {
-        static id formatter = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^{
-            formatter = [[isoClass alloc] init];
-            SEL setFormatOptionsSEL = NSSelectorFromString(@"setFormatOptions:");
-            if ([formatter respondsToSelector:setFormatOptionsSEL]) {
-                NSUInteger options = AT_NSISO8601DateFormatWithInternetDateTime | AT_NSISO8601DateFormatWithFractionalSeconds;
-                NSMethodSignature *sig = [formatter methodSignatureForSelector:setFormatOptionsSEL];
-                NSInvocation *inv = [NSInvocation invocationWithMethodSignature:sig];
-                [inv setTarget:formatter];
-                [inv setSelector:setFormatOptionsSEL];
-                [inv setArgument:&options atIndex:2];
-                [inv invoke];
-            }
-        });
-        return formatter;
+    if (!isoClass) return nil;
+
+    pthread_key_t key = atproto_iso8601_internal_key();
+    id formatter = (__bridge id)pthread_getspecific(key);
+    if (formatter) return formatter;
+
+    formatter = [[isoClass alloc] init];
+    SEL setFormatOptionsSEL = NSSelectorFromString(@"setFormatOptions:");
+    if ([formatter respondsToSelector:setFormatOptionsSEL]) {
+        NSUInteger options = AT_NSISO8601DateFormatWithInternetDateTime | AT_NSISO8601DateFormatWithFractionalSeconds;
+        NSMethodSignature *sig = [formatter methodSignatureForSelector:setFormatOptionsSEL];
+        NSInvocation *inv = [NSInvocation invocationWithMethodSignature:sig];
+        [inv setTarget:formatter];
+        [inv setSelector:setFormatOptionsSEL];
+        [inv setArgument:&options atIndex:2];
+        [inv invoke];
     }
-    return nil;
+    pthread_setspecific(key, (__bridge_retained void *)formatter);
+    return formatter;
 }
 
 + (id)atproto_iso8601FormatterInternalNoFractionalSeconds {
     Class isoClass = NSClassFromString(@"NSISO8601DateFormatter");
-    if (isoClass) {
-        static id formatter = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^{
-            formatter = [[isoClass alloc] init];
-            SEL setFormatOptionsSEL = NSSelectorFromString(@"setFormatOptions:");
-            if ([formatter respondsToSelector:setFormatOptionsSEL]) {
-                NSUInteger options = AT_NSISO8601DateFormatWithInternetDateTime;
-                NSMethodSignature *sig = [formatter methodSignatureForSelector:setFormatOptionsSEL];
-                NSInvocation *inv = [NSInvocation invocationWithMethodSignature:sig];
-                [inv setTarget:formatter];
-                [inv setSelector:setFormatOptionsSEL];
-                [inv setArgument:&options atIndex:2];
-                [inv invoke];
-            }
-        });
-        return formatter;
+    if (!isoClass) return nil;
+
+    pthread_key_t key = atproto_iso8601_internal_nofrac_key();
+    id formatter = (__bridge id)pthread_getspecific(key);
+    if (formatter) return formatter;
+
+    formatter = [[isoClass alloc] init];
+    SEL setFormatOptionsSEL = NSSelectorFromString(@"setFormatOptions:");
+    if ([formatter respondsToSelector:setFormatOptionsSEL]) {
+        NSUInteger options = AT_NSISO8601DateFormatWithInternetDateTime;
+        NSMethodSignature *sig = [formatter methodSignatureForSelector:setFormatOptionsSEL];
+        NSInvocation *inv = [NSInvocation invocationWithMethodSignature:sig];
+        [inv setTarget:formatter];
+        [inv setSelector:setFormatOptionsSEL];
+        [inv setArgument:&options atIndex:2];
+        [inv invoke];
     }
-    return nil;
+    pthread_setspecific(key, (__bridge_retained void *)formatter);
+    return formatter;
 }
 
 + (NSDateFormatter *)atproto_iso8601Formatter {
-    static NSDateFormatter *formatter = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        formatter = [[NSDateFormatter alloc] init];
-        [formatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"];
-        [formatter setLocale:[NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"]];
-        [formatter setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
-    });
+    pthread_key_t key = atproto_iso8601_formatter_key();
+    NSDateFormatter *formatter = (__bridge id)pthread_getspecific(key);
+    if (formatter) return formatter;
+
+    formatter = [[NSDateFormatter alloc] init];
+    [formatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"];
+    [formatter setLocale:[NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"]];
+    [formatter setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
+    pthread_setspecific(key, (__bridge_retained void *)formatter);
     return formatter;
 }
 
