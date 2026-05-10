@@ -22,7 +22,7 @@
 @implementation PDSConnectionPool
 
 - (instancetype)initWithPath:(NSString *)path {
-    return [self initWithPath:path minConnections:2 maxConnections:10];
+    return [self initWithPath:path minConnections:2 maxConnections:32];
 }
 
 - (instancetype)initWithPath:(NSString *)path
@@ -211,6 +211,37 @@
     sqlite3_exec(db, "PRAGMA foreign_keys = ON", NULL, NULL, &errMsg);
     if (errMsg) {
         PDS_LOG_DB_WARN(@"Failed to enable foreign keys: %s", errMsg);
+        sqlite3_free(errMsg);
+        errMsg = NULL;
+    }
+
+    // WAL autocheckpoint: 5000 pages instead of default 1000.
+    // Reduces checkpoint frequency, improving write throughput under
+    // concurrent load. The default 1000-page checkpoint fires too
+    // often when multiple writers are active (32 per-DID dispatchers).
+    sqlite3_exec(db, "PRAGMA wal_autocheckpoint = 5000", NULL, NULL, &errMsg);
+    if (errMsg) {
+        PDS_LOG_DB_WARN(@"Failed to set wal_autocheckpoint: %s", errMsg);
+        sqlite3_free(errMsg);
+        errMsg = NULL;
+    }
+
+    // Journal size limit: 16MB — prevents unbounded WAL growth.
+    // Without this, a burst of writes can grow the WAL file until
+    // it consumes all available disk space.
+    sqlite3_exec(db, "PRAGMA journal_size_limit = 16777216", NULL, NULL, &errMsg);
+    if (errMsg) {
+        PDS_LOG_DB_WARN(@"Failed to set journal_size_limit: %s", errMsg);
+        sqlite3_free(errMsg);
+        errMsg = NULL;
+    }
+
+    // Cache size: 8MB per connection — improves read performance for
+    // hot data (MST nodes, record lookups). Negative value means
+    // kilobytes (SQLite convention).
+    sqlite3_exec(db, "PRAGMA cache_size = -8000", NULL, NULL, &errMsg);
+    if (errMsg) {
+        PDS_LOG_DB_WARN(@"Failed to set cache_size: %s", errMsg);
         sqlite3_free(errMsg);
         errMsg = NULL;
     }
