@@ -798,6 +798,7 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
         [curlTask setLaunchPath:@"/usr/bin/curl"];
         [curlTask setArguments:@[
             @"-s", @"-w", @"\n%{http_code}",
+            @"--noproxy", @"*",
             @"--max-time", @"15",
             @"-X", @"POST",
             @"-H", @"Content-Type: application/json",
