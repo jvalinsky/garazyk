@@ -1096,7 +1096,6 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
     }];
 
     // Register com.atproto.admin.moderateAccount
-    // Register com.atproto.admin.moderateAccount
     // DEPRECATED: This method was removed. Moderation has moved to tools.ozone.*
     [dispatcher registerComAtprotoAdminModerateAccount:^(HttpRequest *request, HttpResponse *response) {
         response.statusCode = HttpStatusGone;
