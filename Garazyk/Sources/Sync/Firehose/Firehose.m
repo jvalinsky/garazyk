@@ -89,6 +89,14 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
     self.isConnected = NO;
 }
 
+- (void)suspendReading {
+    [self.connection suspendReading];
+}
+
+- (void)resumeReading {
+    [self.connection resumeReading];
+}
+
 - (NSTimeInterval)heartbeatTimeout {
     return self.connection.heartbeatTimeout;
 }
