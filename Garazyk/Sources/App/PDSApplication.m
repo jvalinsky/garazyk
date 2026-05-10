@@ -464,9 +464,6 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     // H1: Give PDSAdminAuth access
     [PDSAdminAuth sharedAuth].dataDirectory = _dataDirectory;
 
-    // H2: Validate admin password format
-    // [self validateAdminPasswordWithConfiguration:_configuration]; // Method not implemented
-
     // H3: Warn if X-Admin-Token legacy header is active in production
     NSDictionary *startupEnv = [[NSProcessInfo processInfo] environment];
     BOOL isProductionEnv = [[startupEnv[@"PDS_ENV"] lowercaseString] isEqualToString:@"production"];

@@ -99,15 +99,9 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                                                               rev:(NSString *)rev
                                                             error:(NSError **)error;
 
-@property (nonatomic, strong) NSMutableDictionary<NSString *, MST *> *mstCacheByDid;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSDictionary *> *statsCacheByDid;
-#if defined(GNUSTEP)
-@property (nonatomic, assign) dispatch_queue_t mstCacheQueue;
-#else
-@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t mstCacheQueue;
-#endif
 
-/*! Per-DID write dispatcher — replaces the single global writeQueue. */
+/*! Per-DID write dispatcher. */
 @property (nonatomic, strong) PDSPerDidWriteDispatcher *writeDispatcher;
 
 @end
@@ -118,9 +112,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
     if (self = [super init]) {
         self.databasePool = databasePool;
         self.recordRepository = [[PDSSQLiteRecordRepository alloc] initWithDatabasePool:databasePool];
-        _mstCacheByDid = [NSMutableDictionary dictionary];
         _statsCacheByDid = [NSMutableDictionary dictionary];
-        _mstCacheQueue = dispatch_queue_create("com.atproto.pds.recordservice.mstcache", DISPATCH_QUEUE_SERIAL);
         _writeDispatcher = [[PDSPerDidWriteDispatcher alloc] initWithConcurrencyLimit:32
                                                               idleEvictionSeconds:60];
     }
@@ -375,16 +367,16 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
     __block NSString *newRev = nil;
     __block CID *prevRoot = nil;
     __block NSError *writeError = nil;
-    NSTimeInterval writeQueueEnter = [NSDate timeIntervalSinceReferenceDate];
+    NSTimeInterval writeEnter = [NSDate timeIntervalSinceReferenceDate];
     [self _dispatchWriteForDid:did block:^{
-        NSTimeInterval writeQueueStart = [NSDate timeIntervalSinceReferenceDate];
-        NSTimeInterval waitMs = (writeQueueStart - writeQueueEnter) * 1000.0;
+        NSTimeInterval writeStart = [NSDate timeIntervalSinceReferenceDate];
+        NSTimeInterval waitMs = (writeStart - writeEnter) * 1000.0;
         PDS_LOG_DEBUG(@"[PDSRecordService] putRecord: writeDispatcher entered (waited %.1fms) did=%@ coll=%@ rkey=%@",
                        waitMs, did, collection, rkey);
         success = [self.recordRepository saveRecord:record error:&writeError];
 
         if (success) {
-            NSTimeInterval saveMs = ([NSDate timeIntervalSinceReferenceDate] - writeQueueStart) * 1000.0;
+            NSTimeInterval saveMs = ([NSDate timeIntervalSinceReferenceDate] - writeStart) * 1000.0;
             PDS_LOG_DEBUG(@"[PDSRecordService] putRecord: saveRecord OK (%.1fms) did=%@", saveMs, did);
 
             // Fetch previous root and refresh metadata to get new commit info
@@ -412,7 +404,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
             PDS_LOG_DEBUG(@"[PDSRecordService] putRecord: refreshRepoRootMetadata OK (%.1fms) did=%@ commit=%@",
                            mstMs, did, newRootCID);
         }
-        NSTimeInterval totalMs = ([NSDate timeIntervalSinceReferenceDate] - writeQueueStart) * 1000.0;
+        NSTimeInterval totalMs = ([NSDate timeIntervalSinceReferenceDate] - writeStart) * 1000.0;
         PDS_LOG_DEBUG(@"[PDSRecordService] putRecord: writeDispatcher total %.1fms did=%@ success=%d", totalMs, did, success);
     }];
 
@@ -496,10 +488,10 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
     __block NSString *newRev = nil;
     __block CID *prevRoot = nil;
     __block NSError *writeError = nil;
-    NSTimeInterval writeQueueEnter = [NSDate timeIntervalSinceReferenceDate];
+    NSTimeInterval writeEnter = [NSDate timeIntervalSinceReferenceDate];
     [self _dispatchWriteForDid:did block:^{
-        NSTimeInterval writeQueueStart = [NSDate timeIntervalSinceReferenceDate];
-        NSTimeInterval waitMs = (writeQueueStart - writeQueueEnter) * 1000.0;
+        NSTimeInterval writeStart = [NSDate timeIntervalSinceReferenceDate];
+        NSTimeInterval waitMs = (writeStart - writeEnter) * 1000.0;
         PDS_LOG_DEBUG(@"[PDSRecordService] deleteRecord: writeDispatcher entered (waited %.1fms) did=%@ coll=%@ rkey=%@",
                        waitMs, did, collection, rkey);
         [self.databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
@@ -521,7 +513,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
         } error:&writeError];
 
         if (success) {
-            NSTimeInterval saveMs = ([NSDate timeIntervalSinceReferenceDate] - writeQueueStart) * 1000.0;
+            NSTimeInterval saveMs = ([NSDate timeIntervalSinceReferenceDate] - writeStart) * 1000.0;
             PDS_LOG_DEBUG(@"[PDSRecordService] deleteRecord: DB delete OK (%.1fms) did=%@", saveMs, did);
 
             // Fetch previous root and refresh metadata
@@ -547,7 +539,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
             PDS_LOG_DEBUG(@"[PDSRecordService] deleteRecord: refreshRepoRootMetadata OK (%.1fms) did=%@ commit=%@",
                            mstMs, did, newRootCID);
         }
-        NSTimeInterval totalMs = ([NSDate timeIntervalSinceReferenceDate] - writeQueueStart) * 1000.0;
+        NSTimeInterval totalMs = ([NSDate timeIntervalSinceReferenceDate] - writeStart) * 1000.0;
         PDS_LOG_DEBUG(@"[PDSRecordService] deleteRecord: writeDispatcher total %.1fms did=%@ success=%d", totalMs, did, success);
     }];
 
@@ -605,10 +597,10 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
     // concurrently while serializing writes for the same DID.
     __block NSDictionary *response = nil;
     __block NSError *writeError = nil;
-    NSTimeInterval writeQueueEnter = [NSDate timeIntervalSinceReferenceDate];
+    NSTimeInterval writeEnter = [NSDate timeIntervalSinceReferenceDate];
     [self _dispatchWriteForDid:did block:^{
-        NSTimeInterval writeQueueStart = [NSDate timeIntervalSinceReferenceDate];
-        NSTimeInterval waitMs = (writeQueueStart - writeQueueEnter) * 1000.0;
+        NSTimeInterval writeStart = [NSDate timeIntervalSinceReferenceDate];
+        NSTimeInterval waitMs = (writeStart - writeEnter) * 1000.0;
         PDS_LOG_DEBUG(@"[PDSRecordService] applyWrites: writeDispatcher entered (waited %.1fms) did=%@ writes=%lu",
                        waitMs, did, (unsigned long)writes.count);
         response = [self _applyWritesSerialized:writes
@@ -617,7 +609,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                                 validationMode:mode
                                     swapCommit:swapCommit
                                          error:&writeError];
-        NSTimeInterval totalMs = ([NSDate timeIntervalSinceReferenceDate] - writeQueueStart) * 1000.0;
+        NSTimeInterval totalMs = ([NSDate timeIntervalSinceReferenceDate] - writeStart) * 1000.0;
         PDS_LOG_DEBUG(@"[PDSRecordService] applyWrites: writeDispatcher total %.1fms did=%@ response=%@",
                        totalMs, did, response ? @"OK" : @"FAILED");
     }];
@@ -1361,157 +1353,168 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
         return nil;
     }
 
-    __block NSDictionary<NSString *, NSString *> *result = nil;
-    __block NSError *queueError = nil;
-
-    dispatch_sync(self.mstCacheQueue, ^{
-        MST *mst = [[MSTCacheManager sharedManager] mstForDid:did];
+    // Load or retrieve MST — no serial queue needed
+    // Per-DID serialization is guaranteed by PDSPerDidWriteDispatcher
+    // MSTCacheManager uses MSTAtomicReference for thread-safe access
+    MST *mst = [[MSTCacheManager sharedManager] mstForDid:did];
+    if (!mst) {
+        // Try incremental loading from stored repo blocks first
+        NSError *loadError = nil;
+        mst = [self loadMSTFromRepoBlocksForDid:did store:store error:&loadError];
         if (!mst) {
-            // Try incremental loading from stored repo blocks first
-            mst = [self loadMSTFromRepoBlocksForDid:did store:store error:&queueError];
-            if (!mst) {
-                // Fallback: full rebuild from records
-                mst = [self loadRepoMSTForDid:did store:store error:&queueError];
-            }
-            if (!mst) {
-                return;
-            }
+            // Fallback: full rebuild from records
+            mst = [self loadRepoMSTForDid:did store:store error:&loadError];
         }
-
-        [mutationCIDsByKey enumerateKeysAndObjectsUsingBlock:^(NSString *key, id obj, BOOL *stop) {
-            (void)stop;
-            if (key.length == 0) {
-                return;
-            }
-
-            if ([obj isKindOfClass:[NSNull class]]) {
-                [mst delete:key];
-                return;
-            }
-
-            NSString *cidString = [obj isKindOfClass:[NSString class]] ? (NSString *)obj : nil;
-            CID *recordCID = (cidString.length > 0) ? [CID cidFromString:cidString] : nil;
-            if (!recordCID) {
-                return;
-            }
-            [mst put:key valueCID:recordCID subKey:nil];
-        }];
-
-        CID *dataCID = mst.rootCID;
-        if (!dataCID) {
-            queueError = [NSError errorWithDomain:@"PDSRecordService"
-                                             code:-3
-                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to compute updated MST root"}];
-            [[MSTCacheManager sharedManager] removeMSTForDid:did];
-            [self.statsCacheByDid removeObjectForKey:did];
-            return;
+        if (!mst) {
+            if (error && loadError) *error = loadError;
+            return nil;
         }
-
-        // Always invalidate stats cache on successful write
-        [self.statsCacheByDid removeObjectForKey:did];
-
-        NSString *rev = [store latestMutationRevisionWithError:nil];
-        if (rev.length == 0) {
-            rev = preferredRev;
-        }
-        if (rev.length == 0) {
-            rev = [TID tid].stringValue;
-        }
-
-        NSData *prevCommitBytes = [store getRepoRootForDid:did error:nil];
-        CID *prevCommitCID = prevCommitBytes ? [CID cidFromBytes:prevCommitBytes] : nil;
-
-        RepoCommit *commit = [RepoCommit createCommitWithDid:did
-                                                        data:dataCID
-                                                         rev:rev
-                                                        prev:prevCommitCID];
-
-        NSData *signature = [store signData:[commit serialize] error:&queueError];
-        if (!signature) {
-            [[MSTCacheManager sharedManager] removeMSTForDid:did];
-            return;
-        }
-        commit.signature = signature;
-
-        CID *commitCID = [commit computeCID];
-        NSData *commitData = [commit serializeSigned];
-        if (!commitCID || commitData.length == 0) {
-            queueError = [NSError errorWithDomain:@"PDSRecordService"
-                                             code:-1
-                                         userInfo:@{NSLocalizedDescriptionKey: @"Failed to serialize signed commit"}];
-            [[MSTCacheManager sharedManager] removeMSTForDid:did];
-            return;
-        }
-
-        PDSDatabaseBlock *commitBlock = [[PDSDatabaseBlock alloc] init];
-        commitBlock.cid = [commitCID bytes];
-        commitBlock.blockData = commitData;
-        commitBlock.size = commitData.length;
-        commitBlock.createdAt = [NSDate date];
-        commitBlock.rev = rev;
-
-        NSArray<PDSDatabaseBlock *> *mstBlocks = [self changedMSTBlocksForMST:mst
-                                                                    changedKeys:changedKeys ?: @[]
-                                                                           rev:rev
-                                                                         error:&queueError];
-        if (!mstBlocks) {
-            [[MSTCacheManager sharedManager] removeMSTForDid:did];
-            return;
-        }
-
-        NSMutableArray<PDSDatabaseBlock *> *blocksToPersist = [NSMutableArray arrayWithObject:commitBlock];
-        [blocksToPersist addObjectsFromArray:mstBlocks];
-
-        // Add mutation blocks (the actual records)
-        [mutationBlocksByCID enumerateKeysAndObjectsUsingBlock:^(NSString *cidStr, NSData *data, BOOL *stop) {
-            CID *cid = [CID cidFromString:cidStr];
-            if (cid && data.length > 0) {
-                PDSDatabaseBlock *recordBlock = [[PDSDatabaseBlock alloc] init];
-                recordBlock.cid = [cid bytes];
-                recordBlock.blockData = data;
-                recordBlock.size = data.length;
-                recordBlock.createdAt = [NSDate date];
-                recordBlock.rev = rev;
-                [blocksToPersist addObject:recordBlock];
-            }
-        }];
-
-        __block BOOL updated = NO;
-        [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
-            if (![transactor putBlocks:blocksToPersist forDid:did error:blockError]) {
-                return;
-            }
-            updated = [transactor updateRepoRoot:did rootCid:[commitCID bytes] rev:rev error:blockError];
-        } error:&queueError];
-
-        if (!updated) {
-            [[MSTCacheManager sharedManager] removeMSTForDid:did];
-            if (!queueError) {
-                queueError = [NSError errorWithDomain:@"PDSRecordService"
-                                                 code:-4
-                                             userInfo:@{NSLocalizedDescriptionKey: @"Failed to update repository head"}];
-            }
-            return;
-        }
-
-        [[MSTCacheManager sharedManager] setMST:mst forDid:did];
-        result = @{
-            @"cid": commitCID.stringValue ?: @"",
-            @"rev": rev ?: @""
-        };
-    });
-
-    if (!result && error && queueError) {
-        *error = queueError;
     }
-    return result;
+
+    // Apply mutations
+    [mutationCIDsByKey enumerateKeysAndObjectsUsingBlock:^(NSString *key, id obj, BOOL *stop) {
+        (void)stop;
+        if (key.length == 0) {
+            return;
+        }
+
+        if ([obj isKindOfClass:[NSNull class]]) {
+            [mst delete:key];
+            return;
+        }
+
+        NSString *cidString = [obj isKindOfClass:[NSString class]] ? (NSString *)obj : nil;
+        CID *recordCID = (cidString.length > 0) ? [CID cidFromString:cidString] : nil;
+        if (!recordCID) {
+            return;
+        }
+        [mst put:key valueCID:recordCID subKey:nil];
+    }];
+
+    CID *dataCID = mst.rootCID;
+    if (!dataCID) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSRecordService"
+                                         code:-3
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to compute updated MST root"}];
+        }
+        [[MSTCacheManager sharedManager] removeMSTForDid:did];
+        @synchronized(self.statsCacheByDid) {
+            [self.statsCacheByDid removeObjectForKey:did];
+        }
+        return nil;
+    }
+
+    // Invalidate stats cache on successful write
+    @synchronized(self.statsCacheByDid) {
+        [self.statsCacheByDid removeObjectForKey:did];
+    }
+
+    NSString *rev = [store latestMutationRevisionWithError:nil];
+    if (rev.length == 0) {
+        rev = preferredRev;
+    }
+    if (rev.length == 0) {
+        rev = [TID tid].stringValue;
+    }
+
+    NSData *prevCommitBytes = [store getRepoRootForDid:did error:nil];
+    CID *prevCommitCID = prevCommitBytes ? [CID cidFromBytes:prevCommitBytes] : nil;
+
+    RepoCommit *commit = [RepoCommit createCommitWithDid:did
+                                                    data:dataCID
+                                                     rev:rev
+                                                    prev:prevCommitCID];
+
+    NSError *signError = nil;
+    NSData *signature = [store signData:[commit serialize] error:&signError];
+    if (!signature) {
+        [[MSTCacheManager sharedManager] removeMSTForDid:did];
+        if (error && signError) *error = signError;
+        return nil;
+    }
+    commit.signature = signature;
+
+    CID *commitCID = [commit computeCID];
+    NSData *commitData = [commit serializeSigned];
+    if (!commitCID || commitData.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"PDSRecordService"
+                                         code:-1
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to serialize signed commit"}];
+        }
+        [[MSTCacheManager sharedManager] removeMSTForDid:did];
+        return nil;
+    }
+
+    PDSDatabaseBlock *commitBlock = [[PDSDatabaseBlock alloc] init];
+    commitBlock.cid = [commitCID bytes];
+    commitBlock.blockData = commitData;
+    commitBlock.size = commitData.length;
+    commitBlock.createdAt = [NSDate date];
+    commitBlock.rev = rev;
+
+    NSError *mstBlocksError = nil;
+    NSArray<PDSDatabaseBlock *> *mstBlocks = [self changedMSTBlocksForMST:mst
+                                                                changedKeys:changedKeys ?: @[]
+                                                                       rev:rev
+                                                                     error:&mstBlocksError];
+    if (!mstBlocks) {
+        [[MSTCacheManager sharedManager] removeMSTForDid:did];
+        if (error && mstBlocksError) *error = mstBlocksError;
+        return nil;
+    }
+
+    NSMutableArray<PDSDatabaseBlock *> *blocksToPersist = [NSMutableArray arrayWithObject:commitBlock];
+    [blocksToPersist addObjectsFromArray:mstBlocks];
+
+    // Add mutation blocks (the actual records)
+    [mutationBlocksByCID enumerateKeysAndObjectsUsingBlock:^(NSString *cidStr, NSData *data, BOOL *stop) {
+        CID *cid = [CID cidFromString:cidStr];
+        if (cid && data.length > 0) {
+            PDSDatabaseBlock *recordBlock = [[PDSDatabaseBlock alloc] init];
+            recordBlock.cid = [cid bytes];
+            recordBlock.blockData = data;
+            recordBlock.size = data.length;
+            recordBlock.createdAt = [NSDate date];
+            recordBlock.rev = rev;
+            [blocksToPersist addObject:recordBlock];
+        }
+    }];
+
+    __block BOOL updated = NO;
+    NSError *txError = nil;
+    [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
+        if (![transactor putBlocks:blocksToPersist forDid:did error:blockError]) {
+            return;
+        }
+        updated = [transactor updateRepoRoot:did rootCid:[commitCID bytes] rev:rev error:blockError];
+    } error:&txError];
+
+    if (!updated) {
+        [[MSTCacheManager sharedManager] removeMSTForDid:did];
+        if (error) {
+            if (txError) *error = txError;
+            else *error = [NSError errorWithDomain:@"PDSRecordService"
+                                              code:-4
+                                          userInfo:@{NSLocalizedDescriptionKey: @"Failed to update repository head"}];
+        }
+        return nil;
+    }
+
+    [[MSTCacheManager sharedManager] setMST:mst forDid:did];
+    return @{
+        @"cid": commitCID.stringValue ?: @"",
+        @"rev": rev ?: @""
+    };
 }
 
 - (nullable NSDictionary *)getRepoStatsForDid:(NSString *)did error:(NSError **)error {
-    __block NSDictionary *cached = nil;
-    dispatch_sync(self.mstCacheQueue, ^{
+    // Stats cache is per-DID, protected by @synchronized for thread safety
+    NSDictionary *cached;
+    @synchronized(self.statsCacheByDid) {
         cached = self.statsCacheByDid[did];
-    });
+    }
     if (cached) return cached;
 
     PDSActorStore *store = [self.databasePool storeForDid:did error:error];
@@ -1560,9 +1563,9 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
         @"recordCount": @(totalCount)
     };
 
-    dispatch_sync(self.mstCacheQueue, ^{
+    @synchronized(self.statsCacheByDid) {
         self.statsCacheByDid[did] = result;
-    });
+    }
 
     return result;
 }
