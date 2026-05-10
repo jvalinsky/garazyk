@@ -13,20 +13,31 @@
 
 NSErrorDomain const AppViewWriteProxyErrorDomain = @"AppViewWriteProxy";
 
+#import "PLC/DIDPLCResolver.h"
+
 @interface AppViewWriteProxy ()
-
 @property (nonatomic, strong) AppViewDatabase *database;
-
+@property (nonatomic, copy, nullable) NSString *plcUrl;
+@property (nonatomic, strong, nullable) DIDPLCResolver *resolver;
 @end
 
 @implementation AppViewWriteProxy
 
-- (instancetype)initWithDatabase:(AppViewDatabase *)database {
+- (instancetype)initWithDatabase:(AppViewDatabase *)database
+                          plcUrl:(nullable NSString *)plcUrl {
     self = [super init];
     if (self) {
         _database = database;
+        _plcUrl = [plcUrl copy];
+        if (_plcUrl) {
+            _resolver = [[DIDPLCResolver alloc] initWithPlcUrl:_plcUrl];
+        }
     }
     return self;
+}
+
+- (instancetype)initWithDatabase:(AppViewDatabase *)database {
+    return [self initWithDatabase:database plcUrl:nil];
 }
 
 - (void)proxyWriteRequest:(HttpRequest *)request
@@ -134,8 +145,14 @@ NSErrorDomain const AppViewWriteProxyErrorDomain = @"AppViewWriteProxy";
     PDSSafeHTTPClientOptions *safeOptions = [[PDSSafeHTTPClientOptions alloc] init];
     safeOptions.timeout = 30.0;
     safeOptions.maxResponseBytes = 256 * 1024; // 256 KB
-    safeOptions.allowHTTP = NO;
-    safeOptions.allowPrivateHosts = NO;
+    
+    // Support local testing
+    NSString *allowHTTP = [[NSProcessInfo processInfo] environment][@"PDS_ALLOW_HTTP"];
+    safeOptions.allowHTTP = [allowHTTP isEqualToString:@"1"] || [allowHTTP isEqualToString:@"true"];
+    
+    NSString *allowPrivate = [[NSProcessInfo processInfo] environment][@"PDS_ALLOW_PRIVATE_SSRF"];
+    safeOptions.allowPrivateHosts = [allowPrivate isEqualToString:@"1"] || [allowPrivate isEqualToString:@"true"];
+    
     safeOptions.followRedirects = NO;
 
     NSHTTPURLResponse *urlResponse = nil;
@@ -226,7 +243,38 @@ NSErrorDomain const AppViewWriteProxyErrorDomain = @"AppViewWriteProxy";
 #pragma mark - Private
 
 - (nullable NSString *)resolvePDSEndpointForDID:(NSString *)did {
-    // Try to resolve from the database first (handles table)
+    // 1. Check for local development override
+    // If we're in a local network test, we might want to map all writes to local-pds
+    NSString *envOverride = [[NSProcessInfo processInfo] environment][@"PDS_WRITE_PROXY_OVERRIDE"];
+    if (envOverride.length > 0) {
+        PDS_LOG_DEBUG(@"[WriteProxy] Using override PDS endpoint: %@", envOverride);
+        return envOverride;
+    }
+
+    // 2. Resolve via PLC if available
+    if (self.resolver && [did hasPrefix:@"did:plc:"]) {
+        NSError *error = nil;
+        NSDictionary *doc = [self.resolver resolveDID:did error:&error];
+        if (doc) {
+            NSArray *services = doc[@"service"];
+            for (NSDictionary *svc in services) {
+                if ([svc[@"type"] isEqualToString:@"AtprotoPersonalDataServer"] ||
+                    [svc[@"type"] isEqualToString:@"AtprotoPds"]) {
+                    NSString *endpoint = svc[@"serviceEndpoint"];
+                    if (endpoint.length > 0) {
+                        // Local network hack: if it's 127.0.0.1:2583 and we are in docker,
+                        // it should probably be local-pds:2583.
+                        // But better to let the environment handle it via extra_hosts or similar.
+                        // For now, just return what's in the document.
+                        return endpoint;
+                    }
+                }
+            }
+        }
+    }
+
+    // 3. Fallback: try to resolve from the database (handles table)
+    // This is legacy/fallback behavior
     NSError *error = nil;
     NSString *handle = [self.database resolveDIDToHandle:did error:&error];
     if (handle) {
@@ -235,8 +283,6 @@ NSErrorDomain const AppViewWriteProxyErrorDomain = @"AppViewWriteProxy";
         return [NSString stringWithFormat:@"https://%@", handle];
     }
 
-    // TODO: Resolve via DID document (PLC directory or did:web)
-    // This requires the DID resolver infrastructure
     PDS_LOG_WARN(@"[WriteProxy] Could not resolve PDS endpoint for DID %@", did);
     return nil;
 }

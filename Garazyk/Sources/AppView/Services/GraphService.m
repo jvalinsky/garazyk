@@ -468,6 +468,17 @@
     return [view copy];
 }
 
+- (nullable NSArray<NSDictionary *> *)getStarterPacks:(NSArray<NSString *> *)uris error:(NSError **)error {
+    NSMutableArray *results = [NSMutableArray arrayWithCapacity:uris.count];
+    for (NSString *uri in uris) {
+        NSDictionary *view = [self getStarterPack:uri error:nil];
+        if (view) {
+            [results addObject:view];
+        }
+    }
+    return [results copy];
+}
+
 - (nullable NSDictionary *)getStarterPacksForActor:(NSString *)actorDID
                                              limit:(NSInteger)limit
                                             cursor:(nullable NSString *)cursor
@@ -556,9 +567,10 @@
                    error:(NSError **)error {
     NSString *name = record[@"name"] ?: @"";
     NSString *createdAt = record[@"createdAt"] ?: @"";
+    NSString *uri = [NSString stringWithFormat:@"at://%@/app.bsky.graph.starterpack/%@", did, rkey];
 
-    NSString *sql = @"INSERT OR REPLACE INTO starter_packs (did, rkey, cid, name, created_at) VALUES (?, ?, ?, ?, ?)";
-    return [self.database executeParameterizedUpdate:sql params:@[did, rkey, cid, name, createdAt] error:error];
+    NSString *sql = @"INSERT OR REPLACE INTO starter_packs (uri, did, rkey, cid, name, created_at) VALUES (?, ?, ?, ?, ?, ?)";
+    return [self.database executeParameterizedUpdate:sql params:@[uri, did, rkey, cid, name, createdAt] error:error];
 }
 
 - (BOOL)unindexStarterPackWithRKey:(NSString *)rkey

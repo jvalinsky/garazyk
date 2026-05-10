@@ -45,13 +45,15 @@ typedef NS_ENUM(NSInteger, AppViewWriteProxyErrorCode) {
 @interface AppViewWriteProxy : NSObject
 
 /*!
- @method initWithDatabase:
+ @method initWithDatabase:plcUrl:
 
- @abstract Initialize with the AppView database for DID resolution.
+ @abstract Initialize with the AppView database and PLC URL.
 
  @param database The AppView database.
+ @param plcUrl   The base URL of the PLC server.
  */
-- (instancetype)initWithDatabase:(AppViewDatabase *)database;
+- (instancetype)initWithDatabase:(AppViewDatabase *)database
+                          plcUrl:(nullable NSString *)plcUrl;
 
 /*!
  @method proxyWriteRequest:response:nsid:callerDID:

@@ -188,6 +188,80 @@ NSString *const SearchIndexServiceErrorDomain = @"SearchIndexService";
     return [result copy];
 }
 
+#pragma mark - AppViewIndexHook
+
+- (NSString *)hookIdentifier {
+    return @"search-index-internal";
+}
+
+- (nullable NSArray<NSString *> *)collections {
+    return @[@"app.bsky.actor.profile", @"app.bsky.feed.post", @"app.bsky.graph.starterpack"];
+}
+
+- (void)didIndexRecord:(NSDictionary *)record
+                   uri:(NSString *)uri
+                    did:(NSString *)did
+            collection:(NSString *)collection {
+    [self indexRecord:record uri:uri did:did collection:collection error:nil];
+}
+
+- (void)didDeleteRecordWithURI:(NSString *)uri
+                           did:(NSString *)did
+                    collection:(NSString *)collection {
+    [self unindexRecordWithURI:uri collection:collection error:nil];
+}
+
+#pragma mark - Incremental Indexing
+
+- (BOOL)indexRecord:(NSDictionary *)record
+                uri:(NSString *)uri
+                 did:(NSString *)did
+         collection:(NSString *)collection
+              error:(NSError **)error {
+    if ([collection isEqualToString:@"app.bsky.actor.profile"]) {
+        NSString *sql = @"INSERT OR REPLACE INTO search_actors(did, display_name, handle, description) VALUES (?, ?, ?, ?)";
+        NSString *handle = [self.database executeParameterizedQuery:@"SELECT handle FROM accounts WHERE did = ?" params:@[did] error:nil].firstObject[@"handle"];
+        return [self.database executeParameterizedUpdate:sql
+                                                   params:@[did, record[@"displayName"] ?: [NSNull null], handle ?: [NSNull null], record[@"description"] ?: [NSNull null]]
+                                                    error:error];
+    } else if ([collection isEqualToString:@"app.bsky.feed.post"]) {
+        NSString *sql = @"INSERT OR REPLACE INTO search_posts(uri, did, text) VALUES (?, ?, ?)";
+        return [self.database executeParameterizedUpdate:sql
+                                                   params:@[uri, did, record[@"text"] ?: [NSNull null]]
+                                                    error:error];
+    } else if ([collection isEqualToString:@"app.bsky.graph.starterpack"]) {
+        NSString *sql = @"INSERT OR REPLACE INTO search_starter_packs(uri, did, name) VALUES (?, ?, ?)";
+        return [self.database executeParameterizedUpdate:sql
+                                                   params:@[uri, did, record[@"name"] ?: [NSNull null]]
+                                                    error:error];
+    }
+    return YES;
+}
+
+- (BOOL)unindexRecordWithURI:(NSString *)uri
+                  collection:(NSString *)collection
+                       error:(NSError **)error {
+    if ([collection isEqualToString:@"app.bsky.actor.profile"]) {
+        // We use DID as primary key for actor search, so resolve URI to DID if needed, 
+        // or just delete by DID from URI.
+        // For profile, uri is at://did/app.bsky.actor.profile/self
+        NSRange didRange = [uri rangeOfString:@"at://"];
+        if (didRange.location != NSNotFound) {
+            NSString *didPath = [uri substringFromIndex:didRange.length];
+            NSRange slashRange = [didPath rangeOfString:@"/"];
+            if (slashRange.location != NSNotFound) {
+                NSString *did = [didPath substringToIndex:slashRange.location];
+                return [self.database executeParameterizedUpdate:@"DELETE FROM search_actors WHERE did = ?" params:@[did] error:error];
+            }
+        }
+    } else if ([collection isEqualToString:@"app.bsky.feed.post"]) {
+        return [self.database executeParameterizedUpdate:@"DELETE FROM search_posts WHERE uri = ?" params:@[uri] error:error];
+    } else if ([collection isEqualToString:@"app.bsky.graph.starterpack"]) {
+        return [self.database executeParameterizedUpdate:@"DELETE FROM search_starter_packs WHERE uri = ?" params:@[uri] error:error];
+    }
+    return YES;
+}
+
 #pragma mark - Index Management
 
 - (BOOL)rebuildIndexWithError:(NSError **)error {
