@@ -1,10 +1,10 @@
 {
-    "client_id": "http://localhost:8080/client-metadata.json",
+    "client_id": "http://127.0.0.1:8080/client-metadata.json",
     "client_name": "Garazyk E2E Test Client",
-    "client_uri": "http://localhost:8080",
-    "logo_uri": "http://localhost:8080/logo.png",
+    "client_uri": "http://127.0.0.1:8080",
+    "logo_uri": "http://127.0.0.1:8080/logo.png",
     "redirect_uris": [
-        "http://localhost:8080/callback"
+        "http://127.0.0.1:8080/"
     ],
     "scope": "atproto transition:generic",
     "grant_types": [
