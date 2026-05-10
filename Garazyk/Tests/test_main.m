@@ -554,6 +554,7 @@ int main(int argc, char *argv[]) {
 
     NSArray *testClasses = @[
       @"PDSAccountServiceTests",
+      @"MSTAtomicReferenceTests",
       @"MSTInteropTests",
       @"CARInteropTests",
       @"RepoCommitTests",
