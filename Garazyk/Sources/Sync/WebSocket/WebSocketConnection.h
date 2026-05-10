@@ -183,6 +183,31 @@ typedef NS_ENUM(NSInteger, WebSocketConnectionState) {
 /*! Sends a pong frame. */
 - (void)sendPong:(NSData *_Nullable)payload;
 
+/*!
+ @method suspendReading
+
+ @abstract Suspends the read loop, causing TCP backpressure to propagate.
+
+ @discussion After calling this, the current in-flight receive operation
+ completes normally, but startReading will not be called again. The OS
+ socket buffer fills, the TCP window shrinks, and the remote peer
+ naturally slows or stops sending.
+*/
+- (void)suspendReading;
+
+/*!
+ @method resumeReading
+
+ @abstract Resumes the read loop after a previous suspendReading call.
+
+ @discussion Restarts the recursive read loop by calling startReading.
+ Has no effect if reading is not currently suspended.
+*/
+- (void)resumeReading;
+
+/*! Whether reading is currently suspended. */
+@property (nonatomic, readonly) BOOL isReadingSuspended;
+
 @end
 
 NS_ASSUME_NONNULL_END

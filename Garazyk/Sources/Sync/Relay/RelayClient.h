@@ -82,6 +82,29 @@ extern NSInteger const RelayClientErrorCodeAuthenticationFailed;
 /*! Disconnects from the server. */
 - (void)disconnect;
 
+/*!
+ @method pauseReading
+
+ @abstract Pauses reading from the relay. TCP backpressure propagates.
+
+ @discussion When paused, the OS socket buffer fills, the TCP window
+ shrinks, and the relay naturally slows or stops sending events.
+ Used by the AppView ingest engine for backpressure.
+*/
+- (void)pauseReading;
+
+/*!
+ @method resumeReading
+
+ @abstract Resumes reading from the relay after a previous pause.
+
+ @discussion Restarts the WebSocket read loop. Events will flow again.
+*/
+- (void)resumeReading;
+
+/*! Whether reading is currently paused. */
+@property (nonatomic, readonly) BOOL isReadingPaused;
+
 /*! Sets the access token for authentication. */
 - (void)setAccessToken:(NSString *)accessToken;
 

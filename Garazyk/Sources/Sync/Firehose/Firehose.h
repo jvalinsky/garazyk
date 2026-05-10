@@ -292,6 +292,25 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 /*! Disconnects from the server. */
 - (void)disconnect;
 
+/*!
+ @method suspendReading
+
+ @abstract Suspends reading from the Firehose server.
+
+ @discussion Propagates to the underlying WebSocketConnection, causing
+ TCP backpressure to the server.
+*/
+- (void)suspendReading;
+
+/*!
+ @method resumeReading
+
+ @abstract Resumes reading from the Firehose server after a suspend.
+
+ @discussion Restarts the WebSocket read loop.
+*/
+- (void)resumeReading;
+
 @end
 
 NS_ASSUME_NONNULL_END

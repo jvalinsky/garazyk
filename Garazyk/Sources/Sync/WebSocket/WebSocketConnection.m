@@ -20,6 +20,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
     NSString *_handshakeKey;
     BOOL _waitingForHandshakeResponse;
     BOOL _isReading;
+    BOOL _readingSuspended;
 }
 
 @property(nonatomic, assign, readwrite) WebSocketConnectionState state;
@@ -274,6 +275,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 
 - (void)startReading {
   if (_isReading) return;
+  if (_readingSuspended) return;
   _isReading = YES;
 
   __weak typeof(self) weakSelf = self;
@@ -313,6 +315,24 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 
                       [strongSelf startReading];
                     }];
+}
+
+- (void)suspendReading {
+  _readingSuspended = YES;
+  // The current in-flight receiveWithMinimumLength callback will still
+  // fire, but startReading won't be called again due to the guard.
+  // The OS socket buffer fills, causing TCP backpressure to propagate.
+}
+
+- (void)resumeReading {
+  if (!_readingSuspended) return;
+  _readingSuspended = NO;
+  // Restart the read loop — this re-issues receiveWithMinimumLength.
+  [self startReading];
+}
+
+- (BOOL)isReadingSuspended {
+  return _readingSuspended;
 }
 
 - (void)sendHandshake {

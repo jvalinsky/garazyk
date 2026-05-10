@@ -2,12 +2,15 @@
 #import "Compat/PDSTypes.h"
 #import "Sync/Firehose/Firehose.h"
 #import "Sync/WebSocket/WebSocketConnection.h"
+#import "Debug/PDSLogger.h"
 
 NSString * const RelayClientErrorDomain = @"com.atproto.pds.relay.client";
 NSInteger const RelayClientErrorCodeConnectionFailed = 4000;
 NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 
-@interface RelayClient () <FirehoseSubscriptionDelegate>
+@interface RelayClient () <FirehoseSubscriptionDelegate> {
+    BOOL _readingPaused;
+}
 
 @property (nonatomic, strong, readwrite) NSURL *serverURL;
 @property (nonatomic, copy, readwrite, nullable) NSString *accessToken;
@@ -93,11 +96,30 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 }
 
 - (void)disconnect {
+    _readingPaused = NO;
     [self.subscription cancel];
     [self.firehose disconnect];
     self.firehose = nil;
     self.subscription = nil;
     self.isConnected = NO;
+}
+
+- (void)pauseReading {
+    if (_readingPaused) return;
+    _readingPaused = YES;
+    [self.firehose suspendReading];
+    PDS_LOG_SYNC_INFO(@"RelayClient: paused reading from %@", self.serverURL);
+}
+
+- (void)resumeReading {
+    if (!_readingPaused) return;
+    _readingPaused = NO;
+    [self.firehose resumeReading];
+    PDS_LOG_SYNC_INFO(@"RelayClient: resumed reading from %@", self.serverURL);
+}
+
+- (BOOL)isReadingPaused {
+    return _readingPaused;
 }
 
 - (void)setAccessToken:(NSString *)accessToken {
