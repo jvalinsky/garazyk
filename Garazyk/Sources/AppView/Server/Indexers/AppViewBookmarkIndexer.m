@@ -32,10 +32,11 @@
 }
 
 - (BOOL)indexRecord:(NSDictionary *)record
-                 did:(NSString *)did
-          collection:(NSString *)collection
-                 cid:(nullable NSString *)cid
-               error:(NSError **)error {
+                did:(NSString *)did
+         collection:(NSString *)collection
+               rkey:(NSString *)rkey
+                cid:(nullable NSString *)cid
+              error:(NSError **)error {
     NSDictionary *bookmarkRecord = record[@"record"] ?: record;
 
     NSString *subjectURI = nil;
