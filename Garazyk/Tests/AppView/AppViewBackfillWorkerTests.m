@@ -22,8 +22,8 @@
 - (BOOL)canIndexCollection:(NSString *)collection {
     return [collection hasPrefix:@"app.bsky."];
 }
-- (BOOL)indexRecord:(NSDictionary *)record did:(NSString *)did collection:(NSString *)collection cid:(NSString *)cid error:(NSError **)error {
-    [self.indexedRecords addObject:@{@"record": record, @"did": did, @"collection": collection, @"cid": cid ?: @""}];
+- (BOOL)indexRecord:(NSDictionary *)record did:(NSString *)did collection:(NSString *)collection rkey:(NSString *)rkey cid:(NSString *)cid error:(NSError **)error {
+    [self.indexedRecords addObject:@{@"record": record, @"did": did, @"collection": collection, @"rkey": rkey, @"cid": cid ?: @""}];
     return YES;
 }
 @end
