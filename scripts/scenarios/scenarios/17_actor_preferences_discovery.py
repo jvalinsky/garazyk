@@ -13,11 +13,12 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+_project_root = str(Path(__file__).resolve().parent.parent.parent.parent)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
 
-from lib.client import XrpcClient
-from lib.characters import get_character, PDS1
-from lib.report import ScenarioResult, timed_call
+from scripts.lib.atproto import XrpcClient, get_character, PDS1, ScenarioResult, timed_call
+
 
 
 def _now() -> str:
@@ -42,7 +43,7 @@ def run() -> ScenarioResult:
         char = get_character(name)
         session = timed_call(
             result, f"Create account: {char.name}",
-            lambda c=char: client.create_account(c.handle, c.email, c.password),
+            lambda c=char: client.accounts.create_account(c.handle, c.email, c.password),
             detail_fn=lambda s, n=name: f"did={s['did']}",
         )
         if session:
@@ -59,7 +60,7 @@ def run() -> ScenarioResult:
     for name in active:
         char = get_character(name)
         timed_call(result, f"Set profile: {char.name}",
-                   lambda c=char: client.create_record(
+                   lambda c=char: client.records.create_record(
                        c.did, "app.bsky.actor.profile",
                        {"$type": "app.bsky.actor.profile", "displayName": c.name, "description": c.persona},
                        c.access_jwt),
@@ -78,7 +79,7 @@ def run() -> ScenarioResult:
 
     timed_call(
         result, "Marcus sets preferences",
-        lambda: client.put_preferences(
+        lambda: client.feed.put_preferences(
             [{"$type": "app.bsky.actor.defs#personalDetailsPref", "developerMode": True}],
             marcus.access_jwt,
         ),
@@ -88,7 +89,7 @@ def run() -> ScenarioResult:
     # ── Marcus gets preferences ─────────────────────────────────────
     timed_call(
         result, "Marcus gets preferences",
-        lambda: client.get_preferences(marcus.access_jwt),
+        lambda: client.feed.get_preferences(marcus.access_jwt),
         detail_fn=lambda r: f"count={len(r.get('preferences', []))}",
         skip_on_status={404},
     )
@@ -103,7 +104,7 @@ def run() -> ScenarioResult:
         if luna.did and luna.access_jwt:
             rec = timed_call(
                 result, "Luna posts",
-                lambda t=text: client.create_record(
+                lambda t=text: client.records.create_record(
                     luna.did, "app.bsky.feed.post",
                     {"$type": "app.bsky.feed.post", "text": t, "createdAt": _now()},
                     luna.access_jwt,
@@ -121,7 +122,7 @@ def run() -> ScenarioResult:
         if marcus.did and marcus.access_jwt:
             rec = timed_call(
                 result, "Marcus posts",
-                lambda t=text: client.create_record(
+                lambda t=text: client.records.create_record(
                     marcus.did, "app.bsky.feed.post",
                     {"$type": "app.bsky.feed.post", "text": t, "createdAt": _now()},
                     marcus.access_jwt,
@@ -138,7 +139,7 @@ def run() -> ScenarioResult:
             for text in texts:
                 timed_call(
                     result, f"{char.name} posts",
-                    lambda c=char, t=text: client.create_record(
+                    lambda c=char, t=text: client.records.create_record(
                         c.did, "app.bsky.feed.post",
                         {"$type": "app.bsky.feed.post", "text": t, "createdAt": _now()},
                         c.access_jwt,
@@ -151,7 +152,7 @@ def run() -> ScenarioResult:
         for post_rec in marcus_posts:
             timed_call(
                 result, "Luna likes Marcus's post",
-                lambda p=post_rec: client.create_record(
+                lambda p=post_rec: client.records.create_record(
                     luna.did, "app.bsky.feed.like",
                     {"$type": "app.bsky.feed.like", "subject": {"uri": p["uri"], "cid": p["cid"]}, "createdAt": _now()},
                     luna.access_jwt,
@@ -164,7 +165,7 @@ def run() -> ScenarioResult:
             if target.did and target.access_jwt:
                 posts_for_liking = timed_call(
                     result, f"Get {target.name}'s feed for liking",
-                    lambda t=target: client.get_author_feed(t.did, token=t.access_jwt, limit=1),
+                    lambda t=target: client.feed.get_author_feed(t.did, token=t.access_jwt, limit=1),
                     detail_fn=lambda r: f"items={len(r.get('feed', []))}",
                     skip_on_status={404},
                 )
@@ -176,7 +177,7 @@ def run() -> ScenarioResult:
                         if post_uri:
                             timed_call(
                                 result, f"Luna likes {target.name}'s post",
-                                lambda u=post_uri, c=post_cid: client.create_record(
+                                lambda u=post_uri, c=post_cid: client.records.create_record(
                                     luna.did, "app.bsky.feed.like",
                                     {"$type": "app.bsky.feed.like", "subject": {"uri": u, "cid": c}, "createdAt": _now()},
                                     luna.access_jwt,
@@ -188,7 +189,7 @@ def run() -> ScenarioResult:
         for post_rec in luna_posts:
             timed_call(
                 result, "Marcus likes Luna's post",
-                lambda p=post_rec: client.create_record(
+                lambda p=post_rec: client.records.create_record(
                     marcus.did, "app.bsky.feed.like",
                     {"$type": "app.bsky.feed.like", "subject": {"uri": p["uri"], "cid": p["cid"]}, "createdAt": _now()},
                     marcus.access_jwt,
@@ -203,7 +204,7 @@ def run() -> ScenarioResult:
         label = f"Typeahead search '{query}'"
         timed_call(
             result, label,
-            lambda q=query: client.search_actors_typeahead(q, token=marcus.access_jwt),
+            lambda q=query: client.feed.search_actors_typeahead(q, token=marcus.access_jwt),
             detail_fn=lambda r, q=query: f"found={len(r.get('actors', []))}",
             skip_on_status={404},
         )
@@ -212,7 +213,7 @@ def run() -> ScenarioResult:
     if luna.did:
         timed_call(
             result, "Luna's liked posts",
-            lambda: client.get_actor_likes(luna.did, token=marcus.access_jwt),
+            lambda: client.feed.get_actor_likes(luna.did, token=marcus.access_jwt),
             detail_fn=lambda r: f"count={len(r.get('likes', r.get('feed', [])))}",
             skip_on_status={404},
         )
@@ -224,7 +225,7 @@ def run() -> ScenarioResult:
     if all_post_uris:
         timed_call(
             result, "Get multiple posts",
-            lambda: client.get_posts(all_post_uris[:2], token=marcus.access_jwt),
+            lambda: client.feed.get_posts(all_post_uris[:2], token=marcus.access_jwt),
             detail_fn=lambda r: f"count={len(r.get('posts', []))}",
             skip_on_status={404},
         )
@@ -235,7 +236,7 @@ def run() -> ScenarioResult:
     if luna_posts and marcus.did and marcus.access_jwt:
         timed_call(
             result, "Marcus reposts Luna's post",
-            lambda: client.create_record(
+            lambda: client.records.create_record(
                 marcus.did, "app.bsky.feed.repost",
                 {"$type": "app.bsky.feed.repost", "subject": {"uri": luna_posts[0]["uri"], "cid": luna_posts[0]["cid"]}, "createdAt": _now()},
                 marcus.access_jwt,
@@ -247,7 +248,7 @@ def run() -> ScenarioResult:
 
         timed_call(
             result, "Get reposted by",
-            lambda: client.get_reposted_by(luna_posts[0]["uri"], token=marcus.access_jwt),
+            lambda: client.feed.get_reposted_by(luna_posts[0]["uri"], token=marcus.access_jwt),
             detail_fn=lambda r: f"count={len(r.get('repostedBy', []))}",
             skip_on_status={404},
         )
@@ -257,7 +258,7 @@ def run() -> ScenarioResult:
     # ── Get suggestions ─────────────────────────────────────────────
     timed_call(
         result, "Get actor suggestions",
-        lambda: client.get_suggestions(marcus.access_jwt),
+        lambda: client.feed.get_suggestions(marcus.access_jwt),
         detail_fn=lambda r: f"count={len(r.get('actors', []))}",
         skip_on_status={404},
     )

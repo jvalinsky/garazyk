@@ -14,12 +14,12 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+_project_root = str(Path(__file__).resolve().parent.parent.parent.parent)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
 
-from lib.client import XrpcClient, XrpcError
-from lib.characters import get_character, PDS1, PDS2
-from lib.assertions import assert_success, assert_contains
-from lib.report import ScenarioResult, StepStatus
+from scripts.lib.atproto import XrpcClient, get_character, PDS1, PDS2, ScenarioResult, timed_call
+
 
 
 def _now() -> str:
@@ -33,92 +33,64 @@ def run() -> ScenarioResult:
     pds1 = XrpcClient(PDS1)
     pds2 = XrpcClient(PDS2)
 
-    # ── Wait for both PDSes ──────────────────────────────────────────
     for name, client in [("PDS1", pds1), ("PDS2", pds2)]:
-        try:
-            client.wait_for_healthy(timeout=60)
-            result.step_passed(f"{name} health check")
-        except RuntimeError as exc:
-            result.step_failed(f"{name} health check", str(exc))
+        timed_call(result, f"{name} health check",
+                   lambda c=client: c.wait_for_healthy(timeout=60))
+        if result.failed > 0:
             result.finish()
             return result
 
-    # ── Create accounts on PDS 1 ─────────────────────────────────────
     luna = get_character("luna")
     marcus = get_character("marcus")
     for char in [luna, marcus]:
-        try:
-            session = pds1.create_account(char.handle, char.email, char.password)
-            char.did = session["did"]
-            char.access_jwt = session["accessJwt"]
-            result.step_passed(f"Create account on PDS1: {char.name}", f"did={char.did}")
-        except XrpcError as exc:
-            result.step_failed(f"Create account on PDS1: {char.name}", str(exc))
+        timed_call(
+            result, f"Create account on PDS1: {char.name}",
+            lambda c=char: pds1.accounts.create_account(c.handle, c.email, c.password),
+            detail_fn=lambda s, c=char: f"did={s['did']}",
+        )
 
-    # ── Create accounts on PDS 2 ─────────────────────────────────────
     nova = get_character("nova")
     rex = get_character("rex")
     for char in [nova, rex]:
-        try:
-            session = pds2.create_account(char.handle, char.email, char.password)
-            char.did = session["did"]
-            char.access_jwt = session["accessJwt"]
-            result.step_passed(f"Create account on PDS2: {char.name}", f"did={char.did}")
-        except XrpcError as exc:
-            result.step_failed(f"Create account on PDS2: {char.name}", str(exc))
+        timed_call(
+            result, f"Create account on PDS2: {char.name}",
+            lambda c=char: pds2.accounts.create_account(c.handle, c.email, c.password),
+            detail_fn=lambda s, c=char: f"did={s['did']}",
+        )
 
     if not all([luna.did, marcus.did, nova.did, rex.did]):
         result.step_failed("Account creation", "Not all accounts created")
         result.finish()
         return result
 
-    # ── Set up profiles ──────────────────────────────────────────────
     for char, client in [(luna, pds1), (marcus, pds1), (nova, pds2), (rex, pds2)]:
-        try:
-            client.create_record(
-                char.did,
-                "app.bsky.actor.profile",
-                {"$type": "app.bsky.actor.profile", "displayName": char.name, "description": char.persona},
-                char.access_jwt,
-            )
-        except XrpcError:
-            pass
-
-    # ── Luna posts on PDS 1 ──────────────────────────────────────────
-    luna_post = None
-    try:
-        luna_post = pds1.create_record(
-            luna.did,
-            "app.bsky.feed.post",
-            {
-                "$type": "app.bsky.feed.post",
-                "text": "Hello from PDS 1! Can anyone on PDS 2 see this? 🌍",
-                "createdAt": _now(),
-            },
-            luna.access_jwt,
+        timed_call(
+            result, f"Set profile: {char.name}",
+            lambda c=char, cl=client: cl.records.create_record(
+                c.did, "app.bsky.actor.profile",
+                {"$type": "app.bsky.actor.profile", "displayName": c.name, "description": c.persona},
+                c.access_jwt),
         )
-        result.step_passed("Luna posts on PDS 1")
-    except XrpcError as exc:
-        result.step_failed("Luna posts on PDS 1", str(exc))
 
-    # ── Marcus posts on PDS 1 ────────────────────────────────────────
-    marcus_post = None
-    try:
-        marcus_post = pds1.create_record(
-            marcus.did,
-            "app.bsky.feed.post",
-            {
-                "$type": "app.bsky.feed.post",
-                "text": "Federation is the future of social media! Building bridges across PDSes.",
-                "createdAt": _now(),
-            },
-            marcus.access_jwt,
-        )
-        result.step_passed("Marcus posts on PDS 1")
-    except XrpcError as exc:
-        result.step_failed("Marcus posts on PDS 1", str(exc))
+    luna_post = timed_call(
+        result, "Luna posts on PDS 1",
+        lambda: pds1.records.create_record(
+            luna.did, "app.bsky.feed.post",
+            {"$type": "app.bsky.feed.post", "text": "Hello from PDS 1! Can anyone on PDS 2 see this?",
+             "createdAt": _now()},
+            luna.access_jwt),
+    )
 
-    # ── PLC DID resolution: Nova resolves Luna's DID ─────────────────
+    marcus_post = timed_call(
+        result, "Marcus posts on PDS 1",
+        lambda: pds1.records.create_record(
+            marcus.did, "app.bsky.feed.post",
+            {"$type": "app.bsky.feed.post",
+             "text": "Federation is the future of social media! Building bridges across PDSes.",
+             "createdAt": _now()},
+            marcus.access_jwt),
+    )
+
     try:
         import requests
         plc_resp = requests.get(f"http://localhost:2582/{luna.did}", timeout=10)
@@ -130,74 +102,48 @@ def run() -> ScenarioResult:
     except Exception as exc:
         result.step_skipped("PLC resolves Luna's DID", str(exc))
 
-    # ── Nova resolves Luna's handle from PDS 2 ───────────────────────
-    try:
-        resolved = pds2.resolve_handle(luna.handle)
-        if resolved.get("did") == luna.did:
-            result.step_passed("Nova resolves Luna's handle from PDS2", f"did={resolved['did']}")
-        else:
-            result.step_failed("Nova resolves Luna's handle from PDS2",
-                               f"expected {luna.did}, got {resolved.get('did')}")
-    except XrpcError as exc:
-        result.step_skipped("Nova resolves Luna's handle from PDS2", str(exc))
+    resolved = timed_call(
+        result, "Nova resolves Luna's handle from PDS2",
+        lambda: pds2.identity.resolve_handle(luna.handle),
+        detail_fn=lambda r: f"did={r.get('did')}",
+    )
+    if resolved and resolved.get("did") != luna.did:
+        result.step_failed("Nova resolves Luna's handle from PDS2",
+                           f"expected {luna.did}, got {resolved.get('did')}")
 
-    # ── Nova follows Luna (cross-PDS follow) ─────────────────────────
-    try:
-        follow = pds2.create_record(
-            nova.did,
-            "app.bsky.graph.follow",
-            {
-                "$type": "app.bsky.graph.follow",
-                "subject": luna.did,
-                "createdAt": _now(),
-            },
-            nova.access_jwt,
-        )
-        result.step_passed("Nova follows Luna (cross-PDS)", f"uri={follow['uri']}")
-    except XrpcError as exc:
-        result.step_failed("Nova follows Luna (cross-PDS)", str(exc))
+    timed_call(
+        result, "Nova follows Luna (cross-PDS)",
+        lambda: pds2.records.create_record(
+            nova.did, "app.bsky.graph.follow",
+            {"$type": "app.bsky.graph.follow", "subject": luna.did, "createdAt": _now()},
+            nova.access_jwt),
+        detail_fn=lambda r: f"uri={r['uri']}",
+    )
 
-    # ── Rex follows Marcus (cross-PDS) ────────────────────────────────
-    try:
-        follow = pds2.create_record(
-            rex.did,
-            "app.bsky.graph.follow",
-            {
-                "$type": "app.bsky.graph.follow",
-                "subject": marcus.did,
-                "createdAt": _now(),
-            },
-            rex.access_jwt,
-        )
-        result.step_passed("Rex follows Marcus (cross-PDS)", f"uri={follow['uri']}")
-    except XrpcError as exc:
-        result.step_failed("Rex follows Marcus (cross-PDS)", str(exc))
+    timed_call(
+        result, "Rex follows Marcus (cross-PDS)",
+        lambda: pds2.records.create_record(
+            rex.did, "app.bsky.graph.follow",
+            {"$type": "app.bsky.graph.follow", "subject": marcus.did, "createdAt": _now()},
+            rex.access_jwt),
+        detail_fn=lambda r: f"uri={r['uri']}",
+    )
 
-    # ── Rex replies to Marcus (cross-PDS reply) ──────────────────────
     if marcus_post:
-        try:
-            reply = pds2.create_record(
-                rex.did,
-                "app.bsky.feed.post",
-                {
-                    "$type": "app.bsky.feed.post",
-                    "text": "Hey Marcus! Replying from PDS 2. Federation works! 🎉",
-                    "createdAt": _now(),
-                    "reply": {
-                        "root": {"uri": marcus_post["uri"], "cid": marcus_post["cid"]},
-                        "parent": {"uri": marcus_post["uri"], "cid": marcus_post["cid"]},
-                    },
-                },
-                rex.access_jwt,
-            )
-            result.step_passed("Rex replies to Marcus (cross-PDS)")
-        except XrpcError as exc:
-            result.step_failed("Rex replies to Marcus (cross-PDS)", str(exc))
+        timed_call(
+            result, "Rex replies to Marcus (cross-PDS)",
+            lambda: pds2.records.create_record(
+                rex.did, "app.bsky.feed.post",
+                {"$type": "app.bsky.feed.post",
+                 "text": "Hey Marcus! Replying from PDS 2. Federation works!",
+                 "createdAt": _now(),
+                 "reply": {"root": {"uri": marcus_post["uri"], "cid": marcus_post["cid"]},
+                           "parent": {"uri": marcus_post["uri"], "cid": marcus_post["cid"]}}},
+                rex.access_jwt),
+        )
 
-    # ── Give Relay and AppView time to process ───────────────────────
     time.sleep(5)
 
-    # ── Check relay health ────────────────────────────────────────────
     try:
         import requests
         relay_resp = requests.get("http://localhost:2584/api/relay/health", timeout=5)
@@ -208,20 +154,18 @@ def run() -> ScenarioResult:
     except Exception as exc:
         result.step_skipped("Relay health check", str(exc))
 
-    # ── Check relay upstreams ─────────────────────────────────────────
     try:
         import requests
         upstreams_resp = requests.get("http://localhost:2584/api/relay/upstreams", timeout=5)
         if upstreams_resp.status_code == 200:
             upstreams = upstreams_resp.json()
-            count = len(upstreams) if isinstance(upstreams, list) else upstreams.get("upstreams", [])
-            result.step_passed("Relay upstreams", f"count={len(count) if isinstance(count, list) else count}")
+            count = len(upstreams) if isinstance(upstreams, list) else len(upstreams.get("upstreams", []))
+            result.step_passed("Relay upstreams", f"count={count}")
         else:
             result.step_skipped("Relay upstreams", f"status={upstreams_resp.status_code}")
     except Exception as exc:
         result.step_skipped("Relay upstreams", str(exc))
 
-    # ── AppView backfill status ───────────────────────────────────────
     try:
         import requests
         appview_resp = requests.get(
@@ -236,34 +180,31 @@ def run() -> ScenarioResult:
     except Exception as exc:
         result.step_skipped("AppView backfill status", str(exc))
 
-    # ── Nova views Luna's profile via AppView ────────────────────────
-    try:
-        profile = pds2.get_profile(luna.did, token=nova.access_jwt)
-        result.step_passed("Nova views Luna's profile via AppView",
-                           f"displayName={profile.get('displayName')}")
-    except XrpcError as exc:
-        result.step_skipped("Nova views Luna's profile via AppView", str(exc))
+    timed_call(
+        result, "Nova views Luna's profile via AppView",
+        lambda: pds2.feed.get_profile(luna.did, token=nova.access_jwt),
+        detail_fn=lambda p: f"displayName={p.get('displayName')}",
+        skip_on_status={404},
+    )
 
-    # ── Nova gets Luna's author feed via AppView ─────────────────────
-    try:
-        feed = pds2.get_author_feed(luna.did, token=nova.access_jwt)
-        feed_items = feed.get("feed", [])
-        result.step_passed("Nova sees Luna's feed via AppView", f"items={len(feed_items)}")
-    except XrpcError as exc:
-        result.step_skipped("Nova sees Luna's feed via AppView", str(exc))
+    timed_call(
+        result, "Nova sees Luna's feed via AppView",
+        lambda: pds2.feed.get_author_feed(luna.did, token=nova.access_jwt),
+        detail_fn=lambda f: f"items={len(f.get('feed', []))}",
+        skip_on_status={404},
+    )
 
-    # ── Cross-PDS record retrieval ───────────────────────────────────
     if luna_post:
-        try:
-            record = pds2.xrpc_get(
+        timed_call(
+            result, "Cross-PDS record retrieval",
+            lambda: pds2.raw.xrpc_get(
                 "com.atproto.repo.getRecord",
                 {"repo": luna.did, "collection": "app.bsky.feed.post",
                  "rkey": luna_post["uri"].split("/")[-1]},
-                token=nova.access_jwt,
-            )
-            result.step_passed("Cross-PDS record retrieval", f"uri={record.get('uri')}")
-        except XrpcError as exc:
-            result.step_skipped("Cross-PDS record retrieval", str(exc))
+                token=nova.access_jwt),
+            detail_fn=lambda r: f"uri={r.get('uri')}",
+            skip_on_status={404},
+        )
 
     result.finish()
     return result

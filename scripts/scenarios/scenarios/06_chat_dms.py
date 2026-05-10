@@ -16,27 +16,22 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+_project_root = str(Path(__file__).resolve().parent.parent.parent.parent)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
 
-from lib.client import XrpcClient, XrpcError
-from lib.characters import get_character, PDS1
-from lib.assertions import assert_success, assert_contains
-from lib.report import ScenarioResult, StepStatus
+from scripts.lib.atproto import XrpcClient, get_character, PDS1, ScenarioResult, timed_call
+
 
 
 def _now() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
-def _chat_step(result: ScenarioResult, step_name: str, func, *args, **kwargs):
-    """Execute a chat step, failing strictly on error."""
-    try:
-        response = func(*args, **kwargs)
-        result.step_passed(step_name, detail=str(response)[:100])
-        return response
-    except Exception as exc:
-        result.step_failed(step_name, str(exc))
-        return None
+def _chat_call(result: ScenarioResult, step_name: str, fn, *args, **kwargs):
+    """Execute a chat step, reporting strictly."""
+    response = timed_call(result, step_name, lambda: fn(*args, **kwargs))
+    return response
 
 
 def run() -> ScenarioResult:
@@ -45,26 +40,20 @@ def run() -> ScenarioResult:
 
     client = XrpcClient(PDS1)
 
-    # Wait for server
-    try:
-        client.wait_for_healthy(timeout=30)
-        result.step_passed("Server health check")
-    except RuntimeError as exc:
-        result.step_failed("Server health check", str(exc))
+    timed_call(result, "Server health check",
+               lambda: client.wait_for_healthy(timeout=30))
+    if result.failed > 0:
         result.finish()
         return result
 
-    # ── Create accounts ──────────────────────────────────────────────
     char_names = ["luna", "marcus", "rosa", "volt"]
     for name in char_names:
         char = get_character(name)
-        try:
-            session = client.create_account(char.handle, char.email, char.password)
-            char.did = session["did"]
-            char.access_jwt = session["accessJwt"]
-            result.step_passed(f"Create account: {char.name}", f"did={char.did}")
-        except XrpcError as exc:
-            result.step_failed(f"Create account: {char.name}", str(exc))
+        timed_call(
+            result, f"Create account: {char.name}",
+            lambda c=char: client.accounts.create_account(c.handle, c.email, c.password),
+            detail_fn=lambda s, n=name: f"did={s['did']}",
+        )
 
     luna = get_character("luna")
     marcus = get_character("marcus")
@@ -76,157 +65,101 @@ def run() -> ScenarioResult:
         result.finish()
         return result
 
-    # ── Luna starts a DM with Marcus ─────────────────────────────────
-    convo_id = None
-    convo = _chat_step(
-        result,
-        "Luna gets/creates DM convo with Marcus",
-        client.xrpc_get,
-        "chat.bsky.convo.getConvoForMembers",
-        {"members": [luna.did, marcus.did]},
-        luna.access_jwt,
+    convo = timed_call(
+        result, "Luna gets/creates DM convo with Marcus",
+        lambda: client.raw.xrpc_get(
+            "chat.bsky.convo.getConvoForMembers",
+            {"members": [luna.did, marcus.did]},
+            luna.access_jwt),
     )
-    if convo and "convo" in convo:
-        convo_id = convo["convo"].get("id")
+    convo_id = convo["convo"].get("id") if convo and "convo" in convo else None
 
-    # ── Luna sends a DM to Marcus ────────────────────────────────────
-    luna_msg_id = None
-    luna_msg = _chat_step(
-        result,
-        "Luna sends DM to Marcus",
-        client.xrpc_post,
-        "chat.bsky.convo.sendMessage",
-        {
-            "convoId": convo_id or "default",
-            "message": {
-                "$type": "chat.bsky.convo.message",
-                "text": "Hey Marcus! Want to collaborate on a space-tech project?",
-                "createdAt": _now(),
-            },
-        },
-        luna.access_jwt,
+    luna_msg = timed_call(
+        result, "Luna sends DM to Marcus",
+        lambda: client.raw.xrpc_post(
+            "chat.bsky.convo.sendMessage",
+            {"convoId": convo_id or "default",
+             "message": {"$type": "chat.bsky.convo.message",
+                         "text": "Hey Marcus! Want to collaborate on a space-tech project?",
+                         "createdAt": _now()}},
+            luna.access_jwt),
     )
-    if luna_msg and "id" in luna_msg:
-        luna_msg_id = luna_msg["id"]
+    luna_msg_id = luna_msg.get("id") if luna_msg else None
 
-    # ── Marcus replies to Luna's DM ───────────────────────────────────
-    _chat_step(
-        result,
-        "Marcus replies to Luna's DM",
-        client.xrpc_post,
-        "chat.bsky.convo.sendMessage",
-        {
-            "convoId": convo_id or "default",
-            "message": {
-                "$type": "chat.bsky.convo.message",
-                "text": "Absolutely! I've been thinking about ATProto + space data. Let's do it!",
-                "createdAt": _now(),
-            },
-        },
-        marcus.access_jwt,
+    timed_call(
+        result, "Marcus replies to Luna's DM",
+        lambda: client.raw.xrpc_post(
+            "chat.bsky.convo.sendMessage",
+            {"convoId": convo_id or "default",
+             "message": {"$type": "chat.bsky.convo.message",
+                         "text": "Absolutely! I've been thinking about ATProto + space data. Let's do it!",
+                         "createdAt": _now()}},
+            marcus.access_jwt),
     )
 
-    # ── Marcus lists his conversations ───────────────────────────────
-    _chat_step(
-        result,
-        "Marcus lists conversations",
-        client.xrpc_get,
-        "chat.bsky.convo.listConvos",
-        {"limit": 10},
-        marcus.access_jwt,
+    timed_call(
+        result, "Marcus lists conversations",
+        lambda: client.raw.xrpc_get("chat.bsky.convo.listConvos", {"limit": 10}, marcus.access_jwt),
     )
 
-    # ── Marcus gets conversation messages ────────────────────────────
     if convo_id:
-        _chat_step(
-            result,
-            "Marcus gets conversation messages",
-            client.xrpc_get,
-            "chat.bsky.convo.getMessages",
-            {"convoId": convo_id, "limit": 20},
-            marcus.access_jwt,
+        timed_call(
+            result, "Marcus gets conversation messages",
+            lambda: client.raw.xrpc_get("chat.bsky.convo.getMessages",
+                                         {"convoId": convo_id, "limit": 20}, marcus.access_jwt),
         )
 
-    # ── Marcus mutes the conversation ────────────────────────────────
     if convo_id:
-        _chat_step(
-            result,
-            "Marcus mutes conversation",
-            client.xrpc_post,
-            "chat.bsky.convo.muteConvo",
-            {"convoId": convo_id},
-            marcus.access_jwt,
+        timed_call(
+            result, "Marcus mutes conversation",
+            lambda: client.raw.xrpc_post("chat.bsky.convo.muteConvo",
+                                          {"convoId": convo_id}, marcus.access_jwt),
         )
 
-    # ── Rosa creates a group chat ────────────────────────────────────
-    group_id = None
-    group = _chat_step(
-        result,
-        "Rosa creates group chat",
-        client.xrpc_post,
-        "chat.bsky.group.createGroup",
-        {
-            "name": "Food & Space Enthusiasts",
-            "members": [luna.did, volt.did],
-        },
-        rosa.access_jwt,
+    group = timed_call(
+        result, "Rosa creates group chat",
+        lambda: client.raw.xrpc_post("chat.bsky.group.createGroup",
+                                      {"name": "Food & Space Enthusiasts",
+                                       "members": [luna.did, volt.did]},
+                                      rosa.access_jwt),
     )
-    if group and "group" in group:
-        group_id = group["group"].get("id")
+    group_id = group["group"].get("id") if group and "group" in group else None
 
-    # ── Rosa adds a member to the group ──────────────────────────────
     if group_id:
-        _chat_step(
-            result,
-            "Rosa adds member to group",
-            client.xrpc_post,
-            "chat.bsky.group.addMember",
-            {"groupId": group_id, "did": marcus.did},
-            rosa.access_jwt,
+        timed_call(
+            result, "Rosa adds member to group",
+            lambda: client.raw.xrpc_post("chat.bsky.group.addMember",
+                                          {"groupId": group_id, "did": marcus.did},
+                                          rosa.access_jwt),
         )
 
-    # ── Rosa gets group info ─────────────────────────────────────────
     if group_id:
-        _chat_step(
-            result,
-            "Rosa gets group info",
-            client.xrpc_get,
-            "chat.bsky.group.getGroup",
-            {"groupId": group_id},
-            rosa.access_jwt,
+        timed_call(
+            result, "Rosa gets group info",
+            lambda: client.raw.xrpc_get("chat.bsky.group.getGroup",
+                                         {"groupId": group_id}, rosa.access_jwt),
         )
 
-    # ── Luna updates read status ─────────────────────────────────────
     if convo_id and luna_msg_id:
-        _chat_step(
-            result,
-            "Luna marks conversation as read",
-            client.xrpc_post,
-            "chat.bsky.convo.updateRead",
-            {"convoId": convo_id, "messageId": luna_msg_id},
-            luna.access_jwt,
+        timed_call(
+            result, "Luna marks conversation as read",
+            lambda: client.raw.xrpc_post("chat.bsky.convo.updateRead",
+                                          {"convoId": convo_id, "messageId": luna_msg_id},
+                                          luna.access_jwt),
         )
 
-    # ── Marcus unmutes the conversation ──────────────────────────────
     if convo_id:
-        _chat_step(
-            result,
-            "Marcus unmutes conversation",
-            client.xrpc_post,
-            "chat.bsky.convo.unmuteConvo",
-            {"convoId": convo_id},
-            marcus.access_jwt,
+        timed_call(
+            result, "Marcus unmutes conversation",
+            lambda: client.raw.xrpc_post("chat.bsky.convo.unmuteConvo",
+                                          {"convoId": convo_id}, marcus.access_jwt),
         )
 
-    # ── Marcus leaves the conversation ──────────────────────────────
     if convo_id:
-        _chat_step(
-            result,
-            "Marcus leaves conversation",
-            client.xrpc_post,
-            "chat.bsky.convo.leaveConvo",
-            {"convoId": convo_id},
-            marcus.access_jwt,
+        timed_call(
+            result, "Marcus leaves conversation",
+            lambda: client.raw.xrpc_post("chat.bsky.convo.leaveConvo",
+                                          {"convoId": convo_id}, marcus.access_jwt),
         )
 
     result.finish()

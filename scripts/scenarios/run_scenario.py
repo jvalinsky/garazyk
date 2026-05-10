@@ -31,8 +31,7 @@ REPO_ROOT = SCRIPT_DIR.parent.parent
 sys.path.insert(0, str(SCRIPT_DIR))
 sys.path.insert(0, str(REPO_ROOT))
 
-from lib.report import ScenarioResult, StepStatus
-from scripts.lib.atproto import SERVICE_URLS, create_run_context
+from scripts.lib.atproto import ScenarioResult, StepStatus, SERVICE_URLS, create_run_context
 from scripts.lib.atproto.docker import (
     collect_local_network_diagnostics,
     start_local_network,
@@ -114,7 +113,7 @@ def run_scenario(scenario_id: str, verbose: bool = False, timeout: int = 120) ->
 
     # Reset character handles for each scenario to avoid PDS collisions
     try:
-        from lib.characters import reset_characters
+        from scripts.lib.atproto import reset_characters
         reset_characters()
     except ImportError:
         pass
