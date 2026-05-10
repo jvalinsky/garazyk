@@ -22,8 +22,6 @@
 - (instancetype)init {
     if ((self = [super init])) {
         _rateLimiter = [RateLimiter sharedLimiter];
-        // Get service databases singleton - adjust as needed based on your codebase
-        // _serviceDatabases = [PDSServiceDatabases sharedDatabases];
     }
     return self;
 }
