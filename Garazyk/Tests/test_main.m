@@ -25,6 +25,7 @@
 @property(nonatomic, assign) int unexpectedFailureCount;
 @property(nonatomic, strong) NSMutableDictionary<NSString *, NSDate *> *testStartTimes;
 @property(nonatomic, strong) NSMutableArray<NSDictionary<NSString *, id> *> *methodTimings;
+@property(nonatomic, strong) NSMutableArray<NSDictionary<NSString *, id> *> *failedTests;
 @end
 
 static NSString *PDSClassNameFromTestCase(XCTestCase *testCase) {
@@ -85,6 +86,7 @@ static NSString *PDSMethodNameFromTestCase(XCTestCase *testCase) {
     _unexpectedFailureCount = 0;
     _testStartTimes = [NSMutableDictionary dictionary];
     _methodTimings = [NSMutableArray array];
+    _failedTests = [NSMutableArray array];
   }
   return self;
 }
@@ -101,6 +103,13 @@ static NSString *PDSMethodNameFromTestCase(XCTestCase *testCase) {
                     atLine:(NSUInteger)lineNumber {
   self.failureCount++;
   NSLog(@"FAIL: %@ at %@:%lu: %@", testCase.name, filePath, (unsigned long)lineNumber, description);
+  [self.failedTests addObject:@{
+    @"class" : PDSClassNameFromTestCase(testCase),
+    @"method" : PDSMethodNameFromTestCase(testCase),
+    @"file" : filePath ?: @"(unknown)",
+    @"line" : @(lineNumber),
+    @"description" : description ?: @""
+  }];
 }
 
 - (void)testCaseDidFinish:(XCTestCase *)testCase {
@@ -125,6 +134,7 @@ static NSString *PDSMethodNameFromTestCase(XCTestCase *testCase) {
     _unexpectedFailureCount = 0;
     _testStartTimes = [NSMutableDictionary dictionary];
     _methodTimings = [NSMutableArray array];
+    _failedTests = [NSMutableArray array];
   }
   return self;
 }
@@ -436,6 +446,31 @@ static void PDSPrintTimingSummary(SimpleTestObserver *observer) {
             [record[@"duration"] doubleValue],
             [record[@"class"] UTF8String],
             [record[@"method"] UTF8String]);
+  }
+}
+
+static void PDSPrintFailureSummary(SimpleTestObserver *observer) {
+  NSArray<NSDictionary<NSString *, id> *> *failedTests =
+      observer.failedTests ?: @[];
+  if (failedTests.count == 0) {
+    return;
+  }
+
+  fprintf(stderr, "\n=== Failed Tests (%lu) ===\n",
+          (unsigned long)failedTests.count);
+  for (NSDictionary<NSString *, id> *failure in failedTests) {
+    NSString *className = failure[@"class"] ?: @"(unknown)";
+    NSString *method = failure[@"method"] ?: @"(unknown)";
+    NSString *file = failure[@"file"] ?: @"(unknown)";
+    NSUInteger line = [failure[@"line"] unsignedIntegerValue];
+    NSString *description = failure[@"description"] ?: @"";
+
+    fprintf(stderr, "  %s/%s\n    %s:%lu\n    %s\n",
+            className.UTF8String,
+            method.UTF8String,
+            file.UTF8String,
+            (unsigned long)line,
+            description.UTF8String);
   }
 }
 
@@ -876,6 +911,7 @@ int main(int argc, char *argv[]) {
 
     [mainSuite performTest:nil];
     PDSPrintTimingSummary(observer);
+    PDSPrintFailureSummary(observer);
 
     NSLog(@"\n=== Test Suite Finished ===");
     NSLog(@"Tests run: %d", observer.testCount);
