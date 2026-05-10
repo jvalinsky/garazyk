@@ -40,6 +40,7 @@
     
     for (NSString *method in @[@"POST", @"PUT", @"DELETE"]) {
         [self.httpServer addRoute:method path:@"/:did" handler:^(HttpRequest *req, HttpResponse *resp) {
+            [weakSelf setCorsHeaders:resp forRequest:req];
             [[PLCMetrics sharedMetrics] recordRequest];
             resp.statusCode = 405;
             [resp setJsonBody:@{
@@ -50,6 +51,7 @@
     }
     
     [self.httpServer addRoute:@"GET" path:@"/health" handler:^(HttpRequest *req, HttpResponse *resp) {
+        [weakSelf setCorsHeaders:resp forRequest:req];
         [weakSelf handleGetHealth:req response:resp];
     }];
 }
