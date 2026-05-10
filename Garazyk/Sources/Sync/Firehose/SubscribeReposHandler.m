@@ -740,18 +740,17 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   if (snapshot.count == 0) {
     return;
   }
-  dispatch_queue_t fanout = self.broadcastFanoutQueue;
-  __weak typeof(self) weakSelf = self;
-  for (WebSocketConnection *connection in snapshot) {
-    dispatch_async(fanout, ^{
-      __strong typeof(weakSelf) strongSelf = weakSelf;
-      if (!strongSelf) return;
-      if (![strongSelf sendEventData:eventData
+  // Single dispatch + loop: reduces per-event dispatch overhead from O(N)
+  // to O(1). sendEventData:toConnectionWithBackpressureCheck: is
+  // non-blocking (drops slow consumers), so the loop won't stall.
+  dispatch_async(self.broadcastFanoutQueue, ^{
+    for (WebSocketConnection *connection in snapshot) {
+      if (![self sendEventData:eventData
             toConnectionWithBackpressureCheck:connection]) {
         PDS_LOG_SYNC_WARN(@"Dropping slow consumer during live broadcast");
       }
-    });
-  }
+    }
+  });
 }
 
 - (void)sendInitialRepositoryStateToConnection:(WebSocketConnection *)connection
