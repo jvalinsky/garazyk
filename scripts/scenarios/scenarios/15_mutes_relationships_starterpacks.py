@@ -13,11 +13,12 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+_project_root = str(Path(__file__).resolve().parent.parent.parent.parent)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
 
-from lib.client import XrpcClient
-from lib.characters import get_character, PDS1
-from lib.report import ScenarioResult, timed_call
+from scripts.lib.atproto import XrpcClient, get_character, PDS1, ScenarioResult, timed_call
+
 
 
 def _now() -> str:
@@ -42,7 +43,7 @@ def run() -> ScenarioResult:
         char = get_character(name)
         session = timed_call(
             result, f"Create account: {char.name}",
-            lambda c=char: client.create_account(c.handle, c.email, c.password),
+            lambda c=char: client.accounts.create_account(c.handle, c.email, c.password),
             detail_fn=lambda s, n=name: f"did={s['did']}",
         )
         if session:
@@ -59,7 +60,7 @@ def run() -> ScenarioResult:
     for name in active:
         char = get_character(name)
         timed_call(result, f"Set profile: {char.name}",
-                   lambda c=char: client.create_record(
+                   lambda c=char: client.records.create_record(
                        c.did, "app.bsky.actor.profile",
                        {"$type": "app.bsky.actor.profile", "displayName": c.name, "description": c.persona},
                        c.access_jwt),
@@ -79,7 +80,7 @@ def run() -> ScenarioResult:
         if fchar.did and tchar.did:
             timed_call(
                 result, f"{fchar.name} follows {tchar.name}",
-                lambda ff=fchar, tt=tchar: client.create_record(
+                lambda ff=fchar, tt=tchar: client.records.create_record(
                     ff.did, "app.bsky.graph.follow",
                     {"$type": "app.bsky.graph.follow", "subject": tt.did, "createdAt": _now()},
                     ff.access_jwt,
@@ -93,7 +94,7 @@ def run() -> ScenarioResult:
     if quiet.did and quiet.access_jwt and troll.did:
         timed_call(
             result, "Quiet mutes Trollface",
-            lambda: client.mute_actor(troll.did, quiet.access_jwt),
+            lambda: client.graph.mute_actor(troll.did, quiet.access_jwt),
         )
     else:
         result.step_skipped("Quiet mutes Trollface", "Missing DID or token")
@@ -102,7 +103,7 @@ def run() -> ScenarioResult:
     if quiet.access_jwt:
         timed_call(
             result, "Quiet checks mutes list",
-            lambda: client.get_mutes(quiet.access_jwt),
+            lambda: client.graph.get_mutes(quiet.access_jwt),
             detail_fn=lambda r: f"count={len(r.get('mutes', []))}",
             skip_on_status={404},
         )
@@ -113,7 +114,7 @@ def run() -> ScenarioResult:
     if luna.access_jwt:
         timed_call(
             result, "Luna checks mutes (empty)",
-            lambda: client.get_mutes(luna.access_jwt),
+            lambda: client.graph.get_mutes(luna.access_jwt),
             detail_fn=lambda r: f"count={len(r.get('mutes', []))}",
             skip_on_status={404},
         )
@@ -124,7 +125,7 @@ def run() -> ScenarioResult:
     if quiet.did and quiet.access_jwt and troll.did:
         timed_call(
             result, "Quiet unmutes Trollface",
-            lambda: client.unmute_actor(troll.did, quiet.access_jwt),
+            lambda: client.graph.unmute_actor(troll.did, quiet.access_jwt),
         )
     else:
         result.step_skipped("Quiet unmutes Trollface", "Missing DID or token")
@@ -133,7 +134,7 @@ def run() -> ScenarioResult:
     if quiet.access_jwt:
         timed_call(
             result, "Quiet verifies unmute",
-            lambda: client.get_mutes(quiet.access_jwt),
+            lambda: client.graph.get_mutes(quiet.access_jwt),
             detail_fn=lambda r: f"count={len(r.get('mutes', []))}",
             skip_on_status={404},
         )
@@ -144,7 +145,7 @@ def run() -> ScenarioResult:
     if luna.did and marcus.did:
         timed_call(
             result, "Luna→Marcus relationship",
-            lambda: client.get_relationships(luna.did, [marcus.did], token=luna.access_jwt),
+            lambda: client.graph.get_relationships(luna.did, [marcus.did], token=luna.access_jwt),
             detail_fn=lambda r: f"count={len(r.get('relationships', []))}",
             skip_on_status={404},
         )
@@ -154,7 +155,7 @@ def run() -> ScenarioResult:
     if luna.did and troll.did:
         timed_call(
             result, "Luna→Troll relationship",
-            lambda: client.get_relationships(luna.did, [troll.did], token=luna.access_jwt),
+            lambda: client.graph.get_relationships(luna.did, [troll.did], token=luna.access_jwt),
             detail_fn=lambda r: f"count={len(r.get('relationships', []))}",
             skip_on_status={404},
         )
@@ -166,7 +167,7 @@ def run() -> ScenarioResult:
     if rosa.did and rosa.access_jwt and luna.did and marcus.did:
         sp = timed_call(
             result, "Rosa creates starter pack",
-            lambda: client.create_record(
+            lambda: client.records.create_record(
                 rosa.did, "app.bsky.graph.starterpack",
                 {
                     "$type": "app.bsky.graph.starterpack",
@@ -188,7 +189,7 @@ def run() -> ScenarioResult:
     if rosa.did:
         timed_call(
             result, "Rosa's starter packs",
-            lambda: client.get_actor_starter_packs(rosa.did, token=rosa.access_jwt),
+            lambda: client.graph.get_actor_starter_packs(rosa.did, token=rosa.access_jwt),
             detail_fn=lambda r: f"count={len(r.get('starterPacks', []))}",
             skip_on_status={404},
         )
@@ -199,7 +200,7 @@ def run() -> ScenarioResult:
     if rosa_sp_uri:
         timed_call(
             result, "Get starter pack by URI",
-            lambda: client.get_starter_pack(rosa_sp_uri, token=rosa.access_jwt),
+            lambda: client.graph.get_starter_pack(rosa_sp_uri, token=rosa.access_jwt),
             detail_fn=lambda r: f"name={r.get('starterPack', {}).get('name', '')}",
             skip_on_status={404},
         )
@@ -210,7 +211,7 @@ def run() -> ScenarioResult:
     if rosa_sp_uri:
         timed_call(
             result, "Get starter packs by URIs",
-            lambda: client.get_starter_packs([rosa_sp_uri], token=rosa.access_jwt),
+            lambda: client.graph.get_starter_packs([rosa_sp_uri], token=rosa.access_jwt),
             detail_fn=lambda r: f"count={len(r.get('starterPacks', []))}",
             skip_on_status={404},
         )

@@ -12,11 +12,12 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+_project_root = str(Path(__file__).resolve().parent.parent.parent.parent)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
 
-from lib.client import XrpcClient
-from lib.characters import get_character, PDS1
-from lib.report import ScenarioResult, timed_call
+from scripts.lib.atproto import XrpcClient, get_character, PDS1, ScenarioResult, timed_call
+
 
 
 def _now() -> str:
@@ -41,7 +42,7 @@ def run() -> ScenarioResult:
         char = get_character(name)
         session = timed_call(
             result, f"Create account: {char.name}",
-            lambda c=char: client.create_account(c.handle, c.email, c.password),
+            lambda c=char: client.accounts.create_account(c.handle, c.email, c.password),
             detail_fn=lambda s, n=name: f"did={s['did']}",
         )
         if session:
@@ -58,7 +59,7 @@ def run() -> ScenarioResult:
     for name in active:
         char = get_character(name)
         timed_call(result, f"Set profile: {char.name}",
-                   lambda c=char: client.create_record(
+                   lambda c=char: client.records.create_record(
                        c.did, "app.bsky.actor.profile",
                        {"$type": "app.bsky.actor.profile", "displayName": c.name, "description": c.persona},
                        c.access_jwt),
@@ -88,7 +89,7 @@ def run() -> ScenarioResult:
             for text in texts:
                 timed_call(
                     result, f"{char.name} posts",
-                    lambda c=char, t=text: client.create_record(
+                    lambda c=char, t=text: client.records.create_record(
                         c.did, "app.bsky.feed.post",
                         {"$type": "app.bsky.feed.post", "text": t, "createdAt": _now()},
                         c.access_jwt,
@@ -100,7 +101,7 @@ def run() -> ScenarioResult:
     if rosa.did and rosa.access_jwt and luna.did and marcus.did:
         timed_call(
             result, "Rosa creates starter pack for search",
-            lambda: client.create_record(
+            lambda: client.records.create_record(
                 rosa.did, "app.bsky.graph.starterpack",
                 {
                     "$type": "app.bsky.graph.starterpack",
@@ -126,7 +127,7 @@ def run() -> ScenarioResult:
     for query in ["nebula", "Luna"]:
         timed_call(
             result, f"Search actors skeleton '{query}'",
-            lambda q=query: client.search_actors_skeleton(q, token=marcus.access_jwt),
+            lambda q=query: client.search.search_actors_skeleton(q, token=marcus.access_jwt),
             detail_fn=lambda r, q=query: f"found={len(r.get('actors', []))}",
             skip_on_status={404},
         )
@@ -135,7 +136,7 @@ def run() -> ScenarioResult:
     for query in ["nebula", "sourdough", "zzz nonexistent content"]:
         timed_call(
             result, f"Search posts skeleton '{query}'",
-            lambda q=query: client.search_posts_skeleton(q, token=marcus.access_jwt),
+            lambda q=query: client.search.search_posts_skeleton(q, token=marcus.access_jwt),
             detail_fn=lambda r, q=query: f"found={len(r.get('posts', []))}",
             skip_on_status={404},
         )
@@ -143,7 +144,7 @@ def run() -> ScenarioResult:
     # ── Search starter packs skeleton ────────────────────────────────
     timed_call(
         result, "Search starter packs skeleton 'Space'",
-        lambda: client.search_starter_packs_skeleton("Space", token=marcus.access_jwt),
+        lambda: client.search.search_starter_packs_skeleton("Space", token=marcus.access_jwt),
         detail_fn=lambda r: f"found={len(r.get('starterPacks', []))}",
         skip_on_status={404},
     )

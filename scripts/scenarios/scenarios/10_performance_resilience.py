@@ -15,12 +15,12 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+_project_root = str(Path(__file__).resolve().parent.parent.parent.parent)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
 
-from lib.client import XrpcClient, XrpcError
-from lib.characters import get_character, PDS1
-from lib.assertions import assert_success, assert_contains, assert_xrpc_raises
-from lib.report import ScenarioResult, StepStatus
+from scripts.lib.atproto import XrpcClient, get_character, PDS1, ScenarioResult, timed_call
+
 
 
 def _now() -> str:
@@ -33,26 +33,20 @@ def run() -> ScenarioResult:
 
     client = XrpcClient(PDS1)
 
-    # Wait for server
-    try:
-        client.wait_for_healthy(timeout=30)
-        result.step_passed("Server health check")
-    except RuntimeError as exc:
-        result.step_failed("Server health check", str(exc))
+    timed_call(result, "Server health check",
+               lambda: client.wait_for_healthy(timeout=30))
+    if result.failed > 0:
         result.finish()
         return result
 
-    # ── Create accounts ──────────────────────────────────────────────
     char_names = ["luna", "marcus", "rosa", "volt", "quiet"]
     for name in char_names:
         char = get_character(name)
-        try:
-            session = client.create_account(char.handle, char.email, char.password)
-            char.did = session["did"]
-            char.access_jwt = session["accessJwt"]
-            result.step_passed(f"Create account: {char.name}", f"did={char.did}")
-        except XrpcError as exc:
-            result.step_failed(f"Create account: {char.name}", str(exc))
+        timed_call(
+            result, f"Create account: {char.name}",
+            lambda c=char: client.accounts.create_account(c.handle, c.email, c.password),
+            detail_fn=lambda s, n=name: f"did={s['did']}",
+        )
 
     active = [n for n in char_names if get_character(n).did]
     if len(active) < 3:
@@ -60,38 +54,30 @@ def run() -> ScenarioResult:
         result.finish()
         return result
 
-    # Wait for relay to be ready
     time.sleep(2)
 
-    # ── Burst post creation ───────────────────────────────────────────
-    POSTS_PER_USER = 10  # 5 users x 10 posts = 50 posts (scaled down from 200 for safety)
+    POSTS_PER_USER = 10
     total_posts = 0
     failed_posts = 0
     start_time = time.time()
 
     def create_burst_post(char_name: str, index: int) -> bool:
-        """Create a single post. Returns True on success."""
         char = get_character(char_name)
         try:
-            client.create_record(
-                char.did,
-                "app.bsky.feed.post",
-                {
-                    "$type": "app.bsky.feed.post",
-                    "text": f"Burst post #{index} from {char.name}! Load testing the PDS. 🚀",
-                    "createdAt": _now(),
-                },
+            client.records.create_record(
+                char.did, "app.bsky.feed.post",
+                {"$type": "app.bsky.feed.post",
+                 "text": f"Burst post #{index} from {char.name}! Load testing the PDS.",
+                 "createdAt": _now()},
                 char.access_jwt,
             )
             return True
-        except XrpcError:
+        except Exception:
             return False
 
-    # Use ThreadPoolExecutor for concurrent posts
     with ThreadPoolExecutor(max_workers=5) as executor:
         futures = []
         for name in active:
-            char = get_character(name)
             for i in range(POSTS_PER_USER):
                 futures.append(executor.submit(create_burst_post, name, i + 1))
 
@@ -108,122 +94,84 @@ def run() -> ScenarioResult:
         f"rate={total_posts/max(elapsed, 0.01):.1f} posts/s",
     )
 
-    # ── Verify all posts exist ────────────────────────────────────────
     total_records = 0
     for name in active:
         char = get_character(name)
-        try:
-            records = client.list_records(char.did, "app.bsky.feed.post", token=char.access_jwt)
-            count = len(records.get("records", []))
-            total_records += count
-        except XrpcError:
-            pass
+        records = timed_call(
+            result, f"Verify posts: {char.name}",
+            lambda c=char: client.records.list_records(c.did, "app.bsky.feed.post", token=c.access_jwt),
+        )
+        if records:
+            total_records += len(records.get("records", []))
 
     result.step_passed("Verify posts exist", f"total_records_across_users={total_records}")
 
-    # ── Batch writes via applyWrites ─────────────────────────────────
     luna = get_character("luna")
-    try:
-        batch_writes = [
-            {
-                "$type": "com.atproto.repo.applyWrites#create",
-                "collection": "app.bsky.feed.post",
-                "rkey": f"batch-{i}",
-                "value": {
-                    "$type": "app.bsky.feed.post",
-                    "text": f"Batch post #{i} from Luna",
-                    "createdAt": _now(),
-                },
-            }
-            for i in range(5)
-        ]
-        batch_result = client.apply_writes(luna.did, batch_writes, luna.access_jwt)
-        result.step_passed("Batch applyWrites", "5 records created")
-    except XrpcError as exc:
-        result.step_skipped("Batch applyWrites", str(exc))
+    batch_writes = [
+        {
+            "$type": "com.atproto.repo.applyWrites#create",
+            "collection": "app.bsky.feed.post",
+            "rkey": f"batch-{i}",
+            "value": {"$type": "app.bsky.feed.post", "text": f"Batch post #{i} from Luna", "createdAt": _now()},
+        }
+        for i in range(5)
+    ]
+    timed_call(
+        result, "Batch applyWrites",
+        lambda: client.records.apply_writes(luna.did, batch_writes, luna.access_jwt),
+        detail_fn=lambda r: "5 records created",
+    )
 
-    # ── Error handling: Invalid record ───────────────────────────────
-    try:
-        assert_xrpc_raises(
-            "Create invalid record",
-            None,
-            client.create_record,
-            luna.did,
-            "app.bsky.feed.post",
+    timed_call(
+        result, "Invalid record rejected",
+        lambda: client.records.create_record(
+            luna.did, "app.bsky.feed.post",
             {"$type": "app.bsky.feed.post"},  # Missing required 'text' and 'createdAt'
-            luna.access_jwt,
-        )
-        result.step_passed("Invalid record rejected")
-    except AssertionError as exc:
-        result.step_skipped("Invalid record rejected", str(exc))
+            luna.access_jwt),
+        expect_failure=True,
+    )
 
-    # ── Error handling: Duplicate rkey ───────────────────────────────
     try:
-        # Create a post with a specific rkey
-        client.create_record(
-            luna.did,
-            "app.bsky.feed.post",
-            {
-                "$type": "app.bsky.feed.post",
-                "text": "Original post with specific rkey",
-                "createdAt": _now(),
-            },
+        client.records.create_record(
+            luna.did, "app.bsky.feed.post",
+            {"$type": "app.bsky.feed.post", "text": "Original post with specific rkey",
+             "createdAt": _now()},
             luna.access_jwt,
             rkey="duplicate-test-rkey",
         )
-        # Try to create another with the same rkey
-        assert_xrpc_raises(
-            "Create duplicate rkey",
-            None,
-            client.create_record,
-            luna.did,
-            "app.bsky.feed.post",
-            {
-                "$type": "app.bsky.feed.post",
-                "text": "Duplicate post with same rkey",
-                "createdAt": _now(),
-            },
-            luna.access_jwt,
-            rkey="duplicate-test-rkey",
+        timed_call(
+            result, "Duplicate rkey rejected",
+            lambda: client.records.create_record(
+                luna.did, "app.bsky.feed.post",
+                {"$type": "app.bsky.feed.post", "text": "Duplicate post with same rkey",
+                 "createdAt": _now()},
+                luna.access_jwt,
+                rkey="duplicate-test-rkey"),
+            expect_failure=True,
         )
-        result.step_passed("Duplicate rkey rejected")
-    except (AssertionError, XrpcError) as exc:
+    except Exception as exc:
         result.step_skipped("Duplicate rkey rejected", str(exc))
 
-    # ── Error handling: Missing auth ─────────────────────────────────
-    try:
-        assert_xrpc_raises(
-            "Create record without auth",
-            None,
-            client.create_record,
-            luna.did,
-            "app.bsky.feed.post",
+    timed_call(
+        result, "Missing auth rejected",
+        lambda: client.records.create_record(
+            luna.did, "app.bsky.feed.post",
             {"$type": "app.bsky.feed.post", "text": "unauthorized", "createdAt": _now()},
-            "invalid-token-xyz",
-        )
-        result.step_passed("Missing auth rejected")
-    except AssertionError as exc:
-        result.step_skipped("Missing auth rejected", str(exc))
+            "invalid-token-xyz"),
+        expect_failure=True,
+    )
 
-    # ── Error handling: Non-existent collection ──────────────────────
-    try:
-        assert_xrpc_raises(
-            "Create record in non-existent collection",
-            None,
-            client.create_record,
-            luna.did,
-            "app.bsky.feed.nonexistent",
+    timed_call(
+        result, "Non-existent collection rejected",
+        lambda: client.records.create_record(
+            luna.did, "app.bsky.feed.nonexistent",
             {"$type": "app.bsky.feed.nonexistent", "text": "test", "createdAt": _now()},
-            luna.access_jwt,
-        )
-        result.step_passed("Non-existent collection rejected")
-    except AssertionError as exc:
-        result.step_skipped("Non-existent collection rejected", str(exc))
+            luna.access_jwt),
+        expect_failure=True,
+    )
 
-    # ── Give AppView time to index ───────────────────────────────────
     time.sleep(5)
 
-    # ── AppView consistency check ─────────────────────────────────────
     try:
         import requests
         appview_resp = requests.get(
@@ -238,15 +186,12 @@ def run() -> ScenarioResult:
     except Exception as exc:
         result.step_failed("AppView consistency check", str(exc))
 
-    # ── Verify timeline has content ───────────────────────────────────
-    try:
-        timeline = client.get_timeline(luna.access_jwt)
-        feed = timeline.get("feed", [])
-        result.step_passed("Timeline has content after burst", f"items={len(feed)}")
-    except XrpcError as exc:
-        result.step_failed("Timeline has content after burst", str(exc))
+    timed_call(
+        result, "Timeline has content after burst",
+        lambda: client.feed.get_timeline(luna.access_jwt),
+        detail_fn=lambda t: f"items={len(t.get('feed', []))}",
+    )
 
-    # ── Relay health after load ──────────────────────────────────────
     try:
         import requests
         relay_resp = requests.get("http://localhost:2584/api/relay/health", timeout=5)

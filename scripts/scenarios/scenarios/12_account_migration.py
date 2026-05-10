@@ -13,15 +13,15 @@ from __future__ import annotations
 
 import sys
 import time
-import requests
+import requests as reqs
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+_project_root = str(Path(__file__).resolve().parent.parent.parent.parent)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
 
-from lib.client import XrpcClient, XrpcError
-from lib.characters import get_character, PDS1, PDS2
-from lib.assertions import assert_success, assert_contains
-from lib.report import ScenarioResult, StepStatus
+from scripts.lib.atproto import XrpcClient, get_character, PDS1, PDS2, ScenarioResult, timed_call
+
 
 
 def _now() -> str:
@@ -36,18 +36,15 @@ def run() -> ScenarioResult:
     pds2 = XrpcClient(PDS2)
     luna = get_character("luna")
 
-    # ── Step 1: Environment Setup & Verification ──────────────────────
     for name, client in [("PDS1", pds1), ("PDS2", pds2)]:
-        try:
-            client.wait_for_healthy(timeout=30)
-            result.step_passed(f"{name} health check")
-        except RuntimeError as exc:
-            result.step_failed(f"{name} health check", str(exc))
+        timed_call(result, f"{name} health check",
+                   lambda c=client: c.wait_for_healthy(timeout=30))
+        if result.failed > 0:
             result.finish()
             return result
 
     try:
-        plc_health = requests.get("http://localhost:2582/_health", timeout=5)
+        plc_health = reqs.get("http://localhost:2582/_health", timeout=5)
         if plc_health.status_code == 200:
             result.step_passed("PLC health check")
         else:
@@ -59,89 +56,95 @@ def run() -> ScenarioResult:
         result.finish()
         return result
 
-    # ── Step 2: Account Creation & Initial State (PDS1) ───────────────
     admin = get_character("admin")
-    try:
-        admin_session = pds1.create_account(admin.handle, admin.email, admin.password)
-        admin.did = admin_session["did"]
-        admin.access_jwt = admin_session["accessJwt"]
-        result.step_passed("Create admin account on PDS1", f"did={admin.did}")
-    except XrpcError as exc:
-        result.step_failed("Create admin account on PDS1", str(exc))
+    timed_call(
+        result, "Create admin account on PDS1",
+        lambda: pds1.accounts.create_account(admin.handle, admin.email, admin.password),
+        detail_fn=lambda s: f"did={s['did']}",
+    )
+    if not admin.did:
         result.finish()
         return result
 
-    try:
-        session = pds1.create_account(luna.handle, luna.email, luna.password)
-        luna.did = session["did"]
-        luna.access_jwt = session["accessJwt"]
-        result.step_passed("Create user account on PDS1", f"did={luna.did}")
-    except XrpcError as exc:
-        result.step_failed("Create user account on PDS1", str(exc))
+    session = timed_call(
+        result, "Create user account on PDS1",
+        lambda: pds1.accounts.create_account(luna.handle, luna.email, luna.password),
+        detail_fn=lambda s: f"did={s['did']}",
+    )
+    if not session:
         result.finish()
         return result
+    luna.did = session["did"]
+    luna.access_jwt = session["accessJwt"]
 
-    # ── Step 3: Handle Rotations (PDS1) ───────────────────────────────
     original_handle = luna.handle
     parts = original_handle.rsplit(".", 1)
     base = parts[0]
     domain = parts[1] if len(parts) > 1 else "test"
-    
+
     new_handle_1 = f"one-{base}.{domain}"
     new_handle_2 = f"two-{base}.{domain}"
 
     try:
-        # First handle rotation via direct PLC operation
-        token_resp = pds1.xrpc_post("com.atproto.identity.requestPlcOperationSignature", {}, token=luna.access_jwt)
-        token = token_resp.get("token")
-        
-        sign_resp = pds1.xrpc_post(
-            "com.atproto.identity.signPlcOperation",
-            {"token": token, "alsoKnownAs": [f"at://{new_handle_1}"]},
-            token=luna.access_jwt
+        token_resp = timed_call(
+            result, "Request PLC operation signature",
+            lambda: pds1.raw.xrpc_post("com.atproto.identity.requestPlcOperationSignature",
+                                        {}, token=luna.access_jwt),
         )
-        op1 = sign_resp.get("operation")
-        op1.pop("did", None)  # Remove convenience field before submitting to PLC
-        
-        # Bypass PDS validation and submit directly to PLC directory
-        plc_submit_1 = requests.post(f"http://localhost:2582/{luna.did}", json=op1, timeout=5)
-        if plc_submit_1.status_code == 200:
-            result.step_passed("First handle rotation (Direct PLC)", f"handle={new_handle_1}")
-        else:
-            result.step_failed("First handle rotation (Direct PLC)", f"status={plc_submit_1.status_code} body={plc_submit_1.text}")
-            
-        time.sleep(2)
-        
-        # Second handle rotation via direct PLC operation
-        token_resp2 = pds1.xrpc_post("com.atproto.identity.requestPlcOperationSignature", {}, token=luna.access_jwt)
-        token2 = token_resp2.get("token")
-        
-        sign_resp2 = pds1.xrpc_post(
-            "com.atproto.identity.signPlcOperation",
-            {"token": token2, "alsoKnownAs": [f"at://{new_handle_2}"]},
-            token=luna.access_jwt
-        )
-        op2 = sign_resp2.get("operation")
-        op2.pop("did", None)  # Remove convenience field before submitting to PLC
-        
-        plc_submit_2 = requests.post(f"http://localhost:2582/{luna.did}", json=op2, timeout=5)
-        if plc_submit_2.status_code == 200:
-            result.step_passed("Second handle rotation (Direct PLC)", f"handle={new_handle_2}")
-        else:
-            result.step_failed("Second handle rotation (Direct PLC)", f"status={plc_submit_2.status_code} body={plc_submit_2.text}")
-            
-        luna.handle = new_handle_2
-        time.sleep(2)
+        token = token_resp.get("token") if token_resp else None
+
+        if token:
+            sign_resp1 = timed_call(
+                result, f"Sign handle rotation: {new_handle_1}",
+                lambda: pds1.raw.xrpc_post("com.atproto.identity.signPlcOperation",
+                                            {"token": token, "alsoKnownAs": [f"at://{new_handle_1}"]},
+                                            token=luna.access_jwt),
+            )
+            if sign_resp1:
+                op1 = sign_resp1.get("operation", {})
+                op1.pop("did", None)
+                plc_submit_1 = reqs.post(f"http://localhost:2582/{luna.did}", json=op1, timeout=5)
+                if plc_submit_1.status_code == 200:
+                    result.step_passed("First handle rotation (Direct PLC)", f"handle={new_handle_1}")
+                else:
+                    result.step_failed("First handle rotation (Direct PLC)",
+                                       f"status={plc_submit_1.status_code} body={plc_submit_1.text}")
+            time.sleep(2)
+
+        if token:
+            token_resp2 = timed_call(
+                result, "Request PLC signature (2nd)",
+                lambda: pds1.raw.xrpc_post("com.atproto.identity.requestPlcOperationSignature",
+                                            {}, token=luna.access_jwt),
+            )
+            token2 = token_resp2.get("token") if token_resp2 else None
+
+            if token2:
+                sign_resp2 = timed_call(
+                    result, f"Sign handle rotation: {new_handle_2}",
+                    lambda: pds1.raw.xrpc_post("com.atproto.identity.signPlcOperation",
+                                                {"token": token2, "alsoKnownAs": [f"at://{new_handle_2}"]},
+                                                token=luna.access_jwt),
+                )
+                if sign_resp2:
+                    op2 = sign_resp2.get("operation", {})
+                    op2.pop("did", None)
+                    plc_submit_2 = reqs.post(f"http://localhost:2582/{luna.did}", json=op2, timeout=5)
+                    if plc_submit_2.status_code == 200:
+                        result.step_passed("Second handle rotation (Direct PLC)", f"handle={new_handle_2}")
+                    else:
+                        result.step_failed("Second handle rotation (Direct PLC)",
+                                           f"status={plc_submit_2.status_code} body={plc_submit_2.text}")
+            luna.handle = new_handle_2
+            time.sleep(2)
     except Exception as exc:
         result.step_failed("Handle rotations via PLC", str(exc))
 
-    # ── Step 8: PLC Log Auditing ──────────────────────────────────────
     try:
-        log_resp = requests.get(f"http://localhost:2582/{luna.did}/log", timeout=5)
+        log_resp = reqs.get(f"http://localhost:2582/{luna.did}/log", timeout=5)
         if log_resp.status_code == 200:
             log_lines = log_resp.json()
-            
-            # Since PLC /log sometimes returns JSONL, we might need to parse it if it's text
+
             if isinstance(log_lines, str):
                 import json
                 operations = [json.loads(line) for line in log_lines.strip().split('\n')]
@@ -155,39 +158,29 @@ def run() -> ScenarioResult:
             if len(operations) == 0:
                 result.step_failed("PLC log audit", "Log is empty")
             else:
-                # Audit the chain
                 is_valid = True
                 failure_reason = ""
-                
-                # 1. Check genesis
+
                 genesis = operations[0]
                 if "prev" in genesis and genesis["prev"] is not None:
                     is_valid = False
                     failure_reason = "Genesis operation has a 'prev' CID"
-                
-                # 2. Check chaining and monotonicity
+
                 last_cid = genesis.get("cid")
-                # Note: PLC operations return { cid: "...", operation: { prev: "...", ... } }
-                
+
                 for i, op in enumerate(operations[1:], start=1):
-                    # Different PLC implementations format this slightly differently.
-                    # Usually: {"cid": "bafy...", "operation": {"prev": "bafy...", ...}}
                     op_data = op.get("operation", op)
-                    
                     if op_data.get("prev") != last_cid:
                         is_valid = False
                         failure_reason = f"Chain broken at index {i}: expected prev={last_cid}, got {op_data.get('prev')}"
                         break
-                    
-                    last_cid = op.get("cid", op_data.get("cid")) # Need to get the CID of this operation for the next loop
-                
+                    last_cid = op.get("cid", op_data.get("cid"))
+
                 if is_valid:
                     result.step_passed("PLC operation chain audit", "Chain is intact and monotonic")
                 else:
                     result.step_failed("PLC operation chain audit", failure_reason)
 
-                # 3. Check for handle updates
-                # In PLC operations, handles are updated via 'alsoKnownAs' field
                 handles_seen = set()
                 for op in operations:
                     op_data = op.get("operation", op)
@@ -197,9 +190,11 @@ def run() -> ScenarioResult:
                             handles_seen.add(aka.replace("at://", ""))
 
                 if new_handle_1 in handles_seen and new_handle_2 in handles_seen:
-                    result.step_passed("Verify handle updates in PLC", f"Found handles: {new_handle_1}, {new_handle_2}")
+                    result.step_passed("Verify handle updates in PLC",
+                                       f"Found handles: {new_handle_1}, {new_handle_2}")
                 else:
-                    result.step_failed("Verify handle updates in PLC", f"Missing handle updates in log. Seen: {handles_seen}")
+                    result.step_failed("Verify handle updates in PLC",
+                                       f"Missing handle updates in log. Seen: {handles_seen}")
 
         else:
             result.step_failed("Fetch PLC operation log", f"status={log_resp.status_code}")
