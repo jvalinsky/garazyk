@@ -79,17 +79,16 @@ def run() -> ScenarioResult:
 
     timed_call(
         result, "Marcus sets preferences",
-        lambda: client.feed.put_preferences(
-            [{"$type": "app.bsky.actor.defs#personalDetailsPref", "developerMode": True}],
+        lambda: client.search.put_preferences(
+            [{"$type": "app.bsky.actor.defs#contentLabelPref", "label": "nsfw", "visibility": "show"}],
             marcus.access_jwt,
         ),
-        skip_on_status={404},
     )
 
     # ── Marcus gets preferences ─────────────────────────────────────
     timed_call(
         result, "Marcus gets preferences",
-        lambda: client.feed.get_preferences(marcus.access_jwt),
+        lambda: client.search.get_preferences(marcus.access_jwt),
         detail_fn=lambda r: f"count={len(r.get('preferences', []))}",
         skip_on_status={404},
     )
@@ -204,7 +203,7 @@ def run() -> ScenarioResult:
         label = f"Typeahead search '{query}'"
         timed_call(
             result, label,
-            lambda q=query: client.feed.search_actors_typeahead(q, token=marcus.access_jwt),
+            lambda q=query: client.search.search_actors_typeahead(q, token=marcus.access_jwt),
             detail_fn=lambda r, q=query: f"found={len(r.get('actors', []))}",
             skip_on_status={404},
         )
@@ -258,15 +257,15 @@ def run() -> ScenarioResult:
     # ── Get suggestions ─────────────────────────────────────────────
     timed_call(
         result, "Get actor suggestions",
-        lambda: client.feed.get_suggestions(marcus.access_jwt),
+        lambda: client.search.get_suggestions(marcus.access_jwt),
         detail_fn=lambda r: f"count={len(r.get('actors', []))}",
         skip_on_status={404},
     )
 
     # ── Record artifacts ─────────────────────────────────────────────
     result.record_artifact("accounts", {
-        c.name: {"did": get_character(c.name).did}
-        for c in [get_character(n) for n in char_names] if c.did
+        n: {"did": get_character(n).did}
+        for n in char_names if get_character(n).did
     })
     result.record_artifact("post_count", {
         "luna": len(luna_posts),
