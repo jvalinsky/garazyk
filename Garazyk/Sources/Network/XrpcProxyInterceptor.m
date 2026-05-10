@@ -418,7 +418,7 @@ static BOOL proxyXrpcRequest(HttpRequest *request, HttpResponse *response,
   PDSSafeHTTPClientOptions *safeOptions = [[PDSSafeHTTPClientOptions alloc] init];
   safeOptions.timeout = 30.0;
   safeOptions.maxResponseBytes = 10 * 1024 * 1024; // 10 MB
-  safeOptions.allowHTTP = NO;
+  safeOptions.allowHTTP = isTrusted;
   safeOptions.allowPrivateHosts = isTrusted;
   safeOptions.followRedirects = YES;
 
