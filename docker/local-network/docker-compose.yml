@@ -53,7 +53,9 @@ services:
       - PDS_PLC_KEYS_DIR=/var/lib/atprotopds/keys
       - PDS_MASTER_SECRET=32107992c973da8445b485263cb2bd3157859cb94294a2355e3c4a7b0f825afe
       - GARAZYK_ALLOW_PRIVATE_OAUTH_CLIENTS=1
-      - GARAZYK_OAUTH_HOST_MAP=localhost:8080=oauth-client:8080
+      - GARAZYK_OAUTH_HOST_MAP=127.0.0.1:8080=oauth-client:8080
+      - PDS_RUNNING_TESTS=1
+      - PDS_USE_KEYCHAIN=false
     depends_on:
       local-plc:
         condition: service_healthy
