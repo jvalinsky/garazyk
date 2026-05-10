@@ -110,6 +110,18 @@ if [[ ! -d "$STAGING_DIR/PLC-assets" ]]; then
     docker cp "$CONTAINER_ID:/src/Garazyk/Sources/PLC/Assets" "$STAGING_DIR/PLC-assets"
 fi
 
+# Copy Auth assets if not already present
+if [[ ! -d "$STAGING_DIR/Auth-assets" ]]; then
+    echo "[stage] Copying Auth assets..."
+    docker cp "$CONTAINER_ID:/src/Garazyk/Sources/Auth/Assets" "$STAGING_DIR/Auth-assets"
+fi
+
+# Copy shared design system CSS if not already present
+if [[ ! -d "$STAGING_DIR/css-shared" ]]; then
+    echo "[stage] Copying shared design system CSS..."
+    cp -r "$REPO_ROOT/Garazyk/Sources/Shared/DesignSystem/css" "$STAGING_DIR/css-shared"
+fi
+
 # Clean up the temporary container
 docker rm "$CONTAINER_ID" >/dev/null
 

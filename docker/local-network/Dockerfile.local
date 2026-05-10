@@ -39,6 +39,8 @@ RUN ldconfig
 
 COPY staging/lexicons /usr/share/atprotopds/lexicons
 COPY staging/PLC-assets /usr/share/atprotopds/assets/PLC
+COPY staging/Auth-assets /usr/share/atprotopds/assets/Auth
+COPY staging/css-shared /usr/share/atprotopds/assets/css
 
 RUN mkdir -p /var/lib/atprotopds
 RUN useradd -r -s /usr/sbin/nologin pds && chown -R pds:pds /var/lib/atprotopds
