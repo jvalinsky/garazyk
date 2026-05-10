@@ -29,10 +29,18 @@ from scripts.lib.atproto import (
     ScenarioResult,
     StepResult,
     StepStatus,
+    timed_call,
 )
 
 # Re-export PDS URL constants for scenario convenience
 from scripts.lib.atproto.characters import PDS1, PDS2  # noqa: F401
+
+# Re-export service config for admin scenarios
+from scripts.lib.atproto.config import (  # noqa: F401
+    SERVICE_URLS,
+    APPVIEW_ADMIN_SECRET,
+    PDS_ADMIN_PASSWORD,
+)
 
 __all__ = [
     "XrpcClient",
@@ -52,4 +60,8 @@ __all__ = [
     "ScenarioResult",
     "StepResult",
     "StepStatus",
+    "timed_call",
+    "SERVICE_URLS",
+    "APPVIEW_ADMIN_SECRET",
+    "PDS_ADMIN_PASSWORD",
 ]
