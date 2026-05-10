@@ -56,6 +56,13 @@ SCENARIO_REGISTRY = [
     ("11", "scenarios.11_lab_oauth_login", "Lab OAuth2 Login", False),
     ("12", "scenarios.12_account_migration", "Account Migration & PLC Audit", True),
     ("13", "scenarios.13_oauth_client_e2e", "E2E OAuth2 Client Integration", False),
+    ("14", "scenarios.14_drafts_bookmarks", "Drafts & Bookmarks Workflow", False),
+    ("15", "scenarios.15_mutes_relationships_starterpacks", "Mutes, Relationships & Starter Packs", False),
+    ("16", "scenarios.16_notification_management", "Notification Management & Preferences", False),
+    ("17", "scenarios.17_actor_preferences_discovery", "Actor Preferences & Discovery", False),
+    ("18", "scenarios.18_admin_operations", "AppView Admin Operations", False),
+    ("19", "scenarios.19_contact_age_assurance", "Contact Management & Age Assurance", False),
+    ("20", "scenarios.20_unspecced_search", "Unspecced Search & Discovery", False),
 ]
 
 
