@@ -174,6 +174,7 @@ def run() -> ScenarioResult:
     timed_call(
         result, "Unknown NSID returns 501",
         lambda: av.http_get("/xrpc/com.example.nonexistent.method"),
+        expect_failure=True,
     )
 
     # ── Dynamic XRPC: procedure without custom handler ─────────────
@@ -186,6 +187,7 @@ def run() -> ScenarioResult:
             "/xrpc/com.shinolabs.pinksea.oekaki",
             body={"$type": "com.shinolabs.pinksea.oekaki", "data": "test"},
         ),
+        expect_failure=True,
     )
 
     # ── Admin: Verify records indexed ───────────────────────────────
@@ -203,6 +205,7 @@ def run() -> ScenarioResult:
     timed_call(
         result, "Admin auth: wrong secret rejected",
         lambda: av.http_get("/admin/lexicons", token="wrong-secret-value"),
+        expect_failure=True,
     )
 
     # ── Record artifacts ────────────────────────────────────────────

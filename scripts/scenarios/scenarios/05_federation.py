@@ -43,20 +43,26 @@ def run() -> ScenarioResult:
     luna = get_character("luna")
     marcus = get_character("marcus")
     for char in [luna, marcus]:
-        timed_call(
+        session = timed_call(
             result, f"Create account on PDS1: {char.name}",
             lambda c=char: pds1.accounts.create_account(c.handle, c.email, c.password),
             detail_fn=lambda s, c=char: f"did={s['did']}",
         )
+        if session:
+            char.did = session["did"]
+            char.access_jwt = session["accessJwt"]
 
     nova = get_character("nova")
     rex = get_character("rex")
     for char in [nova, rex]:
-        timed_call(
+        session = timed_call(
             result, f"Create account on PDS2: {char.name}",
             lambda c=char: pds2.accounts.create_account(c.handle, c.email, c.password),
             detail_fn=lambda s, c=char: f"did={s['did']}",
         )
+        if session:
+            char.did = session["did"]
+            char.access_jwt = session["accessJwt"]
 
     if not all([luna.did, marcus.did, nova.did, rex.did]):
         result.step_failed("Account creation", "Not all accounts created")

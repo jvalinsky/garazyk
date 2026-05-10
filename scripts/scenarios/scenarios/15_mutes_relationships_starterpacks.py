@@ -165,16 +165,36 @@ def run() -> ScenarioResult:
     # ── Rosa creates a starter pack ──────────────────────────────────
     rosa_sp_uri = None
     if rosa.did and rosa.access_jwt and luna.did and marcus.did:
+        # Create a list record first (required by starter pack schema)
+        list_rec = timed_call(
+            result, "Rosa creates list for starter pack",
+            lambda: client.records.create_record(
+                rosa.did, "app.bsky.graph.list",
+                {
+                    "$type": "app.bsky.graph.list",
+                    "name": "Foodie Friends",
+                    "purpose": "app.bsky.graph.defs#curatelist",
+                    "createdAt": _now(),
+                },
+                rosa.access_jwt,
+            ),
+            detail_fn=lambda r: f"uri={r['uri']}",
+        )
+        list_uri = list_rec["uri"] if list_rec else None
+
+        sp_record = {
+            "$type": "app.bsky.graph.starterpack",
+            "name": "Foodie Friends",
+            "createdAt": _now(),
+        }
+        if list_uri:
+            sp_record["list"] = list_uri
+
         sp = timed_call(
             result, "Rosa creates starter pack",
             lambda: client.records.create_record(
                 rosa.did, "app.bsky.graph.starterpack",
-                {
-                    "$type": "app.bsky.graph.starterpack",
-                    "name": "Foodie Friends",
-                    "description": "My favorite food-loving friends!",
-                    "createdAt": _now(),
-                },
+                sp_record,
                 rosa.access_jwt,
             ),
             detail_fn=lambda r: f"uri={r['uri']}",

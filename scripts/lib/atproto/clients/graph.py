@@ -36,7 +36,7 @@ class GraphClient:
     ) -> dict:
         return self._t.get(
             "app.bsky.graph.getRelationships",
-            {"actor": actor, "subjects": targets},
+            {"actor": actor, "others": targets},
             token=token,
         )
 
