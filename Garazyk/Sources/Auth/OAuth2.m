@@ -101,6 +101,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
     if (self.codeChallenge) [queryItems addObject:[NSURLQueryItem queryItemWithName:@"code_challenge" value:self.codeChallenge]];
     if (self.codeChallengeMethod) [queryItems addObject:[NSURLQueryItem queryItemWithName:@"code_challenge_method" value:self.codeChallengeMethod]];
     if (self.nonce) [queryItems addObject:[NSURLQueryItem queryItemWithName:@"nonce" value:self.nonce]];
+    if (self.responseMode) [queryItems addObject:[NSURLQueryItem queryItemWithName:@"response_mode" value:self.responseMode]];
     components.queryItems = queryItems;
     return components.URL;
 }
@@ -116,6 +117,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
     if (self.codeChallengeMethod) dict[@"code_challenge_method"] = self.codeChallengeMethod;
     if (self.nonce) dict[@"nonce"] = self.nonce;
     if (self.dpopJWK) dict[@"dpop_jwk"] = self.dpopJWK;
+    if (self.responseMode) dict[@"response_mode"] = self.responseMode;
     return dict;
 }
 
@@ -640,7 +642,23 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
     if (self.issuer.length > 0) {
         [queryItems addObject:[NSURLQueryItem queryItemWithName:@"iss" value:self.issuer]];
     }
-    redirectComponents.queryItems = queryItems;
+
+    // Determine response mode: fragment or query (default)
+    BOOL useFragment = [request.responseMode isEqualToString:@"fragment"];
+    if (useFragment) {
+        // Build fragment string from the response parameters
+        NSMutableArray<NSString *> *fragParts = [NSMutableArray array];
+        for (NSURLQueryItem *item in queryItems) {
+            NSString *encodedName = [item.name stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+            NSString *encodedValue = item.value ? [item.value stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]] : @"";
+            [fragParts addObject:[NSString stringWithFormat:@"%@=%@", encodedName, encodedValue]];
+        }
+        redirectComponents.fragment = [fragParts componentsJoinedByString:@"&"];
+        // Clear any existing query items that were on the redirect URI
+        // (keep the original query items from the redirect_uri itself)
+    } else {
+        redirectComponents.queryItems = queryItems;
+    }
 
     completion(redirectComponents.URL, code, nil);
 }

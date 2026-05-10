@@ -75,6 +75,7 @@
                             <input type="hidden" name="code_challenge_method" value="{{code_challenge_method}}">
                             <input type="hidden" name="nonce" value="{{nonce}}">
                             <input type="hidden" name="login_hint" value="{{login_hint}}">
+                            <input type="hidden" name="response_mode" value="{{response_mode}}">
                             <input type="hidden" name="session_token" value="">
                             <input type="hidden" name="decision" value="allow">
                             <button type="submit" class="btn btn-primary">Authorize</button>
@@ -85,6 +86,7 @@
                             <input type="hidden" name="state" value="{{state}}">
                             <input type="hidden" name="redirect_uri" value="{{redirect_uri}}">
                             <input type="hidden" name="login_hint" value="{{login_hint}}">
+                            <input type="hidden" name="response_mode" value="{{response_mode}}">
                             <input type="hidden" name="decision" value="deny">
                             <button type="submit" class="btn btn-secondary">Cancel</button>
                         </form>
@@ -169,8 +171,8 @@
                     document.querySelectorAll('input[name="session_token"]').forEach(el => {
                         el.value = data.session_token || '';
                     });
-                    document.getElementById('auth-step-signin').style.display = 'none';
-                    document.getElementById('auth-step-consent').style.display = 'block';
+                    document.getElementById('auth-step-signin').classList.add('hidden');
+                    document.getElementById('auth-step-consent').classList.remove('hidden');
                 } else {
                     errorEl.textContent = data.error || 'Invalid credentials';
                     errorEl.style.display = 'block';
@@ -194,11 +196,18 @@
         document.getElementById('auth-cancel-btn').addEventListener('click', () => {
             const redirectUri = params.get('redirect_uri');
             const state = params.get('state');
+            const responseMode = params.get('response_mode') || 'query';
             if (redirectUri) {
                 const url = new URL(redirectUri);
-                url.searchParams.set('error', 'access_denied');
-                url.searchParams.set('error_description', 'User cancelled');
-                if (state) url.searchParams.set('state', state);
+                const errorParams = new URLSearchParams();
+                errorParams.set('error', 'access_denied');
+                errorParams.set('error_description', 'User cancelled');
+                if (state) errorParams.set('state', state);
+                if (responseMode === 'fragment') {
+                    url.hash = errorParams.toString();
+                } else {
+                    errorParams.forEach((v, k) => url.searchParams.set(k, v));
+                }
                 window.location.href = url.href;
             } else {
                 window.history.back();
@@ -318,8 +327,8 @@
                     document.querySelectorAll('input[name="session_token"]').forEach(el => {
                         el.value = signinData.session_token || '';
                     });
-                    document.getElementById('auth-step-signin').style.display = 'none';
-                    document.getElementById('auth-step-consent').style.display = 'block';
+                    document.getElementById('auth-step-signin').classList.add('hidden');
+                    document.getElementById('auth-step-consent').classList.remove('hidden');
                 } else {
                     throw new Error(signinData.error || 'Passkey authentication failed');
                 }

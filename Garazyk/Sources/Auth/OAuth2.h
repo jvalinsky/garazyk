@@ -169,6 +169,9 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 /*! Client metadata provided dynamically by ATProto clients (JSON dictionary). */
 @property (nonatomic, copy, nullable) NSDictionary *clientMetadata;
 
+/*! Response mode for the authorization redirect (\"query\" or \"fragment\"). */
+@property (nonatomic, copy, nullable) NSString *responseMode;
+
 /*!
  @method authorizationURL
  
