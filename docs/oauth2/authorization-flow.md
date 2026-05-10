@@ -8,10 +8,13 @@ This document describes the OAuth2 authorization code flow implementation in the
 
 ## Overview
 
-The PDS implements a two-phase OAuth2 authorization flow:
+The PDS implements a three-phase OAuth2 authorization flow:
 
-1. **Sign-In Phase**: User authenticates with handle/password
-2. **Consent Phase**: User reviews and approves the authorization request
+1. **PAR Phase**: Client pushes authorization parameters to the PDS, gets back a `request_uri`
+2. **Sign-In Phase**: User authenticates with handle/password on the authorize page
+3. **Consent Phase**: User reviews and approves the authorization request
+
+Authorization requests use **Pushed Authorization Requests (PAR, RFC 9126)** — the client POSTs the full authorization request to `/oauth/par` and the browser is redirected to the authorize page with only `client_id` and `request_uri`. This prevents large authorization requests from being reflected through the browser URL.
 
 ## Sequence Diagram
 
@@ -80,6 +83,45 @@ The PDS implements a two-phase OAuth2 authorization flow:
 ```
 
 ## Endpoints
+
+### 0. POST /oauth/par
+
+Pushed Authorization Request (RFC 9126). Client sends the full authorization request to this endpoint instead of reflecting it through the browser.
+
+**Request:**
+
+```
+POST /oauth/par
+Content-Type: application/json (atcute library) or application/x-www-form-urlencoded
+
+{
+  "client_id": "http://127.0.0.1:8080/client-metadata.json",
+  "redirect_uri": "http://127.0.0.1:8080/",
+  "response_type": "code",
+  "scope": "atproto transition:generic",
+  "state": "...",
+  "code_challenge": "...",
+  "code_challenge_method": "S256",
+  "response_mode": "fragment",
+  "login_hint": "luna.test"
+}
+```
+
+**Validation:**
+
+1. Parses body as JSON (if starts with `{`) or form-url-encoded.
+2. Extracts `client_id`, validates client via `validatedClientForClientID:`.
+3. Validates redirect URI, response type, PKCE challenge.
+4. Generates a UUID `request_uri` (urn:ietf:params:oauth:request_uri:<uuid>) and stores the request parameters mapped to it in memory (10-minute TTL).
+
+**Response (201):**
+
+```json
+{
+  "request_uri": "urn:ietf:params:oauth:request_uri:A57B4DF3-788A-5000-5B5C-A58BB6C1A6C9",
+  "expires_in": 600
+}
+```
 
 ### 1. GET /oauth/authorize
 
@@ -297,6 +339,121 @@ OAuth2AuthorizationRequest {
   "created_at": 1708123456.789
 }
 ```
+
+### 4. POST /oauth/token
+
+Exchanges an authorization code for DPoP-bound access and refresh tokens.
+
+**Request (atcute library sends JSON):**
+
+```
+POST /oauth/token
+Content-Type: application/json
+
+{
+  "grant_type": "authorization_code",
+  "code": "<authorization-code>",
+  "redirect_uri": "http://127.0.0.1:8080/",
+  "code_verifier": "<pkce-verifier>",
+  "client_id": "http://127.0.0.1:8080/client-metadata.json"
+}
+```
+
+**Content-Type Handling:**
+
+The server accepts both `application/json` and `application/x-www-form-urlencoded`:
+
+```objc
+if ([body hasPrefix:@"{"]) {
+    params = [NSJSONSerialization JSONObjectWithData:request.body ...];
+}
+if (!params) {
+    params = [self parseFormUrlEncodedString:body];
+}
+```
+
+The atcute OAuth browser client (`@atcute/oauth-browser-client`) sends JSON. Clients sending form-url-encoded (RFC 6749 style) are also supported.
+
+**Validation (in order):**
+
+1. **Client validation**: Looks up `client_id` in database or fetches dynamically from URL.
+2. **Client authentication**: Supports `none` (public clients), `client_secret_basic`, `client_secret_post`, and `private_key_jwt`. Public clients (like the E2E test client) need no secret — just an existing client record.
+3. **DPoP proof validation**: Validates the `DPoP` HTTP header. Verifies JWK thumbprint, method/URL binding, nonce freshness. Returns `use_dpop_nonce` error if nonce is stale.
+4. **Authorization code validation**: Checks the code exists in memory, isn't expired (10-minute TTL), matches `client_id` and `redirect_uri`.
+5. **PKCE verification**: Computes `BASE64URL(SHA256(code_verifier))` and compares against stored `code_challenge` (constant-time).
+6. **Token generation**: Issues a DPoP-bound access token (JWT) with `cnf.jkt` thumbprint, plus a refresh token.
+
+**Success Response (200):**
+
+```json
+{
+  "access_token": "dpop-bound-jwt...",
+  "token_type": "DPoP",
+  "expires_in": 7200,
+  "refresh_token": "v2.refresh...",
+  "scope": "atproto transition:generic",
+  "sub": "did:plc:abc123..."
+}
+```
+
+**Error Responses:**
+
+| Status | Error | Description |
+|--------|-------|-------------|
+| 401 | `invalid_client` | Missing/invalid client_id or client auth |
+| 400 | `invalid_grant` | Expired/used authorization code |
+| 400 | `invalid_grant` | PKCE verifier mismatch |
+| 503 | `server_error` | Client validation timeout |
+
+## Dynamic Client Discovery
+
+Clients with loopback URLs (127.0.0.1, localhost) or HTTPS URLs are discovered dynamically — the PDS fetches the `client_id` URL to retrieve `client-metadata.json`:
+
+```objc
+if ([clientID hasPrefix:@"https://"] || [self isLoopbackURL:clientID]) {
+    [self fetchClientMetadataFromURL:clientID completion:...];
+}
+```
+
+This is how clients like `http://127.0.0.1:8080/client-metadata.json` work without pre-registration.
+
+## CSS Serving Architecture
+
+The authorize page (`authorize.html`) uses shared CSS from the DesignSystem at `/css/shared/system.css`. This CSS is served via a dedicated route handler:
+
+1. **Route**: `OAuth2Handler.m` registers `addHandlerForPath:@"/css/"` → `handleCSSRequest:response:`.
+2. **Path resolution**: `sharedCSSPath` checks three locations:
+   - `dataDirectory/Shared/DesignSystem/css` (runtime data dir)
+   - `/usr/share/atprotopds/assets/css` (Docker install path)
+   - CWD-based dev paths (fallback)
+3. **Files served**: `system.css` (with `@import` of `tokens.css`, `reset.css`, `layout.css`, `components.css`, `utilities.css`).
+4. **Content type**: `text/css; charset=utf-8`.
+
+**Docker deployment**: CSS files are staged into `staging/css-shared/` by `stage-docker-binaries.sh` and copied to `/usr/share/atprotopds/assets/css` in `Dockerfile.local`.
+
+## authorize.html Step Transition
+
+The authorize page uses a two-step UI: sign-in (`#auth-step-signin`) then consent (`#auth-step-consent`).
+
+**CSS visibility model:**
+
+```css
+.hidden { display: none !important; }
+```
+
+The consent step starts with `class="hidden"` so only the sign-in form is visible.
+
+**JS transition (after successful sign-in):**
+
+```javascript
+// Correct — overrides !important by removing the class
+document.getElementById('auth-step-signin').classList.add('hidden');
+document.getElementById('auth-step-consent').classList.remove('hidden');
+```
+
+**Why style.display doesn't work:**
+
+The `.hidden` class uses `display: none !important`. Setting `element.style.display = 'block'` does NOT override `!important`. The JS must use `classList.remove('hidden')` / `classList.add('hidden')`.
 
 ## Error Codes
 
