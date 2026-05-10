@@ -170,7 +170,7 @@ def collect_diagnostics(
     output_dir.mkdir(parents=True, exist_ok=True)
     urls = dict(service_urls or SERVICE_URLS)
     appview_secret = appview_admin_secret or os.environ.get(
-        "APPVIEW_ADMIN_SECRET", "localdevadmin"
+        "APPVIEW_ADMIN_SECRET", "appview-admin-secret"
     )
 
     metadata = {

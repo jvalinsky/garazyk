@@ -20,7 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from lib.client import XrpcClient, XrpcError
+from lib.client import XrpcClient
 from lib.characters import get_character, PDS1
 from lib.config import SERVICE_URLS, APPVIEW_ADMIN_SECRET
 from lib.report import ScenarioResult, timed_call

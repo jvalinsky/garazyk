@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Optional
 
-from .client import XrpcError
+from .transport import XrpcError
 
 
 class StepStatus(str, Enum):
@@ -230,33 +230,51 @@ def timed_call(
     fn: Callable[[], Any],
     detail_fn: Optional[Callable[[Any], str]] = None,
     skip_on_status: Optional[set[int]] = None,
+    expect_failure: Optional[bool | str] = None,
 ) -> Any:
     """Execute a callable, timing it, and record the step as passed or failed.
 
     ``fn`` is a zero-argument callable (use ``lambda`` or ``functools.partial``
-    to capture arguments). ``detail_fn`` receives the return value and should
-    return a detail string for the report. Returns ``fn``'s return value on
-    success, or ``None`` on XrpcError/AssertionError.
+    to capture arguments). ``detail_fn`` receives the return value on success,
+    or the ``XrpcError`` when ``expect_failure`` is set and the call fails as
+    expected. Returns ``fn``'s return value on success, the ``XrpcError`` on
+    expected failure, or ``None`` on unexpected failure/skip.
 
     ``skip_on_status`` — a set of HTTP status codes that cause the step to be
     recorded as ``SKIP`` rather than ``FAIL``. Use ``{404}`` for AppView-only
     endpoints that may not be available.
 
+    ``expect_failure`` — invert pass/fail for negative-path testing:
+        ``None`` (default): success expected.
+        ``True``: any ``XrpcError`` is acceptable.
+        ``"ErrorCode"``: ``XrpcError`` must carry this error string.
+
     The elapsed time in milliseconds is recorded in the step for performance
-    analysis. A failed step stores the exception message as its detail.
+    analysis.
 
     Example::
 
         post = timed_call(
             result, "Create post",
-            lambda: client.create_record(did, collection, record, token),
+            lambda: client.records.create_record(did, collection, record, token),
             detail_fn=lambda r: f"uri={r['uri']}",
+        )
+        err = timed_call(
+            result, "Invalid login rejected",
+            lambda: client.accounts.create_session(handle, "wrong_password"),
+            expect_failure=True,
         )
     """
     start = time.perf_counter()
     try:
         data = fn()
         elapsed = int((time.perf_counter() - start) * 1000)
+        if expect_failure is not None:
+            hint = expect_failure if isinstance(expect_failure, str) else "(any)"
+            detail = detail_fn(data) if detail_fn else ""
+            result.step_failed(name, f"expected failure {hint} but call succeeded",
+                               elapsed)
+            return None
         detail = detail_fn(data) if detail_fn else ""
         result.step_passed(name, detail, elapsed)
         return data
@@ -265,6 +283,24 @@ def timed_call(
         if skip_on_status and exc.status in skip_on_status:
             result.step_skipped(name, f"AppView endpoint: {exc.body}", elapsed)
             return None
+        if expect_failure is not None:
+            if expect_failure is True:
+                detail = detail_fn(exc) if detail_fn else str(exc.body)
+                result.step_passed(name, detail, elapsed)
+                return exc
+            if isinstance(expect_failure, str):
+                body = exc.body if isinstance(exc.body, dict) else {}
+                actual = body.get("error", "")
+                if actual == expect_failure:
+                    detail = detail_fn(exc) if detail_fn else f"error={actual}"
+                    result.step_passed(name, detail, elapsed)
+                    return exc
+                result.step_failed(
+                    name,
+                    f"expected error={expect_failure}, got error={actual} (status={exc.status})",
+                    elapsed,
+                )
+                return None
         result.step_failed(name, f"status={exc.status} {exc.body}", elapsed)
         return None
     except AssertionError as exc:
