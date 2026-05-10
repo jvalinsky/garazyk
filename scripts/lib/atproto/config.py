@@ -97,7 +97,7 @@ def service_health_url(key: str) -> str:
 
 PDS_ADMIN_PASSWORD = os.environ.get("PDS_ADMIN_PASSWORD", "admin123")
 PDS_MASTER_SECRET = os.environ.get("PDS_MASTER_SECRET", "test-master-secret-123")
-APPVIEW_ADMIN_SECRET = os.environ.get("APPVIEW_ADMIN_SECRET", "appview-admin-secret")
+APPVIEW_ADMIN_SECRET = os.environ.get("APPVIEW_ADMIN_SECRET", "localdevadmin")
 UI_ADMIN_PASSWORD = os.environ.get("UI_ADMIN_PASSWORD", "localdev")
 
 
