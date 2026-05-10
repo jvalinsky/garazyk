@@ -35,14 +35,15 @@ static NSString * const kCollection = @"app.bsky.actor.profile";
 }
 
 - (BOOL)indexRecord:(NSDictionary *)record
-                 did:(NSString *)did
-          collection:(NSString *)collection
-                 cid:(nullable NSString *)cid
-               error:(NSError **)error {
+                did:(NSString *)did
+         collection:(NSString *)collection
+               rkey:(NSString *)rkey
+                cid:(nullable NSString *)cid
+              error:(NSError **)error {
     NSDictionary *profileRecord = record[@"record"] ?: record;
     NSString *displayName = profileRecord[@"displayName"];
     NSString *description = profileRecord[@"description"];
-    NSString *rkey = record[@"rkey"] ?: @"self";
+    NSString *effectiveRkey = rkey ?: @"self";
 
     NSString *avatarCID = nil;
     id avatarBlob = profileRecord[@"avatar"];
@@ -57,7 +58,7 @@ static NSString * const kCollection = @"app.bsky.actor.profile";
     if (displayName.length > 640) displayName = [displayName substringToIndex:640];
     if (description.length > 2560) description = [description substringToIndex:2560];
 
-    NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+    NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, effectiveRkey];
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:profileRecord options:0 error:nil];
 
     NSString *recordCID = cid;
@@ -104,11 +105,16 @@ static NSString * const kCollection = @"app.bsky.actor.profile";
 
         if (![path hasPrefix:kCollection]) continue;
 
+        // Parse rkey from path (format: "app.bsky.actor.profile/self")
+        NSRange slash = [path rangeOfString:@"/"];
+        NSString *opRkey = (slash.location != NSNotFound)
+            ? [path substringFromIndex:slash.location + 1] : @"self";
+
         if ([action isEqualToString:@"create"] || [action isEqualToString:@"update"]) {
             NSDictionary *record = op[@"record"];
             NSString *cid = op[@"cid"];
             if (record) {
-                [self indexRecord:record did:event.did collection:kCollection cid:cid error:nil];
+                [self indexRecord:record did:event.did collection:kCollection rkey:opRkey cid:cid error:nil];
             }
         } else if ([action isEqualToString:@"delete"]) {
             PDS_LOG_DEBUG(@"[AppViewActorIndexer] Deleted profile for %@", event.did);

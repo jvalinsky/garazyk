@@ -154,6 +154,13 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
 // ---------------------------------------------------------------------------
 
 - (nullable NSString *)_resolvePDSEndpointForDID:(NSString *)did {
+    // Check for environment override (Docker bridge networking, local testing)
+    NSString *envOverride = [[NSProcessInfo processInfo] environment][@"APPVIEW_PDS_URL"];
+    if (envOverride.length > 0) {
+        PDS_LOG_DEBUG(@"[AppView BackfillWorker] Using APPVIEW_PDS_URL override: %@", envOverride);
+        return envOverride;
+    }
+
     // did:web — host is in the DID itself
     if ([did hasPrefix:@"did:web:"]) {
         NSString *host = [did substringFromIndex:8];
@@ -398,6 +405,7 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
         NSDictionary *record = item[@"record"];
         NSString *cid = item[@"cid"];
         NSString *collection = item[@"collection"];
+        NSString *rkey = item[@"rkey"] ?: @"";
         
         PDS_LOG_DEBUG(@"[AppView BackfillWorker] Calling indexers for collection=%@", collection);
         BOOL wasIndexed = NO;
@@ -405,10 +413,11 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
             if ([indexer canIndexCollection:collection]) {
                 NSError *indexErr = nil;
                 BOOL ok = [indexer indexRecord:record
-                                           did:did
-                                    collection:collection
-                                           cid:cid
-                                         error:&indexErr];
+                                          did:did
+                                   collection:collection
+                                         rkey:rkey
+                                          cid:cid
+                                        error:&indexErr];
                 wasIndexed = YES;
                 if (!ok && indexErr) {
                     PDS_LOG_DEBUG(@"[AppView BackfillWorker] Dead-letter %@ for %@: %@",
