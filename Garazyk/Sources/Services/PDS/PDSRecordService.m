@@ -11,6 +11,7 @@
 #import "Core/CID.h"
 #import "Core/NSDictionary+CID.h"
 #import "Core/NSDateFormatter+ATProto.h"
+#import "Core/PDSPerDidWriteDispatcher.h"
 #import "Core/TID.h"
 #import "Lexicon/ATProtoLexiconValidator.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
@@ -102,11 +103,12 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSDictionary *> *statsCacheByDid;
 #if defined(GNUSTEP)
 @property (nonatomic, assign) dispatch_queue_t mstCacheQueue;
-@property (nonatomic, assign) dispatch_queue_t writeQueue;
 #else
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t mstCacheQueue;
-@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t writeQueue;
 #endif
+
+/*! Per-DID write dispatcher — replaces the single global writeQueue. */
+@property (nonatomic, strong) PDSPerDidWriteDispatcher *writeDispatcher;
 
 @end
 
@@ -119,9 +121,32 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
         _mstCacheByDid = [NSMutableDictionary dictionary];
         _statsCacheByDid = [NSMutableDictionary dictionary];
         _mstCacheQueue = dispatch_queue_create("com.atproto.pds.recordservice.mstcache", DISPATCH_QUEUE_SERIAL);
-        _writeQueue = dispatch_queue_create("com.atproto.pds.recordservice.write", DISPATCH_QUEUE_SERIAL);
+        _writeDispatcher = [[PDSPerDidWriteDispatcher alloc] initWithConcurrencyLimit:32
+                                                              idleEvictionSeconds:60];
     }
     return self;
+}
+
+#pragma mark - Synchronous Write Dispatch
+
+/*!
+ @method _dispatchWriteForDid:block:
+
+ @abstract Dispatches a write block via the per-DID write dispatcher and
+ waits for it to complete synchronously.
+
+ @discussion This preserves the synchronous API of putRecord/deleteRecord/
+ applyWrites while allowing writes for different DIDs to proceed in
+ parallel. The per-call semaphore ensures the caller blocks until the
+ write completes, but other DIDs' writes can run concurrently.
+ */
+- (void)_dispatchWriteForDid:(NSString *)did block:(void (^)(void))block {
+    dispatch_semaphore_t done = dispatch_semaphore_create(0);
+    [self.writeDispatcher dispatchWriteForDid:did block:^{
+        block();
+        dispatch_semaphore_signal(done);
+    }];
+    dispatch_semaphore_wait(done, DISPATCH_TIME_FOREVER);
 }
 
 #pragma mark - Authorization
@@ -351,10 +376,10 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
     __block CID *prevRoot = nil;
     __block NSError *writeError = nil;
     NSTimeInterval writeQueueEnter = [NSDate timeIntervalSinceReferenceDate];
-    dispatch_sync(self.writeQueue, ^{
+    [self _dispatchWriteForDid:did block:^{
         NSTimeInterval writeQueueStart = [NSDate timeIntervalSinceReferenceDate];
         NSTimeInterval waitMs = (writeQueueStart - writeQueueEnter) * 1000.0;
-        PDS_LOG_DEBUG(@"[PDSRecordService] putRecord: writeQueue entered (waited %.1fms) did=%@ coll=%@ rkey=%@",
+        PDS_LOG_DEBUG(@"[PDSRecordService] putRecord: writeDispatcher entered (waited %.1fms) did=%@ coll=%@ rkey=%@",
                        waitMs, did, collection, rkey);
         success = [self.recordRepository saveRecord:record error:&writeError];
 
@@ -388,8 +413,8 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                            mstMs, did, newRootCID);
         }
         NSTimeInterval totalMs = ([NSDate timeIntervalSinceReferenceDate] - writeQueueStart) * 1000.0;
-        PDS_LOG_DEBUG(@"[PDSRecordService] putRecord: writeQueue total %.1fms did=%@ success=%d", totalMs, did, success);
-    });
+        PDS_LOG_DEBUG(@"[PDSRecordService] putRecord: writeDispatcher total %.1fms did=%@ success=%d", totalMs, did, success);
+    }];
 
     if (error && writeError) {
         *error = writeError;
@@ -472,10 +497,10 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
     __block CID *prevRoot = nil;
     __block NSError *writeError = nil;
     NSTimeInterval writeQueueEnter = [NSDate timeIntervalSinceReferenceDate];
-    dispatch_sync(self.writeQueue, ^{
+    [self _dispatchWriteForDid:did block:^{
         NSTimeInterval writeQueueStart = [NSDate timeIntervalSinceReferenceDate];
         NSTimeInterval waitMs = (writeQueueStart - writeQueueEnter) * 1000.0;
-        PDS_LOG_DEBUG(@"[PDSRecordService] deleteRecord: writeQueue entered (waited %.1fms) did=%@ coll=%@ rkey=%@",
+        PDS_LOG_DEBUG(@"[PDSRecordService] deleteRecord: writeDispatcher entered (waited %.1fms) did=%@ coll=%@ rkey=%@",
                        waitMs, did, collection, rkey);
         [self.databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
             if (hadExistingRecord) {
@@ -523,8 +548,8 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                            mstMs, did, newRootCID);
         }
         NSTimeInterval totalMs = ([NSDate timeIntervalSinceReferenceDate] - writeQueueStart) * 1000.0;
-        PDS_LOG_DEBUG(@"[PDSRecordService] deleteRecord: writeQueue total %.1fms did=%@ success=%d", totalMs, did, success);
-    });
+        PDS_LOG_DEBUG(@"[PDSRecordService] deleteRecord: writeDispatcher total %.1fms did=%@ success=%d", totalMs, did, success);
+    }];
 
     if (error && writeError) {
         *error = writeError;
@@ -574,15 +599,17 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
         return @{@"results": @[]};
     }
 
-    // Serialize all repo writes to prevent concurrent SQLite access
+    // Serialize per-DID repo writes to prevent concurrent SQLite access
     // and MST mutation races that cause segfaults under load.
+    // The per-DID dispatcher allows writes for different DIDs to proceed
+    // concurrently while serializing writes for the same DID.
     __block NSDictionary *response = nil;
     __block NSError *writeError = nil;
     NSTimeInterval writeQueueEnter = [NSDate timeIntervalSinceReferenceDate];
-    dispatch_sync(self.writeQueue, ^{
+    [self _dispatchWriteForDid:did block:^{
         NSTimeInterval writeQueueStart = [NSDate timeIntervalSinceReferenceDate];
         NSTimeInterval waitMs = (writeQueueStart - writeQueueEnter) * 1000.0;
-        PDS_LOG_DEBUG(@"[PDSRecordService] applyWrites: writeQueue entered (waited %.1fms) did=%@ writes=%lu",
+        PDS_LOG_DEBUG(@"[PDSRecordService] applyWrites: writeDispatcher entered (waited %.1fms) did=%@ writes=%lu",
                        waitMs, did, (unsigned long)writes.count);
         response = [self _applyWritesSerialized:writes
                                         forDid:did
@@ -591,9 +618,9 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                                     swapCommit:swapCommit
                                          error:&writeError];
         NSTimeInterval totalMs = ([NSDate timeIntervalSinceReferenceDate] - writeQueueStart) * 1000.0;
-        PDS_LOG_DEBUG(@"[PDSRecordService] applyWrites: writeQueue total %.1fms did=%@ response=%@",
+        PDS_LOG_DEBUG(@"[PDSRecordService] applyWrites: writeDispatcher total %.1fms did=%@ response=%@",
                        totalMs, did, response ? @"OK" : @"FAILED");
-    });
+    }];
     if (error && writeError) {
         *error = writeError;
     }
