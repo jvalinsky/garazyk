@@ -9,7 +9,7 @@ fixtures, reporting, seeding, and service configuration.
 from .client import XrpcClient, XrpcError
 from .assertions import assert_success, assert_contains, assert_status, assert_error, assert_xrpc_raises
 from .characters import Character, CHARACTERS, get_character, get_characters_by_role, get_characters_by_pds, reset_characters
-from .report import ScenarioResult, StepResult, StepStatus
+from .report import ScenarioResult, StepResult, StepStatus, timed_call
 from .seed import (
     create_account_or_login,
     create_record_idempotent,
@@ -67,6 +67,7 @@ __all__ = [
     "ScenarioResult",
     "StepResult",
     "StepStatus",
+    "timed_call",
     # Seed helpers
     "create_account_or_login",
     "create_record_idempotent",

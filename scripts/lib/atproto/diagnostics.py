@@ -228,6 +228,48 @@ def collect_diagnostics(
     )
     collect_http_endpoint(
         output_dir,
+        "appview-backfill-queue",
+        f"{urls.get('appview', '')}/admin/backfill/queue?limit=10",
+        headers={"Authorization": f"Bearer {appview_secret}"},
+    )
+    collect_http_endpoint(
+        output_dir,
+        "appview-ingest-health",
+        f"{urls.get('appview', '')}/admin/ingest/health",
+        headers={"Authorization": f"Bearer {appview_secret}"},
+    )
+    collect_http_endpoint(
+        output_dir,
+        "appview-metrics-stats",
+        f"{urls.get('appview', '')}/admin/appview/metrics/stats",
+        headers={"Authorization": f"Bearer {appview_secret}"},
+    )
+    collect_http_endpoint(
+        output_dir,
+        "appview-lexicons",
+        f"{urls.get('appview', '')}/admin/lexicons",
+        headers={"Authorization": f"Bearer {appview_secret}"},
+    )
+    collect_http_endpoint(
+        output_dir,
+        "appview-collections",
+        f"{urls.get('appview', '')}/admin/lexicons/collections",
+        headers={"Authorization": f"Bearer {appview_secret}"},
+    )
+    collect_http_endpoint(
+        output_dir,
+        "appview-hooks",
+        f"{urls.get('appview', '')}/admin/hooks",
+        headers={"Authorization": f"Bearer {appview_secret}"},
+    )
+    collect_http_endpoint(
+        output_dir,
+        "appview-endpoints",
+        f"{urls.get('appview', '')}/admin/endpoints",
+        headers={"Authorization": f"Bearer {appview_secret}"},
+    )
+    collect_http_endpoint(
+        output_dir,
         "pds2-describe-server",
         f"{urls.get('chat', '')}/xrpc/com.atproto.server.describeServer",
     )
