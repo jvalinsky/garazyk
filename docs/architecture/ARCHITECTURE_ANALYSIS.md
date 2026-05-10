@@ -22,11 +22,11 @@ The AT Protocol (Authenticated Transfer Protocol) is a decentralized social netw
 
 | Metric | Value |
 |--------|-------|
-| Lines of Code | ~61,000 |
-| Unit Tests | 158 passing |
-| Main Entry Points | 2 (CLI, Server) |
-| Core Modules | 21 |
-| Database Tables | 6+ |
+| Lines of Code | ~85,000+ |
+| Unit Tests | 2756 passing |
+| Main Entry Points | 4 (PDS, AppView, Relay, PLC) |
+| Core Modules | 30+ |
+| Database Tables | 20+ |
 | Authentication Methods | 5 (JWT, OAuth2, TOTP, WebAuthn, DID) |
 
 ---

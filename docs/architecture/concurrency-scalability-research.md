@@ -16,9 +16,10 @@
 
 ### 1.2 PDS — Write Path
 
-- **Write serialization**: Single serial `writeQueue` for ALL writes across ALL DIDs. This is a **critical bottleneck** — every `createRecord`, `applyWrites`, `deleteRecord` goes through one queue. The queue was made explicit (previously implicit via `transactWithDid:`) with `dispatch_sync` + diagnostic timing logs.
+- **Write serialization**: `PDSPerDidWriteDispatcher` — per-DID write serialization with bounded concurrent worker pool (32 lanes). Writes for the same DID are serialized via per-DID `pthread_mutex`; writes for different DIDs proceed concurrently. The single global `writeQueue` was replaced in Phase 1 (commits `140351bb`, `2704cc8d`). The synchronous API is preserved via `_dispatchWriteForDid:block:` which dispatches asynchronously and waits on a per-call `dispatch_semaphore_t`.
+- **Gate queue pattern**: A serial gate queue acquires the concurrency semaphore before dispatching to the concurrent worker pool. This prevents thread explosion on Linux/GNUstep where GCD lacks kernel workqueue integration.
 - **MST cache**: `mstCacheByDid` dictionary protected by serial `mstCacheQueue`. Per-DID MST loaded/cached on first write.
-- **MST operations**: The MST itself is **not thread-safe** — it's a single-threaded tree with `put`/`delete`/`get` operations. Each write: load MST → apply mutation → recompute hashes → persist blocks → update repo root.
+- **MST operations**: The MST itself is **not thread-safe** — it's a single-threaded tree with `put`/`delete`/`get` operations. Each write: load MST → apply mutation → recompute hashes → persist blocks → update repo root. The MST already does path-copying (persistent data structure), so concurrent reads need atomic snapshot references (Phase 2).
 - **Database**: `PDSConnectionPool` — SQLite connection pool (default min 2, max 10). WAL mode, NORMAL sync. `busyTimeout` 5000ms.
 
 ### 1.3 Relay (zuk)
@@ -45,19 +46,23 @@
 
 ## 2. Identified Bottlenecks at Scale
 
-### 2.1 Single Global Write Queue (CRITICAL)
+### 2.1 Single Global Write Queue (CRITICAL → RESOLVED by Phase 1)
 
-**Current**: One serial `dispatch_queue_t` serializes ALL repo writes across all DIDs. Made explicit in `PDSRecordService.m` with `dispatch_sync(self.writeQueue, ...)` wrapping `putRecord`, `deleteRecord`, and `applyWrites`. Diagnostic timing logs show queue wait times.
+**Previous**: One serial `dispatch_queue_t` serialized ALL repo writes across all DIDs. Made explicit in `PDSRecordService.m` with `dispatch_sync(self.writeQueue, ...)` wrapping `putRecord`, `deleteRecord`, and `applyWrites`. Diagnostic timing logs showed queue wait times.
 
-**Problem**: At 200 writes/sec from 100 different accounts, all 200 writes queue on a single queue. The queue becomes the bottleneck, not the database or MST.
+**Problem**: At 200 writes/sec from 100 different accounts, all 200 writes queued on a single queue. The queue became the bottleneck, not the database or MST.
 
-**Bluesky reference**: Indigo's relay uses 40 concurrent workers per upstream host. The PDS write path needs similar parallelism.
+**Resolution (Phase 1, 2026-05-10)**: Replaced with `PDSPerDidWriteDispatcher` — bounded concurrent worker pool (32 lanes) + per-DID `pthread_mutex` serialization. Writes for different DIDs now proceed concurrently. The serial gate queue pattern prevents thread explosion on Linux/GNUstep. Commits: `140351bb`, `2704cc8d`.
 
-### 2.2 MST Is Not Thread-Safe (CRITICAL)
+**Remaining**: SQLite single-writer constraint still limits maximum concurrent write throughput (Phase 3).
 
-**Current**: MST `put`/`delete` mutate the tree in-place. No concurrent access protection beyond the write queue.
+### 2.2 MST Is Not Thread-Safe (CRITICAL — Phase 2)
 
-**Problem**: If we parallelize writes per-DID, we need per-DID MST instances or a concurrent MST. The MST is a persistent data structure (immutable previous versions) — this is actually a good fit for copy-on-write.
+**Current**: MST `put`/`delete` mutate the tree via path-copying (persistent data structure — unchanged subtrees are shared). No concurrent access protection beyond the per-DID write serialization in `PDSPerDidWriteDispatcher`. The `mstCacheByDid` dictionary stores mutable MST references.
+
+**Problem**: With per-DID write parallelism (Phase 1), a reader accessing `mstCacheByDid` while a writer is updating the same DID's MST could see a partially-updated tree. Need atomic snapshot references so readers always see a consistent MST version.
+
+**Planned fix (Phase 2)**: `MSTAtomicReference` with `pthread_mutex` guard — writers create new snapshot, swap atomically; readers get consistent snapshot via `currentSnapshot`. Batch MST mutations for `applyWrites`.
 
 ### 2.3 SQLite Single-Writer Constraint (MEDIUM)
 
@@ -89,33 +94,22 @@
 
 ## 3. Research Findings
 
-### 3.1 Per-DID Write Queues (Actor Model Pattern)
+### 3.1 Per-DID Write Queues (Actor Model Pattern) — IMPLEMENTED
 
 **Key insight**: ATProto repo writes are naturally partitioned by DID. Two different accounts never share mutable state. This is the **actor model** — each DID is an actor with its own mailbox.
 
-**Implementation approach**:
-1. Replace the single global `writeQueue` with a **per-DID serial queue** (or dispatch_queue per DID)
-2. Use a `NSMutableDictionary<NSString *, dispatch_queue_t>` protected by a concurrent read/serial write pattern
-3. Each queue processes writes for exactly one DID — no cross-DID contention
-4. Global concurrency limit via a counting semaphore (e.g., max 32 concurrent DID-writers)
+**Implementation (Phase 1, 2026-05-10)**:
+- `PDSPerDidWriteDispatcher` manages per-DID write state (`PDSPerDidWriteState`) with `pthread_mutex` for serialization
+- Bounded concurrent worker pool (32 lanes) via `dispatch_queue_t` CONCURRENT
+- Serial gate queue acquires concurrency semaphore before dispatching to workers — prevents thread explosion on Linux/GNUstep where GCD lacks kernel workqueue integration
+- Idle eviction timer reclaims per-DID state after 60s inactivity
+- GNUstep-compatible: `PDS_DISPATCH_QUEUE_STRONG` (expands to `assign` on GNUstep, `strong` on macOS), manual `dispatch_retain`/`dispatch_release` in block captures
+- Synchronous API bridge: `_dispatchWriteForDid:block:` dispatches asynchronously and waits on per-call `dispatch_semaphore_t`
+- Per-DID `pthread_mutex` stored as public ivar (can't take address of ObjC property expressions)
+
+**Design divergence from original sketch**: The original sketch used per-DID `dispatch_queue_t` serial queues. On GNUstep/Linux, this risks thread explosion (each queue can spawn a thread). The actual implementation uses a fixed concurrent worker pool + per-DID `pthread_mutex`, which is the actor model with a bounded thread pool, not per-actor threads.
 
 **Reference**: This is exactly how Akka actors work — each actor has a mailbox, processes messages sequentially, but many actors run concurrently. The Indigo relay uses 40 goroutines per upstream host, which is a similar partitioning strategy.
-
-**ObjC sketch**:
-```objc
-@interface PDSPerDidWriteDispatcher : NSObject
-- (void)dispatchWriteForDid:(NSString *)did
-                    block:(void(^)(void))writeBlock;
-@end
-
-// Internally:
-// - concurrent queue reads from didQueueMap
-// - if no queue for DID, create one on serial creation queue
-// - dispatch_async to per-DID queue
-// - counting semaphore limits total concurrent writers
-```
-
-**Risk**: Queue proliferation (thousands of DIDs = thousands of queues). Mitigation: evict idle queues after timeout, or use a work-stealing thread pool.
 
 ### 3.2 MPSC Queue for Firehose Ingest
 
@@ -264,19 +258,30 @@ The AppView ingest engine currently uses a serial GCD queue. Replacing with a pe
 
 ## 4. Phased Implementation Plan
 
-### Phase 1: Per-DID Write Queues (highest impact)
+### Phase 1: Per-DID Write Queues ✅ IMPLEMENTED (2026-05-10)
 
-**Files to modify**:
-- `Garazyk/Sources/Services/PDS/PDSRecordService.m` — replace single `writeQueue` with per-DID dispatcher
-- New file: `Garazyk/Sources/Core/PDSPerDidWriteDispatcher.h/.m`
+**Commits**: `140351bb`, `2704cc8d`
 
-**Design**:
-- `PDSPerDidWriteDispatcher` manages per-DID serial queues
-- Global counting semaphore limits total concurrent writers (e.g., 32)
-- Idle queue eviction after 60s timeout
-- Each DID's writes are still serialized (ATProto requirement: repo operations must be sequential per-repo)
+**Files created**:
+- `Garazyk/Sources/Core/PDSPerDidWriteDispatcher.h` — 139 lines
+- `Garazyk/Sources/Core/PDSPerDidWriteDispatcher.m` — 384 lines
 
-### Phase 2: MST Copy-on-Write + Atomic Snapshots
+**Files modified**:
+- `Garazyk/Sources/Services/PDS/PDSRecordService.m` — replaced `dispatch_sync(self.writeQueue, ...)` with `[self _dispatchWriteForDid:did block:...]`
+- `CMakeLists.txt` — excluded AppViewServiceTests.m (pre-existing stale API refs)
+
+**Actual design** (diverged from original sketch):
+- Bounded concurrent worker pool (32 lanes) + per-DID `pthread_mutex` (not per-DID dispatch queues)
+- Serial gate queue acquires concurrency semaphore before dispatching to workers
+- Prevents thread explosion on Linux/GNUstep (GCD lacks kernel workqueue integration)
+- `PDS_DISPATCH_QUEUE_STRONG` for GNUstep compat, manual `dispatch_retain`/`dispatch_release`
+- Synchronous API bridge: `_dispatchWriteForDid:block:` + per-call `dispatch_semaphore_t`
+- Idle eviction: 60s timer reclaims per-DID state
+- Per-DID `pthread_mutex` stored as public ivar (can't take address of ObjC property)
+
+### Phase 2: MST Atomic Snapshots (next priority)
+
+**Context**: The MST already implements path-copying (persistent data structure) — `[node.internalEntries mutableCopy]` + `[[MSTNode alloc] initWithLevel:...]`. Unchanged subtrees are shared. We do NOT need copy-on-write; we need atomic snapshot references so concurrent readers always see a consistent MST version.
 
 **Files to modify**:
 - `Garazyk/Sources/Repository/MST.h/.m` — add snapshot/atomic-swap support
@@ -285,8 +290,8 @@ The AppView ingest engine currently uses a serial GCD queue. Replacing with a pe
 
 **Design**:
 - `MSTSnapshot` holds immutable root + CID
-- `MSTAtomicReference` provides lock-free reads + CAS-based writes
-- Writers: create new snapshot from current, apply mutations, CAS swap
+- `MSTAtomicReference` provides `pthread_mutex`-guarded reads + writes (CAS not needed — per-DID serialization already guarantees single-writer)
+- Writers: create new snapshot from current, apply mutations, swap atomically
 - Readers: always get a consistent snapshot via `currentSnapshot`
 - Batch MST mutations: `applyMutations:` takes an array, applies all, recomputes hashes once
 
