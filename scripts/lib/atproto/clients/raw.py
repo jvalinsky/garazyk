@@ -1,0 +1,52 @@
+from __future__ import annotations
+
+from typing import Any, Optional
+
+from ..transport import TransportLayer
+
+
+class RawClient:
+    """Non-XRPC HTTP methods for admin routes and other raw endpoints."""
+
+    def __init__(self, transport: TransportLayer):
+        self._t = transport
+
+    def http_get(
+        self,
+        path: str,
+        params: Optional[dict[str, Any]] = None,
+        token: Optional[str] = None,
+    ) -> dict:
+        return self._t.http_get(path, params=params, token=token)
+
+    def http_post(
+        self,
+        path: str,
+        body: Optional[dict[str, Any]] = None,
+        token: Optional[str] = None,
+    ) -> dict:
+        return self._t.http_post(path, body=body, token=token)
+
+    def xrpc_get(
+        self,
+        method: str,
+        params: Optional[dict[str, Any]] = None,
+        token: Optional[str] = None,
+    ) -> dict:
+        return self._t.get(method, params=params, token=token)
+
+    def xrpc_post(
+        self,
+        method: str,
+        body: Optional[dict[str, Any]] = None,
+        token: Optional[str] = None,
+    ) -> dict:
+        return self._t.post(method, body=body, token=token)
+
+    def xrpc_get_binary(
+        self,
+        method: str,
+        params: Optional[dict[str, Any]] = None,
+        token: Optional[str] = None,
+    ) -> tuple[int, str, bytes]:
+        return self._t.get_binary(method, params=params, token=token)
