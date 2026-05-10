@@ -30,7 +30,7 @@ def _now() -> str:
 
 def _collect_firehose_background(relay_url: str, events: list, stop_event: threading.Event):
     try:
-        from lib.firehose import FirehoseClient
+        from scripts.lib.atproto.firehose import FirehoseClient
 
         fh_client = FirehoseClient(relay_url)
 
@@ -91,11 +91,14 @@ def run() -> ScenarioResult:
     char_names = ["luna", "marcus", "rosa"]
     for name in char_names:
         char = get_character(name)
-        timed_call(
+        session = timed_call(
             result, f"Create account: {char.name}",
             lambda c=char: client.accounts.create_account(c.handle, c.email, c.password),
             detail_fn=lambda s, n=name: f"did={s['did']}",
         )
+        if session:
+            char.did = session["did"]
+            char.access_jwt = session["accessJwt"]
 
     luna = get_character("luna")
     marcus = get_character("marcus")
@@ -113,7 +116,7 @@ def run() -> ScenarioResult:
     time.sleep(2)
 
     try:
-        from lib.firehose import FirehoseClient  # noqa: F401
+        from scripts.lib.atproto.firehose import FirehoseClient  # noqa: F401
 
         firehose_thread = threading.Thread(
             target=_collect_firehose_background,

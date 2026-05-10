@@ -22,7 +22,7 @@ if _project_root not in sys.path:
 from scripts.lib.atproto import XrpcClient, get_character, PDS1, ScenarioResult, timed_call
 
 
-_DEFAULT_ADMIN_PASSWORD = "test-admin-password"
+_DEFAULT_ADMIN_PASSWORD = "admin-localdev"
 
 
 def _now() -> str:
@@ -44,11 +44,14 @@ def run() -> ScenarioResult:
     char_names = ["luna", "troll", "admin", "mod"]
     for name in char_names:
         char = get_character(name)
-        timed_call(
+        session = timed_call(
             result, f"Create account: {char.name}",
             lambda c=char: client.accounts.create_account(c.handle, c.email, c.password),
             detail_fn=lambda s, n=name: f"did={s['did']}",
         )
+        if session:
+            char.did = session["did"]
+            char.access_jwt = session["accessJwt"]
 
     luna = get_character("luna")
     troll = get_character("troll")

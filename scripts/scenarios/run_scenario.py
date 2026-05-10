@@ -51,7 +51,6 @@ SCENARIO_REGISTRY = [
     ("07", "scenarios.07_blobs_uploads", "Blobs & Uploads", False),
     ("08", "scenarios.08_oauth_sessions", "OAuth2 & Sessions", False),
     ("09", "scenarios.09_firehose_streaming", "Firehose & Event Streaming", False),
-    ("10", "scenarios.10_performance_resilience", "Performance & Resilience", False),
     ("11", "scenarios.11_lab_oauth_login", "Lab OAuth2 Login", False),
     ("12", "scenarios.12_account_migration", "Account Migration & PLC Audit", True),
     ("13", "scenarios.13_oauth_client_e2e", "E2E OAuth2 Client Integration", False),
@@ -65,6 +64,7 @@ SCENARIO_REGISTRY = [
     ("21", "scenarios.21_appview_lexicon_endpoints", "AppView Lexicon-Driven Endpoints", False),
     ("22", "scenarios.22_appview_hooks", "AppView Index Hooks & Dead Letter", False),
     ("23", "scenarios.23_appview_write_proxy", "AppView Write Proxy & OAuth2", False),
+    ("10", "scenarios.10_performance_resilience", "Performance & Resilience", False),
 ]
 
 

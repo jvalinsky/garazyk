@@ -133,6 +133,7 @@ def run() -> ScenarioResult:
     timed_call(
         result, "Browse records without collection rejected",
         lambda: av.http_get("/admin/records", token=admin_token),
+        expect_failure=True,
     )
 
     # ── 9. List endpoints ────────────────────────────────────────────
@@ -174,6 +175,7 @@ def run() -> ScenarioResult:
     timed_call(
         result, "Admin access without token",
         lambda: av.http_get("/admin/backfill/status"),
+        expect_failure=True,
     )
 
     # ── Record artifacts ─────────────────────────────────────────────
