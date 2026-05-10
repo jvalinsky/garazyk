@@ -90,27 +90,6 @@ static NSString *refreshTokenSessionID(NSString *refreshToken) {
 
 @implementation PDSServiceDatabases
 
-+ (instancetype)sharedInstance {
-    PDS_LOG_WARN(@"PDSServiceDatabases sharedInstance is deprecated - use initWithDirectory:serviceMaxSize:didCacheMaxSize:sequencerMaxSize: instead");
-    static PDSServiceDatabases *shared = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-#if defined(__APPLE__)
-        NSString *dir = [[[NSFileManager defaultManager] URLsForDirectory:NSApplicationSupportDirectory 
-                                                                 inDomains:NSUserDomainMask].firstObject 
-                    path];
-#else
-        NSString *dir = [NSHomeDirectory() stringByAppendingPathComponent:@".local/share"];
-#endif
-        NSString *pdsDir = [dir stringByAppendingPathComponent:@"ATProtoPDS"];
-        shared = [[PDSServiceDatabases alloc] initWithDirectory:pdsDir 
-                                                    serviceMaxSize:100
-                                                   didCacheMaxSize:1000 
-                                                 sequencerMaxSize:100];
-    });
-    return shared;
-}
-
 - (instancetype)initWithDirectory:(NSString *)directory 
                      serviceMaxSize:(NSUInteger)serviceMaxSize
                    didCacheMaxSize:(NSUInteger)didCacheMaxSize
