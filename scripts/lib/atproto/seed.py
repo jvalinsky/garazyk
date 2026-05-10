@@ -15,7 +15,8 @@ from typing import Any, Optional
 
 import requests
 
-from .client import XrpcClient, XrpcError
+from .transport import XrpcError
+from .client import XrpcClient
 
 
 # ── Timestamp ───────────────────────────────────────────────────────────────
