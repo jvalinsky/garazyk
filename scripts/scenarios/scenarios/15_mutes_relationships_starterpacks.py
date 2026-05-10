@@ -173,7 +173,6 @@ def run() -> ScenarioResult:
                     "$type": "app.bsky.graph.starterpack",
                     "name": "Foodie Friends",
                     "description": "My favorite food-loving friends!",
-                    "list": None,
                     "createdAt": _now(),
                 },
                 rosa.access_jwt,
@@ -220,8 +219,8 @@ def run() -> ScenarioResult:
 
     # ── Record artifacts ─────────────────────────────────────────────
     result.record_artifact("accounts", {
-        c.name: {"did": get_character(c.name).did}
-        for c in [get_character(n) for n in char_names] if c.did
+        n: {"did": get_character(n).did}
+        for n in char_names if get_character(n).did
     })
     result.record_artifact("relationships_checked", ["luna→marcus", "luna→troll"])
     result.record_artifact("starter_pack_uri", rosa_sp_uri)
