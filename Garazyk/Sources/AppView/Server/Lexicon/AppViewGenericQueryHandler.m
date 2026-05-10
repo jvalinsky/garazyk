@@ -212,6 +212,11 @@ static NSInteger const kMaxLimit = 100;
     NSDictionary<NSString *, NSString *> *params =
         [self parseQueryParamsFromRequest:request];
 
+    // Inject NSID so multi-NSID handlers can dispatch
+    NSMutableDictionary *mutableParams = [params mutableCopy];
+    mutableParams[@"_nsid"] = nsid;
+    params = [mutableParams copy];
+
     NSDictionary *input = nil;
     if (isPost) {
         NSData *bodyData = request.body;

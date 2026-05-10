@@ -41,10 +41,11 @@ static NSSet<NSString *> *notifSources(void) {
 }
 
 - (BOOL)indexRecord:(NSDictionary *)record
-                 did:(NSString *)did
-          collection:(NSString *)collection
-                 cid:(nullable NSString *)cid
-               error:(NSError **)error {
+                did:(NSString *)did
+         collection:(NSString *)collection
+               rkey:(NSString *)rkey
+                cid:(nullable NSString *)cid
+              error:(NSError **)error {
     // Notification fan-out:
     // - like/repost: extract subject AT-URI, parse DID from authority, fan to author
     // - post: extract reply.parent.uri for reply notif, facets for mention notifs
@@ -114,13 +115,17 @@ static NSSet<NSString *> *notifSources(void) {
         NSRange slash = [path rangeOfString:@"/"];
         NSString *collection = (slash.location != NSNotFound)
             ? [path substringToIndex:slash.location] : path;
+        NSString *opRkey = (slash.location != NSNotFound)
+            ? [path substringFromIndex:slash.location + 1] : @"";
 
         if (![self canIndexCollection:collection]) continue;
 
-        if ([action isEqualToString:@"create"]) {
+        if ([action isEqualToString:@"create"] || [action isEqualToString:@"update"]) {
             NSDictionary *record = op[@"record"];
             NSString *cid = op[@"cid"];
-            if (record) [self indexRecord:record did:event.did collection:collection cid:cid error:nil];
+            if (record) {
+                [self indexRecord:record did:event.did collection:collection rkey:opRkey cid:cid error:nil];
+            }
         } else if ([action isEqualToString:@"delete"]) {
             // Retract notification if record deleted
         }

@@ -45,6 +45,7 @@ static NSSet<NSString *> *feedCollections(void) {
 - (BOOL)indexRecord:(NSDictionary *)record
                 did:(NSString *)did
          collection:(NSString *)collection
+               rkey:(NSString *)rkey
                 cid:(nullable NSString *)cid
               error:(NSError **)error {
     // Validate presence of $type
@@ -95,13 +96,14 @@ static NSSet<NSString *> *feedCollections(void) {
         if ([action isEqualToString:@"create"] || [action isEqualToString:@"update"]) {
             NSDictionary *record = op[@"record"];
             NSString *cid = op[@"cid"];
+            NSString *opRkey = op[@"rkey"] ?: @"";
             if (record) {
-                [self indexRecord:record did:event.did collection:collection cid:cid error:nil];
+                [self indexRecord:record did:event.did collection:collection rkey:opRkey cid:cid error:nil];
             }
         } else if ([action isEqualToString:@"delete"]) {
-            NSString *rkey = (slash.location != NSNotFound)
+            NSString *delRkey = (slash.location != NSNotFound)
                 ? [path substringFromIndex:slash.location + 1] : @"";
-            [self deleteRecord:rkey did:event.did collection:collection error:nil];
+            [self deleteRecord:delRkey did:event.did collection:collection error:nil];
         }
     }
     return YES;

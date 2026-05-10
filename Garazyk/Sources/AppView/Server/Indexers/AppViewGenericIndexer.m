@@ -66,6 +66,7 @@
 - (BOOL)indexRecord:(NSDictionary *)record
                 did:(NSString *)did
          collection:(NSString *)collection
+               rkey:(NSString *)rkey
                 cid:(nullable NSString *)cid
               error:(NSError **)error {
     if (!record || !did || !collection) {
@@ -108,15 +109,18 @@
         }
     }
 
-    // Extract rkey from URI or generate one
-    NSString *rkey = record[@"rkey"] ?: record[@"$rkey"];
-    if (!rkey) {
+    // Use the rkey parameter (passed from ingest/backfill), or fall back to record data
+    NSString *effectiveRkey = rkey;
+    if (!effectiveRkey || effectiveRkey.length == 0) {
+        effectiveRkey = record[@"rkey"] ?: record[@"$rkey"];
+    }
+    if (!effectiveRkey) {
         // Generate a random rkey if not present
-        rkey = [[[NSUUID UUID] UUIDString] lowercaseString];
+        effectiveRkey = [[[NSUUID UUID] UUIDString] lowercaseString];
     }
 
     // Build URI
-    NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+    NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, effectiveRkey];
 
     // Serialize value
     NSData *valueData = [NSJSONSerialization dataWithJSONObject:record options:0 error:nil];

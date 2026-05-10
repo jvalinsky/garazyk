@@ -30,17 +30,18 @@ static NSString * const kCollectionGroupDef = @"chat.bsky.group.definition";
 }
 
 - (BOOL)indexRecord:(NSDictionary *)record
-                 did:(NSString *)did
-          collection:(NSString *)collection
-                 cid:(nullable NSString *)cid
-               error:(NSError **)error {
+                did:(NSString *)did
+         collection:(NSString *)collection
+               rkey:(NSString *)rkey
+                cid:(nullable NSString *)cid
+              error:(NSError **)error {
     NSDictionary *groupRecord = record[@"record"] ?: record;
 
     NSString *name = groupRecord[@"name"];
     NSString *description = groupRecord[@"description"];
-    NSString *rkey = record[@"rkey"] ?: @"main";
+    NSString *effectiveRkey = rkey ?: @"main";
 
-    NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+    NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, effectiveRkey];
     NSString *createdAt = groupRecord[@"createdAt"] ?: groupRecord[@"indexedAt"] ?: @"";
     NSString *updatedAt = groupRecord[@"updatedAt"] ?: @"";
 
