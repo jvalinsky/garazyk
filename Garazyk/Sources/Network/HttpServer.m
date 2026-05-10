@@ -688,16 +688,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
   
   // Continue connection if idle and not upgraded to WebSocket
   if (state.outputQueue.count == 0 && !state.upgradedToWebSocket) {
-    [self continueReadingForConnection:connection state:state];
-  }
-}
-
-- (void)continueReadingForConnection:(id<PDSNetworkConnection>)connection
-                                state:(HttpConnectionState *)state {
-  // The coordinator now handles all read scheduling for new connections.
-  // This method is kept for backward compatibility but is a no-op.
-  if (state.coordinator) {
-    return;
+    // The coordinator handles all read scheduling for new connections.
   }
 }
 
