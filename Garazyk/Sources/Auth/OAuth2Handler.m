@@ -66,6 +66,7 @@
 - (void)enforcePendingConsentCapacityLocked;
 - (BOOL)requestShouldTrustForwardedHeaders:(HttpRequest *)request;
 - (NSURL *)expectedDPoPURLForRequest:(HttpRequest *)request;
+- (NSString *)requestOriginForRequest:(HttpRequest *)request;
 - (void)attachDPoPNonceToResponseIfMissing:(HttpResponse *)response;
 - (NSDictionary *)parseClientMetadataFromInput:(id)clientMetadataInput;
 - (NSString *)assetsPath;
@@ -1464,8 +1465,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   return NO;
 }
 
-- (void)setCorsHeaders:(HttpResponse *)response
-           forRequest:(HttpRequest *)request {
+- (void)setCorsHeaders:(HttpResponse *)response forRequest:(HttpRequest *)request {
   PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
   NSArray<NSString *> *allowedOrigins =
       [config arrayForKey:@"cors.allowed_origins"];
@@ -1473,14 +1473,24 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     allowedOrigins = @[ @"*" ];
   }
 
-  NSString *origin = [request headerForKey:@"Origin"];
+  NSString *origin = [request headerForKey: @"Origin"];
+  BOOL isMetadataPath = [request.path hasPrefix: @"/.well-known/"];
 
-  if (origin && [allowedOrigins containsObject:@"*"]) {
-    [response setHeader:origin forKey:@"Access-Control-Allow-Origin"];
+  if (origin && ([allowedOrigins containsObject: @"*"] || [origin hasPrefix: @"http://127.0.0.1"] || [origin hasPrefix: @"http://localhost"])) {
+    [response setHeader:origin forKey: @"Access-Control-Allow-Origin"];
+    [response setHeader: @"true" forKey: @"Access-Control-Allow-Credentials"];
+    [response setHeader: @"true" forKey: @"Access-Control-Allow-Private-Network"];
+  } else if (isMetadataPath) {
+    // Public metadata fallback
+    [response setHeader: @"*" forKey: @"Access-Control-Allow-Origin"];
+    [response setHeader: @"true" forKey: @"Access-Control-Allow-Private-Network"];
   } else if (origin && [allowedOrigins containsObject:origin]) {
-    [response setHeader:origin forKey:@"Access-Control-Allow-Origin"];
-  } else if (!origin && [allowedOrigins containsObject:@"*"]) {
-    [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+    [response setHeader:origin forKey: @"Access-Control-Allow-Origin"];
+    [response setHeader: @"true" forKey: @"Access-Control-Allow-Credentials"];
+    [response setHeader: @"true" forKey: @"Access-Control-Allow-Private-Network"];
+  } else if (!origin && [allowedOrigins containsObject: @"*"]) {
+    [response setHeader: @"*" forKey: @"Access-Control-Allow-Origin"];
+    [response setHeader: @"true" forKey: @"Access-Control-Allow-Private-Network"];
   }
 
   NSString *allowedMethods = [config stringForKey:@"cors.allowed_methods"]
@@ -1493,10 +1503,18 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   [response setHeader:allowedHeaders forKey:@"Access-Control-Allow-Headers"];
   [response setHeader:[NSString stringWithFormat:@"%ld", (long)maxAge]
                forKey:@"Access-Control-Max-Age"];
+  [response setHeader:@"DPoP-Nonce, WWW-Authenticate"
+               forKey:@"Access-Control-Expose-Headers"];
   [response setHeader:@"Origin" forKey:@"Vary"];
 }
 
 - (void)registerRoutesWithServer:(HttpServer *)httpServer {
+  // Serve shared design system CSS files (tokens, reset, components, etc.)
+  [httpServer addHandlerForPath:@"/css/"
+                        handler:^(HttpRequest *request, HttpResponse *response) {
+                          [self handleCSSRequest:request response:response];
+                        }];
+
   [httpServer addRoute:@"GET"
                   path:@"/oauth/authorize"
                handler:^(HttpRequest *request, HttpResponse *response) {
@@ -1611,11 +1629,27 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   [httpServer addRoute:@"OPTIONS"
                   path:@"/oauth/introspect"
                handler:corsPreflightHandler];
+  [httpServer addRoute:@"OPTIONS"
+                  path:@"/.well-known/oauth-authorization-server"
+               handler:corsPreflightHandler];
+  [httpServer addRoute:@"OPTIONS"
+                  path:@"/.well-known/oauth-protected-resource"
+               handler:corsPreflightHandler];
+  [httpServer addRoute:@"OPTIONS"
+                  path:@"/oauth/jwks"
+               handler:corsPreflightHandler];
 }
 
 - (void)handleAuthorizationServerMetadata:(HttpRequest *)request
                                  response:(HttpResponse *)response {
-  NSString *issuer = self.oauthServer.issuer;
+  NSLog(@"[OAUTH-DIAG] authorization-server-metadata request: path=%@ Host=%@ Origin=%@",
+        request.path, [request headerForKey:@"Host"], [request headerForKey:@"Origin"]);
+  NSString *issuer = [self requestOriginForRequest:request];
+  NSLog(@"[OAUTH-DIAG] authorization-server-metadata: computed issuer=%@ configuredIssuer=%@",
+        issuer, self.oauthServer.issuer);
+  if (!issuer.length) {
+    issuer = self.oauthServer.issuer;
+  }
   if (!issuer) {
     response.statusCode = 500;
     [response setJsonBody:@{
@@ -1638,15 +1672,22 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     return;
   }
 
-  [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
   [response setJsonBody:metadata.metadata];
   response.statusCode = 200;
+  NSLog(@"[OAUTH-DIAG] authorization-server-metadata response: %@", metadata.metadata);
 }
 
 - (void)handleProtectedResourceMetadata:(HttpRequest *)request
                                response:(HttpResponse *)response {
-  NSString *issuer = self.oauthServer.issuer;
-  if (!issuer) {
+  NSLog(@"[OAUTH-DIAG] protected-resource-metadata request: path=%@ Host=%@ Origin=%@",
+        request.path, [request headerForKey:@"Host"], [request headerForKey:@"Origin"]);
+  NSString *resource = [self requestOriginForRequest:request];
+  NSLog(@"[OAUTH-DIAG] protected-resource-metadata: computed resource=%@ configuredIssuer=%@",
+        resource, self.oauthServer.issuer);
+  if (!resource.length) {
+    resource = self.oauthServer.issuer;
+  }
+  if (!resource) {
     response.statusCode = 500;
     [response setJsonBody:@{
       @"error" : @"server_error",
@@ -1656,9 +1697,14 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     return;
   }
 
+  // RFC 8707: resource identifier must not have a trailing slash
+  if ([resource hasSuffix:@"/"]) {
+    resource = [resource substringToIndex:resource.length - 1];
+  }
+
   NSDictionary *resourceMetadata = @{
-    @"resource" : issuer,
-    @"authorization_servers" : @[ issuer ],
+    @"resource" : resource,
+    @"authorization_servers" : @[ resource ],
     @"scopes_supported" :
         @[ @"atproto", @"transition:generic", @"transition:chat.bsky",
            @"transition:email" ],
@@ -1666,9 +1712,9 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     @"resource_documentation" : @"https://atproto.com/specs/oauth"
   };
 
-  [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
   [response setJsonBody:resourceMetadata];
   response.statusCode = 200;
+  NSLog(@"[OAUTH-DIAG] protected-resource-metadata response: %@", resourceMetadata);
 }
 
 - (void)handleAuthorizeRequest:(HttpRequest *)request
@@ -1808,6 +1854,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   authRequest.nonce = params[@"nonce"];
   authRequest.loginHint = params[@"login_hint"];
   authRequest.dpopJWK = params[@"dpop_jkt"];
+  authRequest.responseMode = params[@"response_mode"];
   authRequest.clientMetadata = clientMetadata;
 
   // RFC 7636: Public clients must use PKCE
@@ -1872,6 +1919,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   NSString *nonce = [self escapeHtml:params[@"nonce"] ?: @""];
 
   NSString *loginHint = [self escapeHtml:params[@"login_hint"] ?: @""];
+  NSString *responseMode = [self escapeHtml:params[@"response_mode"] ?: @"query"];
 
   html = [html stringByReplacingOccurrencesOfString:@"{{client_id}}"
                                          withString:clientId];
@@ -1891,6 +1939,8 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
       [html stringByReplacingOccurrencesOfString:@"{{nonce}}" withString:nonce];
   html = [html stringByReplacingOccurrencesOfString:@"{{login_hint}}"
                                          withString:loginHint];
+  html = [html stringByReplacingOccurrencesOfString:@"{{response_mode}}"
+                                         withString:responseMode];
 
   [response setHeader:[NSString stringWithFormat:@"csrf_token=%@; Path=/oauth; "
                                                  @"HttpOnly; SameSite=Strict",
@@ -1964,7 +2014,20 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
         [queryItems addObject:[NSURLQueryItem queryItemWithName:@"iss"
                                                            value:self.oauthServer.issuer]];
       }
-      components.queryItems = queryItems;
+      // Determine response mode for error redirect
+      NSString *denyResponseMode = params[@"response_mode"] ?: @"query";
+      if ([denyResponseMode isEqualToString:@"fragment"]) {
+        NSMutableArray<NSString *> *fragParts = [NSMutableArray array];
+        for (NSURLQueryItem *item in queryItems) {
+          NSString *encodedName = [item.name stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+          NSString *encodedValue = item.value ? [item.value stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]] : @"";
+          [fragParts addObject:[NSString stringWithFormat:@"%@=%@", encodedName, encodedValue]];
+        }
+        components.fragment = [fragParts componentsJoinedByString:@"&"];
+      } else {
+        components.queryItems = queryItems;
+      }
+
       response.statusCode = 302;
       [response setHeader:components.URL.absoluteString forKey:@"Location"];
     } else {
@@ -2062,6 +2125,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   authRequest.codeChallenge = params[@"code_challenge"];
   authRequest.codeChallengeMethod = params[@"code_challenge_method"];
   authRequest.nonce = params[@"nonce"];
+  authRequest.responseMode = params[@"response_mode"];
   // Pass the authenticated user's handle so the auth code gets a login_hint_did
   authRequest.loginHint = consentSession[@"handle"];
 
@@ -2520,7 +2584,17 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     return;
   }
 
-  NSDictionary *params = [self parseFormUrlEncodedString:body];
+  NSDictionary *params = nil;
+  if ([body hasPrefix:@"{"]) {
+    NSError *jsonError = nil;
+    params = [NSJSONSerialization JSONObjectWithData:request.body
+                                             options:0
+                                               error:&jsonError];
+  }
+
+  if (!params) {
+    params = [self parseFormUrlEncodedString:body];
+  }
 
   NSString *grantType = params[@"grant_type"];
 
@@ -2947,7 +3021,6 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     return;
   }
 
-  [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
   [response setJsonBody:jwks];
   response.statusCode = 200;
 }
@@ -2959,6 +3032,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   // Parse body parameters
   NSString *body = [[NSString alloc] initWithData:request.body
                                          encoding:NSUTF8StringEncoding];
+  PDS_LOG_AUTH_DEBUG(@"PAR request body: %@", body);
   if (!body) {
     response.statusCode = 400;
     [response setJsonBody:@{
@@ -2967,7 +3041,23 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     }];
     return;
   }
-  NSDictionary *params = [self parseFormUrlEncodedString:body];
+
+  NSDictionary *params = nil;
+  if ([body hasPrefix:@"{"]) {
+    // Try to parse as JSON
+    NSError *jsonError = nil;
+    params = [NSJSONSerialization JSONObjectWithData:request.body
+                                             options:0
+                                               error:&jsonError];
+    if (jsonError) {
+      PDS_LOG_AUTH_ERROR(@"Failed to parse PAR JSON body: %@", jsonError.localizedDescription);
+    }
+  }
+
+  if (!params) {
+    params = [self parseFormUrlEncodedString:body];
+  }
+
   self.clientMetadata = [self parseClientMetadataFromInput:params[@"client_metadata"]];
 
   // Validate client authentication (either client_secret or DPoP)
@@ -3599,6 +3689,69 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   return [NSURL URLWithString:urlString];
 }
 
+- (NSString *)requestOriginForRequest:(HttpRequest *)request {
+  NSString *hostHeader = [[request headerForKey:@"host"]
+      stringByTrimmingCharactersInSet:[NSCharacterSet
+                                          whitespaceAndNewlineCharacterSet]];
+  NSString *hostLower = [hostHeader lowercaseString];
+  BOOL localHostHeader = [hostLower containsString:@"localhost"] ||
+                         [hostLower hasPrefix:@"127.0.0.1"] ||
+                         [hostLower hasPrefix:@"[::1]"] ||
+                         [hostLower isEqualToString:@"::1"];
+  BOOL trustedForwarded = [self requestShouldTrustForwardedHeaders:request];
+
+  NSString *scheme = nil;
+  if (trustedForwarded) {
+    NSString *forwardedProto =
+        [[request headerForKey:@"x-forwarded-proto"] lowercaseString];
+    if (forwardedProto.length > 0) {
+      NSString *firstProto =
+          [[forwardedProto componentsSeparatedByString:@","] firstObject];
+      firstProto =
+          [firstProto stringByTrimmingCharactersInSet:
+                          [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+      if ([firstProto isEqualToString:@"https"] ||
+          [firstProto isEqualToString:@"http"]) {
+        scheme = firstProto;
+      }
+    }
+  }
+
+  NSURL *issuerURL = [NSURL URLWithString:self.oauthServer.issuer ?: @""];
+  if (scheme.length == 0) {
+    if (localHostHeader) {
+      scheme = @"http";
+    } else if (issuerURL.scheme.length > 0) {
+      scheme = issuerURL.scheme;
+    } else {
+      scheme = @"https";
+    }
+  }
+
+  NSString *authority = nil;
+  if (hostHeader.length > 0 && (trustedForwarded || localHostHeader)) {
+    authority = hostHeader;
+  } else if (issuerURL.host.length > 0) {
+    authority = issuerURL.host;
+    if (issuerURL.port != nil) {
+      BOOL isDefaultPort =
+          ([issuerURL.scheme.lowercaseString isEqualToString:@"https"] &&
+           issuerURL.port.integerValue == 443) ||
+          ([issuerURL.scheme.lowercaseString isEqualToString:@"http"] &&
+           issuerURL.port.integerValue == 80);
+      if (!isDefaultPort) {
+        authority = [NSString
+            stringWithFormat:@"%@:%@", issuerURL.host, issuerURL.port];
+      }
+    }
+  }
+
+  if (authority.length == 0) {
+    return self.oauthServer.issuer;
+  }
+  return [NSString stringWithFormat:@"%@://%@", scheme, authority];
+}
+
 - (void)attachDPoPNonceToResponseIfMissing:(HttpResponse *)response {
   NSString *existingNonce = response.headers[@"DPoP-Nonce"] ?: response.headers[@"dpop-nonce"];
   if (existingNonce.length > 0) {
@@ -3746,6 +3899,89 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
       @"No assets path found for OAuth2Handler (dataDirectory: %@, cwd: %@)",
       self.dataDirectory, cwd);
   return nil;
+}
+
+- (NSString *)sharedCSSPath {
+  if (self.dataDirectory) {
+    NSString *path =
+        [self.dataDirectory stringByAppendingPathComponent:
+            @"Shared/DesignSystem/css"];
+    if ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
+      return path;
+    }
+  }
+
+  // Check standard install path (Docker/packaged deployments)
+  NSString *installPath = @"/usr/share/atprotopds/assets/css";
+  if ([[NSFileManager defaultManager] fileExistsAtPath:installPath]) {
+    return installPath;
+  }
+
+  // Fallback to project structure (development from build/ or project root)
+  NSString *cwd = [[NSFileManager defaultManager] currentDirectoryPath];
+  NSArray *candidates = @[
+    [cwd stringByAppendingPathComponent:
+        @"Garazyk/Sources/Shared/DesignSystem/css"],
+    [[cwd stringByDeletingLastPathComponent]
+        stringByAppendingPathComponent:
+            @"Garazyk/Sources/Shared/DesignSystem/css"],
+  ];
+
+  for (NSString *candidate in candidates) {
+    if ([[NSFileManager defaultManager] fileExistsAtPath:candidate]) {
+      return candidate;
+    }
+  }
+
+  PDS_LOG_AUTH_ERROR(
+      @"No shared CSS path found for OAuth2Handler (dataDirectory: %@, cwd: %@)",
+      self.dataDirectory, cwd);
+  return nil;
+}
+
+- (void)handleCSSRequest:(HttpRequest *)request
+                response:(HttpResponse *)response {
+  NSString *cssDir = [self sharedCSSPath];
+  if (!cssDir) {
+    response.statusCode = 404;
+    [response setBodyString:@"Not Found"];
+    return;
+  }
+
+  NSString *filename = request.path.lastPathComponent;
+  if (![filename hasSuffix:@".css"]) {
+    response.statusCode = 403;
+    [response setBodyString:@"Forbidden"];
+    return;
+  }
+
+  // Prevent path traversal
+  if ([filename containsString:@".."]) {
+    response.statusCode = 403;
+    [response setBodyString:@"Forbidden"];
+    return;
+  }
+
+  NSString *filePath = [cssDir stringByAppendingPathComponent:filename];
+  NSString *resolvedPath = filePath.stringByStandardizingPath;
+  NSString *resolvedBase = cssDir.stringByStandardizingPath;
+  if (![resolvedPath hasPrefix:resolvedBase]) {
+    response.statusCode = 403;
+    [response setBodyString:@"Forbidden"];
+    return;
+  }
+
+  NSError *readError = nil;
+  NSData *data = [NSData dataWithContentsOfFile:filePath options:0 error:&readError];
+  if (!data) {
+    response.statusCode = 404;
+    [response setBodyString:@"Not Found"];
+    return;
+  }
+
+  response.statusCode = 200;
+  response.contentType = @"text/css; charset=utf-8";
+  [response setBodyData:data];
 }
 
 - (void)fetchClientMetadataFromURL:(NSString *)urlStr
