@@ -23,7 +23,7 @@ DOCKERFILE="$REPO_ROOT/docker/Dockerfile.gnustep"
 BUILDER_TARGET="builder"
 IMAGE_TAG="garazyk-staging-builder:latest"
 
-BINARIES=(kaszlak campagnola zuk syrena)
+BINARIES=(kaszlak campagnola zuk syrena garazyk-ui)
 CHECK_ONLY=false
 
 while [[ $# -gt 0 ]]; do
@@ -91,6 +91,10 @@ for binary in "${BINARIES[@]}"; do
     docker cp "$CONTAINER_ID:/src/build/bin/$binary" "$STAGING_DIR/bin/$binary"
     chmod +x "$STAGING_DIR/bin/$binary"
 done
+
+echo "[stage] Copying UI assets for garazyk-ui..."
+mkdir -p "$STAGING_DIR/bin/Assets"
+docker cp "$CONTAINER_ID:/src/build/bin/Assets/." "$STAGING_DIR/bin/Assets/"
 
 echo "[stage] Extracting libraries..."
 mkdir -p "$STAGING_DIR/lib"

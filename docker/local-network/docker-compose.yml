@@ -21,6 +21,9 @@ services:
       - local_plc_data:/var/lib/atprotopds
     environment:
       - TZ=UTC
+      - PDS_ALLOW_PRIVATE_SSRF=1
+      - PDS_ALLOW_HTTP=1
+      - PDS_LEXICON_PATH=/usr/share/atprotopds/lexicons
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:2582/_health"]
       interval: 5s
@@ -47,6 +50,8 @@ services:
       - local_pds_keys:/var/lib/atprotopds/keys
     environment:
       - TZ=UTC
+      - PDS_ALLOW_PRIVATE_SSRF=1
+      - PDS_ALLOW_HTTP=1
       - PDS_LEXICON_PATH=/usr/share/atprotopds/lexicons
       - HOME=/var/lib/atprotopds
       - PDS_DATA_DIR=/var/lib/atprotopds
@@ -56,6 +61,7 @@ services:
       - GARAZYK_OAUTH_HOST_MAP=127.0.0.1:8080=oauth-client:8080
       - PDS_RUNNING_TESTS=1
       - PDS_USE_KEYCHAIN=false
+      - PDS_ADMIN_PASSWORD=admin-localdev
     depends_on:
       local-plc:
         condition: service_healthy
@@ -103,6 +109,9 @@ services:
       - local_relay_data:/var/lib/atprotopds
     environment:
       - TZ=UTC
+      - PDS_ALLOW_PRIVATE_SSRF=1
+      - PDS_ALLOW_HTTP=1
+      - PDS_LEXICON_PATH=/usr/share/atprotopds/lexicons
     depends_on:
       local-pds:
         condition: service_healthy
@@ -134,9 +143,14 @@ services:
       - local_appview_data:/var/lib/atprotopds
     environment:
       - TZ=UTC
+      - PDS_ALLOW_PRIVATE_SSRF=1
+      - PDS_ALLOW_HTTP=1
+      - PDS_LEXICON_PATH=/usr/share/atprotopds/lexicons
+      - PDS_WRITE_PROXY_OVERRIDE=http://local-pds:2583
       - APPVIEW_ADMIN_SECRET=localdevadmin
       - APPVIEW_DATA_DIR=/var/lib/atprotopds
       - APPVIEW_PLC_URL=http://local-plc:2582
+      - APPVIEW_PDS_URL=http://local-pds:2583
       - APPVIEW_HTTP_PORT=3200
     depends_on:
       local-relay:
@@ -153,6 +167,41 @@ services:
       timeout: 3s
       retries: 10
       start_period: 15s
+    networks:
+      - local_net
+
+  local-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    entrypoint: ["/usr/local/bin/garazyk-ui"]
+    command:
+      - "serve"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "2590"
+    ports:
+      - "2590:2590"
+    environment:
+      - TZ=UTC
+      - PDS_ALLOW_PRIVATE_SSRF=1
+      - PDS_ALLOW_HTTP=1
+      - PDS_LEXICON_PATH=/usr/share/atprotopds/lexicons
+      - GARAZYK_UI_PORT=2590
+      - GARAZYK_UI_ADMIN_PASSWORD=admin-localdev
+      - GARAZYK_UI_PDS_URL=http://local-pds:2583
+      - GARAZYK_UI_PDS_PASSWORD=admin-localdev
+      - GARAZYK_UI_APPVIEW_URL=http://local-appview:3200
+    depends_on:
+      local-pds:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2590/admin"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
     networks:
       - local_net
 

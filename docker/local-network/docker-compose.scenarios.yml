@@ -24,6 +24,7 @@ services:
       - local_pds2_keys:/var/lib/atprotopds/keys
     environment:
       - TZ=UTC
+      - PDS_ALLOW_PRIVATE_SSRF=1
       - PDS_LEXICON_PATH=/usr/share/atprotopds/lexicons
       - HOME=/var/lib/atprotopds
       - PDS_DATA_DIR=/var/lib/atprotopds
