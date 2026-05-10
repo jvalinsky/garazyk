@@ -21,11 +21,17 @@
 #import "AppView/Server/Indexers/AppViewGenericIndexer.h"
 #import "AppView/Server/Lexicon/AppViewLexiconEndpointGenerator.h"
 #import "AppView/Server/Lexicon/AppViewCustomQueryRegistry.h"
+#import "AppView/Server/WriteProxy/AppViewWriteProxy.h"
 #import "AppView/Services/FeedService.h"
 #import "AppView/Services/ActorService.h"
 #import "AppView/Services/GraphService.h"
 #import "AppView/Services/NotificationService.h"
 #import "AppView/Services/BookmarkService.h"
+#import "AppView/Services/DraftService.h"
+#import "AppView/Services/SearchIndexService.h"
+#import "AppView/Server/Lexicon/AppViewGraphQueryHandler.h"
+#import "AppView/Services/ContactService.h"
+#import "AppView/Server/Hooks/AppViewIndexHookRegistry.h"
 #import "AppView/Services/AgeAssuranceService.h"
 #import "Network/AppViewXRpcRoutePack.h"
 #import "AppView/Server/Admin/AppViewAdminRoutePack.h"
@@ -54,10 +60,15 @@
 @property (nonatomic, strong) NotificationService *notificationService;
 @property (nonatomic, strong) BookmarkService *bookmarkService;
 @property (nonatomic, strong) AgeAssuranceService *ageAssuranceService;
+@property (nonatomic, strong) DraftService *draftService;
+@property (nonatomic, strong) SearchIndexService *searchIndexService;
+@property (nonatomic, strong) ContactService *contactService;
+@property (nonatomic, strong) AppViewWriteProxy *writeProxy;
 @property (nonatomic, strong) AppViewLexiconEndpointGenerator *lexiconEndpointGenerator;
 @property (nonatomic, strong) AppViewCustomQueryRegistry *customQueryRegistry;
 @property (nonatomic, strong) ATProtoLexiconRegistry *lexiconRegistry;
 @property (nonatomic, strong) ATProtoLexiconValidator *lexiconValidator;
+@property (nonatomic, strong) AppViewIndexHookRegistry *hookRegistry;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 
 @end
@@ -172,7 +183,8 @@ static AppViewRuntime *_sharedRuntime = nil;
     AppViewActorIndexer *actorIdx   = [[AppViewActorIndexer alloc] initWithDatabase:_database];
     AppViewFeedIndexer  *feedIdx    = [[AppViewFeedIndexer alloc]  initWithDatabase:_database];
     AppViewGraphIndexer *graphIdx   = [[AppViewGraphIndexer alloc] initWithDatabase:_database
-                                                                       relevanceSet:_relevanceSet];
+                                                                       relevanceSet:_relevanceSet
+                                                                       graphService:_graphService];
     AppViewNotificationIndexer *notifIdx = [[AppViewNotificationIndexer alloc] initWithDatabase:_database];
     AppViewBookmarkIndexer *bookmarkIdx = [[AppViewBookmarkIndexer alloc] initWithDatabase:_database
                                                                   bookmarkService:_bookmarkService];
@@ -208,6 +220,14 @@ static AppViewRuntime *_sharedRuntime = nil;
    domainIndexerCollections:domainCollections];
 
     _indexers = @[actorIdx, feedIdx, graphIdx, notifIdx, bookmarkIdx, groupIdx, genericIdx];
+
+    _hookRegistry = [[AppViewIndexHookRegistry alloc] initWithDatabase:_database];
+    
+    // Register SearchIndexService as an internal hook for real-time search updates
+    [_hookRegistry registerHook:_searchIndexService];
+
+    // Populate search index from existing records if needed
+    [_searchIndexService populateIndexIfEmptyWithError:nil];
 
     // Build ingest engine
     _ingestEngine = [[AppViewIngestEngine alloc]
@@ -250,6 +270,13 @@ static AppViewRuntime *_sharedRuntime = nil;
     _ageAssuranceService = [[AgeAssuranceService alloc] initWithDatabase:_database
                                                            emailProvider:nil];
     _bookmarkService = [[BookmarkService alloc] initWithDatabase:_database];
+    _draftService = [[DraftService alloc] initWithDatabase:_database];
+    _searchIndexService = [[SearchIndexService alloc] initWithDatabase:_database];
+    _contactService = [[ContactService alloc] initWithDatabase:_database actorService:_actorService];
+
+    _hookRegistry = [[AppViewIndexHookRegistry alloc] initWithDatabase:_database];
+
+    _writeProxy = [[AppViewWriteProxy alloc] initWithDatabase:_database plcUrl:config.plcURL];
 
     // Initialize JWTMinter for token verification (using shared master secret)
     JWTMinter *jwtMinter = nil;
@@ -258,18 +285,33 @@ static AppViewRuntime *_sharedRuntime = nil;
         jwtMinter.issuer = @"http://localhost:2583"; // The PDS issuer we expect tokens from
     }
 
-// Register XRPC routes
+    // Register XRPC routes
     AppViewXRpcRoutePack *xrpcPack = [[AppViewXRpcRoutePack alloc] initWithFeedService:_feedService
                                                                     actorService:_actorService
                                                                     graphService:_graphService
                                                               notificationService:_notificationService
-                                                              ageAssuranceService:_ageAssuranceService
+                                                             ageAssuranceService:_ageAssuranceService
+                                                                    draftService:_draftService
+                                                                 bookmarkService:_bookmarkService
+                                                                  contactService:_contactService
+                                                              searchIndexService:_searchIndexService
+                                                                      writeProxy:_writeProxy
                                                                                database:_database
                                                                               jwtMinter:jwtMinter];
     [xrpcPack registerRoutesWithServer:_httpServer];
 
     // Register dynamic lexicon-driven endpoints
     _customQueryRegistry = [[AppViewCustomQueryRegistry alloc] init];
+
+    // Register domain-specific query handlers
+    AppViewGraphQueryHandler *graphQueryHandler =
+        [[AppViewGraphQueryHandler alloc] initWithGraphService:_graphService];
+    [_customQueryRegistry registerHandler:graphQueryHandler
+                                  forNSID:@"app.bsky.graph.getStarterPack"];
+    [_customQueryRegistry registerHandler:graphQueryHandler
+                                  forNSID:@"app.bsky.graph.getStarterPacks"];
+    [_customQueryRegistry registerHandler:graphQueryHandler
+                                  forNSID:@"app.bsky.graph.getActorStarterPacks"];
     _lexiconEndpointGenerator = [[AppViewLexiconEndpointGenerator alloc]
         initWithRegistry:_lexiconRegistry
                database:_database
@@ -289,10 +331,11 @@ static AppViewRuntime *_sharedRuntime = nil;
                     database:_database
                  adminSecret:config.adminSecret];
     [_adminRoutePack setLexiconRegistry:_lexiconRegistry];
-    [_adminRoutePack setHookRegistry:nil]; // TODO: wire hook registry
+    [_adminRoutePack setHookRegistry:_hookRegistry];
     [_adminRoutePack setCustomQueryRegistry:_customQueryRegistry];
     [_adminRoutePack setLexiconEndpointGenerator:_lexiconEndpointGenerator];
     [_adminRoutePack registerRoutesWithServer:_httpServer];
+
 
     NSError *listenErr = nil;
     if (![_httpServer startWithError:&listenErr]) {
@@ -337,22 +380,79 @@ static AppViewRuntime *_sharedRuntime = nil;
     // Notify orchestrator to ensure repo is scheduled for backfill if new
     [_orchestrator enqueueDIDs:@[event.did]];
 
-    // Dispatch to all capable indexers
-    for (id<AppViewIndexer> indexer in _indexers) {
-        if ([indexer respondsToSelector:@selector(handleIngestEvent:error:)]) {
-            [indexer handleIngestEvent:event error:nil];
+    // Single pass over ops: dispatch to indexers, fire hooks, expand partial mode
+    for (NSDictionary *op in event.ops) {
+        NSString *action = op[@"action"];
+        NSString *path   = op[@"path"];
+
+        // Parse collection and rkey from path (format: "collection/rkey")
+        NSRange slash = [path rangeOfString:@"/"];
+        NSString *collection = (slash.location != NSNotFound)
+            ? [path substringToIndex:slash.location] : path;
+        NSString *rkey = (slash.location != NSNotFound)
+            ? [path substringFromIndex:slash.location + 1] : @"";
+        NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@",
+                         event.did, collection, rkey];
+
+        // --- 1. Dispatch to indexers ---
+        for (id<AppViewIndexer> indexer in _indexers) {
+            if ([indexer respondsToSelector:@selector(handleIngestEvent:error:)]) {
+                // Indexers that handle the full event themselves (called once per event)
+                // Only call on the first op to avoid duplicate dispatch
+                // These indexers iterate over ops internally
+                continue;
+            }
+            if (![indexer canIndexCollection:collection]) continue;
+
+            if ([action isEqualToString:@"create"] || [action isEqualToString:@"update"]) {
+                NSDictionary *record = op[@"record"];
+                NSString *cid = op[@"cid"];
+                if (record) {
+                    [indexer indexRecord:record
+                                     did:event.did
+                              collection:collection
+                                    rkey:rkey
+                                     cid:cid
+                                   error:nil];
+                }
+            } else if ([action isEqualToString:@"delete"]) {
+                if ([indexer respondsToSelector:@selector(deleteRecord:did:collection:error:)]) {
+                    [indexer deleteRecord:rkey
+                                      did:event.did
+                               collection:collection
+                                    error:nil];
+                }
+            }
+        }
+
+        // --- 2. Fire index hooks ---
+        if ([action isEqualToString:@"create"] || [action isEqualToString:@"update"]) {
+            [_hookRegistry fireDidIndexRecord:op[@"record"]
+                                          uri:uri
+                                           did:event.did
+                                   collection:collection];
+        } else if ([action isEqualToString:@"delete"]) {
+            [_hookRegistry fireDidDeleteRecordWithURI:uri
+                                                   did:event.did
+                                           collection:collection];
+        }
+
+        // --- 3. Interaction expansion for partial mode ---
+        if (_configuration.partialEnabled) {
+            NSDictionary *record = op[@"record"];
+            if ([record isKindOfClass:[NSDictionary class]]) {
+                NSString *subject = record[@"subject"];
+                if (subject && [_relevanceSet isDIDRelevant:event.did]) {
+                    [_relevanceSet recordInteraction:event.did withDID:subject];
+                }
+            }
         }
     }
 
-    // Interaction expansion for partial mode
-    if (_configuration.partialEnabled) {
-        for (NSDictionary *op in event.ops) {
-            NSString *collection = op[@"collection"];
-            NSString *subject    = op[@"record"][@"subject"];
-            if (subject && [_relevanceSet isDIDRelevant:event.did]) {
-                [_relevanceSet recordInteraction:event.did withDID:subject];
-            }
-            (void)collection;
+    // Indexers that handle the full event themselves (called once per event)
+    for (id<AppViewIndexer> indexer in _indexers) {
+        if ([indexer respondsToSelector:@selector(handleIngestEvent:error:)]) {
+            [indexer handleIngestEvent:event error:nil];
         }
     }
 }
