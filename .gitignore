@@ -201,6 +201,9 @@ tooling/test-audit-validator/.artifacts/
 .deciduous/
 plc_data/
 .letta/
+
+# OAuth client Vite build output (built in Dockerfile)
+docker/local-network/oauth-client/dist/
 objc-jupyter-wasm/.letta/
 objc-jupyter-wasm/result
 result
