@@ -173,6 +173,11 @@
         [paths addObject:bundlePath];
     }
 
+    BOOL isDir = NO;
+    if ([fm fileExistsAtPath:@"/usr/share/garazyk/lexicons" isDirectory:&isDir] && isDir) {
+        [paths addObject:@"/usr/share/garazyk/lexicons"];
+    }
+
     NSString *cwd = fm.currentDirectoryPath ?: @"";
     NSArray<NSString *> *candidates = @[
         @"Garazyk/Resources/lexicons",
