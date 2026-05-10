@@ -160,7 +160,8 @@
                          return;
                        }
 
-                       NSString *draftID = [request queryParamForKey:@"id"];
+                       NSDictionary *body = request.jsonBody;
+                       NSString *draftID = body[@"id"] ?: body[@"uri"];
                        if (!draftID) {
                          [XrpcErrorHelper setValidationError:response
                                                    message:@"Missing draft id parameter"];

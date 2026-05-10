@@ -186,9 +186,17 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
             return NO;
         }
 
-        if (!effective.allowPrivateHosts) {
-            NSError *ssrfError = nil;
-            if (![SSRFValidator validateHostResolvesToPublicIP:url.host error:&ssrfError]) {
+    BOOL allowPrivate = effective.allowPrivateHosts;
+    if (!allowPrivate) {
+        NSString *envAllow = [[NSProcessInfo processInfo] environment][@"PDS_ALLOW_PRIVATE_SSRF"];
+        if ([envAllow isEqualToString:@"1"] || [envAllow isEqualToString:@"true"]) {
+            allowPrivate = YES;
+        }
+    }
+
+    if (!allowPrivate) {
+        NSError *ssrfError = nil;
+        if (![SSRFValidator validateHostResolvesToPublicIP:url.host error:&ssrfError]) {
                 if (error) {
                     *error = [self errorWithCode:PDSSafeHTTPClientErrorSSRFBlocked
                                      description:@"Outbound request target failed SSRF validation"
@@ -245,6 +253,7 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)timeout);
         curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, (long)MIN(timeout, 10.0));
         curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+        curl_easy_setopt(curl, CURLOPT_NOPROXY, "*");
 
         struct curl_slist *headers = NULL;
         headers = curl_slist_append(headers, "Connection: close");
@@ -460,6 +469,7 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
         config.HTTPCookieAcceptPolicy = NSHTTPCookieAcceptPolicyNever;
         config.requestCachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
         config.URLCache = nil;
+        config.connectionProxyDictionary = @{};
 
         _sharedSession = [NSURLSession sessionWithConfiguration:config
                                                        delegate:self
@@ -509,9 +519,17 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
             return NO;
         }
 
-        if (!effective.allowPrivateHosts) {
-            NSError *ssrfError = nil;
-            if (![SSRFValidator validateHostResolvesToPublicIP:url.host error:&ssrfError]) {
+    BOOL allowPrivate = effective.allowPrivateHosts;
+    if (!allowPrivate) {
+        NSString *envAllow = [[NSProcessInfo processInfo] environment][@"PDS_ALLOW_PRIVATE_SSRF"];
+        if ([envAllow isEqualToString:@"1"] || [envAllow isEqualToString:@"true"]) {
+            allowPrivate = YES;
+        }
+    }
+
+    if (!allowPrivate) {
+        NSError *ssrfError = nil;
+        if (![SSRFValidator validateHostResolvesToPublicIP:url.host error:&ssrfError]) {
                 if (error) {
                     *error = [self errorWithCode:PDSSafeHTTPClientErrorSSRFBlocked
                                      description:@"Outbound request target failed SSRF validation"
