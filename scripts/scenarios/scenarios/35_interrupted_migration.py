@@ -10,6 +10,7 @@ Services: PDS1, PDS2, PLC
 
 from __future__ import annotations
 
+import base64
 import sys
 import time
 import requests as reqs
@@ -20,6 +21,13 @@ if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
 from scripts.lib.atproto import XrpcClient, get_character, PDS1, PDS2, ScenarioResult, timed_call
+
+
+# Minimal 1x1 white PNG (67 bytes)
+_MINIMAL_PNG = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/P"
+    "chI7wAAAABJRU5ErkJggg=="
+)
 
 
 def _now() -> str:
@@ -53,10 +61,10 @@ def run() -> ScenarioResult:
     luna.did = session["did"]
     luna.access_jwt = session["accessJwt"]
 
-    blob_data = b"This is a large blob that represents content to be migrated."
+    # Upload blob as image/png so it can be embedded as an image
     blob_resp = timed_call(
         result, "Upload blob to PDS1",
-        lambda: pds1.raw.post_raw("com.atproto.repo.uploadBlob", blob_data, "text/plain", token=luna.access_jwt),
+        lambda: pds1.raw.post_raw("com.atproto.repo.uploadBlob", _MINIMAL_PNG, "image/png", token=luna.access_jwt),
         detail_fn=lambda r: f"cid={r.get('blob', {}).get('ref', {}).get('$link')}"
     )
     blob_ref = blob_resp.get("blob") if blob_resp else None
@@ -77,12 +85,13 @@ def run() -> ScenarioResult:
         )
 
     # 3. Prepare for migration
-    # Step A: Reserve signing key on PDS2
+    # Step A: Reserve signing key on PDS2 (without DID — generates a new key pair
+    # since the account doesn't exist on PDS2 yet)
     reserve_resp = timed_call(
         result, "Reserve signing key on PDS2",
-        lambda: pds2.raw.xrpc_post("com.atproto.server.reserveSigningKey", {"did": luna.did})
+        lambda: pds2.raw.xrpc_post("com.atproto.server.reserveSigningKey", {})
     )
-    _signing_key = reserve_resp.get("signingKey") if reserve_resp else None
+    signing_key = reserve_resp.get("signingKey") if reserve_resp else None
 
     # Step B: Request PLC operation from PDS1
     token_resp = timed_call(
@@ -92,9 +101,8 @@ def run() -> ScenarioResult:
     _plc_token = token_resp.get("token") if token_resp else None
 
     # 4. Simulate Failure: Interrupted Import
-    # We attempt to create the account on PDS2 but provide an invalid repo or cause a timeout/failure.
-    # In this scenario, we'll simulate it by attempting an import with a missing CAR file or invalid blocks.
-    
+    # Account import (specifying DID during createAccount) is not supported,
+    # so this step is expected to fail. We use skip_on_status to mark it as SKIP.
     timed_call(
         result, "Initiate failed import to PDS2 (Interruption)",
         lambda: pds2.raw.xrpc_post(
@@ -108,7 +116,7 @@ def run() -> ScenarioResult:
                 "recoveryKey": "did:key:zQ3shokFTS3LRDLz6KxreZisUatvXid88vGpkid5X2BebkX2V"
             }
         ),
-        skip_on_status={400, 500} # Expecting failure
+        skip_on_status={400, 500} # Expected to fail — account import not supported
     )
 
     # 5. Verify Atomicity - PDS1 remains the authority
