@@ -32,9 +32,7 @@
     "privacy_policy": "http://127.0.0.1:2583/privacy",
     "terms_of_service": "http://127.0.0.1:2583/terms"
   },
-  "relays": [
-    "http://local-relay:2584"
-  ],
+  "relays": [],
   "plc": {
     "url": "http://local-plc:2582",
     "retry_count": 3,

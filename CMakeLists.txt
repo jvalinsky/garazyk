@@ -856,18 +856,35 @@ target_include_directories(syrena-chat PRIVATE
   ${SECP256K1_INCLUDE_DIRS}
 )
 
-target_link_libraries(syrena-chat PRIVATE
-  ATProtoRuntime
-  ATProtoServices
-  ATProtoTransport
-  ATProtoXRPC
-  ATProtoSync
-  ATProtoStorage
-  ATProtoCore
-  ${PLATFORM_LIBRARIES}
-  ${SECP256K1_LIBRARIES}
-  ${READLINE_LIBRARY}
-)
+if(APPLE)
+  target_link_libraries(syrena-chat PRIVATE
+    ATProtoServices
+    ATProtoRuntime
+    ATProtoTransport
+    ATProtoXRPC
+    ATProtoSync
+    ATProtoStorage
+    ATProtoCore
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+    ${READLINE_LIBRARY}
+  )
+else()
+  target_link_libraries(syrena-chat PRIVATE
+    -Wl,--whole-archive
+    ATProtoServices
+    ATProtoRuntime
+    ATProtoTransport
+    ATProtoXRPC
+    ATProtoSync
+    ATProtoStorage
+    -Wl,--no-whole-archive
+    ATProtoCore
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+    ${READLINE_LIBRARY}
+  )
+endif()
 
 target_compile_definitions(syrena-chat PRIVATE
   SQLITE_THREADSAFE=2
@@ -889,18 +906,35 @@ target_include_directories(germ PRIVATE
   ${SECP256K1_INCLUDE_DIRS}
 )
 
-target_link_libraries(germ PRIVATE
-  ATProtoRuntime
-  ATProtoServices
-  ATProtoTransport
-  ATProtoXRPC
-  ATProtoSync
-  ATProtoStorage
-  ATProtoCore
-  ${PLATFORM_LIBRARIES}
-  ${SECP256K1_LIBRARIES}
-  ${READLINE_LIBRARY}
-)
+if(APPLE)
+  target_link_libraries(germ PRIVATE
+    ATProtoServices
+    ATProtoRuntime
+    ATProtoTransport
+    ATProtoXRPC
+    ATProtoSync
+    ATProtoStorage
+    ATProtoCore
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+    ${READLINE_LIBRARY}
+  )
+else()
+  target_link_libraries(germ PRIVATE
+    -Wl,--whole-archive
+    ATProtoServices
+    ATProtoRuntime
+    ATProtoTransport
+    ATProtoXRPC
+    ATProtoSync
+    ATProtoStorage
+    -Wl,--no-whole-archive
+    ATProtoCore
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+    ${READLINE_LIBRARY}
+  )
+endif()
 
 target_compile_definitions(germ PRIVATE
   SQLITE_THREADSAFE=2
