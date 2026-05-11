@@ -4,11 +4,16 @@
 
 @class UIServiceConfig;
 
+@class PDSSafeHTTPClient;
+
 NS_ASSUME_NONNULL_BEGIN
 
 @interface UIBackendClient : NSObject
 
 - (instancetype)initWithConfiguration:(UIServiceConfig *)configuration;
+
+- (instancetype)initWithConfiguration:(UIServiceConfig *)configuration
+                           httpClient:(nullable PDSSafeHTTPClient *)httpClient;
 
 /**
  * Obtain a fresh admin JWT from the PDS /admin/login endpoint.
