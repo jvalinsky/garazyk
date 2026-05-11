@@ -45,7 +45,7 @@ def run() -> ScenarioResult:
     # We need to rotate the handle 100 times, then expect the 101st to fail.
     
     ROTATIONS = 100
-    result.step_info(f"Starting {ROTATIONS} handle rotations to exhaust PLC quota")
+    print(f"Starting {ROTATIONS} handle rotations to exhaust PLC quota")
     
     # Speed up by using a loop without full timed_call per iteration to avoid cluttering report
     success_count = 0
@@ -83,7 +83,7 @@ def run() -> ScenarioResult:
 
     # 101st rotation should fail
     if success_count == ROTATIONS:
-        result.step_info("Attempting 101st rotation (expect failure)")
+        print("Attempting 101st rotation (expect failure)")
         new_handle = f"final-{rosa.handle}"
         token_resp = client.raw.xrpc_post("com.atproto.identity.requestPlcOperationSignature", {}, token=rosa.access_jwt)
         token = token_resp.get("token")
