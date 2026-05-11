@@ -22,7 +22,7 @@ if _project_root not in sys.path:
 from scripts.lib.atproto import XrpcClient, get_character, PDS1, ScenarioResult, timed_call
 
 
-_DEFAULT_ADMIN_PASSWORD = "admin-localdev"
+_DEFAULT_ADMIN_PASSWORD = "test-admin-password"
 
 
 def _now() -> str:
