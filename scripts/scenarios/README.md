@@ -64,6 +64,9 @@ pip install requests websockets
 | 08 | OAuth2 & Sessions | OAuth flows, token refresh, revocation | PDS | No |
 | 09 | Firehose Streaming | WebSocket subscription, event sequencing | PDS, Relay, AppView | No |
 | 10 | Performance & Resilience | Burst posting, batch writes, error handling | PDS, Relay, AppView | No |
+| 11 | Lab OAuth2 Login | UI server OAuth2 login flow, admin auth boundary | garazyk-ui | No |
+| 12 | Account Migration | Cooperative account migration, PLC audit | PDS, PDS2, PLC | Yes |
+| 13 | E2E OAuth2 Client Integration | Full stack OAuth2 dance with browser automation | PLC, PDS, AppView | No |
 | 14 | Drafts & Bookmarks Workflow | Draft CRUD, publish from draft, bookmark lifecycle | PDS, AppView | No |
 | 15 | Mutes, Relationships & Starter Packs | Mute/unmute, getRelationships, starter pack CRUD | PDS, AppView | No |
 | 16 | Notification Management | updateSeen, registerPush, preferences, activity subscriptions | PDS, AppView | No |
@@ -71,6 +74,13 @@ pip install requests websockets
 | 18 | AppView Admin Operations | Ingest health, backfill, metrics, lexicons, records, hooks | AppView | No |
 | 19 | Contact & Age Assurance | Phone verification, contact import/matches, age assurance flow | PDS, AppView | No |
 | 20 | Unspecced Search & Discovery | searchActorsSkeleton, searchPostsSkeleton, searchStarterPacksSkeleton | PDS, AppView | No |
+| 21 | AppView Lexicon Endpoints | Dynamic endpoint registration, lexicon-driven XRPC queries | PDS, AppView, Relay | No |
+| 22 | AppView Hooks & Dead Letter | Hook registry, search index, dead letter recording | PDS, AppView, Relay | No |
+| 23 | AppView Write Proxy | Write proxy surface, OAuth2 middleware behavior | PDS, AppView | No |
+| 24 | Concurrent Write Throughput | 32-account burst, mixed workload, instrumentation | PDS | No |
+| 25 | Firehose Fan-Out Scale | 50+ concurrent subscribers, batch fan-out, backpressure | PDS, Relay | No |
+| 26 | AppView Ingest Load | Sustained writes, backpressure pause/resume, ingest stability | PDS, AppView, Relay | No |
+| 27 | Fullstack Soak | 120-second mixed workload, Prometheus metrics, process health | PDS, Relay, AppView | No |
 
 ## Running Scenarios
 
@@ -226,7 +236,24 @@ scripts/scenarios/
 │   ├── 07_blobs_uploads.py
 │   ├── 08_oauth_sessions.py
 │   ├── 09_firehose_streaming.py
-│   └── 10_performance_resilience.py
+│   ├── 10_performance_resilience.py
+│   ├── 11_lab_oauth_login.py
+│   ├── 12_account_migration.py
+│   ├── 13_oauth_client_e2e.py
+│   ├── 14_drafts_bookmarks.py
+│   ├── 15_mutes_relationships_starterpacks.py
+│   ├── 16_notification_management.py
+│   ├── 17_actor_preferences_discovery.py
+│   ├── 18_admin_operations.py
+│   ├── 19_contact_age_assurance.py
+│   ├── 20_unspecced_search.py
+│   ├── 21_appview_lexicon_endpoints.py
+│   ├── 22_appview_hooks.py
+│   ├── 23_appview_write_proxy.py
+│   ├── 24_concurrent_write_throughput.py
+│   ├── 25_firehose_fanout_scale.py
+│   ├── 26_appview_ingest_load.py
+│   └── 27_fullstack_soak.py
 ├── reports/                           # JSON report output (gitignored)
 ├── run_scenario.py                    # Scenario runner
 ├── setup_local_network.sh             # Start Docker services
