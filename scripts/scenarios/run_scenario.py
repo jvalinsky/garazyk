@@ -69,6 +69,13 @@ SCENARIO_REGISTRY = [
     ("26", "scenarios.26_appview_ingest_load", "AppView Ingest Under Load (Instrumented)", False),
     ("27", "scenarios.27_fullstack_soak", "Full-Stack Soak Test (Instrumented)", False),
     ("28", "scenarios.28_repo_format_benchmarks", "Repo Format Benchmarks (CAR vs STAR)", False),
+    ("29", "scenarios.29_depth_charger", "The Depth Charger (Serialization Limits)", False),
+    ("30", "scenarios.30_temporal_distortion", "Temporal Distortion (Clock Skew)", False),
+    ("31", "scenarios.31_noisy_neighbor", "The Noisy Neighbor (Rate Limiting)", False),
+    ("32", "scenarios.32_identity_fatigue", "Identity Fatigue (PLC Quota)", False),
+    ("33", "scenarios.33_tortoise_consumer", "The Tortoise Consumer (Firehose Backpressure)", False),
+    ("34", "scenarios.34_format_roundtrip", "Format Round-Trip (STAR/CAR Integrity)", False),
+    ("35", "scenarios.35_interrupted_migration", "The Interrupted Migration (Atomicity)", False),
     ("10", "scenarios.10_performance_resilience", "Performance & Resilience", False),
 ]
 
