@@ -46,6 +46,7 @@ from .instrumentation import (
     CpuStats,
 )
 from .dashboard import generate_dashboard_html
+from .skylab import SkyLabDriver, SkyLabPlaywright
 from .config import (
     SERVICE_PORTS,
     SERVICE_URLS,
@@ -123,6 +124,9 @@ __all__ = [
     "CpuStats",
     # Dashboard
     "generate_dashboard_html",
+    # SkyLab
+    "SkyLabDriver",
+    "SkyLabPlaywright",
     # Config
     "SERVICE_PORTS",
     "SERVICE_URLS",

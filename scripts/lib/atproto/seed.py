@@ -105,7 +105,7 @@ def create_record_idempotent(
     so callers notice schema, auth, and storage errors.
     """
     try:
-        return client.create_record(repo, collection, record, token)
+        return client.records.create_record(repo, collection, record, token)
     except XrpcError as exc:
         if exc.status == 400 and "already exists" in str(exc.body).lower():
             return {}

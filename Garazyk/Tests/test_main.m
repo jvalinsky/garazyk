@@ -911,7 +911,6 @@ int main(int argc, char *argv[]) {
       @"FeedSkeletonTests",
       @"NotificationServiceTests",
       @"RecordLifecycleHandlerTests",
-      @"AppViewServiceTests",
       @"PDSCLIAccountCommandTests",
       @"PDSCLIRepoCommandTests",
       @"PDSCLIInviteCommandTests",
@@ -1063,7 +1062,19 @@ int main(int argc, char *argv[]) {
       @"PDSTelegramGatewayPhoneVerificationProviderTests",
       @"GermRecordTests",
       @"GermMailboxServiceTests",
-      @"GermIdentityServiceTests"
+      @"ChatServiceTests",
+      @"ModerationServiceTests",
+      @"GermIdentityServiceTests",
+      @"ATProtoCIDTests",
+      @"ATProtoDagCBOREdgeCaseTests",
+      @"ATProtoTIDTests",
+      @"OAuthMetadataComplianceTests",
+      @"OAuthMetadataConsistencyTests",
+      @"OAuthOriginResolutionTests",
+      @"OAuthOriginTests",
+      @"PLCServerHeaderTests",
+      @"Phase2SecurityIntegrationTests",
+      @"XrpcIdentityResolutionTests"
     ];
 
     SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];

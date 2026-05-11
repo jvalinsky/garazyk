@@ -78,6 +78,22 @@ SCENARIO_REGISTRY = [
     ("35", "scenarios.35_interrupted_migration", "The Interrupted Migration (Atomicity)", False),
     ("36", "scenarios.36_video_processing", "The Projection Booth (Video Processing)", False),
     ("10", "scenarios.10_performance_resilience", "Performance & Resilience", False),
+    # ── SkyLab expansion scenarios (38–52) ──────────────────────────────
+    ("38", "scenarios.38_feed_generator", "Feed Generator Lifecycle", False),
+    ("39", "scenarios.39_list_management", "List Management", False),
+    ("40", "scenarios.40_thread_gating", "Thread Gating & Reply Controls", False),
+    ("41", "scenarios.41_account_deactivation", "Account Deactivation & Reactivation", False),
+    ("42", "scenarios.42_handle_change_propagation", "Handle Change Propagation", False),
+    ("43", "scenarios.43_multi_device_sessions", "Multi-Device Session Management", False),
+    ("44", "scenarios.44_content_embedding", "Content Embedding", False),
+    ("45", "scenarios.45_labeler_subscription", "Labeler Subscription", False),
+    ("46", "scenarios.46_video_cdn_playback", "Video CDN Playback", False),
+    ("47", "scenarios.47_chat_group_lifecycle", "Chat Group Lifecycle", False),
+    ("48", "scenarios.48_websocket_reconnection", "WebSocket Reconnection", False),
+    ("49", "scenarios.49_cross_service_consistency", "Cross-Service Consistency", False),
+    ("50", "scenarios.50_profile_migration", "Profile Migration", False),
+    ("51", "scenarios.51_blob_garbage_collection", "Blob Garbage Collection", False),
+    ("52", "scenarios.52_rate_limit_behavior", "Rate Limit Client Behavior", False),
 ]
 
 
