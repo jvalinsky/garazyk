@@ -109,7 +109,7 @@
 
 - (nullable NSDictionary *)getConversationWithId:(NSString *)convoId
                                            error:(NSError **)error {
-    NSString *query = @"SELECT id, created_at, updated_at FROM conversations WHERE id = ?";
+    NSString *query = @"SELECT id, mode, created_at, updated_at FROM conversations WHERE id = ?";
     NSError *queryError = nil;
     NSArray *rows = [(PDSDatabase *)self.database executeParameterizedQuery:query
                                                                       params:@[convoId]
@@ -148,6 +148,7 @@
 
     NSMutableDictionary *conversation = [@{
         @"id": convoRow[@"id"],
+        @"mode": convoRow[@"mode"] ?: @"plaintext",
         @"createdAt": convoRow[@"created_at"],
         @"updatedAt": convoRow[@"updated_at"],
         @"members": members,
@@ -500,6 +501,25 @@
     NSString *query = @"UPDATE conversations SET locked = 0, updated_at = ? WHERE id = ?";
     return [(PDSDatabase *)self.database executeParameterizedUpdate:query
                                             params:@[now, convoId]
+                                                 error:error];
+}
+
+#pragma mark - Conversation Mode
+
+- (BOOL)setConversationMode:(NSString *)convoId
+                       mode:(NSString *)mode
+                      error:(NSError **)error {
+    // Validate mode
+    if (![mode isEqualToString:@"plaintext"] && ![mode isEqualToString:@"e2ee"]) {
+        if (error) *error = [NSError errorWithDomain:@"ChatService" code:400
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Mode must be 'plaintext' or 'e2ee'"}];
+        return NO;
+    }
+
+    NSString *now = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
+    NSString *query = @"UPDATE conversations SET mode = ?, updated_at = ? WHERE id = ?";
+    return [(PDSDatabase *)self.database executeParameterizedUpdate:query
+                                            params:@[mode, now, convoId]
                                                  error:error];
 }
 
