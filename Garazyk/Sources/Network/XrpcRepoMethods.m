@@ -510,7 +510,7 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
             return;
         }
 
-        if (blobData.length > 1 * 1024 * 1024) {
+        if (blobData.length > 50 * 1024 * 1024) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"BlobTooLarge", @"message": @"Blob too large"}];
             return;
