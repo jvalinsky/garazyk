@@ -42,7 +42,9 @@
     "max_age": 86400
   },
   "rate_limit": {
-    "enabled": false
+    "enabled": true,
+    "did_limit": 60,
+    "did_window": 60
   },
   "auth": {
     "master_secret": "test-master-secret-123"

@@ -36,6 +36,23 @@ readonly PLC_PID_FILE
 PDS_PID_FILE="${PDS_PID_FILE:-$PROJECT_ROOT/.pds.pid}"
 readonly PDS_PID_FILE
 
+# Binary paths (for restart)
+BUILD_DIR="$(resolve_build_dir "$PROJECT_ROOT")"
+readonly BUILD_DIR
+PLC_BINARY="${PLC_BINARY:-$BUILD_DIR/$SERVICE_BINARY_PLC}"
+readonly PLC_BINARY
+PDS_BINARY="${PDS_BINARY:-$BUILD_DIR/$SERVICE_BINARY_PDS}"
+readonly PDS_BINARY
+
+# Data directories (for restart)
+DATA_DIR="${DATA_DIR:-/tmp/atproto-services}"
+PLC_DATA_DIR="${PLC_DATA_DIR:-$DATA_DIR/plc}"
+PDS_DATA_DIR="${PDS_DATA_DIR:-$DATA_DIR/pds}"
+
+# Service configuration (for restart)
+PDS_ISSUER="${PDS_ISSUER:-http://localhost:$SERVICE_PORT_PDS}"
+PDS_LOG_LEVEL="${PDS_LOG_LEVEL:-info}"
+
 ################################################################################
 # Service utilities
 ################################################################################
@@ -256,8 +273,9 @@ cmd_stop() {
 }
 
 cmd_restart() {
-    # Restart by delegating startup back to start-all-services.sh so validation,
-    # health checks, and skip semantics stay centralized.
+    # Restart services by stopping them and starting them directly (not via
+    # start-all-services.sh, which blocks on `wait` and is unsuitable for
+    # scripted restarts).  Health checks confirm readiness before returning.
     local target="${1:-all}"
 
     cmd_stop "$target" || return 1
@@ -268,13 +286,43 @@ cmd_restart() {
 
     case "$target" in
         plc)
-            "$SCRIPT_DIR/start-all-services.sh" --skip-pds
+            if [[ ! -f "$PLC_BINARY" ]]; then
+                log_error "PLC binary not found: $PLC_BINARY"
+                return 1
+            fi
+            mkdir -p "$PLC_DATA_DIR"
+            cd "$PLC_DATA_DIR" || { log_error "Cannot cd to $PLC_DATA_DIR"; return 1; }
+            "$PLC_BINARY" serve --port "$SERVICE_PORT_PLC" \
+                >> "$PLC_LOG" 2>&1 &
+            local pid=$!
+            echo "$pid" > "$PLC_PID_FILE"
+            log_info "PLC restarted (PID: $pid)"
+            wait_for_http "$SERVICE_URL_PLC/_health" "PLC" 30
             ;;
         pds)
-            "$SCRIPT_DIR/start-all-services.sh" --skip-plc
+            if [[ ! -f "$PDS_BINARY" ]]; then
+                log_error "PDS binary not found: $PDS_BINARY"
+                return 1
+            fi
+            mkdir -p "$PDS_DATA_DIR"
+            cd "$PDS_DATA_DIR" || { log_error "Cannot cd to $PDS_DATA_DIR"; return 1; }
+            PDS_PLC_URL="$SERVICE_URL_PLC" PDS_ISSUER="$PDS_ISSUER" \
+            "$PDS_BINARY" serve --port "$SERVICE_PORT_PDS" \
+                --data-dir "$PDS_DATA_DIR" --log-level "$PDS_LOG_LEVEL" \
+                >> "$PDS_LOG" 2>&1 &
+            local pid=$!
+            echo "$pid" > "$PDS_PID_FILE"
+            log_info "PDS restarted (PID: $pid)"
+            wait_for_http "$SERVICE_URL_PDS/xrpc/com.atproto.server.describeServer" "PDS" 30
             ;;
         all)
-            "$SCRIPT_DIR/start-all-services.sh"
+            cmd_restart plc
+            sleep 2
+            cmd_restart pds
+            ;;
+        *)
+            log_error "Unknown service: $target"
+            return 1
             ;;
     esac
 }
