@@ -696,3 +696,27 @@
 **Evidence:** .deciduous/documents/2026-05-08-script-and-nix-hygiene-plan.md.2888c8ec
 **Connects to:** Repository Hygiene (Node #719)
 **Status:** pending
+
+---
+
+## Test Filtering Infrastructure
+> Node #1367 | Status: completed
+
+**Current state:** AllTests runner supports 9 CLI flags for filtering, execution control, and structured output. PDS_RUN_INTEGRATION_TESTS/PDS_RUN_SOCKET_TESTS env vars replaced by --gated flag.
+
+**Evolution:**
+1. AllTests runner only supported `-XCTest` exact-match filter — no glob patterns, categories, exclusion, listing, JSON, shuffle, or timeout
+2. **Decision:** Implement 8 new CLI flags, consolidate gated test class lists into PDSGatedClassMap, replace env vars with --gated flag
+3. **--filter/-f:** Glob pattern matching via NSPredicate LIKE (e.g. `--filter "Actor*"`)
+4. **--exclude/-e:** Glob pattern exclusion (e.g. `--exclude "*Integration*"`)
+5. **--category/-c:** Directory-based category filtering with filesystem scan + pattern-based fallback for classes in shared files (e.g. CIDTests in CorePrimitivesTests.m)
+6. **--list/-l:** Dry-run listing with `-v` for method-level detail
+7. **--gated=MODE:** `skip` (default), `run`, `include` — replaces PDS_RUN_INTEGRATION_TESTS/PDS_RUN_SOCKET_TESTS env vars
+8. **--json:** Structured JSON output with PDS logger suppression (stdout redirect during init)
+9. **--shuffle/--seed:** Fisher-Yates shuffle with seeded PRNG for reproducible random order
+10. **--timeout/-t:** Per-test timeout via dispatch_block_create watchdog on background queue; records timeout failures without killing the test
+11. 283 test classes mapped to 34 categories; backward compatible with -XCTest
+
+**Evidence:** Garazyk/Tests/test_main.m, CMakeLists.txt (run-tests.sh passes $@)
+**Connects to:** AllTests Runtime Reduction (Node #939)
+**Status:** completed
