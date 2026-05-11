@@ -1,0 +1,30 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: Garazyk
+Upstream-Contact: Jack Valinsky
+Source: https://github.com/jackvalinsky/garazyk
+
+# Default license for all original code
+Files: Garazyk/Sources/** Garazyk/Tests/** Garazyk/Binaries/**
+Copyright: 2025-2026 Jack Valinsky
+License: Unlicense OR CC0-1.0
+
+# Compat/ platform shims — original API-compatible reimplementations
+Files: Garazyk/Sources/Compat/**
+Copyright: 2025-2026 Jack Valinsky
+License: Unlicense OR CC0-1.0
+Comment: Original API-compatible reimplementations of Apple framework APIs. Not derived from Apple or GNUstep source code.
+
+# Vendored secp256k1 (MIT)
+Files: secp256k1/** vendor/secp256k1/**
+Copyright: 2013 Pieter Wuille
+License: MIT
+
+# Vendored did-method-plc reference (MIT OR Apache-2.0)
+Files: vendor/reference/did-method-plc/**
+Copyright: 2022-2025 Bluesky Social PBC
+License: MIT OR Apache-2.0
+
+# Vendored Allegedly (Apache-2.0)
+Files: vendor/reference/Allegedly/**
+Copyright: 2022-2025 Bluesky Social PBC
+License: Apache-2.0

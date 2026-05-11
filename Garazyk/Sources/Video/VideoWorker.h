@@ -1,7 +1,10 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
 #import "Video/VideoJobStore.h"
 #import "Video/VideoBlobUploader.h"
 #import "Video/VideoAuthProvider.h"
+#import "Video/VideoHLSGenerator.h"
 #import "Blob/PDSBlobProvider.h"
 
 NS_ASSUME_NONNULL_BEGIN
@@ -34,6 +37,7 @@ typedef NS_ENUM(NSInteger, ATProtoVideoJobState) {
 @property (nonatomic, strong, nullable) id<VideoBlobUploader> blobUploader;
 @property (nonatomic, strong, nullable) id<PDSBlobProvider> blobProvider;
 @property (nonatomic, strong, nullable) id<VideoAuthProvider> authProvider;
+@property (nonatomic, strong, nullable) ATProtoVideoHLSGenerator *hlsGenerator;
 
 - (void)start;
 - (void)stop;

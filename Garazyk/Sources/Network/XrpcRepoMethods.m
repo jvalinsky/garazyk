@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Network/XrpcRepoMethods.h"
 #import "Admin/PDSAdminController.h"
 #import "Network/XrpcHandler.h"
@@ -510,7 +512,7 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
             return;
         }
 
-        if (blobData.length > 50 * 1024 * 1024) {
+        if (blobData.length > 100 * 1024 * 1024) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"BlobTooLarge", @"message": @"Blob too large"}];
             return;

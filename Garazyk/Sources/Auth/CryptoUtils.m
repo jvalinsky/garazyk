@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2024-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
  @file CryptoUtils.m
 
@@ -7,7 +9,7 @@
  HMAC signing, SHA hashing, random byte generation, and hex encoding.
  These utilities are used throughout the authentication and security layers.
 
- @copyright Copyright (c) 2024 Jack Myers
+ @copyright Copyright (c) 2024-2026 Jack Valinsky
  */
 
 #import "Auth/CryptoUtils.h"

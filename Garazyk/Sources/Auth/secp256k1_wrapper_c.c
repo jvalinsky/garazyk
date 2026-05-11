@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 #include "secp256k1_wrapper_c.h"
 #include <secp256k1.h>
 #include <string.h>

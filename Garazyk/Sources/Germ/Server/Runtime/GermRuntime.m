@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "GermRuntime.h"
 #import "Germ/Server/Config/GermMailboxSchemaManager.h"
 #import "Germ/Server/Services/GermMailboxService.h"

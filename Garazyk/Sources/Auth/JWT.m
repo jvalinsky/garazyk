@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2024-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
  @file JWT.m
 
@@ -7,7 +9,7 @@
  encoding, verification, and minting. It includes JWTHeader, JWTPayload, JWT,
  JWTVerifier, and JWTMinter classes.
 
- @copyright Copyright (c) 2024 Jack Myers
+ @copyright Copyright (c) 2024-2026 Jack Valinsky
  */
 
 #import "Auth/JWT.h"

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2024-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
  @file Session.m
 
@@ -7,7 +9,7 @@
  minting, validation, storage, and refresh. Sessions are created with both
  access tokens (short-lived) and refresh tokens (long-lived).
 
- @copyright Copyright (c) 2024 Jack Myers
+ @copyright Copyright (c) 2024-2026 Jack Valinsky
  */
 
 #import "Auth/Session.h"

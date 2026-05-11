@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Services/Core/PDSPhoneVerificationProvider.h"
 #import "PhoneVerification/PDSTwilioPhoneVerificationProvider.h"
 #import "PhoneVerification/PDSVonagePhoneVerificationProvider.h"

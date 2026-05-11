@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN
@@ -15,6 +17,11 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) NSUInteger maxUploadBytes;
 @property (nonatomic, assign) NSUInteger maxOutputBytes;
 @property (nonatomic, assign) NSInteger maxDurationSeconds;
+
+// HLS configuration
+@property (nonatomic, copy, nullable) NSString *hlsOutputDirectory;
+@property (nonatomic, copy, nullable) NSString *hlsBaseUrl;
+@property (nonatomic, assign) BOOL hlsInclude1080p;
 
 // S3 configuration
 @property (nonatomic, copy, nullable) NSString *s3Bucket;

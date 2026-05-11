@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "AppView/Server/Admin/AppViewAdminRoutePack.h"
 #import "AppView/Server/Backfill/AppViewBackfillOrchestrator.h"
 #import "AppView/Server/Ingest/AppViewIngestEngine.h"

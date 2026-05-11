@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Video/JelczConfiguration.h"
 
 @implementation JelczConfiguration
@@ -18,6 +20,11 @@
     config.maxUploadBytes = env[@"JELCZ_MAX_UPLOAD_BYTES"] ? [env[@"JELCZ_MAX_UPLOAD_BYTES"] integerValue] : 100 * 1024 * 1024;
     config.maxOutputBytes = env[@"JELCZ_MAX_OUTPUT_BYTES"] ? [env[@"JELCZ_MAX_OUTPUT_BYTES"] integerValue] : 50 * 1024 * 1024;
     config.maxDurationSeconds = env[@"JELCZ_MAX_DURATION"] ? [env[@"JELCZ_MAX_DURATION"] integerValue] : 180;
+
+    // HLS configuration
+    config.hlsOutputDirectory = env[@"JELCZ_HLS_DIR"];
+    config.hlsBaseUrl = env[@"JELCZ_HLS_BASE_URL"];
+    config.hlsInclude1080p = env[@"JELCZ_HLS_1080P"] ? [env[@"JELCZ_HLS_1080P"] boolValue] : NO;
 
     config.s3Bucket = env[@"JELCZ_S3_BUCKET"];
     config.s3Region = env[@"JELCZ_S3_REGION"] ?: @"us-east-1";

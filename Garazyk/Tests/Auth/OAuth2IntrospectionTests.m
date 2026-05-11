@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 //
 // OAuth2IntrospectionTests.m
 // Test suite for OAuth 2.0 token introspection endpoint (RFC 7662)

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
 #import "Admin/Diagnostics/BlobAudit/PDSBlobAuditManager.h"
 #import "Admin/Diagnostics/BlobAudit/PDSBlobOrphanScanOperation.h"

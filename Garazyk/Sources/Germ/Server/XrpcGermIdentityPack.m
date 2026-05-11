@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "XrpcGermIdentityPack.h"
 #import "Germ/Server/Identity/GermIdentityService.h"
 #import "Chat/Server/ChatAuthManager.h"

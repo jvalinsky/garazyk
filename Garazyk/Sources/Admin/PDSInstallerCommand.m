@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "CLI/PDSCLIDefinitions.h"
 #import "Admin/PDSInstallerCommand.h"
 #import "Debug/PDSLogger.h"

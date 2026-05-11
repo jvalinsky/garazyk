@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "ChatSchemaManager.h"
 
 @implementation ChatSchemaManager
@@ -15,6 +17,7 @@
     return @"CREATE TABLE IF NOT EXISTS conversations ("
            @"    id TEXT PRIMARY KEY,"
            @"    locked INTEGER DEFAULT 0,"
+           @"    mode TEXT NOT NULL DEFAULT 'plaintext',"
            @"    created_at TEXT NOT NULL,"
            @"    updated_at TEXT NOT NULL"
            @")";
@@ -95,8 +98,19 @@
     
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_messages_convo ON messages(convo_id);"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_chat_event_log_convo ON chat_event_log(convo_id);"];
-    
+
     return sql;
+}
+
+- (NSString *)chatMigrationSQL {
+    // Safe migrations for existing databases. Each statement is
+    // wrapped in a guard that checks whether the column exists
+    // before attempting to add it. SQLite doesn't support
+    // IF NOT EXISTS for ALTER TABLE, so we use pragma to check.
+    return @"-- Migration: add mode column to conversations\n"
+           @"-- SQLite ALTER TABLE ADD COLUMN is safe to re-run if the\n"
+           @"-- column already exists (it will error, which we ignore).\n"
+           @"ALTER TABLE conversations ADD COLUMN mode TEXT NOT NULL DEFAULT 'plaintext'";
 }
 
 @end

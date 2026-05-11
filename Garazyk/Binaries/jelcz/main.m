@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
  @file main.m
 
@@ -27,6 +29,7 @@
 #import "Video/VideoJWTAuthProvider.h"
 #import "Video/VideoTranscoder.h"
 #import "Video/VideoThumbnailGenerator.h"
+#import "Video/VideoHLSGenerator.h"
 #import "Blob/PDSDiskBlobProvider.h"
 #import "Blob/PDSCloudStorageBlobProvider.h"
 #import "Network/HttpServer.h"
@@ -139,6 +142,9 @@ void print_usage(void) {
     printf("  --s3-bucket <name>    S3 bucket for blob storage\n");
     printf("  --s3-region <region>  S3 region (default: us-east-1)\n");
     printf("  --s3-endpoint <url>   S3-compatible endpoint URL\n");
+    printf("  --hls-dir <path>      HLS output directory\n");
+    printf("  --hls-base-url <url>  Base URL for HLS playlist URLs\n");
+    printf("  --hls-1080p           Include 1080p HLS variant\n");
     printf("  -v, --verbose         Enable debug logging\n");
     printf("  -h, --help            Show this help\n\n");
     printf("Environment variables:\n");
@@ -149,6 +155,9 @@ void print_usage(void) {
     printf("  JELCZ_DID             Service DID\n");
     printf("  JELCZ_S3_BUCKET       S3 bucket name\n");
     printf("  JELCZ_MAX_CONCURRENT_JOBS  Max parallel jobs (default: 2)\n");
+    printf("  JELCZ_HLS_DIR              HLS output directory\n");
+    printf("  JELCZ_HLS_BASE_URL         Base URL for HLS playlist URLs\n");
+    printf("  JELCZ_HLS_1080P            Include 1080p HLS variant (default: false)\n");
 }
 
 int run_serve(int argc, const char *argv[]) {
@@ -177,6 +186,12 @@ int run_serve(int argc, const char *argv[]) {
             config.s3Region = [NSString stringWithUTF8String:argv[++i]];
         } else if ([arg isEqualToString:@"--s3-endpoint"] && i + 1 < argc) {
             config.s3Endpoint = [NSString stringWithUTF8String:argv[++i]];
+        } else if ([arg isEqualToString:@"--hls-dir"] && i + 1 < argc) {
+            config.hlsOutputDirectory = [NSString stringWithUTF8String:argv[++i]];
+        } else if ([arg isEqualToString:@"--hls-base-url"] && i + 1 < argc) {
+            config.hlsBaseUrl = [NSString stringWithUTF8String:argv[++i]];
+        } else if ([arg isEqualToString:@"--hls-1080p"]) {
+            config.hlsInclude1080p = YES;
         } else if ([arg isEqualToString:@"-v"] || [arg isEqualToString:@"--verbose"]) {
             // Enable debug logging
         }
@@ -222,6 +237,25 @@ int run_serve(int argc, const char *argv[]) {
                                                                                        pdsURL:config.pdsURL
                                                                                        plcURL:config.plcURL];
 
+    // Initialize HLS generator
+    ATProtoVideoHLSGenerator *hlsGenerator = [ATProtoVideoHLSGenerator sharedGenerator];
+    if (config.hlsOutputDirectory) {
+        hlsGenerator.outputBaseDirectory = config.hlsOutputDirectory;
+    } else {
+        // Default: store HLS files alongside the data directory
+        hlsGenerator.outputBaseDirectory = [config.dataDirectory stringByAppendingPathComponent:@"hls"];
+    }
+    hlsGenerator.include1080p = config.hlsInclude1080p;
+
+    NSString *hlsBaseUrl = config.hlsBaseUrl;
+    if (!hlsBaseUrl) {
+        // Default: serve HLS from this Jelcz instance
+        hlsBaseUrl = [NSString stringWithFormat:@"http://localhost:%lu", (unsigned long)config.port];
+    }
+
+    PDS_LOG_INFO(@"  HLS output: %@", hlsGenerator.outputBaseDirectory);
+    PDS_LOG_INFO(@"  HLS base URL: %@", hlsBaseUrl);
+
     // Initialize video worker
     gWorker = [ATProtoVideoWorker sharedWorker];
     gWorker.jobStore = database;
@@ -231,6 +265,7 @@ int run_serve(int argc, const char *argv[]) {
     gWorker.maxConcurrentJobs = config.maxConcurrentJobs;
     gWorker.pollInterval = config.pollInterval;
     [gWorker setBlobProvider:blobProvider];
+    gWorker.hlsGenerator = hlsGenerator;
     [gWorker start];
 
     // Initialize HTTP server
@@ -258,6 +293,66 @@ int run_serve(int argc, const char *argv[]) {
         response.statusCode = 200;
         response.contentType = @"application/json";
         [response setJsonBody:@{@"status": @"ok"}];
+    }];
+
+    // HLS serving routes — serve generated HLS segments and playlists
+    // Master playlist: /watch/{did}/{cid}/playlist.m3u8
+    [gServer addRoute:@"GET" path:@"/watch" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *path = request.path ?: @"";
+        // Expect /watch/{did}/{cid}/... or /watch/{did}/{cid}/playlist.m3u8
+        NSArray<NSString *> *parts = [path componentsSeparatedByString:@"/"];
+        // parts: ["", "watch", did, cid, ...]
+        if (parts.count < 5) {
+            response.statusCode = 404;
+            [response setJsonBody:@{@"error": @"NotFound", @"message": @"Invalid HLS path"}];
+            return;
+        }
+
+        NSString *did = parts[2];
+        NSString *cid = parts[3];
+        NSString *remainder = [path substringFromIndex:[NSString stringWithFormat:@"/watch/%@/%@/", did, cid].length];
+
+        NSString *filePath = nil;
+        NSString *contentType = @"application/octet-stream";
+
+        if ([remainder isEqualToString:@"playlist.m3u8"]) {
+            // Master playlist
+            filePath = [hlsGenerator masterPlaylistPathForDID:did cid:cid];
+            contentType = @"application/vnd.apple.mpegurl";
+        } else if ([remainder hasSuffix:@"/video.m3u8"] || [remainder hasSuffix:@".m3u8"]) {
+            // Variant playlist
+            NSString *safeDid = [did stringByReplacingOccurrencesOfString:@":" withString:@"_"];
+            NSString *safeCid = [cid stringByReplacingOccurrencesOfString:@":" withString:@"_"];
+            filePath = [[hlsGenerator hlsDirectoryForDID:did cid:cid] stringByAppendingPathComponent:remainder];
+            contentType = @"application/vnd.apple.mpegurl";
+        } else if ([remainder hasSuffix:@".ts"]) {
+            // Segment file
+            filePath = [[hlsGenerator hlsDirectoryForDID:did cid:cid] stringByAppendingPathComponent:remainder];
+            contentType = @"video/mp2t";
+        } else if ([remainder isEqualToString:@"thumbnail.jpg"]) {
+            // Thumbnail
+            filePath = [hlsGenerator thumbnailPathForDID:did cid:cid];
+            contentType = @"image/jpeg";
+        }
+
+        if (!filePath) {
+            response.statusCode = 404;
+            [response setJsonBody:@{@"error": @"NotFound", @"message": @"HLS file not found"}];
+            return;
+        }
+
+        NSData *fileData = [NSData dataWithContentsOfFile:filePath];
+        if (!fileData) {
+            response.statusCode = 404;
+            [response setJsonBody:@{@"error": @"NotFound", @"message": @"HLS file not found on disk"}];
+            return;
+        }
+
+        response.statusCode = 200;
+        response.contentType = contentType;
+        // Cache HLS files for 1 hour (they're immutable once generated)
+        [response setHeader:@"public, max-age=3600" forKey:@"Cache-Control"];
+        response.body = fileData;
     }];
 
     // Admin auth helper

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
  @file Phase2SecurityIntegrationTests.m
  @brief Tests for Phase 2 security integration: PDSSafeHTTPClient, PDSLogRedactor,
