@@ -21,6 +21,7 @@
 #import "Network/XrpcMethodRegistry.h"
 #import "Repository/CAR.h"
 #import "Repository/MST.h"
+#import "Repository/STAR.h"
 #import "Blob/BlobStorage.h"
 
 static NSString *trimmedNonEmptyString(NSString *value);
@@ -171,6 +172,37 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
       return;
     }
 
+    PDSRepoFormat format = PDSRepoFormatFromAcceptHeader([request headerForKey:@"Accept"]);
+
+    if (format == PDSRepoFormatSTARL0 || format == PDSRepoFormatSTARLite) {
+      // STAR format requested
+      NSError *exportError = nil;
+      PDSRepoChunkProducer producer = nil;
+      if (format == PDSRepoFormatSTARL0) {
+        producer = [repositoryService repoContentsSTARL0ChunkProducer:did
+                                                                since:sinceRev
+                                                                error:&exportError];
+      } else {
+        producer = [repositoryService repoContentsSTARLiteChunkProducer:did
+                                                                  since:sinceRev
+                                                                  error:&exportError];
+      }
+      if (!producer) {
+        response.statusCode = HttpStatusNotFound;
+        [response setJsonBody:@{
+          @"error" : @"RepoNotFound",
+          @"message" : exportError.localizedDescription ?: @"Repository not found"
+        }];
+        return;
+      }
+
+      response.statusCode = HttpStatusOK;
+      response.contentType = ContentTypeForPDSRepoFormat(format);
+      [response setBodyChunkProducer:producer chunkedTransferEncoding:YES];
+      return;
+    }
+
+    // Default: CAR format
     NSError *exportError = nil;
     PDSRepoChunkProducer producer =
         [repositoryService repoContentsChunkProducer:did
@@ -203,6 +235,33 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
       return;
     }
 
+    PDSRepoFormat format = PDSRepoFormatFromAcceptHeader([request headerForKey:@"Accept"]);
+
+    if (format == PDSRepoFormatSTARL0 || format == PDSRepoFormatSTARLite) {
+      // STAR format requested
+      NSError *error = nil;
+      NSData *repoData = nil;
+      if (format == PDSRepoFormatSTARL0) {
+        repoData = [repositoryService getRepoContentsSTARL0:did since:nil error:&error];
+      } else {
+        repoData = [repositoryService getRepoContentsSTARLite:did since:nil error:&error];
+      }
+      if (!repoData || error) {
+        response.statusCode = HttpStatusNotFound;
+        [response setJsonBody:@{
+          @"error" : @"RepoNotFound",
+          @"message" : error.localizedDescription ?: @"Repository not found"
+        }];
+        return;
+      }
+
+      response.statusCode = HttpStatusOK;
+      response.contentType = ContentTypeForPDSRepoFormat(format);
+      [response setBodyData:repoData];
+      return;
+    }
+
+    // Default: CAR format
     NSError *error = nil;
     NSData *repoData =
         [repositoryService getRepoContents:did since:nil error:&error];
