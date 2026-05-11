@@ -82,11 +82,11 @@ def create_account_or_login(
     has not been removed.
     """
     try:
-        return client.create_account(handle, email, password)
+        return client.accounts.create_account(handle, email, password)
     except XrpcError:
         # Account might already exist -- try login
         pass
-    return client.create_session(handle, password)
+    return client.accounts.create_session(handle, password)
 
 
 # ── Record creation with idempotency ───────────────────────────────────────
