@@ -59,7 +59,13 @@ export class TransportLayer {
     const url = new URL(`/xrpc/${method}`, this._base_url);
     if (params) {
       for (const [k, v] of Object.entries(params)) {
-        if (v !== undefined && v !== null) url.searchParams.append(k, String(v));
+        if (v !== undefined && v !== null) {
+          if (Array.isArray(v)) {
+            v.forEach(item => url.searchParams.append(k, String(item)));
+          } else {
+            url.searchParams.append(k, String(v));
+          }
+        }
       }
     }
     const headers: Record<string, string> = {};
