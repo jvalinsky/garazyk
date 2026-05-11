@@ -87,6 +87,53 @@ Includes PDS, Admin UI, and supporting services. See [Docs Site Deployment Guide
 3. Update `docs/` for any contributor-facing behavior change.
 4. Keep internal markdown links valid across the repository.
 
+## Licensing
+
+Original code in this repository is released to the public domain under the
+**Unlicense OR CC0-1.0** dual dedication. Per-file SPDX headers are
+authoritative. Full license texts are in `UNLICENSE` and `LICENSES/`.
+
+### Original code (`Garazyk/Sources/`, `Garazyk/Tests/`, `Garazyk/Binaries/`)
+
+Licensed under `Unlicense OR CC0-1.0` — your choice. Each file carries:
+
+```
+SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+SPDX-License-Identifier: Unlicense OR CC0-1.0
+```
+
+### Compat/ platform shims (`Garazyk/Sources/Compat/`)
+
+These files are **original** API-compatible reimplementations of Apple
+framework APIs (CommonCrypto, Security, CoreFoundation, LocalAuthentication,
+os/log, XCTest). They are not derived from Apple or GNUstep source code — they
+merely provide the same API surface, backed by OpenSSL, SQLite, and other
+open-source libraries on Linux. They are released under the same
+`Unlicense OR CC0-1.0` terms as the rest of the project.
+
+**Note**: On Linux, the runtime links against GNUstepBase (LGPL-2.1+). This is
+a library dependency, not a code provenance issue — the Compat/ shims are
+original work that calls into GNUstepBase, not derived from it.
+
+### Vendored third-party code
+
+| Path | License | Copyright |
+|---|---|---|
+| `secp256k1/` | MIT | Pieter Wuille |
+| `vendor/secp256k1/` | MIT | Pieter Wuille |
+| `vendor/reference/did-method-plc/` | MIT OR Apache-2.0 | Bluesky Social PBC |
+| `vendor/reference/Allegedly/` | Apache-2.0 | Bluesky Social PBC |
+
+These directories retain their original licenses and are **not** covered by
+the Unlicense/CC0 dedication. See their respective `LICENSE`/`COPYING` files.
+
+### Attribution
+
+- `Garazyk/Sources/Repository/MSTWalker.h/.m` — based on the
+  [atproto MST walker](https://github.com/bluesky-social/atproto/blob/main/packages/repo/src/mst/walker.ts)
+  (MIT OR Apache-2.0, Bluesky Social PBC). The Objective-C implementation is
+  original; the algorithm and data structures follow the reference.
+
 ## Agent Tools
 
 AI assistants use `deciduous` decision tracking. See [AGENTS.md](AGENTS.md) for operational guidance and [AGENTS_QUICKREF.md](AGENTS_QUICKREF.md) for build commands.

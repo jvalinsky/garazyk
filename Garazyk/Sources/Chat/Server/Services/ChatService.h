@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
 
 @protocol PDSQueryDatabase;
@@ -12,6 +14,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 // Conversation management
 - (nullable NSDictionary *)createConversationWithMembers:(NSArray<NSString *> *)memberDids
+                                                  error:(NSError **)error;
+
+- (nullable NSDictionary *)createConversationWithMembers:(NSArray<NSString *> *)memberDids
+                                                    mode:(NSString *)mode
                                                   error:(NSError **)error;
 
 - (nullable NSDictionary *)getConversationForMembers:(NSArray<NSString *> *)memberDids
@@ -87,6 +93,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (BOOL)unlockConversation:(NSString *)convoId
                      error:(NSError **)error;
+
+// Conversation mode (plaintext|e2ee)
+- (BOOL)setConversationMode:(NSString *)convoId
+                       mode:(NSString *)mode
+                      error:(NSError **)error;
 
 // Batch operations
 - (nullable NSArray<NSDictionary *> *)sendMessageBatch:(NSString *)convoId

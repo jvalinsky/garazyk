@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 // MigrationTests.m
 // Basic tests for PDSMigrationManager without XCTest framework
 // Run with: build/tests/migration_tests

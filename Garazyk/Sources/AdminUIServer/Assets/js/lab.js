@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 /**
  * AT Protocol OAuth2 Browser Client for Garazyk Lab
  * Handles PKCE, DPoP, PAR, and user account operations

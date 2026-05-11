@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2024-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
  @file HttpServer.m
 
@@ -7,7 +9,7 @@
  requests, routes them to handlers, and sends responses. It supports
  route registration, keep-alive connections, and request parsing.
 
- @copyright Copyright (c) 2024 Jack Myers
+ @copyright Copyright (c) 2024-2026 Jack Valinsky
  */
 
 #import "Network/HttpServer.h"

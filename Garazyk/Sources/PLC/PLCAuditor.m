@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "PLC/PLCAuditor.h"
 #import "PLC/PLCDIDKey.h"
 #import "Auth/Secp256k1.h"
