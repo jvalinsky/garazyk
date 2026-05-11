@@ -115,6 +115,58 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
             response.statusCode = HttpStatusOK;
             [response setJsonBody:@{@"did": resolvedDid}];
         } else {
+            // PLC fallback: when DNS/HTTPS resolution fails (e.g. .test
+            // handles in local environments), query the PLC directory for
+            // a DID whose alsoKnownAs contains this handle.
+            NSString *plcUrl = configuration.plcURL;
+            if (!XrpcIdentityUsesMockPLC(configuration)) {
+                DIDPLCResolver *plcResolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
+                plcResolver.timeout = 5.0;
+
+                // Fetch the list of all DIDs from the PLC directory
+                NSURL *listURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@/_list", plcUrl]];
+                NSURLRequest *listReq = [NSURLRequest requestWithURL:listURL
+                                                         cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
+                                                     timeoutInterval:5.0];
+                __block NSData *listData = nil;
+                __block NSError *listError = nil;
+                dispatch_semaphore_t listSem = dispatch_semaphore_create(0);
+                [[[NSURLSession sharedSession] dataTaskWithRequest:listReq
+                                                completionHandler:^(NSData *data, NSURLResponse *resp, NSError *err) {
+                    listData = data;
+                    listError = err;
+                    dispatch_semaphore_signal(listSem);
+                }] resume];
+                dispatch_semaphore_wait(listSem, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
+
+                if (listData && !listError) {
+                    NSArray *didsList = [NSJSONSerialization JSONObjectWithData:listData options:0 error:nil];
+                    if ([didsList isKindOfClass:[NSArray class]]) {
+                        NSString *normalizedTarget = [normalizedHandle lowercaseString];
+                        for (NSString *candidateDid in didsList) {
+                            if (![candidateDid isKindOfClass:[NSString class]]) continue;
+                            NSError *docError = nil;
+                            NSDictionary *doc = [plcResolver resolveDID:candidateDid error:&docError];
+                            if (!doc) continue;
+                            NSArray *alsoKnownAs = doc[@"alsoKnownAs"];
+                            if (![alsoKnownAs isKindOfClass:[NSArray class]]) continue;
+                            for (NSString *aka in alsoKnownAs) {
+                                if (![aka isKindOfClass:[NSString class]]) continue;
+                                NSString *normalizedAka = aka;
+                                if ([normalizedAka hasPrefix:@"at://"]) {
+                                    normalizedAka = [normalizedAka substringFromIndex:5];
+                                }
+                                if ([[normalizedAka lowercaseString] isEqualToString:normalizedTarget]) {
+                                    response.statusCode = HttpStatusOK;
+                                    [response setJsonBody:@{@"did": candidateDid}];
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             response.statusCode = HttpStatusNotFound;
             [response setJsonBody:@{@"error": @"NotFound", @"message": @"Handle not found"}];
         }
