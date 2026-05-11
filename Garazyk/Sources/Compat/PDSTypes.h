@@ -83,6 +83,32 @@
  */
 #define PDS_GCD_STRONG PDS_DISPATCH_QUEUE_STRONG
 
+/**
+ * @def PDS_GCD_BRIDGE_ID
+ * @brief Casts a GCD object to 'id'.
+ *
+ * Apple: Simple cast (it's already an object).
+ * Linux: __bridge cast (to satisfy ARC for C-struct pointers).
+ */
+#if PDS_GCD_OBJC_SUPPORT
+#define PDS_GCD_BRIDGE_ID(x) ((id)(x))
+#else
+#define PDS_GCD_BRIDGE_ID(x) ((__bridge id)(x))
+#endif
+
+/**
+ * @def PDS_GCD_CAST
+ * @brief Casts from 'id' to a GCD type.
+ *
+ * Apple: Simple cast.
+ * Linux: __bridge cast.
+ */
+#if PDS_GCD_OBJC_SUPPORT
+#define PDS_GCD_CAST(type, x) ((type)(x))
+#else
+#define PDS_GCD_CAST(type, x) ((__bridge type)(x))
+#endif
+
 #ifdef DEPRECATED_MSG_ATTRIBUTE
 #undef DEPRECATED_MSG_ATTRIBUTE
 #endif
