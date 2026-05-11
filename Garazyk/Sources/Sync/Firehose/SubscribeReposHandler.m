@@ -735,8 +735,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   dispatch_sync(_connectionsQueue, ^{
     snapshot = [_attachedConnections allObjects];
   });
-  PDS_LOG_SYNC_DEBUG(@"Broadcasting event to %lu subscribers",
-                     (unsigned long)snapshot.count);
+  PDS_LOG_SYNC_DEBUG(@"Broadcasting event to %lu subscribers (data=%lu bytes)",
+                     (unsigned long)snapshot.count, (unsigned long)eventData.length);
   if (snapshot.count == 0) {
     return;
   }
@@ -745,9 +745,21 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   // non-blocking (drops slow consumers), so the loop won't stall.
   dispatch_async(self.broadcastFanoutQueue, ^{
     for (WebSocketConnection *connection in snapshot) {
+      NSUInteger pCount = connection.pendingSendCount;
+      NSUInteger pBytes = connection.pendingSendBytes;
+      if (pCount > 10 || pBytes > 100000) {
+        PDS_LOG_SYNC_WARN(@"[Firehose] Subscriber %@ has high backpressure: "
+                           "pendingSends=%lu pendingBytes=%lu",
+                           connection.remoteAddress,
+                           (unsigned long)pCount, (unsigned long)pBytes);
+      }
       if (![self sendEventData:eventData
             toConnectionWithBackpressureCheck:connection]) {
-        PDS_LOG_SYNC_WARN(@"Dropping slow consumer during live broadcast");
+        PDS_LOG_SYNC_WARN(@"Dropping slow consumer %@ during live broadcast "
+                           "(pendingSends=%lu, pendingBytes=%lu)",
+                           connection.remoteAddress,
+                           (unsigned long)connection.pendingSendCount,
+                           (unsigned long)connection.pendingSendBytes);
       }
     }
   });
@@ -860,65 +872,109 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     dispatch_semaphore_wait(_backfillSemaphore, DISPATCH_TIME_FOREVER);
 
     @try {
-        if (!self.serviceDatabases) {
-            PDS_LOG_SYNC_WARN(@"Cannot replay events: no service databases");
+        // Try service databases first (PDS mode)
+        if (self.serviceDatabases) {
+            NSUInteger limit = self.maxReplayEventsPerConnection;
+            if (limit == 0) {
+                limit = 1000;
+            }
+
+            NSError *error = nil;
+            NSArray<NSDictionary *> *events =
+                [self.serviceDatabases getEventsSince:(int64_t)cursor
+                                                limit:(NSInteger)limit
+                                                error:&error];
+            if (error) {
+                PDS_LOG_SYNC_ERROR(@"Failed to read events for replay: %@", error);
+                return;
+            }
+
+            PDS_LOG_SYNC_INFO(@"Replaying %lu events after cursor %lu for connection %@",
+                              (unsigned long)events.count, (unsigned long)cursor, connection.remoteAddress);
+
+            for (NSDictionary *eventDict in events) {
+                int64_t dbSeq = [eventDict[@"seq"] longLongValue];
+                NSData *eventData = eventDict[@"data"];
+                if (![eventData isKindOfClass:[NSData class]]) {
+                    eventData = eventDict[@"event_data"];
+                }
+                if (![eventData isKindOfClass:[NSData class]] || eventData.length == 0) {
+                    PDS_LOG_SYNC_WARN(@"Skipping replay event %lld: missing event data", (long long)dbSeq);
+                    continue;
+                }
+
+                NSInteger op = 0;
+                NSString *msgType = nil;
+                NSError *decodeError = nil;
+                NSDictionary *payload = [self.session.eventFormatter
+                    decodeEventFromData:eventData op:&op msgType:&msgType error:&decodeError];
+
+                if (payload && msgType && ![msgType isEqualToString:@"#info"] &&
+                    payload[@"seq"] && [payload[@"seq"] longLongValue] != dbSeq) {
+                    NSMutableDictionary *patchedPayload = [payload mutableCopy];
+                    patchedPayload[@"seq"] = @(dbSeq);
+                    NSData *patchedData = [self.session.eventFormatter
+                        encodeStreamEventWithType:msgType payload:patchedPayload error:nil];
+                    if (patchedData) {
+                        eventData = patchedData;
+                        PDS_LOG_SYNC_DEBUG(@"Patched stale seq %lld -> %lld in replayed %@ event",
+                                           [payload[@"seq"] longLongValue], (long long)dbSeq, msgType);
+                    }
+                }
+
+                [connection sendMessage:eventData];
+            }
+            PDS_LOG_SYNC_INFO(@"Backfill complete for connection %@", connection.remoteAddress);
             return;
         }
 
-        NSUInteger limit = self.maxReplayEventsPerConnection;
-        if (limit == 0) {
-            limit = 1000;
-        }
-
-        NSError *error = nil;
-        NSArray<NSDictionary *> *events =
-            [self.serviceDatabases getEventsSince:(int64_t)cursor
-                                            limit:(NSInteger)limit
-                                            error:&error];
-        if (error) {
-            PDS_LOG_SYNC_ERROR(@"Failed to read events for replay: %@", error);
-            return;
-        }
-
-        PDS_LOG_SYNC_INFO(@"Replaying %lu events after cursor %lu for connection %@",
-                          (unsigned long)events.count, (unsigned long)cursor, connection.remoteAddress);
-
-        for (NSDictionary *eventDict in events) {
-            int64_t dbSeq = [eventDict[@"seq"] longLongValue];
-            NSData *eventData = eventDict[@"data"];
-            if (![eventData isKindOfClass:[NSData class]]) {
-                eventData = eventDict[@"event_data"];
-            }
-            if (![eventData isKindOfClass:[NSData class]] || eventData.length == 0) {
-                PDS_LOG_SYNC_WARN(@"Skipping replay event %lld: missing event data", (long long)dbSeq);
-                continue;
+        // Fallback: use in-memory event buffer (Relay mode)
+        if (self.eventBuffer) {
+            NSUInteger limit = self.maxReplayEventsPerConnection;
+            if (limit == 0) {
+                limit = 1000;
             }
 
-            NSInteger op = 0;
-            NSString *msgType = nil;
-            NSError *decodeError = nil;
-            NSDictionary *payload = [self.session.eventFormatter
-                decodeEventFromData:eventData op:&op msgType:&msgType error:&decodeError];
+            NSArray *bufferedEvents = [self.eventBuffer eventsAfterCursor:(int64_t)cursor count:limit];
+            if (!bufferedEvents || bufferedEvents.count == 0) {
+                PDS_LOG_SYNC_INFO(@"No buffered events to replay after cursor %lu for %@",
+                                  (unsigned long)cursor, connection.remoteAddress);
+                return;
+            }
 
-            if (payload && msgType && ![msgType isEqualToString:@"#info"] &&
-                payload[@"seq"] && [payload[@"seq"] longLongValue] != dbSeq) {
-                NSMutableDictionary *patchedPayload = [payload mutableCopy];
-                patchedPayload[@"seq"] = @(dbSeq);
-                NSData *patchedData = [self.session.eventFormatter
-                    encodeStreamEventWithType:msgType payload:patchedPayload error:nil];
-                if (patchedData) {
-                    eventData = patchedData;
-                    PDS_LOG_SYNC_DEBUG(@"Patched stale seq %lld -> %lld in replayed %@ event",
-                                       [payload[@"seq"] longLongValue], (long long)dbSeq, msgType);
+            PDS_LOG_SYNC_INFO(@"Replaying %lu buffered events after cursor %lu for connection %@",
+                              (unsigned long)bufferedEvents.count, (unsigned long)cursor,
+                              connection.remoteAddress);
+
+            for (id event in bufferedEvents) {
+                NSData *eventData = [self _encodeBufferedEvent:event];
+                if (eventData) {
+                    [connection sendMessage:eventData];
                 }
             }
-
-            [connection sendMessage:eventData];
+            PDS_LOG_SYNC_INFO(@"Buffer replay complete for connection %@", connection.remoteAddress);
+            return;
         }
-        PDS_LOG_SYNC_INFO(@"Backfill complete for connection %@", connection.remoteAddress);
+
+        PDS_LOG_SYNC_WARN(@"Cannot replay events: no service databases or event buffer");
     } @finally {
         dispatch_semaphore_signal(_backfillSemaphore);
     }
+}
+
+- (nullable NSData *)_encodeBufferedEvent:(id)event {
+    if ([event isKindOfClass:[FirehoseCommitEvent class]]) {
+        return [self.session encodeCommitEvent:(FirehoseCommitEvent *)event];
+    } else if ([event isKindOfClass:[FirehoseIdentityEvent class]]) {
+        return [self.session encodeIdentityEvent:(FirehoseIdentityEvent *)event];
+    } else if ([event isKindOfClass:[FirehoseAccountEvent class]]) {
+        return [self.session encodeAccountEvent:(FirehoseAccountEvent *)event];
+    } else if ([event isKindOfClass:[NSDictionary class]]) {
+        // Legacy raw dictionary event — encode as JSON
+        return [NSJSONSerialization dataWithJSONObject:(NSDictionary *)event options:0 error:nil];
+    }
+    PDS_LOG_SYNC_WARN(@"Skipping unknown event type in buffer replay: %@", NSStringFromClass([event class]));
+    return nil;
 }
 
 - (void)sendInfoEvent:(NSString *)kind
@@ -1033,6 +1089,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     }
   });
   if (removed) {
+    PDS_LOG_SYNC_INFO(@"[Firehose] Detached subscriber %@ (remaining=%lu)",
+                       connection.remoteAddress, (unsigned long)count);
     [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)count];
     [self.relayMetrics recordDownstreamDisconnected];
     if ([self.delegate respondsToSelector:@selector(subscribeReposHandler:didCloseConnection:)]) {
@@ -1047,8 +1105,17 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     return NO;
   }
 
-  if (connection.pendingSendCount >= self.maxPendingSendsPerConnection ||
-      connection.pendingSendBytes >= self.maxPendingBytesPerConnection) {
+  NSUInteger pendingCount = connection.pendingSendCount;
+  NSUInteger pendingBytes = connection.pendingSendBytes;
+  if (pendingCount >= self.maxPendingSendsPerConnection ||
+      pendingBytes >= self.maxPendingBytesPerConnection) {
+    PDS_LOG_SYNC_WARN(@"[Firehose] Dropping slow consumer %@: pendingSends=%lu/%lu "
+                       "pendingBytes=%lu/%lu",
+                       connection.remoteAddress,
+                       (unsigned long)pendingCount,
+                       (unsigned long)self.maxPendingSendsPerConnection,
+                       (unsigned long)pendingBytes,
+                       (unsigned long)self.maxPendingBytesPerConnection);
     [self
         sendErrorFrameWithCode:kSubscribeReposErrorConsumerTooSlow
                        message:@"connection output queue exceeded server limit"

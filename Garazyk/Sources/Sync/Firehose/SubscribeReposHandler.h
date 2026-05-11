@@ -14,6 +14,7 @@
 #import "Compat/PDSTypes.h"
 
 #import "Sync/Firehose/Firehose.h"
+#import "Sync/Relay/RelayEventBuffer.h"
 
 @class WebSocketServer;
 @class WebSocketConnection;
@@ -77,6 +78,9 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 
 /*! Relay metrics sink. Set when running inside the Relay (`zuk`); nil for plain PDS. */
 @property (nonatomic, strong, nullable) RelayMetrics *relayMetrics;
+
+/*! In-memory event buffer for relay-mode replay when serviceDatabases is nil. */
+@property (nonatomic, strong, nullable) RelayEventBuffer *eventBuffer;
 
 
 - (instancetype)initWithServiceDatabases:(nullable PDSServiceDatabases *)serviceDatabases;
