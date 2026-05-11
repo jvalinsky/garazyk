@@ -52,6 +52,7 @@ SERVICE_PORTS: dict[str, int] = {
     "appview": int(os.environ.get("APPVIEW_PORT", "3200")),
     "chat": int(os.environ.get("CHAT_PORT", "2585")),
     "video": int(os.environ.get("VIDEO_PORT", "2586")),
+    "germ": int(os.environ.get("GERM_PORT", "8082")),
     "ui": int(os.environ.get("UI_PORT", "2590")),
 }
 
@@ -62,6 +63,7 @@ SERVICE_BINARIES: dict[str, str] = {
     "appview": "syrena",
     "chat": "syrena-chat",
     "video": "jelcz",
+    "germ": "germ",
     "ui": "garazyk-ui",
 }
 
@@ -72,6 +74,7 @@ SERVICE_HEALTH_PATHS: dict[str, str] = {
     "appview": "/admin/backfill/status",
     "chat": "/_health",
     "video": "/_health",
+    "germ": "/_health",
     "ui": "/admin",
 }
 
