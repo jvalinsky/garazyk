@@ -45,7 +45,7 @@ def run() -> ScenarioResult:
     result.start()
 
     ui_url = os.environ.get("GARAZYK_UI_URL", "http://localhost:2590").rstrip("/")
-    admin_password = os.environ.get("GARAZYK_UI_ADMIN_PASSWORD", "admin-localdev")
+    admin_password = os.environ.get("GARAZYK_UI_ADMIN_PASSWORD", "changeme")
 
     try:
         health_resp = requests.get(f"{ui_url}/lab", allow_redirects=False, timeout=10)
