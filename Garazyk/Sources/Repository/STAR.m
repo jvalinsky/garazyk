@@ -230,12 +230,28 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 @end
 
 // ---------------------------------------------------------------------------
+// MSTNode Internal Access
+// ---------------------------------------------------------------------------
+
+@interface MSTNode (STARInternal)
+@property (nonatomic, assign, readonly) uint32_t level;
+@property (nonatomic, strong, readonly, nullable) MSTNode *internalLeft;
+@property (nonatomic, strong, readonly, nullable) CID *leftCID;
+@end
+
+@interface MSTNodeEntry (STARInternal)
+@property (nonatomic, strong, readonly, nullable) MSTNode *internalTree;
+@property (nonatomic, strong, readonly, nullable) CID *treeCID;
+@end
+
+// ---------------------------------------------------------------------------
 // STARL0Writer
 // ---------------------------------------------------------------------------
 
 @interface STARL0Writer ()
 @property (nonatomic, strong) NSMutableData *outputData;
 @property (nonatomic, strong, readwrite) STARCommit *commit;
+@property (nonatomic, copy, nullable) void (^outputBlock)(NSData *chunk);
 @end
 
 @implementation STARL0Writer
@@ -245,6 +261,14 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
     if (self) {
         _commit = commit;
         _outputData = [NSMutableData data];
+    }
+    return self;
+}
+
+- (instancetype)initWithCommit:(STARCommit *)commit outputBlock:(void (^)(NSData *chunk))outputBlock {
+    self = [self initWithCommit:commit];
+    if (self) {
+        _outputBlock = [outputBlock copy];
     }
     return self;
 }
@@ -260,171 +284,70 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
     // Write header
     if (![self writeHeaderWithError:error]) return NO;
 
-    // Walk MST depth-first, emitting nodes and records
-    NSMapTable<MSTNode *, CID *> *cidCache = [NSMapTable strongToStrongObjectsMapTable];
-    __block BOOL failed = NO;
-    __block NSError *failError = nil;
-
-    [mst enumerateNodesDepthFirstUsingBlock:^(MSTNode *node, NSUInteger depth, BOOL *stop) {
-        if (failed) {
-            *stop = YES;
-            return;
-        }
-
-        // Build STAR MST node from the MSTNode
-        NSMutableArray<STARMstEntry *> *starEntries = [NSMutableArray array];
-        NSData *prevKeyData = [NSData data];
-
-        for (MSTNodeEntry *entry in node.internalEntries) {
-            NSData *fullKeyData = [entry.fullKey dataUsingEncoding:NSUTF8StringEncoding];
-            NSUInteger prefixLen = 0;
-            NSUInteger minLen = MIN(prevKeyData.length, fullKeyData.length);
-            const uint8_t *prevBytes = prevKeyData.bytes;
-            const uint8_t *currBytes = fullKeyData.bytes;
-            for (NSUInteger i = 0; i < minLen; i++) {
-                if (prevBytes[i] == currBytes[i]) prefixLen++;
-                else break;
-            }
-            NSData *keySuffix = [fullKeyData subdataWithRange:NSMakeRange(prefixLen, fullKeyData.length - prefixLen)];
-            prevKeyData = fullKeyData;
-
-            // For layer-0 nodes: omit `v` when record is included
-            // For layer>0 nodes: always include `v`
-            CID *valueCID = entry.value;
-            BOOL valueArchived = NO;
-            CID *treeCID = nil;
-            BOOL treeArchived = NO;
-
-            if (depth == 0) {
-                // Layer 0: omit v when record is included (it always is for full trees)
-                valueCID = nil;
-                valueArchived = YES;
-            } else {
-                // Layer >0: v is required, V signals if record is included
-                valueArchived = (blockProvider != nil); // record included if we have a provider
-            }
-
-            // Tree pointer
-            if (entry.internalTree) {
-                treeCID = [entry.internalTree getCID:cidCache];
-                treeArchived = YES;
-            } else if (entry.treeCID) {
-                treeCID = entry.treeCID;
-                treeArchived = NO;
-            }
-
-            STARMstEntry *starEntry = [STARMstEntry entryWithPrefixLen:prefixLen
-                                                             keySuffix:keySuffix
-                                                                 value:valueCID
-                                                          valueArchived:valueArchived
-                                                                  tree:treeCID
-                                                           treeArchived:treeArchived];
-            [starEntries addObject:starEntry];
-        }
-
-        // Left pointer
-        CID *leftCID = nil;
-        BOOL leftArchived = NO;
-        if (node.internalLeft) {
-            leftCID = [node.internalLeft getCID:cidCache];
-            leftArchived = YES;
-        } else if (node.leftCID) {
-            leftCID = node.leftCID;
-            leftArchived = NO;
-        }
-
-        STARMstNode *starNode = [STARMstNode nodeWithLeft:leftCID
-                                              leftArchived:leftArchived
-                                                  entries:starEntries];
-
-        // Serialize and write the node
-        NSError *nodeErr = nil;
-        NSData *nodeCBOR = [starNode serializeToDagCBOR:&nodeErr];
-        if (!nodeCBOR) {
-            failed = YES;
-            failError = nodeErr ?: STARError(1, @"Failed to serialize MST node at depth %lu", (unsigned long)depth);
-            *stop = YES;
-            return;
-        }
-
-        [self writeNode:nodeCBOR];
-
-        // For layer-0 nodes: emit records immediately after the node
-        if (depth == 0 && blockProvider) {
-            for (MSTNodeEntry *entry in node.internalEntries) {
-                NSData *recordData = blockProvider(entry.value);
-                if (!recordData) {
-                    failed = YES;
-                    failError = STARError(2, @"Block provider returned nil for CID: %@", entry.value.stringValue ?: @"(nil)");
-                    *stop = YES;
-                    return;
-                }
-                [self writeRecord:recordData];
-            }
-        }
-    }];
-
-    if (failed) {
-        if (error) *error = failError;
-        return NO;
-    }
-
-    // For layer>0 nodes: emit records after all subtrees
-    // We need a second pass for records at depth > 0
-    // Actually, the STAR spec says records follow in depth-first order,
-    // so for depth>0 nodes, records come after the node's subtrees.
-    // The depth-first traversal above visits subtrees before we can emit
-    // the parent's records. We need to restructure this.
-    // Let me reconsider: the Rust implementation pushes children in reverse
-    // order onto a stack, and records are interleaved with subtrees.
-    // For a depth>0 node: node, then left subtree, then for each entry:
-    //   record (if V=true), then subtree (if T=true)
-    // This means records come BEFORE their entry's subtree.
-    // The enumerateNodesDepthFirst visits nodes only, not records.
-    // We need a different traversal that interleaves records.
-
-    // Actually, looking at the Rust validator more carefully:
-    // For depth>0 nodes, children are pushed in REVERSE order:
-    //   1. left subtree (if L=true)
-    //   2. for each entry (reversed): subtree (if T=true), record (if V=true)
-    // So the emission order for a depth>0 node is:
-    //   node, [left subtree...], [entry records and subtrees in key order]
-    // But since we push in reverse, the stack pops in forward order.
-    // The actual stream order is: node, then depth-first into left, then
-    // for each entry in order: record (if V=true), then subtree (if T=true)
-
-    // For our implementation, we need to emit records for depth>0 nodes
-    // at the right point in the traversal. The simplest approach is to
-    // not use enumerateNodesDepthFirst but instead do a custom traversal.
-
-    // Let me rewrite this with a custom traversal.
-    // Actually, wait - the current implementation already emits layer-0
-    // records correctly (right after the node). For layer>0, we need
-    // records to come after the left subtree but before the entry subtrees.
-    // This is more complex. Let me restructure.
-
-    // Reset and redo with proper interleaving
-    [self.outputData setLength:0];
-
-    return [self writeFromMSTInterleaved:mst blockProvider:blockProvider error:error];
-}
-
-- (BOOL)writeFromMSTInterleaved:(MST *)mst
-                  blockProvider:(nullable NSData * _Nullable (^)(CID *cid))blockProvider
-                          error:(NSError **)error {
-    if (!mst || !mst.root) {
-        return [self writeHeaderWithError:error];
-    }
-
-    // Write header
-    if (![self writeHeaderWithError:error]) return NO;
-
+    // Walk MST depth-first, interleaved with records and subtrees
     NSMapTable<MSTNode *, CID *> *cidCache = [NSMapTable strongToStrongObjectsMapTable];
     return [self writeMSTNode:mst.root
                         depth:0
-                 cidCache:cidCache
-              blockProvider:blockProvider
-                      error:error];
+                     cidCache:cidCache
+                blockProvider:blockProvider
+                        error:error];
+}
+
+- (BOOL)writeHeaderWithError:(NSError **)error {
+    // Header: 0x2A | varint(1) | varint(commitLen) | commit
+    NSError *cborErr = nil;
+    NSData *commitCBOR = [self.commit serializeToDagCBOR:&cborErr];
+    if (!commitCBOR) {
+        if (error) *error = cborErr ?: STARError(1, @"Failed to serialize commit");
+        return NO;
+    }
+
+    uint8_t magic = 0x2A;
+    NSData *headerMagic = [NSData dataWithBytes:&magic length:1];
+    NSData *verVarint = STARVarintData(1);
+    NSData *lenVarint = STARVarintData((uint64_t)commitCBOR.length);
+
+    if (self.outputBlock) {
+        self.outputBlock(headerMagic);
+        self.outputBlock(verVarint);
+        self.outputBlock(lenVarint);
+        self.outputBlock(commitCBOR);
+    } else {
+        [self.outputData appendData:headerMagic];
+        [self.outputData appendData:verVarint];
+        [self.outputData appendData:lenVarint];
+        [self.outputData appendData:commitCBOR];
+    }
+    return YES;
+}
+
+- (void)writeNode:(NSData *)nodeCBOR {
+    // Node: varint(len) | mst node
+    NSData *lenVarint = STARVarintData((uint64_t)nodeCBOR.length);
+    if (self.outputBlock) {
+        self.outputBlock(lenVarint);
+        self.outputBlock(nodeCBOR);
+    } else {
+        [self.outputData appendData:lenVarint];
+        [self.outputData appendData:nodeCBOR];
+    }
+}
+
+- (void)writeRecord:(NSData *)recordData {
+    // Record: varint(len) | block
+    NSData *lenVarint = STARVarintData((uint64_t)recordData.length);
+    if (self.outputBlock) {
+        self.outputBlock(lenVarint);
+        self.outputBlock(recordData);
+    } else {
+        [self.outputData appendData:lenVarint];
+        [self.outputData appendData:recordData];
+    }
+}
+
+- (nullable NSData *)serialize {
+    if (self.outputBlock) return [NSData data]; // Already streamed
+    return [self.outputData copy];
 }
 
 - (BOOL)writeMSTNode:(MSTNode *)node
@@ -437,6 +360,9 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
     // Build STAR MST node
     NSMutableArray<STARMstEntry *> *starEntries = [NSMutableArray array];
     NSData *prevKeyData = [NSData data];
+    
+    // Cache for record data to avoid redundant blockProvider calls
+    NSMutableDictionary<NSString *, NSData *> *recordDataCache = [NSMutableDictionary dictionary];
 
     for (MSTNodeEntry *entry in node.internalEntries) {
         NSData *fullKeyData = [entry.fullKey dataUsingEncoding:NSUTF8StringEncoding];
@@ -456,13 +382,18 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
         CID *treeCID = nil;
         BOOL treeArchived = NO;
 
-        if (depth == 0) {
+        // Harden: only archive if record is actually available
+        if (blockProvider) {
+            NSData *data = blockProvider(entry.value);
+            if (data) {
+                valueArchived = YES;
+                recordDataCache[entry.value.stringValue] = data;
+            }
+        }
+
+        if (node.level == 0 && valueArchived) {
             // Layer 0: omit v when record is included
             valueCID = nil;
-            valueArchived = (blockProvider != nil);
-        } else {
-            // Layer >0: v is required, V signals inclusion
-            valueArchived = (blockProvider != nil);
         }
 
         if (entry.internalTree) {
@@ -520,13 +451,9 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
     // 2. For each entry: record (if included), then subtree (if included)
     for (MSTNodeEntry *entry in node.internalEntries) {
         // Emit record if included
-        if (blockProvider && (depth == 0 || YES)) {
-            // For depth>0, V=true means record is included
-            // For depth==0, v is omitted and V=true means record is included
-            NSData *recordData = blockProvider(entry.value);
-            if (recordData) {
-                [self writeRecord:recordData];
-            }
+        NSData *recordData = recordDataCache[entry.value.stringValue];
+        if (recordData) {
+            [self writeRecord:recordData];
         }
 
         // Emit subtree
@@ -542,46 +469,6 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
     }
 
     return YES;
-}
-
-- (BOOL)writeHeaderWithError:(NSError **)error {
-    // Header: 0x2A | varint(1) | varint(commitLen) | commit
-    NSError *cborErr = nil;
-    NSData *commitCBOR = [self.commit serializeToDagCBOR:&cborErr];
-    if (!commitCBOR) {
-        if (error) *error = cborErr ?: STARError(1, @"Failed to serialize commit");
-        return NO;
-    }
-
-    uint8_t magic = 0x2A;
-    [self.outputData appendBytes:&magic length:1];
-
-    NSData *verVarint = STARVarintData(1);
-    [self.outputData appendData:verVarint];
-
-    NSData *lenVarint = STARVarintData((uint64_t)commitCBOR.length);
-    [self.outputData appendData:lenVarint];
-
-    [self.outputData appendData:commitCBOR];
-    return YES;
-}
-
-- (void)writeNode:(NSData *)nodeCBOR {
-    // Node: varint(len) | mst node
-    NSData *lenVarint = STARVarintData((uint64_t)nodeCBOR.length);
-    [self.outputData appendData:lenVarint];
-    [self.outputData appendData:nodeCBOR];
-}
-
-- (void)writeRecord:(NSData *)recordData {
-    // Record: varint(len) | block
-    NSData *lenVarint = STARVarintData((uint64_t)recordData.length);
-    [self.outputData appendData:lenVarint];
-    [self.outputData appendData:recordData];
-}
-
-- (nullable NSData *)serialize {
-    return [self.outputData copy];
 }
 
 - (BOOL)writeToPath:(NSString *)path error:(NSError **)error {
@@ -1204,17 +1091,18 @@ PDSRepoFormat PDSRepoFormatFromAcceptHeader(NSString * _Nullable acceptHeader) {
         return PDSRepoFormatCAR;
     }
 
+    NSString *lowerAccept = [acceptHeader lowercaseString];
+    
     // Check for STAR-lite first (more specific)
-    if ([acceptHeader containsString:STARContentTypeLite]) {
+    if ([lowerAccept containsString:[STARContentTypeLite lowercaseString]]) {
         return PDSRepoFormatSTARLite;
     }
 
     // Check for STAR-L0
-    if ([acceptHeader containsString:STARContentTypeL0]) {
+    if ([lowerAccept containsString:[STARContentTypeL0 lowercaseString]]) {
         return PDSRepoFormatSTARL0;
     }
 
-    // Default to CAR
     return PDSRepoFormatCAR;
 }
 

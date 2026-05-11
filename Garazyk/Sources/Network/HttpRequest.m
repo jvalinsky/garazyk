@@ -360,6 +360,9 @@ static BOOL PDSHttpRequestIsTrustedProxyAddress(NSString *remoteAddress) {
 
   NSArray<NSString *> *lines =
       [requestString componentsSeparatedByString:@"\r\n"];
+  if (lines.count <= 1) {
+    lines = [requestString componentsSeparatedByString:@"\n"];
+  }
   if (lines.count == 0) {
     return nil;
   }
