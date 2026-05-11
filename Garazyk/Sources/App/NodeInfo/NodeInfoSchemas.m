@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "NodeInfoSchemas.h"
 
 NSString *const NodeInfoSchemaRel20 = @"http://nodeinfo.diaspora.software/ns/schema/2.0";
