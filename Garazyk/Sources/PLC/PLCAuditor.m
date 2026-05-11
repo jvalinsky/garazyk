@@ -58,6 +58,9 @@ static NSData *PLCBase64URLDecode(NSString *string) {
 
 @interface PLCAuditor ()
 @property (nonatomic, strong) id<PLCStore> store;
+@property (nonatomic, assign) NSUInteger hourLimit;
+@property (nonatomic, assign) NSUInteger dayLimit;
+@property (nonatomic, assign) NSUInteger weekLimit;
 @end
 
 @implementation PLCAuditor
@@ -66,8 +69,20 @@ static NSData *PLCBase64URLDecode(NSString *string) {
     self = [super init];
     if (self) {
         _store = store;
+
+        // Allow override via environment variables for testing
+        NSDictionary *env = [[NSProcessInfo processInfo] environment];
+        _hourLimit = [self _limitFromEnv:env[@"PLC_HOURLY_LIMIT"] default:kPLCHourLimit];
+        _dayLimit = [self _limitFromEnv:env[@"PLC_DAILY_LIMIT"] default:kPLCDayLimit];
+        _weekLimit = [self _limitFromEnv:env[@"PLC_WEEKLY_LIMIT"] default:kPLCWeekLimit];
     }
     return self;
+}
+
+- (NSUInteger)_limitFromEnv:(NSString *)value default:(NSUInteger)defaultValue {
+    if (!value || value.length == 0) return defaultValue;
+    NSInteger parsed = [value integerValue];
+    return (parsed > 0) ? (NSUInteger)parsed : defaultValue;
 }
 
 - (BOOL)verifyDID:(NSString *)did error:(NSError **)error {
@@ -590,7 +605,7 @@ static NSData *PLCBase64URLDecode(NSString *string) {
         }
     }
 
-    if (withinHour >= kPLCHourLimit) {
+    if (withinHour >= self.hourLimit) {
         if (error) {
             *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
                                          code:16
@@ -598,7 +613,7 @@ static NSData *PLCBase64URLDecode(NSString *string) {
         }
         return NO;
     }
-    if (withinDay >= kPLCDayLimit) {
+    if (withinDay >= self.dayLimit) {
         if (error) {
             *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
                                          code:17
@@ -606,7 +621,7 @@ static NSData *PLCBase64URLDecode(NSString *string) {
         }
         return NO;
     }
-    if (withinWeek >= kPLCWeekLimit) {
+    if (withinWeek >= self.weekLimit) {
         if (error) {
             *error = [NSError errorWithDomain:@"PLCAuditorErrorDomain"
                                          code:18
