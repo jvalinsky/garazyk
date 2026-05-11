@@ -48,5 +48,6 @@ class RawClient:
         method: str,
         params: Optional[dict[str, Any]] = None,
         token: Optional[str] = None,
+        headers: Optional[dict[str, str]] = None,
     ) -> tuple[int, str, bytes]:
-        return self._t.get_binary(method, params=params, token=token)
+        return self._t.get_binary(method, params=params, token=token, headers=headers)
