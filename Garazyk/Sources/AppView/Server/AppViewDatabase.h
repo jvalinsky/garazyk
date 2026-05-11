@@ -474,6 +474,14 @@ extern NSString * const AppViewDatabaseErrorDomain;
 /*! Close the database connection. */
 - (void)close;
 
+#pragma mark - Transactions
+
+/*! Execute a block inside a database transaction (BEGIN IMMEDIATE / COMMIT).
+    If the block returns NO or sets *error, the transaction is rolled back.
+    This is useful for batching multiple database operations (e.g., block
+    storage + record materialization) into a single fsync. */
+- (BOOL)inTransaction:(BOOL (^)(NSError **blockError))block error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END
