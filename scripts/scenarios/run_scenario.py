@@ -76,6 +76,7 @@ SCENARIO_REGISTRY = [
     ("33", "scenarios.33_tortoise_consumer", "The Tortoise Consumer (Firehose Backpressure)", False),
     ("34", "scenarios.34_format_roundtrip", "Format Round-Trip (STAR/CAR Integrity)", False),
     ("35", "scenarios.35_interrupted_migration", "The Interrupted Migration (Atomicity)", False),
+    ("36", "scenarios.36_video_processing", "The Projection Booth (Video Processing)", False),
     ("10", "scenarios.10_performance_resilience", "Performance & Resilience", False),
 ]
 
