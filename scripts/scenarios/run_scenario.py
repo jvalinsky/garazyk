@@ -68,6 +68,7 @@ SCENARIO_REGISTRY = [
     ("25", "scenarios.25_firehose_fanout_scale", "Firehose Fan-Out at Scale (Instrumented)", False),
     ("26", "scenarios.26_appview_ingest_load", "AppView Ingest Under Load (Instrumented)", False),
     ("27", "scenarios.27_fullstack_soak", "Full-Stack Soak Test (Instrumented)", False),
+    ("28", "scenarios.28_repo_format_benchmarks", "Repo Format Benchmarks (CAR vs STAR)", False),
     ("10", "scenarios.10_performance_resilience", "Performance & Resilience", False),
 ]
 
