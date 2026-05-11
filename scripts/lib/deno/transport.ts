@@ -93,4 +93,20 @@ export class TransportLayer {
     }
     return res.body;
   }
+
+  async postBinary(method: string, data: Uint8Array, contentType: string, token?: string) {
+    const url = new URL(`/xrpc/${method}`, this._base_url);
+    const headers: Record<string, string> = { "Content-Type": contentType };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const res = await this.request(method, url.toString(), {
+      method: "POST",
+      headers,
+      body: data,
+    });
+    if (res.status >= 400) {
+      throw new XrpcError(method, res.status, res.body);
+    }
+    return res.body;
+  }
 }
