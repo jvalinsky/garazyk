@@ -739,3 +739,21 @@
 **Evidence:** PDSCrashReporter.h/m, PDSSignalManager.h/m, CLI/main.m, Binaries/zuk/main.m, Binaries/syrena/main.m, Sources/App/server_main.m, Sources/CLI/PDSCLIServeCommand.m
 **Connects to:** Concurrency Scalability (Node #1331), Crash Handler Installation (Node #1300)
 **Status:** active (Phase 1 complete, Phases 2-4 pending)
+
+---
+
+## Germ Protocol E2EE: Full-stack Encrypted DMs
+> Node #1405 | Status: active
+
+**Current state:** Phases 1-3 complete. Germ lexicon schemas, mailbox transport, and AC Protocol identity verification are implemented. 30 Germ tests passing. Models after Germ's current shipping 1:1 E2EE DM product.
+
+**Evolution:**
+1. **Phase 1 — Lexicon & Record Support:** Added com.germnetwork.declaration, keypackage, authManageDeclaration lexicons. Declaration record binds ATProto DID to ed25519 Anchor Key with optional MLS KeyPackage, continuity proofs, and messageMe policy. 8 GermRecordTests passing.
+2. **Phase 2 — Mailbox Transport:** GermMailboxService manages ephemeral addresses (single-use, 24h TTL) and rendezvous addresses (epoch-derived). Addresses are opaque — server cannot link address to DID. Ciphertext-only storage with single-read semantics. GermRuntime runs as standalone service on port 8082. 5 XRPC endpoints. 14 GermMailboxServiceTests passing.
+3. **Phase 3 — AC Protocol Identity:** GermIdentityService verifies Anchor Key format, validates succession proof chains (LinearEncodedQuad: discriminator, attestation, predecessor, successor). ed25519 via Security.framework with dlsym-resolved constants. 1 XRPC endpoint. 8 GermIdentityServiceTests passing.
+4. **Key decisions:** Mailbox is separate process (Node #1406), addresses are opaque (Node #1407), ed25519 via dlsym (Node #1408), ciphertext-only storage (Node #1409)
+5. **Pending:** Scenario test for vanilla chat + Germ swap (Node #1416), Germ service config (Node #1417), ChatService mode field (Node #1418), Admin UI Germ tab (Node #1419)
+
+**Evidence:** GermMailboxService.h/m, GermIdentityService.h/m, GermRuntime.h/m, XrpcGermMailboxPack.h/m, XrpcGermIdentityPack.h/m, GermMailboxSchemaManager.h/m
+**Connects to:** Chat & DMs (Node #14), Admin UI (Node #8)
+**Status:** active (Phases 1-3 complete, Phases 4-6 pending)
