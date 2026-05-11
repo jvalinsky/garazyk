@@ -111,7 +111,7 @@ def run() -> ScenarioResult:
     # Since constructing a raw CAR with 65 levels of nesting is non-trivial in a script,
     # we'll simulate a large/deep object that fails decoding.
     
-    result.step_info("DagCBOR depth test requires raw CAR construction (Skipping in basic scenario)")
+    print("DagCBOR depth test requires raw CAR construction (Skipping in basic scenario)")
 
     result.finish()
     return result
