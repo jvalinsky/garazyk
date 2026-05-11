@@ -158,6 +158,76 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
                                                     error:(NSError **)error;
 
 /*!
+ @method getRepoContentsSTARL0:since:error:
+
+ @abstract Get repository contents in STAR-L0 format.
+
+ @discussion Returns STAR-L0 encoded repository data. STAR-L0 preserves the
+ MST structure and enables streaming verification with reduced archive size
+ (~80% fewer CIDs than CAR).
+
+ @param did Decentralized identifier of repository owner.
+ @param sinceRev Previous commit revision for incremental sync, or nil for full export.
+ @param error Error pointer for export failures.
+ @return STAR-L0 encoded repository data, or nil on failure.
+ */
+- (nullable NSData *)getRepoContentsSTARL0:(NSString *)did
+                                     since:(nullable NSString *)sinceRev
+                                     error:(NSError **)error;
+
+/*!
+ @method getRepoContentsSTARLite:since:error:
+
+ @abstract Get repository contents in STAR-lite format.
+
+ @discussion Returns STAR-lite encoded repository data. STAR-lite is a flat
+ key-record encoding with no MST structure, providing the best compression
+ ratio.
+
+ @param did Decentralized identifier of repository owner.
+ @param sinceRev Previous commit revision for incremental sync, or nil for full export.
+ @param error Error pointer for export failures.
+ @return STAR-lite encoded repository data, or nil on failure.
+ */
+- (nullable NSData *)getRepoContentsSTARLite:(NSString *)did
+                                       since:(nullable NSString *)sinceRev
+                                       error:(NSError **)error;
+
+/*!
+ @method repoContentsSTARL0ChunkProducer:since:error:
+
+ @abstract Builds a pull-based STAR-L0 chunk producer for streaming repository contents.
+
+ @discussion The returned block emits the next STAR-L0 payload chunk on each call.
+ It returns nil with no error at end-of-stream.
+
+ @param did Decentralized identifier of repository owner.
+ @param sinceRev Previous commit revision for incremental sync, or nil for full export.
+ @param error Error pointer for export preparation failures.
+ @return Chunk producer block or nil on failure.
+ */
+- (nullable PDSRepoChunkProducer)repoContentsSTARL0ChunkProducer:(NSString *)did
+                                                            since:(nullable NSString *)sinceRev
+                                                            error:(NSError **)error;
+
+/*!
+ @method repoContentsSTARLiteChunkProducer:since:error:
+
+ @abstract Builds a pull-based STAR-lite chunk producer for streaming repository contents.
+
+ @discussion The returned block emits the next STAR-lite payload chunk on each call.
+ It returns nil with no error at end-of-stream.
+
+ @param did Decentralized identifier of repository owner.
+ @param sinceRev Previous commit revision for incremental sync, or nil for full export.
+ @param error Error pointer for export preparation failures.
+ @return Chunk producer block or nil on failure.
+ */
+- (nullable PDSRepoChunkProducer)repoContentsSTARLiteChunkProducer:(NSString *)did
+                                                              since:(nullable NSString *)sinceRev
+                                                              error:(NSError **)error;
+
+/*!
  @method filteredRepoContentsChunkProducer:since:collections:error:
 
  @abstract Builds a pull-based CAR chunk producer for streaming filtered repository contents.

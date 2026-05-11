@@ -4,6 +4,7 @@
 #import "Database/PDSDatabase.h"
 #import "Repository/MST.h"
 #import "Repository/CAR.h"
+#import "Repository/STAR.h"
 #import "Repository/RepoCommit.h"
 #import "Repository/CBOR.h"
 #import "Core/ATProtoCBORSerialization.h"
@@ -752,6 +753,222 @@
     };
 }
 
+#pragma mark - STAR Format Export
+
+- (nullable NSData *)getRepoContentsSTARL0:(NSString *)did
+                                     since:(nullable NSString *)sinceRev
+                                     error:(NSError **)error {
+    PDSActorStore *store = nil;
+    MST *mst = nil;
+    CID *commitCID = nil;
+    NSData *commitBlock = nil;
+    BOOL noChangesSince = NO;
+    BOOL includeFullMST = YES;
+    NSArray<NSString *> *changedMSTKeys = nil;
+    NSArray<NSString *> *recordCIDStrings = nil;
+    NSDictionary<NSString *, PDSDatabaseRecord *> *recordByCID = nil;
+    NSDictionary<NSString *, NSData *> *materializedBlocks = nil;
+    if (![self prepareRepoExportForDid:did
+                                 since:sinceRev
+                                 store:&store
+                                   mst:&mst
+                             commitCID:&commitCID
+                           commitBlock:&commitBlock
+                        noChangesSince:&noChangesSince
+                        includeFullMST:&includeFullMST
+                        changedMSTKeys:&changedMSTKeys
+                       recordCIDStrings:&recordCIDStrings
+                            recordByCID:&recordByCID
+                    materializedBlocks:&materializedBlocks
+                                 error:error]) {
+        return nil;
+    }
+
+    if (noChangesSince) {
+        // Empty tree: just the header with data: null
+        STARCommit *commit = [self starCommitFromExport:did
+                                             commitCID:commitCID
+                                           commitBlock:commitBlock];
+        STARL0Writer *writer = [[STARL0Writer alloc] initWithCommit:commit];
+        return [writer serialize];
+    }
+
+    STARCommit *commit = [self starCommitFromExport:did
+                                         commitCID:commitCID
+                                       commitBlock:commitBlock];
+    STARL0Writer *writer = [[STARL0Writer alloc] initWithCommit:commit];
+
+    __weak typeof(self) weakSelf = self;
+    __block NSDictionary<NSString *, PDSDatabaseRecord *> *capturedRecordByCID = [recordByCID copy];
+    __block NSDictionary<NSString *, NSData *> *capturedMaterializedBlocks = [materializedBlocks copy];
+
+    BOOL success = [writer writeFromMST:mst
+                         blockProvider:^NSData * _Nullable(CID *cid) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return nil;
+
+        NSString *cidString = cid.stringValue;
+
+        // Check materialized blocks first, then database
+        NSData *data = capturedMaterializedBlocks[cidString];
+        if (!data) {
+            PDSDatabaseBlock *block = [strongSelf.blockRepository blockWithCid:cid.bytes repoDid:did error:nil];
+            data = block.blockData;
+        }
+        if (!data) {
+            PDSDatabaseRecord *record = capturedRecordByCID[cidString];
+            data = record ? [strongSelf recordBlockDataForRecord:record] : nil;
+        }
+        return data;
+    } error:error];
+
+    if (!success) return nil;
+    return [writer serialize];
+}
+
+- (nullable NSData *)getRepoContentsSTARLite:(NSString *)did
+                                       since:(nullable NSString *)sinceRev
+                                       error:(NSError **)error {
+    PDSActorStore *store = nil;
+    MST *mst = nil;
+    CID *commitCID = nil;
+    NSData *commitBlock = nil;
+    BOOL noChangesSince = NO;
+    BOOL includeFullMST = YES;
+    NSArray<NSString *> *changedMSTKeys = nil;
+    NSArray<NSString *> *recordCIDStrings = nil;
+    NSDictionary<NSString *, PDSDatabaseRecord *> *recordByCID = nil;
+    NSDictionary<NSString *, NSData *> *materializedBlocks = nil;
+    if (![self prepareRepoExportForDid:did
+                                 since:sinceRev
+                                 store:&store
+                                   mst:&mst
+                             commitCID:&commitCID
+                           commitBlock:&commitBlock
+                        noChangesSince:&noChangesSince
+                        includeFullMST:&includeFullMST
+                        changedMSTKeys:&changedMSTKeys
+                       recordCIDStrings:&recordCIDStrings
+                            recordByCID:&recordByCID
+                    materializedBlocks:&materializedBlocks
+                                 error:error]) {
+        return nil;
+    }
+
+    STARCommit *commit = [self starCommitFromExport:did
+                                         commitCID:commitCID
+                                       commitBlock:commitBlock];
+    STARLiteWriter *writer = [[STARLiteWriter alloc] initWithCommit:commit];
+
+    if (noChangesSince) {
+        return [writer serialize];
+    }
+
+    __weak typeof(self) weakSelf = self;
+    __block NSDictionary<NSString *, PDSDatabaseRecord *> *capturedRecordByCID = [recordByCID copy];
+    __block NSDictionary<NSString *, NSData *> *capturedMaterializedBlocks = [materializedBlocks copy];
+
+    BOOL success = [writer writeFromMST:mst
+                         blockProvider:^NSData * _Nullable(CID *cid) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return nil;
+
+        NSString *cidString = cid.stringValue;
+
+        NSData *data = capturedMaterializedBlocks[cidString];
+        if (!data) {
+            PDSDatabaseBlock *block = [strongSelf.blockRepository blockWithCid:cid.bytes repoDid:did error:nil];
+            data = block.blockData;
+        }
+        if (!data) {
+            PDSDatabaseRecord *record = capturedRecordByCID[cidString];
+            data = record ? [strongSelf recordBlockDataForRecord:record] : nil;
+        }
+        return data;
+    } error:error];
+
+    if (!success) return nil;
+    return [writer serialize];
+}
+
+- (nullable PDSRepoChunkProducer)repoContentsSTARL0ChunkProducer:(NSString *)did
+                                                            since:(nullable NSString *)sinceRev
+                                                            error:(NSError **)error {
+    // For now, build the full STAR-L0 data in memory and return a single-chunk producer.
+    // A future optimization could stream the STAR-L0 encoding directly.
+    NSData *starData = [self getRepoContentsSTARL0:did since:sinceRev error:error];
+    if (!starData) return nil;
+
+    __block BOOL sent = NO;
+    return ^NSData * _Nullable (NSError **producerError) {
+        (void)producerError;
+        if (sent) return nil;
+        sent = YES;
+        return starData;
+    };
+}
+
+- (nullable PDSRepoChunkProducer)repoContentsSTARLiteChunkProducer:(NSString *)did
+                                                              since:(nullable NSString *)sinceRev
+                                                              error:(NSError **)error {
+    NSData *starData = [self getRepoContentsSTARLite:did since:sinceRev error:error];
+    if (!starData) return nil;
+
+    __block BOOL sent = NO;
+    return ^NSData * _Nullable (NSError **producerError) {
+        (void)producerError;
+        if (sent) return nil;
+        sent = YES;
+        return starData;
+    };
+}
+
+- (STARCommit *)starCommitFromExport:(NSString *)did
+                           commitCID:(CID *)commitCID
+                         commitBlock:(NSData *)commitBlock {
+    // Parse the commit block to extract rev, prev, sig, data
+    CBORValue *commitValue = [CBORValue decode:commitBlock];
+    NSString *rev = @"";
+    CID *dataCID = nil;
+    CID *prevCID = nil;
+    NSData *sig = nil;
+
+    if (commitValue && commitValue.type == CBORTypeMap) {
+        CBORValue *revVal = commitValue.map[[CBORValue textString:@"rev"]];
+        if (revVal && revVal.type == CBORTypeTextString) {
+            rev = revVal.textString;
+        }
+
+        CBORValue *dataVal = commitValue.map[[CBORValue textString:@"data"]];
+        if (dataVal && dataVal.type == CBORTypeTag) {
+            NSData *cidBytes = dataVal.tagValue.byteString;
+            if (cidBytes.length > 1) {
+                dataCID = [CID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
+            }
+        }
+
+        CBORValue *prevVal = commitValue.map[[CBORValue textString:@"prev"]];
+        if (prevVal && prevVal.type == CBORTypeTag) {
+            NSData *cidBytes = prevVal.tagValue.byteString;
+            if (cidBytes.length > 1) {
+                prevCID = [CID cidFromBytes:[cidBytes subdataWithRange:NSMakeRange(1, cidBytes.length - 1)]];
+            }
+        }
+
+        CBORValue *sigVal = commitValue.map[[CBORValue textString:@"sig"]];
+        if (sigVal && sigVal.type == CBORTypeByteString) {
+            sig = sigVal.byteString;
+        }
+    }
+
+    return [STARCommit commitWithDid:did
+                             version:3
+                               data:dataCID
+                                rev:rev
+                               prev:prevCID
+                                sig:sig];
+}
+
 - (BOOL)prepareRepoExportForDid:(NSString *)did
                           since:(nullable NSString *)sinceRev
                           store:(PDSActorStore * _Nullable * _Nonnull)storeOut
@@ -1314,6 +1531,35 @@
 }
 
 - (BOOL)updateRepo:(NSString *)did commit:(NSData *)commitData error:(NSError **)error {
+    // Detect format: STAR (0x2A magic) vs CAR
+    if (STARDetectFormatFromData(commitData)) {
+        // Parse STAR format and convert to CAR blocks for processing
+        NSError *starErr = nil;
+        STARReader *starReader = [STARReader readFromData:commitData error:&starErr];
+        if (!starReader) {
+            if (error) *error = starErr ?: [NSError errorWithDomain:@"com.atproto.repo"
+                                                               code:7
+                                                           userInfo:@{NSLocalizedDescriptionKey: @"Failed to parse STAR commit data"}];
+            return NO;
+        }
+        // Convert STAR blocks to CAR format for downstream processing
+        CID *rootCID = starReader.rootCID ?: starReader.commit.data;
+        if (rootCID) {
+            CARWriter *carWriter = [CARWriter writerWithRootCID:rootCID];
+            for (CARBlock *block in starReader.blocks) {
+                [carWriter addBlock:block];
+            }
+            NSData *carData = [carWriter serialize];
+            if (carData) {
+                // Recurse with CAR data
+                return [self updateRepo:did commit:carData error:error];
+            }
+        }
+        if (error) *error = [NSError errorWithDomain:@"com.atproto.repo"
+                                                code:8
+                                            userInfo:@{NSLocalizedDescriptionKey: @"Failed to convert STAR to CAR"}];
+        return NO;
+    }
     return NO;
 }
 

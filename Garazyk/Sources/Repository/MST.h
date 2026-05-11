@@ -240,6 +240,21 @@ typedef NSData * _Nullable (^MSTBlockProvider)(CID *cid);
                                        blockProvider:(nullable MSTBlockProvider)blockProvider;
 
 /*!
+ @method enumerateNodesDepthFirstUsingBlock:
+
+ @abstract Enumerates all MST nodes in strict depth-first, key-ordered traversal.
+
+ @discussion Traverses the MST depth-first, visiting each node before its
+ subtrees. For each node, the callback receives the node, its depth in the
+ tree (0 at root), and a stop flag. This ordering is required by the STAR
+ (Streaming Tree ARchive) format, which interleaves MST nodes and records
+ in depth-first order.
+
+ @param block Callback invoked for each node. Set *stop to YES to abort.
+*/
+- (void)enumerateNodesDepthFirstUsingBlock:(void (^)(MSTNode *node, NSUInteger depth, BOOL *stop))block;
+
+/*!
  @method serializeNode:
 
  @abstract Serializes an MST node to CBOR data.

@@ -1128,6 +1128,44 @@
     return [dot copy];
 }
 
+#pragma mark - Depth-First Traversal
+
+- (void)enumerateNodesDepthFirstUsingBlock:(void (^)(MSTNode *node, NSUInteger depth, BOOL *stop))block {
+    if (!self.root || !block) return;
+    BOOL stop = NO;
+    [self enumerateNodesDepthFirst:self.root depth:0 block:block stop:&stop];
+}
+
+- (void)enumerateNodesDepthFirst:(MSTNode *)node
+                           depth:(NSUInteger)depth
+                           block:(void (^)(MSTNode *, NSUInteger, BOOL *))block
+                            stop:(BOOL *)stop {
+    if (!node || *stop) return;
+
+    block(node, depth, stop);
+    if (*stop) return;
+
+    // Visit left subtree first (keys < first entry)
+    if (node.internalLeft) {
+        [self enumerateNodesDepthFirst:node.internalLeft
+                                 depth:depth + 1
+                                 block:block
+                                  stop:stop];
+        if (*stop) return;
+    }
+
+    // Visit each entry's subtree in key order
+    for (MSTNodeEntry *entry in node.internalEntries) {
+        if (entry.internalTree) {
+            [self enumerateNodesDepthFirst:entry.internalTree
+                                     depth:depth + 1
+                                     block:block
+                                      stop:stop];
+            if (*stop) return;
+        }
+    }
+}
+
 #pragma mark - Diff Operations
 
 - (NSArray<MSTDiffOperation *> *)diffFrom:(nullable MST *)oldTree {
