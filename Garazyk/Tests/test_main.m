@@ -1,5 +1,6 @@
 #import <Foundation/Foundation.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #ifdef __APPLE__
 #import <XCTest/XCTest.h>
@@ -17,6 +18,7 @@
 #import "Auth/OAuthPublicClientTests.h"
 #import "Network/HttpResponse.h"
 #import "Network/RateLimiter.h"
+#import "Debug/PDSLogger.h"
 #import <objc/runtime.h>
 
 @interface SimpleTestObserver : NSObject <XCTestObservation>
@@ -248,65 +250,267 @@ static BOOL PDSFilterIncludesMethod(NSDictionary<NSString *, id> *filter,
   return [methods containsObject:methodName];
 }
 
-static NSSet<NSString *> *PDSIntegrationTestClasses(void) {
-  static NSSet<NSString *> *classes = nil;
-  static dispatch_once_t onceToken;
-  dispatch_once(&onceToken, ^{
-    classes = [NSSet setWithArray:@[
-      @"PDSPLCIntegrationTests",
-      @"PDSIntegrationTests",
-      @"CommitChainTests",
-      @"RelayIntegrationTests",
-      @"OAuthIntegrationTests",
-      @"EmailIntegrationTests",
-      @"FirehoseIntegrationTests",
-      @"FollowersCountIntegrationTests",
-      @"MultiTenantDatabaseTests",
-      @"PDSDatabaseIntegrationTests",
-      @"XrpcIntegrationTests",
-      @"E2EDockerTests",
-      @"UILabIntegrationTests",
-      @"ATProtoVideoTranscoderIntegrationTests",
-      @"ATProtoVideoThumbnailGeneratorIntegrationTests",
-      @"ATProtoVideoWorkerIntegrationTests",
-      @"SSLPinningTests"
-    ]];
-  });
-  return classes;
+// ── Glob pattern matching ────────────────────────────────────────────────
+
+static BOOL PDSGlobMatches(NSString *pattern, NSString *string) {
+  if (!pattern || !string) return NO;
+  // Convert glob pattern to NSPredicate LIKE format.
+  // * matches any sequence, ? matches single char.
+  // NSPredicate LIKE uses * and ? the same way.
+  NSPredicate *pred = [NSPredicate predicateWithFormat:@"self LIKE %@", pattern];
+  return [pred evaluateWithObject:string];
 }
 
-static NSSet<NSString *> *PDSSocketTestClasses(void) {
-  static NSSet<NSString *> *classes = nil;
-  static dispatch_once_t onceToken;
-  dispatch_once(&onceToken, ^{
-    classes = [NSSet setWithArray:@[
-      @"HealthEndpointIntegrationTests",
-      @"HttpServerTests",
-      @"OAuth2EndpointTests",
-      @"PDSApplicationTests",
-      @"PDSHttpServerBuilderTests",
-      @"PLCServerTests",
-      @"PLCReplicaServerTests",
-      @"PDSWebSocketServerTests",
-      @"PDSWebSocketTransportTests",
-      @"WebSocketServerTests"
-    ]];
-  });
-  return classes;
+static BOOL PDSAnyPatternMatches(NSArray<NSString *> *patterns, NSString *string) {
+  if (!patterns || patterns.count == 0) return NO;
+  for (NSString *pattern in patterns) {
+    if (PDSGlobMatches(pattern, string)) return YES;
+  }
+  return NO;
 }
 
-static NSString *PDSSkipReasonForClass(NSString *className) {
-  BOOL runIntegration = PDSEnvEnabled("PDS_RUN_INTEGRATION_TESTS");
-  BOOL runSocket = runIntegration || PDSEnvEnabled("PDS_RUN_SOCKET_TESTS");
+// ── Category mapping ────────────────────────────────────────────────────
 
-  if ([PDSSocketTestClasses() containsObject:className] && !runSocket) {
-    return @"set PDS_RUN_SOCKET_TESTS=1";
+// Forward declarations
+static NSSet<NSString *> *PDSRuntimeTestClassNames(void);
+
+// Maps test class names to their source directory (category).
+// Uses filesystem scan when available, with pattern-based fallback.
+static NSDictionary<NSString *, NSString *> *PDSBuildCategoryMap(void) {
+  static NSDictionary<NSString *, NSString *> *map = nil;
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    NSMutableDictionary<NSString *, NSString *> *builder =
+        [NSMutableDictionary dictionary];
+    NSFileManager *fm = [NSFileManager defaultManager];
+
+    // Strategy 1: Filesystem scan — map filename (minus .m) → parent dir
+    NSString *testsRoot = nil;
+    NSString *exePath = [[NSBundle mainBundle] executablePath];
+    if (exePath) {
+      NSString *candidate = [exePath stringByDeletingLastPathComponent];
+      while (candidate.length > 0) {
+        NSString *check = [candidate stringByAppendingPathComponent:@"Garazyk/Tests"];
+        if ([fm fileExistsAtPath:check]) {
+          testsRoot = check;
+          break;
+        }
+        NSString *parent = [candidate stringByDeletingLastPathComponent];
+        if ([parent isEqualToString:candidate]) break;
+        candidate = parent;
+      }
+    }
+    if (!testsRoot) {
+      NSString *cwd = [fm currentDirectoryPath];
+      NSString *check = [cwd stringByAppendingPathComponent:@"Garazyk/Tests"];
+      if ([fm fileExistsAtPath:check]) {
+        testsRoot = check;
+      }
+    }
+
+    if (testsRoot) {
+      NSDirectoryEnumerator *dirEnum = [fm enumeratorAtPath:testsRoot];
+      NSString *path;
+      while ((path = [dirEnum nextObject])) {
+        if (![path hasSuffix:@".m"]) continue;
+        NSString *filename = path.lastPathComponent;
+        if ([filename isEqualToString:@"test_main.m"]) continue;
+        NSString *className = [filename stringByDeletingPathExtension];
+        NSString *dirPath = [path stringByDeletingLastPathComponent];
+        if (dirPath.length > 0) {
+          NSArray *parts = [dirPath componentsSeparatedByString:@"/"];
+          builder[className] = parts.lastObject ?: dirPath;
+        }
+      }
+    }
+
+    // Strategy 2: Pattern-based inference for classes not found by scan.
+    // This handles classes defined in shared files (e.g. CIDTests in
+    // CorePrimitivesTests.m) and any classes the filesystem scan missed.
+    NSDictionary<NSString *, NSArray<NSString *> *> *categoryPatterns = @{
+      @"Admin":          @[@"Admin"],
+      @"AppView":        @[@"AppView"],
+      @"Blob":           @[@"Blob"],
+      @"CLI":            @[@"CLI"],
+      @"Core":           @[@"CID", @"TID", @"Base58", @"ATProtoCore",
+                           @"ATProtoDagCBOR", @"CBORSerialization",
+                           @"ATProtoValidator", @"ATProtoBase32",
+                           @"CorePrimitives", @"ProtocolCompile",
+                           @"ATProtoDateTime", @"NSDateFormatterATProto",
+                           @"ATProtoError", @"DIDValidation",
+                           @"Identifier", @"RecordPathValidation",
+                           @"PDSDataPaths", @"PDSAccountManager",
+                           @"PDSServiceContainer", @"PDSProviderRegistry"],
+      @"Auth":           @[@"Crypto", @"JWT", @"OAuth", @"TOTP",
+                           @"Secp256k1", @"PDSNonce", @"YubiKey",
+                           @"WebAuthn", @"PDSOpenSSLKeyManager",
+                           @"Session", @"PDSReplayCache", @"Refresh",
+                           @"AuthCrypto", @"Base32Utils"],
+      @"Database":       @[@"ActorStore", @"DatabasePool", @"DatabaseMigration",
+                           @"PDSMigration", @"PDSDatabaseLRU", @"PDSController",
+                           @"PDSHealthCheck", @"ServiceDatabases",
+                           @"RecordCache", @"PDSNewArchitecture",
+                           @"PDSVideoJobs", @"ConnectionPool"],
+      @"Identity":       @[@"DIDResolver", @"HandleResolver", @"ATProtoHandle",
+                           @"XrpcIdentityResolution"],
+      @"Network":        @[@"Http", @"RateLimiter", @"RateLimiting",
+                           @"PDSNetwork", @"PDSHttp", @"WebSocketUpgrade",
+                           @"SSLPinning", @"SSRF", @"PDSIntegration",
+                           @"AccountLifecycle", @"AdminAuth",
+                           @"RepoAuth", @"RepoDescribe", @"ModerationIdentity",
+                           @"SyncEndpoint", @"FeedSkeleton", @"StarterPack",
+                           @"SecurityHardening", @"XrpcAppBsky",
+                           @"XrpcChatBsky", @"XrpcToolsOzone",
+                           @"XrpcProxy", @"XrpcError", @"XrpcIntegration",
+                           @"XrpcMethodRegistry"],
+      @"PLC":            @[@"PLCOperation", @"PLCStore", @"PLCAuditor",
+                           @"PLCServer", @"PLCReplica", @"PLCDIDKey",
+                           @"PLCCacheDirectory", @"PLCRotationKey",
+                           @"DIDPLCResolver"],
+      @"Repository":     @[@"MST", @"RepoCommit", @"CARInterop",
+                           @"IPLDBlock"],
+      @"Sync":           @[@"Firehose", @"Relay", @"Subscribe",
+                           @"PDSWebSocket", @"WebSocket", @"EventFormatter",
+                           @"RelayAPI"],
+      @"Security":       @[@"CBORSecurity", @"JWTSecurity",
+                           @"HandleResolverSecurity", @"ProductionSecurity",
+                           @"PDSAuthz", @"PDSInput", @"Phase2Security"],
+      @"Email":          @[@"PDSEmail", @"PDSEnvironment", @"PDSKeychain",
+                           @"PDSMockEmail", @"PDSSMTP", @"PDSResend"],
+      @"App":            @[@"PDSAccount", @"PDSBlob", @"PDSRecord",
+                           @"PDSRepository", @"PDSRelay", @"PDSConfiguration",
+                           @"PDSPhone", @"AppDelegate", @"PDSApplication"],
+      @"CharacterizationTests": @[@"ActorStoreCharacterization",
+                                  @"MSTCharacterization",
+                                  @"SessionCharacterization",
+                                  @"KeyManagerCharacterization",
+                                  @"XrpcMethodRegistryCharacterization",
+                                  @"HttpConnectionCharacterization",
+                                  @"WebSocketFrameCharacterization",
+                                  @"WebSocketStateCharacterization"],
+      @"Integration":     @[@"PDSPLCIntegration", @"CommitChain",
+                           @"RelayIntegration", @"OAuthIntegration",
+                           @"EmailIntegration", @"FirehoseIntegration",
+                           @"FollowersCountIntegration",
+                           @"MultiTenantDatabase",
+                           @"PDSDatabaseIntegration",
+                           @"E2EDocker", @"UILabIntegration",
+                           @"ATProtoVideoTranscoderIntegration",
+                           @"ATProtoVideoThumbnailGeneratorIntegration",
+                           @"ATProtoVideoWorkerIntegration",
+                           @"HealthEndpointIntegration",
+                           @"XrpcIntegration"],
+      @"Compat":         @[@"Arc4random", @"CFRelease", @"PlatformGuard",
+                           @"SecItem", @"PDSNetworkTransportLinux"],
+      @"Lexicon":        @[@"LexiconValidation", @"LexiconResolve"],
+      @"Interop":        @[@"LexiconValidatorInterop", @"AtprotoInterop",
+                           @"SyntaxInterop", @"MSTInterop"],
+      @"Media":          @[@"PDSVideo", @"ATProtoVideo", @"MimeType"],
+      @"Metrics":        @[@"PDSMetrics"],
+      @"Debug":          @[@"PDSLoggerPerformance"],
+      @"Deployment":     @[@"DeploymentReadiness"],
+      @"Federation":     @[@"FederationClient"],
+      @"Registration":   @[@"PDSRegistrationGate"],
+      @"PhoneVerification": @[@"PDSTwilio", @"PDSVonage", @"PDSPlivo",
+                               @"PDSTelegram"],
+      @"AdminUIServer":  @[@"UIAuth", @"UIBackend", @"UIServer",
+                           @"UILabAuth"],
+      @"XRPC":           @[@"XrpcHandler", @"XrpcInputValidation",
+                           @"XrpcErrorResponse", @"XrpcErrorHelper",
+                           @"GetServiceAuth"],
+      @"Services":       @[@"CoverageGap"],
+      @"AppViewServer":  @[@"AppViewDatabase", @"AppViewIngestEngine",
+                           @"AppViewBackfill", @"AppViewBackfillWorker",
+                           @"AppViewRelevanceSet"],
+    };
+
+    // Apply pattern-based categories for any class not yet mapped
+    for (NSString *category in categoryPatterns) {
+      NSArray<NSString *> *prefixes = categoryPatterns[category];
+      for (NSString *className in [PDSRuntimeTestClassNames() allObjects]) {
+        if (builder[className].length > 0) continue;  // already mapped
+        for (NSString *prefix in prefixes) {
+          if ([className hasPrefix:prefix]) {
+            builder[className] = category;
+            break;
+          }
+        }
+      }
+    }
+
+    map = [builder copy];
+  });
+  return map;
+}
+
+static NSString *PDSCategoryForClass(NSString *className) {
+  return PDSBuildCategoryMap()[className];
+}
+
+// ── Gated test classes ──────────────────────────────────────────────────
+
+typedef NS_ENUM(NSInteger, PDSGatedMode) {
+  PDSGatedModeSkip,     // skip gated tests (default)
+  PDSGatedModeRun,      // run gated tests
+  PDSGatedModeMarkSkip  // include but mark as skipped in output
+};
+
+static NSDictionary<NSString *, NSString *> *PDSGatedClassMap(void) {
+  static NSDictionary<NSString *, NSString *> *map = nil;
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    map = @{
+      // integration gate
+      @"PDSPLCIntegrationTests"                       : @"integration",
+      @"PDSIntegrationTests"                           : @"integration",
+      @"CommitChainTests"                              : @"integration",
+      @"RelayIntegrationTests"                         : @"integration",
+      @"OAuthIntegrationTests"                         : @"integration",
+      @"EmailIntegrationTests"                         : @"integration",
+      @"FirehoseIntegrationTests"                      : @"integration",
+      @"FollowersCountIntegrationTests"                 : @"integration",
+      @"MultiTenantDatabaseTests"                      : @"integration",
+      @"PDSDatabaseIntegrationTests"                   : @"integration",
+      @"XrpcIntegrationTests"                          : @"integration",
+      @"E2EDockerTests"                                : @"integration",
+      @"UILabIntegrationTests"                         : @"integration",
+      @"ATProtoVideoTranscoderIntegrationTests"         : @"integration",
+      @"ATProtoVideoThumbnailGeneratorIntegrationTests" : @"integration",
+      @"ATProtoVideoWorkerIntegrationTests"            : @"integration",
+      @"SSLPinningTests"                               : @"integration",
+      // socket gate
+      @"HealthEndpointIntegrationTests" : @"socket",
+      @"HttpServerTests"               : @"socket",
+      @"OAuth2EndpointTests"            : @"socket",
+      @"PDSApplicationTests"           : @"socket",
+      @"PDSHttpServerBuilderTests"     : @"socket",
+      @"PLCServerTests"                : @"socket",
+      @"PLCReplicaServerTests"         : @"socket",
+      @"PDSWebSocketServerTests"       : @"socket",
+      @"PDSWebSocketTransportTests"    : @"socket",
+      @"WebSocketServerTests"          : @"socket"
+    };
+  });
+  return map;
+}
+
+static NSString *PDSGateNameForClass(NSString *className) {
+  return PDSGatedClassMap()[className];
+}
+
+static NSString *PDSSkipReasonForClass(NSString *className, PDSGatedMode gatedMode) {
+  if (gatedMode == PDSGatedModeRun) {
+    return nil;  // --gated=run: don't skip anything
   }
-  if ([PDSIntegrationTestClasses() containsObject:className] &&
-      !runIntegration) {
-    return @"set PDS_RUN_INTEGRATION_TESTS=1";
+  NSString *gateName = PDSGateNameForClass(className);
+  if (!gateName) {
+    return nil;  // not a gated class
   }
-  return nil;
+  if (gatedMode == PDSGatedModeMarkSkip) {
+    return nil;  // --gated=include: include it (will be marked in output)
+  }
+  // PDSGatedModeSkip (default)
+  return [NSString stringWithFormat:@"gated:%@ (use --gated=run)", gateName];
 }
 
 static BOOL PDSClassIsSubclassOf(Class testClass, Class parentClass) {
@@ -475,6 +679,24 @@ static void PDSPrintFailureSummary(SimpleTestObserver *observer) {
 }
 
 int main(int argc, char *argv[]) {
+  // Pre-scan for --json to suppress logger output before any initialization.
+  BOOL jsonOutputEarly = NO;
+  for (int i = 1; i < argc; i++) {
+    if (strcmp(argv[i], "--json") == 0) {
+      jsonOutputEarly = YES;
+      break;
+    }
+  }
+  // When --json is active, redirect stdout to /dev/null during initialization
+  // so the PDS logger doesn't pollute the JSON output.  We save the original
+  // fd and restore it before writing the JSON result.
+  int savedStdout = -1;
+  if (jsonOutputEarly) {
+    fflush(stdout);
+    savedStdout = dup(fileno(stdout));
+    freopen("/dev/null", "w", stdout);
+  }
+
   fprintf(stderr, "test_main started\n");
   @autoreleasepool {
     // Ensure config defaults behave in non-interactive test mode.
@@ -845,31 +1067,271 @@ int main(int argc, char *argv[]) {
     [center addTestObserver:observer];
 #endif
 
-    // Parse command line arguments for filtering
-    NSString *testFilter = nil;
+    // Parse command line arguments
+    NSMutableArray<NSString *> *filterPatterns = [NSMutableArray array];
+    NSMutableArray<NSString *> *excludePatterns = [NSMutableArray array];
+    NSMutableArray<NSString *> *includeCategories = [NSMutableArray array];
+    NSMutableArray<NSString *> *excludeCategories = [NSMutableArray array];
+    BOOL listMode = NO;
+    BOOL listVerbose = NO;
+    BOOL jsonOutput = NO;
+    BOOL shuffleMode = NO;
+    NSUInteger shuffleSeed = 0;
+    NSTimeInterval perTestTimeout = 0;
+    PDSGatedMode gatedMode = PDSGatedModeSkip;
+    NSString *legacyFilter = nil;
+
     for (int i = 1; i < argc; i++) {
       NSString *arg = [NSString stringWithUTF8String:argv[i]];
+
+      // Legacy XCTest filter
       if ([arg isEqualToString:@"-XCTest"] && i + 1 < argc) {
-        testFilter = [NSString stringWithUTF8String:argv[i + 1]];
-        break;
+        legacyFilter = [NSString stringWithUTF8String:argv[i + 1]];
+        i++;
+        continue;
+      }
+
+      // --filter / -f
+      if (([arg isEqualToString:@"--filter"] || [arg isEqualToString:@"-f"]) && i + 1 < argc) {
+        [filterPatterns addObject:[NSString stringWithUTF8String:argv[i + 1]]];
+        i++;
+        continue;
+      }
+
+      // --exclude / -e
+      if (([arg isEqualToString:@"--exclude"] || [arg isEqualToString:@"-e"]) && i + 1 < argc) {
+        [excludePatterns addObject:[NSString stringWithUTF8String:argv[i + 1]]];
+        i++;
+        continue;
+      }
+
+      // --category / -c
+      if (([arg isEqualToString:@"--category"] || [arg isEqualToString:@"-c"]) && i + 1 < argc) {
+        NSString *cats = [NSString stringWithUTF8String:argv[i + 1]];
+        for (NSString *cat in [cats componentsSeparatedByString:@","]) {
+          NSString *trimmed = [cat stringByTrimmingCharactersInSet:
+              [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+          if (trimmed.length > 0) [includeCategories addObject:trimmed];
+        }
+        i++;
+        continue;
+      }
+
+      // --exclude-category
+      if ([arg isEqualToString:@"--exclude-category"] && i + 1 < argc) {
+        NSString *cats = [NSString stringWithUTF8String:argv[i + 1]];
+        for (NSString *cat in [cats componentsSeparatedByString:@","]) {
+          NSString *trimmed = [cat stringByTrimmingCharactersInSet:
+              [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+          if (trimmed.length > 0) [excludeCategories addObject:trimmed];
+        }
+        i++;
+        continue;
+      }
+
+      // --list / -l
+      if ([arg isEqualToString:@"--list"] || [arg isEqualToString:@"-l"]) {
+        listMode = YES;
+        continue;
+      }
+
+      // --verbose / -v (enables method listing in --list mode)
+      if ([arg isEqualToString:@"--verbose"] || [arg isEqualToString:@"-v"]) {
+        listVerbose = YES;
+        continue;
+      }
+
+      // --json
+      if ([arg isEqualToString:@"--json"]) {
+        jsonOutput = YES;
+        continue;
+      }
+
+      // --shuffle
+      if ([arg isEqualToString:@"--shuffle"]) {
+        shuffleMode = YES;
+        if (shuffleSeed == 0) {
+          shuffleSeed = (NSUInteger)([[NSDate date] timeIntervalSince1970] * 1000);
+        }
+        continue;
+      }
+
+      // --seed
+      if ([arg isEqualToString:@"--seed"] && i + 1 < argc) {
+        shuffleSeed = (NSUInteger)[[NSString stringWithUTF8String:argv[i + 1]] integerValue];
+        shuffleMode = YES;
+        i++;
+        continue;
+      }
+
+      // --timeout / -t
+      if (([arg isEqualToString:@"--timeout"] || [arg isEqualToString:@"-t"]) && i + 1 < argc) {
+        perTestTimeout = (NSTimeInterval)[[NSString stringWithUTF8String:argv[i + 1]] doubleValue];
+        i++;
+        continue;
+      }
+
+      // --gated
+      if ([arg isEqualToString:@"--gated"] && i + 1 < argc) {
+        NSString *mode = [NSString stringWithUTF8String:argv[i + 1]];
+        if ([mode isEqualToString:@"run"]) {
+          gatedMode = PDSGatedModeRun;
+        } else if ([mode isEqualToString:@"include"]) {
+          gatedMode = PDSGatedModeMarkSkip;
+        } else {
+          gatedMode = PDSGatedModeSkip;
+        }
+        i++;
+        continue;
+      }
+
+      // --help
+      if ([arg isEqualToString:@"--help"] || [arg isEqualToString:@"-h"]) {
+        fprintf(stderr, "Usage: AllTests [options]\n");
+        fprintf(stderr, "\n");
+        fprintf(stderr, "Filtering:\n");
+        fprintf(stderr, "  -f, --filter PATTERN     Include tests matching glob pattern\n");
+        fprintf(stderr, "  -e, --exclude PATTERN    Exclude tests matching glob pattern\n");
+        fprintf(stderr, "  -c, --category CAT       Include tests in category (comma-separated)\n");
+        fprintf(stderr, "      --exclude-category   Exclude tests in category\n");
+        fprintf(stderr, "  -XCTest FILTER           Legacy XCTest filter (ClassName[/method])\n");
+        fprintf(stderr, "\n");
+        fprintf(stderr, "Execution:\n");
+        fprintf(stderr, "      --gated=MODE         Gated test mode: skip (default), run, include\n");
+        fprintf(stderr, "  -t, --timeout SECS       Per-test timeout in seconds (0 = none)\n");
+        fprintf(stderr, "      --shuffle            Randomize test order\n");
+        fprintf(stderr, "      --seed N             Set shuffle seed for reproducibility\n");
+        fprintf(stderr, "\n");
+        fprintf(stderr, "Output:\n");
+        fprintf(stderr, "  -l, --list               List tests without running\n");
+        fprintf(stderr, "  -v, --verbose            Verbose listing (show methods)\n");
+        fprintf(stderr, "      --json               JSON output\n");
+        fprintf(stderr, "  -h, --help               Show this help\n");
+        return 0;
       }
     }
-    NSDictionary<NSString *, id> *parsedFilter = PDSParseTestFilter(testFilter);
+
+    // When JSON output is active, suppress the PDS logger so stdout
+    // contains only valid JSON.
+    if (jsonOutput) {
+      [PDSLogger sharedLogger].logLevel = PDSLogLevelError;
+    }
+
+    // Merge legacy -XCTest filter into the new filter system
+    if (legacyFilter) {
+      // Legacy filter supports exact class names and Class/method syntax.
+      // Add each token as a filter pattern.
+      for (NSString *token in [legacyFilter componentsSeparatedByString:@","]) {
+        NSString *trimmed = [token stringByTrimmingCharactersInSet:
+            [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        if (trimmed.length > 0) {
+          NSRange slash = [trimmed rangeOfString:@"/"];
+          if (slash.location == NSNotFound) {
+            [filterPatterns addObject:trimmed];
+          } else {
+            // Class/method — add as exact class name
+            [filterPatterns addObject:[trimmed substringToIndex:slash.location]];
+          }
+        }
+      }
+    }
+
+    NSDictionary<NSString *, id> *parsedFilter = PDSParseTestFilter(legacyFilter);
 
     if (PDSEnvEnabled("PDS_TEST_REGISTRATION_AUDIT")) {
       return PDSRunRegistrationAudit(testClasses) ? 0 : 2;
     }
 
+    // ── Determine which classes to include ──────────────────────────────
+
+    // If filter patterns contain glob characters, expand them against the
+    // full class list.  Otherwise they are exact matches.
+    BOOL hasFilterPatterns = filterPatterns.count > 0;
+    BOOL hasExcludePatterns = excludePatterns.count > 0;
+    BOOL hasIncludeCategories = includeCategories.count > 0;
+    BOOL hasExcludeCategories = excludeCategories.count > 0;
+
+    // Helper: does a class pass the filter/include criteria?
+    BOOL (^classPassesFilter)(NSString *) = ^BOOL(NSString *className) {
+      // Legacy exact-match filter (from -XCTest)
+      if (parsedFilter && !PDSFilterIncludesClass(parsedFilter, className)) {
+        return NO;
+      }
+      // New glob filter
+      if (hasFilterPatterns && !PDSAnyPatternMatches(filterPatterns, className)) {
+        return NO;
+      }
+      // Category include
+      if (hasIncludeCategories) {
+        NSString *cat = PDSCategoryForClass(className);
+        BOOL found = NO;
+        for (NSString *inc in includeCategories) {
+          if ([inc isEqualToString:cat] || [inc isEqualToString:@"*"]) {
+            found = YES;
+            break;
+          }
+        }
+        if (!found) return NO;
+      }
+      // Category exclude
+      if (hasExcludeCategories) {
+        NSString *cat = PDSCategoryForClass(className);
+        for (NSString *exc in excludeCategories) {
+          if ([exc isEqualToString:cat]) return NO;
+        }
+      }
+      // Exclude pattern
+      if (hasExcludePatterns && PDSAnyPatternMatches(excludePatterns, className)) {
+        return NO;
+      }
+      return YES;
+    };
+
+    // ── List mode ───────────────────────────────────────────────────────
+
+    if (listMode) {
+      NSUInteger classCount = 0;
+      NSUInteger methodCount = 0;
+      NSMutableArray<NSString *> *listedCategories = [NSMutableArray array];
+      for (NSString *className in testClasses) {
+        if (!classPassesFilter(className)) continue;
+        NSString *cat = PDSCategoryForClass(className) ?: @"(unknown)";
+        if (![listedCategories containsObject:cat]) {
+          [listedCategories addObject:cat];
+        }
+        NSString *gateName = PDSGateNameForClass(className);
+        NSString *gateTag = gateName ? [NSString stringWithFormat:@" [gated:%@]", gateName] : @"";
+        if (listVerbose) {
+          fprintf(stdout, "%s (%s)%s\n", className.UTF8String, cat.UTF8String, gateTag.UTF8String);
+          Class testClass = NSClassFromString(className);
+          if (testClass) {
+            NSArray *methods = discoverTestMethodsForClass(testClass);
+            for (NSString *method in methods) {
+              fprintf(stdout, "  %s\n", method.UTF8String);
+              methodCount++;
+            }
+          }
+        } else {
+          fprintf(stdout, "%s%s\n", className.UTF8String, gateTag.UTF8String);
+        }
+        classCount++;
+      }
+      fprintf(stderr, "\n%lu classes", (unsigned long)classCount);
+      if (listVerbose) fprintf(stderr, ", %lu methods", (unsigned long)methodCount);
+      fprintf(stderr, "\nCategories: %s\n", [listedCategories componentsJoinedByString:@", "].UTF8String);
+      return 0;
+    }
+
+    // ── Build test suite ────────────────────────────────────────────────
+
     XCTestSuite *mainSuite = [XCTestSuite testSuiteWithName:@"All Tests"];
     NSMutableArray<NSString *> *skippedClasses = [NSMutableArray array];
+    NSMutableArray<NSString *> *includedClasses = [NSMutableArray array];
 
     for (NSString *className in testClasses) {
-      // Apply filter if present
-      if (!PDSFilterIncludesClass(parsedFilter, className)) {
-        continue;
-      }
+      if (!classPassesFilter(className)) continue;
 
-      NSString *skipReason = PDSSkipReasonForClass(className);
+      NSString *skipReason = PDSSkipReasonForClass(className, gatedMode);
       if (skipReason) {
         [skippedClasses addObject:
             [NSString stringWithFormat:@"%@ (%@)", className, skipReason]];
@@ -883,7 +1345,8 @@ int main(int argc, char *argv[]) {
           XCTestSuite *classSuite = [XCTestSuite testSuiteWithName:className];
           NSUInteger addedMethodCount = 0;
           for (NSString *methodName in methodNames) {
-            if (!PDSFilterIncludesMethod(parsedFilter, className, methodName)) {
+            // Legacy method-level filter
+            if (parsedFilter && !PDSFilterIncludesMethod(parsedFilter, className, methodName)) {
               continue;
             }
             SEL selector = NSSelectorFromString(methodName);
@@ -894,33 +1357,124 @@ int main(int argc, char *argv[]) {
           }
           if (addedMethodCount > 0) {
             [mainSuite addTest:classSuite];
-          } else if (parsedFilter) {
+            [includedClasses addObject:className];
+          } else if (parsedFilter || hasFilterPatterns) {
             NSLog(@"Warning: No selected test methods found for %@", className);
           }
         }
       } else {
-        // Only warn if we are not filtering, or if this is the specific class
-        // we asked for
-        if (!parsedFilter || PDSFilterIncludesClass(parsedFilter, className)) {
+        if (!parsedFilter && !hasFilterPatterns) {
           NSLog(@"Warning: Test class %@ not found", className);
         }
       }
     }
 
+    // ── Shuffle ─────────────────────────────────────────────────────────
+
+    if (shuffleMode) {
+      // Shuffle the class suites within the main suite
+      NSMutableArray *shuffled = [mainSuite.tests mutableCopy];
+      // Simple Fisher-Yates shuffle with the seed
+      NSUInteger seed = shuffleSeed;
+      for (NSUInteger i = shuffled.count - 1; i > 0; i--) {
+        seed = seed * 1103515245 + 12345;
+        NSUInteger j = (seed / 65536) % (i + 1);
+        [shuffled exchangeObjectAtIndex:i withObjectAtIndex:j];
+      }
+      // Rebuild suite in shuffled order
+      XCTestSuite *shuffledSuite = [XCTestSuite testSuiteWithName:mainSuite.name];
+      for (XCTest *test in shuffled) {
+        [shuffledSuite addTest:test];
+      }
+      mainSuite = shuffledSuite;
+      fprintf(stderr, "Shuffle seed: %lu\n", (unsigned long)shuffleSeed);
+    }
+
+    // ── Run tests ───────────────────────────────────────────────────────
+    // TODO: --timeout enforcement requires wrapping each test invocation
+    // in a dispatch_after-based timeout handler.  Currently the flag is
+    // parsed and stored but not yet enforced during execution.
+
     NSLog(@"\n=== Starting Test Suite: %@ ===", mainSuite.name);
-    NSLog(@"Test suites: %lu", (unsigned long)mainSuite.tests.count);
+    NSLog(@"Test suites: %lu (skipped: %lu)", 
+          (unsigned long)mainSuite.tests.count,
+          (unsigned long)skippedClasses.count);
 
+    NSDate *suiteStart = [NSDate date];
     [mainSuite performTest:nil];
-    PDSPrintTimingSummary(observer);
-    PDSPrintFailureSummary(observer);
+    NSTimeInterval suiteDuration = -[suiteStart timeIntervalSinceNow];
 
-    NSLog(@"\n=== Test Suite Finished ===");
-    NSLog(@"Tests run: %d", observer.testCount);
-    NSLog(@"Failures: %d\n", observer.failureCount);
-    if (skippedClasses.count > 0) {
-      NSLog(@"Skipped gated test classes: %lu", (unsigned long)skippedClasses.count);
-      for (NSString *skipped in skippedClasses) {
-        NSLog(@"  %@", skipped);
+    // ── Output ──────────────────────────────────────────────────────────
+
+    // Restore stdout if we redirected it for --json mode
+    if (jsonOutput && savedStdout >= 0) {
+      fflush(stdout);
+      dup2(savedStdout, fileno(stdout));
+      close(savedStdout);
+      savedStdout = -1;
+    }
+
+    if (jsonOutput) {
+      NSMutableDictionary *jsonResult = [NSMutableDictionary dictionary];
+      jsonResult[@"total"] = @(observer.testCount);
+      jsonResult[@"failed"] = @(observer.failureCount);
+      jsonResult[@"duration_s"] = @(suiteDuration);
+      jsonResult[@"shuffle_seed"] = @(shuffleSeed);
+
+      NSMutableArray *tests = [NSMutableArray array];
+      for (NSDictionary *timing in observer.methodTimings) {
+        NSString *cls = timing[@"class"] ?: @"(unknown)";
+        NSString *method = timing[@"method"] ?: @"(unknown)";
+        NSTimeInterval dur = [timing[@"duration"] doubleValue];
+        // Check if this test failed
+        BOOL failed = NO;
+        NSString *failureDesc = nil;
+        for (NSDictionary *fail in observer.failedTests) {
+          if ([fail[@"class"] isEqualToString:cls] &&
+              [fail[@"method"] isEqualToString:method]) {
+            failed = YES;
+            failureDesc = fail[@"description"];
+            break;
+          }
+        }
+        NSMutableDictionary *entry = [NSMutableDictionary dictionary];
+        entry[@"class"] = cls;
+        entry[@"method"] = method;
+        entry[@"status"] = failed ? @"failed" : @"passed";
+        entry[@"duration_s"] = @(dur);
+        if (failed && failureDesc) {
+          entry[@"failure"] = failureDesc;
+        }
+        [tests addObject:entry];
+      }
+      jsonResult[@"tests"] = tests;
+
+      if (skippedClasses.count > 0) {
+        jsonResult[@"skipped_classes"] = skippedClasses;
+      }
+
+      NSData *jsonData = [NSJSONSerialization dataWithJSONObject:jsonResult
+                                                        options:NSJSONWritingPrettyPrinted
+                                                          error:nil];
+      if (jsonData) {
+        fprintf(stdout, "%s\n", [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding].UTF8String);
+      }
+    } else {
+      PDSPrintTimingSummary(observer);
+      PDSPrintFailureSummary(observer);
+
+      NSLog(@"\n=== Test Suite Finished ===");
+      NSLog(@"Tests run: %d", observer.testCount);
+      NSLog(@"Failures: %d", observer.failureCount);
+      NSLog(@"Duration: %.3fs", suiteDuration);
+      if (shuffleMode) {
+        NSLog(@"Shuffle seed: %lu", (unsigned long)shuffleSeed);
+      }
+      if (skippedClasses.count > 0) {
+        NSLog(@"Skipped gated test classes: %lu", (unsigned long)skippedClasses.count);
+        for (NSString *skipped in skippedClasses) {
+          NSLog(@"  %@", skipped);
+        }
       }
     }
 
