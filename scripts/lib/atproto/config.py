@@ -54,6 +54,7 @@ SERVICE_PORTS: dict[str, int] = {
     "video": int(os.environ.get("VIDEO_PORT", "2586")),
     "germ": int(os.environ.get("GERM_PORT", "8082")),
     "ui": int(os.environ.get("UI_PORT", "2590")),
+    "skylab": int(os.environ.get("SKYLAB_PORT", "2591")),
 }
 
 SERVICE_BINARIES: dict[str, str] = {
@@ -65,6 +66,7 @@ SERVICE_BINARIES: dict[str, str] = {
     "video": "jelcz",
     "germ": "germ",
     "ui": "garazyk-ui",
+    "skylab": "skylab",
 }
 
 SERVICE_HEALTH_PATHS: dict[str, str] = {
@@ -76,6 +78,7 @@ SERVICE_HEALTH_PATHS: dict[str, str] = {
     "video": "/_health",
     "germ": "/_health",
     "ui": "/admin",
+    "skylab": "/skylab/api/health",
 }
 
 
