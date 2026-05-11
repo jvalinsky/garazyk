@@ -2156,9 +2156,16 @@ static NSUInteger UISafeLength(id value) {
         return [NSString stringWithFormat:@"<div class=\"alert alert-destructive\">%@</div>", UIEscaped(result[@"message"] ?: result[@"error"])];
     }
     NSArray<NSDictionary *> *convos = [result[@"convos"] isKindOfClass:[NSArray class]] ? result[@"convos"] : @[];
-    NSMutableString *html = [NSMutableString stringWithString:@"<table class=\"table\"><thead><tr><th>Conversation ID</th><th>Members</th><th>Last Message</th><th>Actions</th></tr></thead><tbody>"];
+    NSMutableString *html = [NSMutableString stringWithString:@"<table class=\"table\"><thead><tr><th>Conversation ID</th><th>Mode</th><th>Members</th><th>Last Message</th><th>Actions</th></tr></thead><tbody>"];
     for (NSDictionary *convo in convos) {
         NSString *convoID = UISafe(convo[@"id"], @"");
+
+        // Mode column: show lock icon for E2EE
+        NSString *mode = UISafe(convo[@"mode"], @"plaintext");
+        NSString *modeDisplay = [mode isEqualToString:@"e2ee"]
+            ? @"<span title=\"End-to-end encrypted\">&#128274; E2EE</span>"
+            : @"<span class=\"text-secondary\">plaintext</span>";
+
         // Count members from the members array if memberCount is absent
         NSString *memberCount;
         if (convo[@"memberCount"] && [convo[@"memberCount"] respondsToSelector:@selector(stringValue)]) {
@@ -2170,16 +2177,23 @@ static NSUInteger UISafeLength(id value) {
         id lastMsgObj = convo[@"lastMessage"];
         NSString *lastMsg = @"(none)";
         if ([lastMsgObj isKindOfClass:[NSDictionary class]]) {
-            lastMsg = UISafe(((NSDictionary *)lastMsgObj)[@"text"], @"(none)");
+            // Check if last message is encrypted
+            if ([((NSDictionary *)lastMsgObj)[@"mode"] isEqualToString:@"e2ee"] ||
+                ((NSDictionary *)lastMsgObj)[@"ciphertext"] != nil) {
+                lastMsg = @"<em class=\"text-secondary\">&#128274; encrypted</em>";
+            } else {
+                lastMsg = UISafe(((NSDictionary *)lastMsgObj)[@"text"], @"(none)");
+                if (lastMsg.length > 50) lastMsg = [[lastMsg substringToIndex:50] stringByAppendingString:@"..."];
+            }
         } else if ([lastMsgObj isKindOfClass:[NSString class]]) {
             lastMsg = lastMsgObj;
+            if (lastMsg.length > 50) lastMsg = [[lastMsg substringToIndex:50] stringByAppendingString:@"..."];
         }
-        if (lastMsg.length > 50) lastMsg = [[lastMsg substringToIndex:50] stringByAppendingString:@"..."];
-        [html appendFormat:@"<tr><td class=\"text-mono text-sm\">%@</td><td>%@</td><td class=\"text-sm\">%@</td><td><button class=\"btn btn-secondary btn-sm\" onclick=\"lockChatConvo('%@')\">Lock</button></td></tr>",
-            UIEscaped(convoID), UIEscaped(memberCount), UIEscaped(lastMsg), UIEscaped(convoID)];
+        [html appendFormat:@"<tr><td class=\"text-mono text-sm\">%@</td><td>%@</td><td>%@</td><td class=\"text-sm\">%@</td><td><button class=\"btn btn-secondary btn-sm\" onclick=\"lockChatConvo('%@')\">Lock</button></td></tr>",
+            UIEscaped(convoID), modeDisplay, UIEscaped(memberCount), lastMsg, UIEscaped(convoID)];
     }
     if (convos.count == 0) {
-        [html appendString:@"<tr><td colspan=\"4\" class=\"text-center text-secondary p-lg\">No conversations found.</td></tr>"];
+        [html appendString:@"<tr><td colspan=\"5\" class=\"text-center text-secondary p-lg\">No conversations found.</td></tr>"];
     }
     [html appendString:@"</tbody></table>"];
     NSString *cursor = UIStringFromDict(result, @"cursor");
@@ -2210,10 +2224,24 @@ static NSUInteger UISafeLength(id value) {
         if ([sender hasPrefix:@"did:plc:"] && sender.length > 20) {
             sender = [NSString stringWithFormat:@"did:plc:…%@", [sender substringFromIndex:sender.length - 8]];
         }
-        NSString *text = UISafe(msg[@"text"], @"");
+
+        // Check if this is an E2EE message (mode=e2ee or ciphertext present)
+        NSString *mode = msg[@"mode"] ?: @"plaintext";
+        BOOL isEncrypted = [mode isEqualToString:@"e2ee"] || msg[@"ciphertext"] != nil;
+
+        NSString *text;
+        NSString *lockIcon = @"";
+        if (isEncrypted) {
+            // E2EE message: show lock icon and placeholder
+            lockIcon = @"<span class=\"text-secondary\" title=\"End-to-end encrypted\">&#128274;</span> ";
+            text = @"<em class=\"text-secondary\">End-to-end encrypted message</em>";
+        } else {
+            text = UIEscaped(UISafe(msg[@"text"], @""));
+        }
+
         NSString *createdAt = UISafe(msg[@"createdAt"] ?: msg[@"sentAt"], @"");
-        [html appendFormat:@"<div class=\"message\"><div class=\"message-header\"><span class=\"message-sender\">%@</span><span class=\"message-time text-xs text-secondary\">%@</span></div><div class=\"message-body\">%@</div></div>",
-            UIEscaped(sender), UIEscaped(createdAt), UIEscaped(text)];
+        [html appendFormat:@"<div class=\"message\"><div class=\"message-header\"><span class=\"message-sender\">%@</span><span class=\"message-time text-xs text-secondary\">%@</span></div><div class=\"message-body\">%@%@</div></div>",
+            UIEscaped(sender), UIEscaped(createdAt), lockIcon, text];
     }
     if (messages.count == 0) {
         [html appendString:@"<div class=\"text-center text-secondary p-lg\">No messages found.</div>"];
