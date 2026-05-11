@@ -17,15 +17,22 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
 @interface UIBackendClient ()
 
 @property(nonatomic, strong) UIServiceConfig *configuration;
+@property(nonatomic, strong, nullable) PDSSafeHTTPClient *httpClient;
 
 @end
 
 @implementation UIBackendClient
 
 - (instancetype)initWithConfiguration:(UIServiceConfig *)configuration {
+    return [self initWithConfiguration:configuration httpClient:nil];
+}
+
+- (instancetype)initWithConfiguration:(UIServiceConfig *)configuration
+                           httpClient:(nullable PDSSafeHTTPClient *)httpClient {
     self = [super init];
     if (self) {
         _configuration = configuration;
+        _httpClient = httpClient;
     }
     return self;
 }
@@ -1617,7 +1624,8 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
     __block NSError *requestError = nil;
     dispatch_semaphore_t sem = dispatch_semaphore_create(0);
 
-    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *response, NSError *err) {
+    PDSSafeHTTPClient *client = self.httpClient ?: [PDSSafeHTTPClient sharedClient];
+    [client performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *response, NSError *err) {
         responseData = data;
         httpResponse = [response isKindOfClass:[NSHTTPURLResponse class]] ? (NSHTTPURLResponse *)response : nil;
         requestError = err;
@@ -1711,7 +1719,8 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
     __block NSError *requestError = nil;
     dispatch_semaphore_t sem = dispatch_semaphore_create(0);
 
-    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *response, NSError *err) {
+    PDSSafeHTTPClient *client = self.httpClient ?: [PDSSafeHTTPClient sharedClient];
+    [client performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *response, NSError *err) {
         responseData = data;
         httpResponse = [response isKindOfClass:[NSHTTPURLResponse class]] ? (NSHTTPURLResponse *)response : nil;
         requestError = err;
@@ -1797,7 +1806,8 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
     __block NSInteger statusCode = 0;
     dispatch_semaphore_t sem = dispatch_semaphore_create(0);
 
-    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *response, NSError *error) {
+    PDSSafeHTTPClient *client = self.httpClient ?: [PDSSafeHTTPClient sharedClient];
+    [client performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *response, NSError *error) {
         if (!error && [response isKindOfClass:[NSHTTPURLResponse class]]) {
             statusCode = ((NSHTTPURLResponse *)response).statusCode;
         }
