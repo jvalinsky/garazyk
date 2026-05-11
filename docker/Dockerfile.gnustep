@@ -159,7 +159,7 @@ RUN rm -rf build && mkdir build && cd build && \
     -DBUILD_SECP256K1=ON \
     -DGNUSTEP_PREFIX=/usr/GNUstep/Local \
     -DCMAKE_OBJC_FLAGS="-I/usr/GNUstep/Local/Library/Headers" && \
-    cmake --build . --target kaszlak --target campagnola --target zuk --target syrena --target garazyk-ui --parallel $(nproc)
+    cmake --build . --target kaszlak --target campagnola --target zuk --target syrena --target garazyk-ui --target jelcz --parallel $(nproc)
 
 # ---------------------------------------------------------------------------
 # Stage 3: Minimal runtime image
