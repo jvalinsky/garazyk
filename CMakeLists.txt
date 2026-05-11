@@ -878,6 +878,39 @@ set_target_properties(syrena-chat PROPERTIES
   LINK_FLAGS "-ObjC"
 )
 
+# Standalone Germ E2EE Mailbox Service (germ)
+add_executable(germ
+  Garazyk/Binaries/germ/main.m
+)
+
+target_include_directories(germ PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
+  ${SECP256K1_INCLUDE_DIRS}
+)
+
+target_link_libraries(germ PRIVATE
+  ATProtoRuntime
+  ATProtoServices
+  ATProtoTransport
+  ATProtoXRPC
+  ATProtoSync
+  ATProtoStorage
+  ATProtoCore
+  ${PLATFORM_LIBRARIES}
+  ${SECP256K1_LIBRARIES}
+  ${READLINE_LIBRARY}
+)
+
+target_compile_definitions(germ PRIVATE
+  SQLITE_THREADSAFE=2
+)
+
+set_target_properties(germ PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  LINK_FLAGS "-ObjC"
+)
+
 # Copy UI server assets to build output
 add_custom_command(TARGET garazyk-ui POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory

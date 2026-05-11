@@ -214,30 +214,32 @@ def run() -> ScenarioResult:
         )
 
         # ── 5. Germ: Claim ephemeral mailbox addresses ───────────────
+        luna_agent_ref = "luna-primary-device"
         claim_result = timed_call(
             result, "Germ: Luna claims ephemeral addresses",
             lambda: _germ_post(client,
-                              "com.germnetwork.mailbox.claimAddresses",
-                              {"count": 3},
-                              luna.access_jwt),
+                               "com.germnetwork.mailbox.claimAddresses",
+                               {"agentRef": luna_agent_ref, "count": 3},
+                               luna.access_jwt),
         )
 
         luna_addresses = []
         if claim_result and "addresses" in claim_result:
             luna_addresses = claim_result["addresses"]
             result.step_passed("Germ: Luna received addresses",
-                              f"Got {len(luna_addresses)} opaque addresses")
+                               f"Got {len(luna_addresses)} opaque addresses")
         elif claim_result is None:
             result.step_skipped("Germ: Claim addresses",
-                               "Germ mailbox endpoint not available")
+                                "Germ mailbox endpoint not available or invalid")
 
         # ── 6. Germ: Marcus claims addresses ──────────────────────────
+        marcus_agent_ref = "marcus-laptop"
         claim_result_m = timed_call(
             result, "Germ: Marcus claims ephemeral addresses",
             lambda: _germ_post(client,
-                              "com.germnetwork.mailbox.claimAddresses",
-                              {"count": 3},
-                              marcus.access_jwt),
+                               "com.germnetwork.mailbox.claimAddresses",
+                               {"agentRef": marcus_agent_ref, "count": 3},
+                               marcus.access_jwt),
         )
 
         marcus_addresses = []
@@ -252,19 +254,19 @@ def run() -> ScenarioResult:
             deliver_result = timed_call(
                 result, "Germ: Luna delivers ciphertext to Marcus",
                 lambda: _germ_post(client,
-                                  "com.germnetwork.mailbox.deliver",
-                                  {"address": marcus_addresses[0],
-                                   "ciphertext": {"$bytes": ciphertext_b64}},
-                                  luna.access_jwt),
+                                   "com.germnetwork.mailbox.deliver",
+                                   {"address": marcus_addresses[0],
+                                    "ciphertext": {"$bytes": ciphertext_b64}},
+                                   luna.access_jwt),
             )
 
             # ── 8. Germ: Marcus polls mailbox ────────────────────────
             poll_result = timed_call(
                 result, "Germ: Marcus polls mailbox",
                 lambda: _germ_get(client,
-                                 "com.germnetwork.mailbox.poll",
-                                 {},
-                                 marcus.access_jwt),
+                                  "com.germnetwork.mailbox.poll",
+                                  {"agentRef": marcus_agent_ref},
+                                  marcus.access_jwt),
             )
 
             # ── 9. Verify ciphertext is opaque ────────────────────────
@@ -290,17 +292,17 @@ def run() -> ScenarioResult:
                         "Verify: Germ ciphertext is opaque",
                         "Ciphertext mismatch — server may have modified content")
             else:
-                result.step_skipped("Verify: Germ ciphertext is opaque",
-                                   "No messages in poll result")
+                result.step_failed("Verify: Germ ciphertext is opaque",
+                                   "No messages in poll result (expected 1)")
 
             # ── 10. Verify single-read semantics ──────────────────────
             # Second poll should return nothing (messages are deleted)
             poll_result_2 = timed_call(
                 result, "Germ: Marcus polls mailbox again (single-read)",
                 lambda: _germ_get(client,
-                                 "com.germnetwork.mailbox.poll",
-                                 {},
-                                 marcus.access_jwt),
+                                  "com.germnetwork.mailbox.poll",
+                                  {"agentRef": marcus_agent_ref},
+                                  marcus.access_jwt),
             )
             if poll_result_2 and "messages" in poll_result_2:
                 if len(poll_result_2["messages"]) == 0:
@@ -321,10 +323,11 @@ def run() -> ScenarioResult:
         rendezvous_result = timed_call(
             result, "Germ: Luna registers rendezvous address",
             lambda: _germ_post(client,
-                              "com.germnetwork.rendezvous.register",
-                              {"address": "rendezvous-luna-epoch-1",
-                               "epoch": 1},
-                              luna.access_jwt),
+                               "com.germnetwork.rendezvous.register",
+                               {"address": "rendezvous-luna-epoch-1",
+                                "agentRef": luna_agent_ref,
+                                "epoch": 1},
+                               luna.access_jwt),
         )
 
         if rendezvous_result:
@@ -335,21 +338,20 @@ def run() -> ScenarioResult:
             timed_call(
                 result, "Germ: Marcus delivers to Luna's rendezvous",
                 lambda: _germ_post(client,
-                                  "com.germnetwork.rendezvous.deliver",
-                                  {"address": "rendezvous-luna-epoch-1",
-                                   "ciphertext": {"$bytes": rendezvous_ct_b64}},
-                                  marcus.access_jwt),
+                                   "com.germnetwork.rendezvous.deliver",
+                                   {"address": "rendezvous-luna-epoch-1",
+                                    "ciphertext": {"$bytes": rendezvous_ct_b64}},
+                                   marcus.access_jwt),
             )
 
             # Luna polls rendezvous
             timed_call(
                 result, "Germ: Luna polls rendezvous messages",
                 lambda: _germ_get(client,
-                                 "com.germnetwork.rendezvous.poll",
-                                 {},
-                                 luna.access_jwt),
+                                  "com.germnetwork.mailbox.poll",
+                                  {"agentRef": luna_agent_ref},
+                                  luna.access_jwt),
             )
-
         # ── 12. Germ: Identity lookup ─────────────────────────────────
         timed_call(
             result, "Germ: Look up Luna's anchor key",
