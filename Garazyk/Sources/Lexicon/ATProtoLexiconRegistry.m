@@ -121,7 +121,7 @@
         self.schemas[schema.nsid] = schema;
     });
     
-    PDS_LOG_INFO(@"[LexiconRegistry] Registered schema: %@", schema.nsid);
+    PDS_LOG_DEBUG(@"[LexiconRegistry] Registered schema: %@", schema.nsid);
 }
 
 - (nullable ATProtoLexiconSchema *)schemaForNSID:(NSString *)nsid {
