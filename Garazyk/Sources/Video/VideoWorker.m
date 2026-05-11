@@ -352,7 +352,15 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
                                                                             serviceAuth:serviceToken
                                                                                   error:&storeError];
                             if (uploadResult) {
-                                processedCid = [CID cidFromString:uploadResult[@"cid"]];
+                                // PDS uploadBlob returns {"blob": {"ref": {"$link": "cid..."}}}
+                                NSString *cidString = uploadResult[@"blob"][@"ref"][@"$link"];
+                                if (!cidString) {
+                                    // Fallback: try top-level "cid" key
+                                    cidString = uploadResult[@"cid"];
+                                }
+                                if (cidString) {
+                                    processedCid = [CID cidFromString:cidString];
+                                }
                             }
                         } else if (self.blobProvider) {
                             // Direct blob store (legacy in-process mode)
