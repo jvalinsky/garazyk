@@ -107,7 +107,7 @@ static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
             return;
         }
 
-        sqlite3_busy_timeout(_db, 60000);
+        sqlite3_busy_timeout(_db, 5000);
 
         // Mark database as open immediately so subsequent operations (including migrations)
         // can execute. This must be set before running migrations that use executeParameterizedUpdate.
