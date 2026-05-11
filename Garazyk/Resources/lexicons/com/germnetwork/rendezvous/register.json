@@ -1,0 +1,49 @@
+{
+  "lexicon": 1,
+  "id": "com.germnetwork.rendezvous.register",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Register a rendezvous address for an agent. Rendezvous addresses are derived from MLS epoch secrets and are stable within an epoch for reconnection. They rotate with each MLS epoch. Models after Germ's current shipping 1:1 E2EE DM product.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["address", "agentRef", "epoch"],
+          "properties": {
+            "address": {
+              "type": "string",
+              "description": "Rendezvous address (derived from epoch secrets)",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "agentRef": {
+              "type": "string",
+              "description": "Opaque agent reference",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "epoch": {
+              "type": "integer",
+              "description": "MLS epoch number this address is valid for",
+              "minimum": 0
+            }
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["registered"],
+          "properties": {
+            "registered": {
+              "type": "boolean",
+              "description": "Whether the registration succeeded"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "lexicon": 1,
+  "id": "com.germnetwork.rendezvous.deliver",
+  "defs": {
+    "main": {
+      "type": "procedure",
+      "description": "Deliver an E2EE ciphertext to a rendezvous address. The server stores only ciphertext and cannot decrypt message content. Models after Germ's current shipping 1:1 E2EE DM product.",
+      "input": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["address", "ciphertext"],
+          "properties": {
+            "address": {
+              "type": "string",
+              "description": "Target rendezvous address",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "ciphertext": {
+              "type": "bytes",
+              "description": "E2EE ciphertext blob"
+            }
+          }
+        }
+      },
+      "output": {
+        "encoding": "application/json",
+        "schema": {
+          "type": "object",
+          "required": ["delivered"],
+          "properties": {
+            "delivered": {
+              "type": "boolean",
+              "description": "Whether the delivery succeeded"
+            }
+          }
+        }
+      }
+    }
+  }
+}
