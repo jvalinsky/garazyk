@@ -18,6 +18,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@class PDSRecordService;
+
 /**
  @brief Namespace pack for app.bsky.graph.* endpoints.
  */
@@ -25,6 +27,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                serviceDatabases:(PDSServiceDatabases *)serviceDatabases
+                  recordService:(nullable PDSRecordService *)recordService
                  appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
                       jwtMinter:(JWTMinter *)jwtMinter
                 adminController:(id<PDSAdminController>)adminController;

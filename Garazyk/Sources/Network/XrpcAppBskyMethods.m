@@ -48,6 +48,7 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
 
 + (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
                                serviceDatabases:(PDSServiceDatabases *)serviceDatabases
+                                  recordService:(nullable PDSRecordService *)recordService
                                       jwtMinter:(nullable JWTMinter *)jwtMinter
                                 adminController:(nullable id<PDSAdminController>)adminController
                                   emailProvider:(nullable id<PDSEmailProvider>)emailProvider {
@@ -107,12 +108,14 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                serviceDatabases:(PDSServiceDatabases *)serviceDatabases
+                  recordService:(nullable PDSRecordService *)recordService
                        jwtMinter:(nullable JWTMinter *)jwtMinter
                  adminController:(nullable id<PDSAdminController>)adminController
                    emailProvider:(nullable id<PDSEmailProvider>)emailProvider {
 
   [self registerPDSLevelMethodsWithDispatcher:dispatcher
                               serviceDatabases:serviceDatabases
+                                 recordService:recordService
                                      jwtMinter:jwtMinter
                                adminController:adminController
                                  emailProvider:emailProvider];
@@ -164,6 +167,7 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
 
   [XrpcAppBskyGraphPack registerWithDispatcher:dispatcher
                                serviceDatabases:serviceDatabases
+                                  recordService:recordService
                                  appViewDatabase:appViewDatabase
                                       jwtMinter:jwtMinter
                                 adminController:adminController];
