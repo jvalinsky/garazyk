@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 /* Apple HIG-aligned color tokens and CSS variables
  * Migrated to OKLCH for perceptually uniform color manipulation
  * Brand hue: warm strawberry red (~15°) at low chroma for tinted neutrals
