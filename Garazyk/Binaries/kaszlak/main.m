@@ -36,7 +36,8 @@ static void crash_signal_handler(int sig) {
     const char *signame = (sig == SIGSEGV) ? "SIGSEGV" :
                           (sig == SIGABRT) ? "SIGABRT" :
                           (sig == SIGBUS)  ? "SIGBUS"  :
-                          (sig == SIGFPE)  ? "SIGFPE"  : "UNKNOWN";
+                          (sig == SIGFPE)  ? "SIGFPE"  :
+                          (sig == SIGTRAP) ? "SIGTRAP" : "UNKNOWN";
 
     // Use write() (async-signal-safe) instead of fprintf
     char buf[256];
@@ -117,6 +118,7 @@ static void install_crash_handlers(void) {
     sigaction(SIGABRT, &sa, NULL);
     sigaction(SIGBUS,  &sa, NULL);
     sigaction(SIGFPE,  &sa, NULL);
+    sigaction(SIGTRAP, &sa, NULL);
     NSSetUncaughtExceptionHandler(&uncaught_exception_handler);
 }
 
