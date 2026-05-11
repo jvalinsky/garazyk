@@ -9,12 +9,13 @@
  */
 
 #import "PDSSignalManager.h"
+#import "Compat/PDSTypes.h"
 #import <signal.h>
 #import <string.h>
 
 @interface PDSSignalManager ()
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSMutableArray<PDSSignalHandlerBlock> *> *handlers;
-@property (nonatomic, strong) NSMutableDictionary<NSNumber *, dispatch_source_t> *sources;
+@property (nonatomic, strong) NSMutableDictionary<NSNumber *, id> *sources;
 @end
 
 @implementation PDSSignalManager
@@ -112,7 +113,7 @@
             });
 
             dispatch_resume(source);
-            self.sources[key] = source;
+            self.sources[key] = PDS_GCD_BRIDGE_ID(source);
         }
     }
 }
@@ -125,7 +126,7 @@
     }
 
     @synchronized(self.sources) {
-        dispatch_source_t source = self.sources[key];
+        dispatch_source_t source = PDS_GCD_CAST(dispatch_source_t, self.sources[key]);
         if (source) {
             dispatch_source_cancel(source);
             [self.sources removeObjectForKey:key];
