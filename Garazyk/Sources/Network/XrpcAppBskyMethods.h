@@ -32,6 +32,8 @@ NS_ASSUME_NONNULL_BEGIN
  These endpoints integrate with AppView services (ActorService, FeedService, NotificationService)
  and support optional authentication for personalized results.
  */
+@class PDSRecordService;
+
 @interface XrpcAppBskyMethods : NSObject
 
 /**
@@ -39,6 +41,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
                              serviceDatabases:(PDSServiceDatabases *)serviceDatabases
+                                recordService:(nullable PDSRecordService *)recordService
                                     jwtMinter:(nullable JWTMinter *)jwtMinter
                               adminController:(nullable id<PDSAdminController>)adminController
                                 emailProvider:(nullable id<PDSEmailProvider>)emailProvider;
@@ -49,6 +52,7 @@ NS_ASSUME_NONNULL_BEGIN
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
 
               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
+                 recordService:(nullable PDSRecordService *)recordService
                        jwtMinter:(nullable JWTMinter *)jwtMinter
                  adminController:(nullable id<PDSAdminController>)adminController
                    emailProvider:(nullable id<PDSEmailProvider>)emailProvider;
