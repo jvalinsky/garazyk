@@ -177,8 +177,16 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
 
     if (!isLoopback) {
         NSString *scheme = url.scheme.lowercaseString;
+        BOOL allowHTTP = effective.allowHTTP;
+        if (!allowHTTP) {
+            NSString *envAllow = [[NSProcessInfo processInfo] environment][@"PDS_ALLOW_HTTP"];
+            if ([envAllow isEqualToString:@"1"] || [envAllow isEqualToString:@"true"]) {
+                allowHTTP = YES;
+            }
+        }
+
         BOOL schemeAllowed = [scheme isEqualToString:@"https"] ||
-                             (effective.allowHTTP && [scheme isEqualToString:@"http"]);
+                             (allowHTTP && [scheme isEqualToString:@"http"]);
         if (!schemeAllowed) {
             if (error) {
                 *error = [self errorWithCode:PDSSafeHTTPClientErrorUnsupportedScheme
@@ -510,8 +518,16 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
 
     if (!isLoopback) {
         NSString *scheme = url.scheme.lowercaseString;
+        BOOL allowHTTP = effective.allowHTTP;
+        if (!allowHTTP) {
+            NSString *envAllow = [[NSProcessInfo processInfo] environment][@"PDS_ALLOW_HTTP"];
+            if ([envAllow isEqualToString:@"1"] || [envAllow isEqualToString:@"true"]) {
+                allowHTTP = YES;
+            }
+        }
+
         BOOL schemeAllowed = [scheme isEqualToString:@"https"] ||
-                             (effective.allowHTTP && [scheme isEqualToString:@"http"]);
+                             (allowHTTP && [scheme isEqualToString:@"http"]);
         if (!schemeAllowed) {
             if (error) {
                 *error = [self errorWithCode:PDSSafeHTTPClientErrorUnsupportedScheme
