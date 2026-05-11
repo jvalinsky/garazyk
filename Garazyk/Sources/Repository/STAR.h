@@ -165,6 +165,17 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 - (instancetype)initWithCommit:(STARCommit *)commit;
 
 /*!
+ @method initWithCommit:outputBlock:
+
+ @abstract Initialize a writer with a commit and a streaming output block.
+
+ @param commit The commit header.
+ @param outputBlock Block called whenever a new chunk of data is ready.
+ @return A new STARL0Writer instance.
+ */
+- (instancetype)initWithCommit:(STARCommit *)commit outputBlock:(void (^)(NSData *chunk))outputBlock;
+
+/*!
  @method writeFromMST:blockProvider:error:
 
  @abstract Walk the MST depth-first and serialize as STAR-L0.

@@ -892,22 +892,89 @@
 }
 
 - (nullable PDSRepoChunkProducer)repoContentsSTARL0ChunkProducer:(NSString *)did
-                                                            since:(nullable NSString *)sinceRev
-                                                            error:(NSError **)error {
-    // For now, build the full STAR-L0 data in memory and return a single-chunk producer.
-    // A future optimization could stream the STAR-L0 encoding directly.
-    NSData *starData = [self getRepoContentsSTARL0:did since:sinceRev error:error];
-    if (!starData) return nil;
+                                                             since:(nullable NSString *)sinceRev
+                                                             error:(NSError **)error {
+    PDSActorStore *store = nil;
+    MST *mst = nil;
+    CID *commitCID = nil;
+    NSData *commitBlock = nil;
+    BOOL noChangesSince = NO;
+    BOOL includeFullMST = YES;
+    NSArray<NSString *> *changedMSTKeys = nil;
+    NSArray<NSString *> *recordCIDStrings = nil;
+    NSDictionary<NSString *, PDSDatabaseRecord *> *recordByCID = nil;
+    NSDictionary<NSString *, NSData *> *materializedBlocks = nil;
 
-    __block BOOL sent = NO;
+    if (![self prepareRepoExportForDid:did
+                                 since:sinceRev
+                                 store:&store
+                                   mst:&mst
+                             commitCID:&commitCID
+                           commitBlock:&commitBlock
+                        noChangesSince:&noChangesSince
+                        includeFullMST:&includeFullMST
+                        changedMSTKeys:&changedMSTKeys
+                       recordCIDStrings:&recordCIDStrings
+                            recordByCID:&recordByCID
+                    materializedBlocks:&materializedBlocks
+                                 error:error]) {
+        return nil;
+    }
+
+    STARCommit *commit = [self starCommitFromExport:did
+                                         commitCID:commitCID
+                                       commitBlock:commitBlock];
+
+    __block NSMutableArray<NSData *> *chunks = [NSMutableArray array];
+    __block BOOL finished = NO;
+    __block NSError *exportError = nil;
+
+    // We can't easily do a true "async generator" in ObjC without threads,
+    // so we'll run the traversal once and capture the chunks. 
+    // This is still better than one giant NSData because we've already split it.
+    // In a future version, we'd use a thread-safe queue.
+
+    STARL0Writer *writer = [[STARL0Writer alloc] initWithCommit:commit outputBlock:^(NSData *chunk) {
+        if (chunk.length > 0) {
+            [chunks addObject:chunk];
+        }
+    }];
+
+    __weak typeof(self) weakSelf = self;
+    __block NSDictionary<NSString *, PDSDatabaseRecord *> *capturedRecordByCID = [recordByCID copy];
+    __block NSDictionary<NSString *, NSData *> *capturedMaterializedBlocks = [materializedBlocks copy];
+
+    BOOL success = [writer writeFromMST:mst
+                         blockProvider:^NSData * _Nullable(CID *cid) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return nil;
+        NSString *cidString = cid.stringValue;
+        NSData *data = capturedMaterializedBlocks[cidString];
+        if (!data) {
+            PDSDatabaseBlock *block = [strongSelf.blockRepository blockWithCid:cid.bytes repoDid:did error:nil];
+            data = block.blockData;
+        }
+        if (!data) {
+            PDSDatabaseRecord *record = capturedRecordByCID[cidString];
+            data = record ? [strongSelf recordBlockDataForRecord:record] : nil;
+        }
+        return data;
+    } error:&exportError];
+
+    if (!success) {
+        if (error) *error = exportError;
+        return nil;
+    }
+
+    __block NSUInteger chunkIndex = 0;
     return ^NSData * _Nullable (NSError **producerError) {
         (void)producerError;
-        if (sent) return nil;
-        sent = YES;
-        return starData;
+        if (chunkIndex < chunks.count) {
+            return chunks[chunkIndex++];
+        }
+        return nil;
     };
 }
-
 - (nullable PDSRepoChunkProducer)repoContentsSTARLiteChunkProducer:(NSString *)did
                                                               since:(nullable NSString *)sinceRev
                                                               error:(NSError **)error {

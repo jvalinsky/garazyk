@@ -79,14 +79,14 @@ class TransportLayer:
 
     # ── Logging ───────────────────────────────────────────────────────
 
-    def _log_request(self, method: str, url: str, body: Any = None) -> None:
+    def _log_request(self, method: str, url: str, body: Any = None, headers: Optional[dict] = None) -> None:
         if not logger.isEnabledFor(logging.DEBUG):
             return
         safe_body: str | None = None
         if body is not None and body != "":
             raw = json.dumps(body, default=str)
             safe_body = raw[:500] + ("..." if len(raw) > 500 else "")
-        logger.debug("REQ %s %s body=%s", method, url, safe_body or "(none)")
+        logger.debug("REQ %s %s headers=%s body=%s", method, url, headers or "{}", safe_body or "(none)")
 
     def _log_response(self, url: str, status: int, body: Any) -> None:
         if not logger.isEnabledFor(logging.DEBUG):
@@ -156,18 +156,32 @@ class TransportLayer:
         return self._request("GET", url, params=params, headers=headers, method_name=method)
 
     def get_binary(self, method: str, params: Optional[dict] = None,
-                   token: Optional[str] = None) -> tuple[int, str, bytes]:
+                   token: Optional[str] = None,
+                   headers: Optional[dict[str, str]] = None) -> tuple[int, str, bytes]:
         url = f"{self._base_url}/xrpc/{method}"
-        headers = {"Authorization": f"Bearer {token}"} if token else {}
-        self._log_request("GET", url, {"params": params})
+        request_headers = {"Authorization": f"Bearer {token}"} if token else {}
+        if headers:
+            request_headers.update(headers)
+        self._log_request("GET", url, {"params": params, "headers": headers})
         for attempt in range(1, self._max_attempts + 1):
             try:
                 resp = self._session.get(
-                    url, params=params, headers=headers, timeout=_REQUEST_TIMEOUT,
+                    url, params=params, headers=request_headers, timeout=_REQUEST_TIMEOUT,
                 )
                 if 200 <= resp.status_code < 300:
                     ct = resp.headers.get("Content-Type", "")
                     self._log_response(url, resp.status_code, f"<{len(resp.content)} bytes {ct}>")
+                    
+                    # Verify Accept header was honored if present
+                    requested_accept = request_headers.get("Accept")
+                    if requested_accept and requested_accept != "*/*" and requested_accept not in ct:
+                        # Allow some flexibility for CAR if it's the requested type
+                        if "ipld.car" in requested_accept and "ipld.car" in ct:
+                            pass
+                        else:
+                             logger.warning("Accept header %r was not honored by server (got %r)", 
+                                           requested_accept, ct)
+
                     return (resp.status_code, ct, resp.content)
                 err_body = _safe_json(resp)
                 if resp.status_code < 500:
