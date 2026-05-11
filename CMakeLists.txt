@@ -1472,7 +1472,7 @@ exit 1
 fi
 
 echo \"Running all tests...\"
-\"\${test_binary}\"
+\"\${test_binary}\" \"$@\"
 echo \"Tests complete.\"
 ")
 

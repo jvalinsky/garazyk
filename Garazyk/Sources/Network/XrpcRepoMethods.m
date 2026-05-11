@@ -984,16 +984,9 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
             return;
         }
 
-        // putRecord creates or updates. To emulate upsert with applyWrites,
-        // we use "update" which will implicitly create if it doesn't exist
-        // based on how PDSRecordService applyWrites is implemented.
-        // Wait, PDSRecordService applyWrites doesn't strictly fail on "update"
-        // if the record doesn't exist, it falls back gracefully in the DB.
-        
-        // Actually, ATProto's com.atproto.repo.putRecord is an upsert.
-        // We will just try applying "update", and if applyWrites fails because of it,
-        // we might have to use "create". But looking at applyWrites, "update" works as upsert.
-        
+        // putRecord is an upsert per ATProto spec: create the record if it
+        // doesn't exist, or update it if it does.  We try "update" first;
+        // if the record is not found we fall back to "create".
         NSDictionary *write = @{
             @"action": @"update",
             @"collection": collection,
@@ -1008,9 +1001,39 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
                                            validationMode:mode
                                                swapCommit:swapCommit
                                                     error:&error];
-        if (!result) {
+        if (!result && error) {
+            NSString *errMsg = error.localizedDescription ?: @"";
+            if ([errMsg containsString:@"Record not found"] ||
+                [errMsg containsString:@"not found"]) {
+                // Upsert fallback: record doesn't exist yet, create it.
+                NSDictionary *createWrite = @{
+                    @"action": @"create",
+                    @"collection": collection,
+                    @"rkey": rkey,
+                    @"value": record,
+                };
+                NSError *createError = nil;
+                result = [recordService applyWrites:@[createWrite]
+                                             forDid:did
+                                     validationMode:mode
+                                         swapCommit:swapCommit
+                                              error:&createError];
+                if (!result) {
+                    response.statusCode = HttpStatusBadRequest;
+                    [response setJsonBody:@{@"error": @"RecordCreateFailed",
+                                            @"message": createError.localizedDescription ?: @"Failed to create record"}];
+                    return;
+                }
+            } else {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{@"error": @"RecordUpdateFailed",
+                                        @"message": errMsg}];
+                return;
+            }
+        } else if (!result) {
             response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"RecordUpdateFailed", @"message": error.localizedDescription ?: @"Failed to update record"}];
+            [response setJsonBody:@{@"error": @"RecordUpdateFailed",
+                                    @"message": @"Failed to update record"}];
             return;
         }
 
