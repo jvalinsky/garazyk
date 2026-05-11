@@ -12,13 +12,17 @@
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
 #import "Core/CID.h"
+#import "Core/TID.h"
+#import "Core/NSDateFormatter+ATProto.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Debug/PDSLogger.h"
+#import "Services/PDS/PDSRecordService.h"
 
 @implementation XrpcAppBskyGraphPack
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                serviceDatabases:(PDSServiceDatabases *)serviceDatabases
+                  recordService:(nullable PDSRecordService *)recordService
                  appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
                       jwtMinter:(JWTMinter *)jwtMinter
                 adminController:(id<PDSAdminController>)adminController {
@@ -930,6 +934,109 @@
         }
         response.statusCode = HttpStatusOK;
         [response setJsonBody:result];
+    }];
+
+    // app.bsky.graph.verification.createVerification
+    [dispatcher registerAppBskyGraphVerificationCreateVerification:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
+        if (!actorDID) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody;
+        NSString *subject = body[@"subject"];
+        if (!subject) {
+            [XrpcErrorHelper setValidationError:response message:@"subject is required"];
+            return;
+        }
+
+        NSDictionary *record = @{
+            @"$type": @"app.bsky.graph.verification",
+            @"subject": subject,
+            @"createdAt": [NSDateFormatter atproto_stringFromDate:[NSDate date]]
+        };
+
+        NSError *error = nil;
+        // Use a TID as rkey for verification records
+        NSString *rkey = [[TID tid] stringValue];
+        if (![recordService putRecord:@"app.bsky.graph.verification"
+                                rkey:rkey
+                               value:record
+                              forDid:actorDID
+                               error:&error]) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
+    }];
+
+    // app.bsky.graph.verification.deleteVerification
+    [dispatcher registerAppBskyGraphVerificationDeleteVerification:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                            jwtMinter:jwtMinter
+                                                      adminController:adminController
+                                                              request:request
+                                                             response:response];
+        if (!actorDID) {
+            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody;
+        NSString *subject = body[@"subject"];
+        if (!subject) {
+            [XrpcErrorHelper setValidationError:response message:@"subject is required"];
+            return;
+        }
+
+        // We need to find the record key for the verification of this subject
+        NSError *error = nil;
+        NSArray *records = [recordService listRecords:@"app.bsky.graph.verification"
+                                               forDid:actorDID
+                                                limit:100
+                                               cursor:nil
+                                                error:&error];
+        if (error) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
+
+        NSString *foundRKey = nil;
+        for (NSDictionary *recordEntry in records) {
+            NSDictionary *value = recordEntry[@"value"];
+            if ([value[@"subject"] isEqualToString:subject]) {
+                foundRKey = recordEntry[@"uri"];
+                // Extract rkey from URI: at://did/coll/rkey
+                foundRKey = [foundRKey lastPathComponent];
+                break;
+            }
+        }
+
+        if (!foundRKey) {
+            response.statusCode = HttpStatusNotFound;
+            [response setJsonBody:@{@"error": @"NotFound", @"message": @"Verification not found"}];
+            return;
+        }
+
+        if (![recordService deleteRecord:@"app.bsky.graph.verification"
+                                   rkey:foundRKey
+                                 forDid:actorDID
+                                  error:&error]) {
+            [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{}];
     }];
 
     PDS_LOG_INFO(@"Registered app.bsky.graph.* endpoints");
