@@ -27,13 +27,15 @@
     self = [super init];
     if (self) {
         _cache = [NSMutableDictionary dictionary];
-        _queue = dispatch_queue_create("com.atproto.pds.mstcache", DISPATCH_QUEUE_SERIAL);
+        // Use a concurrent queue with barrier writes for better read parallelism.
+        // Multiple DIDs can read their MSTs concurrently without blocking each other.
+        _queue = dispatch_queue_create("com.atproto.pds.mstcache", DISPATCH_QUEUE_CONCURRENT);
     }
     return self;
 }
 
 - (nullable MST *)mstForDid:(NSString *)did {
-    // Fast path: dictionary lookup on serial queue, then atomic snapshot read
+    // Fast path: concurrent read from dictionary, then atomic snapshot read
     __block MSTAtomicReference *ref = nil;
     dispatch_sync(self.queue, ^{
         ref = self.cache[did];
@@ -44,7 +46,8 @@
 }
 
 - (void)setMST:(MST *)mst forDid:(NSString *)did {
-    dispatch_sync(self.queue, ^{
+    // Barrier write: exclusive access while updating the cache dictionary
+    dispatch_barrier_sync(self.queue, ^{
         MSTAtomicReference *ref = self.cache[did];
         if (ref) {
             // Atomic swap — readers always see a consistent snapshot
@@ -58,7 +61,8 @@
 }
 
 - (void)removeMSTForDid:(NSString *)did {
-    dispatch_sync(self.queue, ^{
+    // Barrier write: exclusive access while removing from cache
+    dispatch_barrier_sync(self.queue, ^{
         MSTAtomicReference *ref = self.cache[did];
         if (ref) {
             [ref clear];  // Release the MST
@@ -68,7 +72,8 @@
 }
 
 - (void)removeAllMSTs {
-    dispatch_sync(self.queue, ^{
+    // Barrier write: exclusive access while clearing cache
+    dispatch_barrier_sync(self.queue, ^{
         for (MSTAtomicReference *ref in self.cache.allValues) {
             [ref clear];
         }
