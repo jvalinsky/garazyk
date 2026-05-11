@@ -264,6 +264,7 @@ if [[ "$BINARY_MODE" == "true" ]]; then
     export PDS_USE_KEYCHAIN=false
     export PDS_MASTER_SECRET="test-master-secret-123"
     export PDS_ADMIN_PASSWORD="test-admin-password"
+    export PDS_PLC_KEYS_DIR="$PDS_DATA/keys"
 
     # ── Start PLC ────────────────────────────────────────────────────────────
     log_info "Starting PLC on port $SERVICE_PORT_PLC..."
@@ -330,6 +331,7 @@ if [[ "$BINARY_MODE" == "true" ]]; then
         mkdir -p "$PDS2_DATA"
         log_info "Starting PDS2 on port $SERVICE_PORT_CHAT..."
         PDS_MASTER_SECRET="test-master-secret-456" \
+        PDS_PLC_KEYS_DIR="$PDS2_DATA/keys" \
         "$BUILD_BIN/$SERVICE_BINARY_PDS" serve --config "$CONFIG_DIR/pds2-config.json" --port "$SERVICE_PORT_CHAT" --data-dir "$PDS2_DATA" > "$ATPROTO_E2E_LOG_DIR/pds2.log" 2>&1 &
         echo "PDS2_PID=$!" >> "$PID_FILE"
         sleep 3
