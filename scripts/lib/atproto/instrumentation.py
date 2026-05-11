@@ -667,13 +667,14 @@ class ProcessMonitor:
         if not missing:
             return
 
-        # Docker compose service names match our service_names
+        # Docker compose service names in the local-network compose file
+        # use the "local-" prefix (e.g., local-pds, local-appview).
         compose_svc_map = {
-            "pds": "pds",
-            "pds2": "pds2",
-            "relay": "relay",
-            "appview": "appview",
-            "plc": "plc",
+            "pds": "local-pds",
+            "pds2": "local-pds2",
+            "relay": "local-relay",
+            "appview": "local-appview",
+            "plc": "local-plc",
         }
 
         try:
@@ -681,12 +682,18 @@ class ProcessMonitor:
             for svc in missing:
                 compose_svc = compose_svc_map.get(svc, svc)
                 # Find container by compose service label
+                cmd = [
+                    "docker", "ps",
+                    "--filter", f"label=com.docker.compose.service={compose_svc}",
+                    "--format", "{{.ID}}",
+                ]
+                # Also filter by project to avoid matching containers from other runs
+                if self._docker_compose_project:
+                    cmd.extend([
+                        "--filter", f"label=com.docker.compose.project={self._docker_compose_project}",
+                    ])
                 result = subprocess.run(
-                    [
-                        "docker", "ps",
-                        "--filter", f"label=com.docker.compose.service={compose_svc}",
-                        "--format", "{{.ID}}",
-                    ],
+                    cmd,
                     capture_output=True, text=True, timeout=5,
                 )
                 container_id = result.stdout.strip().split("\n")[0] if result.stdout.strip() else None
@@ -744,6 +751,62 @@ class ProcessMonitor:
             disk_write_bytes=disk_write,
         )
         self._stats[svc].samples.append(sample)
+
+    def _sample_docker(self, svc: str, container_id: str) -> None:
+        """Sample process stats from a Docker container via ``docker stats``."""
+        import subprocess as sp
+
+        result = sp.run(
+            [
+                "docker", "stats", "--no-stream",
+                "--format", "{{.CPUPerc}}\t{{.MemUsage}}",
+                container_id,
+            ],
+            capture_output=True, text=True, timeout=10,
+        )
+        if not result.stdout.strip():
+            return
+
+        parts = result.stdout.strip().split("\t")
+        cpu_pct = 0.0
+        rss_bytes = 0
+        if len(parts) >= 2:
+            try:
+                cpu_str = parts[0].strip().rstrip("%")
+                cpu_pct = float(cpu_str)
+            except ValueError:
+                pass
+            try:
+                # MemUsage format: "1.23MiB / 4GiB"
+                mem_str = parts[1].strip().split("/")[0].strip()
+                rss_bytes = _parse_docker_mem(mem_str)
+            except (ValueError, IndexError):
+                pass
+
+        sample = ProcessSample(
+            timestamp=time.time(),
+            rss_bytes=rss_bytes,
+            vms_bytes=rss_bytes,
+            cpu_pct=cpu_pct,
+            thread_count=0,
+            fd_count=0,
+            disk_read_bytes=0,
+            disk_write_bytes=0,
+        )
+        self._stats[svc].samples.append(sample)
+
+
+def _parse_docker_mem(mem_str: str) -> int:
+    """Parse Docker memory string like '1.23MiB' or '512KiB' to bytes."""
+    units = {"KiB": 1024, "MiB": 1024**2, "GiB": 1024**3, "TiB": 1024**4}
+    for suffix, multiplier in units.items():
+        if mem_str.endswith(suffix):
+            return int(float(mem_str[: -len(suffix)]) * multiplier)
+    # Fallback: try plain integer bytes
+    try:
+        return int(mem_str)
+    except ValueError:
+        return 0
 
 
 # ---------------------------------------------------------------------------
