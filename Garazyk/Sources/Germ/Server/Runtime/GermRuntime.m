@@ -1,7 +1,9 @@
 #import "GermRuntime.h"
 #import "Germ/Server/Config/GermMailboxSchemaManager.h"
 #import "Germ/Server/Services/GermMailboxService.h"
+#import "Germ/Server/Identity/GermIdentityService.h"
 #import "Germ/Server/XrpcGermMailboxPack.h"
+#import "Germ/Server/XrpcGermIdentityPack.h"
 #import "Chat/Server/ChatAuthManager.h"
 #import "Database/PDSDatabase.h"
 #import "Network/HttpServer.h"
@@ -15,6 +17,7 @@ static const uint16_t kGermDefaultPort = 8082;
 @interface GermRuntime ()
 @property (nonatomic, strong) PDSDatabase *db;
 @property (nonatomic, strong) GermMailboxService *mailboxService;
+@property (nonatomic, strong) GermIdentityService *identityService;
 @property (nonatomic, strong) ChatAuthManager *authManager;
 @property (nonatomic, strong) HttpServer *httpServer;
 @property (nonatomic, strong) XrpcDispatcher *dispatcher;
@@ -68,6 +71,7 @@ static const uint16_t kGermDefaultPort = 8082;
 
     // 3. Initialize services
     self.mailboxService = [[GermMailboxService alloc] initWithDatabase:(id<PDSQueryDatabase>)self.db];
+    self.identityService = [[GermIdentityService alloc] initWithDatabase:(id<PDSQueryDatabase>)self.db];
     self.authManager = [ChatAuthManager sharedManager];
 
     // 4. Initialize networking
@@ -78,6 +82,11 @@ static const uint16_t kGermDefaultPort = 8082;
         initWithMailboxService:self.mailboxService
                    authManager:self.authManager];
     [mailboxPack registerHandlersWithDispatcher:self.dispatcher];
+
+    XrpcGermIdentityPack *identityPack = [[XrpcGermIdentityPack alloc]
+        initWithIdentityService:self.identityService
+                   authManager:self.authManager];
+    [identityPack registerHandlersWithDispatcher:self.dispatcher];
 
     // 5. Start HTTP server (bind to localhost — Germ mailbox must be
     //    accessed through PDS proxy, not directly exposed)
