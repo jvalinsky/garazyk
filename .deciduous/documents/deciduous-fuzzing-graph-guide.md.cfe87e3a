@@ -1,7 +1,7 @@
 # Deciduous Decision Graph — Fuzzing Infrastructure Complete
 
 **Graph Created:** 2026-04-25  
-**Status:** ✅ Complete (All 10 Phases)  
+**Status:** ✅ Complete (All 11 Phases)
 **Main Goal Node:** #356  
 **Narrative Document:** `/Users/jack/.claude/scratchpads/fuzzing-improvements-narrative.md`
 
@@ -53,9 +53,9 @@
 ### Goal Node #356
 
 **Title:** Comprehensive Fuzzing Harness Review & Improvement  
-**Status:** Pending (design complete, implementation done)  
-**Confidence:** 90%  
-**Description:** Review 9 fuzzer harnesses for correctness and coverage gaps. Fix critical bugs, implement high-priority improvements, and design extended fuzzing strategy per web research.
+**Status:** Completed
+**Confidence:** 90%
+**Description:** Review 9 fuzzer harnesses for correctness and coverage gaps. Fix critical bugs, implement high-priority improvements, and design extended fuzzing strategy per web research. All 11 phases complete including gap fuzzers (Blob, Firehose, OAuth).
 
 **Attached Document:**
 - `fuzzing-improvements-narrative.md` — Full narrative with detailed findings, fixes, and roadmap
@@ -162,10 +162,10 @@
 **Implementation Roadmap:**
 | Phase | Task | Effort | Impact | Status |
 |-------|------|--------|--------|--------|
-| **Now** | Fill corpus with real examples | 2h | ⭐⭐⭐⭐ | Planned |
-| **Now** | Add CI regression tests | 3h | ⭐⭐⭐⭐ | Planned |
-| **Soon** | Custom mutators for JWT/HTTP | 1d | ⭐⭐⭐⭐⭐ | Planned |
-| **Soon** | Coverage measurement | 4h | ⭐⭐⭐ | Planned |
+| **Now** | Fill corpus with real examples | 2h | ⭐⭐⭐⭐ | ✅ Complete |
+| **Now** | Add CI regression tests | 3h | ⭐⭐⭐⭐ | ✅ Complete |
+| **Soon** | Custom mutators for JWT/HTTP | 1d | ⭐⭐⭐⭐⭐ | ✅ Complete |
+| **Soon** | Coverage measurement | 4h | ⭐⭐⭐ | ✅ Complete |
 | **Later** | Differential fuzzing | 2d | ⭐⭐⭐ | Planned |
 | **Later** | Property-based invariants | 1d | ⭐⭐⭐⭐ | Planned |
 | **Future** | OSS-Fuzz integration | 2d | ⭐⭐ | Planned |
@@ -193,13 +193,13 @@
 #### #372 — Fuzzing Harness Review & Improvement Complete
 - **Confidence:** 94%
 - **Commit:** 1bc479f
-- **Status:** ✅ Phases 1-2 complete | 📋 Phase 3+ planned
-- **Description:** 
+- **Status:** ✅ All 11 phases complete
+- **Description:**
   - ✅ COMPLETED: Phase 1 code review (10 issues)
   - ✅ IMPLEMENTED: All critical + high-priority fixes
-  - ✅ BUILD SUCCESS: All 9 fuzzers rebuild
+  - ✅ BUILD SUCCESS: All fuzzers rebuild
   - ✅ SMOKE TESTS: 100% pass
-  - 📋 PLANNED: Extended strategy with 12 categories
+  - ✅ IMPLEMENTED: Seed corpus, custom mutators, protocol corpus, coverage, CI, minimizer, regression, grammars, sanitizers, gap fuzzers
 
 ---
 
@@ -313,8 +313,8 @@ All nodes are linked to one of two scratchpad files:
 
 ## Final Coverage
 
-- 13 fuzzer targets
-- 132 seed files
+- 16 fuzzer harnesses (13 baseline + 3 gap fuzzers)
+- 132+ seed files across 8 corpus directories + auth/blob/unicode
 - ~135 MB total binary size
 - 0 crashes
 - All attack surfaces covered
@@ -362,7 +362,7 @@ All nodes are linked to one of two scratchpad files:
 
 ---
 
-## Fuzzer Targets (14 Total)
+## Fuzzer Targets (17 Total)
 
 | Target | Type | Binary Size |
 |--------|------|-------------|
@@ -375,11 +375,23 @@ All nodes are linked to one of two scratchpad files:
 | fuzz_sqlite | Baseline | — |
 | fuzz_lexicon | Baseline | — |
 | fuzz_mst | Baseline | — |
+| fuzz_blob | Baseline (Phase 11) | — |
+| fuzz_firehose | Baseline (Phase 11) | — |
+| fuzz_oauth | Baseline (Phase 11) | — |
 | fuzz_jwt_struct | Mutator | 8 MB |
 | fuzz_http_struct | Mutator | 8 MB |
 | fuzz_cbor_struct | Mutator | 11 MB |
 | fuzz_xrpc_struct | Mutator | 11 MB |
 | fuzz_multi_json | Multi-path | 8 MB |
+
+### Supporting Harnesses
+
+| File | Purpose |
+|------|---------|
+| FuzzCoverageTracker.m | Coverage instrumentation (Phase 6) |
+| FuzzMinimizer.m | Corpus minimization (Phase 8) |
+| FuzzMultiJSON.m | Multi-path JSON parsing (Phase 9) |
+| XrpcCorpusGenerator.m | XRPC protocol corpus generation (Phase 5) |
 
 ---
 
@@ -393,6 +405,6 @@ All nodes are linked to one of two scratchpad files:
 
 ---
 
-**Decision Graph Version:** 1.0  
-**Last Updated:** 2026-04-25  
-**Status:** Ready for Phase 3
+**Decision Graph Version:** 1.1
+**Last Updated:** 2026-05-11
+**Status:** All 11 Phases Complete
