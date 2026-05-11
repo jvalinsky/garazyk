@@ -21,9 +21,6 @@ services:
       - local_plc_data:/var/lib/atprotopds
     environment:
       - TZ=UTC
-      - PDS_ALLOW_PRIVATE_SSRF=1
-      - PDS_ALLOW_HTTP=1
-      - PDS_LEXICON_PATH=/usr/share/atprotopds/lexicons
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:2582/_health"]
       interval: 5s
@@ -58,7 +55,6 @@ services:
       - PDS_PLC_KEYS_DIR=/var/lib/atprotopds/keys
       - PDS_MASTER_SECRET=32107992c973da8445b485263cb2bd3157859cb94294a2355e3c4a7b0f825afe
       - GARAZYK_ALLOW_PRIVATE_OAUTH_CLIENTS=1
-      - GARAZYK_OAUTH_HOST_MAP=127.0.0.1:8080=oauth-client:8080
       - PDS_RUNNING_TESTS=1
       - PDS_USE_KEYCHAIN=false
       - PDS_ADMIN_PASSWORD=admin-localdev
@@ -73,22 +69,6 @@ services:
       start_period: 15s
     networks:
       - local_net
-
-  oauth-client:
-    build:
-      context: ./oauth-client
-      dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
-    networks:
-      local_net:
-        aliases:
-          - oauth-client
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/client-metadata.json"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
 
   local-relay:
     build:
@@ -171,6 +151,98 @@ services:
     networks:
       - local_net
 
+  local-chat:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    entrypoint: ["/usr/local/bin/syrena-chat"]
+    command:
+      - "serve"
+      - "--port"
+      - "2585"
+      - "--data-dir"
+      - "/var/lib/atprotopds"
+    ports:
+      - "2585:2585"
+    volumes:
+      - local_chat_data:/var/lib/atprotopds
+    environment:
+      - TZ=UTC
+      - CHAT_PDS_URL=http://local-pds:2583
+      - CHAT_PLC_URL=http://local-plc:2582
+    depends_on:
+      local-pds:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2585/_health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - local_net
+
+  local-germ:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    entrypoint: ["/usr/local/bin/germ"]
+    command:
+      - "serve"
+      - "--port"
+      - "8082"
+      - "--data-dir"
+      - "/var/lib/atprotopds"
+    ports:
+      - "8082:8082"
+    volumes:
+      - local_germ_data:/var/lib/atprotopds
+    environment:
+      - TZ=UTC
+      - GERM_PDS_URL=http://local-pds:2583
+      - GERM_PLC_URL=http://local-plc:2582
+    depends_on:
+      local-pds:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/_health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - local_net
+
+  local-video:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    entrypoint: ["/usr/local/bin/jelcz"]
+    command:
+      - "serve"
+      - "--port"
+      - "2586"
+    ports:
+      - "2586:2586"
+    volumes:
+      - local_video_data:/var/lib/atprotopds
+    environment:
+      - TZ=UTC
+      - JELCZ_PDS_URL=http://local-pds:2583
+      - JELCZ_PLC_URL=http://local-plc:2582
+      - JELCZ_DATA_DIR=/var/lib/atprotopds
+    depends_on:
+      local-pds:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2586/_health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - local_net
+
   local-ui:
     build:
       context: .
@@ -186,9 +258,6 @@ services:
       - "2590:2590"
     environment:
       - TZ=UTC
-      - PDS_ALLOW_PRIVATE_SSRF=1
-      - PDS_ALLOW_HTTP=1
-      - PDS_LEXICON_PATH=/usr/share/atprotopds/lexicons
       - GARAZYK_UI_PORT=2590
       - GARAZYK_UI_ADMIN_PASSWORD=admin-localdev
       - GARAZYK_UI_PDS_URL=http://local-pds:2583
@@ -206,6 +275,38 @@ services:
     networks:
       - local_net
 
+  skylab:
+    build:
+      context: ../../skylab
+      dockerfile: Dockerfile
+    ports:
+      - "2591:2591"
+    environment:
+      - PORT=2591
+      - PDS_HOST=local-pds
+      - PDS_PORT=2583
+      - APPVIEW_HOST=local-appview
+      - APPVIEW_PORT=3200
+      - RELAY_HOST=local-relay
+      - RELAY_PORT=2584
+      - CHAT_HOST=local-chat
+      - CHAT_PORT=2585
+      - VIDEO_HOST=local-video
+      - VIDEO_PORT=2586
+      - PLC_HOST=local-plc
+      - PLC_PORT=2582
+      - GERM_HOST=local-germ
+      - GERM_PORT=8082
+      - UI_HOST=local-ui
+      - UI_PORT=2590
+    depends_on:
+      - local-pds
+      - local-appview
+      - local-chat
+      - local-germ
+    networks:
+      - local_net
+
 networks:
   local_net:
     driver: bridge
@@ -216,3 +317,6 @@ volumes:
   local_pds_keys:
   local_relay_data:
   local_appview_data:
+  local_chat_data:
+  local_germ_data:
+  local_video_data:
