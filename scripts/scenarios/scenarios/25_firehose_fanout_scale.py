@@ -83,9 +83,11 @@ def run() -> ScenarioResult:
     prom_scraper = PrometheusScraper(prom_endpoints, interval=2.0)
     prom_scraper.start()
 
+    _compose_project = os.environ.get("ATPROTO_E2E_COMPOSE_PROJECT")
     proc_monitor = ProcessMonitor(
         service_names=["pds", "relay"],
         binary_names=["kaszlak", "zuk"],
+        docker_compose_project=_compose_project,
     )
     proc_monitor.start()
 

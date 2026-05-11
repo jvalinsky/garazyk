@@ -92,6 +92,11 @@ def run() -> ScenarioResult:
     result = ScenarioResult("Full-Stack Soak")
     result.start()
 
+    # Initialize tracking variables early so they're always available
+    # for artifact recording, even if a phase fails before setting them.
+    last_pds_counts: dict[str, int] = {}
+    last_appview_counts: dict[str, int] = {}
+
     client = XrpcClient(PDS1)
     relay_client = XrpcClient(SERVICE_URLS["relay"])
     appview_client = XrpcClient(SERVICE_URLS["appview"])
@@ -108,9 +113,14 @@ def run() -> ScenarioResult:
         },
         headers={"Authorization": f"Bearer {admin_token}"} if admin_token else None,
     )
+    # Discover PID file from the e2e run directory
+    _pid_file = os.environ.get("ATPROTO_E2E_PID_FILE") or None
+    _compose_project = os.environ.get("ATPROTO_E2E_COMPOSE_PROJECT")
     process_monitor = ProcessMonitor(
         service_names=["pds", "relay", "appview"],
         binary_names=["kaszlak", "zuk", "syrena"],
+        pid_file=_pid_file,
+        docker_compose_project=_compose_project,
     )
     storage_monitor = StorageMonitor(
         paths={
@@ -139,13 +149,15 @@ def run() -> ScenarioResult:
     storage_monitor.start()
 
     expected_services = {"pds", "relay", "appview"}
-    discovered_services = set(process_monitor._processes.keys())
+    discovered_services = process_monitor.discovered_services
     if discovered_services != expected_services:
+        missing = sorted(expected_services - discovered_services)
         result.step_failed(
             "Process discovery",
-            f"found={sorted(discovered_services)}, missing={sorted(expected_services - discovered_services)}",
+            f"found={sorted(discovered_services)}, missing={missing}",
         )
-        return result
+        # Non-fatal: continue the scenario even if some processes aren't found.
+        # Process-dependent checks (RSS growth, CPU) will be skipped later.
 
     accounts: list[Character] = []
     existing_names = ["luna", "marcus", "rosa", "volt", "quiet", "admin", "mod", "troll"]
@@ -713,8 +725,8 @@ def run() -> ScenarioResult:
         expected_counts: dict[str, int] = {collection: 0 for collection in COLLECTIONS}
         observed_counts: dict[str, int] = {collection: 0 for collection in COLLECTIONS}
         deadline = time.time() + 30.0
-        last_pds_counts: dict[str, int] = expected_counts.copy()
-        last_appview_counts: dict[str, int] = observed_counts.copy()
+        last_pds_counts = expected_counts.copy()
+        last_appview_counts = observed_counts.copy()
         while time.time() < deadline:
             pds_counts = {
                 "app.bsky.actor.profile": sum(

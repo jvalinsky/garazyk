@@ -143,7 +143,9 @@ def run() -> ScenarioResult:
     pds_wal_path = f"{pds_data_dir}/pds.db-wal"
 
     prometheus = PrometheusScraper({"pds": pds_metrics_url})
-    process_monitor = ProcessMonitor(["pds"], ["kaszlak"])
+    _pid_file = os.environ.get("ATPROTO_E2E_PID_FILE") or None
+    _compose_project = os.environ.get("ATPROTO_E2E_COMPOSE_PROJECT")
+    process_monitor = ProcessMonitor(["pds"], ["kaszlak"], pid_file=_pid_file, docker_compose_project=_compose_project)
     storage_monitor = StorageMonitor({"pds": [pds_db_path, pds_wal_path]})
 
     setup_timer = OperationTimer()

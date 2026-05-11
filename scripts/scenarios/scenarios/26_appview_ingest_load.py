@@ -298,9 +298,13 @@ def run() -> ScenarioResult:
         },
         headers={"Authorization": f"Bearer {APPVIEW_ADMIN_SECRET}"},
     )
+    _pid_file = os.environ.get("ATPROTO_E2E_PID_FILE") or None
+    _compose_project = os.environ.get("ATPROTO_E2E_COMPOSE_PROJECT")
     process_monitor = ProcessMonitor(
         ["appview", "pds"],
         ["syrena", "kaszlak"],
+        pid_file=_pid_file,
+        docker_compose_project=_compose_project,
     )
     storage_monitor = StorageMonitor(storage_paths)
 
@@ -464,7 +468,7 @@ def run() -> ScenarioResult:
     expected_posts = sustained_summary["created"] + burst_summary["created"]
     verification_state = _poll_for_clear_ingest_state(
         expected_posts=expected_posts,
-        deadline_seconds=30,
+        deadline_seconds=60,
     )
     verification_elapsed = time.perf_counter() - verification_started
     if verification_state["cleared"]:

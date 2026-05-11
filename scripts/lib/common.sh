@@ -345,7 +345,7 @@ atproto_collect_diagnostics() {
             cd "$compose_dir"
             "${compose_cmd[@]}" ps --all > "$output_dir/docker/ps.txt" 2>&1 || true
             "${compose_cmd[@]}" config > "$output_dir/docker/config.txt" 2>&1 || true
-            "${compose_cmd[@]}" logs --no-color --timestamps --tail=300 > "$output_dir/docker/logs.raw" 2>&1 || true
+            "${compose_cmd[@]}" logs --no-color --timestamps --tail=3000 > "$output_dir/docker/logs.raw" 2>&1 || true
         )
         atproto_redact_stream < "$output_dir/docker/logs.raw" > "$output_dir/docker/logs.txt"
         rm -f "$output_dir/docker/logs.raw"
