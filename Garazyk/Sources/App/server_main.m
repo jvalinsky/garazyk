@@ -20,8 +20,12 @@
 #import "Network/XrpcMethodRegistry.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Monitoring/PDSHealthCheck.h"
+#import "Compat/PlatformShims/CrashReporting/PDSCrashReporter.h"
+#import "Compat/PlatformShims/SignalHandling/PDSSignalManager.h"
 
 int main(int argc, const char * argv[]) {
+    [[PDSSignalManager sharedManager] installIgnoredSignals];
+    [PDSCrashReporter installCrashHandlersWithExecutableName:"kaszlak-headless"];
     @autoreleasepool {
         PDS_LOG_INFO_C(PDSLogComponentCore, @"ATProto PDS Starting...");
 
@@ -81,7 +85,28 @@ int main(int argc, const char * argv[]) {
         PDS_LOG_INFO_C(PDSLogComponentCore, @"XRPC endpoint: /xrpc/*");
         PDS_LOG_INFO_C(PDSLogComponentCore, @"Press Ctrl+C to stop");
 
-        CFRunLoopRun();
+        // Register signal handlers for graceful shutdown
+        __block volatile sig_atomic_t shouldExit = 0;
+        [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGINT handler:^(int sig) {
+            shouldExit = 1;
+            PDS_LOG_SERVICE_INFO(@"Received SIGINT — shutting down");
+        }];
+        [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGTERM handler:^(int sig) {
+            shouldExit = 1;
+            PDS_LOG_SERVICE_INFO(@"Received SIGTERM — shutting down");
+        }];
+
+        // Drain the run loop instead of CFRunLoopRun() so we can check shouldExit
+        while (!shouldExit && server.running) {
+            @autoreleasepool {
+                [[NSRunLoop mainRunLoop]
+                     runMode:NSDefaultRunLoopMode
+                  beforeDate:[NSDate dateWithTimeIntervalSinceNow:1.0]];
+            }
+        }
+
+        [server stop];
+        PDS_LOG_INFO_C(PDSLogComponentCore, @"ATProto PDS stopped");
     }
     return 0;
 }
