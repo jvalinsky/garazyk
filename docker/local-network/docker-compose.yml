@@ -137,6 +137,7 @@ services:
       - "3200"
       - "--data-dir"
       - "/var/lib/atprotopds"
+      - "--no-backfill"
     ports:
       - "3200:3200"
     volumes:
