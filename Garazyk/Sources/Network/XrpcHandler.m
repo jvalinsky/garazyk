@@ -932,6 +932,14 @@ static XrpcDispatcher *_sharedInstance = nil;
     [self registerMethod:@"app.bsky.graph.getActorStarterPacks" handler:handler];
 }
 
+- (void)registerAppBskyGraphVerificationCreateVerification:(XrpcMethodHandler)handler {
+    [self registerMethod:@"app.bsky.graph.verification.createVerification" handler:handler];
+}
+
+- (void)registerAppBskyGraphVerificationDeleteVerification:(XrpcMethodHandler)handler {
+    [self registerMethod:@"app.bsky.graph.verification.deleteVerification" handler:handler];
+}
+
 #pragma mark - Private Helpers
 
 - (NSString *)_extractDIDFromAuthHeader:(NSString *)authHeader {
