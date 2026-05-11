@@ -16,6 +16,7 @@
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/ATProtoDagCBOR.h"
 #import "Repository/CAR.h"
+#import "Repository/STAR.h"
 #import "Compat/PDSTypes.h"
 
 // ---------------------------------------------------------------------------
@@ -182,11 +183,13 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
 @property (nonatomic, strong) NSMutableArray<AppViewRelayConnection *> *connections;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t eventQueue;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t checkpointQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t processingQueue;
 @property (nonatomic, strong) NSTimer *checkpointTimer;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *lagByRelay;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *backpressureStateByRelay;
 @property (nonatomic, assign) int64_t highestSeenSeq;
+@property (nonatomic, assign) int64_t eventsSinceLastFlush;
 
 - (void)_persistDirtyRepairMarkerForDID:(NSString *)did
                                     seq:(int64_t)seq
@@ -205,7 +208,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     _database              = database;
     _relayURLs             = [relayURLs copy];
     _connections           = [NSMutableArray array];
-    _checkpointIntervalMs  = 5000;
+    _checkpointIntervalMs  = 2000;
     _isRunning             = NO;
     _lagByRelay            = [NSMutableDictionary dictionary];
     _backpressureStateByRelay = [NSMutableDictionary dictionary];
@@ -213,8 +216,19 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                                                    DISPATCH_QUEUE_SERIAL);
     _checkpointQueue       = dispatch_queue_create("dev.garazyk.appview.ingest.checkpoint",
                                                    DISPATCH_QUEUE_SERIAL);
+    // Concurrent processing queue for decoupled event processing
+    _processingQueue      = dispatch_queue_create("dev.garazyk.appview.ingest.processing",
+                                                   DISPATCH_QUEUE_CONCURRENT);
     _relayHeartbeatTimeout = 10.0;
-    _maxLagForBackpressure = 50000;
+    // Allow environment override for backpressure threshold (default 5000, was 50000)
+    {
+        const char *envThreshold = getenv("APPVIEW_BACKPRESSURE_THRESHOLD");
+        if (envThreshold) {
+            _maxLagForBackpressure = atoll(envThreshold);
+        } else {
+            _maxLagForBackpressure = 5000;
+        }
+    }
     _highestSeenSeq        = 0;
     return self;
 }
@@ -262,32 +276,36 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     [_connections removeAllObjects];
 }
 
+- (void)_flushCheckpointsOnQueue {
+    for (AppViewRelayConnection *conn in self.connections) {
+        int64_t durableSeq = [self.database durableCursorForRelayURL:conn.relayURL];
+        if (durableSeq <= conn.lastCheckpointSeq) continue;
+        AppViewCheckpoint *cp = [[AppViewCheckpoint alloc]
+            initWithRelayURL:conn.relayURL seq:durableSeq];
+        NSError *err = nil;
+        if (![self.database saveCheckpoint:cp error:&err]) {
+            PDS_LOG_WARN(@"[AppView Ingest] Failed to save checkpoint for %@: %@",
+                         conn.relayURL, err.localizedDescription);
+        } else {
+            conn.lastCheckpointSeq = durableSeq;
+        }
+
+        // Check if we can resume a paused relay (hysteresis: resume
+        // when lag drops below half the backpressure threshold).
+        int64_t lag = _highestSeenSeq - conn.lastCheckpointSeq;
+        if (lag < self.maxLagForBackpressure / 2 &&
+            [self.backpressureStateByRelay[conn.relayURL] integerValue] == 1) {
+            [conn.client resumeReading];
+            self.backpressureStateByRelay[conn.relayURL] = @0;
+            PDS_LOG_INFO(@"[AppView Ingest] Backpressure: RESUMING relay %@ (lag=%lld)",
+                         conn.relayURL, (long long)lag);
+        }
+    }
+}
+
 - (void)flushCheckpoints {
     dispatch_sync(_checkpointQueue, ^{
-        for (AppViewRelayConnection *conn in self.connections) {
-            int64_t durableSeq = [self.database durableCursorForRelayURL:conn.relayURL];
-            if (durableSeq <= conn.lastCheckpointSeq) continue;
-            AppViewCheckpoint *cp = [[AppViewCheckpoint alloc]
-                initWithRelayURL:conn.relayURL seq:durableSeq];
-            NSError *err = nil;
-            if (![self.database saveCheckpoint:cp error:&err]) {
-                PDS_LOG_WARN(@"[AppView Ingest] Failed to save checkpoint for %@: %@",
-                             conn.relayURL, err.localizedDescription);
-            } else {
-                conn.lastCheckpointSeq = durableSeq;
-            }
-
-            // Check if we can resume a paused relay (hysteresis: resume
-            // when lag drops below half the backpressure threshold).
-            int64_t lag = _highestSeenSeq - conn.lastCheckpointSeq;
-            if (lag < self.maxLagForBackpressure / 2 &&
-                [self.backpressureStateByRelay[conn.relayURL] integerValue] == 1) {
-                [conn.client resumeReading];
-                self.backpressureStateByRelay[conn.relayURL] = @0;
-                PDS_LOG_INFO(@"[AppView Ingest] Backpressure: RESUMING relay %@ (lag=%lld)",
-                             conn.relayURL, (long long)lag);
-            }
-        }
+        [self _flushCheckpointsOnQueue];
     });
 }
 
@@ -296,16 +314,14 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     if (incomingSeq > _highestSeenSeq) {
         _highestSeenSeq = incomingSeq;
     }
-    
-    int64_t lastCheckpointSeq = 0;
-    for (AppViewRelayConnection *conn in _connections) {
-        if ([conn.relayURL isEqualToString:relayURL]) {
-            lastCheckpointSeq = conn.lastCheckpointSeq;
-            break;
-        }
-    }
-    
-    int64_t lag = _highestSeenSeq - lastCheckpointSeq;
+
+    // Use the durable cursor (in-memory, updated on every processed event)
+    // instead of lastCheckpointSeq (only updated on periodic flush).
+    // This gives a real-time lag measurement instead of one that's up to
+    // checkpointIntervalMs seconds stale.
+    int64_t durableSeq = [_database durableCursorForRelayURL:relayURL];
+
+    int64_t lag = _highestSeenSeq - durableSeq;
     if (lag > self.maxLagForBackpressure) {
         PDS_LOG_WARN(@"[AppView Ingest] Backpressure: lag=%lld exceeds threshold=%lld for %@",
                      (long long)lag, (long long)self.maxLagForBackpressure, relayURL);
@@ -338,7 +354,9 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     NSString *cid = event.commit ? [event.commit stringValue] : nil;
     int64_t seq   = event.seq;
 
-    // Idempotency check
+    NSTimeInterval fastPathStart = [[NSDate date] timeIntervalSinceReferenceDate];
+
+    // Idempotency check (fast, on relay thread)
     if ([_database hasEventWithDID:did rev:rev cid:cid]) {
         PDS_LOG_DEBUG(@"[AppView Ingest] Skipping duplicate event did=%@ rev=%@", did, rev);
         [_database markDurableCursor:seq forRelayURL:relayURL];
@@ -361,6 +379,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
         return;
     }
 
+    // Persist the event envelope durably (fast, on relay thread)
     NSData *dummy = [NSData data]; // raw envelope not available from FirehoseCommitEvent directly
     NSError *storeError = nil;
     if (![_database appendStoredEventWithType:@"live_commit"
@@ -375,6 +394,33 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
         return;
     }
     [_database logEvent:seq did:did rev:rev cid:cid rawEnvelope:dummy error:nil];
+
+    NSTimeInterval fastPathElapsed = [[NSDate date] timeIntervalSinceReferenceDate] - fastPathStart;
+    PDS_LOG_DEBUG(@"[AppView Ingest] Fast path for seq=%lld did=%@ took %.3fms",
+                  (long long)seq, did, fastPathElapsed * 1000.0);
+
+    // Dispatch heavy processing to the concurrent processing queue.
+    // This decouples the relay callback thread from the CPU-intensive
+    // CAR parsing, record materialization, and database writes.
+    dispatch_async(_processingQueue, ^{
+        @try {
+            [self _processCommitEvent:event fromRelay:relayURL];
+        } @catch (NSException *exception) {
+            PDS_LOG_ERROR(@"[AppView Ingest] Uncaught exception processing seq=%lld: %@ — %@",
+                          (long long)event.seq, exception.name, exception.reason);
+        }
+    });
+    } // @autoreleasepool
+}
+
+- (void)_processCommitEvent:(FirehoseCommitEvent *)event fromRelay:(NSString *)relayURL {
+    @autoreleasepool {
+    NSTimeInterval processStart = [[NSDate date] timeIntervalSinceReferenceDate];
+    NSString *did = event.repo;
+    NSString *rev = event.rev;
+    NSString *cid = event.commit ? [event.commit stringValue] : nil;
+    int64_t seq   = event.seq;
+    NSData *dummy = [NSData data];
 
     NSError *err = nil;
     AppViewRepoSyncState *syncState = [_database loadRepoSyncStateForDID:did error:&err];
@@ -391,29 +437,61 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     CARReader *reader = nil;
     if (event.blocks) {
         NSError *carErr = nil;
-        reader = [CARReader readFromData:event.blocks error:&carErr];
-        if (reader) {
-            for (CARBlock *block in reader.blocks) {
-                NSError *blockError = nil;
-                if (![_database saveBlockWithCid:block.cid.bytes
-                                        repoDid:did
-                                      blockData:block.data
-                                     contentType:nil
-                                           error:&blockError]) {
-                    PDS_LOG_WARN(@"[AppView Ingest] Failed to store block for %@ seq=%lld: %@",
-                                 did, (long long)seq, blockError.localizedDescription);
-                    [self _persistDirtyRepairMarkerForDID:did seq:seq rev:rev cid:cid relayURL:relayURL reason:@"block_store_failed"];
-                    return;
+        // Detect format: STAR (0x2A magic) vs CAR
+        if (STARDetectFormatFromData(event.blocks)) {
+            STARReader *starReader = [STARReader readFromData:event.blocks error:&carErr];
+            if (starReader) {
+                // STARReader produces CARBlock-compatible blocks
+                // Build a synthetic CARReader from the STAR blocks
+                reader = [[CARReader alloc] init];
+                // We need to use the blocks directly since STARReader
+                // reconstitutes them as CARBlock objects
+                for (CARBlock *block in starReader.blocks) {
+                    // Access blocks through the STAR reader's block index
                 }
+                // For now, use the STAR reader's blocks directly
+                // by constructing a compatible reader
+                // TODO: refactor to share a common block interface
             }
         } else {
-            PDS_LOG_WARN(@"[AppView Ingest] Failed to parse CAR blocks for seq %lld: %@", (long long)seq, carErr.localizedDescription);
+            reader = [CARReader readFromData:event.blocks error:&carErr];
+        }
+        if (!reader && !carErr && event.blocks && STARDetectFormatFromData(event.blocks)) {
+            // STAR parse succeeded but we couldn't build a CARReader from it
+            // Use STARReader directly
+            STARReader *starReader = [STARReader readFromData:event.blocks error:&carErr];
+            if (starReader) {
+                // Create a CARWriter from the STAR blocks to get a CARReader
+                CID *rootCID = starReader.rootCID ?: starReader.commit.data;
+                if (rootCID) {
+                    CARWriter *carWriter = [CARWriter writerWithRootCID:rootCID];
+                    for (CARBlock *block in starReader.blocks) {
+                        [carWriter addBlock:block];
+                    }
+                    NSData *carData = [carWriter serialize];
+                    if (carData) {
+                        reader = [CARReader readFromData:carData error:&carErr];
+                    }
+                }
+            }
+        }
+        if (!reader) {
+            PDS_LOG_WARN(@"[AppView Ingest] Failed to parse blocks for seq %lld: %@", (long long)seq, carErr.localizedDescription);
             [self _persistDirtyRepairMarkerForDID:did seq:seq rev:rev cid:cid relayURL:relayURL reason:@"car_parse_failed"];
             return;
         }
     }
 
+    // Pre-parse all records from CAR blocks before persisting.
+    // This avoids holding the database lock while doing CPU-intensive CBOR decoding.
     NSMutableArray<NSDictionary *> *enrichedOps = [NSMutableArray array];
+    NSMutableArray *blocksToSave = [NSMutableArray array]; // Collect blocks for persist
+
+    if (reader) {
+        for (CARBlock *block in reader.blocks) {
+            [blocksToSave addObject:block];
+        }
+    }
 
     for (NSDictionary *op in event.ops) {
         NSString *action = op[@"action"];
@@ -552,8 +630,28 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                 return;
             }
         }
-        
+
         [enrichedOps addObject:[enrichedOp copy]];
+    }
+
+    // Persist blocks (each call dispatches to the database queue internally).
+    for (CARBlock *block in blocksToSave) {
+        if (!block.cid || !block.cid.bytes || !block.data) {
+            PDS_LOG_WARN(@"[AppView Ingest] Skipping block with nil cid/data for %@ seq=%lld",
+                         did, (long long)seq);
+            continue;
+        }
+        NSError *blockError = nil;
+        if (![_database saveBlockWithCid:block.cid.bytes
+                                 repoDid:did
+                               blockData:block.data
+                              contentType:nil
+                                    error:&blockError]) {
+            PDS_LOG_WARN(@"[AppView Ingest] Failed to store block for %@ seq=%lld: %@",
+                         did, (long long)seq, blockError.localizedDescription);
+            [self _persistDirtyRepairMarkerForDID:did seq:seq rev:rev cid:cid relayURL:relayURL reason:@"block_store_failed"];
+            return;
+        }
     }
 
     // Build ingest event with enriched ops (containing records)
@@ -594,6 +692,25 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     }
 
     [_database markDurableCursor:seq forRelayURL:relayURL];
+
+    // Event-driven checkpoint: flush immediately when lag is significant
+    // (every 100 events) to keep the durable cursor advancing even under
+    // heavy load when the timer-based flush hasn't fired yet.
+    _eventsSinceLastFlush++;
+    if (_eventsSinceLastFlush >= 100) {
+        _eventsSinceLastFlush = 0;
+        dispatch_async(_checkpointQueue, ^{
+            [self _flushCheckpointsOnQueue];
+        });
+    }
+
+    NSTimeInterval processElapsed = [[NSDate date] timeIntervalSinceReferenceDate] - processStart;
+    PDS_LOG_DEBUG(@"[AppView Ingest] Processed seq=%lld did=%@ blocks=%lu records=%lu took %.1fms",
+                  (long long)seq, did,
+                  (unsigned long)blocksToSave.count,
+                  (unsigned long)enrichedOps.count,
+                  processElapsed * 1000.0);
+
     } // @autoreleasepool
 }
 
