@@ -11,6 +11,7 @@
 #import <XCTest/XCTest.h>
 #import "AdminUIServer/UIBackendClient.h"
 #import "AdminUIServer/UIServiceConfig.h"
+#import "Network/PDSSafeHTTPClient.h"
 
 @interface UIBackendClient (UIBackendClientTests)
 - (NSDictionary *)performJSONRequestWithURL:(NSURL *)url
@@ -82,8 +83,32 @@
 
 @end
 
+@interface MockSafeHTTPClient : PDSSafeHTTPClient
+@property(nonatomic, strong) NSMutableArray<NSURLRequest *> *capturedRequests;
+@property(nonatomic, strong) NSData *nextData;
+@property(nonatomic, strong) NSHTTPURLResponse *nextResponse;
+@property(nonatomic, strong) NSError *nextError;
+@end
+
+@implementation MockSafeHTTPClient
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _capturedRequests = [NSMutableArray array];
+    }
+    return self;
+}
+- (void)performSafeDataTaskWithRequest:(NSURLRequest *)request
+                               options:(PDSSafeHTTPClientOptions *)options
+                            completion:(void (^)(NSData *, NSHTTPURLResponse *, NSError *))completion {
+    [self.capturedRequests addObject:request];
+    completion(self.nextData, self.nextResponse, self.nextError);
+}
+@end
+
 @interface UIBackendClientTests : XCTestCase
 @property (nonatomic, strong) UIBackendClient *client;
+@property (nonatomic, strong) MockSafeHTTPClient *mockHTTP;
 @property (nonatomic, strong) UIServiceConfig *config;
 @end
 
@@ -107,7 +132,8 @@
     self.config.appViewAdminToken = @"admin-token-appview";
     self.config.chatAdminToken = @"admin-token-chat";
 
-    self.client = [[UIBackendClient alloc] initWithConfiguration:self.config];
+    self.mockHTTP = [[MockSafeHTTPClient alloc] init];
+    self.client = [[UIBackendClient alloc] initWithConfiguration:self.config httpClient:self.mockHTTP];
 }
 
 - (void)tearDown {
