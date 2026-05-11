@@ -156,13 +156,16 @@
     [self.buffer appendData:data];
 
     if (self.state == Http1ParserStateReadingHeaders) {
-        if (self.buffer.length > self.maxHeaderBytes) {
-            [self setErrorWithStatusCode:413 errorCode:@"RequestTooLarge" message:@"Request headers too large"];
-            return YES;
-        }
-
         NSRange headerEndRange = [self headerEndRangeInData:self.buffer];
         if (headerEndRange.location == NSNotFound) {
+            // Header terminator not found yet — check if the header-only
+            // portion exceeds the limit.  The buffer may contain body data
+            // that arrived in the same TCP segment, so we only enforce the
+            // limit when we genuinely can't find the header end.
+            if (self.buffer.length > self.maxHeaderBytes) {
+                [self setErrorWithStatusCode:413 errorCode:@"RequestTooLarge" message:@"Request headers too large"];
+                return YES;
+            }
             return NO;
         }
 
@@ -530,13 +533,16 @@
     [self.buffer appendData:data];
 
     if (self.state == Http1ParserStateReadingHeaders) {
-        if (self.buffer.length > self.maxHeaderBytes) {
-            [self setErrorWithStatusCode:413 errorCode:@"RequestTooLarge" message:@"Request headers too large"];
-            return YES;
-        }
-
         NSRange headerEndRange = [self headerEndRangeInData:self.buffer];
         if (headerEndRange.location == NSNotFound) {
+            // Header terminator not found yet — check if the header-only
+            // portion exceeds the limit.  The buffer may contain body data
+            // that arrived in the same TCP segment, so we only enforce the
+            // limit when we genuinely can't find the header end.
+            if (self.buffer.length > self.maxHeaderBytes) {
+                [self setErrorWithStatusCode:413 errorCode:@"RequestTooLarge" message:@"Request headers too large"];
+                return YES;
+            }
             return NO;
         }
 
