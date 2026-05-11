@@ -437,43 +437,14 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     CARReader *reader = nil;
     if (event.blocks) {
         NSError *carErr = nil;
-        // Detect format: STAR (0x2A magic) vs CAR
         if (STARDetectFormatFromData(event.blocks)) {
-            STARReader *starReader = [STARReader readFromData:event.blocks error:&carErr];
-            if (starReader) {
-                // STARReader produces CARBlock-compatible blocks
-                // Build a synthetic CARReader from the STAR blocks
-                reader = [[CARReader alloc] init];
-                // We need to use the blocks directly since STARReader
-                // reconstitutes them as CARBlock objects
-                for (CARBlock *block in starReader.blocks) {
-                    // Access blocks through the STAR reader's block index
-                }
-                // For now, use the STAR reader's blocks directly
-                // by constructing a compatible reader
-                // TODO: refactor to share a common block interface
+            // STAR format — convert to CAR for downstream processing
+            NSData *carData = [STARConverter carDataFromSTARData:event.blocks error:&carErr];
+            if (carData) {
+                reader = [CARReader readFromData:carData error:&carErr];
             }
         } else {
             reader = [CARReader readFromData:event.blocks error:&carErr];
-        }
-        if (!reader && !carErr && event.blocks && STARDetectFormatFromData(event.blocks)) {
-            // STAR parse succeeded but we couldn't build a CARReader from it
-            // Use STARReader directly
-            STARReader *starReader = [STARReader readFromData:event.blocks error:&carErr];
-            if (starReader) {
-                // Create a CARWriter from the STAR blocks to get a CARReader
-                CID *rootCID = starReader.rootCID ?: starReader.commit.data;
-                if (rootCID) {
-                    CARWriter *carWriter = [CARWriter writerWithRootCID:rootCID];
-                    for (CARBlock *block in starReader.blocks) {
-                        [carWriter addBlock:block];
-                    }
-                    NSData *carData = [carWriter serialize];
-                    if (carData) {
-                        reader = [CARReader readFromData:carData error:&carErr];
-                    }
-                }
-            }
         }
         if (!reader) {
             PDS_LOG_WARN(@"[AppView Ingest] Failed to parse blocks for seq %lld: %@", (long long)seq, carErr.localizedDescription);

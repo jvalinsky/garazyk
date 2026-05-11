@@ -44,6 +44,7 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
 
         _didResolver = [[DIDResolver alloc] init];
         ((DIDResolver *)_didResolver).plcURL = [PDSConfiguration sharedConfiguration].plcURL;
+        _preferredRepoFormat = PDSRepoFormatCAR;
     }
     return self;
 }
@@ -310,7 +311,15 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
     // Prepare the request
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     request.HTTPMethod = @"GET";
-    [request setValue:@"application/octet-stream" forHTTPHeaderField:@"Accept"];
+
+    // Use preferred repo format for sync methods that return repo data
+    BOOL isRepoSyncMethod = [method hasPrefix:@"com.atproto.sync.getRepo"] ||
+                            [method hasPrefix:@"com.atproto.sync.getCheckout"];
+    if (isRepoSyncMethod && _preferredRepoFormat != PDSRepoFormatCAR) {
+        [request setValue:ContentTypeForPDSRepoFormat(_preferredRepoFormat) forHTTPHeaderField:@"Accept"];
+    } else {
+        [request setValue:@"application/octet-stream" forHTTPHeaderField:@"Accept"];
+    }
     [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
 
     [self executeRequestWithRetry:request attempt:0 completion:^(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {

@@ -3,6 +3,7 @@
 #import "Core/CID.h"
 #import "Core/TID.h"
 #import "Repository/CAR.h"
+#import "Repository/STAR.h"
 #import "Auth/Secp256k1.h"
 #import "Core/ATProtoDagCBOR.h"
 #import "Debug/PDSLogger.h"
@@ -132,7 +133,14 @@ NSString * const RepoCommitErrorDomain = @"com.atproto.repo.commit";
     return [secp verifySignature:self.signature forHash:hash withPublicKey:publicKey error:error];
 }
 
-+ (nullable instancetype)fromCARData:(NSData *)carData error:(NSError **)error {
++ (nullable instancetype)fromCARData:(NSData *)data error:(NSError **)error {
+    // Detect format: STAR (0x2A magic) vs CAR
+    NSData *carData = data;
+    if (STARDetectFormatFromData(data)) {
+        carData = [STARConverter carDataFromSTARData:data error:error];
+        if (!carData) return nil;
+    }
+
     CARReader *reader = [CARReader readFromData:carData error:error];
     if (!reader) {
         return nil;
