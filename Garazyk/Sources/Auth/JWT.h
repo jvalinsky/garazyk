@@ -146,6 +146,9 @@ typedef NS_ENUM(NSInteger, JWTError) {
 /*! The OAuth scope granted (ATProto-specific). */
 @property (nonatomic, copy, nullable) NSString *scope;
 
+/*! The lexicon method for Service Auth tokens (ATProto-specific). */
+@property (nonatomic, copy, nullable) NSString *lxm;
+
 /*! The token use (typically "access" or "refresh"). */
 @property (nonatomic, copy, nullable) NSString *token_use;
 

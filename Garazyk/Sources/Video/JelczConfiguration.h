@@ -8,6 +8,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy) NSString *dataDirectory;
 @property (nonatomic, copy) NSString *blobDirectory;
 @property (nonatomic, copy) NSString *pdsURL;
+@property (nonatomic, copy, nullable) NSString *plcURL;
 @property (nonatomic, copy) NSString *serviceDID;
 @property (nonatomic, assign) NSInteger maxConcurrentJobs;
 @property (nonatomic, assign) NSTimeInterval pollInterval;
