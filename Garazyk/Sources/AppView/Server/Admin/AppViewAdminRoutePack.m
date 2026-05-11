@@ -259,7 +259,7 @@
     NSString *status = [request queryParamForKey:@"status"];
     NSInteger limit = [limitStr integerValue];
     if (limit <= 0) limit = 25;
-    if (limit > 100) limit = 100;
+    if (limit > 1000) limit = 1000;
 
     NSDictionary *result = [self.orchestrator queueWithLimit:limit
                                                       cursor:cursor
@@ -498,7 +498,7 @@
 
     NSInteger limit = [limitStr integerValue];
     if (limit <= 0) limit = 25;
-    if (limit > 100) limit = 100;
+    if (limit > 1000) limit = 1000;
 
     if (!collection || collection.length == 0) {
         response.statusCode = 400;

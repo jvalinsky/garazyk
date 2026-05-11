@@ -1695,7 +1695,7 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
                                               limit:(NSInteger)limit
                                              cursor:(nullable NSString *)cursor
                                               error:(NSError **)error {
-    limit = MAX(1, MIN(limit, 100));
+    limit = MAX(1, MIN(limit, 1000));
 
     NSMutableString *sql = [NSMutableString stringWithString:
         @"SELECT uri, did, collection, rkey, cid, value, handle, indexed_at FROM records WHERE collection = ?"];
@@ -1763,6 +1763,20 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
     if (nextCursor) {
         result[@"cursor"] = nextCursor;
     }
+
+    // Add total count for the query (useful for admin pagination)
+    NSString *countSql = @"SELECT COUNT(*) AS total FROM records WHERE collection = ?";
+    NSMutableArray *countParams = [NSMutableArray arrayWithObject:collection];
+    if (did.length > 0) {
+        countSql = [countSql stringByAppendingString:@" AND did = ?"];
+        [countParams addObject:did];
+    }
+    NSArray *countRows = [self executeParameterizedQuery:countSql params:countParams error:nil];
+    if (countRows.count > 0) {
+        id total = countRows[0][@"total"];
+        if (total) result[@"total"] = total;
+    }
+
     return [result copy];
 }
 
@@ -1835,6 +1849,43 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
         }
     });
     return handle;
+}
+
+#pragma mark - Transactions
+
+- (BOOL)inTransaction:(BOOL (^)(NSError **blockError))block error:(NSError **)error {
+    __block BOOL ok = NO;
+    __block NSError *innerError = nil;
+    dispatch_sync(_queue, ^{
+        char *errmsg = NULL;
+        int rc = sqlite3_exec(self->_db, "BEGIN IMMEDIATE", NULL, NULL, &errmsg);
+        if (rc != SQLITE_OK) {
+            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey: errmsg ? @(errmsg) : @"Failed to begin transaction"}];
+            if (errmsg) sqlite3_free(errmsg);
+            ok = NO;
+            return;
+        }
+
+        NSError *blockError = nil;
+        ok = block(&blockError);
+        if (!ok) {
+            if (blockError) innerError = blockError;
+            sqlite3_exec(self->_db, "ROLLBACK", NULL, NULL, NULL);
+            return;
+        }
+
+        rc = sqlite3_exec(self->_db, "COMMIT", NULL, NULL, &errmsg);
+        if (rc != SQLITE_OK) {
+            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey: errmsg ? @(errmsg) : @"Failed to commit transaction"}];
+            if (errmsg) sqlite3_free(errmsg);
+            sqlite3_exec(self->_db, "ROLLBACK", NULL, NULL, NULL);
+            ok = NO;
+        }
+    });
+    if (!ok && error) *error = innerError;
+    return ok;
 }
 
 @end
