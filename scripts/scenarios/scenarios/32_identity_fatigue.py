@@ -1,14 +1,21 @@
-"""Scenario 32: "Identity Fatigue" — PLC Weekly Limits
+"""Scenario 32: "Identity Fatigue" — PLC Hourly Rate Limits
 
-Test PLC weekly operation limits.
-User rosa performs a loop of 101 handle rotations.
-Assert that the 101st operation fails with a 400 error from the PLC directory.
+Test PLC hourly operation rate limits.
+The PLC auditor enforces three tiers (configurable via env vars):
+  - Hourly: PLC_HOURLY_LIMIT (default 5 in test scenarios)
+  - Daily:  PLC_DAILY_LIMIT  (default 15 in test scenarios)
+  - Weekly: PLC_WEEKLY_LIMIT (default 50 in test scenarios)
+
+User rosa performs PLC_HOURLY_LIMIT handle rotations.
+Assert that the next operation fails with a 400 error from the PLC directory
+containing "Too many operations within last hour".
 
 Services: PDS, PLC
 """
 
 from __future__ import annotations
 
+import os
 import sys
 import time
 import requests as reqs
@@ -41,16 +48,17 @@ def run() -> ScenarioResult:
     rosa.did = session["did"]
     rosa.access_jwt = session["accessJwt"]
 
-    # PLC Week Limit is 100 operations per DID.
-    # We need to rotate the handle 100 times, then expect the 101st to fail.
+    # Read the configured hourly limit (set by setup_local_network.sh)
+    hourly_limit = int(os.environ.get("PLC_HOURLY_LIMIT", "5"))
     
-    ROTATIONS = 100
-    print(f"Starting {ROTATIONS} handle rotations to exhaust PLC quota")
+    # Account creation already consumed one PLC operation, so we can do
+    # (hourly_limit - 1) more rotations before hitting the limit.
+    rotations = hourly_limit - 1
+    print(f"Starting {rotations} handle rotations (account creation already used 1 of {hourly_limit} hourly ops)")
     
-    # Speed up by using a loop without full timed_call per iteration to avoid cluttering report
     success_count = 0
     try:
-        for i in range(ROTATIONS):
+        for i in range(rotations):
             new_handle = f"rev-{i}-{rosa.handle}"
             
             # 1. Request signature
@@ -74,16 +82,16 @@ def run() -> ScenarioResult:
                 result.step_failed("Exhaust Quota", f"Failed at iteration {i}: {plc_submit.status_code} {plc_submit.text}")
                 break
             
-            if (i + 1) % 20 == 0:
+            if (i + 1) % 5 == 0:
                 print(f"  ... completed {i+1} rotations")
     except Exception as exc:
         result.step_failed("Exhaust Quota", str(exc))
 
     result.step_passed("Quota Exhaustion", f"Successfully performed {success_count} rotations")
 
-    # 101st rotation should fail
-    if success_count == ROTATIONS:
-        print("Attempting 101st rotation (expect failure)")
+    # The next rotation should fail (hourly limit reached)
+    if success_count == rotations:
+        print(f"Attempting rotation #{rotations + 1} (expect failure — hourly limit reached)")
         new_handle = f"final-{rosa.handle}"
         token_resp = client.raw.xrpc_post("com.atproto.identity.requestPlcOperationSignature", {}, token=rosa.access_jwt)
         token = token_resp.get("token")
@@ -94,10 +102,10 @@ def run() -> ScenarioResult:
         op.pop("did", None)
         
         plc_submit = reqs.post(f"http://localhost:2582/{rosa.did}", json=op, timeout=5)
-        if plc_submit.status_code == 400:
-             result.step_passed("Verify Weekly Limit", "Rejected 101st operation as expected (400 Bad Request)")
+        if plc_submit.status_code == 400 and "Too many operations" in plc_submit.text:
+             result.step_passed("Verify Hourly Limit", f"Rejected operation after {hourly_limit} total ops as expected (400)")
         else:
-             result.step_failed("Verify Weekly Limit", f"Expected 400 rejection, but got {plc_submit.status_code}: {plc_submit.text}")
+             result.step_failed("Verify Hourly Limit", f"Expected 400 rejection, but got {plc_submit.status_code}: {plc_submit.text}")
 
     result.finish()
     return result
