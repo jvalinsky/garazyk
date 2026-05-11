@@ -204,13 +204,15 @@ class TransportLayer:
                              success_status=(200, 201), method_name=method)
 
     def post_raw(self, method: str, data: bytes, content_type: str,
-                 token: Optional[str] = None) -> dict:
+                 token: Optional[str] = None,
+                 params: Optional[dict] = None) -> dict:
         url = f"{self._base_url}/xrpc/{method}"
         headers = {"Content-Type": content_type}
         if token:
             headers["Authorization"] = f"Bearer {token}"
         self._log_request("POST", url, f"<{len(data)} bytes {content_type}>")
-        resp = self._session.post(url, data=data, headers=headers, timeout=60)
+        resp = self._session.post(url, data=data, headers=headers, timeout=60,
+                                  params=params)
         if resp.status_code in (200, 201):
             data_json = resp.json()
             self._log_response(url, resp.status_code, data_json)
