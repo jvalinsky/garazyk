@@ -4,8 +4,11 @@
   },
   "imports": {
     "@atproto/api": "npm:@atproto/api@^0.13.0",
+    "@ipld/car": "npm:@ipld/car@^5.3.1",
+    "@ipld/dag-cbor": "npm:@ipld/dag-cbor@^9.0.6",
     "@std/assert": "jsr:@std/assert@1",
-    "@std/cli": "jsr:@std/cli@1"
+    "@std/cli": "jsr:@std/cli@1",
+    "@std/fmt": "jsr:@std/fmt@1"
   },
   "fmt": {
     "lineWidth": 100
