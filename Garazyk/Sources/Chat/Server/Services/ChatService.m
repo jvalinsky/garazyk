@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "ChatService.h"
 #import "Database/PDSDatabase.h"
 #import "Debug/PDSLogger.h"
@@ -20,9 +22,22 @@
 
 - (nullable NSDictionary *)createConversationWithMembers:(NSArray<NSString *> *)memberDids
                                                   error:(NSError **)error {
+    return [self createConversationWithMembers:memberDids mode:@"plaintext" error:error];
+}
+
+- (nullable NSDictionary *)createConversationWithMembers:(NSArray<NSString *> *)memberDids
+                                                    mode:(NSString *)mode
+                                                  error:(NSError **)error {
     if (memberDids.count < 2) {
         if (error) *error = [NSError errorWithDomain:@"ChatService" code:400
                                              userInfo:@{NSLocalizedDescriptionKey: @"Conversation requires at least 2 members"}];
+        return nil;
+    }
+
+    // Validate mode
+    if (![mode isEqualToString:@"plaintext"] && ![mode isEqualToString:@"e2ee"]) {
+        if (error) *error = [NSError errorWithDomain:@"ChatService" code:400
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Mode must be 'plaintext' or 'e2ee'"}];
         return nil;
     }
 
@@ -30,10 +45,10 @@
     NSString *convoId = [NSString stringWithFormat:@"convo/%@", [[NSUUID UUID] UUIDString]];
     NSString *now = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
 
-    // Create conversation
-    NSString *insertQuery = @"INSERT INTO conversations (id, created_at, updated_at) VALUES (?, ?, ?)";
+    // Create conversation with mode
+    NSString *insertQuery = @"INSERT INTO conversations (id, mode, created_at, updated_at) VALUES (?, ?, ?, ?)";
     BOOL success = [(PDSDatabase *)self.database executeParameterizedUpdate:insertQuery
-                                                    params:@[convoId, now, now]
+                                                    params:@[convoId, mode, now, now]
                                                          error:error];
     if (!success) return nil;
 

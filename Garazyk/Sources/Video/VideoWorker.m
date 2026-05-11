@@ -1,7 +1,10 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Video/VideoWorker.h"
 #import "Video/VideoThumbnailGenerator.h"
 #import "Video/VideoTranscoder.h"
 #import "Video/VideoTranscoderBackend.h"
+#import "Video/VideoHLSGenerator.h"
 #import "Blob/PDSBlobProvider.h"
 #import "Core/CID.h"
 #import "Debug/PDSLogger.h"
@@ -326,28 +329,52 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
                         PDS_LOG_WARN(@"Thumbnail generation failed for job %@: %@", jobId, thumbError);
                     }
 
-                    [self updateJobProgress:jobId progress:80 message:@"Storing processed video"];
+                    // Generate HLS from transcoded video (if HLS generator is configured)
+                    if (self.hlsGenerator) {
+                        [self updateJobProgress:jobId progress:72 message:@"Generating HLS streams"];
+
+                        NSString *did = job[@"did"];
+                        NSString *blobCidStr = job[@"blob_cid"];
+                        if (did && blobCidStr) {
+                            NSError *hlsError = nil;
+                            VideoHLSResult *hlsResult = [self.hlsGenerator generateHLSFromVideoAtURL:transcodedURL
+                                                                                                 did:did
+                                                                                                 cid:blobCidStr
+                                                                                       thumbnailData:thumbnailData
+                                                                                               error:&hlsError];
+                            if (hlsResult) {
+                                PDS_LOG_INFO(@"HLS generation complete for job %@: %@ variants", jobId, @(hlsResult.variants.count));
+                            } else {
+                                PDS_LOG_WARN(@"HLS generation failed for job %@: %@", jobId, hlsError);
+                                // Non-fatal: HLS is optional, continue with PDS upload
+                            }
+                        }
+                    }
+
+                    [self updateJobProgress:jobId progress:80 message:@"Storing original video on PDS"];
 
                     NSError *storeError = nil;
-                    NSData *processedData = [NSData dataWithContentsOfURL:transcodedURL];
-                    CID *processedCid = nil;
+                    CID *originalCid = nil;
 
-                    if (processedData) {
-                        // Check 50MB output limit
-                        if (processedData.length > 50 * 1024 * 1024) {
-                            PDS_LOG_ERROR(@"Transcoded video exceeds 50MB limit for job %@", jobId);
+                    // Upload the ORIGINAL video to the PDS (matching Bluesky reference architecture).
+                    // The PDS stores the original as the source of truth; the transcoded version
+                    // is kept on disk for HLS generation.
+                    if (videoData) {
+                        // Check 100MB input limit (matches lexicon app.bsky.embed.video#main maxSize)
+                        if (videoData.length > 100 * 1024 * 1024) {
+                            PDS_LOG_ERROR(@"Original video exceeds 100MB limit for job %@", jobId);
                             [[NSFileManager defaultManager] removeItemAtURL:inputURL error:nil];
                             [[NSFileManager defaultManager] removeItemAtURL:transcodedURL error:nil];
                             [self failJob:jobId error:[NSError errorWithDomain:ATProtoVideoWorkerErrorDomain
                                                                           code:ATProtoVideoWorkerErrorProcessingFailed
-                                                                      userInfo:@{NSLocalizedDescriptionKey: @"Transcoded video exceeds 50MB limit"}]];
+                                                                      userInfo:@{NSLocalizedDescriptionKey: @"Original video exceeds 100MB limit"}]];
                             return;
                         }
 
                         if (self.blobUploader) {
                             // Upload via the blob uploader protocol (remote or local)
                             NSString *serviceToken = job[@"service_auth_token"];
-                            NSDictionary *uploadResult = [self.blobUploader uploadBlob:processedData
+                            NSDictionary *uploadResult = [self.blobUploader uploadBlob:videoData
                                                                                mimeType:@"video/mp4"
                                                                             serviceAuth:serviceToken
                                                                                   error:&storeError];
@@ -359,37 +386,41 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
                                     cidString = uploadResult[@"cid"];
                                 }
                                 if (cidString) {
-                                    processedCid = [CID cidFromString:cidString];
+                                    originalCid = [CID cidFromString:cidString];
                                 }
                             }
                         } else if (self.blobProvider) {
                             // Direct blob store (legacy in-process mode)
-                            processedCid = [CID sha256:processedData];
-                            [self.blobProvider storeBlobData:processedData forCID:processedCid error:&storeError];
+                            originalCid = [CID sha256:videoData];
+                            [self.blobProvider storeBlobData:videoData forCID:originalCid error:&storeError];
                         }
                     }
 
+                    // Clean up input file; keep transcoded output for HLS generation
                     [[NSFileManager defaultManager] removeItemAtURL:inputURL error:nil];
-                    [[NSFileManager defaultManager] removeItemAtURL:transcodedURL error:nil];
 
-                    if (processedCid) {
+                    if (originalCid) {
                         [self updateJobProgress:jobId progress:90 message:@"Updating job record"];
 
                         BOOL updated = [self.jobStore updateVideoJobResults:jobId
-                                                         processedBlobCid:processedCid.stringValue
+                                                         processedBlobCid:originalCid.stringValue
                                                         thumbnailBlobCid:thumbnailCid.stringValue
                                                                    error:&storeError];
 
                         if (updated) {
+                            // Clean up transcoded file (will be kept for HLS generation in future)
+                            [[NSFileManager defaultManager] removeItemAtURL:transcodedURL error:nil];
                             [self completeJob:jobId];
                         } else {
                             PDS_LOG_ERROR(@"Failed to update job results: %@", storeError);
                             [self handleJobFailure:jobId error:storeError];
                         }
                     } else {
+                        // Clean up transcoded file on failure
+                        [[NSFileManager defaultManager] removeItemAtURL:transcodedURL error:nil];
                         [self handleJobFailure:jobId error:storeError ?: [NSError errorWithDomain:ATProtoVideoWorkerErrorDomain
                                                                                          code:ATProtoVideoWorkerErrorProcessingFailed
-                                                                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to store processed video"}]];
+                                                                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to store original video on PDS"}]];
                     }
             }];
             }];

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Video/JelczDatabase.h"
 #import "Database/Utils/PDSSQLiteUtils.h"
 #import "Core/NSDateFormatter+ATProto.h"

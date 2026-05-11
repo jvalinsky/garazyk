@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Auth/OAuthSession.h"
 #import "Auth/PKCEUtil.h"
 #import "Auth/DPoPUtil.h"
