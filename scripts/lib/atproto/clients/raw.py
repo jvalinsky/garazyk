@@ -40,8 +40,19 @@ class RawClient:
         method: str,
         body: Optional[dict[str, Any]] = None,
         token: Optional[str] = None,
-    ) -> dict:
+    ) -> dict[str, Any]:
         return self._t.post(method, body=body, token=token)
+
+    def post_raw(
+        self,
+        method: str,
+        data: bytes,
+        content_type: str,
+        params: Optional[dict[str, Any]] = None,
+        token: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """POST raw binary data to an XRPC endpoint."""
+        return self._t.post_raw(method, data, content_type=content_type, token=token)
 
     def xrpc_get_binary(
         self,
