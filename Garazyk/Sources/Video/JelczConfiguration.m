@@ -11,6 +11,7 @@
     config.dataDirectory = env[@"JELCZ_DATA_DIR"] ?: @"./data/jelcz";
     config.blobDirectory = env[@"JELCZ_BLOB_DIR"] ?: @"./data/jelcz/blobs";
     config.pdsURL = env[@"JELCZ_PDS_URL"] ?: @"http://localhost:2583";
+    config.plcURL = env[@"JELCZ_PLC_URL"] ?: @"http://localhost:2582";
     config.serviceDID = env[@"JELCZ_DID"] ?: @"did:web:localhost";
     config.maxConcurrentJobs = env[@"JELCZ_MAX_CONCURRENT_JOBS"] ? [env[@"JELCZ_MAX_CONCURRENT_JOBS"] integerValue] : 2;
     config.pollInterval = env[@"JELCZ_POLL_INTERVAL"] ? [env[@"JELCZ_POLL_INTERVAL"] doubleValue] : 5.0;

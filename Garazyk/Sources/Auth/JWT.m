@@ -62,6 +62,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     payload.did = dictionary[@"did"];
     payload.handle = dictionary[@"handle"];
     payload.scope = dictionary[@"scope"];
+    payload.lxm = dictionary[@"lxm"];
     payload.token_use = dictionary[@"token_use"];
     payload.cnf = dictionary[@"cnf"];
 
@@ -92,6 +93,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     if (self.did) dict[@"did"] = self.did;
     if (self.handle) dict[@"handle"] = self.handle;
     if (self.scope) dict[@"scope"] = self.scope;
+    if (self.lxm) dict[@"lxm"] = self.lxm;
     if (self.token_use) dict[@"token_use"] = self.token_use;
     if (self.cnf) dict[@"cnf"] = self.cnf;
     if (self.exp) dict[@"exp"] = @([self.exp timeIntervalSince1970]);
