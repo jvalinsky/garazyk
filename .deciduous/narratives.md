@@ -720,3 +720,22 @@
 **Evidence:** Garazyk/Tests/test_main.m, CMakeLists.txt (run-tests.sh passes $@)
 **Connects to:** AllTests Runtime Reduction (Node #939)
 **Status:** completed
+
+---
+
+## Platform-Native Integration: Signal Handling, Crash Reporting, and Service Lifecycle
+> Node #1372 | Status: active
+
+**Current state:** Phase 1 (Signal Handling) complete. Crash handlers consolidated from 3 duplicate copies into shared PDSCrashReporter. Unsafe syrena handleSignal fixed. server_main.m has signal handling. SIGHUP/SIGUSR1 lifecycle signals added. Phases 2-4 (launchd/systemd, exit codes, structured logging) pending.
+
+**Evolution:**
+1. Code dive revealed 3 crash handler copies with varying quality: kaszlak (SA_SIGINFO, Linux PC extraction), zuk (deprecated signal(), no PC extraction), syrena (deprecated signal(), unsafe handleSignal calling ObjC from signal context). server_main.m had zero signal handling.
+2. **Decision:** Consolidate into PDSCrashReporter (Compat/PlatformShims/CrashReporting) + PDSSignalManager (Compat/PlatformShims/SignalHandling)
+3. **PDSCrashReporter:** sigaction with SA_SIGINFO|SA_RESETHAND|SA_ONSTACK, sigaltstack for overflow protection, macOS ARM64/x86_64 + Linux aarch64/x86_64 PC extraction, uncaught exception handler, crash log to /tmp/<name>-crash.log
+4. **PDSSignalManager:** Singleton with installIgnoredSignals (SIGPIPE, SIGHUP via sigaction), registerHandlerForSignal:handler: (GCD dispatch_source delivery to main queue), multiple handlers per signal, proper sigprocmask management
+5. **Entry point refactors:** CLI/main.m (-110 lines), zuk/main.m (-80 lines), syrena/main.m (-80 lines + fix unsafe handler), server_main.m (added signal handling), PDSCLIServeCommand (replaced inline dispatch_source + added SIGHUP/SIGUSR1)
+6. **Build verification:** All 4 binary targets build clean (kaszlak, zuk, syrena-chat, AllTests)
+
+**Evidence:** PDSCrashReporter.h/m, PDSSignalManager.h/m, CLI/main.m, Binaries/zuk/main.m, Binaries/syrena/main.m, Sources/App/server_main.m, Sources/CLI/PDSCLIServeCommand.m
+**Connects to:** Concurrency Scalability (Node #1331), Crash Handler Installation (Node #1300)
+**Status:** active (Phase 1 complete, Phases 2-4 pending)
