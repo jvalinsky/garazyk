@@ -8,6 +8,7 @@
 #import "AppView/Server/AppViewDatabase.h"
 #import "AppView/Server/Indexers/AppViewIndexer.h"
 #import "Repository/CAR.h"
+#import "Repository/STAR.h"
 #import "Repository/MST.h"
 #import "Core/ATProtoDagCBOR.h"
 #import "Core/CID.h"
@@ -79,7 +80,7 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
 
     NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlStr]];
     req.timeoutInterval = 120.0;
-    [req setValue:@"application/vnd.ipld.car" forHTTPHeaderField:@"Accept"];
+    [req setValue:@"application/vnd.atproto.star-lite, application/vnd.atproto.star;q=0.9, application/vnd.ipld.car;q=0.8" forHTTPHeaderField:@"Accept"];
     [req setValue:@"garazyk-appview/1.0" forHTTPHeaderField:@"User-Agent"];
 
     // Synchronous fetch via NSURLSession (we're already on a background queue)
@@ -242,15 +243,25 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
     [fh closeFile];
 
     PDS_LOG_DEBUG(@"[AppView BackfillWorker] _parseCARAndIndex called for %@", did);
-    PDS_LOG_DEBUG(@"[AppView BackfillWorker] CAR data length: %lu", (unsigned long)carData.length);
+    PDS_LOG_DEBUG(@"[AppView BackfillWorker] Data length: %lu", (unsigned long)carData.length);
 
-    CARReader *reader = [CARReader readFromData:carData error:error];
+    CARReader *reader = nil;
+    if (STARDetectFormatFromData(carData)) {
+        // STAR format detected — convert to CAR for downstream processing
+        PDS_LOG_DEBUG(@"[AppView BackfillWorker] Detected STAR format, converting to CAR");
+        NSData *carBytes = [STARConverter carDataFromSTARData:carData error:error];
+        if (carBytes) {
+            reader = [CARReader readFromData:carBytes error:error];
+        }
+    } else {
+        reader = [CARReader readFromData:carData error:error];
+    }
     if (!reader) {
-        PDS_LOG_ERROR(@"[AppView BackfillWorker] Failed to read CAR: %@", *error);
+        PDS_LOG_ERROR(@"[AppView BackfillWorker] Failed to read repo data: %@", *error);
         return nil;
     }
 
-    PDS_LOG_DEBUG(@"[AppView BackfillWorker] CARReader success: blocks=%lu rootCID=%@",
+    PDS_LOG_DEBUG(@"[AppView BackfillWorker] Reader success: blocks=%lu rootCID=%@",
               (unsigned long)reader.blocks.count, reader.rootCID);
 
     NSString *lastRev = nil;

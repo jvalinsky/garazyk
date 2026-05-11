@@ -1533,32 +1533,16 @@
 - (BOOL)updateRepo:(NSString *)did commit:(NSData *)commitData error:(NSError **)error {
     // Detect format: STAR (0x2A magic) vs CAR
     if (STARDetectFormatFromData(commitData)) {
-        // Parse STAR format and convert to CAR blocks for processing
         NSError *starErr = nil;
-        STARReader *starReader = [STARReader readFromData:commitData error:&starErr];
-        if (!starReader) {
+        NSData *carData = [STARConverter carDataFromSTARData:commitData error:&starErr];
+        if (!carData) {
             if (error) *error = starErr ?: [NSError errorWithDomain:@"com.atproto.repo"
                                                                code:7
-                                                           userInfo:@{NSLocalizedDescriptionKey: @"Failed to parse STAR commit data"}];
+                                                           userInfo:@{NSLocalizedDescriptionKey: @"Failed to convert STAR to CAR"}];
             return NO;
         }
-        // Convert STAR blocks to CAR format for downstream processing
-        CID *rootCID = starReader.rootCID ?: starReader.commit.data;
-        if (rootCID) {
-            CARWriter *carWriter = [CARWriter writerWithRootCID:rootCID];
-            for (CARBlock *block in starReader.blocks) {
-                [carWriter addBlock:block];
-            }
-            NSData *carData = [carWriter serialize];
-            if (carData) {
-                // Recurse with CAR data
-                return [self updateRepo:did commit:carData error:error];
-            }
-        }
-        if (error) *error = [NSError errorWithDomain:@"com.atproto.repo"
-                                                code:8
-                                            userInfo:@{NSLocalizedDescriptionKey: @"Failed to convert STAR to CAR"}];
-        return NO;
+        // Recurse with CAR data
+        return [self updateRepo:did commit:carData error:error];
     }
     return NO;
 }
