@@ -40,6 +40,8 @@
 
         NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
         if (httpResponse.statusCode != 200) {
+            NSString *bodyStr = data ? [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] : @"(no body)";
+            PDS_LOG_WARN(@"VideoRemoteBlobUploader: PDS returned HTTP %ld for uploadBlob: %@", (long)httpResponse.statusCode, bodyStr);
             blockError = [NSError errorWithDomain:@"com.atproto.video.uploader"
                                              code:httpResponse.statusCode
                                          userInfo:@{NSLocalizedDescriptionKey:
@@ -52,6 +54,7 @@
             NSError *jsonError = nil;
             result = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
             if (jsonError) {
+                PDS_LOG_WARN(@"VideoRemoteBlobUploader: failed to parse upload response: %@", jsonError);
                 blockError = jsonError;
             }
         }
