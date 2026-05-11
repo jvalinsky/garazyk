@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garazyk E2E Test Client</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- HLS.js for Video CDN support -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>Garazyk E2E Test Harness</h1>
+            <div id="auth-status" class="status-badge">Not Logged In</div>
+        </header>
+
+        <main>
+            <section id="login-section">
+                <h2>Authentication</h2>
+                <div class="input-group">
+                    <input type="text" id="handle" placeholder="handle (e.g. luna.test)" value="luna.test">
+                    <input type="password" id="password" placeholder="password" value="password">
+                    <button id="login-btn" onclick="GarazykE2E.login(document.getElementById('handle').value, document.getElementById('password').value)">Login</button>
+                </div>
+            </section>
+
+            <section id="timeline-section" class="hidden">
+                <h2>Timeline</h2>
+                <button onclick="GarazykE2E.loadTimeline()">Refresh Timeline</button>
+                <div id="timeline-feed"></div>
+            </section>
+
+            <section id="chat-section" class="hidden">
+                <h2>Chat & E2EE</h2>
+                <div id="chat-controls">
+                    <input type="text" id="chat-dest" placeholder="Recipient DID">
+                    <input type="text" id="chat-msg" placeholder="Message content">
+                    <button onclick="GarazykE2E.sendDM(document.getElementById('chat-dest').value, document.getElementById('chat-msg').value)">Send Plaintext DM</button>
+                    <button onclick="GarazykE2E.sendEncryptedDM(document.getElementById('chat-dest').value, document.getElementById('chat-msg').value)">Send Germ E2EE DM</button>
+                </div>
+                <div id="chat-history"></div>
+            </section>
+
+            <section id="video-section" class="hidden">
+                <h2>Video CDN</h2>
+                <div id="video-container">
+                    <video id="video-player" controls></video>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <div id="service-urls">
+                <p>PDS: <span id="url-pds">-</span></p>
+                <p>AppView: <span id="url-appview">-</span></p>
+                <p>Chat: <span id="url-chat">-</span></p>
+                <p>Germ: <span id="url-germ">-</span></p>
+            </div>
+        </footer>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
