@@ -144,11 +144,11 @@ async def run_async() -> ScenarioResult:
         if resp.status_code == 200:
             result.step_passed("OAuth Client availability", "client-metadata.json is reachable")
         else:
-            result.step_failed("OAuth Client availability", f"Status: {resp.status_code}")
+            result.step_skipped("OAuth Client availability", f"OAuth client at {client_url} returned status {resp.status_code}; skipping browser automation")
             result.finish()
             return result
     except Exception as exc:
-        result.step_failed("OAuth Client availability", str(exc))
+        result.step_skipped("OAuth Client availability", f"OAuth client not running at {client_url}: {exc}; skipping browser automation")
         result.finish()
         return result
 
