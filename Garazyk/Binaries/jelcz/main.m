@@ -219,7 +219,8 @@ int run_serve(int argc, const char *argv[]) {
 
     // Initialize auth provider
     VideoJWTAuthProvider *authProvider = [[VideoJWTAuthProvider alloc] initWithExpectedAudience:config.serviceDID
-                                                                               signingKeyJWK:nil];
+                                                                                       pdsURL:config.pdsURL
+                                                                                       plcURL:config.plcURL];
 
     // Initialize video worker
     gWorker = [ATProtoVideoWorker sharedWorker];
