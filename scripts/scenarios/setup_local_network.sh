@@ -266,6 +266,11 @@ if [[ "$BINARY_MODE" == "true" ]]; then
     export PDS_ADMIN_PASSWORD="test-admin-password"
     export PDS_PLC_KEYS_DIR="$PDS_DATA/keys"
 
+    # PLC rate limits (lower than production for scenario testing)
+    export PLC_HOURLY_LIMIT="${PLC_HOURLY_LIMIT:-5}"
+    export PLC_DAILY_LIMIT="${PLC_DAILY_LIMIT:-15}"
+    export PLC_WEEKLY_LIMIT="${PLC_WEEKLY_LIMIT:-50}"
+
     # ── Start PLC ────────────────────────────────────────────────────────────
     log_info "Starting PLC on port $SERVICE_PORT_PLC..."
     "$BUILD_BIN/$SERVICE_BINARY_PLC" serve --port "$SERVICE_PORT_PLC" --data-dir "$PLC_DATA" > "$ATPROTO_E2E_LOG_DIR/plc.log" 2>&1 &
