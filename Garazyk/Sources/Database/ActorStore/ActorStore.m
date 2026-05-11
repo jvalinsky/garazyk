@@ -137,7 +137,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
         return NO;
     }
 
-    sqlite3_busy_timeout(_db, 60000);
+    sqlite3_busy_timeout(_db, 5000);
     
     if (![self configureDatabase:error]) {
         sqlite3_close_v2(_db);
