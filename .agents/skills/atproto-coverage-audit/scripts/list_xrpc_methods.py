@@ -93,15 +93,32 @@ def main():
     parser.add_argument("--json", action="store_true", help="Emit JSON output")
     args = parser.parse_args()
 
-    registry_path = os.path.join(
-        args.repo_root, "ATProtoPDS", "Sources", "Network", "XrpcMethodRegistry.m"
-    )
+    sources_root = os.path.join(args.repo_root, "Garazyk", "Sources")
+    if not os.path.isdir(sources_root):
+        # Fallback to current directory if Garazyk/Sources doesn't exist
+        sources_root = args.repo_root
 
-    if not os.path.exists(registry_path):
-        print(f"Registry not found: {registry_path}", file=sys.stderr)
-        return 1
+    entries = []
+    for root, _, files in os.walk(sources_root):
+        for filename in files:
+            if not (filename.endswith(".m") or filename.endswith(".mm")):
+                continue
+            path = os.path.join(root, filename)
+            entries.extend(parse_registry(path))
 
-    entries = parse_registry(registry_path)
+    # Deduplicate entries by method_id
+    seen = {}
+    unique_entries = []
+    for entry in entries:
+        mid = entry["method_id"]
+        if mid == "unknown":
+            unique_entries.append(entry)
+            continue
+        if mid not in seen:
+            seen[mid] = entry
+            unique_entries.append(entry)
+    
+    entries = unique_entries
 
     if args.json:
         output = json.dumps(entries, indent=2, sort_keys=True)
