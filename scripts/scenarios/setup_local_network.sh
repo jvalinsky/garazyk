@@ -237,7 +237,7 @@ fi
 if [[ "$BINARY_MODE" == "true" ]]; then
     log_info "Starting binary services..."
 
-    check_binaries "$BUILD_BIN" plc pds relay appview
+    check_binaries "$BUILD_BIN" plc pds relay appview video
 
     # Binary mode is disposable by design. Starting from an empty data root keeps
     # scenario runs independent and avoids stale repo/account state.
@@ -281,6 +281,7 @@ if [[ "$BINARY_MODE" == "true" ]]; then
     # ── Start PDS ────────────────────────────────────────────────────────────
     log_info "Starting PDS on port $SERVICE_PORT_PDS..."
     PDS_ALLOW_HTTP=1 \
+    PDS_VIDEO_MODE=external \
     "$BUILD_BIN/$SERVICE_BINARY_PDS" serve --config "$CONFIG_DIR/pds-config.json" --port "$SERVICE_PORT_PDS" --data-dir "$PDS_DATA" > "$ATPROTO_E2E_LOG_DIR/pds.log" 2>&1 &
     echo "PDS_PID=$!" >> "$PID_FILE"
     sleep 3
@@ -345,6 +346,26 @@ if [[ "$BINARY_MODE" == "true" ]]; then
         wait_for_http "$SERVICE_URL_CHAT/xrpc/com.atproto.server.describeServer" "PDS2" 60
     fi
 
+    # ── Start Jelcz video service (optional) ─────────────────────────────────
+    if [[ -x "$BUILD_BIN/$SERVICE_BINARY_VIDEO" ]]; then
+        VIDEO_DATA="$DATA_ROOT/video"
+        mkdir -p "$VIDEO_DATA" "$VIDEO_DATA/blobs"
+        log_info "Starting Jelcz video service on port $SERVICE_PORT_VIDEO..."
+        JELCZ_DATA_DIR="$VIDEO_DATA" \
+        JELCZ_BLOB_DIR="$VIDEO_DATA/blobs" \
+        JELCZ_PDS_URL="$SERVICE_URL_PDS" \
+        JELCZ_PLC_URL="$SERVICE_URL_PLC" \
+        JELCZ_DID="did:web:localhost" \
+        "$BUILD_BIN/$SERVICE_BINARY_VIDEO" serve --port "$SERVICE_PORT_VIDEO" \
+            > "$ATPROTO_E2E_LOG_DIR/video.log" 2>&1 &
+        echo "VIDEO_PID=$!" >> "$PID_FILE"
+        sleep 2
+        wait_for_http "$SERVICE_URL_VIDEO/_health" "Jelcz" 30 || \
+            log_warn "Jelcz video service not healthy (scenario 36 will fail)"
+    else
+        log_warn "Jelcz binary not found; scenario 36 will be skipped"
+    fi
+
     echo ""
     log_info "Waiting for services to settle..."
     sleep 5
@@ -354,6 +375,7 @@ if [[ "$BINARY_MODE" == "true" ]]; then
     echo "  PDS:     $SERVICE_URL_PDS"
     echo "  Relay:   $SERVICE_URL_RELAY"
     echo "  AppView: $SERVICE_URL_APPVIEW"
+    echo "  Video:   $SERVICE_URL_VIDEO"
     echo "  UI:      $SERVICE_URL_UI"
     if [[ "$WITH_PDS2" == "true" ]]; then
         echo "  PDS2:    $SERVICE_URL_CHAT"

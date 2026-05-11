@@ -23,7 +23,7 @@ DOCKERFILE="$REPO_ROOT/docker/Dockerfile.gnustep"
 BUILDER_TARGET="builder"
 IMAGE_TAG="garazyk-staging-builder:latest"
 
-BINARIES=(kaszlak campagnola zuk syrena garazyk-ui)
+BINARIES=(kaszlak campagnola zuk syrena garazyk-ui jelcz)
 CHECK_ONLY=false
 
 while [[ $# -gt 0 ]]; do

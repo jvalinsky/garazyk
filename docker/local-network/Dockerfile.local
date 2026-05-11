@@ -34,6 +34,7 @@ COPY staging/bin/campagnola /usr/local/bin/campagnola
 COPY staging/bin/zuk /usr/local/bin/zuk
 COPY staging/bin/syrena /usr/local/bin/syrena
 COPY staging/bin/garazyk-ui /usr/local/bin/garazyk-ui
+COPY staging/bin/jelcz /usr/local/bin/jelcz
 COPY staging/bin/Assets /usr/local/bin/Assets
 COPY staging/bin/Assets /usr/local/bin/Assets
 
