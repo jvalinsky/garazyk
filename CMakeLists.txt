@@ -349,6 +349,8 @@ file(GLOB_RECURSE ATPROTO_SERVICES_SOURCES
   "Garazyk/Sources/Registration/*.c"
   "Garazyk/Sources/PhoneVerification/*.m"
   "Garazyk/Sources/PhoneVerification/*.c"
+  "Garazyk/Sources/Germ/*.m"
+  "Garazyk/Sources/Germ/*.c"
 )
 list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/PDSAuth/.*")
 list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/Crypto/.*")

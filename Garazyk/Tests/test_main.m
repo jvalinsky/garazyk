@@ -1012,6 +1012,8 @@ int main(int argc, char *argv[]) {
       @"ATProtoVideoThumbnailGeneratorIntegrationTests",
       @"ATProtoVideoWorkerTests",
       @"ATProtoVideoWorkerIntegrationTests",
+      @"ATProtoVideoHLSGeneratorTests",
+      @"AppViewVideoUriBuilderTests",
       @"XrpcAppBskyBookmarksTests",
       @"XrpcAppBskyContactTests",
       @"XrpcAppBskyDraftsTests",
@@ -1057,7 +1059,8 @@ int main(int argc, char *argv[]) {
       @"PDSVonagePhoneVerificationProviderTests",
       @"PDSPlivoPhoneVerificationProviderTests",
       @"PDSTelegramGatewayPhoneVerificationProviderTests",
-      @"GermRecordTests"
+      @"GermRecordTests",
+      @"GermMailboxServiceTests"
     ];
 
     SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
