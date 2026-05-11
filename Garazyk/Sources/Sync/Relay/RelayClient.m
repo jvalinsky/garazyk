@@ -66,6 +66,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
     self.subscription = [self.firehose subscribeWithCursor:self.currentSeq
                                                 collections:nil
                                                   delegate:self];
+    PDS_LOG_SYNC_INFO(@"RelayClient: Connecting to %@ (cursor=%lld)", wsURL, (long long)self.currentSeq);
     [self.firehose connect];
 }
 
@@ -168,6 +169,10 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
     NSTimeInterval delay = self.reconnectInterval * pow(1.5, self.reconnectAttempts - 1);
     delay = MIN(delay, 60.0);
 
+    PDS_LOG_SYNC_INFO(@"RelayClient: Scheduling reconnect to %@ (attempt=%ld/%ld, delay=%.1fs, cursor=%lld)",
+                       self.serverURL, (long)self.reconnectAttempts, (long)self.maxReconnectAttempts,
+                       delay, (long long)self.currentSeq);
+
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         if (!self.isConnected) {
             [self establishConnection];
@@ -212,6 +217,8 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 }
 
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveErrorEvent:(FirehoseErrorEvent *)event {
+    PDS_LOG_SYNC_WARN(@"RelayClient: Received error from relay: error=%@ message=%@", event.error, event.message);
+
     id<RelayClientDelegate> delegate = self.delegate;  // Capture strongly
     dispatch_async(dispatch_get_main_queue(), ^{
         if (delegate) {
@@ -222,6 +229,9 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didCloseWithError:(NSError *)error {
     self.isConnected = NO;
+
+    PDS_LOG_SYNC_WARN(@"RelayClient: Firehose closed from %@ (error=%@, currentSeq=%lld)",
+                       self.serverURL, error.localizedDescription, (long long)self.currentSeq);
 
     id<RelayClientDelegate> delegate = self.delegate;  // Capture strongly
     int64_t seq = self.currentSeq;  // Capture value
