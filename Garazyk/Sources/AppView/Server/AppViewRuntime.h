@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
  @file AppViewRuntime.h
 
@@ -23,6 +25,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class AppViewConfiguration;
 @class AppViewDatabase;
+@class AppViewVideoUriBuilder;
 
 /*!
  @class AppViewRuntime
@@ -39,6 +42,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*! Returns YES if the runtime is running. */
 @property (nonatomic, readonly) BOOL isRunning;
+
+/*! Returns the video URI builder (nil if no video service configured). */
+@property (nonatomic, strong, readonly, nullable) AppViewVideoUriBuilder *videoUriBuilder;
 
 /*!
  @method sharedRuntime

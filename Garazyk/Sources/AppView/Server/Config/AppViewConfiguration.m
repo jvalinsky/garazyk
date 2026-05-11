@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
  @file AppViewConfiguration.m
 
@@ -33,6 +35,7 @@
     _partialTTLHours           = 168;
     _partialProxyFallback      = NO;
     _partialProxyFallbackURL   = nil;
+    _videoServiceURL           = nil;
     _plcURL                  = @"https://plc.directory";
 }
 
@@ -112,6 +115,10 @@
     }
     if (fallbackURL.length > 0) config.partialProxyFallbackURL = fallbackURL;
 
+    // Video service URL
+    NSString *videoServiceURL = [NSProcessInfo.processInfo.environment objectForKey:@"APPVIEW_VIDEO_SERVICE_URL"];
+    if (videoServiceURL.length > 0) config.videoServiceURL = videoServiceURL;
+
     return config;
 }
 
@@ -183,6 +190,10 @@
 
     NSString *fallbackURL = dict[@"partial.proxy_fallback_url"];
     if (fallbackURL.length > 0) _partialProxyFallbackURL = fallbackURL;
+
+    // Video service
+    NSString *videoURL = dict[@"video_service_url"];
+    if (videoURL.length > 0) _videoServiceURL = videoURL;
 }
 
 - (BOOL)validate:(NSError **)error {
