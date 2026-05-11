@@ -336,11 +336,11 @@ int main(int argc, const char * argv[]) {
         // Register safe signal handlers (dispatch_source, not raw signal())
         [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGTERM handler:^(int sig) {
             [gShutdownRuntime stop];
-            CFRunLoopStop(CFRunLoopGetCurrent());
+            exit(0);
         }];
         [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGINT handler:^(int sig) {
             [gShutdownRuntime stop];
-            CFRunLoopStop(CFRunLoopGetCurrent());
+            exit(0);
         }];
 
         [[NSRunLoop currentRunLoop] run];
