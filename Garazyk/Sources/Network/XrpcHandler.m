@@ -157,7 +157,7 @@ static XrpcDispatcher *_sharedInstance = nil;
     // Set CORS headers for all XRPC responses (not just OPTIONS)
     [self setCorsHeaders:response forRequest:request];
 
-    // Check Rate Limit
+    // Check Rate Limit (per-IP)
     RateLimitResult *rateLimit = [[RateLimiter sharedLimiter] checkRateLimitForIP:request.remoteAddress];
     if (!rateLimit.allowed) {
         response.statusCode = HttpStatusTooManyRequests;
@@ -174,6 +174,29 @@ static XrpcDispatcher *_sharedInstance = nil;
         [response setHeader:[NSString stringWithFormat:@"%.0f", rateLimit.retryAfter] forKey:@"Retry-After"];
         
         return;
+    }
+
+    // Check Rate Limit (per-DID) — extract DID from Authorization header
+    // without full JWT verification. The per-DID limit is only enforced when
+    // the rate limiter is enabled and the request carries a Bearer token.
+    NSString *authHeader = [request headerForKey:@"Authorization"];
+    if (authHeader.length > 0) {
+        NSString *did = [self _extractDIDFromAuthHeader:authHeader];
+        if (did.length > 0) {
+            RateLimitResult *didRateLimit = [[RateLimiter sharedLimiter] checkRateLimitForDid:did];
+            if (!didRateLimit.allowed) {
+                response.statusCode = HttpStatusTooManyRequests;
+                [response setJsonBody:@{
+                    @"error": @"RateLimitExceeded",
+                    @"message": @"Rate limit exceeded"
+                }];
+                [response setHeader:[NSString stringWithFormat:@"%ld", (long)didRateLimit.limit] forKey:@"X-RateLimit-Limit"];
+                [response setHeader:[NSString stringWithFormat:@"%ld", (long)didRateLimit.remaining] forKey:@"X-RateLimit-Remaining"];
+                [response setHeader:[NSString stringWithFormat:@"%.0f", didRateLimit.resetSeconds] forKey:@"X-RateLimit-Reset"];
+                [response setHeader:[NSString stringWithFormat:@"%.0f", didRateLimit.retryAfter] forKey:@"Retry-After"];
+                return;
+            }
+        }
     }
 
     // Timeout signal: set default timeout for all network calls
@@ -905,6 +928,49 @@ static XrpcDispatcher *_sharedInstance = nil;
 
 - (void)registerAppBskyGraphGetActorStarterPacks:(XrpcMethodHandler)handler {
     [self registerMethod:@"app.bsky.graph.getActorStarterPacks" handler:handler];
+}
+
+#pragma mark - Private Helpers
+
+- (NSString *)_extractDIDFromAuthHeader:(NSString *)authHeader {
+    // Lightweight DID extraction from Bearer token — decodes the JWT payload
+    // without signature verification. This is sufficient for rate limiting
+    // because the per-DID limit is a soft guard, not a security boundary.
+    if (!authHeader) return nil;
+
+    NSString *token = nil;
+    if ([authHeader hasPrefix:@"Bearer "]) {
+        token = [authHeader substringFromIndex:7];
+    } else if ([authHeader hasPrefix:@"DPoP "]) {
+        token = [authHeader substringFromIndex:5];
+    } else {
+        return nil;
+    }
+
+    // JWT format: header.payload.signature
+    NSArray *parts = [token componentsSeparatedByString:@"."];
+    if (parts.count != 3) return nil;
+
+    // Base64url-decode the payload (second segment)
+    NSString *payloadB64 = parts[1];
+    // Pad with '=' to make valid base64
+    NSUInteger padLen = (4 - payloadB64.length % 4) % 4;
+    if (padLen > 0) {
+        payloadB64 = [payloadB64 stringByAppendingString:
+            [@"" stringByPaddingToLength:padLen withString:@"=" startingAtIndex:0]];
+    }
+    // Replace URL-safe chars
+    NSMutableString *mutableB64 = [payloadB64 mutableCopy];
+    [mutableB64 replaceOccurrencesOfString:@"-" withString:@"+" options:0 range:NSMakeRange(0, mutableB64.length)];
+    [mutableB64 replaceOccurrencesOfString:@"_" withString:@"/" options:0 range:NSMakeRange(0, mutableB64.length)];
+
+    NSData *payloadData = [[NSData alloc] initWithBase64EncodedString:mutableB64 options:0];
+    if (!payloadData) return nil;
+
+    NSDictionary *payload = [NSJSONSerialization JSONObjectWithData:payloadData
+                                                            options:0
+                                                              error:nil];
+    return payload[@"did"];
 }
 
 @end
