@@ -20,6 +20,7 @@
 #import "Auth/JWT.h"
 #import "App/PDSConfiguration.h"
 #import "Repository/CAR.h"
+#import "Repository/STAR.h"
 #import "Lexicon/ATProtoLexiconValidator.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Repository/CBOR.h"
@@ -671,10 +672,10 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
             return;
         }
 
-        NSData *carData = request.body;
-        if (!carData || carData.length == 0) {
+        NSData *repoData = request.body;
+        if (!repoData || repoData.length == 0) {
             response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing CAR body"}];
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing repository body"}];
             return;
         }
 
@@ -685,10 +686,27 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
         }
 
         NSString *contentType = [[request headerForKey:@"Content-Type"] lowercaseString];
-        if (contentType.length > 0 && ![contentType hasPrefix:@"application/vnd.ipld.car"]) {
+        BOOL isSTAR = [contentType hasPrefix:@"application/vnd.atproto.star"];
+        BOOL isCAR = [contentType hasPrefix:@"application/vnd.ipld.car"];
+        if (contentType.length > 0 && !isCAR && !isSTAR) {
             response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Content-Type must be application/vnd.ipld.car"}];
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Content-Type must be application/vnd.ipld.car or application/vnd.atproto.star"}];
             return;
+        }
+
+        // Convert STAR to CAR if needed
+        NSData *carData = repoData;
+        if (isSTAR || STARDetectFormatFromData(repoData)) {
+            NSError *starErr = nil;
+            carData = [STARConverter carDataFromSTARData:repoData error:&starErr];
+            if (!carData) {
+                response.statusCode = HttpStatusBadRequest;
+                [response setJsonBody:@{
+                    @"error": @"InvalidRequest",
+                    @"message": starErr.localizedDescription ?: @"Failed to convert STAR to CAR"
+                }];
+                return;
+            }
         }
 
         NSError *carError = nil;

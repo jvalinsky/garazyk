@@ -1,4 +1,5 @@
 #import <Foundation/Foundation.h>
+#import "Repository/STAR.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -18,6 +19,12 @@ typedef NS_ENUM(NSInteger, FederationErrorCode) {
 @interface FederationClient : NSObject
 
 @property (nonatomic, strong, nullable) id didResolver;
+
+/*! Preferred repository format for sync requests (getRepo, getCheckout).
+    Defaults to PDSRepoFormatCAR. When set to STAR-L0 or STAR-lite, the
+    FederationClient sends the appropriate Accept header to request STAR
+    format from remote PDS instances that support it. */
+@property (nonatomic, assign) PDSRepoFormat preferredRepoFormat;
 
 /// Forward an XRPC request to the appropriate remote PDS based on DID resolution
 /// @param method The XRPC method name (e.g., "com.atproto.repo.getRecord")
