@@ -13,6 +13,7 @@
 #import "PDSCLIDefinitions.h"
 #import "Services/PDS/PDSRelayService.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
+#import "Compat/PlatformShims/SignalHandling/PDSSignalManager.h"
 
 @interface PDSCLIServeCommand : PDSBaseCommand
 @end
@@ -57,8 +58,7 @@
 
 - (int)executeWithArguments:(NSArray<NSString *> *)args
                     context:(PDSCLICommandContext *)context {
-  // Ignore SIGPIPE to prevent crash when a client closes connection unexpectedly
-  signal(SIGPIPE, SIG_IGN);
+  // SIGPIPE is already ignored by PDSSignalManager in main()
 
   NSInteger port = 2583;
   BOOL foreground = NO;
@@ -391,12 +391,10 @@
     PDS_LOG_INFO(@"PDS server started successfully");
   }
 
-  // Setup signal handling for graceful shutdown
+  // Setup signal handling for graceful shutdown via PDSSignalManager
   __block volatile sig_atomic_t shouldExit = 0;
 
-  dispatch_source_t intSource = dispatch_source_create(
-      DISPATCH_SOURCE_TYPE_SIGNAL, SIGINT, 0, dispatch_get_main_queue());
-  dispatch_source_set_event_handler(intSource, ^{
+  [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGINT handler:^(int sig) {
     shouldExit = 1;
     printf("\nShutting down server...\n");
     [subscribeReposHandler stop];
@@ -407,12 +405,9 @@
                      printf("Forced exit after timeout.\n");
                      exit(0);
                    });
-  });
-  dispatch_resume(intSource);
+  }];
 
-  dispatch_source_t termSource = dispatch_source_create(
-      DISPATCH_SOURCE_TYPE_SIGNAL, SIGTERM, 0, dispatch_get_main_queue());
-  dispatch_source_set_event_handler(termSource, ^{
+  [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGTERM handler:^(int sig) {
     shouldExit = 1;
     printf("\nShutting down server...\n");
     [subscribeReposHandler stop];
@@ -423,8 +418,19 @@
                      printf("Forced exit after timeout.\n");
                      exit(0);
                    });
-  });
-  dispatch_resume(termSource);
+  }];
+
+  // SIGHUP: log rotation trigger
+  [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGHUP handler:^(int sig) {
+    PDS_LOG_SERVICE_INFO(@"Received SIGHUP — rotating logs");
+    [[PDSLogger sharedLogger] rotateLogIfNeeded];
+  }];
+
+  // SIGUSR1: diagnostic dump
+  [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGUSR1 handler:^(int sig) {
+    PDS_LOG_SERVICE_INFO(@"Received SIGUSR1 — diagnostic dump requested");
+    // Future: dump goroutine-equivalent (dispatch queue state), connection pool stats, etc.
+  }];
 
   // Keep server running
   if (foreground) {
