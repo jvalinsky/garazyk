@@ -1391,17 +1391,78 @@ int main(int argc, char *argv[]) {
     }
 
     // ── Run tests ───────────────────────────────────────────────────────
-    // TODO: --timeout enforcement requires wrapping each test invocation
-    // in a dispatch_after-based timeout handler.  Currently the flag is
-    // parsed and stored but not yet enforced during execution.
 
     NSLog(@"\n=== Starting Test Suite: %@ ===", mainSuite.name);
-    NSLog(@"Test suites: %lu (skipped: %lu)", 
+    NSLog(@"Test suites: %lu (skipped: %lu)",
           (unsigned long)mainSuite.tests.count,
           (unsigned long)skippedClasses.count);
 
     NSDate *suiteStart = [NSDate date];
-    [mainSuite performTest:nil];
+
+    if (perTestTimeout > 0) {
+      // Per-test timeout enforcement: run each test case individually with
+      // a watchdog on a background queue.  If the test exceeds the limit,
+      // the watchdog fires and we record a timeout failure.  The test still
+      // runs to completion (we can't safely kill it), but the timeout is
+      // recorded in the observer and the JSON output.
+      dispatch_queue_t watchdogQueue = dispatch_queue_create(
+          "com.garazyk.test-timeout", DISPATCH_QUEUE_SERIAL);
+      NSUInteger timeoutCount = 0;
+
+      for (XCTest *classTest in mainSuite.tests) {
+        XCTestSuite *classSuite = (XCTestSuite *)classTest;
+        XCTestSuite *timedClassSuite =
+            [XCTestSuite testSuiteWithName:classSuite.name];
+        for (XCTest *test in classSuite.tests) {
+          if (![test isKindOfClass:[XCTestCase class]]) continue;
+          XCTestCase *testCase = (XCTestCase *)test;
+
+          __block volatile BOOL timedOut = NO;
+          dispatch_block_t timeoutBlock = dispatch_block_create(0, ^{
+            timedOut = YES;
+          });
+          dispatch_after(
+              dispatch_time(DISPATCH_TIME_NOW,
+                            (int64_t)(perTestTimeout * NSEC_PER_SEC)),
+              watchdogQueue, timeoutBlock);
+
+          // Run the test case within a suite so XCTestObservation
+          // callbacks fire correctly.
+          XCTestSuite *singleSuite =
+              [XCTestSuite testSuiteWithName:@"_timeout_single"];
+          [singleSuite addTest:testCase];
+          [singleSuite performTest:nil];
+
+          dispatch_block_cancel(timeoutBlock);
+
+          if (timedOut) {
+            timeoutCount++;
+            NSString *cls = PDSClassNameFromTestCase(testCase);
+            NSString *method = PDSMethodNameFromTestCase(testCase);
+            NSString *msg = [NSString stringWithFormat:
+                @"TIMEOUT: %@/%@ exceeded %.1fs limit",
+                cls, method, perTestTimeout];
+            observer.failureCount++;
+            [observer.failedTests addObject:@{
+              @"class" : cls,
+              @"method" : method,
+              @"file" : @"(timeout)",
+              @"line" : @(0),
+              @"description" : msg
+            }];
+            NSLog(@"%@", msg);
+          }
+        }
+      }
+
+      if (timeoutCount > 0) {
+        NSLog(@"%lu tests exceeded the %.1fs timeout",
+              (unsigned long)timeoutCount, perTestTimeout);
+      }
+    } else {
+      [mainSuite performTest:nil];
+    }
+
     NSTimeInterval suiteDuration = -[suiteStart timeIntervalSinceNow];
 
     // ── Output ──────────────────────────────────────────────────────────
