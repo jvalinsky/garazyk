@@ -1,0 +1,31 @@
+{
+  "lexicon": 1,
+  "id": "com.germnetwork.keypackage",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "An AnchorHello package for E2EE session setup. Contains MLS KeyPackage(s), agent delegation data, and policy information, all signed by the Anchor Key declared in com.germnetwork.declaration. Models after Germ's current shipping 1:1 E2EE DM product.",
+      "key": "literal:self",
+      "record": {
+        "type": "object",
+        "required": ["version", "anchorHello"],
+        "properties": {
+          "version": {
+            "type": "string",
+            "description": "Semver version number for the AnchorHello wire format",
+            "minLength": 5,
+            "maxLength": 14
+          },
+          "anchorHello": {
+            "type": "bytes",
+            "description": "Opaque AnchorHello wire format: contains agent public key, MLS KeyPackage(s), succession proofs, and policy, signed by the Anchor Key"
+          },
+          "anchorSignature": {
+            "type": "bytes",
+            "description": "The Anchor Key's signature over the AnchorHello, verifying the delegation from the DID's Anchor Key to the Hello Agent"
+          }
+        }
+      }
+    }
+  }
+}
