@@ -94,7 +94,7 @@
                                         jwtMinter:nil
                                   adminController:nil];
 
-    self.httpServer = [HttpServer serverWithHost:@"127.0.0.1" port:self.configuration.httpPort]; // Bind to localhost only — chat must be accessed through PDS proxy
+    self.httpServer = [HttpServer serverWithHost:@"0.0.0.0" port:self.configuration.httpPort]; // Bind to all interfaces for Docker support
 
     // Configure auth manager with PDS URL for JWT signature verification
     if (self.configuration.pdsUrl.length > 0) {

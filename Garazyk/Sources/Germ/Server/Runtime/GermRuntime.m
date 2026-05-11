@@ -90,10 +90,9 @@ static const uint16_t kGermDefaultPort = 8082;
                    authManager:self.authManager];
     [identityPack registerHandlersWithDispatcher:self.dispatcher];
 
-    // 5. Start HTTP server (bind to localhost — Germ mailbox must be
-    //    accessed through PDS proxy, not directly exposed)
+    // 5. Start HTTP server (bind to all interfaces so it works in Docker)
     if (port == 0) port = kGermDefaultPort;
-    self.httpServer = [HttpServer serverWithHost:@"127.0.0.1" port:port];
+    self.httpServer = [HttpServer serverWithHost:@"0.0.0.0" port:port];
 
     // Health endpoint
     [self.httpServer addRoute:@"GET"
