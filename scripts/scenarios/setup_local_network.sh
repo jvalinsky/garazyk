@@ -275,6 +275,7 @@ if [[ "$BINARY_MODE" == "true" ]]; then
 
     # ── Start PDS ────────────────────────────────────────────────────────────
     log_info "Starting PDS on port $SERVICE_PORT_PDS..."
+    PDS_ALLOW_HTTP=1 \
     "$BUILD_BIN/$SERVICE_BINARY_PDS" serve --config "$CONFIG_DIR/pds-config.json" --port "$SERVICE_PORT_PDS" --data-dir "$PDS_DATA" > "$ATPROTO_E2E_LOG_DIR/pds.log" 2>&1 &
     echo "PDS_PID=$!" >> "$PID_FILE"
     sleep 3
@@ -332,6 +333,7 @@ if [[ "$BINARY_MODE" == "true" ]]; then
         log_info "Starting PDS2 on port $SERVICE_PORT_CHAT..."
         PDS_MASTER_SECRET="test-master-secret-456" \
         PDS_PLC_KEYS_DIR="$PDS2_DATA/keys" \
+        PDS_ALLOW_HTTP=1 \
         "$BUILD_BIN/$SERVICE_BINARY_PDS" serve --config "$CONFIG_DIR/pds2-config.json" --port "$SERVICE_PORT_CHAT" --data-dir "$PDS2_DATA" > "$ATPROTO_E2E_LOG_DIR/pds2.log" 2>&1 &
         echo "PDS2_PID=$!" >> "$PID_FILE"
         sleep 3
