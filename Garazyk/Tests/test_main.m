@@ -1056,7 +1056,8 @@ int main(int argc, char *argv[]) {
       @"PDSTwilioPhoneVerificationProviderTests",
       @"PDSVonagePhoneVerificationProviderTests",
       @"PDSPlivoPhoneVerificationProviderTests",
-      @"PDSTelegramGatewayPhoneVerificationProviderTests"
+      @"PDSTelegramGatewayPhoneVerificationProviderTests",
+      @"GermRecordTests"
     ];
 
     SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
