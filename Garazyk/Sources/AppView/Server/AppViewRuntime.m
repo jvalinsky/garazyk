@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
  @file AppViewRuntime.m
 
@@ -33,6 +35,7 @@
 #import "AppView/Services/ContactService.h"
 #import "AppView/Server/Hooks/AppViewIndexHookRegistry.h"
 #import "AppView/Services/AgeAssuranceService.h"
+#import "AppView/Services/VideoUriBuilder.h"
 #import "Network/AppViewXRpcRoutePack.h"
 #import "AppView/Server/Admin/AppViewAdminRoutePack.h"
 #import "Network/HttpServer.h"
@@ -69,6 +72,7 @@
 @property (nonatomic, strong) ATProtoLexiconRegistry *lexiconRegistry;
 @property (nonatomic, strong) ATProtoLexiconValidator *lexiconValidator;
 @property (nonatomic, strong) AppViewIndexHookRegistry *hookRegistry;
+@property (nonatomic, strong) AppViewVideoUriBuilder *videoUriBuilder;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 
 @end
@@ -273,6 +277,11 @@ static AppViewRuntime *_sharedRuntime = nil;
     _draftService = [[DraftService alloc] initWithDatabase:_database];
     _searchIndexService = [[SearchIndexService alloc] initWithDatabase:_database];
     _contactService = [[ContactService alloc] initWithDatabase:_database actorService:_actorService];
+
+    // Initialize video URI builder (for constructing HLS playlist/thumbnail URLs)
+    if (config.videoServiceURL.length > 0) {
+        _videoUriBuilder = [AppViewVideoUriBuilder builderWithVideoServiceURL:config.videoServiceURL];
+    }
 
     _hookRegistry = [[AppViewIndexHookRegistry alloc] initWithDatabase:_database];
 

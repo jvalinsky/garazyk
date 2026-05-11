@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
  @file AppViewConfiguration.h
 
@@ -116,6 +118,11 @@ typedef NS_ENUM(NSInteger, AppViewMode) {
 
 /*! Upstream AppView URL for proxy fallback. */
 @property (nonatomic, copy, nullable) NSString *partialProxyFallbackURL;
+
+#pragma mark - Video
+
+/*! Base URL of the Jelcz video service for constructing HLS playlist URLs. */
+@property (nonatomic, copy, nullable) NSString *videoServiceURL;
 
 #pragma mark - Lifecycle
 
