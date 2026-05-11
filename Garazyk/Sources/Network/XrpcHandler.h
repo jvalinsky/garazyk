@@ -515,6 +515,12 @@ typedef BOOL (^XrpcRequestInterceptor)(HttpRequest *request,
 /*! Registers handler for app.bsky.graph.getActorStarterPacks. */
 - (void)registerAppBskyGraphGetActorStarterPacks:(XrpcMethodHandler)handler;
 
+/*! Registers handler for app.bsky.graph.verification.createVerification. */
+- (void)registerAppBskyGraphVerificationCreateVerification:(XrpcMethodHandler)handler;
+
+/*! Registers handler for app.bsky.graph.verification.deleteVerification. */
+- (void)registerAppBskyGraphVerificationDeleteVerification:(XrpcMethodHandler)handler;
+
 @end
 
 NS_ASSUME_NONNULL_END

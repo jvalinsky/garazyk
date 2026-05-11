@@ -1116,6 +1116,44 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
         response.statusCode = HttpStatusOK;
         [response setJsonBody:result];
     }];
+
+    // com.atproto.repo.deleteBlob
+    [dispatcher registerComAtprotoRepoDeleteBlob:^(HttpRequest *request, HttpResponse *response) {
+        NSString *authHeader = [request headerForKey:@"Authorization"];
+        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
+                                                       jwtMinter:jwtMinter
+                                                 adminController:adminController
+                                                         request:request
+                                                        response:response];
+        if (!did) {
+            if (response.statusCode == HttpStatusOK) {
+                response.statusCode = HttpStatusUnauthorized;
+                [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
+            }
+            return;
+        }
+
+        NSDictionary *body = request.jsonBody ?: @{};
+        NSString *cid = body[@"blob"];
+        if (cid.length == 0) {
+            response.statusCode = HttpStatusBadRequest;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing blob CID"}];
+            return;
+        }
+
+        NSError *error = nil;
+        if (![blobService deleteBlobWithCID:cid did:did error:&error]) {
+            response.statusCode = HttpStatusInternalServerError;
+            [response setJsonBody:@{
+                @"error": @"DeleteFailed",
+                @"message": error.localizedDescription ?: @"Failed to delete blob"
+            }];
+            return;
+        }
+
+        response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"success": @YES}];
+    }];
 }
 
 @end

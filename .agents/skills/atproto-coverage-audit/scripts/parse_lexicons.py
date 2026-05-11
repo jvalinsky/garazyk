@@ -35,7 +35,7 @@ def main():
     args = parser.parse_args()
 
     lexicon_root = args.lexicon_root or os.path.join(
-        args.repo_root, "ATProtoPDS", "Resources", "lexicons"
+        args.repo_root, "Garazyk", "Resources", "lexicons"
     )
 
     if not os.path.isdir(lexicon_root):
