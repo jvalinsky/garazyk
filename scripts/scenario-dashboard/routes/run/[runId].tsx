@@ -1,4 +1,5 @@
 import { Handlers, PageProps } from "$fresh/server.ts";
+import { db } from "../../db/index.ts";
 import Layout from "../../components/Layout.tsx";
 import Toolbar from "../../components/Toolbar.tsx";
 import StatusBar from "../../components/StatusBar.tsx";
@@ -28,11 +29,27 @@ interface RunPageData {
 }
 
 export const handler: Handlers<RunPageData> = {
-  async GET(_req, ctx) {
+  GET(_req, ctx) {
     const { runId } = ctx.params;
 
-    // Will be wired to SQLite
-    return ctx.render({ runId });
+    const run = db.prepare(`
+      SELECT id, started_at as startedAt, finished_at as finishedAt, passed, failed, skipped, total_scenarios as total, duration_s as durationS, status
+      FROM runs 
+      WHERE id = ?
+    `).get(runId) as RunPageData["run"] | undefined;
+
+    let scenarioResults: RunPageData["scenarioResults"] = undefined;
+    
+    if (run) {
+      scenarioResults = db.prepare(`
+        SELECT scenario_id as scenarioId, scenario_name as scenarioName, status, passed, failed, skipped
+        FROM scenario_results
+        WHERE run_id = ?
+        ORDER BY scenario_id ASC
+      `).all(runId) as RunPageData["scenarioResults"];
+    }
+
+    return ctx.render({ runId, run, scenarioResults });
   },
 };
 
