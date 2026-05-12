@@ -80,6 +80,40 @@ async function main() {
         console.log(result.summary());
         results.push(result);
         if (!result.ok) allPassed = false;
+
+        if (args["run-id"]) {
+          try {
+            const reportFile = {
+              scenario: s.name,
+              started_at: result.startedAt ? Math.floor(result.startedAt / 1000) : 0,
+              finished_at: result.finishedAt ? Math.floor(result.finishedAt / 1000) : 0,
+              duration_s: (result.finishedAt && result.startedAt) ? (result.finishedAt - result.startedAt) / 1000 : 0,
+              steps: result.steps.map(step => ({
+                name: step.name,
+                status: step.status,
+                detail: step.detail,
+                duration_ms: step.durationMs,
+              })),
+              summary: {
+                passed: result.passed,
+                failed: result.failed,
+                skipped: result.skipped,
+                total: result.steps.length,
+              },
+              ok: result.ok,
+            };
+            
+            const reportsDir = join(scriptDir, "scenarios", "reports");
+            await Deno.mkdir(reportsDir, { recursive: true });
+            
+            const safeName = s.name.replace(/[^a-zA-Z0-9_]/g, "_");
+            const filename = `${args["run-id"]}-${s.id}_${safeName}.json`;
+            await Deno.writeTextFile(join(reportsDir, filename), JSON.stringify(reportFile, null, 2));
+            console.log(`Saved report to ${filename}`);
+          } catch (e) {
+            console.error("Failed to save JSON report", e);
+          }
+        }
       } else {
         console.error(red(`  ✗ Error: Scenario ${s.id} does not export a run() function.`));
         allPassed = false;

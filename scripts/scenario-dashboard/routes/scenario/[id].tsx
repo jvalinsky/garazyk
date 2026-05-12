@@ -1,10 +1,12 @@
 import { Handlers, PageProps } from "$fresh/server.ts";
 import { getScenarios } from "../../services/scenario_discovery.ts";
+import { db } from "../../db/index.ts";
 import Layout from "../../components/Layout.tsx";
 import Toolbar from "../../components/Toolbar.tsx";
 import Sidebar from "../../components/Sidebar.tsx";
 import StatusBar from "../../components/StatusBar.tsx";
 import StepRow from "../../components/StepRow.tsx";
+import ScenarioRunner from "../../islands/ScenarioRunner.tsx";
 
 interface ScenarioPageData {
   scenario: {
@@ -38,10 +40,36 @@ export const handler: Handlers<ScenarioPageData> = {
       return ctx.renderNotFound();
     }
 
+    let latestResult: ScenarioPageData["latestResult"] = undefined;
+    
+    try {
+      const resultRow = db.prepare(`
+        SELECT status, passed, failed, skipped, steps_json, artifacts_json
+        FROM scenario_results
+        WHERE scenario_id = ?
+        ORDER BY started_at DESC
+        LIMIT 1
+      `).get(scenario.id) as any;
+
+      if (resultRow) {
+        latestResult = {
+          status: resultRow.status as "passed" | "failed",
+          passed: resultRow.passed,
+          failed: resultRow.failed,
+          skipped: resultRow.skipped,
+          steps: JSON.parse(resultRow.steps_json || "[]"),
+          artifacts: resultRow.artifacts_json ? JSON.parse(resultRow.artifacts_json) : undefined,
+        };
+      }
+    } catch (e) {
+      console.error("Error fetching latest result:", e);
+    }
+
     return ctx.render({
       scenario,
       scenarios,
       services,
+      latestResult,
     });
   },
 };
@@ -101,9 +129,7 @@ export default function ScenarioDetailPage({ data }: PageProps<ScenarioPageData>
         )}
 
         <div style="display: flex; gap: var(--space-md);">
-          <button class="btn btn-primary">
-            Run This Scenario
-          </button>
+          <ScenarioRunner scenarioId={scenario.id} needsPds2={scenario.needsPds2} />
           {latestResult && (
             <button class="btn">
               View Full Report JSON
