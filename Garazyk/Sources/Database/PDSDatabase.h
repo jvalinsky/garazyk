@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
+#import <sqlite3.h>
 #import "PDSBlock.h"
 #import "PDSQueryDatabase.h"
 
@@ -95,6 +96,15 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
  @abstract Closes the database connection.
  */
 - (void)close;
+
+/*!
+ @method preparedStatementForQuery:
+
+ @abstract Returns a cached prepared statement for the given SQL query.
+ @discussion Uses an LRU cache internally. The caller must finalize the returned
+ statement when done.
+ */
+- (nullable sqlite3_stmt *)preparedStatementForQuery:(NSString *)query;
 
 /*!
  @method executeUnsafeRawSQL:error:

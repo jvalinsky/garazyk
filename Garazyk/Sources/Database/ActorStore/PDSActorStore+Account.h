@@ -42,6 +42,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable PDSDatabaseAccount *)getAccountByHandle:(NSString *)handle error:(NSError * _Nullable * _Nullable)error;
 - (nullable PDSDatabaseAccount *)getAccountByEmail:(NSString *)email error:(NSError * _Nullable * _Nullable)error;
 - (nullable NSArray<PDSDatabaseAccount *> *)getAllAccountsWithError:(NSError * _Nullable * _Nullable)error;
+- (nullable NSArray<PDSDatabaseAccount *> *)listAccountsWithLimit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError * _Nullable * _Nullable)error;
 
 - (BOOL)createAccount:(PDSDatabaseAccount *)account error:(NSError * _Nullable * _Nullable)error;
 - (BOOL)updateAccount:(PDSDatabaseAccount *)account error:(NSError * _Nullable * _Nullable)error;
