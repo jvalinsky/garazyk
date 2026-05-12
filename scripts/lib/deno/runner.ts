@@ -93,17 +93,26 @@ export async function timedCall<T>(
   result: ScenarioResult,
   name: string,
   fn: () => Promise<T> | T,
-  detailFn?: (res: T) => string
+  detailFn?: (res: T) => string,
+  expectFailure = false
 ): Promise<T | null> {
   const start = performance.now();
   try {
     const val = await fn();
     const duration = Math.round(performance.now() - start);
+    if (expectFailure) {
+      result.stepFailed(name, "Expected failure but call succeeded", duration);
+      return null;
+    }
     const detail = detailFn ? detailFn(val) : "";
     result.stepPassed(name, detail, duration);
     return val;
   } catch (e: any) {
     const duration = Math.round(performance.now() - start);
+    if (expectFailure) {
+      result.stepPassed(name, "Failed as expected", duration);
+      return null;
+    }
     result.stepFailed(name, e.message || String(e), duration);
     return null; // Return null so tests don't crash but report failure
   }
