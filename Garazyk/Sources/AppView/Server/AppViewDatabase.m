@@ -395,14 +395,6 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
     }
 }
 
-- (void)safeExecuteSync:(void(^)(void))block {
-    if (dispatch_get_specific(kAppViewDatabaseQueueKey)) {
-        block();
-    } else {
-        dispatch_sync(_queue, block);
-    }
-}
-
 // ---------------------------------------------------------------------------
 // Implementation
 // ---------------------------------------------------------------------------
@@ -412,6 +404,14 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
     dispatch_queue_t _queue;
     NSMutableSet<NSString *> *_relevanceCache; // in-memory set for fast isDIDRelevant
     NSMutableDictionary<NSString *, NSNumber *> *_durableCursorByRelayURL;
+}
+
+- (void)safeExecuteSync:(void(^)(void))block {
+    if (dispatch_get_specific(kAppViewDatabaseQueueKey)) {
+        block();
+    } else {
+        dispatch_sync(_queue, block);
+    }
 }
 
 - (nullable instancetype)initWithPath:(NSString *)path error:(NSError **)error {

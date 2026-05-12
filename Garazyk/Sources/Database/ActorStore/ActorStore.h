@@ -13,6 +13,7 @@
  */
 
 #import <Foundation/Foundation.h>
+#import <sqlite3.h>
 #import "Auth/PDSActorKeyManagerProtocol.h"
 
 NS_ASSUME_NONNULL_BEGIN
@@ -240,6 +241,12 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 
 /*! Clears the repo_root table for re-initialization. */
 - (BOOL)clearRepoRootWithError:(NSError **)error;
+
+/*! Prepares a SQL statement on the actor's database connection. */
+- (nullable sqlite3_stmt *)prepareStatement:(NSString *)sql error:(NSError **)error;
+
+/*! Finalizes a prepared SQL statement. */
+- (void)finalizeStatement:(sqlite3_stmt *)stmt;
 
 /*! Derives an encryption key from a password and salt. */
 - (nullable NSData *)deriveKeyFromPassword:(NSString *)password salt:(NSData *)salt;

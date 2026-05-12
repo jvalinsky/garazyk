@@ -1,29 +1,19 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-/*!
- @file PDSSQLiteAccountRepository.m
- @abstract Implementation of PDSSQLiteAccountRepository.
- @copyright Copyright (c) 2025 Jack Valinsky
- */
-
 #import "PDSSQLiteAccountRepository.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
-#import "Database/ActorStore/PDSActorStoreInternal.h"
 #import "Database/ActorStore/PDSActorStore+Account.h"
-#import "Core/ATProtoError.h"
-#import "Database/Utils/PDSSQLiteUtils.h"
-#import "Identity/ATProtoHandleValidator.h"
-#import <sqlite3.h>
+#import "Database/PDSDatabase.h"
 
 @implementation PDSSQLiteAccountRepository {
-    PDSDatabasePool *_servicePool;
+    PDSDatabasePool *_databasePool;
 }
 
-- (instancetype)initWithServicePool:(PDSDatabasePool *)servicePool {
+- (instancetype)initWithServicePool:(PDSDatabasePool *)databasePool {
     self = [super init];
     if (self) {
-        _servicePool = servicePool;
+        _databasePool = databasePool;
     }
     return self;
 }
@@ -32,144 +22,61 @@
 
 - (nullable PDSDatabaseAccount *)accountForDid:(NSString *)did error:(NSError **)error {
     __block PDSDatabaseAccount *account = nil;
-
-    [_servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
-        PDSActorStore *store = (PDSActorStore *)reader;
-        NSString *sql = @"SELECT * FROM accounts WHERE did = ?";
-        sqlite3_stmt *stmt = [store prepareStatement:sql error:blockError];
-        if (!stmt) {
-            return;
-        }
-
-        sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_TRANSIENT);
-        
-        if (sqlite3_step(stmt) == SQLITE_ROW) {
-            account = [store accountFromStatement:stmt];
-        }
-        [store finalizeStatement:stmt];
+    [_databasePool readWithDid:did block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+        account = [reader getAccountForDid:did error:blockError];
     } error:error];
-
     return account;
 }
 
 - (nullable PDSDatabaseAccount *)accountForHandle:(NSString *)handle error:(NSError **)error {
     __block PDSDatabaseAccount *account = nil;
-
-    [_servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+    // Handle-based lookup needs to search across all actor databases or use a central index.
+    // In this implementation, we assume handle lookup is done via the "__service__" store
+    // or by iterating (less efficient). 
+    [_databasePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
         PDSActorStore *store = (PDSActorStore *)reader;
-        NSString *sql = @"SELECT * FROM accounts WHERE handle = ?";
-        sqlite3_stmt *stmt = [store prepareStatement:sql error:blockError];
-        if (!stmt) {
-            return;
-        }
-
-        NSString *normalizedHandle = [ATProtoHandleValidator normalizeHandle:handle];
-        sqlite3_bind_text(stmt, 1, normalizedHandle.UTF8String, -1, SQLITE_TRANSIENT);
-        
-        if (sqlite3_step(stmt) == SQLITE_ROW) {
-            account = [store accountFromStatement:stmt];
-        }
-        [store finalizeStatement:stmt];
+        account = [store getAccountByHandle:handle error:blockError];
     } error:error];
-
     return account;
 }
 
 - (nullable PDSDatabaseAccount *)accountForEmail:(NSString *)email error:(NSError **)error {
     __block PDSDatabaseAccount *account = nil;
-
-    [_servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+    [_databasePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
         PDSActorStore *store = (PDSActorStore *)reader;
-        NSString *sql = @"SELECT * FROM accounts WHERE email = ?";
-        sqlite3_stmt *stmt = [store prepareStatement:sql error:blockError];
-        if (!stmt) {
-            return;
-        }
-
-        sqlite3_bind_text(stmt, 1, email.UTF8String, -1, SQLITE_TRANSIENT);
-        
-        if (sqlite3_step(stmt) == SQLITE_ROW) {
-            account = [store accountFromStatement:stmt];
-        }
-        [store finalizeStatement:stmt];
+        account = [store getAccountByEmail:email error:blockError];
     } error:error];
-
     return account;
 }
 
 - (BOOL)saveAccount:(PDSDatabaseAccount *)account error:(NSError **)error {
     __block BOOL success = NO;
-
-    // Check for existence and then insert/update
-    [_servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
-        PDSActorStore *store = (PDSActorStore *)transactor;
-        
-        // Check if exists
-        NSString *checkSql = @"SELECT 1 FROM accounts WHERE did = ?";
-        sqlite3_stmt *checkStmt = [store prepareStatement:checkSql error:nil];
-        BOOL exists = NO;
-        if (checkStmt) {
-            sqlite3_bind_text(checkStmt, 1, account.did.UTF8String, -1, SQLITE_TRANSIENT);
-            if (sqlite3_step(checkStmt) == SQLITE_ROW) {
-                exists = YES;
-            }
-            [store finalizeStatement:checkStmt];
-        }
-
-        if (exists) {
-            success = [store updateAccount:account error:blockError];
+    [_databasePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
+        // Try update first, then create
+        if (![transactor updateAccount:account error:nil]) {
+            success = [transactor createAccount:account error:blockError];
         } else {
-            success = [store createAccount:account error:blockError];
+            success = YES;
         }
     } error:error];
-
     return success;
 }
 
 - (BOOL)deleteAccount:(NSString *)did error:(NSError **)error {
     __block BOOL success = NO;
-
-    [_servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
-        PDSActorStore *store = (PDSActorStore *)transactor;
-        success = [store deleteAccount:did error:blockError];
+    [_databasePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
+        success = [transactor deleteAccount:did error:blockError];
     } error:error];
-
     return success;
 }
 
-- (nullable NSArray<PDSDatabaseAccount *> *)listAccountsWithLimit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error {
-    __block NSMutableArray<PDSDatabaseAccount *> *accounts = [NSMutableArray array];
-
-    [_servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+- (NSArray<PDSDatabaseAccount *> *)listAccountsWithError:(NSError **)error {
+    __block NSArray *accounts = @[];
+    [_databasePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
         PDSActorStore *store = (PDSActorStore *)reader;
-        NSString *sql;
-        if (cursor) {
-            sql = @"SELECT * FROM accounts WHERE did > ? ORDER BY did ASC LIMIT ?";
-        } else {
-            sql = @"SELECT * FROM accounts ORDER BY did ASC LIMIT ?";
-        }
-
-        sqlite3_stmt *stmt = [store prepareStatement:sql error:blockError];
-        if (!stmt) {
-            return;
-        }
-
-        int idx = 1;
-        if (cursor) {
-            sqlite3_bind_text(stmt, idx++, cursor.UTF8String, -1, SQLITE_TRANSIENT);
-        }
-        sqlite3_bind_int(stmt, idx, (int)limit);
-
-        while (sqlite3_step(stmt) == SQLITE_ROW) {
-            PDSDatabaseAccount *account = [store accountFromStatement:stmt];
-            if (account) {
-                [accounts addObject:account];
-            }
-        }
-        [store finalizeStatement:stmt];
+        accounts = [store getAllAccountsWithError:blockError];
     } error:error];
-
-    return [accounts copy];
+    return accounts;
 }
 
 @end

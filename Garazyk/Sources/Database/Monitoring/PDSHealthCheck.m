@@ -98,7 +98,7 @@
     }
     
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
-    int result = sqlite3_prepare_v2(store.db, "PRAGMA integrity_check", -1, &stmt, NULL);
+    int result = sqlite3_prepare_v2((sqlite3 *)[store.database internalSQLiteHandle], "PRAGMA integrity_check", -1, &stmt, NULL);
     if (result != SQLITE_OK) {
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.pds.health"
@@ -142,7 +142,7 @@
     }
     
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
-    int result = sqlite3_prepare_v2(store.db, "PRAGMA foreign_key_check", -1, &stmt, NULL);
+    int result = sqlite3_prepare_v2((sqlite3 *)[store.database internalSQLiteHandle], "PRAGMA foreign_key_check", -1, &stmt, NULL);
     if (result != SQLITE_OK) {
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.pds.health"
@@ -169,7 +169,7 @@
     
     if (store && store.isOpen) {
         PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
-        if (sqlite3_prepare_v2(store.db, 
+        if (sqlite3_prepare_v2((sqlite3 *)[store.database internalSQLiteHandle], 
             "SELECT name, SUM(pages * page_size) as size FROM sqlite_master "
             "LEFT JOIN sqlite_dbpage USING(sqlite_dbpage.name) GROUP BY name",
             -1, &stmt, NULL) == SQLITE_OK) {
@@ -196,7 +196,7 @@
     }
     
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt;
-    if (sqlite3_prepare_v2(store.db, "SELECT SUM((leaf_pages - 1) * payload) / SUM(payload) FROM dbstat WHERE name = 'accounts'", -1, &stmt, NULL) != SQLITE_OK) {
+    if (sqlite3_prepare_v2((sqlite3 *)[store.database internalSQLiteHandle], "SELECT SUM((leaf_pages - 1) * payload) / SUM(payload) FROM dbstat WHERE name = 'accounts'", -1, &stmt, NULL) != SQLITE_OK) {
         return 0;
     }
     
