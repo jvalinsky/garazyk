@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "Network/PDSSafeHTTPClient.h"
+#import "Network/ATProtoSafeHTTPClient.h"
 #import "Network/SSRFValidator.h"
 
 #if defined(GNUSTEP)
@@ -94,12 +94,12 @@ static size_t pds_curl_header_cb(void *contents, size_t size, size_t nmemb, void
 
 #endif // defined(GNUSTEP)
 
-NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
+NSErrorDomain const ATProtoSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
 
-@implementation PDSSafeHTTPClientOptions
+@implementation ATProtoSafeHTTPClientOptions
 
 + (instancetype)defaultOptions {
-    PDSSafeHTTPClientOptions *options = [[PDSSafeHTTPClientOptions alloc] init];
+    ATProtoSafeHTTPClientOptions *options = [[ATProtoSafeHTTPClientOptions alloc] init];
     options.timeout = 10.0;
     options.maxResponseBytes = 1024 * 1024;
     options.allowHTTP = NO;
@@ -109,7 +109,7 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
 }
 
 - (id)copyWithZone:(NSZone *)zone {
-    PDSSafeHTTPClientOptions *copy = [[[self class] allocWithZone:zone] init];
+    ATProtoSafeHTTPClientOptions *copy = [[[self class] allocWithZone:zone] init];
     copy.timeout = self.timeout;
     copy.maxResponseBytes = self.maxResponseBytes;
     copy.allowHTTP = self.allowHTTP;
@@ -128,17 +128,17 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
 // entirely and use libcurl directly with a multi handle, which gives
 // us full control over the socket lifecycle.
 
-@interface PDSSafeHTTPClient ()
+@interface ATProtoSafeHTTPClient ()
 @property (nonatomic, strong) NSLock *stateLock;
 @end
 
-@implementation PDSSafeHTTPClient
+@implementation ATProtoSafeHTTPClient
 
 + (instancetype)sharedClient {
-    static PDSSafeHTTPClient *client = nil;
+    static ATProtoSafeHTTPClient *client = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        client = [[PDSSafeHTTPClient alloc] init];
+        client = [[ATProtoSafeHTTPClient alloc] init];
     });
     return client;
 }
@@ -151,21 +151,21 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
     return self;
 }
 
-+ (NSError *)errorWithCode:(PDSSafeHTTPClientErrorCode)code
++ (NSError *)errorWithCode:(ATProtoSafeHTTPClientErrorCode)code
                description:(NSString *)description
            underlyingError:(NSError *)underlyingError {
     NSMutableDictionary *userInfo = [@{NSLocalizedDescriptionKey : description ?: @"Safe HTTP request rejected"} mutableCopy];
     if (underlyingError) {
         userInfo[NSUnderlyingErrorKey] = underlyingError;
     }
-    return [NSError errorWithDomain:PDSSafeHTTPClientErrorDomain code:code userInfo:userInfo];
+    return [NSError errorWithDomain:ATProtoSafeHTTPClientErrorDomain code:code userInfo:userInfo];
 }
 
-+ (BOOL)validateURL:(NSURL *)url options:(PDSSafeHTTPClientOptions *)options error:(NSError **)error {
-    PDSSafeHTTPClientOptions *effective = options ?: [PDSSafeHTTPClientOptions defaultOptions];
++ (BOOL)validateURL:(NSURL *)url options:(ATProtoSafeHTTPClientOptions *)options error:(NSError **)error {
+    ATProtoSafeHTTPClientOptions *effective = options ?: [ATProtoSafeHTTPClientOptions defaultOptions];
     if (!url || url.host.length == 0 || url.scheme.length == 0) {
         if (error) {
-            *error = [self errorWithCode:PDSSafeHTTPClientErrorInvalidURL
+            *error = [self errorWithCode:ATProtoSafeHTTPClientErrorInvalidURL
                              description:@"URL must include a scheme and host"
                          underlyingError:nil];
         }
@@ -189,7 +189,7 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
                              (allowHTTP && [scheme isEqualToString:@"http"]);
         if (!schemeAllowed) {
             if (error) {
-                *error = [self errorWithCode:PDSSafeHTTPClientErrorUnsupportedScheme
+                *error = [self errorWithCode:ATProtoSafeHTTPClientErrorUnsupportedScheme
                                  description:@"Only HTTPS is allowed for this outbound request"
                              underlyingError:nil];
             }
@@ -208,7 +208,7 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
         NSError *ssrfError = nil;
         if (![SSRFValidator validateHostResolvesToPublicIP:url.host error:&ssrfError]) {
                 if (error) {
-                    *error = [self errorWithCode:PDSSafeHTTPClientErrorSSRFBlocked
+                    *error = [self errorWithCode:ATProtoSafeHTTPClientErrorSSRFBlocked
                                      description:@"Outbound request target failed SSRF validation"
                                  underlyingError:ssrfError];
                 }
@@ -223,12 +223,12 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
 #pragma mark - Direct libcurl request
 
 - (void)performSafeDataTaskWithRequest:(NSURLRequest *)request
-                    options:(PDSSafeHTTPClientOptions *)options
+                    options:(ATProtoSafeHTTPClientOptions *)options
                  completion:(void (^)(NSData *, NSHTTPURLResponse *, NSError *))completion {
     if (!completion) {
         return;
     }
-    PDSSafeHTTPClientOptions *effective = [options copy] ?: [PDSSafeHTTPClientOptions defaultOptions];
+    ATProtoSafeHTTPClientOptions *effective = [options copy] ?: [ATProtoSafeHTTPClientOptions defaultOptions];
     NSError *validationError = nil;
     if (![[self class] validateURL:request.URL options:effective error:&validationError]) {
         completion(nil, nil, validationError);
@@ -243,7 +243,7 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
     NSString *method = request.HTTPMethod ?: @"GET";
     NSDictionary *requestHeaders = request.allHTTPHeaderFields;
     BOOL followRedirects = effective.followRedirects;
-    PDSSafeHTTPClientOptions *opts = effective;
+    ATProtoSafeHTTPClientOptions *opts = effective;
 
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
 
@@ -252,7 +252,7 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
         if (!curl || !multi) {
             if (curl) curl_easy_cleanup(curl);
             if (multi) curl_multi_cleanup(multi);
-            NSError *err = [NSError errorWithDomain:PDSSafeHTTPClientErrorDomain
+            NSError *err = [NSError errorWithDomain:ATProtoSafeHTTPClientErrorDomain
                                                code:0
                                            userInfo:@{NSLocalizedDescriptionKey: @"Failed to initialize curl handle"}];
             completion(nil, nil, err);
@@ -352,7 +352,7 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
             if (finalNSURL && ![finalNSURL.host isEqualToString:url.host]) {
                 NSError *redirectError = nil;
                 if (![[self class] validateURL:finalNSURL options:opts error:&redirectError]) {
-                    redirectBlockError = [[self class] errorWithCode:PDSSafeHTTPClientErrorRedirectBlocked
+                    redirectBlockError = [[self class] errorWithCode:ATProtoSafeHTTPClientErrorRedirectBlocked
                                                        description:@"Redirect target failed SSRF validation"
                                                    underlyingError:redirectError];
                 }
@@ -381,7 +381,7 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
 
         if (res != CURLE_OK) {
             if (writeCtx.exceededLimit) {
-                NSError *sizeError = [[self class] errorWithCode:PDSSafeHTTPClientErrorResponseTooLarge
+                NSError *sizeError = [[self class] errorWithCode:ATProtoSafeHTTPClientErrorResponseTooLarge
                                                       description:@"Outbound response exceeded size limit"
                                                   underlyingError:nil];
                 NSHTTPURLResponse *httpResp = [[NSHTTPURLResponse alloc] initWithURL:url
@@ -408,7 +408,7 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
 }
 
 - (NSData *)sendSynchronousRequest:(NSURLRequest *)request
-                           options:(PDSSafeHTTPClientOptions *)options
+                           options:(ATProtoSafeHTTPClientOptions *)options
                           response:(NSHTTPURLResponse **)response
                              error:(NSError **)error {
     dispatch_semaphore_t sema = dispatch_semaphore_create(0);
@@ -423,7 +423,7 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
         dispatch_semaphore_signal(sema);
     }];
 
-    NSTimeInterval timeout = (options ?: [PDSSafeHTTPClientOptions defaultOptions]).timeout + 1.0;
+    NSTimeInterval timeout = (options ?: [ATProtoSafeHTTPClientOptions defaultOptions]).timeout + 1.0;
     if (dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(timeout * NSEC_PER_SEC))) != 0) {
         resultError = [NSError errorWithDomain:NSURLErrorDomain
                                           code:NSURLErrorTimedOut
@@ -443,22 +443,22 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
 
 #else // Apple platforms — use NSURLSession
 
-@interface PDSSafeHTTPClient () <NSURLSessionTaskDelegate>
+@interface ATProtoSafeHTTPClient () <NSURLSessionTaskDelegate>
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSError *> *redirectErrors;
-@property (nonatomic, strong) NSMutableDictionary<NSNumber *, PDSSafeHTTPClientOptions *> *taskOptions;
+@property (nonatomic, strong) NSMutableDictionary<NSNumber *, ATProtoSafeHTTPClientOptions *> *taskOptions;
 @property (nonatomic, strong) NSMutableSet<NSNumber *> *completedTrackingIDs;
 @property (nonatomic, assign) NSUInteger nextTrackingID;
 @property (nonatomic, strong) NSLock *stateLock;
 @property (nonatomic, strong) NSURLSession *sharedSession;
 @end
 
-@implementation PDSSafeHTTPClient
+@implementation ATProtoSafeHTTPClient
 
 + (instancetype)sharedClient {
-    static PDSSafeHTTPClient *client = nil;
+    static ATProtoSafeHTTPClient *client = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        client = [[PDSSafeHTTPClient alloc] init];
+        client = [[ATProtoSafeHTTPClient alloc] init];
     });
     return client;
 }
@@ -492,21 +492,21 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
     [_sharedSession finishTasksAndInvalidate];
 }
 
-+ (NSError *)errorWithCode:(PDSSafeHTTPClientErrorCode)code
++ (NSError *)errorWithCode:(ATProtoSafeHTTPClientErrorCode)code
                description:(NSString *)description
            underlyingError:(NSError *)underlyingError {
     NSMutableDictionary *userInfo = [@{NSLocalizedDescriptionKey : description ?: @"Safe HTTP request rejected"} mutableCopy];
     if (underlyingError) {
         userInfo[NSUnderlyingErrorKey] = underlyingError;
     }
-    return [NSError errorWithDomain:PDSSafeHTTPClientErrorDomain code:code userInfo:userInfo];
+    return [NSError errorWithDomain:ATProtoSafeHTTPClientErrorDomain code:code userInfo:userInfo];
 }
 
-+ (BOOL)validateURL:(NSURL *)url options:(PDSSafeHTTPClientOptions *)options error:(NSError **)error {
-    PDSSafeHTTPClientOptions *effective = options ?: [PDSSafeHTTPClientOptions defaultOptions];
++ (BOOL)validateURL:(NSURL *)url options:(ATProtoSafeHTTPClientOptions *)options error:(NSError **)error {
+    ATProtoSafeHTTPClientOptions *effective = options ?: [ATProtoSafeHTTPClientOptions defaultOptions];
     if (!url || url.host.length == 0 || url.scheme.length == 0) {
         if (error) {
-            *error = [self errorWithCode:PDSSafeHTTPClientErrorInvalidURL
+            *error = [self errorWithCode:ATProtoSafeHTTPClientErrorInvalidURL
                              description:@"URL must include a scheme and host"
                          underlyingError:nil];
         }
@@ -530,7 +530,7 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
                              (allowHTTP && [scheme isEqualToString:@"http"]);
         if (!schemeAllowed) {
             if (error) {
-                *error = [self errorWithCode:PDSSafeHTTPClientErrorUnsupportedScheme
+                *error = [self errorWithCode:ATProtoSafeHTTPClientErrorUnsupportedScheme
                                  description:@"Only HTTPS is allowed for this outbound request"
                              underlyingError:nil];
             }
@@ -549,7 +549,7 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
         NSError *ssrfError = nil;
         if (![SSRFValidator validateHostResolvesToPublicIP:url.host error:&ssrfError]) {
                 if (error) {
-                    *error = [self errorWithCode:PDSSafeHTTPClientErrorSSRFBlocked
+                    *error = [self errorWithCode:ATProtoSafeHTTPClientErrorSSRFBlocked
                                      description:@"Outbound request target failed SSRF validation"
                                  underlyingError:ssrfError];
                 }
@@ -562,12 +562,12 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
 }
 
 - (void)performSafeDataTaskWithRequest:(NSURLRequest *)request
-                    options:(PDSSafeHTTPClientOptions *)options
+                    options:(ATProtoSafeHTTPClientOptions *)options
                  completion:(void (^)(NSData *, NSHTTPURLResponse *, NSError *))completion {
     if (!completion) {
         return;
     }
-    PDSSafeHTTPClientOptions *effective = [options copy] ?: [PDSSafeHTTPClientOptions defaultOptions];
+    ATProtoSafeHTTPClientOptions *effective = [options copy] ?: [ATProtoSafeHTTPClientOptions defaultOptions];
     NSError *validationError = nil;
     if (![[self class] validateURL:request.URL options:effective error:&validationError]) {
         completion(nil, nil, validationError);
@@ -584,18 +584,23 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
     NSMutableURLRequest *mutableRequest = [request mutableCopy];
     mutableRequest.timeoutInterval = effective.timeout;
 
+    [self.stateLock lock];
     __block NSURLSessionDataTask *task =
         [self.sharedSession dataTaskWithRequest:mutableRequest
                                completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-        NSNumber *taskID = @(task.taskIdentifier);
         [self.stateLock lock];
+        NSURLSessionDataTask *capturedTask = task;
+        NSNumber *taskID = capturedTask ? @(capturedTask.taskIdentifier) : @0;
+        
         BOOL alreadyHandled = [self.completedTrackingIDs containsObject:trackingID];
         if (!alreadyHandled) {
             [self.completedTrackingIDs addObject:trackingID];
         }
-        NSError *redirectError = self.redirectErrors[taskID];
-        [self.redirectErrors removeObjectForKey:taskID];
-        [self.taskOptions removeObjectForKey:taskID];
+        NSError *redirectError = taskID ? self.redirectErrors[taskID] : nil;
+        if (taskID) {
+            [self.redirectErrors removeObjectForKey:taskID];
+            [self.taskOptions removeObjectForKey:taskID];
+        }
         [self.stateLock unlock];
 
         if (alreadyHandled) {
@@ -611,7 +616,7 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
             return;
         }
         if (effective.maxResponseBytes > 0 && data.length > effective.maxResponseBytes) {
-            NSError *sizeError = [[self class] errorWithCode:PDSSafeHTTPClientErrorResponseTooLarge
+            NSError *sizeError = [[self class] errorWithCode:ATProtoSafeHTTPClientErrorResponseTooLarge
                                                   description:@"Outbound response exceeded size limit"
                                               underlyingError:nil];
             completion(nil, (NSHTTPURLResponse *)response, sizeError);
@@ -621,7 +626,6 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
     }];
 
     NSNumber *taskID = @(task.taskIdentifier);
-    [self.stateLock lock];
     self.taskOptions[taskID] = effective;
     [self.stateLock unlock];
 
@@ -651,7 +655,7 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
 }
 
 - (NSData *)sendSynchronousRequest:(NSURLRequest *)request
-                           options:(PDSSafeHTTPClientOptions *)options
+                           options:(ATProtoSafeHTTPClientOptions *)options
                           response:(NSHTTPURLResponse **)response
                              error:(NSError **)error {
     dispatch_semaphore_t sema = dispatch_semaphore_create(0);
@@ -666,7 +670,7 @@ NSErrorDomain const PDSSafeHTTPClientErrorDomain = @"com.atproto.safe-http";
         dispatch_semaphore_signal(sema);
     }];
 
-    NSTimeInterval timeout = (options ?: [PDSSafeHTTPClientOptions defaultOptions]).timeout + 1.0;
+    NSTimeInterval timeout = (options ?: [ATProtoSafeHTTPClientOptions defaultOptions]).timeout + 1.0;
     if (dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(timeout * NSEC_PER_SEC))) != 0) {
         resultError = [NSError errorWithDomain:NSURLErrorDomain
                                           code:NSURLErrorTimedOut
@@ -688,7 +692,7 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
         newRequest:(NSURLRequest *)request
  completionHandler:(void (^)(NSURLRequest * _Nullable))completionHandler {
     NSNumber *taskID = @(task.taskIdentifier);
-    PDSSafeHTTPClientOptions *options = nil;
+    ATProtoSafeHTTPClientOptions *options = nil;
     [self.stateLock lock];
     options = self.taskOptions[taskID];
     [self.stateLock unlock];
@@ -700,7 +704,7 @@ willPerformHTTPRedirection:(NSHTTPURLResponse *)response
 
     NSError *validationError = nil;
     if (![[self class] validateURL:request.URL options:options error:&validationError]) {
-        NSError *redirectError = [[self class] errorWithCode:PDSSafeHTTPClientErrorRedirectBlocked
+        NSError *redirectError = [[self class] errorWithCode:ATProtoSafeHTTPClientErrorRedirectBlocked
                                                  description:@"Redirect target failed SSRF validation"
                                              underlyingError:validationError];
         [self.stateLock lock];

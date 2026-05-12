@@ -17,6 +17,9 @@
  */
 
 #import <Foundation/Foundation.h>
+#if defined(GNUSTEP)
+#import <curl/curl.h>
+#endif
 #import <signal.h>
 #import <unistd.h>
 #import <fcntl.h>
@@ -36,7 +39,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/XrpcHandler.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 static HttpServer *gServer = nil;
 static ATProtoVideoWorker *gWorker = nil;
@@ -119,7 +122,7 @@ static void install_crash_handlers(void) {
 }
 
 void handleSignal(int sig) {
-    PDS_LOG_INFO(@"Received signal %d, shutting down...", sig);
+    GZ_LOG_INFO(@"Received signal %d, shutting down...", sig);
     [gWorker stop];
     [gServer stop];
     exit(0);
@@ -197,19 +200,19 @@ int run_serve(int argc, const char *argv[]) {
         }
     }
 
-    PDS_LOG_INFO(@"Jelcz video processing service starting");
-    PDS_LOG_INFO(@"  Port: %lu", (unsigned long)config.port);
-    PDS_LOG_INFO(@"  PDS URL: %@", config.pdsURL);
-    PDS_LOG_INFO(@"  Service DID: %@", config.serviceDID);
-    PDS_LOG_INFO(@"  Data dir: %@", config.dataDirectory);
-    PDS_LOG_INFO(@"  Blob dir: %@", config.blobDirectory);
+    GZ_LOG_INFO(@"Jelcz video processing service starting");
+    GZ_LOG_INFO(@"  Port: %lu", (unsigned long)config.port);
+    GZ_LOG_INFO(@"  PDS URL: %@", config.pdsURL);
+    GZ_LOG_INFO(@"  Service DID: %@", config.serviceDID);
+    GZ_LOG_INFO(@"  Data dir: %@", config.dataDirectory);
+    GZ_LOG_INFO(@"  Blob dir: %@", config.blobDirectory);
 
     // Initialize database
     NSString *dbPath = [config.dataDirectory stringByAppendingPathComponent:@"jelcz.db"];
     NSError *error = nil;
     JelczDatabase *database = [[JelczDatabase alloc] initWithDatabasePath:dbPath error:&error];
     if (!database) {
-        PDS_LOG_ERROR(@"Failed to open database: %@", error);
+        GZ_LOG_ERROR(@"Failed to open database: %@", error);
         return 1;
     }
 
@@ -222,11 +225,11 @@ int run_serve(int argc, const char *argv[]) {
                                                                  keyPrefix:@"blobs/"
                                                              accessKeyId:config.s3AccessKey ?: @""
                                                           secretAccessKey:config.s3SecretKey ?: @""];
-        PDS_LOG_INFO(@"  Blob storage: S3 (%@)", config.s3Bucket);
+        GZ_LOG_INFO(@"  Blob storage: S3 (%@)", config.s3Bucket);
     } else {
         NSURL *blobURL = [NSURL fileURLWithPath:config.blobDirectory];
         blobProvider = [[PDSDiskBlobProvider alloc] initWithStorageDirectory:blobURL];
-        PDS_LOG_INFO(@"  Blob storage: disk (%@)", config.blobDirectory);
+        GZ_LOG_INFO(@"  Blob storage: disk (%@)", config.blobDirectory);
     }
 
     // Initialize blob uploader (remote to PDS)
@@ -253,8 +256,8 @@ int run_serve(int argc, const char *argv[]) {
         hlsBaseUrl = [NSString stringWithFormat:@"http://localhost:%lu", (unsigned long)config.port];
     }
 
-    PDS_LOG_INFO(@"  HLS output: %@", hlsGenerator.outputBaseDirectory);
-    PDS_LOG_INFO(@"  HLS base URL: %@", hlsBaseUrl);
+    GZ_LOG_INFO(@"  HLS output: %@", hlsGenerator.outputBaseDirectory);
+    GZ_LOG_INFO(@"  HLS base URL: %@", hlsBaseUrl);
 
     // Initialize video worker
     gWorker = [ATProtoVideoWorker sharedWorker];
@@ -430,11 +433,11 @@ int run_serve(int argc, const char *argv[]) {
 
     NSError *startError = nil;
     if (![gServer startWithError:&startError]) {
-        PDS_LOG_ERROR(@"Failed to start HTTP server: %@", startError);
+        GZ_LOG_ERROR(@"Failed to start HTTP server: %@", startError);
         return 1;
     }
 
-    PDS_LOG_INFO(@"Jelcz listening on port %lu", (unsigned long)config.port);
+    GZ_LOG_INFO(@"Jelcz listening on port %lu", (unsigned long)config.port);
 
     // Run the run loop
     [[NSRunLoop currentRunLoop] run];
@@ -443,6 +446,9 @@ int run_serve(int argc, const char *argv[]) {
 }
 
 int main(int argc, const char *argv[]) {
+#if defined(GNUSTEP)
+    curl_global_init(CURL_GLOBAL_ALL);
+#endif
     @autoreleasepool {
         if (argc < 2) {
             print_usage();

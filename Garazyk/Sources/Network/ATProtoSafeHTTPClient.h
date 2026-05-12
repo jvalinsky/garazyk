@@ -4,17 +4,17 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-extern NSErrorDomain const PDSSafeHTTPClientErrorDomain;
+extern NSErrorDomain const ATProtoSafeHTTPClientErrorDomain;
 
-typedef NS_ENUM(NSInteger, PDSSafeHTTPClientErrorCode) {
-    PDSSafeHTTPClientErrorInvalidURL = 1,
-    PDSSafeHTTPClientErrorUnsupportedScheme = 2,
-    PDSSafeHTTPClientErrorSSRFBlocked = 3,
-    PDSSafeHTTPClientErrorResponseTooLarge = 4,
-    PDSSafeHTTPClientErrorRedirectBlocked = 5,
+typedef NS_ENUM(NSInteger, ATProtoSafeHTTPClientErrorCode) {
+    ATProtoSafeHTTPClientErrorInvalidURL = 1,
+    ATProtoSafeHTTPClientErrorUnsupportedScheme = 2,
+    ATProtoSafeHTTPClientErrorSSRFBlocked = 3,
+    ATProtoSafeHTTPClientErrorResponseTooLarge = 4,
+    ATProtoSafeHTTPClientErrorRedirectBlocked = 5,
 };
 
-@interface PDSSafeHTTPClientOptions : NSObject <NSCopying>
+@interface ATProtoSafeHTTPClientOptions : NSObject <NSCopying>
 
 @property (nonatomic, assign) NSTimeInterval timeout;
 @property (nonatomic, assign) NSUInteger maxResponseBytes;
@@ -26,22 +26,22 @@ typedef NS_ENUM(NSInteger, PDSSafeHTTPClientErrorCode) {
 
 @end
 
-@interface PDSSafeHTTPClient : NSObject
+@interface ATProtoSafeHTTPClient : NSObject
 
 + (instancetype)sharedClient;
 
 + (BOOL)validateURL:(NSURL *)url
-            options:(nullable PDSSafeHTTPClientOptions *)options
+            options:(nullable ATProtoSafeHTTPClientOptions *)options
               error:(NSError **)error;
 
 - (void)performSafeDataTaskWithRequest:(NSURLRequest *)request
-                    options:(nullable PDSSafeHTTPClientOptions *)options
+                    options:(nullable ATProtoSafeHTTPClientOptions *)options
                  completion:(void (^)(NSData * _Nullable data,
                                       NSHTTPURLResponse * _Nullable response,
                                       NSError * _Nullable error))completion;
 
 - (nullable NSData *)sendSynchronousRequest:(NSURLRequest *)request
-                                    options:(nullable PDSSafeHTTPClientOptions *)options
+                                    options:(nullable ATProtoSafeHTTPClientOptions *)options
                                    response:(NSHTTPURLResponse * _Nullable * _Nullable)response
                                       error:(NSError **)error;
 

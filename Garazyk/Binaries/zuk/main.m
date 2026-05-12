@@ -21,6 +21,9 @@
 #import "Sync/Relay/RelayEventBuffer.h"
 #import "Sync/Relay/RelayDownstreamHandler.h"
 #import "Sync/Relay/RelayRepoStateManager.h"
+#if defined(GNUSTEP)
+#import <curl/curl.h>
+#endif
 #import "Sync/Firehose/SubscribeReposHandler.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Network/HttpServer.h"
@@ -28,7 +31,7 @@
 #import "Network/HttpResponse.h"
 #import "Network/RelayXrpcRoutePack.h"
 #import "Network/PDSNetworkTransport.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "PLC/DIDPLCResolver.h"
@@ -140,7 +143,7 @@ static BOOL parse_relay_options(NSArray<NSString *> *args,
             if (verbose) {
                 *verbose = YES;
             }
-            [[PDSLogger sharedLogger] setLogLevel:PDSLogLevelDebug];
+            [[GZLogger sharedLogger] setLogLevel:GZLogLevelDebug];
         } else if ([arg hasPrefix:@"-"]) {
             if (errorMessage) {
                 *errorMessage = [NSString stringWithFormat:@"Unknown option: %@", arg];
@@ -162,6 +165,9 @@ extern void NSDateFormatterLinkATProtoCategory(void);
 int main(int argc, const char * argv[]) {
     [[PDSSignalManager sharedManager] installIgnoredSignals];
     [PDSCrashReporter installCrashHandlersWithExecutableName:"zuk"];
+#if defined(GNUSTEP)
+    curl_global_init(CURL_GLOBAL_ALL);
+#endif
     @autoreleasepool {
         NSDateFormatterLinkATProtoCategory();
 #ifdef LINUX
@@ -216,12 +222,12 @@ int main(int argc, const char * argv[]) {
             NSError *configError = nil;
             NSData *configData = [NSData dataWithContentsOfFile:configPath options:0 error:&configError];
             if (!configData) {
-                PDS_LOG_CORE_ERROR(@"Failed to read config file: %@", configError.localizedDescription);
+                GZ_LOG_CORE_ERROR(@"Failed to read config file: %@", configError.localizedDescription);
                 return 1;
             }
             NSDictionary *config = [NSJSONSerialization JSONObjectWithData:configData options:0 error:&configError];
             if (!config || ![config isKindOfClass:[NSDictionary class]]) {
-                PDS_LOG_CORE_ERROR(@"Failed to parse config JSON: %@", configError.localizedDescription);
+                GZ_LOG_CORE_ERROR(@"Failed to parse config JSON: %@", configError.localizedDescription);
                 return 1;
             }
             
@@ -245,7 +251,7 @@ int main(int argc, const char * argv[]) {
                 }
             }
             
-            PDS_LOG_CORE_INFO(@"Loaded config from %@", configPath);
+            GZ_LOG_CORE_INFO(@"Loaded config from %@", configPath);
         }
 
         if ([command isEqualToString:@"status"]) {
@@ -294,7 +300,7 @@ int main(int argc, const char * argv[]) {
                            attributes:nil
                                 error:&dirError];
             if (dirError) {
-                PDS_LOG_CORE_ERROR(@"Failed to create data directory: %@", dirError.localizedDescription);
+                GZ_LOG_CORE_ERROR(@"Failed to create data directory: %@", dirError.localizedDescription);
                 return 1;
             }
         }
@@ -444,7 +450,7 @@ int main(int argc, const char * argv[]) {
         // Start server
         NSError *startError = nil;
         if (![server startWithError:&startError]) {
-            PDS_LOG_CORE_ERROR(@"Failed to start relay server: %@", startError.localizedDescription ?: @"unknown error");
+            GZ_LOG_CORE_ERROR(@"Failed to start relay server: %@", startError.localizedDescription ?: @"unknown error");
             return 1;
         }
 

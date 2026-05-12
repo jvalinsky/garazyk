@@ -6,9 +6,12 @@
 #import <unistd.h>
 #import <fcntl.h>
 #import <execinfo.h>
+#if defined(GNUSTEP)
+#import <curl/curl.h>
+#endif
 #import "AdminUIServer/UIServiceConfig.h"
 #import "AdminUIServer/UIServerRuntime.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 static const char *executable_name = "garazyk-ui";
 static UIServerRuntime *gRuntime = nil;
@@ -172,6 +175,9 @@ int main(int argc, const char *argv[]) {
     signal(SIGINT, handleSignal);
     signal(SIGTERM, handleSignal);
 
+#if defined(GNUSTEP)
+    curl_global_init(CURL_GLOBAL_ALL);
+#endif
     @autoreleasepool {
         if (argc < 2) {
             print_usage();
@@ -209,7 +215,7 @@ int main(int argc, const char *argv[]) {
         }
 
         if (verbose) {
-            [[PDSLogger sharedLogger] setLogLevel:PDSLogLevelDebug];
+            [[GZLogger sharedLogger] setLogLevel:GZLogLevelDebug];
         }
 
         UIServiceConfig *config = [UIServiceConfig configurationFromEnvironment];
