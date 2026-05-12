@@ -10,9 +10,9 @@ Garazyk is an Objective-C Personal Data Server (PDS) for the AT Protocol. It ser
 
 Garazyk emphasizes:
 
-- Direct control over transport, routing, and persistence in a small runtime.
-- Native cross-platform support for macOS and GNUstep.
-- ATProto primitives (DIDs, repos, sync, auth) implemented directly in the repository.
+- Transport, routing, and persistence implemented in a small runtime.
+- Cross-platform support for macOS and GNUstep.
+- ATProto primitives (DIDs, repos, sync, auth) implemented in the repository.
 - Explicit boundaries between request handling, services, and storage.
 
 ```mermaid

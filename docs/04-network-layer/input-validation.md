@@ -4,7 +4,7 @@ title: Input Validation
 
 # Input Validation
 
-Input validation is a critical security layer that prevents malicious data from entering the system. Garazyk PDS implements comprehensive validation strategies at multiple levels to protect against injection attacks, data corruption, and protocol violations.
+Input validation is a security layer that prevents malicious data from entering the system. Garazyk PDS uses validation strategies at multiple levels to protect against injection attacks, data corruption, and protocol violations.
 
 ## Overview
 

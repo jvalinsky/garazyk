@@ -10,12 +10,12 @@ The `PDSAdminService` (delegated by `PDSAdminController`) provides administrativ
 
 ### Why This Service Matters
 
-Moderation is essential for maintaining healthy online communities. The Admin Service enables:
+The Admin Service enables:
 
 - **Content Moderation**: Remove harmful content while preserving legitimate speech
 - **Account Management**: Suspend or delete accounts that violate terms of service
 - **Labeling System**: Apply warnings and filters without complete removal
-- **Audit Trail**: Track all moderation actions for accountability and appeals
+- **Audit Trail**: Track moderation actions for accountability and appeals
 - **Compliance**: Meet legal requirements for content removal and user safety
 
 ## When to Use This Service
@@ -57,7 +57,7 @@ flowchart TD
     moderation --> databases
 ```
 
-## Key Operations
+## Operations
 
 ### Account Suspension
 
@@ -221,7 +221,7 @@ All admin actions are logged with:
 
 ## Moderation Workflow
 
-### Typical Moderation Process
+### Moderation Process
 
 ```
 
@@ -242,7 +242,7 @@ All admin actions are logged with:
 
 ## Error Handling
 
-Common error scenarios:
+Error scenarios:
 
 | Error | Cause | Handling |
 |-------|-------|----------|
@@ -252,7 +252,7 @@ Common error scenarios:
 | Already suspended | Account already suspended | Return 409 |
 | Invalid reason | Reason too short/long | Return 400 |
 
-## Common Pitfalls and Troubleshooting
+## Pitfalls and Troubleshooting
 
 ### Pitfall 1: Insufficient Moderation Documentation
 
@@ -260,7 +260,7 @@ Common error scenarios:
 
 **Why it happens**: Not recording sufficient context for moderation decisions.
 
-**Solution**: Document all moderation actions thoroughly:
+**Solution**: Document moderation actions:
 ```objc
 - (BOOL)suspendAccountWithDocumentation:(NSString *)did
                                  reason:(NSString *)reason
@@ -360,7 +360,7 @@ Common error scenarios:
 
 **Why it happens**: Not logging admin operations.
 
-**Solution**: Comprehensive audit logging:
+**Solution**: Audit logging:
 ```objc
 - (BOOL)performAdminAction:(NSString *)action
                     target:(NSString *)target
@@ -408,12 +408,12 @@ Common error scenarios:
 // Verify label was stored
 NSDictionary *moderation = [adminService getModerationForTarget:target error:nil];
 NSArray *labels = moderation[@"labels"];
-PDS_LOG_DEBUG(@"Stored labels: %@", labels);
+GZ_LOG_DEBUG(@"Auth", @"Stored labels: %@", labels);
 
 // Check label format
 for (NSString *label in labels) {
     if (![label hasPrefix:@"!"]) {
-        PDS_LOG_WARN(@"Invalid label format: %@", label);
+        GZ_LOG_WARN(@"Auth", @"Invalid label format: %@", label);
     }
 }
 
@@ -434,8 +434,8 @@ for (NSString *label in labels) {
 ```objc
 // Verify suspension status
 PDSDatabaseAccount *account = [accountRepository accountForDid:did error:nil];
-PDS_LOG_DEBUG(@"Account status: %@", account.status);
-PDS_LOG_DEBUG(@"Suspended: %d", account.suspended);
+GZ_LOG_DEBUG(@"Auth", @"Account status: %@", account.status);
+GZ_LOG_DEBUG(@"Auth", @"Suspended: %d", account.suspended);
 
 // Check if authentication checks suspension
 - (BOOL)authenticateUser:(NSString *)did error:(NSError **)error {
