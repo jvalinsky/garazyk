@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Federation/FederationClient.h"
 #import "Core/DID.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Lexicon/ATProtoLexiconSchema.h"
 #import "Lexicon/ATProtoLexiconDef.h"
 #import "App/PDSConfiguration.h"
-#import "Network/PDSSafeHTTPClient.h"
+#import "Network/ATProtoSafeHTTPClient.h"
 #import "Network/SSRFValidator.h"
 #import "Network/HttpRetryPolicy.h"
 
@@ -54,14 +54,14 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
 - (void)executeRequestWithRetry:(NSURLRequest *)request
                         attempt:(NSInteger)attempt
                      completion:(void (^)(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error))completion {
-    PDSSafeHTTPClientOptions *safeOptions = [[PDSSafeHTTPClientOptions alloc] init];
+    ATProtoSafeHTTPClientOptions *safeOptions = [[ATProtoSafeHTTPClientOptions alloc] init];
     safeOptions.timeout = 30.0;
     safeOptions.maxResponseBytes = 10 * 1024 * 1024; // 10 MB
     safeOptions.allowHTTP = NO;
     safeOptions.allowPrivateHosts = NO;
     safeOptions.followRedirects = YES;
 
-    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
+    [[ATProtoSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
                                                    options:safeOptions
                                                 completion:^(NSData *data, NSHTTPURLResponse *response, NSError *error) {
         NSInteger statusCode = response ? response.statusCode : 0;
@@ -138,7 +138,7 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
         pdsEndpoint = [NSString stringWithFormat:@"https://%@", pdsEndpoint];
     }
 
-    // SSRF protection is handled by PDSSafeHTTPClient during the actual request,
+    // SSRF protection is handled by ATProtoSafeHTTPClient during the actual request,
     // eliminating the validate-before-fetch TOCTOU gap.
 
     // Construct the XRPC URL
@@ -170,7 +170,7 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
         return;
     }
 
-    PDS_LOG_SERVICE_INFO(@"Forwarding XRPC request (method=%@, did=%@) to %@", method ?: @"", did ?: @"", PDSSanitizedURLString(url));
+    GZ_LOG_SERVICE_INFO(@"Forwarding XRPC request (method=%@, did=%@) to %@", method ?: @"", did ?: @"", PDSSanitizedURLString(url));
 
     // Prepare the request
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
@@ -228,7 +228,7 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
 
     if (!completion) return;
 
-    PDS_LOG_SERVICE_INFO(@"Forwarding HTTP request (method=%@) to %@", method ?: @"", PDSSanitizedURLString(url));
+    GZ_LOG_SERVICE_INFO(@"Forwarding HTTP request (method=%@) to %@", method ?: @"", PDSSanitizedURLString(url));
 
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     request.HTTPMethod = method;
@@ -240,14 +240,14 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
 
     request.HTTPBody = body;
 
-    PDSSafeHTTPClientOptions *safeOptions = [[PDSSafeHTTPClientOptions alloc] init];
+    ATProtoSafeHTTPClientOptions *safeOptions = [[ATProtoSafeHTTPClientOptions alloc] init];
     safeOptions.timeout = 30.0;
     safeOptions.maxResponseBytes = 10 * 1024 * 1024; // 10 MB
     safeOptions.allowHTTP = NO;
     safeOptions.allowPrivateHosts = NO;
     safeOptions.followRedirects = YES;
 
-    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
+    [[ATProtoSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
                                                    options:safeOptions
                                                 completion:^(NSData *data, NSHTTPURLResponse *response, NSError *error) {
         completion(data, response, error);
@@ -276,7 +276,7 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
         pdsEndpoint = [NSString stringWithFormat:@"https://%@", pdsEndpoint];
     }
 
-    // SSRF protection is handled by PDSSafeHTTPClient during the actual request,
+    // SSRF protection is handled by ATProtoSafeHTTPClient during the actual request,
     // eliminating the validate-before-fetch TOCTOU gap.
 
     // Construct the XRPC URL
@@ -308,7 +308,7 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
         return;
     }
 
-    PDS_LOG_SERVICE_INFO(@"Forwarding binary XRPC request (method=%@, did=%@) to %@", method ?: @"", did ?: @"", PDSSanitizedURLString(url));
+    GZ_LOG_SERVICE_INFO(@"Forwarding binary XRPC request (method=%@, did=%@) to %@", method ?: @"", did ?: @"", PDSSanitizedURLString(url));
 
     // Prepare the request
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];

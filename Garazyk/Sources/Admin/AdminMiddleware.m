@@ -5,7 +5,7 @@
 #import "Auth/Session.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "Debug/PDSLogger.h" // Added import
+#import "Debug/GZLogger.h" // Added import
 #import "Compat/PDSTypes.h"
 
 NSString * const AdminMiddlewareErrorDomain = @"com.atproto.pds.admin.middleware";
@@ -75,7 +75,7 @@ NSString * const AdminMiddlewareErrorDomain = @"com.atproto.pds.admin.middleware
     }
     
     if (!isAdmin) { // Kept original condition `!isAdmin`
-        PDS_LOG_ADMIN_WARN(@"Non-admin user %@ attempted to access admin endpoint", session.did); // Replaced NSLog
+        GZ_LOG_ADMIN_WARN(@"Non-admin user %@ attempted to access admin endpoint", session.did); // Replaced NSLog
         
         if (error) {
             *error = [NSError errorWithDomain:AdminMiddlewareErrorDomain
@@ -90,7 +90,7 @@ NSString * const AdminMiddlewareErrorDomain = @"com.atproto.pds.admin.middleware
         return NO;
     }
     
-    PDS_LOG_ADMIN_INFO(@"Admin action by user %@", session.did); // Replaced NSLog
+    GZ_LOG_ADMIN_INFO(@"Admin action by user %@", session.did); // Replaced NSLog
     
     return YES;
 }

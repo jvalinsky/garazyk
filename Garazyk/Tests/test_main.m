@@ -20,7 +20,7 @@
 #import "Auth/OAuthPublicClientTests.h"
 #import "Network/HttpResponse.h"
 #import "Network/RateLimiter.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import <objc/runtime.h>
 
 @interface SimpleTestObserver : NSObject <XCTestObservation>
@@ -33,11 +33,7 @@
 @end
 
 static NSString *PDSClassNameFromTestCase(XCTestCase *testCase) {
-#ifdef __APPLE__
   NSString *name = testCase.name ?: @"";
-#else
-  NSString *name = @"";
-#endif
   if (([name hasPrefix:@"-["] || [name hasPrefix:@"+["]) &&
       [name hasSuffix:@"]"] && name.length > 3) {
     NSString *inner = [name substringWithRange:NSMakeRange(2, name.length - 3)];
@@ -57,11 +53,7 @@ static NSString *PDSClassNameFromTestCase(XCTestCase *testCase) {
 }
 
 static NSString *PDSMethodNameFromTestCase(XCTestCase *testCase) {
-#ifdef __APPLE__
   NSString *name = testCase.name ?: @"";
-#else
-  NSString *name = @"";
-#endif
   if (([name hasPrefix:@"-["] || [name hasPrefix:@"+["]) &&
       [name hasSuffix:@"]"] && name.length > 3) {
     NSString *inner = [name substringWithRange:NSMakeRange(2, name.length - 3)];
@@ -141,6 +133,39 @@ static NSString *PDSMethodNameFromTestCase(XCTestCase *testCase) {
     _failedTests = [NSMutableArray array];
   }
   return self;
+}
+
+- (void)testCaseWillStart:(XCTestCase *)testCase {
+  self.testCount++;
+  NSString *key = [NSString stringWithFormat:@"%p", testCase];
+  self.testStartTimes[key] = [NSDate date];
+}
+
+- (void)testCase:(XCTestCase *)testCase
+    didFailWithDescription:(NSString *)description
+                    inFile:(nullable NSString *)filePath
+                    atLine:(NSUInteger)lineNumber {
+  self.failureCount++;
+  NSLog(@"FAIL: %@ at %@:%lu: %@", testCase.name, filePath, (unsigned long)lineNumber, description);
+  [self.failedTests addObject:@{
+    @"class" : PDSClassNameFromTestCase(testCase),
+    @"method" : PDSMethodNameFromTestCase(testCase),
+    @"file" : filePath ?: @"(unknown)",
+    @"line" : @(lineNumber),
+    @"description" : description ?: @""
+  }];
+}
+
+- (void)testCaseDidFinish:(XCTestCase *)testCase {
+  NSString *key = [NSString stringWithFormat:@"%p", testCase];
+  NSDate *start = self.testStartTimes[key];
+  [self.testStartTimes removeObjectForKey:key];
+  NSTimeInterval elapsed = start ? -[start timeIntervalSinceNow] : 0;
+  [self.methodTimings addObject:@{
+    @"class" : PDSClassNameFromTestCase(testCase),
+    @"method" : PDSMethodNameFromTestCase(testCase),
+    @"duration" : @(elapsed)
+  }];
 }
 @end
 #endif
@@ -409,7 +434,7 @@ static NSDictionary<NSString *, NSString *> *PDSBuildCategoryMap(void) {
                            @"SyntaxInterop", @"MSTInterop"],
       @"Media":          @[@"PDSVideo", @"ATProtoVideo", @"MimeType"],
       @"Metrics":        @[@"PDSMetrics"],
-      @"Debug":          @[@"PDSLoggerPerformance"],
+      @"Debug":          @[@"GZLoggerPerformance"],
       @"Deployment":     @[@"DeploymentReadiness"],
       @"Federation":     @[@"FederationClient"],
       @"Registration":   @[@"PDSRegistrationGate"],
@@ -1041,7 +1066,7 @@ int main(int argc, char *argv[]) {
       @"PDSCLINukeCommandTests",
       @"PDSDatabaseIntegrationTests",
       @"PDSHttpPDSAdminRoutePackTests",
-      @"PDSLoggerPerformanceTests",
+      @"GZLoggerPerformanceTests",
       @"RelayAPIHandlerTests",
       @"RelayDownstreamHandlerTests",
       @"SecurityHardeningTests",
@@ -1079,11 +1104,9 @@ int main(int argc, char *argv[]) {
 
     SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
 
-#ifdef __APPLE__
     XCTestObservationCenter *center =
         [XCTestObservationCenter sharedTestObservationCenter];
     [center addTestObserver:observer];
-#endif
 
     // Parse command line arguments
     NSMutableArray<NSString *> *filterPatterns = [NSMutableArray array];
@@ -1229,10 +1252,9 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    // When JSON output is active, suppress the PDS logger so stdout
-    // contains only valid JSON.
-    if (jsonOutput) {
-      [PDSLogger sharedLogger].logLevel = PDSLogLevelError;
+    // When JSON output is active, or PDS_TEST_QUIET is set, suppress the PDS logger.
+    if (jsonOutput || PDSEnvEnabled("PDS_TEST_QUIET")) {
+      [GZLogger sharedLogger].logLevel = GZLogLevelError;
     }
 
     // Merge legacy -XCTest filter into the new filter system

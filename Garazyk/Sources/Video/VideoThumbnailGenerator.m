@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Video/VideoThumbnailGenerator.h"
 #import "Core/CID.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 
 // Suppress -Wblock-capture-autoreleasing: the error out-parameter captured
@@ -157,7 +157,7 @@ NSString * const ATProtoVideoThumbnailErrorDomain = @"com.atproto.video.thumbnai
                 NSData *stderrData = [stderrPipe.fileHandleForReading readDataToEndOfFile];
                 NSString *stderrStr = [[NSString alloc] initWithData:stderrData encoding:NSUTF8StringEncoding];
                 NSString *msg = [NSString stringWithFormat:@"ffmpeg thumbnail extraction failed: %@", stderrStr ?: @"(unknown)"];
-                PDS_LOG_ERROR(@"%@", msg);
+                GZ_LOG_ERROR(@"%@", msg);
                 NSError *err = [NSError errorWithDomain:ATProtoVideoThumbnailErrorDomain
                                                    code:ATProtoVideoThumbnailErrorGenerationFailed
                                                userInfo:@{NSLocalizedDescriptionKey: msg}];

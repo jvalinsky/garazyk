@@ -9,7 +9,7 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Core/CID.h"
 
 @implementation PDSBlobConsistencyCheckOperation
@@ -21,7 +21,7 @@
     NSError *error = nil;
     NSArray<PDSDatabaseAccount *> *accounts = [self.serviceDatabases getAllAccountsWithError:&error];
     if (!accounts) {
-        PDS_LOG_ERROR(@"ConsistencyCheck: Failed to list accounts: %@", error);
+        GZ_LOG_ERROR(@"ConsistencyCheck: Failed to list accounts: %@", error);
         [self updateProgress:1.0 status:@"Failed to list accounts"];
         return;
     }
@@ -107,7 +107,7 @@
     [self saveResults:results error:&error];
 
     if (error) {
-        PDS_LOG_DB_ERROR(@"Failed to save consistency check results: %@", error);
+        GZ_LOG_DB_ERROR(@"Failed to save consistency check results: %@", error);
     }
 }
 

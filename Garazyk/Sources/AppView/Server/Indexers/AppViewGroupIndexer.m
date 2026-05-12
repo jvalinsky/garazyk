@@ -8,7 +8,7 @@
 
 #import "AppView/Server/Indexers/AppViewGroupIndexer.h"
 #import "AppView/Server/AppViewDatabase.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 static NSString * const kCollectionGroupDef = @"chat.bsky.group.definition";
 
@@ -60,7 +60,7 @@ static NSString * const kCollectionGroupDef = @"chat.bsky.group.definition";
     BOOL ok = [self.avdb executeParameterizedUpdate:query params:args error:error];
 
     if (!ok) {
-        PDS_LOG_WARN(@"[AppViewGroupIndexer] Failed to index group for %@: %@",
+        GZ_LOG_WARN(@"[AppViewGroupIndexer] Failed to index group for %@: %@",
                      did, error && *error ? (*error).localizedDescription : @"unknown");
         return NO;
     }
@@ -97,7 +97,7 @@ static NSString * const kCollectionGroupDef = @"chat.bsky.group.definition";
         }
     }
 
-    PDS_LOG_DEBUG(@"[AppViewGroupIndexer] Indexed group for %@: %@", did, uri);
+    GZ_LOG_DEBUG(@"[AppViewGroupIndexer] Indexed group for %@: %@", did, uri);
     return YES;
 }
 
@@ -114,7 +114,7 @@ static NSString * const kCollectionGroupDef = @"chat.bsky.group.definition";
     BOOL ok = [self.avdb executeParameterizedUpdate:deleteGroupQuery params:@[uri] error:error];
 
     if (!ok) {
-        PDS_LOG_WARN(@"[AppViewGroupIndexer] Failed to delete group for %@: %@",
+        GZ_LOG_WARN(@"[AppViewGroupIndexer] Failed to delete group for %@: %@",
                      did, error && *error ? (*error).localizedDescription : @"unknown");
     }
     return ok;

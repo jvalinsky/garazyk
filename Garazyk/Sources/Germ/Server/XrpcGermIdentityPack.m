@@ -6,7 +6,7 @@
 #import "Network/XrpcHandler.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @interface XrpcGermIdentityPack ()
 @property (nonatomic, strong) GermIdentityService *identityService;
@@ -32,7 +32,7 @@
         [self handleGetAnchorKey:request response:response];
     }];
 
-    PDS_LOG_INFO(@"Registered com.germnetwork.identity.* endpoints");
+    GZ_LOG_INFO(@"Registered com.germnetwork.identity.* endpoints");
 }
 
 #pragma mark - Authentication

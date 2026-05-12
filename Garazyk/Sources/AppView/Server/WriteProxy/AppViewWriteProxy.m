@@ -10,8 +10,8 @@
 #import "AppView/Server/AppViewDatabase.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "Network/PDSSafeHTTPClient.h"
-#import "Debug/PDSLogger.h"
+#import "Network/ATProtoSafeHTTPClient.h"
+#import "Debug/GZLogger.h"
 
 NSErrorDomain const AppViewWriteProxyErrorDomain = @"AppViewWriteProxy";
 
@@ -130,7 +130,7 @@ NSErrorDomain const AppViewWriteProxyErrorDomain = @"AppViewWriteProxy";
                                                              options:0
                                                                error:nil];
 
-    // 6. Execute the proxied request via PDSSafeHTTPClient (SSRF protection)
+    // 6. Execute the proxied request via ATProtoSafeHTTPClient (SSRF protection)
     NSURL *url = [NSURL URLWithString:pdsURL];
     NSMutableURLRequest *urlRequest = [NSMutableURLRequest requestWithURL:url];
     urlRequest.HTTPMethod = @"POST";
@@ -144,7 +144,7 @@ NSErrorDomain const AppViewWriteProxyErrorDomain = @"AppViewWriteProxy";
         [urlRequest setValue:dpopHeader forHTTPHeaderField:@"DPoP"];
     }
 
-    PDSSafeHTTPClientOptions *safeOptions = [[PDSSafeHTTPClientOptions alloc] init];
+    ATProtoSafeHTTPClientOptions *safeOptions = [[ATProtoSafeHTTPClientOptions alloc] init];
     safeOptions.timeout = 30.0;
     safeOptions.maxResponseBytes = 256 * 1024; // 256 KB
     
@@ -159,7 +159,7 @@ NSErrorDomain const AppViewWriteProxyErrorDomain = @"AppViewWriteProxy";
 
     NSHTTPURLResponse *urlResponse = nil;
     NSError *requestError = nil;
-    NSData *responseData = [[PDSSafeHTTPClient sharedClient]
+    NSData *responseData = [[ATProtoSafeHTTPClient sharedClient]
         sendSynchronousRequest:urlRequest
                        options:safeOptions
                       response:&urlResponse
@@ -167,18 +167,18 @@ NSErrorDomain const AppViewWriteProxyErrorDomain = @"AppViewWriteProxy";
 
     // 7. Return the PDS response
     if (requestError) {
-        PDS_LOG_WARN(@"[WriteProxy] PDS request failed for %@: %@",
+        GZ_LOG_WARN(@"[WriteProxy] PDS request failed for %@: %@",
                      nsid, requestError.localizedDescription);
 
         // Map SSRF errors to 502, other errors to their natural code
         NSInteger errorCode = 502;
-        if ([requestError.domain isEqualToString:PDSSafeHTTPClientErrorDomain]) {
+        if ([requestError.domain isEqualToString:ATProtoSafeHTTPClientErrorDomain]) {
             switch (requestError.code) {
-                case PDSSafeHTTPClientErrorInvalidURL:
-                case PDSSafeHTTPClientErrorUnsupportedScheme:
+                case ATProtoSafeHTTPClientErrorInvalidURL:
+                case ATProtoSafeHTTPClientErrorUnsupportedScheme:
                     errorCode = 400;
                     break;
-                case PDSSafeHTTPClientErrorSSRFBlocked:
+                case ATProtoSafeHTTPClientErrorSSRFBlocked:
                     errorCode = 403;
                     break;
                 default:
@@ -249,7 +249,7 @@ NSErrorDomain const AppViewWriteProxyErrorDomain = @"AppViewWriteProxy";
     // If we're in a local network test, we might want to map all writes to local-pds
     NSString *envOverride = [[NSProcessInfo processInfo] environment][@"PDS_WRITE_PROXY_OVERRIDE"];
     if (envOverride.length > 0) {
-        PDS_LOG_DEBUG(@"[WriteProxy] Using override PDS endpoint: %@", envOverride);
+        GZ_LOG_DEBUG(@"[WriteProxy] Using override PDS endpoint: %@", envOverride);
         return envOverride;
     }
 
@@ -285,7 +285,7 @@ NSErrorDomain const AppViewWriteProxyErrorDomain = @"AppViewWriteProxy";
         return [NSString stringWithFormat:@"https://%@", handle];
     }
 
-    PDS_LOG_WARN(@"[WriteProxy] Could not resolve PDS endpoint for DID %@", did);
+    GZ_LOG_WARN(@"[WriteProxy] Could not resolve PDS endpoint for DID %@", did);
     return nil;
 }
 

@@ -6,7 +6,7 @@
 #import "Network/XrpcHandler.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @interface XrpcGermMailboxPack ()
 @property (nonatomic, strong) GermMailboxService *mailboxService;
@@ -56,7 +56,7 @@
         [self handleRendezvousDeliver:request response:response];
     }];
 
-    PDS_LOG_INFO(@"Registered com.germnetwork.mailbox.* + com.germnetwork.rendezvous.* endpoints");
+    GZ_LOG_INFO(@"Registered com.germnetwork.mailbox.* + com.germnetwork.rendezvous.* endpoints");
 }
 
 #pragma mark - Authentication

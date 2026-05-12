@@ -12,7 +12,7 @@
 #import "Database/PDSDatabase.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Network/HttpRequest.h"
 #import "Repository/CAR.h"
 #import "Repository/CBOR.h"
@@ -190,7 +190,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 }
 
 - (BOOL)startOnPort:(uint16_t)port error:(NSError **)error {
-  PDS_LOG_SYNC_INFO(@"Starting subscribeRepos WebSocket handler on port %d",
+  GZ_LOG_SYNC_INFO(@"Starting subscribeRepos WebSocket handler on port %d",
                     port);
 
   [self ensureSequenceInitialized];
@@ -201,7 +201,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   self.webSocketServer.subprotocol = @"com.atproto.sync.subscribeRepos";
 
   if (![self.webSocketServer start:error]) {
-    PDS_LOG_SYNC_ERROR(@"Failed to start WebSocket server: %@", *error);
+    GZ_LOG_SYNC_ERROR(@"Failed to start WebSocket server: %@", *error);
     return NO;
   }
 
@@ -212,12 +212,12 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     [self.delegate subscribeReposHandlerDidStart:self];
   }
 
-  PDS_LOG_SYNC_INFO(@"SubscribeRepos WebSocket handler started successfully");
+  GZ_LOG_SYNC_INFO(@"SubscribeRepos WebSocket handler started successfully");
   return YES;
 }
 
 - (void)stop {
-  PDS_LOG_SYNC_INFO(@"Stopping subscribeRepos WebSocket handler");
+  GZ_LOG_SYNC_INFO(@"Stopping subscribeRepos WebSocket handler");
 
   self.stopping = YES;
   [self stopObservingNotifications];
@@ -251,7 +251,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     [self.delegate subscribeReposHandlerDidStop:self];
   }
 
-  PDS_LOG_SYNC_INFO(@"SubscribeRepos WebSocket handler stopped");
+  GZ_LOG_SYNC_INFO(@"SubscribeRepos WebSocket handler stopped");
 }
 
 - (BOOL)waitForIdleWithTimeout:(NSTimeInterval)timeout {
@@ -277,7 +277,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
 - (void)acceptUpgradedConnection:(id<PDSNetworkConnection>)connection
                          request:(HttpRequest *)request {
-  PDS_LOG_SYNC_INFO(@"Accepting upgraded connection for subscribeRepos from %@", request.remoteAddress);
+  GZ_LOG_SYNC_INFO(@"Accepting upgraded connection for subscribeRepos from %@", request.remoteAddress);
   [self ensureSequenceInitialized];
 
   WebSocketConnection *webSocketConnection =
@@ -309,7 +309,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
 - (void)webSocketServer:(WebSocketServer *)server
     didAcceptConnection:(WebSocketConnection *)connection {
-  PDS_LOG_SYNC_INFO(
+  GZ_LOG_SYNC_INFO(
       @"[%@] Accepted new WebSocket connection for subscribeRepos",
       connection.remoteAddress);
 
@@ -331,19 +331,19 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
 - (void)webSocketServer:(WebSocketServer *)server
      didCloseConnection:(WebSocketConnection *)connection {
-  PDS_LOG_SYNC_INFO(@"[%@] Closed WebSocket connection for subscribeRepos",
+  GZ_LOG_SYNC_INFO(@"[%@] Closed WebSocket connection for subscribeRepos",
                     connection.remoteAddress);
   [self detachConnection:connection];
 }
 
 - (void)webSocketServer:(WebSocketServer *)server
        didFailWithError:(NSError *)error {
-  PDS_LOG_SYNC_ERROR(@"WebSocket server failed: %@", error);
+  GZ_LOG_SYNC_ERROR(@"WebSocket server failed: %@", error);
 }
 
 - (void)webSocketServer:(WebSocketServer *)server
          stateDidChange:(WebSocketServerState)state {
-  PDS_LOG_SYNC_INFO(@"WebSocket server state changed to: %ld", (long)state);
+  GZ_LOG_SYNC_INFO(@"WebSocket server state changed to: %ld", (long)state);
 }
 
 #pragma mark - WebSocketConnectionDelegate
@@ -351,7 +351,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 - (void)webSocketConnection:(WebSocketConnection *)connection
            didCloseWithCode:(NSInteger)code
                      reason:(NSString *)reason {
-  PDS_LOG_SYNC_INFO(
+  GZ_LOG_SYNC_INFO(
       @"[%@] Main-port WebSocket connection closed (code=%ld, reason=%@)",
       connection.remoteAddress, (long)code, reason ?: @"");
   [self detachConnection:connection];
@@ -359,7 +359,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
 - (void)webSocketConnection:(WebSocketConnection *)connection
            didFailWithError:(NSError *)error {
-  PDS_LOG_SYNC_ERROR(@"[%@] Main-port WebSocket connection failed: %@",
+  GZ_LOG_SYNC_ERROR(@"[%@] Main-port WebSocket connection failed: %@",
                      connection.remoteAddress, error);
   [self detachConnection:connection];
 }
@@ -460,7 +460,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     }
 
     if (!commit || !commit.signature) {
-      PDS_LOG_SYNC_ERROR(@"Failed to load valid signed commit for firehose "
+      GZ_LOG_SYNC_ERROR(@"Failed to load valid signed commit for firehose "
                          @"broadcast (DID: %@)",
                          did);
       return;
@@ -567,7 +567,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     NSString *eventType = @"commit";
     NSData *eventData = [strongSelf.session encodeCommitEvent:event];
     if (!eventData) {
-      PDS_LOG_SYNC_WARN(
+      GZ_LOG_SYNC_WARN(
           @"Commit event encoding failed for %@ at seq %lu, falling back "
           @"to #sync",
           repoDid, (unsigned long)strongSelf.session.sequenceNumber + 1);
@@ -579,7 +579,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
       eventData = [strongSelf.session.eventFormatter encodeSyncEvent:syncEvent error:nil];
       if (!eventData) {
-        PDS_LOG_SYNC_ERROR(@"Failed to encode sync fallback event");
+        GZ_LOG_SYNC_ERROR(@"Failed to encode sync fallback event");
         return;
       }
       eventType = @"sync";
@@ -590,7 +590,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                                         type:eventType
                                         data:eventData
                                        error:&persistError]) {
-      PDS_LOG_SYNC_ERROR(@"Failed to persist %@ event: %@", eventType,
+      GZ_LOG_SYNC_ERROR(@"Failed to persist %@ event: %@", eventType,
                          persistError);
     }
 
@@ -598,7 +598,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     [[PDSMetrics sharedMetrics] incrementFirehoseEvent:@"commit"];
     [[PDSMetrics sharedMetrics] incrementRepoCommits];
     [[PDSMetrics sharedMetrics] setFirehoseSeq:(int64_t)strongSelf.session.sequenceNumber];
-    PDS_LOG_SYNC_INFO(@"Broadcast %@ event for repo %@, seq %lu", eventType,
+    GZ_LOG_SYNC_INFO(@"Broadcast %@ event for repo %@, seq %lu", eventType,
                       repoDid, (unsigned long)strongSelf.session.sequenceNumber);
   };
 
@@ -639,14 +639,14 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                                             type:@"identity"
                                             data:eventData
                                            error:&persistError]) {
-          PDS_LOG_SYNC_ERROR(@"Failed to persist identity event: %@", persistError);
+          GZ_LOG_SYNC_ERROR(@"Failed to persist identity event: %@", persistError);
         }
       }
 
       [strongSelf broadcastEventData:eventData];
       [[PDSMetrics sharedMetrics] incrementFirehoseEvent:@"identity"];
       [[PDSMetrics sharedMetrics] setFirehoseSeq:(int64_t)strongSelf.session.sequenceNumber];
-      PDS_LOG_SYNC_INFO(@"Broadcast identity event for DID %@, seq %lu", did,
+      GZ_LOG_SYNC_INFO(@"Broadcast identity event for DID %@, seq %lu", did,
                         (unsigned long)strongSelf.session.sequenceNumber);
     }
   });
@@ -683,14 +683,14 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                                             type:@"account"
                                             data:eventData
                                            error:&persistError]) {
-          PDS_LOG_SYNC_ERROR(@"Failed to persist account event: %@", persistError);
+          GZ_LOG_SYNC_ERROR(@"Failed to persist account event: %@", persistError);
         }
       }
 
       [strongSelf broadcastEventData:eventData];
       [[PDSMetrics sharedMetrics] incrementFirehoseEvent:@"account"];
       [[PDSMetrics sharedMetrics] setFirehoseSeq:(int64_t)strongSelf.session.sequenceNumber];
-      PDS_LOG_SYNC_INFO(@"Broadcast account status event for DID %@ (active=%d, status=%@), seq %lu",
+      GZ_LOG_SYNC_INFO(@"Broadcast account status event for DID %@ (active=%d, status=%@), seq %lu",
                         did, active, status ?: @"(null)", (unsigned long)strongSelf.session.sequenceNumber);
     }
   });
@@ -721,7 +721,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     if (eventData) {
       // Info events are ephemeral — do NOT persist for replay
       [strongSelf broadcastEventData:eventData];
-      PDS_LOG_SYNC_DEBUG(@"Broadcast info event (%@)", kind);
+      GZ_LOG_SYNC_DEBUG(@"Broadcast info event (%@)", kind);
     }
   });
 }
@@ -737,7 +737,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   dispatch_sync(_connectionsQueue, ^{
     snapshot = [_attachedConnections allObjects];
   });
-  PDS_LOG_SYNC_DEBUG(@"Broadcasting event to %lu subscribers (data=%lu bytes)",
+  GZ_LOG_SYNC_DEBUG(@"Broadcasting event to %lu subscribers (data=%lu bytes)",
                      (unsigned long)snapshot.count, (unsigned long)eventData.length);
   if (snapshot.count == 0) {
     return;
@@ -750,14 +750,14 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
       NSUInteger pCount = connection.pendingSendCount;
       NSUInteger pBytes = connection.pendingSendBytes;
       if (pCount > 10 || pBytes > 100000) {
-        PDS_LOG_SYNC_WARN(@"[Firehose] Subscriber %@ has high backpressure: "
+        GZ_LOG_SYNC_WARN(@"[Firehose] Subscriber %@ has high backpressure: "
                            "pendingSends=%lu pendingBytes=%lu",
                            connection.remoteAddress,
                            (unsigned long)pCount, (unsigned long)pBytes);
       }
       if (![self sendEventData:eventData
             toConnectionWithBackpressureCheck:connection]) {
-        PDS_LOG_SYNC_WARN(@"Dropping slow consumer %@ during live broadcast "
+        GZ_LOG_SYNC_WARN(@"Dropping slow consumer %@ during live broadcast "
                            "(pendingSends=%lu, pendingBytes=%lu)",
                            connection.remoteAddress,
                            (unsigned long)connection.pendingSendCount,
@@ -769,8 +769,8 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
 - (void)sendInitialRepositoryStateToConnection:(WebSocketConnection *)connection
                                         cursor:(nullable NSString *)cursor {
-  PDS_LOG_SYNC_INFO(@"New connection from %@ (requested path: %@)", connection.remoteAddress, connection.path);
-  PDS_LOG_SYNC_INFO(@"Sending initial repository state to new connection");
+  GZ_LOG_SYNC_INFO(@"New connection from %@ (requested path: %@)", connection.remoteAddress, connection.path);
+  GZ_LOG_SYNC_INFO(@"Sending initial repository state to new connection");
 
   if (!cursor) {
     id cursorParam = connection.queryParams[@"cursor"];
@@ -791,25 +791,25 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   if (hasCursor) {
     cursorValid = [self parseCursorString:cursor outValue:&parsedCursor];
     if (cursorValid) {
-      PDS_LOG_SYNC_INFO(@"Client requested resumption from cursor %@ (parsed as seq %lu)",
+      GZ_LOG_SYNC_INFO(@"Client requested resumption from cursor %@ (parsed as seq %lu)",
                         cursor, (unsigned long)parsedCursor);
     } else {
-      PDS_LOG_SYNC_WARN(@"Client requested resumption from invalid cursor: %@", cursor);
+      GZ_LOG_SYNC_WARN(@"Client requested resumption from invalid cursor: %@", cursor);
     }
   } else {
-    PDS_LOG_SYNC_INFO(@"No cursor requested by client, connection will start in live update mode");
+    GZ_LOG_SYNC_INFO(@"No cursor requested by client, connection will start in live update mode");
   }
 
-  PDS_LOG_SYNC_INFO(@"Queuing initial state worker for connection %@ (queue: %p)", connection.remoteAddress, self.syncQueue);
+  GZ_LOG_SYNC_INFO(@"Queuing initial state worker for connection %@ (queue: %p)", connection.remoteAddress, self.syncQueue);
   if (!self.syncQueue) {
-    PDS_LOG_SYNC_ERROR(@"CRITICAL: eventQueue is NULL in SubscribeReposHandler!");
+    GZ_LOG_SYNC_ERROR(@"CRITICAL: eventQueue is NULL in SubscribeReposHandler!");
     return;
   }
   __weak typeof(self) weakSelf = self;
   dispatch_async(self.syncQueue, ^{
     __strong typeof(weakSelf) strongSelf = weakSelf;
     if (!strongSelf || strongSelf.stopping) return;
-    PDS_LOG_SYNC_INFO(@"Async worker started: processing initial state for connection %@", connection.remoteAddress);
+    GZ_LOG_SYNC_INFO(@"Async worker started: processing initial state for connection %@", connection.remoteAddress);
 
     if (hasCursor && !cursorValid) {
       [strongSelf sendErrorFrameWithCode:kSubscribeReposErrorInvalidCursor
@@ -827,7 +827,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     // Sending OutdatedCursor info and replaying from beginning breaks the loop.
     NSUInteger requestedReplayCursor = hasCursor ? parsedCursor : 0;
     if (hasCursor && parsedCursor > strongSelf.session.sequenceNumber) {
-      PDS_LOG_SYNC_WARN(
+      GZ_LOG_SYNC_WARN(
           @"Future cursor %lu is ahead of server sequence %lu; "
           @"adjusting to cursor 0 and sending OutdatedCursor info for connection %@",
           (unsigned long)parsedCursor,
@@ -838,9 +838,9 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                    toConnection:connection];
       requestedReplayCursor = 0;
     } else if (!hasCursor) {
-      PDS_LOG_SYNC_INFO(@"No cursor provided; replaying retained events before switching to live updates.");
+      GZ_LOG_SYNC_INFO(@"No cursor provided; replaying retained events before switching to live updates.");
     } else if (parsedCursor == 0) {
-      PDS_LOG_SYNC_INFO(@"Client requested cursor=0; replaying all retained events from the beginning.");
+      GZ_LOG_SYNC_INFO(@"Client requested cursor=0; replaying all retained events from the beginning.");
     }
 
     BOOL outdated = NO;
@@ -848,7 +848,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         [strongSelf effectiveReplayCursorForRequestedCursor:requestedReplayCursor
                                              outdated:&outdated];
     if (outdated && hasCursor) {
-      PDS_LOG_SYNC_WARN(@"Outdated cursor %lu adjusted to %lu for connection %@",
+      GZ_LOG_SYNC_WARN(@"Outdated cursor %lu adjusted to %lu for connection %@",
                         (unsigned long)requestedReplayCursor,
                         (unsigned long)replayCursor, connection);
       [strongSelf sendInfoEvent:kSubscribeReposInfoOutdatedCursor
@@ -857,11 +857,11 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     }
 
     if (replayCursor >= strongSelf.session.sequenceNumber) {
-      PDS_LOG_SYNC_INFO(@"Cursor %lu is up to date at server sequence %lu; client is listening for live events.",
+      GZ_LOG_SYNC_INFO(@"Cursor %lu is up to date at server sequence %lu; client is listening for live events.",
                         (unsigned long)replayCursor,
                         (unsigned long)strongSelf.session.sequenceNumber);
     } else {
-      PDS_LOG_SYNC_INFO(@"Backfill requested (backlog: %lu). Replaying events from cursor %lu.",
+      GZ_LOG_SYNC_INFO(@"Backfill requested (backlog: %lu). Replaying events from cursor %lu.",
                         (unsigned long)(strongSelf.session.sequenceNumber - replayCursor),
                         (unsigned long)replayCursor);
       [strongSelf replayEventsAfterCursor:replayCursor toConnection:connection];
@@ -887,11 +887,11 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                                                 limit:(NSInteger)limit
                                                 error:&error];
             if (error) {
-                PDS_LOG_SYNC_ERROR(@"Failed to read events for replay: %@", error);
+                GZ_LOG_SYNC_ERROR(@"Failed to read events for replay: %@", error);
                 return;
             }
 
-            PDS_LOG_SYNC_INFO(@"Replaying %lu events after cursor %lu for connection %@",
+            GZ_LOG_SYNC_INFO(@"Replaying %lu events after cursor %lu for connection %@",
                               (unsigned long)events.count, (unsigned long)cursor, connection.remoteAddress);
 
             for (NSDictionary *eventDict in events) {
@@ -901,7 +901,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                     eventData = eventDict[@"event_data"];
                 }
                 if (![eventData isKindOfClass:[NSData class]] || eventData.length == 0) {
-                    PDS_LOG_SYNC_WARN(@"Skipping replay event %lld: missing event data", (long long)dbSeq);
+                    GZ_LOG_SYNC_WARN(@"Skipping replay event %lld: missing event data", (long long)dbSeq);
                     continue;
                 }
 
@@ -919,14 +919,14 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                         encodeStreamEventWithType:msgType payload:patchedPayload error:nil];
                     if (patchedData) {
                         eventData = patchedData;
-                        PDS_LOG_SYNC_DEBUG(@"Patched stale seq %lld -> %lld in replayed %@ event",
+                        GZ_LOG_SYNC_DEBUG(@"Patched stale seq %lld -> %lld in replayed %@ event",
                                            [payload[@"seq"] longLongValue], (long long)dbSeq, msgType);
                     }
                 }
 
                 [connection sendMessage:eventData];
             }
-            PDS_LOG_SYNC_INFO(@"Backfill complete for connection %@", connection.remoteAddress);
+            GZ_LOG_SYNC_INFO(@"Backfill complete for connection %@", connection.remoteAddress);
             return;
         }
 
@@ -939,12 +939,12 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
             NSArray *bufferedEvents = [self.eventBuffer eventsAfterCursor:(int64_t)cursor count:limit];
             if (!bufferedEvents || bufferedEvents.count == 0) {
-                PDS_LOG_SYNC_INFO(@"No buffered events to replay after cursor %lu for %@",
+                GZ_LOG_SYNC_INFO(@"No buffered events to replay after cursor %lu for %@",
                                   (unsigned long)cursor, connection.remoteAddress);
                 return;
             }
 
-            PDS_LOG_SYNC_INFO(@"Replaying %lu buffered events after cursor %lu for connection %@",
+            GZ_LOG_SYNC_INFO(@"Replaying %lu buffered events after cursor %lu for connection %@",
                               (unsigned long)bufferedEvents.count, (unsigned long)cursor,
                               connection.remoteAddress);
 
@@ -954,11 +954,11 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
                     [connection sendMessage:eventData];
                 }
             }
-            PDS_LOG_SYNC_INFO(@"Buffer replay complete for connection %@", connection.remoteAddress);
+            GZ_LOG_SYNC_INFO(@"Buffer replay complete for connection %@", connection.remoteAddress);
             return;
         }
 
-        PDS_LOG_SYNC_WARN(@"Cannot replay events: no service databases or event buffer");
+        GZ_LOG_SYNC_WARN(@"Cannot replay events: no service databases or event buffer");
     } @finally {
         dispatch_semaphore_signal(_backfillSemaphore);
     }
@@ -975,7 +975,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         // Legacy raw dictionary event — encode as JSON
         return [NSJSONSerialization dataWithJSONObject:(NSDictionary *)event options:0 error:nil];
     }
-    PDS_LOG_SYNC_WARN(@"Skipping unknown event type in buffer replay: %@", NSStringFromClass([event class]));
+    GZ_LOG_SYNC_WARN(@"Skipping unknown event type in buffer replay: %@", NSStringFromClass([event class]));
     return nil;
 }
 
@@ -990,7 +990,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
   if (eventData) {
     [connection sendMessage:eventData];
-    PDS_LOG_SYNC_DEBUG(@"Sent info event (%@) to connection", kind);
+    GZ_LOG_SYNC_DEBUG(@"Sent info event (%@) to connection", kind);
   }
 }
 
@@ -1028,7 +1028,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   NSArray<NSDictionary *> *events =
       [self.serviceDatabases getEventsSince:0 limit:1 error:&error];
   if (error) {
-    PDS_LOG_SYNC_WARN(@"Failed to read oldest persisted sequence: %@", error);
+    GZ_LOG_SYNC_WARN(@"Failed to read oldest persisted sequence: %@", error);
     return nil;
   }
   if (events.count == 0) {
@@ -1091,7 +1091,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     }
   });
   if (removed) {
-    PDS_LOG_SYNC_INFO(@"[Firehose] Detached subscriber %@ (remaining=%lu)",
+    GZ_LOG_SYNC_INFO(@"[Firehose] Detached subscriber %@ (remaining=%lu)",
                        connection.remoteAddress, (unsigned long)count);
     [[PDSMetrics sharedMetrics] setFirehoseSubscribers:(NSInteger)count];
     [self.relayMetrics recordDownstreamDisconnected];
@@ -1111,7 +1111,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   NSUInteger pendingBytes = connection.pendingSendBytes;
   if (pendingCount >= self.maxPendingSendsPerConnection ||
       pendingBytes >= self.maxPendingBytesPerConnection) {
-    PDS_LOG_SYNC_WARN(@"[Firehose] Dropping slow consumer %@: pendingSends=%lu/%lu "
+    GZ_LOG_SYNC_WARN(@"[Firehose] Dropping slow consumer %@: pendingSends=%lu/%lu "
                        "pendingBytes=%lu/%lu",
                        connection.remoteAddress,
                        (unsigned long)pendingCount,
@@ -1142,14 +1142,14 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
         NSError *dbError = nil;
         int64_t maxSequence = [self.serviceDatabases getMaxEventSequence:&dbError];
         if (dbError) {
-          PDS_LOG_SYNC_ERROR(@"Failed to get max event sequence: %@", dbError);
+          GZ_LOG_SYNC_ERROR(@"Failed to get max event sequence: %@", dbError);
         }
         startSeq = (NSUInteger)MAX((int64_t)0, maxSequence);
     }
 
     self.session = [[FirehoseProtocolSession alloc] initWithSequenceNumber:startSeq];
     self.sequenceInitialized = YES;
-    PDS_LOG_SYNC_INFO(@"Initialized sequence number to %lu",
+    GZ_LOG_SYNC_INFO(@"Initialized sequence number to %lu",
                       (unsigned long)self.session.sequenceNumber);
   });
 }
@@ -1159,7 +1159,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     if (self.sequenceInitialized) return;
     self.session = [[FirehoseProtocolSession alloc] initWithSequenceNumber:0];
     self.sequenceInitialized = YES;
-    PDS_LOG_SYNC_INFO(@"Firehose persistence disabled. Starting from sequence 0.");
+    GZ_LOG_SYNC_INFO(@"Firehose persistence disabled. Starting from sequence 0.");
   });
 }
 

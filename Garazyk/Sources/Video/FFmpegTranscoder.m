@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Video/FFmpegTranscoder.h"
 #import "Video/VideoTranscoder.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 
 #ifdef LINUX
@@ -146,7 +146,7 @@ NSString * const FFmpegTranscoderErrorDomain = @"com.atproto.video.transcoder.ff
                 NSData *stderrData = [stderrPipe.fileHandleForReading readDataToEndOfFile];
                 NSString *stderrStr = [[NSString alloc] initWithData:stderrData encoding:NSUTF8StringEncoding];
                 NSString *msg = [NSString stringWithFormat:@"ffmpeg exited with status %d: %@", status, stderrStr ?: @"(no stderr)"];
-                PDS_LOG_ERROR(@"%@", msg);
+                GZ_LOG_ERROR(@"%@", msg);
                 NSError *err = [NSError errorWithDomain:FFmpegTranscoderErrorDomain
                                                    code:ATProtoVideoTranscoderErrorExportFailed
                                                userInfo:@{NSLocalizedDescriptionKey: msg}];
@@ -178,7 +178,7 @@ NSString * const FFmpegTranscoderErrorDomain = @"com.atproto.video.transcoder.ff
     NSError *taskError = nil;
     BOOL launched = PDS_TASK_LAUNCH(task, &taskError);
     if (!launched) {
-        PDS_LOG_WARN(@"Failed to launch ffprobe: %@", taskError);
+        GZ_LOG_WARN(@"Failed to launch ffprobe: %@", taskError);
         return 0;
     }
 
@@ -222,7 +222,7 @@ NSString * const FFmpegTranscoderErrorDomain = @"com.atproto.video.transcoder.ff
     NSError *taskError = nil;
     BOOL launched = PDS_TASK_LAUNCH(task, &taskError);
     if (!launched) {
-        PDS_LOG_WARN(@"Failed to launch ffprobe: %@", taskError);
+        GZ_LOG_WARN(@"Failed to launch ffprobe: %@", taskError);
         return 0;
     }
 
@@ -256,7 +256,7 @@ NSString * const FFmpegTranscoderErrorDomain = @"com.atproto.video.transcoder.ff
     NSError *taskError = nil;
     BOOL launched = PDS_TASK_LAUNCH(task, &taskError);
     if (!launched) {
-        PDS_LOG_WARN(@"Failed to launch ffprobe: %@", taskError);
+        GZ_LOG_WARN(@"Failed to launch ffprobe: %@", taskError);
         return CGSizeZero;
     }
 

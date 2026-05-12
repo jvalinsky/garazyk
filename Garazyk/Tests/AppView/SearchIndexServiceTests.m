@@ -32,7 +32,7 @@
         @"Database should open: %@", openError);
 
     // Create FTS5 tables directly (mimicking V7 migration)
-    [self.database executeRawSQL:@"CREATE TABLE IF NOT EXISTS search_actors("
+    [self.database executeUnsafeRawSQL:@"CREATE TABLE IF NOT EXISTS search_actors("
      @"rowid INTEGER PRIMARY KEY, "
      @"did TEXT NOT NULL, "
      @"display_name TEXT, "
@@ -40,29 +40,29 @@
      @"description TEXT"
      @")" error:nil];
 
-    [self.database executeRawSQL:@"CREATE TABLE IF NOT EXISTS search_posts("
+    [self.database executeUnsafeRawSQL:@"CREATE TABLE IF NOT EXISTS search_posts("
      @"rowid INTEGER PRIMARY KEY, "
      @"uri TEXT NOT NULL, "
      @"did TEXT NOT NULL, "
      @"text TEXT"
      @")" error:nil];
 
-    [self.database executeRawSQL:@"CREATE TABLE IF NOT EXISTS search_starter_packs("
+    [self.database executeUnsafeRawSQL:@"CREATE TABLE IF NOT EXISTS search_starter_packs("
      @"rowid INTEGER PRIMARY KEY, "
      @"uri TEXT NOT NULL, "
      @"did TEXT NOT NULL, "
      @"name TEXT"
      @")" error:nil];
 
-    [self.database executeRawSQL:@"CREATE VIRTUAL TABLE IF NOT EXISTS fts_actors "
+    [self.database executeUnsafeRawSQL:@"CREATE VIRTUAL TABLE IF NOT EXISTS fts_actors "
      @"USING fts5(did, display_name, handle, description, "
      @"content=search_actors, content_rowid=rowid)" error:nil];
 
-    [self.database executeRawSQL:@"CREATE VIRTUAL TABLE IF NOT EXISTS fts_posts "
+    [self.database executeUnsafeRawSQL:@"CREATE VIRTUAL TABLE IF NOT EXISTS fts_posts "
      @"USING fts5(uri, did, text, "
      @"content=search_posts, content_rowid=rowid)" error:nil];
 
-    [self.database executeRawSQL:@"CREATE VIRTUAL TABLE IF NOT EXISTS fts_starter_packs "
+    [self.database executeUnsafeRawSQL:@"CREATE VIRTUAL TABLE IF NOT EXISTS fts_starter_packs "
      @"USING fts5(uri, did, name, "
      @"content=search_starter_packs, content_rowid=rowid)" error:nil];
 

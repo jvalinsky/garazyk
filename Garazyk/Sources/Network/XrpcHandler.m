@@ -8,7 +8,7 @@
 #import "Network/XrpcMiddleware.h"
 #import "Auth/JWT.h"
 #import "Core/DID.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "App/PDSConfiguration.h"
 
 @interface XrpcDispatcher ()
@@ -230,7 +230,7 @@ static XrpcDispatcher *_sharedInstance = nil;
     XrpcMethodHandler handler = self.methodHandlers[methodId];
     BOOL isProtected = [self isMethodProtected:methodId];
 
-    PDS_LOG_INFO(@"XrpcHandler: methodId=%@, handler=%@, protected=%d", 
+    GZ_LOG_INFO(@"XrpcHandler: methodId=%@, handler=%@, protected=%d", 
                  methodId, handler ? @"found" : @"nil", isProtected);
 
     if (self.requestInterceptor) {
@@ -244,7 +244,7 @@ static XrpcDispatcher *_sharedInstance = nil;
     //    This prevents atproto-proxy header injection from redirecting
     //    auth/admin requests to an attacker-controlled service.
     if (handler && isProtected) {
-        PDS_LOG_INFO(@"XrpcHandler: Executing protected local handler for method=%@", methodId);
+        GZ_LOG_INFO(@"XrpcHandler: Executing protected local handler for method=%@", methodId);
         [self executeHandler:handler methodId:methodId request:request response:response];
         return;
     }
@@ -259,12 +259,12 @@ static XrpcDispatcher *_sharedInstance = nil;
         NSError *resolveError = nil;
 
         if ([self resolveProxyTarget:atprotoProxy outURL:&resolvedURL outDID:&resolvedDID error:&resolveError]) {
-            PDS_LOG_INFO(@"Proxying XRPC method '%@' to resolved service %@ (%@)", methodId, resolvedDID, resolvedURL);
+            GZ_LOG_INFO(@"Proxying XRPC method '%@' to resolved service %@ (%@)", methodId, resolvedDID, resolvedURL);
             XrpcProxyHandler *proxy = [[XrpcProxyHandler alloc] initWithMinter:self.jwtMinter];
             [proxy handleRequest:request response:response baseURL:resolvedURL upstreamDID:resolvedDID];
             return;
         } else {
-            PDS_LOG_ERROR(@"Failed to resolve atproto-proxy target '%@': %@", atprotoProxy, resolveError);
+            GZ_LOG_ERROR(@"Failed to resolve atproto-proxy target '%@': %@", atprotoProxy, resolveError);
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{
                 @"error": @"InvalidAtprotoProxy",
@@ -277,10 +277,10 @@ static XrpcDispatcher *_sharedInstance = nil;
     // 3. Fallback for app.bsky.* methods (AppView)
     if ([methodId hasPrefix:@"app.bsky."] && !isProtected) {
         if (handler) {
-            PDS_LOG_INFO(@"XrpcHandler: Executing local app.bsky handler for method=%@", methodId);
+            GZ_LOG_INFO(@"XrpcHandler: Executing local app.bsky handler for method=%@", methodId);
             [self executeHandler:handler methodId:methodId request:request response:response];
         } else if (self.proxyURL) {
-            PDS_LOG_INFO(@"Proxying XRPC method '%@' to AppView (automatic) %@", methodId, self.proxyURL);
+            GZ_LOG_INFO(@"Proxying XRPC method '%@' to AppView (automatic) %@", methodId, self.proxyURL);
             XrpcProxyHandler *proxy = [[XrpcProxyHandler alloc] initWithProxyURL:self.proxyURL
                                                                      upstreamDID:self.upstreamDID
                                                                           minter:self.jwtMinter];
@@ -296,7 +296,7 @@ static XrpcDispatcher *_sharedInstance = nil;
         if (handler) {
             [self executeHandler:handler methodId:methodId request:request response:response];
         } else if (self.ozoneURL) {
-            PDS_LOG_INFO(@"Proxying XRPC method '%@' to Ozone %@", methodId, self.ozoneURL);
+            GZ_LOG_INFO(@"Proxying XRPC method '%@' to Ozone %@", methodId, self.ozoneURL);
             XrpcProxyHandler *proxy = [[XrpcProxyHandler alloc] initWithProxyURL:self.ozoneURL
                                                                      upstreamDID:self.ozoneDID
                                                                           minter:self.jwtMinter];
@@ -312,7 +312,7 @@ static XrpcDispatcher *_sharedInstance = nil;
         if (handler) {
             [self executeHandler:handler methodId:methodId request:request response:response];
         } else if (self.chatURL) {
-            PDS_LOG_INFO(@"Proxying XRPC method '%@' to Chat %@", methodId, self.chatURL);
+            GZ_LOG_INFO(@"Proxying XRPC method '%@' to Chat %@", methodId, self.chatURL);
             XrpcProxyHandler *proxy = [[XrpcProxyHandler alloc] initWithProxyURL:self.chatURL
                                                                      upstreamDID:self.chatDID
                                                                           minter:self.jwtMinter];
@@ -347,7 +347,7 @@ static XrpcDispatcher *_sharedInstance = nil;
         NSString *name = exception.name ?: @"(null)";
         NSString *reason = exception.reason ?: @"(null)";
         NSArray<NSString *> *stack = exception.callStackSymbols ?: @[];
-        PDS_LOG_ERROR(@"[XRPC] Unhandled exception in %@: %@ (%@)\n%@",
+        GZ_LOG_ERROR(@"[XRPC] Unhandled exception in %@: %@ (%@)\n%@",
                       methodId, name, reason, [stack componentsJoinedByString:@"\n"]);
 
         response.statusCode = HttpStatusInternalServerError;

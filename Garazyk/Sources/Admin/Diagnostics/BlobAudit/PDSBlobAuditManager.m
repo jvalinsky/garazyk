@@ -8,7 +8,7 @@
 #import "Blob/BlobStorage.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Service/ServiceDatabases.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 #import <sqlite3.h>
 
@@ -48,14 +48,14 @@ static NSString *const PDSBlobAuditManagerErrorDomain = @"com.atproto.pds.diagno
                                                               jobId:jobId
                                                              dryRun:dryRun];
     if (!operation) {
-        PDS_LOG_WARN(@"Unsupported blob audit type requested: %@", type);
+        GZ_LOG_WARN(@"Unsupported blob audit type requested: %@", type);
         return nil;
     }
 
     // Insert job record into database
     NSError *error = nil;
     if (![self insertJobRecord:jobId type:type error:&error]) {
-        PDS_LOG_DB_ERROR(@"Failed to insert job record: %@", error);
+        GZ_LOG_DB_ERROR(@"Failed to insert job record: %@", error);
         return nil;
     }
 

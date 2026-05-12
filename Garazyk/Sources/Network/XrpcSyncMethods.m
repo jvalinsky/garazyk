@@ -15,7 +15,7 @@
 #import "Database/PDSDatabase.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/XrpcAuthHelper.h"
@@ -940,7 +940,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
       return;
     }
 
-    PDS_LOG_INFO_C(@"Sync",
+    GZ_LOG_INFO_C(@"Sync",
                    @"requestCrawl accepted for local host %@ (no relay "
                    @"forwarding)",
                    requestedHost);
@@ -986,7 +986,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
     NSError *error = nil;
     id account = [serviceDatabases getAccountByDid:did error:&error];
     if (!account) {
-      PDS_LOG_DEBUG_C(@"Sync", @"Account not registered globally for DID: %@",
+      GZ_LOG_DEBUG_C(@"Sync", @"Account not registered globally for DID: %@",
                       did);
       response.statusCode = HttpStatusNotFound;
       [response setJsonBody:@{
@@ -998,7 +998,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
 
     PDSActorStore *store = [userDatabasePool storeForDid:did error:&error];
     if (!store) {
-      PDS_LOG_DEBUG_C(@"Sync", @"Actor store not found for request DID: %@",
+      GZ_LOG_DEBUG_C(@"Sync", @"Actor store not found for request DID: %@",
                       did);
       response.statusCode = HttpStatusNotFound;
       [response setJsonBody:@{
@@ -1017,7 +1017,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
                    error:&error];
 
     if (error) {
-      PDS_LOG_ERROR_C(@"Sync", @"Error reading actor store: %@",
+      GZ_LOG_ERROR_C(@"Sync", @"Error reading actor store: %@",
                       error.localizedDescription);
       response.statusCode = HttpStatusInternalServerError;
       [response setJsonBody:@{

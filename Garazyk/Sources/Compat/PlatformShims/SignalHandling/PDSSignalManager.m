@@ -15,7 +15,7 @@
 
 @interface PDSSignalManager ()
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSMutableArray<PDSSignalHandlerBlock> *> *handlers;
-@property (nonatomic, strong) NSMutableDictionary<NSNumber *, id> *sources;
+@property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSValue *> *sources;
 @end
 
 @implementation PDSSignalManager
@@ -113,7 +113,7 @@
             });
 
             dispatch_resume(source);
-            self.sources[key] = PDS_GCD_BRIDGE_ID(source);
+            self.sources[key] = [NSValue valueWithPointer:(void *)source];
         }
     }
 }
@@ -126,8 +126,9 @@
     }
 
     @synchronized(self.sources) {
-        dispatch_source_t source = PDS_GCD_CAST(dispatch_source_t, self.sources[key]);
-        if (source) {
+        NSValue *val = self.sources[key];
+        if (val) {
+            dispatch_source_t source = (dispatch_source_t)[val pointerValue];
             dispatch_source_cancel(source);
             [self.sources removeObjectForKey:key];
         }

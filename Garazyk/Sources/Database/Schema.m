@@ -451,6 +451,7 @@ NSString * const kPDSIndexStarterPacksDidSQL =
 NSString * const kPDSConversationsTableCreateSQL =
     @"CREATE TABLE IF NOT EXISTS conversations ("
     @"id TEXT PRIMARY KEY,"
+    @"mode TEXT NOT NULL DEFAULT 'plaintext',"
     @"locked INTEGER DEFAULT 0,"
     @"created_at TEXT NOT NULL,"
     @"updated_at TEXT NOT NULL"

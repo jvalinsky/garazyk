@@ -17,7 +17,7 @@
 #import "Email/PDSKeychainSecretsProvider.h"
 #import "Email/PDSEnvironmentSecretsProvider.h"
 #import "App/PDSConfiguration.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 NSString *const PDSEmailProviderFactoryErrorDomain = @"com.atproto.pds.emailproviderfactory";
 
@@ -87,7 +87,7 @@ static dispatch_queue_t sRegistryQueue = nil;
                 username:configuration.emailSmtpUsername
                 password:configuration.emailSmtpPassword
                   useTLS:configuration.emailSmtpUseTLS];
-        PDS_LOG_WARN(@"SMTP email provider is configured, but SMTP delivery is not implemented. "
+        GZ_LOG_WARN(@"SMTP email provider is configured, but SMTP delivery is not implemented. "
                       @"Email sends will fail closed.");
         return smtp;
     }
@@ -172,7 +172,7 @@ static dispatch_queue_t sRegistryQueue = nil;
                                                             secretsProvider:(nullable id<PDSSecretsProvider>)secretsProvider
                                                                       error:(NSError **)error {
     if (!configuration.resendFromAddress || configuration.resendFromAddress.length == 0) {
-        PDS_LOG_WARN(@"Resend email provider requested but no from address configured "
+        GZ_LOG_WARN(@"Resend email provider requested but no from address configured "
                       @"(set PDS_EMAIL_RESEND_FROM).");
         if (error) {
             *error = [NSError errorWithDomain:PDSEmailProviderFactoryErrorDomain
@@ -202,7 +202,7 @@ static dispatch_queue_t sRegistryQueue = nil;
                     fromAddress:configuration.resendFromAddress
                     apiEndpoint:configuration.resendAPIEndpoint];
 
-    PDS_LOG_INFO(@"Initialized Resend email provider (source: %@, from: %@)",
+    GZ_LOG_INFO(@"Initialized Resend email provider (source: %@, from: %@)",
                  configuration.resendAPIKeySource ?: @"env",
                  configuration.resendFromAddress);
 

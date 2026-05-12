@@ -44,7 +44,7 @@
 #import "Auth/JWT.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Lexicon/ATProtoLexiconValidator.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @interface AppViewRuntime () <AppViewIngestEngineDelegate,
                                AppViewBackfillOrchestratorDelegate>
@@ -164,12 +164,12 @@ static AppViewRuntime *_sharedRuntime = nil;
     for (NSString *path in searchPaths) {
         [_lexiconRegistry loadLexiconsFromDirectory:path error:&lexiconErr];
         if (lexiconErr) {
-            PDS_LOG_WARN(@"[AppViewRuntime] Lexicon load error from %@: %@",
+            GZ_LOG_WARN(@"[AppViewRuntime] Lexicon load error from %@: %@",
                          path, lexiconErr.localizedDescription);
             lexiconErr = nil; // Continue loading from other paths
         }
     }
-    PDS_LOG_INFO(@"[AppViewRuntime] Loaded %lu lexicon schemas",
+    GZ_LOG_INFO(@"[AppViewRuntime] Loaded %lu lexicon schemas",
                  (unsigned long)[_lexiconRegistry loadedNSIDs].count);
 
     // Build lexicon validator
@@ -328,7 +328,7 @@ static AppViewRuntime *_sharedRuntime = nil;
        customHandlers:_customQueryRegistry];
     NSError *lexiconRouteErr = nil;
     if (![_lexiconEndpointGenerator registerDynamicEndpointsWithError:&lexiconRouteErr]) {
-        PDS_LOG_WARN(@"[AppViewRuntime] Lexicon endpoint registration failed: %@",
+        GZ_LOG_WARN(@"[AppViewRuntime] Lexicon endpoint registration failed: %@",
                      lexiconRouteErr.localizedDescription ?: @"unknown");
         // Non-fatal: dynamic endpoints unavailable but core routes still work
     }
@@ -348,11 +348,11 @@ static AppViewRuntime *_sharedRuntime = nil;
 
     NSError *listenErr = nil;
     if (![_httpServer startWithError:&listenErr]) {
-        PDS_LOG_WARN(@"[AppViewRuntime] HTTP server failed to start on port %lu: %@",
+        GZ_LOG_WARN(@"[AppViewRuntime] HTTP server failed to start on port %lu: %@",
                      (unsigned long)config.httpPort, listenErr.localizedDescription);
         // Non-fatal: admin endpoints unavailable but ingest + backfill can still run
     } else {
-        PDS_LOG_INFO(@"[AppViewRuntime] HTTP server listening on port %lu", (unsigned long)config.httpPort);
+        GZ_LOG_INFO(@"[AppViewRuntime] HTTP server listening on port %lu", (unsigned long)config.httpPort);
     }
 
     // Start all planes
@@ -360,7 +360,7 @@ static AppViewRuntime *_sharedRuntime = nil;
     [_orchestrator start];
 
     _isRunning = YES;
-    PDS_LOG_INFO(@"[AppViewRuntime] Started. Relays: %@", config.relayURLs);
+    GZ_LOG_INFO(@"[AppViewRuntime] Started. Relays: %@", config.relayURLs);
     return YES;
 }
 
@@ -377,7 +377,7 @@ static AppViewRuntime *_sharedRuntime = nil;
     [_httpServer stop];
     [_database close];
 
-    PDS_LOG_INFO(@"[AppViewRuntime] Stopped.");
+    GZ_LOG_INFO(@"[AppViewRuntime] Stopped.");
 }
 
 // ---------------------------------------------------------------------------
@@ -468,7 +468,7 @@ static AppViewRuntime *_sharedRuntime = nil;
 
 - (void)ingestEngine:(AppViewIngestEngine *)engine
 didReceiveIdentityChange:(AppViewIngestEvent *)event {
-    PDS_LOG_DEBUG(@"[AppViewRuntime] Identity change for %@", event.did);
+    GZ_LOG_DEBUG(@"[AppViewRuntime] Identity change for %@", event.did);
     [_orchestrator enqueueDIDs:@[event.did]];
 }
 
@@ -478,13 +478,13 @@ didReceiveIdentityChange:(AppViewIngestEvent *)event {
 
 - (void)orchestrator:(AppViewBackfillOrchestrator *)orchestrator
 didCompleteBackfillForDID:(NSString *)did {
-    PDS_LOG_DEBUG(@"[AppViewRuntime] Backfill complete for %@", did);
+    GZ_LOG_DEBUG(@"[AppViewRuntime] Backfill complete for %@", did);
 }
 
 - (void)orchestrator:(AppViewBackfillOrchestrator *)orchestrator
 didFailBackfillForDID:(NSString *)did
                error:(NSError *)error {
-    PDS_LOG_DEBUG(@"[AppViewRuntime] Backfill failed for %@: %@", did, error.localizedDescription);
+    GZ_LOG_DEBUG(@"[AppViewRuntime] Backfill failed for %@: %@", did, error.localizedDescription);
 }
 
 @end

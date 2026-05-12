@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "CLI/PDSCLIDefinitions.h"
 #import "Admin/PDSInstallerCommand.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/Foundation/NSDataCompat.h"
 #import <Foundation/Foundation.h>
 
@@ -178,7 +178,7 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
     if (![fm setAttributes:@{NSFileOwnerAccountName: @"root", NSFileGroupOwnerAccountName: @"wheel"}
               ofItemAtPath:destPlist
                      error:&error]) {
-        PDS_LOG_WARN(@"Failed to set plist ownership: %@", error.localizedDescription);
+        GZ_LOG_WARN(@"Failed to set plist ownership: %@", error.localizedDescription);
     }
 
     [context printInfo:[NSString stringWithFormat:@"Installed LaunchDaemon to %@", destPlist]];
@@ -194,10 +194,10 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
         if (task.terminationStatus == 0) {
             [context printInfo:@"Started LaunchDaemon"];
         } else {
-            PDS_LOG_WARN(@"Failed to load daemon (may already be loaded or require manual intervention)");
+            GZ_LOG_WARN(@"Failed to load daemon (may already be loaded or require manual intervention)");
         }
     } @catch (NSException *e) {
-        PDS_LOG_WARN(@"Could not auto-load daemon: %@", e.reason);
+        GZ_LOG_WARN(@"Could not auto-load daemon: %@", e.reason);
     }
 
     return YES;
@@ -245,10 +245,10 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
         if (task.terminationStatus == 0) {
             [context printInfo:@"Started LaunchAgent"];
         } else {
-            PDS_LOG_WARN(@"Failed to load agent (may already be loaded or require manual intervention)");
+            GZ_LOG_WARN(@"Failed to load agent (may already be loaded or require manual intervention)");
         }
     } @catch (NSException *e) {
-        PDS_LOG_WARN(@"Could not auto-load agent: %@", e.reason);
+        GZ_LOG_WARN(@"Could not auto-load agent: %@", e.reason);
     }
 
     return YES;
@@ -327,7 +327,7 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
                 [stopTask launch];
                 [stopTask waitUntilExit];
             } @catch (NSException *e) {
-                PDS_LOG_WARN(@"Could not stop daemon: %@", e.reason);
+                GZ_LOG_WARN(@"Could not stop daemon: %@", e.reason);
             }
 
             NSError *error = nil;
@@ -352,7 +352,7 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
                 [stopTask launch];
                 [stopTask waitUntilExit];
             } @catch (NSException *e) {
-                PDS_LOG_WARN(@"Could not stop agent: %@", e.reason);
+                GZ_LOG_WARN(@"Could not stop agent: %@", e.reason);
             }
 
             NSError *error = nil;
@@ -523,7 +523,7 @@ static NSString * const kAgentPlistSource = @"Resources/LaunchAgents/com.atproto
             return output;
         }
     } @catch (NSException *e) {
-        PDS_LOG_WARN(@"Could not query launchctl: %@", e.reason);
+        GZ_LOG_WARN(@"Could not query launchctl: %@", e.reason);
     }
 
     return nil;

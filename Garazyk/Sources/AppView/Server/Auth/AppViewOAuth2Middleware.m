@@ -12,7 +12,7 @@
 #import "Auth/JWT.h"
 #import "Auth/Crypto/AuthCryptoDPoP.h"
 #import "Auth/CryptoUtils.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 
 NSErrorDomain const AppViewOAuth2MiddlewareErrorDomain = @"AppViewOAuth2Middleware";
@@ -167,7 +167,7 @@ NSErrorDomain const AppViewOAuth2MiddlewareErrorDomain = @"AppViewOAuth2Middlewa
                                             error:&dpopError];
 
     if (!validProof) {
-        PDS_LOG_AUTH_DEBUG(@"[OAuth2Middleware] DPoP proof verification failed: %@",
+        GZ_LOG_AUTH_DEBUG(@"[OAuth2Middleware] DPoP proof verification failed: %@",
                            dpopError.localizedDescription ?: @"unknown");
         if (error) {
             *error = [NSError errorWithDomain:AppViewOAuth2MiddlewareErrorDomain
@@ -184,7 +184,7 @@ NSErrorDomain const AppViewOAuth2MiddlewareErrorDomain = @"AppViewOAuth2Middlewa
     // Enforce DPoP binding: cnf.jkt from access token must match proof thumbprint
     if (tokenJkt.length > 0) {
         if (![CryptoUtils constantTimeCompare:tokenJkt to:dpopThumbprint]) {
-            PDS_LOG_AUTH_DEBUG(@"[OAuth2Middleware] DPoP thumbprint mismatch");
+            GZ_LOG_AUTH_DEBUG(@"[OAuth2Middleware] DPoP thumbprint mismatch");
             if (error) {
                 *error = [NSError errorWithDomain:AppViewOAuth2MiddlewareErrorDomain
                                              code:AppViewOAuth2ErrorDPoPKeyMismatch
@@ -197,7 +197,7 @@ NSErrorDomain const AppViewOAuth2MiddlewareErrorDomain = @"AppViewOAuth2Middlewa
     } else {
         // No cnf.jkt on token but DPoP proof provided — accept
         // (token was not DPoP-bound at issuance, but client sent proof anyway)
-        PDS_LOG_AUTH_DEBUG(@"[OAuth2Middleware] DPoP proof accepted for non-DPoP-bound token");
+        GZ_LOG_AUTH_DEBUG(@"[OAuth2Middleware] DPoP proof accepted for non-DPoP-bound token");
     }
 
     return YES;

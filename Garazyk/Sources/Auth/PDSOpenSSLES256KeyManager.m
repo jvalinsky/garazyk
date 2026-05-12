@@ -14,7 +14,7 @@
 
 #if !defined(__APPLE__) || defined(GNUSTEP)
 
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 #import <openssl/ec.h>
 #import <openssl/ecdsa.h>

@@ -5,7 +5,7 @@
 #import "Germ/Server/Config/GermMailboxSchemaManager.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Pool/DatabasePool.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 #pragma mark - Germ Mailbox Service Tests
 // Tests for the Germ E2EE mailbox transport service. Verifies
@@ -36,7 +36,7 @@
 
     // Apply schema
     NSString *schemaSQL = [[GermMailboxSchemaManager sharedManager] mailboxSchemaSQL];
-    [self.db executeRawSQL:schemaSQL error:nil];
+    [self.db executeUnsafeRawSQL:schemaSQL error:nil];
 
     self.service = [[GermMailboxService alloc] initWithDatabase:(id<PDSQueryDatabase>)self.db];
 }

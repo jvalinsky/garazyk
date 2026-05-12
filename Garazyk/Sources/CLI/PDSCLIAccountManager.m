@@ -3,7 +3,7 @@
 #import "CLI/PDSCLIAccountManager.h"
 #import <CommonCrypto/CommonKeyDerivation.h>
 #import "PDSCLIDefinitions.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "PDSCLIInputHelper.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Schema.h"
@@ -11,7 +11,7 @@
 #import "Identity/ATProtoHandleValidator.h"
 #import "Auth/Secp256k1.h"
 #import "Auth/CryptoUtils.h"
-#import "Network/PDSSafeHTTPClient.h"
+#import "Network/ATProtoSafeHTTPClient.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/CID.h"
 #import "PLC/PLCOperation.h"
@@ -85,7 +85,7 @@
     NSString *dbPath = [self databasePathForContext:context];
     if (![[NSFileManager defaultManager] fileExistsAtPath:dbPath]) {
         if (context.verbose) {
-            PDS_LOG_WARN(@"Database not found at %@", dbPath);
+            GZ_LOG_WARN(@"Database not found at %@", dbPath);
         }
         return @[];
     }
@@ -94,7 +94,7 @@
     PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
     if (![db openWithError:&error]) {
         if (context.verbose) {
-            PDS_LOG_ERROR(@"Failed to open database: %@", error.localizedDescription);
+            GZ_LOG_ERROR(@"Failed to open database: %@", error.localizedDescription);
         }
         return @[];
     }
@@ -104,7 +104,7 @@
 
     if (error) {
         if (context.verbose) {
-            PDS_LOG_ERROR(@"Failed to query accounts: %@", error.localizedDescription);
+            GZ_LOG_ERROR(@"Failed to query accounts: %@", error.localizedDescription);
         }
         return @[];
     }
@@ -163,7 +163,7 @@
         NSError *configError = nil;
         PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
         if (![config loadFromPath:context.configPath error:&configError]) {
-            PDS_LOG_WARN(@"Failed to load config from %@: %@", context.configPath, configError.localizedDescription);
+            GZ_LOG_WARN(@"Failed to load config from %@: %@", context.configPath, configError.localizedDescription);
         }
     }
 
@@ -173,13 +173,13 @@
     PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
     if (![db openWithError:&error]) {
         if (context.verbose) {
-            PDS_LOG_ERROR(@"Failed to open database: %@", error.localizedDescription);
+            GZ_LOG_ERROR(@"Failed to open database: %@", error.localizedDescription);
         }
         return NO;
     }
 
     if (context.verbose) {
-        PDS_LOG_INFO(@"Creating account: email=%@, handle=%@", email, handle);
+        GZ_LOG_INFO(@"Creating account: email=%@, handle=%@", email, handle);
         
         // Diagnostic: calculate DID for sokol (unsigned — for reference only)
         NSDictionary *sokolData = @{
@@ -201,14 +201,14 @@
             @"prev": [NSNull null]
         };
         NSString *sokolDid = [PLCOperation calculateDIDForData:sokolData];
-        PDS_LOG_INFO(@"Diagnostic: Calculated DID for sokol (unsigned, non-spec): %@", sokolDid);
-        PDS_LOG_INFO(@"Diagnostic: Note: spec-compliant DID requires signed operation");
+        GZ_LOG_INFO(@"Diagnostic: Calculated DID for sokol (unsigned, non-spec): %@", sokolDid);
+        GZ_LOG_INFO(@"Diagnostic: Note: spec-compliant DID requires signed operation");
     }
 
     PDSDatabaseAccount *existing = [db getAccountByHandle:handle error:&error];
     if (existing) {
         if (context.verbose) {
-            PDS_LOG_WARN(@"Account with handle %@ already exists", handle);
+            GZ_LOG_WARN(@"Account with handle %@ already exists", handle);
         }
         [db close];
         return NO;
@@ -219,7 +219,7 @@
 
     if ([PDSConfiguration sharedConfiguration].masterSecret.length == 0) {
         if (context.verbose) {
-            PDS_LOG_ERROR(@"PDS_MASTER_SECRET not configured");
+            GZ_LOG_ERROR(@"PDS_MASTER_SECRET not configured");
         }
         [db close];
         return NO;
@@ -232,7 +232,7 @@
 
     if (!keyPair) {
         if (context.verbose) {
-            PDS_LOG_ERROR(@"Failed to generate keypair: %@", keyError.localizedDescription);
+            GZ_LOG_ERROR(@"Failed to generate keypair: %@", keyError.localizedDescription);
         }
         [db close];
         return NO;
@@ -241,7 +241,7 @@
     Secp256k1KeyPair *rotationKeyPair = [signer generateKeyPairWithError:&keyError];
     if (!rotationKeyPair) {
         if (context.verbose) {
-            PDS_LOG_ERROR(@"Failed to generate rotation keypair: %@", keyError.localizedDescription);
+            GZ_LOG_ERROR(@"Failed to generate rotation keypair: %@", keyError.localizedDescription);
         }
         [db close];
         return NO;
@@ -251,7 +251,7 @@
     NSString *did = [self registerDidWithHandle:handle email:email pdsHost:pdsHostname pdsEndpoint:pdsEndpoint keyPair:keyPair rotationKeyPair:rotationKeyPair error:&error];
     if (!did) {
         if (context.verbose) {
-            PDS_LOG_ERROR(@"Failed to register DID with PLC: %@", error.localizedDescription);
+            GZ_LOG_ERROR(@"Failed to register DID with PLC: %@", error.localizedDescription);
         }
         [db close];
         return NO;
@@ -263,7 +263,7 @@
     PDSActorStore *store = [pool storeForDid:did error:&storeError];
     if (!store) {
         if (context.verbose) {
-            PDS_LOG_ERROR(@"Failed to open ActorStore to save keys: %@", storeError.localizedDescription);
+            GZ_LOG_ERROR(@"Failed to open ActorStore to save keys: %@", storeError.localizedDescription);
         }
         [db close];
         return NO;
@@ -271,7 +271,7 @@
 
     if (![store importSigningKey:keyPair.privateKey error:&storeError]) {
         if (context.verbose) {
-            PDS_LOG_ERROR(@"Failed to import signing key: %@", storeError.localizedDescription);
+            GZ_LOG_ERROR(@"Failed to import signing key: %@", storeError.localizedDescription);
         }
         [db close];
         return NO;
@@ -281,14 +281,14 @@
                               publicKey:rotationKeyPair.compressedPublicKey
                                   error:&storeError]) {
         if (context.verbose) {
-            PDS_LOG_ERROR(@"Failed to store rotation key: %@", storeError.localizedDescription);
+            GZ_LOG_ERROR(@"Failed to store rotation key: %@", storeError.localizedDescription);
         }
         [db close];
         return NO;
     }
 
     if (context.verbose) {
-        PDS_LOG_INFO(@"Generated and Registered DID: %@", did);
+        GZ_LOG_INFO(@"Generated and Registered DID: %@", did);
     }
 
     // Generate salt and hash password
@@ -307,7 +307,7 @@
     BOOL success = [db createAccount:account error:&error];
     if (!success) {
         if (context.verbose) {
-            PDS_LOG_ERROR(@"Failed to create account: %@", error.localizedDescription);
+            GZ_LOG_ERROR(@"Failed to create account: %@", error.localizedDescription);
         }
     }
 
@@ -423,7 +423,7 @@
     
     // 5. Generate DID from the signed operation (per did-method-plc spec v0.3.0).
     NSString *did = [PLCOperation calculateDIDForSignedOperation:signedOp];
-    PDS_LOG_INFO(@"Calculated DID from signed genesis op: %@", did);
+    GZ_LOG_INFO(@"Calculated DID from signed genesis op: %@", did);
     
     // 6. POST genesis operation to PLC Server
     PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
@@ -438,10 +438,10 @@
         plcUrl = @"http://127.0.0.1:2582";
     }
     NSString *urlStr = [NSString stringWithFormat:@"%@/%@", plcUrl, did];
-    PDS_LOG_INFO(@"Posting genesis op to: %@", urlStr);
+    GZ_LOG_INFO(@"Posting genesis op to: %@", urlStr);
     
     // Post to PLC server
-    PDSSafeHTTPClientOptions *httpOptions = [PDSSafeHTTPClientOptions defaultOptions];
+    ATProtoSafeHTTPClientOptions *httpOptions = [ATProtoSafeHTTPClientOptions defaultOptions];
 #if defined(GNUSTEP)
     httpOptions.timeout = 2.0;
 #endif
@@ -455,7 +455,7 @@
     __block NSError *reqError = nil;
     __block BOOL success = NO;
     
-    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:req options:httpOptions completion:^(NSData *data, NSURLResponse *resp, NSError *err) {
+    [[ATProtoSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:req options:httpOptions completion:^(NSData *data, NSURLResponse *resp, NSError *err) {
         if (err) {
             reqError = err;
         } else {
@@ -474,7 +474,7 @@
     
 #if defined(GNUSTEP)
     if (!success) {
-        PDS_LOG_INFO(@"NSURLSession POST to PLC failed, trying curl fallback: %@", urlStr);
+        GZ_LOG_INFO(@"NSURLSession POST to PLC failed, trying curl fallback: %@", urlStr);
         NSData *jsonPayload = [NSJSONSerialization dataWithJSONObject:signedOp options:0 error:nil];
         NSString *payloadStr = [[NSString alloc] initWithData:jsonPayload encoding:NSUTF8StringEncoding];
 
@@ -511,12 +511,12 @@
                         NSString *body = [responseStr substringToIndex:responseStr.length - httpCodeStr.length - 1];
                         if (body.length == 0) body = responseStr;
                         reqError = [NSError errorWithDomain:@"PDSCLI" code:httpCode userInfo:@{NSLocalizedDescriptionKey: body ?: @"Unknown error"}];
-                        PDS_LOG_WARN(@"curl POST to PLC returned HTTP %ld: %@", (long)httpCode, body);
+                        GZ_LOG_WARN(@"curl POST to PLC returned HTTP %ld: %@", (long)httpCode, body);
                     }
                 }
             }
         } @catch (NSException *exception) {
-            PDS_LOG_WARN(@"curl fallback exception: %@", exception.reason);
+            GZ_LOG_WARN(@"curl fallback exception: %@", exception.reason);
         }
 
         if (!success) {
@@ -543,14 +543,14 @@
 
 + (BOOL)deactivateAccountWithContext:(PDSCLICommandContext *)context did:(NSString *)did {
     if (context.verbose) {
-        PDS_LOG_INFO(@"Deactivating account: %@", did);
+        GZ_LOG_INFO(@"Deactivating account: %@", did);
     }
     return YES;
 }
 
 + (BOOL)reactivateAccountWithContext:(PDSCLICommandContext *)context did:(NSString *)did {
     if (context.verbose) {
-        PDS_LOG_INFO(@"Reactivating account: %@", did);
+        GZ_LOG_INFO(@"Reactivating account: %@", did);
     }
     return YES;
 }
@@ -567,9 +567,9 @@
     BOOL success = [db deleteAccount:did error:&error];
     if (context.verbose) {
         if (success) {
-            PDS_LOG_INFO(@"Deleted account: %@", did);
+            GZ_LOG_INFO(@"Deleted account: %@", did);
         } else {
-            PDS_LOG_ERROR(@"Failed to delete account: %@", error.localizedDescription);
+            GZ_LOG_ERROR(@"Failed to delete account: %@", error.localizedDescription);
         }
     }
 
@@ -631,20 +631,20 @@
                                   did:(NSString *)did
                           newEndpoint:(NSString *)newEndpoint {
     if (context.verbose) {
-        PDS_LOG_INFO(@"Updating PLC endpoint for %@ to %@", did, newEndpoint);
+        GZ_LOG_INFO(@"Updating PLC endpoint for %@ to %@", did, newEndpoint);
     }
     
     NSString *dbPath = [self databasePathForContext:context];
     NSError *error = nil;
     PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
     if (![db openWithError:&error]) {
-        if (context.verbose) PDS_LOG_ERROR(@"Failed to open DB: %@", error.localizedDescription);
+        if (context.verbose) GZ_LOG_ERROR(@"Failed to open DB: %@", error.localizedDescription);
         return NO;
     }
 
     PDSDatabaseAccount *account = [db getAccountByDid:did error:&error];
     if (!account) {
-        if (context.verbose) PDS_LOG_ERROR(@"Account not found");
+        if (context.verbose) GZ_LOG_ERROR(@"Account not found");
         [db close];
         return NO;
     }
@@ -661,7 +661,7 @@
     NSArray *auditLog = [resolver resolveAuditLogForDID:did error:&error];
     
     if (!auditLog || auditLog.count == 0) {
-        if (context.verbose) PDS_LOG_ERROR(@"Failed to fetch PLC log for DID: %@", error.localizedDescription);
+        if (context.verbose) GZ_LOG_ERROR(@"Failed to fetch PLC log for DID: %@", error.localizedDescription);
         return NO;
     }
     
@@ -669,7 +669,7 @@
     NSString *lastOpHash = [PLCOperation calculateCIDForOperation:lastOpPayload error:nil];
     
     if (!lastOpHash) {
-         if (context.verbose) PDS_LOG_ERROR(@"Could not calculate cid of previous operation");
+         if (context.verbose) GZ_LOG_ERROR(@"Could not calculate cid of previous operation");
          return NO;
     }
     
@@ -690,13 +690,13 @@
     PDSDatabasePool *pool = [[PDSDatabasePool alloc] initWithDbDirectory:[self dataDirForContext:context] maxSize:10];
     PDSActorStore *store = [pool storeForDid:did error:&error];
     if (!store) {
-        if (context.verbose) PDS_LOG_ERROR(@"Could not open actor store: %@", error.localizedDescription);
+        if (context.verbose) GZ_LOG_ERROR(@"Could not open actor store: %@", error.localizedDescription);
         return NO;
     }
     
     NSData *privKeyData = [store exportSigningKeyWithError:&error];
     if (!privKeyData) {
-        if (context.verbose) PDS_LOG_ERROR(@"No rotation key available: %@", error.localizedDescription);
+        if (context.verbose) GZ_LOG_ERROR(@"No rotation key available: %@", error.localizedDescription);
         return NO;
     }
     
@@ -705,7 +705,7 @@
     NSData *signature = [[Secp256k1 shared] signHash:sha256 withPrivateKey:privKeyData error:&error];
     
     if (!signature) {
-        if (context.verbose) PDS_LOG_ERROR(@"Failed to sign new PLC op: %@", error.localizedDescription);
+        if (context.verbose) GZ_LOG_ERROR(@"Failed to sign new PLC op: %@", error.localizedDescription);
         return NO;
     }
     
@@ -720,12 +720,12 @@
     
     dispatch_semaphore_t sema = dispatch_semaphore_create(0);
     __block BOOL success = NO;
-    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:req options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *resp, NSError *err) {
+    [[ATProtoSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:req options:[ATProtoSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *resp, NSError *err) {
         if (!err && [(NSHTTPURLResponse *)resp statusCode] == 200) {
             success = YES;
         } else {
             NSString *body = data ? [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] : @"";
-            if (context.verbose) PDS_LOG_ERROR(@"PLC Post Failed: %ld %@", (long)[(NSHTTPURLResponse *)resp statusCode], body);
+            if (context.verbose) GZ_LOG_ERROR(@"PLC Post Failed: %ld %@", (long)[(NSHTTPURLResponse *)resp statusCode], body);
         }
         dispatch_semaphore_signal(sema);
     }];

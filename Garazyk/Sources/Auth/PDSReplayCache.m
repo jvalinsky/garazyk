@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Auth/PDSReplayCache.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import <sqlite3.h>
 
 @implementation PDSReplayCache {
@@ -29,7 +29,7 @@
         const char *dbPath = path ? path.UTF8String : ":memory:";
         int rc = sqlite3_open(dbPath, &_db);
         if (rc != SQLITE_OK) {
-            PDS_LOG_AUTH_ERROR(@"Failed to open replay cache database: %s", sqlite3_errmsg(_db));
+            GZ_LOG_AUTH_ERROR(@"Failed to open replay cache database: %s", sqlite3_errmsg(_db));
             return nil;
         }
         _databaseQueue = dispatch_queue_create("com.garazyk.auth.replay-cache.database", DISPATCH_QUEUE_SERIAL);
@@ -44,7 +44,7 @@
 
         char *errMsg = NULL;
         if (sqlite3_exec(_db, createSQL, NULL, NULL, &errMsg) != SQLITE_OK) {
-            PDS_LOG_AUTH_ERROR(@"Failed to create jti_cache table: %s", errMsg);
+            GZ_LOG_AUTH_ERROR(@"Failed to create jti_cache table: %s", errMsg);
             sqlite3_free(errMsg);
             sqlite3_close(_db);
             return nil;
@@ -86,7 +86,7 @@
         // Use BEGIN IMMEDIATE to keep check-and-insert atomic. Access to the
         // single SQLite connection is serialized to avoid nested transactions.
         if (sqlite3_exec(_db, "BEGIN IMMEDIATE TRANSACTION;", NULL, NULL, NULL) != SQLITE_OK) {
-            PDS_LOG_AUTH_ERROR(@"Replay cache: failed to begin transaction: %s", sqlite3_errmsg(_db));
+            GZ_LOG_AUTH_ERROR(@"Replay cache: failed to begin transaction: %s", sqlite3_errmsg(_db));
             return;
         }
 
@@ -126,7 +126,7 @@
         sqlite3_finalize(insertStmt);
 
         if (sqlite3_exec(_db, "COMMIT;", NULL, NULL, NULL) != SQLITE_OK) {
-            PDS_LOG_AUTH_ERROR(@"Replay cache: failed to commit transaction: %s", sqlite3_errmsg(_db));
+            GZ_LOG_AUTH_ERROR(@"Replay cache: failed to commit transaction: %s", sqlite3_errmsg(_db));
             return;
         }
 
