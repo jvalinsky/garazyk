@@ -19,7 +19,7 @@
 #import "Chat/Server/Config/ChatSchemaManager.h"
 #import "Database/PDSDatabase.h"
 #import "Core/DID.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @implementation XrpcChatBskyConvoPack
 
@@ -54,7 +54,7 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
     // Ensure chat schema tables exist
     PDSDatabase *db = (PDSDatabase *)appViewDatabase;
     ChatSchemaManager *schemaManager = [ChatSchemaManager sharedManager];
-    [db executeRawSQL:[schemaManager chatSchemaSQL] error:nil];
+    [db executeParameterizedUpdate:[schemaManager chatSchemaSQL] params:@[] error:nil];
 
     ChatService *chatService = [[ChatService alloc] initWithDatabase:appViewDatabase];
 
@@ -754,7 +754,7 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
         [response setJsonBody:@{@"logs": logs ?: @[]}];
     }];
 
-    PDS_LOG_INFO(@"Registered chat.bsky.convo.* endpoints");
+    GZ_LOG_INFO(@"Registered chat.bsky.convo.* endpoints");
 }
 
 #pragma mark - Lexicon Shape Helpers

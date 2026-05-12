@@ -7,7 +7,7 @@
 #import "Video/VideoHLSGenerator.h"
 #import "Blob/PDSBlobProvider.h"
 #import "Core/CID.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 #if TARGET_OS_MAC
 #import <AVFoundation/AVFoundation.h>
@@ -62,7 +62,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
     }
 
     self.enabled = YES;
-    PDS_LOG_INFO(@"Video worker starting");
+    GZ_LOG_INFO(@"Video worker starting");
 
     [self startPollTimer];
 }
@@ -81,7 +81,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
 
     [[ATProtoVideoTranscoder sharedTranscoder] cancelAllExports];
 
-    PDS_LOG_INFO(@"Video worker stopped");
+    GZ_LOG_INFO(@"Video worker stopped");
 }
 
 - (void)startPollTimer {
@@ -156,7 +156,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
 - (void)processJob:(NSString *)jobId {
     dispatch_async(_workerQueue, ^{
         @autoreleasepool {
-            PDS_LOG_INFO(@"Processing video job: %@", jobId);
+            GZ_LOG_INFO(@"Processing video job: %@", jobId);
 
             [self updateJobProgress:jobId progress:10 message:@"Loading video"];
 
@@ -164,7 +164,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
             NSDictionary *job = [self.jobStore getVideoJobById:jobId error:&dbError];
 
             if (!job) {
-                PDS_LOG_ERROR(@"Job not found: %@", jobId);
+                GZ_LOG_ERROR(@"Job not found: %@", jobId);
                 [self failJob:jobId error:dbError ?: [NSError errorWithDomain:ATProtoVideoWorkerErrorDomain
                                                                        code:ATProtoVideoWorkerErrorDatabaseUnavailable
                                                                    userInfo:@{NSLocalizedDescriptionKey: @"Job not found"}]];
@@ -190,7 +190,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
 
             NSData *videoData = [self.blobProvider retrieveBlobDataForCID:cid error:&blobError];
             if (!videoData) {
-                PDS_LOG_ERROR(@"Failed to retrieve blob %@: %@", blobCid, blobError);
+                GZ_LOG_ERROR(@"Failed to retrieve blob %@: %@", blobCid, blobError);
                 [self failJob:jobId error:blobError ?: [NSError errorWithDomain:ATProtoVideoWorkerErrorDomain
                                                                            code:ATProtoVideoWorkerErrorBlobProviderUnavailable
                                                                        userInfo:@{NSLocalizedDescriptionKey: @"Failed to retrieve video blob"}]];
@@ -208,7 +208,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
 
             BOOL written = [videoData writeToURL:inputURL options:NSDataWritingAtomic error:&blobError];
             if (!written) {
-                PDS_LOG_ERROR(@"Failed to write temp file: %@", blobError);
+                GZ_LOG_ERROR(@"Failed to write temp file: %@", blobError);
                 [self failJob:jobId error:blobError];
                 return;
             }
@@ -239,7 +239,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
 
                     // Validate duration limits (1s–180s)
                     if (durationSeconds < 1.0) {
-                        PDS_LOG_ERROR(@"Video too short (%.1fs) for job %@", durationSeconds, jobId);
+                        GZ_LOG_ERROR(@"Video too short (%.1fs) for job %@", durationSeconds, jobId);
                         [[NSFileManager defaultManager] removeItemAtURL:inputURL error:nil];
                         [self failJob:jobId error:[NSError errorWithDomain:ATProtoVideoWorkerErrorDomain
                                                                     code:ATProtoVideoWorkerErrorProcessingFailed
@@ -247,7 +247,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
                         return;
                     }
                     if (durationSeconds > 180.0) {
-                        PDS_LOG_ERROR(@"Video too long (%.1fs) for job %@", durationSeconds, jobId);
+                        GZ_LOG_ERROR(@"Video too long (%.1fs) for job %@", durationSeconds, jobId);
                         [[NSFileManager defaultManager] removeItemAtURL:inputURL error:nil];
                         [self failJob:jobId error:[NSError errorWithDomain:ATProtoVideoWorkerErrorDomain
                                                                     code:ATProtoVideoWorkerErrorProcessingFailed
@@ -276,7 +276,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
 
                 // Validate duration limits (1s–180s)
                 if (durationSeconds < 1.0) {
-                    PDS_LOG_ERROR(@"Video too short (%.1fs) for job %@", durationSeconds, jobId);
+                    GZ_LOG_ERROR(@"Video too short (%.1fs) for job %@", durationSeconds, jobId);
                     [[NSFileManager defaultManager] removeItemAtURL:inputURL error:nil];
                     [self failJob:jobId error:[NSError errorWithDomain:ATProtoVideoWorkerErrorDomain
                                                                 code:ATProtoVideoWorkerErrorProcessingFailed
@@ -284,7 +284,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
                     return;
                 }
                 if (durationSeconds > 180.0) {
-                    PDS_LOG_ERROR(@"Video too long (%.1fs) for job %@", durationSeconds, jobId);
+                    GZ_LOG_ERROR(@"Video too long (%.1fs) for job %@", durationSeconds, jobId);
                     [[NSFileManager defaultManager] removeItemAtURL:inputURL error:nil];
                     [self failJob:jobId error:[NSError errorWithDomain:ATProtoVideoWorkerErrorDomain
                                                                 code:ATProtoVideoWorkerErrorProcessingFailed
@@ -306,7 +306,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
                                                             completion:^(NSURL *transcodedURL, NSError *transcodeError) {
 
                 if (!transcodedURL) {
-                    PDS_LOG_ERROR(@"Transcoding failed for job %@: %@", jobId, transcodeError);
+                    GZ_LOG_ERROR(@"Transcoding failed for job %@: %@", jobId, transcodeError);
                     [[NSFileManager defaultManager] removeItemAtURL:inputURL error:nil];
                     [self handleJobFailure:jobId error:transcodeError];
                     return;
@@ -326,7 +326,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
                                                                                                 forJob:jobId
                                                                                                 error:nil];
                     } else {
-                        PDS_LOG_WARN(@"Thumbnail generation failed for job %@: %@", jobId, thumbError);
+                        GZ_LOG_WARN(@"Thumbnail generation failed for job %@: %@", jobId, thumbError);
                     }
 
                     // Generate HLS from transcoded video (if HLS generator is configured)
@@ -343,9 +343,9 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
                                                                                        thumbnailData:thumbnailData
                                                                                                error:&hlsError];
                             if (hlsResult) {
-                                PDS_LOG_INFO(@"HLS generation complete for job %@: %@ variants", jobId, @(hlsResult.variants.count));
+                                GZ_LOG_INFO(@"HLS generation complete for job %@: %@ variants", jobId, @(hlsResult.variants.count));
                             } else {
-                                PDS_LOG_WARN(@"HLS generation failed for job %@: %@", jobId, hlsError);
+                                GZ_LOG_WARN(@"HLS generation failed for job %@: %@", jobId, hlsError);
                                 // Non-fatal: HLS is optional, continue with PDS upload
                             }
                         }
@@ -362,7 +362,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
                     if (videoData) {
                         // Check 100MB input limit (matches lexicon app.bsky.embed.video#main maxSize)
                         if (videoData.length > 100 * 1024 * 1024) {
-                            PDS_LOG_ERROR(@"Original video exceeds 100MB limit for job %@", jobId);
+                            GZ_LOG_ERROR(@"Original video exceeds 100MB limit for job %@", jobId);
                             [[NSFileManager defaultManager] removeItemAtURL:inputURL error:nil];
                             [[NSFileManager defaultManager] removeItemAtURL:transcodedURL error:nil];
                             [self failJob:jobId error:[NSError errorWithDomain:ATProtoVideoWorkerErrorDomain
@@ -412,7 +412,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
                             [[NSFileManager defaultManager] removeItemAtURL:transcodedURL error:nil];
                             [self completeJob:jobId];
                         } else {
-                            PDS_LOG_ERROR(@"Failed to update job results: %@", storeError);
+                            GZ_LOG_ERROR(@"Failed to update job results: %@", storeError);
                             [self handleJobFailure:jobId error:storeError];
                         }
                     } else {
@@ -434,13 +434,13 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
     NSInteger retryCount = [job[@"retry_count"] integerValue];
 
     if (retryCount < 3) {
-        PDS_LOG_WARN(@"Job %@ failed, retrying (%ld/3): %@", jobId, (long)retryCount + 1, error);
+        GZ_LOG_WARN(@"Job %@ failed, retrying (%ld/3): %@", jobId, (long)retryCount + 1, error);
         [self.jobStore incrementVideoJobRetry:jobId error:nil];
         dispatch_sync(_stateQueue, ^{
             [self.processingJobIds removeObject:jobId];
         });
     } else {
-        PDS_LOG_ERROR(@"Job %@ failed permanently after %ld retries: %@", jobId, (long)retryCount, error);
+        GZ_LOG_ERROR(@"Job %@ failed permanently after %ld retries: %@", jobId, (long)retryCount, error);
         [self failJob:jobId error:error];
     }
 }
@@ -473,7 +473,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
         [self.processingJobIds removeObject:jobId];
     });
 
-    PDS_LOG_INFO(@"Video job completed: %@", jobId);
+    GZ_LOG_INFO(@"Video job completed: %@", jobId);
 }
 
 - (void)failJob:(NSString *)jobId error:(NSError *)error {
@@ -488,7 +488,7 @@ NSString * const ATProtoVideoWorkerErrorDomain = @"com.atproto.video.worker";
         [self.processingJobIds removeObject:jobId];
     });
 
-    PDS_LOG_ERROR(@"Video job failed: %@ - %@", jobId, error);
+    GZ_LOG_ERROR(@"Video job failed: %@ - %@", jobId, error);
 }
 
 @end

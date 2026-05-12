@@ -31,7 +31,7 @@
 #import "Identity/ATProtoHandleValidator.h"
 #import "Core/DID.h"
 #import "Core/PDSAccountEvents.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import <CommonCrypto/CommonKeyDerivation.h>
 
@@ -529,7 +529,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
         if (createdDid && repositoryService) {
             NSError *initError = nil;
             if (![repositoryService initializeRepoForDid:createdDid error:&initError]) {
-                PDS_LOG_ERROR(@"Failed to initialize repo for DID %@: %@", createdDid, initError);
+                GZ_LOG_ERROR(@"Failed to initialize repo for DID %@: %@", createdDid, initError);
             }
         }
 

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "PDSCLIDefinitions.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "PDSCLIInputHelper.h"
 #import "Database/PDSDatabase.h"
 #import "App/PDSConfiguration.h"
@@ -132,7 +132,7 @@
     } else {
         if (accounts.count == 0) {
             NSString *hostname = [PDSCLIAccountManager pdsHostnameForContext:context];
-            PDS_LOG_INFO(@"No accounts found in database");
+            GZ_LOG_INFO(@"No accounts found in database");
             [context printInfo:@"No accounts found."];
             [context printInfo:@"\nTo create your first account, run:"];
             [context printInfo:[NSString stringWithFormat:@"  kaszlak account create --email you@example.com --handle yourhandle.%@", hostname]];
@@ -175,7 +175,7 @@
     PDSDatabaseAccount *account = [PDSCLIAccountManager getAccountWithContext:context identifier:identifier];
 
     if (!account) {
-        PDS_LOG_WARN(@"Account not found: %@", identifier);
+        GZ_LOG_WARN(@"Account not found: %@", identifier);
         [context printError:[NSString stringWithFormat:@"Account not found: %@", identifier]];
         [context printInfo:@"\nTo find accounts, run:"];
         [context printInfo:@"  kaszlak account list"];
@@ -226,7 +226,7 @@
             }
         } else if ([arg isEqualToString:@"--verbose"] || [arg isEqualToString:@"-v"]) {
             context.verbose = YES;
-            [[PDSLogger sharedLogger] setLogLevel:PDSLogLevelDebug];
+            [[GZLogger sharedLogger] setLogLevel:GZLogLevelDebug];
         }
     }
     
@@ -290,7 +290,7 @@
                                                        password:password];
 
     if (success) {
-        PDS_LOG_INFO(@"Account created successfully: %@", normalizedHandle);
+        GZ_LOG_INFO(@"Account created successfully: %@", normalizedHandle);
         [context printInfo:@"Account created successfully"];
         [context printInfo:[NSString stringWithFormat:@"Handle: %@", normalizedHandle]];
         [context printInfo:[NSString stringWithFormat:@"Email: %@", email]];
@@ -298,11 +298,11 @@
     } else {
         NSString *dbPath = [PDSCLIAccountManager databasePathForContext:context];
         if (![[NSFileManager defaultManager] fileExistsAtPath:dbPath]) {
-            PDS_LOG_ERROR(@"Database not found at %@", dbPath);
+            GZ_LOG_ERROR(@"Database not found at %@", dbPath);
             [context printError:@"Database not found. Make sure the PDS data directory exists."];
             [context printInfo:[NSString stringWithFormat:@"Expected database at: %@", dbPath]];
         } else {
-            PDS_LOG_ERROR(@"Failed to create account for handle: %@", normalizedHandle);
+            GZ_LOG_ERROR(@"Failed to create account for handle: %@", normalizedHandle);
             [context printError:@"Failed to create account"];
             [context printInfo:@"Possible causes:"];
             [context printInfo:@"  - Handle already in use"];
@@ -391,12 +391,12 @@
     BOOL success = [PDSCLIAccountManager updateEmailWithContext:context did:did email:email];
 
     if (success) {
-        PDS_LOG_INFO(@"Email updated for account %@: %@", did, email);
+        GZ_LOG_INFO(@"Email updated for account %@: %@", did, email);
         [context printInfo:@"Email updated successfully"];
         [context printInfo:[NSString stringWithFormat:@"New email: %@", email]];
         return 0;
     } else {
-        PDS_LOG_ERROR(@"Failed to update email for account %@", did);
+        GZ_LOG_ERROR(@"Failed to update email for account %@", did);
         [context printError:@"Failed to update email"];
         [context printInfo:@"Possible causes:"];
         [context printInfo:@"  - Account not found"];
@@ -453,12 +453,12 @@
     BOOL success = [PDSCLIAccountManager updateHandleWithContext:context did:did handle:normalizedHandle];
 
     if (success) {
-        PDS_LOG_INFO(@"Handle updated for account %@: %@", did, normalizedHandle);
+        GZ_LOG_INFO(@"Handle updated for account %@: %@", did, normalizedHandle);
         [context printInfo:@"Handle updated successfully"];
         [context printInfo:[NSString stringWithFormat:@"New handle: %@", normalizedHandle]];
         return 0;
     } else {
-        PDS_LOG_ERROR(@"Failed to update handle for account %@", did);
+        GZ_LOG_ERROR(@"Failed to update handle for account %@", did);
         [context printError:@"Failed to update handle"];
         [context printInfo:@"Possible causes:"];
         [context printInfo:@"  - Account not found"];

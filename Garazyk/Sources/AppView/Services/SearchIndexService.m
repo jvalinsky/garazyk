@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "SearchIndexService.h"
 #import "Database/PDSQueryDatabase.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 NSString *const SearchIndexServiceErrorDomain = @"SearchIndexService";
 
@@ -267,7 +267,7 @@ NSString *const SearchIndexServiceErrorDomain = @"SearchIndexService";
 #pragma mark - Index Management
 
 - (BOOL)rebuildIndexWithError:(NSError **)error {
-    PDS_LOG_CORE_INFO(@"SearchIndexService: rebuilding search index from records...");
+    GZ_LOG_CORE_INFO(@"SearchIndexService: rebuilding search index from records...");
 
     // Clear content tables
     [self.database executeParameterizedUpdate:@"DELETE FROM search_actors" params:@[] error:nil];
@@ -282,7 +282,7 @@ NSString *const SearchIndexServiceErrorDomain = @"SearchIndexService";
                           @"WHERE r.collection = 'app.bsky.actor.profile'";
     BOOL ok = [self.database executeParameterizedUpdate:actorsSQL params:@[] error:error];
     if (!ok) {
-        PDS_LOG_CORE_ERROR(@"SearchIndexService: failed to populate search_actors: %@", error ? *error : @"unknown");
+        GZ_LOG_CORE_ERROR(@"SearchIndexService: failed to populate search_actors: %@", error ? *error : @"unknown");
         return NO;
     }
 
@@ -293,7 +293,7 @@ NSString *const SearchIndexServiceErrorDomain = @"SearchIndexService";
                          @"WHERE r.collection = 'app.bsky.feed.post'";
     ok = [self.database executeParameterizedUpdate:postsSQL params:@[] error:error];
     if (!ok) {
-        PDS_LOG_CORE_ERROR(@"SearchIndexService: failed to populate search_posts: %@", error ? *error : @"unknown");
+        GZ_LOG_CORE_ERROR(@"SearchIndexService: failed to populate search_posts: %@", error ? *error : @"unknown");
         return NO;
     }
 
@@ -304,26 +304,26 @@ NSString *const SearchIndexServiceErrorDomain = @"SearchIndexService";
                          @"WHERE r.collection = 'app.bsky.graph.starterpack'";
     ok = [self.database executeParameterizedUpdate:packsSQL params:@[] error:error];
     if (!ok) {
-        PDS_LOG_CORE_ERROR(@"SearchIndexService: failed to populate search_starter_packs: %@", error ? *error : @"unknown");
+        GZ_LOG_CORE_ERROR(@"SearchIndexService: failed to populate search_starter_packs: %@", error ? *error : @"unknown");
         return NO;
     }
 
     // Rebuild FTS indexes from content tables
     NSError *rebuildError = nil;
-    BOOL rebuildOk = [self.database executeRawSQL:@"INSERT INTO fts_actors(fts_actors) VALUES('rebuild')" error:&rebuildError];
+    BOOL rebuildOk = [self.database executeParameterizedUpdate:@"INSERT INTO fts_actors(fts_actors) VALUES('rebuild')" params:@[] error:&rebuildError];
     if (!rebuildOk) {
-        PDS_LOG_CORE_ERROR(@"SearchIndexService: failed to rebuild fts_actors: %@", rebuildError);
+        GZ_LOG_CORE_ERROR(@"SearchIndexService: failed to rebuild fts_actors: %@", rebuildError);
     }
-    rebuildOk = [self.database executeRawSQL:@"INSERT INTO fts_posts(fts_posts) VALUES('rebuild')" error:&rebuildError];
+    rebuildOk = [self.database executeParameterizedUpdate:@"INSERT INTO fts_posts(fts_posts) VALUES('rebuild')" params:@[] error:&rebuildError];
     if (!rebuildOk) {
-        PDS_LOG_CORE_ERROR(@"SearchIndexService: failed to rebuild fts_posts: %@", rebuildError);
+        GZ_LOG_CORE_ERROR(@"SearchIndexService: failed to rebuild fts_posts: %@", rebuildError);
     }
-    rebuildOk = [self.database executeRawSQL:@"INSERT INTO fts_starter_packs(fts_starter_packs) VALUES('rebuild')" error:&rebuildError];
+    rebuildOk = [self.database executeParameterizedUpdate:@"INSERT INTO fts_starter_packs(fts_starter_packs) VALUES('rebuild')" params:@[] error:&rebuildError];
     if (!rebuildOk) {
-        PDS_LOG_CORE_ERROR(@"SearchIndexService: failed to rebuild fts_starter_packs: %@", rebuildError);
+        GZ_LOG_CORE_ERROR(@"SearchIndexService: failed to rebuild fts_starter_packs: %@", rebuildError);
     }
 
-    PDS_LOG_CORE_INFO(@"SearchIndexService: search index rebuilt successfully");
+    GZ_LOG_CORE_INFO(@"SearchIndexService: search index rebuilt successfully");
     return YES;
 }
 
@@ -331,7 +331,7 @@ NSString *const SearchIndexServiceErrorDomain = @"SearchIndexService";
     // Check if search_actors has any rows
     NSArray *rows = [self.database executeParameterizedQuery:@"SELECT count(*) as cnt FROM search_actors" params:@[] error:nil];
     if (rows.count > 0 && [rows[0][@"cnt"] integerValue] > 0) {
-        PDS_LOG_CORE_INFO(@"SearchIndexService: search index already populated, skipping rebuild");
+        GZ_LOG_CORE_INFO(@"SearchIndexService: search index already populated, skipping rebuild");
         return YES;
     }
 

@@ -10,7 +10,7 @@
 
 #import "Network/PDSHttpRelayAPIRoutePack.h"
 
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
@@ -81,7 +81,7 @@
               [relayAPIHandler handleRequest:request response:response];
             }];
 
-  PDS_LOG_DEBUG(@"PDSHttpRelayAPIRoutePack: Relay API routes registered");
+  GZ_LOG_DEBUG(@"PDSHttpRelayAPIRoutePack: Relay API routes registered");
 }
 
 @end

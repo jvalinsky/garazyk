@@ -299,7 +299,7 @@ NSString * const TutorialIdentityErrorDomain = @"com.atproto.tutorial.identity";
 #pragma mark - Cache
 
 - (nullable TutorialDIDDocument *)cachedDIDDocument:(NSString *)did {
-    return [self.db executeQuery:nil block:^id(sqlite3 *db) {
+    return [self.db executeUnsafeRawQuery:nil block:^id(sqlite3 *db) {
         const char *sql = "SELECT handle, doc_json, cached_at FROM did_cache WHERE did = ?";
         sqlite3_stmt *stmt;
         if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) return nil;
@@ -350,7 +350,7 @@ NSString * const TutorialIdentityErrorDomain = @"com.atproto.tutorial.identity";
 }
 
 - (nullable NSString *)cachedDIDForHandle:(NSString *)handle {
-    return [self.db executeQuery:nil block:^id(sqlite3 *db) {
+    return [self.db executeUnsafeRawQuery:nil block:^id(sqlite3 *db) {
         const char *sql = "SELECT did FROM handle_cache WHERE handle = ?";
         sqlite3_stmt *stmt;
         if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) return nil;
@@ -366,7 +366,7 @@ NSString * const TutorialIdentityErrorDomain = @"com.atproto.tutorial.identity";
 }
 
 - (NSTimeInterval)cachedAtForHandle:(NSString *)handle {
-    return [[self.db executeQuery:nil block:^id(sqlite3 *db) {
+    return [[self.db executeUnsafeRawQuery:nil block:^id(sqlite3 *db) {
         const char *sql = "SELECT cached_at FROM handle_cache WHERE handle = ?";
         sqlite3_stmt *stmt;
         if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) return @(0);

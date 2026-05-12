@@ -16,8 +16,8 @@
 #import "Core/ATURI.h"
 #import "Core/CID.h"
 #import "App/PDSConfiguration.h"
-#import "Debug/PDSLogger.h"
-#import "Network/PDSSafeHTTPClient.h"
+#import "Debug/GZLogger.h"
+#import "Network/ATProtoSafeHTTPClient.h"
 
 NSErrorDomain const DIDErrorDomain = @"com.atproto.did";
 static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
@@ -156,13 +156,13 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     DIDCacheStatus status;
     NSDictionary *entry = [self cachedEntryForDID:did status:&status];
     if (entry && status == DIDCacheStatusFresh) {
-        PDS_LOG_CORE_DEBUG(@"Returning fresh cached DID document");
+        GZ_LOG_CORE_DEBUG(@"Returning fresh cached DID document");
         DIDDocument *doc = entry[@"document"];
         completion(doc.jsonDictionary, nil);
         return;
     }
     if (entry && status == DIDCacheStatusStale) {
-        PDS_LOG_CORE_DEBUG(@"Returning stale cached DID document and refreshing");
+        GZ_LOG_CORE_DEBUG(@"Returning stale cached DID document and refreshing");
         DIDDocument *doc = entry[@"document"];
         completion(doc.jsonDictionary, nil);
         [self refreshCacheForDID:did];
@@ -224,12 +224,12 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
         DIDCacheStatus status;
         NSDictionary *entry = [self cachedEntryForDID:did status:&status];
         if (entry && status == DIDCacheStatusFresh) {
-            PDS_LOG_CORE_DEBUG(@"Returning fresh cached DID document");
+            GZ_LOG_CORE_DEBUG(@"Returning fresh cached DID document");
             completion(entry[@"document"], nil);
             return;
         }
         if (entry && status == DIDCacheStatusStale) {
-            PDS_LOG_CORE_DEBUG(@"Returning stale cached DID document and refreshing");
+            GZ_LOG_CORE_DEBUG(@"Returning stale cached DID document and refreshing");
             completion(entry[@"document"], nil);
             [self refreshCacheForDID:did];
             return;
@@ -485,14 +485,14 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
         return;
     }
     
-    PDS_LOG_CORE_DEBUG(@"Resolving did:web URL: %@", urlString ?: @"");
+    GZ_LOG_CORE_DEBUG(@"Resolving did:web URL: %@", urlString ?: @"");
     
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
     [request setValue:@"application/did+ld+json,application/json" forHTTPHeaderField:@"Accept"];
     
-    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
-                                                   options:[PDSSafeHTTPClientOptions defaultOptions]
+    [[ATProtoSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
+                                                   options:[ATProtoSafeHTTPClientOptions defaultOptions]
                                                 completion:^(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
         
         if (error) {
@@ -589,18 +589,18 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
         return;
     }
 
-    PDS_LOG_CORE_DEBUG(@"Resolving did:plc URL: %@", urlString ?: @"");
+    GZ_LOG_CORE_DEBUG(@"Resolving did:plc URL: %@", urlString ?: @"");
 
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
     [request setValue:@"application/did+ld+json,application/json" forHTTPHeaderField:@"Accept"];
 
-    PDSSafeHTTPClientOptions *httpOptions = [PDSSafeHTTPClientOptions defaultOptions];
+    ATProtoSafeHTTPClientOptions *httpOptions = [ATProtoSafeHTTPClientOptions defaultOptions];
 #if defined(GNUSTEP)
     httpOptions.timeout = 2.0;
 #endif
 
-    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
+    [[ATProtoSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
                                                    options:httpOptions
                                                 completion:^(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
 
@@ -610,7 +610,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
         }
 
 #if defined(GNUSTEP)
-        PDS_LOG_CORE_DEBUG(@"NSURLSession failed, trying curl fallback: %@", urlString ?: @"");
+        GZ_LOG_CORE_DEBUG(@"NSURLSession failed, trying curl fallback: %@", urlString ?: @"");
 
         NSTask *curlTask = [[NSTask alloc] init];
         [curlTask setLaunchPath:@"/usr/bin/curl"];
@@ -636,10 +636,10 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
                 }
             }
         } @catch (NSException *exception) {
-            PDS_LOG_CORE_WARN(@"curl fallback exception: %@", exception.reason);
+            GZ_LOG_CORE_WARN(@"curl fallback exception: %@", exception.reason);
         }
 
-        PDS_LOG_CORE_WARN(@"All PLC resolution methods failed for DID: %@", did);
+        GZ_LOG_CORE_WARN(@"All PLC resolution methods failed for DID: %@", did);
 #endif
 
         NSError *underlying = error ?: [NSError errorWithDomain:NSURLErrorDomain code:NSURLErrorTimedOut userInfo:nil];
@@ -683,12 +683,12 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     request.HTTPMethod = @"GET";
 
-    PDSSafeHTTPClientOptions *options = [PDSSafeHTTPClientOptions defaultOptions];
+    ATProtoSafeHTTPClientOptions *options = [ATProtoSafeHTTPClientOptions defaultOptions];
     options.timeout = 10.0;
 
     NSHTTPURLResponse *httpResponse = nil;
     NSError *requestError = nil;
-    NSData *data = [[PDSSafeHTTPClient sharedClient] sendSynchronousRequest:request
+    NSData *data = [[ATProtoSafeHTTPClient sharedClient] sendSynchronousRequest:request
                                                                     options:options
                                                                    response:&httpResponse
                                                                       error:&requestError];

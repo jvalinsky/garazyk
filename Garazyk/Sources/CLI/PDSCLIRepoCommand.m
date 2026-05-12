@@ -10,7 +10,7 @@
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Repository/MST.h"
 #import "Repository/RepoCommit.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Services/PDS/PDSRecordService.h"
 
 @interface PDSCLIRepoCommand : PDSBaseCommand

@@ -14,7 +14,7 @@
 #import "Repository/MST.h"
 #import "Core/ATProtoDagCBOR.h"
 #import "Core/CID.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @interface AppViewBackfillWorker ()
 @property (nonatomic, copy)   NSString *did;
@@ -54,7 +54,7 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
 
 - (void)_run {
     NSString *did = _did;
-    PDS_LOG_INFO(@"[AppView BackfillWorker] Starting backfill for %@", did);
+    GZ_LOG_INFO(@"[AppView BackfillWorker] Starting backfill for %@", did);
 
     // Load current sync state to get lastRev for incremental fetch
     NSError *stateErr = nil;
@@ -148,7 +148,7 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
         return;
     }
 
-    PDS_LOG_INFO(@"[AppView BackfillWorker] Completed backfill for %@ (rev=%@)", did, lastRev);
+    GZ_LOG_INFO(@"[AppView BackfillWorker] Completed backfill for %@ (rev=%@)", did, lastRev);
     [_delegate worker:self didCompleteForDID:did lastRev:lastRev ?: @""];
 }
 
@@ -160,7 +160,7 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
     // Check for environment override (Docker bridge networking, local testing)
     NSString *envOverride = [[NSProcessInfo processInfo] environment][@"APPVIEW_PDS_URL"];
     if (envOverride.length > 0) {
-        PDS_LOG_DEBUG(@"[AppView BackfillWorker] Using APPVIEW_PDS_URL override: %@", envOverride);
+        GZ_LOG_DEBUG(@"[AppView BackfillWorker] Using APPVIEW_PDS_URL override: %@", envOverride);
         return envOverride;
     }
 
@@ -205,7 +205,7 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
         if ([aka hasPrefix:@"at://"]) {
             NSString *handle = [aka substringFromIndex:5];
             [_database saveHandle:handle did:did error:nil];
-            PDS_LOG_INFO(@"[AppView BackfillWorker] Discovered handle mapping during backfill: %@ -> %@", handle, did);
+            GZ_LOG_INFO(@"[AppView BackfillWorker] Discovered handle mapping during backfill: %@ -> %@", handle, did);
             break;
         }
     }
@@ -244,13 +244,13 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
     [fh synchronizeFile];
     [fh closeFile];
 
-    PDS_LOG_DEBUG(@"[AppView BackfillWorker] _parseCARAndIndex called for %@", did);
-    PDS_LOG_DEBUG(@"[AppView BackfillWorker] Data length: %lu", (unsigned long)carData.length);
+    GZ_LOG_DEBUG(@"[AppView BackfillWorker] _parseCARAndIndex called for %@", did);
+    GZ_LOG_DEBUG(@"[AppView BackfillWorker] Data length: %lu", (unsigned long)carData.length);
 
     CARReader *reader = nil;
     if (STARDetectFormatFromData(carData)) {
         // STAR format detected — convert to CAR for downstream processing
-        PDS_LOG_DEBUG(@"[AppView BackfillWorker] Detected STAR format, converting to CAR");
+        GZ_LOG_DEBUG(@"[AppView BackfillWorker] Detected STAR format, converting to CAR");
         NSData *carBytes = [STARConverter carDataFromSTARData:carData error:error];
         if (carBytes) {
             reader = [CARReader readFromData:carBytes error:error];
@@ -259,11 +259,11 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
         reader = [CARReader readFromData:carData error:error];
     }
     if (!reader) {
-        PDS_LOG_ERROR(@"[AppView BackfillWorker] Failed to read repo data: %@", *error);
+        GZ_LOG_ERROR(@"[AppView BackfillWorker] Failed to read repo data: %@", *error);
         return nil;
     }
 
-    PDS_LOG_DEBUG(@"[AppView BackfillWorker] Reader success: blocks=%lu rootCID=%@",
+    GZ_LOG_DEBUG(@"[AppView BackfillWorker] Reader success: blocks=%lu rootCID=%@",
               (unsigned long)reader.blocks.count, reader.rootCID);
 
     NSString *lastRev = nil;
@@ -287,7 +287,7 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
     if (reader.rootCID) {
         CARBlock *commitBlock = [reader blockWithCID:reader.rootCID];
         if (commitBlock) {
-            PDS_LOG_INFO(@"[AppView BackfillWorker] Decoding commit block (%lu bytes)",
+            GZ_LOG_INFO(@"[AppView BackfillWorker] Decoding commit block (%lu bytes)",
                       (unsigned long)commitBlock.data.length);
             id commitObj = [ATProtoDagCBOR decodeData:commitBlock.data error:nil];
             if ([commitObj isKindOfClass:[NSDictionary class]]) {
@@ -295,21 +295,21 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
 
                 // Extract revision
                 lastRev = commitDict[@"rev"];
-                PDS_LOG_INFO(@"[AppView BackfillWorker] Found commit revision: %@", lastRev);
+                GZ_LOG_INFO(@"[AppView BackfillWorker] Found commit revision: %@", lastRev);
 
                 // Extract data CID - this is the actual data MST
                 id dataField = commitDict[@"data"];
                 if ([dataField isKindOfClass:[CID class]]) {
                     dataMSTCID = (CID *)dataField;
-                    PDS_LOG_INFO(@"[AppView BackfillWorker] Found data MST CID (CID type): %@", dataMSTCID);
+                    GZ_LOG_INFO(@"[AppView BackfillWorker] Found data MST CID (CID type): %@", dataMSTCID);
                 } else if ([dataField isKindOfClass:[NSData class]]) {
                     dataMSTCID = [CID cidFromBytes:dataField];
-                    PDS_LOG_INFO(@"[AppView BackfillWorker] Found data MST CID (NSData type): %@", dataMSTCID);
+                    GZ_LOG_INFO(@"[AppView BackfillWorker] Found data MST CID (NSData type): %@", dataMSTCID);
                 } else if ([dataField isKindOfClass:[NSString class]]) {
                     dataMSTCID = [CID cidFromString:dataField];
-                    PDS_LOG_INFO(@"[AppView BackfillWorker] Found data MST CID (NSString type): %@", dataMSTCID);
+                    GZ_LOG_INFO(@"[AppView BackfillWorker] Found data MST CID (NSString type): %@", dataMSTCID);
                 } else if (dataField) {
-                    PDS_LOG_WARN(@"[AppView BackfillWorker] data field is unexpected type: %@", NSStringFromClass([dataField class]));
+                    GZ_LOG_WARN(@"[AppView BackfillWorker] data field is unexpected type: %@", NSStringFromClass([dataField class]));
                 }
             }
         }
@@ -319,21 +319,21 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
     if (dataMSTCID) {
         CARBlock *dataMSTBlock = [reader blockWithCID:dataMSTCID];
         if (dataMSTBlock) {
-            PDS_LOG_INFO(@"[AppView BackfillWorker] Trying to deserialize data MST...");
+            GZ_LOG_INFO(@"[AppView BackfillWorker] Trying to deserialize data MST...");
             MST *dataMST = [MST deserializeFromCBOR:dataMSTBlock.data];
             if (dataMST && dataMST.root) {
                 entries = [dataMST allEntries];
-                PDS_LOG_INFO(@"[AppView BackfillWorker] Parsed data MST with %lu entries",
+                GZ_LOG_INFO(@"[AppView BackfillWorker] Parsed data MST with %lu entries",
                           (unsigned long)entries.count);
             } else {
-                PDS_LOG_WARN(@"[AppView BackfillWorker] Data MST deserialize failed");
+                GZ_LOG_WARN(@"[AppView BackfillWorker] Data MST deserialize failed");
                 entries = [self _parseCBOREntriesFromBlock:dataMSTBlock.data];
             }
         } else {
-            PDS_LOG_WARN(@"[AppView BackfillWorker] Could not find data MST block for CID: %@", dataMSTCID);
+            GZ_LOG_WARN(@"[AppView BackfillWorker] Could not find data MST block for CID: %@", dataMSTCID);
         }
     } else {
-        PDS_LOG_WARN(@"[AppView BackfillWorker] No data CID found in commit");
+        GZ_LOG_WARN(@"[AppView BackfillWorker] No data CID found in commit");
     }
 
     // Index entries
@@ -362,7 +362,7 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
 
             CARBlock *block = [reader blockWithCID:valueCID];
             if (!block) {
-                PDS_LOG_WARN(@"[AppView BackfillWorker] Missing block for CID %@ in %@",
+                GZ_LOG_WARN(@"[AppView BackfillWorker] Missing block for CID %@ in %@",
                           valueCID, did);
                 continue;
             }
@@ -403,7 +403,7 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
         }
     }
 
-    PDS_LOG_INFO(@"[AppView BackfillWorker] Found %lu records in CAR for %@", (unsigned long)records.count, did);
+    GZ_LOG_INFO(@"[AppView BackfillWorker] Found %lu records in CAR for %@", (unsigned long)records.count, did);
     NSError *snapshotError = nil;
     if (![_database saveRepoSnapshotForDID:did
                                    lastRev:lastRev ?: @""
@@ -420,7 +420,7 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
         NSString *collection = item[@"collection"];
         NSString *rkey = item[@"rkey"] ?: @"";
         
-        PDS_LOG_DEBUG(@"[AppView BackfillWorker] Calling indexers for collection=%@", collection);
+        GZ_LOG_DEBUG(@"[AppView BackfillWorker] Calling indexers for collection=%@", collection);
         BOOL wasIndexed = NO;
         for (id<AppViewIndexer> indexer in _indexers) {
             if ([indexer canIndexCollection:collection]) {
@@ -433,7 +433,7 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
                                         error:&indexErr];
                 wasIndexed = YES;
                 if (!ok && indexErr) {
-                    PDS_LOG_DEBUG(@"[AppView BackfillWorker] Dead-letter %@ for %@: %@",
+                    GZ_LOG_DEBUG(@"[AppView BackfillWorker] Dead-letter %@ for %@: %@",
                                   collection, did, indexErr.localizedDescription);
                     NSData *raw = [NSJSONSerialization dataWithJSONObject:record options:0 error:nil]
                                   ?: [NSData data];
@@ -450,7 +450,7 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
             }
         }
         if (!wasIndexed) {
-            PDS_LOG_DEBUG(@"[AppView BackfillWorker] No specialized indexer for %@; generic snapshot already stored", collection);
+            GZ_LOG_DEBUG(@"[AppView BackfillWorker] No specialized indexer for %@; generic snapshot already stored", collection);
         }
     }
 
@@ -494,7 +494,7 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
 // ---------------------------------------------------------------------------
 
 - (void)_failWithError:(NSError *)error rateLimitedUntil:(nullable NSDate *)rateLimitedUntil {
-    PDS_LOG_WARN(@"[AppView BackfillWorker] Backfill failed for %@: %@", _did, error.localizedDescription);
+    GZ_LOG_WARN(@"[AppView BackfillWorker] Backfill failed for %@: %@", _did, error.localizedDescription);
     [_database recordBackfillError:_did message:error.localizedDescription error:nil];
     [_delegate worker:self didFailForDID:_did error:error rateLimitedUntil:rateLimitedUntil];
 }

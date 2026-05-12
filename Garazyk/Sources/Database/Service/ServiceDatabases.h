@@ -85,7 +85,7 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
  
  @return Raw sqlite3 handle or NULL on failure.
  */
-- (nullable sqlite3 *)serviceDatabase;
+- (nullable void *)serviceDatabase;
 
 /*!
  @method initWithDirectory:serviceMaxSize:didCacheMaxSize:sequencerMaxSize:

@@ -11,7 +11,7 @@
 #import "PDSAdminService.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Service/ServiceDatabases.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Core/ATProtoValidator.h"
 #import "Services/PDS/PDSAccountService.h"
@@ -127,7 +127,7 @@ static NSNumber *moderationAppliedOverrideForAction(NSString *normalizedAction) 
     NSError *error = nil;
     PDSDatabase *db = [serviceDatabases serviceDatabaseWithError:&error];
     if (!db) {
-        PDS_LOG_ERROR(@"Failed to get service database: %@", error);
+        GZ_LOG_ERROR(@"Failed to get service database: %@", error);
         return nil;
     }
     self = [super init];
@@ -158,7 +158,7 @@ static NSNumber *moderationAppliedOverrideForAction(NSString *normalizedAction) 
         return NO;
     }
 
-    PDS_LOG_INFO(@"Taking down account: %@ reason: %@", did, reason);
+    GZ_LOG_INFO(@"Taking down account: %@ reason: %@", did, reason);
     return [_database takeDownAccount:did reason:reason takedownRef:nil error:error];
 }
 
@@ -172,7 +172,7 @@ static NSNumber *moderationAppliedOverrideForAction(NSString *normalizedAction) 
         return NO;
     }
 
-    PDS_LOG_INFO(@"Deactivating account: %@ reason: %@", did, reason);
+    GZ_LOG_INFO(@"Deactivating account: %@ reason: %@", did, reason);
     return [_database deactivateAccount:did error:error];
 }
 
@@ -186,7 +186,7 @@ static NSNumber *moderationAppliedOverrideForAction(NSString *normalizedAction) 
         return NO;
     }
 
-    PDS_LOG_INFO(@"Reinstating account: %@", did);
+    GZ_LOG_INFO(@"Reinstating account: %@", did);
     return [_database reinstateAccount:did error:error];
 }
 
@@ -215,7 +215,7 @@ static NSNumber *moderationAppliedOverrideForAction(NSString *normalizedAction) 
     BOOL success = [_database updateAccount:account error:error];
 
     if (success) {
-        PDS_LOG_INFO(@"Updated email to %@ for account: %@", email, did);
+        GZ_LOG_INFO(@"Updated email to %@ for account: %@", email, did);
     }
     return success;
 }
@@ -223,7 +223,7 @@ static NSNumber *moderationAppliedOverrideForAction(NSString *normalizedAction) 
 - (BOOL)updateAccountPassword:(NSString *)did newPassword:(NSString *)password error:(NSError **)error {
     PDSDatabaseAccount *account = [_database getAccountByDid:did error:error];
     if (!account) return NO;
-    PDS_LOG_INFO(@"Updating password for account: %@", did);
+    GZ_LOG_INFO(@"Updating password for account: %@", did);
     return YES;
 }
 
@@ -239,7 +239,7 @@ static NSNumber *moderationAppliedOverrideForAction(NSString *normalizedAction) 
     BOOL success = [_database updateAccount:account error:error];
 
     if (success) {
-        PDS_LOG_INFO(@"Updated handle to %@ for account: %@", handle, did);
+        GZ_LOG_INFO(@"Updated handle to %@ for account: %@", handle, did);
     }
     return success;
 }
@@ -270,7 +270,7 @@ static NSNumber *moderationAppliedOverrideForAction(NSString *normalizedAction) 
     account.updatedAt = [[NSDate date] timeIntervalSince1970];
     BOOL success = [_database updateAccount:account error:error];
     if (success) {
-        PDS_LOG_INFO(@"Disabled invites for account: %@", did);
+        GZ_LOG_INFO(@"Disabled invites for account: %@", did);
     }
     return success;
 }
@@ -299,7 +299,7 @@ static NSNumber *moderationAppliedOverrideForAction(NSString *normalizedAction) 
     account.updatedAt = [[NSDate date] timeIntervalSince1970];
     BOOL success = [_database updateAccount:account error:error];
     if (success) {
-        PDS_LOG_INFO(@"Enabled invites for account: %@", did);
+        GZ_LOG_INFO(@"Enabled invites for account: %@", did);
     }
     return success;
 }
@@ -415,7 +415,7 @@ static NSNumber *moderationAppliedOverrideForAction(NSString *normalizedAction) 
 #pragma mark - Moderation
 
 - (NSDictionary *)moderateAccount:(NSDictionary *)params error:(NSError **)error {
-    PDS_LOG_INFO(@"Moderating account: %@", params);
+    GZ_LOG_INFO(@"Moderating account: %@", params);
 
     NSString *did = nullableTrimmedString(params[@"did"]);
     NSString *action = nullableTrimmedString(params[@"action"]);
@@ -471,7 +471,7 @@ static NSNumber *moderationAppliedOverrideForAction(NSString *normalizedAction) 
 }
 
 - (NSDictionary *)moderateRecord:(NSDictionary *)params error:(NSError **)error {
-    PDS_LOG_INFO(@"Moderating record: %@", params);
+    GZ_LOG_INFO(@"Moderating record: %@", params);
 
     NSString *uri = nullableTrimmedString(params[@"uri"]);
     NSString *action = nullableTrimmedString(params[@"action"]);
@@ -528,7 +528,7 @@ static NSNumber *moderationAppliedOverrideForAction(NSString *normalizedAction) 
         return nil;
     }
 
-    PDS_LOG_INFO(@"Creating label: uri=%@ val=%@", uri, val);
+    GZ_LOG_INFO(@"Creating label: uri=%@ val=%@", uri, val);
 
     if ([_database createLabel:params error:error]) {
         return @{
@@ -650,45 +650,45 @@ static NSNumber *moderationAppliedOverrideForAction(NSString *normalizedAction) 
     NSMutableDictionary *stats = [NSMutableDictionary dictionary];
     
     // Account counts
-    NSArray *accounts = [_database executeQuery:@"SELECT COUNT(*) as count FROM accounts" error:error];
+    NSArray *accounts = [_database executeParameterizedQuery:@"SELECT COUNT(*) as count FROM accounts" params:@[] error:error];
     if (accounts.count > 0) {
         stats[@"accounts_total"] = accounts.firstObject[@"count"] ?: @0;
     }
     
     // Active accounts (with repos)
-    NSArray *repos = [_database executeQuery:@"SELECT COUNT(*) as count FROM repos" error:error];
+    NSArray *repos = [_database executeParameterizedQuery:@"SELECT COUNT(*) as count FROM repos" params:@[] error:error];
     if (repos.count > 0) {
         stats[@"repos_total"] = repos.firstObject[@"count"] ?: @0;
     }
     
     // Record count
-    NSArray *records = [_database executeQuery:@"SELECT COUNT(*) as count FROM records" error:error];
+    NSArray *records = [_database executeParameterizedQuery:@"SELECT COUNT(*) as count FROM records" params:@[] error:error];
     if (records.count > 0) {
         stats[@"records_total"] = records.firstObject[@"count"] ?: @0;
     }
     
     // Blob count and size
-    NSArray *blobs = [_database executeQuery:@"SELECT COUNT(*) as count, COALESCE(SUM(size), 0) as total_size FROM blobs" error:error];
+    NSArray *blobs = [_database executeParameterizedQuery:@"SELECT COUNT(*) as count, COALESCE(SUM(size), 0) as total_size FROM blobs" params:@[] error:error];
     if (blobs.count > 0) {
         stats[@"blobs_total"] = blobs.firstObject[@"count"] ?: @0;
         stats[@"blobs_size_bytes"] = blobs.firstObject[@"total_size"] ?: @0;
     }
     
     // Block count
-    NSArray *blocks = [_database executeQuery:@"SELECT COUNT(*) as count FROM blocks" error:error];
+    NSArray *blocks = [_database executeParameterizedQuery:@"SELECT COUNT(*) as count FROM blocks" params:@[] error:error];
     if (blocks.count > 0) {
         stats[@"blocks_total"] = blocks.firstObject[@"count"] ?: @0;
     }
     
     // Invite code stats
-    NSArray *invites = [_database executeQuery:@"SELECT COUNT(*) as total, SUM(CASE WHEN disabled = 0 THEN 1 ELSE 0 END) as active FROM invite_codes" error:error];
+    NSArray *invites = [_database executeParameterizedQuery:@"SELECT COUNT(*) as total, SUM(CASE WHEN disabled = 0 THEN 1 ELSE 0 END) as active FROM invite_codes" params:@[] error:error];
     if (invites.count > 0) {
         stats[@"invite_codes_total"] = invites.firstObject[@"total"] ?: @0;
         stats[@"invite_codes_active"] = invites.firstObject[@"active"] ?: @0;
     }
     
     // Open reports count
-    NSArray *reports = [_database executeQuery:@"SELECT COUNT(*) as count FROM reports WHERE status = 'open'" error:error];
+    NSArray *reports = [_database executeParameterizedQuery:@"SELECT COUNT(*) as count FROM reports WHERE status = 'open'" params:@[] error:error];
     if (reports.count > 0) {
         stats[@"reports_open"] = reports.firstObject[@"count"] ?: @0;
     }

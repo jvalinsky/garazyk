@@ -8,7 +8,7 @@
 #import "Network/XrpcHandler.h"
 #import "Admin/PDSAdminController.h"
 #import "Core/ATProtoValidator.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @implementation XrpcModerationMethods
 

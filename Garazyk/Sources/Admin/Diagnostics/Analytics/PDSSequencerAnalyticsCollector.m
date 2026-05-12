@@ -4,7 +4,7 @@
 #import "Database/Service/ServiceDatabases.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
 #import "Metrics/PDSMetrics.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 #import <sqlite3.h>
 
@@ -60,7 +60,7 @@
 
         dispatch_resume(self.timer);
         self.isCollecting = YES;
-        PDS_LOG_DB_INFO(@"Sequencer analytics collector started");
+        GZ_LOG_DB_INFO(@"Sequencer analytics collector started");
     });
 }
 
@@ -70,7 +70,7 @@
             dispatch_source_cancel(self.timer);
             self.timer = nil;
             self.isCollecting = NO;
-            PDS_LOG_DB_INFO(@"Sequencer analytics collector stopped");
+            GZ_LOG_DB_INFO(@"Sequencer analytics collector stopped");
         }
     });
 }
@@ -81,7 +81,7 @@
     // Get current sequence
     int64_t currentSeq = [self.serviceDatabases getMaxEventSequence:&error];
     if (error) {
-        PDS_LOG_DB_ERROR(@"Failed to get max sequence: %@", error);
+        GZ_LOG_DB_ERROR(@"Failed to get max sequence: %@", error);
         return;
     }
 
@@ -135,7 +135,7 @@
     } error:&error];
 
     if (!success) {
-        PDS_LOG_DB_ERROR(@"Failed to insert analytics snapshot: %@", error);
+        GZ_LOG_DB_ERROR(@"Failed to insert analytics snapshot: %@", error);
         return;
     }
 

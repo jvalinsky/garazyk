@@ -8,7 +8,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "AppView/Services/ActorService.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @implementation XrpcAppBskyActorPack
 
@@ -251,7 +251,7 @@
         [response setJsonBody:result ?: @{@"actors": @[], @"cursor": [NSNull null]}];
     }];
     
-    PDS_LOG_INFO(@"Registered app.bsky.actor.* endpoints");
+    GZ_LOG_INFO(@"Registered app.bsky.actor.* endpoints");
 }
 
 @end

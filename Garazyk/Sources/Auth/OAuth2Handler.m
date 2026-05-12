@@ -17,12 +17,12 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
-#import "Network/PDSSafeHTTPClient.h"
+#import "Network/ATProtoSafeHTTPClient.h"
 #import "Network/SSRFValidator.h"
 
 #import "App/PDSConfiguration.h"
 #import "Services/PDS/PDSAccountService.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @interface OAuth2Handler ()
 @property(nonatomic, strong) PDSDatabase *database;
@@ -206,7 +206,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
 
   // Database lookup failed - check if client_metadata is available in request
   if (self.clientMetadata) {
-    PDS_LOG_AUTH_INFO(@"Client not in database, attempting validation via "
+    GZ_LOG_AUTH_INFO(@"Client not in database, attempting validation via "
                       @"client_metadata for client_id: %@",
                       clientID);
 
@@ -231,7 +231,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
                                         }]);
         return;
       }
-      PDS_LOG_AUTH_INFO(
+      GZ_LOG_AUTH_INFO(
           @"Client validated successfully via client_metadata: %@", clientID);
       completion(validatedClient, nil);
       return;
@@ -245,7 +245,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   // Not in DB and not in request - check if it's a URL-based client_id for
   // dynamic discovery
   if ([clientID hasPrefix:@"https://"] || [self isLoopbackURL:clientID]) {
-    PDS_LOG_AUTH_INFO(@"Attempting dynamic client discovery for: %@", clientID);
+    GZ_LOG_AUTH_INFO(@"Attempting dynamic client discovery for: %@", clientID);
 
     dispatch_once(&sClientCacheOnceToken, ^{
       sClientMetadataCache = [[NSCache alloc] init];
@@ -257,7 +257,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
       cached = [sClientMetadataCache objectForKey:clientID];
     });
     if (cached) {
-      PDS_LOG_AUTH_INFO(@"Found cached metadata for client: %@", clientID);
+      GZ_LOG_AUTH_INFO(@"Found cached metadata for client: %@", clientID);
       completion(cached, nil);
       return;
     }
@@ -278,13 +278,13 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
                                 // Ensure client_id in metadata matches the URL
                                 NSString *metadataClientID =
                                     validatedClient[@"client_id"];
-                                if ([metadataClientID isEqualToString:clientID]) {
+                                if ([PDSSecurityCompare constantTimeEqualString:metadataClientID string:clientID]) {
                                   dispatch_sync(sClientMetadataQueue, ^{
                                     [sClientMetadataCache
                                          setObject:validatedClient
                                             forKey:clientID];
                                   });
-                                  PDS_LOG_AUTH_INFO(@"Successfully discovered "
+                                  GZ_LOG_AUTH_INFO(@"Successfully discovered "
                                                     @"and cached client: %@",
                                                     clientID);
                                   completion(validatedClient, nil);
@@ -1051,7 +1051,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   NSNumber *exp = payload[@"exp"];
 
   if (!iss || ![iss isKindOfClass:[NSString class]] ||
-      ![iss isEqualToString:clientID]) {
+      ![PDSSecurityCompare constantTimeEqualString:iss string:clientID]) {
     if (error) {
       *error = [NSError errorWithDomain:@"OAuth2"
                                    code:401
@@ -1064,7 +1064,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   }
 
   if (!sub || ![sub isKindOfClass:[NSString class]] ||
-      ![sub isEqualToString:clientID]) {
+      ![PDSSecurityCompare constantTimeEqualString:sub string:clientID]) {
     if (error) {
       *error = [NSError errorWithDomain:@"OAuth2"
                                    code:401
@@ -1081,7 +1081,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     expectedAud = @"https://pds.garazyk.xyz";
   }
   if (!aud || ![aud isKindOfClass:[NSString class]] ||
-      ![aud isEqualToString:expectedAud]) {
+      ![PDSSecurityCompare constantTimeEqualString:aud string:expectedAud]) {
     if (error) {
       *error = [NSError errorWithDomain:@"OAuth2"
                                    code:401
@@ -1429,13 +1429,13 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     return NO;
   }
 
-  PDS_LOG_AUTH_DEBUG(@"Validating redirect_uri: '%@' against allowed: %@",
+  GZ_LOG_AUTH_DEBUG(@"Validating redirect_uri: '%@' against allowed: %@",
                      redirectURI, allowedURIs);
 
   for (NSString *allowedURI in allowedURIs) {
     // Exact match (standard OAuth 2.0 security best practice)
-    if ([redirectURI isEqualToString:allowedURI]) {
-      PDS_LOG_AUTH_DEBUG(@"Successfully matched redirect_uri: %@", allowedURI);
+    if ([PDSSecurityCompare constantTimeEqualString:redirectURI string:allowedURI]) {
+      GZ_LOG_AUTH_DEBUG(@"Successfully matched redirect_uri: %@", allowedURI);
       return YES;
     }
 
@@ -1448,7 +1448,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
               isEqualToString:[allowedURL.host lowercaseString]] &&
           [[url.path ?: @"/" lowercaseString]
               isEqualToString:[allowedURL.path ?: @"/" lowercaseString]]) {
-        PDS_LOG_AUTH_DEBUG(
+        GZ_LOG_AUTH_DEBUG(
             @"Loopback port-wildcard matched redirect_uri: %@ (allowed: %@)",
             redirectURI, allowedURI);
         return YES;
@@ -1456,7 +1456,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     }
   }
 
-  PDS_LOG_AUTH_DEBUG(@"No match found for redirect_uri: %@", redirectURI);
+  GZ_LOG_AUTH_DEBUG(@"No match found for redirect_uri: %@", redirectURI);
 
   if (error) {
     *error = [NSError
@@ -1644,11 +1644,8 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
 
 - (void)handleAuthorizationServerMetadata:(HttpRequest *)request
                                  response:(HttpResponse *)response {
-  NSLog(@"[OAUTH-DIAG] authorization-server-metadata request: path=%@ Host=%@ Origin=%@",
-        request.path, [request headerForKey:@"Host"], [request headerForKey:@"Origin"]);
+  GZ_LOG_AUTH_DEBUG(@"authorization-server-metadata request: path=%@", request.path);
   NSString *issuer = [self requestOriginForRequest:request];
-  NSLog(@"[OAUTH-DIAG] authorization-server-metadata: computed issuer=%@ configuredIssuer=%@",
-        issuer, self.oauthServer.issuer);
   if (!issuer.length) {
     issuer = self.oauthServer.issuer;
   }
@@ -1676,16 +1673,12 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
 
   [response setJsonBody:metadata.metadata];
   response.statusCode = 200;
-  NSLog(@"[OAUTH-DIAG] authorization-server-metadata response: %@", metadata.metadata);
 }
 
 - (void)handleProtectedResourceMetadata:(HttpRequest *)request
                                response:(HttpResponse *)response {
-  NSLog(@"[OAUTH-DIAG] protected-resource-metadata request: path=%@ Host=%@ Origin=%@",
-        request.path, [request headerForKey:@"Host"], [request headerForKey:@"Origin"]);
+  GZ_LOG_AUTH_DEBUG(@"protected-resource-metadata request: path=%@", request.path);
   NSString *resource = [self requestOriginForRequest:request];
-  NSLog(@"[OAUTH-DIAG] protected-resource-metadata: computed resource=%@ configuredIssuer=%@",
-        resource, self.oauthServer.issuer);
   if (!resource.length) {
     resource = self.oauthServer.issuer;
   }
@@ -1716,12 +1709,11 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
 
   [response setJsonBody:resourceMetadata];
   response.statusCode = 200;
-  NSLog(@"[OAUTH-DIAG] protected-resource-metadata response: %@", resourceMetadata);
 }
 
 - (void)handleAuthorizeRequest:(HttpRequest *)request
                       response:(HttpResponse *)response {
-  PDS_LOG_AUTH_INFO(@"Starting authorize request for path: %@", request.path);
+  GZ_LOG_AUTH_INFO(@"Starting authorize request for path: %@", request.path);
   // Use request.queryParams if available, otherwise parse manually
   NSMutableDictionary *params =
       [request.queryParams mutableCopy] ?: [NSMutableDictionary dictionary];
@@ -1779,7 +1771,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   // Validate client from database
   NSString *clientID = params[@"client_id"];
   if (!clientID) {
-    PDS_LOG_AUTH_WARN(@"Missing client_id in authorize request");
+    GZ_LOG_AUTH_WARN(@"Missing client_id in authorize request");
     response.statusCode = 400;
     [response setJsonBody:@{
       @"error" : @"invalid_request",
@@ -1792,7 +1784,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   NSDictionary *client = [self validatedClientForClientID:clientID
                                                      error:&clientError];
   if (!client) {
-    PDS_LOG_AUTH_WARN(@"Invalid client_id: %@, error: %@", clientID,
+    GZ_LOG_AUTH_WARN(@"Invalid client_id: %@, error: %@", clientID,
                       clientError.localizedDescription);
     if ([self isClientValidationTimeoutError:clientError]) {
       [self setOAuthErrorResponse:response
@@ -1809,7 +1801,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     return;
   }
 
-  PDS_LOG_AUTH_INFO(@"Found client: %@", clientID);
+  GZ_LOG_AUTH_INFO(@"Found client: %@", clientID);
 
   // Validate redirect URI against client's registered URIs
   NSString *redirectURI = params[@"redirect_uri"];
@@ -1817,7 +1809,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   if (![self validateRedirectURI:redirectURI
                        forClient:client
                            error:&redirectError]) {
-    PDS_LOG_AUTH_WARN(@"Invalid redirect_uri: %@ for client %@, error: %@",
+    GZ_LOG_AUTH_WARN(@"Invalid redirect_uri: %@ for client %@, error: %@",
                       redirectURI, clientID,
                       redirectError.localizedDescription);
     response.statusCode = 400;
@@ -1835,7 +1827,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
       [state stringByTrimmingCharactersInSet:[NSCharacterSet
                                                  whitespaceCharacterSet]]
               .length == 0) {
-    PDS_LOG_AUTH_WARN(@"Missing state parameter for client: %@", clientID);
+    GZ_LOG_AUTH_WARN(@"Missing state parameter for client: %@", clientID);
     response.statusCode = 400;
     [response setJsonBody:@{
       @"error" : @"invalid_request",
@@ -1864,7 +1856,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   BOOL isPublicClient = (client[@"client_secret"] == nil);
   if (isPublicClient &&
       (!authRequest.codeChallenge || authRequest.codeChallenge.length == 0)) {
-    PDS_LOG_AUTH_WARN(@"Public client missing code_challenge: %@", clientID);
+    GZ_LOG_AUTH_WARN(@"Public client missing code_challenge: %@", clientID);
     response.statusCode = 400;
     [response setJsonBody:@{
       @"error" : @"invalid_request",
@@ -1873,7 +1865,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     return;
   }
 
-  PDS_LOG_AUTH_INFO(@"Processing authorization for client: %@, hint: %@",
+  GZ_LOG_AUTH_INFO(@"Processing authorization for client: %@, hint: %@",
                     clientID, authRequest.loginHint);
 
   // Instead of auto-authorizing, serve the consent screen
@@ -1885,14 +1877,14 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   NSString *assetsPath = [self assetsPath];
   NSString *filePath =
       [assetsPath stringByAppendingPathComponent:@"authorize.html"];
-  PDS_LOG_AUTH_INFO(@"Serving authorize page from: %@", filePath);
+  GZ_LOG_AUTH_INFO(@"Serving authorize page from: %@", filePath);
 
   NSError *error = nil;
   NSString *html = [NSString stringWithContentsOfFile:filePath
                                              encoding:NSUTF8StringEncoding
                                                 error:&error];
   if (!html || error) {
-    PDS_LOG_AUTH_ERROR(@"Failed to load authorize.html at %@: %@", filePath,
+    GZ_LOG_AUTH_ERROR(@"Failed to load authorize.html at %@: %@", filePath,
                        error);
     response.statusCode = 500;
     [response
@@ -1900,7 +1892,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     return;
   }
 
-  PDS_LOG_AUTH_DEBUG(@"Loaded html, size: %lu", (unsigned long)html.length);
+  GZ_LOG_AUTH_DEBUG(@"Loaded html, size: %lu", (unsigned long)html.length);
 
   // Generate CSRF token
   NSString *csrfToken = [[NSUUID UUID] UUIDString];
@@ -2131,7 +2123,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   // Pass the authenticated user's handle so the auth code gets a login_hint_did
   authRequest.loginHint = consentSession[@"handle"];
 
-  PDS_LOG_AUTH_INFO(@"Authorizing request for client: %@, redirect_uri: %@",
+  GZ_LOG_AUTH_INFO(@"Authorizing request for client: %@, redirect_uri: %@",
                     clientID, authRequest.redirectURI);
 
   [self.oauthServer
@@ -2444,7 +2436,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   }
 
   if (!self.accountService) {
-    PDS_LOG_AUTH_ERROR(@"Sign-in attempted but no accountService configured");
+    GZ_LOG_AUTH_ERROR(@"Sign-in attempted but no accountService configured");
     response.statusCode = 500;
     [response setJsonBody:@{
       @"ok" : @NO,
@@ -2459,7 +2451,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
                                                             error:&authError];
 
   if (result && result[@"did"]) {
-    PDS_LOG_AUTH_INFO(@"Sign-in successful for handle: %@", handle);
+    GZ_LOG_AUTH_INFO(@"Sign-in successful for handle: %@", handle);
     NSString *sessionToken = [self createPendingConsentSessionForDid:result[@"did"]
                                                               handle:handle];
     if (!sessionToken) {
@@ -2477,7 +2469,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
       @"session_token" : sessionToken
     }];
   } else {
-    PDS_LOG_AUTH_INFO(@"Sign-in failed for handle: %@, error: %@", handle,
+    GZ_LOG_AUTH_INFO(@"Sign-in failed for handle: %@, error: %@", handle,
                       authError.localizedDescription ?: @"unknown");
     response.statusCode = 401;
     [response
@@ -2602,7 +2594,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
 
   // Validate client from database
   NSString *clientID = params[@"client_id"];
-  PDS_LOG_AUTH_INFO(@"Token request received (grant_type=%@, client_id=%@)",
+  GZ_LOG_AUTH_INFO(@"Token request received (grant_type=%@, client_id=%@)",
                     grantType ?: @"", clientID ?: @"");
 
   NSError *clientError = nil;
@@ -2622,7 +2614,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     }
     return;
   }
-  PDS_LOG_AUTH_DEBUG(@"Token request client validation passed (client_id=%@)",
+  GZ_LOG_AUTH_DEBUG(@"Token request client validation passed (client_id=%@)",
                      clientID ?: @"");
 
   // Validate client authentication
@@ -2668,7 +2660,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
       }];
       return;
     }
-    PDS_LOG_AUTH_DEBUG(
+    GZ_LOG_AUTH_DEBUG(
         @"JWT assertion validation passed (client_id=%@)", clientID ?: @"");
 
   } else if (clientUsesPrivateKeyJWT) {
@@ -2719,7 +2711,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     if (![self validateRedirectURI:redirectURI
                          forClient:client
                              error:&redirectError]) {
-      PDS_LOG_AUTH_WARN(
+      GZ_LOG_AUTH_WARN(
           @"Token request redirect_uri validation failed (client_id=%@): %@",
           clientID ?: @"",
           redirectError.localizedDescription ?: @"Invalid redirect_uri");
@@ -3030,12 +3022,12 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
 
 - (void)handlePARRequest:(HttpRequest *)request
                 response:(HttpResponse *)response {
-  PDS_LOG_AUTH_INFO(@"Handling PAR request");
+  GZ_LOG_AUTH_INFO(@"Handling PAR request");
 
   // Parse body parameters
   NSString *body = [[NSString alloc] initWithData:request.body
                                          encoding:NSUTF8StringEncoding];
-  PDS_LOG_AUTH_DEBUG(@"PAR request body: %@", body);
+  GZ_LOG_AUTH_DEBUG(@"PAR request body: %@", body);
   if (!body) {
     response.statusCode = 400;
     [response setJsonBody:@{
@@ -3053,7 +3045,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
                                              options:0
                                                error:&jsonError];
     if (jsonError) {
-      PDS_LOG_AUTH_ERROR(@"Failed to parse PAR JSON body: %@", jsonError.localizedDescription);
+      GZ_LOG_AUTH_ERROR(@"Failed to parse PAR JSON body: %@", jsonError.localizedDescription);
     }
   }
 
@@ -3128,7 +3120,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
       }];
       return;
     }
-    PDS_LOG_AUTH_DEBUG(
+    GZ_LOG_AUTH_DEBUG(
         @"PAR JWT assertion validation passed (client_id=%@)", clientID ?: @"");
 
   } else if (clientUsesPrivateKeyJWT) {
@@ -3340,7 +3332,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     NSData *jsonData =
         [clientMetadataString dataUsingEncoding:NSUTF8StringEncoding];
     if (!jsonData) {
-      PDS_LOG_AUTH_WARN(@"Failed to decode client_metadata text as UTF-8");
+      GZ_LOG_AUTH_WARN(@"Failed to decode client_metadata text as UTF-8");
       return nil;
     }
 
@@ -3349,17 +3341,17 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
                                                     options:0
                                                       error:&jsonError];
     if (jsonError) {
-      PDS_LOG_AUTH_WARN(@"Failed to parse client_metadata JSON: %@",
+      GZ_LOG_AUTH_WARN(@"Failed to parse client_metadata JSON: %@",
                         jsonError.localizedDescription);
       return nil;
     }
     if (![parsedJSON isKindOfClass:[NSDictionary class]]) {
-      PDS_LOG_AUTH_WARN(@"client_metadata is not a JSON object");
+      GZ_LOG_AUTH_WARN(@"client_metadata is not a JSON object");
       return nil;
     }
 
     NSDictionary *clientMetadata = (NSDictionary *)parsedJSON;
-    PDS_LOG_AUTH_INFO(@"Parsed client_metadata with %lu keys",
+    GZ_LOG_AUTH_INFO(@"Parsed client_metadata with %lu keys",
                       (unsigned long)clientMetadata.count);
     return clientMetadata;
   }
@@ -3782,7 +3774,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
 
   NSURL *dpopURL = [self expectedDPoPURLForRequest:request];
   if (!dpopURL) {
-    PDS_LOG_AUTH_DEBUG(@"validateDPoPForRequest: Failed to construct DPoP URL");
+    GZ_LOG_AUTH_DEBUG(@"validateDPoPForRequest: Failed to construct DPoP URL");
     response.statusCode = 400;
     [response setJsonBody:@{
       @"error" : @"invalid_request",
@@ -3837,9 +3829,9 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     NSString *prefix = dpopThumbprint.length > 8
                            ? [dpopThumbprint substringToIndex:8]
                            : dpopThumbprint;
-    PDS_LOG_AUTH_DEBUG(@"DPoP proof verified (thumbprint_prefix=%@)", prefix);
+    GZ_LOG_AUTH_DEBUG(@"DPoP proof verified (thumbprint_prefix=%@)", prefix);
   } else {
-    PDS_LOG_AUTH_DEBUG(@"DPoP proof verified (thumbprint unavailable)");
+    GZ_LOG_AUTH_DEBUG(@"DPoP proof verified (thumbprint unavailable)");
   }
 
   if (outThumbprint) {
@@ -3869,7 +3861,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   if (self.dataDirectory) {
     NSString *path =
         [self.dataDirectory stringByAppendingPathComponent:@"Auth/Assets"];
-    PDS_LOG_AUTH_DEBUG(@"Checking for assets in dataDirectory: %@", path);
+    GZ_LOG_AUTH_DEBUG(@"Checking for assets in dataDirectory: %@", path);
     if ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
       return path;
     }
@@ -3892,13 +3884,13 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   ];
 
   for (NSString *candidate in candidates) {
-    PDS_LOG_AUTH_DEBUG(@"Checking for assets in candidate path: %@", candidate);
+    GZ_LOG_AUTH_DEBUG(@"Checking for assets in candidate path: %@", candidate);
     if ([[NSFileManager defaultManager] fileExistsAtPath:candidate]) {
       return candidate;
     }
   }
 
-  PDS_LOG_AUTH_ERROR(
+  GZ_LOG_AUTH_ERROR(
       @"No assets path found for OAuth2Handler (dataDirectory: %@, cwd: %@)",
       self.dataDirectory, cwd);
   return nil;
@@ -3936,7 +3928,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     }
   }
 
-  PDS_LOG_AUTH_ERROR(
+  GZ_LOG_AUTH_ERROR(
       @"No shared CSS path found for OAuth2Handler (dataDirectory: %@, cwd: %@)",
       self.dataDirectory, cwd);
   return nil;
@@ -4006,7 +3998,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     return;
   }
 
-  PDS_LOG_AUTH_DEBUG(@"Fetching dynamic client metadata from %@", urlStr);
+  GZ_LOG_AUTH_DEBUG(@"Fetching dynamic client metadata from %@", urlStr);
 
   // For E2E tests in Docker, we may need to map the client's public URL (e.g. localhost)
   // to an internal container name (e.g. oauth-client).
@@ -4019,7 +4011,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
           effectiveUrlStr = [urlStr stringByReplacingOccurrencesOfString:parts[0]
                                                               withString:parts[1]];
           if (![effectiveUrlStr isEqualToString:urlStr]) {
-              PDS_LOG_AUTH_DEBUG(@"Mapped OAuth client URL: %@ -> %@", urlStr, effectiveUrlStr);
+              GZ_LOG_AUTH_DEBUG(@"Mapped OAuth client URL: %@ -> %@", urlStr, effectiveUrlStr);
           }
       }
   }
@@ -4029,7 +4021,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   [request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
   request.timeoutInterval = 10.0;
 
-  PDSSafeHTTPClientOptions *safeOptions = [[PDSSafeHTTPClientOptions alloc] init];
+  ATProtoSafeHTTPClientOptions *safeOptions = [[ATProtoSafeHTTPClientOptions alloc] init];
   safeOptions.timeout = 10.0;
   safeOptions.maxResponseBytes = 256 * 1024; // 256 KB
   
@@ -4044,27 +4036,27 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
   safeOptions.allowPrivateHosts = allowPrivate;
   safeOptions.followRedirects = YES;
 
-  [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
+  [[ATProtoSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
                                                  options:safeOptions
                                               completion:^(NSData *data, NSHTTPURLResponse *httpResponse, NSError *err) {
-    // Map PDSSafeHTTPClient SSRF errors to OAuth error codes
-    if (err && [err.domain isEqualToString:PDSSafeHTTPClientErrorDomain]) {
+    // Map ATProtoSafeHTTPClient SSRF errors to OAuth error codes
+    if (err && [err.domain isEqualToString:ATProtoSafeHTTPClientErrorDomain]) {
       NSInteger oauthErrorCode = 500;
       NSString *oauthMessage = @"Failed to fetch client metadata";
-      if (err.code == PDSSafeHTTPClientErrorSSRFBlocked) {
+      if (err.code == ATProtoSafeHTTPClientErrorSSRFBlocked) {
         oauthErrorCode = 403;
         oauthMessage = @"SSRF Protection: Host resolves to private IP address";
-        PDS_LOG_AUTH_ERROR(@"Blocked SSRF attempt for dynamic discovery: %@", urlStr);
-      } else if (err.code == PDSSafeHTTPClientErrorInvalidURL) {
+        GZ_LOG_AUTH_ERROR(@"Blocked SSRF attempt for dynamic discovery: %@", urlStr);
+      } else if (err.code == ATProtoSafeHTTPClientErrorInvalidURL) {
         oauthErrorCode = 400;
         oauthMessage = @"Invalid client_id URL";
-      } else if (err.code == PDSSafeHTTPClientErrorUnsupportedScheme) {
+      } else if (err.code == ATProtoSafeHTTPClientErrorUnsupportedScheme) {
         oauthErrorCode = 400;
         oauthMessage = @"Only HTTPS is allowed for client metadata";
-      } else if (err.code == PDSSafeHTTPClientErrorRedirectBlocked) {
+      } else if (err.code == ATProtoSafeHTTPClientErrorRedirectBlocked) {
         oauthErrorCode = 403;
         oauthMessage = @"SSRF Protection: Redirect target resolves to private IP address";
-        PDS_LOG_AUTH_ERROR(@"Blocked SSRF redirect attempt for dynamic discovery: %@", urlStr);
+        GZ_LOG_AUTH_ERROR(@"Blocked SSRF redirect attempt for dynamic discovery: %@", urlStr);
       }
       NSError *oauthError = [NSError errorWithDomain:@"OAuth2"
                                                  code:oauthErrorCode

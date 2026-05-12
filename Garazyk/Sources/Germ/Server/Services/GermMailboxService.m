@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "GermMailboxService.h"
 #import "Database/PDSDatabase.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 // Default TTL for ephemeral addresses (24 hours in seconds)
 static const NSTimeInterval kGermMailboxDefaultTTL = 86400.0;
@@ -63,13 +63,13 @@ static const NSInteger kGermAddressByteLength = 32;
                                                                           params:@[address, agentRef, expiresAt]
                                                                            error:error];
         if (!success) {
-            PDS_LOG_ERROR(@"Failed to claim mailbox address: %@", *error ?: @"unknown error");
+            GZ_LOG_ERROR(@"Failed to claim mailbox address: %@", *error ?: @"unknown error");
             return nil;
         }
         [addresses addObject:address];
     }
 
-    PDS_LOG_DEBUG(@"Claimed %ld ephemeral addresses for agent", (long)count);
+    GZ_LOG_DEBUG(@"Claimed %ld ephemeral addresses for agent", (long)count);
     return [addresses copy];
 }
 
@@ -93,7 +93,7 @@ static const NSInteger kGermAddressByteLength = 32;
                                                                      params:@[address]
                                                                       error:error];
     if (!rows) {
-        PDS_LOG_ERROR(@"Mailbox address lookup failed: %@", *error ?: @"unknown error");
+        GZ_LOG_ERROR(@"Mailbox address lookup failed: %@", *error ?: @"unknown error");
         return NO;
     }
 
@@ -113,11 +113,11 @@ static const NSInteger kGermAddressByteLength = 32;
                                                                      params:@[messageId, address, ciphertext]
                                                                       error:error];
     if (!success) {
-        PDS_LOG_ERROR(@"Failed to deliver ciphertext to mailbox: %@", *error ?: @"unknown error");
+        GZ_LOG_ERROR(@"Failed to deliver ciphertext to mailbox: %@", *error ?: @"unknown error");
         return NO;
     }
 
-    PDS_LOG_DEBUG(@"Delivered ciphertext to ephemeral address");
+    GZ_LOG_DEBUG(@"Delivered ciphertext to ephemeral address");
     return YES;
 }
 
@@ -144,7 +144,7 @@ static const NSInteger kGermAddressByteLength = 32;
                                                                      params:@[agentRef]
                                                                       error:error];
     if (!rows) {
-        PDS_LOG_ERROR(@"Failed to poll mailbox messages: %@", *error ?: @"unknown error");
+        GZ_LOG_ERROR(@"Failed to poll mailbox messages: %@", *error ?: @"unknown error");
         return nil;
     }
 
@@ -171,7 +171,7 @@ static const NSInteger kGermAddressByteLength = 32;
                                                            error:nil];
     }
 
-    PDS_LOG_DEBUG(@"Polled %lu messages for agent", (unsigned long)messages.count);
+    GZ_LOG_DEBUG(@"Polled %lu messages for agent", (unsigned long)messages.count);
     return [messages copy];
 }
 
@@ -198,11 +198,11 @@ static const NSInteger kGermAddressByteLength = 32;
                                                                      params:@[address, agentRef, @(epoch)]
                                                                       error:error];
     if (!success) {
-        PDS_LOG_ERROR(@"Failed to register rendezvous address: %@", *error ?: @"unknown error");
+        GZ_LOG_ERROR(@"Failed to register rendezvous address: %@", *error ?: @"unknown error");
         return NO;
     }
 
-    PDS_LOG_DEBUG(@"Registered rendezvous address for epoch %ld", (long)epoch);
+    GZ_LOG_DEBUG(@"Registered rendezvous address for epoch %ld", (long)epoch);
     return YES;
 }
 
@@ -242,11 +242,11 @@ static const NSInteger kGermAddressByteLength = 32;
                                                                      params:@[messageId, address, ciphertext]
                                                                       error:error];
     if (!success) {
-        PDS_LOG_ERROR(@"Failed to deliver to rendezvous address: %@", *error ?: @"unknown error");
+        GZ_LOG_ERROR(@"Failed to deliver to rendezvous address: %@", *error ?: @"unknown error");
         return NO;
     }
 
-    PDS_LOG_DEBUG(@"Delivered ciphertext to rendezvous address");
+    GZ_LOG_DEBUG(@"Delivered ciphertext to rendezvous address");
     return YES;
 }
 
@@ -304,8 +304,8 @@ static const NSInteger kGermAddressByteLength = 32;
 - (void)expireStaleAddresses {
     // Delete expired ephemeral addresses (cascades to messages)
     NSString *sql = @"DELETE FROM germ_mailboxes WHERE datetime(expires_at) <= datetime('now')";
-    [(PDSDatabase *)self.database executeRawSQL:sql error:nil];
-    PDS_LOG_DEBUG(@"Expired stale mailbox addresses");
+    [(PDSDatabase *)self.database executeParameterizedUpdate:sql params:@[] error:nil];
+    GZ_LOG_DEBUG(@"Expired stale mailbox addresses");
 }
 
 #pragma mark - Private Helpers

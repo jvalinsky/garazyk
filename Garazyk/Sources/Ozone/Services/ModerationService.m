@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "ModerationService.h"
 #import "Database/PDSDatabase.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @interface ModerationService ()
 @property (nonatomic, weak) id<PDSQueryDatabase> database;

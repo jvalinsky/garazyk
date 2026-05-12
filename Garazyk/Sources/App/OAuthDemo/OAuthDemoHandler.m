@@ -4,7 +4,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "App/PDSController.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/Foundation/NSDataCompat.h"
 
 @interface OAuthDemoHandler ()

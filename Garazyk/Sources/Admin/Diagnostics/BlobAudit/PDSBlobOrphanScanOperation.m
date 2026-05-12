@@ -9,7 +9,7 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Core/CID.h"
 #import <sqlite3.h>
 
@@ -22,7 +22,7 @@
     NSError *error = nil;
     NSArray<CID *> *allCIDs = [self.blobStorage.provider listAllCIDsWithError:&error];
     if (!allCIDs) {
-        PDS_LOG_ERROR(@"OrphanScan: Failed to list CIDs from provider: %@", error);
+        GZ_LOG_ERROR(@"OrphanScan: Failed to list CIDs from provider: %@", error);
         [self updateProgress:1.0 status:@"Failed to list CIDs"];
         return;
     }
@@ -36,7 +36,7 @@
 
     NSArray<PDSDatabaseAccount *> *accounts = [self.serviceDatabases getAllAccountsWithError:&error];
     if (!accounts) {
-        PDS_LOG_ERROR(@"OrphanScan: Failed to list accounts: %@", error);
+        GZ_LOG_ERROR(@"OrphanScan: Failed to list accounts: %@", error);
         [self updateProgress:1.0 status:@"Failed to list accounts"];
         return;
     }
@@ -85,7 +85,7 @@
             }
         } error:&readError];
         if (readError) {
-            PDS_LOG_ERROR(@"OrphanScan: Failed to read account %@: %@", account.did, readError);
+            GZ_LOG_ERROR(@"OrphanScan: Failed to read account %@: %@", account.did, readError);
         }
     }
 
@@ -107,7 +107,7 @@
     [self saveResults:results error:&error];
 
     if (error) {
-        PDS_LOG_DB_ERROR(@"Failed to save orphan scan results: %@", error);
+        GZ_LOG_DB_ERROR(@"Failed to save orphan scan results: %@", error);
     }
 }
 

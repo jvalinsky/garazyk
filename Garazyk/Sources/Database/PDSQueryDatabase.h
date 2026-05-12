@@ -34,10 +34,10 @@ NS_ASSUME_NONNULL_BEGIN
                             error:(NSError **)error;
 
 /*!
- @method executeRawSQL:error:
- @abstract Execute raw SQL without parameters.
+ @method executeUnsafeRawSQL:error:
+ @abstract Execute raw SQL without parameters (UNSAFE).
  */
-- (BOOL)executeRawSQL:(NSString *)sql error:(NSError **)error;
+- (BOOL)executeUnsafeRawSQL:(NSString *)sql error:(NSError **)error;
 
 /*!
  @method getBlockWithCid:repoDid:error:

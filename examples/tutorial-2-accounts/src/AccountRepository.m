@@ -100,7 +100,7 @@
 
 - (nullable Account *)accountWhere:(NSString *)column equals:(NSString *)value error:(NSError **)error {
     __block NSError *blockError = nil;
-    Account *result = [self.db executeQuery:&blockError block:^id _Nullable(sqlite3 *db) {
+    Account *result = [self.db executeUnsafeRawQuery:&blockError block:^id _Nullable(sqlite3 *db) {
         NSString *sql = [NSString stringWithFormat:
             @"SELECT did, handle, email, password_hash, password_salt, access_jwt, refresh_jwt, created_at "
             @"FROM accounts WHERE %@ = ?", column];

@@ -43,7 +43,7 @@
 #import "Core/PDSServiceContainer.h"
 #import "Core/DID.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Email/PDSEmailProvider.h"
 #import "Email/PDSEmailProviderFactory.h"
 #import "Email/PDSSecretsProvider.h"
@@ -75,7 +75,7 @@
 @end
 
 static void PDSApplicationUncaughtExceptionHandler(NSException *exception) {
-    PDS_LOG_ERROR(@"Core", @"Uncaught exception: %@ — %@\n%@",
+    GZ_LOG_ERROR(@"Core", @"Uncaught exception: %@ — %@\n%@",
                   exception.name,
                   exception.reason,
                   exception.callStackSymbols);
@@ -107,7 +107,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
         return;
     }
     didLog = YES;
-    PDS_LOG_AUTH_INFO(@"Using in-memory secp256k1 JWT signing key in test mode (keychain disabled).");
+    GZ_LOG_AUTH_INFO(@"Using in-memory secp256k1 JWT signing key in test mode (keychain disabled).");
 }
 
 @implementation PDSApplication {
@@ -172,7 +172,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
         [self configureLogging];
         [self configureRateLimiter];
         
-        PDS_LOG_INFO_C(PDSLogComponentCore, @"PDSApplication initializing with data directory: %@", _dataDirectory);
+        GZ_LOG_INFO_C(GZLogComponentCore, @"PDSApplication initializing with data directory: %@", _dataDirectory);
         
         [self initializeInfrastructure];
         [self initializeServices];
@@ -211,14 +211,14 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
         NSError *error = nil;
         if ([registry loadLexiconsFromDirectory:path error:&error]) {
             loadedAny = YES;
-            PDS_LOG_INFO_C(PDSLogComponentCore, @"Loaded lexicons from %@", path);
+            GZ_LOG_INFO_C(GZLogComponentCore, @"Loaded lexicons from %@", path);
         } else if (error) {
-            PDS_LOG_WARN_C(PDSLogComponentCore, @"Failed to load lexicons from %@: %@", path, error.localizedDescription);
+            GZ_LOG_WARN_C(GZLogComponentCore, @"Failed to load lexicons from %@: %@", path, error.localizedDescription);
         }
     }
     
     if (!loadedAny) {
-        PDS_LOG_WARN_C(PDSLogComponentCore, @"No lexicons found in any search path: %@", searchPaths);
+        GZ_LOG_WARN_C(GZLogComponentCore, @"No lexicons found in any search path: %@", searchPaths);
     }
 }
 
@@ -227,7 +227,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
 - (void)configureLogging {
     if (!_configuration) return;
     
-    PDSLogger *logger = [PDSLogger sharedLogger];
+    GZLogger *logger = [GZLogger sharedLogger];
     if (_configuration.logFilePath) {
         logger.logFilePath = _configuration.logFilePath;
     }
@@ -268,7 +268,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
            withIntermediateDirectories:YES
                             attributes:nil
                                  error:&dirError]) {
-            PDS_LOG_ERROR(@"Core", @"Failed to create data directory %@: %@", _dataDirectory, dirError);
+            GZ_LOG_ERROR(@"Core", @"Failed to create data directory %@: %@", _dataDirectory, dirError);
         }
     }
     
@@ -309,7 +309,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
         for (NSDictionary *entry in cachedDIDs) {
             [resolver seedCacheWithDID:entry[@"did"] documentJSON:entry[@"document"]];
         }
-        PDS_LOG_INFO_C(PDSLogComponentCore, @"Pre-populated DIDResolver cache with %lu entries from persistent store", (unsigned long)cachedDIDs.count);
+        GZ_LOG_INFO_C(GZLogComponentCore, @"Pre-populated DIDResolver cache with %lu entries from persistent store", (unsigned long)cachedDIDs.count);
     }
 
     _userDatabasePool = [[PDSDatabasePool alloc] initWithDbDirectory:_dataDirectory maxSize:userMaxSize];
@@ -322,11 +322,11 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
                         [[pdsEnv[@"PDS_REQUIRE_ISSUER"] lowercaseString] isEqualToString:@"1"] ||
                         [[pdsEnv[@"PDS_REQUIRE_ISSUER"] lowercaseString] isEqualToString:@"true"];
     if (isProduction && configuredIssuer.length == 0) {
-        PDS_LOG_ERROR(@"Core", @"PDS_ISSUER must be set to your public HTTPS domain in production (e.g. PDS_ISSUER=https://pds.example.com). Refusing to start.");
+        GZ_LOG_ERROR(@"Core", @"PDS_ISSUER must be set to your public HTTPS domain in production (e.g. PDS_ISSUER=https://pds.example.com). Refusing to start.");
         exit(1);
     }
     if (isProduction && [configuredIssuer containsString:@"pds.local"]) {
-        PDS_LOG_ERROR(@"Core", @"PDS_ISSUER cannot use a local placeholder domain in production. Refusing to start.");
+        GZ_LOG_ERROR(@"Core", @"PDS_ISSUER cannot use a local placeholder domain in production. Refusing to start.");
         exit(1);
     }
     _jwtMinter.issuer = [_configuration canonicalIssuerWithPortHint:_httpPort];
@@ -344,7 +344,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
             hasProvisionedSigningKey = YES;
             PDSApplicationLogEphemeralJWTKeyModeOnce();
         } else {
-            PDS_LOG_AUTH_WARN(@"Test-mode ephemeral JWT key generation failed; falling back to key manager path: %@",
+            GZ_LOG_AUTH_WARN(@"Test-mode ephemeral JWT key generation failed; falling back to key manager path: %@",
                               fallbackError.localizedDescription ?: @"unknown error");
         }
     }
@@ -354,7 +354,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
         id<PDSKeyManager> keyManager = [PDSKeyManagerFactory createKeyManagerWithDatabase:[_serviceDatabases serviceDatabaseWithError:nil]];
         id<PDSKeyPair> activeKey = [keyManager getActiveKeyPair:&serverKeyError];
         if (serverKeyError) {
-            PDS_LOG_AUTH_WARN(@"JWT signing key load/create error: %@", serverKeyError.localizedDescription ?: @"unknown error");
+            GZ_LOG_AUTH_WARN(@"JWT signing key load/create error: %@", serverKeyError.localizedDescription ?: @"unknown error");
         }
 
         if (activeKey) {
@@ -367,10 +367,10 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
                 _jwtMinter.signingAlgorithm = @"ES256K";
                 _jwtMinter.privateKey = fallbackKeyPair.privateKey;
                 _jwtMinter.publicKey = fallbackKeyPair.publicKey;
-                PDS_LOG_AUTH_WARN(@"Using in-memory secp256k1 JWT signing key fallback because key manager provisioning failed.");
+                GZ_LOG_AUTH_WARN(@"Using in-memory secp256k1 JWT signing key fallback because key manager provisioning failed.");
             } else {
                 _jwtMinter.keyManager = keyManager;
-                PDS_LOG_AUTH_WARN(@"JWT fallback key generation failed: %@", fallbackError.localizedDescription ?: @"unknown error");
+                GZ_LOG_AUTH_WARN(@"JWT fallback key generation failed: %@", fallbackError.localizedDescription ?: @"unknown error");
             }
         } else {
             _jwtMinter.keyManager = keyManager;
@@ -406,7 +406,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
                                                   secretsProvider:nil
                                                             error:&emailError];
         if (!emailProvider && emailError) {
-            PDS_LOG_WARN(@"Failed to initialize email provider: %@", emailError);
+            GZ_LOG_WARN(@"Failed to initialize email provider: %@", emailError);
         }
     }
     _emailProvider = emailProvider;
@@ -472,7 +472,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     BOOL xAdminTokenDisabled = [[startupEnv[@"PDS_DISABLE_X_ADMIN_TOKEN_HEADER"] lowercaseString] isEqualToString:@"1"] ||
                                 [[startupEnv[@"PDS_DISABLE_X_ADMIN_TOKEN_HEADER"] lowercaseString] isEqualToString:@"true"];
     if (isProductionEnv && !xAdminTokenDisabled) {
-        PDS_LOG_WARN(@"Auth", @"X-Admin-Token legacy header is active in production. Set PDS_DISABLE_X_ADMIN_TOKEN_HEADER=1 to disable it.");
+        GZ_LOG_WARN(@"Auth", @"X-Admin-Token legacy header is active in production. Set PDS_DISABLE_X_ADMIN_TOKEN_HEADER=1 to disable it.");
     }
 
     // Firehose handler
@@ -488,12 +488,12 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
 }
 
 - (BOOL)startWithError:(NSError **)error {
-    PDS_LOG_CORE_INFO(@"Starting PDSApplication...");
+    GZ_LOG_CORE_INFO(@"Starting PDSApplication...");
 
     // Startup readiness checks
     NSError *readinessError = nil;
     if (![PDSReadinessCheck performReadinessChecksWithConfig:_configuration serviceDatabases:_serviceDatabases error:&readinessError]) {
-        PDS_LOG_CORE_ERROR(@"Server failed readiness checks: %@", readinessError);
+        GZ_LOG_CORE_ERROR(@"Server failed readiness checks: %@", readinessError);
         if (error) *error = readinessError;
         return NO;
     }
@@ -517,13 +517,13 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     if (_configuration.chatServiceURL.length > 0) {
         _xrpcDispatcher.chatURL = [NSURL URLWithString:_configuration.chatServiceURL];
         _xrpcDispatcher.chatDID = _configuration.chatServiceDID;
-        PDS_LOG_CORE_INFO(@"Configured Chat proxy to %@", _configuration.chatServiceURL);
+        GZ_LOG_CORE_INFO(@"Configured Chat proxy to %@", _configuration.chatServiceURL);
     }
     
     NSError *buildError = nil;
     _httpServer = [builder buildWithError:&buildError];
     if (!_httpServer) {
-        PDS_LOG_CORE_ERROR(@"Failed to build HTTP server: %@", buildError);
+        GZ_LOG_CORE_ERROR(@"Failed to build HTTP server: %@", buildError);
         if (error) *error = buildError;
         return NO;
     }
@@ -531,14 +531,14 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     // Start HTTP server
     NSError *httpError = nil;
     if (![_httpServer startWithError:&httpError]) {
-        PDS_LOG_CORE_ERROR(@"Failed to start HTTP server: %@", httpError);
+        GZ_LOG_CORE_ERROR(@"Failed to start HTTP server: %@", httpError);
         if (error) *error = httpError;
         return NO;
     }
     _httpPort = _httpServer.port;
     _configuration.serverPort = _httpPort;
-    PDS_LOG_CORE_INFO(@"HTTP server started on port %lu", (unsigned long)_httpPort);
-    PDS_LOG_CORE_INFO(@"subscribeRepos WebSocket upgrades available on HTTP port %lu", (unsigned long)_httpPort);
+    GZ_LOG_CORE_INFO(@"HTTP server started on port %lu", (unsigned long)_httpPort);
+    GZ_LOG_CORE_INFO(@"subscribeRepos WebSocket upgrades available on HTTP port %lu", (unsigned long)_httpPort);
     
     [_subscribeReposHandler startObservingNotifications];
 
@@ -558,22 +558,22 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
         worker.blobUploader = uploader;
         worker.authProvider = authProvider;
         [worker start];
-        PDS_LOG_CORE_INFO(@"Video processing worker started (internal mode)");
+        GZ_LOG_CORE_INFO(@"Video processing worker started (internal mode)");
     } else {
-        PDS_LOG_CORE_INFO(@"Video processing disabled (external mode — use jelcz side-car)");
+        GZ_LOG_CORE_INFO(@"Video processing disabled (external mode — use jelcz side-car)");
     }
 
     // Start analytics collection for diagnostics dashboard
     [_analyticsCollector startCollecting];
     [PDSSequencerHealthHandler sharedHandler].analyticsCollector = _analyticsCollector;
-    PDS_LOG_CORE_INFO(@"Sequencer analytics collector started");
+    GZ_LOG_CORE_INFO(@"Sequencer analytics collector started");
 
-    PDS_LOG_CORE_INFO(@"PDSApplication started successfully");
+    GZ_LOG_CORE_INFO(@"PDSApplication started successfully");
     return YES;
 }
 
 - (void)stop {
-    PDS_LOG_CORE_INFO(@"Stopping PDSApplication...");
+    GZ_LOG_CORE_INFO(@"Stopping PDSApplication...");
     
     // Stop video processing worker
     [[ATProtoVideoWorker sharedWorker] stop];
@@ -596,11 +596,11 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     [_serviceDatabases closeAll];
     
     // Logger
-    [[PDSLogger sharedLogger] flush];
-    [[PDSLogger sharedLogger] closeLogFile];
+    [[GZLogger sharedLogger] flush];
+    [[GZLogger sharedLogger] closeLogFile];
     
     _running = NO;
-    PDS_LOG_CORE_INFO(@"PDSApplication stopped");
+    GZ_LOG_CORE_INFO(@"PDSApplication stopped");
 }
 
 @end

@@ -28,7 +28,7 @@
 #import "Auth/CryptoUtils.h"
 #import "Auth/Secp256k1.h"
 #import "Core/NSDateFormatter+ATProto.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
@@ -273,7 +273,7 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
             [token appendFormat:@"%C", [alphabet characterAtIndex:arc4random_uniform((uint32_t)alphabet.length)]];
         }
         [XrpcMethodRegistry storePlcOperationToken:token forDid:did];
-        PDS_LOG_INFO(@"Generated PLC operation token for DID %@", did);
+        GZ_LOG_INFO(@"Generated PLC operation token for DID %@", did);
 
         if (emailProvider && account.email.length > 0) {
             NSString *subject = @"PLC Operation Confirmation Code";
@@ -281,7 +281,7 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
             
             NSError *emailError = nil;
             if (![emailProvider sendEmailTo:account.email subject:subject body:body error:&emailError]) {
-                PDS_LOG_ERROR(@"Failed to send PLC operation email to %@: %@", account.email, emailError);
+                GZ_LOG_ERROR(@"Failed to send PLC operation email to %@: %@", account.email, emailError);
                 response.statusCode = HttpStatusInternalServerError;
                 [response setJsonBody:@{@"error": @"EmailFailed", @"message": @"Failed to send confirmation email"}];
                 return;
@@ -460,10 +460,10 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
         NSData *sig = nil;
         
         if (perDidRotationKey) {
-            PDS_LOG_INFO(@"Signing PLC operation with per-DID rotation key for %@", did);
+            GZ_LOG_INFO(@"Signing PLC operation with per-DID rotation key for %@", did);
             sig = [[Secp256k1 shared] signHash:hash withPrivateKey:perDidRotationKey error:&signError];
         } else {
-            PDS_LOG_INFO(@"Signing PLC operation with server rotation key for %@", did);
+            GZ_LOG_INFO(@"Signing PLC operation with server rotation key for %@", did);
             [keyManager signHash:hash result:&sig error:&signError];
         }
 
@@ -568,7 +568,7 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
         }
 
         if (XrpcIdentityUsesMockPLC(configuration)) {
-            PDS_LOG_INFO(@"Skipping PLC audit and submission (mock mode) for DID %@", did);
+            GZ_LOG_INFO(@"Skipping PLC audit and submission (mock mode) for DID %@", did);
             response.statusCode = HttpStatusOK;
             [response setJsonBody:@{}];
             return;
@@ -646,7 +646,7 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
             return;
         }
 
-        PDS_LOG_INFO(@"Submitted PLC operation for DID %@", did);
+        GZ_LOG_INFO(@"Submitted PLC operation for DID %@", did);
 
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{}];
@@ -687,7 +687,7 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
 
         NSDictionary *body = request.jsonBody ?: @{};
         NSString *handle = body[@"handle"];
-        PDS_LOG_DEBUG(@"updateHandle: handle=%@", handle);
+        GZ_LOG_DEBUG(@"updateHandle: handle=%@", handle);
         if (handle.length == 0) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing handle"}];
@@ -696,24 +696,24 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
 
         NSError *validateError = nil;
         if (![ATProtoHandleValidator validateHandle:handle error:&validateError]) {
-            PDS_LOG_DEBUG(@"updateHandle: Validation failed: %@", validateError);
+            GZ_LOG_DEBUG(@"updateHandle: Validation failed: %@", validateError);
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidHandle", @"message": validateError.localizedDescription ?: @"Invalid handle"}];
             return;
         }
         NSString *normalizedHandle = [ATProtoHandleValidator normalizeHandle:handle];
-        PDS_LOG_DEBUG(@"updateHandle: normalizedHandle=%@", normalizedHandle);
+        GZ_LOG_DEBUG(@"updateHandle: normalizedHandle=%@", normalizedHandle);
 
         // 1. Uniqueness Check
-        PDS_LOG_DEBUG(@"updateHandle: Checking uniqueness");
+        GZ_LOG_DEBUG(@"updateHandle: Checking uniqueness");
         NSError *error = nil;
         PDSDatabaseAccount *existingAccount = [serviceDatabases getAccountByHandle:normalizedHandle error:&error];
-        PDS_LOG_DEBUG(@"updateHandle: Uniqueness check done, existingAccount=%@", existingAccount);
+        GZ_LOG_DEBUG(@"updateHandle: Uniqueness check done, existingAccount=%@", existingAccount);
 
         BOOL needsUpdate = YES;
         if (existingAccount && [existingAccount.did isEqualToString:did]) {
             // Already owns this handle in local DB - verify PLC also matches before skipping
-            PDS_LOG_DEBUG(@"updateHandle: Local DB has handle %@ for did=%@", normalizedHandle, did);
+            GZ_LOG_DEBUG(@"updateHandle: Local DB has handle %@ for did=%@", normalizedHandle, did);
             // Continue to PLC check below to ensure PLC is in sync
         } else if (existingAccount) {
             response.statusCode = HttpStatusConflict;
@@ -725,7 +725,7 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
 
         if (needsUpdate) {
             // 2. Handle Ownership Verification
-            PDS_LOG_DEBUG(@"updateHandle: Verifying handle ownership for %@", normalizedHandle);
+            GZ_LOG_DEBUG(@"updateHandle: Verifying handle ownership for %@", normalizedHandle);
             
             BOOL isLocal = NO;
             NSString *hostname = [configuration canonicalHostname];
@@ -747,7 +747,7 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
                 NSString *resolvedDid = [XrpcIdentityHelper resolveHandleToDid:normalizedHandle handleResolver:handleResolver error:&rError];
 
                 if (![resolvedDid isEqualToString:did]) {
-                    PDS_LOG_ERROR(@"Handle verification failed for %@: expected %@, got %@", normalizedHandle, did, resolvedDid);
+                    GZ_LOG_ERROR(@"Handle verification failed for %@: expected %@, got %@", normalizedHandle, did, resolvedDid);
                     response.statusCode = HttpStatusBadRequest;
                     [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Handle resolution does not match DID"}];
                     return;
@@ -755,9 +755,9 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
             }
 
             // 3. Identity Update / Validation
-            PDS_LOG_DEBUG(@"updateHandle: Starting PLC/DID update for did=%@", did);
+            GZ_LOG_DEBUG(@"updateHandle: Starting PLC/DID update for did=%@", did);
             if (XrpcIdentityUsesMockPLC(configuration)) {
-                PDS_LOG_DB_DEBUG(@"Skipping PLC handle update (mock mode) for DID %@", did);
+                GZ_LOG_DB_DEBUG(@"Skipping PLC handle update (mock mode) for DID %@", did);
             } else if ([did hasPrefix:@"did:plc:"]) {
                 NSString *plcUrl = configuration.plcURL;
                 if ([plcUrl isEqualToString:@"mock"] || plcUrl.length == 0) {
@@ -765,13 +765,13 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
                 }
                 
                 DIDPLCResolver *plcResolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
-                PDS_LOG_DEBUG(@"updateHandle: Resolving PLC audit log for DID=%@", did);
+                GZ_LOG_DEBUG(@"updateHandle: Resolving PLC audit log for DID=%@", did);
                 NSError *auditError = nil;
                 NSArray *auditLog = [plcResolver resolveAuditLogForDID:did error:&auditError];
-                PDS_LOG_DEBUG(@"updateHandle: PLC audit log resolved, count=%lu, error=%@", (unsigned long)auditLog.count, auditError);
+                GZ_LOG_DEBUG(@"updateHandle: PLC audit log resolved, count=%lu, error=%@", (unsigned long)auditLog.count, auditError);
                 
                 if (!auditLog || auditLog.count == 0) {
-                    PDS_LOG_ERROR(@"PLC audit log empty or not found for DID %@: %@", did, auditError);
+                    GZ_LOG_ERROR(@"PLC audit log empty or not found for DID %@: %@", did, auditError);
                     response.statusCode = HttpStatusBadRequest;
                     [response setJsonBody:@{@"error": @"NotFound", @"message": @"DID not found in PLC directory"}];
                     return;
@@ -780,7 +780,7 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
                 PLCRotationKeyManager *keyManager = [PLCRotationKeyManager sharedManager];
                 NSError *keyError = nil;
                 if (![keyManager loadOrGenerateKeyWithError:&keyError]) {
-                    PDS_LOG_ERROR(@"Failed to load rotation key for DID %@: %@", did, keyError);
+                    GZ_LOG_ERROR(@"Failed to load rotation key for DID %@: %@", did, keyError);
                     response.statusCode = HttpStatusInternalServerError;
                     [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to load rotation key"}];
                     return;
@@ -801,35 +801,35 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
                     if (operation) {
                         [ops addObject:operation];
                     } else {
-                        PDS_LOG_ERROR(@"updateHandle: Failed to parse PLC operation from audit log: %@, error: %@", dict, parseError);
+                        GZ_LOG_ERROR(@"updateHandle: Failed to parse PLC operation from audit log: %@, error: %@", dict, parseError);
                     }
                 }
                 
                 PLCDIDState *currentState = nil;
                 @try {
-                    PDS_LOG_DEBUG(@"updateHandle: Replaying PLC history");
+                    GZ_LOG_DEBUG(@"updateHandle: Replaying PLC history");
                     currentState = [PLCStateReplayer replayHistory:ops error:&auditError];
                 } @catch (NSException *exception) {
-                    PDS_LOG_ERROR(@"updateHandle: Exception replaying PLC history: %@", exception);
+                    GZ_LOG_ERROR(@"updateHandle: Exception replaying PLC history: %@", exception);
                     response.statusCode = HttpStatusInternalServerError;
                     [response setJsonBody:@{@"error": @"InternalError", @"message": [NSString stringWithFormat:@"Exception replaying DID history: %@", exception.reason]}];
                     return;
                 }
 
                 if (!currentState) {
-                    PDS_LOG_ERROR(@"Failed to replay PLC state for DID %@: %@", did, auditError);
+                    GZ_LOG_ERROR(@"Failed to replay PLC state for DID %@: %@", did, auditError);
                     response.statusCode = HttpStatusInternalServerError;
                     [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to replay DID history"}];
                     return;
                 }
 
                 // Check if PLC already has this handle - if so, only DB update needed
-                PDS_LOG_INFO(@"updateHandle: Checking PLC state, alsoKnownAs=%@, target=%@", currentState.alsoKnownAs, normalizedHandle);
+                GZ_LOG_INFO(@"updateHandle: Checking PLC state, alsoKnownAs=%@, target=%@", currentState.alsoKnownAs, normalizedHandle);
                 NSString *plcHandle = nil;
                 for (NSString *aka in currentState.alsoKnownAs) {
                     if ([aka hasPrefix:@"at://"]) {
                         NSString *handle = [aka substringFromIndex:5]; // remove "at://"
-                        PDS_LOG_DEBUG(@"updateHandle: Found handle in PLC: %@", handle);
+                        GZ_LOG_DEBUG(@"updateHandle: Found handle in PLC: %@", handle);
                         if ([handle isEqualToString:normalizedHandle]) {
                             plcHandle = handle;
                             break;
@@ -837,11 +837,11 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
                     }
                 }
                 
-                PDS_LOG_INFO(@"updateHandle: After PLC check, plcHandle=%@", plcHandle);
+                GZ_LOG_INFO(@"updateHandle: After PLC check, plcHandle=%@", plcHandle);
                 if (plcHandle) {
-                    PDS_LOG_INFO(@"updateHandle: PLC already has handle %@, need DB update", normalizedHandle);
+                    GZ_LOG_INFO(@"updateHandle: PLC already has handle %@, need DB update", normalizedHandle);
                 } else {
-                    PDS_LOG_INFO(@"updateHandle: Creating PLC operation for handle %@", normalizedHandle);
+                    GZ_LOG_INFO(@"updateHandle: Creating PLC operation for handle %@", normalizedHandle);
                     // Create update operation
                     NSMutableDictionary *op = [NSMutableDictionary dictionary];
                     op[@"type"] = @"plc_operation";
@@ -875,15 +875,15 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
                     NSData *sigData = nil;
                     
                     if (perDidRotationKey) {
-                        PDS_LOG_INFO(@"Signing handle update with per-DID rotation key for %@", did);
+                        GZ_LOG_INFO(@"Signing handle update with per-DID rotation key for %@", did);
                         sigData = [[Secp256k1 shared] signHash:hash withPrivateKey:perDidRotationKey error:&signError];
                     } else {
-                        PDS_LOG_INFO(@"Signing handle update with server rotation key for %@", did);
+                        GZ_LOG_INFO(@"Signing handle update with server rotation key for %@", did);
                         [keyManager signHash:hash result:&sigData error:&signError];
                     }
 
                     if (!sigData) {
-                        PDS_LOG_ERROR(@"Failed to sign PLC operation for DID %@: %@", did, signError);
+                        GZ_LOG_ERROR(@"Failed to sign PLC operation for DID %@: %@", did, signError);
                         response.statusCode = HttpStatusInternalServerError;
                         [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to sign operation"}];
                         return;
@@ -891,12 +891,12 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
                     op[@"sig"] = [CryptoUtils base64URLEncode:sigData];
 
                     // Submit to PLC
-                    PDS_LOG_DEBUG(@"updateHandle: Submitting PLC operation for DID=%@", did);
+                    GZ_LOG_DEBUG(@"updateHandle: Submitting PLC operation for DID=%@", did);
                     NSInteger statusCode = 0;
                     NSData *responseData = [plcResolver submitOperation:op did:did statusCode:&statusCode error:&auditError];
                     if (statusCode < 200 || statusCode >= 300) {
                         NSString *respString = responseData ? [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding] : @"";
-                        PDS_LOG_ERROR(@"PLC handle update failed: %ld %@", (long)statusCode, respString);
+                        GZ_LOG_ERROR(@"PLC handle update failed: %ld %@", (long)statusCode, respString);
                         response.statusCode = HttpStatusServiceUnavailable;
                         [response setJsonBody:@{@"error": @"UpstreamError", @"message": @"Failed to submit operation to PLC directory"}];
                         return;
@@ -904,11 +904,11 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
                 }  // end else (plcHandle)
             } else {
                 // Non-PLC DID (e.g. did:web). Verification already performed above in Step 2.
-                PDS_LOG_DEBUG(@"updateHandle: Non-PLC DID %@ verification successful", did);
+                GZ_LOG_DEBUG(@"updateHandle: Non-PLC DID %@ verification successful", did);
             }
 
             // 4. Database Update
-            PDS_LOG_INFO(@"updateHandle: Doing DB update for did=%@, handle=%@", did, normalizedHandle);
+            GZ_LOG_INFO(@"updateHandle: Doing DB update for did=%@, handle=%@", did, normalizedHandle);
             if (![XrpcIdentityHelper updateAccountHandle:serviceDatabases
                                                     did:did
                                                 handle:normalizedHandle
@@ -920,7 +920,7 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
         }
 
         // 5. Firehose / Sequencer Broadcast (Always run, even if handle was already owned)
-        PDS_LOG_INFO(@"updateHandle: Broadcasting identity change for did=%@, handler exists=%d", did, subscribeReposHandler != nil);
+        GZ_LOG_INFO(@"updateHandle: Broadcasting identity change for did=%@, handler exists=%d", did, subscribeReposHandler != nil);
         if (subscribeReposHandler) {
             [subscribeReposHandler broadcastIdentityChange:did handle:normalizedHandle];
         }

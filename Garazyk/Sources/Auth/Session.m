@@ -16,7 +16,7 @@
 #import "Auth/JWT.h"
 #import "Auth/PDSKeyManagerFactory.h"
 #import "Database/PDSDatabase.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 #import "Database/Utils/PDSSQLiteUtils.h"
 #import <sqlite3.h>
@@ -156,7 +156,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
             accessTokenValue = [jwt encodedToken];
             self.tokenType = @"DPoP"; // Standard for ATProto
         } else {
-            PDS_LOG_AUTH_WARN(@"Failed to mint JWT access token (falling back to UUID): %@", error);
+            GZ_LOG_AUTH_WARN(@"Failed to mint JWT access token (falling back to UUID): %@", error);
             accessTokenValue = [[NSUUID UUID] UUIDString];
         }
     } else {
@@ -182,7 +182,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
         if (jwt) {
             refreshTokenValue = [jwt encodedToken];
         } else {
-            PDS_LOG_AUTH_WARN(@"Failed to mint JWT refresh token (falling back to UUID): %@", error);
+            GZ_LOG_AUTH_WARN(@"Failed to mint JWT refresh token (falling back to UUID): %@", error);
             refreshTokenValue = [[NSUUID UUID] UUIDString];
         }
     } else {
@@ -411,7 +411,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
     if (self) {
         int rc = sqlite3_open(path.UTF8String, &_db);
         if (rc != SQLITE_OK) {
-            PDS_LOG_AUTH_ERROR(@"Failed to open session database: %s", sqlite3_errmsg(_db));
+            GZ_LOG_AUTH_ERROR(@"Failed to open session database: %s", sqlite3_errmsg(_db));
             return nil;
         }
         sqlite3_exec(_db, "PRAGMA journal_mode=WAL;", NULL, NULL, NULL);
@@ -436,7 +436,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
             
         char *errMsg = NULL;
         if (sqlite3_exec(_db, createSQL, NULL, NULL, &errMsg) != SQLITE_OK) {
-            PDS_LOG_AUTH_ERROR(@"Failed to create sessions table: %s", errMsg);
+            GZ_LOG_AUTH_ERROR(@"Failed to create sessions table: %s", errMsg);
             sqlite3_free(errMsg);
             sqlite3_close(_db);
             return nil;

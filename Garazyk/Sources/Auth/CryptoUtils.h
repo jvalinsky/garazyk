@@ -77,9 +77,9 @@ NS_ASSUME_NONNULL_BEGIN
 + (nullable NSData *)decryptData:(NSData *)data withKey:(NSData *)key;
 
 /*! Derives a key from a password and salt using PBKDF2-SHA256.
-    Uses 100,000 iterations and produces a 32-byte key.
-    Note: Uses 100,000 iterations for encryption key derivation (balance of security and
-    performance). See implementation for details on OWASP recommendations.
+    Uses 600,000 iterations and produces a 32-byte key.
+    Note: Uses 600,000 iterations for encryption key derivation to align with
+    OWASP 2023 recommendations.
     @param password The password/secret string (nonnull).
     @param salt The salt data, typically 16+ bytes (nonnull).
     @return Derived 32-byte key, or nil on failure. */

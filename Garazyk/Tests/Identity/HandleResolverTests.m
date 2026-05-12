@@ -137,7 +137,7 @@
     self = [super init];
     if (self) {
         _callCounts = [NSMutableDictionary dictionary];
-        // skipSSRFCheck removed — PDSSafeHTTPClient.allowPrivateHosts is set
+        // skipSSRFCheck removed — ATProtoSafeHTTPClient.allowPrivateHosts is set
         // automatically in test mode via PDSHandleResolverRunningTests()
     }
     return self;
@@ -172,7 +172,7 @@
 - (void)setUp {
     [super setUp];
     self.resolver = [[TestHandleResolver alloc] init];
-    // skipSSRFCheck removed — PDSSafeHTTPClient handles SSRF automatically
+    // skipSSRFCheck removed — ATProtoSafeHTTPClient handles SSRF automatically
     // with allowPrivateHosts=YES in test mode
 }
 
@@ -182,7 +182,7 @@
 
 - (void)testHandleResolverInitialization {
     XCTAssertNotNil(self.resolver, @"Resolver should be initialized");
-    // Session property removed — PDSSafeHTTPClient manages sessions internally
+    // Session property removed — ATProtoSafeHTTPClient manages sessions internally
 }
 
 - (void)testHandleValidationEmpty {
@@ -380,7 +380,7 @@
 
 - (void)testURLConstructionInvalidCharacters {
     HandleResolver *urlTestResolver = [[TestHandleResolver alloc] init];
-    // PDSSafeHTTPClient handles SSRF in test mode automatically
+    // ATProtoSafeHTTPClient handles SSRF in test mode automatically
 
     XCTestExpectation *expectation = [self expectationWithDescription:@"Invalid URL characters test"];
 
@@ -397,7 +397,7 @@
 - (void)testSessionTimeoutConfiguration {
     HandleResolver *timeoutResolver = [[TestHandleResolver alloc] init];
 
-    // Session property removed — PDSSafeHTTPClient manages timeout internally
+    // Session property removed — ATProtoSafeHTTPClient manages timeout internally
     XCTAssertNotNil(timeoutResolver, @"Resolver should be initialized");
 }
 
@@ -480,7 +480,7 @@
 - (void)testMemoryManagement {
     @autoreleasepool {
         HandleResolver *tempResolver = [[TestHandleResolver alloc] init];
-        // PDSSafeHTTPClient handles SSRF in test mode automatically
+        // ATProtoSafeHTTPClient handles SSRF in test mode automatically
         MockURLSession *tempSession = [[MockURLSession alloc] initWithResponse:@{@"statusCode": @200, @"body": @"did:plc:temp"}
                                                                          error:nil
                                                                          delay:0.1];

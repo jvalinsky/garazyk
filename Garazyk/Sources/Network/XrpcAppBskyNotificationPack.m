@@ -9,7 +9,7 @@
 #import "Network/HttpResponse.h"
 #import "AppView/Services/NotificationService.h"
 #import "AppView/Services/ActorService.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @implementation XrpcAppBskyNotificationPack
 
@@ -567,7 +567,7 @@
         [response setJsonBody:@{@"subject": subjectDID, @"activitySubscription": subscription}];
     }];
 
-    PDS_LOG_INFO(@"Registered app.bsky.notification.* endpoints");
+    GZ_LOG_INFO(@"Registered app.bsky.notification.* endpoints");
 }
 
 @end

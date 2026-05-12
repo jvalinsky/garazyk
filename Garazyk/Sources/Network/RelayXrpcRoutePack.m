@@ -8,7 +8,7 @@
 #import "PLC/DIDPLCResolver.h"
 #import "Network/XrpcLexiconResolver.h"
 #import "Core/DID.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 // DID validation helper
 static BOOL isValidDID(NSString *did) {
@@ -720,14 +720,14 @@ static BOOL isValidDID(NSString *did) {
             @"message": errorMessage,
             @"hostname": normalizedHostname
         }];
-        PDS_LOG_SYNC_WARN(@"Relay requestCrawl: Host validation failed for %@: %@", upstreamURL, errorMessage);
+        GZ_LOG_SYNC_WARN(@"Relay requestCrawl: Host validation failed for %@: %@", upstreamURL, errorMessage);
         return;
     }
 
     // Add upstream for crawling
     [_upstreamManager addUpstream:upstreamURL];
 
-    PDS_LOG_SYNC_INFO(@"Relay requestCrawl: Added upstream %@", upstreamURL);
+    GZ_LOG_SYNC_INFO(@"Relay requestCrawl: Added upstream %@", upstreamURL);
 
     // Success - return empty response (per lexicon)
     response.statusCode = HttpStatusOK;
@@ -823,7 +823,7 @@ static BOOL isValidDID(NSString *did) {
     // Add upstream immediately (admin bypasses validation)
     [_upstreamManager addUpstream:upstreamURL];
 
-    PDS_LOG_SYNC_INFO(@"Relay admin requestCrawl: Added upstream %@ (bypassing validation)", upstreamURL);
+    GZ_LOG_SYNC_INFO(@"Relay admin requestCrawl: Added upstream %@ (bypassing validation)", upstreamURL);
 
     response.statusCode = HttpStatusOK;
     [response setJsonBody:@{
@@ -899,7 +899,7 @@ static BOOL isValidDID(NSString *did) {
 
     if (!didDoc || resolveError)
     {
-        PDS_LOG_WARN(@"Relay getRepo: Failed to resolve DID %@: %@", didParam,
+        GZ_LOG_WARN(@"Relay getRepo: Failed to resolve DID %@: %@", didParam,
                      resolveError.localizedDescription ?: @"unknown error");
         response.statusCode = HttpStatusNotFound;
         [response setJsonBody:@{
@@ -913,7 +913,7 @@ static BOOL isValidDID(NSString *did) {
     DIDDocument *didDocument = [DIDDocument documentWithJSON:didDoc error:&resolveError];
     if (!didDocument)
     {
-        PDS_LOG_WARN(@"Relay getRepo: Invalid DID document for %@: %@", didParam,
+        GZ_LOG_WARN(@"Relay getRepo: Invalid DID document for %@: %@", didParam,
                      resolveError.localizedDescription ?: @"unknown error");
         response.statusCode = HttpStatusNotFound;
         [response setJsonBody:@{
@@ -929,7 +929,7 @@ static BOOL isValidDID(NSString *did) {
 
     if (!pdsEndpoint || pdsEndpoint.length == 0)
     {
-        PDS_LOG_WARN(@"Relay getRepo: No PDS endpoint in DID document for %@", didParam);
+        GZ_LOG_WARN(@"Relay getRepo: No PDS endpoint in DID document for %@", didParam);
         response.statusCode = HttpStatusNotFound;
         [response setJsonBody:@{
             @"error": @"RepoNotFound",
@@ -991,7 +991,7 @@ static BOOL isValidDID(NSString *did) {
         return;
     }
 
-    PDS_LOG_INFO(@"Relay getRepo: Redirecting %@ to %@", didParam, redirectURL.absoluteString);
+    GZ_LOG_INFO(@"Relay getRepo: Redirecting %@ to %@", didParam, redirectURL.absoluteString);
 
     // HTTP 302 Found (temporary redirect) per indigo reference
     response.statusCode = 302;

@@ -4,7 +4,7 @@
 #import "Auth/JWT.h"
 #import "App/PDSController.h"
 #import "App/PDSConfiguration.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import <CommonCrypto/CommonKeyDerivation.h>
 #include <stdlib.h>
 
@@ -326,7 +326,7 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
     NSError *parseError = nil;
     JWT *jwt = [JWT jwtWithToken:token error:&parseError];
     if (!jwt || parseError) {
-        PDS_LOG_AUTH_WARN(@"PDSAdminAuth: Failed to parse JWT token");
+        GZ_LOG_AUTH_WARN(@"PDSAdminAuth: Failed to parse JWT token");
         if (error) {
             NSMutableDictionary *userInfo = [@{NSLocalizedDescriptionKey: @"Invalid token format"} mutableCopy];
             if (parseError) {
@@ -340,7 +340,7 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
     NSString *issuerClaim = [jwt.payload.iss stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     NSString *audienceClaim = [jwt.payload.aud stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     if (issuerClaim.length == 0 || audienceClaim.length == 0) {
-        PDS_LOG_AUTH_WARN(@"PDSAdminAuth: Missing issuer or audience in token");
+        GZ_LOG_AUTH_WARN(@"PDSAdminAuth: Missing issuer or audience in token");
         if (error) {
             *error = [NSError errorWithDomain:PDSAdminAuthErrorDomain code:401 userInfo:@{NSLocalizedDescriptionKey: @"Missing issuer or audience in token"}];
         }
@@ -390,7 +390,7 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
 
     NSError *verifyError = nil;
     if (![verifier verifyJWT:jwt error:&verifyError]) {
-        PDS_LOG_AUTH_WARN(@"PDSAdminAuth: JWT verification failed (%@)",
+        GZ_LOG_AUTH_WARN(@"PDSAdminAuth: JWT verification failed (%@)",
                          PDSAdminAuthSanitizedErrorSummary(verifyError));
         if (error) {
             NSMutableDictionary *userInfo = [@{NSLocalizedDescriptionKey: @"Invalid authentication token"} mutableCopy];
@@ -532,7 +532,7 @@ static void PDSAdminAuthSaveAdminDids(NSString *dataDirectory, NSArray<NSString 
     claims[@"exp"] = @([expiresAt timeIntervalSince1970]);
     claims[@"iat"] = @([issuedAt timeIntervalSince1970]);
 
-    PDS_LOG_AUTH_DEBUG(@"PDSAdminAuth: Signing admin token");
+    GZ_LOG_AUTH_DEBUG(@"PDSAdminAuth: Signing admin token");
     NSError *signError = nil;
     NSString *token = [controller.jwtMinter signPayload:claims error:&signError];
     if (token) {

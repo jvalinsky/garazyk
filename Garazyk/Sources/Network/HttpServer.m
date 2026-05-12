@@ -14,7 +14,7 @@
 
 #import "Network/HttpServer.h"
 #import "Compat/PDSTypes.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Metrics/PDSMetrics.h"
 #import "Network/HttpBufferPool.h"
 #import "Network/HttpParsing.h"
@@ -255,7 +255,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
           strongSelf.running = YES;
           strongSelf.port = strongSelf.listener.port;
           strongSelf.startupFinished = YES;
-          PDS_LOG_HTTP_INFO(@"HTTPServer listening on port %lu",
+          GZ_LOG_HTTP_INFO(@"HTTPServer listening on port %lu",
                             (unsigned long)strongSelf.port);
           dispatch_semaphore_signal(strongSelf.readySemaphore);
           break;
@@ -264,14 +264,14 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
           strongSelf.running = NO;
           strongSelf.startupFinished = YES;
           strongSelf.startupError = error;
-          PDS_LOG_HTTP_ERROR(@"HTTPServer failed to start: %@", error);
+          GZ_LOG_HTTP_ERROR(@"HTTPServer failed to start: %@", error);
           dispatch_semaphore_signal(strongSelf.readySemaphore);
           break;
         case PDSNetworkListenerStateCancelled:
           strongSelf.listenerReady = NO;
           strongSelf.running = NO;
           strongSelf.startupFinished = YES;
-          PDS_LOG_HTTP_INFO(@"HTTPServer cancelled");
+          GZ_LOG_HTTP_INFO(@"HTTPServer cancelled");
           dispatch_semaphore_signal(strongSelf.readySemaphore);
           dispatch_semaphore_signal(strongSelf.stopSemaphore);
           break;
@@ -427,7 +427,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
   if (!request) return;
 
   NSString *path = request.path;
-  PDS_LOG_HTTP_DEBUG(@"Attempting WebSocket upgrade for path: %@", path);
+  GZ_LOG_HTTP_DEBUG(@"Attempting WebSocket upgrade for path: %@", path);
   WebSocketRequestHandler webSocketHandler = self.webSocketHandlers[path];
   
   if (webSocketHandler) {
@@ -531,14 +531,14 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
           return;
         }
 
-        [[PDSLogger sharedLogger] setCorrelationID:requestRef.correlationID];
+        [[GZLogger sharedLogger] setCorrelationID:requestRef.correlationID];
 
         NSString *logPath =
             requestRef.queryString.length > 0
                 ? [NSString stringWithFormat:@"%@?%@", requestRef.path,
                                              requestRef.queryString]
                 : requestRef.path;
-        PDS_LOG_HTTP_INFO(@"Starting dispatch for [%@] %@ %@",
+        GZ_LOG_HTTP_INFO(@"Starting dispatch for [%@] %@ %@",
                           requestRef.remoteAddress, requestRef.methodString,
                           logPath);
         NSTimeInterval requestStart = [NSDate timeIntervalSinceReferenceDate];
@@ -551,7 +551,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
                                                    method:requestRef.methodString
                                                  endpoint:requestRef.path
                                                    status:response.statusCode];
-        PDS_LOG_HTTP_INFO(@"Finished dispatch for [%@] %@ %@, status %ld",
+        GZ_LOG_HTTP_INFO(@"Finished dispatch for [%@] %@ %@, status %ld",
                           requestRef.remoteAddress, requestRef.methodString,
                           logPath, (long)response.statusCode);
 
@@ -566,7 +566,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 #endif
         });
 
-        [[PDSLogger sharedLogger] clearCorrelationID];
+        [[GZLogger sharedLogger] clearCorrelationID];
       });
 }
 
@@ -611,7 +611,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
           return;
 
         if (error) {
-          PDS_LOG_HTTP_ERROR(@"Failed to send pipelined response: %@", error);
+          GZ_LOG_HTTP_ERROR(@"Failed to send pipelined response: %@", error);
           if (queueItem.deleteBodyFileAfterSend &&
               queueItem.bodyFilePath.length > 0) {
             [[NSFileManager defaultManager]
@@ -700,7 +700,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
   NSFileHandle *fileHandle =
       [NSFileHandle fileHandleForReadingAtPath:queueItem.bodyFilePath];
   if (!fileHandle) {
-    PDS_LOG_HTTP_ERROR(@"Failed to open response body file at path %@",
+    GZ_LOG_HTTP_ERROR(@"Failed to open response body file at path %@",
                        queueItem.bodyFilePath);
     if (queueItem.deleteBodyFileAfterSend &&
         queueItem.bodyFilePath.length > 0) {
@@ -741,7 +741,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
       [connection sendData:chunk
                 completion:^(NSError *error) {
                   if (error) {
-                    PDS_LOG_HTTP_ERROR(
+                    GZ_LOG_HTTP_ERROR(
                         @"Failed to stream response body file: %@", error);
                     @try {
                       [fileHandle closeFile];
@@ -801,7 +801,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
                                     ? queueItem.bodyChunkProducer(&produceError)
                                     : nil;
         if (produceError) {
-          PDS_LOG_HTTP_ERROR(@"Failed to produce response body chunk: %@",
+          GZ_LOG_HTTP_ERROR(@"Failed to produce response body chunk: %@",
                              produceError);
           [connection cancel];
           sendNextChunk = nil;
@@ -816,7 +816,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
                   sendData:terminator
                 completion:^(NSError *error) {
                   if (error) {
-                    PDS_LOG_HTTP_ERROR(
+                    GZ_LOG_HTTP_ERROR(
                         @"Failed to stream chunked terminator: %@", error);
                     [connection cancel];
                     sendNextChunk = nil;
@@ -862,7 +862,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
       [connection sendData:wireChunk
                 completion:^(NSError *error) {
                   if (error) {
-                    PDS_LOG_HTTP_ERROR(
+                    GZ_LOG_HTTP_ERROR(
                         @"Failed to stream generated response body: %@", error);
                     [connection cancel];
                     sendNextChunk = nil;

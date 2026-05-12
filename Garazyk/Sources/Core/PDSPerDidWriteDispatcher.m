@@ -8,7 +8,7 @@
 
 #import "Core/PDSPerDidWriteDispatcher.h"
 #import "Compat/PDSTypes.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #include <pthread.h>
 
 // ---------------------------------------------------------------------------
@@ -225,7 +225,7 @@ static const NSTimeInterval kDefaultIdleEvictionSeconds = 60.0;
             // A write is already in progress for this DID — queue it
             [state.pendingWork addObject:[block copy]];
             pthread_mutex_unlock(&state->_mutex);
-            PDS_LOG_DEBUG(@"[WriteDispatcher] Queued write for did=%@ (pending=%lu)",
+            GZ_LOG_DEBUG(@"[WriteDispatcher] Queued write for did=%@ (pending=%lu)",
                           did, (unsigned long)state.pendingWork.count);
         } else {
             // No write in progress — mark active and dispatch
@@ -248,12 +248,12 @@ static const NSTimeInterval kDefaultIdleEvictionSeconds = 60.0;
             dispatch_async(workerQ, ^{
                 @autoreleasepool {
                     NSTimeInterval start = [NSDate timeIntervalSinceReferenceDate];
-                    PDS_LOG_DEBUG(@"[WriteDispatcher] Starting write for did=%@", did);
+                    GZ_LOG_DEBUG(@"[WriteDispatcher] Starting write for did=%@", did);
 
                     block();
 
                     NSTimeInterval elapsed = ([NSDate timeIntervalSinceReferenceDate] - start) * 1000.0;
-                    PDS_LOG_DEBUG(@"[WriteDispatcher] Completed write for did=%@ (%.1fms)", did, elapsed);
+                    GZ_LOG_DEBUG(@"[WriteDispatcher] Completed write for did=%@ (%.1fms)", did, elapsed);
 
                     // Release concurrency slot
                     dispatch_semaphore_signal(semaphore);
@@ -289,7 +289,7 @@ static const NSTimeInterval kDefaultIdleEvictionSeconds = 60.0;
         [state.pendingWork removeObjectAtIndex:0];
         pthread_mutex_unlock(&state->_mutex);
 
-        PDS_LOG_DEBUG(@"[WriteDispatcher] Dequeued next write for did=%@ (remaining=%lu)",
+        GZ_LOG_DEBUG(@"[WriteDispatcher] Dequeued next write for did=%@ (remaining=%lu)",
                       did, (unsigned long)state.pendingWork.count);
 
         // Dispatch through the gate queue to wait for a concurrency slot
@@ -301,7 +301,7 @@ static const NSTimeInterval kDefaultIdleEvictionSeconds = 60.0;
                     NSTimeInterval nextStart = [NSDate timeIntervalSinceReferenceDate];
                     nextBlock();
                     NSTimeInterval nextElapsed = ([NSDate timeIntervalSinceReferenceDate] - nextStart) * 1000.0;
-                    PDS_LOG_DEBUG(@"[WriteDispatcher] Completed queued write for did=%@ (%.1fms)",
+                    GZ_LOG_DEBUG(@"[WriteDispatcher] Completed queued write for did=%@ (%.1fms)",
                                   did, nextElapsed);
                     dispatch_semaphore_signal(semaphore);
                     [self _processNextPendingForDid:did state:state
@@ -313,7 +313,7 @@ static const NSTimeInterval kDefaultIdleEvictionSeconds = 60.0;
     } else {
         state.isActive = NO;
         pthread_mutex_unlock(&state->_mutex);
-        PDS_LOG_DEBUG(@"[WriteDispatcher] No more pending writes for did=%@", did);
+        GZ_LOG_DEBUG(@"[WriteDispatcher] No more pending writes for did=%@", did);
     }
 }
 
@@ -340,11 +340,11 @@ static const NSTimeInterval kDefaultIdleEvictionSeconds = 60.0;
         PDSPerDidWriteState *state = self.didStateMap[did];
         [state destroyMutex];
         [self.didStateMap removeObjectForKey:did];
-        PDS_LOG_DEBUG(@"[WriteDispatcher] Evicted idle state for did=%@", did);
+        GZ_LOG_DEBUG(@"[WriteDispatcher] Evicted idle state for did=%@", did);
     }
 
     if (keysToRemove.count > 0) {
-        PDS_LOG_DEBUG(@"[WriteDispatcher] Evicted %lu idle DID states",
+        GZ_LOG_DEBUG(@"[WriteDispatcher] Evicted %lu idle DID states",
                       (unsigned long)keysToRemove.count);
     }
 }

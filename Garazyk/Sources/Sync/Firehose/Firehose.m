@@ -5,7 +5,7 @@
 #import "Core/ATProtoDagCBOR.h"
 #import "Sync/Relay/EventFormatter.h"
 #import "Core/CID.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 NSString * const FirehoseErrorDomain = @"com.atproto.pds.firehose";
 NSInteger const FirehoseErrorCodeSubscriptionFailed = 6000;
@@ -72,7 +72,7 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
         path = [path stringByAppendingFormat:@"?cursor=%lld", (long long)self.cursor];
     }
 
-    PDS_LOG_SYNC_INFO(@"Firehose: Connecting to %@:%u%@ (scheme: %@)", host, port, path, self.serverURL.scheme);
+    GZ_LOG_SYNC_INFO(@"Firehose: Connecting to %@:%u%@ (scheme: %@)", host, port, path, self.serverURL.scheme);
 
     self.connection = [[WebSocketConnection alloc] initWithHost:host port:port path:path];
     self.connection.delegate = self;
@@ -149,18 +149,18 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
 }
 
 - (void)handleMessage:(NSData *)data {
-    PDS_LOG_SYNC_DEBUG(@"Firehose received message of length %lu", (unsigned long)data.length);
+    GZ_LOG_SYNC_DEBUG(@"Firehose received message of length %lu", (unsigned long)data.length);
     NSInteger op = 0;
     NSString *msgType = nil;
     NSError *error = nil;
     
     NSDictionary *payload = [self.eventFormatter decodeEventFromData:data op:&op msgType:&msgType error:&error];
     if (!payload || error) {
-        PDS_LOG_SYNC_ERROR(@"Failed to decode firehose frame: %@", error);
+        GZ_LOG_SYNC_ERROR(@"Failed to decode firehose frame: %@", error);
         return;
     }
     
-    PDS_LOG_SYNC_DEBUG(@"Decoded firehose frame: op=%ld type=%@", (long)op, msgType);
+    GZ_LOG_SYNC_DEBUG(@"Decoded firehose frame: op=%ld type=%@", (long)op, msgType);
 
     if (op == -1) { // Error frame
         FirehoseErrorEvent *event = [[FirehoseErrorEvent alloc] init];
@@ -269,13 +269,13 @@ NSInteger const FirehoseErrorCodeSubscriptionClosed = 6002;
 }
 
 - (void)webSocketConnectionStateDidChange:(WebSocketConnection *)connection {
-    PDS_LOG_DEBUG(@"Firehose: WebSocket state changed to %d", (int)connection.state);
+    GZ_LOG_DEBUG(@"Firehose: WebSocket state changed to %d", (int)connection.state);
     if (connection.state == WebSocketConnectionStateConnected) {
         self.isConnected = YES;
 
         for (FirehoseSubscription *subscription in self.subscriptions) {
             dispatch_async(dispatch_get_main_queue(), ^{
-                PDS_LOG_DEBUG(@"Firehose: Notifying subscription delegate of connect");
+                GZ_LOG_DEBUG(@"Firehose: Notifying subscription delegate of connect");
                 if ([subscription.delegate respondsToSelector:@selector(firehoseSubscriptionDidConnect:)]) {
                     [subscription.delegate firehoseSubscriptionDidConnect:subscription];
                 }
