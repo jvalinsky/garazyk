@@ -16,7 +16,7 @@
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 NSErrorDomain const AppViewLexiconEndpointGeneratorErrorDomain =
     @"AppViewLexiconEndpointGenerator";
@@ -74,7 +74,7 @@ NSErrorDomain const AppViewLexiconEndpointGeneratorErrorDomain =
 
         NSError *schemaError = nil;
         if (![self registerEndpointsForSchema:schema error:&schemaError]) {
-            PDS_LOG_WARN(@"[LexiconEndpointGenerator] Failed to register routes for %@: %@",
+            GZ_LOG_WARN(@"[LexiconEndpointGenerator] Failed to register routes for %@: %@",
                          nsid, schemaError.localizedDescription ?: @"unknown");
             // Continue registering other schemas
         }
@@ -107,7 +107,7 @@ NSErrorDomain const AppViewLexiconEndpointGeneratorErrorDomain =
         }
     }
 
-    PDS_LOG_INFO(@"[LexiconEndpointGenerator] Registered %lu dynamic endpoints "
+    GZ_LOG_INFO(@"[LexiconEndpointGenerator] Registered %lu dynamic endpoints "
                  @"(%lu queries, %lu procedures, %lu records). Skipped %lu domain-specific.",
                  (unsigned long)_registeredCount,
                  (unsigned long)queryCount,
@@ -182,7 +182,7 @@ NSErrorDomain const AppViewLexiconEndpointGeneratorErrorDomain =
     }];
 
     self.registeredCount++;
-    PDS_LOG_DEBUG(@"[LexiconEndpointGenerator] Registered GET %@", path);
+    GZ_LOG_DEBUG(@"[LexiconEndpointGenerator] Registered GET %@", path);
 }
 
 - (void)registerProcedureRouteForNSID:(NSString *)nsid {
@@ -207,7 +207,7 @@ NSErrorDomain const AppViewLexiconEndpointGeneratorErrorDomain =
     }];
 
     self.registeredCount++;
-    PDS_LOG_DEBUG(@"[LexiconEndpointGenerator] Registered POST %@", path);
+    GZ_LOG_DEBUG(@"[LexiconEndpointGenerator] Registered POST %@", path);
 }
 
 - (NSUInteger)registeredEndpointCount {

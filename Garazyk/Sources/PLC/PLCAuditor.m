@@ -9,7 +9,7 @@
 #import "Auth/Crypto/AuthCryptoBase64URL.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/CID.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "PLC/PLCMetrics.h"
 
 #if defined(__APPLE__) && !defined(GNUSTEP)
@@ -420,13 +420,13 @@ static NSData *PLCBase64URLDecode(NSString *string) {
     NSError *error = nil;
     NSData *cbor = [ATProtoCBORSerialization encodeDataWithJSONObject:data error:&error];
     if (!cbor) {
-        PDS_LOG_CORE_ERROR(@"Failed to encode unsigned data to CBOR: %@", error);
+        GZ_LOG_CORE_ERROR(@"Failed to encode unsigned data to CBOR: %@", error);
         return nil;
     }
-    PDS_LOG_CORE_DEBUG(@"Unsigned data for hash: %@", data);
-    PDS_LOG_CORE_DEBUG(@"Unsigned CBOR bytes: %@", [CryptoUtils hexStringFromData:cbor]);
+    GZ_LOG_CORE_DEBUG(@"Unsigned data for hash: %@", data);
+    GZ_LOG_CORE_DEBUG(@"Unsigned CBOR bytes: %@", [CryptoUtils hexStringFromData:cbor]);
     NSData *hash = [CryptoUtils sha256:cbor];
-    PDS_LOG_CORE_DEBUG(@"Calculated hash: %@", [CryptoUtils hexStringFromData:hash]);
+    GZ_LOG_CORE_DEBUG(@"Calculated hash: %@", [CryptoUtils hexStringFromData:hash]);
     return hash;
 }
 

@@ -4,7 +4,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "App/PDSController.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Database/PDSDatabase.h"
 #import "Repository/MST.h"
 #import "Services/PDS/PDSRepositoryService.h"
@@ -48,7 +48,7 @@
 
 - (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response {
     NSString *path = request.path;
-    PDS_LOG_DEBUG(@"MSTViewerHandler: %@", path);
+    GZ_LOG_DEBUG(@"MSTViewerHandler: %@", path);
 
     if ([path isEqualToString:@"/mst-viewer"] || [path isEqualToString:@"/mst-viewer/"]) {
         [self serveIndex:response];
@@ -165,7 +165,7 @@
 #pragma mark - API Request Handling
 
 - (void)handleApiRequest:(HttpRequest *)request response:(HttpResponse *)response endpoint:(NSString *)endpoint {
-    PDS_LOG_DEBUG(@"MST API: %@", endpoint);
+    GZ_LOG_DEBUG(@"MST API: %@", endpoint);
 
     if ([endpoint isEqualToString:@"accounts"]) {
         [self handleAccountsRequest:response];
@@ -215,7 +215,7 @@
     __block NSMutableArray *accounts = [NSMutableArray array];
 
     NSString *sql = @"SELECT did, handle FROM accounts ORDER BY created_at DESC LIMIT 1000";
-    NSArray<NSDictionary *> *rows = [db executeQuery:sql error:&error];
+    NSArray<NSDictionary *> *rows = [db executeParameterizedQuery:sql params:@[] error:&error];
     if (!rows) {
         response.statusCode = HttpStatusInternalServerError;
         [response setJsonBody:@{@"error": error.localizedDescription ?: @"Failed to query accounts"}];
@@ -383,7 +383,7 @@
     MST *mst = [repoService loadMSTForDid:did error:&error];
 
     if (error) {
-        PDS_LOG_ERROR(@"Failed to load MST for %@: %@", did, error.localizedDescription);
+        GZ_LOG_ERROR(@"Failed to load MST for %@: %@", did, error.localizedDescription);
         return [[MST alloc] init];
     }
 

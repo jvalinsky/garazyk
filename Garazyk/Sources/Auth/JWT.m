@@ -17,6 +17,7 @@
 #import "Auth/PDSKeyManagerProtocol.h"
 #import "Auth/PDSActorKeyManagerProtocol.h"
 #import <CommonCrypto/CommonDigest.h>
+#import "Security/PDSSecurityCompare.h"
 
 NSString * const JWTErrorDomain = @"com.atproto.pds.jwt";
 
@@ -370,7 +371,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
         return NO;
     }
 
-    if (self.expectedIssuer && payload.iss && ![payload.iss isEqualToString:self.expectedIssuer]) {
+    if (self.expectedIssuer && payload.iss && ![PDSSecurityCompare constantTimeEqualString:payload.iss string:self.expectedIssuer]) {
         if (error) {
             *error = [NSError errorWithDomain:JWTErrorDomain
                                          code:JWTErrorInvalidIssuer
@@ -379,7 +380,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
         return NO;
     }
 
-    if (self.expectedAudience && payload.aud && ![payload.aud isEqualToString:self.expectedAudience]) {
+    if (self.expectedAudience && payload.aud && ![PDSSecurityCompare constantTimeEqualString:payload.aud string:self.expectedAudience]) {
         if (error) {
             *error = [NSError errorWithDomain:JWTErrorDomain
                                          code:JWTErrorInvalidAudience

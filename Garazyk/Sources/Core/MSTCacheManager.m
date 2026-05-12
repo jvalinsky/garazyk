@@ -6,7 +6,7 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Core/CID.h"
 #import "Repository/CBOR.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 
 @interface MSTCacheManager ()
@@ -91,65 +91,65 @@
     // 1. Read the current repo root CID
     NSData *rootCIDBytes = [store getRepoRootForDid:did error:nil];
     if (!rootCIDBytes) {
-        PDS_LOG_INFO(@"MSTCacheManager: no repo root for %@, falling back to full rebuild", did);
+        GZ_LOG_INFO(@"MSTCacheManager: no repo root for %@, falling back to full rebuild", did);
         return nil;
     }
 
     CID *rootCID = [CID cidFromBytes:rootCIDBytes];
     if (!rootCID) {
-        PDS_LOG_ERROR(@"MSTCacheManager: invalid root CID bytes for %@", did);
+        GZ_LOG_ERROR(@"MSTCacheManager: invalid root CID bytes for %@", did);
         return nil;
     }
 
     // 2. Read the commit block to get the data CID (MST root)
     NSData *commitBlockData = [store getBlockForCID:rootCID.bytes forDid:did error:nil];
     if (!commitBlockData) {
-        PDS_LOG_INFO(@"MSTCacheManager: no commit block for %@, falling back", did);
+        GZ_LOG_INFO(@"MSTCacheManager: no commit block for %@, falling back", did);
         return nil;
     }
 
     // 3. Parse the commit to extract the data CID
     CBORValue *commitValue = [CBORValue decode:commitBlockData];
     if (!commitValue || commitValue.type != CBORTypeMap) {
-        PDS_LOG_ERROR(@"MSTCacheManager: commit block is not a CBOR map for %@", did);
+        GZ_LOG_ERROR(@"MSTCacheManager: commit block is not a CBOR map for %@", did);
         return nil;
     }
 
     CBORValue *dataTag = commitValue.map[[CBORValue textString:@"data"]];
     if (!dataTag || dataTag.type != CBORTypeTag) {
-        PDS_LOG_ERROR(@"MSTCacheManager: commit block missing 'data' tag for %@", did);
+        GZ_LOG_ERROR(@"MSTCacheManager: commit block missing 'data' tag for %@", did);
         return nil;
     }
 
     // The data field is a CID link: tag(42) wrapping a byte string with CID bytes
     NSData *dataCIDBytes = dataTag.tagValue.byteString;
     if (!dataCIDBytes || dataCIDBytes.length <= 1) {
-        PDS_LOG_ERROR(@"MSTCacheManager: data CID bytes too short for %@", did);
+        GZ_LOG_ERROR(@"MSTCacheManager: data CID bytes too short for %@", did);
         return nil;
     }
 
     // Skip the multibase prefix byte (0x00) to get raw CID bytes
     CID *dataCID = [CID cidFromBytes:[dataCIDBytes subdataWithRange:NSMakeRange(1, dataCIDBytes.length - 1)]];
     if (!dataCID) {
-        PDS_LOG_ERROR(@"MSTCacheManager: failed to parse data CID for %@", did);
+        GZ_LOG_ERROR(@"MSTCacheManager: failed to parse data CID for %@", did);
         return nil;
     }
 
     // 4. Read the MST root block
     NSData *mstBlockData = [store getBlockForCID:dataCID.bytes forDid:did error:nil];
     if (!mstBlockData) {
-        PDS_LOG_INFO(@"MSTCacheManager: no MST root block for %@, falling back", did);
+        GZ_LOG_INFO(@"MSTCacheManager: no MST root block for %@, falling back", did);
         return nil;
     }
 
     // 5. Deserialize the MST from CBOR
     MST *mst = [MST deserializeFromCBOR:mstBlockData];
     if (!mst) {
-        PDS_LOG_ERROR(@"MSTCacheManager: CBOR deserialization failed for %@, falling back", did);
+        GZ_LOG_ERROR(@"MSTCacheManager: CBOR deserialization failed for %@, falling back", did);
         return nil;
     }
 
-    PDS_LOG_INFO(@"MSTCacheManager: successfully loaded MST for %@ from repo blocks", did);
+    GZ_LOG_INFO(@"MSTCacheManager: successfully loaded MST for %@ from repo blocks", did);
     return mst;
 }
 

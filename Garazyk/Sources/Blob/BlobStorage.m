@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Blob/BlobStorage.h"
 #import "Blob/PDSBlobProvider.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Blob/MimeTypeValidator.h"
 #import "Core/CID.h"

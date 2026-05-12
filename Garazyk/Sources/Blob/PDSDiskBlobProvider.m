@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "PDSDiskBlobProvider.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/Foundation/NSDataCompat.h"
 
 NSString * const PDSDiskBlobProviderErrorDomain = @"com.atproto.pds.diskblobprovider";
@@ -24,7 +24,7 @@ NSString * const PDSDiskBlobProviderErrorDomain = @"com.atproto.pds.diskblobprov
                     withIntermediateDirectories:YES
                                      attributes:nil
                                           error:&error]) {
-            PDS_LOG_ERROR_C(PDSLogComponentBlob, @"Failed to create blob storage directory: %@", error);
+            GZ_LOG_ERROR_C(GZLogComponentBlob, @"Failed to create blob storage directory: %@", error);
         }
     }
     return self;

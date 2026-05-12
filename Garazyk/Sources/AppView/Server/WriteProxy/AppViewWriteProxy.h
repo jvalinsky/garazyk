@@ -13,7 +13,7 @@
  a record type, it's a write. Auto-detect create vs update by presence
  of uri field in input (no uri → create, has uri → update).
 
- SSRF protection: uses PDSSafeHTTPClient for all outbound requests.
+ SSRF protection: uses ATProtoSafeHTTPClient for all outbound requests.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */

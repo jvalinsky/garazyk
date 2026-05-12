@@ -15,7 +15,7 @@
 #import "App/PDSController.h"
 #import "Admin/PDSAdminController.h"
 #import "Database/Service/ServiceDatabases.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
 
@@ -126,7 +126,7 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
                                          code:XrpcMiddlewareErrorInternal
                                      userInfo:@{NSLocalizedDescriptionKey: @"Server not configured for authentication"}];
         }
-        PDS_LOG_AUTH_WARN(@"AuthMiddleware: Server not configured for authentication");
+        GZ_LOG_AUTH_WARN(@"AuthMiddleware: Server not configured for authentication");
         return NO;
     }
 
@@ -360,7 +360,7 @@ NSString * const XrpcMiddlewareErrorDomain = @"com.atproto.pds.middleware";
 
     // Validate ownership
     if (![authDID isEqualToString:resourceDID]) {
-        PDS_LOG_AUTH_WARN(@"ResourceOwnership: User %@ attempted to access resource owned by %@", authDID, resourceDID);
+        GZ_LOG_AUTH_WARN(@"ResourceOwnership: User %@ attempted to access resource owned by %@", authDID, resourceDID);
         response.statusCode = HttpStatusForbidden;
         [response setJsonBody:@{@"error": @"Forbidden", @"message": @"Cannot access resource owned by another user"}];
         if (error) {

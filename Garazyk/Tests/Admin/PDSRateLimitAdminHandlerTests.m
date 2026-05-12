@@ -10,7 +10,7 @@
 
 #if 0
 
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import <sqlite3.h>
 
 // Mock RateLimiter for testing

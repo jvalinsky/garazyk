@@ -16,7 +16,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Auth/JWT.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 NSErrorDomain const AppViewGenericQueryHandlerErrorDomain = @"AppViewGenericQueryHandler";
 

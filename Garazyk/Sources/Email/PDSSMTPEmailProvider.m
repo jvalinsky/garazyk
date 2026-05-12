@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "PDSSMTPEmailProvider.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 NSString * const PDSSMTPEmailProviderErrorDomain = @"com.atproto.pds.smtpemailprovider";
 
@@ -34,7 +34,7 @@ static NSError *PDSSMTPEmailProviderUnsupportedError(void) {
             subject:(NSString *)subject
                body:(NSString *)body
               error:(NSError **)error {
-    PDS_LOG_WARN(@"[SMTP] Refusing to report email delivery for %@ because SMTP is not implemented (host: %@)", to, self.smtpHost);
+    GZ_LOG_WARN(@"[SMTP] Refusing to report email delivery for %@ because SMTP is not implemented (host: %@)", to, self.smtpHost);
     if (error) {
         *error = PDSSMTPEmailProviderUnsupportedError();
     }
@@ -46,7 +46,7 @@ static NSError *PDSSMTPEmailProviderUnsupportedError(void) {
                htmlBody:(NSString *)htmlBody
                textBody:(NSString *)textBody
                   error:(NSError **)error {
-    PDS_LOG_WARN(@"[SMTP] Refusing to report HTML email delivery for %@ because SMTP is not implemented (host: %@)", to, self.smtpHost);
+    GZ_LOG_WARN(@"[SMTP] Refusing to report HTML email delivery for %@ because SMTP is not implemented (host: %@)", to, self.smtpHost);
     if (error) {
         *error = PDSSMTPEmailProviderUnsupportedError();
     }

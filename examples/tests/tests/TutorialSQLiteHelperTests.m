@@ -36,7 +36,7 @@
     [self.db executeUpdate:&error sql:@"INSERT INTO test (id, name) VALUES (1, 'alice')"];
     [self.db executeUpdate:&error sql:@"INSERT INTO test (id, name) VALUES (2, 'bob')"];
 
-    NSNumber *count = [self.db executeQuery:&error block:^id(sqlite3 *db) {
+    NSNumber *count = [self.db executeUnsafeRawQuery:&error block:^id(sqlite3 *db) {
         sqlite3_stmt *stmt;
         sqlite3_prepare_v2(db, "SELECT COUNT(*) FROM test", -1, &stmt, NULL);
         NSNumber *result = nil;
@@ -75,7 +75,7 @@
 
 - (void)testWALMode {
     NSError *error = nil;
-    NSString *mode = [self.db executeQuery:&error block:^id(sqlite3 *db) {
+    NSString *mode = [self.db executeUnsafeRawQuery:&error block:^id(sqlite3 *db) {
         sqlite3_stmt *stmt;
         sqlite3_prepare_v2(db, "PRAGMA journal_mode", -1, &stmt, NULL);
         NSString *result = nil;

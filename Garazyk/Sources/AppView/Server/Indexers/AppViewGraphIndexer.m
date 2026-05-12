@@ -11,7 +11,7 @@
 #import "AppView/Server/AppViewTypes.h"
 #import "AppView/Server/Ingest/AppViewIngestEngine.h"
 #import "AppView/Server/Relevance/AppViewRelevanceSet.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 #import "AppView/Services/GraphService.h"
 
@@ -80,7 +80,7 @@ static NSSet<NSString *> *graphCollections(void) {
         [_graphService indexStarterPack:record did:did rkey:rkey cid:cid error:error];
     }
 
-    PDS_LOG_DEBUG(@"[AppViewGraphIndexer] Indexed %@ for %@", collection, did);
+    GZ_LOG_DEBUG(@"[AppViewGraphIndexer] Indexed %@ for %@", collection, did);
     return YES;
 }
 
@@ -109,12 +109,12 @@ static NSSet<NSString *> *graphCollections(void) {
 }
 
 - (BOOL)processPendingDelta:(AppViewPendingDelta *)delta error:(NSError **)error {
-    PDS_LOG_DEBUG(@"[AppViewGraphIndexer] Replaying pending delta for %@", delta.did);
+    GZ_LOG_DEBUG(@"[AppViewGraphIndexer] Replaying pending delta for %@", delta.did);
     return YES;
 }
 
 - (BOOL)deleteRecord:(NSString *)rkey did:(NSString *)did collection:(NSString *)collection error:(NSError **)error {
-    PDS_LOG_DEBUG(@"[AppViewGraphIndexer] Delete %@/%@ for %@", collection, rkey, did);
+    GZ_LOG_DEBUG(@"[AppViewGraphIndexer] Delete %@/%@ for %@", collection, rkey, did);
     return YES;
 }
 

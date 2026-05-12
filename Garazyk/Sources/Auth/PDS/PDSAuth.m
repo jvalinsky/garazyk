@@ -14,7 +14,7 @@
 #import "Auth/OAuth2.h"
 #import "App/PDSController.h"
 #import "Admin/PDSAdminController.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 NSString * const PDSAuthErrorDomain = @"com.atproto.pds.auth";
 

@@ -6,7 +6,7 @@
 #import "Auth/JWT.h"
 #import "Core/CID.h"
 #import "Network/HttpResponse.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #include <errno.h>
 
 NS_ASSUME_NONNULL_BEGIN

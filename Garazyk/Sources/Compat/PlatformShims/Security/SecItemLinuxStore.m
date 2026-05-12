@@ -9,7 +9,7 @@
  */
 
 #import "SecItemLinuxStore.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import <sqlite3.h>
 
 #define PDS_SQLITE_AUTORELEASE_STMT __attribute__((cleanup(PDS_sqlite3_finalize_cleanup)))
@@ -64,7 +64,7 @@ static dispatch_once_t gKeychainOnce = 0;
                                                     attributes:nil
                                                          error:&dirError];
         if (dirError) {
-            PDS_LOG_ERROR(@"SecItemLinuxStore: Failed to create .pds directory: %@", dirError);
+            GZ_LOG_ERROR(@"SecItemLinuxStore: Failed to create .pds directory: %@", dirError);
             return;
         }
     }
@@ -72,7 +72,7 @@ static dispatch_once_t gKeychainOnce = 0;
     // Open database
     int rc = sqlite3_open([dbPath UTF8String], &gKeychainDB);
     if (rc != SQLITE_OK) {
-        PDS_LOG_ERROR(@"SecItemLinuxStore: Failed to open keychain database: %s", sqlite3_errmsg(gKeychainDB));
+        GZ_LOG_ERROR(@"SecItemLinuxStore: Failed to open keychain database: %s", sqlite3_errmsg(gKeychainDB));
         return;
     }
 
@@ -98,7 +98,7 @@ static dispatch_once_t gKeychainOnce = 0;
     char *errMsg = NULL;
     int rc = sqlite3_exec(gKeychainDB, sql, NULL, NULL, &errMsg);
     if (rc != SQLITE_OK) {
-        PDS_LOG_ERROR(@"SecItemLinuxStore: Failed to create schema: %s", errMsg);
+        GZ_LOG_ERROR(@"SecItemLinuxStore: Failed to create schema: %s", errMsg);
         sqlite3_free(errMsg);
     }
 }

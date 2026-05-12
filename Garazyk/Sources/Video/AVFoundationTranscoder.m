@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Video/AVFoundationTranscoder.h"
 #import "Video/VideoTranscoder.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 #if TARGET_OS_MAC
 #import <AVFoundation/AVFoundation.h>
@@ -44,7 +44,7 @@ NSString * const AVFoundationTranscoderErrorDomain = @"com.atproto.video.transco
             NSArray *compatible = [AVAssetExportSession exportPresetsCompatibleWithAsset:asset];
 
             if (![compatible containsObject:preset]) {
-                PDS_LOG_WARN(@"Preset %@ not compatible, falling back to HighestQuality", preset);
+                GZ_LOG_WARN(@"Preset %@ not compatible, falling back to HighestQuality", preset);
                 preset = AVAssetExportPresetHighestQuality;
                 if (![compatible containsObject:preset]) {
                     NSError *err = [NSError errorWithDomain:AVFoundationTranscoderErrorDomain

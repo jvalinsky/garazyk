@@ -4,7 +4,7 @@
 #import "Compat/PDSTypes.h"
 #import "Sync/Firehose/Firehose.h"
 #import "Sync/WebSocket/WebSocketConnection.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 NSString * const RelayClientErrorDomain = @"com.atproto.pds.relay.client";
 NSInteger const RelayClientErrorCodeConnectionFailed = 4000;
@@ -68,7 +68,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
     self.subscription = [self.firehose subscribeWithCursor:self.currentSeq
                                                 collections:nil
                                                   delegate:self];
-    PDS_LOG_SYNC_INFO(@"RelayClient: Connecting to %@ (cursor=%lld)", wsURL, (long long)self.currentSeq);
+    GZ_LOG_SYNC_INFO(@"RelayClient: Connecting to %@ (cursor=%lld)", wsURL, (long long)self.currentSeq);
     [self.firehose connect];
 }
 
@@ -111,14 +111,14 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
     if (_readingPaused) return;
     _readingPaused = YES;
     [self.firehose suspendReading];
-    PDS_LOG_SYNC_INFO(@"RelayClient: paused reading from %@", self.serverURL);
+    GZ_LOG_SYNC_INFO(@"RelayClient: paused reading from %@", self.serverURL);
 }
 
 - (void)resumeReading {
     if (!_readingPaused) return;
     _readingPaused = NO;
     [self.firehose resumeReading];
-    PDS_LOG_SYNC_INFO(@"RelayClient: resumed reading from %@", self.serverURL);
+    GZ_LOG_SYNC_INFO(@"RelayClient: resumed reading from %@", self.serverURL);
 }
 
 - (BOOL)isReadingPaused {
@@ -171,7 +171,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
     NSTimeInterval delay = self.reconnectInterval * pow(1.5, self.reconnectAttempts - 1);
     delay = MIN(delay, 60.0);
 
-    PDS_LOG_SYNC_INFO(@"RelayClient: Scheduling reconnect to %@ (attempt=%ld/%ld, delay=%.1fs, cursor=%lld)",
+    GZ_LOG_SYNC_INFO(@"RelayClient: Scheduling reconnect to %@ (attempt=%ld/%ld, delay=%.1fs, cursor=%lld)",
                        self.serverURL, (long)self.reconnectAttempts, (long)self.maxReconnectAttempts,
                        delay, (long long)self.currentSeq);
 
@@ -219,7 +219,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 }
 
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveErrorEvent:(FirehoseErrorEvent *)event {
-    PDS_LOG_SYNC_WARN(@"RelayClient: Received error from relay: error=%@ message=%@", event.error, event.message);
+    GZ_LOG_SYNC_WARN(@"RelayClient: Received error from relay: error=%@ message=%@", event.error, event.message);
 
     id<RelayClientDelegate> delegate = self.delegate;  // Capture strongly
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -232,7 +232,7 @@ NSInteger const RelayClientErrorCodeAuthenticationFailed = 4001;
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didCloseWithError:(NSError *)error {
     self.isConnected = NO;
 
-    PDS_LOG_SYNC_WARN(@"RelayClient: Firehose closed from %@ (error=%@, currentSeq=%lld)",
+    GZ_LOG_SYNC_WARN(@"RelayClient: Firehose closed from %@ (error=%@, currentSeq=%lld)",
                        self.serverURL, error.localizedDescription, (long long)self.currentSeq);
 
     id<RelayClientDelegate> delegate = self.delegate;  // Capture strongly

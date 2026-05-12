@@ -9,13 +9,14 @@
  */
 
 #import "Auth/OAuthProvider/OAuthProvider.h"
-#import "Debug/PDSLogRedactor.h"
+#import "Debug/GZLogRedactor.h"
 #import "Auth/OAuthClientAuthPolicy.h"
 #import "Auth/Crypto/AuthCryptoDPoP.h"
 #import "Auth/Crypto/AuthCryptoJWK.h"
 #import "Auth/Crypto/AuthCryptoBase64URL.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import <CommonCrypto/CommonDigest.h>
+#import "Security/PDSSecurityCompare.h"
 
 NSString * const OAuthProviderErrorDomain = @"com.atproto.oauthprovider";
 
@@ -210,7 +211,7 @@ NSString * const OAuthProviderErrorDomain = @"com.atproto.oauthprovider";
     }
 
     NSDate *expiresIn = expiresAt;
-    PDS_LOG_AUTH_DEBUG(@"PAR created: request_uri=%@", requestURI);
+    GZ_LOG_AUTH_DEBUG(@"PAR created: request_uri=%@", requestURI);
     completion(requestURI, expiresIn, nil);
 }
 
@@ -277,7 +278,7 @@ NSString * const OAuthProviderErrorDomain = @"com.atproto.oauthprovider";
         });
     }
 
-    PDS_LOG_AUTH_DEBUG(@"Authorization code created: code=%@ client_id=%@", code, request.clientID);
+    GZ_LOG_AUTH_DEBUG(@"Authorization code created: code=%@ client_id=%@", [GZLogRedactor maskToken:code], request.clientID);
 
     NSURLComponents *redirectComponents = [NSURLComponents componentsWithString:request.redirectURI];
     NSMutableArray<NSURLQueryItem *> *queryItems = [redirectComponents.queryItems mutableCopy] ?: [NSMutableArray array];
@@ -353,13 +354,13 @@ NSString * const OAuthProviderErrorDomain = @"com.atproto.oauthprovider";
         return;
     }
 
-    if (![codeData[@"redirect_uri"] isEqualToString:redirectURI]) {
+    if (![PDSSecurityCompare constantTimeEqualString:codeData[@"redirect_uri"] string:redirectURI]) {
         completion(nil, [self errorWithCode:OAuthProviderErrorInvalidGrant
                                description:@"redirect_uri mismatch"]);
         return;
     }
 
-    if (clientID && ![codeData[@"client_id"] isEqualToString:clientID]) {
+    if (clientID && ![PDSSecurityCompare constantTimeEqualString:codeData[@"client_id"] string:clientID]) {
         completion(nil, [self errorWithCode:OAuthProviderErrorInvalidClient
                                description:@"client_id mismatch"]);
         return;
@@ -502,7 +503,7 @@ NSString * const OAuthProviderErrorDomain = @"com.atproto.oauthprovider";
         response.dpopKeyThumbprint = [AuthCryptoJWK thumbprint:dpopJWK error:&thumbprintError];
     }
 
-    PDS_LOG_AUTH_DEBUG(@"Tokens issued: sub=%@ client_id=%@", sub, clientID);
+    GZ_LOG_AUTH_DEBUG(@"Tokens issued: sub=%@ client_id=%@", sub, clientID);
     completion(response, nil);
 }
 
@@ -574,7 +575,7 @@ NSString * const OAuthProviderErrorDomain = @"com.atproto.oauthprovider";
 }
 
 - (BOOL)verifyPKCE:(NSString *)verifier challenge:(NSString *)challenge method:(NSString *)method {
-    if (![method isEqualToString:@"S256"]) {
+    if (![PDSSecurityCompare constantTimeEqualString:method string:@"S256"]) {
         return NO;
     }
 
@@ -583,7 +584,7 @@ NSString * const OAuthProviderErrorDomain = @"com.atproto.oauthprovider";
     CC_SHA256(verifierData.bytes, (CC_LONG)verifierData.length, digest);
     NSData *hashData = [NSData dataWithBytes:digest length:CC_SHA256_DIGEST_LENGTH];
     NSString *computed = [AuthCryptoBase64URL encode:hashData];
-    return [computed isEqualToString:challenge];
+    return [PDSSecurityCompare constantTimeEqualString:computed string:challenge];
 }
 
 @end

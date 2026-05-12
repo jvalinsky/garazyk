@@ -5,13 +5,13 @@
 #import "App/PDSConfiguration.h"
 #import "Auth/JWT.h"
 #import "Core/DID.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "Network/PDSSafeHTTPClient.h"
+#import "Network/ATProtoSafeHTTPClient.h"
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcHandler.h"
 
@@ -361,7 +361,8 @@ static BOOL proxyXrpcRequest(HttpRequest *request, HttpResponse *response,
     } else if ([lowercaseKey isEqualToString:@"dpop"]) {
       headerFieldName = @"DPoP";
     } else if ([lowercaseKey isEqualToString:@"atproto-proxy"]) {
-      headerFieldName = @"Atproto-Proxy";
+      // Consume and do not forward
+      continue;
     }
 
     [upstreamRequest setValue:value forHTTPHeaderField:headerFieldName];
@@ -417,7 +418,7 @@ static BOOL proxyXrpcRequest(HttpRequest *request, HttpResponse *response,
     }
   }
 
-  PDSSafeHTTPClientOptions *safeOptions = [[PDSSafeHTTPClientOptions alloc] init];
+  ATProtoSafeHTTPClientOptions *safeOptions = [[ATProtoSafeHTTPClientOptions alloc] init];
   safeOptions.timeout = 30.0;
   safeOptions.maxResponseBytes = 10 * 1024 * 1024; // 10 MB
   safeOptions.allowHTTP = isTrusted;
@@ -426,18 +427,26 @@ static BOOL proxyXrpcRequest(HttpRequest *request, HttpResponse *response,
 
   NSHTTPURLResponse *upstreamResponse = nil;
   NSError *proxyError = nil;
-  NSData *upstreamBody = [[PDSSafeHTTPClient sharedClient]
+  NSData *upstreamBody = [[ATProtoSafeHTTPClient sharedClient]
       sendSynchronousRequest:upstreamRequest
                      options:safeOptions
                     response:&upstreamResponse
                        error:&proxyError];
 
   if (!upstreamResponse) {
-    response.statusCode = 502;
-    [response setJsonBody:@{
-      @"error" : @"ProxyRequestFailed",
-      @"message" : proxyError.localizedDescription ?: @"Upstream request failed"
-    }];
+    if (proxyError.code == NSURLErrorTimedOut) {
+      response.statusCode = 504; // Gateway Timeout
+      [response setJsonBody:@{
+        @"error" : @"UpstreamTimeout",
+        @"message" : @"Upstream request timed out"
+      }];
+    } else {
+      response.statusCode = 502; // Bad Gateway
+      [response setJsonBody:@{
+        @"error" : @"UpstreamError",
+        @"message" : proxyError.localizedDescription ?: @"Upstream request failed"
+      }];
+    }
     return YES;
   }
 

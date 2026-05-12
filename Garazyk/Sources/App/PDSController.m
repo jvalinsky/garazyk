@@ -25,7 +25,7 @@
 #import "Core/ATProtoError.h"
 #import "Core/PDSServiceContainer.h"
 #import "Core/TID.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -140,7 +140,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
                                              DISPATCH_QUEUE_SERIAL);
     _running = NO;
 
-    PDS_LOG_CORE_INFO(
+    GZ_LOG_CORE_INFO(
         @"PDSController initialized as facade over PDSApplication");
   }
   return self;
@@ -188,7 +188,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     }
     return NO;
   }
-  PDS_LOG_CORE_INFO(@"Starting server via PDSApplication...");
+  GZ_LOG_CORE_INFO(@"Starting server via PDSApplication...");
   BOOL result = [_backingApplication startWithError:error];
   if (result) {
     _httpPort = _backingApplication.httpPort;
@@ -202,7 +202,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
   if (!_backingApplication) {
     return;
   }
-  PDS_LOG_CORE_INFO(@"Stopping server via PDSApplication...");
+  GZ_LOG_CORE_INFO(@"Stopping server via PDSApplication...");
   [_backingApplication stop];
   _httpServer = nil;
   _running = NO;
@@ -231,7 +231,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
     NSError *initError = nil;
     if (![_repositoryService initializeRepoForDid:createdDid
                                             error:&initError]) {
-      PDS_LOG_ERROR(
+      GZ_LOG_ERROR(
           @"Failed to initialize repo for DID %@ during account creation: %@",
           createdDid, initError.localizedDescription ?: @"unknown error");
     }
@@ -405,38 +405,38 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
                            error:error];
   if (!success)
     return nil;
-  PDS_LOG_CORE_DEBUG(@"Service call success, calculating record CID");
+  GZ_LOG_CORE_DEBUG(@"Service call success, calculating record CID");
 
   // Use DAG-CBOR for record CID calculation
   NSError *cborError = nil;
-  PDS_LOG_CORE_DEBUG(@"Encoding record with CBOR");
+  GZ_LOG_CORE_DEBUG(@"Encoding record with CBOR");
   NSData *recordData =
       [ATProtoCBORSerialization encodeDataWithJSONObject:record
                                                    error:&cborError];
 
   if (!recordData) {
-    PDS_LOG_CORE_WARN(@"CBOR encoding failed, falling back to JSON: %@", cborError);
+    GZ_LOG_CORE_WARN(@"CBOR encoding failed, falling back to JSON: %@", cborError);
     // Fallback to JSON if CBOR fails (shouldn't happen for valid JSON types)
     recordData =
         [NSJSONSerialization dataWithJSONObject:record options:0 error:nil];
   }
 
   if (!recordData) {
-    PDS_LOG_CORE_ERROR(@"Record data is NIL after fallback");
+    GZ_LOG_CORE_ERROR(@"Record data is NIL after fallback");
   } else {
-    PDS_LOG_CORE_DEBUG(@"Record data length: %lu bytes", (unsigned long)recordData.length);
+    GZ_LOG_CORE_DEBUG(@"Record data length: %lu bytes", (unsigned long)recordData.length);
   }
 
-  PDS_LOG_CORE_DEBUG(@"Calculating SHA-256 digest");
+  GZ_LOG_CORE_DEBUG(@"Calculating SHA-256 digest");
   NSData *digest = [CID sha256Digest:recordData];
-  PDS_LOG_CORE_DEBUG(@"Digest calculated: %@", digest ?: @"NIL");
+  GZ_LOG_CORE_DEBUG(@"Digest calculated: %@", digest ?: @"NIL");
 
-  PDS_LOG_CORE_DEBUG(@"Creating CID with dag-cbor codec");
+  GZ_LOG_CORE_DEBUG(@"Creating CID with dag-cbor codec");
   CID *cid = [CID cidWithDigest:digest codec:0x71]; // Use dag-cbor codec
-  PDS_LOG_CORE_DEBUG(@"CID created: %@", cid.stringValue);
+  GZ_LOG_CORE_DEBUG(@"CID created: %@", cid.stringValue);
 
   if (!cid || !cid.stringValue) {
-    PDS_LOG_CORE_ERROR(@"Failed to create CID for record at at://%@/%@/%@", did, collection, rkey);
+    GZ_LOG_CORE_ERROR(@"Failed to create CID for record at at://%@/%@/%@", did, collection, rkey);
     return nil;
   }
 
@@ -445,7 +445,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
         [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey],
     @"cid" : cid.stringValue
   };
-  PDS_LOG_CORE_DEBUG(@"Returning result for URI: %@", result[@"uri"]);
+  GZ_LOG_CORE_DEBUG(@"Returning result for URI: %@", result[@"uri"]);
   return result;
 }
 

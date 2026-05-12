@@ -6,7 +6,7 @@
 #import "Auth/JWT.h"
 #import "Core/DID.h"
 #import "Core/CID.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @interface VideoJWTAuthProvider ()
 @end
@@ -71,7 +71,7 @@
     NSError *error = nil;
     JWT *jwt = [JWT jwtWithToken:token error:&error];
     if (!jwt) {
-        PDS_LOG_WARN(@"Service Auth JWT parsing failed: %@", error);
+        GZ_LOG_WARN(@"Service Auth JWT parsing failed: %@", error);
         response.statusCode = HttpStatusUnauthorized;
         [response setJsonBody:@{
             @"error": @"InvalidToken",
@@ -93,12 +93,12 @@
             // Fall back to the 'did' claim
             iss = jwt.payload.did;
         }
-        PDS_LOG_INFO(@"Video auth: received access token for did=%@", iss);
+        GZ_LOG_INFO(@"Video auth: received access token for did=%@", iss);
     } else if (isServiceAuth) {
         // Service Auth tokens: issuer is the user DID
         iss = jwt.payload.iss;
     } else {
-        PDS_LOG_WARN(@"Video auth: rejected token with typ=%@", typ);
+        GZ_LOG_WARN(@"Video auth: rejected token with typ=%@", typ);
         response.statusCode = HttpStatusUnauthorized;
         [response setJsonBody:@{
             @"error": @"InvalidToken",
@@ -120,7 +120,7 @@
     if (isServiceAuth) {
         NSString *aud = jwt.payload.aud;
         if (aud && ![aud isEqualToString:self.audience]) {
-            PDS_LOG_WARN(@"Service Auth JWT audience mismatch: expected %@, got %@", self.audience, aud);
+            GZ_LOG_WARN(@"Service Auth JWT audience mismatch: expected %@, got %@", self.audience, aud);
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{
                 @"error": @"InvalidToken",
@@ -147,18 +147,18 @@
         // We can't fully verify them without the PDS's JWKS, but we trust them in
         // the sidecar architecture since the PDS has already authenticated the user.
         // In production, the PDS's JWKS would be fetched and used for verification.
-        PDS_LOG_INFO(@"Video auth: accepting access token for did=%@ (PDS-signed, trusted)", iss);
+        GZ_LOG_INFO(@"Video auth: accepting access token for did=%@ (PDS-signed, trusted)", iss);
     } else if (self.didResolver) {
         BOOL verified = [self verifyJWTSignature:jwt issuerDID:iss forceRefresh:NO error:&error];
         if (!verified) {
             // Retry with force-refresh to handle key rotation
-            PDS_LOG_INFO(@"Service Auth JWT verification failed, retrying with fresh DID: %@", error);
+            GZ_LOG_INFO(@"Service Auth JWT verification failed, retrying with fresh DID: %@", error);
             error = nil;
             verified = [self verifyJWTSignature:jwt issuerDID:iss forceRefresh:YES error:&error];
         }
 
         if (!verified) {
-            PDS_LOG_WARN(@"Service Auth JWT verification failed: %@", error);
+            GZ_LOG_WARN(@"Service Auth JWT verification failed: %@", error);
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{
                 @"error": @"InvalidToken",
@@ -171,7 +171,7 @@
         JWTVerifier *verifier = [[JWTVerifier alloc] init];
         verifier.expectedAudience = self.audience;
         if (![verifier verifyJWT:jwt error:&error]) {
-            PDS_LOG_WARN(@"Service Auth JWT verification failed (JWK): %@", error);
+            GZ_LOG_WARN(@"Service Auth JWT verification failed (JWK): %@", error);
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{
                 @"error": @"InvalidToken",
@@ -181,7 +181,7 @@
         }
     } else {
         // No DID resolver and no JWK — can't verify
-        PDS_LOG_WARN(@"Service Auth JWT verification failed: no DID resolver or signing key configured");
+        GZ_LOG_WARN(@"Service Auth JWT verification failed: no DID resolver or signing key configured");
         response.statusCode = HttpStatusUnauthorized;
         [response setJsonBody:@{
             @"error": @"InvalidToken",
@@ -199,7 +199,7 @@
         NSString *effectiveScope = lxm ?: scope;
         if (effectiveScope && ![effectiveScope isEqualToString:@"com.atproto.repo.uploadBlob"] &&
             ![effectiveScope isEqualToString:@"app.bsky.video.uploadVideo"]) {
-            PDS_LOG_WARN(@"Service Auth JWT scope mismatch: %@", effectiveScope);
+            GZ_LOG_WARN(@"Service Auth JWT scope mismatch: %@", effectiveScope);
             response.statusCode = HttpStatusForbidden;
             [response setJsonBody:@{
                 @"error": @"Forbidden",
@@ -223,7 +223,7 @@
     if (forceRefresh) {
         DIDDocument *doc = [self.didResolver resolveDIDSync:iss forceRefresh:YES error:error];
         if (!doc) {
-            PDS_LOG_WARN(@"Service Auth: DID resolution failed for %@ (forceRefresh): %@", iss, error ? *error : @"unknown");
+            GZ_LOG_WARN(@"Service Auth: DID resolution failed for %@ (forceRefresh): %@", iss, error ? *error : @"unknown");
             return NO;
         }
         // Re-extract atproto data from the fresh document
@@ -233,7 +233,7 @@
     }
 
     if (!atprotoData) {
-        PDS_LOG_WARN(@"Service Auth: no atprotoData for DID %@: %@", iss, error ? *error : @"unknown");
+        GZ_LOG_WARN(@"Service Auth: no atprotoData for DID %@: %@", iss, error ? *error : @"unknown");
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.video.auth"
                                          code:1

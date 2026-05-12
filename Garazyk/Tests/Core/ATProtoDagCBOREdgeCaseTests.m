@@ -124,7 +124,7 @@ static NSData *ATProtoDataWithBytes(const uint8_t *bytes, NSUInteger length) {
 
 - (void)testRoundTripIdentity {
     NSError *error = nil;
-    CID *cid = [CID cidWithDigest:[@"round-trip digest" dataUsingEncoding:NSUTF8StringEncoding] codec:0x71];
+    CID *cid = [CID cidWithDigest:[CID sha256Digest:[@"data" dataUsingEncoding:NSUTF8StringEncoding]] codec:0x71];
     NSDictionary *original = @{
         @"a": @[@YES, [NSNull null], @123],
         @"b": @{

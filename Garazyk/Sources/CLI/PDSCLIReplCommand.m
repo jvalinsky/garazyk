@@ -3,7 +3,7 @@
 #import "PDSCLIDefinitions.h"
 #import "CLI/PDSCLIDispatcher.h"
 #import "CLI/PDSCLIInputHelper.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 #import <readline/readline.h>
 #import <readline/history.h>

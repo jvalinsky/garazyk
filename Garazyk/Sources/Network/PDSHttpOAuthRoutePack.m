@@ -19,7 +19,7 @@
 #import "Auth/WebAuthnRegistrationHandler.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Service/ServiceDatabases.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Network/HttpServer.h"
 
 @implementation PDSHttpOAuthRoutePack
@@ -31,7 +31,7 @@
                      application:(nullable PDSApplication *)application
                       controller:(nullable PDSController *)controller {
   if (!serviceDatabases || !jwtMinter) {
-    PDS_LOG_WARN(@"PDSHttpOAuthRoutePack: OAuth routes not registered - missing "
+    GZ_LOG_WARN(@"PDSHttpOAuthRoutePack: OAuth routes not registered - missing "
                  @"serviceDatabases or jwtMinter");
     return;
   }
@@ -39,7 +39,7 @@
   NSError *dbError = nil;
   PDSDatabase *db = [serviceDatabases serviceDatabaseWithError:&dbError];
   if (!db) {
-    PDS_LOG_WARN(@"PDSHttpOAuthRoutePack: OAuth routes not registered - could "
+    GZ_LOG_WARN(@"PDSHttpOAuthRoutePack: OAuth routes not registered - could "
                  @"not get service database: %@",
                  dbError);
     return;
@@ -58,13 +58,13 @@
     oauthHandler.accountService = controller.accountService;
   }
   [oauthHandler registerRoutesWithServer:server];
-  PDS_LOG_DEBUG(@"PDSHttpOAuthRoutePack: OAuth routes registered");
+  GZ_LOG_DEBUG(@"PDSHttpOAuthRoutePack: OAuth routes registered");
 
   WebAuthnRegistrationHandler *webauthnHandler =
       [[WebAuthnRegistrationHandler alloc] initWithDatabase:db
                                                 serverOrigin:config.issuer];
   [webauthnHandler registerRoutesWithServer:server];
-  PDS_LOG_DEBUG(@"PDSHttpOAuthRoutePack: WebAuthn routes registered");
+  GZ_LOG_DEBUG(@"PDSHttpOAuthRoutePack: WebAuthn routes registered");
 }
 
 @end
