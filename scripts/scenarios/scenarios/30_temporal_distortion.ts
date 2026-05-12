@@ -1,0 +1,64 @@
+import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+import { assert } from "../../lib/deno/assertions.ts";
+import { XrpcClient } from "../../lib/deno/client.ts";
+import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+
+function now() {
+  return new Date().toISOString();
+}
+
+export async function run(): Promise<ScenarioResult> {
+  const result = new ScenarioResult("Temporal Distortion");
+  result.start();
+
+  const client = new XrpcClient(PDS1);
+  const luna = getCharacter("luna");
+
+  await timedCall(result, "Server health check", async () => {
+    await client.wait_for_healthy(30);
+  });
+
+  if (result.failed > 0) return result;
+
+  const session = await timedCall(result, "Create Luna", async () => {
+    return await client.accounts.createAccount(luna.handle, luna.email, luna.password);
+  });
+
+  if (!session) {
+    result.finish();
+    return result;
+  }
+  luna.did = session.did;
+  luna.accessJwt = session.accessJwt;
+
+  await timedCall(result, "Create Post A", async () => {
+    return await client.records.createRecord(
+      luna.did, "app.bsky.feed.post",
+      { $type: "app.bsky.feed.post", text: "Post A", createdAt: now() },
+      luna.accessJwt
+    );
+  });
+
+  const repoHead = await client.raw.xrpcGet("com.atproto.sync.getHead", { did: luna.did });
+  assert(repoHead.root, "Missing root in getHead");
+
+  // Monotonicity burst
+  for (let i = 0; i < 10; i++) {
+    await client.records.createRecord(
+      luna.did, "app.bsky.feed.post",
+      { $type: "app.bsky.feed.post", text: `Burst ${i}`, createdAt: now() },
+      luna.accessJwt
+    );
+  }
+
+  result.stepPassed("Monotonicity burst completed");
+  result.finish();
+  return result;
+}
+
+if (import.meta.main) {
+  run().then(res => {
+    console.log(res.summary());
+    Deno.exit(res.ok ? 0 : 1);
+  });
+}

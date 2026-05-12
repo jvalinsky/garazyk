@@ -72,6 +72,15 @@ If you forget that step, a test can compile and still never run. Any test-select
 3. do the smallest manual smoke check that matches the user-facing surface
 4. run `AllTests` last
 
+## Scenario Testing (Full Stack)
+
+For broad behavioral changes affecting multiple services (PDS, AppView, Relay), use the narrative scenario suite:
+
+```bash
+./scripts/run_scenarios.ts --list
+./scripts/run_scenarios.ts 01 05
+```
+
 ## Related
 
 - [Documentation Map](documentation-map.md)
