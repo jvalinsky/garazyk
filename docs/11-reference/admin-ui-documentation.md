@@ -4,12 +4,12 @@ title: Admin UI Documentation
 
 # Admin UI Documentation
 
-This hub maps Admin UI documentation into the canonical `docs/` path and points to the current standalone service.
+This hub maps Admin UI documentation into the canonical `docs/` path and points to the current standalone service. The UI is built using **HTMX** and **Objective-C** server-side templates.
 
 ## Current Runtime
 
 - Binary: `./build/bin/garazyk-ui`
-- Xcode scheme: `garazyk-ui`
+- Architecture: HTMX 1.9.10 + Vanilla CSS + Objective-C Rendering
 - Default URL: `http://127.0.0.1:2590/admin`
 - Login password variable: `GARAZYK_UI_ADMIN_PASSWORD`
 - Backend URL variables: `GARAZYK_UI_PDS_URL`, `GARAZYK_UI_PLC_URL`, `GARAZYK_UI_RELAY_URL`, `GARAZYK_UI_APPVIEW_URL`, `GARAZYK_UI_CHAT_URL`
@@ -19,8 +19,6 @@ This hub maps Admin UI documentation into the canonical `docs/` path and points 
 
 - [Documentation Map](./documentation-map)
 - [Explorer, OpenAPI & UI](./explorer-openapi-ui)
-- [Tutorial 7a: Objective-J for Contributors](../10-tutorials/tutorial-7a-objective-j-intro)
-- [Tutorial 7b: Admin UI Architecture](../10-tutorials/tutorial-7b-admin-ui)
 
 ## Source-Adjacent Admin UI Docs
 

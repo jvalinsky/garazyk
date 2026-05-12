@@ -4,7 +4,7 @@ title: Video Side-Car (jelcz)
 
 # Video Side-Car Service (jelcz)
 
-Jelcz is a standalone microservice that handles video processing outside the PDS process. It runs its own HTTP server, SQLite database, and transcoding pipeline, communicating with the PDS via Service Auth tokens.
+Jelcz is a microservice that handles video processing outside the PDS process. It runs an HTTP server, SQLite database, and transcoding pipeline, communicating with the PDS via Service Auth tokens.
 
 ## When to Use
 

@@ -26,18 +26,16 @@ Long code and shell material belongs in appendices so the main narrative can sta
 5. [Tutorial 5: Firehose](./tutorial-5-firehose)
 6. [Subguide: HTTP + WebSocket from Scratch](./network-from-scratch/)
 7. [Tutorial 6: Deployment](./tutorial-6-deployment)
-8. [Tutorial 7a: Objective-J for Contributors](./tutorial-7a-objective-j-intro)
-9. [Tutorial 7b: Admin UI Architecture](./tutorial-7b-admin-ui)
-10. [Tutorial 8: Endpoint Workflow](./tutorial-8-endpoint-workflow)
-11. [Tutorial 9: Blobs and Migrations](./tutorial-9-blobs-and-migrations)
-12. [Tutorial 10: Deep-Dive OAuth2 & DPoP](./tutorial-10-oauth-dpop)
-13. [Tutorial 11: PLC Failover and Resolution](./tutorial-11-plc-resolution)
-14. [Tutorial 12: Federation & Sync](./tutorial-12-federation-sync)
-15. [Tutorial 13: Admin UI Internals & Instrumentation](./tutorial-13-admin-internals)
-16. [Tutorial 14: Advanced Firehose (Filtering & Backfill)](./tutorial-14-advanced-firehose)
-17. [Tutorial 15: Syrena AppView Operation](./tutorial-15-appview-operation)
+8. [Tutorial 8: Endpoint Workflow](./tutorial-8-endpoint-workflow)
+9. [Tutorial 9: Blobs and Migrations](./tutorial-9-blobs-and-migrations)
+10. [Tutorial 10: Deep-Dive OAuth2 & DPoP](./tutorial-10-oauth-dpop)
+11. [Tutorial 11: PLC Failover and Resolution](./tutorial-11-plc-resolution)
+12. [Tutorial 12: Federation & Sync](./tutorial-12-federation-sync)
+13. [Tutorial 13: Admin UI Internals & Instrumentation](./tutorial-13-admin-internals)
+14. [Tutorial 14: Advanced Firehose (Filtering & Backfill)](./tutorial-14-advanced-firehose)
+15. [Tutorial 15: Syrena AppView Operation](./tutorial-15-appview-operation)
 
-The first five tutorials plus the network subguide teach the production server from the inside out. [Tutorial 6: Deployment](./tutorial-6-deployment) then shifts to production operations. Tutorials 7a and 7b cover contributor tooling in the browser. [Tutorial 8: Endpoint Workflow](./tutorial-8-endpoint-workflow) ties together the end-to-end workflow for adding or changing a feature. [Tutorial 9: Blobs and Migrations](./tutorial-9-blobs-and-migrations) covers the durability layer. [Tutorial 10: Deep-Dive OAuth2 & DPoP](./tutorial-10-oauth-dpop) explains the high-security authentication handshake. [Tutorial 11: PLC Failover and Resolution](./tutorial-11-plc-resolution) covers identity resolution and resilience. [Tutorial 12: Federation & Sync](./tutorial-12-federation-sync) explains the network-wide data flow. [Tutorial 13: Admin UI Internals & Instrumentation](./tutorial-13-admin-internals) covers PDS management and monitoring. [Tutorial 14: Advanced Firehose (Filtering & Backfill)](./tutorial-14-advanced-firehose) dives into production-grade streaming features. [Tutorial 15: Syrena AppView Operation](./tutorial-15-appview-operation) covers the lifecycle of data within the AppView engine, from ingestion to specialized indexing.
+The first five tutorials plus the network subguide teach the production server from the inside out. [Tutorial 6: Deployment](./tutorial-6-deployment) then shifts to production operations. [Tutorial 8: Endpoint Workflow](./tutorial-8-endpoint-workflow) ties together the end-to-end workflow for adding or changing a feature. [Tutorial 9: Blobs and Migrations](./tutorial-9-blobs-and-migrations) covers the durability layer. [Tutorial 10: Deep-Dive OAuth2 & DPoP](./tutorial-10-oauth-dpop) explains the high-security authentication handshake. [Tutorial 11: PLC Failover and Resolution](./tutorial-11-plc-resolution) covers identity resolution and resilience. [Tutorial 12: Federation & Sync](./tutorial-12-federation-sync) explains the network-wide data flow. [Tutorial 13: Admin UI Internals & Instrumentation](./tutorial-13-admin-internals) covers PDS management and monitoring. [Tutorial 14: Advanced Firehose (Filtering & Backfill)](./tutorial-14-advanced-firehose) dives into production-grade streaming features. [Tutorial 15: Syrena AppView Operation](./tutorial-15-appview-operation) covers the lifecycle of data within the AppView engine, from ingestion to specialized indexing.
 
 If you want the network internals immediately after the firehose walkthrough, take the advanced track next:
 
