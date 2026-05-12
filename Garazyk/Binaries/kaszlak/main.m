@@ -3,12 +3,15 @@
 #import <Foundation/Foundation.h>
 #import "CLI/PDSCLIDefinitions.h"
 #import "Core/NSDateFormatter+ATProto.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import <execinfo.h>
 #import <signal.h>
 #import <fcntl.h>
 #import <unistd.h>
 #import <string.h>
+#if defined(GNUSTEP)
+#import <curl/curl.h>
+#endif
 
 /**
  * @file main.m
@@ -181,7 +184,7 @@ static BOOL parse_global_options(NSMutableArray<NSString *> *commandArgs,
         }
         if ([arg isEqualToString:@"--verbose"] || [arg isEqualToString:@"-v"]) {
             context.verbose = YES;
-            [[PDSLogger sharedLogger] setLogLevel:PDSLogLevelDebug];
+            [[GZLogger sharedLogger] setLogLevel:GZLogLevelDebug];
             [commandArgs removeObjectAtIndex:i];
             continue;
         }
@@ -216,6 +219,9 @@ int main(int argc, const char * argv[]) {
     signal(SIGPIPE, SIG_IGN);
     signal(SIGHUP, SIG_IGN);
     install_crash_handlers();
+#if defined(GNUSTEP)
+    curl_global_init(CURL_GLOBAL_ALL);
+#endif
     @autoreleasepool {
         PDSCLIRegisterAllCommands();
 #ifdef LINUX

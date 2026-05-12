@@ -8,11 +8,14 @@
 #import <Foundation/Foundation.h>
 #import <signal.h>
 #import <unistd.h>
+#if defined(GNUSTEP)
+#import <curl/curl.h>
+#endif
 #import <fcntl.h>
 #import <execinfo.h>
 #import "Chat/Server/ChatRuntime.h"
 #import "Chat/Server/Config/ChatConfiguration.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 static const char *executable_name = "syrena-chat";
 static ChatRuntime *gShutdownRuntime = nil;
@@ -116,6 +119,9 @@ void print_usage(void) {
 }
 
 int main(int argc, const char * argv[]) {
+#if defined(GNUSTEP)
+    curl_global_init(CURL_GLOBAL_ALL);
+#endif
     @autoreleasepool {
         if (argc < 2) {
             print_usage();
@@ -145,7 +151,7 @@ int main(int argc, const char * argv[]) {
                     return 1;
                 }
             } else if ([arg isEqualToString:@"-v"] || [arg isEqualToString:@"--verbose"]) {
-                [[PDSLogger sharedLogger] setLogLevel:PDSLogLevelDebug];
+                [[GZLogger sharedLogger] setLogLevel:GZLogLevelDebug];
             }
         }
 

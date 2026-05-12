@@ -7,7 +7,7 @@
 # 1. No hardcoded OAuth test clients outside DEBUG
 # 2. No weak SHA-256 password hashing
 # 3. PBKDF2 with sufficient iterations
-# 4. All outbound HTTP uses PDSSafeHTTPClient (no raw NSURLSession)
+# 4. All outbound HTTP uses ATProtoSafeHTTPClient (no raw NSURLSession)
 # 5. PDSLogRedactor wired into PDSLogger
 # 6. OAuthClientAuthPolicy used for client auth validation
 # 7. PDSKeyEnvelope used for key encryption
