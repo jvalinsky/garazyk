@@ -6,6 +6,8 @@
 
 import { Handlers } from "$fresh/server.ts";
 import { getScenarios } from "../../services/scenario_discovery.ts";
+import { join, fromFileUrl } from "$std/path/mod.ts";
+import { db } from "../../db/index.ts";
 
 export const handler: Handlers = {
   async GET(_req) {
@@ -27,11 +29,44 @@ export const handler: Handlers = {
       });
     }
 
-    // For now, return a placeholder response.
-    // Actual execution will be wired up in the Run Manager step.
+    const now = new Date();
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const runId = `${now.getUTCFullYear()}${pad(now.getUTCMonth()+1)}${pad(now.getUTCDate())}-${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}`;
+    const startedAt = Math.floor(now.getTime() / 1000);
+
+    // Insert pending run
+    try {
+      db.prepare(`
+        INSERT INTO runs (id, started_at, status, total_scenarios, passed, failed, skipped)
+        VALUES (?, ?, 'running', ?, 0, 0, 0)
+      `).run(runId, startedAt, ids.length);
+    } catch (e) {
+      console.error("Failed to insert run record", e);
+    }
+
+    // Run async
+    (async () => {
+      const scriptPath = join(
+        fromFileUrl(new URL("../../../../run_scenarios.ts", import.meta.url))
+      );
+      const args = ["run", "-A", scriptPath, "--no-setup", "--run-id", runId, ...ids];
+      if (pds2) args.push("--pds2");
+
+      const command = new Deno.Command("deno", {
+        args,
+        stdout: "inherit",
+        stderr: "inherit",
+      });
+      const { code } = await command.output();
+
+      // Scan reports to finalize DB
+      const { scanReports } = await import("../../services/report_scanner.ts");
+      await scanReports(db);
+    })();
+
     return new Response(JSON.stringify({
       message: "Run initiated",
-      runId: `run-${Date.now()}`,
+      runId,
       scenarioIds: ids,
       pds2,
     }), {

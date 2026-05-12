@@ -15,7 +15,8 @@
     "tailwindcss": "npm:tailwindcss@3.4.7",
     "tailwindcss/": "npm:/tailwindcss@3.4.7/",
     "tailwindcss/plugin": "npm:tailwindcss@3.4.7/plugin.js",
-    "$std/": "https://deno.land/std@0.224.0/"
+    "$std/": "https://deno.land/std@0.224.0/",
+    "sqlite3": "https://deno.land/x/sqlite3@0.12.0/mod.ts"
   },
   "compilerOptions": {
     "jsx": "react-jsx",

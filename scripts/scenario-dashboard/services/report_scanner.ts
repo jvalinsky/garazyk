@@ -78,8 +78,8 @@ export async function scanReports(db: Database): Promise<number> {
       const startedAt = timestampToUnix(timestamp);
 
       // Check if this run already exists
-      const existing = db.prepare("SELECT id FROM runs WHERE id = ?").get<[string]>(runId);
-      if (existing) continue;
+      const existing = db.prepare("SELECT id, status FROM runs WHERE id = ?").get<{id: string, status: string}>(runId);
+      if (existing && existing.status === 'completed') continue;
 
       let totalPassed = 0;
       let totalFailed = 0;
@@ -91,6 +91,9 @@ export async function scanReports(db: Database): Promise<number> {
       db.exec("BEGIN TRANSACTION");
 
       try {
+        // Clear any partial data for this run id
+        db.prepare("DELETE FROM scenario_results WHERE run_id = ?").run(runId);
+        
         for (const file of files) {
           const filePath = join(REPORTS_DIR, file.filename);
           const content = await Deno.readTextFile(filePath);
@@ -128,9 +131,9 @@ export async function scanReports(db: Database): Promise<number> {
           );
         }
 
-        // Insert the run record
+        // Insert or replace the run record
         db.prepare(
-          `INSERT INTO runs (id, started_at, finished_at, status, total_scenarios, passed, failed, skipped, duration_s)
+          `INSERT OR REPLACE INTO runs (id, started_at, finished_at, status, total_scenarios, passed, failed, skipped, duration_s)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
         ).run(
           runId,
