@@ -4,7 +4,7 @@
 #import "Network/HttpRequest.h"
 #import "Security/PDSSecurityCompare.h"
 #import "Auth/CryptoUtils.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 
 #if !TARGET_OS_LINUX
@@ -40,7 +40,7 @@ static NSData *pbkdf2DeriveKey(NSString *password, NSData *salt) {
                                        passwordData.bytes, passwordData.length,
                                        salt.bytes, salt.length,
                                        kCCPRFHmacAlgSHA256,
-                                       100000, // 100k iterations
+                                       600000, // 600k iterations
                                        derivedKey, 32);
     if (result != kCCSuccess) return nil;
     return [NSData dataWithBytes:derivedKey length:32];
@@ -50,7 +50,7 @@ static NSString *generateCSPRNGToken(NSUInteger byteCount) {
     uint8_t bytes[32];
     if (byteCount > sizeof(bytes)) byteCount = sizeof(bytes);
     if (SecRandomCopyBytes(kSecRandomDefault, byteCount, bytes) != errSecSuccess) {
-        PDS_LOG_ERROR(@"Failed to generate CSPRNG token");
+        GZ_LOG_ERROR(@"Failed to generate CSPRNG token");
         return nil;
     }
     NSMutableString *token = [NSMutableString stringWithCapacity:byteCount * 2];
@@ -92,7 +92,7 @@ static NSString *generateCSPRNGToken(NSUInteger byteCount) {
         // Generate random salt for PBKDF2
         uint8_t saltBytes[16];
         if (SecRandomCopyBytes(kSecRandomDefault, 16, saltBytes) != errSecSuccess) {
-            PDS_LOG_ERROR(@"Failed to generate password salt");
+            GZ_LOG_ERROR(@"Failed to generate password salt");
             _passwordSalt = [NSData data];
             _passwordHash = @"";
         } else {
@@ -266,6 +266,14 @@ static NSString *generateCSPRNGToken(NSUInteger byteCount) {
 }
 
 - (NSString *)createCSRFNonceCookie:(BOOL)secure {
+    NSString *nonce, *cookie;
+    [self createCSRFNonce:&nonce cookie:&cookie secure:secure];
+    return cookie;
+}
+
+- (void)createCSRFNonce:(NSString * _Nonnull * _Nonnull)outNonce
+                 cookie:(NSString * _Nonnull * _Nonnull)outCookie
+                 secure:(BOOL)secure {
     NSString *nonce = generateCSPRNGToken(16);
     if (!nonce) nonce = [[NSUUID UUID] UUIDString];
 
@@ -281,7 +289,9 @@ static NSString *generateCSPRNGToken(NSUInteger byteCount) {
     if (secure) {
         [cookie appendString:@"; Secure"];
     }
-    return cookie;
+    
+    *outNonce = nonce;
+    *outCookie = [cookie copy];
 }
 
 @end
