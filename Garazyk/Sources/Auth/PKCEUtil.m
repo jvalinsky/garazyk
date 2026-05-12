@@ -4,6 +4,7 @@
 #import "Auth/CryptoUtils.h"
 #import <CommonCrypto/CommonDigest.h>
 #import <Security/Security.h>
+#import "Security/PDSSecurityCompare.h"
 
 static NSString * const kBase64URLAlphabet = @"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
@@ -23,7 +24,7 @@ static NSString * const kBase64URLAlphabet = @"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefg
 
 + (BOOL)verifyCodeChallenge:(NSString *)challenge withVerifier:(NSString *)verifier {
     NSString *expectedChallenge = [self generateCodeChallengeWithVerifier:verifier];
-    return [challenge isEqualToString:expectedChallenge];
+    return [PDSSecurityCompare constantTimeEqualString:challenge string:expectedChallenge];
 }
 
 @end

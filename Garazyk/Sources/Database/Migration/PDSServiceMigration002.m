@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "PDSDatabaseMigration.h"
 #import "Database/PDSDatabase.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 /*!
  @class PDSServiceMigration002
@@ -55,12 +55,12 @@
             NSString *errMsg = execError.localizedDescription;
             // "duplicate column name" means the column already exists — not an error
             if ([errMsg containsString:@"duplicate column name"]) {
-                PDS_LOG_DB_DEBUG(@"Migration 002: column already exists, skipping: %@", sql);
+                GZ_LOG_DB_DEBUG(@"Migration 002: column already exists, skipping: %@", sql);
                 continue;
             }
             // Real error
             if (error) *error = execError;
-            PDS_LOG_DB_ERROR(@"Migration 002 failed on %@: %@", sql, errMsg);
+            GZ_LOG_DB_ERROR(@"Migration 002 failed on %@: %@", sql, errMsg);
             return NO;
         }
     }
@@ -72,13 +72,13 @@
         @"UPDATE records SET indexed_at = created_at WHERE indexed_at = ''"
         params:@[] error:&backfillError];
     if (!backfillSuccess) {
-        PDS_LOG_DB_WARN(@"Migration 002: backfill of indexed_at failed (non-fatal): %@",
+        GZ_LOG_DB_WARN(@"Migration 002: backfill of indexed_at failed (non-fatal): %@",
                         backfillError.localizedDescription);
         // Non-fatal: existing records will have empty indexed_at until
         // the application layer sets it on next write.
     }
 
-    PDS_LOG_DB_INFO(@"Migration 002: all column additions applied successfully");
+    GZ_LOG_DB_INFO(@"Migration 002: all column additions applied successfully");
     return YES;
 }
 

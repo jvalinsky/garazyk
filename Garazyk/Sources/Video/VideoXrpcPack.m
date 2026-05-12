@@ -10,7 +10,7 @@
 #import "Network/XrpcHandler.h"
 #import "Blob/PDSBlobProvider.h"
 #import "Core/CID.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @implementation ATProtoVideoXrpcPack
 
@@ -87,7 +87,7 @@
 
     BOOL stored = [blobProvider storeBlobData:request.body forCID:cid error:&error];
     if (!stored) {
-      PDS_LOG_ERROR(@"Failed to store video blob: %@", error);
+      GZ_LOG_ERROR(@"Failed to store video blob: %@", error);
       [XrpcErrorHelper setInternalServerError:response message:@"Failed to store video"];
       return;
     }
@@ -107,12 +107,12 @@
                                     serviceAuthToken:serviceToken
                                               error:&error];
     if (!created) {
-      PDS_LOG_ERROR(@"Failed to create video job: %@", error);
+      GZ_LOG_ERROR(@"Failed to create video job: %@", error);
       [XrpcErrorHelper setInternalServerError:response message:@"Failed to create job"];
       return;
     }
 
-    PDS_LOG_INFO(@"Created video job %@ for did %@", jobId, did);
+    GZ_LOG_INFO(@"Created video job %@ for did %@", jobId, did);
 
     response.statusCode = HttpStatusOK;
     [response setJsonBody:@{

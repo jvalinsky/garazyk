@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Database/Cache/PDSRecordCache.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 
 // Cache entry structure
@@ -65,7 +65,7 @@
         _cacheQueue = dispatch_queue_create("com.atproto.pds.recordcache",
                                            DISPATCH_QUEUE_SERIAL);
 
-        PDS_LOG_CORE_INFO(@"Record cache initialized: max=%lu, memory=%lu, ttl=%.0fs",
+        GZ_LOG_CORE_INFO(@"Record cache initialized: max=%lu, memory=%lu, ttl=%.0fs",
                          (unsigned long)_maxEntries,
                          (unsigned long)_maxMemoryBytes,
                          _defaultTTL);

@@ -4,7 +4,7 @@
 #import "Compat/PDSTypes.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import <sqlite3.h>
 
 NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
@@ -56,7 +56,7 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
             NSError *error = nil;
             [fm createDirectoryAtPath:dbDirectory withIntermediateDirectories:YES attributes:nil error:&error];
             if (error) {
-                PDS_LOG_DB_ERROR(@"Failed to create database directory: %@ (error: %@)", dbDirectory, error);
+                GZ_LOG_DB_ERROR(@"Failed to create database directory: %@ (error: %@)", dbDirectory, error);
             }
         }
         
@@ -134,7 +134,7 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
         }
 
         dbPath = [self dbPathForDid:did];
-        PDS_LOG_DB_DEBUG(@"Opening store at path: %@ (exists: %d)", dbPath,
+        GZ_LOG_DB_DEBUG(@"Opening store at path: %@ (exists: %d)", dbPath,
                          [[NSFileManager defaultManager] fileExistsAtPath:dbPath]);
 
         store = [PDSActorStore storeWithDid:did dbPath:dbPath error:&blockError];
@@ -145,7 +145,7 @@ NSString * const PDSDatabasePoolErrorDomain = @"com.atproto.pds.databasepool";
             self.lastAccessTime[did] = [NSDate date];
             self.openFileHandleCount++;
         } else {
-            PDS_LOG_DB_ERROR(@"Failed to open store for %@: %@", did, blockError);
+            GZ_LOG_DB_ERROR(@"Failed to open store for %@: %@", did, blockError);
         }
     });
 

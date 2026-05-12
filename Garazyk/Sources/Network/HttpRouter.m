@@ -267,14 +267,6 @@
         path = [path substringFromIndex:1];
     }
 
-    // Prevent directory traversal
-    if ([path containsString:@".."]) {
-        // In a secure implementation, this would return an error
-        // For now, we'll sanitize by removing dangerous sequences
-        path = [path stringByReplacingOccurrencesOfString:@".." withString:@""];
-        path = [path stringByReplacingOccurrencesOfString:@"//" withString:@"/"];
-    }
-
     return path;
 }
 

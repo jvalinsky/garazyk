@@ -67,9 +67,8 @@ extern NSString * const TutorialSQLiteErrorDomain;
  @param block The query to execute. Receives the sqlite3* handle.
  @return The result returned by the block, or nil on error.
  */
-- (nullable id)executeQuery:(NSError **)error
-                      block:(id _Nullable (^)(sqlite3 *db))block;
-
+- (nullable id)executeUnsafeRawQuery:(NSError **)error
+                        block:(id _Nullable (^)(sqlite3 *db))block;
 /*!
  @method executeUpdate:error:sql:
 

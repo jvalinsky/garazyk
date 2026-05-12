@@ -11,7 +11,8 @@
 #import "PhoneVerification/PDSVonagePhoneVerificationProvider.h"
 #import "Core/PDSProviderHTTPClient.h"
 #import "Email/PDSSecretsProvider.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
+#import "Debug/GZLogRedactor.h"
 
 static NSString *const kVonageVerifyBaseURL = @"https://api.nexmo.com";
 static NSString *const kVonageAPIKeyEnvVar = @"VONAGE_API_KEY";
@@ -133,7 +134,7 @@ NSString *const PDSVonageProviderErrorDomain = @"com.atproto.pds.vonageprovider"
         return nil;
     }
 
-    PDS_LOG_INFO(@"[Vonage] Sending verification to: %@", phoneNumber);
+    GZ_LOG_INFO(@"[Vonage] Sending verification to: %@", [GZLogRedactor maskToken:phoneNumber]);
 
     // POST /verify/json with form-encoded params
     NSDictionary *params = @{
@@ -148,7 +149,7 @@ NSString *const PDSVonageProviderErrorDomain = @"com.atproto.pds.vonageprovider"
                                                    params:params
                                                     error:&requestError];
     if (!response) {
-        PDS_LOG_ERROR(@"[Vonage] Failed to send verification: %@", requestError);
+        GZ_LOG_ERROR(@"[Vonage] Failed to send verification: %@", requestError);
         if (error) {
             *error = [NSError errorWithDomain:PDSVonageProviderErrorDomain
                                          code:PDSVonageProviderErrorRequestFailed
@@ -166,7 +167,7 @@ NSString *const PDSVonageProviderErrorDomain = @"com.atproto.pds.vonageprovider"
     // Vonage returns status "0" for success
     if (![status isEqualToString:@"0"]) {
         NSString *errorText = response[@"error_text"] ?: @"Unknown error";
-        PDS_LOG_ERROR(@"[Vonage] Verification send failed (status: %@, error: %@)", status, errorText);
+        GZ_LOG_ERROR(@"[Vonage] Verification send failed (status: %@, error: %@)", status, errorText);
         if (error) {
             *error = [NSError errorWithDomain:PDSVonageProviderErrorDomain
                                          code:PDSVonageProviderErrorRequestFailed
@@ -178,7 +179,7 @@ NSString *const PDSVonageProviderErrorDomain = @"com.atproto.pds.vonageprovider"
         return nil;
     }
 
-    PDS_LOG_INFO(@"[Vonage] Verification sent to %@ (request_id: %@)", phoneNumber, requestID);
+    GZ_LOG_INFO(@"[Vonage] Verification sent to %@ (request_id: %@)", [GZLogRedactor maskToken:phoneNumber], requestID);
     return requestID ?: @"";
 }
 
@@ -229,7 +230,7 @@ NSString *const PDSVonageProviderErrorDomain = @"com.atproto.pds.vonageprovider"
         return NO;
     }
 
-    PDS_LOG_INFO(@"[Vonage] Checking verification code for: %@ (request_id: %@)", phoneNumber, sessionID);
+    GZ_LOG_INFO(@"[Vonage] Checking verification code for: %@ (request_id: %@)", [GZLogRedactor maskToken:phoneNumber], sessionID);
 
     // POST /verify/check/json with form-encoded params
     NSDictionary *params = @{
@@ -244,7 +245,7 @@ NSString *const PDSVonageProviderErrorDomain = @"com.atproto.pds.vonageprovider"
                                                    params:params
                                                     error:&requestError];
     if (!response) {
-        PDS_LOG_ERROR(@"[Vonage] Verification check failed: %@", requestError);
+        GZ_LOG_ERROR(@"[Vonage] Verification check failed: %@", requestError);
         if (error) {
             *error = [NSError errorWithDomain:PDSVonageProviderErrorDomain
                                          code:PDSVonageProviderErrorVerificationFailed
@@ -258,12 +259,12 @@ NSString *const PDSVonageProviderErrorDomain = @"com.atproto.pds.vonageprovider"
 
     NSString *status = response[@"status"];
     if ([status isEqualToString:@"0"]) {
-        PDS_LOG_INFO(@"[Vonage] Verification approved for %@", phoneNumber);
+        GZ_LOG_INFO(@"[Vonage] Verification approved for %@", [GZLogRedactor maskToken:phoneNumber]);
         return YES;
     }
 
     NSString *errorText = response[@"error_text"] ?: @"unknown";
-    PDS_LOG_INFO(@"[Vonage] Verification not approved for %@ (status: %@, error: %@)", phoneNumber, status, errorText);
+    GZ_LOG_INFO(@"[Vonage] Verification not approved for %@ (status: %@, error: %@)", [GZLogRedactor maskToken:phoneNumber], status, errorText);
     if (error) {
         *error = [NSError errorWithDomain:PDSVonageProviderErrorDomain
                                      code:PDSVonageProviderErrorVerificationFailed

@@ -4,7 +4,7 @@
 #import "Auth/Secp256k1.h"
 #import "Security/PDSKeyEnvelope.h"
 #import "Core/PDSDataPaths.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Auth/CryptoUtils.h"
 #import "App/PDSConfiguration.h"
 
@@ -103,7 +103,7 @@ static NSString *PLCRotationKeyStorageDirectory(void) {
         if (keyData.length == 32) {
             // Legacy unencrypted key
             privateKeyData = keyData;
-            PDS_LOG_INFO(@"Detected legacy unencrypted rotation key.");
+            GZ_LOG_INFO(@"Detected legacy unencrypted rotation key.");
             
             // Migrate to envelope encryption if master secret is available
             NSData *encKey = [self encryptionKeyWithError:nil];
@@ -111,7 +111,7 @@ static NSString *PLCRotationKeyStorageDirectory(void) {
                 NSData *encrypted = [PDSKeyEnvelope seal:privateKeyData withKey:encKey error:nil];
                 if (encrypted) {
                     if ([encrypted writeToFile:keyPath atomically:YES]) {
-                        PDS_LOG_INFO(@"Successfully migrated rotation key to envelope encryption.");
+                        GZ_LOG_INFO(@"Successfully migrated rotation key to envelope encryption.");
                         [self ensureSecurePermissionsForPath:keyPath isDirectory:NO];
                     }
                 }
@@ -126,7 +126,7 @@ static NSString *PLCRotationKeyStorageDirectory(void) {
                     privateKeyData = [CryptoUtils decryptData:keyData withKey:encKey];
                 }
                 if (!privateKeyData) {
-                    PDS_LOG_ERROR(@"Failed to decrypt rotation key. Possible invalid master secret.");
+                    GZ_LOG_ERROR(@"Failed to decrypt rotation key. Possible invalid master secret.");
                     if (error && !*error) {
                         *error = [NSError errorWithDomain:PLCRotationKeyManagerErrorDomain
                                                      code:PLCRotationKeyManagerErrorKeyStorageFailed
@@ -144,10 +144,10 @@ static NSString *PLCRotationKeyStorageDirectory(void) {
             self.rotationKeyPair = [[Secp256k1 shared] keyPairFromPrivateKey:privateKeyData error:&keyError];
             if (self.rotationKeyPair) {
                 self.rotationKeyDidKey = self.rotationKeyPair.didKeyString;
-                PDS_LOG_INFO(@"Loaded rotation key: %@", self.rotationKeyDidKey);
+                GZ_LOG_INFO(@"Loaded rotation key: %@", self.rotationKeyDidKey);
                 return YES;
             }
-            PDS_LOG_ERROR(@"Failed to reconstruct rotation key: %@", keyError);
+            GZ_LOG_ERROR(@"Failed to reconstruct rotation key: %@", keyError);
         }
     }
     
@@ -187,10 +187,10 @@ static NSString *PLCRotationKeyStorageDirectory(void) {
         }
         
         if (![dataToSave writeToFile:keyPath atomically:YES]) {
-            PDS_LOG_ERROR(@"Failed to write rotation key to: %@", keyPath);
+            GZ_LOG_ERROR(@"Failed to write rotation key to: %@", keyPath);
         } else {
             [self ensureSecurePermissionsForPath:keyPath isDirectory:NO];
-            PDS_LOG_INFO(@"Generated and saved new PLC rotation key: %@", self.rotationKeyDidKey);
+            GZ_LOG_INFO(@"Generated and saved new PLC rotation key: %@", self.rotationKeyDidKey);
         }
     }
     
@@ -262,18 +262,18 @@ static NSString *PLCRotationKeyStorageDirectory(void) {
     // Linux: use chmod directly via system call
     int chmodResult = chmod(path.UTF8String, mode);
     if (chmodResult != 0) {
-        PDS_LOG_ERROR(@"Failed to set secure permissions (mode %o) on %@: %d", mode, path, errno);
+        GZ_LOG_ERROR(@"Failed to set secure permissions (mode %o) on %@: %d", mode, path, errno);
     } else {
-        PDS_LOG_DEBUG(@"Set secure permissions (mode %o) on %@", mode, path);
+        GZ_LOG_DEBUG(@"Set secure permissions (mode %o) on %@", mode, path);
     }
     return;
 #endif
 
     NSError *error = nil;
     if (![fm setAttributes:attrs ofItemAtPath:path error:&error]) {
-        PDS_LOG_ERROR(@"Failed to set secure permissions (mode %o) on %@: %@", mode, path, error);
+        GZ_LOG_ERROR(@"Failed to set secure permissions (mode %o) on %@: %@", mode, path, error);
     } else {
-        PDS_LOG_DEBUG(@"Set secure permissions (mode %o) on %@", mode, path);
+        GZ_LOG_DEBUG(@"Set secure permissions (mode %o) on %@", mode, path);
     }
 }
 

@@ -8,7 +8,7 @@
 #import "ATProtoLexiconError.h"
 #import "Core/ATProtoValidator.h"
 #import "Core/NSDateFormatter+ATProto.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 // Maximum recursion depth for nested objects
 static const NSInteger kMaxRecursionDepth = 32;
@@ -126,7 +126,7 @@ static NSData *LexiconBase64URLDecode(NSString *string) {
             return NO;
         } else {
             // Optimistic mode: allow unknown lexicons
-            PDS_LOG_DEBUG(@"[LexiconValidator] Lexicon unknown for '%@', allowing in optimistic mode", collection);
+            GZ_LOG_DEBUG(@"[LexiconValidator] Lexicon unknown for '%@', allowing in optimistic mode", collection);
             return YES;
         }
     }
@@ -790,7 +790,7 @@ static NSData *LexiconBase64URLDecode(NSString *string) {
 
             if (!propDef) {
                 // Unknown field - log warning but allow (forward compatibility)
-                PDS_LOG_DEBUG(@"[LexiconValidator] Unknown field '%@' in %@", propName, context);
+                GZ_LOG_DEBUG(@"[LexiconValidator] Unknown field '%@' in %@", propName, context);
                 continue;
             }
 

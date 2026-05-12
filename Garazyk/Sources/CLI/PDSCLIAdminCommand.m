@@ -3,7 +3,7 @@
 #import "PDSCLIDefinitions.h"
 #import "Admin/PDSAdminAuth.h"
 #import "CLI/PDSCLIAccountManager.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "PDSCLIInputHelper.h"
 #import "Identity/ATProtoHandleValidator.h"
 

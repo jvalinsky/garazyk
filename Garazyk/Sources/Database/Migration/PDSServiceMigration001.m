@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "PDSDatabaseMigration.h"
 #import "Database/PDSDatabase.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 /*!
  @class PDSServiceMigration001
@@ -39,9 +39,9 @@
     BOOL success = [database executeParameterizedUpdate:versionTableSQL params:@[] error:error];
 
     if (success) {
-        PDS_LOG_DB_INFO(@"Created schema_version table for migration tracking");
+        GZ_LOG_DB_INFO(@"Created schema_version table for migration tracking");
     } else {
-        PDS_LOG_DB_ERROR(@"Failed to create schema_version table: %@", *error);
+        GZ_LOG_DB_ERROR(@"Failed to create schema_version table: %@", *error);
     }
 
     return success;

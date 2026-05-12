@@ -17,7 +17,7 @@
 #import "Auth/Secp256k1.h"
 #import "App/PDSConfiguration.h"
 #import "Database/PDSDatabase.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 #import <CommonCrypto/CommonDigest.h>
 
@@ -283,7 +283,7 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
         // Save to database for persistence
         NSError *saveError = nil;
         if (![self saveKeyPairToDatabase:keyPair error:&saveError]) {
-            PDS_LOG_AUTH_WARN(@"Failed to save ES256K JWT signing key to database: %@", saveError);
+            GZ_LOG_AUTH_WARN(@"Failed to save ES256K JWT signing key to database: %@", saveError);
         }
 
         return keyPair;
@@ -359,7 +359,7 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
     // Save to database for persistence
     NSError *saveError = nil;
     if (![self saveKeyPairToDatabase:keyPair error:&saveError]) {
-        PDS_LOG_AUTH_WARN(@"Failed to save JWT signing key to database: %@", saveError);
+        GZ_LOG_AUTH_WARN(@"Failed to save JWT signing key to database: %@", saveError);
     }
 
     return keyPair;
@@ -620,10 +620,10 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
     if (!self.database) return;
 
     NSError *error = nil;
-    NSArray *results = [self.database executeQuery:@"SELECT key_id, algorithm, private_key_data, public_key_data, keychain_tag, is_active, created_at FROM jwt_signing_keys ORDER BY created_at DESC" error:&error];
+    NSArray *results = [self.database executeParameterizedQuery:@"SELECT key_id, algorithm, private_key_data, public_key_data, keychain_tag, is_active, created_at FROM jwt_signing_keys ORDER BY created_at DESC" params:@[] error:&error];
 
     if (error) {
-        PDS_LOG_AUTH_ERROR(@"Failed to load JWT signing keys from database: %@", error);
+        GZ_LOG_AUTH_ERROR(@"Failed to load JWT signing keys from database: %@", error);
         return;
     }
 
@@ -650,7 +650,7 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
                 };
                 OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, (CFTypeRef *)&privateKey);
                 if (status != errSecSuccess) {
-                    PDS_LOG_AUTH_WARN(@"Failed to load private key from Keychain for tag: %@ (status: %d)", keychainTag, (int)status);
+                    GZ_LOG_AUTH_WARN(@"Failed to load private key from Keychain for tag: %@ (status: %d)", keychainTag, (int)status);
                 }
             }
             
@@ -671,7 +671,7 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
                 }
 
                 // Import legacy RSA/EC key from data
-                PDS_LOG_AUTH_WARN(@"Loading legacy private key from database for key ID: %@. Migration recommended.", keyID);
+                GZ_LOG_AUTH_WARN(@"Loading legacy private key from database for key ID: %@. Migration recommended.", keyID);
                 NSDictionary *privateKeyAttrs = @{
                     (__bridge id)kSecAttrKeyType: [algorithm hasPrefix:@"RS"] ? (__bridge id)kSecAttrKeyTypeRSA : (__bridge id)kSecAttrKeyTypeECSECPrimeRandom,
                     (__bridge id)kSecAttrKeyClass: (__bridge id)kSecAttrKeyClassPrivate

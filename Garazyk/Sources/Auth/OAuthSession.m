@@ -4,6 +4,7 @@
 #import "Auth/PKCEUtil.h"
 #import "Auth/DPoPUtil.h"
 #import "Compat/PDSTypes.h"
+#import "Security/PDSSecurityCompare.h"
 
 NSString * const OAuthErrorDomain = @"com.atproto.pds.oauth";
 
@@ -338,7 +339,7 @@ NSString * const OAuthErrorDomain = @"com.atproto.pds.oauth";
         return @{@"error": @"invalid_grant"};
     }
 
-    if (![validSession.redirectUri isEqualToString:request.redirectUri]) {
+    if (![PDSSecurityCompare constantTimeEqualString:validSession.redirectUri string:request.redirectUri]) {
         if (error) {
             *error = [NSError errorWithDomain:OAuthErrorDomain
                                          code:OAuthErrorInvalidRequest

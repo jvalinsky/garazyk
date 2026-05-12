@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "PLC/PLCMetrics.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "libkern/OSAtomic.h"
 
 NS_ASSUME_NONNULL_BEGIN
@@ -56,22 +56,22 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)recordCacheHit {
     OSAtomicIncrement64(&_cacheHits);
-    PDS_LOG_CORE_DEBUG(@"PLC cache hit");
+    GZ_LOG_CORE_DEBUG(@"PLC cache hit");
 }
 
 - (void)recordCacheMiss {
     OSAtomicIncrement64(&_cacheMisses);
-    PDS_LOG_CORE_DEBUG(@"PLC cache miss");
+    GZ_LOG_CORE_DEBUG(@"PLC cache miss");
 }
 
 - (void)recordMemcacheHit {
     OSAtomicIncrement64(&_memcacheHits);
-    PDS_LOG_CORE_DEBUG(@"PLC memcache hit");
+    GZ_LOG_CORE_DEBUG(@"PLC memcache hit");
 }
 
 - (void)recordMemcacheMiss {
     OSAtomicIncrement64(&_memcacheMisses);
-    PDS_LOG_CORE_DEBUG(@"PLC memcache miss");
+    GZ_LOG_CORE_DEBUG(@"PLC memcache miss");
 }
 
 - (void)recordRequest {
@@ -80,7 +80,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)recordError {
     OSAtomicIncrement64(&_totalErrors);
-    PDS_LOG_CORE_DEBUG(@"PLC error recorded");
+    GZ_LOG_CORE_DEBUG(@"PLC error recorded");
 }
 
 - (void)recordOperation:(NSString *)operationType {
@@ -89,17 +89,17 @@ NS_ASSUME_NONNULL_BEGIN
         int64_t newValue = current.longLongValue + 1;
         self.operationCounts[operationType] = @(newValue);
     });
-    PDS_LOG_CORE_DEBUG(@"PLC operation: %@", operationType ?: @"");
+    GZ_LOG_CORE_DEBUG(@"PLC operation: %@", operationType ?: @"");
 }
 
 - (void)recordVerificationSuccess {
     OSAtomicIncrement64(&_verificationSuccesses);
-    PDS_LOG_CORE_DEBUG(@"PLC verification success");
+    GZ_LOG_CORE_DEBUG(@"PLC verification success");
 }
 
 - (void)recordVerificationFailure {
     OSAtomicIncrement64(&_verificationFailures);
-    PDS_LOG_CORE_DEBUG(@"PLC verification failure");
+    GZ_LOG_CORE_DEBUG(@"PLC verification failure");
 }
 
 - (void)recordResolutionLatency:(NSTimeInterval)latencyMs {

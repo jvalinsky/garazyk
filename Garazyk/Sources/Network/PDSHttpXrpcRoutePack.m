@@ -4,7 +4,7 @@
 
 #import "App/PDSApplication.h"
 #import "App/PDSController.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
@@ -33,7 +33,7 @@
     [XrpcMethodRegistry registerMethodsWithDispatcher:resolvedDispatcher
                                            controller:controller];
   } else {
-    PDS_LOG_ERROR(@"No application/controller available for XRPC registration");
+    GZ_LOG_ERROR(@"No application/controller available for XRPC registration");
   }
 
   __weak SubscribeReposHandler *weakSubscribeReposHandler = subscribeReposHandler;
@@ -44,10 +44,10 @@
       response.statusCode = HttpStatusOK;
       return;
     }
-    PDS_LOG_HTTP_INFO(@"About to call dispatcher handleRequest for %@",
+    GZ_LOG_HTTP_INFO(@"About to call dispatcher handleRequest for %@",
                       request.path);
     [resolvedDispatcher handleRequest:request response:response];
-    PDS_LOG_HTTP_INFO(@"dispatcher handleRequest returned for %@",
+    GZ_LOG_HTTP_INFO(@"dispatcher handleRequest returned for %@",
                       request.path);
   };
 
@@ -93,7 +93,7 @@
   }
 
   if (subscribeReposHandler) {
-    PDS_LOG_SYNC_INFO(@"PDSHttpXrpcRoutePack: Registering WebSocket route for subscribeRepos");
+    GZ_LOG_SYNC_INFO(@"PDSHttpXrpcRoutePack: Registering WebSocket route for subscribeRepos");
     // OPTIONS preflight for WebSocket upgrade
     [server addRoute:@"OPTIONS"
                 path:@"/xrpc/com.atproto.sync.subscribeRepos"
@@ -117,7 +117,7 @@
                       }];
   }
 
-  PDS_LOG_DEBUG(@"PDSHttpXrpcRoutePack: XRPC routes registered");
+  GZ_LOG_DEBUG(@"PDSHttpXrpcRoutePack: XRPC routes registered");
 }
 
 @end

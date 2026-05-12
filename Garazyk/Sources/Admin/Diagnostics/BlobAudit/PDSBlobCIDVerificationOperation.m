@@ -5,7 +5,7 @@
 #import "Blob/BlobStorage.h"
 #import "Blob/PDSBlobProvider.h"
 #import "Database/Service/ServiceDatabases.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Core/CID.h"
 
 @implementation PDSBlobCIDVerificationOperation
@@ -17,7 +17,7 @@
     NSError *error = nil;
     NSArray<CID *> *allCIDs = [self.blobStorage.provider listAllCIDsWithError:&error];
     if (!allCIDs) {
-        PDS_LOG_ERROR(@"CIDVerify: Failed to list CIDs from provider: %@", error);
+        GZ_LOG_ERROR(@"CIDVerify: Failed to list CIDs from provider: %@", error);
         [self updateProgress:1.0 status:@"Failed to list CIDs"];
         return;
     }
@@ -34,7 +34,7 @@
 
         NSData *data = [self.blobStorage.provider retrieveBlobDataForCID:originalCID error:nil];
         if (!data) {
-            PDS_LOG_WARN(@"CIDVerify: Failed to retrieve data for %@", originalCID.stringValue);
+            GZ_LOG_WARN(@"CIDVerify: Failed to retrieve data for %@", originalCID.stringValue);
             [mismatchedCIDs addObject:@{
                 @"cid": originalCID.stringValue,
                 @"error": @"Missing data"
@@ -47,7 +47,7 @@
         CID *computedCID = [CID sha256:data];
         
         if (![computedCID isEqualToCID:originalCID]) {
-            PDS_LOG_ERROR(@"CIDVerify: CID mismatch for %@ (computed %@)", originalCID.stringValue, computedCID.stringValue);
+            GZ_LOG_ERROR(@"CIDVerify: CID mismatch for %@ (computed %@)", originalCID.stringValue, computedCID.stringValue);
             [mismatchedCIDs addObject:@{
                 @"cid": originalCID.stringValue,
                 @"expected": computedCID.stringValue,
@@ -69,7 +69,7 @@
     [self saveResults:results error:&error];
 
     if (error) {
-        PDS_LOG_DB_ERROR(@"Failed to save CID verification results: %@", error);
+        GZ_LOG_DB_ERROR(@"Failed to save CID verification results: %@", error);
     }
 }
 

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "PDSCLIDefinitions.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 #if defined(__APPLE__)
 #import <mach/mach.h>

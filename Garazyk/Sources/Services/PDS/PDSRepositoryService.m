@@ -14,7 +14,7 @@
 #import "Core/CID.h"
 #import "Core/TID.h"
 #import "Auth/CryptoUtils.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Core/Repositories/PDSBlockRepository.h"
 #import "Core/Repositories/PDSRepoRepository.h"
 #import "Core/MSTCacheManager.h"
@@ -130,11 +130,11 @@
 }
 
 - (nullable NSData *)getRepoRoot:(NSString *)did error:(NSError **)error {
-    PDS_LOG_DB_DEBUG(@"Looking up repo root for DID: %@", did);
+    GZ_LOG_DB_DEBUG(@"Looking up repo root for DID: %@", did);
 
     PDSActorStore *store = [self.databasePool storeForDid:did error:error];
     if (!store) {
-        PDS_LOG_DB_DEBUG(@"storeForDid returned nil for: %@", did);
+        GZ_LOG_DB_DEBUG(@"storeForDid returned nil for: %@", did);
         return nil;
     }
     
@@ -1835,10 +1835,10 @@
         return NO;
     }
 
-    PDS_LOG_SERVICE_DEBUG(@"Clearing repo_root for DID: %@", did);
+    GZ_LOG_SERVICE_DEBUG(@"Clearing repo_root for DID: %@", did);
 
     if (![store clearRepoRootWithError:error]) {
-        PDS_LOG_SERVICE_ERROR(@"Failed to clear repo_root: %@", error ? *error : @"unknown");
+        GZ_LOG_SERVICE_ERROR(@"Failed to clear repo_root: %@", error ? *error : @"unknown");
         return NO;
     }
 

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "PDSCLIDefinitions.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "PDSCLIInputHelper.h"
 #import "PDSCLIAccountManager.h"
 #import "Database/PDSDatabase.h"
@@ -97,14 +97,14 @@
 
     NSString *dbPath = [self databasePathForContext:context];
     if (![[NSFileManager defaultManager] fileExistsAtPath:dbPath]) {
-        PDS_LOG_ERROR(@"Database not found at %@", dbPath);
+        GZ_LOG_ERROR(@"Database not found at %@", dbPath);
         return nil;
     }
 
     NSError *error = nil;
     PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
     if (![db openWithError:&error]) {
-        PDS_LOG_ERROR(@"Failed to open database: %@", error.localizedDescription);
+        GZ_LOG_ERROR(@"Failed to open database: %@", error.localizedDescription);
         return nil;
     }
 
@@ -122,12 +122,12 @@
     [db close];
 
     if (!success) {
-        PDS_LOG_ERROR(@"Failed to insert invite code into database: %@", error.localizedDescription);
+        GZ_LOG_ERROR(@"Failed to insert invite code into database: %@", error.localizedDescription);
         return nil;
     }
 
     if (context.verbose) {
-        PDS_LOG_INFO(@"Created invite code: %@ (max_uses: %ld)", code, (long)uses);
+        GZ_LOG_INFO(@"Created invite code: %@ (max_uses: %ld)", code, (long)uses);
     }
 
     return code;

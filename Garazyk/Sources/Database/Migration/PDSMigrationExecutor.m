@@ -3,7 +3,7 @@
 #import "PDSMigrationExecutor.h"
 #import "PDSDatabaseMigration.h"
 #import "Database/PDSDatabase.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @implementation PDSMigrationExecutor
 
@@ -41,7 +41,7 @@
     // currentVersionOfDatabase: creates schema_version table if missing,
     // so we only fail if the error is set after that.
     if (error && *error) {
-        PDS_LOG_DB_ERROR(@"Failed to get current schema version: %@", *error);
+        GZ_LOG_DB_ERROR(@"Failed to get current schema version: %@", *error);
         return NO;
     }
 
@@ -59,10 +59,10 @@
                 continue;
             }
 
-            PDS_LOG_DB_INFO(@"Applying migration %ld: %@", (long)migration.version, migration.description);
+            GZ_LOG_DB_INFO(@"Applying migration %ld: %@", (long)migration.version, migration.description);
 
             if (![migration applyToDatabase:database error:txError]) {
-                PDS_LOG_DB_ERROR(@"Migration %ld failed: %@", (long)migration.version, *txError);
+                GZ_LOG_DB_ERROR(@"Migration %ld failed: %@", (long)migration.version, *txError);
                 success = NO;
                 return;
             }
@@ -70,12 +70,12 @@
             // Record migration in schema_version table
             NSString *insertSQL = @"INSERT INTO schema_version (version, description) VALUES (?, ?)";
             if (![database executeParameterizedUpdate:insertSQL params:@[@(migration.version), migration.description] error:txError]) {
-                PDS_LOG_DB_ERROR(@"Failed to record migration %ld: %@", (long)migration.version, *txError);
+                GZ_LOG_DB_ERROR(@"Failed to record migration %ld: %@", (long)migration.version, *txError);
                 success = NO;
                 return;
             }
 
-            PDS_LOG_DB_INFO(@"Migration %ld applied successfully", (long)migration.version);
+            GZ_LOG_DB_INFO(@"Migration %ld applied successfully", (long)migration.version);
         }
     } error:error];
 

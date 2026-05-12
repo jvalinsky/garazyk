@@ -3,7 +3,7 @@
 #import "PDSConfiguration.h"
 #import "Compat/Foundation/NSDataCompat.h"
 #import "Core/PDSDataPaths.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
 
@@ -224,8 +224,8 @@ static BOOL PDSConfigRunningUnderTests(void) {
 
     // Logging defaults
     _logFilePath = nil; // No file logging by default
-    _logLevel = PDSLogLevelInfo;
-    _logFormat = PDSLogFormatText;
+    _logLevel = GZLogLevelInfo;
+    _logFormat = GZLogFormatText;
     _maxLogFileSize = 10 * 1024 * 1024; // 10MB
     _maxLogFiles = 5;
     _asyncLogging = YES;
@@ -242,7 +242,7 @@ static BOOL PDSConfigRunningUnderTests(void) {
     _privacyPolicyURL = nil;
     _termsOfServiceURL = nil;
 
-    _crawlRelays = @[ @"https://bsky.network" ];
+    _crawlRelays = @[];
 
     // Security defaults
     _useBiometricProtection = runningUnderTests ? NO : YES;
@@ -251,14 +251,14 @@ static BOOL PDSConfigRunningUnderTests(void) {
           [self boolFromEnv:@"PDS_USE_BIOMETRIC_PROTECTION"
                     default:_useBiometricProtection];
     }
-    PDS_LOG_INFO_C(PDSLogComponentCore, @"Biometric protection: %@", _useBiometricProtection ? @"ENABLED" : @"DISABLED");
+    GZ_LOG_INFO_C(GZLogComponentCore, @"Biometric protection: %@", _useBiometricProtection ? @"ENABLED" : @"DISABLED");
 
     _useKeychain = runningUnderTests ? NO : YES;
     if ([self envVarExists:@"PDS_USE_KEYCHAIN"]) {
       _useKeychain = [self boolFromEnv:@"PDS_USE_KEYCHAIN"
                                default:_useKeychain];
     }
-    PDS_LOG_INFO_C(PDSLogComponentCore, @"Keychain integration: %@", _useKeychain ? @"ENABLED" : @"DISABLED");
+    GZ_LOG_INFO_C(GZLogComponentCore, @"Keychain integration: %@", _useKeychain ? @"ENABLED" : @"DISABLED");
 
     _masterSecret = [self resolveEnvOverrideForKey:@"PDS_MASTER_SECRET" default:nil];
 
@@ -401,7 +401,7 @@ static BOOL PDSConfigRunningUnderTests(void) {
   NSString *envMasterSecret = [self resolveEnvOverrideForKey:@"PDS_MASTER_SECRET" default:nil];
   if (envMasterSecret.length > 0) {
     _masterSecret = envMasterSecret;
-    PDS_LOG_AUTH_DEBUG(@"Master secret resolved from environment (length: %lu)", (unsigned long)_masterSecret.length);
+    GZ_LOG_AUTH_DEBUG(@"Master secret resolved from environment (length: %lu)", (unsigned long)_masterSecret.length);
   }
 
   if ([self envVarExists:@"PDS_USE_SECURE_ENCLAVE"]) {
@@ -732,41 +732,41 @@ static BOOL PDSConfigRunningUnderTests(void) {
   NSDictionary *logging = config[@"logging"];
   if (logging) {
     if (logging[@"file_path"]) {
-      _logFilePath = [self resolveEnvOverrideForKey:@"PDS_LOG_FILE"
+      _logFilePath = [self resolveEnvOverrideForKey:@"GZ_LOG_FILE"
                                             default:logging[@"file_path"]];
     }
 
     if (logging[@"level"]) {
       NSString *level =
-          [[self resolveEnvOverrideForKey:@"PDS_LOG_LEVEL"
+          [[self resolveEnvOverrideForKey:@"GZ_LOG_LEVEL"
                                   default:logging[@"level"]] lowercaseString];
       if ([level isEqualToString:@"debug"]) {
-        _logLevel = PDSLogLevelDebug;
+        _logLevel = GZLogLevelDebug;
       } else if ([level isEqualToString:@"info"]) {
-        _logLevel = PDSLogLevelInfo;
+        _logLevel = GZLogLevelInfo;
       } else if ([level isEqualToString:@"warn"]) {
-        _logLevel = PDSLogLevelWarn;
+        _logLevel = GZLogLevelWarn;
       } else if ([level isEqualToString:@"error"]) {
-        _logLevel = PDSLogLevelError;
+        _logLevel = GZLogLevelError;
       }
     }
 
     if (logging[@"format"]) {
       NSString *format =
-          [[self resolveEnvOverrideForKey:@"PDS_LOG_FORMAT"
+          [[self resolveEnvOverrideForKey:@"GZ_LOG_FORMAT"
                                   default:logging[@"format"]] lowercaseString];
       if ([format isEqualToString:@"json"]) {
-        _logFormat = PDSLogFormatJSON;
+        _logFormat = GZLogFormatJSON;
       } else if ([format isEqualToString:@"both"]) {
-        _logFormat = PDSLogFormatBoth;
+        _logFormat = GZLogFormatBoth;
       } else {
-        _logFormat = PDSLogFormatText;
+        _logFormat = GZLogFormatText;
       }
     }
 
     if ([self dictionary:logging hasValueForKey:@"max_file_size_mb"]) {
       NSString *envValue =
-          [[NSProcessInfo processInfo] environment][@"PDS_LOG_MAX_SIZE_MB"];
+          [[NSProcessInfo processInfo] environment][@"GZ_LOG_MAX_SIZE_MB"];
       NSUInteger sizeMB =
           envValue ? [envValue integerValue]
                    : [logging[@"max_file_size_mb"] unsignedIntegerValue];
@@ -775,19 +775,19 @@ static BOOL PDSConfigRunningUnderTests(void) {
 
     if ([self dictionary:logging hasValueForKey:@"max_files"]) {
       NSString *envValue =
-          [[NSProcessInfo processInfo] environment][@"PDS_LOG_MAX_FILES"];
+          [[NSProcessInfo processInfo] environment][@"GZ_LOG_MAX_FILES"];
       _maxLogFiles = envValue ? [envValue integerValue]
                               : [logging[@"max_files"] unsignedIntegerValue];
     }
 
     if ([self dictionary:logging hasValueForKey:@"async"]) {
-      _asyncLogging = [self boolFromEnv:@"PDS_LOG_ASYNC"
+      _asyncLogging = [self boolFromEnv:@"GZ_LOG_ASYNC"
                                 default:[logging[@"async"] boolValue]];
     }
 
     if (logging[@"components"]) {
       NSString *envValue =
-          [[NSProcessInfo processInfo] environment][@"PDS_LOG_COMPONENTS"];
+          [[NSProcessInfo processInfo] environment][@"GZ_LOG_COMPONENTS"];
       if (envValue) {
         _enabledComponents = [envValue componentsSeparatedByString:@","];
       } else {
@@ -860,32 +860,32 @@ static BOOL PDSConfigRunningUnderTests(void) {
   // Also check environment variables if no config file logging section
   if (!logging) {
     NSString *logFile =
-        [[NSProcessInfo processInfo] environment][@"PDS_LOG_FILE"];
+        [[NSProcessInfo processInfo] environment][@"GZ_LOG_FILE"];
     if (logFile)
       _logFilePath = logFile;
 
     NSString *logLevel = [[[NSProcessInfo processInfo]
-        environment][@"PDS_LOG_LEVEL"] lowercaseString];
+        environment][@"GZ_LOG_LEVEL"] lowercaseString];
     if (logLevel) {
       if ([logLevel isEqualToString:@"debug"])
-        _logLevel = PDSLogLevelDebug;
+        _logLevel = GZLogLevelDebug;
       else if ([logLevel isEqualToString:@"info"])
-        _logLevel = PDSLogLevelInfo;
+        _logLevel = GZLogLevelInfo;
       else if ([logLevel isEqualToString:@"warn"])
-        _logLevel = PDSLogLevelWarn;
+        _logLevel = GZLogLevelWarn;
       else if ([logLevel isEqualToString:@"error"])
-        _logLevel = PDSLogLevelError;
+        _logLevel = GZLogLevelError;
     }
 
     NSString *logFormat = [[[NSProcessInfo processInfo]
-        environment][@"PDS_LOG_FORMAT"] lowercaseString];
+        environment][@"GZ_LOG_FORMAT"] lowercaseString];
     if (logFormat) {
       if ([logFormat isEqualToString:@"json"])
-        _logFormat = PDSLogFormatJSON;
+        _logFormat = GZLogFormatJSON;
       else if ([logFormat isEqualToString:@"both"])
-        _logFormat = PDSLogFormatBoth;
+        _logFormat = GZLogFormatBoth;
       else
-        _logFormat = PDSLogFormatText;
+        _logFormat = GZLogFormatText;
     }
   }
 

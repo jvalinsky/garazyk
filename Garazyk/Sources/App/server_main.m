@@ -18,7 +18,7 @@
 #import "Network/HttpServer.h"
 #import "Network/XrpcHandler.h"
 #import "App/PDSConfiguration.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Network/XrpcMethodRegistry.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Monitoring/PDSHealthCheck.h"
@@ -29,7 +29,7 @@ int main(int argc, const char * argv[]) {
     [[PDSSignalManager sharedManager] installIgnoredSignals];
     [PDSCrashReporter installCrashHandlersWithExecutableName:"kaszlak-headless"];
     @autoreleasepool {
-        PDS_LOG_INFO_C(PDSLogComponentCore, @"ATProto PDS Starting...");
+        GZ_LOG_INFO_C(GZLogComponentCore, @"ATProto PDS Starting...");
 
         NSError *error = nil;
         NSString *dataDirectory = @"/tmp/atproto_pds_data";
@@ -79,23 +79,23 @@ int main(int argc, const char * argv[]) {
         }];
 
         if (![server startWithError:&error]) {
-            PDS_LOG_ERROR_C(PDSLogComponentCore, @"Failed to start server: %@", error);
+            GZ_LOG_ERROR_C(GZLogComponentCore, @"Failed to start server: %@", error);
             return 1;
         }
 
-        PDS_LOG_INFO_C(PDSLogComponentCore, @"ATProto PDS running on port %hu", server.port);
-        PDS_LOG_INFO_C(PDSLogComponentCore, @"XRPC endpoint: /xrpc/*");
-        PDS_LOG_INFO_C(PDSLogComponentCore, @"Press Ctrl+C to stop");
+        GZ_LOG_INFO_C(GZLogComponentCore, @"ATProto PDS running on port %hu", server.port);
+        GZ_LOG_INFO_C(GZLogComponentCore, @"XRPC endpoint: /xrpc/*");
+        GZ_LOG_INFO_C(GZLogComponentCore, @"Press Ctrl+C to stop");
 
         // Register signal handlers for graceful shutdown
         __block volatile sig_atomic_t shouldExit = 0;
         [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGINT handler:^(int sig) {
             shouldExit = 1;
-            PDS_LOG_SERVICE_INFO(@"Received SIGINT — shutting down");
+            GZ_LOG_SERVICE_INFO(@"Received SIGINT — shutting down");
         }];
         [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGTERM handler:^(int sig) {
             shouldExit = 1;
-            PDS_LOG_SERVICE_INFO(@"Received SIGTERM — shutting down");
+            GZ_LOG_SERVICE_INFO(@"Received SIGTERM — shutting down");
         }];
 
         // Drain the run loop instead of CFRunLoopRun() so we can check shouldExit
@@ -108,7 +108,7 @@ int main(int argc, const char * argv[]) {
         }
 
         [server stop];
-        PDS_LOG_INFO_C(PDSLogComponentCore, @"ATProto PDS stopped");
+        GZ_LOG_INFO_C(GZLogComponentCore, @"ATProto PDS stopped");
     }
     return 0;
 }

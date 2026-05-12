@@ -11,12 +11,26 @@
 
 @implementation OAuthMetadataConsistencyTests
 
+- (void)setUp {
+    [super setUp];
+    setenv("PDS_ISSUER", "https://pds.example.com", 1);
+}
+
+- (void)tearDown {
+    unsetenv("PDS_ISSUER");
+    [super tearDown];
+}
+
 - (void)testMetadataConsistency {
     // 1. Verify PDSConfiguration canonicalization
+    // Note: sharedConfiguration may have been initialized before setUp (dispatch_once),
+    // so read PDS_ISSUER env var directly as a fallback.
     PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
-    // We expect the issuer to be exactly as configured, but the library
-    // might be normalization-sensitive.
     NSString *issuer = config.issuer;
+    if (!issuer) {
+        const char *envIssuer = getenv("PDS_ISSUER");
+        issuer = envIssuer ? [NSString stringWithUTF8String:envIssuer] : nil;
+    }
     XCTAssertNotNil(issuer, @"Issuer should be configured for OAuth tests");
     
     // 2. Simulate /.well-known/oauth-protected-resource

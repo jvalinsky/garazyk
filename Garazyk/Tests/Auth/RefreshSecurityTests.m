@@ -6,7 +6,7 @@
 #import "Auth/Secp256k1.h"
 #import "Database/PDSDatabase.h"
 #import "Auth/Session.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "App/PDSConfiguration.h"
 
 @interface OAuth2Server (Testing)

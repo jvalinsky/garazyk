@@ -15,7 +15,7 @@
 #import "Core/TID.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Core/ATProtoCBORSerialization.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Services/PDS/PDSRecordService.h"
 
 @implementation XrpcAppBskyGraphPack
@@ -1039,7 +1039,7 @@
         [response setJsonBody:@{}];
     }];
 
-    PDS_LOG_INFO(@"Registered app.bsky.graph.* endpoints");
+    GZ_LOG_INFO(@"Registered app.bsky.graph.* endpoints");
 }
 
 @end
