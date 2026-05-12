@@ -1,11 +1,28 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
-#import <sqlite3.h>
 #import "PDSBlock.h"
 #import "PDSQueryDatabase.h"
 
 NS_ASSUME_NONNULL_BEGIN
+
+@class PDSDatabase;
+
+/*!
+ @protocol PDSDatabaseModel
+ @abstract Protocol for database model objects that can initialize themselves from a dictionary row.
+ */
+@protocol PDSDatabaseModel <NSObject>
+
+/*!
+ @method initWithDatabaseRow:
+ @abstract Initializes a new model object from a dictionary representing a database row.
+ @param row A dictionary where keys are column names and values are column data.
+ @return An initialized model object, or nil if initialization failed.
+ */
+- (nullable instancetype)initWithDatabaseRow:(NSDictionary<NSString *, id> *)row;
+
+@end
 
 /*!
  @header PDSDatabase.h
@@ -38,6 +55,13 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
 
 /*! YES if the database connection is currently open. */
 @property (nonatomic, readonly) BOOL isOpen;
+
+/*!
+ @method internalSQLiteHandle
+ @abstract Returns the raw sqlite3* handle.
+ @discussion INTERNAL USE ONLY. Requires casting to sqlite3*.
+ */
+- (void *)internalSQLiteHandle;
 
 /*!
  @method init
@@ -73,30 +97,32 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
 - (void)close;
 
 /*!
- @method executeRawSQL:error:
+ @method executeUnsafeRawSQL:error:
  
  @abstract Executes a raw SQL statement.
  
- @discussion Use this method for custom SQL operations that don't have
- dedicated methods. The statement should be a single command (not a query)
- if expecting no results.
+ @discussion DANGEROUS: Does not support parameter binding. Use only for
+ internal schema setup or when the SQL string is a compile-time constant.
  
  @param sql The SQL statement to execute.
  @param error On return, contains an error if the operation failed.
  @return YES if the statement executed successfully, NO otherwise.
  */
-- (BOOL)executeRawSQL:(NSString *)sql error:(NSError **)error;
+- (BOOL)executeUnsafeRawSQL:(NSString *)sql error:(NSError **)error;
 
 /*!
- @method executeQuery:error:
+ @method executeUnsafeRawQuery:error:
  
  @abstract Executes a SQL query and returns results.
+ 
+ @discussion DANGEROUS: Does not support parameter binding. Prefer
+ executeParameterizedQuery:params:error: instead.
  
  @param sql The SQL query to execute.
  @param error On return, contains an error if the query failed.
  @return An array of dictionaries representing query results, or nil on failure.
  */
-- (NSArray<NSDictionary *> *)executeQuery:(NSString *)sql error:(NSError **)error;
+- (NSArray<NSDictionary *> *)executeUnsafeRawQuery:(NSString *)sql error:(NSError **)error;
 
 /*!
  @method executeParameterizedQuery:params:error:
@@ -116,6 +142,20 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
                                                  error:(NSError **)error;
 
 /*!
+ @method executeParameterizedQuery:params:modelClass:error:
+ @abstract Executes a query and maps results to model objects.
+ @param sql The SQL query to execute.
+ @param params Array of parameters for placeholders.
+ @param modelClass The class of the model to instantiate (must implement PDSDatabaseModel).
+ @param error On return, contains an error if the query failed.
+ @return An array of model objects, or nil on failure.
+ */
+- (nullable NSArray *)executeParameterizedQuery:(NSString *)sql
+                                         params:(NSArray *)params
+                                     modelClass:(Class<PDSDatabaseModel>)modelClass
+                                          error:(NSError **)error;
+
+/*!
  @method executeParameterizedUpdate:params:error:
  
  @abstract Executes a parameterized SQL statement (INSERT, UPDATE, DELETE).
@@ -130,18 +170,29 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
                              error:(NSError **)error;
 
 /*!
- @method preparedStatementForQuery:
-
- @abstract Returns a cached prepared statement for the given SQL query.
-
- @discussion
-    This method is intended for internal diagnostics and tests that validate
-    statement-cache behavior. The returned statement is reset before reuse.
-
- @param query SQL query text used as the statement cache key.
- @return A prepared SQLite statement, or NULL on prepare failure.
+ @method parameterPlaceholdersForCount:
+ @abstract Returns a string of ? placeholders for use in an IN clause.
+ @param count Number of placeholders needed.
+ @return A string like "?, ?, ?" or empty if count is 0.
  */
-- (sqlite3_stmt *)preparedStatementForQuery:(NSString *)query;
+- (NSString *)parameterPlaceholdersForCount:(NSUInteger)count;
+
+/*!
+ @method expandPlaceholdersForArray:
+ @abstract Returns a string of ? placeholders for an array of values.
+ @param values The array of values.
+ @return A string like "?, ?, ?" or empty if array is empty.
+ */
+- (NSString *)expandPlaceholdersForArray:(NSArray *)values;
+
+/*!
+ @method performTransaction:error:
+ @abstract Executes a block within a database transaction.
+ @param block The block to execute. If it returns NO, the transaction is rolled back.
+ @param error On return, contains an error if the transaction failed.
+ @return YES if the transaction was committed, NO otherwise.
+ */
+- (BOOL)performTransaction:(BOOL (^)(PDSDatabase *db, NSError **error))block error:(NSError **)error;
 
 /*!
  @method getClientWithID:error:
@@ -209,7 +260,7 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
  
  @see PDSDatabase (Accounts)
  */
-@interface PDSDatabaseAccount : NSObject
+@interface PDSDatabaseAccount : NSObject <PDSDatabaseModel>
 
 /*! The decentralized identifier (DID) for this account. */
 @property (nonatomic, copy) NSString *did;
@@ -278,7 +329,7 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
  
  @see PDSDatabase (Repos)
  */
-@interface PDSDatabaseRepo : NSObject
+@interface PDSDatabaseRepo : NSObject <PDSDatabaseModel>
 
 /*! The DID of the repository owner. */
 @property (nonatomic, copy) NSString *ownerDid;
@@ -308,7 +359,7 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
  
  @see PDSDatabase (Records)
  */
-@interface PDSDatabaseRecord : NSObject
+@interface PDSDatabaseRecord : NSObject <PDSDatabaseModel>
 
 /*! The AT-URI identifying this record (e.g., at://did:plc:z.../app.bsky.actor.profile/self). */
 @property (nonatomic, copy) NSString *uri;
@@ -353,7 +404,7 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
  
  @see PDSDatabase (Blobs)
  */
-@interface PDSDatabaseBlob : NSObject
+@interface PDSDatabaseBlob : NSObject <PDSDatabaseModel>
 
 /*! The CID of the blob. */
 @property (nonatomic, copy) NSData *cid;
