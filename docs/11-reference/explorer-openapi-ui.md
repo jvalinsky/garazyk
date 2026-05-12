@@ -12,7 +12,7 @@ The key distinction is:
 
 - `/xrpc/*` is the protocol surface,
 - `/api/pds/*` is the inspection and documentation surface,
-- `/ui` is the newer Cappuccino-based browser UI.
+- `http://127.0.0.1:2590/admin` is the standalone Admin UI.
 
 Keeping these roles separate makes the code easier to navigate.
 
@@ -23,7 +23,7 @@ Keeping these roles separate makes the code easier to navigate.
 | `/api/pds/*` | Explorer API for accounts, repositories, records, DID/PLC inspection, generated OpenAPI, and lightweight debug helpers |
 | `/api/pds/docs` | Swagger UI backed by the generated OpenAPI document |
 | `/api/pds/openapi.yaml` and `/api/pds/openapi.json` | Generated OpenAPI output for the Explorer endpoints |
-| `/ui` | Cappuccino UI for repository and admin-oriented exploration |
+| `http://127.0.0.1:2590/admin` | Standalone Admin UI for repository and moderator-oriented exploration |
 | `/api/mst/*` | MST-specific inspection routes exposed by the MST viewer |
 | `/oauth-demo` | OAuth demo tooling |
 
@@ -33,7 +33,6 @@ These routes are contributor tools that solve specific debugging problems:
 
 - inspect data quickly,
 - verify route wiring,
-- compare UI behavior to raw API output,
 - and make the project easier to operate without custom scripts.
 
 This explains why the code lives partly in app/UI handlers rather than the XRPC method registry.
@@ -51,31 +50,27 @@ The Explorer handler serves the `/api/pds/*` namespace. It owns:
 
 The OpenAPI document is generated from the Explorer endpoint descriptor list, not maintained as a static file. When the docs drift from implementation here, contributors should check the descriptor list and the handler behavior together.
 
-## `/ui` and the Cappuccino Surface
+## Admin UI
 
-`/ui` is the newer Objective-J and Cappuccino-based interface. It is useful when you want a richer contributor workflow than JSON responses alone:
+The Admin UI now runs as a standalone service (`garazyk-ui`). It provides a browser-based interface for:
 
 - account browsing,
 - record and collection inspection,
 - profile and graph views,
-- admin-oriented exploration,
-- and MST utilities.
+- and moderation tools.
 
-Use [Tutorial 7a: Objective-J for Contributors](../10-tutorials/tutorial-7a-objective-j-intro) and [Tutorial 7b: Admin UI Architecture](../10-tutorials/tutorial-7b-admin-ui) when changing the UI itself.
+Refer to [Admin UI Documentation](./admin-ui-documentation) for deployment and usage.
 
 ## Route Ownership
 
 The server builder wires these surfaces explicitly:
 
 - `PDSHttpServerBuilder` registers `/api/pds/:endpoint`
-- `PDSHttpServerBuilder` registers `/ui` and `/ui/*`
 - `ExploreHandler` owns the Explorer and OpenAPI endpoints
-- `CappuccinoUIHandler` owns the `/ui` asset path
 
 UI breakage is often not a UI bug. It can be:
 
 - missing route registration,
-- an asset staging problem,
 - or API response drift underneath the UI.
 
 ## Recommended Contributor Workflow
@@ -85,7 +80,7 @@ When you change a feature that has both protocol and tooling impact:
 1. verify the XRPC or service behavior first,
 2. verify `/api/pds/*` inspection output next,
 3. verify `/api/pds/docs` and the OpenAPI output if the Explorer surface changed,
-4. verify `/ui` if the feature is rendered there.
+4. verify the Admin UI if the feature is rendered there.
 
 This order isolates failures cleanly.
 
@@ -95,7 +90,6 @@ This order isolates failures cleanly.
 curl -sS http://127.0.0.1:2583/xrpc/com.atproto.server.describeServer | jq '.did'
 curl -sS http://127.0.0.1:2583/api/pds/openapi.yaml | head
 curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:2583/api/pds/docs
-curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:2583/ui/Info.plist
 ```
 
 ## Legacy and Archival Context
@@ -105,13 +99,12 @@ Older docs under `docs/guides/`, `docs/architecture/`, and some README material 
 For this docs pass, the current contributor truth is:
 
 - `/api/pds/*` for Explorer and OpenAPI
-- `/ui` for the Cappuccino UI
+- Standalone service for the Admin UI
 
 ## Related Reading
 
 - [Request Lifecycle](../01-getting-started/request-lifecycle)
-- [Tutorial 7a: Objective-J Intro](../10-tutorials/tutorial-7a-objective-j-intro)
-- [Tutorial 7b: Admin UI Architecture](../10-tutorials/tutorial-7b-admin-ui)
+- [Admin UI Documentation](./admin-ui-documentation)
 - [API Reference](./api-reference)
 
 ## Related

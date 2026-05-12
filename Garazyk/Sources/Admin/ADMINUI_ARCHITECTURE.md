@@ -2,7 +2,7 @@
 
 ## System Overview
 
-The AdminUI is a modern, hierarchical admin panel for the AT Protocol PDS (Personal Data Server). It provides a unified interface for managing multiple services:
+The AdminUI is an admin panel for the AT Protocol PDS (Personal Data Server). It provides a unified interface for managing multiple services:
 - **PDS** (Personal Data Server)
 - **PLC** (DID Registry)
 - **Relay** (BGS - Firehose Aggregator)
@@ -11,11 +11,11 @@ The AdminUI is a modern, hierarchical admin panel for the AT Protocol PDS (Perso
 
 ## Technology Stack
 
-- **Frontend**: Vanilla HTML5 + CSS3 + HTMX 1.9.10
-- **Design System**: Apple HIG-aligned (macOS aesthetic)
-- **Backend**: Objective-C (NSString templates + simple rendering)
+- **Frontend**: HTML5 + CSS3 + HTMX 1.9.10
+- **Design System**: Desktop-oriented aesthetic
+- **Backend**: Objective-C (NSString templates + rendering)
 - **Protocol**: HTTP/HTTPS with XRPC endpoints
-- **Real-time**: Server-Sent Events (SSE) for live updates
+- **Real-time**: Server-Sent Events (SSE) for updates
 
 ## Directory Structure
 
