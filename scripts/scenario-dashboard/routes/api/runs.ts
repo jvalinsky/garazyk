@@ -4,11 +4,17 @@
  */
 
 import { Handlers } from "$fresh/server.ts";
+import { db } from "../../db/index.ts";
 
 export const handler: Handlers = {
   GET(_req) {
-    // Will be wired to SQLite when DB layer is complete
-    return new Response(JSON.stringify({ runs: [] }), {
+    const runs = db.prepare(`
+      SELECT id, started_at as startedAt, finished_at as finishedAt, passed, failed, skipped, total_scenarios as total, duration_s as durationS 
+      FROM runs 
+      ORDER BY started_at DESC
+    `).all();
+    
+    return new Response(JSON.stringify({ runs }), {
       headers: { "Content-Type": "application/json" },
     });
   },
