@@ -67,7 +67,7 @@
     NSDate *now = [NSDate date];
     [self.dbs.sequencerPool transactWithDid:@"__service__" block:^(id transactor, NSError **err) {
         PDSActorStore *store = (PDSActorStore *)transactor;
-        sqlite3 *db = store.db;
+        sqlite3 *db = (sqlite3 *)[store.database internalSQLiteHandle];
         
         char *errMsg = NULL;
         NSString *sql = [NSString stringWithFormat:@"INSERT INTO events (seq, event_type, event_data, created_at) VALUES (1, 'test', 'data', %f)", yesterday.timeIntervalSince1970];

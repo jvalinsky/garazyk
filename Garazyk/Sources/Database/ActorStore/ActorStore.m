@@ -192,9 +192,8 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 
 - (void)transactWithBlock:(void (^)(id<PDSActorStoreTransactor> transactor, NSError **error))block
                     error:(NSError **)error {
-    [self.database performTransaction:^BOOL(PDSDatabase *db, NSError **localError) {
+    [self.database transactWithBlock:^(NSError **localError) {
         block(self, localError);
-        return (*localError == nil);
     } error:error];
 }
 
@@ -371,11 +370,10 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 }
 
 - (BOOL)putRecords:(NSArray<PDSDatabaseRecord *> *)records forDid:(NSString *)did error:(NSError **)error {
-    return [self.database performTransaction:^BOOL(PDSDatabase *db, NSError **localError) {
+    return [self.database transactWithBlock:^(NSError **localError) {
         for (PDSDatabaseRecord *record in records) {
-            if (![self putRecord:record forDid:did error:localError]) return NO;
+            if (![self putRecord:record forDid:did error:localError]) return;
         }
-        return YES;
     } error:error];
 }
 
@@ -416,11 +414,10 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 }
 
 - (BOOL)putBlocks:(NSArray<PDSDatabaseBlock *> *)blocks forDid:(NSString *)did error:(NSError **)error {
-    return [self.database performTransaction:^BOOL(PDSDatabase *db, NSError **localError) {
+    return [self.database transactWithBlock:^(NSError **localError) {
         for (PDSDatabaseBlock *block in blocks) {
-            if (![self putBlock:block forDid:did error:localError]) return NO;
+            if (![self putBlock:block forDid:did error:localError]) return;
         }
-        return YES;
     } error:error];
 }
 
