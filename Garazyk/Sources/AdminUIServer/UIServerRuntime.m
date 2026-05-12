@@ -8,6 +8,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
+#import "Auth/CryptoUtils.h"
 
 static NSString *UIEscaped(NSString *value) {
     if (![value isKindOfClass:[NSString class]]) {
@@ -49,6 +50,32 @@ static NSUInteger UISafeLength(id value) {
 /// Returns the result of ensureAuthorized so the caller can use `if (AUTH_GUARD(...)) return;`
 #define AUTH_GUARD(weakSelf, request, response) \
     if (![weakSelf ensureAuthorized:request response:response]) return
+
+static NSString *UIGenerateNonce(void) {
+    NSData *data = [CryptoUtils randomBytes:16];
+    return [CryptoUtils base64URLEncode:data];
+}
+
+static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *pdsOrigin) {
+    NSString *csp;
+    if (pdsOrigin) {
+        csp = [NSString stringWithFormat:
+            @"default-src 'self'; "
+            "script-src 'self' 'nonce-%@' https://unpkg.com; "
+            "style-src 'self' 'nonce-%@'; "
+            "img-src 'self' data:; "
+            "connect-src 'self' %@;",
+            nonce, nonce, pdsOrigin];
+    } else {
+        csp = [NSString stringWithFormat:
+            @"default-src 'self'; "
+            "script-src 'self' 'nonce-%@' https://unpkg.com; "
+            "style-src 'self' 'nonce-%@'; "
+            "img-src 'self' data:;",
+            nonce, nonce];
+    }
+    [response setHeader:csp forKey:@"content-security-policy"];
+}
 
 @interface UIServerRuntime ()
 
@@ -146,12 +173,22 @@ static NSUInteger UISafeLength(id value) {
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/admin/login" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *nonce = UIGenerateNonce();
+        NSString *csrfNonce, *csrfCookie;
+        [weakSelf.authManager createCSRFNonce:&csrfNonce cookie:&csrfCookie secure:NO];
+        [response setHeader:csrfCookie forKey:@"Set-Cookie"];
+        UIApplyNonceCSP(response, nonce, nil);
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf loginPageHTML]];
+        [response setBodyString:[weakSelf loginPageHTML:nonce csrfNonce:csrfNonce]];
     }];
 
     [self.httpServer addRoute:@"POST" path:@"/admin/login" handler:^(HttpRequest *request, HttpResponse *response) {
+        if (![weakSelf.authManager validateCSRFForRequest:request]) {
+            response.statusCode = 403;
+            [response setJsonBody:@{@"ok": @NO, @"error": @"invalid_csrf_token"}];
+            return;
+        }
         NSString *password = request.jsonBody[@"password"];
         if (![weakSelf.authManager validatePassword:password]) {
             response.statusCode = 401;
@@ -176,9 +213,11 @@ static NSUInteger UISafeLength(id value) {
 
     [self.httpServer addRoute:@"GET" path:@"/admin" handler:^(HttpRequest *request, HttpResponse *response) {
         AUTH_GUARD(weakSelf, request, response);
+        NSString *nonce = UIGenerateNonce();
+        UIApplyNonceCSP(response, nonce, [weakSelf.configuration.pdsBaseURL absoluteString]);
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        [response setBodyString:[weakSelf adminShellHTML]];
+        [response setBodyString:[weakSelf adminShellHTML:nonce]];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/admin/partials/overview" handler:^(HttpRequest *request, HttpResponse *response) {
@@ -496,21 +535,19 @@ static NSUInteger UISafeLength(id value) {
 
     // Lab: Public OAuth2 user self-service portal (no admin auth required)
     [self.httpServer addRoute:@"GET" path:@"/lab" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *nonce = UIGenerateNonce();
+        UIApplyNonceCSP(response, nonce, [weakSelf.configuration.pdsBaseURL absoluteString]);
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        NSString *pdsOrigin = [weakSelf.configuration.pdsBaseURL absoluteString];
-        [response setHeader:[NSString stringWithFormat:@"default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' %@;", pdsOrigin]
-                      forKey:@"content-security-policy"];
-        [response setBodyString:[weakSelf labShellHTML]];
+        [response setBodyString:[weakSelf labShellHTML:nonce]];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/lab/callback" handler:^(HttpRequest *request, HttpResponse *response) {
+        NSString *nonce = UIGenerateNonce();
+        UIApplyNonceCSP(response, nonce, [weakSelf.configuration.pdsBaseURL absoluteString]);
         response.statusCode = 200;
         response.contentType = @"text/html; charset=utf-8";
-        NSString *pdsOrigin = [weakSelf.configuration.pdsBaseURL absoluteString];
-        [response setHeader:[NSString stringWithFormat:@"default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' %@;", pdsOrigin]
-                      forKey:@"content-security-policy"];
-        [response setBodyString:[weakSelf labShellHTML]];
+        [response setBodyString:[weakSelf labShellHTML:nonce]];
     }];
 
     [self.httpServer addRoute:@"GET" path:@"/lab/client-metadata.json" handler:^(HttpRequest *request, HttpResponse *response) {
@@ -1151,32 +1188,34 @@ static NSUInteger UISafeLength(id value) {
     return NO;
 }
 
-- (NSString *)loginPageHTML {
-    return @"<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
+- (NSString *)loginPageHTML:(NSString *)nonce csrfNonce:(NSString *)csrfNonce {
+    return [NSString stringWithFormat:@"<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
     "<title>Garazyk UI Login</title>"
     "<link rel=\"stylesheet\" href=\"/css/system.css\">"
-    "<style>.login-shell{display:flex;justify-content:center;align-items:center;min-height:100vh;background:var(--color-bg-primary)}"
+    "<meta name=\"csrf-nonce\" content=\"%@\">"
+    "<style nonce=\"%@\">.login-shell{display:flex;justify-content:center;align-items:center;min-height:100vh;background:var(--color-bg-primary)}"
     ".login-card{background:var(--color-bg-secondary);border:1px solid var(--separator-color);border-radius:var(--radius-lg);padding:var(--space-xl);width:320px;box-shadow:var(--shadow-lg)}"
     ".login-card h2{margin-bottom:var(--space-sm)}.login-card p{color:var(--color-text-secondary);margin-bottom:var(--space-lg)}"
-    ".login-card input{width:100%;margin-bottom:var(--space-sm)}.login-card button{width:100%}"
+    ".login-card input{width:100%%;margin-bottom:var(--space-sm)}.login-card button{width:100%%}"
     ".login-error{color:var(--color-destructive);margin-top:var(--space-sm);font-size:var(--font-size-sm)}</style>"
     "</head><body><div class=\"login-shell\"><div class=\"login-card\">"
     "<h2>Admin UI Service</h2><p>Sign in to continue.</p>"
     "<form id=\"login-form\"><input id=\"password\" type=\"password\" placeholder=\"Admin password\" required/>"
     "<button type=\"submit\" class=\"btn btn-primary\">Sign in</button></form>"
     "<p id=\"error\" class=\"login-error\"></p></div></div>"
-    "<script>document.getElementById('login-form').addEventListener('submit',async(e)=>{e.preventDefault();"
+    "<script nonce=\"%@\">document.getElementById('login-form').addEventListener('submit',async(e)=>{e.preventDefault();"
     "const password=document.getElementById('password').value;"
-    "const resp=await fetch('/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})});"
+    "const csrfNonce=document.querySelector('meta[name=\"csrf-nonce\"]').content;"
+    "const resp=await fetch('/admin/login',{method:'POST',headers:{'Content-Type':'application/json','X-UI-Admin-Nonce':csrfNonce},body:JSON.stringify({password})});"
     "if(resp.ok){window.location='/admin';return;}document.getElementById('error').textContent='Invalid credentials';});</script>"
-    "</body></html>";
+    "</body></html>", csrfNonce, nonce, nonce];
 }
 
-- (NSString *)adminShellHTML {
-    return @"<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
+- (NSString *)adminShellHTML:(NSString *)nonce {
+    return [NSString stringWithFormat:@"<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
     "<title>Garazyk UI Service</title>"
     "<link rel=\"stylesheet\" href=\"/css/system.css\">"
-    "<script src=\"https://unpkg.com/htmx.org@1.9.12\" integrity=\"sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2\" crossorigin=\"anonymous\"></script>"
+    "<script nonce=\"%@\" src=\"https://unpkg.com/htmx.org@1.9.12\" integrity=\"sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2\" crossorigin=\"anonymous\"></script>"
     "</head><body><div class=\"admin-shell\">"
     "<header class=\"admin-header\"><div class=\"admin-header-title\">Garazyk UI Service</div>"
     "<nav class=\"service-segments\" id=\"nav-tabs\">"
@@ -1381,7 +1420,7 @@ static NSUInteger UISafeLength(id value) {
     "<footer class=\"admin-footer\"><span class=\"version-info\"></span>"
     "<span id=\"footer-status\"></span></footer>"
     "</div>"
-    "<script>"
+    "<script nonce=\"%@\">"
     "function switchTab(name){"
     "document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none');"
     "document.querySelectorAll('.service-segment').forEach(s=>s.classList.remove('active'));"
@@ -1389,7 +1428,7 @@ static NSUInteger UISafeLength(id value) {
     "var btn=document.querySelector('[data-tab=\"'+name+'\"]');if(btn)btn.classList.add('active');"
     "}"
     "function activeTabPane(){return Array.from(document.querySelectorAll('.tab-pane')).find(p=>getComputedStyle(p).display!=='none')||document;}"
-    "function didFromText(text){const m=(text||'').match(/\\bdid:[a-z0-9]+:[A-Za-z0-9._:%-]+/);return m?m[0]:'';}"
+    "function didFromText(text){const m=(text||'').match(/\\bdid:[a-z0-9]+:[A-Za-z0-9._:%%-]+/);return m?m[0]:'';}"
     "function didFieldHint(el){let hint=[el.id,el.name,el.placeholder,el.getAttribute('aria-label')].filter(Boolean).join(' ');"
     "const group=el.closest('.form-group');if(group){const label=group.querySelector('label');if(label)hint+=' '+label.textContent;}"
     "return hint.toLowerCase();}"
@@ -1526,12 +1565,12 @@ static NSUInteger UISafeLength(id value) {
     "async function saveConnections(){"
     "const services=[['pds','pds'],['plc','plc'],['relay','relay'],['appview','appView'],['chat','chat'],['video','video']];"
     "const body={};"
-    "services.forEach(([id,key])=>{body[key+'URL']=document.getElementById('conn-'+id+'-url').value;body[key+'Token']=document.getElementById('conn-'+id+'-token').value;});"
+    "services.forEach(([id,key])=>{const urlEl=document.getElementById('conn-'+id+'-url');const tokenEl=document.getElementById('conn-'+id+'-token');body[key+'URL']=urlEl.value;body[key+'Token']=tokenEl.value||tokenEl.dataset.originalToken;});"
     "const resp=await fetch('/admin/actions/update-connections',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});"
     "document.getElementById('connections-form').innerHTML=await resp.text();}"
     "async function testConnection(service){"
-    "const url=document.getElementById('conn-'+service+'-url').value;"
-    "const token=document.getElementById('conn-'+service+'-token').value;"
+"const url=document.getElementById('conn-'+service+'-url').value;"
+     "const tokenEl=document.getElementById('conn-'+service+'-token');const token=tokenEl.value||tokenEl.dataset.originalToken;"
     "const resultEl=document.getElementById('conn-'+service+'-test-result');"
     "resultEl.textContent='Testing...';"
     "try{const resp=await fetch('/admin/actions/test-connection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({service,url,token})});"
@@ -1540,7 +1579,7 @@ static NSUInteger UISafeLength(id value) {
     "else{resultEl.innerHTML='<span class=\"badge badge-destructive\">'+(result.error||result.status||'Failed')+'</span>';}}"
     "catch(e){resultEl.innerHTML='<span class=\"badge badge-destructive\">Failed</span>';}}"
     "</script>"
-    "</body></html>";
+    "</body></html>", nonce, nonce];
 }
 
 - (NSString *)renderAccountsPartial:(NSDictionary *)result {
@@ -1922,8 +1961,6 @@ static NSUInteger UISafeLength(id value) {
     while (filename.length > 0 && [filename hasPrefix:@"/"]) {
         filename = [filename substringFromIndex:1];
     }
-    // Remove any path traversal attempts
-    filename = [filename stringByReplacingOccurrencesOfString:@".." withString:@""];
     if (filename.length == 0) {
         response.statusCode = 403;
         [response setBodyString:@"Forbidden"];
@@ -2296,7 +2333,7 @@ static NSUInteger UISafeLength(id value) {
         
         [html appendFormat:@"<div class=\"form-group\">"];
         [html appendFormat:@"<label class=\"form-label\">Admin Token</label>"];
-        [html appendFormat:@"<input id=\"conn-%@-token\" type=\"password\" name=\"%@\" value=\"%@\" class=\"form-input\"/>", inputID, tokenKey, UIEscaped(fields[tokenKey])];
+        [html appendFormat:@"<input id=\"conn-%@-token\" type=\"password\" name=\"%@\" value=\"\" data-original-token=\"%@\" class=\"form-input\" placeholder=\"Current token set, type to change\"/>", inputID, tokenKey, UIEscaped(fields[tokenKey])];
         [html appendString:@"</div>"];
 
         [html appendFormat:@"<div class=\"d-flex align-center gap-sm\"><button type=\"button\" class=\"btn btn-secondary btn-sm\" onclick=\"testConnection('%@')\">Test</button><span id=\"conn-%@-test-result\" class=\"text-sm text-secondary\"></span></div>", inputID, inputID];
@@ -2666,7 +2703,7 @@ static NSUInteger UISafeLength(id value) {
 
 #pragma mark - Lab (AT Protocol OAuth2 Self-Service)
 
-- (NSString *)labShellHTML {
+- (NSString *)labShellHTML:(NSString *)nonce {
     NSString *pdsBaseURL = [self.configuration.pdsBaseURL absoluteString];
     NSString *clientId = [NSString stringWithFormat:@"http://%@:%lu/lab/client-metadata.json",
                          self.configuration.host, (unsigned long)self.configuration.port];
@@ -2678,7 +2715,7 @@ static NSUInteger UISafeLength(id value) {
     @"<title>Garazyk Lab - AT Protocol</title>"
     @"<link rel=\"stylesheet\" href=\"/css/system.css\">"
     @"<link rel=\"stylesheet\" href=\"/css/components.css\">"
-    @"<style>"
+    @"<style nonce=\"%@\">"
     @".lab-shell { max-width: 800px; margin: 0 auto; padding: var(--space-lg); }"
     @".lab-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xl); padding-bottom: var(--space-lg); border-bottom: 1px solid var(--separator-color); }"
     @".lab-header h1 { margin: 0; }"
@@ -2743,12 +2780,12 @@ static NSUInteger UISafeLength(id value) {
     @"</div>"
     @"</section>"
     @"</main>"
-    @"<script>"
+    @"<script nonce=\"%@\">"
     @"const LAB_CONFIG = { pdsUrl: '%@', clientId: '%@', redirectUri: '%@' };"
     @"</script>"
-    @"<script src=\"/js/lab.js\"></script>"
+    @"<script nonce=\"%@\" src=\"/js/lab.js\"></script>"
     @"</body></html>",
-    pdsBaseURL, clientId, redirectUri];
+    nonce, nonce, nonce, pdsBaseURL, clientId, redirectUri];
 }
 
 - (NSString *)labClientMetadataJSON {
