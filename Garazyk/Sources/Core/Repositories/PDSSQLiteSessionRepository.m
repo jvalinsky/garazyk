@@ -20,6 +20,12 @@
 
 #pragma mark - PDSSessionRepository
 
+- (BOOL)storeRefreshToken:(NSString *)token forAccountDid:(NSString *)accountDid error:(NSError **)error {
+    // Default expiration: 30 days
+    NSDate *expiresAt = [NSDate dateWithTimeIntervalSinceNow:(30 * 24 * 60 * 60)];
+    return [self storeRefreshToken:token forAccountDid:accountDid expiresAt:expiresAt error:error];
+}
+
 - (BOOL)storeRefreshToken:(NSString *)token forAccountDid:(NSString *)accountDid expiresAt:(NSDate *)expiresAt error:(NSError **)error {
     __block BOOL success = NO;
     [_databasePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {

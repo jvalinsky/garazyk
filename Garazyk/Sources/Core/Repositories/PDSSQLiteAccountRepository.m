@@ -70,6 +70,15 @@
     return success;
 }
 
+- (NSArray<PDSDatabaseAccount *> *)listAccountsWithLimit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error {
+    __block NSArray *accounts = @[];
+    [_databasePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+        PDSActorStore *store = (PDSActorStore *)reader;
+        accounts = [store listAccountsWithLimit:limit cursor:cursor error:blockError];
+    } error:error];
+    return accounts;
+}
+
 - (NSArray<PDSDatabaseAccount *> *)listAccountsWithError:(NSError **)error {
     __block NSArray *accounts = @[];
     [_databasePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **blockError) {

@@ -9,6 +9,7 @@
 #pragma mark - Session Operations (Reader)
 
 - (nullable NSString *)accountDidForRefreshToken:(NSString *)token error:(NSError **)error {
+    if (!token) return nil;
     NSString *sql = @"SELECT account_did FROM refresh_tokens WHERE token = ? AND expires_at > ?";
     NSArray *results = [self.database executeParameterizedQuery:sql params:@[token, @([[NSDate date] timeIntervalSince1970])] error:error];
     if (results.count > 0) {
@@ -20,6 +21,7 @@
 #pragma mark - Session Operations (Transactor)
 
 - (BOOL)storeRefreshToken:(NSString *)token forAccountDid:(NSString *)accountDid expiresAt:(NSDate *)expiresAt error:(NSError **)error {
+    if (!token || !accountDid) return NO;
     NSString *sql = @"INSERT OR REPLACE INTO refresh_tokens (token, account_did, created_at, expires_at) VALUES (?, ?, ?, ?)";
     NSArray *params = @[
         token ?: @"",
@@ -31,11 +33,13 @@
 }
 
 - (BOOL)revokeRefreshToken:(NSString *)token error:(NSError **)error {
+    if (!token) return NO;
     NSString *sql = @"DELETE FROM refresh_tokens WHERE token = ?";
     return [self.database executeParameterizedUpdate:sql params:@[token] error:error];
 }
 
 - (BOOL)revokeAllRefreshTokensForAccountDid:(NSString *)accountDid error:(NSError **)error {
+    if (!accountDid) return NO;
     NSString *sql = @"DELETE FROM refresh_tokens WHERE account_did = ?";
     return [self.database executeParameterizedUpdate:sql params:@[accountDid] error:error];
 }

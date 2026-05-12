@@ -524,7 +524,7 @@
         PDSActorStore *store = (PDSActorStore *)transactor;
         NSTimeInterval oldTime = [[NSDate dateWithTimeIntervalSinceNow:-7200] timeIntervalSince1970];
         NSString *sql = [NSString stringWithFormat:@"UPDATE events SET created_at = %f WHERE seq <= 2", oldTime];
-        sqlite3_exec(store.db, sql.UTF8String, NULL, NULL, NULL);
+        sqlite3_exec((sqlite3 *)[store.database internalSQLiteHandle], sql.UTF8String, NULL, NULL, NULL);
     } error:nil];
     
     // 3. Prune events older than 1 hour ago

@@ -49,6 +49,21 @@ void PDSActorStoreLinkAccountCategory(void) {}
     return [self.database executeParameterizedQuery:sql params:@[] modelClass:[PDSDatabaseAccount class] error:error] ?: @[];
 }
 
+- (nullable NSArray<PDSDatabaseAccount *> *)listAccountsWithLimit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error {
+    NSMutableString *sql = [@"SELECT * FROM accounts" mutableCopy];
+    NSMutableArray *params = [NSMutableArray array];
+    
+    if (cursor.length > 0) {
+        [sql appendString:@" WHERE did > ?"];
+        [params addObject:cursor];
+    }
+    
+    [sql appendString:@" ORDER BY did ASC LIMIT ?"];
+    [params addObject:@(limit)];
+    
+    return [self.database executeParameterizedQuery:sql params:params modelClass:[PDSDatabaseAccount class] error:error] ?: @[];
+}
+
 #pragma mark - Account Operations (Transactor)
 
 - (BOOL)createAccount:(PDSDatabaseAccount *)account error:(NSError **)error {
