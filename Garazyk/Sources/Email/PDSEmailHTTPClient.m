@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "Network/PDSSafeHTTPClient.h"
+#import "Network/ATProtoSafeHTTPClient.h"
 #import "PDSEmailHTTPClient.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @interface PDSEmailHTTPClient ()
 @property (nonatomic, strong, readwrite) NSURL *baseURL;
@@ -20,7 +20,7 @@
         _timeoutInterval = 30.0;
         _maxRetries = 3;
         
-        _safeHTTPClient = [PDSSafeHTTPClient sharedClient];
+        _safeHTTPClient = [ATProtoSafeHTTPClient sharedClient];
     }
     return self;
 }
@@ -48,7 +48,7 @@
     }
     if (jsonError || !jsonData) {
         if (error) *error = jsonError ?: [NSError errorWithDomain:@"PDSEmailHTTPClientErrorDomain" code:-1 userInfo:@{ NSLocalizedDescriptionKey: @"Failed to serialize JSON body" }];
-        PDS_LOG_HTTP_ERROR(@"Failed to serialize JSON body: %@", jsonError ?: @"unknown");
+        GZ_LOG_HTTP_ERROR(@"Failed to serialize JSON body: %@", jsonError ?: @"unknown");
         return nil;
     }
     request.HTTPBody = jsonData;
@@ -57,7 +57,7 @@
     __block NSError *requestError = nil;
     
     // Log the request (sanitized)
-    PDS_LOG_HTTP_INFO(@"Sending email request to: %@", url);
+    GZ_LOG_HTTP_INFO(@"Sending email request to: %@", url);
     
     NSUInteger attempt = 0;
     __block BOOL success = NO;
@@ -65,13 +65,13 @@
     while (attempt <= self.maxRetries && !success) {
         if (attempt > 0) {
             NSTimeInterval delay = pow(2.0, attempt);
-            PDS_LOG_HTTP_INFO(@"Retrying request (attempt %lu) in %.1f seconds...", (unsigned long)attempt, delay);
+            GZ_LOG_HTTP_INFO(@"Retrying request (attempt %lu) in %.1f seconds...", (unsigned long)attempt, delay);
             [NSThread sleepForTimeInterval:delay];
         }
         
         dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
         
-        [self.safeHTTPClient performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable taskError) {
+        [self.safeHTTPClient performSafeDataTaskWithRequest:request options:[ATProtoSafeHTTPClientOptions defaultOptions] completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable taskError) {
             NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
             
             if (taskError) {
@@ -111,15 +111,15 @@
                             userInfo[@"resendErrorMessage"] = resendMessage;
                             userInfo[NSLocalizedDescriptionKey] = resendMessage;
                         }
-                        PDS_LOG_HTTP_ERROR(@"Resend API error HTTP %ld — %@: %@",
+                        GZ_LOG_HTTP_ERROR(@"Resend API error HTTP %ld — %@: %@",
                                            (long)httpResponse.statusCode,
                                            resendName ?: @"unknown",
                                            resendMessage ?: @"no message");
                     } else {
-                        PDS_LOG_HTTP_ERROR(@"HTTP error %ld: %@", (long)httpResponse.statusCode, responseString);
+                        GZ_LOG_HTTP_ERROR(@"HTTP error %ld: %@", (long)httpResponse.statusCode, responseString);
                     }
                 } else {
-                    PDS_LOG_HTTP_ERROR(@"HTTP error %ld (no response body)", (long)httpResponse.statusCode);
+                    GZ_LOG_HTTP_ERROR(@"HTTP error %ld (no response body)", (long)httpResponse.statusCode);
                 }
 
                 requestError = [NSError errorWithDomain:@"PDSEmailHTTPClientErrorDomain"
@@ -151,7 +151,7 @@
         if (requestError && [requestError.domain isEqualToString:@"PDSEmailHTTPClientErrorDomain"]) {
             NSInteger code = requestError.code;
             if (code >= 400 && code < 500 && code != 429 && code != 409) {
-                PDS_LOG_HTTP_ERROR(@"Client error (%ld), not retrying: %@", (long)code, requestError);
+                GZ_LOG_HTTP_ERROR(@"Client error (%ld), not retrying: %@", (long)code, requestError);
                 break;
             }
         }

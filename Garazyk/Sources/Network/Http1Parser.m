@@ -171,7 +171,13 @@
             return NO;
         }
 
-        NSData *headerData = [self.buffer subdataWithRange:NSMakeRange(0, headerEndRange.location + headerEndRange.length)];
+        NSUInteger headerSectionLength = headerEndRange.location + headerEndRange.length;
+        if (headerSectionLength > self.maxHeaderBytes) {
+            [self setErrorWithStatusCode:413 errorCode:@"RequestTooLarge" message:@"Request headers too large"];
+            return YES;
+        }
+
+        NSData *headerData = [self.buffer subdataWithRange:NSMakeRange(0, headerSectionLength)];
         if (!CFHTTPMessageAppendBytes(self.message, headerData.bytes, headerData.length)) {
             [self setErrorWithStatusCode:400 errorCode:@"BadRequest" message:@"Invalid request"];
             return YES;
@@ -548,7 +554,13 @@
             return NO;
         }
 
-        NSData *headerData = [self.buffer subdataWithRange:NSMakeRange(0, headerEndRange.location + headerEndRange.length)];
+        NSUInteger headerSectionLength = headerEndRange.location + headerEndRange.length;
+        if (headerSectionLength > self.maxHeaderBytes) {
+            [self setErrorWithStatusCode:413 errorCode:@"RequestTooLarge" message:@"Request headers too large"];
+            return YES;
+        }
+
+        NSData *headerData = [self.buffer subdataWithRange:NSMakeRange(0, headerSectionLength)];
         NSString *headerError = nil;
         NSDictionary<NSString *, NSString *> *headers = [self headersFromHeaderData:headerData errorMessage:&headerError];
         if (!headers) {

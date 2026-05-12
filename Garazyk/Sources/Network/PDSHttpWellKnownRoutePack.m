@@ -14,7 +14,7 @@
 #import "App/PDSController.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Service/ServiceDatabases.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -143,7 +143,7 @@
         PDSDatabaseAccount *account =
             [strongServiceDatabases getAccountByHandle:handle error:&dbError];
         if (dbError) {
-          PDS_LOG_ERROR(@"Database error looking up handle %@: %@", handle,
+          GZ_LOG_ERROR(@"Database error looking up handle %@: %@", handle,
                         dbError.localizedDescription ?: @"unknown error");
           response.statusCode = HttpStatusInternalServerError;
           response.contentType = @"text/plain; charset=utf-8";
@@ -183,7 +183,7 @@
                       }
                     }];
 
-  PDS_LOG_DEBUG(@"PDSHttpWellKnownRoutePack: .well-known routes registered");
+  GZ_LOG_DEBUG(@"PDSHttpWellKnownRoutePack: .well-known routes registered");
 }
 
 @end

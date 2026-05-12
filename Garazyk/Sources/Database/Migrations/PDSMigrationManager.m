@@ -5,7 +5,7 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
 #import "Database/PDSBlock.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 #import <sqlite3.h>
 
@@ -465,7 +465,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
         return NO;
     }
 
-    PDS_LOG_DB_INFO(@"V1 %@ schema migration applied", self.schemaType);
+    GZ_LOG_DB_INFO(@"V1 %@ schema migration applied", self.schemaType);
     return YES;
 }
 
@@ -499,7 +499,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
         sqlite3_exec(db, sql.UTF8String, NULL, NULL, NULL);
     }
     
-    PDS_LOG_DB_INFO(@"V1 %@ schema migration rolled back", self.schemaType);
+    GZ_LOG_DB_INFO(@"V1 %@ schema migration rolled back", self.schemaType);
     return YES;
 }
 
@@ -650,11 +650,11 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     // Get pending migrations
     NSArray<id<PDSMigration>> *pending = [self pendingMigrations:db];
     if (pending.count == 0) {
-        PDS_LOG_DB_INFO(@"Database is up to date, no migrations pending");
+        GZ_LOG_DB_INFO(@"Database is up to date, no migrations pending");
         return YES;
     }
 
-    PDS_LOG_DB_INFO(@"Applying %lu migrations...", (unsigned long)pending.count);
+    GZ_LOG_DB_INFO(@"Applying %lu migrations...", (unsigned long)pending.count);
 
     // Apply each migration
     for (id<PDSMigration> migration in pending) {
@@ -663,7 +663,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
         }
     }
 
-    PDS_LOG_DB_INFO(@"All migrations applied successfully");
+    GZ_LOG_DB_INFO(@"All migrations applied successfully");
     return YES;
 }
 
@@ -724,7 +724,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
         }
     }
 
-    PDS_LOG_DB_INFO(@"Rolling back %lu migrations to version %ld...", (unsigned long)toRollback.count, (long)version);
+    GZ_LOG_DB_INFO(@"Rolling back %lu migrations to version %ld...", (unsigned long)toRollback.count, (long)version);
 
     // Rollback each migration
     for (id<PDSMigration> migration in toRollback) {
@@ -733,7 +733,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
         }
     }
 
-    PDS_LOG_DB_INFO(@"Rollback completed successfully");
+    GZ_LOG_DB_INFO(@"Rollback completed successfully");
     return YES;
 }
 
@@ -749,7 +749,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 - (BOOL)migrateFromMonolithicDatabase:(NSString *)sourcePath
                toSingleTenantDirectory:(NSString *)destinationDirectory
                                  error:(NSError **)error {
-    PDS_LOG_DB_INFO(@"Starting monolithic migration from %@ to %@", sourcePath, destinationDirectory);
+    GZ_LOG_DB_INFO(@"Starting monolithic migration from %@ to %@", sourcePath, destinationDirectory);
 
     // Validate source file exists
     if (![[NSFileManager defaultManager] fileExistsAtPath:sourcePath]) {
@@ -797,7 +797,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
     NSInteger totalDIDs = dids.count;
     if (totalDIDs == 0) {
-        PDS_LOG_DB_INFO(@"No accounts to migrate");
+        GZ_LOG_DB_INFO(@"No accounts to migrate");
         sqlite3_close(sourceDb);
         if (self.progressBlock) self.progressBlock(1.0, @"Migration complete");
         return YES;
@@ -885,7 +885,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     sqlite3_close(sourceDb);
 
     if (self.progressBlock) self.progressBlock(1.0, @"Migration completed successfully");
-    PDS_LOG_DB_INFO(@"Monolithic migration completed successfully");
+    GZ_LOG_DB_INFO(@"Monolithic migration completed successfully");
 
     return YES;
 }
@@ -913,7 +913,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
         // Check for duplicate version
         for (id<PDSMigration> existing in self.migrations) {
             if (existing.version == migration.version) {
-                PDS_LOG_DB_WARN(@"Migration version %ld already registered, skipping", (long)migration.version);
+                GZ_LOG_DB_WARN(@"Migration version %ld already registered, skipping", (long)migration.version);
                 return;
             }
         }
@@ -934,7 +934,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 - (BOOL)applyMigration:(id<PDSMigration>)migration
            toDatabase:(sqlite3 *)db
                  error:(NSError **)error {
-    PDS_LOG_DB_INFO(@"Applying migration V%ld: %@", (long)migration.version, migration.name);
+    GZ_LOG_DB_INFO(@"Applying migration V%ld: %@", (long)migration.version, migration.name);
 
     // Begin transaction
     char *errMsg = NULL;
@@ -965,25 +965,25 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
                 // Commit
                 result = sqlite3_exec(db, "COMMIT", NULL, NULL, &errMsg);
                 if (result != SQLITE_OK) {
-                    PDS_LOG_DB_ERROR(@"Failed to commit migration V%ld: %s", (long)migration.version, errMsg);
+                    GZ_LOG_DB_ERROR(@"Failed to commit migration V%ld: %s", (long)migration.version, errMsg);
                     sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
                     success = NO;
                 } else {
-                    PDS_LOG_DB_INFO(@"Migration V%ld applied successfully", (long)migration.version);
+                    GZ_LOG_DB_INFO(@"Migration V%ld applied successfully", (long)migration.version);
                 }
             } else {
-                PDS_LOG_DB_ERROR(@"Failed to record migration V%ld", (long)migration.version);
+                GZ_LOG_DB_ERROR(@"Failed to record migration V%ld", (long)migration.version);
                 sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
                 success = NO;
             }
             sqlite3_finalize(stmt);
         } else {
-            PDS_LOG_DB_ERROR(@"Failed to prepare migration record statement");
+            GZ_LOG_DB_ERROR(@"Failed to prepare migration record statement");
             sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
             success = NO;
         }
     } else {
-        PDS_LOG_DB_ERROR(@"Migration V%ld up method failed: %@", (long)migration.version, upError);
+        GZ_LOG_DB_ERROR(@"Migration V%ld up method failed: %@", (long)migration.version, upError);
         sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
 
         if (error && upError) {
@@ -1002,7 +1002,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 - (BOOL)rollbackMigration:(id<PDSMigration>)migration
              fromDatabase:(sqlite3 *)db
                    error:(NSError **)error {
-    PDS_LOG_DB_INFO(@"Rolling back migration V%ld: %@", (long)migration.version, migration.name);
+    GZ_LOG_DB_INFO(@"Rolling back migration V%ld: %@", (long)migration.version, migration.name);
 
     // Begin transaction
     char *errMsg = NULL;
@@ -1031,25 +1031,25 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
                 // Commit
                 result = sqlite3_exec(db, "COMMIT", NULL, NULL, &errMsg);
                 if (result != SQLITE_OK) {
-                    PDS_LOG_DB_ERROR(@"Failed to commit rollback V%ld: %s", (long)migration.version, errMsg);
+                    GZ_LOG_DB_ERROR(@"Failed to commit rollback V%ld: %s", (long)migration.version, errMsg);
                     sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
                     success = NO;
                 } else {
-                    PDS_LOG_DB_INFO(@"Migration V%ld rolled back successfully", (long)migration.version);
+                    GZ_LOG_DB_INFO(@"Migration V%ld rolled back successfully", (long)migration.version);
                 }
             } else {
-                PDS_LOG_DB_ERROR(@"Failed to remove migration record V%ld", (long)migration.version);
+                GZ_LOG_DB_ERROR(@"Failed to remove migration record V%ld", (long)migration.version);
                 sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
                 success = NO;
             }
             sqlite3_finalize(stmt);
         } else {
-            PDS_LOG_DB_ERROR(@"Failed to prepare migration removal statement");
+            GZ_LOG_DB_ERROR(@"Failed to prepare migration removal statement");
             sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
             success = NO;
         }
     } else {
-        PDS_LOG_DB_ERROR(@"Migration V%ld down method failed: %@", (long)migration.version, downError);
+        GZ_LOG_DB_ERROR(@"Migration V%ld down method failed: %@", (long)migration.version, downError);
         sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
 
         if (error && downError) {

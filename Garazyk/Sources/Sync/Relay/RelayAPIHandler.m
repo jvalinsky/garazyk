@@ -5,7 +5,7 @@
 #import "Sync/Relay/RelayUpstreamManager.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import <Foundation/Foundation.h>
 
 @interface RelayAPIHandler ()
@@ -261,7 +261,7 @@
     response.statusCode = HttpStatusCreated;
     response.jsonBody = @{@"success": @YES, @"url": url, @"action": @"added"};
     [self setCORS:response];
-    PDS_LOG_SYNC_INFO(@"Relay: Added upstream %@", url);
+    GZ_LOG_SYNC_INFO(@"Relay: Added upstream %@", url);
 }
 
 - (void)handleUpstreamDetail:(NSString *)url response:(HttpResponse *)response {
@@ -297,7 +297,7 @@
     response.statusCode = HttpStatusOK;
     response.jsonBody = @{@"success": @YES, @"url": url, @"action": @"connecting"};
     [self setCORS:response];
-    PDS_LOG_SYNC_INFO(@"Relay: Connecting to upstream %@", url);
+    GZ_LOG_SYNC_INFO(@"Relay: Connecting to upstream %@", url);
 }
 
 - (void)handleUpstreamDisconnect:(NSString *)url response:(HttpResponse *)response {
@@ -312,7 +312,7 @@
     response.statusCode = HttpStatusOK;
     response.jsonBody = @{@"success": @YES, @"url": url, @"action": @"disconnected"};
     [self setCORS:response];
-    PDS_LOG_SYNC_INFO(@"Relay: Disconnected from upstream %@", url);
+    GZ_LOG_SYNC_INFO(@"Relay: Disconnected from upstream %@", url);
 }
 
 - (void)handleUpstreamRemove:(NSString *)url response:(HttpResponse *)response {
@@ -331,7 +331,7 @@
     response.statusCode = HttpStatusOK;
     response.jsonBody = @{@"success": @YES, @"url": url, @"action": @"removed"};
     [self setCORS:response];
-    PDS_LOG_SYNC_INFO(@"Relay: Removed upstream %@", url);
+    GZ_LOG_SYNC_INFO(@"Relay: Removed upstream %@", url);
 }
 
 - (void)handleReconnectAll:(HttpResponse *)response {
@@ -346,7 +346,7 @@
     response.statusCode = HttpStatusOK;
     response.jsonBody = @{@"success": @YES, @"action": @"reconnect_all"};
     [self setCORS:response];
-    PDS_LOG_SYNC_INFO(@"Relay: Reconnecting all upstreams");
+    GZ_LOG_SYNC_INFO(@"Relay: Reconnecting all upstreams");
 }
 
 - (void)handleDisconnectAll:(HttpResponse *)response {
@@ -361,7 +361,7 @@
     response.statusCode = HttpStatusOK;
     response.jsonBody = @{@"success": @YES, @"action": @"disconnect_all"};
     [self setCORS:response];
-    PDS_LOG_SYNC_INFO(@"Relay: Disconnected all upstreams");
+    GZ_LOG_SYNC_INFO(@"Relay: Disconnected all upstreams");
 }
 
 - (void)methodNotAllowed:(HttpResponse *)response {
@@ -442,7 +442,7 @@
         response.jsonBody = @{@"success": @YES, @"hostname": hostname, @"action": @"crawling"};
     }
     [self setCORS:response];
-    PDS_LOG_SYNC_INFO(@"Relay: Crawl requested for hostname %@", hostname);
+    GZ_LOG_SYNC_INFO(@"Relay: Crawl requested for hostname %@", hostname);
 }
 
 @end

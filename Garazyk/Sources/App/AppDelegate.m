@@ -4,7 +4,7 @@
 #import <os/log.h>
 #import "Network/HttpServer.h"
 #import "Database/PDSDatabase.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @interface AppDelegate ()
 
@@ -15,18 +15,18 @@
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
 #if !defined(GNUSTEP) && (TARGET_OS_OSX || defined(__APPLE__))
     self.window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 480, 270) styleMask:NSWindowStyleMaskTitled backing:NSBackingStoreBuffered defer:NO];
-    PDS_LOG_INFO_C(PDSLogComponentCore, @"ATProto PDS starting up...");
+    GZ_LOG_INFO_C(GZLogComponentCore, @"ATProto PDS starting up...");
 #else
-    PDS_LOG_INFO_C(PDSLogComponentCore, @"ATProto PDS starting up...");
+    GZ_LOG_INFO_C(GZLogComponentCore, @"ATProto PDS starting up...");
 #endif
     
     self.pdsController = [[PDSController alloc] init];
     NSError *error = nil;
     if (![self.pdsController startServerWithError:&error]) {
 #if !defined(GNUSTEP) && (TARGET_OS_OSX || defined(__APPLE__))
-        PDS_LOG_ERROR_C(PDSLogComponentCore, @"Failed to start server: %@", error);
+        GZ_LOG_ERROR_C(GZLogComponentCore, @"Failed to start server: %@", error);
 #else
-        PDS_LOG_ERROR_C(PDSLogComponentCore, @"Failed to start server: %@", error);
+        GZ_LOG_ERROR_C(GZLogComponentCore, @"Failed to start server: %@", error);
 #endif
     }
     
@@ -36,7 +36,7 @@
 }
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
-    PDS_LOG_INFO_C(PDSLogComponentCore, @"ATProto PDS shutting down...");
+    GZ_LOG_INFO_C(GZLogComponentCore, @"ATProto PDS shutting down...");
     [self.pdsController stopServer];
 }
 
@@ -60,9 +60,9 @@
     NSError *error = nil;
     if (![self.pdsController startServerWithError:&error]) {
 #if !defined(GNUSTEP) && (TARGET_OS_OSX || defined(__APPLE__))
-        PDS_LOG_ERROR_C(PDSLogComponentCore, @"Failed to start server: %@", error);
+        GZ_LOG_ERROR_C(GZLogComponentCore, @"Failed to start server: %@", error);
 #else
-        PDS_LOG_ERROR_C(PDSLogComponentCore, @"Failed to start server: %@", error);
+        GZ_LOG_ERROR_C(GZLogComponentCore, @"Failed to start server: %@", error);
 #endif
     }
 }

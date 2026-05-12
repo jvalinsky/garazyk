@@ -3,7 +3,7 @@
 #import <XCTest/XCTest.h>
 #import "Repository/MST.h"
 #import "Core/CID.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @interface MSTRebalancingTests : XCTestCase
 @end
@@ -16,7 +16,7 @@
     
     // Insert 1000 keys with pseudo-random TIDs
     int count = 1000;
-    PDS_LOG_INFO(@"[MST TEST] Starting insertion of %d keys...", count);
+    GZ_LOG_INFO(@"[MST TEST] Starting insertion of %d keys...", count);
     for (int i = 0; i < count; i++) {
         NSString *rkey = [self generateRandomTID];
         NSString *key = [NSString stringWithFormat:@"app.bsky.feed.post/%@", rkey];
@@ -32,13 +32,13 @@
     for (NSString *key in expectedEntries) {
         CID *foundCID = [tree get:key];
         if (![foundCID.stringValue isEqualToString:expectedEntries[key].stringValue]) {
-             PDS_LOG_ERROR(@"[MST TEST] Verification failure for key %@: expected %@, found %@", key, expectedEntries[key].stringValue, foundCID.stringValue);
+             GZ_LOG_ERROR(@"[MST TEST] Verification failure for key %@: expected %@, found %@", key, expectedEntries[key].stringValue, foundCID.stringValue);
         }
         XCTAssertEqualObjects(foundCID.stringValue, expectedEntries[key].stringValue);
     }
     
     int deleteCount = 500;
-    PDS_LOG_INFO(@"[MST TEST] Insertion verified. Starting deletion of %d keys...", deleteCount);
+    GZ_LOG_INFO(@"[MST TEST] Insertion verified. Starting deletion of %d keys...", deleteCount);
     
     // Delete keys
     NSArray *keysToDelete = [[expectedEntries.allKeys sortedArrayUsingSelector:@selector(compare:)] subarrayWithRange:NSMakeRange(0, deleteCount)];
@@ -61,7 +61,7 @@
         XCTAssertNil([tree get:key]);
     }
     
-    PDS_LOG_INFO(@"[MST TEST] MST rebalancing test completed successfully.");
+    GZ_LOG_INFO(@"[MST TEST] MST rebalancing test completed successfully.");
 }
 
 - (void)testDepthConsistency {

@@ -3,7 +3,7 @@
 #import "Video/JelczDatabase.h"
 #import "Database/Utils/PDSSQLiteUtils.h"
 #import "Core/NSDateFormatter+ATProto.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 #import <sqlite3.h>
 

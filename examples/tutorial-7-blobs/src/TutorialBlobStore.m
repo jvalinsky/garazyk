@@ -251,7 +251,7 @@ NSString * const TutorialBlobErrorDomain = @"com.atproto.tutorial.blob";
                                                cursor:(nullable NSString *)cursor
                                                 error:(NSError **)error {
     __block NSError *blockError = nil;
-    NSArray<NSDictionary *> *results = [self.db executeQuery:&blockError block:^id(sqlite3 *db) {
+    NSArray<NSDictionary *> *results = [self.db executeUnsafeRawQuery:&blockError block:^id(sqlite3 *db) {
         NSString *sql;
         if (cursor) {
             sql = @"SELECT cid, mime_type, size FROM blobs WHERE did = ? AND cid > ? ORDER BY cid LIMIT ?";

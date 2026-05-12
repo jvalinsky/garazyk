@@ -12,7 +12,8 @@
 #import "Auth/Crypto/AuthCryptoBase64URL.h"
 #import "Auth/Crypto/AuthCryptoJWK.h"
 #import "Auth/PDSKeyProtocol.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
+#import "Security/PDSSecurityCompare.h"
 
 NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
 
@@ -185,7 +186,7 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
 
     // Canonical HTU check
     NSString *expectedHTU = [self canonicalHTUFromURL:url];
-    if (![proofHtu isEqualToString:expectedHTU]) {
+    if (![PDSSecurityCompare constantTimeEqualString:proofHtu string:expectedHTU]) {
         if (error) {
             *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
                                          code:-8
@@ -227,7 +228,7 @@ NSString * const AuthCryptoDPoPErrorDomain = @"com.atproto.authcrypto.dpop";
         return NO;
     }
 
-    if (nonce && ![proofNonce isEqualToString:nonce]) {
+    if (nonce && ![PDSSecurityCompare constantTimeEqualString:proofNonce string:nonce]) {
         if (error) {
             *error = [NSError errorWithDomain:AuthCryptoDPoPErrorDomain
                                          code:-11

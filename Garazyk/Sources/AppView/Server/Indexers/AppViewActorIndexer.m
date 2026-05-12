@@ -10,7 +10,7 @@
 #import "AppView/Server/AppViewDatabase.h"
 #import "AppView/AppViewIdentityHelper.h"
 #import "AppView/Server/Ingest/AppViewIngestEngine.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Database/PDSDatabase.h"
 #import "Core/CID.h"
 #import "Core/ATProtoCBORSerialization.h"
@@ -119,19 +119,19 @@ static NSString * const kCollection = @"app.bsky.actor.profile";
                 [self indexRecord:record did:event.did collection:kCollection rkey:opRkey cid:cid error:nil];
             }
         } else if ([action isEqualToString:@"delete"]) {
-            PDS_LOG_DEBUG(@"[AppViewActorIndexer] Deleted profile for %@", event.did);
+            GZ_LOG_DEBUG(@"[AppViewActorIndexer] Deleted profile for %@", event.did);
         }
     }
     return YES;
 }
 
 - (BOOL)processPendingDelta:(AppViewPendingDelta *)delta error:(NSError **)error {
-    PDS_LOG_DEBUG(@"[AppViewActorIndexer] Replaying pending delta for %@", delta.did);
+    GZ_LOG_DEBUG(@"[AppViewActorIndexer] Replaying pending delta for %@", delta.did);
     return YES;
 }
 
 - (BOOL)deleteRecord:(NSString *)rkey did:(NSString *)did collection:(NSString *)collection error:(NSError **)error {
-    PDS_LOG_DEBUG(@"[AppViewActorIndexer] Delete record %@/%@ for %@", collection, rkey, did);
+    GZ_LOG_DEBUG(@"[AppViewActorIndexer] Delete record %@/%@ for %@", collection, rkey, did);
     return YES;
 }
 

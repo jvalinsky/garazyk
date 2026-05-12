@@ -12,7 +12,7 @@
 #import "Lexicon/ATProtoLexiconSchema.h"
 #import "Lexicon/ATProtoLexiconDef.h"
 #import "Lexicon/ATProtoLexiconValidator.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @interface AppViewGenericIndexer ()
 
@@ -90,7 +90,7 @@
                                               mode:ATProtoValidationModeOptimistic
                                              error:&validationError];
         if (!valid && validationError) {
-            PDS_LOG_DEBUG(@"[GenericIndexer] Validation failed for %@ in %@: %@",
+            GZ_LOG_DEBUG(@"[GenericIndexer] Validation failed for %@ in %@: %@",
                           collection, did, validationError.localizedDescription);
             // In optimistic mode, we still index even if the schema is unknown
             // but we log validation failures for known schemas

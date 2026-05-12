@@ -29,6 +29,9 @@
 
     const char *savedValue = getenv("PDS_APPVIEW_URL");
     self.savedAppViewProxyURL = savedValue ? [NSString stringWithUTF8String:savedValue] : nil;
+    unsetenv("PDS_APPVIEW_URL");
+    unsetenv("PDS_CHAT_URL");
+    unsetenv("PDS_ISSUER");
 
     self.tempURL = [NSURL fileURLWithPath:NSTemporaryDirectory()];
     self.tempURL = [self.tempURL URLByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
@@ -70,6 +73,8 @@
     } else {
         unsetenv("PDS_APPVIEW_URL");
     }
+    unsetenv("PDS_CHAT_URL");
+    unsetenv("PDS_ISSUER");
 
     [[NSFileManager defaultManager] removeItemAtURL:self.tempURL error:nil];
     [super tearDown];

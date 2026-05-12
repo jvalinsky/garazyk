@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Sync/Relay/RelayUpstreamManager.h"
 #import "Sync/Relay/RelayMetrics.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @interface RelayUpstreamManager () <RelayClientDelegate>
 
@@ -75,13 +75,13 @@
 
     NSURL *httpURL = [NSURL URLWithString:urlString];
     if (!httpURL) {
-        PDS_LOG_ERROR_C(@"Relay", @"Invalid upstream URL: %@", url);
+        GZ_LOG_ERROR_C(@"Relay", @"Invalid upstream URL: %@", url);
         return;
     }
 
     NSString *scheme = httpURL.scheme.lowercaseString;
     if (![scheme isEqualToString:@"http"] && ![scheme isEqualToString:@"https"]) {
-        PDS_LOG_ERROR_C(@"Relay", @"Invalid upstream URL scheme: %@ (original: %@)", scheme, url);
+        GZ_LOG_ERROR_C(@"Relay", @"Invalid upstream URL scheme: %@ (original: %@)", scheme, url);
         return;
     }
 
@@ -166,10 +166,10 @@
 - (void)connectToUpstream:(NSString *)url {
     RelayClient *client = self.upstreamClients[url];
     if (client) {
-        PDS_LOG_SYNC_INFO(@"RelayUpstreamManager: Connecting to %@", url);
+        GZ_LOG_SYNC_INFO(@"RelayUpstreamManager: Connecting to %@", url);
         [client connect];
     } else {
-        PDS_LOG_SYNC_ERROR(@"RelayUpstreamManager: No client found for %@", url);
+        GZ_LOG_SYNC_ERROR(@"RelayUpstreamManager: No client found for %@", url);
     }
 }
 
@@ -271,7 +271,7 @@
 - (void)relayClientDidConnect:(RelayClient *)client {
     NSString *url = [self urlForClient:client];
     if (url) {
-        PDS_LOG_SYNC_INFO(@"RelayUpstreamManager: Client connected to %@", url);
+        GZ_LOG_SYNC_INFO(@"RelayUpstreamManager: Client connected to %@", url);
         dispatch_async(_managerQueue, ^{
             [self.connectedUpstreams addObject:url];
             self.reconnectAttempts[url] = @0;
@@ -323,12 +323,12 @@
 - (void)scheduleReconnectForUpstream:(NSString *)url {
     NSNumber *attempts = self.reconnectAttempts[url];
     if (attempts.integerValue >= self.maxReconnectAttempts) {
-        PDS_LOG_SYNC_WARN(@"Max reconnect attempts reached for upstream %@", url);
+        GZ_LOG_SYNC_WARN(@"Max reconnect attempts reached for upstream %@", url);
         return;
     }
 
     NSTimeInterval delay = [self.reconnectDelays[url] doubleValue];
-    PDS_LOG_SYNC_INFO(@"Scheduling reconnect for %@ in %.1fs (attempt %ld)", url, delay, (long)attempts.integerValue + 1);
+    GZ_LOG_SYNC_INFO(@"Scheduling reconnect for %@ in %.1fs (attempt %ld)", url, delay, (long)attempts.integerValue + 1);
 
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), _managerQueue, ^{
         self.reconnectAttempts[url] = @(attempts.integerValue + 1);

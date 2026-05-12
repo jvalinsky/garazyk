@@ -11,7 +11,8 @@
 #import "PhoneVerification/PDSPlivoPhoneVerificationProvider.h"
 #import "Core/PDSProviderHTTPClient.h"
 #import "Email/PDSSecretsProvider.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
+#import "Debug/GZLogRedactor.h"
 
 static NSString *const kPlivoVerifyBaseURLTemplate = @"https://api.plivo.com/v1/Account/%@";
 static NSString *const kPlivoAuthIDEnvVar = @"PLIVO_AUTH_ID";
@@ -129,7 +130,7 @@ NSString *const PDSPlivoProviderErrorDomain = @"com.atproto.pds.plivoprovider";
         return nil;
     }
 
-    PDS_LOG_INFO(@"[Plivo] Sending verification to: %@", phoneNumber);
+    GZ_LOG_INFO(@"[Plivo] Sending verification to: %@", [GZLogRedactor maskToken:phoneNumber]);
 
     // POST /Verify/Session/ with JSON body
     NSDictionary *body = @{
@@ -142,7 +143,7 @@ NSString *const PDSPlivoProviderErrorDomain = @"com.atproto.pds.plivoprovider";
                                                   body:body
                                                  error:&requestError];
     if (!response) {
-        PDS_LOG_ERROR(@"[Plivo] Failed to send verification: %@", requestError);
+        GZ_LOG_ERROR(@"[Plivo] Failed to send verification: %@", requestError);
         if (error) {
             *error = [NSError errorWithDomain:PDSPlivoProviderErrorDomain
                                          code:PDSPlivoProviderErrorRequestFailed
@@ -160,7 +161,7 @@ NSString *const PDSPlivoProviderErrorDomain = @"com.atproto.pds.plivoprovider";
         sessionUUID = response[@"api_id"];
     }
 
-    PDS_LOG_INFO(@"[Plivo] Verification sent to %@ (session_uuid: %@)", phoneNumber, sessionUUID);
+    GZ_LOG_INFO(@"[Plivo] Verification sent to %@ (session_uuid: %@)", [GZLogRedactor maskToken:phoneNumber], sessionUUID);
     return sessionUUID ?: @"";
 }
 
@@ -211,7 +212,7 @@ NSString *const PDSPlivoProviderErrorDomain = @"com.atproto.pds.plivoprovider";
         return NO;
     }
 
-    PDS_LOG_INFO(@"[Plivo] Checking verification code for: %@ (session_uuid: %@)", phoneNumber, sessionID);
+    GZ_LOG_INFO(@"[Plivo] Checking verification code for: %@ (session_uuid: %@)", [GZLogRedactor maskToken:phoneNumber], sessionID);
 
     // POST /Verify/Session/{session_uuid}/ with JSON body
     NSString *path = [NSString stringWithFormat:@"/Verify/Session/%@/", sessionID];
@@ -224,7 +225,7 @@ NSString *const PDSPlivoProviderErrorDomain = @"com.atproto.pds.plivoprovider";
                                                   body:body
                                                  error:&requestError];
     if (!response) {
-        PDS_LOG_ERROR(@"[Plivo] Verification check failed: %@", requestError);
+        GZ_LOG_ERROR(@"[Plivo] Verification check failed: %@", requestError);
         if (error) {
             *error = [NSError errorWithDomain:PDSPlivoProviderErrorDomain
                                          code:PDSPlivoProviderErrorVerificationFailed
@@ -240,7 +241,7 @@ NSString *const PDSPlivoProviderErrorDomain = @"com.atproto.pds.plivoprovider";
     // Check for a "is_verified" field or successful status
     NSNumber *isVerified = response[@"is_verified"];
     if (isVerified && isVerified.boolValue) {
-        PDS_LOG_INFO(@"[Plivo] Verification approved for %@", phoneNumber);
+        GZ_LOG_INFO(@"[Plivo] Verification approved for %@", [GZLogRedactor maskToken:phoneNumber]);
         return YES;
     }
 
@@ -249,11 +250,11 @@ NSString *const PDSPlivoProviderErrorDomain = @"com.atproto.pds.plivoprovider";
     // the HTTP status was 200, which for Plivo means success.
     NSString *message = response[@"message"];
     if (message && [message containsString:@"verified"]) {
-        PDS_LOG_INFO(@"[Plivo] Verification approved for %@", phoneNumber);
+        GZ_LOG_INFO(@"[Plivo] Verification approved for %@", [GZLogRedactor maskToken:phoneNumber]);
         return YES;
     }
 
-    PDS_LOG_INFO(@"[Plivo] Verification not approved for %@", phoneNumber);
+    GZ_LOG_INFO(@"[Plivo] Verification not approved for %@", [GZLogRedactor maskToken:phoneNumber]);
     if (error) {
         *error = [NSError errorWithDomain:PDSPlivoProviderErrorDomain
                                      code:PDSPlivoProviderErrorVerificationFailed

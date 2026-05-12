@@ -16,7 +16,7 @@
 #import "Sync/Firehose/Firehose.h"
 #import "Sync/Relay/EventFormatter.h"
 #import "Core/CID.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 
 @interface RelayDownstreamHandler ()
@@ -46,7 +46,7 @@
         _currentSequence = 0;
         _downstreamConnections = [NSMutableArray array];
         _handlerQueue = dispatch_queue_create("com.atproto.relay.downstream", DISPATCH_QUEUE_SERIAL);
-        PDS_LOG_SYNC_INFO(@"RelayDownstreamHandler initialized %p", self);
+        GZ_LOG_SYNC_INFO(@"RelayDownstreamHandler initialized %p", self);
     }
     return self;
 }
@@ -57,7 +57,7 @@
 - (void)upstreamManager:(RelayUpstreamManager *)manager
          didReceiveEvent:(id)event
            fromUpstream:(NSString *)url {
-    PDS_LOG_SYNC_INFO(@"RelayDownstreamHandler: Received event from %@", url);
+    GZ_LOG_SYNC_INFO(@"RelayDownstreamHandler: Received event from %@", url);
     // Process on handler queue for thread safety
     dispatch_async(self.handlerQueue, ^{
         // Extract sequence number and event type
@@ -73,7 +73,7 @@
             }
 
             [self.eventBuffer appendEvent:commitEvent seq:seq];
-            PDS_LOG_DEBUG(@"Relay: Received and broadcast commit seq=%lld repo=%@", seq, commitEvent.repo);
+            GZ_LOG_DEBUG(@"Relay: Received and broadcast commit seq=%lld repo=%@", seq, commitEvent.repo);
         }
         else if ([event isKindOfClass:[FirehoseIdentityEvent class]]) {
             FirehoseIdentityEvent *identityEvent = (FirehoseIdentityEvent *)event;
@@ -84,7 +84,7 @@
             }
 
             [self.eventBuffer appendEvent:identityEvent seq:seq];
-            PDS_LOG_DEBUG(@"Relay: Received and broadcast identity seq=%lld did=%@", seq, identityEvent.did);
+            GZ_LOG_DEBUG(@"Relay: Received and broadcast identity seq=%lld did=%@", seq, identityEvent.did);
         }
         else if ([event isKindOfClass:[FirehoseAccountEvent class]]) {
             FirehoseAccountEvent *accountEvent = (FirehoseAccountEvent *)event;
@@ -95,11 +95,11 @@
             }
 
             [self.eventBuffer appendEvent:accountEvent seq:seq];
-            PDS_LOG_DEBUG(@"Relay: Received and broadcast account seq=%lld did=%@", seq, accountEvent.did);
+            GZ_LOG_DEBUG(@"Relay: Received and broadcast account seq=%lld did=%@", seq, accountEvent.did);
         }
         else if ([event isKindOfClass:[FirehoseErrorEvent class]]) {
             FirehoseErrorEvent *errorEvent = (FirehoseErrorEvent *)event;
-            PDS_LOG_WARN(@"Relay: Received error from upstream %@: %@", url, errorEvent.message ?: @"unknown");
+            GZ_LOG_WARN(@"Relay: Received error from upstream %@: %@", url, errorEvent.message ?: @"unknown");
         }
         else if ([event isKindOfClass:[NSDictionary class]]) {
             // Raw dictionary event (legacy/fallback)
@@ -121,20 +121,20 @@
 
 - (void)upstreamManager:(RelayUpstreamManager *)manager
     didConnectToUpstream:(NSString *)url {
-    PDS_LOG_SYNC_INFO(@"RelayDownstreamHandler: Connected to upstream %@", url);
+    GZ_LOG_SYNC_INFO(@"RelayDownstreamHandler: Connected to upstream %@", url);
 }
 
 - (void)upstreamManager:(RelayUpstreamManager *)manager
     didDisconnectFromUpstream:(NSString *)url
                         error:(nullable NSError *)error {
-    PDS_LOG_SYNC_WARN(@"RelayDownstreamHandler: Disconnected from upstream %@ (error: %@)", 
+    GZ_LOG_SYNC_WARN(@"RelayDownstreamHandler: Disconnected from upstream %@ (error: %@)", 
                  url, error.localizedDescription ?: @"none");
 }
 
 - (void)upstreamManager:(RelayUpstreamManager *)manager
         didReceiveCursor:(int64_t)cursor
              fromUpstream:(NSString *)url {
-    PDS_LOG_SYNC_INFO(@"RelayDownstreamHandler: Received cursor %lld from upstream %@", (long long)cursor, url);
+    GZ_LOG_SYNC_INFO(@"RelayDownstreamHandler: Received cursor %lld from upstream %@", (long long)cursor, url);
     // We don't necessarily update our local sequence based on upstream cursor
 }
 

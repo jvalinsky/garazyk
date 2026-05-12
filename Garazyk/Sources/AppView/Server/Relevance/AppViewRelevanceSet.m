@@ -9,7 +9,7 @@
 #import "AppView/Server/Relevance/AppViewRelevanceSet.h"
 #import "AppView/Server/AppViewDatabase.h"
 #import "Compat/PDSTypes.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @interface AppViewRelevanceSet ()
 @property (nonatomic, strong) AppViewDatabase *database;
@@ -51,7 +51,7 @@
                 initWithDID:did reason:AppViewRelevanceReasonAllowlist expiresAt:nil];
             [self.database upsertRelevanceMembership:m error:nil];
         }
-        PDS_LOG_INFO(@"[AppViewRelevanceSet] Rebuilt with %lu seeds + %lu allowlist entries",
+        GZ_LOG_INFO(@"[AppViewRelevanceSet] Rebuilt with %lu seeds + %lu allowlist entries",
                      (unsigned long)self.seedDIDs.count,
                      (unsigned long)self.allowlist.count);
     });
@@ -89,7 +89,7 @@
 - (void)expandFromFollowsOf:(NSString *)did {
     // Expansion is driven by the graph indexer when it processes follow records.
     // This method is a hook for on-demand expansion from the query path.
-    PDS_LOG_DEBUG(@"[AppViewRelevanceSet] expandFromFollowsOf: %@", did);
+    GZ_LOG_DEBUG(@"[AppViewRelevanceSet] expandFromFollowsOf: %@", did);
 }
 
 - (void)recordInteraction:(NSString *)actorDID withDID:(NSString *)targetDID {
@@ -100,8 +100,8 @@
 - (NSInteger)pruneExpired {
     NSError *err = nil;
     NSInteger pruned = [_database pruneExpiredRelevanceMemberships:&err];
-    if (err) PDS_LOG_WARN(@"[AppViewRelevanceSet] Prune error: %@", err.localizedDescription);
-    PDS_LOG_INFO(@"[AppViewRelevanceSet] Pruned %ld expired memberships.", (long)pruned);
+    if (err) GZ_LOG_WARN(@"[AppViewRelevanceSet] Prune error: %@", err.localizedDescription);
+    GZ_LOG_INFO(@"[AppViewRelevanceSet] Pruned %ld expired memberships.", (long)pruned);
     return pruned;
 }
 

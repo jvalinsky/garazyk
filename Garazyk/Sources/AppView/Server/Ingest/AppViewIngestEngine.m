@@ -10,7 +10,7 @@
 
 #import "AppView/Server/AppViewDatabase.h"
 #import "AppView/Server/AppViewTypes.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Sync/Relay/RelayClient.h"
 #import "Sync/Firehose/Firehose.h"
 #import "Core/CID.h"
@@ -49,7 +49,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
 
         // Prevent cycles
         if ([visitedCIDs containsObject:cidString]) {
-            PDS_LOG_DEBUG(@"[AppView Ingest] CID cycle at depth %d: %@", depth, cidString);
+            GZ_LOG_DEBUG(@"[AppView Ingest] CID cycle at depth %d: %@", depth, cidString);
             return object;
         }
         [visitedCIDs addObject:cidString];
@@ -63,15 +63,15 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                 decoded = [ATProtoDagCBOR decodeData:block.data error:&decodeErr];
             }
             if (decoded) {
-                PDS_LOG_DEBUG(@"[AppView Ingest] Resolved CID link at depth %d, got type %@, keys=%@",
+                GZ_LOG_DEBUG(@"[AppView Ingest] Resolved CID link at depth %d, got type %@, keys=%@",
                              depth, NSStringFromClass([decoded class]),
                              [decoded isKindOfClass:[NSDictionary class]] ? [(NSDictionary *)decoded allKeys] : @"N/A");
                 return ResolveCIDLinksInObject(decoded, reader, visitedCIDs, depth + 1);
             } else {
-                PDS_LOG_DEBUG(@"[AppView Ingest] Failed to decode CID link %@: %@", cidString, decodeErr.localizedDescription);
+                GZ_LOG_DEBUG(@"[AppView Ingest] Failed to decode CID link %@: %@", cidString, decodeErr.localizedDescription);
             }
         } else {
-            PDS_LOG_DEBUG(@"[AppView Ingest] CID link not found in CAR: %@", cidString);
+            GZ_LOG_DEBUG(@"[AppView Ingest] CID link not found in CAR: %@", cidString);
         }
         return object;
 
@@ -156,16 +156,16 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
 - (void)relayClientDidConnect:(RelayClient *)client {
     AppViewIngestEngine *engine = self.owner;
     if (!engine) return;
-    PDS_LOG_INFO(@"[AppView Ingest] Connected to relay %@", self.relayURL);
+    GZ_LOG_INFO(@"[AppView Ingest] Connected to relay %@", self.relayURL);
     [engine _relayConnection:self didConnectAtSeq:self.currentSeq];
 }
 
 - (void)relayClient:(RelayClient *)client didDisconnectWithError:(nullable NSError *)error {
     if (error) {
-        PDS_LOG_WARN(@"[AppView Ingest] Disconnected from relay %@: %@",
+        GZ_LOG_WARN(@"[AppView Ingest] Disconnected from relay %@: %@",
                      self.relayURL, error.localizedDescription);
     } else {
-        PDS_LOG_INFO(@"[AppView Ingest] Disconnected from relay %@ (clean)", self.relayURL);
+        GZ_LOG_INFO(@"[AppView Ingest] Disconnected from relay %@ (clean)", self.relayURL);
     }
 }
 
@@ -210,7 +210,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     _database              = database;
     _relayURLs             = [relayURLs copy];
     _connections           = [NSMutableArray array];
-    _checkpointIntervalMs  = 2000;
+    _checkpointIntervalMs  = 5000;
     _isRunning             = NO;
     _lagByRelay            = [NSMutableDictionary dictionary];
     _backpressureStateByRelay = [NSMutableDictionary dictionary];
@@ -244,7 +244,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
         AppViewCheckpoint *checkpoint = [_database loadCheckpointForRelayURL:relayURL error:&err];
         int64_t startSeq = checkpoint ? checkpoint.seq : 0;
         [_database markDurableCursor:startSeq forRelayURL:relayURL];
-        PDS_LOG_INFO(@"[AppView Ingest] Starting relay %@ from seq %lld", relayURL, (long long)startSeq);
+        GZ_LOG_INFO(@"[AppView Ingest] Starting relay %@ from seq %lld", relayURL, (long long)startSeq);
 
         AppViewRelayConnection *conn = [[AppViewRelayConnection alloc]
             initWithRelayURL:relayURL startingSeq:startSeq owner:self];
@@ -286,7 +286,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
             initWithRelayURL:conn.relayURL seq:durableSeq];
         NSError *err = nil;
         if (![self.database saveCheckpoint:cp error:&err]) {
-            PDS_LOG_WARN(@"[AppView Ingest] Failed to save checkpoint for %@: %@",
+            GZ_LOG_WARN(@"[AppView Ingest] Failed to save checkpoint for %@: %@",
                          conn.relayURL, err.localizedDescription);
         } else {
             conn.lastCheckpointSeq = durableSeq;
@@ -299,7 +299,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
             [self.backpressureStateByRelay[conn.relayURL] integerValue] == 1) {
             [conn.client resumeReading];
             self.backpressureStateByRelay[conn.relayURL] = @0;
-            PDS_LOG_INFO(@"[AppView Ingest] Backpressure: RESUMING relay %@ (lag=%lld)",
+            GZ_LOG_INFO(@"[AppView Ingest] Backpressure: RESUMING relay %@ (lag=%lld)",
                          conn.relayURL, (long long)lag);
         }
     }
@@ -325,7 +325,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
 
     int64_t lag = _highestSeenSeq - durableSeq;
     if (lag > self.maxLagForBackpressure) {
-        PDS_LOG_WARN(@"[AppView Ingest] Backpressure: lag=%lld exceeds threshold=%lld for %@",
+        GZ_LOG_WARN(@"[AppView Ingest] Backpressure: lag=%lld exceeds threshold=%lld for %@",
                      (long long)lag, (long long)self.maxLagForBackpressure, relayURL);
         return YES;
     }
@@ -360,7 +360,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
 
     // Idempotency check (fast, on relay thread)
     if ([_database hasEventWithDID:did rev:rev cid:cid]) {
-        PDS_LOG_DEBUG(@"[AppView Ingest] Skipping duplicate event did=%@ rev=%@", did, rev);
+        GZ_LOG_DEBUG(@"[AppView Ingest] Skipping duplicate event did=%@ rev=%@", did, rev);
         [_database markDurableCursor:seq forRelayURL:relayURL];
         return;
     }
@@ -372,7 +372,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
         if (conn && !conn.client.isReadingPaused) {
             [conn.client pauseReading];
             self.backpressureStateByRelay[relayURL] = @1;
-            PDS_LOG_WARN(@"[AppView Ingest] Backpressure: PAUSING relay %@ (lag=%lld)",
+            GZ_LOG_WARN(@"[AppView Ingest] Backpressure: PAUSING relay %@ (lag=%lld)",
                          relayURL, (long long)(_highestSeenSeq - conn.lastCheckpointSeq));
         }
         // Still persist the repair marker — it will be processed
@@ -391,14 +391,14 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                                           cid:cid
                                   rawEnvelope:dummy
                                         error:&storeError]) {
-        PDS_LOG_WARN(@"[AppView Ingest] Failed to durably append commit seq=%lld: %@",
+        GZ_LOG_WARN(@"[AppView Ingest] Failed to durably append commit seq=%lld: %@",
                      (long long)seq, storeError.localizedDescription);
         return;
     }
     [_database logEvent:seq did:did rev:rev cid:cid rawEnvelope:dummy error:nil];
 
     NSTimeInterval fastPathElapsed = [[NSDate date] timeIntervalSinceReferenceDate] - fastPathStart;
-    PDS_LOG_DEBUG(@"[AppView Ingest] Fast path for seq=%lld did=%@ took %.3fms",
+    GZ_LOG_DEBUG(@"[AppView Ingest] Fast path for seq=%lld did=%@ took %.3fms",
                   (long long)seq, did, fastPathElapsed * 1000.0);
 
     // Dispatch heavy processing to the concurrent processing queue.
@@ -408,7 +408,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
         @try {
             [self _processCommitEvent:event fromRelay:relayURL];
         } @catch (NSException *exception) {
-            PDS_LOG_ERROR(@"[AppView Ingest] Uncaught exception processing seq=%lld: %@ — %@",
+            GZ_LOG_ERROR(@"[AppView Ingest] Uncaught exception processing seq=%lld: %@ — %@",
                           (long long)event.seq, exception.name, exception.reason);
         }
     });
@@ -430,7 +430,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
         [event.since isKindOfClass:[NSString class]] && event.since.length > 0 &&
         [syncState.lastRev isKindOfClass:[NSString class]] && syncState.lastRev.length > 0 &&
         ![event.since isEqualToString:syncState.lastRev]) {
-        PDS_LOG_WARN(@"[AppView Ingest] Gap for %@: event.since=%@ stored=%@", did, event.since, syncState.lastRev);
+        GZ_LOG_WARN(@"[AppView Ingest] Gap for %@: event.since=%@ stored=%@", did, event.since, syncState.lastRev);
         [self _persistDirtyRepairMarkerForDID:did seq:seq rev:rev cid:cid relayURL:relayURL reason:@"continuity_gap"];
         return;
     }
@@ -449,7 +449,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
             reader = [CARReader readFromData:event.blocks error:&carErr];
         }
         if (!reader) {
-            PDS_LOG_WARN(@"[AppView Ingest] Failed to parse blocks for seq %lld: %@", (long long)seq, carErr.localizedDescription);
+            GZ_LOG_WARN(@"[AppView Ingest] Failed to parse blocks for seq %lld: %@", (long long)seq, carErr.localizedDescription);
             [self _persistDirtyRepairMarkerForDID:did seq:seq rev:rev cid:cid relayURL:relayURL reason:@"car_parse_failed"];
             return;
         }
@@ -476,7 +476,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
         NSString *cidStr = [op cidStringForKey:@"cid"];
         CID *opCID = [op cidObjectForKey:@"cid"];
         
-        PDS_LOG_DEBUG(@"[AppView Ingest] op path=%@ cid_type=%@ cid_val=%@", path, NSStringFromClass([rawCID class]), rawCID);
+        GZ_LOG_DEBUG(@"[AppView Ingest] op path=%@ cid_type=%@ cid_val=%@", path, NSStringFromClass([rawCID class]), rawCID);
 
         NSMutableDictionary *enrichedOp = [op mutableCopy];
         
@@ -501,7 +501,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                         if ([decoded isKindOfClass:[NSDictionary class]]) {
                             record = (NSDictionary *)decoded;
                             enrichedOp[@"record"] = record;
-                            PDS_LOG_DEBUG(@"[AppView Ingest] Decoded record from CID block: keys=%@", record.allKeys);
+                            GZ_LOG_DEBUG(@"[AppView Ingest] Decoded record from CID block: keys=%@", record.allKeys);
                         }
                     }
                 }
@@ -529,7 +529,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                             // Resolve any CID links in the record
                             record = (NSDictionary *)ResolveCIDLinksInObject(dictDecoded, reader, [NSMutableSet set], 0);
                             enrichedOp[@"record"] = record;
-                            PDS_LOG_DEBUG(@"[AppView Ingest] Found record in CAR block: keys=%@", record.allKeys);
+                            GZ_LOG_DEBUG(@"[AppView Ingest] Found record in CAR block: keys=%@", record.allKeys);
 
                             if (!cidStr) {
                                 CID *computedCID = [CID cidWithDigest:[CID sha256Digest:block.data] codec:0x71];
@@ -543,7 +543,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                             break;
                         }
                     } else if (decodeErr) {
-                        PDS_LOG_DEBUG(@"[AppView Ingest] Failed to decode CAR block: %@", decodeErr.localizedDescription);
+                        GZ_LOG_DEBUG(@"[AppView Ingest] Failed to decode CAR block: %@", decodeErr.localizedDescription);
                     }
                 }
             }
@@ -551,7 +551,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
 // Extract subject DID if applicable (e.g. follow target)
             // Use enrichedOp record if available, fall back to op record
             NSDictionary *recordForSubject = enrichedOp[@"record"] ?: op[@"record"];
-            PDS_LOG_DEBUG(@"[AppView Ingest] Subject extraction: enrichedOp.record keys=%@", recordForSubject.allKeys);
+            GZ_LOG_DEBUG(@"[AppView Ingest] Subject extraction: enrichedOp.record keys=%@", recordForSubject.allKeys);
             NSString *subjectDid = nil;
             if (recordForSubject && [recordForSubject isKindOfClass:[NSDictionary class]]) {
                 id subject = recordForSubject[@"subject"];
@@ -577,7 +577,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                 }
             }
 
-            PDS_LOG_DEBUG(@"[AppView Ingest] Materializing record: %@ cid=%@ subject=%@", uri, cidStr, subjectDid);
+            GZ_LOG_DEBUG(@"[AppView Ingest] Materializing record: %@ cid=%@ subject=%@", uri, cidStr, subjectDid);
 
             NSError *recordError = nil;
             if (![_database saveRecordWithURI:uri
@@ -589,7 +589,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                                        value:nil
                                   subjectDid:subjectDid
                                        error:&recordError]) {
-                PDS_LOG_WARN(@"[AppView Ingest] Failed to store record %@ seq=%lld: %@",
+                GZ_LOG_WARN(@"[AppView Ingest] Failed to store record %@ seq=%lld: %@",
                              uri, (long long)seq, recordError.localizedDescription);
                 [self _persistDirtyRepairMarkerForDID:did seq:seq rev:rev cid:cid relayURL:relayURL reason:@"record_store_failed"];
                 return;
@@ -597,7 +597,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
         } else if ([action isEqualToString:@"delete"]) {
             NSError *deleteError = nil;
             if (![_database executeParameterizedUpdate:@"DELETE FROM records WHERE uri = ?" params:@[uri] error:&deleteError]) {
-                PDS_LOG_WARN(@"[AppView Ingest] Failed to delete record %@ seq=%lld: %@",
+                GZ_LOG_WARN(@"[AppView Ingest] Failed to delete record %@ seq=%lld: %@",
                              uri, (long long)seq, deleteError.localizedDescription);
                 [self _persistDirtyRepairMarkerForDID:did seq:seq rev:rev cid:cid relayURL:relayURL reason:@"record_delete_failed"];
                 return;
@@ -610,7 +610,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     // Persist blocks (each call dispatches to the database queue internally).
     for (CARBlock *block in blocksToSave) {
         if (!block.cid || !block.cid.bytes || !block.data) {
-            PDS_LOG_WARN(@"[AppView Ingest] Skipping block with nil cid/data for %@ seq=%lld",
+            GZ_LOG_WARN(@"[AppView Ingest] Skipping block with nil cid/data for %@ seq=%lld",
                          did, (long long)seq);
             continue;
         }
@@ -620,7 +620,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                                blockData:block.data
                               contentType:nil
                                     error:&blockError]) {
-            PDS_LOG_WARN(@"[AppView Ingest] Failed to store block for %@ seq=%lld: %@",
+            GZ_LOG_WARN(@"[AppView Ingest] Failed to store block for %@ seq=%lld: %@",
                          did, (long long)seq, blockError.localizedDescription);
             [self _persistDirtyRepairMarkerForDID:did seq:seq rev:rev cid:cid relayURL:relayURL reason:@"block_store_failed"];
             return;
@@ -645,7 +645,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
         AppViewPendingDelta *delta = [[AppViewPendingDelta alloc]
             initWithDID:did seq:seq commitCID:cid ?: @"" rev:rev ?: @"" rawEnvelope:dummy];
         [_database enqueuePendingDelta:delta error:nil];
-        PDS_LOG_DEBUG(@"[AppView Ingest] Buffered delta for in-flight backfill: did=%@", did);
+        GZ_LOG_DEBUG(@"[AppView Ingest] Buffered delta for in-flight backfill: did=%@", did);
         [_database markDurableCursor:seq forRelayURL:relayURL];
         return;
     }
@@ -678,7 +678,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     }
 
     NSTimeInterval processElapsed = [[NSDate date] timeIntervalSinceReferenceDate] - processStart;
-    PDS_LOG_DEBUG(@"[AppView Ingest] Processed seq=%lld did=%@ blocks=%lu records=%lu took %.1fms",
+    GZ_LOG_DEBUG(@"[AppView Ingest] Processed seq=%lld did=%@ blocks=%lu records=%lu took %.1fms",
                   (long long)seq, did,
                   (unsigned long)blocksToSave.count,
                   (unsigned long)enrichedOps.count,
@@ -698,7 +698,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                                           cid:nil
                                   rawEnvelope:dummy
                                         error:&storeError]) {
-        PDS_LOG_WARN(@"[AppView Ingest] Failed to durably append identity seq=%lld: %@",
+        GZ_LOG_WARN(@"[AppView Ingest] Failed to durably append identity seq=%lld: %@",
                      (long long)event.seq, storeError.localizedDescription);
         return;
     }
@@ -706,7 +706,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
 
     if (event.handle) {
         [_database saveHandle:event.handle did:event.did error:nil];
-        PDS_LOG_INFO(@"[AppView Ingest] Updated handle mapping: %@ -> %@", event.handle, event.did);
+        GZ_LOG_INFO(@"[AppView Ingest] Updated handle mapping: %@ -> %@", event.handle, event.did);
     }
 
     AppViewIngestEvent *ingestEvent = [[AppViewIngestEvent alloc] init];
@@ -745,7 +745,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                                        error:&markerError]) {
         [_database markDurableCursor:seq forRelayURL:relayURL];
     } else {
-        PDS_LOG_WARN(@"[AppView Ingest] Failed to persist dirty marker for %@ seq=%lld: %@",
+        GZ_LOG_WARN(@"[AppView Ingest] Failed to persist dirty marker for %@ seq=%lld: %@",
                      did, (long long)seq, markerError.localizedDescription);
     }
 }

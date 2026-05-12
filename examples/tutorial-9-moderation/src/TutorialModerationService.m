@@ -137,7 +137,7 @@ NSString * const TutorialModerationErrorDomain = @"com.atproto.tutorial.moderati
 - (nullable TutorialModerationSubject *)getSubject:(NSString *)subjectDID
                                          subjectURI:(nullable NSString *)subjectURI
                                               error:(NSError **)error {
-    return [self.db executeQuery:error block:^id(sqlite3 *db) {
+    return [self.db executeUnsafeRawQuery:error block:^id(sqlite3 *db) {
         // Get subject state
         const char *sql = "SELECT review_state, last_reviewed_at FROM moderation_subjects "
             "WHERE subject_did = ? AND COALESCE(subject_uri, '') = ?";
@@ -214,7 +214,7 @@ NSString * const TutorialModerationErrorDomain = @"com.atproto.tutorial.moderati
 - (nullable NSArray<TutorialModerationReport *> *)listReportsForSubject:(NSString *)subjectDID
                                                              subjectURI:(nullable NSString *)subjectURI
                                                                   error:(NSError **)error {
-    return [self.db executeQuery:error block:^id(sqlite3 *db) {
+    return [self.db executeUnsafeRawQuery:error block:^id(sqlite3 *db) {
         return [self queryReportsForSubject:subjectDID subjectURI:subjectURI db:db];
     }];
 }

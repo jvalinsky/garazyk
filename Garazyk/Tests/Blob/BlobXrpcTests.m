@@ -163,8 +163,8 @@
     XCTAssertNil(error);
     NSString *accessJwt = session[@"accessJwt"];
     
-    // Create large data (e.g. 2MB) assume limit is 1MB from plan
-    NSMutableData *largeData = [NSMutableData dataWithLength:2 * 1024 * 1024];
+    // Create large data exceeding the MIME category limit (5MB for application/octet-stream)
+    NSMutableData *largeData = [NSMutableData dataWithLength:6 * 1024 * 1024];
     
     HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
                                                   methodString:@"POST"

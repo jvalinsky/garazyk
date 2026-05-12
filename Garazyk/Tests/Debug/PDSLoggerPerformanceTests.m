@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
-@interface PDSLoggerPerformanceTests : XCTestCase
+@interface GZLoggerPerformanceTests : XCTestCase
 @property (nonatomic, copy) NSString *testLogPath;
 @end
 
-@implementation PDSLoggerPerformanceTests
+@implementation GZLoggerPerformanceTests
 
 - (void)setUp {
     [super setUp];
@@ -17,22 +17,22 @@
 }
 
 - (void)tearDown {
-    [[PDSLogger sharedLogger] flush];
+    [[GZLogger sharedLogger] flush];
     [[NSFileManager defaultManager] removeItemAtPath:self.testLogPath error:nil];
     [super tearDown];
 }
 
 #ifndef GNUSTEP
 - (void)testAsyncLoggingPerformance {
-    PDSLogger *logger = [PDSLogger sharedLogger];
+    GZLogger *logger = [GZLogger sharedLogger];
     logger.logFilePath = self.testLogPath;
     logger.asyncLogging = YES;
-    logger.logLevel = PDSLogLevelInfo;
+    logger.logLevel = GZLogLevelInfo;
     logger.printToStdout = NO;
 
     [self measureBlock:^{
         for (int i = 0; i < 1000; i++) {
-            PDS_LOG_INFO(@"Performance test message %d", i);
+            GZ_LOG_INFO(@"Performance test message %d", i);
         }
         [logger flush];
     }];
@@ -41,15 +41,15 @@
 
 #ifndef GNUSTEP
 - (void)testSyncLoggingPerformance {
-    PDSLogger *logger = [PDSLogger sharedLogger];
+    GZLogger *logger = [GZLogger sharedLogger];
     logger.logFilePath = self.testLogPath;
     logger.asyncLogging = NO;
-    logger.logLevel = PDSLogLevelInfo;
+    logger.logLevel = GZLogLevelInfo;
     logger.printToStdout = NO;
 
     [self measureBlock:^{
         for (int i = 0; i < 1000; i++) {
-            PDS_LOG_INFO(@"Performance test message %d", i);
+            GZ_LOG_INFO(@"Performance test message %d", i);
         }
     }];
 }
@@ -57,13 +57,13 @@
 
 #ifndef GNUSTEP
 - (void)testFilteredLoggingPerformance {
-    PDSLogger *logger = [PDSLogger sharedLogger];
-    logger.logLevel = PDSLogLevelError; // We will log at INFO level, so all should be filtered
+    GZLogger *logger = [GZLogger sharedLogger];
+    logger.logLevel = GZLogLevelError; // We will log at INFO level, so all should be filtered
     logger.printToStdout = NO;
 
     [self measureBlock:^{
         for (int i = 0; i < 10000; i++) {
-            PDS_LOG_INFO(@"Filtered message %d", i);
+            GZ_LOG_INFO(@"Filtered message %d", i);
         }
     }];
 }
@@ -71,14 +71,14 @@
 
 #ifndef GNUSTEP
 - (void)testComponentFilteringPerformance {
-    PDSLogger *logger = [PDSLogger sharedLogger];
-    logger.logLevel = PDSLogLevelDebug;
-    logger.enabledComponents = [NSSet setWithObject:PDSLogComponentHTTP];
+    GZLogger *logger = [GZLogger sharedLogger];
+    logger.logLevel = GZLogLevelDebug;
+    logger.enabledComponents = [NSSet setWithObject:GZLogComponentHTTP];
     logger.printToStdout = NO;
 
     [self measureBlock:^{
         for (int i = 0; i < 10000; i++) {
-            PDS_LOG_DB_DEBUG(@"This should be filtered because component is DB");
+            GZ_LOG_DB_DEBUG(@"This should be filtered because component is DB");
         }
     }];
 }

@@ -11,7 +11,7 @@
 #import "PDSOpenSSLSessionKeyManager.h"
 #import "Database/PDSDatabase.h"
 #import "Core/NSDateFormatter+ATProto.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 #import <openssl/rsa.h>
 #import <openssl/pem.h>
@@ -386,10 +386,10 @@ NSString * const OpenSSLKeyManagerErrorDomain = @"com.atproto.pds.opensslsession
     if (!self.database) return;
 
     NSError *error = nil;
-    NSArray *results = [self.database executeQuery:@"SELECT key_id, algorithm, private_key_data, public_key_data, keychain_tag, is_active, created_at FROM jwt_signing_keys ORDER BY created_at DESC" error:&error];
+    NSArray *results = [self.database executeParameterizedQuery:@"SELECT key_id, algorithm, private_key_data, public_key_data, keychain_tag, is_active, created_at FROM jwt_signing_keys ORDER BY created_at DESC" params:@[] error:&error];
 
     if (error) {
-        PDS_LOG_AUTH_ERROR(@"Failed to load keys: %@", error);
+        GZ_LOG_AUTH_ERROR(@"Failed to load keys: %@", error);
         return;
     }
 
@@ -402,7 +402,7 @@ NSString * const OpenSSLKeyManagerErrorDomain = @"com.atproto.pds.opensslsession
         NSString *createdAtStr = row[@"created_at"];
         
         if ([keychainTag isKindOfClass:[NSString class]] && keychainTag.length > 0) {
-            PDS_LOG_AUTH_WARN(@"OpenSSL manager skipping hardware-backed key: %@", keychainTag);
+            GZ_LOG_AUTH_WARN(@"OpenSSL manager skipping hardware-backed key: %@", keychainTag);
             continue;
         }
 

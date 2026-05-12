@@ -1303,10 +1303,7 @@ if(BUILD_TESTS)
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/MigrationTests.m")
   # Exclude duplicate SecurityHardeningTests - keep only the Security/ one
   list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/SecurityHardeningTests.m")
-  # Exclude stale admin handler tests (references removed PDSAdminHandler/AdminPartialHandler)
-  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Admin/PDSAdminHandlerTests.m")
-  # Exclude stale admin route pack test (references removed PDSHttpAdminRoutePack)
-  list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpAdminRoutePackTests.m")
+
   # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Database/Integration/.*")
   # list(FILTER TEST_OBJC_SOURCES EXCLUDE REGEX ".*/Identity/DIDResolverTests.m")
   # Phase 1: Enabled Core Logic & Crypto Tests

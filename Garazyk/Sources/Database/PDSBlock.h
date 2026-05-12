@@ -18,7 +18,10 @@ NS_ASSUME_NONNULL_BEGIN
  @discussion Blocks are content-addressed data units stored in CAR format.
  Each block is identified by its CID and belongs to a specific repository.
  */
-@interface PDSDatabaseBlock : NSObject
+@class PDSDatabase;
+@protocol PDSDatabaseModel;
+
+@interface PDSDatabaseBlock : NSObject <PDSDatabaseModel>
 
 /*! The CID of this block. */
 @property (nonatomic, copy) NSData *cid;

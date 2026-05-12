@@ -17,7 +17,7 @@
 #import "PLC/DIDPLCResolver.h"
 #import "Core/DID.h"
 #import "Core/NSDateFormatter+ATProto.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 // Helper function to extract normalized handle from alsoKnownAs array
 static NSString *normalizedAtHandleFromAlsoKnownAs(NSArray *alsoKnownAs) {

@@ -9,7 +9,7 @@
 #import "AppView/Server/Hooks/AppViewIndexHookRegistry.h"
 #import "AppView/Server/Hooks/AppViewIndexHook.h"
 #import "AppView/Server/AppViewDatabase.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 
 @interface AppViewIndexHookRegistry ()
@@ -42,7 +42,7 @@
         self.hooks[identifier] = hook;
     });
 
-    PDS_LOG_INFO(@"[IndexHookRegistry] Registered hook: %@", identifier);
+    GZ_LOG_INFO(@"[IndexHookRegistry] Registered hook: %@", identifier);
 }
 
 - (void)unregisterHook:(NSString *)hookIdentifier {
@@ -52,7 +52,7 @@
         [self.hooks removeObjectForKey:hookIdentifier];
     });
 
-    PDS_LOG_INFO(@"[IndexHookRegistry] Unregistered hook: %@", hookIdentifier);
+    GZ_LOG_INFO(@"[IndexHookRegistry] Unregistered hook: %@", hookIdentifier);
 }
 
 - (void)fireDidIndexRecord:(NSDictionary *)record
@@ -70,7 +70,7 @@
                                           did:did
                                   collection:collection];
             } @catch (NSException *exception) {
-                PDS_LOG_WARN(@"[IndexHookRegistry] Hook %@ threw exception: %@",
+                GZ_LOG_WARN(@"[IndexHookRegistry] Hook %@ threw exception: %@",
                              [retainedHook hookIdentifier],
                              exception.reason ?: @"unknown");
                 [self recordHookFailure:retainedHook
@@ -97,7 +97,7 @@
                                                   did:did
                                            collection:collection];
             } @catch (NSException *exception) {
-                PDS_LOG_WARN(@"[IndexHookRegistry] Hook %@ threw exception: %@",
+                GZ_LOG_WARN(@"[IndexHookRegistry] Hook %@ threw exception: %@",
                              [retainedHook hookIdentifier],
                              exception.reason ?: @"unknown");
                 [self recordHookFailure:retainedHook
@@ -150,7 +150,7 @@
     NSError *error = nil;
     [self.database executeParameterizedUpdate:sql params:params error:&error];
     if (error) {
-        PDS_LOG_WARN(@"[IndexHookRegistry] Failed to record hook failure for %@: %@",
+        GZ_LOG_WARN(@"[IndexHookRegistry] Failed to record hook failure for %@: %@",
                      hookId, error.localizedDescription);
     }
 }

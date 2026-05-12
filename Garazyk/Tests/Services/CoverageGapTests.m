@@ -28,6 +28,8 @@
     // Try to start server, retrying with different ports if needed
     NSError *error = nil;
     if ([self.controller startServerWithError:&error]) {
+        // Wait briefly for the server's event loop to be ready
+        [NSThread sleepForTimeInterval:0.5];
         return YES;
     }
     // If server failed to start, skip the test rather than fail
@@ -37,7 +39,7 @@
 - (void)tearDown {
     [self.controller stopServer];
     // Wait for port to be released
-    [NSThread sleepForTimeInterval:1.0];
+    [NSThread sleepForTimeInterval:3.0];
     [[NSFileManager defaultManager] removeItemAtPath:self.tempDir error:nil];
     [super tearDown];
 }

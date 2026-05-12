@@ -20,7 +20,7 @@
 #import "Admin/PDSAdminAuth.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 static BOOL XrpcAuthEnvBool(NSString *value) {
     if (value.length == 0) {
@@ -203,14 +203,14 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
     if (isDPoP) {
         NSString *dpopProof = [request headerForKey:@"DPoP"];
         if (dpopProof.length == 0) {
-            PDS_LOG_AUTH_WARN(@"Missing DPoP header for DPoP authorization");
+            GZ_LOG_AUTH_WARN(@"Missing DPoP header for DPoP authorization");
             [self setAuthRequiredResponse:response];
             return nil;
         }
 
         NSURL *dpopURL = XrpcAuthExpectedDPoPURL(request, jwtMinter);
         if (!dpopURL) {
-            PDS_LOG_AUTH_WARN(@"Unable to construct DPoP URL for request");
+            GZ_LOG_AUTH_WARN(@"Unable to construct DPoP URL for request");
             [self setAuthRequiredResponse:response];
             return nil;
         }
@@ -241,7 +241,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
                 }
                 return nil;
             }
-            PDS_LOG_AUTH_WARN(@"Invalid DPoP proof (%@)", XrpcAuthSanitizedErrorSummary(dpopError));
+            GZ_LOG_AUTH_WARN(@"Invalid DPoP proof (%@)", XrpcAuthSanitizedErrorSummary(dpopError));
             [self setAuthRequiredResponse:response];
             return nil;
         }
@@ -253,7 +253,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
     NSError *parseError = nil;
     JWT *jwt = [JWT jwtWithToken:token error:&parseError];
     if (!jwt || parseError) {
-        PDS_LOG_HTTP_WARN(@"Failed to parse JWT token from authorization header");
+        GZ_LOG_HTTP_WARN(@"Failed to parse JWT token from authorization header");
         [self setAuthRequiredResponse:response];
         return nil;
     }
@@ -276,7 +276,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
     NSError *verifyError = nil;
     BOOL isValid = [verifier verifyJWT:jwt error:&verifyError];
     if (!isValid || verifyError) {
-        PDS_LOG_AUTH_WARN(@"JWT verification failed for request from IP: %@", request.remoteAddress ?: @"unknown");
+        GZ_LOG_AUTH_WARN(@"JWT verification failed for request from IP: %@", request.remoteAddress ?: @"unknown");
         [self setAuthRequiredResponse:response];
         return nil;
     }
@@ -299,7 +299,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
             }
         }
         if (!validAud) {
-            PDS_LOG_AUTH_WARN(@"JWT verification failed due to invalid audience: %@", tokenAud);
+            GZ_LOG_AUTH_WARN(@"JWT verification failed due to invalid audience: %@", tokenAud);
             [self setAuthRequiredResponse:response];
             return nil;
         }
@@ -309,17 +309,17 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
     NSString *tokenJkt = jwt.payload.cnf[@"jkt"];
     if (isDPoP) {
         if (!tokenJkt) {
-            PDS_LOG_AUTH_WARN(@"DPoP authorization used with non-DPoP-bound token");
+            GZ_LOG_AUTH_WARN(@"DPoP authorization used with non-DPoP-bound token");
             [self setAuthRequiredResponse:response];
             return nil;
         }
         if (![CryptoUtils constantTimeCompare:tokenJkt to:dpopThumbprint]) {
-            PDS_LOG_AUTH_WARN(@"DPoP thumbprint mismatch");
+            GZ_LOG_AUTH_WARN(@"DPoP thumbprint mismatch");
             [self setAuthRequiredResponse:response];
             return nil;
         }
     } else if (tokenJkt) {
-        PDS_LOG_AUTH_WARN(@"DPoP-bound token sent as Bearer token");
+        GZ_LOG_AUTH_WARN(@"DPoP-bound token sent as Bearer token");
         [self setAuthRequiredResponse:response];
         return nil;
     }
@@ -327,7 +327,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
     // Extract DID from subject claim
     NSString *did = jwt.payload.sub;
     if (!did || ![did hasPrefix:@"did:"]) {
-        PDS_LOG_AUTH_WARN(@"Invalid DID in JWT subject claim");
+        GZ_LOG_AUTH_WARN(@"Invalid DID in JWT subject claim");
         [self setAuthRequiredResponse:response];
         return nil;
     }
@@ -336,13 +336,13 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
     NSError *takedownError = nil;
     BOOL isTakedown = [adminController isAccountTakedownActive:did error:&takedownError];
     if (takedownError) {
-        PDS_LOG_AUTH_WARN(@"Failed to check takedown status (%@) — allowing request",
+        GZ_LOG_AUTH_WARN(@"Failed to check takedown status (%@) — allowing request",
                          XrpcAuthSanitizedErrorSummary(takedownError));
         // Database unavailable: allow request through rather than blocking all access.
         // The takedown check is defense-in-depth; if the DB is down, blocking everything
         // would be worse than allowing a potentially-taken-down account through.
     } else if (isTakedown) {
-        PDS_LOG_AUTH_WARN(@"Rejected request for suspended account %@", did);
+        GZ_LOG_AUTH_WARN(@"Rejected request for suspended account %@", did);
         [self setAuthRequiredResponse:response];
         return nil;
     }

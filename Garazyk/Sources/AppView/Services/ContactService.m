@@ -7,7 +7,8 @@
  */
 
 #import "AppView/Services/ContactService.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
+#import "Debug/GZLogRedactor.h"
 #import "AppView/Services/ActorService.h"
 #import "Database/PDSDatabase.h"
 #import "App/PDSConfiguration.h"
@@ -56,7 +57,7 @@
 
     // In production, would send SMS here
     // For now, return the verification ID (code logged for testing)
-    PDS_LOG_INFO(@"[ContactService] Verification code sent for %@ (code: %@)", phoneNumber, code);
+    GZ_LOG_INFO(@"[ContactService] Verification code sent for %@ (code: %@)", [GZLogRedactor maskToken:phoneNumber], [GZLogRedactor maskToken:code]);
 
     return verificationId;
 }
@@ -257,7 +258,7 @@
     // Derive salt from master secret (M8)
     NSString *masterSecret = [PDSConfiguration sharedConfiguration].masterSecret;
     if (masterSecret.length == 0) {
-        PDS_LOG_WARN(@"ContactService: masterSecret is missing, using weak fallback salt");
+        GZ_LOG_WARN(@"ContactService: masterSecret is missing, using weak fallback salt");
         masterSecret = @"pds_contact_weak_salt_v1";
     }
     

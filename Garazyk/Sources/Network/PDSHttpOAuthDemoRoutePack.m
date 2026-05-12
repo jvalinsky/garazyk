@@ -12,7 +12,7 @@
 
 #import "App/OAuthDemo/OAuthDemoHandler.h"
 #import "App/PDSController.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
@@ -23,7 +23,7 @@
                    dataDirectory:(nullable NSString *)dataDirectory
                       controller:(nullable PDSController *)controller {
   if (dataDirectory.length == 0 && !controller) {
-    PDS_LOG_WARN(@"PDSHttpOAuthDemoRoutePack: OAuth Demo routes not registered - "
+    GZ_LOG_WARN(@"PDSHttpOAuthDemoRoutePack: OAuth Demo routes not registered - "
                  @"missing dataDirectory and controller");
     return;
   }
@@ -46,7 +46,7 @@
              [oauthDemoHandler handleRequest:request response:response];
            }];
 
-  PDS_LOG_DEBUG(@"PDSHttpOAuthDemoRoutePack: OAuth Demo routes registered");
+  GZ_LOG_DEBUG(@"PDSHttpOAuthDemoRoutePack: OAuth Demo routes registered");
 }
 
 @end

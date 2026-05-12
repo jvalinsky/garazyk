@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "Network/PDSSafeHTTPClient.h"
+#import "Network/ATProtoSafeHTTPClient.h"
 #import "PDSAccountService.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
@@ -9,7 +9,7 @@
 #import "App/PDSConfiguration.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "Auth/JWT.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "PLC/PLCOperation.h"
 #import "PLC/PLCRotationKeyManager.h"
 #import "Auth/Secp256k1.h"
@@ -111,7 +111,7 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
             return encoded;
         }
         if (primaryMintError) {
-            PDS_LOG_ERROR(@"Primary JWT mint failed for DID %@: %@", did,
+            GZ_LOG_ERROR(@"Primary JWT mint failed for DID %@: %@", did,
                           primaryMintError.localizedDescription ?: @"unknown");
         }
     }
@@ -254,15 +254,15 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
         PDSActorStore *store = [self.databasePool storeForDid:resolvedDid error:&storeError];
         if (store) {
             if (![store importSigningKey:userKeyPair.privateKey error:&storeError]) {
-                PDS_LOG_ERROR(@"Failed to import signing key for DID %@: %@", resolvedDid, storeError);
+                GZ_LOG_ERROR(@"Failed to import signing key for DID %@: %@", resolvedDid, storeError);
             }
             if (![store storeRotationKeyPrivate:rotationKeyPair.privateKey
                                       publicKey:rotationKeyPair.compressedPublicKey
                                         error:&storeError]) {
-                PDS_LOG_ERROR(@"Failed to store rotation key for DID %@: %@", resolvedDid, storeError);
+                GZ_LOG_ERROR(@"Failed to store rotation key for DID %@: %@", resolvedDid, storeError);
             }
         } else {
-             PDS_LOG_ERROR(@"Failed to get store for DID %@ to import key: %@", resolvedDid, storeError);
+             GZ_LOG_ERROR(@"Failed to get store for DID %@ to import key: %@", resolvedDid, storeError);
         }
     }
     NSString *refreshToken = [[NSUUID UUID] UUIDString];
@@ -302,7 +302,7 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
                                      subject:welcomeSubject
                                         body:welcomeBody
                                        error:&emailError]) {
-            PDS_LOG_ERROR(@"Failed to send welcome email to %@: %@", email, emailError);
+            GZ_LOG_ERROR(@"Failed to send welcome email to %@: %@", email, emailError);
         }
     }
 
@@ -570,7 +570,7 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
 
     NSData *passwordData = [password dataUsingEncoding:NSUTF8StringEncoding];
     if (!passwordData) {
-        PDS_LOG_AUTH_ERROR(@"Failed to encode password as UTF-8");
+        GZ_LOG_AUTH_ERROR(@"Failed to encode password as UTF-8");
         return nil;
     }
 
@@ -587,7 +587,7 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     );
 
     if (result != kCCSuccess) {
-        PDS_LOG_AUTH_ERROR(@"PBKDF2 derivation failed with error: %d", result);
+        GZ_LOG_AUTH_ERROR(@"PBKDF2 derivation failed with error: %d", result);
         return nil;
     }
 
@@ -642,10 +642,9 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     NSData *unsignedCBOR = [ATProtoCBORSerialization encodeDataWithJSONObject:unsignedData error:error];
     if (!unsignedCBOR) return nil;
     
-    PDS_LOG_AUTH_DEBUG(@"[PDS ACCOUNT] Unsigned CBOR hex: %@", [CryptoUtils hexStringFromData:unsignedCBOR]);
+    GZ_LOG_AUTH_DEBUG(@"[PDS ACCOUNT] Unsigned CBOR prepared for signing (length: %lu)", (unsigned long)unsignedCBOR.length);
 
     NSData *hash = [CID rawSha256:unsignedCBOR];
-    PDS_LOG_AUTH_DEBUG(@"[PDS ACCOUNT] Unsigned operation hash (SHA-256): %@", [CryptoUtils hexStringFromData:hash]);
     
     NSData *sig = nil;
     if (![keyManager signHash:hash result:&sig error:error]) {
@@ -659,7 +658,7 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     
     // Calculate DID from the SIGNED operation (per did-method-plc spec v0.3.0)
     NSString *did = [PLCOperation calculateDIDForSignedOperation:signedData];
-    PDS_LOG_AUTH_DEBUG(@"[PDS ACCOUNT] Calculated DID %@ for signed operation", did);
+    GZ_LOG_AUTH_DEBUG(@"[PDS ACCOUNT] Calculated DID %@ for signed operation", did);
     
     return did;
 }
@@ -731,7 +730,7 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     op.prev = nil;
     
     NSDictionary *opDict = [op toDictionary];
-    PDS_LOG_AUTH_INFO(@"[PDS ACCOUNT] Registering DID %@ with PLC at %@", did, plcURLString);
+    GZ_LOG_AUTH_INFO(@"[PDS ACCOUNT] Registering DID %@ with PLC at %@", did, plcURLString);
     NSData *postData = [NSJSONSerialization dataWithJSONObject:opDict options:0 error:error];
     if (!postData) return nil;
     
@@ -741,7 +740,7 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
     request.HTTPBody = postData;
     
-    PDSSafeHTTPClientOptions *httpOptions = [PDSSafeHTTPClientOptions defaultOptions];
+    ATProtoSafeHTTPClientOptions *httpOptions = [ATProtoSafeHTTPClientOptions defaultOptions];
 #if defined(GNUSTEP)
     // On GNUstep, NSURLSession cannot make outbound HTTPS requests.
     // Use a short timeout so it fails fast and falls back to curl.
@@ -752,7 +751,7 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     __block NSString *resultDid = nil;
     __block NSError *innerError = nil;
     
-    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:httpOptions completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+    [[ATProtoSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:httpOptions completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
         if (error) {
             innerError = error;
@@ -793,7 +792,7 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     // Fall back to curl if the NSURLSession attempt failed or timed out.
     if (!resultDid) {
         NSString *urlStr = [NSString stringWithFormat:@"%@/%@", plcURLString, did];
-        PDS_LOG_AUTH_INFO(@"NSURLSession POST to PLC failed, trying curl fallback: %@", urlStr);
+        GZ_LOG_AUTH_INFO(@"NSURLSession POST to PLC failed, trying curl fallback: %@", urlStr);
         NSString *payloadStr = [[NSString alloc] initWithData:postData encoding:NSUTF8StringEncoding];
 
         NSTask *curlTask = [[NSTask alloc] init];
@@ -832,12 +831,12 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
                         innerError = [NSError errorWithDomain:@"PLCRegistration"
                                                         code:httpCode
                                                     userInfo:@{NSLocalizedDescriptionKey: body ?: @"Unknown error"}];
-                        PDS_LOG_AUTH_WARN(@"curl POST to PLC returned HTTP %ld: %@", (long)httpCode, body);
+                        GZ_LOG_AUTH_WARN(@"curl POST to PLC returned HTTP %ld: %@", (long)httpCode, body);
                     }
                 }
             }
         } @catch (NSException *exception) {
-            PDS_LOG_AUTH_WARN(@"curl fallback exception: %@", exception.reason);
+            GZ_LOG_AUTH_WARN(@"curl fallback exception: %@", exception.reason);
         }
     }
 #endif

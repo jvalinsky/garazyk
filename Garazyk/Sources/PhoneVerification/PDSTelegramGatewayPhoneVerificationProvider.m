@@ -11,7 +11,8 @@
 #import "PhoneVerification/PDSTelegramGatewayPhoneVerificationProvider.h"
 #import "Core/PDSProviderHTTPClient.h"
 #import "Email/PDSSecretsProvider.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
+#import "Debug/GZLogRedactor.h"
 
 static NSString *const kTelegramGatewayBaseURL = @"https://gatewayapi.telegram.org";
 static NSString *const kTelegramGatewayTokenEnvVar = @"TELEGRAM_GATEWAY_TOKEN";
@@ -107,7 +108,7 @@ NSString *const PDSTelegramGatewayProviderErrorDomain = @"com.atproto.pds.telegr
         return nil;
     }
 
-    PDS_LOG_INFO(@"[TelegramGateway] Sending verification to: %@", phoneNumber);
+    GZ_LOG_INFO(@"[TelegramGateway] Sending verification to: %@", [GZLogRedactor maskToken:phoneNumber]);
 
     // Optional: check send ability first to avoid unnecessary charges.
     // If the user cannot receive Telegram messages, fail early.
@@ -129,7 +130,7 @@ NSString *const PDSTelegramGatewayProviderErrorDomain = @"com.atproto.pds.telegr
                                                   body:[body copy]
                                                  error:&requestError];
     if (!response) {
-        PDS_LOG_ERROR(@"[TelegramGateway] Failed to send verification: %@", requestError);
+        GZ_LOG_ERROR(@"[TelegramGateway] Failed to send verification: %@", requestError);
         if (error) {
             *error = [NSError errorWithDomain:PDSTelegramGatewayProviderErrorDomain
                                          code:PDSTelegramGatewayProviderErrorRequestFailed
@@ -145,7 +146,7 @@ NSString *const PDSTelegramGatewayProviderErrorDomain = @"com.atproto.pds.telegr
     NSNumber *ok = response[@"ok"];
     if (!ok || !ok.boolValue) {
         NSString *errorMsg = response[@"error"] ?: @"Unknown error";
-        PDS_LOG_ERROR(@"[TelegramGateway] Verification send failed (error: %@)", errorMsg);
+        GZ_LOG_ERROR(@"[TelegramGateway] Verification send failed (error: %@)", errorMsg);
         if (error) {
             *error = [NSError errorWithDomain:PDSTelegramGatewayProviderErrorDomain
                                          code:PDSTelegramGatewayProviderErrorRequestFailed
@@ -160,7 +161,7 @@ NSString *const PDSTelegramGatewayProviderErrorDomain = @"com.atproto.pds.telegr
     NSDictionary *result = response[@"result"];
     NSString *requestID = result[@"request_id"];
 
-    PDS_LOG_INFO(@"[TelegramGateway] Verification sent to %@ (request_id: %@)", phoneNumber, requestID);
+    GZ_LOG_INFO(@"[TelegramGateway] Verification sent to %@ (request_id: %@)", [GZLogRedactor maskToken:phoneNumber], requestID);
     return requestID ?: @"";
 }
 
@@ -211,7 +212,7 @@ NSString *const PDSTelegramGatewayProviderErrorDomain = @"com.atproto.pds.telegr
         return NO;
     }
 
-    PDS_LOG_INFO(@"[TelegramGateway] Checking verification code for: %@ (request_id: %@)", phoneNumber, sessionID);
+    GZ_LOG_INFO(@"[TelegramGateway] Checking verification code for: %@ (request_id: %@)", [GZLogRedactor maskToken:phoneNumber], sessionID);
 
     // POST /checkVerificationStatus with JSON body
     NSDictionary *body = @{
@@ -224,7 +225,7 @@ NSString *const PDSTelegramGatewayProviderErrorDomain = @"com.atproto.pds.telegr
                                                   body:body
                                                  error:&requestError];
     if (!response) {
-        PDS_LOG_ERROR(@"[TelegramGateway] Verification check failed: %@", requestError);
+        GZ_LOG_ERROR(@"[TelegramGateway] Verification check failed: %@", requestError);
         if (error) {
             *error = [NSError errorWithDomain:PDSTelegramGatewayProviderErrorDomain
                                          code:PDSTelegramGatewayProviderErrorVerificationFailed
@@ -240,7 +241,7 @@ NSString *const PDSTelegramGatewayProviderErrorDomain = @"com.atproto.pds.telegr
     NSNumber *ok = response[@"ok"];
     if (!ok || !ok.boolValue) {
         NSString *errorMsg = response[@"error"] ?: @"Unknown error";
-        PDS_LOG_INFO(@"[TelegramGateway] Verification not approved for %@ (error: %@)", phoneNumber, errorMsg);
+        GZ_LOG_INFO(@"[TelegramGateway] Verification not approved for %@ (error: %@)", [GZLogRedactor maskToken:phoneNumber], errorMsg);
         if (error) {
             *error = [NSError errorWithDomain:PDSTelegramGatewayProviderErrorDomain
                                          code:PDSTelegramGatewayProviderErrorVerificationFailed
@@ -257,11 +258,11 @@ NSString *const PDSTelegramGatewayProviderErrorDomain = @"com.atproto.pds.telegr
     NSString *status = verificationStatus[@"status"];
 
     if ([status isEqualToString:@"code_valid"]) {
-        PDS_LOG_INFO(@"[TelegramGateway] Verification approved for %@", phoneNumber);
+        GZ_LOG_INFO(@"[TelegramGateway] Verification approved for %@", [GZLogRedactor maskToken:phoneNumber]);
         return YES;
     }
 
-    PDS_LOG_INFO(@"[TelegramGateway] Verification not approved for %@ (status: %@)", phoneNumber, status ?: @"unknown");
+    GZ_LOG_INFO(@"[TelegramGateway] Verification not approved for %@ (status: %@)", [GZLogRedactor maskToken:phoneNumber], status ?: @"unknown");
     if (error) {
         *error = [NSError errorWithDomain:PDSTelegramGatewayProviderErrorDomain
                                      code:PDSTelegramGatewayProviderErrorVerificationFailed
@@ -301,7 +302,7 @@ NSString *const PDSTelegramGatewayProviderErrorDomain = @"com.atproto.pds.telegr
                                                   body:body
                                                  error:&requestError];
     if (!response) {
-        PDS_LOG_INFO(@"[TelegramGateway] checkSendAbility failed for %@: %@", phoneNumber, requestError);
+        GZ_LOG_INFO(@"[TelegramGateway] checkSendAbility failed for %@: %@", [GZLogRedactor maskToken:phoneNumber], requestError);
         if (error) {
             *error = [NSError errorWithDomain:PDSTelegramGatewayProviderErrorDomain
                                          code:PDSTelegramGatewayProviderErrorSendAbilityCheckFailed
@@ -316,7 +317,7 @@ NSString *const PDSTelegramGatewayProviderErrorDomain = @"com.atproto.pds.telegr
     NSNumber *ok = response[@"ok"];
     if (!ok || !ok.boolValue) {
         NSString *errorMsg = response[@"error"] ?: @"Unknown error";
-        PDS_LOG_INFO(@"[TelegramGateway] checkSendAbility returned error for %@: %@", phoneNumber, errorMsg);
+        GZ_LOG_INFO(@"[TelegramGateway] checkSendAbility returned error for %@: %@", [GZLogRedactor maskToken:phoneNumber], errorMsg);
         if (error) {
             *error = [NSError errorWithDomain:PDSTelegramGatewayProviderErrorDomain
                                          code:PDSTelegramGatewayProviderErrorSendAbilityCheckFailed
@@ -330,7 +331,7 @@ NSString *const PDSTelegramGatewayProviderErrorDomain = @"com.atproto.pds.telegr
 
     NSDictionary *result = response[@"result"];
     NSString *requestID = result[@"request_id"];
-    PDS_LOG_INFO(@"[TelegramGateway] checkSendAbility OK for %@ (request_id: %@)", phoneNumber, requestID);
+    GZ_LOG_INFO(@"[TelegramGateway] checkSendAbility OK for %@ (request_id: %@)", [GZLogRedactor maskToken:phoneNumber], requestID);
     return requestID;
 }
 

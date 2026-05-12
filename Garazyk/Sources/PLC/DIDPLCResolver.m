@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "Network/PDSSafeHTTPClient.h"
+#import "Network/ATProtoSafeHTTPClient.h"
 #import "DIDPLCResolver.h"
 #import "PLCOperation.h"
 #import "Network/HttpRetryPolicy.h"
@@ -132,7 +132,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
 }
 
 - (void)executeRequest:(NSURLRequest *)request attempt:(NSInteger)attempt transform:(id (^)(NSData *data, NSError **error))transform completion:(void (^)(id _Nullable result, NSError * _Nullable error))completion {
-    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+    [[ATProtoSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:[ATProtoSafeHTTPClientOptions defaultOptions] completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         
         NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
         NSInteger statusCode = httpResponse ? httpResponse.statusCode : 0;
@@ -297,7 +297,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     __block NSInteger code = 0;
     __block NSError *netError = nil;
     
-    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *response, NSError *err) {
+    [[ATProtoSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:[ATProtoSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *response, NSError *err) {
         responseData = data;
         if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
             code = [(NSHTTPURLResponse *)response statusCode];

@@ -102,7 +102,7 @@
     
     // I should check the DB to get the token.
     PDSDatabase *db = [self.application.serviceDatabases serviceDatabaseWithError:nil];
-    NSArray *results = [db executeQuery:@"SELECT token FROM age_assurance_states ORDER BY created_at DESC LIMIT 1" error:nil];
+    NSArray *results = [db executeParameterizedQuery:@"SELECT token FROM age_assurance_states ORDER BY created_at DESC LIMIT 1" params:@[] error:nil];
     XCTAssertGreaterThan(results.count, 0u);
     NSString *token = results[0][@"token"];
     XCTAssertNotNil(token);

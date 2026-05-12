@@ -26,7 +26,7 @@
 #import "Core/ATProtoValidator.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "Core/NSDateFormatter+ATProto.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import <CommonCrypto/CommonKeyDerivation.h>
 
 // Forward declarations of helper functions
@@ -201,7 +201,7 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
             return;
         }
 
-        PDS_LOG_INFO(@"Admin sendEmail recipient=%@ sender=%@ subject=%@", recipientDid, senderDid, subject ?: @"");
+        GZ_LOG_INFO(@"Admin sendEmail recipient=%@ sender=%@ subject=%@", recipientDid, senderDid, subject ?: @"");
         response.statusCode = HttpStatusOK;
         [response setJsonBody:@{@"sent": @YES}];
     }];
@@ -1223,7 +1223,7 @@ static BOOL updateAccountSigningKey(PDSServiceDatabases *serviceDatabases,
         return NO;
     }
 
-    PDS_LOG_WARN(@"updateAccountSigningKey accepted but no DID document persistence is configured for DID %@ (signingKey=%@)", did, signingKey);
+    GZ_LOG_WARN(@"updateAccountSigningKey accepted but no DID document persistence is configured for DID %@ (signingKey=%@)", did, signingKey);
     return YES;
 }
 

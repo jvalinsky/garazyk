@@ -10,7 +10,7 @@
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
 #import "Auth/PDSKeyManagerFactory.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 NSString * const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
 
@@ -28,39 +28,39 @@ NSString * const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
 + (BOOL)performReadinessChecksWithConfig:(PDSConfiguration *)config
                            serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                                        error:(NSError **)error {
-    PDS_LOG_CORE_INFO(@"Starting server readiness checks...");
+    GZ_LOG_CORE_INFO(@"Starting server readiness checks...");
 
     // 1. Database connection pool initialization
     if (![self checkDatabasePools:config serviceDatabases:serviceDatabases error:error]) {
-        PDS_LOG_CORE_ERROR(@"Database pool readiness check failed");
+        GZ_LOG_CORE_ERROR(@"Database pool readiness check failed");
         return NO;
     }
 
     // 2. PLC directory reachability
     if (![self checkPLCDirectory:config error:error]) {
-        PDS_LOG_CORE_ERROR(@"PLC directory readiness check failed");
+        GZ_LOG_CORE_ERROR(@"PLC directory readiness check failed");
         return NO;
     }
 
     // 3. Signing key availability
     if (![self checkSigningKeys:config serviceDatabases:serviceDatabases error:error]) {
-        PDS_LOG_CORE_ERROR(@"Signing key readiness check failed");
+        GZ_LOG_CORE_ERROR(@"Signing key readiness check failed");
         return NO;
     }
 
     // 4. Blob storage accessibility
     if (![self checkBlobStorage:config error:error]) {
-        PDS_LOG_CORE_ERROR(@"Blob storage readiness check failed");
+        GZ_LOG_CORE_ERROR(@"Blob storage readiness check failed");
         return NO;
     }
 
     // 5. Disk space check (non-fatal warning)
     if (![self checkDiskSpace:config error:error]) {
-        PDS_LOG_CORE_WARN(@"Disk space check warning (non-fatal)");
+        GZ_LOG_CORE_WARN(@"Disk space check warning (non-fatal)");
         // Don't fail, just warn
     }
 
-    PDS_LOG_CORE_INFO(@"All readiness checks passed - server ready to accept traffic");
+    GZ_LOG_CORE_INFO(@"All readiness checks passed - server ready to accept traffic");
     return YES;
 }
 
@@ -87,7 +87,7 @@ NSString * const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
             return NO;
         }
 
-        PDS_LOG_CORE_DEBUG(@"Database pool check passed");
+        GZ_LOG_CORE_DEBUG(@"Database pool check passed");
         return YES;
     } @catch (NSException *exception) {
         if (error) {
@@ -105,7 +105,7 @@ NSString * const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
         config.plcURL.length == 0 ||
         [config.plcURL hasPrefix:@"http://127.0.0.1"] ||
         [config.plcURL hasPrefix:@"http://localhost"]) {
-        PDS_LOG_CORE_DEBUG(@"PLC directory check skipped (test/mock mode)");
+        GZ_LOG_CORE_DEBUG(@"PLC directory check skipped (test/mock mode)");
         return YES;
     }
 
@@ -134,7 +134,7 @@ NSString * const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
 
     // Accept 200 (success) or 404 (not found) - both mean PLC is reachable
     if (response && (response.statusCode == 200 || response.statusCode == 404)) {
-        PDS_LOG_CORE_DEBUG(@"PLC directory reachable (%ld)", (long)response.statusCode);
+        GZ_LOG_CORE_DEBUG(@"PLC directory reachable (%ld)", (long)response.statusCode);
         return YES;
     }
 
@@ -182,7 +182,7 @@ NSString * const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
             return NO;
         }
 
-        PDS_LOG_CORE_DEBUG(@"Signing key check passed");
+        GZ_LOG_CORE_DEBUG(@"Signing key check passed");
         return YES;
     } @catch (NSException *exception) {
         if (error) {
@@ -208,7 +208,7 @@ NSString * const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
         [[NSFileManager defaultManager] removeItemAtPath:testPath error:nil];
 
         if (success) {
-            PDS_LOG_CORE_DEBUG(@"Blob storage (disk) check passed");
+            GZ_LOG_CORE_DEBUG(@"Blob storage (disk) check passed");
             return YES;
         }
 
@@ -220,7 +220,7 @@ NSString * const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
         return NO;
     } else if ([config.blobStorageType isEqualToString:@"s3"]) {
         // S3 readiness check - for now just warn (full S3 check is complex)
-        PDS_LOG_CORE_DEBUG(@"S3 blob storage readiness check: assuming valid configuration");
+        GZ_LOG_CORE_DEBUG(@"S3 blob storage readiness check: assuming valid configuration");
         return YES;
     }
 
@@ -246,7 +246,7 @@ NSString * const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
 
     // Critical: less than 1GB
     if (freeGB < 1) {
-        PDS_LOG_CORE_ERROR(@"CRITICAL: Less than 1GB free disk space (%llu GB remaining)", freeGB);
+        GZ_LOG_CORE_ERROR(@"CRITICAL: Less than 1GB free disk space (%llu GB remaining)", freeGB);
         if (error) {
             *error = [NSError errorWithDomain:PDSReadinessErrorDomain
                                          code:PDSReadinessErrorInsufficientDiskSpace
@@ -259,10 +259,10 @@ NSString * const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
 
     // Warning: less than 10GB
     if (freeGB < 10) {
-        PDS_LOG_CORE_WARN(@"Low disk space warning: %llu GB free (consider cleanup)", freeGB);
+        GZ_LOG_CORE_WARN(@"Low disk space warning: %llu GB free (consider cleanup)", freeGB);
     }
 
-    PDS_LOG_CORE_DEBUG(@"Disk space check passed: %llu GB free", freeGB);
+    GZ_LOG_CORE_DEBUG(@"Disk space check passed: %llu GB free", freeGB);
     return YES;
 }
 

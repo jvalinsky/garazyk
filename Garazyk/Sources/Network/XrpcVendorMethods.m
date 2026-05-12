@@ -22,7 +22,7 @@
 #import "Database/Pool/DatabasePool.h"
 #import "App/PDSConfiguration.h"
 #import "Metrics/PDSMetrics.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @implementation XrpcVendorMethods
 
@@ -187,17 +187,17 @@
         unsigned long long repoBytes = [usage[@"repoBytes"] unsignedLongLongValue];
 
         if (config.softQuotaBlobBytes > 0 && blobBytes > config.softQuotaBlobBytes) {
-            PDS_LOG_WARN(@"Soft quota exceeded for blob bytes: %@ (%llu > %llu)",
+            GZ_LOG_WARN(@"Soft quota exceeded for blob bytes: %@ (%llu > %llu)",
                          did, blobBytes, config.softQuotaBlobBytes);
             [metrics incrementQuotaExceeded:@"blob_bytes"];
         }
         if (config.softQuotaRecordCount > 0 && recordCount > config.softQuotaRecordCount) {
-            PDS_LOG_WARN(@"Soft quota exceeded for record count: %@ (%lu > %lu)",
+            GZ_LOG_WARN(@"Soft quota exceeded for record count: %@ (%lu > %lu)",
                          did, (unsigned long)recordCount, (unsigned long)config.softQuotaRecordCount);
             [metrics incrementQuotaExceeded:@"record_count"];
         }
         if (config.softQuotaRepoBytes > 0 && repoBytes > config.softQuotaRepoBytes) {
-            PDS_LOG_WARN(@"Soft quota exceeded for repo bytes: %@ (%llu > %llu)",
+            GZ_LOG_WARN(@"Soft quota exceeded for repo bytes: %@ (%llu > %llu)",
                          did, repoBytes, config.softQuotaRepoBytes);
             [metrics incrementQuotaExceeded:@"repo_bytes"];
         }

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "PDSResendEmailProvider.h"
 #import "PDSEmailHTTPClient.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 // Suppress -Wblock-capture-autoreleasing: the error out-parameter captured
 // by dispatch_sync in httpClientWithError: is safe because dispatch_sync
@@ -93,12 +93,12 @@ static NSString *const kResendAPIKeySecretName = @"RESEND_API_KEY";
             subject:(NSString *)subject
                body:(NSString *)body
               error:(NSError **)error {
-    PDS_LOG_INFO(@"[Resend] Sending email to: %@ subject: %@", to, subject);
+    GZ_LOG_INFO(@"[Resend] Sending email to: %@ subject: %@", to, subject);
 
     NSError *localError = nil;
     PDSEmailHTTPClient *client = [self httpClientWithError:&localError];
     if (!client) {
-        PDS_LOG_ERROR(@"[Resend] Failed to initialize client: %@", localError);
+        GZ_LOG_ERROR(@"[Resend] Failed to initialize client: %@", localError);
         if (error) {
             *error = localError;
         }
@@ -114,10 +114,10 @@ static NSString *const kResendAPIKeySecretName = @"RESEND_API_KEY";
 
     NSDictionary *response = [client postPath:@"/emails" body:payload error:&localError];
     if (response) {
-        PDS_LOG_INFO(@"[Resend] Successfully sent email to: %@ (ID: %@)", to, response[@"id"]);
+        GZ_LOG_INFO(@"[Resend] Successfully sent email to: %@ (ID: %@)", to, response[@"id"]);
         return YES;
     } else {
-        PDS_LOG_ERROR(@"[Resend] Failed to send email to: %@ error: %@", to, localError);
+        GZ_LOG_ERROR(@"[Resend] Failed to send email to: %@ error: %@", to, localError);
         if (error) {
             *error = localError;
         }
@@ -130,12 +130,12 @@ static NSString *const kResendAPIKeySecretName = @"RESEND_API_KEY";
                htmlBody:(NSString *)htmlBody
                textBody:(NSString *)textBody
                   error:(NSError **)error {
-    PDS_LOG_INFO(@"[Resend] Sending HTML email to: %@ subject: %@", to, subject);
+    GZ_LOG_INFO(@"[Resend] Sending HTML email to: %@ subject: %@", to, subject);
 
     NSError *localError = nil;
     PDSEmailHTTPClient *client = [self httpClientWithError:&localError];
     if (!client) {
-        PDS_LOG_ERROR(@"[Resend] Failed to initialize client: %@", localError);
+        GZ_LOG_ERROR(@"[Resend] Failed to initialize client: %@", localError);
         if (error) {
             *error = localError;
         }
@@ -155,10 +155,10 @@ static NSString *const kResendAPIKeySecretName = @"RESEND_API_KEY";
 
     NSDictionary *response = [client postPath:@"/emails" body:payload error:&localError];
     if (response) {
-        PDS_LOG_INFO(@"[Resend] Successfully sent HTML email to: %@ (ID: %@)", to, response[@"id"]);
+        GZ_LOG_INFO(@"[Resend] Successfully sent HTML email to: %@ (ID: %@)", to, response[@"id"]);
         return YES;
     } else {
-        PDS_LOG_ERROR(@"[Resend] Failed to send HTML email to: %@ error: %@", to, localError);
+        GZ_LOG_ERROR(@"[Resend] Failed to send HTML email to: %@ error: %@", to, localError);
         if (error) {
             *error = localError;
         }

@@ -11,7 +11,7 @@
 #import <XCTest/XCTest.h>
 #import "AdminUIServer/UIBackendClient.h"
 #import "AdminUIServer/UIServiceConfig.h"
-#import "Network/PDSSafeHTTPClient.h"
+#import "Network/ATProtoSafeHTTPClient.h"
 
 @interface UIBackendClient (UIBackendClientTests)
 - (NSDictionary *)performJSONRequestWithURL:(NSURL *)url
@@ -83,7 +83,7 @@
 
 @end
 
-@interface MockSafeHTTPClient : PDSSafeHTTPClient
+@interface MockSafeHTTPClient : ATProtoSafeHTTPClient
 @property(nonatomic, strong) NSMutableArray<NSURLRequest *> *capturedRequests;
 @property(nonatomic, strong) NSData *nextData;
 @property(nonatomic, strong) NSHTTPURLResponse *nextResponse;
@@ -99,7 +99,7 @@
     return self;
 }
 - (void)performSafeDataTaskWithRequest:(NSURLRequest *)request
-                               options:(PDSSafeHTTPClientOptions *)options
+                               options:(ATProtoSafeHTTPClientOptions *)options
                             completion:(void (^)(NSData *, NSHTTPURLResponse *, NSError *))completion {
     [self.capturedRequests addObject:request];
     completion(self.nextData, self.nextResponse, self.nextError);

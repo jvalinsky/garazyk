@@ -9,7 +9,7 @@
  */
 
 #import "Network/HttpProtocolSession.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @interface HttpProtocolSession ()
 @property(nonatomic, strong, readwrite) Http1Parser *parser;
@@ -40,7 +40,7 @@
   BOOL completeOrError = [self.parser feedData:data];
 
   if (!completeOrError) {
-    PDS_LOG_DEBUG_C(PDSLogComponentHTTP, @"HttpProtocolSession: Parser needs more data (%lu bytes fed)", (unsigned long)data.length);
+    GZ_LOG_DEBUG_C(GZLogComponentHTTP, @"HttpProtocolSession: Parser needs more data (%lu bytes fed)", (unsigned long)data.length);
     return events;
   }
 

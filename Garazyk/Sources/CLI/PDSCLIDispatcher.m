@@ -4,7 +4,7 @@
 #import "CLI/PDSCLIDefinitions.h"
 #import "Admin/PDSInstallerCommand.h"
 #import "CLI/PDSCLIReplCommand.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/Foundation/NSDataCompat.h"
 #import "App/PDSConfiguration.h"
 
@@ -76,7 +76,7 @@
             printf("%s\n", (const char *)data.bytes);
         }
     } else {
-        PDS_LOG_ERROR_C(PDSLogComponentCLI, @"Error: %@", error);
+        GZ_LOG_ERROR_C(GZLogComponentCLI, @"Error: %@", error);
     }
 }
 
@@ -280,7 +280,7 @@
     }
 
     if (context.verbose) {
-        PDS_LOG_INFO(@"Executing command: %@ with args: %@", commandName, [args componentsJoinedByString:@" "]);
+        GZ_LOG_INFO(@"Executing command: %@ with args: %@", commandName, [args componentsJoinedByString:@" "]);
     }
 
     @try {

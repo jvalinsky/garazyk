@@ -11,7 +11,7 @@
 #import "Services/PDS/PDSBlobService.h"
 #import "Services/PDS/PDSRepositoryService.h"
 #import "Database/Service/ServiceDatabases.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Database/PDSDatabase.h"
 #import "Identity/HandleResolver.h"
 #import "Identity/ATProtoHandleValidator.h"
@@ -775,7 +775,7 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
             // Parse record value to extract $type
             NSData *valueData = [record.value dataUsingEncoding:NSUTF8StringEncoding];
             if (!valueData) {
-                PDS_LOG_DEBUG(@"[importRepo] Skipping record with invalid value encoding: %@", record.uri);
+                GZ_LOG_DEBUG(@"[importRepo] Skipping record with invalid value encoding: %@", record.uri);
                 continue;
             }
 
@@ -784,7 +784,7 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
                                                                         options:0
                                                                           error:&parseError];
             if (!recordValue || ![recordValue isKindOfClass:[NSDictionary class]]) {
-                PDS_LOG_DEBUG(@"[importRepo] Skipping record with invalid JSON: %@ - %@",
+                GZ_LOG_DEBUG(@"[importRepo] Skipping record with invalid JSON: %@ - %@",
                               record.uri, parseError.localizedDescription);
                 continue;
             }
@@ -793,7 +793,7 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
             if (![recordType isKindOfClass:[NSString class]]) {
                 // No $type - this may be a raw CBOR-style record without lexicon
                 // Accept it but log warning
-                PDS_LOG_DEBUG(@"[importRepo] Record missing $type: %@", record.uri);
+                GZ_LOG_DEBUG(@"[importRepo] Record missing $type: %@", record.uri);
                 [validatedRecords addObject:record];
                 continue;
             }
@@ -805,7 +805,7 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
                                  collection:recordType
                                        mode:ATProtoValidationModeOptimistic
                                       error:&validationError]) {
-                PDS_LOG_WARN(@"[importRepo] Lexicon validation failed for %@: %@",
+                GZ_LOG_WARN(@"[importRepo] Lexicon validation failed for %@: %@",
                              record.uri, validationError.localizedDescription);
                 // For import: reject records that fail validation for known lexicons
                 // This prevents importing malformed data
@@ -822,7 +822,7 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
             [validatedRecords addObject:record];
         }
 
-        PDS_LOG_DEBUG(@"[importRepo] Validated %lu/%lu records",
+        GZ_LOG_DEBUG(@"[importRepo] Validated %lu/%lu records",
                       (unsigned long)validatedRecords.count, (unsigned long)records.count);
 
         PDSDatabasePool *databasePool = recordService.databasePool;
@@ -1061,7 +1061,7 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
     // com.atproto.repo.applyWrites
     [dispatcher registerComAtprotoRepoApplyWrites:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody;
-        PDS_LOG_INFO(@"applyWrites: method called, body=%@", body);
+        GZ_LOG_INFO(@"applyWrites: method called, body=%@", body);
         if (!body) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing request body"}];
@@ -1087,7 +1087,7 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
         PDSValidationMode mode = validationModeFromValidateParameter(body[@"validate"]);
         NSString *swapCommit = body[@"swapCommit"];
 
-        PDS_LOG_INFO(@"applyWrites: body=%@, writes=%@", body, writes);
+        GZ_LOG_INFO(@"applyWrites: body=%@, writes=%@", body, writes);
 
         if (repo && ![repo isEqualToString:did]) {
             response.statusCode = HttpStatusForbidden;

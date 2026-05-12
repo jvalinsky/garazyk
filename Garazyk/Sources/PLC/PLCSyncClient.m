@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "Network/PDSSafeHTTPClient.h"
+#import "Network/ATProtoSafeHTTPClient.h"
 #import "PLCSyncClient.h"
 #import "Network/HttpRetryPolicy.h"
 
@@ -97,9 +97,9 @@ NSString * const PLCSyncClientErrorDomain = @"com.atproto.plc.syncclient";
         request.timeoutInterval = self.timeout;
         [request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
         
-        PDSSafeHTTPClientOptions *syncOptions = [[PDSSafeHTTPClientOptions defaultOptions] copy];
+        ATProtoSafeHTTPClientOptions *syncOptions = [[ATProtoSafeHTTPClientOptions defaultOptions] copy];
         syncOptions.timeout = self.timeout;
-        [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:syncOptions completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable networkError) {
+        [[ATProtoSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:syncOptions completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable networkError) {
             if (networkError) {
                 if (completion) {
                     NSError *err = [NSError errorWithDomain:PLCSyncClientErrorDomain
@@ -211,9 +211,9 @@ NSString * const PLCSyncClientErrorDomain = @"com.atproto.plc.syncclient";
     __block NSArray<PLCOperation *> *resultOps = nil;
     __block NSError *resultError = nil;
     
-    PDSSafeHTTPClientOptions *syncOptions = [[PDSSafeHTTPClientOptions defaultOptions] copy];
+    ATProtoSafeHTTPClientOptions *syncOptions = [[ATProtoSafeHTTPClientOptions defaultOptions] copy];
     syncOptions.timeout = self.timeout;
-    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:syncOptions completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable networkError) {
+    [[ATProtoSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:syncOptions completion:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable networkError) {
         if (networkError) {
             resultError = [NSError errorWithDomain:PLCSyncClientErrorDomain
                                               code:PLCSyncClientErrorNetworkFailure

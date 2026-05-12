@@ -3,7 +3,7 @@
 #import <XCTest/XCTest.h>
 #import "Germ/Server/Identity/GermIdentityService.h"
 #import "Database/PDSDatabase.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 #pragma mark - Germ Identity Service Tests
 // Tests for the Germ AC Protocol identity verification service.

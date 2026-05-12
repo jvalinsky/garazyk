@@ -6,7 +6,7 @@
 #import "Admin/PDSAdminAuth.h"
 #import "Auth/JWT.h"
 #import "Core/CID.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
@@ -102,12 +102,12 @@
   }
 
   if (context.verbose) {
-    PDS_LOG_INFO(@"Starting PDS server on port %ld", (long)port);
-    PDS_LOG_INFO(@"Data directory: %@", context.dataDir);
-    PDS_LOG_INFO(@"Config path: %@", context.configPath);
-    PDS_LOG_INFO(@"Log level: %@", logLevel);
+    GZ_LOG_INFO(@"Starting PDS server on port %ld", (long)port);
+    GZ_LOG_INFO(@"Data directory: %@", context.dataDir);
+    GZ_LOG_INFO(@"Config path: %@", context.configPath);
+    GZ_LOG_INFO(@"Log level: %@", logLevel);
     if (logComponents) {
-      PDS_LOG_INFO(@"Enabled components: %@", logComponents);
+      GZ_LOG_INFO(@"Enabled components: %@", logComponents);
     }
   }
 
@@ -156,14 +156,14 @@
 
   // Apply logging overrides from CLI
   if (logLevel) {
-    PDSLogLevel level = PDSLogLevelInfo;
+    GZLogLevel level = GZLogLevelInfo;
     if ([logLevel isEqualToString:@"debug"])
-      level = PDSLogLevelDebug;
+      level = GZLogLevelDebug;
     else if ([logLevel isEqualToString:@"warn"])
-      level = PDSLogLevelWarn;
+      level = GZLogLevelWarn;
     else if ([logLevel isEqualToString:@"error"])
-      level = PDSLogLevelError;
-    [PDSLogger sharedLogger].logLevel = level;
+      level = GZLogLevelError;
+    [GZLogger sharedLogger].logLevel = level;
   }
 
   if (logComponents) {
@@ -173,7 +173,7 @@
       [componentSet addObject:[c stringByTrimmingCharactersInSet:
                                       [NSCharacterSet whitespaceCharacterSet]]];
     }
-    [PDSLogger sharedLogger].enabledComponents = componentSet;
+    [GZLogger sharedLogger].enabledComponents = componentSet;
   }
 
   // Initialize and start HTTP server
@@ -195,7 +195,7 @@
   // Without this, JWT minter defaults to port 8080 while server runs on --port.
   [[PDSConfiguration sharedConfiguration] setServerPort:port];
 
-  PDS_LOG_INFO_C(PDSLogComponentCLI,
+  GZ_LOG_INFO_C(GZLogComponentCLI,
                  @"Initializing PDS controller with data directory: %@",
                  dataDir);
   PDSController *controller = [[PDSController alloc] initWithDirectory:dataDir
@@ -237,8 +237,8 @@
            builderError.localizedDescription.UTF8String);
     return 0;
   }
-  PDS_LOG_DEBUG_C(
-      PDSLogComponentCLI,
+  GZ_LOG_DEBUG_C(
+      GZLogComponentCLI,
       @"PDSCLIServeCommand: Registered routes via PDSHttpServerBuilder");
 
   // Register Health Check
@@ -390,7 +390,7 @@
   }
 
   if (context.verbose) {
-    PDS_LOG_INFO(@"PDS server started successfully");
+    GZ_LOG_INFO(@"PDS server started successfully");
   }
 
   // Setup signal handling for graceful shutdown via PDSSignalManager
@@ -424,13 +424,13 @@
 
   // SIGHUP: log rotation trigger
   [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGHUP handler:^(int sig) {
-    PDS_LOG_SERVICE_INFO(@"Received SIGHUP — rotating logs");
-    [[PDSLogger sharedLogger] rotateLogIfNeeded];
+    GZ_LOG_SERVICE_INFO(@"Received SIGHUP — rotating logs");
+    [[GZLogger sharedLogger] rotateLogIfNeeded];
   }];
 
   // SIGUSR1: diagnostic dump
   [[PDSSignalManager sharedManager] registerHandlerForSignal:SIGUSR1 handler:^(int sig) {
-    PDS_LOG_SERVICE_INFO(@"Received SIGUSR1 — diagnostic dump requested");
+    GZ_LOG_SERVICE_INFO(@"Received SIGUSR1 — diagnostic dump requested");
     // Future: dump goroutine-equivalent (dispatch queue state), connection pool stats, etc.
   }];
 

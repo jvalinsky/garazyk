@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Video/VideoHLSGenerator.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 
 #ifdef LINUX
@@ -77,7 +77,7 @@ NSString * const ATProtoVideoHLSGeneratorErrorDomain = @"com.atproto.video.hls";
 
     // Create output directory structure
     if (![fm createDirectoryAtPath:hlsDir withIntermediateDirectories:YES attributes:nil error:error]) {
-        PDS_LOG_ERROR(@"Failed to create HLS directory: %@", *error);
+        GZ_LOG_ERROR(@"Failed to create HLS directory: %@", *error);
         if (error) {
             *error = [NSError errorWithDomain:ATProtoVideoHLSGeneratorErrorDomain
                                           code:ATProtoVideoHLSErrorOutputDirectoryFailed
@@ -120,7 +120,7 @@ NSString * const ATProtoVideoHLSGeneratorErrorDomain = @"com.atproto.video.hls";
     for (NSDictionary *config in variantConfigs) {
         NSString *variantDir = [hlsDir stringByAppendingPathComponent:config[@"name"]];
         if (![fm createDirectoryAtPath:variantDir withIntermediateDirectories:YES attributes:nil error:nil]) {
-            PDS_LOG_WARN(@"Failed to create variant directory: %@", variantDir);
+            GZ_LOG_WARN(@"Failed to create variant directory: %@", variantDir);
         }
     }
 
@@ -194,7 +194,7 @@ NSString * const ATProtoVideoHLSGeneratorErrorDomain = @"com.atproto.video.hls";
     if (status != 0) {
         NSData *stderrData = [stderrPipe.fileHandleForReading readDataToEndOfFile];
         NSString *stderrStr = stderrData ? [[NSString alloc] initWithData:stderrData encoding:NSUTF8StringEncoding] : @"(no stderr)";
-        PDS_LOG_ERROR(@"ffmpeg HLS generation failed (exit %d): %@", status, stderrStr);
+        GZ_LOG_ERROR(@"ffmpeg HLS generation failed (exit %d): %@", status, stderrStr);
 
         if (error) {
             *error = [NSError errorWithDomain:ATProtoVideoHLSGeneratorErrorDomain
@@ -230,7 +230,7 @@ NSString * const ATProtoVideoHLSGeneratorErrorDomain = @"com.atproto.video.hls";
     NSError *writeError = nil;
     NSData *playlistData = [masterPlaylist dataUsingEncoding:NSUTF8StringEncoding];
     if (![playlistData writeToFile:masterPlaylistPath options:NSDataWritingAtomic error:&writeError]) {
-        PDS_LOG_ERROR(@"Failed to write master playlist: %@", writeError);
+        GZ_LOG_ERROR(@"Failed to write master playlist: %@", writeError);
         if (error) {
             *error = [NSError errorWithDomain:ATProtoVideoHLSGeneratorErrorDomain
                                           code:ATProtoVideoHLSErrorOutputDirectoryFailed
@@ -246,7 +246,7 @@ NSString * const ATProtoVideoHLSGeneratorErrorDomain = @"com.atproto.video.hls";
     if (thumbnailData) {
         thumbnailPath = [self thumbnailPathForDID:did cid:cid];
         if (![thumbnailData writeToFile:thumbnailPath options:NSDataWritingAtomic error:nil]) {
-            PDS_LOG_WARN(@"Failed to write HLS thumbnail for %@/%@", did, cid);
+            GZ_LOG_WARN(@"Failed to write HLS thumbnail for %@/%@", did, cid);
             thumbnailPath = nil;
         }
     }
@@ -260,7 +260,7 @@ NSString * const ATProtoVideoHLSGeneratorErrorDomain = @"com.atproto.video.hls";
     result.variants = [variantResults copy];
     result.thumbnailPath = thumbnailPath;
 
-    PDS_LOG_INFO(@"HLS generation complete for %@/%@: %lu variants, master at %@",
+    GZ_LOG_INFO(@"HLS generation complete for %@/%@: %lu variants, master at %@",
                  did, cid, (unsigned long)variantConfigs.count, masterPlaylistPath);
 
     return result;

@@ -13,7 +13,7 @@
 #import <Security/Security.h>
 #import <CommonCrypto/CommonCrypto.h>
 #import <stdint.h>
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 NSString *const SSLPinningErrorDomain = @"com.atproto.pds.sslpinning";
 
@@ -93,7 +93,7 @@ NSString *const SSLPinningErrorDomain = @"com.atproto.pds.sslpinning";
     NSArray<NSData *> *pinnedKeys = self.pinnedKeys[domain];
     if (!pinnedKeys || pinnedKeys.count == 0) {
         // No pinned keys for this domain - allow connection but log warning
-        PDS_LOG_HTTP_WARN(@"SSLPinning: No pinned keys configured for domain %@", domain);
+        GZ_LOG_HTTP_WARN(@"SSLPinning: No pinned keys configured for domain %@", domain);
         return YES;
     }
 

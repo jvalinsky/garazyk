@@ -4,7 +4,7 @@
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/CID.h"
 #import "Core/ATProtoBase32.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -57,7 +57,7 @@ static BOOL isBase32Char(unichar c) {
     for (NSUInteger i = 0; i < cborData.length; i++) {
         [hexStr appendFormat:@"%02x", bytes[i]];
     }
-    PDS_LOG_INFO(@"DID derivation CBOR hex (%lu bytes): %@", (unsigned long)cborData.length, hexStr);
+    GZ_LOG_INFO(@"DID derivation CBOR hex (%lu bytes): %@", (unsigned long)cborData.length, hexStr);
     
     NSData *hash = [CID rawSha256:cborData];
     
@@ -67,10 +67,10 @@ static BOOL isBase32Char(unichar c) {
     for (NSUInteger i = 0; i < hash.length; i++) {
         [hashHex appendFormat:@"%02x", hashBytes[i]];
     }
-    PDS_LOG_INFO(@"DID derivation SHA256: %@", hashHex);
+    GZ_LOG_INFO(@"DID derivation SHA256: %@", hashHex);
     
     NSString *base32 = [ATProtoBase32 encodeData:hash];
-    PDS_LOG_INFO(@"DID derivation base32 full: %@", base32);
+    GZ_LOG_INFO(@"DID derivation base32 full: %@", base32);
     // did:plc is first 24 chars of base32 hash
     if (base32.length > 24) {
         base32 = [base32 substringToIndex:24];
@@ -93,7 +93,7 @@ static BOOL isBase32Char(unichar c) {
     for (NSUInteger i = 0; i < cborData.length; i++) {
         [hexStr appendFormat:@"%02x", bytes[i]];
     }
-    PDS_LOG_INFO(@"DID derivation (signed) CBOR hex (%lu bytes): %@", (unsigned long)cborData.length, hexStr);
+    GZ_LOG_INFO(@"DID derivation (signed) CBOR hex (%lu bytes): %@", (unsigned long)cborData.length, hexStr);
     
     NSData *hash = [CID rawSha256:cborData];
     
@@ -102,10 +102,10 @@ static BOOL isBase32Char(unichar c) {
     for (NSUInteger i = 0; i < hash.length; i++) {
         [hashHex appendFormat:@"%02x", hashBytes[i]];
     }
-    PDS_LOG_INFO(@"DID derivation (signed) SHA256: %@", hashHex);
+    GZ_LOG_INFO(@"DID derivation (signed) SHA256: %@", hashHex);
     
     NSString *base32 = [ATProtoBase32 encodeData:hash];
-    PDS_LOG_INFO(@"DID derivation (signed) base32 full: %@", base32);
+    GZ_LOG_INFO(@"DID derivation (signed) base32 full: %@", base32);
     if (base32.length > 24) {
         base32 = [base32 substringToIndex:24];
     }

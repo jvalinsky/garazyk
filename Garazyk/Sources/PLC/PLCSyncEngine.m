@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "PLCSyncEngine.h"
 #import "PLC/PLCMetrics.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "libkern/OSAtomic.h"
 
 NSString * const PLCSyncEngineErrorDomain = @"com.atproto.pds.plc.syncengine";
@@ -340,11 +340,11 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
                 validCount++;
             } else {
                 failedCount++;
-                PDS_LOG_CORE_ERROR(@"PLC replica: failed to append operation for DID %@: %@", op.did, appendError.localizedDescription);
+                GZ_LOG_CORE_ERROR(@"PLC replica: failed to append operation for DID %@: %@", op.did, appendError.localizedDescription);
             }
         } else {
             failedCount++;
-            PDS_LOG_CORE_ERROR(@"PLC replica: operation validation failed for DID %@: %@", op.did, validationError.localizedDescription);
+            GZ_LOG_CORE_ERROR(@"PLC replica: operation validation failed for DID %@: %@", op.did, validationError.localizedDescription);
         }
     }
     
@@ -369,7 +369,7 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
         NSTimeInterval cooldown = MIN(self.maxRetryDelay * pow(2, self.consecutiveErrorCycles - 1),
                                       kMaxCooldown);
         
-        PDS_LOG_CORE_ERROR(@"PLC replica: sync failed after %lu retries (cycle %lu, cooldown %.0fs): %@",
+        GZ_LOG_CORE_ERROR(@"PLC replica: sync failed after %lu retries (cycle %lu, cooldown %.0fs): %@",
                          (unsigned long)self.currentRetryCount,
                          (unsigned long)self.consecutiveErrorCycles,
                          cooldown,
@@ -394,7 +394,7 @@ static const NSTimeInterval kDefaultMaxRetryDelay = 60.0;
         return;
     }
     
-    PDS_LOG_CORE_WARN(@"PLC replica: sync error, retry %lu/%lu in %.1fs: %@",
+    GZ_LOG_CORE_WARN(@"PLC replica: sync error, retry %lu/%lu in %.1fs: %@",
                      (unsigned long)self.currentRetryCount,
                      (unsigned long)self.maxRetries,
                      delay,

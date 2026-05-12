@@ -3,7 +3,7 @@
 #import "PDSCloudStorageBlobProvider.h"
 #import "Auth/CryptoUtils.h"
 #import "Core/CID.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/Foundation/NSDataCompat.h"
 #import <CommonCrypto/CommonHMAC.h>
 #import <CommonCrypto/CommonDigest.h>

@@ -14,7 +14,7 @@
 #import "App/PDSApplication.h"
 #import "App/PDSConfiguration.h"
 #import "App/PDSController.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Network/HttpServer.h"
 
 @implementation PDSHttpNodeInfoRoutePack
@@ -45,7 +45,7 @@
   [nodeInfoHandler setConfigured];
   [nodeInfoHandler registerRoutesWithServer:server];
 
-  PDS_LOG_DEBUG(@"PDSHttpNodeInfoRoutePack: NodeInfo routes registered");
+  GZ_LOG_DEBUG(@"PDSHttpNodeInfoRoutePack: NodeInfo routes registered");
 }
 
 @end

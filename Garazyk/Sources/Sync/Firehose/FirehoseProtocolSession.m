@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Sync/Firehose/FirehoseProtocolSession.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @interface FirehoseProtocolSession () {
     dispatch_queue_t _sequenceQueue;
@@ -32,7 +32,7 @@
   NSError *error = nil;
   NSData *data = [self.eventFormatter encodeCommitEvent:event error:&error];
   if (!data) {
-    PDS_LOG_SYNC_ERROR(@"Failed to encode commit event: %@", error);
+    GZ_LOG_SYNC_ERROR(@"Failed to encode commit event: %@", error);
   }
   return data;
 }
@@ -47,7 +47,7 @@
   NSError *error = nil;
   NSData *data = [self.eventFormatter encodeIdentityEvent:event error:&error];
   if (!data) {
-    PDS_LOG_SYNC_ERROR(@"Failed to encode identity event: %@", error);
+    GZ_LOG_SYNC_ERROR(@"Failed to encode identity event: %@", error);
   }
   return data;
 }
@@ -62,7 +62,7 @@
   NSError *error = nil;
   NSData *data = [self.eventFormatter encodeAccountEvent:event error:&error];
   if (!data) {
-    PDS_LOG_SYNC_ERROR(@"Failed to encode account event: %@", error);
+    GZ_LOG_SYNC_ERROR(@"Failed to encode account event: %@", error);
   }
   return data;
 }
@@ -77,7 +77,7 @@
   NSError *error = nil;
   NSData *data = [self.eventFormatter encodeSyncEvent:event error:&error];
   if (!data) {
-    PDS_LOG_SYNC_ERROR(@"Failed to encode sync event: %@", error);
+    GZ_LOG_SYNC_ERROR(@"Failed to encode sync event: %@", error);
   }
   return data;
 }
@@ -86,7 +86,7 @@
   NSError *error = nil;
   NSData *data = [self.eventFormatter encodeInfoEvent:event error:&error];
   if (!data) {
-    PDS_LOG_SYNC_ERROR(@"Failed to encode info event: %@", error);
+    GZ_LOG_SYNC_ERROR(@"Failed to encode info event: %@", error);
   }
   return data;
 }
@@ -95,7 +95,7 @@
   NSError *error = nil;
   NSData *data = [self.eventFormatter encodeErrorEvent:event error:&error];
   if (!data) {
-    PDS_LOG_SYNC_ERROR(@"Failed to encode error event: %@", error);
+    GZ_LOG_SYNC_ERROR(@"Failed to encode error event: %@", error);
   }
   return data;
 }

@@ -45,8 +45,8 @@
     }
     
     // Ensure the tables exist
-    [self.database executeRawSQL:@"CREATE TABLE IF NOT EXISTS oauth_clients (client_id TEXT PRIMARY KEY, client_name TEXT, client_secret TEXT, redirect_uris TEXT, grant_types TEXT, response_types TEXT, scope TEXT, application_type TEXT)" error:nil];
-    [self.database executeRawSQL:@"CREATE TABLE IF NOT EXISTS oauth_par_requests (request_uri TEXT PRIMARY KEY, client_id TEXT NOT NULL, params_json TEXT NOT NULL, expires_at TEXT NOT NULL, consumed_at TEXT)" error:nil];
+    [self.database executeUnsafeRawSQL:@"CREATE TABLE IF NOT EXISTS oauth_clients (client_id TEXT PRIMARY KEY, client_name TEXT, client_secret TEXT, redirect_uris TEXT, grant_types TEXT, response_types TEXT, scope TEXT, application_type TEXT)" error:nil];
+    [self.database executeUnsafeRawSQL:@"CREATE TABLE IF NOT EXISTS oauth_par_requests (request_uri TEXT PRIMARY KEY, client_id TEXT NOT NULL, params_json TEXT NOT NULL, expires_at TEXT NOT NULL, consumed_at TEXT)" error:nil];
 }
 
 - (void)tearDown {

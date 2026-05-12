@@ -7,11 +7,11 @@
 #import "Core/ATProtoValidator.h"
 #import "Core/CID.h"
 #import "Core/DID.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "Network/PDSSafeHTTPClient.h"
+#import "Network/ATProtoSafeHTTPClient.h"
 #import "Network/SSRFValidator.h"
 #import "Network/XrpcHandler.h"
 
@@ -340,7 +340,7 @@ static NSString *const kLexiconResolverUserAgent = @"atprotopds/0.1.0";
   [request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
   [request setValue:kLexiconResolverUserAgent forHTTPHeaderField:@"User-Agent"];
 
-  PDSSafeHTTPClientOptions *safeOptions = [[PDSSafeHTTPClientOptions alloc] init];
+  ATProtoSafeHTTPClientOptions *safeOptions = [[ATProtoSafeHTTPClientOptions alloc] init];
   safeOptions.timeout = 10.0;
   safeOptions.maxResponseBytes = 1024 * 1024; // 1 MB
   safeOptions.allowHTTP = NO;
@@ -349,7 +349,7 @@ static NSString *const kLexiconResolverUserAgent = @"atprotopds/0.1.0";
 
   NSHTTPURLResponse *httpResponse = nil;
   NSError *requestError = nil;
-  NSData *responseData = [[PDSSafeHTTPClient sharedClient]
+  NSData *responseData = [[ATProtoSafeHTTPClient sharedClient]
       sendSynchronousRequest:request
                      options:safeOptions
                     response:&httpResponse
@@ -438,7 +438,7 @@ static NSString *const kLexiconResolverUserAgent = @"atprotopds/0.1.0";
               withIntermediateDirectories:YES
                                attributes:nil
                                     error:&dirError]) {
-    PDS_LOG_WARN(@"Failed to create lexicon cache directory: %@",
+    GZ_LOG_WARN(@"Failed to create lexicon cache directory: %@",
                  dirError.localizedDescription ?: @"unknown");
     return;
   }
@@ -448,14 +448,14 @@ static NSString *const kLexiconResolverUserAgent = @"atprotopds/0.1.0";
                                                      options:0
                                                        error:&encodeError];
   if (!jsonData) {
-    PDS_LOG_WARN(@"Failed to encode fetched lexicon schema for %@: %@", nsid,
+    GZ_LOG_WARN(@"Failed to encode fetched lexicon schema for %@: %@", nsid,
                  encodeError.localizedDescription ?: @"unknown");
     return;
   }
 
   NSError *writeError = nil;
   if (![jsonData writeToFile:targetPath options:NSDataWritingAtomic error:&writeError]) {
-    PDS_LOG_WARN(@"Failed to persist fetched lexicon schema for %@: %@", nsid,
+    GZ_LOG_WARN(@"Failed to persist fetched lexicon schema for %@: %@", nsid,
                  writeError.localizedDescription ?: @"unknown");
   }
 }
@@ -531,7 +531,7 @@ static BOOL PDSLexiconResolverRunningTests(void) {
     }
     return nil;
   }
-  // SSRF protection is handled by PDSSafeHTTPClient during the actual fetch,
+  // SSRF protection is handled by ATProtoSafeHTTPClient during the actual fetch,
   // eliminating the validate-before-fetch TOCTOU gap.
 
   NSError *urlError = nil;

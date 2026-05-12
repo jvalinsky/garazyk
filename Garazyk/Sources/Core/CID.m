@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Core/CID.h"
 #import "Core/Base58.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import <CommonCrypto/CommonCrypto.h>
 
 #define b32_debug_log(...) do {} while(0)
@@ -365,7 +365,7 @@ static const NSUInteger kMaxVarintSize = 9;
         if (c >= 'A' && c <= 'Z') c = c - 'A' + 'a';
         const char *ptr = strchr(kBase32Alphabet, (char)c);
         if (!ptr) {
-            PDS_LOG_DEBUG_C(PDSLogComponentCore, @"Invalid character: %c", (char)c);
+            GZ_LOG_DEBUG_C(GZLogComponentCore, @"Invalid character: %c", (char)c);
             return nil;
         }
         uint8_t value = (uint8_t)(ptr - kBase32Alphabet);

@@ -13,7 +13,7 @@
  */
 
 #import "Auth/OAuth2.h"
-#import "Debug/PDSLogRedactor.h"
+#import "Debug/GZLogRedactor.h"
 #import "Auth/JWT.h"
 #import "Auth/Session.h"
 #import "Auth/TOTPService.h"
@@ -30,7 +30,7 @@
 #import "Auth/Crypto/AuthCryptoECDSA.h"
 #import "Auth/Secp256k1.h"
 #import "Database/PDSDatabase.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Metrics/PDSMetrics.h"
 #import "Core/DID.h"
 #import "Auth/PDSKeyManagerProtocol.h"
@@ -82,7 +82,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         return;
     }
     didLog = YES;
-    PDS_LOG_AUTH_INFO(@"Using in-memory secp256k1 OAuth2 JWT signing key in test mode (keychain disabled).");
+    GZ_LOG_AUTH_INFO(@"Using in-memory secp256k1 OAuth2 JWT signing key in test mode (keychain disabled).");
 }
 
 
@@ -174,7 +174,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         return nil;
     }
 
-    if (state && ![response.state isEqualToString:state]) {
+    if (state && ![PDSSecurityCompare constantTimeEqualString:response.state string:state]) {
         if (error) {
             *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                          code:OAuth2ErrorInvalidRequest
@@ -506,7 +506,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
                 hasProvisionedSigningKey = YES;
                 OAuth2LogEphemeralJWTKeyModeOnce();
             } else {
-                PDS_LOG_AUTH_WARN(@"Test-mode ephemeral OAuth2 JWT key generation failed; falling back to key manager path: %@",
+                GZ_LOG_AUTH_WARN(@"Test-mode ephemeral OAuth2 JWT key generation failed; falling back to key manager path: %@",
                                   fallbackError.localizedDescription ?: @"unknown error");
             }
         }
@@ -528,15 +528,15 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
                         _jwtMinter.signingAlgorithm = @"ES256K";
                         _jwtMinter.privateKey = fallbackKeyPair.privateKey;
                         _jwtMinter.publicKey = fallbackKeyPair.publicKey;
-                        PDS_LOG_AUTH_WARN(@"Using in-memory secp256k1 OAuth2 JWT signing key fallback because key manager provisioning failed (%@).",
+                        GZ_LOG_AUTH_WARN(@"Using in-memory secp256k1 OAuth2 JWT signing key fallback because key manager provisioning failed (%@).",
                                           keyError.localizedDescription ?: @"unknown error");
                     } else {
-                        PDS_LOG_AUTH_ERROR(@"Failed to get or generate JWT signing key for OAuth2: %@ (fallback error: %@)",
+                        GZ_LOG_AUTH_ERROR(@"Failed to get or generate JWT signing key for OAuth2: %@ (fallback error: %@)",
                                            keyError.localizedDescription ?: @"unknown error",
                                            fallbackError.localizedDescription ?: @"unknown error");
                     }
                 } else {
-                    PDS_LOG_AUTH_ERROR(@"Failed to get or generate JWT signing key for OAuth2: %@", keyError.localizedDescription ?: @"unknown error");
+                    GZ_LOG_AUTH_ERROR(@"Failed to get or generate JWT signing key for OAuth2: %@", keyError.localizedDescription ?: @"unknown error");
                 }
             }
         }
@@ -605,7 +605,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         if (did) {
             codeData[@"login_hint_did"] = did;
         } else {
-            PDS_LOG_AUTH_WARN(@"Failed to resolve login_hint for authorization request (client_id=%@): %@",
+            GZ_LOG_AUTH_WARN(@"Failed to resolve login_hint for authorization request (client_id=%@): %@",
                               request.clientID ?: @"",
                               resolveError.localizedDescription ?: @"unknown error");
         }
@@ -620,7 +620,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
 
     [self storeAuthorizationCode:code data:codeData];
 
-    PDS_LOG_AUTH_DEBUG(@"Stored authorization code (client_id=%@, has_pkce=%@, has_dpop_jwk=%@, has_login_hint=%@)",
+    GZ_LOG_AUTH_DEBUG(@"Stored authorization code (client_id=%@, has_pkce=%@, has_dpop_jwk=%@, has_login_hint=%@)",
                        request.clientID ?: @"",
                        @(request.codeChallenge.length > 0),
                        @(request.dpopJWK != nil),
@@ -685,7 +685,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
                           completion:(OAuth2TokenCompletion)completion {
     NSDictionary *codeData = [self getAuthorizationCodeData:request.code];
     if (!codeData) {
-        PDS_LOG_AUTH_WARN(@"Authorization code not found or expired (client_id=%@)", request.clientID ?: @"");
+        GZ_LOG_AUTH_WARN(@"Authorization code not found or expired (client_id=%@)", request.clientID ?: @"");
         NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                              code:OAuth2ErrorInvalidGrant
                                          userInfo:@{NSLocalizedDescriptionKey: @"Invalid or expired authorization code"}];
@@ -693,7 +693,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         return;
     }
 
-    PDS_LOG_AUTH_DEBUG(@"Processing token request (grant_type=%@, client_id=%@, has_code=%@, has_code_verifier=%@)",
+    GZ_LOG_AUTH_DEBUG(@"Processing token request (grant_type=%@, client_id=%@, has_code=%@, has_code_verifier=%@)",
                        request.grantType ?: @"",
                        request.clientID ?: @"",
                        @(request.code.length > 0),
@@ -709,7 +709,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         return;
     }
 
-    if (![codeData[@"client_id"] isEqualToString:request.clientID]) {
+    if (![PDSSecurityCompare constantTimeEqualString:codeData[@"client_id"] string:request.clientID]) {
         NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                              code:OAuth2ErrorInvalidGrant
                                          userInfo:@{NSLocalizedDescriptionKey: @"Client ID mismatch"}];
@@ -743,7 +743,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         codeVerifier = request.codeVerifier;
     }
 
-    PDS_LOG_AUTH_DEBUG(@"Verifying PKCE (client_id=%@, method=%@, verifier_len=%lu, challenge_len=%lu)",
+    GZ_LOG_AUTH_DEBUG(@"Verifying PKCE (client_id=%@, method=%@, verifier_len=%lu, challenge_len=%lu)",
                        request.clientID ?: @"",
                        method,
                        (unsigned long)codeVerifier.length,
@@ -756,13 +756,13 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         completion(nil, error);
         return;
     }
-    PDS_LOG_AUTH_DEBUG(@"PKCE verification passed (client_id=%@)", request.clientID ?: @"");
+    GZ_LOG_AUTH_DEBUG(@"PKCE verification passed (client_id=%@)", request.clientID ?: @"");
 
     [self removeAuthorizationCode:request.code];
 
     NSString *did = codeData[@"login_hint_did"];
     if (!did) {
-        PDS_LOG_AUTH_ERROR(@"Authorization code missing login_hint_did (client_id=%@)", request.clientID ?: @"");
+        GZ_LOG_AUTH_ERROR(@"Authorization code missing login_hint_did (client_id=%@)", request.clientID ?: @"");
         NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                              code:OAuth2ErrorInvalidGrant
                                          userInfo:@{NSLocalizedDescriptionKey: @"Missing user identity in authorization code"}];
@@ -865,7 +865,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
     }
 
     if (!account.handle) {
-        PDS_LOG_ERROR(@"OAuth2", @"Account handle is nil, cannot proceed with token exchange");
+        GZ_LOG_ERROR(@"OAuth2", @"Account handle is nil, cannot proceed with token exchange");
         NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                               code:OAuth2ErrorInvalidRequest
                                           userInfo:@{NSLocalizedDescriptionKey: @"Account handle is required"}];
@@ -938,7 +938,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         NSError *dbError = nil;
         did = [self.database accountDidForRefreshToken:request.refreshToken error:&dbError];
         if (!did) {
-            PDS_LOG_AUTH_WARN(@"Invalid or expired refresh token (not found in memory or DB): %@", [PDSLogRedactor maskToken:request.refreshToken]);
+            GZ_LOG_AUTH_WARN(@"Invalid or expired refresh token (not found in memory or DB): %@", [GZLogRedactor maskToken:request.refreshToken]);
             NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                                  code:OAuth2ErrorInvalidGrant
                                              userInfo:@{NSLocalizedDescriptionKey: @"Invalid or expired refresh token"}];
@@ -951,8 +951,8 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
     NSError *jwtError = nil;
     JWT *refreshTokenJWT = [JWT jwtWithToken:request.refreshToken error:&jwtError];
     if (refreshTokenJWT) {
-        if (![refreshTokenJWT.payload.token_use isEqualToString:@"refresh"]) {
-            PDS_LOG_AUTH_ERROR(@"Token usage mismatch: expected 'refresh', got '%@'", refreshTokenJWT.payload.token_use ?: @"none");
+        if (![PDSSecurityCompare constantTimeEqualString:refreshTokenJWT.payload.token_use string:@"refresh"]) {
+            GZ_LOG_AUTH_ERROR(@"Token usage mismatch: expected 'refresh', got '%@'", refreshTokenJWT.payload.token_use ?: @"none");
             NSError *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                                  code:OAuth2ErrorInvalidGrant
                                              userInfo:@{NSLocalizedDescriptionKey: @"Invalid token use"}];
@@ -1058,7 +1058,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
     CC_SHA256(verifierData.bytes, (CC_LONG)verifierData.length, hash);
     NSData *hashData = [NSData dataWithBytes:hash length:CC_SHA256_DIGEST_LENGTH];
     NSString *base64Hash = [self base64URLEncodeData:hashData];
-    return [base64Hash isEqualToString:challenge];
+    return [PDSSecurityCompare constantTimeEqualString:base64Hash string:challenge];
 }
 
 - (NSString *)base64URLEncodeData:(NSData *)data {
@@ -1172,11 +1172,11 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
     identity = [identity stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@" +"]];
     BOOL isDID = [identity hasPrefix:@"did:"];
     BOOL looksLikeEmail = [identity containsString:@"@"];
-    PDS_LOG_AUTH_DEBUG(@"Resolving identity (is_did=%@, looks_like_email=%@)", @(isDID), @(looksLikeEmail));
+    GZ_LOG_AUTH_DEBUG(@"Resolving identity (is_did=%@, looks_like_email=%@)", @(isDID), @(looksLikeEmail));
 
     // Check database is valid
     if (!self.database) {
-        PDS_LOG_AUTH_ERROR(@"Database is nil during identity resolution");
+        GZ_LOG_AUTH_ERROR(@"Database is nil during identity resolution");
         if (error) {
             *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                          code:OAuth2ErrorServerError
@@ -1190,13 +1190,13 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         NSError *dbError = nil;
         PDSDatabaseAccount *account = [self.database getAccountByHandle:identity error:&dbError];
         if (dbError) {
-            PDS_LOG_AUTH_ERROR(@"Database error looking up handle: %@", dbError.localizedDescription ?: @"unknown error");
+            GZ_LOG_AUTH_ERROR(@"Database error looking up handle: %@", dbError.localizedDescription ?: @"unknown error");
         }
         if (account) {
-            PDS_LOG_AUTH_DEBUG(@"Found local account for handle (did=%@)", account.did ?: @"");
+            GZ_LOG_AUTH_DEBUG(@"Found local account for handle (did=%@)", account.did ?: @"");
             return account.did;
         }
-        PDS_LOG_AUTH_DEBUG(@"Account not found for handle in local database");
+        GZ_LOG_AUTH_DEBUG(@"Account not found for handle in local database");
     }
 
     // Check if it's already a DID
@@ -1209,7 +1209,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         __block NSString *resolvedDID = nil;
         __block NSError *resolveError = nil;
 
-        PDS_LOG_AUTH_DEBUG(@"Resolving handle via HandleResolver");
+        GZ_LOG_AUTH_DEBUG(@"Resolving handle via HandleResolver");
         dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
 
         [self.handleResolver resolveHandle:identity completion:^(NSString * _Nullable did, NSError * _Nullable err) {
@@ -1219,12 +1219,12 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         }];
 
         if (dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC)) != 0) {
-            PDS_LOG_AUTH_ERROR(@"Handle resolution timeout");
+            GZ_LOG_AUTH_ERROR(@"Handle resolution timeout");
             if (error) *error = [NSError errorWithDomain:OAuth2ErrorDomain code:OAuth2ErrorServerError userInfo:@{NSLocalizedDescriptionKey: @"Identity resolution timeout"}];
             return nil;
         }
 
-        PDS_LOG_AUTH_DEBUG(@"Handle resolution completed (resolved_did_present=%@)", @(resolvedDID.length > 0));
+        GZ_LOG_AUTH_DEBUG(@"Handle resolution completed (resolved_did_present=%@)", @(resolvedDID.length > 0));
 
         if (resolveError) {
             if (error) *error = resolveError;
@@ -1237,7 +1237,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
             NSString *verifiedHandle = atprotoData[@"handle"];
 
             if (verifiedHandle && ![verifiedHandle isEqualToString:identity]) {
-                PDS_LOG_AUTH_ERROR(@"Handle verification failed (mismatch)");
+                GZ_LOG_AUTH_ERROR(@"Handle verification failed (mismatch)");
                 if (error) {
                     *error = [NSError errorWithDomain:OAuth2ErrorDomain
                                                  code:OAuth2ErrorInvalidRequest

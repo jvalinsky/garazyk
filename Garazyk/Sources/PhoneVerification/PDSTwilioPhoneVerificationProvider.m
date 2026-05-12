@@ -11,12 +11,14 @@
 #import "PhoneVerification/PDSTwilioPhoneVerificationProvider.h"
 #import "Core/PDSProviderHTTPClient.h"
 #import "Email/PDSSecretsProvider.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
+#import "Debug/GZLogRedactor.h"
 
 static NSString *const kTwilioVerifyBaseURL = @"https://verify.twilio.com/v2/Service";
 static NSString *const kTwilioAccountSIDEnvVar = @"TWILIO_ACCOUNT_SID";
 static NSString *const kTwilioAuthTokenEnvVar = @"TWILIO_AUTH_TOKEN";
 static NSString *const kTwilioVerifyServiceSIDEnvVar = @"TWILIO_VERIFY_SERVICE_SID";
+static NSString *const kTwilioBaseURLEnvVar = @"TWILIO_API_BASE_URL";
 
 NSString *const PDSTwilioProviderErrorDomain = @"com.atproto.pds.twilioprovider";
 
@@ -115,9 +117,17 @@ NSString *const PDSTwilioProviderErrorDomain = @"com.atproto.pds.twilioprovider"
         NSString *base64Credentials = [credentialData base64EncodedStringWithOptions:0];
         NSString *authHeader = [NSString stringWithFormat:@"Basic %@", base64Credentials];
 
+        NSString *baseURLString = self->_providerConfig[@"baseURL"];
+        if (!baseURLString) {
+            baseURLString = [self.secretsProvider secretForKey:kTwilioBaseURLEnvVar
+                                                         error:&secretError];
+        }
+        if (!baseURLString) {
+            baseURLString = kTwilioVerifyBaseURL;
+        }
         NSURL *baseURL = [NSURL URLWithString:
             [NSString stringWithFormat:@"%@/%@",
-                kTwilioVerifyBaseURL, serviceSID]];
+                baseURLString, serviceSID]];
 
         self->_httpClient = [[PDSProviderHTTPClient alloc]
             initWithBaseURL:baseURL authHeader:authHeader];
@@ -146,7 +156,7 @@ NSString *const PDSTwilioProviderErrorDomain = @"com.atproto.pds.twilioprovider"
         return nil;
     }
 
-    PDS_LOG_INFO(@"[Twilio] Sending verification to: %@", phoneNumber);
+    GZ_LOG_INFO(@"[Twilio] Sending verification to: %@", [GZLogRedactor maskToken:phoneNumber]);
 
     // POST /Verifications
     NSDictionary *body = @{
@@ -159,7 +169,7 @@ NSString *const PDSTwilioProviderErrorDomain = @"com.atproto.pds.twilioprovider"
                                                   body:body
                                                  error:&requestError];
     if (!response) {
-        PDS_LOG_ERROR(@"[Twilio] Failed to send verification: %@", requestError);
+        GZ_LOG_ERROR(@"[Twilio] Failed to send verification: %@", requestError);
         if (error) {
             *error = [NSError errorWithDomain:PDSTwilioProviderErrorDomain
                                          code:PDSTwilioProviderErrorRequestFailed
@@ -172,7 +182,7 @@ NSString *const PDSTwilioProviderErrorDomain = @"com.atproto.pds.twilioprovider"
     }
 
     NSString *status = response[@"status"];
-    PDS_LOG_INFO(@"[Twilio] Verification sent to %@ (status: %@)", phoneNumber, status);
+    GZ_LOG_INFO(@"[Twilio] Verification sent to %@ (status: %@)", [GZLogRedactor maskToken:phoneNumber], status);
     // Twilio does not use session IDs — return empty string on success
     return @"";
 }
@@ -210,7 +220,7 @@ NSString *const PDSTwilioProviderErrorDomain = @"com.atproto.pds.twilioprovider"
         return NO;
     }
 
-    PDS_LOG_INFO(@"[Twilio] Checking verification code for: %@", phoneNumber);
+    GZ_LOG_INFO(@"[Twilio] Checking verification code for: %@", [GZLogRedactor maskToken:phoneNumber]);
 
     // POST /VerificationCheck
     NSDictionary *body = @{
@@ -223,7 +233,7 @@ NSString *const PDSTwilioProviderErrorDomain = @"com.atproto.pds.twilioprovider"
                                                   body:body
                                                  error:&requestError];
     if (!response) {
-        PDS_LOG_ERROR(@"[Twilio] Verification check failed: %@", requestError);
+        GZ_LOG_ERROR(@"[Twilio] Verification check failed: %@", requestError);
         if (error) {
             *error = [NSError errorWithDomain:PDSTwilioProviderErrorDomain
                                          code:PDSTwilioProviderErrorVerificationFailed
@@ -237,11 +247,11 @@ NSString *const PDSTwilioProviderErrorDomain = @"com.atproto.pds.twilioprovider"
 
     NSString *status = response[@"status"];
     if ([status isEqualToString:@"approved"]) {
-        PDS_LOG_INFO(@"[Twilio] Verification approved for %@", phoneNumber);
+        GZ_LOG_INFO(@"[Twilio] Verification approved for %@", [GZLogRedactor maskToken:phoneNumber]);
         return YES;
     }
 
-    PDS_LOG_INFO(@"[Twilio] Verification not approved for %@ (status: %@)", phoneNumber, status);
+    GZ_LOG_INFO(@"[Twilio] Verification not approved for %@ (status: %@)", [GZLogRedactor maskToken:phoneNumber], status);
     if (error) {
         *error = [NSError errorWithDomain:PDSTwilioProviderErrorDomain
                                      code:PDSTwilioProviderErrorVerificationFailed

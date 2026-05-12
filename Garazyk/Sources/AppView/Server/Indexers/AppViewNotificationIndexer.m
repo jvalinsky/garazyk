@@ -9,7 +9,7 @@
 #import "AppView/Server/Indexers/AppViewNotificationIndexer.h"
 #import "AppView/Server/AppViewDatabase.h"
 #import "AppView/Server/Ingest/AppViewIngestEngine.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 static NSSet<NSString *> *notifSources(void) {
     static NSSet *s;
@@ -62,7 +62,7 @@ static NSSet<NSString *> *notifSources(void) {
 
     // Bounds check: reject excessively large records
     if (collection.length > 100) {
-        PDS_LOG_WARN(@"[AppViewNotificationIndexer] Collection name too long: %@", collection);
+        GZ_LOG_WARN(@"[AppViewNotificationIndexer] Collection name too long: %@", collection);
         return NO;
     }
 
@@ -88,7 +88,7 @@ static NSSet<NSString *> *notifSources(void) {
     // Validate extracted DID
     if (recipientDID && recipientDID.length > 0 && recipientDID.length < 200) {
         if ([_avdb isDIDRelevant:recipientDID]) {
-            PDS_LOG_DEBUG(@"[AppViewNotificationIndexer] Fan-out %@ notif to %@", collection, recipientDID);
+            GZ_LOG_DEBUG(@"[AppViewNotificationIndexer] Fan-out %@ notif to %@", collection, recipientDID);
             // In a full implementation: insert into notifications table
         }
     }
@@ -103,7 +103,7 @@ static NSSet<NSString *> *notifSources(void) {
     // Bounds check: limit ops processed per event
     NSArray *opsToProcess = event.ops;
     if (opsToProcess.count > 100) {
-        PDS_LOG_WARN(@"[AppViewNotificationIndexer] Truncating ops from %lu to 100 for event seq=%lld",
+        GZ_LOG_WARN(@"[AppViewNotificationIndexer] Truncating ops from %lu to 100 for event seq=%lld",
                      (unsigned long)opsToProcess.count, (long long)event.seq);
         opsToProcess = [opsToProcess subarrayWithRange:NSMakeRange(0, 100)];
     }

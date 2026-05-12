@@ -22,8 +22,9 @@
     [self.db openWithError:nil];
     
     // Initialize schema
-    [self.db executeRawSQL:@"CREATE TABLE moderation_events (id TEXT PRIMARY KEY, type TEXT, subject TEXT, created_by TEXT, created_at TEXT, details TEXT)" error:nil];
-    [self.db executeRawSQL:@"CREATE TABLE moderation_statuses (subject TEXT PRIMARY KEY, status TEXT, last_updated TEXT)" error:nil];
+    [self.db executeUnsafeRawSQL:@"CREATE TABLE moderation_events (id TEXT PRIMARY KEY, action TEXT NOT NULL, subject_did TEXT NOT NULL, subject_type TEXT NOT NULL, reason TEXT, created_by TEXT NOT NULL, created_at REAL NOT NULL, details_json TEXT)" error:nil];
+    [self.db executeUnsafeRawSQL:@"CREATE TABLE moderation_subjects (subject_did TEXT NOT NULL, subject_type TEXT NOT NULL, review_state TEXT NOT NULL, last_event_id TEXT, updated_at REAL NOT NULL, PRIMARY KEY(subject_did, subject_type))" error:nil];
+    [self.db executeUnsafeRawSQL:@"CREATE TABLE admin_audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, admin_did TEXT NOT NULL, action TEXT NOT NULL, subject_type TEXT NOT NULL, subject_id TEXT NOT NULL, details TEXT, created_at REAL NOT NULL)" error:nil];
     
     self.service = [[ModerationService alloc] initWithDatabase:self.db];
 }
@@ -36,7 +37,7 @@
 
 - (void)testEmitEvent {
     NSDictionary *event = @{
-        @"type": @"tools.ozone.moderation.defs#eventTakedown",
+        @"$type": @"tools.ozone.moderation.defs#modEventTakedown",
         @"subject": @{@"$type": @"com.atproto.admin.defs#repoRef", @"did": @"did:plc:badactor"}
     };
     NSError *error = nil;
@@ -49,17 +50,19 @@
 
 - (void)testQueryStatuses {
     NSDictionary *event = @{
-        @"type": @"tools.ozone.moderation.defs#eventTakedown",
+        @"$type": @"tools.ozone.moderation.defs#modEventTakedown",
         @"subject": @{@"$type": @"com.atproto.admin.defs#repoRef", @"did": @"did:plc:badactor"}
     };
-    [self.service emitModerationEvent:event createdBy:@"did:plc:admin" error:nil];
+    NSError *emitError = nil;
+    NSDictionary *emitResult = [self.service emitModerationEvent:event createdBy:@"did:plc:admin" error:&emitError];
+    XCTAssertNotNil(emitResult, @"Emit should succeed: %@", emitError);
     
     NSError *error = nil;
     NSDictionary *result = [self.service queryModerationStatuses:@{} limit:10 cursor:nil error:&error];
     
     XCTAssertNotNil(result);
     XCTAssertNil(error);
-    NSArray *statuses = result[@"subjectStatuses"];
+    NSArray *statuses = result[@"statuses"];
     XCTAssertGreaterThan(statuses.count, 0);
 }
 

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "AdminUIServer/UIBackendClient.h"
 #import "AdminUIServer/UIServiceConfig.h"
-#import "Debug/PDSLogger.h"
-#import "Network/PDSSafeHTTPClient.h"
+#import "Debug/GZLogger.h"
+#import "Network/ATProtoSafeHTTPClient.h"
 
 static NSString *UIBackendEscapedPathSegment(NSString *segment) {
     if (![segment isKindOfClass:[NSString class]]) {
@@ -17,7 +17,7 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
 @interface UIBackendClient ()
 
 @property(nonatomic, strong) UIServiceConfig *configuration;
-@property(nonatomic, strong, nullable) PDSSafeHTTPClient *httpClient;
+@property(nonatomic, strong, nullable) ATProtoSafeHTTPClient *httpClient;
 
 @end
 
@@ -28,7 +28,7 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
 }
 
 - (instancetype)initWithConfiguration:(UIServiceConfig *)configuration
-                           httpClient:(nullable PDSSafeHTTPClient *)httpClient {
+                           httpClient:(nullable ATProtoSafeHTTPClient *)httpClient {
     self = [super init];
     if (self) {
         _configuration = configuration;
@@ -345,7 +345,7 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
     NSError *error = nil;
     NSDictionary *response = [self performJSONRequestWithURL:url method:@"GET" body:nil bearerToken:self.configuration.plcAdminToken statusCode:&status error:&error];
     if (status < 200 || status >= 300 || !response) {
-        PDS_LOG_DEBUG(@"PLC Lookup failed for URL: %@, status: %ld, error: %@, response: %@", url, (long)status, error, response);
+        GZ_LOG_DEBUG(@"PLC Lookup failed for URL: %@, status: %ld, error: %@, response: %@", url, (long)status, error, response);
         return @{@"error": @"plc_lookup_failed", @"message": error.localizedDescription ?: @"DID lookup failed"};
     }
     return response;
@@ -1624,8 +1624,8 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
     __block NSError *requestError = nil;
     dispatch_semaphore_t sem = dispatch_semaphore_create(0);
 
-    PDSSafeHTTPClient *client = self.httpClient ?: [PDSSafeHTTPClient sharedClient];
-    [client performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *response, NSError *err) {
+    ATProtoSafeHTTPClient *client = self.httpClient ?: [ATProtoSafeHTTPClient sharedClient];
+    [client performSafeDataTaskWithRequest:request options:[ATProtoSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *response, NSError *err) {
         responseData = data;
         httpResponse = [response isKindOfClass:[NSHTTPURLResponse class]] ? (NSHTTPURLResponse *)response : nil;
         requestError = err;
@@ -1719,8 +1719,8 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
     __block NSError *requestError = nil;
     dispatch_semaphore_t sem = dispatch_semaphore_create(0);
 
-    PDSSafeHTTPClient *client = self.httpClient ?: [PDSSafeHTTPClient sharedClient];
-    [client performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *response, NSError *err) {
+    ATProtoSafeHTTPClient *client = self.httpClient ?: [ATProtoSafeHTTPClient sharedClient];
+    [client performSafeDataTaskWithRequest:request options:[ATProtoSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *response, NSError *err) {
         responseData = data;
         httpResponse = [response isKindOfClass:[NSHTTPURLResponse class]] ? (NSHTTPURLResponse *)response : nil;
         requestError = err;
@@ -1806,8 +1806,8 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
     __block NSInteger statusCode = 0;
     dispatch_semaphore_t sem = dispatch_semaphore_create(0);
 
-    PDSSafeHTTPClient *client = self.httpClient ?: [PDSSafeHTTPClient sharedClient];
-    [client performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *response, NSError *error) {
+    ATProtoSafeHTTPClient *client = self.httpClient ?: [ATProtoSafeHTTPClient sharedClient];
+    [client performSafeDataTaskWithRequest:request options:[ATProtoSafeHTTPClientOptions defaultOptions] completion:^(NSData *data, NSURLResponse *response, NSError *error) {
         if (!error && [response isKindOfClass:[NSHTTPURLResponse class]]) {
             statusCode = ((NSHTTPURLResponse *)response).statusCode;
         }

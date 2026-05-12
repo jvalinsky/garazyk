@@ -11,7 +11,7 @@
 #import "Network/PDSHttpMetricsRoutePack.h"
 
 #import "Metrics/PDSMetrics.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
@@ -28,7 +28,7 @@
              [response setBodyString:[[PDSMetrics sharedMetrics] exportPrometheus]];
            }];
 
-  PDS_LOG_DEBUG(@"PDSHttpMetricsRoutePack: Metrics endpoint registered");
+  GZ_LOG_DEBUG(@"PDSHttpMetricsRoutePack: Metrics endpoint registered");
 }
 
 @end

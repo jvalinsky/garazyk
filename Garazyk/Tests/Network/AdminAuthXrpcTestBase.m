@@ -14,6 +14,12 @@
 - (void)setUp {
     [super setUp];
 
+    // Clear any proxy/upstream env vars that would cause PDSApplication
+    // to try connecting to external services during tests
+    unsetenv("PDS_APPVIEW_URL");
+    unsetenv("PDS_CHAT_URL");
+    unsetenv("PDS_ISSUER");
+
     // Set required environment variables before creating PDSApplication
     // (matching RepoAuthXrpcTestBase setup which works correctly)
     setenv("PDS_AVAILABLE_USER_DOMAINS", "test", 1);

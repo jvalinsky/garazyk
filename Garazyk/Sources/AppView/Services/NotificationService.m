@@ -39,7 +39,7 @@
                                    @"updated_at TEXT DEFAULT (datetime('now')), "
                                    @"UNIQUE(did, device_token))";
 
-    [self.database executeRawSQL:createPushTableSQL error:nil];
+    [self.database executeParameterizedUpdate:createPushTableSQL params:@[] error:nil];
 
     NSString *createNotificationsTableSQL = @"CREATE TABLE IF NOT EXISTS notifications ("
                                              @"id INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -52,10 +52,10 @@
                                              @"is_read INTEGER DEFAULT 0, "
                                              @"indexed_at TEXT DEFAULT (datetime('now')))";
 
-    [self.database executeRawSQL:createNotificationsTableSQL error:nil];
+    [self.database executeParameterizedUpdate:createNotificationsTableSQL params:@[] error:nil];
 
     // Migration: add author_did column if it doesn't exist
-    [self.database executeRawSQL:@"ALTER TABLE notifications ADD COLUMN author_did TEXT NOT NULL DEFAULT ''" error:nil];
+    [self.database executeParameterizedUpdate:@"ALTER TABLE notifications ADD COLUMN author_did TEXT NOT NULL DEFAULT ''" params:@[] error:nil];
 
     NSString *createActivitySubscriptionsSQL = @"CREATE TABLE IF NOT EXISTS actor_activity_subscriptions ("
                                               @"id INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -66,7 +66,7 @@
                                               @"created_at TEXT DEFAULT (datetime('now')), "
                                               @"updated_at TEXT DEFAULT (datetime('now')), "
                                               @"UNIQUE(owner_did, subject_did))";
-    [self.database executeRawSQL:createActivitySubscriptionsSQL error:nil];
+    [self.database executeParameterizedUpdate:createActivitySubscriptionsSQL params:@[] error:nil];
 }
 
 - (BOOL)registerPushForActor:(NSString *)actorDID

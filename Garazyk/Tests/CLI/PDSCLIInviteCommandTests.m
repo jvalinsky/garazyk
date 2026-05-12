@@ -65,7 +65,7 @@
     PDSDatabase *db = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
     [db openWithError:nil];
     
-    [db executeRawSQL:@"CREATE TABLE invite_codes (id TEXT PRIMARY KEY, code TEXT UNIQUE, account_did TEXT, created_at TEXT, uses INTEGER, max_uses INTEGER, disabled INTEGER)" error:nil];
+    [db executeUnsafeRawSQL:@"CREATE TABLE invite_codes (id TEXT PRIMARY KEY, code TEXT UNIQUE, account_did TEXT, created_at TEXT, uses INTEGER, max_uses INTEGER, disabled INTEGER)" error:nil];
     
     [db executeParameterizedUpdate:@"INSERT INTO invite_codes VALUES (?, ?, ?, ?, ?, ?, ?)"
                             params:@[@"1", @"ABCD-1234-EFGH-5678", @"admin", @"2026-01-03T00:00:00Z", @0, @1, @0]

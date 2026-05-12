@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "Network/PDSSafeHTTPClient.h"
+#import "Network/ATProtoSafeHTTPClient.h"
 #import "ChatAuthManager.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Auth/JWT.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 
 @interface ChatAuthManager ()
@@ -58,7 +58,7 @@ static NSString *ChatAuthURLByAppendingPath(NSString *baseURL, NSString *path) {
     __block NSError *fetchError = nil;
     __block NSInteger statusCode = 0;
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:[PDSSafeHTTPClientOptions defaultOptions] completion:^(NSData * _Nullable responseData, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
+    [[ATProtoSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:[ATProtoSafeHTTPClientOptions defaultOptions] completion:^(NSData * _Nullable responseData, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
             data = responseData;
             fetchError = error;
             if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
@@ -69,14 +69,14 @@ static NSString *ChatAuthURLByAppendingPath(NSString *baseURL, NSString *path) {
     dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
 
     if (!data || (statusCode != 0 && (statusCode < 200 || statusCode >= 300))) {
-        PDS_LOG_ERROR(@"ChatAuthManager: failed to fetch JWKS from %@: status=%ld error=%@",
+        GZ_LOG_ERROR(@"ChatAuthManager: failed to fetch JWKS from %@: status=%ld error=%@",
                       jwksURL, (long)statusCode, fetchError);
         return nil;
     }
 
     id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
     if (![json isKindOfClass:[NSDictionary class]]) {
-        PDS_LOG_ERROR(@"ChatAuthManager: JWKS from %@ was not a JSON object", jwksURL);
+        GZ_LOG_ERROR(@"ChatAuthManager: JWKS from %@ was not a JSON object", jwksURL);
         return nil;
     }
 
@@ -138,7 +138,7 @@ static NSString *ChatAuthURLByAppendingPath(NSString *baseURL, NSString *path) {
             self.cachedPdsUrl = url;
             self.lastKeyFetchTime = [[NSDate date] timeIntervalSince1970];
         });
-        PDS_LOG_INFO(@"ChatAuthManager: fetched public key from PDS JWKS");
+        GZ_LOG_INFO(@"ChatAuthManager: fetched public key from PDS JWKS");
     }
     return publicKey ?: cachedKey;
 }
@@ -148,11 +148,11 @@ static NSString *ChatAuthURLByAppendingPath(NSString *baseURL, NSString *path) {
     NSString *kty = jwk[@"kty"];
     NSString *crv = jwk[@"crv"];
     if (![kty isEqualToString:@"EC"]) {
-        PDS_LOG_ERROR(@"ChatAuthManager: JWK kty is not EC: %@", kty);
+        GZ_LOG_ERROR(@"ChatAuthManager: JWK kty is not EC: %@", kty);
         return nil;
     }
     if (![crv isEqualToString:@"P-256"] && ![crv isEqualToString:@"secp256k1"]) {
-        PDS_LOG_ERROR(@"ChatAuthManager: JWK crv not supported: %@ (expected P-256 or secp256k1)", crv);
+        GZ_LOG_ERROR(@"ChatAuthManager: JWK crv not supported: %@ (expected P-256 or secp256k1)", crv);
         return nil;
     }
 
@@ -251,7 +251,7 @@ static NSString *ChatAuthURLByAppendingPath(NSString *baseURL, NSString *path) {
 
         NSError *verifyError = nil;
         if (![verifier verifyJWT:jwt error:&verifyError]) {
-            PDS_LOG_ERROR(@"ChatAuthManager: JWT signature verification failed: %@", verifyError.localizedDescription);
+            GZ_LOG_ERROR(@"ChatAuthManager: JWT signature verification failed: %@", verifyError.localizedDescription);
             if (response) {
                 response.statusCode = 401;
                 [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"JWT signature verification failed"}];
@@ -260,7 +260,7 @@ static NSString *ChatAuthURLByAppendingPath(NSString *baseURL, NSString *path) {
         }
     } else if (self.pdsUrl.length > 0) {
         // PDS URL is configured but we couldn't fetch the key — reject
-        PDS_LOG_ERROR(@"ChatAuthManager: PDS URL configured but failed to fetch public key");
+        GZ_LOG_ERROR(@"ChatAuthManager: PDS URL configured but failed to fetch public key");
         if (response) {
             response.statusCode = 503;
             [response setJsonBody:@{@"error": @"KeyUnavailable", @"message": @"Cannot verify token: PDS public key unavailable"}];

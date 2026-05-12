@@ -16,8 +16,9 @@
 #import "Auth/PDSReplayCache.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Metrics/PDSMetrics.h"
+#import "Security/PDSSecurityCompare.h"
 #import "Auth/OAuthProvider/OAuthProviderProtocols.h"
 #import <Security/Security.h>
 
@@ -186,7 +187,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
     if (isDPoP && request) {
         dpopURL = [self expectedDPoPURLForRequest:request];
         if (!dpopURL) {
-            PDS_LOG_AUTH_WARN(@"Unable to construct DPoP URL for request");
+            GZ_LOG_AUTH_WARN(@"Unable to construct DPoP URL for request");
             if (error) {
                 *error = [NSError errorWithDomain:AuthVerifierErrorDomain
                                              code:AuthVerifierErrorInvalidRequest
@@ -269,8 +270,8 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
         return nil;
     }
 
-    BOOL isLocalIssuer = [issuer isEqualToString:self.localIssuer] ||
-                         [issuer isEqualToString:self.expectedAudience];
+    BOOL isLocalIssuer = [PDSSecurityCompare constantTimeEqualString:issuer string:self.localIssuer] ||
+                         [PDSSecurityCompare constantTimeEqualString:issuer string:self.expectedAudience];
 
     if (isLocalIssuer) {
         JWTVerifier *verifier = [[JWTVerifier alloc] init];
@@ -368,7 +369,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
         return nil;
     }
 
-    if (audience && self.expectedAudience.length > 0 && ![audience isEqualToString:self.expectedAudience]) {
+    if (audience && self.expectedAudience.length > 0 && ![PDSSecurityCompare constantTimeEqualString:audience string:self.expectedAudience]) {
         if (error) {
             *error = [NSError errorWithDomain:AuthVerifierErrorDomain
                                          code:AuthVerifierErrorInvalidAudience
@@ -386,7 +387,7 @@ NSString * const AuthVerifierErrorDomain = @"com.atproto.authverifier";
             }
             return nil;
         }
-        if (dpopThumbprint && ![tokenJkt isEqualToString:dpopThumbprint]) {
+        if (dpopThumbprint && ![PDSSecurityCompare constantTimeEqualString:tokenJkt string:dpopThumbprint]) {
             if (error) {
                 *error = [NSError errorWithDomain:AuthVerifierErrorDomain
                                              code:AuthVerifierErrorDPoPThumbprintMismatch

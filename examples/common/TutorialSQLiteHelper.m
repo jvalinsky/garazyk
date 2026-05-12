@@ -76,9 +76,8 @@ NSString * const TutorialSQLiteErrorDomain = @"com.atproto.tutorial.sqlite";
     return success;
 }
 
-- (nullable id)executeQuery:(NSError **)error
-                      block:(id _Nullable (^)(sqlite3 *db))block {
-    if (!block) return nil;
+- (nullable id)executeUnsafeRawQuery:(NSError **)error
+                        block:(id _Nullable (^)(sqlite3 *db))block {    if (!block) return nil;
 
     __block id result = nil;
     __block NSError *blockError = nil;

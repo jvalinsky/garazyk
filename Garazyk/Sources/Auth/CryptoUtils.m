@@ -14,6 +14,7 @@
 
 #import "Auth/CryptoUtils.h"
 #import "Security/PDSSecurityCompare.h"
+#import "Security/PDSKeyEnvelope.h"
 #if !TARGET_OS_LINUX
 #import <CommonCrypto/CommonHMAC.h>
 #import <CommonCrypto/CommonDigest.h>
@@ -159,63 +160,11 @@
 }
 
 + (nullable NSData *)encryptData:(NSData *)data withKey:(NSData *)key {
-    if (key.length != 32) return nil;
-    
-    uint8_t ivBytes[kCCBlockSizeAES128];
-    if (SecRandomCopyBytes(kSecRandomDefault, kCCBlockSizeAES128, ivBytes) != errSecSuccess) {
-        return nil;
-    }
-    
-    size_t bufferSize = data.length + kCCBlockSizeAES128;
-    NSMutableData *cipherData = [NSMutableData dataWithLength:bufferSize];
-    
-    size_t numBytesEncrypted = 0;
-    CCCryptorStatus status = CCCrypt(kCCEncrypt,
-                                     kCCAlgorithmAES128,
-                                     kCCOptionPKCS7Padding,
-                                     key.bytes, kCCKeySizeAES256,
-                                     ivBytes,
-                                     data.bytes, data.length,
-                                     cipherData.mutableBytes, bufferSize,
-                                     &numBytesEncrypted);
-    
-    if (status != kCCSuccess) {
-        return nil;
-    }
-    
-    cipherData.length = numBytesEncrypted;
-    
-    NSMutableData *result = [NSMutableData dataWithBytes:ivBytes length:kCCBlockSizeAES128];
-    [result appendData:cipherData];
-    
-    return result;
+    return [PDSKeyEnvelope seal:data withKey:key error:nil];
 }
 
 + (nullable NSData *)decryptData:(NSData *)data withKey:(NSData *)key {
-    if (key.length != 32 || data.length < kCCBlockSizeAES128) return nil;
-    
-    const uint8_t *iv = data.bytes;
-    NSData *ciphertext = [data subdataWithRange:NSMakeRange(kCCBlockSizeAES128, data.length - kCCBlockSizeAES128)];
-    
-    size_t bufferSize = ciphertext.length + kCCBlockSizeAES128;
-    NSMutableData *plainData = [NSMutableData dataWithLength:bufferSize];
-    
-    size_t numBytesDecrypted = 0;
-    CCCryptorStatus status = CCCrypt(kCCDecrypt,
-                                     kCCAlgorithmAES128,
-                                     kCCOptionPKCS7Padding,
-                                     key.bytes, kCCKeySizeAES256,
-                                     iv,
-                                     ciphertext.bytes, ciphertext.length,
-                                     plainData.mutableBytes, bufferSize,
-                                     &numBytesDecrypted);
-    
-    if (status != kCCSuccess) {
-        return nil;
-    }
-    
-    plainData.length = numBytesDecrypted;
-    return plainData;
+    return [PDSKeyEnvelope openEnvelope:data withKey:key error:nil];
 }
 
 /*!
@@ -225,15 +174,11 @@
 
  @discussion Uses PBKDF2 with the following parameters:
  - Algorithm: HMAC-SHA256
- - Iterations: 100,000 (OWASP 2023 minimum recommendation is 600,000)
+ - Iterations: 600,000 (OWASP 2023 minimum recommendation)
  - Output length: 32 bytes (256 bits)
 
- Note: This method uses 100,000 iterations for encryption key derivation to balance
- security with performance for frequently-executed operations. This is higher than
- legacy recommendations but lower than the current OWASP guideline of 600,000 for
- password hashing. For password hashing (PDSAccountService), 600,000 iterations are used.
-
- Consider increasing iterations to 600,000 in a future version if performance allows.
+ Note: This method uses 600,000 iterations for encryption key derivation to align
+ with the current OWASP guideline for password hashing and sensitive key derivation.
 
  @param password The password string (nonnull, converted to UTF-8).
  @param salt The salt data (nonnull, typically 16+ bytes).
@@ -247,7 +192,7 @@
                                       passwordData.bytes, passwordData.length,
                                       salt.bytes, salt.length,
                                       kCCPRFHmacAlgSHA256,
-                                      100000,
+                                      600000,
                                       derivedKey.mutableBytes, 32);
     
     if (result != kCCSuccess) {

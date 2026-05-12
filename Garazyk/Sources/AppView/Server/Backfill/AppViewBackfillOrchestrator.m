@@ -11,7 +11,7 @@
 #import "AppView/Server/AppViewTypes.h"
 #import "AppView/Server/Indexers/AppViewIndexer.h"
 #import "AppView/Server/Backfill/AppViewBackfillWorker.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 
 // ---------------------------------------------------------------------------
@@ -71,7 +71,7 @@
 
 - (void)start {
     _stopping = NO;
-    PDS_LOG_INFO(@"[AppView Backfill] Orchestrator starting, sweeping pending repos…");
+    GZ_LOG_INFO(@"[AppView Backfill] Orchestrator starting, sweeping pending repos…");
 
     dispatch_async(_schedulerQueue, ^{
         [self _sweepPendingRepos];
@@ -80,7 +80,7 @@
 
 - (void)stop {
     _stopping = YES;
-    PDS_LOG_INFO(@"[AppView Backfill] Orchestrator stopping.");
+    GZ_LOG_INFO(@"[AppView Backfill] Orchestrator stopping.");
 }
 
 - (void)_sweepPendingRepos {
@@ -89,7 +89,7 @@
     NSArray<AppViewRepoSyncState *> *pending =
         [_database loadRepoSyncStatesWithStatus:AppViewRepoSyncStatusPending limit:500 error:&err];
     if (err) {
-        PDS_LOG_WARN(@"[AppView Backfill] Sweep failed: %@", err.localizedDescription);
+        GZ_LOG_WARN(@"[AppView Backfill] Sweep failed: %@", err.localizedDescription);
         return;
     }
     NSArray<AppViewRepoSyncState *> *dirty =
@@ -100,7 +100,7 @@
     for (AppViewRepoSyncState *s in dirty)   [dids addObject:s.did];
 
     if (dids.count > 0) {
-        PDS_LOG_INFO(@"[AppView Backfill] Sweep enqueued %lu repos.", (unsigned long)dids.count);
+        GZ_LOG_INFO(@"[AppView Backfill] Sweep enqueued %lu repos.", (unsigned long)dids.count);
         [_pendingQueue addObjectsFromArray:dids];
         [self _scheduleNextWorkers];
     }
@@ -131,7 +131,7 @@
 }
 
 - (void)notifyGapDetectedForDID:(NSString *)did atSeq:(int64_t)seq {
-    PDS_LOG_INFO(@"[AppView Backfill] Gap detected for %@ at seq %lld — marking dirty", did, (long long)seq);
+    GZ_LOG_INFO(@"[AppView Backfill] Gap detected for %@ at seq %lld — marking dirty", did, (long long)seq);
     dispatch_async(_schedulerQueue, ^{
         [self.database markRepoDirty:did error:nil];
         if (![self.pendingQueue containsObject:did])
@@ -201,7 +201,7 @@
 // ---------------------------------------------------------------------------
 
 - (void)worker:(AppViewBackfillWorker *)worker didCompleteForDID:(NSString *)did lastRev:(NSString *)lastRev {
-    PDS_LOG_INFO(@"[AppView Backfill] Completed backfill for %@", did);
+    GZ_LOG_INFO(@"[AppView Backfill] Completed backfill for %@", did);
 
     dispatch_async(_schedulerQueue, ^{
         NSString *host = [self _hostForDID:did];
@@ -218,7 +218,7 @@
         NSError *err = nil;
         cachedDeltas = [self.database dequeuePendingDeltasForDID:did error:&err];
         if (cachedDeltas.count > 0) {
-            PDS_LOG_INFO(@"[AppView Backfill] Replaying %lu pending deltas for %@",
+            GZ_LOG_INFO(@"[AppView Backfill] Replaying %lu pending deltas for %@",
                          (unsigned long)cachedDeltas.count, did);
             for (AppViewPendingDelta *delta in cachedDeltas) {
                 // Dispatch to indexers as if it were a live event
@@ -241,7 +241,7 @@
 didFailForDID:(NSString *)did
  error:(NSError *)error
 rateLimitedUntil:(nullable NSDate *)rateLimitedUntil {
-    PDS_LOG_WARN(@"[AppView Backfill] Backfill failed for %@: %@", did, error.localizedDescription);
+    GZ_LOG_WARN(@"[AppView Backfill] Backfill failed for %@: %@", did, error.localizedDescription);
 
     dispatch_async(_schedulerQueue, ^{
         NSString *host = [self _hostForDID:did];

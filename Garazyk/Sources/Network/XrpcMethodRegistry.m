@@ -29,7 +29,7 @@
 #import "Database/PDSDatabase.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Email/PDSEmailProvider.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "Identity/HandleResolver.h"
@@ -508,7 +508,7 @@ static void registerMethodsWithDispatcherUsingServices(
                                        serviceDatabases:serviceDatabases
                                                   error:&gateError];
   if (gateError) {
-    PDS_LOG_ERROR(@"Failed to create registration gate: %@", gateError);
+    GZ_LOG_ERROR(@"Failed to create registration gate: %@", gateError);
   }
 
   // Register domain modules in order

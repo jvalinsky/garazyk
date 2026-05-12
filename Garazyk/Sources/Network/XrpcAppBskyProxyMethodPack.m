@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Network/XrpcAppBskyProxyMethodPack.h"
 
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/XrpcHandler.h"
@@ -25,7 +25,7 @@
                    methodId:(NSString *)methodId
                  dispatcher:(XrpcDispatcher *)dispatcher {
   if (dispatcher.proxyURL) {
-    PDS_LOG_INFO(@"Proxying XRPC method '%@' to %@", methodId,
+    GZ_LOG_INFO(@"Proxying XRPC method '%@' to %@", methodId,
                  dispatcher.proxyURL);
     XrpcProxyHandler *proxy = [[XrpcProxyHandler alloc]
         initWithProxyURL:dispatcher.proxyURL
@@ -33,7 +33,7 @@
                   minter:dispatcher.jwtMinter];
     [proxy handleRequest:request response:response];
   } else {
-    PDS_LOG_INFO(
+    GZ_LOG_INFO(
         @"Method '%@' not supported locally and no upstream AppView configured",
         methodId);
     [self setUnsupportedError:response methodId:methodId];

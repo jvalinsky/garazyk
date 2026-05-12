@@ -6,7 +6,7 @@
 #import "Network/XrpcAuthHelper.h"
 #import "Auth/JWT.h"
 #import "App/PDSConfiguration.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @implementation XrpcProxyHandler
 
@@ -40,7 +40,7 @@
           upstreamDID:(NSString *)upstreamDID {
     
     if (!baseURL || !upstreamDID) {
-        PDS_LOG_ERROR(@"Proxy request failed: No target baseURL or upstreamDID provided");
+        GZ_LOG_ERROR(@"Proxy request failed: No target baseURL or upstreamDID provided");
         response.statusCode = HttpStatusInternalServerError;
         [response setJsonBody:@{@"error": @"InternalError", @"message": @"Proxy target not configured"}];
         return;
@@ -79,7 +79,7 @@
     NSError *mintError = nil;
     NSString *token = [self.minter signPayload:payload error:&mintError];
     if (!token) {
-        PDS_LOG_ERROR(@"Failed to mint proxy token: %@", mintError);
+        GZ_LOG_ERROR(@"Failed to mint proxy token: %@", mintError);
         response.statusCode = HttpStatusInternalServerError;
         [response setJsonBody:@{@"error": @"InternalError", @"message": @"Failed to create service token"}];
         return;
@@ -129,11 +129,11 @@
             // NSURLSession timeout errors should return 504, not 503
             if ([error.domain isEqualToString:NSURLErrorDomain] &&
                 error.code == NSURLErrorTimedOut) {
-                PDS_LOG_ERROR(@"Proxy request timed out (NSURLConnection): %@", request.path);
+                GZ_LOG_ERROR(@"Proxy request timed out (NSURLConnection): %@", request.path);
                 response.statusCode = 504;
                 [response setJsonBody:@{@"error": @"UpstreamTimeout", @"message": @"Upstream AppView did not respond within the timeout window"}];
             } else {
-                PDS_LOG_ERROR(@"Proxy request failed to upstream %@: %@", baseURL, error);
+                GZ_LOG_ERROR(@"Proxy request failed to upstream %@: %@", baseURL, error);
                 response.statusCode = HttpStatusServiceUnavailable;
                 [response setJsonBody:@{@"error": @"UpstreamError", @"message": @"Failed to contact upstream service"}];
             }
@@ -164,7 +164,7 @@
     if (waitResult != 0) {
         timedOut = YES;
         [task cancel];
-        PDS_LOG_ERROR(@"Proxy request timed out after %.0f seconds: %@", proxyTimeoutSeconds, request.path);
+        GZ_LOG_ERROR(@"Proxy request timed out after %.0f seconds: %@", proxyTimeoutSeconds, request.path);
         response.statusCode = 504;
         [response setJsonBody:@{@"error": @"UpstreamTimeout", @"message": @"Upstream AppView did not respond within the timeout window"}];
     }

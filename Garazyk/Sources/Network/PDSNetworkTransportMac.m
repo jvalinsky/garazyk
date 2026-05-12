@@ -9,7 +9,7 @@
  */
 
 #import "PDSNetworkTransportMac.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import <Foundation/Foundation.h>
 
 @implementation PDSNetworkTransportFactory
@@ -53,8 +53,12 @@
         nw_endpoint_t endpoint = nw_endpoint_create_host(host.UTF8String, [[NSString stringWithFormat:@"%lu", (unsigned long)port] UTF8String]);
         nw_parameters_t parameters;
         
-        // If port is 80, 2583 (local dev), or other known plain ports, use plain TCP
-        if (port == 80 || port == 2583 || port == 2584 || port == 2582 || port == 3200) {
+        BOOL isLoopback = [host isEqualToString:@"127.0.0.1"] || 
+                          [host isEqualToString:@"::1"] || 
+                          [host isEqualToString:@"localhost"];
+        
+        // Use plain TCP for loopback or known plain ports
+        if (isLoopback || port == 80 || port == 2583 || port == 2584 || port == 2582 || port == 3200) {
             parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
         } else {
             parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DEFAULT_CONFIGURATION, NW_PARAMETERS_DEFAULT_CONFIGURATION);
@@ -83,7 +87,7 @@
                 case nw_connection_state_waiting: 
                     pdsState = PDSNetworkConnectionStateWaiting;
                     if (nsError) {
-                        PDS_LOG_WARN(@"[Network] Connection waiting: %@", nsError.localizedDescription);
+                        GZ_LOG_WARN(@"[Network] Connection waiting: %@", nsError.localizedDescription);
                     }
                     break;
                 case nw_connection_state_preparing: pdsState = PDSNetworkConnectionStatePreparing; break;
@@ -177,7 +181,7 @@
         if (port == 80 || port == 2583 || port == 2584 || port == 2582 || port == 3200) {
             parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
         } else {
-            parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
+            parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DEFAULT_CONFIGURATION, NW_PARAMETERS_DEFAULT_CONFIGURATION);
         }
         char portStr[16];
         snprintf(portStr, sizeof(portStr), "%lu", (unsigned long)port);

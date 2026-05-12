@@ -14,7 +14,7 @@
 - (void)setUp {
     [super setUp];
     self.resolver = [[HandleResolver alloc] init];
-    // skipSSRFCheck property removed — PDSSafeHTTPClient handles SSRF validation
+    // skipSSRFCheck property removed — ATProtoSafeHTTPClient handles SSRF validation
     // atomically during the request. In test mode, allowPrivateHosts is set
     // automatically via PDSHandleResolverRunningTests().
 }
@@ -85,12 +85,12 @@
 
 - (void)testSSRFProtectionIsAlwaysEnabled {
     // skipSSRFCheck property removed — SSRF validation is always performed
-    // by PDSSafeHTTPClient during the actual request. There is no way to
+    // by ATProtoSafeHTTPClient during the actual request. There is no way to
     // disable it in production code. Tests use allowPrivateHosts via
     // PDSHandleResolverRunningTests() detection.
     HandleResolver *newResolver = [[HandleResolver alloc] init];
     XCTAssertNotNil(newResolver, @"Resolver should be initialized");
-    // SSRF validation is enforced by PDSSafeHTTPClient, not a toggle
+    // SSRF validation is enforced by ATProtoSafeHTTPClient, not a toggle
 }
 
 @end

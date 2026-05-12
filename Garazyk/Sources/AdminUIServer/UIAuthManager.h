@@ -44,6 +44,11 @@ extern const NSTimeInterval kUIAuthDefaultSessionTTL;
 /// Generate a new CSRF nonce and return the Set-Cookie header value.
 - (NSString *)createCSRFNonceCookie:(BOOL)secure;
 
+/// Generate a new CSRF nonce and return both the raw value and the Set-Cookie header.
+- (void)createCSRFNonce:(NSString * _Nonnull * _Nonnull)outNonce
+                 cookie:(NSString * _Nonnull * _Nonnull)outCookie
+                 secure:(BOOL)secure;
+
 @end
 
 NS_ASSUME_NONNULL_END

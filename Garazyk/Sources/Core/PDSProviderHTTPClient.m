@@ -9,8 +9,8 @@
  */
 
 #import "Core/PDSProviderHTTPClient.h"
-#import "Network/PDSSafeHTTPClient.h"
-#import "Debug/PDSLogger.h"
+#import "Network/ATProtoSafeHTTPClient.h"
+#import "Debug/GZLogger.h"
 
 // Suppress -Wblock-capture-autoreleasing: the error out-parameter captured
 // by dispatch_sync in the safe HTTP client is safe because dispatch_sync
@@ -44,7 +44,7 @@ NSString *const PDSProviderHTTPClientErrorDomain = @"com.atproto.pds.providerhtt
         _authHeader = [authHeader copy];
         _timeoutInterval = 30.0;
         _maxRetries = 3;
-        _safeHTTPClient = [PDSSafeHTTPClient sharedClient];
+        _safeHTTPClient = [ATProtoSafeHTTPClient sharedClient];
     }
     return self;
 }
@@ -175,7 +175,7 @@ NSString *const PDSProviderHTTPClientErrorDomain = @"com.atproto.pds.providerhtt
     __block NSDictionary *result = nil;
     __block NSError *requestError = nil;
 
-    PDS_LOG_HTTP_INFO(@"Provider HTTP request: %@ %@", request.HTTPMethod, request.URL);
+    GZ_LOG_HTTP_INFO(@"Provider HTTP request: %@ %@", request.HTTPMethod, request.URL);
 
     NSUInteger attempt = 0;
     __block BOOL success = NO;
@@ -183,7 +183,7 @@ NSString *const PDSProviderHTTPClientErrorDomain = @"com.atproto.pds.providerhtt
     while (attempt <= self.maxRetries && !success) {
         if (attempt > 0) {
             NSTimeInterval delay = pow(2.0, (double)attempt);
-            PDS_LOG_HTTP_INFO(@"Retrying request (attempt %lu) in %.1f seconds...",
+            GZ_LOG_HTTP_INFO(@"Retrying request (attempt %lu) in %.1f seconds...",
                               (unsigned long)attempt, delay);
             [NSThread sleepForTimeInterval:delay];
         }
@@ -191,7 +191,7 @@ NSString *const PDSProviderHTTPClientErrorDomain = @"com.atproto.pds.providerhtt
         dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
 
         [self.safeHTTPClient performSafeDataTaskWithRequest:request
-                                                    options:[PDSSafeHTTPClientOptions defaultOptions]
+                                                    options:[ATProtoSafeHTTPClientOptions defaultOptions]
                                                 completion:^(NSData * _Nullable data,
                                                              NSURLResponse * _Nullable response,
                                                              NSError * _Nullable taskError) {

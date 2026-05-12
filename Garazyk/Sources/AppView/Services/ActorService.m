@@ -8,7 +8,7 @@
 #import "Core/ATProtoCBORSerialization.h"
 #import "Database/Schema.h"
 #import "Core/NSDateFormatter+ATProto.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @interface ActorService ()
 @property (nonatomic, strong) id<PDSQueryDatabase> database;

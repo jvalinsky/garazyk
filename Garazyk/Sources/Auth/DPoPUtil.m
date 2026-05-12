@@ -18,6 +18,7 @@
 #import "Auth/Crypto/AuthCryptoJWK.h"
 #import "Auth/Crypto/AuthCryptoECDSA.h"
 #import "Auth/PDSReplayCache.h"
+#import "Security/PDSSecurityCompare.h"
 #import <CommonCrypto/CommonDigest.h>
 #import <Security/Security.h>
 
@@ -201,7 +202,7 @@ NSString * const DPoPErrorDomain = @"com.atproto.pds.dpop";
     if (publicKey) {
         // Extra check: ensure provided publicKey matches the one in the DPoP header
         NSString *expectedThumbprint = [AuthCryptoJWK thumbprintForSecKey:publicKey error:error];
-        if (!expectedThumbprint || ![thumbprint isEqualToString:expectedThumbprint]) {
+        if (!expectedThumbprint || ![PDSSecurityCompare constantTimeEqualString:thumbprint string:expectedThumbprint]) {
             if (error) {
                 *error = [NSError errorWithDomain:@"com.atproto.pds.dpop"
                                              code:-14

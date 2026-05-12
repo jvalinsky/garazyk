@@ -12,7 +12,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/XrpcHandler.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 static const uint16_t kGermDefaultPort = 8082;
 
@@ -48,7 +48,7 @@ static const uint16_t kGermDefaultPort = 8082;
 - (BOOL)startWithDataDirectory:(NSString *)dataDirectory
                       port:(uint16_t)port
                      error:(NSError **)error {
-    PDS_LOG_INFO(@"Starting Germ E2EE mailbox service...");
+    GZ_LOG_INFO(@"Starting Germ E2EE mailbox service...");
 
     // 1. Ensure data directory exists
     NSFileManager *fm = [NSFileManager defaultManager];
@@ -67,7 +67,7 @@ static const uint16_t kGermDefaultPort = 8082;
 
     // Apply schema
     NSString *schemaSQL = [[GermMailboxSchemaManager sharedManager] mailboxSchemaSQL];
-    if (![self.db executeRawSQL:schemaSQL error:error]) {
+    if (![self.db executeParameterizedUpdate:schemaSQL params:@[] error:error]) {
         return NO;
     }
 
@@ -111,12 +111,12 @@ static const uint16_t kGermDefaultPort = 8082;
     }];
 
     if (![self.httpServer startWithError:error]) {
-        PDS_LOG_ERROR(@"Failed to start Germ HTTP server on port %d: %@", port, *error ?: @"unknown");
+        GZ_LOG_ERROR(@"Failed to start Germ HTTP server on port %d: %@", port, *error ?: @"unknown");
         return NO;
     }
 
     self.isRunning = YES;
-    PDS_LOG_INFO(@"Germ E2EE mailbox service started on port %d", port);
+    GZ_LOG_INFO(@"Germ E2EE mailbox service started on port %d", port);
     return YES;
 }
 
@@ -127,7 +127,7 @@ static const uint16_t kGermDefaultPort = 8082;
     [self.db close];
 
     self.isRunning = NO;
-    PDS_LOG_INFO(@"Germ E2EE mailbox service stopped");
+    GZ_LOG_INFO(@"Germ E2EE mailbox service stopped");
 }
 
 @end

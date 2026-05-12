@@ -9,7 +9,7 @@
 #import "AppView/Server/Indexers/AppViewFeedIndexer.h"
 #import "AppView/Server/AppViewDatabase.h"
 #import "AppView/Server/Ingest/AppViewIngestEngine.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 static NSSet<NSString *> *feedCollections(void) {
     static NSSet *s;
@@ -79,7 +79,7 @@ static NSSet<NSString *> *feedCollections(void) {
         }
     }
 
-    PDS_LOG_DEBUG(@"[AppViewFeedIndexer] Indexed %@ for %@", collection, did);
+    GZ_LOG_DEBUG(@"[AppViewFeedIndexer] Indexed %@ for %@", collection, did);
     return YES;
 }
 
@@ -112,12 +112,12 @@ static NSSet<NSString *> *feedCollections(void) {
 }
 
 - (BOOL)processPendingDelta:(AppViewPendingDelta *)delta error:(NSError **)error {
-    PDS_LOG_DEBUG(@"[AppViewFeedIndexer] Replaying pending delta for %@", delta.did);
+    GZ_LOG_DEBUG(@"[AppViewFeedIndexer] Replaying pending delta for %@", delta.did);
     return YES;
 }
 
 - (BOOL)deleteRecord:(NSString *)rkey did:(NSString *)did collection:(NSString *)collection error:(NSError **)error {
-    PDS_LOG_DEBUG(@"[AppViewFeedIndexer] Delete %@/%@ for %@", collection, rkey, did);
+    GZ_LOG_DEBUG(@"[AppViewFeedIndexer] Delete %@/%@ for %@", collection, rkey, did);
     return YES;
 }
 

@@ -16,7 +16,7 @@
 #import "AppView/Services/SearchIndexService.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Service/ServiceDatabases.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Network/XrpcAppBskyActorPack.h"
 #import "Network/XrpcAppBskyAgeAssurancePack.h"
 #import "Network/XrpcAppBskyBookmarksPack.h"
@@ -56,7 +56,7 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
   PDSDatabase *appViewDatabase =
       [serviceDatabases serviceDatabaseWithError:&appViewDbError];
   if (!appViewDatabase && appViewDbError) {
-    PDS_LOG_WARN(@"Failed to open service database for app.bsky handlers: %@",
+    GZ_LOG_WARN(@"Failed to open service database for app.bsky handlers: %@",
                  appViewDbError.localizedDescription ?: @"unknown error");
   }
 
@@ -125,12 +125,12 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
       [serviceDatabases serviceDatabaseWithError:&appViewDbError];
 
   if ([PDSConfiguration sharedConfiguration].appViewURL.length > 0) {
-    PDS_LOG_INFO(@"Local AppView disabled; only registering proxy and PDS-side handlers.");
+    GZ_LOG_INFO(@"Local AppView disabled; only registering proxy and PDS-side handlers.");
     [XrpcAppBskyProxyMethodPack registerProxyOnlyMethodsWithDispatcher:dispatcher];
     return;
   }
 
-  PDS_LOG_INFO(@"Local AppView enabled; registering full suite of app.bsky.* handlers.");
+  GZ_LOG_INFO(@"Local AppView enabled; registering full suite of app.bsky.* handlers.");
   
   [XrpcAppBskyActorPack registerAppViewMethodsWithDispatcher:dispatcher
                                                 appViewDatabase:appViewDatabase

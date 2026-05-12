@@ -5,7 +5,7 @@
 #import "PDSDiskBlobProvider.h"
 #import "App/PDSConfiguration.h"
 #import "Core/PDSDataPaths.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 NSString * const PDSBlobProviderFactoryErrorDomain = @"com.atproto.pds.blobproviderfactory";
 
@@ -69,7 +69,7 @@ NSString * const PDSBlobProviderFactoryErrorDomain = @"com.atproto.pds.blobprovi
     }
 
     NSURL *blobStorageDir = [NSURL fileURLWithPath:blobStoragePath];
-    PDS_LOG_INFO_C(PDSLogComponentBlob, @"Initializing disk blob provider at: %@", blobStoragePath);
+    GZ_LOG_INFO_C(GZLogComponentBlob, @"Initializing disk blob provider at: %@", blobStoragePath);
     return [[PDSDiskBlobProvider alloc] initWithStorageDirectory:blobStorageDir];
 }
 
@@ -147,7 +147,7 @@ NSString * const PDSBlobProviderFactoryErrorDomain = @"com.atproto.pds.blobprovi
         return nil;
     }
 
-    PDS_LOG_INFO_C(PDSLogComponentBlob, @"Initializing S3 blob provider: bucket=%@, region=%@, endpoint=%@",
+    GZ_LOG_INFO_C(GZLogComponentBlob, @"Initializing S3 blob provider: bucket=%@, region=%@, endpoint=%@",
                    bucket, region, endpoint ?: @"(AWS S3 default)");
 
     return provider;

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Network/XrpcToolsOzonePack.h"
 
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Admin/PDSAdminAuth.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"

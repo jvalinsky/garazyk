@@ -15,7 +15,7 @@
 
 #import "Identity/HandleResolver.h"
 #import "Identity/ATProtoHandleValidator.h"
-#import "Network/PDSSafeHTTPClient.h"
+#import "Network/ATProtoSafeHTTPClient.h"
 #import "Network/SSRFValidator.h"
 #import "Network/HttpRetryPolicy.h"
 
@@ -46,7 +46,7 @@ static NSString *const kDefaultUserAgent = @"atprotopds/0.1.0";
 }
 @property (nonatomic, strong) HttpRetryPolicy *retryPolicy;
 - (void)executeSafeHTTPSRequest:(NSURLRequest *)request
-                        options:(PDSSafeHTTPClientOptions *)options
+                        options:(ATProtoSafeHTTPClientOptions *)options
                         attempt:(NSInteger)attempt
                      completion:(void (^)(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error))completion;
 @end
@@ -111,7 +111,7 @@ static BOOL PDSHandleResolverRunningTests(void) {
     /*! Normalize handle to standard format. */
     handle = [ATProtoHandleValidator normalizeHandle:handle];
 
-    /*! Prevent SSRF attacks — validation is handled by PDSSafeHTTPClient
+    /*! Prevent SSRF attacks — validation is handled by ATProtoSafeHTTPClient
         during the actual HTTPS request, eliminating the validate-before-fetch
         TOCTOU gap. The client will reject requests to private IP addresses. */
 
@@ -213,7 +213,7 @@ static BOOL PDSHandleResolverRunningTests(void) {
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
     [request setValue:kDefaultUserAgent forHTTPHeaderField:@"User-Agent"];
 
-    PDSSafeHTTPClientOptions *safeOptions = [[PDSSafeHTTPClientOptions alloc] init];
+    ATProtoSafeHTTPClientOptions *safeOptions = [[ATProtoSafeHTTPClientOptions alloc] init];
     safeOptions.timeout = 10.0;
     safeOptions.maxResponseBytes = 1024; // DID responses are tiny
     safeOptions.allowHTTP = NO;
@@ -224,10 +224,10 @@ static BOOL PDSHandleResolverRunningTests(void) {
                            options:safeOptions
                            attempt:0
                         completion:^(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
-        // Map PDSSafeHTTPClient SSRF errors to HandleErrorDomain
-        if (error && [error.domain isEqualToString:PDSSafeHTTPClientErrorDomain]) {
-            if (error.code == PDSSafeHTTPClientErrorSSRFBlocked ||
-                error.code == PDSSafeHTTPClientErrorRedirectBlocked) {
+        // Map ATProtoSafeHTTPClient SSRF errors to HandleErrorDomain
+        if (error && [error.domain isEqualToString:ATProtoSafeHTTPClientErrorDomain]) {
+            if (error.code == ATProtoSafeHTTPClientErrorSSRFBlocked ||
+                error.code == ATProtoSafeHTTPClientErrorRedirectBlocked) {
                 NSError *ssrfError = [NSError errorWithDomain:HandleErrorDomain
                                                         code:HandleErrorSSRFAttempt
                                                     userInfo:@{
@@ -237,7 +237,7 @@ static BOOL PDSHandleResolverRunningTests(void) {
                 completion(nil, ssrfError);
                 return;
             }
-            if (error.code == PDSSafeHTTPClientErrorUnsupportedScheme) {
+            if (error.code == ATProtoSafeHTTPClientErrorUnsupportedScheme) {
                 NSError *schemeError = [NSError errorWithDomain:HandleErrorDomain
                                                            code:HandleErrorInvalidFormat
                                                        userInfo:@{
@@ -303,10 +303,10 @@ static BOOL PDSHandleResolverRunningTests(void) {
 }
 
 - (void)executeSafeHTTPSRequest:(NSURLRequest *)request
-                        options:(PDSSafeHTTPClientOptions *)options
+                        options:(ATProtoSafeHTTPClientOptions *)options
                         attempt:(NSInteger)attempt
                      completion:(void (^)(NSData * _Nullable data, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error))completion {
-    [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
+    [[ATProtoSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
                                                    options:options
                                                 completion:^(NSData *data, NSHTTPURLResponse *response, NSError *error) {
         NSInteger statusCode = response ? response.statusCode : 0;

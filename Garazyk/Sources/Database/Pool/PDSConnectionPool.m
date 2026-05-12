@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Database/Pool/PDSConnectionPool.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 #import <sqlite3.h>
 
@@ -33,11 +33,11 @@
     if ((self = [super init])) {
         // Validate inputs
         if (!path || path.length == 0) {
-            PDS_LOG_DB_ERROR(@"Connection pool initialized with empty path");
+            GZ_LOG_DB_ERROR(@"Connection pool initialized with empty path");
             return nil;
         }
         if (minConnections > maxConnections) {
-            PDS_LOG_DB_ERROR(@"minConnections (%lu) > maxConnections (%lu)",
+            GZ_LOG_DB_ERROR(@"minConnections (%lu) > maxConnections (%lu)",
                             (unsigned long)minConnections, (unsigned long)maxConnections);
             return nil;
         }
@@ -73,7 +73,7 @@
             }
         }
 
-        PDS_LOG_DB_INFO(@"Connection pool created: path=%@, min=%lu, max=%lu",
+        GZ_LOG_DB_INFO(@"Connection pool created: path=%@, min=%lu, max=%lu",
                        path, (unsigned long)minConnections, (unsigned long)maxConnections);
     }
     return self;
@@ -94,7 +94,7 @@
     dispatch_time_t timeout = dispatch_time(DISPATCH_TIME_NOW,
                                            (int64_t)(timeoutSeconds * NSEC_PER_SEC));
     if (dispatch_semaphore_wait(self.connectionSemaphore, timeout) != 0) {
-        PDS_LOG_DB_WARN(@"Connection pool exhausted, timeout after %.1fs", timeoutSeconds);
+        GZ_LOG_DB_WARN(@"Connection pool exhausted, timeout after %.1fs", timeoutSeconds);
         return NULL;
     }
 
@@ -128,7 +128,7 @@
     // If we got a connection but it failed, release semaphore
     if (!connection) {
         dispatch_semaphore_signal(self.connectionSemaphore);
-        PDS_LOG_DB_ERROR(@"Failed to acquire connection from pool");
+        GZ_LOG_DB_ERROR(@"Failed to acquire connection from pool");
     }
 
     return connection;
@@ -168,7 +168,7 @@
         dispatch_semaphore_signal(self.connectionSemaphore);
     });
 
-    PDS_LOG_DB_WARN(@"Connection invalidated and closed");
+    GZ_LOG_DB_WARN(@"Connection invalidated and closed");
 }
 
 #pragma mark - Connection Creation
@@ -178,7 +178,7 @@
     int result = sqlite3_open(self.databasePath.UTF8String, &db);
 
     if (result != SQLITE_OK) {
-        PDS_LOG_DB_ERROR(@"Failed to open database: %s", sqlite3_errmsg(db));
+        GZ_LOG_DB_ERROR(@"Failed to open database: %s", sqlite3_errmsg(db));
         if (db) sqlite3_close(db);
         return NULL;
     }
@@ -194,7 +194,7 @@
                            self.journalMode];
     sqlite3_exec(db, journalSQL.UTF8String, NULL, NULL, &errMsg);
     if (errMsg) {
-        PDS_LOG_DB_WARN(@"Failed to set journal mode: %s", errMsg);
+        GZ_LOG_DB_WARN(@"Failed to set journal mode: %s", errMsg);
         sqlite3_free(errMsg);
         errMsg = NULL;
     }
@@ -204,7 +204,7 @@
                         self.synchronousMode];
     sqlite3_exec(db, syncSQL.UTF8String, NULL, NULL, &errMsg);
     if (errMsg) {
-        PDS_LOG_DB_WARN(@"Failed to set synchronous mode: %s", errMsg);
+        GZ_LOG_DB_WARN(@"Failed to set synchronous mode: %s", errMsg);
         sqlite3_free(errMsg);
         errMsg = NULL;
     }
@@ -212,7 +212,7 @@
     // Foreign keys (always enabled for data integrity)
     sqlite3_exec(db, "PRAGMA foreign_keys = ON", NULL, NULL, &errMsg);
     if (errMsg) {
-        PDS_LOG_DB_WARN(@"Failed to enable foreign keys: %s", errMsg);
+        GZ_LOG_DB_WARN(@"Failed to enable foreign keys: %s", errMsg);
         sqlite3_free(errMsg);
         errMsg = NULL;
     }
@@ -223,7 +223,7 @@
     // often when multiple writers are active (32 per-DID dispatchers).
     sqlite3_exec(db, "PRAGMA wal_autocheckpoint = 5000", NULL, NULL, &errMsg);
     if (errMsg) {
-        PDS_LOG_DB_WARN(@"Failed to set wal_autocheckpoint: %s", errMsg);
+        GZ_LOG_DB_WARN(@"Failed to set wal_autocheckpoint: %s", errMsg);
         sqlite3_free(errMsg);
         errMsg = NULL;
     }
@@ -233,7 +233,7 @@
     // it consumes all available disk space.
     sqlite3_exec(db, "PRAGMA journal_size_limit = 16777216", NULL, NULL, &errMsg);
     if (errMsg) {
-        PDS_LOG_DB_WARN(@"Failed to set journal_size_limit: %s", errMsg);
+        GZ_LOG_DB_WARN(@"Failed to set journal_size_limit: %s", errMsg);
         sqlite3_free(errMsg);
         errMsg = NULL;
     }
@@ -243,7 +243,7 @@
     // kilobytes (SQLite convention).
     sqlite3_exec(db, "PRAGMA cache_size = -8000", NULL, NULL, &errMsg);
     if (errMsg) {
-        PDS_LOG_DB_WARN(@"Failed to set cache_size: %s", errMsg);
+        GZ_LOG_DB_WARN(@"Failed to set cache_size: %s", errMsg);
         sqlite3_free(errMsg);
         errMsg = NULL;
     }
@@ -298,7 +298,7 @@
         }
 
         if (toRemove > 0) {
-            PDS_LOG_DB_INFO(@"Pruning %lu idle connections", (unsigned long)toRemove);
+            GZ_LOG_DB_INFO(@"Pruning %lu idle connections", (unsigned long)toRemove);
 
             for (NSUInteger i = 0; i < toRemove; i++) {
                 NSNumber *connNumber = self.availablePool.lastObject;
@@ -317,7 +317,7 @@
 
 - (void)closeAllConnections {
     dispatch_sync(self.poolQueue, ^{
-        PDS_LOG_DB_INFO(@"Closing all connections (available: %lu, in use: %lu)",
+        GZ_LOG_DB_INFO(@"Closing all connections (available: %lu, in use: %lu)",
                        (unsigned long)self.availablePool.count,
                        (unsigned long)self.inUsePool.count);
 

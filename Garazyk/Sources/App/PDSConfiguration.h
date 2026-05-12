@@ -18,8 +18,8 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSDataPaths;
 
 // Forward declarations for logging types
-typedef NS_ENUM(NSInteger, PDSLogLevel);
-typedef NS_ENUM(NSInteger, PDSLogFormat);
+typedef NS_ENUM(NSInteger, GZLogLevel);
+typedef NS_ENUM(NSInteger, GZLogFormat);
 
 /*! Error domain for configuration errors. */
 extern NSString *const PDSConfigErrorDomain;
@@ -304,10 +304,10 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 @property (nonatomic, readonly, nullable) NSString *logFilePath;
 
 /*! @abstract Minimum log level to output. */
-@property (nonatomic, readonly) PDSLogLevel logLevel;
+@property (nonatomic, readonly) GZLogLevel logLevel;
 
 /*! @abstract Log output format (text, JSON, or both). */
-@property (nonatomic, readonly) PDSLogFormat logFormat;
+@property (nonatomic, readonly) GZLogFormat logFormat;
 
 /*! @abstract Maximum log file size in bytes before rotation. */
 @property (nonatomic, readonly) NSUInteger maxLogFileSize;

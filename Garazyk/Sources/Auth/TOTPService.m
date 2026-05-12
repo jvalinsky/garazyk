@@ -5,6 +5,7 @@
 #import "Auth/Base32Utils.h"
 #import "Auth/CryptoUtils.h"
 #import "Auth/YubiKeyOATH.h"
+#import "Security/PDSSecurityCompare.h"
 
 
 #if defined(GNUSTEP)
@@ -47,9 +48,9 @@
     NSString *otpPrev = [generator generateOTPForDate:[NSDate dateWithTimeIntervalSinceNow:-30]];
     NSString *otpNext = [generator generateOTPForDate:[NSDate dateWithTimeIntervalSinceNow:30]];
 
-    return [code isEqualToString:otpCurrent] || 
-           [code isEqualToString:otpPrev] || 
-           [code isEqualToString:otpNext];
+    return [PDSSecurityCompare constantTimeEqualString:code string:otpCurrent] || 
+           [PDSSecurityCompare constantTimeEqualString:code string:otpPrev] || 
+           [PDSSecurityCompare constantTimeEqualString:code string:otpNext];
 }
 
 + (nullable NSData *)generateQRCodeImageForSecret:(NSString *)secret 

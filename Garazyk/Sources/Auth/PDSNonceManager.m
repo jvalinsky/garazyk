@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Auth/PDSNonceManager.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 #import <Security/Security.h>
 
@@ -35,7 +35,7 @@ static const NSTimeInterval kDPoPNonceTTLSeconds = 300.0; // 5 minutes per AT Pr
 - (NSString *)generateNonce {
     uint8_t randomBytes[24];
     if (SecRandomCopyBytes(kSecRandomDefault, sizeof(randomBytes), randomBytes) != errSecSuccess) {
-        PDS_LOG_AUTH_ERROR(@"Failed to generate random bytes for nonce");
+        GZ_LOG_AUTH_ERROR(@"Failed to generate random bytes for nonce");
         return nil;
     }
     NSData *data = [NSData dataWithBytes:randomBytes length:sizeof(randomBytes)];

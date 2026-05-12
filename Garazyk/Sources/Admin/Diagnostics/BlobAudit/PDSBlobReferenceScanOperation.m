@@ -8,7 +8,7 @@
 #import "Database/Pool/DatabasePool.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Service/ServiceDatabases.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @implementation PDSBlobReferenceScanOperation
 
@@ -19,7 +19,7 @@
     NSError *error = nil;
     NSArray<PDSDatabaseAccount *> *accounts = [self.serviceDatabases getAllAccountsWithError:&error];
     if (!accounts) {
-        PDS_LOG_ERROR(@"ReferenceScan: Failed to list accounts: %@", error);
+        GZ_LOG_ERROR(@"ReferenceScan: Failed to list accounts: %@", error);
         [self updateProgress:1.0 status:@"Failed to list accounts"];
         return;
     }
@@ -107,7 +107,7 @@
         } error:&readError];
 
         if (readError) {
-            PDS_LOG_ERROR(@"ReferenceScan: Failed to read account %@: %@", account.did, readError);
+            GZ_LOG_ERROR(@"ReferenceScan: Failed to read account %@: %@", account.did, readError);
             continue;
         }
 
@@ -140,7 +140,7 @@
     [self saveResults:results error:&saveError];
 
     if (saveError) {
-        PDS_LOG_DB_ERROR(@"Failed to save reference scan results: %@", saveError);
+        GZ_LOG_DB_ERROR(@"Failed to save reference scan results: %@", saveError);
     }
 }
 

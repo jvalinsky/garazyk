@@ -7,7 +7,7 @@
 #import "App/PDSConfiguration.h"
 #import "NodeInfoProvider.h"
 #import "NodeInfoSchemas.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Services/PDS/PDSAccountService.h"
 
 @interface NodeInfoHandler ()
@@ -86,7 +86,7 @@
 
 - (void)registerRoutesWithServer:(HttpServer *)httpServer {
     if (!httpServer) {
-        PDS_LOG_CORE_ERROR(@"Cannot register routes with nil server");
+        GZ_LOG_CORE_ERROR(@"Cannot register routes with nil server");
         return;
     }
 
@@ -107,7 +107,7 @@
         [strongSelf handleNodeInfo21Request:request response:response];
     }];
 
-    PDS_LOG_CORE_INFO(@"NodeInfo routes registered");
+    GZ_LOG_CORE_INFO(@"NodeInfo routes registered");
 }
 
 - (void)setCorsHeaders:(HttpResponse *)response

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
  @file Phase2SecurityIntegrationTests.m
- @brief Tests for Phase 2 security integration: PDSSafeHTTPClient, PDSLogRedactor,
+ @brief Tests for Phase 2 security integration: ATProtoSafeHTTPClient, GZLogRedactor,
         PDSSecurityCompare, OAuthClientAuthPolicy, PDSKeyEnvelope, UIAuthManager rework,
         and SQL hardening.
 
@@ -12,12 +12,12 @@
 
 #import <XCTest/XCTest.h>
 #import "Security/PDSSecurityCompare.h"
-#import "Debug/PDSLogRedactor.h"
+#import "Debug/GZLogRedactor.h"
 #import "Auth/OAuthClientAuthPolicy.h"
 #import "Security/PDSKeyEnvelope.h"
 #import "Auth/CryptoUtils.h"
 #import "AdminUIServer/UIAuthManager.h"
-#import "Network/PDSSafeHTTPClient.h"
+#import "Network/ATProtoSafeHTTPClient.h"
 #import "Network/SSRFValidator.h"
 
 @interface Phase2SecurityIntegrationTests : XCTestCase
@@ -70,34 +70,34 @@
                    @"Empty vs non-empty should not match");
 }
 
-#pragma mark - PDSLogRedactor Integration
+#pragma mark - GZLogRedactor Integration
 
 - (void)testLogRedactorRedactsBearerTokens {
     NSString *log = @"Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.test.sig";
-    NSString *redacted = [PDSLogRedactor redactString:log];
+    NSString *redacted = [GZLogRedactor redactString:log];
     XCTAssertFalse([redacted containsString:@"eyJhbGciOiJIUzI1NiJ9.test.sig"],
                    @"Bearer token should be redacted");
-    XCTAssertTrue([redacted containsString:@"[REDACTED"] || [redacted containsString:@"REDACTED"],
+    XCTAssertTrue([redacted containsString:@"<redacted>"],
                   @"Redacted placeholder should appear");
 }
 
 - (void)testLogRedactorRedactsClientSecrets {
     NSString *log = @"client_secret=abc123def456";
-    NSString *redacted = [PDSLogRedactor redactString:log];
+    NSString *redacted = [GZLogRedactor redactString:log];
     XCTAssertFalse([redacted containsString:@"abc123def456"],
                    @"client_secret value should be redacted");
 }
 
 - (void)testLogRedactorRedactsRefreshTokens {
     NSString *log = @"refresh_token=r-abc123def456xyz789";
-    NSString *redacted = [PDSLogRedactor redactString:log];
+    NSString *redacted = [GZLogRedactor redactString:log];
     XCTAssertFalse([redacted containsString:@"r-abc123def456xyz789"],
                    @"refresh_token value should be redacted");
 }
 
 - (void)testLogRedactorPreservesNonSensitiveData {
     NSString *log = @"User did:example123 logged in successfully";
-    NSString *redacted = [PDSLogRedactor redactString:log];
+    NSString *redacted = [GZLogRedactor redactString:log];
     XCTAssertTrue([redacted containsString:@"did:example123"],
                   @"Non-sensitive DID should be preserved");
     XCTAssertTrue([redacted containsString:@"logged in successfully"],
@@ -271,11 +271,11 @@
     XCTAssertTrue([cookie containsString:@"Secure"], @"Should have Secure flag when secure:YES");
 }
 
-#pragma mark - PDSSafeHTTPClient Integration
+#pragma mark - ATProtoSafeHTTPClient Integration
 
 - (void)testSafeHTTPClientRejectsPrivateIPs {
-    // PDSSafeHTTPClient should reject requests to private IPs
-    PDSSafeHTTPClientOptions *options = [[PDSSafeHTTPClientOptions alloc] init];
+    // ATProtoSafeHTTPClient should reject requests to private IPs
+    ATProtoSafeHTTPClientOptions *options = [[ATProtoSafeHTTPClientOptions alloc] init];
     options.allowPrivateHosts = NO;
     options.timeout = 2.0;
 
@@ -284,7 +284,7 @@
 
     NSHTTPURLResponse *response = nil;
     NSError *error = nil;
-    NSData *data = [[PDSSafeHTTPClient sharedClient] sendSynchronousRequest:request
+    NSData *data = [[ATProtoSafeHTTPClient sharedClient] sendSynchronousRequest:request
                                                                      options:options
                                                                     response:&response
                                                                        error:&error];
@@ -295,7 +295,7 @@
 - (void)testSafeHTTPClientAllowPrivateHosts {
     // When allowPrivateHosts is YES, private IPs should be allowed
     // (used for testing)
-    PDSSafeHTTPClientOptions *options = [[PDSSafeHTTPClientOptions alloc] init];
+    ATProtoSafeHTTPClientOptions *options = [[ATProtoSafeHTTPClientOptions alloc] init];
     options.allowPrivateHosts = YES;
     options.timeout = 2.0;
 
@@ -306,20 +306,20 @@
 
     NSHTTPURLResponse *response = nil;
     NSError *error = nil;
-    NSData *data = [[PDSSafeHTTPClient sharedClient] sendSynchronousRequest:request
+    NSData *data = [[ATProtoSafeHTTPClient sharedClient] sendSynchronousRequest:request
                                                                      options:options
                                                                     response:&response
                                                                        error:&error];
     // Should fail with a network error (connection refused), NOT an SSRF error
     if (error) {
-        XCTAssertFalse([error.domain isEqualToString:PDSSafeHTTPClientErrorDomain] &&
-                       error.code == PDSSafeHTTPClientErrorSSRFBlocked,
+        XCTAssertFalse([error.domain isEqualToString:ATProtoSafeHTTPClientErrorDomain] &&
+                       error.code == ATProtoSafeHTTPClientErrorSSRFBlocked,
                        @"Should not be SSRF-blocked when allowPrivateHosts=YES");
     }
 }
 
 - (void)testSafeHTTPClientRejectsUnsupportedSchemes {
-    PDSSafeHTTPClientOptions *options = [[PDSSafeHTTPClientOptions alloc] init];
+    ATProtoSafeHTTPClientOptions *options = [[ATProtoSafeHTTPClientOptions alloc] init];
     options.allowHTTP = NO;
 
     NSURL *httpURL = [NSURL URLWithString:@"http://example.com/test"];
@@ -327,7 +327,7 @@
 
     NSHTTPURLResponse *response = nil;
     NSError *error = nil;
-    NSData *data = [[PDSSafeHTTPClient sharedClient] sendSynchronousRequest:request
+    NSData *data = [[ATProtoSafeHTTPClient sharedClient] sendSynchronousRequest:request
                                                                      options:options
                                                                     response:&response
                                                                        error:&error];

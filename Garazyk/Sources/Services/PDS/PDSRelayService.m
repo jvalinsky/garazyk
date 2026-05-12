@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "PDSRelayService.h"
 #import "Compat/PDSTypes.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "PDSRecordService.h"
-#import "Network/PDSSafeHTTPClient.h"
+#import "Network/ATProtoSafeHTTPClient.h"
 
 #ifndef MSEC_PER_SEC
 #define MSEC_PER_SEC 1000ULL
@@ -34,7 +34,7 @@ static const NSTimeInterval kRelayNotifyThresholdSeconds = 20.0 * 60.0;
 - (void)sendRequest:(NSURLRequest *)request
    completionHandler:(void (^)(NSData * _Nullable, NSURLResponse * _Nullable,
                                 NSError * _Nullable))handler {
-  [[PDSSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
+  [[ATProtoSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request
                                                            options:nil
                                                         completion:handler];
 }
@@ -66,7 +66,7 @@ static const NSTimeInterval kRelayNotifyThresholdSeconds = 20.0 * 60.0;
          selector:@selector(handleRecordChange:)
              name:PDSRecordDidChangeNotification
            object:nil];
-  PDS_LOG_INFO(@"PDSRelayService started with %lu relays",
+  GZ_LOG_INFO(@"PDSRelayService started with %lu relays",
                (unsigned long)self.relays.count);
 
   // Notify all configured relays to crawl this PDS on startup
@@ -135,7 +135,7 @@ static const NSTimeInterval kRelayNotifyThresholdSeconds = 20.0 * 60.0;
   NSSet *didsToNotify = [self.pendingDids copy];
   [self.pendingDids removeAllObjects];
 
-  PDS_LOG_DEBUG(@"PDSRelayService notifying %lu relays of updates for %lu DIDs",
+  GZ_LOG_DEBUG(@"PDSRelayService notifying %lu relays of updates for %lu DIDs",
                 (unsigned long)self.relays.count,
                 (unsigned long)didsToNotify.count);
 
@@ -156,7 +156,7 @@ static const NSTimeInterval kRelayNotifyThresholdSeconds = 20.0 * 60.0;
 
   NSURL *url = components.URL;
   if (!url) {
-    PDS_LOG_ERROR(@"PDSRelayService: Invalid relay URL for host: %@",
+    GZ_LOG_ERROR(@"PDSRelayService: Invalid relay URL for host: %@",
                   relayHost);
     return;
   }
@@ -171,7 +171,7 @@ static const NSTimeInterval kRelayNotifyThresholdSeconds = 20.0 * 60.0;
       [NSJSONSerialization dataWithJSONObject:body options:0 error:&error];
 
   if (error) {
-    PDS_LOG_ERROR(@"PDSRelayService: Failed to serialize requestCrawl body: %@",
+    GZ_LOG_ERROR(@"PDSRelayService: Failed to serialize requestCrawl body: %@",
                   error);
     return;
   }
@@ -181,13 +181,13 @@ static const NSTimeInterval kRelayNotifyThresholdSeconds = 20.0 * 60.0;
                                NSError *error) {
              NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
              if (error) {
-               PDS_LOG_ERROR(@"PDSRelayService: Failed to notify relay %@: %@",
+               GZ_LOG_ERROR(@"PDSRelayService: Failed to notify relay %@: %@",
                              relayHost, error.localizedDescription);
              } else if (httpResponse.statusCode >= 300) {
-               PDS_LOG_WARN(@"PDSRelayService: Relay %@ returned status %ld",
+               GZ_LOG_WARN(@"PDSRelayService: Relay %@ returned status %ld",
                             relayHost, (long)httpResponse.statusCode);
              } else {
-               PDS_LOG_INFO(@"PDSRelayService: Successfully notified relay %@",
+               GZ_LOG_INFO(@"PDSRelayService: Successfully notified relay %@",
                             relayHost);
              }
            }];

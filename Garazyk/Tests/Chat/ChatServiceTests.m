@@ -3,6 +3,7 @@
 #import <XCTest/XCTest.h>
 #import "Chat/Server/Services/ChatService.h"
 #import "Database/PDSDatabase.h"
+#import "Database/Schema.h"
 
 @interface ChatServiceTests : XCTestCase
 @property (nonatomic, strong) NSString *tempDir;
@@ -22,9 +23,9 @@
     [self.db openWithError:nil];
     
     // Initialize schema
-    [self.db executeRawSQL:@"CREATE TABLE chat_conversations (id TEXT PRIMARY KEY, members TEXT, mode TEXT, locked INTEGER, created_at TEXT)" error:nil];
-    [self.db executeRawSQL:@"CREATE TABLE chat_members (convo_id TEXT, did TEXT, last_read_message_id TEXT, muted INTEGER, PRIMARY KEY(convo_id, did))" error:nil];
-    [self.db executeRawSQL:@"CREATE TABLE chat_messages (id TEXT PRIMARY KEY, convo_id TEXT, sender_did TEXT, text TEXT, embed_json TEXT, created_at TEXT)" error:nil];
+    [self.db executeUnsafeRawSQL:kPDSConversationsTableCreateSQL error:nil];
+    [self.db executeUnsafeRawSQL:kPDSConversationMembersTableCreateSQL error:nil];
+    [self.db executeUnsafeRawSQL:kPDSMessagesTableCreateSQL error:nil];
     
     self.service = [[ChatService alloc] initWithDatabase:self.db];
 }
@@ -43,7 +44,7 @@
     XCTAssertNotNil(convo);
     XCTAssertNil(error);
     XCTAssertNotNil(convo[@"id"]);
-    XCTAssertEqualObjects(convo[@"members"], members);
+    XCTAssertEqualObjects(convo[@"memberList"], @"did:plc:alice, did:plc:bob");
 }
 
 - (void)testSendMessage {

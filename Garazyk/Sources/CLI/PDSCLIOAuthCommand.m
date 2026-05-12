@@ -3,7 +3,7 @@
 #import "PDSCLIDefinitions.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Service/ServiceDatabases.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 #pragma mark - OAuth Command
 

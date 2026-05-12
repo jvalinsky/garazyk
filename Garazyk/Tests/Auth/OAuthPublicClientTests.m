@@ -27,7 +27,7 @@
   [self.database openWithError:nil];
   NSError *error = nil;
   BOOL success = [self.database
-      executeRawSQL:
+      executeUnsafeRawSQL:
           @"CREATE TABLE IF NOT EXISTS clients (client_id TEXT PRIMARY KEY, "
           @"client_secret TEXT, redirect_uris TEXT, grant_types TEXT, "
           @"response_types TEXT, scope TEXT, application_type TEXT)"
@@ -35,14 +35,14 @@
   XCTAssertTrue(success, @"Failed to create clients table: %@", error);
 
   success = [self.database
-      executeRawSQL:
+      executeUnsafeRawSQL:
           @"CREATE TABLE IF NOT EXISTS accounts (did TEXT PRIMARY KEY, handle "
           @"TEXT, password_hash TEXT, email TEXT, phone TEXT)"
               error:&error];
   XCTAssertTrue(success, @"Failed to create accounts table: %@", error);
 
   success = [self.database
-      executeRawSQL:
+      executeUnsafeRawSQL:
           @"CREATE TABLE IF NOT EXISTS oauth_par_requests (request_uri TEXT "
           @"PRIMARY KEY, client_id TEXT NOT NULL, params_json TEXT NOT NULL, "
           @"expires_at TEXT NOT NULL, consumed_at TEXT)"

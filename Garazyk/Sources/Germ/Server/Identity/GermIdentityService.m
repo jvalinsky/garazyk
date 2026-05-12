@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "GermIdentityService.h"
 #import "Database/PDSDatabase.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import <Security/Security.h>
 #import <dlfcn.h>
 
@@ -139,7 +139,7 @@ static NSString *const kAnchorSuccessionDiscriminator = @"AnchorSuccession";
     }
     CFRelease(secKey);
 
-    PDS_LOG_DEBUG(@"Verified declaration anchor key for DID");
+    GZ_LOG_DEBUG(@"Verified declaration anchor key for DID");
     return YES;
 }
 
@@ -265,7 +265,7 @@ static NSString *const kAnchorSuccessionDiscriminator = @"AnchorSuccession";
 
     CFRelease(successorSecKey);
 
-    PDS_LOG_DEBUG(@"Verified %ld succession proofs", (long)proofCount);
+    GZ_LOG_DEBUG(@"Verified %ld succession proofs", (long)proofCount);
     return [predecessorKeys copy];
 }
 

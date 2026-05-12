@@ -4,7 +4,7 @@
 #import "ATProtoLexiconSchema.h"
 #import "ATProtoLexiconError.h"
 #import "Compat/PDSTypes.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @interface ATProtoLexiconRegistry ()
 
@@ -47,7 +47,7 @@
         return NO;
     }
 
-    PDS_LOG_INFO(@"[LexiconRegistry] Loading lexicons from: %@", path);
+    GZ_LOG_DEBUG(@"[LexiconRegistry] Loading lexicons from: %@", path);
 
     NSError *enumError = nil;
     NSArray *contents = [fileManager contentsOfDirectoryAtPath:path error:&enumError];
@@ -76,13 +76,13 @@
                 loadedCount++;
             } else {
                 errorCount++;
-                PDS_LOG_WARN(@"[LexiconRegistry] Failed to load %@: %@",
+                GZ_LOG_WARN(@"[LexiconRegistry] Failed to load %@: %@",
                               item, loadError.localizedDescription);
             }
         }
     }
 
-    PDS_LOG_INFO(@"[LexiconRegistry] Loaded %lu lexicons (%lu errors) from %@",
+    GZ_LOG_DEBUG(@"[LexiconRegistry] Loaded %lu lexicons (%lu errors) from %@",
                 (unsigned long)loadedCount, (unsigned long)errorCount, path);
 
     return errorCount == 0;
@@ -115,7 +115,7 @@
 
 - (void)registerSchema:(ATProtoLexiconSchema *)schema {
     if (!schema || !schema.nsid) {
-        PDS_LOG_WARN(@"[LexiconRegistry] Attempted to register nil schema or schema with nil NSID");
+        GZ_LOG_WARN(@"[LexiconRegistry] Attempted to register nil schema or schema with nil NSID");
         return;
     }
     
@@ -123,7 +123,7 @@
         self.schemas[schema.nsid] = schema;
     });
     
-    PDS_LOG_DEBUG(@"[LexiconRegistry] Registered schema: %@", schema.nsid);
+    GZ_LOG_DEBUG(@"[LexiconRegistry] Registered schema: %@", schema.nsid);
 }
 
 - (nullable ATProtoLexiconSchema *)schemaForNSID:(NSString *)nsid {
@@ -135,9 +135,9 @@
     });
     
     if (!schema) {
-        PDS_LOG_WARN(@"[LexiconRegistry] Schema NOT FOUND for NSID: %@", nsid);
+        GZ_LOG_DEBUG(@"[LexiconRegistry] Schema NOT FOUND for NSID: %@", nsid);
     } else {
-        PDS_LOG_DEBUG(@"[LexiconRegistry] Schema found for NSID: %@", nsid);
+        GZ_LOG_DEBUG(@"[LexiconRegistry] Schema found for NSID: %@", nsid);
     }
     
     return schema;
@@ -151,7 +151,7 @@
     dispatch_barrier_async(self.registryQueue, ^{
         [self.schemas removeAllObjects];
     });
-    PDS_LOG_INFO(@"[LexiconRegistry] Cache cleared");
+    GZ_LOG_DEBUG(@"[LexiconRegistry] Cache cleared");
 }
 
 - (NSArray<NSString *> *)loadedNSIDs {

@@ -18,7 +18,7 @@
 #import "Database/PDSDatabase.h"
 #import "Core/CID.h"
 #import "Core/ATProtoCBORSerialization.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @interface RecordLifecycleHandler ()
 @property (nonatomic, strong) NotificationService *notificationService;

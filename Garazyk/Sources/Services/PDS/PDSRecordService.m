@@ -5,7 +5,7 @@
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/ActorStore/PDSActorStoreInternal.h"
 #import "Database/PDSDatabase.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 #import "Core/ATProtoBase32.h"
 #import "Core/ATProtoCBORSerialization.h"
@@ -258,7 +258,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
     // Validate collection NSID format
     NSError *nsidError = nil;
     if (![ATProtoValidator validateNSID:collection error:&nsidError]) {
-        PDS_LOG_ERROR(@"[PDSRecordService] Invalid collection NSID: %@", collection);
+        GZ_LOG_ERROR(@"[PDSRecordService] Invalid collection NSID: %@", collection);
         if (error) *error = nsidError;
         return NO;
     }
@@ -266,7 +266,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
     // Validate rkey format
     NSError *rkeyError = nil;
     if (![ATProtoValidator validateRkey:rkey error:&rkeyError]) {
-        PDS_LOG_ERROR(@"[PDSRecordService] Invalid rkey: %@", rkey);
+        GZ_LOG_ERROR(@"[PDSRecordService] Invalid rkey: %@", rkey);
         if (error) *error = rkeyError;
         return NO;
     }
@@ -274,7 +274,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
     // Lexicon validation
     if (mode != PDSValidationModeOff) {
         ATProtoLexiconRegistry *registry = [ATProtoLexiconRegistry sharedRegistry];
-        PDS_LOG_INFO(@"[PDSRecordService] Using lexicon registry: %p (loaded NSIDs: %lu)", registry, (unsigned long)registry.loadedNSIDs.count);
+        GZ_LOG_INFO(@"[PDSRecordService] Using lexicon registry: %p (loaded NSIDs: %lu)", registry, (unsigned long)registry.loadedNSIDs.count);
 
         ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc]
             initWithRegistry:registry];
@@ -298,18 +298,18 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                             collection:collection
                                   mode:validationMode
                                  error:&validationError]) {
-            PDS_LOG_ERROR(@"[PDSRecordService] Lexicon validation failed for %@: %@",
+            GZ_LOG_ERROR(@"[PDSRecordService] Lexicon validation failed for %@: %@",
                           collection, validationError.localizedDescription);
             if (error) *error = validationError;
             return NO;
         }
 
-        PDS_LOG_DEBUG(@"[PDSRecordService] Lexicon validation passed for %@", collection);
+        GZ_LOG_DEBUG(@"[PDSRecordService] Lexicon validation passed for %@", collection);
     }
 
     if (!validateCreatedAtCoherence(collection, rkey, value, mode, error)) {
         NSString *message = (error && *error) ? (*error).localizedDescription : @"invalid createdAt";
-        PDS_LOG_WARN(@"[PDSRecordService] createdAt coherence check failed for %@/%@: %@",
+        GZ_LOG_WARN(@"[PDSRecordService] createdAt coherence check failed for %@/%@: %@",
                      collection, rkey, message);
         return NO;
     }
@@ -373,13 +373,13 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
     [self _dispatchWriteForDid:did block:^{
         NSTimeInterval writeStart = [NSDate timeIntervalSinceReferenceDate];
         NSTimeInterval waitMs = (writeStart - writeEnter) * 1000.0;
-        PDS_LOG_DEBUG(@"[PDSRecordService] putRecord: writeDispatcher entered (waited %.1fms) did=%@ coll=%@ rkey=%@",
+        GZ_LOG_DEBUG(@"[PDSRecordService] putRecord: writeDispatcher entered (waited %.1fms) did=%@ coll=%@ rkey=%@",
                        waitMs, did, collection, rkey);
         success = [self.recordRepository saveRecord:record error:&writeError];
 
         if (success) {
             NSTimeInterval saveMs = ([NSDate timeIntervalSinceReferenceDate] - writeStart) * 1000.0;
-            PDS_LOG_DEBUG(@"[PDSRecordService] putRecord: saveRecord OK (%.1fms) did=%@", saveMs, did);
+            GZ_LOG_DEBUG(@"[PDSRecordService] putRecord: saveRecord OK (%.1fms) did=%@", saveMs, did);
 
             // Fetch previous root and refresh metadata to get new commit info
             NSTimeInterval mstStart = [NSDate timeIntervalSinceReferenceDate];
@@ -403,11 +403,11 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
             newRootCID = newRootMeta[@"cid"];
             newRev = newRootMeta[@"rev"];
             NSTimeInterval mstMs = ([NSDate timeIntervalSinceReferenceDate] - mstStart) * 1000.0;
-            PDS_LOG_DEBUG(@"[PDSRecordService] putRecord: refreshRepoRootMetadata OK (%.1fms) did=%@ commit=%@",
+            GZ_LOG_DEBUG(@"[PDSRecordService] putRecord: refreshRepoRootMetadata OK (%.1fms) did=%@ commit=%@",
                            mstMs, did, newRootCID);
         }
         NSTimeInterval totalMs = ([NSDate timeIntervalSinceReferenceDate] - writeStart) * 1000.0;
-        PDS_LOG_DEBUG(@"[PDSRecordService] putRecord: writeDispatcher total %.1fms did=%@ success=%d", totalMs, did, success);
+        GZ_LOG_DEBUG(@"[PDSRecordService] putRecord: writeDispatcher total %.1fms did=%@ success=%d", totalMs, did, success);
     }];
 
     if (error && writeError) {
@@ -415,7 +415,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
     }
 
     if (success) {
-        PDS_LOG_DEBUG(@"[PDSRecordService] Record changed: did=%@, collection=%@, rkey=%@, cid=%@, commit=%@, rev=%@, recordCBOR_len=%lu", did, collection, rkey, cidString, newRootCID, newRev, (unsigned long)cborData.length);
+        GZ_LOG_DEBUG(@"[PDSRecordService] Record changed: did=%@, collection=%@, rkey=%@, cid=%@, commit=%@, rev=%@, recordCBOR_len=%lu", did, collection, rkey, cidString, newRootCID, newRev, (unsigned long)cborData.length);
         [[NSNotificationCenter defaultCenter] postNotificationName:PDSRecordDidChangeNotification
                                                             object:self
                                                           userInfo:@{
@@ -432,7 +432,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
         }];
     }
 
-    PDS_LOG_SERVICE_DEBUG(@"putRecord finishing with success: %d", success);
+    GZ_LOG_SERVICE_DEBUG(@"putRecord finishing with success: %d", success);
     return success;
 }
 
@@ -494,7 +494,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
     [self _dispatchWriteForDid:did block:^{
         NSTimeInterval writeStart = [NSDate timeIntervalSinceReferenceDate];
         NSTimeInterval waitMs = (writeStart - writeEnter) * 1000.0;
-        PDS_LOG_DEBUG(@"[PDSRecordService] deleteRecord: writeDispatcher entered (waited %.1fms) did=%@ coll=%@ rkey=%@",
+        GZ_LOG_DEBUG(@"[PDSRecordService] deleteRecord: writeDispatcher entered (waited %.1fms) did=%@ coll=%@ rkey=%@",
                        waitMs, did, collection, rkey);
         [self.databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
             if (hadExistingRecord) {
@@ -516,7 +516,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
 
         if (success) {
             NSTimeInterval saveMs = ([NSDate timeIntervalSinceReferenceDate] - writeStart) * 1000.0;
-            PDS_LOG_DEBUG(@"[PDSRecordService] deleteRecord: DB delete OK (%.1fms) did=%@", saveMs, did);
+            GZ_LOG_DEBUG(@"[PDSRecordService] deleteRecord: DB delete OK (%.1fms) did=%@", saveMs, did);
 
             // Fetch previous root and refresh metadata
             NSTimeInterval mstStart = [NSDate timeIntervalSinceReferenceDate];
@@ -538,11 +538,11 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
             newRootCID = newRootMeta[@"cid"];
             newRev = newRootMeta[@"rev"];
             NSTimeInterval mstMs = ([NSDate timeIntervalSinceReferenceDate] - mstStart) * 1000.0;
-            PDS_LOG_DEBUG(@"[PDSRecordService] deleteRecord: refreshRepoRootMetadata OK (%.1fms) did=%@ commit=%@",
+            GZ_LOG_DEBUG(@"[PDSRecordService] deleteRecord: refreshRepoRootMetadata OK (%.1fms) did=%@ commit=%@",
                            mstMs, did, newRootCID);
         }
         NSTimeInterval totalMs = ([NSDate timeIntervalSinceReferenceDate] - writeStart) * 1000.0;
-        PDS_LOG_DEBUG(@"[PDSRecordService] deleteRecord: writeDispatcher total %.1fms did=%@ success=%d", totalMs, did, success);
+        GZ_LOG_DEBUG(@"[PDSRecordService] deleteRecord: writeDispatcher total %.1fms did=%@ success=%d", totalMs, did, success);
     }];
 
     if (error && writeError) {
@@ -603,7 +603,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
     [self _dispatchWriteForDid:did block:^{
         NSTimeInterval writeStart = [NSDate timeIntervalSinceReferenceDate];
         NSTimeInterval waitMs = (writeStart - writeEnter) * 1000.0;
-        PDS_LOG_DEBUG(@"[PDSRecordService] applyWrites: writeDispatcher entered (waited %.1fms) did=%@ writes=%lu",
+        GZ_LOG_DEBUG(@"[PDSRecordService] applyWrites: writeDispatcher entered (waited %.1fms) did=%@ writes=%lu",
                        waitMs, did, (unsigned long)writes.count);
         response = [self _applyWritesSerialized:writes
                                         forDid:did
@@ -612,7 +612,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                                     swapCommit:swapCommit
                                          error:&writeError];
         NSTimeInterval totalMs = ([NSDate timeIntervalSinceReferenceDate] - writeStart) * 1000.0;
-        PDS_LOG_DEBUG(@"[PDSRecordService] applyWrites: writeDispatcher total %.1fms did=%@ response=%@",
+        GZ_LOG_DEBUG(@"[PDSRecordService] applyWrites: writeDispatcher total %.1fms did=%@ response=%@",
                        totalMs, did, response ? @"OK" : @"FAILED");
     }];
     if (error && writeError) {
@@ -686,7 +686,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
         }
         
         if (!action || !collection) {
-            PDS_LOG_ERROR(@"[PDSRecordService] applyWrites: missing action (%@) or collection (%@) in write: %@", 
+            GZ_LOG_ERROR(@"[PDSRecordService] applyWrites: missing action (%@) or collection (%@) in write: %@", 
                           action ?: @"nil", collection ?: @"nil", write);
             if (error) {
                 *error = [NSError errorWithDomain:@"com.atproto.repo.applyWrites"
@@ -703,7 +703,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                 rkey = [TID tid].stringValue;
             }
             if (!record) {
-                PDS_LOG_ERROR(@"[PDSRecordService] applyWrites: create write missing record value: %@", write);
+                GZ_LOG_ERROR(@"[PDSRecordService] applyWrites: create write missing record value: %@", write);
                 if (error) {
                     *error = [NSError errorWithDomain:@"com.atproto.repo.applyWrites"
                                                  code:4
@@ -1351,7 +1351,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                                                                            error:(NSError **)error {
     PDSActorStore *store = [self.databasePool storeForDid:did error:error];
     if (!store) {
-        PDS_LOG_ERROR(@"refreshRepoRootMetadata: Failed to get store for DID %@", did);
+        GZ_LOG_ERROR(@"refreshRepoRootMetadata: Failed to get store for DID %@", did);
         return nil;
     }
 
@@ -1521,7 +1521,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
 
     PDSActorStore *store = [self.databasePool storeForDid:did error:error];
     if (!store) {
-        PDS_LOG_DB_ERROR(@"[PDSRecordService] Failed to get store for DID: %@", did);
+        GZ_LOG_DB_ERROR(@"[PDSRecordService] Failed to get store for DID: %@", did);
         if (error) *error = [NSError errorWithDomain:@"com.atproto.pds.recordservice" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"Failed to get store"}];
         return nil;
     }
@@ -1550,7 +1550,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
             [actorStore finalizeStatement:stmt];
         } else {
              if (blockError && *blockError) {
-                PDS_LOG_DB_ERROR(@"[PDSRecordService] Failed to prepare stats statement: %@", *blockError);
+                GZ_LOG_DB_ERROR(@"[PDSRecordService] Failed to prepare stats statement: %@", *blockError);
              }
         }
     } error:error];

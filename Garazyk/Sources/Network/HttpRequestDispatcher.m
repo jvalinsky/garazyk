@@ -10,7 +10,7 @@
 
 #import "Network/HttpRequestDispatcher.h"
 
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/RateLimiter.h"
@@ -30,7 +30,7 @@
                           ? [NSString stringWithFormat:@"%@?%@", request.path,
                                                        request.queryString]
                           : request.path;
-  PDS_LOG_HTTP_INFO(@"[%@] %@ %@", request.remoteAddress, request.methodString,
+  GZ_LOG_HTTP_INFO(@"[%@] %@ %@", request.remoteAddress, request.methodString,
                     logPath);
 
   HttpResponse *response = [HttpResponse response];

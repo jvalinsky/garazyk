@@ -13,7 +13,7 @@
 #import "Network/HttpResponse.h"
 #import "Core/PDSDataPaths.h"
 #import "App/PDSConfiguration.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Database/Utils/PDSSQLiteUtils.h"
 #import "Metrics/PDSMetrics.h"
 #import <sqlite3.h>
@@ -67,7 +67,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         sharedInstance = [[RateLimiter alloc] initWithDatabasePath:nil];
-        PDS_LOG_HTTP_DEBUG(@"RateLimiter singleton created (enabled=%@)", @(sharedInstance.isEnabled));
+        GZ_LOG_HTTP_DEBUG(@"RateLimiter singleton created (enabled=%@)", @(sharedInstance.isEnabled));
     });
     return sharedInstance;
 }
@@ -86,7 +86,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
         _blobLimit = 50;
         _blobWindowSeconds = 3600;
         _enabled = !_rateLimiterDisabledGlobally;
-        PDS_LOG_HTTP_DEBUG(@"RateLimiter init (enabled=%@, global_disabled=%@)",
+        GZ_LOG_HTTP_DEBUG(@"RateLimiter init (enabled=%@, global_disabled=%@)",
                            @(_enabled),
                            @(_rateLimiterDisabledGlobally));
         
@@ -140,7 +140,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
 - (void)initializeDatabase {
     int result = sqlite3_open(self.databasePath.UTF8String, &_db);
     if (result != SQLITE_OK) {
-        PDS_LOG_DB_ERROR(@"Failed to open rate limit database: %s (SQLite code: %d)",
+        GZ_LOG_DB_ERROR(@"Failed to open rate limit database: %s (SQLite code: %d)",
                          sqlite3_errmsg(_db), result);
         return;
     }
@@ -157,7 +157,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     char *errMsg = NULL;
     result = sqlite3_exec(_db, createTableSQL.UTF8String, NULL, NULL, &errMsg);
     if (result != SQLITE_OK) {
-        PDS_LOG_DB_ERROR(@"Failed to create rate limit table: %s (SQLite code: %d)",
+        GZ_LOG_DB_ERROR(@"Failed to create rate limit table: %s (SQLite code: %d)",
                          errMsg, result);
         sqlite3_free(errMsg);
     }
@@ -175,7 +175,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
 
     result = sqlite3_exec(_db, createBlobTableSQL.UTF8String, NULL, NULL, &errMsg);
     if (result != SQLITE_OK) {
-        PDS_LOG_DB_ERROR(@"Failed to create blob rate limit table: %s (SQLite code: %d)",
+        GZ_LOG_DB_ERROR(@"Failed to create blob rate limit table: %s (SQLite code: %d)",
                          errMsg, result);
         sqlite3_free(errMsg);
     }
@@ -317,7 +317,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     result = sqlite3_step(upsertStmt);
 
     if (result != SQLITE_DONE && result != SQLITE_CONSTRAINT) {
-        PDS_LOG_DB_ERROR(@"Failed to update rate limit: %s (SQLite code: %d)",
+        GZ_LOG_DB_ERROR(@"Failed to update rate limit: %s (SQLite code: %d)",
                          sqlite3_errmsg(_db), result);
         sqlite3_exec(_db, "ROLLBACK TRANSACTION", NULL, NULL, NULL);
         return [RateLimitResult resultAllowed:YES limit:limit remaining:(limit - requestCount - 1) resetSeconds:0 retryAfter:0];
@@ -434,7 +434,7 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     result = sqlite3_step(upsertStmt);
 
     if (result != SQLITE_DONE && result != SQLITE_CONSTRAINT) {
-        PDS_LOG_DB_ERROR(@"Failed to update blob rate limit: %s (SQLite code: %d)",
+        GZ_LOG_DB_ERROR(@"Failed to update blob rate limit: %s (SQLite code: %d)",
                          sqlite3_errmsg(_db), result);
     }
 

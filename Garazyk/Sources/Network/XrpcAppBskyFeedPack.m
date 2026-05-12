@@ -14,7 +14,7 @@
 #import "Database/Pool/DatabasePool.h"
 #import "Core/CID.h"
 #import "Core/ATProtoCBORSerialization.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @implementation XrpcAppBskyFeedPack
 
@@ -573,7 +573,7 @@
         [response setJsonBody:result ?: @{@"feed": @[], @"cursor": [NSNull null]}];
     }];
 
-    PDS_LOG_INFO(@"Registered app.bsky.feed.* endpoints");
+    GZ_LOG_INFO(@"Registered app.bsky.feed.* endpoints");
 }
 
 @end

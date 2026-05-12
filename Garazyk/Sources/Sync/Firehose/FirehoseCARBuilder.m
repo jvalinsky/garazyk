@@ -3,7 +3,7 @@
 #import "Sync/Firehose/FirehoseCARBuilder.h"
 #import "Repository/CAR.h"
 #import "Repository/CBOR.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Core/NSDictionary+CID.h"
 
 @implementation FirehoseCARBuilder

@@ -5,7 +5,7 @@
 #import "Network/PDSNetworkTransport.h"
 #import "Network/HttpParsing.h"
 #import "Sync/WebSocket/WebSocketProtocolSession.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Metrics/PDSMetrics.h"
 #import <CommonCrypto/CommonDigest.h>
 
@@ -225,7 +225,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 - (void)handlePDSStateChange:(PDSNetworkConnectionState)state
                        error:(NSError *)error {
 
-  PDS_LOG_SYNC_DEBUG(@"WebSocket connection %p state change: %ld", self, (long)state);
+  GZ_LOG_SYNC_DEBUG(@"WebSocket connection %p state change: %ld", self, (long)state);
   dispatch_async(dispatch_get_main_queue(), ^{
     switch (state) {
     case PDSNetworkConnectionStateReady: {
@@ -243,7 +243,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
     }
 
     case PDSNetworkConnectionStateWaiting:
-      PDS_LOG_SYNC_DEBUG(@"WebSocket connection %p is waiting for network availability: %@", self, error.localizedDescription ?: @"no error");
+      GZ_LOG_SYNC_DEBUG(@"WebSocket connection %p is waiting for network availability: %@", self, error.localizedDescription ?: @"no error");
       break;
 
     case PDSNetworkConnectionStateCancelled:
@@ -356,7 +356,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
     }
     [handshake appendString:@"\r\n"];
     
-    PDS_LOG_SYNC_DEBUG(@"WebSocket: Sending handshake to %@:%u", self.host, self.port);
+    GZ_LOG_SYNC_DEBUG(@"WebSocket: Sending handshake to %@:%u", self.host, self.port);
     
     NSData *data = [handshake dataUsingEncoding:NSUTF8StringEncoding];
     [self writeData:data];
@@ -373,7 +373,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
         return;
     }
     
-    PDS_LOG_SYNC_DEBUG(@"WebSocket received %lu bytes from wire", (unsigned long)data.length);
+    GZ_LOG_SYNC_DEBUG(@"WebSocket received %lu bytes from wire", (unsigned long)data.length);
     NSArray<WSSessionAction *> *actions = [self.session
       feedData:data
       receivedAt:[[NSDate date] timeIntervalSince1970]];
@@ -416,7 +416,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
         }
         
         if (!acceptMatched) {
-            PDS_LOG_SYNC_ERROR(@"WebSocket: Handshake failed - Invalid Sec-WebSocket-Accept header");
+            GZ_LOG_SYNC_ERROR(@"WebSocket: Handshake failed - Invalid Sec-WebSocket-Accept header");
             [self notifyError:[NSError errorWithDomain:WebSocketConnectionErrorDomain 
                                                   code:WebSocketConnectionErrorCodeConnectionClosed 
                                               userInfo:@{NSLocalizedDescriptionKey: @"WebSocket handshake failed: Invalid Accept key"}]];
@@ -424,7 +424,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
             return;
         }
 
-        PDS_LOG_SYNC_INFO(@"WebSocket: Handshake successful");
+        GZ_LOG_SYNC_INFO(@"WebSocket: Handshake successful");
         _waitingForHandshakeResponse = NO;
         self.state = WebSocketConnectionStateConnected;
         [self startHeartbeat];
@@ -442,7 +442,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
             }
         }
     } else {
-        PDS_LOG_SYNC_ERROR(@"WebSocket: Handshake failed: %@", resp);
+        GZ_LOG_SYNC_ERROR(@"WebSocket: Handshake failed: %@", resp);
         [self notifyError:[NSError errorWithDomain:WebSocketConnectionErrorDomain 
                                               code:WebSocketConnectionErrorCodeConnectionClosed 
                                           userInfo:@{NSLocalizedDescriptionKey: @"WebSocket handshake failed"}]];
@@ -722,7 +722,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 }
 
 - (void)notifyBackpressureWarning:(double)fillPercentage bytes:(NSUInteger)bytes {
-  PDS_LOG_SYNC_WARN(@"[%@] WebSocket backpressure warning: queue %.1f%% full (%lu/%lu bytes)",
+  GZ_LOG_SYNC_WARN(@"[%@] WebSocket backpressure warning: queue %.1f%% full (%lu/%lu bytes)",
                     self.remoteAddress, fillPercentage * 100,
                     bytes, self.session.maxOutboundQueueBytes);
   [[PDSMetrics sharedMetrics] recordWebSocketBackpressureWarning];
@@ -737,7 +737,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 }
 
 - (void)notifyBackpressureCritical:(double)fillPercentage bytes:(NSUInteger)bytes {
-  PDS_LOG_SYNC_WARN(@"[%@] WebSocket backpressure critical: queue %.1f%% full (%lu/%lu bytes)",
+  GZ_LOG_SYNC_WARN(@"[%@] WebSocket backpressure critical: queue %.1f%% full (%lu/%lu bytes)",
                     self.remoteAddress, fillPercentage * 100,
                     bytes, self.session.maxOutboundQueueBytes);
   [[PDSMetrics sharedMetrics] recordWebSocketBackpressureCritical];
@@ -751,7 +751,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 }
 
 - (void)notifyBackpressureCleared {
-  PDS_LOG_SYNC_INFO(@"[%@] WebSocket backpressure cleared: queue now %.1f%% full (%lu/%lu bytes)",
+  GZ_LOG_SYNC_INFO(@"[%@] WebSocket backpressure cleared: queue now %.1f%% full (%lu/%lu bytes)",
                     self.remoteAddress, (double)self.queuedSendBytes / (double)self.session.maxOutboundQueueBytes * 100,
                     self.queuedSendBytes, self.session.maxOutboundQueueBytes);
   [[PDSMetrics sharedMetrics] recordWebSocketBackpressureStateChange:NO];
@@ -763,7 +763,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 }
 
 - (void)notifyQueueOverflow:(NSUInteger)bytes {
-  PDS_LOG_SYNC_ERROR(@"[%@] WebSocket queue overflow: %lu bytes exceeds limit %lu, closing connection",
+  GZ_LOG_SYNC_ERROR(@"[%@] WebSocket queue overflow: %lu bytes exceeds limit %lu, closing connection",
                      self.remoteAddress, bytes, self.session.maxOutboundQueueBytes);
   [[PDSMetrics sharedMetrics] recordWebSocketQueueOverflowClosure];
   [[PDSMetrics sharedMetrics] recordWebSocketBackpressureStateChange:NO];

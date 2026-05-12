@@ -17,7 +17,7 @@
 #import "Database/Service/ServiceDatabases.h"
 #import "Services/Core/PDSPhoneVerificationProvider.h"
 #import "Email/PDSEnvironmentSecretsProvider.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 NSString *const PDSRegistrationGateErrorDomain = @"com.atproto.pds.registrationgate";
 
@@ -147,7 +147,7 @@ static NSMutableDictionary<NSString *, Class> *sCustomGateClasses = nil;
                                                                   secretsProvider:secretsProvider
                                                                             error:&providerError];
             if (!phoneProvider) {
-                PDS_LOG_WARN(@"[RegistrationGate] Failed to create phone verification provider '%@': %@",
+                GZ_LOG_WARN(@"[RegistrationGate] Failed to create phone verification provider '%@': %@",
                              providerName, providerError.localizedDescription);
             }
         } else if ([providerName isEqualToString:@"mock"]) {

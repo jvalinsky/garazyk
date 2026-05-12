@@ -5,7 +5,7 @@
 #import "Video/AVFoundationTranscoder.h"
 #import "Video/FFmpegTranscoder.h"
 #import "Core/CID.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 // Suppress -Wblock-capture-autoreleasing: the error out-parameter captured
 // by the completion block is written before dispatch_semaphore_signal,

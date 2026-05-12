@@ -9,7 +9,7 @@
 #import "AppView/Server/Indexers/AppViewBookmarkIndexer.h"
 #import "AppView/Server/AppViewDatabase.h"
 #import "AppView/Services/BookmarkService.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @interface AppViewBookmarkIndexer ()
 @property (nonatomic, strong) AppViewDatabase *avdb;
@@ -71,13 +71,13 @@
                                      cid:cid
                                    error:&indexErr];
     if (!ok) {
-        PDS_LOG_WARN(@"[AppViewBookmarkIndexer] Failed to index bookmark for %@: %@",
+        GZ_LOG_WARN(@"[AppViewBookmarkIndexer] Failed to index bookmark for %@: %@",
                      did, indexErr.localizedDescription);
         if (error) *error = indexErr;
         return NO;
     }
 
-    PDS_LOG_DEBUG(@"[AppViewBookmarkIndexer] Indexed bookmark for %@: %@", did, uri);
+    GZ_LOG_DEBUG(@"[AppViewBookmarkIndexer] Indexed bookmark for %@: %@", did, uri);
     return YES;
 }
 
@@ -91,7 +91,7 @@
                                              did:did
                                            error:&unindexErr];
     if (!ok) {
-        PDS_LOG_WARN(@"[AppViewBookmarkIndexer] Failed to unindex bookmark for %@: %@",
+        GZ_LOG_WARN(@"[AppViewBookmarkIndexer] Failed to unindex bookmark for %@: %@",
                     did, unindexErr.localizedDescription);
     }
     return ok;

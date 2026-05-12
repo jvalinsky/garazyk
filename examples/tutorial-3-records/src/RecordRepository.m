@@ -90,7 +90,7 @@
 
 - (nullable Record *)getRecordAtURI:(NSString *)uri forDid:(NSString *)did error:(NSError **)error {
     __block NSError *blockError = nil;
-    Record *result = [self.db executeQuery:&blockError block:^id(sqlite3 *db) {
+    Record *result = [self.db executeUnsafeRawQuery:&blockError block:^id(sqlite3 *db) {
         const char *sql = "SELECT uri, cid, value, created_at FROM records WHERE uri = ? AND did = ?";
         sqlite3_stmt *stmt;
         int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
@@ -119,7 +119,7 @@
                                       limit:(NSUInteger)limit
                                       error:(NSError **)error {
     __block NSError *blockError = nil;
-    NSArray *result = [self.db executeQuery:&blockError block:^id(sqlite3 *db) {
+    NSArray *result = [self.db executeUnsafeRawQuery:&blockError block:^id(sqlite3 *db) {
         const char *sql = "SELECT uri, cid, value, created_at FROM records "
             "WHERE did = ? AND collection = ? ORDER BY created_at DESC LIMIT ?";
         sqlite3_stmt *stmt;

@@ -7,7 +7,7 @@
 #import "PLC/PLCMetrics.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/CID.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Core/NSDateFormatter+ATProto.h"
 
 static const NSUInteger kPLCMaxOperationBytes = 4000;
@@ -655,7 +655,7 @@ static BOOL PLCValidateIncomingOperation(NSDictionary *op, NSError **error) {
         }
         NSString *expectedDid = [PLCOperation calculateDIDForSignedOperation:[op toDictionary]];
         if (expectedDid.length > 0 && ![expectedDid isEqualToString:did]) {
-            PDS_LOG_CORE_ERROR(@"PLC genesis DID mismatch for %@: expected %@", did, expectedDid);
+            GZ_LOG_CORE_ERROR(@"PLC genesis DID mismatch for %@: expected %@", did, expectedDid);
             [[PLCMetrics sharedMetrics] recordError];
             resp.statusCode = HttpStatusBadRequest;
             [resp setJsonBody:@{@"error": @"Genesis operation does not match DID"}];

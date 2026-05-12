@@ -3,7 +3,7 @@
 #import <Foundation/Foundation.h>
 #import "CLI/PDSCLIDefinitions.h"
 #import "Core/NSDateFormatter+ATProto.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Compat/PlatformShims/CrashReporting/PDSCrashReporter.h"
 #import "Compat/PlatformShims/SignalHandling/PDSSignalManager.h"
 
@@ -85,7 +85,7 @@ static BOOL parse_global_options(NSMutableArray<NSString *> *commandArgs,
         }
         if ([arg isEqualToString:@"--verbose"] || [arg isEqualToString:@"-v"]) {
             context.verbose = YES;
-            [[PDSLogger sharedLogger] setLogLevel:PDSLogLevelDebug];
+            [[GZLogger sharedLogger] setLogLevel:GZLogLevelDebug];
             [commandArgs removeObjectAtIndex:i];
             continue;
         }

@@ -6,7 +6,7 @@
 #import "Sync/Relay/RelayMetrics.h"
 #import "Sync/Relay/RelayRepoStateManager.h"
 #import "Sync/Relay/RelayEventBuffer.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @interface PDSCLIRelayCommand ()
 @property (nonatomic, assign) BOOL running;
@@ -119,8 +119,8 @@
     self.eventBuffer = [RelayEventBuffer bufferWithDefaultRetention];
     self.upstreamManager = [[RelayUpstreamManager alloc] initWithInitialURLs:upstreamURLs];
 
-    PDS_LOG_INFO_C(@"Relay", @"Starting relay on port %d", port);
-    PDS_LOG_INFO_C(@"Relay", @"Connecting to %lu upstream PDS(s)", (unsigned long)upstreamURLs.count);
+    GZ_LOG_INFO_C(@"Relay", @"Starting relay on port %d", port);
+    GZ_LOG_INFO_C(@"Relay", @"Connecting to %lu upstream PDS(s)", (unsigned long)upstreamURLs.count);
 
     [self.upstreamManager connectAll];
 
@@ -131,7 +131,7 @@
     }
 
     [self.upstreamManager disconnectAll];
-    PDS_LOG_INFO_C(@"Relay", @"Relay stopped");
+    GZ_LOG_INFO_C(@"Relay", @"Relay stopped");
 
     return 0;
 }

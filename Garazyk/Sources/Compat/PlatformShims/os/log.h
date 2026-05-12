@@ -16,22 +16,22 @@ static inline os_log_t os_log_create(const char *subsystem, const char *category
     return (os_log_t)1;
 }
 
-#define PDS_LOG_CONVERT(fmt) @fmt
+#define GZ_LOG_CONVERT(fmt) @fmt
 
 #define os_log(log, format, ...) \
-    NSLog(PDS_LOG_CONVERT(format), ##__VA_ARGS__)
+    NSLog(GZ_LOG_CONVERT(format), ##__VA_ARGS__)
 
 #define os_log_info(log, format, ...) \
-    NSLog(@"[ATProtoPDS INFO] " PDS_LOG_CONVERT(format), ##__VA_ARGS__)
+    NSLog(@"[ATProtoPDS INFO] " GZ_LOG_CONVERT(format), ##__VA_ARGS__)
 
 #define os_log_error(log, format, ...) \
-    NSLog(@"[ATProtoPDS ERROR] " PDS_LOG_CONVERT(format), ##__VA_ARGS__)
+    NSLog(@"[ATProtoPDS ERROR] " GZ_LOG_CONVERT(format), ##__VA_ARGS__)
 
 #define os_log_debug(log, format, ...) \
-    NSLog(@"[ATProtoPDS DEBUG] " PDS_LOG_CONVERT(format), ##__VA_ARGS__)
+    NSLog(@"[ATProtoPDS DEBUG] " GZ_LOG_CONVERT(format), ##__VA_ARGS__)
 
 #define os_log_fault(log, format, ...) \
-    NSLog(@"[ATProtoPDS FAULT] " PDS_LOG_CONVERT(format), ##__VA_ARGS__)
+    NSLog(@"[ATProtoPDS FAULT] " GZ_LOG_CONVERT(format), ##__VA_ARGS__)
 
 #else
 #error "Unsupported platform"

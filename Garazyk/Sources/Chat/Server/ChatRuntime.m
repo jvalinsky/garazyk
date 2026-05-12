@@ -13,7 +13,7 @@
 #import "Network/XrpcChatBskyActorPack.h"
 #import "Network/XrpcChatBskyConvoPack.h"
 #import "Network/XrpcChatBskyGroupPack.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 @interface ChatRuntime ()
 @property (nonatomic, strong, readwrite) ChatConfiguration *configuration;
@@ -52,7 +52,7 @@
 }
 
 - (BOOL)startWithError:(NSError **)error {
-    PDS_LOG_INFO(@"Starting Chat service...");
+    GZ_LOG_INFO(@"Starting Chat service...");
     
     // 1. Initialize Data Directory
     NSFileManager *fm = [NSFileManager defaultManager];
@@ -67,7 +67,7 @@
     
     // Initialize Schema
     NSString *schemaSQL = [[ChatSchemaManager sharedManager] chatSchemaSQL];
-    if (![self.db executeRawSQL:schemaSQL error:error]) {
+    if (![self.db executeParameterizedUpdate:schemaSQL params:@[] error:error]) {
         return NO;
     }
     
@@ -118,7 +118,7 @@
     if (![self.httpServer startWithError:error]) return NO;
     
     self.isRunning = YES;
-    PDS_LOG_INFO(@"Chat service started on port %lu", (unsigned long)self.httpPort);
+    GZ_LOG_INFO(@"Chat service started on port %lu", (unsigned long)self.httpPort);
     return YES;
 }
 
@@ -127,7 +127,7 @@
 }
 
 - (void)stop {
-    PDS_LOG_INFO(@"Stopping Chat service...");
+    GZ_LOG_INFO(@"Stopping Chat service...");
     [self.httpServer stop];
     [self.db close];
     self.isRunning = NO;
