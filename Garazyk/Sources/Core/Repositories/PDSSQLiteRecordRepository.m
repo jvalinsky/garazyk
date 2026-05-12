@@ -4,6 +4,7 @@
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
+#import "Core/ATURI.h"
 
 @implementation PDSSQLiteRecordRepository {
     PDSDatabasePool *_databasePool;
@@ -27,6 +28,17 @@
     return success;
 }
 
+- (nullable PDSDatabaseRecord *)recordForUri:(NSString *)uri error:(NSError **)error {
+    ATURI *parsed = [ATURI uriWithString:uri error:error];
+    if (!parsed) return nil;
+    NSString *did = parsed.did;
+    __block PDSDatabaseRecord *record = nil;
+    [_databasePool readWithDid:did block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+        record = [reader getRecord:uri forDid:did error:blockError];
+    } error:error];
+    return record;
+}
+
 - (nullable PDSDatabaseRecord *)recordForUri:(NSString *)uri did:(NSString *)did error:(NSError **)error {
     __block PDSDatabaseRecord *record = nil;
     [_databasePool readWithDid:did block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
@@ -42,6 +54,17 @@
         records = [reader listRecordsForDid:did collection:collection limit:1000 offset:0 error:blockError];
     } error:error];
     return records;
+}
+
+- (BOOL)deleteRecord:(NSString *)uri error:(NSError **)error {
+    ATURI *parsed = [ATURI uriWithString:uri error:error];
+    if (!parsed) return NO;
+    NSString *did = parsed.did;
+    __block BOOL success = NO;
+    [_databasePool transactWithDid:did block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
+        success = [transactor deleteRecord:uri forDid:did error:blockError];
+    } error:error];
+    return success;
 }
 
 - (BOOL)deleteRecord:(NSString *)uri did:(NSString *)did error:(NSError **)error {

@@ -750,6 +750,7 @@ int main(int argc, char *argv[]) {
     // fails to decrypt an existing key encrypted with a different secret.
     if (getenv("PDS_PLC_KEYS_DIR") == NULL) {
       NSString *tempKeysDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"garazyk-test-plc-keys"];
+      [[NSFileManager defaultManager] removeItemAtPath:tempKeysDir error:NULL];
       [[NSFileManager defaultManager] createDirectoryAtPath:tempKeysDir
                                 withIntermediateDirectories:YES
                                                  attributes:nil
@@ -758,6 +759,7 @@ int main(int argc, char *argv[]) {
     }
     if (getenv("PDS_DATA_DIR") == NULL) {
       NSString *tempDataDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"garazyk-test-data"];
+      [[NSFileManager defaultManager] removeItemAtPath:tempDataDir error:NULL];
       [[NSFileManager defaultManager] createDirectoryAtPath:tempDataDir
                                 withIntermediateDirectories:YES
                                                  attributes:nil
