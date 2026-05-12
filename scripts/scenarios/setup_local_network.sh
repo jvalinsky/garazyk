@@ -25,6 +25,7 @@ BUILD_BIN="$(resolve_build_dir "$REPO_ROOT")"
 
 BINARY_MODE=false
 WITH_PDS2=false
+WITH_PHONE_VERIFICATION=false
 WAIT_ONLY=false
 TEARDOWN=false
 KEEP_RUNNING=false
@@ -34,8 +35,9 @@ while [[ $# -gt 0 ]]; do
     # Keep argument parsing intentionally simple: scenario automation passes a
     # small fixed flag set and all per-service values come from common.sh envs.
     case "$1" in
-        --binary)    BINARY_MODE=true ;;
-        --pds2)      WITH_PDS2=true ;;
+        --binary)                BINARY_MODE=true ;;
+        --pds2)                  WITH_PDS2=true ;;
+        --with-phone-verification) WITH_PHONE_VERIFICATION=true ;;
         --wait-only) WAIT_ONLY=true ;;
         --teardown)  TEARDOWN=true ;;
         --keep-running) KEEP_RUNNING=true ;;
@@ -53,14 +55,15 @@ while [[ $# -gt 0 ]]; do
         --help|-h)
             echo "Usage: $0 [--binary] [--pds2] [--wait-only] [--teardown] [--run-id ID] [--diagnostics-dir DIR]"
             echo ""
-            echo "  --binary               Start services from build/bin/ (no Docker)"
-            echo "  --pds2                 Also start a second PDS on port $SERVICE_PORT_CHAT"
-            echo "  --wait-only            Don't start services, just wait for them to be healthy"
-            echo "  --teardown             Stop services for this run"
-            echo "  --keep-running         Mark this run as intentionally long-lived"
-            echo "  --collect-diagnostics  Capture health, logs, and compose state"
-            echo "  --run-id ID            Reuse or name the shared e2e run directory"
-            echo "  --diagnostics-dir DIR  Write diagnostics to DIR"
+            echo "  --binary                 Start services from build/bin/ (no Docker)"
+            echo "  --pds2                   Also start a second PDS on port $SERVICE_PORT_CHAT"
+            echo "  --with-phone-verification Start mock Twilio server and configure PDS for phone verification"
+            echo "  --wait-only              Don't start services, just wait for them to be healthy"
+            echo "  --teardown               Stop services for this run"
+            echo "  --keep-running           Mark this run as intentionally long-lived"
+            echo "  --collect-diagnostics    Capture health, logs, and compose state"
+            echo "  --run-id ID              Reuse or name the shared e2e run directory"
+            echo "  --diagnostics-dir DIR    Write diagnostics to DIR"
             exit 0
             ;;
         *)
@@ -126,6 +129,9 @@ stop_stale_docker_e2e() {
     local needed_ports=("$SERVICE_PORT_PLC" "$SERVICE_PORT_PDS" "$SERVICE_PORT_RELAY" "$SERVICE_PORT_APPVIEW" "8080")
     if [[ "$WITH_PDS2" == "true" ]]; then
         needed_ports+=("$SERVICE_PORT_CHAT")
+    fi
+    if [[ "$WITH_PHONE_VERIFICATION" == "true" ]]; then
+        needed_ports+=("8081")
     fi
 
     # Find garazyk-e2e containers holding any of our ports.
@@ -278,10 +284,25 @@ if [[ "$BINARY_MODE" == "true" ]]; then
     sleep 2
     wait_for_http "$SERVICE_URL_PLC/_health" "PLC" 30
 
+    # ── Mock Twilio server (optional) ────────────────────────────────────────
+    MOCK_TWILIO_PID=""
+    if [[ "$WITH_PHONE_VERIFICATION" == "true" ]]; then
+        log_info "Starting mock Twilio server on port 8081..."
+        deno run -A "$SCRIPT_DIR/../mock-twilio-server.ts" --port=8081 > "$ATPROTO_E2E_LOG_DIR/mock-twilio.log" 2>&1 &
+        MOCK_TWILIO_PID=$!
+        echo "MOCK_TWILIO_PID=$MOCK_TWILIO_PID" >> "$PID_FILE"
+        sleep 1
+        wait_for_http "http://127.0.0.1:8081/__control/health" "Mock Twilio" 15
+    fi
+
     # ── Start PDS ────────────────────────────────────────────────────────────
     log_info "Starting PDS on port $SERVICE_PORT_PDS..."
     PDS_ALLOW_HTTP=1 \
     PDS_VIDEO_MODE=external \
+    TWILIO_ACCOUNT_SID="${TWILIO_ACCOUNT_SID:-AC00000000000000000000000000000000}" \
+    TWILIO_AUTH_TOKEN="${TWILIO_AUTH_TOKEN:-SK00000000000000000000000000000000}" \
+    TWILIO_VERIFY_SERVICE_SID="${TWILIO_VERIFY_SERVICE_SID:-VA00000000000000000000000000000000}" \
+    TWILIO_API_BASE_URL="${TWILIO_API_BASE_URL:-http://127.0.0.1:8081/v2/Service}" \
     "$BUILD_BIN/$SERVICE_BINARY_PDS" serve --config "$CONFIG_DIR/pds-config.json" --port "$SERVICE_PORT_PDS" --data-dir "$PDS_DATA" > "$ATPROTO_E2E_LOG_DIR/pds.log" 2>&1 &
     echo "PDS_PID=$!" >> "$PID_FILE"
     sleep 3
@@ -379,6 +400,9 @@ if [[ "$BINARY_MODE" == "true" ]]; then
     echo "  UI:      $SERVICE_URL_UI"
     if [[ "$WITH_PDS2" == "true" ]]; then
         echo "  PDS2:    $SERVICE_URL_CHAT"
+    fi
+    if [[ "$WITH_PHONE_VERIFICATION" == "true" ]]; then
+        echo "  Mock Twilio: http://127.0.0.1:8081"
     fi
     echo ""
     echo "  Run:  $ATPROTO_E2E_RUN_DIR"

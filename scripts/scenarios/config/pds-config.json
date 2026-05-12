@@ -46,6 +46,14 @@
     "did_limit": 60,
     "did_window": 60
   },
+  "providers": {
+    "phone_verification": {
+      "type": "twilio"
+    }
+  },
+  "registration": {
+    "phone_verification_required": false
+  },
   "auth": {
     "master_secret": "test-master-secret-123"
   }

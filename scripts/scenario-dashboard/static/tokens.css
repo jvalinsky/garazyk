@@ -1,0 +1,107 @@
+/* Garazyk Scenario Dashboard — Design Tokens
+ * Reuses OKLCH tokens from Admin UI design system.
+ * Brand hue: warm strawberry red (~15°) at low chroma for tinted neutrals.
+ */
+
+:root {
+  /* Light mode semantic colors - OKLCH */
+  --color-bg-primary: oklch(96% 0.003 200);
+  --color-bg-secondary: oklch(99% 0.003 200);
+  --color-bg-tertiary: oklch(93% 0.005 200);
+  --color-text-primary: oklch(13% 0.005 200);
+  --color-text-secondary: oklch(45% 0.005 200);
+  --color-text-tertiary: oklch(60% 0.003 200);
+
+  /* Brand accent - Apple blue with OKLCH */
+  --color-accent: oklch(52% 0.18 255);
+
+  /* Action colors */
+  --color-destructive: oklch(58% 0.22 25);
+  --color-success: oklch(60% 0.18 145);
+  --color-warning: oklch(75% 0.18 70);
+  --color-info: oklch(60% 0.15 210);
+
+  /* Strawberry brand tint on neutrals */
+  --color-bg-secondary-tinted: oklch(99% 0.004 15);
+
+  /* Separators and borders */
+  --separator-color: oklch(85% 0.003 200);
+  --separator-color-secondary: oklch(91% 0.002 200);
+
+  /* System font stack */
+  --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+                 "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  /* Font sizes - 5-step scale with ~1.25 ratio */
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-md: 15px;
+  --font-size-lg: 19px;
+  --font-size-xl: 24px;
+  --font-size-2xl: 30px;
+
+  /* Line heights */
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* Spacing scale - 4pt grid */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+  --space-3xl: 48px;
+  --space-4xl: 64px;
+
+  /* Border radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-full: 50%;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px oklch(0% 0 0 / 0.08);
+  --shadow-md: 0 2px 8px oklch(0% 0 0 / 0.12);
+  --shadow-lg: 0 4px 16px oklch(0% 0 0 / 0.15);
+
+  /* Z-index scale */
+  --z-base: 1;
+  --z-dropdown: 100;
+  --z-sticky: 20;
+  --z-fixed: 30;
+  --z-modal: 1000;
+  --z-tooltip: 1100;
+
+  /* Transitions */
+  --transition-fast: 0.1s ease;
+  --transition-normal: 0.15s ease;
+  --transition-slow: 0.3s ease;
+
+  /* Sidebar width */
+  --sidebar-width: 220px;
+  --toolbar-height: 52px;
+  --statusbar-height: 28px;
+}
+
+/* Dark mode overrides */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg-primary: oklch(15% 0.006 15);
+    --color-bg-secondary: oklch(22% 0.01 15);
+    --color-bg-tertiary: oklch(28% 0.012 15);
+    --color-text-primary: oklch(96% 0.003 200);
+    --color-text-secondary: oklch(70% 0.005 200);
+    --color-text-tertiary: oklch(55% 0.004 200);
+
+    --color-bg-secondary-tinted: oklch(22% 0.015 15);
+
+    --separator-color: oklch(32% 0.005 200);
+    --separator-color-secondary: oklch(28% 0.004 200);
+
+    --shadow-sm: 0 1px 3px oklch(0% 0 0 / 0.3);
+    --shadow-md: 0 2px 8px oklch(0% 0 0 / 0.4);
+    --shadow-lg: 0 4px 16px oklch(0% 0 0 / 0.5);
+  }
+}

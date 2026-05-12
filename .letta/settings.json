@@ -303,7 +303,11 @@
       "Bash(mkdir -p /Users/jack/Software/garazyk/Garazyk/Tests/PhoneVerification)",
       "Bash(ssh DEPLOY_HOST \"top -b -n1 | head -30\")",
       "Bash(deciduous search \"provider\" 2)",
-      "Bash(deciduous graph 2)"
+      "Bash(deciduous graph 2)",
+      "Bash(deno task dev 2)",
+      "Bash(deno task dev 2 &)",
+      "Bash(deno task -c scripts/scenario-dashboard/deno.json dev 2 &)",
+      "Bash(deno eval \"const r = await fetch('https://deno.land/x/fresh@1.7.3/src/mod.ts', {redirect: 'follow'}); console.log(r.status, r.url)\" 2)"
     ]
   }
 }

@@ -102,11 +102,66 @@ export class TransportLayer {
     const res = await this.request(method, url.toString(), {
       method: "POST",
       headers,
-      body: data,
+      body: data as BodyInit,
     });
     if (res.status >= 400) {
       throw new XrpcError(method, res.status, res.body);
     }
     return res.body;
+  }
+
+  async httpGet(path: string, params?: Record<string, any>, token?: string) {
+    const url = new URL(path, this._base_url);
+    if (params) {
+      for (const [k, v] of Object.entries(params)) {
+        if (v !== undefined && v !== null) {
+          url.searchParams.append(k, String(v));
+        }
+      }
+    }
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const res = await this.request(path, url.toString(), { method: "GET", headers });
+    if (res.status >= 400) {
+      throw new XrpcError(path, res.status, res.body);
+    }
+    return res.body;
+  }
+
+  async httpPost(path: string, body?: any, token?: string) {
+    const url = new URL(path, this._base_url);
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const res = await this.request(path, url.toString(), {
+      method: "POST",
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (res.status >= 400) {
+      throw new XrpcError(path, res.status, res.body);
+    }
+    return res.body;
+  }
+
+  async getBinary(method: string, params?: Record<string, any>, token?: string, headers?: Record<string, string>) {
+    const url = new URL(`/xrpc/${method}`, this._base_url);
+    if (params) {
+      for (const [k, v] of Object.entries(params)) {
+        if (v !== undefined && v !== null) {
+          url.searchParams.append(k, String(v));
+        }
+      }
+    }
+    const mergedHeaders: Record<string, string> = { ...headers };
+    if (token) mergedHeaders["Authorization"] = `Bearer ${token}`;
+
+    const targetUrl = new URL(url, this._base_url);
+    const response = await fetch(targetUrl.toString(), { method: "GET", headers: mergedHeaders });
+    const data = await response.arrayBuffer();
+    
+    this._record(method, response.status, `binary: ${data.byteLength} bytes`);
+    return [response.status, response.headers.get("Content-Type") || "", new Uint8Array(data)] as [number, string, Uint8Array];
   }
 }

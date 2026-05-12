@@ -44,6 +44,9 @@ rg -n --glob '*.{m,mm,h}' \
 rg -n --glob '*.{m,mm,h}' \
   -e 'sqlite3_exec\s*\(' \
   -e 'executeQuery:' \
+  -e 'executeUnsafeRawQuery:' \
+  -e 'executeRawSQL:' \
+  -e 'executeUnsafeRawSQL:' \
   -e 'executeUpdate:' \
   -e '\[.*execute' \
   "$scan_path" >"$exec_hits" || true
