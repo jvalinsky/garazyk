@@ -471,12 +471,22 @@ extern NSString * const AppViewDatabaseErrorDomain;
  */
 - (nullable NSString *)resolveDIDToHandle:(NSString *)did error:(NSError **)error;
 
+/*!
+ @method parameterPlaceholdersForCount:
+ @abstract Returns a string of ? placeholders for use in an IN clause.
+ */
+- (NSString *)parameterPlaceholdersForCount:(NSUInteger)count;
+
 #pragma mark - Lifecycle
 
 /*! Close the database connection. */
 - (void)close;
 
 #pragma mark - Transactions
+
+/*! Execute a block inside a database transaction (BEGIN IMMEDIATE / COMMIT).
+    If the block returns NO or sets *error, the transaction is rolled back. */
+- (BOOL)performTransaction:(BOOL (^)(AppViewDatabase *db, NSError **error))block error:(NSError **)error;
 
 /*! Execute a block inside a database transaction (BEGIN IMMEDIATE / COMMIT).
     If the block returns NO or sets *error, the transaction is rolled back.
