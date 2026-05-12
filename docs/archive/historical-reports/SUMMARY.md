@@ -110,8 +110,6 @@ title: Table of Contents
 - [Tutorial 5: Firehose](10-tutorials/tutorial-5-firehose)
 - [Subguide: Network from Scratch](10-tutorials/network-from-scratch/index)
 - [Tutorial 6: Deployment](10-tutorials/tutorial-6-deployment)
-- [Tutorial 7a: Objective-J for Contributors](10-tutorials/tutorial-7a-objective-j-intro)
-- [Tutorial 7b: Admin UI Architecture](10-tutorials/tutorial-7b-admin-ui)
 - [Tutorial 8: Endpoint Workflow](10-tutorials/tutorial-8-endpoint-workflow)
 - [Tutorial 9: Blobs and Migrations](10-tutorials/tutorial-9-blobs-and-migrations)
 - [Tutorial 10: Deep-Dive OAuth2 & DPoP](10-tutorials/tutorial-10-oauth-dpop)
@@ -119,6 +117,7 @@ title: Table of Contents
 - [Tutorial 12: Federation & Sync](10-tutorials/tutorial-12-federation-sync)
 - [Tutorial 13: Admin UI Internals & Instrumentation](10-tutorials/tutorial-13-admin-internals)
 - [Tutorial 14: Advanced Firehose (Filtering & Backfill)](10-tutorials/tutorial-14-advanced-firehose)
+- [Tutorial 15: Syrena AppView Operation](10-tutorials/tutorial-15-appview-operation)
 
 ### 11 Reference
 - [API Reference](11-reference/api-reference)

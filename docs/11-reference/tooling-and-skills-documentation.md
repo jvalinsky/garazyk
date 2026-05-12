@@ -15,7 +15,6 @@ This hub maps docs for repository tooling, scripts, and skills.
 ## Tooling Docs
 
 - [Tooling: Test Audit Validator](../../tooling/test-audit-validator/README.md)
-- [Tooling: Objective-J VSCode Extension](../../tooling/vscode-objective-j/README.md)
 - [Scripts Docs Workspace](../../scripts/docs/README.md)
 - [Scripts Docs Configs](../../scripts/docs/configs/README.md)
 - [Scripts Docs Migration Mapping](../../scripts/docs/lib/README-migration-mapping.md)

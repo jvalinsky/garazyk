@@ -55,6 +55,9 @@ export const sidebarConfig: DefaultTheme.Sidebar = [
       { text: 'Repository Service', link: '/03-application-layer/repository-service' },
       { text: 'Relay Service', link: '/03-application-layer/relay-service' },
       { text: 'Admin Service', link: '/03-application-layer/admin-service' },
+      { text: 'Chat Service (PDS2)', link: '/03-application-layer/chat-service' },
+      { text: 'Germ Mailbox Service', link: '/03-application-layer/germ-service' },
+      { text: 'Video Side-Car (jelcz)', link: '/03-application-layer/video-sidecar' },
       { text: 'Deep Dive: Runtime Flow', link: '/03-application-layer/runtime-flow-walkthrough' }
     ]
   },
@@ -173,7 +176,6 @@ export const sidebarConfig: DefaultTheme.Sidebar = [
         ]
       },
       { text: 'Tutorial 6: Deployment', link: '/10-tutorials/tutorial-6-deployment' },
-      { text: 'Tutorial 7: Objective-J UI', link: '/10-tutorials/tutorial-7-objective-j-ui' },
       { text: 'Tutorial 8: Endpoint Workflow', link: '/10-tutorials/tutorial-8-endpoint-workflow' }
     ]
   },
@@ -194,6 +196,7 @@ export const sidebarConfig: DefaultTheme.Sidebar = [
       { text: 'Test Organization', link: '/11-reference/test-organization' },
       { text: 'Property-Based Testing', link: '/11-reference/property-based-testing' },
       { text: 'E2E Testing', link: '/11-reference/e2e-testing' },
+      { text: 'Deno Scenario Framework', link: '/11-reference/deno-scenario-framework' },
       { text: 'Test Coverage Goals', link: '/11-reference/test-coverage-goals' },
       { text: 'Security Audit Guide', link: '/11-reference/security-audit-guide' },
       { text: 'PLC Server Operations', link: '/11-reference/plc-server-operations' },

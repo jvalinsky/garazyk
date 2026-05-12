@@ -13,7 +13,6 @@ This plan covers:
 - Documentation automation under `docs/scripts/` and `scripts/docs/`.
 - Example deployment scripts under `examples/tutorial-6-deployment/`.
 - PLC integration shell scripts under `Garazyk/Tests/plc_e2e/`.
-- Objective-Jupyter build/demo/test scripts and Nix files under `objc-jupyter-wasm/`.
 - Repository Nix files: `flake.nix`, `flake.lock`, and nested flakes/derivations.
 
 It does not propose moving normal Objective-C, Go, TypeScript, or notebook source code merely because the file extension is executable in another context. Those files stay with their owning module unless explicitly named below.
@@ -30,7 +29,7 @@ It does not propose moving normal Objective-C, Go, TypeScript, or notebook sourc
 
 1. **Stabilize broken active scripts.** Fix syntax errors and security-sensitive scripts first: `uninstall.sh`, `hash_admin_password.sh`, backup/restore helpers, and config validation.
 2. **Delete or quarantine stale duplicates.** Remove retired wrappers, stale lint wrappers, no-op docs scripts, and local agent settings under `scripts/.letta/`.
-3. **Move scripts into clearer ownership.** Put fuzzing tools under `scripts/fuzzing/`, production DNS/account scripts under `scripts/ops/production/`, and Objective-Jupyter WASM wrappers under `objc-jupyter-wasm/scripts/`.
+3. **Move scripts into clearer ownership.** Put fuzzing tools under `scripts/fuzzing/`, and production DNS/account scripts under `scripts/ops/production/`.
 4. **Revise remaining active tools.** Bring shell scripts to `set -euo pipefail`, root discovery, `mktemp`, safe cleanup traps, `find -print0`, and structured JSON handling.
 5. **Refresh Nix.** Keep flakes, remove or expose unused derivations, and add checks/formatters so script hygiene can be enforced.
 
@@ -64,8 +63,6 @@ Delete these after checking references with `rg` and updating any docs or wrappe
 | `scripts/test/atproto-compliance-review.sh` | Broken array/temp-file design and brittle grep checks; replace with the coverage audit workflow. |
 | `scripts/test/sql_injection_test.sh` | Hard-coded proof script with stale references; replace with real security tests/audit scans. |
 | `scripts/wasm/build-clang-wasm.sh` | Executable placeholder that exits 2; track this as roadmap/docs instead of a script. |
-| `objc-jupyter-wasm/nix/libobjc2-real-subset.nix` | Appears unused by the current flake. Delete unless a hidden consumer is found. |
-| `objc-jupyter-wasm/nix/wasi-sysroot.nix` | Appears unused by the current flake and duplicates `wasi-libc-sysroot.nix` intent. Delete unless exposed deliberately. |
 
 ## Move
 
@@ -76,10 +73,6 @@ Move these to clarify ownership. During moves, leave temporary compatibility wra
 | `scripts/add-account.sh` | `scripts/ops/production/add-account.sh` | Production account/DNS tooling should live with ops. |
 | `scripts/cloudflare-dns.sh` | `scripts/ops/production/cloudflare-dns.sh` | Production Cloudflare API mutation should not sit at root script level. |
 | `scripts/setup-pds.sh` | `scripts/ops/production/setup-pds.sh` | Production provisioning helper belongs under ops. |
-| `scripts/build-all.sh` | `objc-jupyter-wasm/scripts/build-all.sh` | It builds only the Objective-Jupyter WASM smoke slice. |
-| `scripts/wasm/build-jupyterlite-smoke.sh` | `objc-jupyter-wasm/scripts/build-jupyterlite-smoke.sh` | Module-owned build script. |
-| `scripts/wasm/build-kernel-wasm.sh` | `objc-jupyter-wasm/scripts/build-kernel-wasm.sh` | Module-owned build script. |
-| `scripts/wasm/build-runtime-wasm.sh` | `objc-jupyter-wasm/scripts/build-runtime-wasm.sh` | Module-owned build script. |
 | `scripts/coverage-diff.sh` | `scripts/fuzzing/coverage-diff.sh` | Fuzzing helper; group with crash/corpus tools. |
 | `scripts/generate-xrpc-corpus.sh` | `scripts/fuzzing/generate-xrpc-corpus.sh` | Fuzzing corpus generator. |
 | `scripts/minimize-corpus.sh` | `scripts/fuzzing/minimize-corpus.sh` | Fuzzing corpus minimizer. |
@@ -102,7 +95,6 @@ Move these to clarify ownership. During moves, leave temporary compatibility wra
 | Path | Revision |
 |---|---|
 | `scripts/build/build.sh` | Keep out-of-source build behavior; add portable job count helper, explicit `xcodegen generate` path for macOS when using Xcode, and optional `BUILD_DIR`. |
-| `scripts/build/build_cappuccino_ui.sh` | Keep; prefer `npm ci` when lockfile exists, add `--no-install` option for CI, and avoid unconditional dependency mutation. |
 | `scripts/build/build-docs.sh` | Keep; align with `docs/scripts/build-docs.sh` and avoid duplicate docs build entrypoints. |
 | `scripts/build/clean.sh` | Add `--dry-run`, `--yes`, target allowlist, and do not remove `docs/node_modules` unless requested. |
 | `scripts/build/lint.sh` | Replace `find | xargs` with `find -print0 | xargs -0`, split check vs write modes, cover current `Garazyk` paths, and fail consistently. |
@@ -338,13 +330,6 @@ These are already in the right ownership location and should not be moved during
 |---|---|---|
 | `flake.nix` | Revise | Keep root dev shells; add formatter, script hygiene tools (`shellcheck`, `shfmt`, `jq`), and optionally a `checks` target for shell syntax. |
 | `flake.lock` | Leave | Keep lockfile paired with root flake. |
-| `objc-jupyter-wasm/flake.nix` | Revise | Keep; expose only active packages and document compatibility aliases. |
-| `objc-jupyter-wasm/flake.lock` | Leave | Keep lockfile paired with nested flake. |
-| `objc-jupyter-wasm/nix/kernel-wasm.nix` | Revise | Keep; factor repeated compile invocations into a small derivation helper/list. |
-| `objc-jupyter-wasm/nix/libobjc2-wasm-full.nix` | Revise | Keep; move large inline C stubs into checked-in source/patch files. |
-| `objc-jupyter-wasm/nix/wasi-libc-sysroot.nix` | Leave | Active sysroot derivation used by the nested flake. |
-| `objc-jupyter-wasm/nix/libobjc2-real-subset.nix` | Delete | Not exposed by current flake; delete unless deliberately revived. |
-| `objc-jupyter-wasm/nix/wasi-sysroot.nix` | Delete | Not exposed by current flake and overlaps `wasi-libc-sysroot.nix`. |
 | `tooling/test-audit-validator/flake.nix` | Revise | Keep; add checks for Go tests and clarify ignored `.cache/` behavior. |
 | `tooling/test-audit-validator/flake.lock` | Leave | Keep lockfile paired with tool flake. |
 | `examples/tutorial-6-deployment/flake.nix` | Revise | Keep with tutorial; move to a production NixOS module later only if it becomes supported deployment surface. |
@@ -379,14 +364,13 @@ After each cleanup batch:
 
    ```bash
    nix flake check
-   nix flake check objc-jupyter-wasm
    nix flake check tooling/test-audit-validator
    ```
 
 5. Re-scan for stale absolute paths and old source roots:
 
    ```bash
-   rg -n '/Users/jack/Software/garazyk|ATProtoPDS/Sources|NSPds|build-linux/bin' scripts docs/scripts .opencode/tools examples objc-jupyter-wasm
+   rg -n '/Users/jack/Software/garazyk|ATProtoPDS/Sources|NSPds|build-linux/bin' scripts docs/scripts .opencode/tools examples
    ```
 
 ## Tracking

@@ -1,22 +1,26 @@
 # Garazyk
 
-Full AT Protocol stack in portable Objective-C — PDS, AppView, Relay, PLC Server, and Admin UI. Runs on macOS (Apple frameworks) and Linux (GNUstep).
+AT Protocol stack in portable Objective-C — PDS, AppView, Relay, PLC Server, and Admin UI. Runs on macOS (Apple frameworks) and Linux (GNUstep).
 
 ## Architecture
 
-Garazyk implements the complete ATProto service topology in a single Objective-C codebase:
+Garazyk implements the ATProto service topology in an Objective-C codebase:
 
 - **PDS** — Personal Data Server: repo hosting, XRPC endpoints, blob storage, account management
 - **AppView** — indexing, backfill, profile/feed/notification queries
 - **Relay** (BGS) — firehose aggregation, crawl dispatch, event stream
 - **PLC Server** — DID PLC directory: rotation key management, operation log, export
-- **Admin UI** — HTMX server with AppKit aesthetics, 18 XRPC client methods, tabbed admin shell
+- **Admin UI** — Standalone HTMX service for live monitoring and administration.
+- **Scenario Dashboard** — Deno Fresh application for orchestrating narrative integration tests.
 
-The stack is built on a sans-I/O HTTP architecture (`HttpProtocolDriver`, `HttpConnectionIOCoordinator`, `HttpResponseSender`) with WebSocket firehose support, full OAuth2 provider (PKCE, DPoP, refresh token rotation, passkey), AVFoundation video transcoding (H.264/H.265, FFmpeg on Linux), and MST/CAR repository encoding.
+The stack uses a sans-I/O HTTP architecture (`HttpProtocolDriver`, `HttpConnectionIOCoordinator`, `HttpResponseSender`) with WebSocket firehose support, `GZLogger` with PII redaction, OAuth2 provider (PKCE, DPoP, refresh token rotation, passkey), AVFoundation video transcoding (H.264/H.265, FFmpeg on Linux), and MST/CAR repository encoding.
 
-26 source modules, 33 test directories, 2676+ tests. See [Codebase Map](docs/01-getting-started/codebase-map.md) for the full layout.
+26 source modules, 33 test directories, 2676+ tests. See [Codebase Map](docs/01-getting-started/codebase-map.md) for the layout.
 
-## Quick Build
+### Prerequisites
+
+- **macOS**: `brew install cmake xcodegen deno`
+- **Linux**: `apt install clang cmake libsqlite3-dev libssl-dev gnustep-devel` (and [install Deno](https://deno.land/manual/getting_started/installation))
 
 ### macOS
 
@@ -47,12 +51,13 @@ cd objc-jupyter-wasm && nix build .#kernel-wasm
 
 ## Testing
 
-- **2676+ tests** across 33 test directories — core suite passes with 0 failures
-- **Scenario tests** — `scripts/scenarios/` and `scripts/seed_*.py` for full-stack simulation
+- **2676+ tests** across 33 test directories
+- **Deno Scenarios** — TypeScript integration tests in `scripts/scenarios/` orchestrating the local Docker network
+- **Scenario Dashboard** — Browser-based UI for running tests and viewing historical results via SQLite
 - **Fuzzing** — corpus, harnesses, crashers, and mutators in `fuzzing/`
 - **Coverage builds** — `cmake -DENABLE_COVERAGE=ON` with LLVM profraw
 
-See [Test Organization](docs/11-reference/test-organization.md) and [Test Selection Workflow](docs/11-reference/test-selection-workflow.md).
+See [Test Organization](docs/11-reference/test-organization.md), [Test Selection Workflow](docs/11-reference/test-selection-workflow.md), and [Deno Scenario Framework](docs/11-reference/deno-scenario-framework.md).
 
 ## Docker
 
@@ -78,6 +83,7 @@ Includes PDS, Admin UI, and supporting services. See [Docs Site Deployment Guide
 - [Tutorials](docs/10-tutorials/index.md)
 - [CLI Reference](docs/11-reference/cli-reference.md)
 - [Admin UI Documentation](docs/11-reference/admin-ui-documentation.md)
+- [Deno Scenario Framework](docs/11-reference/deno-scenario-framework.md)
 - [Spec Version & Lexicon Compliance](docs/11-reference/spec-version.md)
 
 ## Contributing

@@ -4,7 +4,7 @@ title: Test Coverage Goals
 
 # Test Coverage Goals
 
-Garazyk PDS maintains comprehensive test coverage with over 2,400 tests across all layers. This document outlines coverage targets, critical paths that must be tested, and known gaps.
+Garazyk PDS has over 2,400 tests across all layers. This document outlines coverage targets, paths that require testing, and identified gaps.
 
 ## Current Test Coverage
 
@@ -48,11 +48,11 @@ Garazyk/Sources/
 └── Compat/         60%+ coverage (Platform compatibility layer)
 ```
 
-## Critical Paths
+## Core Paths
 
-### Must-Have Test Coverage
+### Required Test Coverage
 
-These paths are critical to PDS functionality and must have comprehensive test coverage:
+These paths require testing for PDS functionality:
 
 #### 1. Account Creation & Authentication
 

@@ -31,7 +31,7 @@ Development happens at the seams between configuration, routing, service composi
 [Tutorial 8: Endpoint Workflow](10-tutorials/tutorial-8-endpoint-workflow), [API Reference](11-reference/api-reference), [Testing Map](11-reference/testing-map).
 
 ### Tooling
-[Explorer, OpenAPI & UI](11-reference/explorer-openapi-ui), [Tutorial 7b: Admin UI Architecture](10-tutorials/tutorial-7b-admin-ui).
+[Explorer, OpenAPI & UI](11-reference/explorer-openapi-ui), [Admin UI Documentation](11-reference/admin-ui-documentation).
 
 ### Deployment
 [Tutorial 6: Deployment](10-tutorials/tutorial-6-deployment), [Config Reference](11-reference/config-reference).

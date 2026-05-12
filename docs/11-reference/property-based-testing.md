@@ -64,7 +64,7 @@ Tests generate random data to explore edge cases:
 
 ## Fuzz Testing
 
-Garazyk includes a comprehensive fuzzing infrastructure in `fuzzing/`:
+Garazyk includes fuzzing infrastructure in `fuzzing/`:
 
 ### Fuzzer Targets
 
@@ -409,8 +409,8 @@ Garazyk's testing approach has some limitations compared to formal PBT framework
 - No automatic property discovery
 
 These limitations are mitigated by:
-- Comprehensive fuzzing infrastructure
-- Extensive interoperability test suites
+- Fuzzing infrastructure
+- Interoperability test suites
 - Security-focused testing
 - Manual property verification
 

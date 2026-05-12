@@ -8,7 +8,7 @@ title: Architecture Overview
 
 <!-- Image placeholder: System Architecture -->
 
-*Complete system architecture showing all major components and their interactions*
+*System architecture showing major components and their interactions*
 
 Garazyk uses a layered architecture to support both monolithic (PDS) and distributed (AppView, Relay, PLC) deployments.
 
@@ -59,6 +59,12 @@ Garazyk uses a layered architecture to support both monolithic (PDS) and distrib
         │  │ - PDSRelayService                        │  │
         │  └──────────────────────────────────────────┘  │
         │  ┌──────────────────────────────────────────┐  │
+        │  │ Standalone / Side-car:                   │  │
+        │  │ - Chat Service (PDS2)                    │  │
+        │  │ - Video Service (Jelcz)                  │  │
+        │  │ - Germ E2EE Mailbox                      │  │
+        │  └──────────────────────────────────────────┘  │
+        │  ┌──────────────────────────────────────────┐  │
         │  │ Safety & Compliance:                     │  │
         │  │ - AgeAssuranceService                    │  │
         │  │ - ChatModerationService                  │  │
@@ -85,7 +91,7 @@ Garazyk uses a layered architecture to support both monolithic (PDS) and distrib
 ## Core Architectural Patterns
 
 ### 1. Sans-I/O Protocol Logic
-The system uses a **Sans-I/O architecture** for HTTP and WebSocket handling. Protocol logic is implemented as pure state machines (`HttpProtocolSession`, `WebSocketProtocolSession`) that are decoupled from socket operations. This ensures that the same codebase is highly portable and facilitates deterministic testing. See the [Sans-I/O Guide](../04-network-layer/sans-io) for more details.
+The system uses a **Sans-I/O architecture** for HTTP and WebSocket handling. Protocol logic is implemented as pure state machines (`HttpProtocolSession`, `WebSocketProtocolSession`) that are decoupled from socket operations. This ensures that the codebase is portable and enables deterministic testing. See the [Sans-I/O Guide](../04-network-layer/sans-io) for more details.
 
 ### 2. Standalone Binary Suite
 While the system can run as a unified PDS, it provides a suite of standalone binaries for distributed deployments:

@@ -60,7 +60,7 @@ Skills are located in `.agents/skills/`. The LLM loads them on-demand via the `s
 | `sqlite-sql-best-practices` | SQLite correctness, query perf, index design, migrations |
 | `using-deciduous` | Track goals/decisions in the deciduous decision graph |
 | `web-ui-audit` | Accessibility (WCAG), JS patterns, frontend security |
-| `expand_md_topic` | Expand markdown outlines into comprehensive docs |
+| `expand_md_topic` | Expand markdown outlines into documentation |
 
 ## Development Rules
 

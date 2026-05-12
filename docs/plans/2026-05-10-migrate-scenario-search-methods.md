@@ -23,7 +23,7 @@
 - Line 266: Replace `client.feed.get_suggestions` with `client.search.get_suggestions`.
 
 **Step 4: Verify changes**
-- Run: `python3 scripts/scenarios/scenarios/17_actor_preferences_discovery.py` (Note: This might require a running local stack if health checks are enabled, but the code change is straightforward).
+- Run: `./scripts/run_scenarios.ts 17_actor_preferences_discovery.py` (Note: This might require a running local stack if health checks are enabled, but the code change is straightforward).
 - Expected: No syntax errors; calls use the correct client object.
 
 **Step 5: Commit**

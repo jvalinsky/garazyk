@@ -11,14 +11,15 @@ behavior that ad hoc `NSLog` debugging stops scaling quickly. Auth, sync,
 storage, and admin code all need to emit messages that can be filtered,
 formatted, and correlated consistently.
 
-The current logging strategy is practical rather than elaborate:
+The system was recently migrated from the legacy `PDSLogger` to the unified `GZLogger` framework.
 
 - one shared logger
-- level-based filtering
+- level-based filtering via `GZ_LOG_LEVEL`
 - optional component filtering
-- text or JSON output
+- text or JSON output via `GZ_LOG_FORMAT`
 - stdout and optional file output
 - correlation IDs for request-level tracing
+- automatic PII redaction via `GZLogRedactor`
 
 ## Why Central Logging Matters Here
 
@@ -30,10 +31,10 @@ Central logging answers questions like "is this an HTTP problem, an auth problem
 
 ## Supported Log Dimensions
 
-The logger currently supports:
+The `GZLogger` currently supports:
 
 - log levels: `DEBUG`, `INFO`, `WARN`, `ERROR`
-- output formats: text, JSON, or both
+- output formats: `text`, `json`, or `both`
 - optional file rotation
 - stdout printing
 - optional async file buffering
@@ -49,33 +50,29 @@ The standard component tags include `Database`, `Auth`, `HTTP`, `Admin`,
 `PDSApplication` configures the shared logger from `PDSConfiguration` during
 startup. The application-configured runtime state matters more than the bare logger defaults.
 
-A few defaults are still worth knowing because older docs often got them wrong:
+### Environment Overrides
 
-- the raw logger starts at `DEBUG`
+You can override logging behavior globally using these environment variables:
+
+| Variable | Values | Description |
+| --- | --- | --- |
+| `GZ_LOG_LEVEL` | `debug`, `info`, `warn`, `error` | Minimum level to emit |
+| `GZ_LOG_FORMAT` | `text`, `json`, `both` | Output format |
+| `GZ_LOG_ASYNC` | `0` or `1` | Enable background buffering |
+
+A few defaults are still worth knowing:
+
+- the raw logger starts at `INFO` (unless changed via `GZ_LOG_LEVEL`)
 - stdout is enabled
 - the default format is text
-- async logging is currently disabled by default
 
-If you expect background log buffering, confirm the configuration rather than assuming it.
+## Redaction and Security
 
-## Choosing Text Or JSON
+The `GZLogRedactor` automatically filters sensitive values from logs. When writing code that logs potentially sensitive information (emails, tokens, keys), use the redaction macros:
 
-Use text logs when you are iterating locally and reading failures in a terminal.
-Use JSON logs when you need machine parsing or external ingestion.
-
-The logger supports both
-because local debugging and operational collection require different formats.
-
-## Correlation IDs And Request Work
-
-Correlation IDs are the lightweight tracing mechanism already present in the
-tree. They are cheaper than a full tracing stack and still good enough to tie
-together related log messages during one request or workflow.
-
-When a page feels hard to debug, adding or propagating a correlation ID is
-often a better improvement than adding more generic log lines.
-
-## Logging And Security
+```objective-c
+GZ_LOG_INFO(@"Auth", @"User logged in: %@", GZ_REDACT_EMAIL(userEmail));
+```
 
 The docs should not imply that logging magically sanitizes every value. The
 real guarantee is narrower: there is one place to control format, level, and

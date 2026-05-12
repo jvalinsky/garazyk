@@ -6,23 +6,21 @@ title: Setup Guide
 
 ## Overview
 
-This page is the contributor setup path for the current repository. It is intentionally opinionated:
+This page describes the contributor setup for the repository:
 
-- macOS contributors should use `xcodegen` and `xcodebuild`
-- all builds should be out-of-source
-- production-style Docker workflows should be run from `docker/pds/`
+- macOS contributors use `xcodegen` and `xcodebuild`
+- builds are out-of-source
+- Docker workflows are run from `docker/pds/`
 
-If another page suggests a different default, treat this page as the canonical contributor guide for this docs pass.
+## Local Workflow
 
-## What This Setup Optimizes For
+The goal is to get a contributor to a local workflow:
 
-The goal is not to teach every possible build permutation. The goal is to get a new contributor to a trustworthy local workflow quickly:
-
-1. generate the project correctly,
+1. generate the project,
 2. build the main targets,
-3. run the shared test binary,
-4. start the server with an explicit config,
-5. verify the exposed routes.
+3. run the test binary,
+4. start the server with a config,
+5. verify the routes.
 
 ## Build Rules That Matter
 
@@ -190,7 +188,6 @@ After the server starts, verify the discovery and contributor surfaces rather th
 ./build/bin/kaszlak account list
 curl -sS http://127.0.0.1:2583/xrpc/com.atproto.server.describeServer | jq '.did'
 curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:2583/api/pds/docs
-curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:2583/ui/index.html
 curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:2590/admin
 ```
 
@@ -199,12 +196,11 @@ These checks confirm:
 
 - protocol discovery,
 - Explorer and OpenAPI docs routing,
-- and the newer `/ui` asset path.
-- the standalone Admin UI service, when it is running.
+- and the standalone Admin UI service, when it is running.
 
-## Production-Like Docker Workflow
+## Docker Workflow
 
-Contributor docs often drift when they ignore the deployment path. This repository’s compose workflow is rooted in `docker/pds/`.
+The compose workflow is rooted in `docker/pds/`.
 
 Run compose commands from that directory, not from the repo root:
 
@@ -214,21 +210,19 @@ docker compose build
 docker compose up -d
 ```
 
-That is the only compose workflow this docs pass treats as canonical.
+## Implementation Notes
 
-## Common Mistakes
+### macOS Build Path
 
-### Using the wrong macOS build path
+Use XcodeGen on macOS. Raw `cmake ..` commands are not supported for the macOS contributor path.
 
-If you are on macOS and start with raw `cmake ..` commands, you are not following the repository’s preferred contributor path.
+### Configuration Keys
 
-### Copying stale config keys
+Use snake_case keys as documented in [Config Reference](../11-reference/config-reference). Older camelCase examples are stale.
 
-Several older docs used camelCase or renamed fields that `PDSConfiguration` no longer reads. Prefer [Config Reference](../11-reference/config-reference) over older examples.
+### Defaults
 
-### Assuming the process default is the production default
-
-Development defaults and secure deployment defaults are not the same thing. Production guidance lives in [Tutorial 6: Deployment](../10-tutorials/tutorial-6-deployment).
+Development defaults and deployment defaults differ. Deployment guidance lives in [Tutorial 6: Deployment](../10-tutorials/tutorial-6-deployment).
 
 ## Related Reading
 
