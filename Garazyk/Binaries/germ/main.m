@@ -8,10 +8,13 @@
 #import <Foundation/Foundation.h>
 #import <signal.h>
 #import <unistd.h>
+#if defined(GNUSTEP)
+#import <curl/curl.h>
+#endif
 #import <fcntl.h>
 #import <execinfo.h>
 #import "Germ/Server/Runtime/GermRuntime.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 
 static const char *executable_name = "germ";
 static GermRuntime *gShutdownRuntime = nil;
@@ -90,6 +93,9 @@ void print_usage(void) {
 }
 
 int main(int argc, const char * argv[]) {
+#if defined(GNUSTEP)
+    curl_global_init(CURL_GLOBAL_ALL);
+#endif
     @autoreleasepool {
         if (argc < 2) {
             print_usage();
@@ -118,7 +124,7 @@ int main(int argc, const char * argv[]) {
             } else if ([arg isEqualToString:@"--data-dir"] && i + 1 < argc) {
                 dataDir = [NSString stringWithUTF8String:argv[++i]];
             } else if ([arg isEqualToString:@"-v"] || [arg isEqualToString:@"--verbose"]) {
-                [[PDSLogger sharedLogger] setLogLevel:PDSLogLevelDebug];
+                [[GZLogger sharedLogger] setLogLevel:GZLogLevelDebug];
             }
         }
 

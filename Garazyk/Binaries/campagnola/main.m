@@ -8,8 +8,11 @@
 #import "PLC/PLCReplicaServer.h"
 #import "PLC/PLCSyncEngine.h"
 #import "PLC/PLCReplicaStore.h"
+#if defined(GNUSTEP)
+#import <curl/curl.h>
+#endif
 #import "PLC/PLCSyncClient.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Core/NSDateFormatter+ATProto.h"
 
 #import <readline/readline.h>
@@ -222,6 +225,9 @@ static int run_status_command(NSString *host, NSUInteger port) {
 extern void NSDateFormatterLinkATProtoCategory(void);
 
 int main(int argc, const char * argv[]) {
+#if defined(GNUSTEP)
+    curl_global_init(CURL_GLOBAL_ALL);
+#endif
     @autoreleasepool {
         NSDateFormatterLinkATProtoCategory();
 #ifdef LINUX
@@ -312,7 +318,7 @@ int main(int argc, const char * argv[]) {
             NSError *storeError = nil;
             PLCReplicaStore *replicaStore = [[PLCReplicaStore alloc] initWithPath:replicaDBPath];
             if (![replicaStore openWithError:&storeError]) {
-                PDS_LOG_CORE_ERROR(@"Failed to open replica store at %@: %@",
+                GZ_LOG_CORE_ERROR(@"Failed to open replica store at %@: %@",
                                     replicaDBPath, storeError.localizedDescription);
                 return 1;
             }
@@ -339,7 +345,7 @@ int main(int argc, const char * argv[]) {
                 NSError *storeError = nil;
                 store = [PLCPersistentStore storeWithPath:dbPath error:&storeError];
                 if (!store) {
-                    PDS_LOG_CORE_ERROR(@"Failed to open persistent store at %@: %@",
+                    GZ_LOG_CORE_ERROR(@"Failed to open persistent store at %@: %@",
                                         dbPath, storeError.localizedDescription);
                     return 1;
                 }
@@ -359,7 +365,7 @@ int main(int argc, const char * argv[]) {
 
         NSError *error = nil;
         if (![server startWithError:&error]) {
-            PDS_LOG_CORE_ERROR(@"Failed to start PLC server: %@",
+            GZ_LOG_CORE_ERROR(@"Failed to start PLC server: %@",
                                 error.localizedDescription ?: @"unknown error");
             return 1;
         }

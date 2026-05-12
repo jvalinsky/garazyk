@@ -17,10 +17,13 @@
 #import <Foundation/Foundation.h>
 #import "AppView/Server/AppViewRuntime.h"
 #import "AppView/Server/Config/AppViewConfiguration.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Compat/PlatformShims/CrashReporting/PDSCrashReporter.h"
 #import "Compat/PlatformShims/SignalHandling/PDSSignalManager.h"
+#if defined(GNUSTEP)
+#import <curl/curl.h>
+#endif
 
 static const char *executable_name = "syrena";
 static AppViewRuntime *gShutdownRuntime = nil;
@@ -169,7 +172,7 @@ static BOOL parse_appview_options(NSArray<NSString *> *args,
             if (verbose) {
                 *verbose = YES;
             }
-            [[PDSLogger sharedLogger] setLogLevel:PDSLogLevelDebug];
+            [[GZLogger sharedLogger] setLogLevel:GZLogLevelDebug];
         } else if ([arg hasPrefix:@"-"]) {
             if (errorMessage) {
                 *errorMessage = [NSString stringWithFormat:@"Unknown option: %@", arg];
@@ -188,6 +191,9 @@ static BOOL parse_appview_options(NSArray<NSString *> *args,
 int main(int argc, const char * argv[]) {
     [[PDSSignalManager sharedManager] installIgnoredSignals];
     [PDSCrashReporter installCrashHandlersWithExecutableName:"syrena"];
+#if defined(GNUSTEP)
+    curl_global_init(CURL_GLOBAL_ALL);
+#endif
     @autoreleasepool {
         NSDateFormatterLinkATProtoCategory();
 #ifdef LINUX

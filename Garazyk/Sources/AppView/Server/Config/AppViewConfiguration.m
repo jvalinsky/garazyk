@@ -19,7 +19,7 @@
 
 - (void)_applyDefaults {
     _mode                      = AppViewModeStandalone;
-    _relayURLs                 = @[@"wss://bsky.network"];
+    _relayURLs                 = @[];
     _dataDirectory             = [NSHomeDirectory() stringByAppendingPathComponent:
                                   @"Library/Application Support/AppView"];
     _httpPort                  = 3200;
