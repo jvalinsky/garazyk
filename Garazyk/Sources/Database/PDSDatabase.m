@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Database/PDSDatabase.h"
+#import <sqlite3.h>
 #import "Database/Utils/PDSSQLiteUtils.h"
 #import "Compat/PDSTypes.h"
 #import "Database/Schema.h"
 #import "Identity/ATProtoHandleValidator.h"
-#import "Debug/PDSLogger.h"
+#import "Debug/GZLogger.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Database/Migration/PDSMigrationExecutor.h"
 #import "Database/Migration/PDSServiceMigration001.h"
@@ -56,6 +57,10 @@ static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
         dispatch_queue_set_specific(_dbQueue, kPDSDatabaseQueueKey, (void *)kPDSDatabaseQueueKey, NULL);
     }
     return self;
+}
+
+- (void *)internalSQLiteHandle {
+    return _db;
 }
 
 - (void)safeExecuteSync:(void(^)(void))block {
@@ -127,7 +132,7 @@ static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
             // Future migrations go here
         ];
         if (![executor executePendingMigrationsOnDatabase:self migrations:migrations error:error]) {
-            PDS_LOG_DB_ERROR(@"Failed to execute pending migrations: %@", *error);
+            GZ_LOG_DB_ERROR(@"Failed to execute pending migrations: %@", *error);
             [self close];  // Clean up on failure
             result = NO;
             return;
@@ -168,7 +173,7 @@ static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
     }];
 
     self.isOpen = NO;
-    PDS_LOG_DB_DEBUG(@"Database connection closed");
+    GZ_LOG_DB_DEBUG(@"Database connection closed");
 }
 
 - (void)dealloc {
@@ -905,7 +910,7 @@ static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
     return result;
 }
 
-- (BOOL)executeRawSQL:(NSString *)sql error:(NSError **)error {
+- (BOOL)executeUnsafeRawSQL:(NSString *)sql error:(NSError **)error {
     __block BOOL result = NO;
     [self safeExecuteSync:^{
 
@@ -937,7 +942,7 @@ static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
     return result;
 }
 
-- (NSArray<NSDictionary *> *)executeQuery:(NSString *)sql error:(NSError **)error {
+- (NSArray<NSDictionary *> *)executeUnsafeRawQuery:(NSString *)sql error:(NSError **)error {
     __block id result = nil;
     [self safeExecuteSync:^{
 
@@ -1108,6 +1113,23 @@ static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
     return;
     }];
     return result;
+}
+
+- (nullable NSArray *)executeParameterizedQuery:(NSString *)sql
+                                         params:(NSArray *)params
+                                     modelClass:(Class<PDSDatabaseModel>)modelClass
+                                          error:(NSError **)error {
+    NSArray<NSDictionary *> *rows = [self executeParameterizedQuery:sql params:params error:error];
+    if (!rows) return nil;
+
+    NSMutableArray *models = [NSMutableArray arrayWithCapacity:rows.count];
+    for (NSDictionary *row in rows) {
+        id model = [[(Class)modelClass alloc] initWithDatabaseRow:row];
+        if (model) {
+            [models addObject:model];
+        }
+    }
+    return [models copy];
 }
 
 - (BOOL)executeParameterizedUpdate:(NSString *)sql
@@ -1296,88 +1318,22 @@ static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
 }
 
 - (nullable PDSDatabaseAccount *)getAccountByDid:(NSString *)did error:(NSError **)error {
-    __block id result = nil;
-    [self safeExecuteSync:^{
-
     NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM accounts WHERE did = ?", kAccountsColumns];
-
-    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
-    int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
-    if (rc != SQLITE_OK) {
-        if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        result = nil;
-        return;
-    }
-
-    sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_STATIC);
-
-    PDSDatabaseAccount *account = nil;
-    if (sqlite3_step(stmt) == SQLITE_ROW) {
-        account = [self accountFromStatement:stmt];
-    }
-
-    result = account;
-
-    return;
-    }];
-    return result;
+    NSArray *results = [self executeParameterizedQuery:sql params:@[did] modelClass:[PDSDatabaseAccount class] error:error];
+    return results.firstObject;
 }
 
 - (nullable PDSDatabaseAccount *)getAccountByHandle:(NSString *)handle error:(NSError **)error {
-    __block id result = nil;
-    [self safeExecuteSync:^{
-
     NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM accounts WHERE handle = ?", kAccountsColumns];
-
-    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
-    int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
-    if (rc != SQLITE_OK) {
-        if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        result = nil;
-        return;
-    }
-
     NSString *normalizedHandle = [ATProtoHandleValidator normalizeHandle:handle];
-    sqlite3_bind_text(stmt, 1, normalizedHandle.UTF8String, -1, SQLITE_STATIC);
-
-    PDSDatabaseAccount *account = nil;
-    if (sqlite3_step(stmt) == SQLITE_ROW) {
-        account = [self accountFromStatement:stmt];
-    }
-
-    result = account;
-
-    return;
-    }];
-    return result;
+    NSArray *results = [self executeParameterizedQuery:sql params:@[normalizedHandle] modelClass:[PDSDatabaseAccount class] error:error];
+    return results.firstObject;
 }
 
 - (nullable PDSDatabaseAccount *)getAccountByEmail:(NSString *)email error:(NSError **)error {
-    __block id result = nil;
-    [self safeExecuteSync:^{
-
     NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM accounts WHERE email = ?", kAccountsColumns];
-
-    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
-    int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
-    if (rc != SQLITE_OK) {
-        if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        result = nil;
-        return;
-    }
-
-    sqlite3_bind_text(stmt, 1, email.UTF8String, -1, SQLITE_STATIC);
-
-    PDSDatabaseAccount *account = nil;
-    if (sqlite3_step(stmt) == SQLITE_ROW) {
-        account = [self accountFromStatement:stmt];
-    }
-
-    result = account;
-
-    return;
-    }];
-    return result;
+    NSArray *results = [self executeParameterizedQuery:sql params:@[email] modelClass:[PDSDatabaseAccount class] error:error];
+    return results.firstObject;
 }
 
 - (nullable PDSDatabaseAccount *)getAccountByRefreshToken:(NSString *)refreshToken error:(NSError **)error {
@@ -1413,32 +1369,8 @@ static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
 
 
 - (NSArray<PDSDatabaseAccount *> *)getAllAccountsWithError:(NSError **)error {
-    __block id result = nil;
-    [self safeExecuteSync:^{
-
     NSString *sql = [NSString stringWithFormat:@"SELECT %@ FROM accounts ORDER BY created_at DESC", kAccountsColumns];
-
-    PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
-    int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);
-    if (rc != SQLITE_OK) {
-        if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:PDSDatabaseErrorQueryFailed];
-        result = @[];
-        return;
-    }
-
-    NSMutableArray *accounts = [NSMutableArray array];
-    while (sqlite3_step(stmt) == SQLITE_ROW) {
-        PDSDatabaseAccount *account = [self accountFromStatement:stmt];
-        if (account) {
-            [accounts addObject:account];
-        }
-    }
-
-    result = accounts;
-
-    return;
-    }];
-    return result;
+    return [self executeParameterizedQuery:sql params:@[] modelClass:[PDSDatabaseAccount class] error:error] ?: @[];
 }
 
 - (NSArray<PDSDatabaseAccount *> *)getAccountsWithLimit:(NSInteger)limit afterDid:(nullable NSString *)afterDid error:(NSError **)error {
@@ -2399,6 +2331,27 @@ static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
 
 #pragma mark - Transactions
 
+- (BOOL)performTransaction:(BOOL (^)(PDSDatabase *db, NSError **error))block error:(NSError **)error {
+    if (![self beginTransactionWithError:error]) {
+        return NO;
+    }
+
+    NSError *localError = nil;
+    BOOL success = block(self, &localError);
+
+    if (success) {
+        if (![self commitTransactionWithError:error]) {
+            [self rollbackTransactionWithError:nil];
+            return NO;
+        }
+        return YES;
+    } else {
+        [self rollbackTransactionWithError:nil];
+        if (error) *error = localError;
+        return NO;
+    }
+}
+
 - (BOOL)beginTransactionWithError:(NSError **)error {
     __block BOOL result = NO;
     [self safeExecuteSync:^{
@@ -2617,6 +2570,19 @@ static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
     }
     }];
     return result;
+}
+
+- (NSString *)expandPlaceholdersForArray:(NSArray *)values {
+    return [self parameterPlaceholdersForCount:values.count];
+}
+
+- (NSString *)parameterPlaceholdersForCount:(NSUInteger)count {
+    if (count == 0) return @"";
+    NSMutableArray *placeholders = [NSMutableArray arrayWithCapacity:count];
+    for (NSUInteger i = 0; i < count; i++) {
+        [placeholders addObject:@"?"];
+    }
+    return [placeholders componentsJoinedByString:@", "];
 }
 
 #pragma mark - Helpers
@@ -2928,7 +2894,7 @@ static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
     rc = sqlite3_step(stmt);
 
     if (rc != SQLITE_DONE) {
-        PDS_LOG_DB_ERROR(@"Failed to save record: %s (SQLite code: %d, URI: %@)",
+        GZ_LOG_DB_ERROR(@"Failed to save record: %s (SQLite code: %d, URI: %@)",
                          sqlite3_errmsg(_db), rc, record.uri);
         if (error) {
             NSInteger errorCode = (rc == SQLITE_CONSTRAINT) ? PDSDatabaseErrorConstraintViolation : PDSDatabaseErrorQueryFailed;
@@ -2992,26 +2958,111 @@ static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
 #pragma mark - PDSDatabaseAccount
 
 @implementation PDSDatabaseAccount
+
+- (instancetype)initWithDatabaseRow:(NSDictionary<NSString *, id> *)row {
+    self = [super init];
+    if (self) {
+        _did = row[@"did"];
+        _handle = row[@"handle"];
+        _email = row[@"email"];
+        _passwordHash = row[@"password_hash"];
+        _passwordSalt = row[@"password_salt"];
+        _accessJwt = row[@"access_jwt"];
+        _refreshJwt = row[@"refresh_jwt"];
+        _status = row[@"status"];
+        _deactivatedAt = [row[@"deactivated_at"] doubleValue];
+        _createdAt = [row[@"created_at"] doubleValue];
+        _updatedAt = [row[@"updated_at"] doubleValue];
+        _inviteEnabled = [row[@"invite_enabled"] boolValue];
+        _tfaEnabled = [row[@"tfa_enabled"] boolValue];
+        _webauthnEnabled = [row[@"webauthn_enabled"] boolValue];
+        _tfaSecret = row[@"tfa_secret"];
+        _recoveryCodes = row[@"recovery_codes"];
+        _ageAssurance = row[@"age_assurance"];
+        _ageVerifiedAt = row[@"age_verified_at"];
+    }
+    return self;
+}
+
 @end
 
 #pragma mark - PDSDatabaseRepo
 
 @implementation PDSDatabaseRepo
+
+- (instancetype)initWithDatabaseRow:(NSDictionary<NSString *, id> *)row {
+    self = [super init];
+    if (self) {
+        _ownerDid = row[@"ownerDid"];
+        _rootCid = row[@"rootCid"];
+        _collectionData = row[@"collectionData"];
+        _createdAt = [NSDate dateWithTimeIntervalSince1970:[row[@"createdAt"] doubleValue]];
+        _updatedAt = [NSDate dateWithTimeIntervalSince1970:[row[@"updatedAt"] doubleValue]];
+    }
+    return self;
+}
+
 @end
 
 #pragma mark - PDSDatabaseBlock
 
 @implementation PDSDatabaseBlock
+
+- (instancetype)initWithDatabaseRow:(NSDictionary<NSString *, id> *)row {
+    self = [super init];
+    if (self) {
+        _cid = row[@"cid"];
+        _repoDid = row[@"repoDid"];
+        _blockData = row[@"block"];
+        _contentType = row[@"contentType"];
+        _size = [row[@"size"] integerValue];
+        _createdAt = [NSDate dateWithTimeIntervalSince1970:[row[@"createdAt"] doubleValue]];
+        _rev = row[@"rev"];
+    }
+    return self;
+}
+
 @end
 
 #pragma mark - PDSDatabaseBlob
 
 @implementation PDSDatabaseBlob
+
+- (instancetype)initWithDatabaseRow:(NSDictionary<NSString *, id> *)row {
+    self = [super init];
+    if (self) {
+        _cid = row[@"cid"];
+        _did = row[@"did"];
+        _mimeType = row[@"mimeType"];
+        _size = [row[@"size"] integerValue];
+        _createdAt = [NSDate dateWithTimeIntervalSince1970:[row[@"created_at"] doubleValue]];
+    }
+    return self;
+}
+
 @end
 
 #pragma mark - PDSDatabaseRecord
 
 @implementation PDSDatabaseRecord
+
+- (instancetype)initWithDatabaseRow:(NSDictionary<NSString *, id> *)row {
+    self = [super init];
+    if (self) {
+        _uri = row[@"uri"];
+        _did = row[@"did"];
+        _collection = row[@"collection"];
+        _rkey = row[@"rkey"];
+        _cid = row[@"cid"];
+        _createdAt = [NSDate dateWithTimeIntervalSince1970:[row[@"created_at"] doubleValue]];
+        _value = row[@"value"];
+        _rev = row[@"rev"];
+        _subjectDid = row[@"subject_did"];
+        _indexedAt = [NSDate dateWithTimeIntervalSince1970:[row[@"indexed_at"] doubleValue]];
+    }
+    return self;
+}
+
 @end
 
 #pragma mark - Moderation
