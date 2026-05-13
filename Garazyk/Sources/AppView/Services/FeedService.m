@@ -656,8 +656,13 @@
 
 - (BOOL)indexThreadgate:(NSDictionary *)record did:(NSString *)did uri:(NSString *)uri cid:(NSString *)cid error:(NSError **)error {
     NSString *postUri = record[@"post"];
-    if (!postUri) {
-        // Fallback for missing field
+    if (![postUri isKindOfClass:[NSString class]] || postUri.length == 0) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"FeedService"
+                                         code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Threadgate record missing post URI"}];
+        }
+        return NO;
     }
     
     NSArray *allow = record[@"allow"];
@@ -667,10 +672,10 @@
         allowJson = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     }
     
-    NSString *sql = @"INSERT OR REPLACE INTO bsky_feed_threadgates (uri, post_uri, allow_json, created_at) VALUES (?, ?, ?, ?)";
+    NSString *sql = @"INSERT OR REPLACE INTO bsky_feed_threadgates (uri, post_uri, allow_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?)";
     NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
     
-    return [self.database executeParameterizedUpdate:sql params:@[uri, postUri ?: @"", allowJson ?: @"[]", @((long long)now)] error:error];
+    return [self.database executeParameterizedUpdate:sql params:@[uri ?: @"", postUri, allowJson ?: @"[]", @((long long)now), @((long long)now)] error:error];
 }
 
 - (BOOL)unindexThreadgateWithURI:(NSString *)uri error:(NSError **)error {
