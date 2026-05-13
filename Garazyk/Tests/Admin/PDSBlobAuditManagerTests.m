@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
+#import "Admin/Diagnostics/PDSBlobAuditHandler.h"
 #import "Admin/Diagnostics/BlobAudit/PDSBlobAuditManager.h"
 #import "Admin/Diagnostics/BlobAudit/PDSBlobOrphanScanOperation.h"
 #import "Admin/Diagnostics/BlobAudit/PDSBlobReferenceScanOperation.h"
@@ -62,6 +63,35 @@
     PDSDatabase *db = [self.serviceDatabases serviceDatabaseWithError:&error];
     XCTAssertNotNil(db, @"Failed to open service DB: %@", error);
     return db;
+}
+
+- (void)testBlobAuditHandlerReturnsUnavailableWithoutManager {
+    PDSBlobAuditHandler *handler = [[PDSBlobAuditHandler alloc] init];
+    NSInteger statusCode = 0;
+    NSString *body = [handler handleRequestWithMethod:1
+                                                 path:@"/audit"
+                                              headers:@{}
+                                                 body:[@"{}" dataUsingEncoding:NSUTF8StringEncoding]
+                                           statusCode:&statusCode
+                                          contentType:NULL];
+    XCTAssertEqual(statusCode, 503);
+    XCTAssertTrue([body containsString:@"BlobAuditUnavailable"]);
+}
+
+- (void)testBlobAuditHandlerUsesInjectedManager {
+    PDSBlobAuditHandler *handler = [[PDSBlobAuditHandler alloc] initWithAuditManager:self.auditManager];
+    NSData *requestBody = [NSJSONSerialization dataWithJSONObject:@{@"auditType": @"orphans", @"dryRun": @YES}
+                                                          options:0
+                                                            error:nil];
+    NSInteger statusCode = 0;
+    NSString *body = [handler handleRequestWithMethod:1
+                                                 path:@"/audit"
+                                              headers:@{}
+                                                 body:requestBody
+                                           statusCode:&statusCode
+                                          contentType:NULL];
+    XCTAssertEqual(statusCode, 200);
+    XCTAssertTrue([body containsString:@"jobId"], @"Expected job response, got %@", body);
 }
 
 - (void)insertJobWithId:(NSString *)jobId

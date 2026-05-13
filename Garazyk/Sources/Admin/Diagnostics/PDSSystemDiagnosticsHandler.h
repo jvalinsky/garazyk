@@ -7,6 +7,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@class PDSBlobAuditManager;
+
 /**
  * @class PDSSystemDiagnosticsHandler
  * @brief Coordinator for all system diagnostics API endpoints.
@@ -22,6 +24,11 @@ NS_ASSUME_NONNULL_BEGIN
  * @return The shared PDSSystemDiagnosticsHandler instance.
  */
 + (instancetype)sharedHandler;
+
+/**
+ * @brief Audit manager for blob operations.
+ */
+@property (nonatomic, strong, nullable) PDSBlobAuditManager *auditManager;
 
 /**
  * @brief Processes diagnostics API requests.

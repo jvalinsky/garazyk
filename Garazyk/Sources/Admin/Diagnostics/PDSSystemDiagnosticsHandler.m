@@ -36,12 +36,16 @@
     if ([path hasPrefix:@"/blobs/"]) {
         NSString *blobPath = [path stringByReplacingOccurrencesOfString:@"/blobs"
                                                              withString:@""];
-        return [[PDSBlobAuditHandler sharedHandler] handleRequestWithMethod:method
-                                                                      path:blobPath
-                                                                 headers:headers
-                                                                    body:body
-                                                              statusCode:statusCode
-                                                             contentType:contentType];
+        PDSBlobAuditHandler *blobHandler = [PDSBlobAuditHandler sharedHandler];
+        if (self.auditManager) {
+            blobHandler.auditManager = self.auditManager;
+        }
+        return [blobHandler handleRequestWithMethod:method
+                                               path:blobPath
+                                            headers:headers
+                                               body:body
+                                         statusCode:statusCode
+                                        contentType:contentType];
     }
 
     // Route to rate limit handler

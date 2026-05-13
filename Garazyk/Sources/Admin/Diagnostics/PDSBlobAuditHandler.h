@@ -4,6 +4,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@class PDSBlobAuditManager;
+
 /**
  * @class PDSBlobAuditHandler
  * @brief Handles blob storage audit API endpoints for system diagnostics.
@@ -46,12 +48,18 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @interface PDSBlobAuditHandler : NSObject
 
+/*! Blob audit manager used to create and inspect audit jobs. */
+@property (nonatomic, strong, nullable) PDSBlobAuditManager *auditManager;
+
 /**
  * @brief Returns the shared singleton instance.
  *
  * @return The shared PDSBlobAuditHandler instance.
  */
 + (instancetype)sharedHandler;
+
+/*! Initialize with an explicit audit manager. */
+- (instancetype)initWithAuditManager:(PDSBlobAuditManager *)auditManager;
 
 /**
  * @brief Processes blob audit API requests.
