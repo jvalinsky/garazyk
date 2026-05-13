@@ -31,6 +31,61 @@ NSErrorDomain const PDSRecordServiceErrorDomain = @"com.atproto.pds.record-servi
 
 static const NSTimeInterval kATProtoCreatedAtMaxSkewSeconds = 24.0 * 60.0 * 60.0;
 
+static NSString *PDSRecordServiceDIDFromATURI(NSString *uri) {
+    if (![uri isKindOfClass:[NSString class]] || ![uri hasPrefix:@"at://"]) {
+        return nil;
+    }
+    NSString *withoutScheme = [uri substringFromIndex:5];
+    NSRange slash = [withoutScheme rangeOfString:@"/"];
+    if (slash.location == NSNotFound || slash.location == 0) {
+        return nil;
+    }
+    return [withoutScheme substringToIndex:slash.location];
+}
+
+static NSDictionary *PDSRecordServiceJSONObjectFromRecordValue(id value) {
+    if ([value isKindOfClass:[NSDictionary class]]) {
+        return value;
+    }
+    if (![value respondsToSelector:@selector(dataUsingEncoding:)]) {
+        return nil;
+    }
+    NSData *data = [value dataUsingEncoding:NSUTF8StringEncoding];
+    if (!data) {
+        return nil;
+    }
+    id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+    return [json isKindOfClass:[NSDictionary class]] ? json : nil;
+}
+
+static BOOL PDSRecordServiceRecordMentionsDID(NSDictionary *record, NSString *did) {
+    NSArray *facets = record[@"facets"];
+    if (![facets isKindOfClass:[NSArray class]]) {
+        return NO;
+    }
+    for (NSDictionary *facet in facets) {
+        if (![facet isKindOfClass:[NSDictionary class]]) continue;
+        NSArray *features = facet[@"features"];
+        if (![features isKindOfClass:[NSArray class]]) continue;
+        for (NSDictionary *feature in features) {
+            if (![feature isKindOfClass:[NSDictionary class]]) continue;
+            NSString *type = feature[@"$type"];
+            NSString *mentionDID = feature[@"did"];
+            if ([type isEqualToString:@"app.bsky.richtext.facet#mention"] &&
+                [mentionDID isEqualToString:did]) {
+                return YES;
+            }
+        }
+    }
+    return NO;
+}
+
+static NSError *PDSRecordServiceReplyNotAllowedError(void) {
+    return [NSError errorWithDomain:PDSRecordServiceErrorDomain
+                               code:403
+                           userInfo:@{NSLocalizedDescriptionKey: @"ReplyNotAllowed: Reply not allowed by threadgate"}];
+}
+
 static BOOL validateCreatedAtCoherence(NSString *collection,
                                        NSString *rkey,
                                        NSDictionary *value,
@@ -100,6 +155,14 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                                                        changedKeys:(NSArray<NSString *> *)changedKeys
                                                               rev:(NSString *)rev
                                                             error:(NSError **)error;
+- (BOOL)validateThreadgateForReplyRecord:(NSDictionary *)record
+                              collection:(NSString *)collection
+                               authorDID:(NSString *)authorDID
+                                   error:(NSError **)error;
+- (nullable NSDictionary *)threadgateRecordForPostURI:(NSString *)postURI
+                                            authorDID:(NSString *)authorDID
+                                                error:(NSError **)error;
+- (BOOL)authorDID:(NSString *)authorDID hasFollowForDID:(NSString *)targetDID error:(NSError **)error;
 
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSDictionary *> *statsCacheByDid;
 
@@ -165,6 +228,94 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
     }
     
     return YES;
+}
+
+#pragma mark - Threadgate Validation
+
+- (nullable NSDictionary *)threadgateRecordForPostURI:(NSString *)postURI
+                                            authorDID:(NSString *)authorDID
+                                                error:(NSError **)error {
+    NSArray<PDSDatabaseRecord *> *threadgates =
+        [self.recordRepository recordsForDid:authorDID
+                                  collection:@"app.bsky.feed.threadgate"
+                                       error:error];
+    for (PDSDatabaseRecord *threadgate in threadgates) {
+        NSDictionary *value = PDSRecordServiceJSONObjectFromRecordValue(threadgate.value);
+        if ([value[@"post"] isEqualToString:postURI]) {
+            return value;
+        }
+    }
+    return nil;
+}
+
+- (BOOL)authorDID:(NSString *)authorDID hasFollowForDID:(NSString *)targetDID error:(NSError **)error {
+    NSArray<PDSDatabaseRecord *> *follows =
+        [self.recordRepository recordsForDid:authorDID
+                                  collection:@"app.bsky.graph.follow"
+                                       error:error];
+    for (PDSDatabaseRecord *follow in follows) {
+        NSDictionary *value = PDSRecordServiceJSONObjectFromRecordValue(follow.value);
+        id subject = value[@"subject"];
+        if ([subject isKindOfClass:[NSString class]] && [subject isEqualToString:targetDID]) {
+            return YES;
+        }
+        if ([subject isKindOfClass:[NSDictionary class]] && [subject[@"did"] isEqualToString:targetDID]) {
+            return YES;
+        }
+    }
+    return NO;
+}
+
+- (BOOL)validateThreadgateForReplyRecord:(NSDictionary *)record
+                              collection:(NSString *)collection
+                               authorDID:(NSString *)authorDID
+                                   error:(NSError **)error {
+    if (![collection isEqualToString:@"app.bsky.feed.post"]) {
+        return YES;
+    }
+
+    NSDictionary *reply = record[@"reply"];
+    if (![reply isKindOfClass:[NSDictionary class]]) {
+        return YES;
+    }
+    NSDictionary *parent = reply[@"parent"];
+    NSString *parentURI = [parent isKindOfClass:[NSDictionary class]] ? parent[@"uri"] : nil;
+    NSString *rootAuthorDID = PDSRecordServiceDIDFromATURI(parentURI);
+    if (!rootAuthorDID) {
+        return YES;
+    }
+
+    NSDictionary *threadgate = [self threadgateRecordForPostURI:parentURI
+                                                      authorDID:rootAuthorDID
+                                                          error:error];
+    if (!threadgate) {
+        return YES;
+    }
+
+    NSArray *allow = threadgate[@"allow"];
+    if (![allow isKindOfClass:[NSArray class]] || allow.count == 0) {
+        if (error) *error = PDSRecordServiceReplyNotAllowedError();
+        return NO;
+    }
+
+    for (NSDictionary *rule in allow) {
+        if (![rule isKindOfClass:[NSDictionary class]]) continue;
+        NSString *type = rule[@"$type"];
+        if ([type isEqualToString:@"app.bsky.feed.threadgate#followerRule"]) {
+            if ([self authorDID:authorDID hasFollowForDID:rootAuthorDID error:nil]) {
+                return YES;
+            }
+        } else if ([type isEqualToString:@"app.bsky.feed.threadgate#mentionRule"]) {
+            PDSDatabaseRecord *parentRecord = [self.recordRepository recordForUri:parentURI error:nil];
+            NSDictionary *parentValue = PDSRecordServiceJSONObjectFromRecordValue(parentRecord.value);
+            if (PDSRecordServiceRecordMentionsDID(parentValue, authorDID)) {
+                return YES;
+            }
+        }
+    }
+
+    if (error) *error = PDSRecordServiceReplyNotAllowedError();
+    return NO;
 }
 
 #pragma mark - Record Operations
@@ -311,6 +462,10 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
         NSString *message = (error && *error) ? (*error).localizedDescription : @"invalid createdAt";
         GZ_LOG_WARN(@"[PDSRecordService] createdAt coherence check failed for %@/%@: %@",
                      collection, rkey, message);
+        return NO;
+    }
+
+    if (![self validateThreadgateForReplyRecord:value collection:collection authorDID:did error:error]) {
         return NO;
     }
 
@@ -756,6 +911,10 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                 return nil;
             }
 
+            if (![self validateThreadgateForReplyRecord:record collection:collection authorDID:did error:error]) {
+                return nil;
+            }
+
             // Build the database record
             NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
             NSError *cidError = nil;
@@ -865,6 +1024,10 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
             NSError *coherenceError = nil;
             if (!validateCreatedAtCoherence(collection, rkey, record, mode, &coherenceError)) {
                 if (error && !*error) *error = coherenceError;
+                return nil;
+            }
+
+            if (![self validateThreadgateForReplyRecord:record collection:collection authorDID:did error:error]) {
                 return nil;
             }
 

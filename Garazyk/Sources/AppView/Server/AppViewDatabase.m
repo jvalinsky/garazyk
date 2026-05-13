@@ -12,6 +12,7 @@
 #import "Core/NSDateFormatter+ATProto.h"
 
 #import <sqlite3.h>
+#include <string.h>
 #import "Database/Utils/PDSSQLiteUtils.h"
 
 NSString * const AppViewDatabaseErrorDomain = @"AppViewDatabaseErrorDomain";
@@ -150,6 +151,7 @@ static NSString * const kSchemaV1 = @""
 
 // BSky AppView Tables migrated from PDS
 "CREATE TABLE IF NOT EXISTS bsky_feed_threadgates ("
+"    uri TEXT UNIQUE,"
 "    post_uri TEXT PRIMARY KEY,"
 "    allow_json TEXT,"
 "    created_at INTEGER,"
@@ -497,6 +499,38 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
                                          userInfo:@{NSLocalizedDescriptionKey:
                                                         errmsg ? [NSString stringWithUTF8String:errmsg]
                                                                : @"Migration failed"}];
+            if (errmsg) sqlite3_free(errmsg);
+            ok = NO;
+            return;
+        }
+
+        rc = sqlite3_exec(self->_db,
+                          "ALTER TABLE bsky_feed_threadgates ADD COLUMN uri TEXT;",
+                          NULL, NULL, &errmsg);
+        if (rc != SQLITE_OK) {
+            BOOL duplicateColumn = errmsg && strstr(errmsg, "duplicate column name") != NULL;
+            if (errmsg) {
+                sqlite3_free(errmsg);
+                errmsg = NULL;
+            }
+            if (!duplicateColumn) {
+                innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain
+                                                 code:rc
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Failed to add bsky_feed_threadgates.uri"}];
+                ok = NO;
+                return;
+            }
+        }
+
+        rc = sqlite3_exec(self->_db,
+                          "CREATE UNIQUE INDEX IF NOT EXISTS idx_bsky_feed_threadgates_uri ON bsky_feed_threadgates(uri);",
+                          NULL, NULL, &errmsg);
+        if (rc != SQLITE_OK) {
+            innerError = [NSError errorWithDomain:AppViewDatabaseErrorDomain
+                                             code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey:
+                                                        errmsg ? [NSString stringWithUTF8String:errmsg]
+                                                               : @"Failed to create threadgate uri index"}];
             if (errmsg) sqlite3_free(errmsg);
             ok = NO;
             return;
