@@ -39,6 +39,7 @@ The Admin Service enables:
 
 - Account suspension and deletion
 - Record takedowns
+- **System Diagnostics**: Sequencer health and blob auditing
 - Label management
 - Moderation actions
 - Admin audit logging
@@ -566,6 +567,9 @@ Start here when you change administrative or moderation behavior:
 - `Garazyk/Sources/Admin/PDSAdminController.m`
 - `Garazyk/Sources/Admin/PDSAdminHandler.m`
 - `Garazyk/Sources/Network/XrpcAdminMethods.m`
+- `Garazyk/Sources/Admin/Diagnostics/PDSSystemDiagnosticsHandler.m`
+- `Garazyk/Sources/Admin/Diagnostics/PDSBlobAuditHandler.m`
+- `Garazyk/Sources/Admin/Diagnostics/BlobAudit/PDSBlobAuditManager.m`
 
 ## See Also
 
