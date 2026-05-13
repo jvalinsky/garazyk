@@ -99,6 +99,9 @@ NS_ASSUME_NONNULL_BEGIN
 /*! Administrative operations controller. */
 @property(nonatomic, strong, readonly) PDSAdminController *adminController;
 
+/*! The rate limiter for throttling requests. */
+@property(nonatomic, strong, readonly) RateLimiter *rateLimiter;
+
 /*! JWT minting for access tokens. */
 @property(nonatomic, strong, readonly) JWTMinter *jwtMinter;
 
