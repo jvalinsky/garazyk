@@ -112,17 +112,26 @@
 
     NSMutableData *responseData = [NSMutableData data];
     uint8_t buffer[4096];
+    int retryCount = 0;
     while (YES) {
         ssize_t n = recv(fd, buffer, sizeof(buffer), 0);
         if (n > 0) {
             [responseData appendBytes:buffer length:(NSUInteger)n];
+            retryCount = 0;
             continue;
         }
         if (n == 0) {
             break;
         }
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            break;
+            // Retry on EAGAIN — server may not have written headers yet for chunked responses
+            retryCount++;
+            if (retryCount > 50) {
+                // Timeout after ~250ms (50 * 5ms) — fail fast so failures surface quickly
+                break;
+            }
+            usleep(5000);
+            continue;
         }
         int recvErrno = errno;
         close(fd);

@@ -178,7 +178,7 @@
     if (self) {
         _port = port;
         nw_parameters_t parameters;
-        if (port == 80 || port == 2583 || port == 2584 || port == 2582 || port == 3200) {
+        if (port == 0 || port == 80 || port == 2583 || port == 2584 || port == 2582 || port == 3200) {
             parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
         } else {
             parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DEFAULT_CONFIGURATION, NW_PARAMETERS_DEFAULT_CONFIGURATION);

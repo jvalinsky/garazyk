@@ -67,6 +67,11 @@ void PDSActorStoreLinkAccountCategory(void) {}
 #pragma mark - Account Operations (Transactor)
 
 - (BOOL)createAccount:(PDSDatabaseAccount *)account error:(NSError **)error {
+    if (!account) {
+        if (error) *error = [NSError errorWithDomain:@"PDSActorStore" code:1 userInfo:@{NSLocalizedDescriptionKey: @"account must not be nil"}];
+        return NO;
+    }
+
     NSString *sql = @"INSERT INTO accounts (did, handle, email, password_hash, password_salt, "
                      @"access_jwt, refresh_jwt, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 

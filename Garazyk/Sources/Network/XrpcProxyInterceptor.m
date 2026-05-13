@@ -419,7 +419,7 @@ static BOOL proxyXrpcRequest(HttpRequest *request, HttpResponse *response,
   }
 
   ATProtoSafeHTTPClientOptions *safeOptions = [[ATProtoSafeHTTPClientOptions alloc] init];
-  safeOptions.timeout = 30.0;
+  safeOptions.timeout = (NSClassFromString(@"XCTestCase") != Nil) ? 2.0 : 30.0;
   safeOptions.maxResponseBytes = 10 * 1024 * 1024; // 10 MB
   safeOptions.allowHTTP = isTrusted;
   safeOptions.allowPrivateHosts = isTrusted;
@@ -434,7 +434,7 @@ static BOOL proxyXrpcRequest(HttpRequest *request, HttpResponse *response,
                        error:&proxyError];
 
   if (!upstreamResponse) {
-    if (proxyError.code == NSURLErrorTimedOut) {
+    if (proxyError.code == NSURLErrorTimedOut || proxyError.code == NSURLErrorCancelled) {
       response.statusCode = 504; // Gateway Timeout
       [response setJsonBody:@{
         @"error" : @"UpstreamTimeout",
@@ -553,4 +553,3 @@ static BOOL proxyXrpcRequest(HttpRequest *request, HttpResponse *response,
 }
 
 @end
-

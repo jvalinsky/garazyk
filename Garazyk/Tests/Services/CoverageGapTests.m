@@ -28,11 +28,40 @@
     // Try to start server, retrying with different ports if needed
     NSError *error = nil;
     if ([self.controller startServerWithError:&error]) {
-        // Wait briefly for the server's event loop to be ready
-        [NSThread sleepForTimeInterval:0.5];
-        return YES;
+        return [self waitForServerReadyWithTimeout:5.0];
     }
     // If server failed to start, skip the test rather than fail
+    return NO;
+}
+
+- (BOOL)waitForServerReadyWithTimeout:(NSTimeInterval)timeout {
+    NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:timeout];
+    NSString *urlString = [NSString stringWithFormat:@"http://localhost:%lu/xrpc/com.atproto.server.describeServer",
+                                                     (unsigned long)self.controller.httpPort];
+    NSURL *url = [NSURL URLWithString:urlString];
+
+    while ([deadline timeIntervalSinceNow] > 0) {
+        dispatch_semaphore_t sema = dispatch_semaphore_create(0);
+        __block BOOL ready = NO;
+        NSURLRequest *request = [NSURLRequest requestWithURL:url
+                                                 cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
+                                             timeoutInterval:1.0];
+        NSURLSessionDataTask *task = [NSURLSession.sharedSession dataTaskWithRequest:request
+                                                                   completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+            NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+            ready = (error == nil && httpResponse.statusCode == 200 && data.length > 0);
+            dispatch_semaphore_signal(sema);
+        }];
+        [task resume];
+
+        dispatch_time_t waitUntil = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.25 * NSEC_PER_SEC));
+        dispatch_semaphore_wait(sema, waitUntil);
+        if (ready) {
+            return YES;
+        }
+        [NSThread sleepForTimeInterval:0.1];
+    }
+
     return NO;
 }
 

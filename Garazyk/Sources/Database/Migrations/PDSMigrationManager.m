@@ -1394,6 +1394,68 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 @end
 
+#pragma mark - Blobs MimeType Column Rename
+
+@interface BlobsMimeTypeRename : NSObject <PDSMigration>
+@property (nonatomic) NSInteger migrationVersion;
+- (instancetype)initWithVersion:(NSInteger)version;
+@end
+
+@implementation BlobsMimeTypeRename
+
+- (instancetype)initWithVersion:(NSInteger)version {
+    if ((self = [super init])) {
+        _migrationVersion = version;
+    }
+    return self;
+}
+
+- (NSInteger)version {
+    return _migrationVersion;
+}
+
+- (NSString *)name {
+    return @"blobs_mime_type_rename";
+}
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    char *errMsg = NULL;
+    int rc = sqlite3_exec(db, "ALTER TABLE blobs RENAME COLUMN mime_type TO mimeType", NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        // "no such column" means the column was already renamed — treat as success.
+        BOOL alreadyRenamed = errMsg && strstr(errMsg, "no such column") != NULL;
+        if (errMsg) sqlite3_free(errMsg);
+        if (alreadyRenamed) return YES;
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"blobs RENAME COLUMN failed"}];
+        }
+        return NO;
+    }
+    if (errMsg) sqlite3_free(errMsg);
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    char *errMsg = NULL;
+    int rc = sqlite3_exec(db, "ALTER TABLE blobs RENAME COLUMN mimeType TO mime_type", NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+        if (errMsg) sqlite3_free(errMsg);
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: msg}];
+        }
+        return NO;
+    }
+    if (errMsg) sqlite3_free(errMsg);
+    return YES;
+}
+
+@end
+
 #pragma mark - Convenience Factory Methods
 
 @implementation PDSMigrationManager (Factory)
@@ -1408,12 +1470,14 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     [manager registerMigration:[[V6DraftsSchema alloc] init]];
     [manager registerMigration:[[V7SearchFTS5Schema alloc] init]];
     [manager registerMigration:[[V8OzoneSubjectsSchema alloc] init]];
+    [manager registerMigration:[[BlobsMimeTypeRename alloc] initWithVersion:9]];
     return manager;
 }
 
 + (instancetype)actorStoreMigrationManager {
     PDSMigrationManager *manager = [[PDSMigrationManager alloc] init];
     [manager registerMigration:[[V1InitialSchema alloc] initWithSchemaType:@"actor"]];
+    [manager registerMigration:[[BlobsMimeTypeRename alloc] initWithVersion:2]];
     return manager;
 }
 

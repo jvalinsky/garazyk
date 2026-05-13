@@ -269,7 +269,11 @@ static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
         return;
     }
 
+#if DEBUG
+    rc = sqlite3_exec(_db, "PRAGMA cache_size=64", NULL, NULL, &errMsg);
+#else
     rc = sqlite3_exec(_db, "PRAGMA cache_size=65536", NULL, NULL, &errMsg);
+#endif
     if (rc != SQLITE_OK && errMsg) {
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorQueryFailed];
         sqlite3_free(errMsg);
@@ -287,7 +291,11 @@ static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
         return;
     }
 
+#if DEBUG
+    rc = sqlite3_exec(_db, "PRAGMA mmap_size=4194304", NULL, NULL, &errMsg);
+#else
     rc = sqlite3_exec(_db, "PRAGMA mmap_size=268435456", NULL, NULL, &errMsg);
+#endif
     if (rc != SQLITE_OK && errMsg) {
         NSError *e = [self errorWithMessage:errMsg code:PDSDatabaseErrorQueryFailed];
         sqlite3_free(errMsg);
@@ -918,7 +926,7 @@ static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
         if (error) {
             *error = [NSError errorWithDomain:PDSDatabaseErrorDomain
                                          code:PDSDatabaseErrorNotOpen
-                                     userInfo:@{NSLocalizedDescriptionKey:@"Database is not open"}];
+                                     userInfo:@{NSLocalizedDescriptionKey:[NSString stringWithFormat:@"Database is not open (path=%@, called from %s)", self.databaseURL.path ?: @"<unknown>", __func__]}];
         }
         result = NO;
         return;
@@ -950,7 +958,7 @@ static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
         if (error) {
             *error = [NSError errorWithDomain:PDSDatabaseErrorDomain
                                          code:PDSDatabaseErrorNotOpen
-                                     userInfo:@{NSLocalizedDescriptionKey:@"Database is not open"}];
+                                     userInfo:@{NSLocalizedDescriptionKey:[NSString stringWithFormat:@"Database is not open (path=%@, called from %s)", self.databaseURL.path ?: @"<unknown>", __func__]}];
         }
         result = @[];
         return;
@@ -2150,7 +2158,7 @@ static NSString *const kRecordsColumns = @"uri, did, collection, rkey, cid, "
     __block BOOL result = NO;
     [self safeExecuteSync:^{
 
-    NSString *sql = @"INSERT OR REPLACE INTO blobs (cid, did, mime_type, size, created_at) VALUES (?, ?, ?, ?, ?)";
+    NSString *sql = @"INSERT OR REPLACE INTO blobs (cid, did, mimeType, size, created_at) VALUES (?, ?, ?, ?, ?)";
 
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(_db, sql.UTF8String, -1, &stmt, NULL);

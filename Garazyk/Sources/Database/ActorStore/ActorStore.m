@@ -30,6 +30,7 @@ extern void PDSActorStoreLinkAccountCategory(void);
 extern void PDSActorStoreLinkBlobCategory(void);
 
 NSString * const PDSActorStoreErrorDomain = @"com.atproto.pds.actorstore";
+NSString * const PDSServiceStoreDID = @"__service__";
 
 /// Extracts the base directory path from a database path.
 static NSString *PDSActorStoreBaseDirectoryFromDBPath(NSString *dbPath) {
@@ -135,7 +136,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 
 - (BOOL)createSchema:(NSError **)error {
     PDSMigrationManager *migrationManager;
-    if ([self.did isEqualToString:@"__service__"]) {
+    if ([self.did isEqualToString:PDSServiceStoreDID]) {
         migrationManager = [PDSMigrationManager serviceDatabaseMigrationManager];
     } else {
         migrationManager = [PDSMigrationManager actorStoreMigrationManager];
@@ -557,7 +558,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 - (nullable NSData *)decryptData:(NSData *)data withKey:(NSData *)key { return [CryptoUtils decryptData:data withKey:key]; }
 
 static BOOL isValidTableName(NSString *n) { return [@[@"actor_status", @"records", @"blocks", @"blobs", @"migrations", @"account", @"repo", @"cid_index", @"collection_index"] containsObject:n]; }
-static BOOL isValidColumnName(NSString *n) { return [@[@"did", @"collection", @"rkey", @"cid", @"value", @"created_at", @"indexed_at", @"takedown_ref", @"blob_data", @"mime_type", @"size", @"height", @"rev", @"handle"] containsObject:n]; }
+static BOOL isValidColumnName(NSString *n) { return [@[@"did", @"collection", @"rkey", @"cid", @"value", @"created_at", @"indexed_at", @"takedown_ref", @"blob_data", @"mimeType", @"size", @"height", @"rev", @"handle"] containsObject:n]; }
 static BOOL isValidColumnType(NSString *t) { return YES; } // Simplified for now since we whitelist usage
 
 - (BOOL)addColumnIfNeeded:(NSString *)tableName column:(NSString *)columnName type:(NSString *)type {
