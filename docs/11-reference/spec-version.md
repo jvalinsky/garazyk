@@ -8,5 +8,5 @@
 
 ## Compliance Goals
 
-- **Full Lexicon Coverage** — verified via `scripts/generate_xrpc_coverage_report.js`
+- **Full Lexicon Coverage** — verified via `scripts/docs/generate_xrpc_coverage_report.cjs`
 - **Full Conformance Test Pass** — verified via `tests/AllTests`

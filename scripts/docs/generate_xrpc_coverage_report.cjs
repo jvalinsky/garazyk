@@ -75,7 +75,7 @@ function parseArgs(argv) {
 function printUsageAndExit(code) {
   const usage = [
     "Usage:",
-    "  node scripts/docs/generate_xrpc_coverage_report.js [options]",
+    "  node scripts/docs/generate_xrpc_coverage_report.cjs [options]",
     "",
     "Options:",
     "  --repo-root <path>   Repository root (default: cwd)",
@@ -269,6 +269,9 @@ function extractMethodIdsFromSourceSnippet(sourceSnippet, methodMap) {
   const typedRegex = /\[dispatcher\s+(register[A-Za-z0-9]+)\s*:\s*(?:\^|[A-Za-z0-9_]+)/g;
   for (const match of sourceSnippet.matchAll(typedRegex)) {
     const registrationName = match[1];
+    if (registrationName === "registerMethod") {
+      continue;
+    }
     const methodId = methodMap.get(registrationName);
     if (methodId) {
       methods.push(methodId);
@@ -382,17 +385,83 @@ function computeCrossScopeDuplicateStats(scopeStats) {
   };
 }
 
-function registrarModuleFilesFromRegistry(registrySource, networkDir) {
+function implementationFileForImport(importPath, sourcesRoot) {
+  if (!importPath.endsWith(".h")) {
+    return null;
+  }
+  const implementationPath = path.join(sourcesRoot, importPath.replace(/\.h$/, ".m"));
+  return fs.existsSync(implementationPath) ? implementationPath : null;
+}
+
+function importedImplementationFilesFromSource(source, sourcesRoot) {
+  const files = new Set();
+  const importRegex = /#import\s+"([^"]+)"/g;
+  for (const match of source.matchAll(importRegex)) {
+    const implementationPath = implementationFileForImport(match[1], sourcesRoot);
+    if (implementationPath) {
+      files.add(implementationPath);
+    }
+  }
+  return files;
+}
+
+function registrarModuleFilesFromRegistry(registrySource, networkDir, sourcesRoot) {
   const moduleNames = new Set();
-  const moduleRegex = /\[(Xrpc[A-Za-z0-9_]+)\s+registerWithDispatcher:/g;
+  const moduleRegex = /\[([A-Za-z][A-Za-z0-9_]+)\s+register[A-Za-z0-9_]*WithDispatcher:/g;
   for (const match of registrySource.matchAll(moduleRegex)) {
     moduleNames.add(match[1]);
   }
 
-  return Array.from(moduleNames)
+  const moduleFiles = Array.from(moduleNames)
     .sort()
     .map((moduleName) => path.join(networkDir, `${moduleName}.m`))
     .filter((candidatePath) => fs.existsSync(candidatePath));
+
+  // Also scan for any file that looks like a route pack but might not be in networkDir
+  // or might be imported indirectly.
+  const allSourceFiles = getAllSourceFiles(sourcesRoot);
+  const extraPacks = allSourceFiles.filter((filePath) => {
+    if (!filePath.endsWith("Pack.m") && !filePath.endsWith("Methods.m")) {
+      return false;
+    }
+    const content = fs.readFileSync(filePath, "utf8");
+    return content.includes("[dispatcher register");
+  });
+
+  const combined = new Set([...moduleFiles, ...extraPacks]);
+  return Array.from(combined).sort();
+}
+
+function getAllSourceFiles(dir, files = []) {
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const res = path.resolve(dir, entry.name);
+    if (entry.isDirectory()) {
+      getAllSourceFiles(res, files);
+    } else if (entry.isFile() && entry.name.endsWith(".m")) {
+      files.push(res);
+    }
+  }
+  return files;
+}
+
+function expandSourceFiles(seedFiles, sourcesRoot) {
+  const seen = new Set();
+  const queue = [...seedFiles];
+  while (queue.length > 0) {
+    const sourcePath = queue.shift();
+    if (seen.has(sourcePath) || !fs.existsSync(sourcePath)) {
+      continue;
+    }
+    seen.add(sourcePath);
+    const source = fs.readFileSync(sourcePath, "utf8");
+    for (const importedPath of importedImplementationFilesFromSource(source, sourcesRoot)) {
+      if (!seen.has(importedPath)) {
+        queue.push(importedPath);
+      }
+    }
+  }
+  return Array.from(seen).sort();
 }
 
 function extractScopeStatsFromSources(sourceFiles, methodMap, rootDir) {
@@ -436,8 +505,9 @@ function extractImplementedMethodsFromSource(registryPath, handlerPath, networkD
   ensureFileExists(registryPath);
   const registrySource = fs.readFileSync(registryPath, "utf8");
   const methodMap = parseDispatcherMethodMap(handlerPath);
-  const moduleFiles = registrarModuleFilesFromRegistry(registrySource, networkDir);
-  const sourceFiles = [registryPath, ...moduleFiles];
+  const sourcesRoot = path.dirname(networkDir);
+  const moduleFiles = registrarModuleFilesFromRegistry(registrySource, networkDir, sourcesRoot);
+  const sourceFiles = expandSourceFiles([registryPath, ...moduleFiles], sourcesRoot);
   const extracted = extractScopeStatsFromSources(sourceFiles, methodMap, path.dirname(registryPath));
   const scopedDuplicateRegistrations = extracted.scopes.reduce((sum, scope) => sum + scope.duplicate_registrations, 0);
   const crossScopeDuplicateStats = computeCrossScopeDuplicateStats(extracted.scopes);
