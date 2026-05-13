@@ -597,7 +597,7 @@ static void registerMethodsWithDispatcherUsingServices(
       controller.relayService, controller.adminController,
       controller.application.blobAuditManager,
       controller.serviceDatabases, controller.userDatabasePool,
-      controller.jwtMinter, config, nil,
+      controller.jwtMinter, controller.rateLimiter, config, nil,
       controller.subscribeReposHandler);
 }
 
@@ -612,9 +612,10 @@ static void registerMethodsWithDispatcherUsingServices(
       application.relayService, application.adminController,
       application.blobAuditManager,
       application.serviceDatabases, application.userDatabasePool,
-      application.jwtMinter, application.configuration,
+      application.jwtMinter, application.rateLimiter, application.configuration,
       application.emailProvider,
       application.subscribeReposHandler);
 }
 
+@end
 @end
