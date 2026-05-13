@@ -174,6 +174,12 @@
 
 - (void)testBlobDeletionVerification {
     NSError *error = nil;
+    self.uploadedCID = [self.blobStorage uploadBlob:self.testData mimeType:@"text/plain" did:self.testDID error:&error];
+    XCTAssertNotNil(self.uploadedCID, @"Upload should succeed first");
+
+    BOOL success = [self.blobStorage deleteBlobWithCID:self.uploadedCID did:self.testDID error:&error];
+    XCTAssertTrue(success, @"Blob deletion should succeed");
+
     NSData *deletedData = [self.blobStorage getBlobWithCID:self.uploadedCID did:self.testDID error:&error];
 
     XCTAssertNil(deletedData, @"Deleted blob should return nil");

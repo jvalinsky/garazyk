@@ -41,6 +41,7 @@
 @property(nonatomic, copy, nullable)
     HttpResponseBodyChunkProducer bodyChunkProducer;
 @property(nonatomic, assign) BOOL chunkedTransferEncoding;
+@property(nonatomic, assign) BOOL closeAfterSend;
 @property(nonatomic, strong, nullable) NSData *pendingGeneratedChunk;
 @property(nonatomic, assign) NSUInteger pendingGeneratedChunkOffset;
 @property(nonatomic, assign) NSUInteger queueByteSize;
@@ -543,6 +544,12 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
                           logPath);
         NSTimeInterval requestStart = [NSDate timeIntervalSinceReferenceDate];
         HttpResponse *response = [strongSelf dispatchRequest:requestRef];
+        NSString *connectionHeader =
+            [[requestRef headerForKey:@"Connection"] lowercaseString];
+        if ([connectionHeader isEqualToString:@"close"] ||
+            [requestRef.version isEqualToString:@"HTTP/1.0"]) {
+          response.keepAlive = NO;
+        }
         NSTimeInterval latency = [NSDate timeIntervalSinceReferenceDate] - requestStart;
         [[PDSMetrics sharedMetrics] incrementHttpRequestsForMethod:requestRef.methodString
                                                           endpoint:requestRef.path
@@ -653,6 +660,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
     queueItem.headerData = [response serializeHeadersForBodyLength:bodyLength];
     queueItem.bodyFilePath = bodyFilePath;
     queueItem.deleteBodyFileAfterSend = response.deleteBodyFileAfterSend;
+    queueItem.closeAfterSend = !response.keepAlive;
     queueItem.queueByteSize = queueItem.headerData.length;
     return queueItem;
   }
@@ -664,6 +672,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
     queueItem.headerData = [response serializeHeadersForBodyLength:0];
     queueItem.bodyChunkProducer = [response.bodyChunkProducer copy];
     queueItem.chunkedTransferEncoding = response.chunkedTransferEncoding;
+    queueItem.closeAfterSend = !response.keepAlive;
     queueItem.queueByteSize =
         queueItem.headerData.length + kHttpGeneratedQueueBudget;
     return queueItem;
@@ -671,6 +680,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 
   NSData *serialized = [response serialize];
   queueItem.headerData = serialized;
+  queueItem.closeAfterSend = !response.keepAlive;
   queueItem.queueByteSize = serialized.length;
   return queueItem;
 }
@@ -686,6 +696,10 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
                                               itemBytes:queueItem.queueByteSize];
   state.sendingActive = NO;
   [state.driver responseDidFinishSending];
+  if (queueItem.closeAfterSend) {
+    [connection cancel];
+    return;
+  }
   [self sendNextQueuedResponseForState:state connection:connection];
   
   // Continue connection if idle and not upgraded to WebSocket

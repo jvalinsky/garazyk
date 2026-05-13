@@ -93,7 +93,23 @@ export async function scanReports(db: Database): Promise<number> {
       try {
         // Clear any partial data for this run id
         db.prepare("DELETE FROM scenario_results WHERE run_id = ?").run(runId);
-        
+
+        // Insert stub runs record first to satisfy FK constraint on scenario_results
+        db.prepare(
+          `INSERT OR REPLACE INTO runs (id, started_at, finished_at, status, total_scenarios, passed, failed, skipped, duration_s)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).run(
+          runId,
+          startedAt,
+          startedAt,
+          "running",
+          0,
+          0,
+          0,
+          0,
+          0,
+        );
+
         for (const file of files) {
           const filePath = join(REPORTS_DIR, file.filename);
           const content = await Deno.readTextFile(filePath);
@@ -131,13 +147,10 @@ export async function scanReports(db: Database): Promise<number> {
           );
         }
 
-        // Insert or replace the run record
+        // Update the runs record with final computed values
         db.prepare(
-          `INSERT OR REPLACE INTO runs (id, started_at, finished_at, status, total_scenarios, passed, failed, skipped, duration_s)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          `UPDATE runs SET finished_at=?, status=?, total_scenarios=?, passed=?, failed=?, skipped=?, duration_s=? WHERE id=?`
         ).run(
-          runId,
-          startedAt,
           finishedAt,
           "completed",
           files.length,
@@ -145,6 +158,7 @@ export async function scanReports(db: Database): Promise<number> {
           totalFailed,
           totalSkipped,
           finishedAt - startedAt,
+          runId,
         );
 
         db.exec("COMMIT");

@@ -168,8 +168,6 @@
     }
 
     NSString *proxyBase = [NSString stringWithFormat:@"http://127.0.0.1:%lu", (unsigned long)self.upstreamServer.port];
-    self.dispatcher.proxyURL = [NSURL URLWithString:proxyBase];
-    self.dispatcher.upstreamDID = @"did:web:test";
 
     NSString *methodId = @"app.bsky.unspecced.getThing";
     NSString *query = @"limit=5";
@@ -179,7 +177,7 @@
                                                      path:[NSString stringWithFormat:@"/xrpc/%@", methodId]
                                               queryString:query
                                               queryParams:@{ @"limit": @"5" }
-                                                  headers:@{ @"authorization": authValue }
+                                                  headers:@{ @"authorization": authValue, @"atproto-proxy": proxyBase }
                                                      body:nil];
 
     XCTAssertEqual(response.statusCode, 200);
@@ -200,10 +198,6 @@
         return;
     }
 
-    NSString *proxyBase = [NSString stringWithFormat:@"http://127.0.0.1:%lu", (unsigned long)self.upstreamServer.port];
-    self.dispatcher.proxyURL = [NSURL URLWithString:proxyBase];
-    self.dispatcher.upstreamDID = @"did:web:test";
-
     HttpResponse *response = [self dispatchRequestWithMethod:HttpMethodGET
                                              methodString:@"GET"
                                                      path:@"/xrpc/app.bsky.actor.getProfile"
@@ -212,11 +206,11 @@
                                                   headers:@{}
                                                      body:nil];
 
-    XCTAssertEqual(response.statusCode, HttpStatusUnauthorized);
+    XCTAssertEqual(response.statusCode, HttpStatusNotImplemented);
     NSDictionary *json = response.body.length > 0
         ? [NSJSONSerialization JSONObjectWithData:response.body options:0 error:nil]
         : nil;
-    XCTAssertEqualObjects(json[@"error"], @"AuthRequired");
+    XCTAssertEqualObjects(json[@"error"], @"NotSupported");
     XCTAssertNil(json[@"proxied"]);
 }
 
@@ -254,8 +248,6 @@
     }
 
     NSString *proxyBase = [NSString stringWithFormat:@"http://127.0.0.1:%lu", (unsigned long)self.upstreamServer.port];
-    self.dispatcher.proxyURL = [NSURL URLWithString:proxyBase];
-    self.dispatcher.upstreamDID = @"did:web:test";
 
     NSData *bodyData = [NSJSONSerialization dataWithJSONObject:@{} options:0 error:nil];
     NSString *authValue = [NSString stringWithFormat:@"Bearer %@", self.testAccessJwt];
@@ -266,7 +258,8 @@
                                               queryParams:@{}
                                                   headers:@{
                                                       @"authorization": authValue,
-                                                      @"content-type": @"application/json"
+                                                      @"content-type": @"application/json",
+                                                      @"atproto-proxy": proxyBase
                                                   }
                                                      body:bodyData];
 
@@ -297,8 +290,6 @@
     }
 
     NSString *proxyBase = [NSString stringWithFormat:@"http://127.0.0.1:%lu", (unsigned long)self.upstreamServer.port];
-    self.dispatcher.proxyURL = [NSURL URLWithString:proxyBase];
-    self.dispatcher.upstreamDID = @"did:web:test";
 
     NSData *bodyData = [NSJSONSerialization dataWithJSONObject:@{} options:0 error:nil];
     NSString *authValue = [NSString stringWithFormat:@"Bearer %@", self.testAccessJwt];
@@ -309,7 +300,8 @@
                                               queryParams:@{}
                                                   headers:@{
                                                       @"authorization": authValue,
-                                                      @"content-type": @"application/json"
+                                                      @"content-type": @"application/json",
+                                                      @"atproto-proxy": proxyBase
                                                   }
                                                      body:bodyData];
 

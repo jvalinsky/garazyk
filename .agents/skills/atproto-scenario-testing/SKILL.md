@@ -24,9 +24,10 @@ Run narrative-driven simulation scripts against the local ATProto service networ
    ./scripts/run_scenarios.ts --list       # List available
    ```
 
-3. **Review results and diagnostics:**
+3. **Review results and dashboard:**
    - Terminal: colored PASS/FAIL/SKIP table per scenario
-   - JSON: `/tmp/garazyk-atproto-e2e/<run-id>/reports/`
+   - JSON Reports: `scripts/scenarios/reports/`
+   - Scenario Dashboard: `scripts/scenario-dashboard/` (run with `deno task start`)
    - Diagnostics: `/tmp/garazyk-atproto-e2e/<run-id>/diagnostics/`
 
 4. **Tear down:**
@@ -61,7 +62,8 @@ Run narrative-driven simulation scripts against the local ATProto service networ
 - **Runner**: `scripts/run_scenarios.ts`
 - **Library**: `scripts/lib/deno/` (client, config, diagnostics, instrumentation, runner, transport)
 - **Scenarios**: `scripts/scenarios/scenarios/*.ts`
-- **Reports**: `/tmp/garazyk-atproto-e2e/<run-id>/reports/`
+- **Reports**: `scripts/scenarios/reports/`
+- **Dashboard**: `scripts/scenario-dashboard/`
 
 ## Adding a New Scenario
 
