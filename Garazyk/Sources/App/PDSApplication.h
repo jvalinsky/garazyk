@@ -35,6 +35,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSRelayService;
 @class SubscribeReposHandler;
 @class PDSBlobAuditManager;
+@class RateLimiter;
 
 @protocol PDSAccountService;
 @protocol PDSAdminController;
@@ -331,6 +332,13 @@ NS_ASSUME_NONNULL_BEGIN
  application. Use this when interfacing with code that expects PDSController.
 
  @note Prefer using the services directly for new code.
+ */
+@property (nonatomic, strong, readonly) PDSController *legacyController;
+
+@end
+
+NS_ASSUME_NONNULL_END
+ces directly for new code.
  */
 @property (nonatomic, strong, readonly) PDSController *legacyController;
 
