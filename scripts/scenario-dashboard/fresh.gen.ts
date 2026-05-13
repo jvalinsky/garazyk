@@ -12,6 +12,7 @@ import * as $index from "./routes/index.tsx";
 import * as $run_runId_ from "./routes/run/[runId].tsx";
 import * as $scenario_id_ from "./routes/scenario/[id].tsx";
 import * as $NetworkStatus from "./islands/NetworkStatus.tsx";
+import * as $ScenarioRunner from "./islands/ScenarioRunner.tsx";
 import * as $Toolbar from "./islands/Toolbar.tsx";
 import type { Manifest } from "$fresh/server.ts";
 
@@ -29,6 +30,7 @@ const manifest = {
   },
   islands: {
     "./islands/NetworkStatus.tsx": $NetworkStatus,
+    "./islands/ScenarioRunner.tsx": $ScenarioRunner,
     "./islands/Toolbar.tsx": $Toolbar,
   },
   baseUrl: import.meta.url,

@@ -135,13 +135,14 @@ static const NSTimeInterval kHttpHeaderTimeout = 30.0;
             return;
         }
 
-        if (isComplete) {
-            return;
-        }
-
         if (data && data.length > 0) {
             NSArray<NSNumber *> *events = [self.driver feedData:data];
             [self processProtocolEvents:events];
+        }
+
+        if (isComplete) {
+            [self close];
+            return;
         }
 
         if (!self.isPaused && !self.isClosed) {
