@@ -60,6 +60,11 @@
     NSString *createBlocks = @"CREATE TABLE IF NOT EXISTS blocks ("
         @"id INTEGER PRIMARY KEY, cid BLOB UNIQUE, repo_did TEXT, block_data BLOB, size INTEGER)";
     XCTAssertTrue([self.database executeParameterizedUpdate:createBlocks params:@[] error:&error], @"Blocks table: %@", error);
+
+    NSString *createThreadgates = @"CREATE TABLE IF NOT EXISTS bsky_feed_threadgates ("
+        @"uri TEXT UNIQUE, post_uri TEXT PRIMARY KEY, allow_json TEXT, created_at INTEGER, updated_at INTEGER)";
+    XCTAssertTrue([self.database executeParameterizedUpdate:createThreadgates params:@[] error:&error], @"Threadgates table: %@", error);
+    XCTAssertTrue([self.database executeParameterizedUpdate:@"CREATE UNIQUE INDEX IF NOT EXISTS idx_bsky_feed_threadgates_uri ON bsky_feed_threadgates(uri)" params:@[] error:&error], @"Threadgates uri index: %@", error);
 }
 
 - (void)tearDown {
@@ -288,6 +293,55 @@
     XCTAssertNotNil(thread);
     XCTAssertNotNil(thread[@"post"][@"replyCount"]);
     XCTAssertTrue([thread[@"post"][@"replyCount"] isKindOfClass:[NSNumber class]]);
+}
+
+- (void)testIndexThreadgateStoresUriPostUriAndAllowJson {
+    NSString *postURI = @"at://did:plc:author/app.bsky.feed.post/gated";
+    NSString *gateURI = @"at://did:plc:author/app.bsky.feed.threadgate/gate";
+    NSDictionary *record = @{
+        @"$type": @"app.bsky.feed.threadgate",
+        @"post": postURI,
+        @"allow": @[@{@"$type": @"app.bsky.feed.threadgate#followerRule"}]
+    };
+
+    NSError *error = nil;
+    XCTAssertTrue([self.service indexThreadgate:record
+                                           did:@"did:plc:author"
+                                           uri:gateURI
+                                           cid:@"bafythreadgate"
+                                         error:&error], @"Threadgate indexing failed: %@", error);
+
+    NSArray *rows = [self.database executeParameterizedQuery:@"SELECT uri, post_uri, allow_json FROM bsky_feed_threadgates WHERE post_uri = ?"
+                                                      params:@[postURI]
+                                                       error:&error];
+    XCTAssertEqual(rows.count, 1U);
+    XCTAssertEqualObjects(rows.firstObject[@"uri"], gateURI);
+    XCTAssertEqualObjects(rows.firstObject[@"post_uri"], postURI);
+    XCTAssertTrue([rows.firstObject[@"allow_json"] containsString:@"followerRule"]);
+}
+
+- (void)testUnindexThreadgateRemovesOnlyMatchingGateUri {
+    NSDictionary *first = @{@"post": @"at://did:plc:author/app.bsky.feed.post/one", @"allow": @[]};
+    NSDictionary *second = @{@"post": @"at://did:plc:author/app.bsky.feed.post/two", @"allow": @[]};
+    NSError *error = nil;
+
+    XCTAssertTrue([self.service indexThreadgate:first
+                                           did:@"did:plc:author"
+                                           uri:@"at://did:plc:author/app.bsky.feed.threadgate/gate-one"
+                                           cid:@"bafyone"
+                                         error:&error]);
+    XCTAssertTrue([self.service indexThreadgate:second
+                                           did:@"did:plc:author"
+                                           uri:@"at://did:plc:author/app.bsky.feed.threadgate/gate-two"
+                                           cid:@"bafytwo"
+                                         error:&error]);
+
+    XCTAssertTrue([self.service unindexThreadgateWithURI:@"at://did:plc:author/app.bsky.feed.threadgate/gate-one" error:&error]);
+    NSArray *rows = [self.database executeParameterizedQuery:@"SELECT post_uri FROM bsky_feed_threadgates ORDER BY post_uri"
+                                                      params:@[]
+                                                       error:&error];
+    XCTAssertEqual(rows.count, 1U);
+    XCTAssertEqualObjects(rows.firstObject[@"post_uri"], @"at://did:plc:author/app.bsky.feed.post/two");
 }
 
 - (void)insertPost:(NSString *)did rkey:(NSString *)rkey text:(NSString *)text {
