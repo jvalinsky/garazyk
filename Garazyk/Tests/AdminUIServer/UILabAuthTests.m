@@ -99,16 +99,22 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
 }
 
 - (nullable NSString *)invokeRuntimeStringSelector:(SEL)selector {
-    if (![self.runtime respondsToSelector:selector]) {
+    NSMethodSignature *sig = [self.runtime methodSignatureForSelector:selector];
+    if (!sig) {
         XCTFail(@"Runtime does not respond to %@", NSStringFromSelector(selector));
         return nil;
     }
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
-    NSString *result = [self.runtime performSelector:selector];
-#pragma clang diagnostic pop
-
+    NSInvocation *inv = [NSInvocation invocationWithMethodSignature:sig];
+    [inv setTarget:self.runtime];
+    [inv setSelector:selector];
+    // Pass nil for any argument beyond self and _cmd (e.g. the nonce in labShellHTML:)
+    if (sig.numberOfArguments > 2) {
+        NSString *nilArg = nil;
+        [inv setArgument:&nilArg atIndex:2];
+    }
+    [inv invoke];
+    __unsafe_unretained NSString *result = nil;
+    [inv getReturnValue:&result];
     return result;
 }
 
@@ -362,7 +368,7 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
  @abstract Verify that the Lab shell HTML renders the login section.
  */
 - (void)testLabShellHTMLContainsLoginSection {
-    NSString *html = [self invokeRuntimeStringSelector:NSSelectorFromString(@"labShellHTML")];
+    NSString *html = [self invokeRuntimeStringSelector:NSSelectorFromString(@"labShellHTML:")];
     XCTAssertNotNil(html);
     if (!html) {
         return;
@@ -376,7 +382,7 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
  @abstract Verify that the Lab shell HTML renders the account section.
  */
 - (void)testLabShellHTMLContainsAccountSection {
-    NSString *html = [self invokeRuntimeStringSelector:NSSelectorFromString(@"labShellHTML")];
+    NSString *html = [self invokeRuntimeStringSelector:NSSelectorFromString(@"labShellHTML:")];
     XCTAssertNotNil(html);
     if (!html) {
         return;
@@ -390,7 +396,7 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
  @abstract Verify that the Lab shell HTML includes the embedded LAB_CONFIG object.
  */
 - (void)testLabShellHTMLContainsLabConfig {
-    NSString *html = [self invokeRuntimeStringSelector:NSSelectorFromString(@"labShellHTML")];
+    NSString *html = [self invokeRuntimeStringSelector:NSSelectorFromString(@"labShellHTML:")];
     XCTAssertNotNil(html);
     if (!html) {
         return;
@@ -404,7 +410,7 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
  @abstract Verify that the Lab shell HTML references the Lab JavaScript bundle.
  */
 - (void)testLabShellHTMLReferencesLabJS {
-    NSString *html = [self invokeRuntimeStringSelector:NSSelectorFromString(@"labShellHTML")];
+    NSString *html = [self invokeRuntimeStringSelector:NSSelectorFromString(@"labShellHTML:")];
     XCTAssertNotNil(html);
     if (!html) {
         return;
@@ -418,7 +424,7 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
  @abstract Verify that the Lab shell HTML includes the handle input field.
  */
 - (void)testLabShellHTMLContainsHandleInput {
-    NSString *html = [self invokeRuntimeStringSelector:NSSelectorFromString(@"labShellHTML")];
+    NSString *html = [self invokeRuntimeStringSelector:NSSelectorFromString(@"labShellHTML:")];
     XCTAssertNotNil(html);
     if (!html) {
         return;
@@ -432,7 +438,7 @@ typedef void (^UILabRouteHandler)(HttpRequest *request, HttpResponse *response);
  @abstract Verify that the Lab shell HTML includes the OAuth sign-out control.
  */
 - (void)testLabShellHTMLContainsSignOutButton {
-    NSString *html = [self invokeRuntimeStringSelector:NSSelectorFromString(@"labShellHTML")];
+    NSString *html = [self invokeRuntimeStringSelector:NSSelectorFromString(@"labShellHTML:")];
     XCTAssertNotNil(html);
     if (!html) {
         return;

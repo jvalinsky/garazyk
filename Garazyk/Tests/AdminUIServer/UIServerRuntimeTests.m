@@ -128,6 +128,30 @@
 
 #pragma mark - Helper Methods
 
+- (nullable NSString *)issueFreshCSRFNonce {
+    HttpRequest *req = [[HttpRequest alloc] initWithMethod:HttpMethodGET
+                                               methodString:@"GET"
+                                                       path:@"/admin/login"
+                                                queryString:@""
+                                               queryParams:@{}
+                                                   version:@"HTTP/1.1"
+                                                   headers:@{}
+                                                      body:[NSData data]
+                                             remoteAddress:@"127.0.0.1"];
+    HttpResponse *resp = [self.runtime dispatchRequestForTesting:req];
+
+    NSString *setCookie = [resp headerForKey:@"Set-Cookie"];
+    for (NSString *part in [setCookie componentsSeparatedByString:@";"]) {
+        NSString *trimmed = [part stringByTrimmingCharactersInSet:
+            [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        if ([trimmed hasPrefix:@"ui_admin_nonce="]) {
+            return [trimmed substringFromIndex:15]; // length of "ui_admin_nonce="
+        }
+    }
+    XCTFail(@"GET /admin/login did not set ui_admin_nonce cookie");
+    return nil;
+}
+
 /*!
  @abstract Creates an HttpRequest with the specified method, path, and optional token.
  */
@@ -139,6 +163,23 @@
 
     if (token) {
         headers[@"Cookie"] = [NSString stringWithFormat:@"ui_admin_token=%@", token];
+    }
+
+    // Add CSRF nonce for mutating methods (POST, PUT, DELETE, PATCH)
+    NSString *m = method.uppercaseString;
+    BOOL isMutating = [m isEqualToString:@"POST"] || [m isEqualToString:@"PUT"]
+                   || [m isEqualToString:@"DELETE"] || [m isEqualToString:@"PATCH"];
+    if (isMutating) {
+        NSString *nonce = [self issueFreshCSRFNonce];
+        if (nonce) {
+            headers[@"X-UI-Admin-Nonce"] = nonce;
+            if (headers[@"Cookie"]) {
+                headers[@"Cookie"] = [NSString stringWithFormat:@"%@; ui_admin_nonce=%@",
+                                      headers[@"Cookie"], nonce];
+            } else {
+                headers[@"Cookie"] = [NSString stringWithFormat:@"ui_admin_nonce=%@", nonce];
+            }
+        }
     }
 
     if (jsonBody) {
