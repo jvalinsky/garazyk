@@ -1384,7 +1384,6 @@ static BOOL setInviteEnabledForAccount(PDSServiceDatabases *serviceDatabases,
 
     PDSDatabaseAccount *account = [db getAccountByDid:did error:error];
     if (!account) {
-        [db close];
         if (error && !*error) {
             *error = [NSError errorWithDomain:@"com.atproto.admin"
                                          code:404
@@ -1396,7 +1395,6 @@ static BOOL setInviteEnabledForAccount(PDSServiceDatabases *serviceDatabases,
     account.inviteEnabled = enabled;
     account.updatedAt = [[NSDate date] timeIntervalSince1970];
     BOOL updated = [db updateAccount:account error:error];
-    [db close];
     return updated;
 }
 

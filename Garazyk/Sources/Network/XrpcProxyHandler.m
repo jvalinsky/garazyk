@@ -128,7 +128,7 @@
         if (error) {
             // NSURLSession timeout errors should return 504, not 503
             if ([error.domain isEqualToString:NSURLErrorDomain] &&
-                error.code == NSURLErrorTimedOut) {
+                (error.code == NSURLErrorTimedOut || error.code == NSURLErrorCancelled)) {
                 GZ_LOG_ERROR(@"Proxy request timed out (NSURLConnection): %@", request.path);
                 response.statusCode = 504;
                 [response setJsonBody:@{@"error": @"UpstreamTimeout", @"message": @"Upstream AppView did not respond within the timeout window"}];
