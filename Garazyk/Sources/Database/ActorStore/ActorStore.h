@@ -24,6 +24,8 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSDatabaseRecord;
 @class PDSDatabaseBlock;
 @class PDSDatabaseBlob;
+/*! Sentinel DID used to route operations to the shared service-level database. */
+extern NSString * const PDSServiceStoreDID;
 /*! Error domain for actor store operations. */
 extern NSString * const PDSActorStoreErrorDomain;
 

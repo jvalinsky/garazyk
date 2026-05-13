@@ -107,7 +107,7 @@ NSString * const kPDSBlobTableCreateSQL =
     @"CREATE TABLE IF NOT EXISTS blobs ("
     @"cid BLOB PRIMARY KEY,"
     @"did TEXT NOT NULL,"
-    @"mime_type TEXT,"
+    @"mimeType TEXT,"
     @"size INTEGER NOT NULL,"
     @"created_at TEXT NOT NULL,"
     @"FOREIGN KEY (did) REFERENCES accounts(did)"

@@ -144,7 +144,7 @@ stop_stale_docker_e2e() {
                 [[ -z "$cid" ]] && continue
                 local project
                 project=$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' "$cid" 2>/dev/null || true)
-                if [[ -n "$project" && "$project" != "$ATPROTO_E2E_COMPOSE_PROJECT" && " ${stale_projects[*]} " != *" $project "* ]]; then
+                if [[ -n "$project" && "$project" != "$ATPROTO_E2E_COMPOSE_PROJECT" && ! " ${stale_projects[@]:-} " =~ " $project " ]]; then
                     stale_projects+=("$project")
                 fi
             done <<< "$container_id"
