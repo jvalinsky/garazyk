@@ -42,7 +42,7 @@ function parseArgs(argv) {
 function printUsageAndExit(code) {
   const usage = [
     "Usage:",
-    "  node scripts/generate_xrpc_next_steps.js [options]",
+    "  node scripts/docs/generate_xrpc_next_steps.cjs [options]",
     "",
     "Options:",
     "  --repo-root <path>       Repository root (default: cwd)",
@@ -223,13 +223,13 @@ function createPlanMarkdown(payload) {
   lines.push("");
   if (payload.coverage.missing_in_code === 0) {
     lines.push("1. No in-scope endpoint implementation backlog remains.");
-    lines.push("2. Keep `scripts/docs/generate_xrpc_coverage_report.js --source-only --fail-on-duplicates` in CI.");
+    lines.push("2. Keep `scripts/docs/generate_xrpc_coverage_report.cjs --source-only --fail-on-duplicates` in CI.");
     lines.push("3. Re-run coverage and next-steps generation after registry or lexicon changes.");
   } else {
     lines.push("1. Implement all Phase 1 P0/P1 endpoints.");
     lines.push("2. Implement Phase 2 P0/P1 endpoints, then run interop/sync tests.");
     lines.push("3. Implement Phase 3 P1/P2 endpoints needed for moderation/admin workflows.");
-    lines.push("4. Re-run `scripts/docs/generate_xrpc_coverage_report.js` after each batch.");
+    lines.push("4. Re-run `scripts/docs/generate_xrpc_coverage_report.cjs` after each batch.");
   }
   lines.push("");
   return `${lines.join("\n")}\n`;
