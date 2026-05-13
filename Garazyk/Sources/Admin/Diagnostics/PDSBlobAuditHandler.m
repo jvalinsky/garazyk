@@ -3,10 +3,6 @@
 #import "PDSBlobAuditHandler.h"
 #import "BlobAudit/PDSBlobAuditManager.h"
 
-@interface PDSBlobAuditHandler ()
-@property (nonatomic, strong) PDSBlobAuditManager *auditManager;
-@end
-
 @implementation PDSBlobAuditHandler
 
 + (instancetype)sharedHandler {
@@ -18,13 +14,11 @@
     return shared;
 }
 
-- (PDSBlobAuditManager *)auditManager {
-    if (!_auditManager) {
-        // Lazy initialization - would be set from PDSApplication or injected
-        // For now, this placeholder will be replaced by proper dependency injection
-        // when integrated into PDSApplication
+- (instancetype)initWithAuditManager:(PDSBlobAuditManager *)auditManager {
+    if ((self = [super init])) {
+        _auditManager = auditManager;
     }
-    return _auditManager;
+    return self;
 }
 
 - (nullable NSString *)handleRequestWithMethod:(NSInteger)method
@@ -62,6 +56,11 @@
 
     NSString *auditType = request[@"auditType"];
     BOOL dryRun = [request[@"dryRun"] boolValue];
+
+    if (!self.auditManager) {
+        if (statusCode) *statusCode = 503;
+        return @"{\"error\": \"BlobAuditUnavailable\", \"message\": \"Blob audit manager is not configured\"}";
+    }
 
     if (!auditType) {
         if (statusCode) *statusCode = 400;
@@ -104,6 +103,11 @@
     if (!jobId) {
         if (statusCode) *statusCode = 400;
         return @"{\"error\": \"Missing jobId parameter\"}";
+    }
+
+    if (!self.auditManager) {
+        if (statusCode) *statusCode = 503;
+        return @"{\"error\": \"BlobAuditUnavailable\", \"message\": \"Blob audit manager is not configured\"}";
     }
 
     // Query job status from audit manager
