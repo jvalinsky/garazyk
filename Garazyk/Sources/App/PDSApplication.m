@@ -18,6 +18,7 @@
 #import "Services/PDS/PDSBlobService.h"
 #import "Services/PDS/PDSRepositoryService.h"
 #import "Admin/Diagnostics/BlobAudit/PDSBlobAuditManager.h"
+#import "Admin/Diagnostics/PDSBlobAuditHandler.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/Monitoring/PDSHealthCheck.h"
 #import "Database/Pool/DatabasePool.h"
@@ -244,7 +245,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
 - (void)configureRateLimiter {
     if (!_configuration) return;
     
-    RateLimiter *limiter = [RateLimiter sharedLimiter];
+    RateLimiter *limiter = self.rateLimiter;
     NSString *rateLimitPath = [[_dataDirectory stringByAppendingPathComponent:@"service"]
                                stringByAppendingPathComponent:@"ratelimits.db"];
     [limiter reconfigureDatabasePath:rateLimitPath];
@@ -462,6 +463,8 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     // Blob Audit Manager
     _blobAuditManager = [[PDSBlobAuditManager alloc] initWithBlobStorage:_blobService.blobStorage
                                                          serviceDatabases:_serviceDatabases];
+    [PDSBlobAuditHandler sharedHandler].auditManager = _blobAuditManager;
+    [PDSSystemDiagnosticsHandler sharedHandler].auditManager = _blobAuditManager;
 
     // H1: Give PDSAdminAuth access
     [PDSAdminAuth sharedAuth].dataDirectory = _dataDirectory;

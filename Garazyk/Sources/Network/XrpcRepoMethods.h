@@ -8,6 +8,7 @@
 @class PDSBlobService;
 @class PDSRepositoryService;
 @class PDSServiceDatabases;
+@class RateLimiter;
 @protocol PDSAccountService;
 @protocol PDSAdminController;
 
@@ -45,6 +46,11 @@ NS_ASSUME_NONNULL_BEGIN
                    blobService:(PDSBlobService *)blobService
              repositoryService:(PDSRepositoryService *)repositoryService
               serviceDatabases:(PDSServiceDatabases *)serviceDatabases;
+
+@end
+
+NS_ASSUME_NONNULL_END
+Limiter;
 
 @end
 
