@@ -13,15 +13,19 @@ Garazyk uses rate limiting as a shared safety layer around a few abuse-prone pat
 ```mermaid
 flowchart TD
     Req["Incoming request"]
+    App["PDSApplication/Controller"]
+    Limiter["RateLimiter (Injected)"]
     OAuth["HttpServer IP gate for /oauth/"]
     Identity["Identity method custom windows"]
     Blob["Blob upload budget"]
     Allow["Continue to handler"]
     Deny["429 plus rate-limit headers"]
 
-    Req --> OAuth
-    Req --> Identity
-    Req --> Blob
+    Req --> App
+    App --> Limiter
+    Limiter --> OAuth
+    Limiter --> Identity
+    Limiter --> Blob
     OAuth --> Allow
     Identity --> Allow
     Blob --> Allow
@@ -38,6 +42,14 @@ The live implementation is `Garazyk/Sources/Network/RateLimiter.{h,m}`. It store
 - IP-based limits for unauthenticated traffic
 - blob-upload limits for per-actor media pressure
 - custom keyed limits for sensitive endpoints that need their own window
+
+### Dependency Injection
+
+In the current runtime, the `RateLimiter` is owned by `PDSApplication` and its compatibility facade `PDSController`. It is explicitly injected into XRPC method packs (like `XrpcRepoMethods`) during registration. This ensures that handlers use the correctly configured limiter instance and facilitates easier testing by allowing mock limiters.
+
+- `PDSApplication` initializes and configures the `rateLimiter`.
+- `XrpcMethodRegistry` orchestrates the injection into various XRPC handlers.
+- `XrpcRepoMethods` applies `checkBlobUploadRateLimitForDid:` for blob uploads.
 
 In the current runtime, those checks are not applied everywhere in one generic middleware layer. They are attached where the repo needs them:
 
