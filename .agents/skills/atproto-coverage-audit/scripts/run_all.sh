@@ -35,8 +35,8 @@ done
 mkdir -p "$output_dir"
 
 scripts_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-repo_coverage_script="$root/scripts/generate_xrpc_coverage_report.js"
-repo_next_steps_script="$root/scripts/generate_xrpc_next_steps.js"
+repo_coverage_script="$root/scripts/docs/generate_xrpc_coverage_report.cjs"
+repo_next_steps_script="$root/scripts/docs/generate_xrpc_next_steps.cjs"
 
 if [[ -f "$repo_coverage_script" && -f "$repo_next_steps_script" ]]; then
   coverage_cmd=(node "$repo_coverage_script" --source-only)
