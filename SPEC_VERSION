@@ -4,5 +4,5 @@ AT Protocol Lexicons:
 - Application Lexicons: whitewind (Local)
 
 Compliance Goals:
-- Full Lexicon Coverage (Verified via scripts/generate_xrpc_coverage_report.js)
+- Full Lexicon Coverage (Verified via scripts/docs/generate_xrpc_coverage_report.cjs)
 - Full Conformance Test Pass (Verified via tests/AllTests)

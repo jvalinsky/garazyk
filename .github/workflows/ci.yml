@@ -62,7 +62,7 @@ jobs:
 
       - name: Check XRPC Registry Coverage
         run: |
-          node scripts/docs/generate_xrpc_coverage_report.js --source-only --fail-on-duplicates --fail-on-missing
+          node scripts/docs/generate_xrpc_coverage_report.cjs --source-only --fail-on-duplicates --fail-on-missing
 
       - name: Check Module Boundaries
         run: |
