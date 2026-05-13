@@ -66,6 +66,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
   PDSRepositoryService *_repositoryService;
   PDSRelayService *_relayService;
   PDSAdminController *_adminController;
+  RateLimiter *_rateLimiter;
   JWTMinter *_jwtMinter;
   NSMutableDictionary<NSString *, MST *> *_repos;
   NSMutableDictionary<NSString *, NSMutableSet<NSString *> *> *_collections;
@@ -88,6 +89,10 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 
 - (PDSAdminController *)adminController {
   return _adminController;
+}
+
+- (RateLimiter *)rateLimiter {
+  return _rateLimiter;
 }
 
 - (SubscribeReposHandler *)subscribeReposHandler {
@@ -568,6 +573,10 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 
 - (NSDictionary *)getLabels:(NSDictionary *)params error:(NSError **)error {
   return [_adminController getLabels:params error:error];
+}
+
+@end
+rror];
 }
 
 @end

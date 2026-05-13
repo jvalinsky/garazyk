@@ -6,6 +6,7 @@
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcErrorHelper.h"
 #import "Network/XrpcMethodRegistry.h"
+#import "Network/RateLimiter.h"
 #import "Services/PDS/PDSAccountService.h"
 #import "Services/PDS/PDSRecordService.h"
 #import "Services/PDS/PDSBlobService.h"
@@ -36,6 +37,10 @@
 
 static BOOL parseStrictIntegerString(NSString *value, NSInteger *result);
 static CID *cidFromTaggedCBORValue(CBORValue *value);
+
+static BOOL isReplyNotAllowedError(NSError *error) {
+    return [error.localizedDescription containsString:@"ReplyNotAllowed"];
+}
 
 static PDSValidationMode validationModeFromValidateParameter(id validateParam) {
     if (!validateParam || validateParam == (id)[NSNull null]) {
@@ -411,7 +416,11 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
                                                     error:&error];
         if (!result) {
             response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"RecordCreationFailed", @"message": error.localizedDescription ?: @"Failed to create record"}];
+            if (isReplyNotAllowedError(error)) {
+                [response setJsonBody:@{@"error": @"ReplyNotAllowed", @"message": @"Reply not allowed by threadgate"}];
+            } else {
+                [response setJsonBody:@{@"error": @"RecordCreationFailed", @"message": error.localizedDescription ?: @"Failed to create record"}];
+            }
             return;
         }
 
@@ -502,6 +511,17 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
                 response.statusCode = HttpStatusUnauthorized;
                 [response setJsonBody:@{@"error": @"AuthRequired", @"message": @"Valid authorization required"}];
             }
+            return;
+        }
+
+        RateLimitResult *blobRateLimit = [rateLimiter checkBlobUploadRateLimitForDid:did];
+        if (!blobRateLimit.allowed) {
+            response.statusCode = HttpStatusTooManyRequests;
+            [response setHeader:[NSString stringWithFormat:@"%ld", (long)blobRateLimit.limit] forKey:@"X-RateLimit-Limit"];
+            [response setHeader:[NSString stringWithFormat:@"%ld", (long)blobRateLimit.remaining] forKey:@"X-RateLimit-Remaining"];
+            [response setHeader:[NSString stringWithFormat:@"%.0f", blobRateLimit.resetSeconds] forKey:@"X-RateLimit-Reset"];
+            [response setHeader:[NSString stringWithFormat:@"%.0f", blobRateLimit.retryAfter] forKey:@"Retry-After"];
+            [response setJsonBody:@{@"error": @"RateLimitExceeded", @"message": @"Blob upload rate limit exceeded"}];
             return;
         }
 
@@ -1022,14 +1042,22 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
                                               error:&createError];
                 if (!result) {
                     response.statusCode = HttpStatusBadRequest;
-                    [response setJsonBody:@{@"error": @"RecordCreateFailed",
-                                            @"message": createError.localizedDescription ?: @"Failed to create record"}];
+                    if (isReplyNotAllowedError(createError)) {
+                        [response setJsonBody:@{@"error": @"ReplyNotAllowed", @"message": @"Reply not allowed by threadgate"}];
+                    } else {
+                        [response setJsonBody:@{@"error": @"RecordCreateFailed",
+                                                @"message": createError.localizedDescription ?: @"Failed to create record"}];
+                    }
                     return;
                 }
             } else {
                 response.statusCode = HttpStatusBadRequest;
-                [response setJsonBody:@{@"error": @"RecordUpdateFailed",
-                                        @"message": errMsg}];
+                if (isReplyNotAllowedError(error)) {
+                    [response setJsonBody:@{@"error": @"ReplyNotAllowed", @"message": @"Reply not allowed by threadgate"}];
+                } else {
+                    [response setJsonBody:@{@"error": @"RecordUpdateFailed",
+                                            @"message": errMsg}];
+                }
                 return;
             }
         } else if (!result) {
@@ -1109,7 +1137,11 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
                                                     error:&error];
         if (!result) {
             response.statusCode = HttpStatusBadRequest;
-            [response setJsonBody:@{@"error": @"WriteFailed", @"message": error.localizedDescription ?: @"Failed to apply writes"}];
+            if (isReplyNotAllowedError(error)) {
+                [response setJsonBody:@{@"error": @"ReplyNotAllowed", @"message": @"Reply not allowed by threadgate"}];
+            } else {
+                [response setJsonBody:@{@"error": @"WriteFailed", @"message": error.localizedDescription ?: @"Failed to apply writes"}];
+            }
             return;
         }
 
@@ -1152,6 +1184,12 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
         }
 
         response.statusCode = HttpStatusOK;
+        [response setJsonBody:@{@"success": @YES}];
+    }];
+}
+
+@end
+usOK;
         [response setJsonBody:@{@"success": @YES}];
     }];
 }
