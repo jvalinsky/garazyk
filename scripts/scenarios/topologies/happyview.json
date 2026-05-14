@@ -1,0 +1,39 @@
+{
+  "name": "happyview",
+  "description": "HappyView (TypeScript/Rust, trezy) with Garazyk PDS, Relay, and PLC. Lexicon-driven AppView that auto-generates XRPC endpoints from uploaded schemas. Supports Lua scripting, OAuth, real-time sync via Tap, and backfill. Uses SQLite by default (PostgreSQL optional).",
+  "roles": {
+    "plc": { "inherit": "garazyk-default" },
+    "pds": { "inherit": "garazyk-default" },
+    "pds2": { "inherit": "garazyk-default" },
+    "relay": { "inherit": "garazyk-default" },
+    "appview": {
+      "name": "happyview",
+      "source": {
+        "repo": "https://github.com/gamesgamesgamesgamesgames/happyview.git",
+        "ref": "v2.7.0",
+        "buildArgs": {
+          "HAPPYVIEW_VERSION": "2.7.0"
+        }
+      },
+      "env": {
+        "DATABASE_URL": "sqlite:///data/happyview.db?mode=rwc",
+        "PUBLIC_URL": "http://localhost:3200",
+        "SESSION_SECRET": "localdev-session-secret",
+        "RELAY_URL": "ws://local-relay:2584/xrpc/com.atproto.sync.subscribeRepos",
+        "PORT": "3200"
+      },
+      "ports": ["3200:3000"],
+      "volumes": ["happyview_data:/data"],
+      "healthCheck": {
+        "path": "/"
+      },
+      "capabilities": [
+        "getTimeline", "getProfile", "getFeed", "search",
+        "xrpcEndpoints", "oauth", "realTimeSync", "backfill",
+        "lexiconDriven", "luaScripting", "indexHooks",
+        "networkLexicons", "hotReloading", "adminDashboard"
+      ],
+      "dependsOn": ["local-relay"]
+    }
+  }
+}

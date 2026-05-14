@@ -1,0 +1,197 @@
+{
+  "name": "garazyk-default",
+  "description": "Full Garazyk stack: PDS (kaszlak), Relay (zuk), PLC (campagnola), AppView (syrena), Chat (syrena-chat), Video (jelcz). Built from local source.",
+  "roles": {
+    "plc": {
+      "name": "campagnola",
+      "buildContext": "docker/local-network",
+      "dockerfile": "Dockerfile.local",
+      "entrypoint": ["/usr/local/bin/campagnola"],
+      "command": ["serve", "--host", "0.0.0.0", "--port", "2582", "--database", "/var/lib/atprotopds/plc.db"],
+      "env": {
+        "TZ": "UTC",
+        "PLC_HOURLY_LIMIT": "500",
+        "PLC_DAILY_LIMIT": "1000",
+        "PLC_WEEKLY_LIMIT": "5000"
+      },
+      "ports": ["2582:2582"],
+      "volumes": ["local_plc_data:/var/lib/atprotopds"],
+      "healthCheck": {
+        "path": "/_health"
+      },
+      "capabilities": ["createAccount", "didResolution", "operationLog", "handleRotation", "quotaEnforcement"],
+      "dependsOn": []
+    },
+    "pds": {
+      "name": "kaszlak",
+      "buildContext": "docker/local-network",
+      "dockerfile": "Dockerfile.local",
+      "command": ["serve", "--config", "/var/lib/atprotopds/config.json", "--foreground"],
+      "env": {
+        "TZ": "UTC",
+        "PDS_ALLOW_PRIVATE_SSRF": "1",
+        "PDS_ALLOW_HTTP": "1",
+        "PDS_LEXICON_PATH": "/usr/share/atprotopds/lexicons",
+        "HOME": "/var/lib/atprotopds",
+        "PDS_RATELIMIT_ENABLED": "false",
+        "PDS_HANDLE_RESOLVE_LIMIT": "10000",
+        "PDS_DATA_DIR": "/var/lib/atprotopds",
+        "PDS_PLC_KEYS_DIR": "/var/lib/atprotopds/keys",
+        "PDS_MASTER_SECRET": "32107992c973da8445b485263cb2bd3157859cb94294a2355e3c4a7b0f825afe",
+        "GARAZYK_ALLOW_PRIVATE_OAUTH_CLIENTS": "1",
+        "PDS_RUNNING_TESTS": "1",
+        "PDS_USE_KEYCHAIN": "false",
+        "PDS_ADMIN_PASSWORD": "admin-localdev"
+      },
+      "ports": ["2583:2583"],
+      "volumes": [
+        "local_pds_data:/var/lib/atprotopds",
+        "./pds-config.json:/var/lib/atprotopds/config.json:ro",
+        "local_pds_keys:/var/lib/atprotopds/keys"
+      ],
+      "healthCheck": {
+        "path": "/xrpc/com.atproto.server.describeServer"
+      },
+      "capabilities": [
+        "describeServer", "createAccount", "createSession", "getSession",
+        "createRecord", "getRecord", "deleteRecord", "listRecords",
+        "uploadBlob", "getBlob", "listBlobs",
+        "resolveHandle", "updateHandle", "requestPlcOperationSignature", "signPlcOperation",
+        "subscribeRepos", "getHead", "getRepo", "requestCrawl",
+        "admin", "moderation", "labeling",
+        "repo", "identity", "blob", "sync"
+      ],
+      "dependsOn": ["local-plc"]
+    },
+    "pds2": {
+      "name": "kaszlak-pds2",
+      "buildContext": "docker/local-network",
+      "dockerfile": "Dockerfile.local",
+      "command": ["serve", "--config", "/var/lib/atprotopds/config.json", "--foreground"],
+      "env": {
+        "TZ": "UTC",
+        "PDS_ALLOW_PRIVATE_SSRF": "1",
+        "PDS_ALLOW_HTTP": "1",
+        "PDS_LEXICON_PATH": "/usr/share/atprotopds/lexicons",
+        "HOME": "/var/lib/atprotopds",
+        "PDS_RATELIMIT_ENABLED": "false",
+        "PDS_HANDLE_RESOLVE_LIMIT": "10000",
+        "PDS_DATA_DIR": "/var/lib/atprotopds",
+        "PDS_PLC_KEYS_DIR": "/var/lib/atprotopds/keys",
+        "PDS_MASTER_SECRET": "32107992c973da8445b485263cb2bd3157859cb94294a2355e3c4a7b0f825afe",
+        "GARAZYK_ALLOW_PRIVATE_OAUTH_CLIENTS": "1",
+        "PDS_RUNNING_TESTS": "1",
+        "PDS_USE_KEYCHAIN": "false",
+        "PDS_ADMIN_PASSWORD": "admin-localdev"
+      },
+      "ports": ["2587:2587"],
+      "volumes": [
+        "local_pds2_data:/var/lib/atprotopds",
+        "./pds2-config.json:/var/lib/atprotopds/config.json:ro",
+        "local_pds2_keys:/var/lib/atprotopds/keys"
+      ],
+      "healthCheck": {
+        "path": "/xrpc/com.atproto.server.describeServer"
+      },
+      "capabilities": [
+        "describeServer", "createAccount", "createSession", "getSession",
+        "createRecord", "getRecord", "deleteRecord", "listRecords",
+        "uploadBlob", "getBlob", "listBlobs",
+        "resolveHandle", "updateHandle", "requestPlcOperationSignature", "signPlcOperation",
+        "subscribeRepos", "getHead", "getRepo", "requestCrawl",
+        "admin", "moderation", "labeling",
+        "repo", "identity", "blob", "sync"
+      ],
+      "dependsOn": ["local-plc"]
+    },
+    "relay": {
+      "name": "zuk",
+      "buildContext": "docker/local-network",
+      "dockerfile": "Dockerfile.local",
+      "entrypoint": ["/usr/local/bin/zuk"],
+      "command": ["serve", "--upstream", "ws://local-pds:2583/xrpc/com.atproto.sync.subscribeRepos", "--port", "2584", "--data-dir", "/var/lib/atprotopds"],
+      "env": {
+        "TZ": "UTC",
+        "PDS_ALLOW_PRIVATE_SSRF": "1",
+        "PDS_ALLOW_HTTP": "1",
+        "PDS_LEXICON_PATH": "/usr/share/atprotopds/lexicons"
+      },
+      "ports": ["2584:2584"],
+      "volumes": ["local_relay_data:/var/lib/atprotopds"],
+      "healthCheck": {
+        "path": "/api/relay/health"
+      },
+      "capabilities": ["subscribeRepos", "requestCrawl", "healthCheck", "upstreams"],
+      "dependsOn": ["local-pds"]
+    },
+    "appview": {
+      "name": "syrena",
+      "buildContext": "docker/local-network",
+      "dockerfile": "Dockerfile.local",
+      "entrypoint": ["/usr/local/bin/syrena"],
+      "command": ["serve", "--relay", "ws://local-relay:2584", "--port", "3200", "--data-dir", "/var/lib/atprotopds", "--no-backfill"],
+      "env": {
+        "TZ": "UTC",
+        "PDS_ALLOW_PRIVATE_SSRF": "1",
+        "PDS_ALLOW_HTTP": "1",
+        "PDS_LEXICON_PATH": "/usr/share/atprotopds/lexicons",
+        "PDS_WRITE_PROXY_OVERRIDE": "http://local-pds:2583",
+        "APPVIEW_ADMIN_SECRET": "localdevadmin",
+        "APPVIEW_DATA_DIR": "/var/lib/atprotopds",
+        "APPVIEW_PLC_URL": "http://local-plc:2582",
+        "APPVIEW_PDS_URL": "http://local-pds:2583",
+        "APPVIEW_HTTP_PORT": "3200"
+      },
+      "ports": ["3200:3200"],
+      "volumes": ["local_appview_data:/var/lib/atprotopds"],
+      "healthCheck": {
+        "path": "/admin/backfill/status",
+        "headers": { "Authorization": "Bearer localdevadmin" }
+      },
+      "capabilities": ["getTimeline", "getProfile", "getFeed", "search", "backfill", "admin"],
+      "dependsOn": ["local-relay"]
+    },
+    "chat": {
+      "name": "syrena-chat",
+      "buildContext": "docker/local-network",
+      "dockerfile": "Dockerfile.local",
+      "entrypoint": ["/usr/local/bin/syrena-chat"],
+      "command": ["serve", "--port", "2585", "--data-dir", "/var/lib/atprotopds"],
+      "env": {
+        "TZ": "UTC",
+        "CHAT_PDS_URL": "http://local-pds:2583",
+        "CHAT_PLC_URL": "http://local-plc:2582"
+      },
+      "ports": ["2585:2585"],
+      "volumes": ["local_chat_data:/var/lib/atprotopds"],
+      "healthCheck": {
+        "path": "/_health"
+      },
+      "capabilities": ["dm", "chat", "healthCheck"],
+      "dependsOn": ["local-pds"]
+    },
+    "video": {
+      "name": "jelcz",
+      "buildContext": "docker/local-network",
+      "dockerfile": "Dockerfile.local",
+      "entrypoint": ["/usr/local/bin/jelcz"],
+      "command": ["serve", "--port", "2586"],
+      "env": {
+        "TZ": "UTC",
+        "JELCZ_PDS_URL": "http://local-pds:2583",
+        "JELCZ_PLC_URL": "http://local-plc:2582",
+        "JELCZ_DATA_DIR": "/var/lib/atprotopds"
+      },
+      "ports": ["2586:2586"],
+      "volumes": ["local_video_data:/var/lib/atprotopds"],
+      "healthCheck": {
+        "path": "/_health"
+      },
+      "capabilities": ["uploadVideo", "getVideoStatus", "healthCheck"],
+      "dependsOn": ["local-pds"]
+    }
+  },
+  "networkAliases": {
+    "local-appview": ["bsky.app"]
+  }
+}
