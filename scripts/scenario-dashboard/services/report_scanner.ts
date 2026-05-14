@@ -31,6 +31,7 @@ interface ReportFile {
 }
 
 function parseFilename(filename: string): { timestamp: string; scenarioName: string } | null {
+  if (filename.endsWith("-progress.json")) return null;
   // Format: 20260507-183659-01_account_lifecycle.json
   const match = filename.match(/^(\d{8}-\d{6})-(.+)\.json$/);
   if (!match) return null;
