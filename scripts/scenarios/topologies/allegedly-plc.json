@@ -27,20 +27,22 @@
           "source": {
             "repo": "https://github.com/did-method-plc/did-method-plc.git",
             "ref": "main",
-            "dockerDir": "packages/server"
+            "dockerfile": "packages/server/Dockerfile"
           },
           "command": ["node", "--enable-source-maps", "index.js"],
           "env": {
             "PORT": "3000",
             "NODE_ENV": "production",
-            "DATABASE_URL": "postgres://plc:plc@local-plc-db:5432/plc",
+            "DB_CREDS_JSON": "{\"host\":\"local-plc-db\",\"port\":5432,\"username\":\"plc\",\"password\":\"plc\",\"database\":\"plc\"}",
+            "ENABLE_MIGRATIONS": "true",
+            "DB_MIGRATE_CREDS_JSON": "{\"host\":\"local-plc-db\",\"port\":5432,\"username\":\"plc\",\"password\":\"plc\",\"database\":\"plc\"}",
             "DEBUG_MODE": "1",
             "LOG_ENABLED": "true",
             "LOG_LEVEL": "debug"
           },
-          "volumes": [],
           "healthCheck": {
-            "path": "/_health"
+            "path": null,
+            "customTest": ["CMD-SHELL", "wget -qO- http://localhost:3000/_health || exit 1"]
           }
         },
         "local-plc-db": {

@@ -173,6 +173,9 @@ export function renderComposeYaml(
         build.args = adapter.source.buildArgs;
       }
       service.build = build;
+      // Clear any inherited entrypoint from base compose — source-built
+      // services use their Dockerfile's ENTRYPOINT
+      service.entrypoint = [];
     } else if (adapter.buildContext) {
       const ctx = adapter.buildContext.startsWith("/")
         ? adapter.buildContext
@@ -191,7 +194,7 @@ export function renderComposeYaml(
     if (adapter.ports) service.ports = adapter.ports;
 
     // Volumes
-    if (adapter.volumes) {
+    if (adapter.volumes && adapter.volumes.length > 0) {
       service.volumes = adapter.volumes;
       for (const vol of adapter.volumes) {
         const volName = vol.split(":")[0];
@@ -284,7 +287,7 @@ export function renderComposeYaml(
       lines.push(`    ports:`);
       for (const p of svc.ports) lines.push(`      - "${p}"`);
     }
-    if (svc.volumes) {
+    if (svc.volumes && svc.volumes.length > 0) {
       lines.push(`    volumes:`);
       for (const v of svc.volumes) lines.push(`      - ${v}`);
     }
@@ -442,12 +445,14 @@ function renderSidecarService(
       build.args = sidecar.source.buildArgs;
     }
     service.build = build;
+    // Clear any inherited entrypoint — source-built sidecars use their Dockerfile's ENTRYPOINT
+    service.entrypoint = [];
   }
 
   if (sidecar.command) service.command = sidecar.command;
   if (sidecar.ports) service.ports = sidecar.ports;
 
-  if (sidecar.volumes) {
+  if (sidecar.volumes && sidecar.volumes.length > 0) {
     service.volumes = sidecar.volumes;
     for (const vol of sidecar.volumes) {
       const volName = vol.split(":")[0];
