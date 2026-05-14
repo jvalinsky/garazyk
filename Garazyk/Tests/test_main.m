@@ -1101,7 +1101,11 @@ int main(int argc, char *argv[]) {
       @"OAuthOriginTests",
       @"PLCServerHeaderTests",
       @"Phase2SecurityIntegrationTests",
-      @"XrpcIdentityResolutionTests"
+      @"XrpcIdentityResolutionTests",
+      @"ThreadgateServiceTests",
+      @"ThreadgateMigrationTests",
+      @"XRPCContractAuditTests",
+      @"ChatGroupLifecycleTests"
     ];
 
     SimpleTestObserver *observer = [[SimpleTestObserver alloc] init];
