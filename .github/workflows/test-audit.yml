@@ -108,46 +108,47 @@ jobs:
           REPORT_PATH: tooling/test-audit-validator/.artifacts/test-audit/${{ matrix.report_name }}
           LOG_PATH: /tmp/test-audit/run-${{ matrix.id }}.log
         run: |
-          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
-          import json
-          import os
-          from pathlib import Path
+          node <<'JS' >> "$GITHUB_STEP_SUMMARY"
+          const fs = require("node:fs");
 
-          mode = os.environ["MODE"]
-          target = os.environ["TARGET"]
-          exit_code = os.environ.get("EXIT_CODE", "unknown")
-          report_path = Path(os.environ["REPORT_PATH"])
-          log_path = Path(os.environ["LOG_PATH"])
+          const mode = process.env.MODE;
+          const target = process.env.TARGET;
+          const exitCode = process.env.EXIT_CODE || "unknown";
+          const reportPath = process.env.REPORT_PATH;
+          const logPath = process.env.LOG_PATH;
 
-          print(f"### Test Audit: {mode}")
-          print("")
-          print(f"- target: `{target}`")
-          print(f"- exit_code: `{exit_code}`")
+          console.log(`### Test Audit: ${mode}`);
+          console.log("");
+          console.log(`- target: \`${target}\``);
+          console.log(`- exit_code: \`${exitCode}\``);
 
-          if report_path.exists():
-            data = json.loads(report_path.read_text())
-            stats = data.get("statistics", {})
-            sev = stats.get("issues_by_severity", {})
-            meta = data.get("metadata", {})
-            errors = data.get("errors", [])
-            print(f"- findings: `{stats.get('issues_found', 0)}`")
-            print(f"- critical: `{sev.get('critical', 0)}`")
-            print(f"- high: `{sev.get('high', 0)}`")
-            print(f"- parser_mode: `{meta.get('parser_mode', 'n/a')}`")
-            print(f"- clang_attempted_count: `{meta.get('clang_attempted_count', 0)}`")
-            print(f"- clang_success_count: `{meta.get('clang_success_count', 0)}`")
-            print(f"- clang_fallback_count: `{meta.get('clang_fallback_count', 0)}`")
-            print(f"- parser_errors: `{len(errors)}`")
-          else:
-            print("- report: missing")
+          if (reportPath && fs.existsSync(reportPath)) {
+            const data = JSON.parse(fs.readFileSync(reportPath, "utf8"));
+            const stats = data.statistics || {};
+            const sev = stats.issues_by_severity || {};
+            const meta = data.metadata || {};
+            const errors = data.errors || [];
+            console.log(`- findings: \`${stats.issues_found || 0}\``);
+            console.log(`- critical: \`${sev.critical || 0}\``);
+            console.log(`- high: \`${sev.high || 0}\``);
+            console.log(`- parser_mode: \`${meta.parser_mode || "n/a"}\``);
+            console.log(`- clang_attempted_count: \`${meta.clang_attempted_count || 0}\``);
+            console.log(`- clang_success_count: \`${meta.clang_success_count || 0}\``);
+            console.log(`- clang_fallback_count: \`${meta.clang_fallback_count || 0}\``);
+            console.log(`- parser_errors: \`${errors.length}\``);
+          } else {
+            console.log("- report: missing");
+          }
 
-          if log_path.exists():
-            print("")
-            print("<details><summary>gate log tail</summary>")
-            print("")
-            print("```text")
-            for line in log_path.read_text().splitlines()[-40:]:
-              print(line)
-            print("```")
-            print("</details>")
-          PY
+          if (logPath && fs.existsSync(logPath)) {
+            console.log("");
+            console.log("<details><summary>gate log tail</summary>");
+            console.log("");
+            console.log("```text");
+            for (const line of fs.readFileSync(logPath, "utf8").split(/\r?\n/).slice(-40)) {
+              console.log(line);
+            }
+            console.log("```");
+            console.log("</details>");
+          }
+          JS
