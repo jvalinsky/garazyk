@@ -4,6 +4,7 @@ import { bold, brightBlue, green, red, yellow } from "@std/fmt/colors";
 import { startLocalNetwork, stopLocalNetwork } from "./lib/deno/docker.ts";
 import { collectDiagnostics, createRunContext } from "./lib/deno/diagnostics.ts";
 import { resetCharacters, SERVICE_URLS } from "./lib/deno/config.ts";
+import { BrowserFlow, resolveTopology, WEB_CLIENT_PRESETS } from "./lib/deno/topology.ts";
 import { DurationCache, ProgressBar } from "./lib/deno/progress.ts";
 import { ScenarioResult } from "./lib/deno/runner.ts";
 
@@ -22,6 +23,9 @@ interface RunnerArgs {
   keepRunning: boolean;
   collectDiagnostics: boolean;
   timeout: number;
+  clientFlow: BrowserFlow;
+  webClient?: string;
+  allowHybridNetwork: boolean;
   runId?: string;
   diagnosticsDir?: string;
   reportsDir?: string;
@@ -32,9 +36,15 @@ interface ScenarioInfo {
   name: string;
   path: string;
   needsPds2: boolean;
+  browserFlows: BrowserFlow[];
 }
 
 const NEEDS_PDS2 = new Set(["05", "12", "35"]);
+const BROWSER_FLOW_SCENARIOS: Record<string, BrowserFlow[]> = {
+  "11": ["smoke", "login"],
+  "13": ["login"],
+  "59": ["smoke", "login", "deep"],
+};
 
 function usage(): never {
   console.log(`Usage: scripts/run_scenarios.ts [options] [scenario ids]
@@ -52,6 +62,9 @@ Options:
   --diagnostics-dir DIR   Write diagnostics to DIR
   --reports-dir DIR       Write scenario JSON reports to DIR
   --collect-diagnostics   Capture diagnostics for the current run and exit
+  --web-client PRESET     Add a web-client service (${Object.keys(WEB_CLIENT_PRESETS).join("|")})
+  --client-flow FLOW      Run browser flow scenarios: smoke, login, deep (default: none)
+  --allow-hybrid-network  Permit browser clients to call public ATProto hosts
   --keep-running          Leave services running after setup or execution
   --timeout SECONDS       Per-scenario timeout (default: 120)
   --no-json               Do not write JSON reports
@@ -75,6 +88,8 @@ function parseRunnerArgs(argv: string[]): RunnerArgs {
     keepRunning: false,
     collectDiagnostics: false,
     timeout: 120,
+    clientFlow: "none",
+    allowHybridNetwork: false,
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -121,10 +136,15 @@ function parseRunnerArgs(argv: string[]): RunnerArgs {
       case "--collect-diagnostics":
         args.collectDiagnostics = true;
         break;
+      case "--allow-hybrid-network":
+        args.allowHybridNetwork = true;
+        break;
       case "--run-id":
       case "--diagnostics-dir":
       case "--reports-dir":
-      case "--timeout": {
+      case "--timeout":
+      case "--web-client":
+      case "--client-flow": {
         const value = argv[++i];
         if (!value) {
           console.error(`${arg} requires a value`);
@@ -133,6 +153,21 @@ function parseRunnerArgs(argv: string[]): RunnerArgs {
         if (arg === "--run-id") args.runId = value;
         if (arg === "--diagnostics-dir") args.diagnosticsDir = value;
         if (arg === "--reports-dir") args.reportsDir = value;
+        if (arg === "--web-client") {
+          args.webClient = value;
+          if (!WEB_CLIENT_PRESETS[value]) {
+            console.error(`Unknown web client preset: ${value}`);
+            console.error(`Available: ${Object.keys(WEB_CLIENT_PRESETS).join(", ")}`);
+            Deno.exit(2);
+          }
+        }
+        if (arg === "--client-flow") {
+          if (!["none", "smoke", "login", "deep"].includes(value)) {
+            console.error("--client-flow must be one of: none, smoke, login, deep");
+            Deno.exit(2);
+          }
+          args.clientFlow = value as BrowserFlow;
+        }
         if (arg === "--timeout") {
           const parsed = Number.parseInt(value, 10);
           if (!Number.isFinite(parsed) || parsed <= 0) {
@@ -170,6 +205,7 @@ async function discoverScenarios(scenarioDir: string): Promise<ScenarioInfo[]> {
       name: match[2].replace(/_/g, " "),
       path: join(scenarioDir, entry.name),
       needsPds2: NEEDS_PDS2.has(id),
+      browserFlows: BROWSER_FLOW_SCENARIOS[id] || [],
     });
   }
   scenarios.sort((a, b) => Number(a.id) - Number(b.id));
@@ -186,6 +222,10 @@ async function discoverScenarios(scenarioDir: string): Promise<ScenarioInfo[]> {
 }
 
 function selectScenarios(all: ScenarioInfo[], args: RunnerArgs): ScenarioInfo[] {
+  if (args.clientFlow !== "none" && args.scenarioIds.length === 0) {
+    return all.filter((scenario) => scenario.browserFlows.includes(args.clientFlow));
+  }
+
   if (args.scenarioIds.length === 0) {
     return all.filter((scenario) => !scenario.needsPds2 || args.pds2);
   }
@@ -223,9 +263,17 @@ async function withTimeout<T>(
 async function runScenario(
   scenario: ScenarioInfo,
   timeoutSeconds: number,
+  args: RunnerArgs,
 ): Promise<ScenarioResult> {
   resetCharacters();
   try {
+    Deno.env.set("ATPROTO_CLIENT_FLOW", args.clientFlow);
+    Deno.env.set("ATPROTO_ALLOW_HYBRID_NETWORK", args.allowHybridNetwork ? "1" : "0");
+    Deno.env.set(
+      "ATPROTO_BLOCKED_PUBLIC_HOSTS",
+      args.allowHybridNetwork ? "" : "bsky.app,api.bsky.app,bsky.network,plc.directory",
+    );
+    if (args.webClient) Deno.env.set("ATPROTO_WEB_CLIENT", args.webClient);
     const module = await import(`file://${scenario.path}?run=${Date.now()}`);
     if (typeof module.run !== "function") {
       const result = new ScenarioResult(scenario.name);
@@ -278,6 +326,7 @@ async function main() {
 
   const context = await createRunContext(args.runId, args.diagnosticsDir);
   const reportsDir = args.reportsDir || context.reportsDir;
+  const topology = resolveTopology(args.webClient);
 
   if (args.collectDiagnostics) {
     await collectDiagnostics(context);
@@ -316,6 +365,9 @@ async function main() {
       keepRunning: args.keepRunning,
       runId: context.runId,
       diagnosticsDir: context.diagnosticsDir,
+      webClient: args.webClient,
+      clientFlow: args.clientFlow,
+      allowHybridNetwork: args.allowHybridNetwork,
     });
     networkStarted = true;
     console.log(`Run directory: ${context.runDir}`);
@@ -340,6 +392,9 @@ async function main() {
         useBinary: args.binary,
         runId: context.runId,
         diagnosticsDir: context.diagnosticsDir,
+        webClient: args.webClient,
+        clientFlow: args.clientFlow,
+        allowHybridNetwork: args.allowHybridNetwork,
       });
       networkStarted = true;
     }
@@ -352,13 +407,16 @@ async function main() {
     for (let i = 0; i < selected.length; i++) {
       const scenario = selected[i];
       progress.start(`${scenario.id} - ${scenario.name}`);
-      const result = await runScenario(scenario, args.timeout);
+      const result = await runScenario(scenario, args.timeout, args);
       result.metadata = {
         ...result.metadata,
         run_id: context.runId,
         run_dir: context.runDir,
         diagnostics_dir: context.diagnosticsDir,
-        service_urls: SERVICE_URLS,
+        service_urls: { ...SERVICE_URLS, ...topology.serviceUrls },
+        web_client: topology.webClient || null,
+        client_flow: args.clientFlow,
+        allow_hybrid_network: args.allowHybridNetwork,
         scenario_id: scenario.id,
         binary_mode: args.binary,
         pds2: withPds2,
@@ -422,6 +480,9 @@ async function main() {
           scenario_ids: selected.map((scenario) => scenario.id),
           binary_mode: args.binary,
           pds2: withPds2,
+          web_client: topology.webClient || null,
+          client_flow: args.clientFlow,
+          service_urls: { ...SERVICE_URLS, ...topology.serviceUrls },
           report_paths: reportPaths,
           summary: {
             passed: totalPassed,
