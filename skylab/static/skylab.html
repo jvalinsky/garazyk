@@ -269,7 +269,7 @@
         errorEl.style.display = 'none';
         const result = await bridge.login(identifier, password);
         if (!result.ok) {
-            errorEl.textContent = result.data?.message || result.data?.error || 'Login failed';
+            errorEl.textContent = result.data?.message || result.data?.detail || result.data?.error || 'Login failed';
             errorEl.style.display = 'block';
         } else {
             loginOverlay.style.display = 'none';
