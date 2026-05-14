@@ -281,6 +281,7 @@ static AppViewRuntime *_sharedRuntime = nil;
     // Initialize video URI builder (for constructing HLS playlist/thumbnail URLs)
     if (config.videoServiceURL.length > 0) {
         _videoUriBuilder = [AppViewVideoUriBuilder builderWithVideoServiceURL:config.videoServiceURL];
+        _feedService.videoUriBuilder = _videoUriBuilder;
     }
 
     _hookRegistry = [[AppViewIndexHookRegistry alloc] initWithDatabase:_database];
