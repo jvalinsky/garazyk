@@ -227,7 +227,7 @@ class NetworkManager {
         clearTimeout(id);
 
         const healthy = resp.ok;
-        if (healthy && (s.status === "stopped" || s.status === "error" || s.status === "starting")) {
+        if (healthy && (s.status === "error" || s.status === "starting")) {
           this.updateStatus(name, "running");
         }
         
