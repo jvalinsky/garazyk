@@ -3,10 +3,11 @@ import { fromFileUrl, join } from "@std/path";
 import { bold, brightBlue, green, red, yellow } from "@std/fmt/colors";
 import { startLocalNetwork, stopLocalNetwork } from "./lib/deno/docker.ts";
 import { collectDiagnostics, createRunContext } from "./lib/deno/diagnostics.ts";
-import { resetCharacters, SERVICE_URLS } from "./lib/deno/config.ts";
+import { resetCharacters, SERVICE_URLS, TOPOLOGY_CAPABILITIES } from "./lib/deno/config.ts";
 import { BrowserFlow, resolveTopology, WEB_CLIENT_PRESETS } from "./lib/deno/topology.ts";
 import { DurationCache, ProgressBar } from "./lib/deno/progress.ts";
 import { ScenarioResult } from "./lib/deno/runner.ts";
+import { runScenarioInDocker } from "./lib/deno/docker_runner.ts";
 
 interface RunnerArgs {
   scenarioIds: string[];
@@ -29,6 +30,8 @@ interface RunnerArgs {
   runId?: string;
   diagnosticsDir?: string;
   reportsDir?: string;
+  topology?: string;
+  runner: "host" | "docker";
 }
 
 interface ScenarioInfo {
@@ -37,6 +40,7 @@ interface ScenarioInfo {
   path: string;
   needsPds2: boolean;
   browserFlows: BrowserFlow[];
+  requiredCapabilities: string[];
 }
 
 const NEEDS_PDS2 = new Set(["05", "12", "35"]);
@@ -44,6 +48,18 @@ const BROWSER_FLOW_SCENARIOS: Record<string, BrowserFlow[]> = {
   "11": ["smoke", "login"],
   "13": ["login"],
   "59": ["smoke", "login", "deep"],
+};
+
+/** Capabilities required by each scenario. Scenarios not listed require no special capabilities. */
+const SCENARIO_CAPABILITIES: Record<string, string[]> = {
+  "01": ["didResolution"],
+  "05": ["didResolution", "subscribeRepos", "requestCrawl", "backfill"],
+  "09": ["subscribeRepos", "requestCrawl", "backfill"],
+  "10": ["backfill", "subscribeRepos"],
+  "12": ["didResolution", "operationLog", "handleRotation", "quotaEnforcement"],
+  "32": ["didResolution", "handleRotation", "quotaEnforcement"],
+  "35": ["didResolution"],
+  "42": ["didResolution"],
 };
 
 function usage(): never {
@@ -65,6 +81,8 @@ Options:
   --web-client PRESET     Add a web-client service (${Object.keys(WEB_CLIENT_PRESETS).join("|")})
   --client-flow FLOW      Run browser flow scenarios: smoke, login, deep (default: none)
   --allow-hybrid-network  Permit browser clients to call public ATProto hosts
+  --topology PRESET       Use a topology preset from scripts/scenarios/topologies/
+  --runner MODE           Scenario runner: host (default) or docker
   --keep-running          Leave services running after setup or execution
   --timeout SECONDS       Per-scenario timeout (default: 120)
   --no-json               Do not write JSON reports
@@ -90,6 +108,7 @@ function parseRunnerArgs(argv: string[]): RunnerArgs {
     timeout: 120,
     clientFlow: "none",
     allowHybridNetwork: false,
+    runner: "host",
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -139,6 +158,8 @@ function parseRunnerArgs(argv: string[]): RunnerArgs {
       case "--allow-hybrid-network":
         args.allowHybridNetwork = true;
         break;
+      case "--topology":
+      case "--runner":
       case "--run-id":
       case "--diagnostics-dir":
       case "--reports-dir":
@@ -153,6 +174,14 @@ function parseRunnerArgs(argv: string[]): RunnerArgs {
         if (arg === "--run-id") args.runId = value;
         if (arg === "--diagnostics-dir") args.diagnosticsDir = value;
         if (arg === "--reports-dir") args.reportsDir = value;
+        if (arg === "--topology") args.topology = value;
+        if (arg === "--runner") {
+          if (!["host", "docker"].includes(value)) {
+            console.error("--runner must be one of: host, docker");
+            Deno.exit(2);
+          }
+          args.runner = value as "host" | "docker";
+        }
         if (arg === "--web-client") {
           args.webClient = value;
           if (!WEB_CLIENT_PRESETS[value]) {
@@ -206,6 +235,7 @@ async function discoverScenarios(scenarioDir: string): Promise<ScenarioInfo[]> {
       path: join(scenarioDir, entry.name),
       needsPds2: NEEDS_PDS2.has(id),
       browserFlows: BROWSER_FLOW_SCENARIOS[id] || [],
+      requiredCapabilities: SCENARIO_CAPABILITIES[id] || [],
     });
   }
   scenarios.sort((a, b) => Number(a.id) - Number(b.id));
@@ -221,13 +251,20 @@ async function discoverScenarios(scenarioDir: string): Promise<ScenarioInfo[]> {
   return scenarios;
 }
 
-function selectScenarios(all: ScenarioInfo[], args: RunnerArgs): ScenarioInfo[] {
+function selectScenarios(all: ScenarioInfo[], args: RunnerArgs, capabilities: Set<string>): ScenarioInfo[] {
   if (args.clientFlow !== "none" && args.scenarioIds.length === 0) {
     return all.filter((scenario) => scenario.browserFlows.includes(args.clientFlow));
   }
 
   if (args.scenarioIds.length === 0) {
-    return all.filter((scenario) => !scenario.needsPds2 || args.pds2);
+    return all.filter((scenario) => {
+      if (scenario.needsPds2 && !args.pds2) return false;
+      if (scenario.requiredCapabilities.length > 0 && capabilities.size > 0) {
+        const missing = scenario.requiredCapabilities.filter((cap) => !capabilities.has(cap));
+        if (missing.length > 0) return false;
+      }
+      return true;
+    });
   }
 
   const requested = new Set(args.scenarioIds.map(normalizeScenarioId));
@@ -264,7 +301,52 @@ async function runScenario(
   scenario: ScenarioInfo,
   timeoutSeconds: number,
   args: RunnerArgs,
+  topology: ReturnType<typeof resolveTopology>,
+  repoRoot: string,
 ): Promise<ScenarioResult> {
+  // Docker runner mode: execute the scenario inside a container
+  if (args.runner === "docker") {
+    try {
+      const exitCode = await runScenarioInDocker({
+        repoRoot,
+        composeProject: "garazyk-e2e",
+        internalUrls: topology.preset
+          ? Object.fromEntries(
+              Object.entries(topology.serviceUrls).map(([k, v]) => [k, v.replace("localhost", "local-" + (k === "pds2" ? "pds2" : k))]),
+            )
+          : topology.serviceUrls,
+        capabilities: topology.capabilities,
+        scenarioPath: scenario.path,
+        timeoutSeconds,
+        env: {
+          ATPROTO_CLIENT_FLOW: args.clientFlow,
+          ATPROTO_ALLOW_HYBRID_NETWORK: args.allowHybridNetwork ? "1" : "0",
+          ...(args.webClient ? { ATPROTO_WEB_CLIENT: args.webClient } : {}),
+          ...(args.topology ? { ATPROTO_TOPOLOGY: args.topology } : {}),
+        },
+      });
+      const result = new ScenarioResult(scenario.name);
+      result.start();
+      if (exitCode === 0) {
+        result.stepPassed(`Scenario ${scenario.id} (docker)`, `exit=${exitCode}`);
+      } else {
+        result.stepFailed(`Scenario ${scenario.id} (docker)`, `exit=${exitCode}`);
+      }
+      result.finish();
+      return result;
+    } catch (exc) {
+      const result = new ScenarioResult(scenario.name);
+      result.start();
+      result.stepFailed(
+        `Scenario ${scenario.id} docker runner`,
+        exc instanceof Error ? exc.message : String(exc),
+      );
+      result.finish();
+      return result;
+    }
+  }
+
+  // Host runner mode (default)
   resetCharacters();
   try {
     Deno.env.set("ATPROTO_CLIENT_FLOW", args.clientFlow);
@@ -274,6 +356,7 @@ async function runScenario(
       args.allowHybridNetwork ? "" : "bsky.app,api.bsky.app,bsky.network,plc.directory",
     );
     if (args.webClient) Deno.env.set("ATPROTO_WEB_CLIENT", args.webClient);
+    if (args.topology) Deno.env.set("ATPROTO_TOPOLOGY", args.topology);
     const module = await import(`file://${scenario.path}?run=${Date.now()}`);
     if (typeof module.run !== "function") {
       const result = new ScenarioResult(scenario.name);
@@ -311,13 +394,16 @@ async function main() {
 
   if (args.list) {
     console.log(bold("\nAvailable Scenarios:\n"));
-    console.log(`  ${"ID".padEnd(4)} ${"PDS2".padEnd(5)} Description`);
-    console.log(`  ${"----"} ${"-----"} ${"-----------"}`);
+    console.log(`  ${"ID".padEnd(4)} ${"PDS2".padEnd(5)} ${"Caps".padEnd(12)} Description`);
+    console.log(`  ${"----"} ${"-----"} ${"------------".padEnd(12)} ${"-----------"}`);
     for (const scenario of scenarios) {
+      const caps = scenario.requiredCapabilities.length > 0
+        ? scenario.requiredCapabilities.join(",")
+        : "";
       console.log(
         `  ${brightBlue(scenario.id).padEnd(13)} ${
           (scenario.needsPds2 ? "yes" : "").padEnd(5)
-        } ${scenario.name}`,
+        } ${caps.padEnd(12)} ${scenario.name}`,
       );
     }
     console.log("");
@@ -326,7 +412,12 @@ async function main() {
 
   const context = await createRunContext(args.runId, args.diagnosticsDir);
   const reportsDir = args.reportsDir || context.reportsDir;
-  const topology = resolveTopology(args.webClient);
+  const topology = resolveTopology(args.webClient, args.topology);
+
+  // Set topology env var so scenarios pick up the right SERVICE_URLS
+  if (args.topology) {
+    Deno.env.set("ATPROTO_TOPOLOGY", args.topology);
+  }
 
   if (args.collectDiagnostics) {
     await collectDiagnostics(context);
@@ -343,7 +434,7 @@ async function main() {
     return;
   }
 
-  const selected = selectScenarios(scenarios, args);
+  const selected = selectScenarios(scenarios, args, topology.capabilities);
   const withPds2 = args.pds2 || selected.some((scenario) => scenario.needsPds2);
   let networkStarted = false;
 
@@ -368,6 +459,7 @@ async function main() {
       webClient: args.webClient,
       clientFlow: args.clientFlow,
       allowHybridNetwork: args.allowHybridNetwork,
+      topology: args.topology,
     });
     networkStarted = true;
     console.log(`Run directory: ${context.runDir}`);
@@ -395,6 +487,7 @@ async function main() {
         webClient: args.webClient,
         clientFlow: args.clientFlow,
         allowHybridNetwork: args.allowHybridNetwork,
+        topology: args.topology,
       });
       networkStarted = true;
     }
@@ -407,7 +500,7 @@ async function main() {
     for (let i = 0; i < selected.length; i++) {
       const scenario = selected[i];
       progress.start(`${scenario.id} - ${scenario.name}`);
-      const result = await runScenario(scenario, args.timeout, args);
+      const result = await runScenario(scenario, args.timeout, args, topology, repoRoot);
       result.metadata = {
         ...result.metadata,
         run_id: context.runId,
@@ -420,6 +513,8 @@ async function main() {
         scenario_id: scenario.id,
         binary_mode: args.binary,
         pds2: withPds2,
+        topology: args.topology || null,
+        runner: args.runner,
       };
 
       Deno.stdout.writeSync(new TextEncoder().encode("\r" + " ".repeat(120) + "\r"));

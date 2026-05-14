@@ -1,0 +1,85 @@
+{
+  "name": "parakeet",
+  "description": "Parakeet AppServer (Rust, parakeet.at) with Garazyk PDS, Relay, and PLC. Full Bluesky AppView implementation using Axum+Diesel, with consumer (firehose indexer), parakeet-index (RocksDB aggregation), PostgreSQL 16, and Redis. Note: Docker images may not build currently — Nix is the recommended deployment method.",
+  "roles": {
+    "plc": { "inherit": "garazyk-default" },
+    "pds": { "inherit": "garazyk-default" },
+    "pds2": { "inherit": "garazyk-default" },
+    "relay": { "inherit": "garazyk-default" },
+    "appview": {
+      "name": "parakeet",
+      "image": "registry.gitlab.com/parakeet-social/parakeet/parakeet-appview:main",
+      "env": {
+        "PK_SERVER__PORT": "3200",
+        "PK_SERVER__BIND_ADDRESS": "0.0.0.0",
+        "PK_DATABASE_URL": "postgres://parakeet:parakeet@local-parakeet-db:5432/parakeet",
+        "PK_INDEX_URI": "local-parakeet-index:6001",
+        "PK_REDIS_URI": "redis://local-parakeet-redis:6379",
+        "PK_PLC_DIRECTORY": "http://local-plc:2582",
+        "PK_MIGRATE": "true",
+        "PK_CDN__BASE": "https://cdn.bsky.app",
+        "PK_CDN__VIDEO_BASE": "https://video.bsky.app"
+      },
+      "ports": ["3200:3200"],
+      "volumes": [],
+      "healthCheck": {
+        "path": "/xrpc/app.bsky.actor.getProfile"
+      },
+      "capabilities": [
+        "getTimeline", "getProfile", "getFeed",
+        "posts", "likes", "reposts", "follows", "blocks",
+        "labels", "lists", "mutes", "notifications", "feeds"
+      ],
+      "dependsOn": ["local-parakeet-db", "local-parakeet-redis", "local-parakeet-index", "local-parakeet-consumer"],
+      "sidecars": {
+        "local-parakeet-consumer": {
+          "image": "registry.gitlab.com/parakeet-social/parakeet/parakeet-consumer:main",
+          "env": {
+            "PKC_DATABASE__URL": "postgres://parakeet:parakeet@local-parakeet-db:5432/parakeet",
+            "PKC_INDEX_URI": "local-parakeet-index:6001",
+            "PKC_REDIS_URI": "redis://local-parakeet-redis:6379",
+            "PKC_PLC_DIRECTORY": "http://local-plc:2582",
+            "PKC_RESUME_PATH": "/data/consumer-cursor.json",
+            "PKC_INDEXER__RELAY_SOURCE": "ws://local-relay:2584/xrpc/com.atproto.sync.subscribeRepos",
+            "PKC_INDEXER__HISTORY_MODE": "realtime",
+            "PKC_INDEXER__INDEXER_WORKERS": "4",
+            "PKC_INDEXER__SKIP_HANDLE_VALIDATION": "true",
+            "PKC_UA_CONTACT": "garazyk-scenario-test"
+          },
+          "volumes": ["parakeet_consumer_data:/data"],
+          "healthCheck": { "path": null }
+        },
+        "local-parakeet-index": {
+          "image": "registry.gitlab.com/parakeet-social/parakeet/parakeet-index:main",
+          "env": {
+            "PKI_SERVER__BIND_ADDRESS": "0.0.0.0",
+            "PKI_SERVER__PORT": "6001",
+            "PKI_INDEX_DB_PATH": "/data/index-db"
+          },
+          "volumes": ["parakeet_index_data:/data"],
+          "healthCheck": { "path": null }
+        },
+        "local-parakeet-db": {
+          "image": "postgres:16-alpine",
+          "env": {
+            "POSTGRES_USER": "parakeet",
+            "POSTGRES_PASSWORD": "parakeet",
+            "POSTGRES_DB": "parakeet"
+          },
+          "volumes": ["parakeet_pg_data:/var/lib/postgresql/data"],
+          "healthCheck": {
+            "path": null,
+            "customTest": ["CMD-SHELL", "pg_isready -U parakeet"]
+          }
+        },
+        "local-parakeet-redis": {
+          "image": "redis:7-alpine",
+          "healthCheck": {
+            "path": null,
+            "customTest": ["CMD", "redis-cli", "ping"]
+          }
+        }
+      }
+    }
+  }
+}

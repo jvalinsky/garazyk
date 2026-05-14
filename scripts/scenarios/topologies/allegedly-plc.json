@@ -1,0 +1,68 @@
+{
+  "name": "allegedly-plc",
+  "description": "Allegedly PLC mirror/wrapper (Rust, microcosm.blue) wrapping the reference PLC server. Provides TLS termination, rate limiting, and write-forwarding. Tests PLC interop through the Allegedly mirror proxy with Garazyk PDS, Relay, and AppView.",
+  "roles": {
+    "plc": {
+      "name": "allegedly-plc",
+      "image": "ghcr.io/at-microcosm/allegedly:latest",
+      "command": [
+        "mirror",
+        "--upstream", "https://plc.directory",
+        "--wrap", "http://local-ref-plc:3000",
+        "--bind", "0.0.0.0:2582"
+      ],
+      "env": {
+        "ALLEGEDLY_WRAP_PG": "postgres://plc:plc@local-plc-db:5432/plc",
+        "RUST_LOG": "allegedly=debug,info"
+      },
+      "ports": ["2582:2582"],
+      "volumes": ["allegedly_plc_data:/data"],
+      "healthCheck": {
+        "path": "/_health"
+      },
+      "capabilities": ["createAccount", "didResolution", "operationLog", "handleRotation", "quotaEnforcement"],
+      "dependsOn": ["local-ref-plc", "local-plc-db"],
+      "sidecars": {
+        "local-ref-plc": {
+          "source": {
+            "repo": "https://github.com/did-method-plc/did-method-plc.git",
+            "ref": "main",
+            "dockerDir": "packages/server"
+          },
+          "command": ["node", "--enable-source-maps", "index.js"],
+          "env": {
+            "PORT": "3000",
+            "NODE_ENV": "production",
+            "DATABASE_URL": "postgres://plc:plc@local-plc-db:5432/plc",
+            "DEBUG_MODE": "1",
+            "LOG_ENABLED": "true",
+            "LOG_LEVEL": "debug"
+          },
+          "volumes": [],
+          "healthCheck": {
+            "path": "/_health"
+          }
+        },
+        "local-plc-db": {
+          "image": "postgres:16-alpine",
+          "env": {
+            "POSTGRES_USER": "plc",
+            "POSTGRES_PASSWORD": "plc",
+            "POSTGRES_DB": "plc"
+          },
+          "volumes": ["allegedly_plc_pg_data:/var/lib/postgresql/data"],
+          "healthCheck": {
+            "path": null,
+            "customTest": ["CMD-SHELL", "pg_isready -U plc"]
+          }
+        }
+      }
+    },
+    "pds": { "inherit": "garazyk-default" },
+    "pds2": { "inherit": "garazyk-default" },
+    "relay": { "inherit": "garazyk-default" },
+    "appview": { "inherit": "garazyk-default" },
+    "chat": { "inherit": "garazyk-default" },
+    "video": { "inherit": "garazyk-default" }
+  }
+}

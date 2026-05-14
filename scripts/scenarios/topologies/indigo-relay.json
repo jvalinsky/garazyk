@@ -1,0 +1,28 @@
+{
+  "name": "indigo-relay",
+  "description": "Garazyk PDS with indigo Relay (Go). Tests relay interop with a different relay implementation.",
+  "roles": {
+    "plc": { "inherit": "garazyk-default" },
+    "pds": { "inherit": "garazyk-default" },
+    "relay": {
+      "name": "indigo-relay",
+      "source": {
+        "repo": "https://github.com/bluesky-social/indigo.git",
+        "ref": "main",
+        "dockerfile": "cmd/relay/Dockerfile"
+      },
+      "command": ["run", "--listen-addr", "0.0.0.0:2584", "--upstream", "ws://local-pds:2583/xrpc/com.atproto.sync.subscribeRepos"],
+      "env": {
+        "RELAY_DIDPLC_URL": "http://local-plc:2582"
+      },
+      "ports": ["2584:2584"],
+      "volumes": ["indigo_relay_data:/data"],
+      "healthCheck": {
+        "path": "/xrpc/com.atproto.sync.subscribeRepos"
+      },
+      "capabilities": ["subscribeRepos", "requestCrawl", "healthCheck"],
+      "dependsOn": ["local-pds"]
+    },
+    "appview": { "inherit": "garazyk-default" }
+  }
+}
