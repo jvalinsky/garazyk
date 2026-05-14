@@ -1,6 +1,6 @@
 import { join, resolve } from "@std/path";
 import { copy, exists } from "@std/fs";
-import { SERVICE_URLS } from "./config.ts";
+import { loadTopologyManifest } from "./topology.ts";
 
 const BASE_DIR = "/tmp/garazyk-atproto-e2e";
 
@@ -128,7 +128,18 @@ export async function collectDiagnostics(
 ): Promise<string> {
   const outputDir = context.diagnosticsDir;
   await Deno.mkdir(outputDir, { recursive: true });
-  const urls = { ...SERVICE_URLS, ...options.serviceUrls };
+  const manifest = loadTopologyManifest();
+  const defaultUrls: Record<string, string> = {
+    plc: Deno.env.get("PLC_URL") || "http://localhost:2582",
+    pds: Deno.env.get("PDS_URL") || "http://localhost:2583",
+    pds2: Deno.env.get("PDS2_URL") || "http://localhost:2587",
+    relay: Deno.env.get("RELAY_URL") || "http://localhost:2584",
+    appview: Deno.env.get("APPVIEW_URL") || "http://localhost:3200",
+    chat: Deno.env.get("CHAT_URL") || "http://localhost:2585",
+    video: Deno.env.get("VIDEO_URL") || "http://localhost:2586",
+    ui: Deno.env.get("GARAZYK_UI_URL") || "http://localhost:2590",
+  };
+  const urls = { ...defaultUrls, ...(manifest?.serviceUrls || {}), ...options.serviceUrls };
   const appviewSecret = options.appviewAdminSecret || Deno.env.get("APPVIEW_ADMIN_SECRET") ||
     "localdevadmin";
   const label = options.label || "atproto-e2e";
@@ -172,61 +183,53 @@ export async function collectDiagnostics(
 
   const authHeader = { "Authorization": `Bearer ${appviewSecret}` };
 
-  await Promise.all([
-    collectHttpEndpoint(outputDir, "plc-health", `${urls.plc}/_health`),
-    collectHttpEndpoint(
-      outputDir,
-      "pds-describe-server",
-      `${urls.pds}/xrpc/com.atproto.server.describeServer`,
-    ),
-    collectHttpEndpoint(outputDir, "relay-health", `${urls.relay}/api/relay/health`),
-    collectHttpEndpoint(outputDir, "relay-upstreams", `${urls.relay}/api/relay/upstreams`),
-    collectHttpEndpoint(
-      outputDir,
-      "appview-backfill-status",
-      `${urls.appview}/admin/backfill/status`,
-      authHeader,
-    ),
-    collectHttpEndpoint(
-      outputDir,
-      "appview-backfill-queue",
-      `${urls.appview}/admin/backfill/queue?limit=10`,
-      authHeader,
-    ),
-    collectHttpEndpoint(
-      outputDir,
-      "appview-ingest-health",
-      `${urls.appview}/admin/ingest/health`,
-      authHeader,
-    ),
-    collectHttpEndpoint(
-      outputDir,
-      "appview-metrics-stats",
-      `${urls.appview}/admin/appview/metrics/stats`,
-      authHeader,
-    ),
-    collectHttpEndpoint(
-      outputDir,
-      "appview-lexicons",
-      `${urls.appview}/admin/lexicons`,
-      authHeader,
-    ),
-    collectHttpEndpoint(outputDir, "appview-hooks", `${urls.appview}/admin/hooks`, authHeader),
-    collectHttpEndpoint(
-      outputDir,
-      "appview-endpoints",
-      `${urls.appview}/admin/endpoints`,
-      authHeader,
-    ),
-    collectHttpEndpoint(
-      outputDir,
-      "pds2-describe-server",
-      `${urls.pds2}/xrpc/com.atproto.server.describeServer`,
-    ),
-    collectHttpEndpoint(outputDir, "chat-health", `${urls.chat}/_health`),
-    collectHttpEndpoint(outputDir, "video-health", `${urls.video}/_health`),
-    collectHttpEndpoint(outputDir, "ui-admin", `${urls.ui}/admin`),
-  ]);
+  const probes = manifest?.diagnostics?.length
+    ? manifest.diagnostics
+    : [
+      { name: "plc-health", url: `${urls.plc}/_health`, headers: {} },
+      {
+        name: "pds-describe-server",
+        url: `${urls.pds}/xrpc/com.atproto.server.describeServer`,
+        headers: {},
+      },
+      { name: "relay-health", url: `${urls.relay}/api/relay/health`, headers: {} },
+      { name: "relay-upstreams", url: `${urls.relay}/api/relay/upstreams`, headers: {} },
+      {
+        name: "appview-backfill-status",
+        url: `${urls.appview}/admin/backfill/status`,
+        headers: authHeader,
+      },
+      {
+        name: "appview-backfill-queue",
+        url: `${urls.appview}/admin/backfill/queue?limit=10`,
+        headers: authHeader,
+      },
+      {
+        name: "appview-ingest-health",
+        url: `${urls.appview}/admin/ingest/health`,
+        headers: authHeader,
+      },
+      {
+        name: "appview-metrics-stats",
+        url: `${urls.appview}/admin/appview/metrics/stats`,
+        headers: authHeader,
+      },
+      { name: "appview-lexicons", url: `${urls.appview}/admin/lexicons`, headers: authHeader },
+      { name: "appview-hooks", url: `${urls.appview}/admin/hooks`, headers: authHeader },
+      { name: "appview-endpoints", url: `${urls.appview}/admin/endpoints`, headers: authHeader },
+      {
+        name: "pds2-describe-server",
+        url: `${urls.pds2}/xrpc/com.atproto.server.describeServer`,
+        headers: {},
+      },
+      { name: "chat-health", url: `${urls.chat}/_health`, headers: {} },
+      { name: "video-health", url: `${urls.video}/_health`, headers: {} },
+      { name: "ui-admin", url: `${urls.ui}/admin`, headers: {} },
+    ];
+
+  await Promise.all(
+    probes.map((probe) => collectHttpEndpoint(outputDir, probe.name, probe.url, probe.headers)),
+  );
 
   return outputDir;
 }
