@@ -13,7 +13,8 @@
     "@std/cli": "jsr:@std/cli@1",
     "@std/fmt": "jsr:@std/fmt@1",
     "@std/fs": "jsr:@std/fs@1",
-    "@std/path": "jsr:@std/path@1"
+    "@std/path": "jsr:@std/path@1",
+    "zod": "npm:zod@3.25.76"
   },
   "fmt": {
     "lineWidth": 100
