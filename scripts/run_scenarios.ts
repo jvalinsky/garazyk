@@ -3,8 +3,10 @@ import { fromFileUrl, join } from "@std/path";
 import { bold, brightBlue, green, red, yellow } from "@std/fmt/colors";
 import { startLocalNetwork, stopLocalNetwork } from "./lib/deno/docker.ts";
 import { collectDiagnostics, createRunContext } from "./lib/deno/diagnostics.ts";
-import { resetCharacters, SERVICE_URLS, TOPOLOGY_CAPABILITIES } from "./lib/deno/config.ts";
-import { BrowserFlow, resolveTopology, WEB_CLIENT_PRESETS } from "./lib/deno/topology.ts";
+import { resolveTopology, WEB_CLIENT_PRESETS } from "./lib/deno/topology.ts";
+import type { BrowserFlow, ScenarioRequirement, Topology } from "./lib/deno/topology.ts";
+import { parseScenarioRequirement } from "./lib/deno/topology_schema.ts";
+import { validateRoleCapability } from "./lib/deno/topology_registry.ts";
 import { DurationCache, ProgressBar } from "./lib/deno/progress.ts";
 import { ScenarioResult } from "./lib/deno/runner.ts";
 import { runScenarioInDocker } from "./lib/deno/docker_runner.ts";
@@ -34,32 +36,53 @@ interface RunnerArgs {
   runner: "host" | "docker";
 }
 
-interface ScenarioInfo {
+export interface ScenarioInfo {
   id: string;
   name: string;
   path: string;
   needsPds2: boolean;
   browserFlows: BrowserFlow[];
-  requiredCapabilities: string[];
+  requires: Array<string | ScenarioRequirement>;
+  optional: Array<string | ScenarioRequirement>;
+  timeout?: number;
 }
 
-const NEEDS_PDS2 = new Set(["05", "12", "35"]);
-const BROWSER_FLOW_SCENARIOS: Record<string, BrowserFlow[]> = {
-  "11": ["smoke", "login"],
-  "13": ["login"],
-  "59": ["smoke", "login", "deep"],
-};
+export interface ScenarioManifest {
+  requires?: Array<string | ScenarioRequirement>;
+  optional?: Array<string | ScenarioRequirement>;
+  needsPds2?: boolean;
+  browserFlows?: BrowserFlow[];
+  timeout?: number;
+}
 
-/** Capabilities required by each scenario. Scenarios not listed require no special capabilities. */
-const SCENARIO_CAPABILITIES: Record<string, string[]> = {
-  "01": ["didResolution"],
-  "05": ["didResolution", "subscribeRepos", "requestCrawl", "backfill"],
-  "09": ["subscribeRepos", "requestCrawl", "backfill"],
-  "10": ["backfill", "subscribeRepos"],
-  "12": ["didResolution", "operationLog", "handleRotation", "quotaEnforcement"],
-  "32": ["didResolution", "handleRotation", "quotaEnforcement"],
-  "35": ["didResolution"],
-  "42": ["didResolution"],
+export const SCENARIO_MANIFESTS: Record<string, ScenarioManifest> = {
+  "01": { requires: ["plc:didResolution"] },
+  "05": {
+    needsPds2: true,
+    requires: [
+      "plc:didResolution",
+      "relay:subscribeRepos",
+      "relay:requestCrawl",
+      "appview:backfill",
+    ],
+  },
+  "09": { requires: ["relay:subscribeRepos", "relay:requestCrawl", "appview:backfill"] },
+  "10": { requires: ["appview:backfill", "relay:subscribeRepos"] },
+  "11": { browserFlows: ["smoke", "login"] },
+  "12": {
+    needsPds2: true,
+    requires: [
+      "plc:didResolution",
+      "plc:operationLog",
+      "plc:handleRotation",
+      "plc:quotaEnforcement",
+    ],
+  },
+  "13": { browserFlows: ["login"] },
+  "32": { requires: ["plc:didResolution", "plc:handleRotation", "plc:quotaEnforcement"] },
+  "35": { needsPds2: true, requires: ["plc:didResolution"] },
+  "42": { requires: ["plc:didResolution"] },
+  "59": { browserFlows: ["smoke", "login", "deep"] },
 };
 
 function usage(): never {
@@ -229,13 +252,18 @@ async function discoverScenarios(scenarioDir: string): Promise<ScenarioInfo[]> {
     const match = entry.isFile ? entry.name.match(/^(\d+)_(.+)\.ts$/) : null;
     if (!match) continue;
     const id = match[1];
+    const manifest = SCENARIO_MANIFESTS[id] || {};
+    const requires = normalizeScenarioRequirements(manifest.requires || [], `${id}.requires`);
+    const optional = normalizeScenarioRequirements(manifest.optional || [], `${id}.optional`);
     scenarios.push({
       id,
       name: match[2].replace(/_/g, " "),
       path: join(scenarioDir, entry.name),
-      needsPds2: NEEDS_PDS2.has(id),
-      browserFlows: BROWSER_FLOW_SCENARIOS[id] || [],
-      requiredCapabilities: SCENARIO_CAPABILITIES[id] || [],
+      needsPds2: manifest.needsPds2 || false,
+      browserFlows: manifest.browserFlows || [],
+      requires,
+      optional,
+      timeout: manifest.timeout,
     });
   }
   scenarios.sort((a, b) => Number(a.id) - Number(b.id));
@@ -251,7 +279,44 @@ async function discoverScenarios(scenarioDir: string): Promise<ScenarioInfo[]> {
   return scenarios;
 }
 
-function selectScenarios(all: ScenarioInfo[], args: RunnerArgs, capabilities: Set<string>): ScenarioInfo[] {
+function normalizeScenarioRequirements(
+  values: Array<string | ScenarioRequirement>,
+  label: string,
+): ScenarioRequirement[] {
+  return values.map((value) => {
+    const requirement = parseScenarioRequirement(value);
+    if (requirement.role) {
+      const error = validateRoleCapability(requirement.role, requirement.capability);
+      if (error) {
+        throw new Error(`Invalid scenario requirement ${label}: ${error}`);
+      }
+    }
+    return requirement;
+  });
+}
+
+function formatRequirement(requirement: string | ScenarioRequirement): string {
+  const parsed = typeof requirement === "string"
+    ? parseScenarioRequirement(requirement)
+    : requirement;
+  return parsed.role ? `${parsed.role}:${parsed.capability}` : parsed.capability;
+}
+
+function hasRequirement(topology: Topology, requirement: string | ScenarioRequirement): boolean {
+  const parsed = typeof requirement === "string"
+    ? parseScenarioRequirement(requirement)
+    : requirement;
+  if (parsed.role) {
+    return topology.capabilitiesByRole[parsed.role]?.has(parsed.capability) || false;
+  }
+  return topology.capabilities.has(parsed.capability);
+}
+
+export function selectScenarios(
+  all: ScenarioInfo[],
+  args: Pick<RunnerArgs, "clientFlow" | "scenarioIds" | "pds2">,
+  topology: Topology,
+): ScenarioInfo[] {
   if (args.clientFlow !== "none" && args.scenarioIds.length === 0) {
     return all.filter((scenario) => scenario.browserFlows.includes(args.clientFlow));
   }
@@ -259,8 +324,8 @@ function selectScenarios(all: ScenarioInfo[], args: RunnerArgs, capabilities: Se
   if (args.scenarioIds.length === 0) {
     return all.filter((scenario) => {
       if (scenario.needsPds2 && !args.pds2) return false;
-      if (scenario.requiredCapabilities.length > 0 && capabilities.size > 0) {
-        const missing = scenario.requiredCapabilities.filter((cap) => !capabilities.has(cap));
+      if (scenario.requires.length > 0 && topology.capabilities.size > 0) {
+        const missing = scenario.requires.filter((cap) => !hasRequirement(topology, cap));
         if (missing.length > 0) return false;
       }
       return true;
@@ -274,6 +339,18 @@ function selectScenarios(all: ScenarioInfo[], args: RunnerArgs, capabilities: Se
     const missing = [...requested].filter((id) => !found.has(id));
     console.error(red(`No scenarios found matching: ${missing.join(", ")}`));
     Deno.exit(1);
+  }
+  for (const scenario of selected) {
+    const missing = scenario.requires.filter((cap) => !hasRequirement(topology, cap));
+    if (missing.length > 0) {
+      console.warn(
+        yellow(
+          `Warning: explicit scenario ${scenario.id} is missing requirements: ${
+            missing.map(formatRequirement).join(", ")
+          }`,
+        ),
+      );
+    }
   }
   return selected;
 }
@@ -301,24 +378,27 @@ async function runScenario(
   scenario: ScenarioInfo,
   timeoutSeconds: number,
   args: RunnerArgs,
-  topology: ReturnType<typeof resolveTopology>,
+  topology: Topology,
   repoRoot: string,
+  composeProject: string,
 ): Promise<ScenarioResult> {
   // Docker runner mode: execute the scenario inside a container
   if (args.runner === "docker") {
     try {
       const exitCode = await runScenarioInDocker({
         repoRoot,
-        composeProject: "garazyk-e2e",
-        internalUrls: topology.preset
-          ? Object.fromEntries(
-              Object.entries(topology.serviceUrls).map(([k, v]) => [k, v.replace("localhost", "local-" + (k === "pds2" ? "pds2" : k))]),
-            )
-          : topology.serviceUrls,
+        composeProject,
+        networkName: topology.manifest
+          ? `${composeProject}_${topology.manifest.networkName}`
+          : `${composeProject}_local_net`,
+        internalUrls: topology.internalUrls,
+        dockerRunnerEnv: topology.manifest?.env?.dockerRunner,
         capabilities: topology.capabilities,
         scenarioPath: scenario.path,
         timeoutSeconds,
         env: {
+          ...(topology.manifest?.scenarioEnv || {}),
+          ...(topology.manifest?.env?.scenario || {}),
           ATPROTO_CLIENT_FLOW: args.clientFlow,
           ATPROTO_ALLOW_HYBRID_NETWORK: args.allowHybridNetwork ? "1" : "0",
           ...(args.webClient ? { ATPROTO_WEB_CLIENT: args.webClient } : {}),
@@ -347,7 +427,6 @@ async function runScenario(
   }
 
   // Host runner mode (default)
-  resetCharacters();
   try {
     Deno.env.set("ATPROTO_CLIENT_FLOW", args.clientFlow);
     Deno.env.set("ATPROTO_ALLOW_HYBRID_NETWORK", args.allowHybridNetwork ? "1" : "0");
@@ -357,6 +436,15 @@ async function runScenario(
     );
     if (args.webClient) Deno.env.set("ATPROTO_WEB_CLIENT", args.webClient);
     if (args.topology) Deno.env.set("ATPROTO_TOPOLOGY", args.topology);
+    if (topology.manifest) {
+      const runnerEnv = topology.manifest.env?.hostRunner || topology.manifest.scenarioEnv;
+      const scenarioEnv = topology.manifest.env?.scenario || {};
+      for (const [key, value] of Object.entries({ ...runnerEnv, ...scenarioEnv })) {
+        Deno.env.set(key, value);
+      }
+    }
+    const { resetCharacters } = await import("./lib/deno/config.ts");
+    resetCharacters();
     const module = await import(`file://${scenario.path}?run=${Date.now()}`);
     if (typeof module.run !== "function") {
       const result = new ScenarioResult(scenario.name);
@@ -397,13 +485,13 @@ async function main() {
     console.log(`  ${"ID".padEnd(4)} ${"PDS2".padEnd(5)} ${"Caps".padEnd(12)} Description`);
     console.log(`  ${"----"} ${"-----"} ${"------------".padEnd(12)} ${"-----------"}`);
     for (const scenario of scenarios) {
-      const caps = scenario.requiredCapabilities.length > 0
-        ? scenario.requiredCapabilities.join(",")
+      const caps = scenario.requires.length > 0
+        ? scenario.requires.map(formatRequirement).join(",")
         : "";
       console.log(
-        `  ${brightBlue(scenario.id).padEnd(13)} ${
-          (scenario.needsPds2 ? "yes" : "").padEnd(5)
-        } ${caps.padEnd(12)} ${scenario.name}`,
+        `  ${brightBlue(scenario.id).padEnd(13)} ${(scenario.needsPds2 ? "yes" : "").padEnd(5)} ${
+          caps.padEnd(12)
+        } ${scenario.name}`,
       );
     }
     console.log("");
@@ -412,7 +500,17 @@ async function main() {
 
   const context = await createRunContext(args.runId, args.diagnosticsDir);
   const reportsDir = args.reportsDir || context.reportsDir;
-  const topology = resolveTopology(args.webClient, args.topology);
+  const topologyManifestPath = args.topology
+    ? join(context.runDir, "topology-manifest.json")
+    : undefined;
+  const existingTopologyManifest = topologyManifestPath &&
+    await pathExists(topologyManifestPath);
+  if (existingTopologyManifest) {
+    Deno.env.set("ATPROTO_TOPOLOGY_MANIFEST", topologyManifestPath);
+  }
+  let topology = resolveTopology(args.webClient, args.topology, {
+    manifestPath: existingTopologyManifest ? topologyManifestPath : undefined,
+  });
 
   // Set topology env var so scenarios pick up the right SERVICE_URLS
   if (args.topology) {
@@ -434,7 +532,7 @@ async function main() {
     return;
   }
 
-  const selected = selectScenarios(scenarios, args, topology.capabilities);
+  const selected = selectScenarios(scenarios, args, topology);
   const withPds2 = args.pds2 || selected.some((scenario) => scenario.needsPds2);
   let networkStarted = false;
 
@@ -490,6 +588,11 @@ async function main() {
         topology: args.topology,
       });
       networkStarted = true;
+      if (topologyManifestPath) Deno.env.set("ATPROTO_TOPOLOGY_MANIFEST", topologyManifestPath);
+      topology = resolveTopology(args.webClient, args.topology, {
+        manifestPath: topologyManifestPath,
+        includePds2: withPds2,
+      });
     }
 
     console.log(bold(`\nRunning ${selected.length} scenario(s)...\n`));
@@ -500,13 +603,20 @@ async function main() {
     for (let i = 0; i < selected.length; i++) {
       const scenario = selected[i];
       progress.start(`${scenario.id} - ${scenario.name}`);
-      const result = await runScenario(scenario, args.timeout, args, topology, repoRoot);
+      const result = await runScenario(
+        scenario,
+        scenario.timeout || args.timeout,
+        args,
+        topology,
+        repoRoot,
+        context.composeProject,
+      );
       result.metadata = {
         ...result.metadata,
         run_id: context.runId,
         run_dir: context.runDir,
         diagnostics_dir: context.diagnosticsDir,
-        service_urls: { ...SERVICE_URLS, ...topology.serviceUrls },
+        service_urls: topology.serviceUrls,
         web_client: topology.webClient || null,
         client_flow: args.clientFlow,
         allow_hybrid_network: args.allowHybridNetwork,
@@ -577,7 +687,7 @@ async function main() {
           pds2: withPds2,
           web_client: topology.webClient || null,
           client_flow: args.clientFlow,
-          service_urls: { ...SERVICE_URLS, ...topology.serviceUrls },
+          service_urls: topology.serviceUrls,
           report_paths: reportPaths,
           summary: {
             passed: totalPassed,
@@ -593,6 +703,15 @@ async function main() {
   }
 
   if (totalFailed > 0) Deno.exit(1);
+}
+
+async function pathExists(path: string): Promise<boolean> {
+  try {
+    await Deno.stat(path);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 if (import.meta.main) {
