@@ -1,7 +1,7 @@
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
-import { PDS1, PDS2, getCharacter } from "../../lib/deno/config.ts";
+import { PDS1, PDS2, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
 
 function now() {
   return new Date().toISOString();
@@ -85,7 +85,7 @@ export async function run(): Promise<ScenarioResult> {
   });
 
   try {
-    const plcRes = await fetch(`http://localhost:2582/${luna.did}`);
+    const plcRes = await fetch(`${SERVICE_URLS.plc}/${luna.did}`);
     const doc = await plcRes.json();
     const pdsEndpoint = doc.service?.find((s: any) => s.id === "#atproto_pds")?.serviceEndpoint;
     if (pdsEndpoint === PDS1) {
