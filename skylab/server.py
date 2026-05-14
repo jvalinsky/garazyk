@@ -156,7 +156,38 @@ def _xrpc_method_uses_http_get(method: str) -> bool:
     if not method:
         return False
     seg = method.rsplit(".", 1)[-1].lower()
-    return seg.startswith(("get", "list", "search", "describe", "resolve"))
+    if seg.startswith(("get", "list", "search", "describe")):
+        return True
+    # resolve* queries (identity, lexicon); exclude procedures like admin.resolveReport
+    if seg.startswith("resolve") and seg != "resolvereport":
+        return True
+    return False
+
+
+# Only forward headers that are meaningful upstream. Mirroring the entire browser
+# request can break httpx framing (e.g. Content-Length vs actual body) or trip
+# strict HTTP parsers on local services.
+_PROXY_HEADER_ALLOW = frozenset(
+    {
+        "authorization",
+        "accept",
+        "content-type",
+        "user-agent",
+        "atproto-accept-labelers",
+        "atproto-proxy",
+        "atproto-relay",
+    }
+)
+
+
+def _proxy_upstream_headers(request: Request) -> dict[str, str]:
+    headers: dict[str, str] = {}
+    for key, value in request.headers.items():
+        if key.lower() in _PROXY_HEADER_ALLOW:
+            headers[key] = value
+    if not any(k.lower() == "accept" for k in headers):
+        headers["Accept"] = "application/json"
+    return headers
 
 
 # ---------------------------------------------------------------------------
@@ -219,8 +250,9 @@ async def debug_appview_timeline(request: Request, limit: int = 25) -> JSONRespo
                 headers={"Authorization": auth},
             )
     except httpx.RequestError as exc:
+        detail = str(exc)
         return JSONResponse(
-            {"ok": False, "error": "proxy_error", "detail": str(exc)},
+            {"ok": False, "error": "proxy_error", "detail": detail, "message": detail},
             status_code=502,
         )
     content_type = resp.headers.get("content-type", "")
@@ -305,7 +337,7 @@ async def execute_xrpc(request: Request):
     is_query = _xrpc_method_uses_http_get(method)
     url = f"{target_url}/xrpc/{method}"
 
-    headers = {}
+    headers: dict[str, str] = {"Accept": "application/json"}
     auth_header = body.get("authorization")
     if auth_header:
         headers["Authorization"] = auth_header
@@ -321,8 +353,9 @@ async def execute_xrpc(request: Request):
                 status_code=resp.status_code,
             )
         except httpx.RequestError as exc:
+            detail = str(exc)
             return JSONResponse(
-                content={"error": "proxy_error", "detail": str(exc)},
+                content={"error": "proxy_error", "detail": detail, "message": detail},
                 status_code=502,
             )
 
@@ -484,10 +517,7 @@ async def proxy_to_service(service: str, path: str, request: Request):
     if request.url.query:
         target += f"?{request.url.query}"
 
-    # Forward headers (except host)
-    headers = dict(request.headers)
-    headers.pop("host", None)
-
+    headers = _proxy_upstream_headers(request)
     body = await request.body()
 
     async with httpx.AsyncClient(timeout=30.0) as client:
@@ -505,8 +535,9 @@ async def proxy_to_service(service: str, path: str, request: Request):
             )
             return response
         except httpx.RequestError as exc:
+            detail = str(exc)
             return JSONResponse(
-                content={"error": "proxy_error", "detail": str(exc)},
+                content={"error": "proxy_error", "detail": detail, "message": detail},
                 status_code=502,
             )
 
