@@ -93,6 +93,8 @@
             }
 
             const candidates = [
+                payload.playlistUrl,
+                payload.hlsUrl,
                 payload.blobUrl,
                 payload.videoUrl,
                 payload.playbackUrl,
@@ -115,6 +117,33 @@
             return null;
         }
 
+        /**
+         * Build a CDN playlist URL through the SkyLab CORS proxy.
+         * Converts a direct Jelcz URL like http://host:2586/watch/did/cid/playlist.m3u8
+         * into a proxied URL: /skylab/proxy/video/watch/did/cid/playlist.m3u8
+         */
+        function proxiedVideoUrl(rawUrl) {
+            if (!rawUrl) return null;
+            // Already a relative/proxied URL
+            if (rawUrl.startsWith('/')) return rawUrl;
+            // Parse the URL and extract the /watch/... path
+            try {
+                const parsed = new URL(rawUrl);
+                if (parsed.pathname.startsWith('/watch/')) {
+                    return `/skylab/proxy/video${parsed.pathname}${parsed.search}`;
+                }
+            } catch (_) { /* not a valid URL, return as-is */ }
+            return rawUrl;
+        }
+
+        /**
+         * Check if a URL points to an HLS playlist (.m3u8).
+         */
+        function isHlsUrl(url) {
+            if (!url) return false;
+            return /\.m3u8(\?.*)?$/i.test(url) || /playlist\.m3u8/i.test(url);
+        }
+
         function normalizeJob(payload, fallbackJobId = null) {
             const data = payload?.job && typeof payload.job === 'object'
                 ? payload.job
@@ -128,12 +157,22 @@
             const blobUrl = extractBlobUrl(data) || extractBlobUrl(payload);
             const message = getErrorMessage(data, getErrorMessage(payload, ''));
 
+            // Extract HLS/CDN fields from job status
+            const did = data.did || data.ownerDid || payload?.did || null;
+            const cid = data.cid || data.blobCid || data.videoCid || payload?.cid || null;
+            const playlistUrl = data.playlistUrl || data.hlsUrl || payload?.playlistUrl || payload?.hlsUrl || null;
+            const thumbnailUrl = data.thumbnailUrl || data.thumbUrl || payload?.thumbnailUrl || null;
+
             return {
                 jobId,
                 rawState: String(data.state || data.status || payload?.state || payload?.status || 'pending'),
                 state: stateClass,
                 progress: progress == null ? null : progress,
                 blobUrl,
+                did,
+                cid,
+                playlistUrl,
+                thumbnailUrl,
                 message: message || null,
             };
         }
@@ -290,16 +329,90 @@
                     previewLabel.textContent = 'Playback';
                     card.appendChild(previewLabel);
 
+                    const videoUrl = proxiedVideoUrl(job.blobUrl);
                     const video = document.createElement('video');
                     video.controls = true;
                     video.playsInline = true;
                     video.preload = 'metadata';
-                    video.src = job.blobUrl;
                     video.style.width = '100%';
                     video.style.marginTop = 'var(--space-xs)';
                     video.style.borderRadius = 'var(--radius-md)';
                     video.style.background = '#000';
                     card.appendChild(video);
+
+                    if (isHlsUrl(videoUrl) && typeof Hls !== 'undefined' && Hls.isSupported()) {
+                        // Use hls.js for browsers without native HLS support
+                        const hls = new Hls({
+                            xhrSetup: function(xhr) {
+                                // Route segment requests through proxy too
+                            },
+                        });
+                        hls.loadSource(videoUrl);
+                        hls.attachMedia(video);
+                        hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                            // Auto-play is optional; leave it paused
+                        });
+                        hls.on(Hls.Events.ERROR, function(event, data) {
+                            if (data.fatal) {
+                                switch (data.type) {
+                                    case Hls.ErrorTypes.NETWORK_ERROR:
+                                        hls.startLoad();
+                                        break;
+                                    case Hls.ErrorTypes.MEDIA_ERROR:
+                                        hls.recoverMediaError();
+                                        break;
+                                    default:
+                                        hls.destroy();
+                                        break;
+                                }
+                            }
+                        });
+                        // Store hls instance for cleanup
+                        card._hlsInstance = hls;
+                    } else if (isHlsUrl(videoUrl) && video.canPlayType('application/vnd.apple.mpegurl')) {
+                        // Safari: native HLS support
+                        video.src = videoUrl;
+                    } else {
+                        // Direct MP4/webm URL
+                        video.src = videoUrl;
+                    }
+
+                    // Thumbnail poster if available
+                    if (job.thumbnailUrl) {
+                        video.poster = proxiedVideoUrl(job.thumbnailUrl) || job.thumbnailUrl;
+                    }
+                } else if (job.state === 'completed' && job.did && job.cid) {
+                    // Completed job without explicit URL — construct CDN URL
+                    const cdnPlaylistUrl = `/skylab/proxy/video/watch/${job.did}/${job.cid}/playlist.m3u8`;
+                    const previewLabel = document.createElement('div');
+                    previewLabel.style.marginTop = 'var(--space-sm)';
+                    previewLabel.style.fontSize = 'var(--font-size-xs)';
+                    previewLabel.style.color = 'var(--color-text-secondary)';
+                    previewLabel.textContent = 'Playback';
+                    card.appendChild(previewLabel);
+
+                    const video = document.createElement('video');
+                    video.controls = true;
+                    video.playsInline = true;
+                    video.preload = 'metadata';
+                    video.style.width = '100%';
+                    video.style.marginTop = 'var(--space-xs)';
+                    video.style.borderRadius = 'var(--radius-md)';
+                    video.style.background = '#000';
+                    card.appendChild(video);
+
+                    if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+                        const hls = new Hls();
+                        hls.loadSource(cdnPlaylistUrl);
+                        hls.attachMedia(video);
+                        card._hlsInstance = hls;
+                    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                        video.src = cdnPlaylistUrl;
+                    }
+
+                    // Thumbnail
+                    const thumbUrl = `/skylab/proxy/video/watch/${job.did}/${job.cid}/thumbnail.jpg`;
+                    video.poster = thumbUrl;
                 }
 
                 jobsEl.appendChild(card);
