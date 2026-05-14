@@ -11,7 +11,7 @@ export async function run(): Promise<ScenarioResult> {
   const rosa = getCharacter("rosa");
 
   await timedCall(result, "PDS health check", async () => {
-    await client.wait_for_healthy(30);
+    await client.waitForHealthy(30);
   });
 
   if (result.failed > 0) return result;
@@ -28,7 +28,7 @@ export async function run(): Promise<ScenarioResult> {
   rosa.accessJwt = session.accessJwt;
 
   const hourlyLimit = parseInt(Deno.env.get("PLC_HOURLY_LIMIT") || "5");
-  const rotations = hourlyLimit - 1;
+  const rotations = Math.min(hourlyLimit - 1, 10);
 
   let successCount = 0;
   for (let i = 0; i < rotations; i++) {

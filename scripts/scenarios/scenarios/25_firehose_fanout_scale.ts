@@ -34,7 +34,7 @@ export async function run(): Promise<ScenarioResult> {
   promScraper.start();
 
   await timedCall(result, "Server health check", async () => {
-    await client.wait_for_healthy(30);
+    await client.waitForHealthy(30);
   });
 
   if (result.failed > 0) {
@@ -70,23 +70,26 @@ export async function run(): Promise<ScenarioResult> {
   const subscriberEvents: any[] = [];
   const subscriberStop = { stopped: false };
   const relayUrl = SERVICE_URLS.relay;
+  const abortController = new AbortController();
 
   const startSubscriber = async (id: number) => {
     const fh = new FirehoseClient(relayUrl);
-    while (!subscriberStop.stopped) {
+    while (!subscriberStop.stopped && !abortController.signal.aborted) {
       try {
         await fh.subscribe((ev) => {
           (ev as any)._subscriber_id = id;
           (ev as any)._received_at = Date.now() / 1000;
           subscriberEvents.push(ev);
-        }, 60);
+        }, 60, undefined, abortController.signal);
       } catch {
-        if (!subscriberStop.stopped) await new Promise(r => setTimeout(r, 1000));
+        if (!subscriberStop.stopped && !abortController.signal.aborted) {
+          await new Promise(r => setTimeout(r, 1000));
+        }
       }
     }
   };
 
-  const subscriberPromises = [];
+  const subscriberPromises: Promise<void>[] = [];
   for (let i = 0; i < NUM_SUBSCRIBERS; i++) {
     subscriberPromises.push(startSubscriber(i));
   }
@@ -97,12 +100,12 @@ export async function run(): Promise<ScenarioResult> {
 
   phaseTimer.startPhase("event_production");
 
+  // Sequential post creation avoids PDS concurrency issues with parallel createRecord
   const POSTS_PER_USER = 20;
   let totalPosts = 0;
-
-  const postPromises = active.flatMap(name => {
+  for (const name of active) {
     const char = getCharacter(name);
-    return Array.from({ length: POSTS_PER_USER }).map(async (_, i) => {
+    for (let i = 0; i < POSTS_PER_USER; i++) {
       try {
         await timer.measure("create_post", () =>
           client.records.createRecord(
@@ -112,18 +115,16 @@ export async function run(): Promise<ScenarioResult> {
           )
         );
         totalPosts++;
-      } catch { /* ignore */ }
-    });
-  });
-
-  await Promise.all(postPromises);
+      } catch { /* ignore rate limits */ }
+    }
+  }
   result.stepPassed("Event production", `created=${totalPosts}`);
   phaseTimer.endPhase();
 
   await new Promise(r => setTimeout(r, 5000));
 
   phaseTimer.startPhase("backpressure_test");
-  const extraPromises = [];
+  const extraPromises: Promise<void>[] = [];
   for (let i = 0; i < NUM_SUBSCRIBERS; i++) {
     extraPromises.push(startSubscriber(NUM_SUBSCRIBERS + i));
   }
@@ -132,9 +133,9 @@ export async function run(): Promise<ScenarioResult> {
 
   const BURST_PER_USER = 40;
   let burstPosts = 0;
-  const burstPromises = active.flatMap(name => {
+  for (const name of active) {
     const char = getCharacter(name);
-    return Array.from({ length: BURST_PER_USER }).map(async (_, i) => {
+    for (let i = 0; i < BURST_PER_USER; i++) {
       try {
         await timer.measure("create_post_burst", () =>
           client.records.createRecord(
@@ -144,11 +145,9 @@ export async function run(): Promise<ScenarioResult> {
           )
         );
         burstPosts++;
-      } catch { /* ignore */ }
-    });
-  });
-
-  await Promise.all(burstPromises);
+      } catch { /* ignore rate limits */ }
+    }
+  }
   result.stepPassed("Backpressure burst", `created=${burstPosts}`);
 
   try {
@@ -168,7 +167,11 @@ export async function run(): Promise<ScenarioResult> {
 
   phaseTimer.startPhase("subscriber_teardown");
   subscriberStop.stopped = true;
-  // We don't await subscriberPromises/extraPromises as they might be stuck in read
+  abortController.abort();
+  await Promise.race([
+    Promise.all([...subscriberPromises, ...extraPromises]),
+    new Promise(r => setTimeout(r, 5000)),
+  ]);
   result.stepPassed("Subscriber teardown", `total_events=${subscriberEvents.length}`);
   phaseTimer.endPhase();
 

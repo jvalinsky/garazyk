@@ -11,7 +11,7 @@ export async function run(): Promise<ScenarioResult> {
   const video = new XrpcClient(SERVICE_URLS.video);
   const luna = getCharacter("luna");
 
-  await timedCall(result, "PDS health check", async () => { await pds.wait_for_healthy(30); });
+  await timedCall(result, "PDS health check", async () => { await pds.waitForHealthy(30); });
 
   if (result.failed > 0) return result;
 

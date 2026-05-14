@@ -13,7 +13,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const client = new XrpcClient(PDS1);
   await timedCall(result, "Server health check", async () => {
-    await client.wait_for_healthy(30);
+    await client.waitForHealthy(30);
   });
 
   if (result.failed > 0) return result;
@@ -43,20 +43,20 @@ export async function run(): Promise<ScenarioResult> {
   result.stepPassed("Seeding records");
 
   const [s1, ct1, body1] = await client.raw.xrpcGetBinary("com.atproto.sync.getRepo", { params: { did: luna.did } });
-  assert(ct1.includes("application/vnd.ipld.car"), "Expected CAR");
+  assert.isTrue(ct1.includes("application/vnd.ipld.car"), "Expected CAR");
 
   const [s2, ct2, body2] = await client.raw.xrpcGetBinary("com.atproto.sync.getRepo", {
     params: { did: luna.did },
     headers: { "Accept": "application/vnd.atproto.star" }
   });
-  assert(ct2.includes("application/vnd.atproto.star"), "Expected STAR");
-  assert(body2[0] === 0x2A, "Expected STAR magic byte 0x2A");
+  assert.isTrue(ct2.includes("application/vnd.atproto.star"), "Expected STAR");
+  assert.isTrue(body2[0] === 0x2A, "Expected STAR magic byte 0x2A");
 
   const head = await client.raw.xrpcGet("com.atproto.sync.getHead", { did: luna.did });
   result.stepPassed("Deterministic consistency check", `Root CID: ${head.root}`);
 
   const records = await client.records.listRecords(luna.did, "app.bsky.feed.post");
-  assert(records.records.length >= recordCount, "Record count mismatch");
+  assert.isTrue(records.records.length >= recordCount, "Record count mismatch");
   result.stepPassed("Record set integrity verified");
 
   result.finish();

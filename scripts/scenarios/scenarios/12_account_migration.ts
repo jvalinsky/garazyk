@@ -16,7 +16,7 @@ export async function run(): Promise<ScenarioResult> {
     await timedCall(
       result, `${name} health check`,
       async () => {
-        await client.wait_for_healthy(30);
+        await client.waitForHealthy(30);
       }
     );
   }

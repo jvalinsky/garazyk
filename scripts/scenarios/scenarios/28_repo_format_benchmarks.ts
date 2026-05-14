@@ -14,7 +14,7 @@ export async function run(): Promise<ScenarioResult> {
   const client = new XrpcClient(PDS1);
 
   await timedCall(result, "Server health check", async () => {
-    await client.wait_for_healthy(30);
+    await client.waitForHealthy(30);
   });
 
   if (result.failed > 0) return result;
@@ -83,7 +83,7 @@ export async function run(): Promise<ScenarioResult> {
       result.stepPassed(`Fetch ${fmt.label} (Iter ${i + 1})`, `bytes=${body.length} duration=${duration.toFixed(1)}ms`);
       
       if (fmt.label !== "CAR" && body.length > 0) {
-        assert(body[0] === 0x2A, `Invalid magic byte for ${fmt.label}`);
+        assert.isTrue(body[0] === 0x2A, `Invalid magic byte for ${fmt.label}`);
       }
     }
 

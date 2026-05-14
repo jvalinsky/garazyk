@@ -24,7 +24,7 @@ export async function run(): Promise<ScenarioResult> {
   const luna = getCharacter("luna");
 
   for (const [name, client] of [["PDS1", pds1], ["PDS2", pds2]] as const) {
-    await timedCall(result, `${name} health check`, async () => { await client.wait_for_healthy(30); });
+    await timedCall(result, `${name} health check`, async () => { await client.waitForHealthy(30); });
   }
 
   if (result.failed > 0) return result;
