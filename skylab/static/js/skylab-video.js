@@ -5,6 +5,125 @@
  */
 
 (function () {
+    function getErrorMessage(payload, fallback) {
+        if (!payload) return fallback;
+        if (typeof payload === 'string') return payload || fallback;
+        if (typeof payload.message === 'string' && payload.message.trim()) return payload.message;
+        if (typeof payload.error === 'string' && payload.error.trim()) return payload.error;
+        if (typeof payload.detail === 'string' && payload.detail.trim()) return payload.detail;
+        return fallback;
+    }
+
+    function getVideoBaseUrl(bridge) {
+        return bridge?.services?.video || (typeof bridge?.serviceUrl === 'function' ? bridge.serviceUrl('video') : null);
+    }
+
+    function directVideoUrl(bridge, path, params = null) {
+        const base = getVideoBaseUrl(bridge);
+        if (!base) return null;
+        const url = new URL(path, base.endsWith('/') ? base : `${base}/`);
+        if (params) {
+            for (const [key, value] of Object.entries(params)) {
+                if (value != null && value !== '') {
+                    url.searchParams.set(key, value);
+                }
+            }
+        }
+        return url.toString();
+    }
+
+    function extractJobStatus(payload) {
+        if (payload?.jobStatus && typeof payload.jobStatus === 'object') return payload.jobStatus;
+        if (payload?.job && typeof payload.job === 'object') return payload.job;
+        return payload && typeof payload === 'object' ? payload : {};
+    }
+
+    function extractBlobRef(payload) {
+        const data = extractJobStatus(payload);
+        return data.blob || data.blobRef || payload?.blob || payload?.blobRef || null;
+    }
+
+    async function getVideoServiceToken(bridge) {
+        const authResp = await bridge.xrpc(
+            'com.atproto.server.getServiceAuth',
+            { aud: bridge?.videoServiceDid || 'did:web:localhost', lxm: 'app.bsky.video.uploadVideo' },
+            null,
+            { service: 'pds', auth: true },
+        );
+        if (authResp.ok) {
+            return authResp.data?.token || authResp.data?.serviceJwt || authResp.data?.jwt || authResp.data?.accessJwt || null;
+        }
+        return bridge?.auth?.accessJwt || null;
+    }
+
+    async function getVideoJobStatus(bridge, jobId, token = null) {
+        const url = directVideoUrl(bridge, 'xrpc/app.bsky.video.getJobStatus', { jobId });
+        if (!url) throw new Error('Video service URL is unavailable');
+        const headers = {};
+        if (token || bridge?.auth?.accessJwt) headers.Authorization = `Bearer ${token || bridge.auth.accessJwt}`;
+        const response = await fetch(url, { method: 'GET', headers });
+        const data = await response.json().catch(() => ({}));
+        return { ok: response.ok, status: response.status, data };
+    }
+
+    async function getVideoUploadLimits(bridge) {
+        const url = directVideoUrl(bridge, 'xrpc/app.bsky.video.getUploadLimits');
+        if (!url) throw new Error('Video service URL is unavailable');
+        const headers = {};
+        if (bridge?.auth?.accessJwt) headers.Authorization = `Bearer ${bridge.auth.accessJwt}`;
+        const response = await fetch(url, { method: 'GET', headers });
+        const data = await response.json().catch(() => ({}));
+        return { ok: response.ok, status: response.status, data };
+    }
+
+    async function uploadVideoFile(bridge, file, { onProgress } = {}) {
+        if (!file) throw new Error('Choose a video file first');
+        if (!bridge?.auth?.did) throw new Error('Sign in before uploading video');
+
+        const token = await getVideoServiceToken(bridge);
+        if (!token) throw new Error('Video upload token was not returned');
+
+        const url = directVideoUrl(bridge, 'xrpc/app.bsky.video.uploadVideo', {
+            did: bridge.auth.did,
+            name: file.name || 'video.mp4',
+        });
+        if (!url) throw new Error('Video service URL is unavailable');
+
+        const data = await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', url, true);
+            xhr.responseType = 'text';
+            xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+            xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
+            if (bridge?.auth?.accessJwt && bridge.auth.accessJwt !== token) {
+                xhr.setRequestHeader('X-Garazyk-Access-JWT', bridge.auth.accessJwt);
+            }
+            xhr.upload.onprogress = (event) => {
+                if (!event.lengthComputable || !onProgress) return;
+                onProgress(Math.round((event.loaded / event.total) * 100));
+            };
+            xhr.onload = () => {
+                const raw = xhr.responseText || '';
+                let parsed = {};
+                try {
+                    parsed = raw ? JSON.parse(raw) : {};
+                } catch {
+                    parsed = raw;
+                }
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    resolve(parsed);
+                } else {
+                    reject(new Error(getErrorMessage(parsed, `Upload failed with HTTP ${xhr.status}`)));
+                }
+            };
+            xhr.onerror = () => reject(new Error('Upload network error'));
+            xhr.onabort = () => reject(new Error('Upload aborted'));
+            xhr.send(file);
+        });
+
+        return { data, token };
+    }
+
     function initVideoPanel(bridge) {
         const panel = document.getElementById('panel-video');
         const uploadCard = document.getElementById('video-upload');
@@ -32,15 +151,6 @@
         };
 
         panel.__skylabVideoInitialized = true;
-
-        function getErrorMessage(payload, fallback) {
-            if (!payload) return fallback;
-            if (typeof payload === 'string') return payload || fallback;
-            if (typeof payload.message === 'string' && payload.message.trim()) return payload.message;
-            if (typeof payload.error === 'string' && payload.error.trim()) return payload.error;
-            if (typeof payload.detail === 'string' && payload.detail.trim()) return payload.detail;
-            return fallback;
-        }
 
         function normalizeJobState(value) {
             const raw = String(value || 'pending').trim();
@@ -117,22 +227,8 @@
             return null;
         }
 
-        /**
-         * Build a CDN playlist URL through the SkyLab CORS proxy.
-         * Converts a direct Jelcz URL like http://host:2586/watch/did/cid/playlist.m3u8
-         * into a proxied URL: /skylab/proxy/video/watch/did/cid/playlist.m3u8
-         */
         function proxiedVideoUrl(rawUrl) {
             if (!rawUrl) return null;
-            // Already a relative/proxied URL
-            if (rawUrl.startsWith('/')) return rawUrl;
-            // Parse the URL and extract the /watch/... path
-            try {
-                const parsed = new URL(rawUrl);
-                if (parsed.pathname.startsWith('/watch/')) {
-                    return `/skylab/proxy/video${parsed.pathname}${parsed.search}`;
-                }
-            } catch (_) { /* not a valid URL, return as-is */ }
             return rawUrl;
         }
 
@@ -145,9 +241,7 @@
         }
 
         function normalizeJob(payload, fallbackJobId = null) {
-            const data = payload?.job && typeof payload.job === 'object'
-                ? payload.job
-                : (payload && typeof payload === 'object' ? payload : {});
+            const data = extractJobStatus(payload);
             const jobId = extractJobId(data) || fallbackJobId;
             const stateClass = normalizeJobState(data.state || data.status || payload?.state || payload?.status);
             const progress = toPercent(
@@ -155,11 +249,12 @@
                 stateClass,
             );
             const blobUrl = extractBlobUrl(data) || extractBlobUrl(payload);
+            const blob = extractBlobRef(payload);
             const message = getErrorMessage(data, getErrorMessage(payload, ''));
 
             // Extract HLS/CDN fields from job status
             const did = data.did || data.ownerDid || payload?.did || null;
-            const cid = data.cid || data.blobCid || data.videoCid || payload?.cid || null;
+            const cid = data.cid || data.blobCid || data.videoCid || blob?.ref?.$link || blob?.cid || payload?.cid || null;
             const playlistUrl = data.playlistUrl || data.hlsUrl || payload?.playlistUrl || payload?.hlsUrl || null;
             const thumbnailUrl = data.thumbnailUrl || data.thumbUrl || payload?.thumbnailUrl || null;
 
@@ -169,6 +264,7 @@
                 state: stateClass,
                 progress: progress == null ? null : progress,
                 blobUrl,
+                blob,
                 did,
                 cid,
                 playlistUrl,
@@ -383,7 +479,7 @@
                     }
                 } else if (job.state === 'completed' && job.did && job.cid) {
                     // Completed job without explicit URL — construct CDN URL
-                    const cdnPlaylistUrl = `/skylab/proxy/video/watch/${job.did}/${job.cid}/playlist.m3u8`;
+                    const cdnPlaylistUrl = directVideoUrl(bridge, `watch/${job.did}/${job.cid}/playlist.m3u8`);
                     const previewLabel = document.createElement('div');
                     previewLabel.style.marginTop = 'var(--space-sm)';
                     previewLabel.style.fontSize = 'var(--font-size-xs)';
@@ -411,7 +507,7 @@
                     }
 
                     // Thumbnail
-                    const thumbUrl = `/skylab/proxy/video/watch/${job.did}/${job.cid}/thumbnail.jpg`;
+                    const thumbUrl = directVideoUrl(bridge, `watch/${job.did}/${job.cid}/thumbnail.jpg`);
                     video.poster = thumbUrl;
                 }
 
@@ -430,10 +526,7 @@
             limitsEl.textContent = 'Remaining daily uploads: loading…';
 
             try {
-                const resp = await bridge.xrpc('app.bsky.video.getUploadLimits', null, null, {
-                    service: 'video',
-                    auth: true,
-                });
+                const resp = await getVideoUploadLimits(bridge);
 
                 if (!resp.ok) {
                     limitsEl.textContent = `Remaining daily uploads: unavailable (${resp.status || 'error'})`;
@@ -478,10 +571,7 @@
 
             const tick = async () => {
                 try {
-                    const resp = await bridge.xrpc('app.bsky.video.getJobStatus', { jobId }, null, {
-                        service: 'video',
-                        auth: true,
-                    });
+                    const resp = await getVideoJobStatus(bridge, jobId);
 
                     if (resp.ok) {
                         const normalized = normalizeJob(resp.data, jobId);
@@ -523,90 +613,10 @@
             setProgress(0, 'Reading file…', true);
 
             try {
-                const arrayBuffer = await file.arrayBuffer();
-                const blob = new Blob([arrayBuffer], {
-                    type: file.type || 'application/octet-stream',
-                });
-
                 setProgress(0, 'Getting service auth…', true);
-
-                const authResp = await bridge.xrpc(
-                    'com.atproto.server.getServiceAuth',
-                    {
-                        aud: 'did:web:localhost',
-                        lxm: 'app.bsky.video.uploadVideo',
-                    },
-                    null,
-                    { service: 'pds', auth: true },
-                );
-
-                if (!authResp.ok) {
-                    throw new Error(getErrorMessage(authResp.data, 'Failed to get service auth token'));
-                }
-
-                const serviceToken =
-                    authResp.data?.token ||
-                    authResp.data?.serviceJwt ||
-                    authResp.data?.jwt ||
-                    authResp.data?.accessJwt ||
-                    null;
-
-                if (!serviceToken) {
-                    throw new Error('Service auth token was not returned');
-                }
-
-                const videoBaseUrl = bridge.services?.video || (typeof bridge.serviceUrl === 'function' ? bridge.serviceUrl('video') : null);
-                if (!videoBaseUrl) {
-                    throw new Error('Video service URL is unavailable');
-                }
-
                 setProgress(0, 'Uploading…', true);
-
-                const uploadResponse = await new Promise((resolve, reject) => {
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('POST', `${videoBaseUrl}/xrpc/app.bsky.video.uploadVideo`, true);
-                    xhr.responseType = 'text';
-                    xhr.setRequestHeader('Authorization', `Bearer ${serviceToken}`);
-                    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
-
-                    xhr.upload.onprogress = (event) => {
-                        if (!event.lengthComputable) return;
-                        const percent = Math.max(0, Math.min(100, Math.round((event.loaded / event.total) * 100)));
-                        setProgress(percent, `Uploading… ${percent}%`, true);
-                    };
-
-                    xhr.onload = () => {
-                        const raw = xhr.responseText || '';
-                        let parsed = raw;
-
-                        const contentType = xhr.getResponseHeader('content-type') || '';
-                        if (contentType.includes('application/json')) {
-                            try {
-                                parsed = raw ? JSON.parse(raw) : {};
-                            } catch (error) {
-                                parsed = raw;
-                            }
-                        } else {
-                            try {
-                                parsed = raw ? JSON.parse(raw) : {};
-                            } catch (error) {
-                                parsed = raw;
-                            }
-                        }
-
-                        if (xhr.status >= 200 && xhr.status < 300) {
-                            resolve({
-                                status: xhr.status,
-                                data: parsed,
-                            });
-                        } else {
-                            reject(new Error(getErrorMessage(parsed, `Upload failed with HTTP ${xhr.status}`)));
-                        }
-                    };
-
-                    xhr.onerror = () => reject(new Error('Upload network error'));
-                    xhr.onabort = () => reject(new Error('Upload aborted'));
-                    xhr.send(blob);
+                const uploadResponse = await uploadVideoFile(bridge, file, {
+                    onProgress: (percent) => setProgress(percent, `Uploading… ${percent}%`, true),
                 });
 
                 const normalized = normalizeJob(uploadResponse.data);
@@ -680,6 +690,9 @@
             refreshUploadLimits,
             renderJobs,
             upsertJob,
+            uploadVideoFile: (file, options) => uploadVideoFile(bridge, file, options),
+            getVideoJobStatus: (jobId, token) => getVideoJobStatus(bridge, jobId, token),
+            normalizeJob,
         };
 
         return panel.__skylabVideoApi;
@@ -687,6 +700,16 @@
 
     if (typeof window !== 'undefined') {
         window.initVideoPanel = initVideoPanel;
+        window.SkyLabVideo = {
+            uploadVideoFile,
+            getVideoJobStatus,
+            getVideoUploadLimits,
+            normalizeJobPayload: (payload, fallbackJobId) => ({
+                jobStatus: extractJobStatus(payload),
+                blob: extractBlobRef(payload),
+                jobId: extractJobStatus(payload).jobId || fallbackJobId || null,
+            }),
+        };
     }
 
     if (typeof module !== 'undefined' && module.exports) {
