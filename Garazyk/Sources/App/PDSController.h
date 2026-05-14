@@ -40,8 +40,9 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSBlobService;
 @class PDSRepositoryService;
 @class PDSRelayService;
-@class JWTMinter;
 @class PDSAdminController;
+@class RateLimiter;
+@class JWTMinter;
 
 /*!
  @class PDSController
