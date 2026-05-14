@@ -35,14 +35,24 @@ static const char *executable_name = "kaszlak";
  */
 void print_usage(void) {
     printf("Usage: %s <command> [options]\n\n", executable_name);
-    printf("A command-line interface for managing kaszlak (ATProto PDS).\n\n");
+    printf("A command-line interface for managing kaszlak (ATProto PDS).\n");
+    printf("Global flags (--config, --data-dir, --verbose, --json) must follow the command name.\n\n");
     printf("Commands:\n");
-    printf("  serve       Start the kaszlak server\n");
-    printf("  status      Check kaszlak status\n");
-    printf("  account     Manage accounts\n");
-    printf("  invite      Manage invite codes\n");
-    printf("  help        Show help information\n");
-    printf("  version     Show version information\n\n");
+    printf("  serve       Start the PDS server\n");
+    printf("  status      Local status (alias: health)\n");
+    printf("  account     Account lifecycle\n");
+    printf("  invite      Invite codes\n");
+    printf("  oauth       OAuth client registration and inspection\n");
+    printf("  repo        Repository inspection and helpers\n");
+    printf("  admin       Administrator management\n");
+    printf("  relay       In-process relay helpers\n");
+    printf("  daemon      Background process lifecycle\n");
+    printf("  init        Interactive config bootstrap\n");
+    printf("  install     Service installation\n");
+    printf("  nuke-data   Destructive data reset\n");
+    printf("  repl        Interactive shell (aliases: shell, interactive)\n");
+    printf("  help        Help for a command\n");
+    printf("  version     Version information\n\n");
     printf("Use '%s help <command>' for more information about a command.\n", executable_name);
 }
 
