@@ -1,5 +1,5 @@
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 
 function now() {
@@ -232,7 +232,7 @@ export async function run(): Promise<ScenarioResult> {
   await new Promise((r) => setTimeout(r, 5000));
 
   try {
-    const appviewResp = await fetch("http://localhost:3200/admin/backfill/status", {
+    const appviewResp = await fetch(`${SERVICE_URLS.appview}/admin/backfill/status`, {
       headers: { "Authorization": "Bearer localdevadmin" },
     });
     if (appviewResp.ok) {
@@ -254,7 +254,7 @@ export async function run(): Promise<ScenarioResult> {
   );
 
   try {
-    const relayResp = await fetch("http://localhost:2584/api/relay/health");
+    const relayResp = await fetch(`${SERVICE_URLS.relay}/api/relay/health`);
     if (relayResp.ok) {
       result.stepPassed("Relay healthy after load");
     } else {

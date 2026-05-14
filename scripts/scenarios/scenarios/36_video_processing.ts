@@ -67,7 +67,7 @@ export async function run(): Promise<ScenarioResult> {
     for (let i = 0; i < 60; i++) {
       try {
         jobResp = await videoClient.raw.xrpcGet("app.bsky.video.getJobStatus", { jobId }, videoAuthToken);
-        const state = jobResp.state;
+        const state = (jobResp.jobStatus || jobResp).state;
         if (state === "JOB_STATE_COMPLETED" || state === "JOB_STATE_FAILED") {
           finalState = state;
           break;

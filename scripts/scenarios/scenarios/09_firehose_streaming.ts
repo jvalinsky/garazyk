@@ -1,5 +1,5 @@
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 import { FirehoseClient, FirehoseEvent } from "../../lib/deno/firehose.ts";
 
@@ -27,7 +27,7 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   try {
-    const relayResp = await fetch("http://localhost:2584/api/relay/health");
+    const relayResp = await fetch(`${SERVICE_URLS.relay}/api/relay/health`);
     if (relayResp.ok) {
       result.stepPassed("Relay health check");
     } else {
@@ -38,7 +38,7 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   try {
-    const upstreamsResp = await fetch("http://localhost:2584/api/relay/upstreams");
+    const upstreamsResp = await fetch(`${SERVICE_URLS.relay}/api/relay/upstreams`);
     if (upstreamsResp.ok) {
       const upstreams = await upstreamsResp.json();
       const count = Array.isArray(upstreams) ? upstreams.length : 0;
@@ -88,7 +88,7 @@ export async function run(): Promise<ScenarioResult> {
   await new Promise(r => setTimeout(r, 2000));
 
   const firehoseEvents: FirehoseEvent[] = [];
-  const fhClient = new FirehoseClient("ws://localhost:2584");
+  const fhClient = new FirehoseClient(SERVICE_URLS.relay.replace(/^http/, "ws"));
   
   // Start collecting in background (we don't await this directly)
   const collectionPromise = fhClient.collect(10.0);
@@ -215,7 +215,7 @@ export async function run(): Promise<ScenarioResult> {
   await new Promise(r => setTimeout(r, 3000));
 
   try {
-    const appviewResp = await fetch("http://localhost:3200/admin/backfill/status", {
+    const appviewResp = await fetch(`${SERVICE_URLS.appview}/admin/backfill/status`, {
       headers: { "Authorization": "Bearer localdevadmin" }
     });
     if (appviewResp.ok) {

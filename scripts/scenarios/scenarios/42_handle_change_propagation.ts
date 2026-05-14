@@ -40,7 +40,7 @@ export async function run(): Promise<ScenarioResult> {
   await new Promise(r => setTimeout(r, 3000));
 
   try {
-    const plcRes = await fetch(`http://localhost:2582/${luna.did}`);
+    const plcRes = await fetch(`${SERVICE_URLS.plc}/${luna.did}`);
     const doc = await plcRes.json();
     const hasNewHandle = doc.alsoKnownAs?.some((h: string) => h.includes(newHandle));
     assert.isTrue(hasNewHandle, "New handle not found in PLC DID doc");
