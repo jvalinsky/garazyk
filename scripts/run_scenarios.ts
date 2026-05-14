@@ -8,10 +8,17 @@ import { brightBlue, bold, green, red, yellow, cyan } from "@std/fmt/colors";
 
 async function main() {
   const args = parseArgs(Deno.args, {
-    boolean: ["setup-only", "teardown", "pds2", "list", "no-setup"],
+    boolean: ["setup-only", "teardown", "pds2", "list", "no-setup", "skip-setup"],
     string: ["run-id"],
-    alias: { "no-setup": "keep-running" } // Simplified for now
+    alias: { "no-setup": ["keep-running", "skip-setup"] } 
   });
+
+  const skipSetup = args["no-setup"] || args["skip-setup"];
+
+  if (args["run-id"]) {
+    console.log(`[runner] Run ID: ${args["run-id"]}`);
+    console.log(`[runner] skipSetup: ${skipSetup}`);
+  }
 
   const scriptDir = fromFileUrl(new URL(".", import.meta.url));
   const repoRoot = join(scriptDir, "..");
@@ -58,7 +65,7 @@ async function main() {
     Deno.exit(1);
   }
 
-  if (!args["no-setup"]) {
+  if (!skipSetup) {
     console.log("Starting local network...");
     await startLocalNetwork(args.pds2 || scenariosToRun.some(s => s.id === "05"));
   }
