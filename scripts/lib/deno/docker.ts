@@ -4,6 +4,9 @@ export interface LocalNetworkOptions {
   keepRunning?: boolean;
   runId?: string;
   diagnosticsDir?: string;
+  webClient?: string;
+  clientFlow?: string;
+  allowHybridNetwork?: boolean;
 }
 
 async function repoRoot(): Promise<string> {
@@ -27,6 +30,9 @@ export async function startLocalNetwork(options: LocalNetworkOptions = {}) {
   if (options.keepRunning) args.push("--keep-running");
   if (options.runId) args.push("--run-id", options.runId);
   if (options.diagnosticsDir) args.push("--diagnostics-dir", options.diagnosticsDir);
+  if (options.webClient) args.push("--web-client", options.webClient);
+  if (options.clientFlow) args.push("--client-flow", options.clientFlow);
+  if (options.allowHybridNetwork) args.push("--allow-hybrid-network");
 
   const command = new Deno.Command("bash", { args, stdout: "inherit", stderr: "inherit" });
   const { code } = await command.output();
@@ -49,6 +55,7 @@ export async function stopLocalNetwork(
   if (options.collectDiagnostics) args.push("--collect-diagnostics");
   if (options.runId) args.push("--run-id", options.runId);
   if (options.diagnosticsDir) args.push("--diagnostics-dir", options.diagnosticsDir);
+  if (options.webClient) args.push("--web-client", options.webClient);
   const command = new Deno.Command("bash", { args, stdout: "inherit", stderr: "inherit" });
   const { code } = await command.output();
   if (code !== 0) {

@@ -1,18 +1,19 @@
+import { resolveTopology } from "./topology.ts";
+
+const topology = resolveTopology(Deno.env.get("ATPROTO_WEB_CLIENT") || undefined);
+
 export const PDS1 = Deno.env.get("PDS_URL") || "http://localhost:2583";
 export const PDS2 = Deno.env.get("PDS2_URL") || "http://localhost:2587";
 export const APPVIEW_ADMIN_SECRET = Deno.env.get("APPVIEW_ADMIN_SECRET") || "localdevadmin";
 export const PDS_ADMIN_PASSWORD = Deno.env.get("PDS_ADMIN_PASSWORD") || "admin-localdev";
 
-export const SERVICE_URLS = {
+export const SERVICE_URLS: Record<string, string> = {
+  ...topology.serviceUrls,
   pds: PDS1,
   pds2: PDS2,
-  plc: "http://localhost:2582",
-  relay: "http://localhost:2584",
-  appview: "http://localhost:3200",
-  chat: "http://localhost:2585",
-  video: "http://localhost:2586",
-  ui: "http://localhost:2590",
 };
+
+export const WEB_CLIENT_TOPOLOGY = topology.webClient;
 
 export class Character {
   public did = "";
