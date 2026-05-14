@@ -6,5 +6,5 @@ REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || (cd "
 
 cd "$REPO_ROOT"
 
-python3 scripts/docs/repo_docs.py sync
-python3 scripts/docs/repo_docs.py validate --internal-strict
+deno run -A scripts/docs/repo_docs.ts sync
+deno run -A scripts/docs/repo_docs.ts validate --internal-strict

@@ -1,14 +1,15 @@
 export const PDS1 = Deno.env.get("PDS_URL") || "http://localhost:2583";
-export const PDS2 = Deno.env.get("PDS2_URL") || "http://localhost:2585";
+export const PDS2 = Deno.env.get("PDS2_URL") || "http://localhost:2587";
 export const APPVIEW_ADMIN_SECRET = Deno.env.get("APPVIEW_ADMIN_SECRET") || "localdevadmin";
 export const PDS_ADMIN_PASSWORD = Deno.env.get("PDS_ADMIN_PASSWORD") || "admin-localdev";
 
 export const SERVICE_URLS = {
   pds: PDS1,
+  pds2: PDS2,
   plc: "http://localhost:2582",
   relay: "http://localhost:2584",
   appview: "http://localhost:3200",
-  chat: PDS2,
+  chat: "http://localhost:2585",
   video: "http://localhost:2586",
   ui: "http://localhost:2590",
 };
@@ -25,10 +26,12 @@ export class Character {
     public password: string,
     public persona: string,
     public role: "user" | "admin" | "mod" = "user",
-    public pdsUrl: string = PDS1
+    public pdsUrl: string = PDS1,
   ) {}
 
-  get token() { return this.accessJwt; }
+  get token() {
+    return this.accessJwt;
+  }
 }
 
 const BASE_CHARACTERS: Record<string, any> = {
@@ -130,7 +133,7 @@ function buildCharacters(): Record<string, Character> {
 
   for (const [key, tpl] of Object.entries(BASE_CHARACTERS)) {
     const handleParts = tpl.handle.split(".");
-    const handle = handleParts.length > 1 
+    const handle = handleParts.length > 1
       ? `${handleParts[0]}-${suffix}.${handleParts.slice(1).join(".")}`
       : `${tpl.handle}-${suffix}`;
 
@@ -144,7 +147,7 @@ function buildCharacters(): Record<string, Character> {
       tpl.password,
       tpl.persona,
       tpl.role,
-      tpl.pdsUrl
+      tpl.pdsUrl,
     );
   }
   return chars;
@@ -163,10 +166,9 @@ export function getCharacter(name: string): Character {
 }
 
 export function getCharactersByRole(role: string): Character[] {
-  return Object.values(registry).filter(c => c.role === role);
+  return Object.values(registry).filter((c) => c.role === role);
 }
 
 export function getCharactersByPds(pdsUrl: string): Character[] {
-  return Object.values(registry).filter(c => c.pdsUrl === pdsUrl);
+  return Object.values(registry).filter((c) => c.pdsUrl === pdsUrl);
 }
-
