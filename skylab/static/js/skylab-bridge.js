@@ -85,6 +85,7 @@ class SkyLabBridge {
      */
     constructor(config = {}) {
         this.services = config.services || {};
+        this.videoServiceDid = config.videoServiceDid || 'did:web:localhost';
         this.useProxy = config.useProxy !== false;
         this.proxyBase = config.proxyBase || '/skylab/proxy';
         this.controlBridgeUrl = config.controlBridgeUrl ||
