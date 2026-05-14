@@ -152,7 +152,19 @@
                 return data;
             }
 
-            return data.message || data.error || fallbackMessage;
+            if (data.message) {
+                return data.message;
+            }
+
+            if (data.detail) {
+                return data.detail;
+            }
+
+            if (data.error) {
+                return data.error;
+            }
+
+            return fallbackMessage;
         }
 
         function clearFeed() {
