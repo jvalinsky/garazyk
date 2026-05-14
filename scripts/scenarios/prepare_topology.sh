@@ -23,6 +23,7 @@ REPO_ROOT="$(resolve_project_root "$SCRIPT_DIR")"
 
 PRESET=""
 RUN_DIR=""
+SOURCES_JSON=""
 VERBOSE=false
 
 while [[ $# -gt 0 ]]; do
@@ -37,6 +38,11 @@ while [[ $# -gt 0 ]]; do
             RUN_DIR="$2"
             shift
             ;;
+        --sources-json)
+            [[ $# -ge 2 ]] || { echo "Error: --sources-json requires a value" >&2; exit 2; }
+            SOURCES_JSON="$2"
+            shift
+            ;;
         --repo-root)
             [[ $# -ge 2 ]] || { echo "Error: --repo-root requires a value" >&2; exit 2; }
             REPO_ROOT="$2"
@@ -44,7 +50,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         --verbose|-v) VERBOSE=true ;;
         --help|-h)
-            echo "Usage: $0 --preset <name> --run-dir <dir> [--repo-root <dir>] [--verbose]"
+            echo "Usage: $0 --preset <name> --run-dir <dir> [--repo-root <dir>] [--sources-json <path>] [--verbose]"
             echo ""
             echo "  Clone source repos for topology adapters that use source builds."
             echo ""
@@ -73,15 +79,17 @@ fi
 
 # Compile the topology to get the source list
 SOURCES_DIR="$RUN_DIR/sources"
-SOURCES_JSON="$RUN_DIR/topology_sources.json"
+SOURCES_JSON="${SOURCES_JSON:-$RUN_DIR/topology_sources.json}"
 
-log_info "Compiling topology preset: $PRESET"
-deno run -A "$SCRIPT_DIR/compile_topology.ts" \
-    --preset "$PRESET" \
-    --output "$RUN_DIR/docker-compose.topology.yml" \
-    --run-dir "$RUN_DIR" \
-    --repo-root "$REPO_ROOT" \
-    --sources-json "$SOURCES_JSON"
+if [[ ! -f "$SOURCES_JSON" ]]; then
+    log_info "Compiling topology preset: $PRESET"
+    deno run -A "$SCRIPT_DIR/compile_topology.ts" \
+        --preset "$PRESET" \
+        --output "$RUN_DIR/docker-compose.topology.yml" \
+        --run-dir "$RUN_DIR" \
+        --repo-root "$REPO_ROOT" \
+        --sources-json "$SOURCES_JSON"
+fi
 
 if [[ ! -f "$SOURCES_JSON" ]]; then
     log_info "No source builds required for preset: $PRESET"
@@ -106,46 +114,79 @@ for i in $(seq 0 $((SOURCE_COUNT - 1))); do
     REF=$(python3 -c "import json; print(json.load(open('$SOURCES_JSON'))[$i]['ref'])")
     CLONE_DIR=$(python3 -c "import json; print(json.load(open('$SOURCES_JSON'))[$i]['cloneDir'])")
 
+    DOCKERFILE_OVERLAY=$(python3 -c "import json; print(json.load(open('$SOURCES_JSON'))[$i].get('dockerfileOverlay', ''))")
+    OVERLAY_DIR=$(python3 -c "import json; print(json.load(open('$SOURCES_JSON'))[$i].get('overlayDir', ''))")
+
     if [[ -z "$NAME" || -z "$REPO" || -z "$REF" ]]; then
         log_warn "Skipping source entry $i: missing name, repo, or ref"
         continue
     fi
 
     # Check if the clone already exists with the correct ref
+    CLONE_REUSED=false
     if [[ -d "$CLONE_DIR/.git" ]]; then
         CURRENT_REF=$(git -C "$CLONE_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || true)
         CURRENT_TAG=$(git -C "$CLONE_DIR" describe --tags --exact-match HEAD 2>/dev/null || true)
         if [[ "$CURRENT_REF" == "$REF" || "$CURRENT_TAG" == "$REF" ]]; then
             log_ok "Source $NAME: already cloned at $REF, reusing"
-            continue
-        fi
-        # Ref mismatch — remove and re-clone
-        log_info "Source $NAME: ref changed ($CURRENT_REF/$CURRENT_TAG -> $REF), re-cloning"
-        rm -rf "$CLONE_DIR"
-    fi
-
-    log_info "Source $NAME: cloning $REPO at $REF"
-    mkdir -p "$(dirname "$CLONE_DIR")"
-
-    # Determine if ref is a branch/tag (shallow clone) or a commit SHA (full clone + checkout)
-    if [[ "$REF" =~ ^[0-9a-f]{7,40}$ ]]; then
-        # Commit SHA — need full clone
-        if [[ "$VERBOSE" == "true" ]]; then
-            git clone "$REPO" "$CLONE_DIR"
+            CLONE_REUSED=true
         else
-            git clone --quiet "$REPO" "$CLONE_DIR"
-        fi
-        git -C "$CLONE_DIR" checkout "$REF"
-    else
-        # Branch or tag — shallow clone
-        if [[ "$VERBOSE" == "true" ]]; then
-            git clone --depth 1 --branch "$REF" "$REPO" "$CLONE_DIR"
-        else
-            git clone --quiet --depth 1 --branch "$REF" "$REPO" "$CLONE_DIR"
+            # Ref mismatch — remove and re-clone
+            log_info "Source $NAME: ref changed ($CURRENT_REF/$CURRENT_TAG -> $REF), re-cloning"
+            rm -rf "$CLONE_DIR"
         fi
     fi
 
-    log_ok "Source $NAME: cloned at $REF -> $CLONE_DIR"
+    if [[ "$CLONE_REUSED" != "true" ]]; then
+        log_info "Source $NAME: cloning $REPO at $REF"
+        mkdir -p "$(dirname "$CLONE_DIR")"
+
+        # Determine if ref is a branch/tag (shallow clone) or a commit SHA (full clone + checkout)
+        if [[ "$REF" =~ ^[0-9a-f]{7,40}$ ]]; then
+            # Commit SHA — need full clone
+            if [[ "$VERBOSE" == "true" ]]; then
+                git clone "$REPO" "$CLONE_DIR"
+            else
+                git clone --quiet "$REPO" "$CLONE_DIR"
+            fi
+            git -C "$CLONE_DIR" checkout "$REF"
+        else
+            # Branch or tag — shallow clone
+            if [[ "$VERBOSE" == "true" ]]; then
+                git clone --depth 1 --branch "$REF" "$REPO" "$CLONE_DIR"
+            else
+                git clone --quiet --depth 1 --branch "$REF" "$REPO" "$CLONE_DIR"
+            fi
+        fi
+
+        log_ok "Source $NAME: cloned at $REF -> $CLONE_DIR"
+    fi
+
+    # Copy overlay Dockerfile from Garazyk repo into the cloned source
+    if [[ -n "$DOCKERFILE_OVERLAY" ]]; then
+        OVERLAY_SRC="$REPO_ROOT/$DOCKERFILE_OVERLAY"
+        if [[ -f "$OVERLAY_SRC" ]]; then
+            DOCKERFILE_NAME=$(python3 -c "import json; print(json.load(open('$SOURCES_JSON'))[$i].get('dockerfile', 'Dockerfile'))")
+            cp "$OVERLAY_SRC" "$CLONE_DIR/$DOCKERFILE_NAME"
+            log_ok "Source $NAME: copied Dockerfile overlay $OVERLAY_SRC -> $CLONE_DIR/$DOCKERFILE_NAME"
+        else
+            log_warn "Source $NAME: dockerfileOverlay '$DOCKERFILE_OVERLAY' not found at $OVERLAY_SRC, skipping"
+        fi
+    fi
+
+    # Copy overlay directory from Garazyk repo into the cloned source.
+    # The directory's contents are merged into the clone root (existing files overwritten).
+    if [[ -n "$OVERLAY_DIR" ]]; then
+        OVERLAY_DIR_SRC="$REPO_ROOT/$OVERLAY_DIR"
+        if [[ -d "$OVERLAY_DIR_SRC" ]]; then
+            # Copy directory contents (not the directory itself) into the clone
+            # using tar to preserve permissions and avoid cp -r edge cases
+            (cd "$OVERLAY_DIR_SRC" && tar cf - .) | (cd "$CLONE_DIR" && tar xf -)
+            log_ok "Source $NAME: copied overlay dir $OVERLAY_DIR_SRC -> $CLONE_DIR"
+        else
+            log_warn "Source $NAME: overlayDir '$OVERLAY_DIR' not found at $OVERLAY_DIR_SRC, skipping"
+        fi
+    fi
 done
 
 log_ok "All source builds prepared for preset: $PRESET"

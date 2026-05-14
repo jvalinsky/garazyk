@@ -1,13 +1,18 @@
 {
   "name": "allegedly-plc",
-  "description": "Allegedly PLC mirror/wrapper (Rust, microcosm.blue) wrapping the reference PLC server. Provides TLS termination, rate limiting, and write-forwarding. Tests PLC interop through the Allegedly mirror proxy with Garazyk PDS, Relay, and AppView.",
+  "description": "Allegedly PLC mirror/wrapper (Rust, microcosm.blue) wrapping the reference PLC server. Provides TLS termination, rate limiting, and write-forwarding. Tests PLC interop through the Allegedly mirror proxy with Garazyk PDS, Relay, and AppView. NOTE: ref-plc sidecar is pinned to a pre-sequencing-migration commit because Allegedly asserts exact migration count parity.",
   "roles": {
     "plc": {
       "name": "allegedly-plc",
-      "image": "ghcr.io/at-microcosm/allegedly:latest",
+      "source": {
+        "repo": "https://tangled.org/microcosm.blue/Allegedly",
+        "ref": "main",
+        "dockerfileOverlay": "docker/allegedly/Dockerfile"
+      },
       "command": [
+        "allegedly",
         "mirror",
-        "--upstream", "https://plc.directory",
+        "--upstream", "http://local-ref-plc:3000",
         "--wrap", "http://local-ref-plc:3000",
         "--bind", "0.0.0.0:2582"
       ],
@@ -18,7 +23,8 @@
       "ports": ["2582:2582"],
       "volumes": ["allegedly_plc_data:/data"],
       "healthCheck": {
-        "path": "/_health"
+        "path": null,
+        "customTest": ["CMD-SHELL", "wget -qO- http://localhost:2582/ || exit 1"]
       },
       "capabilities": ["createAccount", "didResolution", "operationLog", "handleRotation", "quotaEnforcement"],
       "dependsOn": ["local-ref-plc", "local-plc-db"],
@@ -26,7 +32,7 @@
         "local-ref-plc": {
           "source": {
             "repo": "https://github.com/did-method-plc/did-method-plc.git",
-            "ref": "main",
+            "ref": "244abb5f6a75916984d5853df34d7bcefc4d2faf",
             "dockerfile": "packages/server/Dockerfile"
           },
           "command": ["node", "--enable-source-maps", "index.js"],
@@ -43,7 +49,8 @@
           "healthCheck": {
             "path": null,
             "customTest": ["CMD-SHELL", "wget -qO- http://localhost:3000/_health || exit 1"]
-          }
+          },
+          "dependsOn": ["local-plc-db"]
         },
         "local-plc-db": {
           "image": "postgres:16-alpine",

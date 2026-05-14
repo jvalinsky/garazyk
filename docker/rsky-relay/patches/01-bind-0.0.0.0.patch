@@ -1,0 +1,13 @@
+diff --git a/rsky-relay/src/server/server.rs b/rsky-relay/src/server/server.rs
+index 112e0dc..4e24bbc 100644
+--- a/rsky-relay/src/server/server.rs
++++ b/rsky-relay/src/server/server.rs
+@@ -204,7 +204,7 @@ impl Server {
+             None
+         };
+
+-        let listener = TcpListener::bind(format!("127.0.0.1:{PORT}"))?;
++        let listener = TcpListener::bind(format!("0.0.0.0:{PORT}"))?;
+         listener.set_nonblocking(true)?;
+         let base_url = Url::parse("http://example.com")?;
+         let now = Instant::now();
