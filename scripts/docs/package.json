@@ -11,10 +11,10 @@
     "validate": "node validate.js",
     "validate-config": "node validate-config.js",
     "archive": "node archive.js",
-    "repo:sync": "python3 ../../scripts/docs/repo_docs.py sync",
-    "repo:related": "python3 ../../scripts/docs/repo_docs.py enrich-related",
-    "repo:validate:strict": "python3 ../../scripts/docs/repo_docs.py validate --internal-strict --orphans",
-    "repo:validate:external": "python3 ../../scripts/docs/repo_docs.py validate --external-report"
+    "repo:sync": "deno run -A ../../scripts/docs/repo_docs.ts sync",
+    "repo:related": "deno run -A ../../scripts/docs/repo_docs.ts enrich-related",
+    "repo:validate:strict": "deno run -A ../../scripts/docs/repo_docs.ts validate --internal-strict --orphans",
+    "repo:validate:external": "deno run -A ../../scripts/docs/repo_docs.ts validate --external-report"
   },
   "keywords": [
     "documentation",

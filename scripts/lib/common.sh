@@ -330,7 +330,7 @@ atproto_collect_diagnostics() {
     atproto_collect_http_endpoint "$output_dir" "relay-upstreams" "$SERVICE_URL_RELAY/api/relay/upstreams"
     atproto_collect_http_endpoint "$output_dir" "appview-backfill-status" "$SERVICE_URL_APPVIEW/admin/backfill/status" \
         -H "Authorization: Bearer ${APPVIEW_ADMIN_SECRET:-localdevadmin}"
-    atproto_collect_http_endpoint "$output_dir" "pds2-describe-server" "$SERVICE_URL_CHAT/xrpc/com.atproto.server.describeServer"
+    atproto_collect_http_endpoint "$output_dir" "pds2-describe-server" "$SERVICE_URL_PDS2/xrpc/com.atproto.server.describeServer"
     atproto_collect_http_endpoint "$output_dir" "chat-health" "$SERVICE_URL_CHAT/_health"
     atproto_collect_http_endpoint "$output_dir" "video-health" "$SERVICE_URL_VIDEO/_health"
     atproto_collect_http_endpoint "$output_dir" "ui-admin" "$SERVICE_URL_UI/admin"
@@ -441,13 +441,61 @@ kill_stray_processes() {
         local binary="$(_svc_var "SERVICE_BINARY_$(echo "$_svc" | tr '[:lower:]' '[:upper:]')")"
         local port="$(_svc_var "SERVICE_PORT_$(echo "$_svc" | tr '[:lower:]' '[:upper:]')")"
         if [[ -n "$binary" ]] && [[ -n "$port" ]]; then
-            pkill -f "${binary}.*${port}" 2>/dev/null || true
+            local pids=()
+            if command -v pgrep >/dev/null 2>&1; then
+                while read -r pid; do
+                    if [[ "$pid" =~ ^[0-9]+$ ]]; then
+                        pids+=("$pid")
+                    fi
+                done < <(pgrep -f "${binary}.*${port}" 2>/dev/null || true)
+            else
+                pkill -f "${binary}.*${port}" 2>/dev/null || true
+            fi
             if command -v lsof >/dev/null 2>&1; then
                 while read -r pid; do
                     if [[ "$pid" =~ ^[0-9]+$ ]]; then
-                        kill "$pid" 2>/dev/null || true
+                        pids+=("$pid")
                     fi
                 done < <(lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true)
+            fi
+
+            local pid
+            for pid in ${pids[@]+"${pids[@]}"}; do
+                kill "$pid" 2>/dev/null || true
+            done
+
+            local deadline=$(( $(date +%s) + 5 ))
+            while [[ $(date +%s) -lt $deadline ]]; do
+                local still_running=false
+                if command -v lsof >/dev/null 2>&1 && lsof -tiTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
+                    still_running=true
+                else
+                    for pid in ${pids[@]+"${pids[@]}"}; do
+                        if kill -0 "$pid" 2>/dev/null; then
+                            still_running=true
+                            break
+                        fi
+                    done
+                fi
+                [[ "$still_running" == "true" ]] || break
+                sleep 0.2
+            done
+
+            if command -v lsof >/dev/null 2>&1; then
+                local listener_pids=()
+                local listener_count=0
+                while read -r pid; do
+                    if [[ "$pid" =~ ^[0-9]+$ ]]; then
+                        listener_pids+=("$pid")
+                        listener_count=$(( listener_count + 1 ))
+                    fi
+                done < <(lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true)
+                if (( listener_count > 0 )); then
+                    log_warn "Force-killing ${binary} listener(s) on port $port"
+                    for pid in ${listener_pids[@]+"${listener_pids[@]}"}; do
+                        kill -9 "$pid" 2>/dev/null || true
+                    done
+                fi
             fi
         fi
     done

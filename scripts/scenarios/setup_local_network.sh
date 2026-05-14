@@ -58,7 +58,7 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: $0 [--binary] [--pds2] [--wait-only] [--teardown] [--run-id ID] [--diagnostics-dir DIR]"
             echo ""
             echo "  --binary                 Start services from build/bin/ (no Docker)"
-            echo "  --pds2                   Also start a second PDS on port $SERVICE_PORT_CHAT"
+            echo "  --pds2                   Also start a second PDS on port $SERVICE_PORT_PDS2"
             echo "  --with-phone-verification Start mock Twilio server and configure PDS for phone verification"
             echo "  --wait-only              Don't start services, just wait for them to be healthy"
             echo "  --teardown               Stop services for this run"
@@ -149,7 +149,7 @@ stop_docker_services() {
 stop_stale_host_processes() {
     local needed_ports=("$SERVICE_PORT_PLC" "$SERVICE_PORT_PDS" "$SERVICE_PORT_RELAY" "$SERVICE_PORT_APPVIEW" "8080")
     if [[ "$WITH_PDS2" == "true" ]]; then
-        needed_ports+=("$SERVICE_PORT_CHAT")
+        needed_ports+=("$SERVICE_PORT_PDS2")
     fi
     if [[ "$WITH_PHONE_VERIFICATION" == "true" ]]; then
         needed_ports+=("8081")
@@ -184,7 +184,7 @@ stop_stale_docker_e2e() {
     # Collect the ports we need.
     local needed_ports=("$SERVICE_PORT_PLC" "$SERVICE_PORT_PDS" "$SERVICE_PORT_RELAY" "$SERVICE_PORT_APPVIEW" "8080")
     if [[ "$WITH_PDS2" == "true" ]]; then
-        needed_ports+=("$SERVICE_PORT_CHAT")
+        needed_ports+=("$SERVICE_PORT_PDS2")
     fi
     if [[ "$WITH_PHONE_VERIFICATION" == "true" ]]; then
         needed_ports+=("8081")
@@ -240,12 +240,9 @@ on_interrupt() {
 trap on_exit EXIT
 trap on_interrupt INT TERM
 
-check_scenario_python_dependencies() {
-    if ! python3 -c "import requests" >/dev/null 2>&1; then
-        error_exit "Missing Python dependency: requests (install with: python3 -m pip install -r $SCRIPT_DIR/requirements.txt)" 3
-    fi
-    if ! python3 -c "import websockets" >/dev/null 2>&1; then
-        log_warn "Optional Python dependency missing: websockets (scenario 09 may skip firehose checks)"
+check_scenario_deno_dependencies() {
+    if ! command -v deno >/dev/null 2>&1; then
+        error_exit "Missing dependency: deno is required for scenario scripts" 3
     fi
 }
 
@@ -255,7 +252,7 @@ if [[ "$COLLECT_DIAGNOSTICS" == "true" && "$TEARDOWN" != "true" ]]; then
 fi
 
 if [[ "$TEARDOWN" != "true" ]]; then
-    check_scenario_python_dependencies
+    check_scenario_deno_dependencies
 fi
 
 wait_for_admin_http() {
@@ -314,8 +311,8 @@ if [[ "$BINARY_MODE" == "true" ]]; then
     APPVIEW_DATA="$DATA_ROOT/appview"
     mkdir -p "$PLC_DATA" "$PDS_DATA" "$RELAY_DATA" "$APPVIEW_DATA"
 
-    # PID file gives teardown a stable list of processes even after this script
-    # exits and the scenario runner continues in a separate Python process.
+    # PID file gives teardown a stable process list after this script exits and
+    # the Deno scenario runner continues independently.
     PID_FILE="$ATPROTO_E2E_PID_FILE"
     echo "# ATProto scenario PIDs (started $(date))" > "$PID_FILE"
 
@@ -378,6 +375,7 @@ if [[ "$BINARY_MODE" == "true" ]]; then
     export APPVIEW_ADMIN_SECRET="localdevadmin"
     export APPVIEW_MASTER_SECRET="test-master-secret-123"
     export APPVIEW_PLC_URL="$SERVICE_URL_PLC"
+    export APPVIEW_PDS_URL="$SERVICE_URL_PDS"
     "$BUILD_BIN/$SERVICE_BINARY_APPVIEW" serve \
         --relay "${SERVICE_URL_PDS/http/ws}/xrpc/com.atproto.sync.subscribeRepos" \
         --port "$SERVICE_PORT_APPVIEW" \

@@ -4,7 +4,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || (cd "$SCRIPT_DIR/../.." && pwd))"
 SOURCE_DIR="$REPO_ROOT/Garazyk/Sources"
-GENERATOR_SCRIPT="$SCRIPT_DIR/generate_characterization_tests.py"
+GENERATOR_SCRIPT="$SCRIPT_DIR/generate_characterization_tests.ts"
 
 if [ $# -eq 0 ]; then
     echo "Usage: $0 ClassName1 [ClassName2 ...]"
@@ -25,7 +25,7 @@ for CLASS_NAME in "$@"; do
     echo "Found header: $HEADER_FILE"
     echo "Generating tests..."
     
-    python3 "$GENERATOR_SCRIPT" "$HEADER_FILE"
+    deno run -A "$GENERATOR_SCRIPT" "$HEADER_FILE"
     
     echo "Done for $CLASS_NAME."
     echo "-----------------------------------"
