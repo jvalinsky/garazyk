@@ -1,0 +1,35 @@
+diff --git a/rsky-relay/src/config.rs b/rsky-relay/src/config.rs
+--- a/rsky-relay/src/config.rs
++++ b/rsky-relay/src/config.rs
+@@ -7,6 +7,11 @@
+     LazyLock::new(|| env::var("RELAY_ADMIN_PASSWORD").ok().filter(|s| !s.is_empty()));
+ pub const BAN_REFRESH_INTERVAL: Duration = Duration::from_secs(30);
+ 
++pub static DISCOVERY_ALLOW_HTTP: LazyLock<bool> = LazyLock::new(|| {
++    env::var("RELAY_DISCOVERY_ALLOW_HTTP")
++        .map_or(false, |s| matches!(s.as_ref(), "1" | "true"))
++});
++
+ // validator: when true (default), the validator publishes events that strict checks would defer or drop.
+ // AT Protocol relay validation is operator-discretion; consumers verify signatures end-to-end.
+ pub static LENIENT_VALIDATION: LazyLock<bool> = LazyLock::new(|| {
+diff --git a/rsky-relay/src/server/server.rs b/rsky-relay/src/server/server.rs
+--- a/rsky-relay/src/server/server.rs
++++ b/rsky-relay/src/server/server.rs
+@@ -24,6 +24,7 @@
+ use crate::SHUTDOWN;
+ use crate::config::{ADMIN_PASSWORD, HOSTS_INTERVAL, PORT};
+ #[cfg(not(feature = "labeler"))]
++use crate::config::DISCOVERY_ALLOW_HTTP;
+ use crate::config::{HOSTS_MIN_ACCOUNTS, HOSTS_RELAYS};
+ use crate::crawler::{RequestCrawl, RequestCrawlSender};
+ #[cfg(not(feature = "labeler"))]
+@@ -536,7 +537,7 @@
+     fn query_hosts(&mut self) -> Result<()> {
+         let client = reqwest::blocking::Client::builder()
+             .user_agent("rsky-relay")
+-            .https_only(true)
++            .https_only(!*DISCOVERY_ALLOW_HTTP)
+             .build()?;
+         let mut seen: hashbrown::HashSet<String> = hashbrown::HashSet::new();
+         for upstream in HOSTS_RELAYS.iter() {

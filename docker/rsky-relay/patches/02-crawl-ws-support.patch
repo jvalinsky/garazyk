@@ -1,0 +1,38 @@
+diff --git a/rsky-relay/src/config.rs b/rsky-relay/src/config.rs
+index 0000000..1111111 100644
+--- a/rsky-relay/src/config.rs
++++ b/rsky-relay/src/config.rs
+@@ -37,6 +37,12 @@ pub static HOSTS_RELAYS: LazyLock<Vec<String>> = LazyLock::new(|| {
+         |s| s.split(',').map(str::trim).filter(|s| !s.is_empty()).map(str::to_owned).collect(),
+     )
+ });
++pub static CRAWL_SCHEME: LazyLock<String> = LazyLock::new(|| {
++    env::var("RELAY_CRAWL_SCHEME")
++        .ok()
++        .filter(|s| !s.is_empty())
++        .unwrap_or_else(|| "wss".to_owned())
++});
+ pub const HOSTS_INTERVAL: Duration = Duration::from_secs(60 * 5);
+ pub const HOSTS_MIN_ACCOUNTS: u64 = 0;
+
+diff --git a/rsky-relay/src/crawler/connection.rs b/rsky-relay/src/crawler/connection.rs
+index 0000000..1111111 100644
+--- a/rsky-relay/src/crawler/connection.rs
++++ b/rsky-relay/src/crawler/connection.rs
+@@ -10,6 +10,7 @@ use url::Url;
+
+ use crate::crawler::client;
+ use crate::crawler::types::{HandshakeResult, WebSocketClient};
++use crate::config::CRAWL_SCHEME;
+ use crate::types::{Cursor, MessageSender};
+
+ #[derive(Debug, Error)]
+@@ -53,7 +54,7 @@ impl Connection {
+             "com.atproto.sync.subscribeRepos"
+         };
+         #[expect(clippy::unwrap_used)]
+-        let mut url = Url::parse(&format!("wss://{hostname}/xrpc/{path}")).unwrap();
++        let mut url = Url::parse(&format!("{}://{hostname}/xrpc/{path}", *CRAWL_SCHEME)).unwrap();
+         if let Some(cursor) = cursor {
+             url.query_pairs_mut().append_pair("cursor", &cursor.to_string());
+         }
