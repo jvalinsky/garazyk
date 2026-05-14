@@ -1,0 +1,74 @@
+{
+  "name": "wintermute",
+  "description": "Wintermute (Rust, blacksky-algorithms/rsky) with Garazyk PDS, Relay, PLC, and reference bsky-dataplane for schema init. Monolithic firehose indexer that writes to PostgreSQL using the bsky dataplane schema. The dataplane sidecar runs Kysely migrations to create the schema; Wintermute then writes indexed records to the same database.",
+  "roles": {
+    "plc": { "inherit": "garazyk-default" },
+    "pds": { "inherit": "garazyk-default" },
+    "pds2": { "inherit": "garazyk-default" },
+    "relay": { "inherit": "garazyk-default" },
+    "appview": { "inherit": "garazyk-default" },
+    "backfill": {
+      "name": "wintermute",
+      "source": {
+        "repo": "https://github.com/blacksky-algorithms/rsky.git",
+        "ref": "main",
+        "overlayDir": "docker/wintermute"
+      },
+      "env": {
+        "RELAY_HOSTS": "http://local-relay:2584",
+        "DATABASE_URL": "postgres://wintermute:wintermute@local-wintermute-db:5432/bsky",
+        "DATABASE_HOST": "local-wintermute-db",
+        "DATABASE_PORT": "5432",
+        "DATABASE_USER": "wintermute",
+        "METRICS_PORT": "9090",
+        "RUST_LOG": "info"
+      },
+      "ports": ["9090:9090"],
+      "volumes": ["wintermute_data:/data"],
+      "healthCheck": {
+        "path": null,
+        "customTest": ["CMD-SHELL", "wget -qO- http://localhost:9090/metrics || exit 1"]
+      },
+      "capabilities": [
+        "backfill", "fullNetworkIndexing", "labelSubscription",
+        "prometheusMetrics", "repoBackfill", "directIndexing"
+      ],
+      "dependsOn": ["local-dataplane"],
+      "sidecars": {
+        "local-wintermute-db": {
+          "image": "postgres:16-alpine",
+          "env": {
+            "POSTGRES_DB": "bsky",
+            "POSTGRES_USER": "wintermute",
+            "POSTGRES_PASSWORD": "wintermute"
+          },
+          "ports": ["5433:5432"],
+          "volumes": ["wintermute_db_data:/var/lib/postgresql/data"],
+          "healthCheck": {
+            "path": null,
+            "customTest": ["CMD-SHELL", "pg_isready -U wintermute -d bsky"]
+          }
+        },
+        "local-dataplane": {
+          "source": {
+            "repo": "https://github.com/bluesky-social/atproto.git",
+            "ref": "main",
+            "overlayDir": "docker/bsky-dataplane"
+          },
+          "env": {
+            "BSKY_DB_POSTGRES_URL": "postgres://wintermute:wintermute@local-wintermute-db:5432/bsky?options=-csearch_path%3Dbsky",
+            "BSKY_DB_POSTGRES_SCHEMA": "bsky",
+            "BSKY_DATAPLANE_PORT": "2585",
+            "BSKY_DID_PLC_URL": "http://local-plc:2582"
+          },
+          "ports": ["2585:2585"],
+          "healthCheck": {
+            "path": null,
+            "customTest": ["CMD-SHELL", "wget -qO- http://localhost:2585/ || exit 1"]
+          },
+          "dependsOn": ["local-wintermute-db"]
+        }
+      }
+    }
+  }
+}
