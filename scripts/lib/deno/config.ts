@@ -1,12 +1,13 @@
 export const PDS1 = Deno.env.get("PDS_URL") || "http://localhost:2583";
 export const PDS2 = Deno.env.get("PDS2_URL") || "http://localhost:2585";
 export const APPVIEW_ADMIN_SECRET = Deno.env.get("APPVIEW_ADMIN_SECRET") || "localdevadmin";
+export const PDS_ADMIN_PASSWORD = Deno.env.get("PDS_ADMIN_PASSWORD") || "admin-localdev";
 
 export const SERVICE_URLS = {
   pds: PDS1,
   plc: "http://localhost:2582",
   relay: "http://localhost:2584",
-  appview: "http://localhost:2583", // PDS and AppView are same in local stack
+  appview: "http://localhost:3200",
   chat: PDS2,
   video: "http://localhost:2586",
   ui: "http://localhost:2590",
