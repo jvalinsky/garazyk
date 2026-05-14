@@ -105,15 +105,7 @@ pbkdf2:100000:7kN9xQZ3mP4vR2sT8wY6uI==:aB1cD2eF3gH4iJ5kL6mN7oP8qR9sT0uV==
 **Generating a PBKDF2 hash:**
 
 ```bash
-# Using Python
-python3 -c "
-import base64, hashlib, os
-password = 'your-secure-password'
-salt = os.urandom(16)
-iterations = 100000
-hash_val = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, iterations)
-print(f'pbkdf2:{iterations}:{base64.b64encode(salt).decode()}:{base64.b64encode(hash_val).decode()}')
-"
+./scripts/ops/hash_admin_password.sh
 ```
 
 ## JWT Structure

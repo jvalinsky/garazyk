@@ -19,9 +19,9 @@ Garazyk employs a multi-level testing strategy:
 
 Scenarios in Garazyk:
 - Orchestrate a local Docker network of services
-- Use TypeScript and the official ATProto API
+- Use TypeScript, Deno, and the shared XRPC client in `scripts/lib/deno/`
 - Record timing instrumentation for every step
-- Generate JSON reports for the **Scenario Dashboard**
+- Generate JSON reports under the current e2e run directory
 - Support multi-user interactions (e.g., federation, DMs)
 
 ## Running Scenarios
@@ -34,6 +34,12 @@ The scenarios are managed by the `run_scenarios.ts` orchestrator:
 
 # Run a specific scenario (e.g. 01_account_lifecycle)
 ./scripts/run_scenarios.ts 01
+
+# Start services, run scenarios, then stop services
+./scripts/run_scenarios.ts --setup --teardown
+
+# Include scenarios that need the second PDS on port 2587
+./scripts/run_scenarios.ts --pds2
 ```
 
 ## Scenario Example
@@ -41,15 +47,16 @@ The scenarios are managed by the `run_scenarios.ts` orchestrator:
 Tests are written in idiomatic TypeScript using the `ScenarioResult` runner:
 
 ```typescript
-import { ScenarioResult, timedCall } from "../lib/deno/runner.ts";
-import { AtpAgent } from "npm:@atproto/api";
+import { XrpcClient } from "../../lib/deno/client.ts";
+import { PDS1, PDS2 } from "../../lib/deno/config.ts";
+import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Federation Flow");
   result.start();
 
-  const pds1 = new AtpAgent({ service: "http://localhost:2583" });
-  const pds2 = new AtpAgent({ service: "http://localhost:2585" });
+  const pds1 = new XrpcClient(PDS1);
+  const pds2 = new XrpcClient(PDS2);
 
   await timedCall(result, "PDS 1 -> PDS 2 Message", async () => {
     // Test logic here
@@ -82,4 +89,3 @@ docker compose up -d
 - [Documentation Map](documentation-map.md)
 - [Contributor Guide](../index.md)
 - [Repository Documentation Index](../repo-index/index.md)
-

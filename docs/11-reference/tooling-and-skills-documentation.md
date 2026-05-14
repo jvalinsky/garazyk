@@ -18,23 +18,19 @@ This hub maps docs for repository tooling, scripts, and skills.
 - [Scripts Docs Workspace](../../scripts/docs/README.md)
 - [Scripts Docs Configs](../../scripts/docs/configs/README.md)
 - [Scripts Docs Migration Mapping](../../scripts/docs/lib/README-migration-mapping.md)
+- [Script Development Standards](../guides/SCRIPT_DEVELOPMENT.md)
+- [Deno Scenario Framework](./deno-scenario-framework.md)
 
 ## Skills Docs
 
-- [Skills Directory](../skills/README)
-- [ATProto Endpoint Stub Finder Skill](../../skills/atproto-endpoint-stub-finder/SKILL.md)
-- [XRPC Schema Sync Skill](../../skills/xrpc-schema-sync/SKILL.md)
-- [Objective-C Concurrency Audit Skill](../../skills/objc-concurrency-bug-audit/SKILL.md)
+- [Skills Directory](../skills/README.md)
+- [ATProto Coverage Audit Skill](../../.agents/skills/atproto-coverage-audit/SKILL.md)
+- [Objective-C Architecture Audit Skill](../../.agents/skills/objc-architecture-audit/SKILL.md)
+- [Objective-C Concurrency Audit Skill](../../.agents/skills/objc-concurrency-audit/SKILL.md)
+- [Professional Bash Scripting Skill](../../.agents/skills/professional-bash-scripting/SKILL.md)
 
 ## Related
 
 - [Source-Adjacent Documentation](./source-adjacent-documentation)
-- [Repository Documentation Index](../repo-index/index)
-- [Backlinks](../repo-index/backlinks)
-
-## Related
-
-- [Documentation Map](documentation-map.md)
-- [Contributor Guide](../index.md)
 - [Repository Documentation Index](../repo-index/index.md)
-
+- [Backlinks](../repo-index/backlinks.md)

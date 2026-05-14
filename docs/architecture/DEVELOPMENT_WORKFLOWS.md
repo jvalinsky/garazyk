@@ -293,7 +293,7 @@ graph TD
     
     scripts --> test[test_*.sh]
     scripts --> build[build_*.sh]
-    scripts --> seed[seed_*.py]
+    scripts --> seed[seed_*.ts]
     
     style root fill:#c8e6c9
     style src fill:#bbdefb

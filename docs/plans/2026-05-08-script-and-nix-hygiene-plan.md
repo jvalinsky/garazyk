@@ -4,6 +4,8 @@ Date: 2026-05-08
 
 Goal: review repository scripts, wrappers, generated script-adjacent files, and Nix files, then decide whether each family should be deleted, moved, revised, or left alone.
 
+Status update, 2026-05-14: maintained Python entrypoints under `scripts/` have been migrated to Deno/TypeScript or retired. The path inventory below is historical pre-migration analysis; current contributor guidance lives in [Script Development and Quality Standards](../guides/SCRIPT_DEVELOPMENT.md) and current scenario commands use `scripts/run_scenarios.ts`.
+
 ## Scope
 
 This plan covers:
