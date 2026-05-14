@@ -43,6 +43,11 @@ jobs:
           cache: 'npm'
           cache-dependency-path: 'docs/package-lock.json'
 
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
       - name: Install Dependencies
         run: |
           cd docs
@@ -55,7 +60,7 @@ jobs:
 
       - name: Sync Repo-Wide Docs Metadata
         run: |
-          python3 scripts/docs/repo_docs.py sync
+          deno run -A scripts/docs/repo_docs.ts sync
 
       - name: Verify Generated Docs Artifacts Are Committed
         run: |
@@ -64,7 +69,7 @@ jobs:
 
       - name: Validate Repo-Wide Internal Links and Discoverability
         run: |
-          python3 scripts/docs/repo_docs.py validate --internal-strict --orphans
+          deno run -A scripts/docs/repo_docs.ts validate --internal-strict --orphans
 
       - name: Build Documentation
         run: |
@@ -157,5 +162,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '📚 Documentation preview built successfully!\n\nDownload the artifact to preview locally:\n```bash\nunzip vitepress-site.zip\ncd dist\npython3 -m http.server 8080\n```\nThen visit http://localhost:8080/docs/'
+              body: '📚 Documentation preview built successfully!\n\nDownload the artifact to preview locally:\n```bash\nunzip vitepress-site.zip\ncd dist\ndeno run --allow-net --allow-read jsr:@std/http/file-server -p 8080\n```\nThen visit http://localhost:8080/docs/'
             })
