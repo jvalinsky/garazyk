@@ -1,4 +1,3 @@
-import { BskyAgent } from "@atproto/api";
 import { TransportLayer, XrpcError } from "./transport.ts";
 import {
   AccountsClient,
@@ -17,8 +16,7 @@ import {
 } from "./clients/index.ts";
 
 export class XrpcClient {
-  public agent: BskyAgent;
-  public raw_transport: TransportLayer;
+  public rawTransport: TransportLayer;
 
   public accounts: AccountsClient;
   public identity: IdentityClient;
@@ -30,15 +28,14 @@ export class XrpcClient {
   public drafts: DraftsClient;
   public search: SearchClient;
   public contact: ContactClient;
-  public age_assurance: AgeAssuranceClient;
+  public ageAssurance: AgeAssuranceClient;
   public admin: AdminClient;
   public raw: RawClient;
 
   constructor(public baseUrl = "http://localhost:2583") {
     const t = new TransportLayer(baseUrl);
-    this.raw_transport = t;
-    this.agent = new BskyAgent({ service: baseUrl });
-    
+    this.rawTransport = t;
+
     this.accounts = new AccountsClient(t);
     this.identity = new IdentityClient(t);
     this.records = new RecordsClient(t);
@@ -49,19 +46,26 @@ export class XrpcClient {
     this.drafts = new DraftsClient(t);
     this.search = new SearchClient(t);
     this.contact = new ContactClient(t);
-    this.age_assurance = new AgeAssuranceClient(t);
+    this.ageAssurance = new AgeAssuranceClient(t);
     this.admin = new AdminClient(t);
     this.raw = new RawClient(t);
   }
 
   async adminLogin(password = "test-admin-password"): Promise<string> {
-    return await this.accounts.adminLogin(password);
+    return await this.admin.login(password);
   }
 
-  get last_response() { return this.raw_transport.last_response; }
-  get last_responses() { return this.raw_transport.last_responses; }
+  get lastResponse() { return this.rawTransport.lastResponse; }
+  get lastResponses() { return this.rawTransport.lastResponses; }
 
-  async health_check(): Promise<boolean> {
+  #agentSession = new AgentSession();
+
+  get agent() {
+    const self = this;
+    return createAgentProxy([], self, this.#agentSession);
+  }
+
+  async healthCheck(): Promise<boolean> {
     try {
       const res = await fetch(`${this.baseUrl}/_health`);
       return res.status === 200;
@@ -70,14 +74,92 @@ export class XrpcClient {
     }
   }
 
-  async wait_for_healthy(timeout = 30): Promise<void> {
+  async waitForHealthy(timeout = 30): Promise<void> {
     const start = Date.now();
     while (Date.now() - start < timeout * 1000) {
-      if (await this.health_check()) return;
+      if (await this.healthCheck()) return;
       await new Promise(r => setTimeout(r, 500));
     }
     throw new Error(`Service at ${this.baseUrl} not healthy after ${timeout}s`);
   }
+}
+
+class AgentSession {
+  accessJwt?: string;
+  refreshJwt?: string;
+  did?: string;
+  handle?: string;
+}
+
+function resolveToken(opts: any, session: AgentSession): string | undefined {
+  if (opts?.headers?.Authorization) {
+    return opts.headers.Authorization.replace(/^Bearer\s+/i, "");
+  }
+  return session.accessJwt;
+}
+
+function createAgentProxy(path: string[], client: XrpcClient, session: AgentSession): any {
+  return new Proxy(function () {}, {
+    get(_target, prop: string) {
+      if (typeof prop !== "string") return undefined;
+
+      if (prop === "createAccount") {
+        return async (params: {
+          handle: string;
+          email: string;
+          password: string;
+        }) => {
+          const data = await client.accounts.createAccount(
+            params.handle,
+            params.email,
+            params.password,
+          );
+          session.accessJwt = data.accessJwt;
+          session.refreshJwt = data.refreshJwt;
+          session.did = data.did;
+          session.handle = data.handle;
+          return { data };
+        };
+      }
+
+      if (prop === "login") {
+        return async (params: {
+          identifier: string;
+          password: string;
+        }) => {
+          const data = await client.accounts.createSession(
+            params.identifier,
+            params.password,
+          );
+          session.accessJwt = data.accessJwt;
+          session.refreshJwt = data.refreshJwt;
+          session.did = data.did;
+          session.handle = data.handle;
+          return { data };
+        };
+      }
+
+      return createAgentProxy([...path, prop], client, session);
+    },
+    async apply(_target, _thisArg, args: any[]) {
+      const method = path.join(".");
+      const [params, opts] = args;
+      const token = resolveToken(opts, session);
+
+      const isQuery = /^(get|list|resolve|describe)/i.test(
+        method.split(".").pop() || "",
+      );
+
+      try {
+        const data = isQuery
+          ? await client.rawTransport.get(method, params, token)
+          : await client.rawTransport.post(method, params, token);
+        return { data };
+      } catch (e) {
+        throw e;
+      }
+    },
+  });
 }
 
 export { XrpcError };
