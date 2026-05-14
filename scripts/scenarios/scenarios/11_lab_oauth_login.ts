@@ -1,11 +1,12 @@
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
+import { SERVICE_URLS } from "../../lib/deno/config.ts";
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Lab OAuth2 Login");
   result.start();
 
-  const uiUrl = (Deno.env.get("GARAZYK_UI_URL") || "http://localhost:2590").replace(/\/$/, "");
+  const uiUrl = (SERVICE_URLS.webClient || SERVICE_URLS.ui).replace(/\/$/, "");
   const adminPassword = Deno.env.get("GARAZYK_UI_ADMIN_PASSWORD") || "changeme";
 
   await timedCall(
