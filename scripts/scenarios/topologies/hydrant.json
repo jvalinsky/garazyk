@@ -1,0 +1,38 @@
+{
+  "name": "hydrant",
+  "description": "Hydrant (Rust, ptr.pet) with Garazyk PDS, Relay, and PLC. Fast AT Protocol indexer built on fjall with flexible filtering, XRPC queries, cursor-backed event stream, and optional relay mode. Supports full-network and filtered indexing.",
+  "roles": {
+    "plc": { "inherit": "garazyk-default" },
+    "pds": { "inherit": "garazyk-default" },
+    "pds2": { "inherit": "garazyk-default" },
+    "relay": { "inherit": "garazyk-default" },
+    "appview": { "inherit": "garazyk-default" },
+    "backfill": {
+      "name": "hydrant",
+      "source": {
+        "repo": "https://tangled.org/ptr.pet/hydrant",
+        "ref": "main"
+      },
+      "env": {
+        "HYDRANT_RELAY_HOST": "ws://local-relay:2584/xrpc/com.atproto.sync.subscribeRepos",
+        "HYDRANT_PLC_URL": "http://local-plc:2582",
+        "HYDRANT_DATABASE_PATH": "/data/hydrant.db",
+        "HYDRANT_API_PORT": "3000",
+        "HYDRANT_FULL_NETWORK": "false",
+        "HYDRANT_FILTER_SIGNALS": "app.bsky.actor.profile",
+        "RUST_LOG": "info"
+      },
+      "ports": ["3000:3000"],
+      "volumes": ["hydrant_data:/data"],
+      "healthCheck": {
+        "path": "/stats"
+      },
+      "capabilities": [
+        "backfill", "filteredSync", "xrpcQueries",
+        "eventStream", "filterManagement",
+        "ingestionControl", "repoManagement"
+      ],
+      "dependsOn": ["local-relay"]
+    }
+  }
+}

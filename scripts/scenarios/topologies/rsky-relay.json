@@ -1,0 +1,61 @@
+{
+  "name": "rsky-relay",
+  "description": "Garazyk PDS with rsky-relay (Rust, blacksky-algorithms). Tests relay interop with the rsky relay implementation. Patches applied via overlayDir fix hardcoding issues for local Docker networking.",
+  "roles": {
+    "plc": { "inherit": "garazyk-default" },
+    "pds": { "inherit": "garazyk-default" },
+    "relay": {
+      "name": "rsky-relay",
+      "source": {
+        "repo": "https://github.com/blacksky-algorithms/rsky.git",
+        "ref": "fd88a2740da299377ee08cf4e76f80e4ad45fc4a",
+        "overlayDir": "docker/rsky-relay"
+      },
+      "command": ["rsky-relay", "--no-plc-export"],
+      "env": {
+        "RELAY_PORT": "2584",
+        "RELAY_CRAWL_SCHEME": "ws",
+        "RELAY_PLC_URL": "http://local-plc:2582",
+        "RELAY_DISCOVERY_UPSTREAMS": "",
+        "RELAY_DISCOVERY_ALLOW_HTTP": "true",
+        "RELAY_DB_PATH": "/data/db",
+        "RUST_LOG": "rsky_relay=debug,info"
+      },
+      "ports": ["2584:2584"],
+      "volumes": ["rsky_relay_data:/data"],
+      "healthCheck": {
+        "path": null,
+        "customTest": ["CMD-SHELL", "wget -qO- http://localhost:2584/xrpc/com.atproto.sync.subscribeRepos || exit 1"]
+      },
+      "capabilities": ["subscribeRepos", "requestCrawl", "healthCheck"],
+      "dependsOn": ["local-pds"]
+    },
+    "appview": {
+      "name": "syrena",
+      "buildContext": "docker/local-network",
+      "dockerfile": "Dockerfile.local",
+      "entrypoint": ["/usr/local/bin/syrena"],
+      "command": ["serve", "--relay", "ws://local-relay:2584", "--port", "3200", "--data-dir", "/var/lib/atprotopds", "--no-backfill"],
+      "env": {
+        "TZ": "UTC",
+        "PDS_ALLOW_PRIVATE_SSRF": "1",
+        "PDS_ALLOW_HTTP": "1",
+        "PDS_LEXICON_PATH": "/usr/share/atprotopds/lexicons",
+        "PDS_WRITE_PROXY_OVERRIDE": "http://local-pds:2583",
+        "APPVIEW_ADMIN_SECRET": "localdevadmin",
+        "APPVIEW_DATA_DIR": "/var/lib/atprotopds",
+        "APPVIEW_PLC_URL": "http://local-plc:2582",
+        "APPVIEW_PDS_URL": "http://local-pds:2583",
+        "APPVIEW_HTTP_PORT": "3200"
+      },
+      "ports": ["3200:3200"],
+      "volumes": ["local_appview_data:/var/lib/atprotopds"],
+      "healthCheck": {
+        "path": "/admin/backfill/status",
+        "headers": { "Authorization": "Bearer localdevadmin" }
+      },
+      "capabilities": ["getTimeline", "getProfile", "getFeed", "search", "backfill", "admin"],
+      "dependsOn": ["local-relay"]
+    }
+  }
+}
