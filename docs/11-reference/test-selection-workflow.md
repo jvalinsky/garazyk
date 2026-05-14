@@ -78,11 +78,13 @@ For broad behavioral changes affecting multiple services (PDS, AppView, Relay), 
 
 ```bash
 ./scripts/run_scenarios.ts --list
-./scripts/run_scenarios.ts 01 05
+./scripts/run_scenarios.ts --no-setup 01 05
+./scripts/run_scenarios.ts --setup --teardown
 ```
+
+Scenarios are Deno/TypeScript modules under `scripts/scenarios/scenarios/*.ts`. The runner auto-discovers them and skips PDS2-only scenarios during broad runs unless `--pds2` is set or the focused selection requires PDS2.
 
 ## Related
 
 - [Documentation Map](documentation-map.md)
 - [Contributor Guide](../index.md)
-

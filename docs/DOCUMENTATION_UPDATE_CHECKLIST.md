@@ -114,7 +114,7 @@ Run automated checks:
 
 ```bash
 # Verify all links work
-python3 scripts/test-doc-links.py
+deno run -A scripts/test/test-doc-links.ts
 
 # Test code examples compile (if applicable)
 ./scripts/verify-doc-examples.sh
@@ -150,7 +150,7 @@ Check if these need updates:
 # Check generated site in _site/ directory
 
 # Test locally
-cd _site && python3 -m http.server 8000
+cd _site && deno run --allow-net --allow-read jsr:@std/http/file-server -p 8000
 # Visit http://localhost:8000 and verify changes
 ```
 
@@ -255,7 +255,7 @@ When cutting a release:
 
 ```bash
 # Find broken internal links
-python3 scripts/test-doc-links.py
+deno run -A scripts/test/test-doc-links.ts
 
 # Fix by updating paths or removing dead links
 ```
@@ -336,7 +336,7 @@ For critical fixes that need immediate documentation updates:
 
 - **Documentation source**: `docs/` directory
 - **Build script**: `scripts/build/build-docs.sh`
-- **Link checker**: `scripts/test-doc-links.py`
+- **Link checker**: `scripts/test/test-doc-links.ts`
 - **Example validator**: `scripts/verify-doc-examples.sh` (if exists)
 - **Style guide**: Follow this checklist for consistency
 - **Issue tracker**: Label issues with `documentation` tag
