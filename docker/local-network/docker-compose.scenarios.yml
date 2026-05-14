@@ -17,7 +17,7 @@ services:
       - "/var/lib/atprotopds/config.json"
       - "--foreground"
     ports:
-      - "2585:2585"
+      - "2587:2585"
     volumes:
       - local_pds2_data:/var/lib/atprotopds
       - ./pds2-config.json:/var/lib/atprotopds/config.json:ro
