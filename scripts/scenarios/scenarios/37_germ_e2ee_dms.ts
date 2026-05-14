@@ -85,8 +85,12 @@ export async function run(): Promise<ScenarioResult> {
     await timedCall(result, "Germ: Publish declaration", async () => {
       const decl = {
         $type: "com.germnetwork.declaration",
+        version: "1.0.0",
         currentKey: { $bytes: btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(33)))) },
-        messageMe: "all",
+        messageMe: {
+          showButtonTo: "everyone",
+          messageMeUrl: "https://germ.network/dm"
+        },
         createdAt: now()
       };
       return await client.records.createRecord(luna.did, "com.germnetwork.declaration", decl, luna.accessJwt, { rkey: "self" });
