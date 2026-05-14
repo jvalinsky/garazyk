@@ -92,6 +92,9 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 }
 
 - (RateLimiter *)rateLimiter {
+  if (_backingApplication) {
+    return _backingApplication.rateLimiter;
+  }
   return _rateLimiter;
 }
 
