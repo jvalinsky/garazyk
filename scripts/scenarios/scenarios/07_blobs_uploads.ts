@@ -1,4 +1,4 @@
-import { XrpcClient } from "../../lib/deno/client.ts";
+import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
 import { PDS1, getCharacter } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 
@@ -195,13 +195,20 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   const largeData = new Uint8Array(2 * 1024 * 1024); // 2MB
-  const err = await timedCall(
+  await timedCall(
     result, "Oversized blob upload",
     async () => {
-      await client.raw.postBinary("com.atproto.repo.uploadBlob", largeData, "application/octet-stream", marcus.accessJwt);
+      try {
+        await client.raw.postBinary("com.atproto.repo.uploadBlob", largeData, "application/octet-stream", marcus.accessJwt);
+      } catch (e) {
+        if (e instanceof XrpcError && e.status === 400 && e.body?.error === "BlobTooLarge") {
+          return e.body;
+        }
+        throw e;
+      }
+      throw new Error("Expected BlobTooLarge response");
     },
-    undefined,
-    true
+    (body) => `error=${body.error}`
   );
 
   if (rosaBlob) {
