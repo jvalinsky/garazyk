@@ -27,9 +27,9 @@ export async function run(): Promise<ScenarioResult> {
       const res = await fetch(`${uiUrl}/lab`, { redirect: "manual" });
       const contentType = res.headers.get("Content-Type") || "";
       const body = await res.text();
-      assert(res.status === 200, `status=${res.status}`);
-      assert(contentType.toLowerCase().startsWith("text/html"), `content_type=${contentType}`);
-      assert(body.includes("lab-login-section"), "body missing lab-login-section");
+      assert.isTrue(res.status === 200, `status=${res.status}`);
+      assert.isTrue(contentType.toLowerCase().startsWith("text/html"), `content_type=${contentType}`);
+      assert.isTrue(body.includes("lab-login-section"), "body missing lab-login-section");
     }
   );
 
@@ -45,15 +45,15 @@ export async function run(): Promise<ScenarioResult> {
       ];
       
       for (const key of requiredKeys) {
-        assert(key in metadata, `missing key: ${key}`);
+        assert.isTrue(key in metadata, `missing key: ${key}`);
       }
 
-      assert(res.status === 200, `status=${res.status}`);
-      assert(metadata.client_id, "missing client_id");
-      assert(metadata.grant_types?.includes("authorization_code"), "missing auth_code grant");
-      assert(metadata.token_endpoint_auth_method === "none", "wrong auth method");
-      assert(metadata.dpop_bound_access_tokens === true, "dpop not enabled");
-      assert(metadata.redirect_uris?.some((uri: string) => uri.includes("/lab/callback")), "missing callback uri");
+      assert.isTrue(res.status === 200, `status=${res.status}`);
+      assert.isTrue(metadata.client_id, "missing client_id");
+      assert.isTrue(metadata.grant_types?.includes("authorization_code"), "missing auth_code grant");
+      assert.isTrue(metadata.token_endpoint_auth_method === "none", "wrong auth method");
+      assert.isTrue(metadata.dpop_bound_access_tokens === true, "dpop not enabled");
+      assert.isTrue(metadata.redirect_uris?.some((uri: string) => uri.includes("/lab/callback")), "missing callback uri");
     }
   );
 
@@ -64,7 +64,7 @@ export async function run(): Promise<ScenarioResult> {
       url.searchParams.append("code", "test-code");
       url.searchParams.append("state", "test-state");
       const res = await fetch(url.toString(), { redirect: "manual" });
-      assert(res.status === 200, `status=${res.status}`);
+      assert.isTrue(res.status === 200, `status=${res.status}`);
     }
   );
 
@@ -72,7 +72,7 @@ export async function run(): Promise<ScenarioResult> {
     result, "Admin auth boundary",
     async () => {
       const res = await fetch(`${uiUrl}/admin`, { redirect: "manual" });
-      assert(res.status === 302, `status=${res.status}`);
+      assert.isTrue(res.status === 302, `status=${res.status}`);
     }
   );
 
@@ -85,7 +85,7 @@ export async function run(): Promise<ScenarioResult> {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: adminPassword }),
       });
-      assert(res.status === 200, `status=${res.status}`);
+      assert.isTrue(res.status === 200, `status=${res.status}`);
       
       const setCookie = res.headers.get("Set-Cookie") || "";
       const match = setCookie.match(/ui_admin_token=([^;]+)/);
@@ -96,7 +96,7 @@ export async function run(): Promise<ScenarioResult> {
         token = body.token || body.ui_admin_token;
       }
       
-      assert(token, "token not found");
+      assert.isTrue(token, "token not found");
       adminCookieHeader = `ui_admin_token=${token}`;
     }
   );
@@ -109,7 +109,7 @@ export async function run(): Promise<ScenarioResult> {
           headers: { "Cookie": adminCookieHeader },
           redirect: "manual",
         });
-        assert(res.status === 200, `status=${res.status}`);
+        assert.isTrue(res.status === 200, `status=${res.status}`);
       }
     );
   }
@@ -121,7 +121,7 @@ export async function run(): Promise<ScenarioResult> {
         headers: { "HX-Request": "true" },
         redirect: "manual",
       });
-      assert(res.status === 401, `status=${res.status}`);
+      assert.isTrue(res.status === 401, `status=${res.status}`);
     }
   );
 
@@ -133,7 +133,7 @@ export async function run(): Promise<ScenarioResult> {
           headers: { "HX-Request": "true", "Cookie": adminCookieHeader },
           redirect: "manual",
         });
-        assert(res.status === 200, `status=${res.status}`);
+        assert.isTrue(res.status === 200, `status=${res.status}`);
       }
     );
   }
@@ -146,13 +146,13 @@ export async function run(): Promise<ScenarioResult> {
           method: "POST",
           headers: { "Cookie": adminCookieHeader },
         });
-        assert(res.status === 200, `status=${res.status}`);
+        assert.isTrue(res.status === 200, `status=${res.status}`);
         
         const postLogout = await fetch(`${uiUrl}/admin`, {
           headers: { "Cookie": adminCookieHeader },
           redirect: "manual",
         });
-        assert(postLogout.status === 302, `status=${postLogout.status} after logout`);
+        assert.isTrue(postLogout.status === 302, `status=${postLogout.status} after logout`);
       }
     );
   }

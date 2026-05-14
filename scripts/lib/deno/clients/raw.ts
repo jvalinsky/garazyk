@@ -28,6 +28,10 @@ export class RawClient {
     return await this.xrpcPost(method, body, token);
   }
 
+  async postBinary(method: string, data: Uint8Array, contentType: string, token?: string) {
+    return await this.transport.postBinary(method, data, contentType, token);
+  }
+
   async postRaw(
     method: string,
     data: Uint8Array,

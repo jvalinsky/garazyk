@@ -57,7 +57,7 @@ export async function run(): Promise<ScenarioResult> {
       result.stepPassed("AppView indexed post");
       const avPost = await appview.feed.getPosts([postUri], luna.accessJwt);
       const avText = avPost.posts[0].record?.text;
-      assert(avText === postText, `Content drift: ${avText} !== ${postText}`);
+      assert.isTrue(avText === postText, `Content drift: ${avText} !== ${postText}`);
       result.stepPassed("PDS-AppView content match");
     } else {
       result.stepFailed("AppView index timeout", "Post not found after 15s");

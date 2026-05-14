@@ -1,5 +1,5 @@
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { PDS1, getCharacter, PDS_ADMIN_PASSWORD } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 
 function now() {
@@ -61,7 +61,7 @@ export async function run(): Promise<ScenarioResult> {
     return result;
   }
 
-  const adminPassword = Deno.env.get("PDS_ADMIN_PASSWORD") || "test-admin-password";
+  const adminPassword = PDS_ADMIN_PASSWORD;
   const adminToken = await timedCall(
     result, "Admin login",
     async () => {
