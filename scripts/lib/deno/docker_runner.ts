@@ -16,6 +16,8 @@ export interface DockerRunnerOptions {
   networkName?: string;
   /** Service URLs to inject as env vars (internal URLs, not localhost) */
   internalUrls: Record<string, string>;
+  /** Precomputed Docker runner env from topology manifest v2 */
+  dockerRunnerEnv?: Record<string, string>;
   /** Capabilities set for the topology */
   capabilities: Set<string>;
   /** Scenario file path (relative to repo root) */
@@ -34,11 +36,17 @@ export async function runScenarioInDocker(options: DockerRunnerOptions): Promise
   const network = options.networkName || `${options.composeProject}_topology_net`;
 
   const envArgs: string[] = [];
-  for (const [key, value] of Object.entries(options.internalUrls)) {
-    const envKey = roleToEnvKey(key);
-    envArgs.push("-e", `${envKey}=${value}`);
+  if (options.dockerRunnerEnv) {
+    for (const [key, value] of Object.entries(options.dockerRunnerEnv)) {
+      envArgs.push("-e", `${key}=${value}`);
+    }
+  } else {
+    for (const [key, value] of Object.entries(options.internalUrls)) {
+      const envKey = roleToEnvKey(key);
+      envArgs.push("-e", `${envKey}=${value}`);
+    }
+    envArgs.push("-e", `ATPROTO_TOPOLOGY_CAPABILITIES=${[...options.capabilities].join(",")}`);
   }
-  envArgs.push("-e", `ATPROTO_TOPOLOGY_CAPABILITIES=${[...options.capabilities].join(",")}`);
 
   if (options.env) {
     for (const [key, value] of Object.entries(options.env)) {
@@ -49,14 +57,20 @@ export async function runScenarioInDocker(options: DockerRunnerOptions): Promise
   const scenarioRelPath = options.scenarioPath.replace(options.repoRoot + "/", "");
 
   const cmd = [
-    "docker", "run",
+    "docker",
+    "run",
     "--rm",
-    "--network", network,
-    "--name", `scenario-runner-${Date.now()}`,
+    "--network",
+    network,
+    "--name",
+    `scenario-runner-${Date.now()}`,
     ...envArgs,
-    "-v", `${options.repoRoot}:/workspace:ro`,
+    "-v",
+    `${options.repoRoot}:/workspace:ro`,
     "denoland/deno:alpine",
-    "run", "-A", `--timeout=${options.timeoutSeconds * 1000}`,
+    "run",
+    "-A",
+    `--timeout=${options.timeoutSeconds * 1000}`,
     `/workspace/${scenarioRelPath}`,
   ];
 

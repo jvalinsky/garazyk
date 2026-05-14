@@ -1,6 +1,15 @@
-import { assertEquals } from "@std/assert";
-import { validatePreset, renderComposeYaml, compileTopology } from "./topology_compiler.ts";
-import { TopologyPreset, ServiceAdapter } from "./topology.ts";
+import { assertEquals, assertThrows } from "@std/assert";
+import { compileTopology, renderComposeYaml, validatePreset } from "./topology_compiler.ts";
+import {
+  createTopologyManifest,
+  loadTopologyManifest,
+  resolveTopology,
+  ServiceAdapter,
+  Topology,
+  TopologyPreset,
+} from "./topology.ts";
+import { normalizeTopologyPreset, parseRawTopologyPresetV1 } from "./topology_schema.ts";
+import { ScenarioInfo, selectScenarios } from "../../run_scenarios.ts";
 
 const VALID_ADAPTER: ServiceAdapter = {
   name: "test-pds",
@@ -452,3 +461,351 @@ Deno.test("compileTopology: happyview source build with buildArgs", async () => 
     await Deno.remove(runDir, { recursive: true });
   }
 });
+
+Deno.test("compileTopology: zlay-relay does not inherit Garazyk relay command or clear entrypoint", async () => {
+  const runDir = await Deno.makeTempDir({ prefix: "topology-test-" });
+  try {
+    const result = await compileTopology({
+      preset: "zlay-relay",
+      runDir,
+      repoRoot: "/Users/jack/Software/garazyk",
+      composeProject: "test",
+    });
+
+    const content = await Deno.readTextFile(result.composeFile);
+    assertEquals(content.includes("entrypoint: []"), false);
+    assertEquals(
+      content.includes(
+        'command: ["serve","--upstream","ws://local-pds:2583/xrpc/com.atproto.sync.subscribeRepos"',
+      ),
+      false,
+    );
+    assertEquals(
+      result.manifest.health.some((probe) =>
+        probe.role === "relay" && probe.mode === "docker-health"
+      ),
+      true,
+    );
+  } finally {
+    await Deno.remove(runDir, { recursive: true });
+  }
+});
+
+Deno.test("resolveTopology: inherited capabilities are visible by role", () => {
+  const topology = resolveTopology(undefined, "zlay-relay");
+  assertEquals(topology.capabilities.has("didResolution"), true);
+  assertEquals(topology.capabilitiesByRole.plc.has("didResolution"), true);
+  assertEquals(topology.capabilitiesByRole.pds.has("createAccount"), true);
+  assertEquals(topology.capabilitiesByRole.relay.has("subscribeRepos"), true);
+});
+
+Deno.test("createTopologyManifest: public and internal URLs use host and container ports", () => {
+  const preset: TopologyPreset = {
+    name: "port-test",
+    description: "Port mapping test",
+    roles: {
+      appview: {
+        name: "happyview",
+        image: "example/happyview:latest",
+        ports: ["3200:3000"],
+        healthCheck: { path: "/" },
+        capabilities: ["getTimeline"],
+      },
+    },
+  };
+
+  const manifest = createTopologyManifest(preset, {
+    runDir: "/tmp/port-test",
+    repoRoot: "/repo",
+  });
+
+  assertEquals(manifest.serviceUrls.appview, "http://localhost:3200");
+  assertEquals(manifest.internalUrls.appview, "http://local-appview:3000");
+  assertEquals(manifest.diagnostics[0].url, "http://localhost:3200/");
+});
+
+Deno.test("selectScenarios: role-scoped requirements filter default runs", () => {
+  const topology: Topology = {
+    serviceUrls: {},
+    internalUrls: {},
+    serviceNames: {},
+    capabilities: new Set(["didResolution", "subscribeRepos"]),
+    capabilitiesByRole: {
+      plc: new Set(["didResolution"]),
+      relay: new Set(["subscribeRepos"]),
+      appview: new Set([]),
+    },
+  };
+  const scenarios: ScenarioInfo[] = [
+    {
+      id: "01",
+      name: "ok",
+      path: "/tmp/01.ts",
+      needsPds2: false,
+      browserFlows: [],
+      requires: ["plc:didResolution"],
+      optional: [],
+    },
+    {
+      id: "09",
+      name: "missing appview",
+      path: "/tmp/09.ts",
+      needsPds2: false,
+      browserFlows: [],
+      requires: ["relay:subscribeRepos", "appview:backfill"],
+      optional: [],
+    },
+  ];
+
+  const selected = selectScenarios(scenarios, {
+    scenarioIds: [],
+    clientFlow: "none",
+    pds2: false,
+  }, topology);
+
+  assertEquals(selected.map((scenario) => scenario.id), ["01"]);
+});
+
+Deno.test("selectScenarios: optional capabilities do not block default runs", () => {
+  const topology: Topology = {
+    serviceUrls: {},
+    internalUrls: {},
+    serviceNames: {},
+    capabilities: new Set(["didResolution"]),
+    capabilitiesByRole: {
+      plc: new Set(["didResolution"]),
+    },
+  };
+  const scenarios: ScenarioInfo[] = [
+    {
+      id: "01",
+      name: "optional missing",
+      path: "/tmp/01.ts",
+      needsPds2: false,
+      browserFlows: [],
+      requires: ["plc:didResolution"],
+      optional: ["appview:backfill"],
+    },
+  ];
+
+  const selected = selectScenarios(scenarios, {
+    scenarioIds: [],
+    clientFlow: "none",
+    pds2: false,
+  }, topology);
+
+  assertEquals(selected.map((scenario) => scenario.id), ["01"]);
+});
+
+Deno.test("selectScenarios: PDS2 scenarios are filtered by default and auto-enable when explicitly selected", () => {
+  const topology: Topology = {
+    serviceUrls: {},
+    internalUrls: {},
+    serviceNames: {},
+    capabilities: new Set(["didResolution"]),
+    capabilitiesByRole: {
+      plc: new Set(["didResolution"]),
+    },
+  };
+  const scenarios: ScenarioInfo[] = [
+    {
+      id: "35",
+      name: "pds2 federation",
+      path: "/tmp/35.ts",
+      needsPds2: true,
+      browserFlows: [],
+      requires: ["plc:didResolution"],
+      optional: [],
+    },
+  ];
+
+  const defaultSelected = selectScenarios(scenarios, {
+    scenarioIds: [],
+    clientFlow: "none",
+    pds2: false,
+  }, topology);
+  assertEquals(defaultSelected.map((scenario) => scenario.id), []);
+
+  const explicitSelected = selectScenarios(scenarios, {
+    scenarioIds: ["35"],
+    clientFlow: "none",
+    pds2: false,
+  }, topology);
+  assertEquals(explicitSelected.map((scenario) => scenario.id), ["35"]);
+  assertEquals(explicitSelected.some((scenario) => scenario.needsPds2), true);
+});
+
+Deno.test("selectScenarios: explicit scenario IDs bypass missing requirements", () => {
+  const topology: Topology = {
+    serviceUrls: {},
+    internalUrls: {},
+    serviceNames: {},
+    capabilities: new Set(["subscribeRepos"]),
+    capabilitiesByRole: {
+      relay: new Set(["subscribeRepos"]),
+      appview: new Set([]),
+    },
+  };
+  const scenarios: ScenarioInfo[] = [
+    {
+      id: "09",
+      name: "explicit missing appview",
+      path: "/tmp/09.ts",
+      needsPds2: false,
+      browserFlows: [],
+      requires: ["relay:subscribeRepos", "appview:backfill"],
+      optional: [],
+    },
+  ];
+
+  const selected = selectScenarios(scenarios, {
+    scenarioIds: ["09"],
+    clientFlow: "none",
+    pds2: false,
+  }, topology);
+
+  assertEquals(selected.map((scenario) => scenario.id), ["09"]);
+});
+
+Deno.test("compileTopology: every topology preset resolves, renders, and writes manifest", async () => {
+  for await (const entry of Deno.readDir("scripts/scenarios/topologies")) {
+    if (!entry.isFile || !entry.name.endsWith(".json")) continue;
+    const preset = entry.name.replace(/\.json$/, "");
+    const runDir = await Deno.makeTempDir({ prefix: `topology-${preset}-` });
+    try {
+      const result = await compileTopology({
+        preset,
+        runDir,
+        repoRoot: "/Users/jack/Software/garazyk",
+        composeProject: "test",
+      });
+      assertEquals((await Deno.stat(result.composeFile)).isFile, true);
+      assertEquals((await Deno.stat(result.manifestFile)).isFile, true);
+      assertEquals(result.manifest.name, preset);
+    } finally {
+      await Deno.remove(runDir, { recursive: true });
+    }
+  }
+});
+
+Deno.test("schema: unknown roles require x- namespace and metadata", () => {
+  const raw = parseRawTopologyPresetV1({
+    name: "bad-role",
+    description: "Reject unknown role",
+    roles: {
+      search: {
+        name: "search",
+        healthCheck: { path: "/health" },
+        capabilities: ["query"],
+      },
+    },
+  }, "inline");
+
+  assertThrows(
+    () => normalizeTopologyPreset(raw),
+    Error,
+    'unknown role "search"',
+  );
+});
+
+Deno.test("schema: experimental roles require env/default port/runner exposure metadata", () => {
+  const raw = parseRawTopologyPresetV1({
+    name: "experimental-role",
+    description: "Reject incomplete experimental role",
+    roles: {
+      "x-search": {
+        name: "search",
+        healthCheck: { path: "/health" },
+        capabilities: ["x-search:query"],
+      },
+    },
+  }, "inline");
+
+  assertThrows(
+    () => normalizeTopologyPreset(raw),
+    Error,
+    'experimental role "x-search" must declare envVar',
+  );
+});
+
+Deno.test("schema: unknown role capabilities fail unless experimental namespace", async () => {
+  const runDir = await Deno.makeTempDir({ prefix: "topology-test-" });
+  try {
+    const preset: TopologyPreset = {
+      name: "bad-capability",
+      description: "Reject unregistered capability",
+      roles: {
+        relay: {
+          name: "relay",
+          healthCheck: { path: "/health" },
+          capabilities: ["totallyNewThing"],
+        },
+      },
+    };
+    await assertThrowsAsync(
+      () =>
+        compileTopology({
+          preset,
+          runDir,
+          repoRoot: "/repo",
+          composeProject: "test",
+        }),
+      Error,
+      'Capability "totallyNewThing" is not registered for role "relay"',
+    );
+  } finally {
+    await Deno.remove(runDir, { recursive: true });
+  }
+});
+
+Deno.test("compileTopology: manifest v2 separates host and docker runner env", async () => {
+  const runDir = await Deno.makeTempDir({ prefix: "topology-test-" });
+  try {
+    const result = await compileTopology({
+      preset: "hydrant",
+      runDir,
+      repoRoot: "/Users/jack/Software/garazyk",
+      composeProject: "test",
+    });
+
+    assertEquals(result.manifest.version, 2);
+    assertEquals(result.manifest.env?.hostRunner.BACKFILL_URL, "http://localhost:3000");
+    assertEquals(result.manifest.env?.dockerRunner.BACKFILL_URL, "http://local-backfill:3000");
+    assertEquals(result.manifest.urls?.host.backfill, "http://localhost:3000");
+    assertEquals(result.manifest.urls?.docker.backfill, "http://local-backfill:3000");
+  } finally {
+    await Deno.remove(runDir, { recursive: true });
+  }
+});
+
+Deno.test("loadTopologyManifest: malformed explicit manifest throws", async () => {
+  const manifestFile = await Deno.makeTempFile({
+    prefix: "bad-topology-manifest-",
+    suffix: ".json",
+  });
+  try {
+    await Deno.writeTextFile(manifestFile, "{ not json");
+    assertThrows(
+      () => loadTopologyManifest(manifestFile),
+      Error,
+      "Unable to load topology manifest",
+    );
+  } finally {
+    await Deno.remove(manifestFile);
+  }
+});
+
+async function assertThrowsAsync(
+  fn: () => Promise<unknown>,
+  ErrorClass: new (...args: any[]) => Error,
+  msgIncludes: string,
+) {
+  let thrown: unknown;
+  try {
+    await fn();
+  } catch (exc) {
+    thrown = exc;
+  }
+  assertEquals(thrown instanceof ErrorClass, true);
+  assertEquals(String((thrown as Error).message).includes(msgIncludes), true);
+}

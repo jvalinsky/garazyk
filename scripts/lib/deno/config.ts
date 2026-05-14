@@ -5,8 +5,8 @@ const topology = resolveTopology(
   Deno.env.get("ATPROTO_TOPOLOGY") || undefined,
 );
 
-export const PDS1 = Deno.env.get("PDS_URL") || "http://localhost:2583";
-export const PDS2 = Deno.env.get("PDS2_URL") || "http://localhost:2587";
+export const PDS1 = Deno.env.get("PDS_URL") || topology.serviceUrls.pds || "http://localhost:2583";
+export const PDS2 = Deno.env.get("PDS2_URL") || topology.serviceUrls.pds2 || "http://localhost:2587";
 export const APPVIEW_ADMIN_SECRET = Deno.env.get("APPVIEW_ADMIN_SECRET") || "localdevadmin";
 export const PDS_ADMIN_PASSWORD = Deno.env.get("PDS_ADMIN_PASSWORD") || "admin-localdev";
 
@@ -17,6 +17,7 @@ export const SERVICE_URLS: Record<string, string> = {
 };
 
 export const TOPOLOGY_CAPABILITIES = topology.capabilities;
+export const TOPOLOGY_CAPABILITIES_BY_ROLE = topology.capabilitiesByRole;
 
 export const WEB_CLIENT_TOPOLOGY = topology.webClient;
 
