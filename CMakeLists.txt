@@ -953,37 +953,39 @@ add_custom_command(TARGET garazyk-ui POST_BUILD
   COMMENT "Copying UI server assets to build output"
 )
 
-# Tutorial 1: Hello PDS Example
-add_executable(hello-pds
-  examples/tutorial-1-hello-pds/src/main.m
-)
+# Tutorial examples are optional; local/dev checkouts may omit examples/.
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/examples/tutorial-1-hello-pds/src/main.m")
+  add_executable(hello-pds
+    examples/tutorial-1-hello-pds/src/main.m
+  )
 
-target_include_directories(hello-pds PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
-  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
-  ${SECP256K1_INCLUDE_DIRS}
-)
+  target_include_directories(hello-pds PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+    ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
+    ${SECP256K1_INCLUDE_DIRS}
+  )
 
-target_link_libraries(hello-pds PRIVATE
-  ATProtoRuntime
-  ATProtoServices
-  ATProtoTransport
-  ATProtoXRPC
-  ATProtoSync
-  ATProtoStorage
-  ATProtoCore
-  ATProtoPLC
-  ${PLATFORM_LIBRARIES}
-  ${SECP256K1_LIBRARIES}
-)
+  target_link_libraries(hello-pds PRIVATE
+    ATProtoRuntime
+    ATProtoServices
+    ATProtoTransport
+    ATProtoXRPC
+    ATProtoSync
+    ATProtoStorage
+    ATProtoCore
+    ATProtoPLC
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+  )
 
-target_compile_definitions(hello-pds PRIVATE
-  SQLITE_THREADSAFE=2
-)
+  target_compile_definitions(hello-pds PRIVATE
+    SQLITE_THREADSAFE=2
+  )
 
-set_target_properties(hello-pds PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-)
+  set_target_properties(hello-pds PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  )
+endif()
 
 # Migration Tests (standalone, no XCTest)
 add_executable(migration_tests
