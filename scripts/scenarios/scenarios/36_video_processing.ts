@@ -28,8 +28,8 @@ export async function run(): Promise<ScenarioResult> {
   const videoUrl = SERVICE_URLS.video;
   const videoClient = new XrpcClient(videoUrl);
 
-  await timedCall(result, "PDS health check", async () => { await pdsClient.wait_for_healthy(30); });
-  await timedCall(result, "Jelcz health check", async () => { await videoClient.wait_for_healthy(15); });
+  await timedCall(result, "PDS health check", async () => { await pdsClient.waitForHealthy(30); });
+  await timedCall(result, "Jelcz health check", async () => { await videoClient.waitForHealthy(15); });
 
   if (result.failed > 0) return result;
 

@@ -3,6 +3,7 @@ import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
 import { createRunContext } from "../../lib/deno/diagnostics.ts";
+import { join } from "@std/path";
 import {
   OperationTimer,
   PhaseTimer,
@@ -94,7 +95,7 @@ export async function run(): Promise<ScenarioResult> {
 
   try {
     await timedCall(result, "PDS health check", async () => {
-      await client.wait_for_healthy(30);
+      await client.waitForHealthy(30);
     });
 
     if (result.failed > 0) return result;

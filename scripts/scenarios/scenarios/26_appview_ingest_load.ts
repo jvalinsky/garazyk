@@ -55,7 +55,7 @@ export async function run(): Promise<ScenarioResult> {
   promScraper.start();
 
   await timedCall(result, "PDS health check", async () => {
-    await client.wait_for_healthy(30);
+    await client.waitForHealthy(30);
   });
 
   if (result.failed > 0) {
@@ -134,7 +134,7 @@ export async function run(): Promise<ScenarioResult> {
   phaseTimer.startPhase("Backpressure trigger");
   const burstCount = 200;
   let burstCreated = 0;
-  const burstPromises = Array.from({ length: burstCount }).map(async (_, i) => {
+  for (let i = 0; i < burstCount; i++) {
     const acc = activeAccounts[i % activeAccounts.length];
     try {
       await timer.measure("create_post_burst", () =>
@@ -146,8 +146,7 @@ export async function run(): Promise<ScenarioResult> {
       );
       burstCreated++;
     } catch { /* ignore */ }
-  });
-  await Promise.all(burstPromises);
+  }
 
   const health = await appviewAdminGet("/admin/ingest/health");
   const backfill = await appviewAdminGet("/admin/backfill/status");
