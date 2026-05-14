@@ -85,7 +85,7 @@ export async function run(): Promise<ScenarioResult> {
 
     await timedCall(result, "AppView catches final profile", async () => {
       const profile = await appview.feed.getProfile(luna.did, luna.accessJwt);
-      assert(profile.displayName === newName, "Display name mismatch");
+      assert.isTrue(profile.displayName === newName, "Display name mismatch");
     });
   }
 

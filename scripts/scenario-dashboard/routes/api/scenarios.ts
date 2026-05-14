@@ -66,7 +66,7 @@ export const handler: Handlers = {
         logFile = await Deno.open(logPath, { create: true, write: true, truncate: true });
 
         const scriptPath = join(repoRoot, "scripts", "run_scenarios.ts");
-        const args = ["run", "-A", scriptPath, "--no-setup", "--run-id", runId, ...ids];
+        const args = ["run", "-A", scriptPath, "--skip-setup", "--run-id", runId, ...ids];
         if (pds2) args.push("--pds2");
 
         console.log(`[api] Starting run ${runId}: deno ${args.join(" ")}`);

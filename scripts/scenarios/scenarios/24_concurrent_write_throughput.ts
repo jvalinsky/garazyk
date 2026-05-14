@@ -248,7 +248,7 @@ export async function run(): Promise<ScenarioResult> {
         );
         const actual = new Set(resp.records.map((r: any) => r.uri.split("/").pop()));
         const expectedCount = 5 + 10 + 1 + 2 - plan.deletedRkeys.size;
-        assert(actual.size >= expectedCount, `Expected at least ${expectedCount}, got ${actual.size}`);
+        assert.isTrue(actual.size >= expectedCount, `Expected at least ${expectedCount}, got ${actual.size}`);
         return { records: actual.size, expected: expectedCount };
       });
     }

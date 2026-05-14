@@ -50,7 +50,7 @@ export async function run(): Promise<ScenarioResult> {
   await timedCall(result, "Verify profile is deactivated", async () => {
     try {
       const profile = await appview.feed.getProfile(luna.did, luna.accessJwt);
-      assert(profile.associated?.deactivated === true || profile.error === "AccountDeactivated", "Should be deactivated");
+      assert.isTrue(profile.associated?.deactivated === true || profile.error === "AccountDeactivated", "Should be deactivated");
     } catch {
       // Hidden entirely is also valid deactivation
     }

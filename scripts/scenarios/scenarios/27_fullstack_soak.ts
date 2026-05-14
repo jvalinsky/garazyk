@@ -159,7 +159,7 @@ export async function run(): Promise<ScenarioResult> {
     
     await timedCall(result, "PDS check", async () => {
       const resp = await client.accounts.describeServer();
-      assert(resp.availableUserDomains.length > 0);
+      assert.isTrue(resp.availableUserDomains.length > 0);
     });
 
     await timedCall(result, "AppView check", async () => {

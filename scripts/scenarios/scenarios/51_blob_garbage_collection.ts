@@ -87,11 +87,11 @@ export async function run(): Promise<ScenarioResult> {
         if (res.status === 404) { doomed404 = true; break; }
         await new Promise(r => setTimeout(r, 1000));
       }
-      assert(doomed404, "Doomed blob not deleted");
+      assert.isTrue(doomed404, "Doomed blob not deleted");
       result.stepPassed("Doomed blob returns 404");
 
       const keepRes = await fetch(`${PDS1}/xrpc/com.atproto.sync.getBlob?did=${luna.did}&cid=${keepCid}`);
-      assert(keepRes.status === 200, "Keep-alive blob missing");
+      assert.isTrue(keepRes.status === 200, "Keep-alive blob missing");
       result.stepPassed("Keep-alive blob still downloads");
     }
   }

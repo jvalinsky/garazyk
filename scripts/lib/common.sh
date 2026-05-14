@@ -411,7 +411,7 @@ wait_for_service() {
 
     local deadline=$(( $(date +%s) + timeout ))
     while [[ $(date +%s) -lt $deadline ]]; do
-        if curl -s -f "${extra_args[@]:-}" "$url" >/dev/null 2>&1; then
+        if curl -s -f ${extra_args[@]+"${extra_args[@]}"} "$url" >/dev/null 2>&1; then
             log_ok "$label is healthy"
             return 0
         fi
