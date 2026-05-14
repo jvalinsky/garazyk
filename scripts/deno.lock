@@ -13,7 +13,8 @@
     "npm:@atproto/api@0.13": "0.13.35",
     "npm:@ipld/car@^5.3.1": "5.4.5",
     "npm:@ipld/dag-cbor@^9.0.6": "9.2.6",
-    "npm:playwright@*": "1.60.0"
+    "npm:playwright@*": "1.60.0",
+    "npm:zod@3.25.76": "3.25.76"
   },
   "jsr": {
     "@std/assert@1.0.19": {
@@ -205,7 +206,8 @@
       "jsr:@std/path@1",
       "npm:@atproto/api@0.13",
       "npm:@ipld/car@^5.3.1",
-      "npm:@ipld/dag-cbor@^9.0.6"
+      "npm:@ipld/dag-cbor@^9.0.6",
+      "npm:zod@3.25.76"
     ]
   }
 }

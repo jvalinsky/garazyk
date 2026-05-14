@@ -19,7 +19,8 @@ import { parseArgs } from "@std/cli";
 import { compileTopology, CompilerOptions } from "../lib/deno/topology_compiler.ts";
 
 const args = parseArgs(Deno.args, {
-  string: ["preset", "output", "run-dir", "repo-root", "sources-json"],
+  string: ["preset", "output", "run-dir", "repo-root", "sources-json", "manifest-json"],
+  boolean: ["include-pds2"],
   alias: {
     preset: "p",
     output: "o",
@@ -32,7 +33,7 @@ const args = parseArgs(Deno.args, {
 
 if (!args.preset) {
   console.error("Error: --preset is required");
-  console.error("Usage: compile_topology.ts --preset <name> [--output <path>] [--run-dir <dir>] [--repo-root <dir>] [--sources-json <path>]");
+  console.error("Usage: compile_topology.ts --preset <name> [--output <path>] [--run-dir <dir>] [--repo-root <dir>] [--sources-json <path>] [--manifest-json <path>] [--include-pds2]");
   Deno.exit(1);
 }
 
@@ -41,6 +42,8 @@ const options: CompilerOptions = {
   runDir: args["run-dir"],
   repoRoot: args["repo-root"],
   composeProject: "garazyk-topology",
+  manifestFile: args["manifest-json"],
+  includePds2: Boolean(args["include-pds2"]),
 };
 
 const result = await compileTopology(options);
@@ -48,6 +51,8 @@ const result = await compileTopology(options);
 if (args.output && args.output !== result.composeFile) {
   await Deno.rename(result.composeFile, args.output);
   result.composeFile = args.output;
+  result.manifest.composeFile = args.output;
+  await Deno.writeTextFile(result.manifestFile, JSON.stringify(result.manifest, null, 2) + "\n");
 }
 
 // Write sources JSON if requested
@@ -56,6 +61,7 @@ if (args["sources-json"] && result.sources.length > 0) {
 }
 
 console.log(`Topology compiled: ${result.composeFile}`);
+console.log(`Manifest: ${result.manifestFile}`);
 console.log(`Service URLs:`);
 for (const [role, url] of Object.entries(result.serviceUrls)) {
   console.log(`  ${role}: ${url}`);
