@@ -1,0 +1,61 @@
+{
+  "build_id": "467cd5fa7e149360e33c4ff4a179ac8fc196947a",
+  "files": {
+    "island-toolbar.js": [
+      "chunk-BYRZ2NRM.js",
+      "chunk-G4CPWP5O.js",
+      "chunk-JP5XG2OT.js"
+    ],
+    "main.js": [
+      "chunk-GI7LLYGM.js",
+      "chunk-JP5XG2OT.js"
+    ],
+    "deserializer.js": [],
+    "signals.js": [
+      "chunk-Y257Z5RO.js",
+      "chunk-GI7LLYGM.js",
+      "chunk-G4CPWP5O.js",
+      "chunk-JP5XG2OT.js"
+    ],
+    "island-logviewer.js": [
+      "chunk-BYRZ2NRM.js",
+      "chunk-G4CPWP5O.js",
+      "chunk-JP5XG2OT.js"
+    ],
+    "island-networkstatus.js": [
+      "chunk-BYRZ2NRM.js",
+      "chunk-G4CPWP5O.js",
+      "chunk-JP5XG2OT.js"
+    ],
+    "island-runpoller.js": [
+      "chunk-BYRZ2NRM.js",
+      "chunk-G4CPWP5O.js",
+      "chunk-JP5XG2OT.js"
+    ],
+    "island-scenariorunner.js": [
+      "chunk-BYRZ2NRM.js",
+      "chunk-G4CPWP5O.js",
+      "chunk-JP5XG2OT.js"
+    ],
+    "island-sidebar.js": [
+      "chunk-Y257Z5RO.js",
+      "chunk-GI7LLYGM.js",
+      "chunk-BYRZ2NRM.js",
+      "chunk-G4CPWP5O.js",
+      "chunk-JP5XG2OT.js"
+    ],
+    "chunk-Y257Z5RO.js": [
+      "chunk-G4CPWP5O.js",
+      "chunk-JP5XG2OT.js"
+    ],
+    "chunk-GI7LLYGM.js": [],
+    "chunk-BYRZ2NRM.js": [
+      "chunk-JP5XG2OT.js"
+    ],
+    "chunk-G4CPWP5O.js": [
+      "chunk-JP5XG2OT.js"
+    ],
+    "chunk-JP5XG2OT.js": [],
+    "metafile.json": []
+  }
+}

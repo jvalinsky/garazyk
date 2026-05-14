@@ -56,7 +56,7 @@ export class ScenarioResult {
   get passed() { return this.steps.filter(s => s.status === StepStatus.PASSED).length; }
   get failed() { return this.steps.filter(s => s.status === StepStatus.FAILED).length; }
   get skipped() { return this.steps.filter(s => s.status === StepStatus.SKIPPED).length; }
-  get ok() { return this.failed === 0; }
+  get ok() { return this.steps.length > 0 && this.failed === 0; }
 
   summary(): string {
     const lines: string[] = [];
