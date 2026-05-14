@@ -16,7 +16,7 @@ export async function run(): Promise<ScenarioResult> {
   const luna = getCharacter("luna");
   const marcus = getCharacter("marcus");
 
-  await timedCall(result, "PDS health check", async () => { await pds.wait_for_healthy(30); });
+  await timedCall(result, "PDS health check", async () => { await pds.waitForHealthy(30); });
 
   if (result.failed > 0) return result;
 

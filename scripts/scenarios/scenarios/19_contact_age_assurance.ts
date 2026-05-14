@@ -10,7 +10,7 @@ export async function run(): Promise<ScenarioResult> {
   const client = new XrpcClient(PDS1);
 
   await timedCall(result, "Server health check", async () => {
-    await client.wait_for_healthy(30);
+    await client.waitForHealthy(30);
   });
 
   if (result.failed > 0) {
@@ -96,7 +96,7 @@ export async function run(): Promise<ScenarioResult> {
     await timedCall(
       result, "Get age assurance config",
       async () => {
-        return await client.age_assurance.getAgeAssuranceConfig();
+        return await client.ageAssurance.getAgeAssuranceConfig();
       }
     );
 
@@ -104,7 +104,7 @@ export async function run(): Promise<ScenarioResult> {
       await timedCall(
         result, "Marcus begins age assurance",
         async () => {
-          return await client.age_assurance.beginAgeAssurance(
+          return await client.ageAssurance.beginAgeAssurance(
             marcus.email, "en", "US", { regionCode: "CA", token: marcus.accessJwt }
           );
         }
@@ -113,7 +113,7 @@ export async function run(): Promise<ScenarioResult> {
       await timedCall(
         result, "Marcus age assurance state",
         async () => {
-          return await client.age_assurance.getAgeAssuranceState("US", { regionCode: "CA", token: marcus.accessJwt });
+          return await client.ageAssurance.getAgeAssuranceState("US", { regionCode: "CA", token: marcus.accessJwt });
         }
       );
     }
