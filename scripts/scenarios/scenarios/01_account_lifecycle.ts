@@ -1,5 +1,5 @@
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 
@@ -77,7 +77,7 @@ export async function run(): Promise<ScenarioResult> {
   );
 
   try {
-    const plcResp = await fetch(`http://localhost:2582/${luna.did}`);
+    const plcResp = await fetch(`${SERVICE_URLS.plc}/${luna.did}`);
     if (plcResp.ok) {
       const didDoc = await plcResp.json();
       const didField = didDoc.id || didDoc.did;
