@@ -51,6 +51,11 @@
   ];
 
   for (NSString *methodId in methodIds) {
+    if ([dispatcher hasRegisteredMethod:methodId]) {
+      GZ_LOG_DEBUG(@"Skipping proxy-only registration for local XRPC method '%@'",
+                   methodId);
+      continue;
+    }
     [dispatcher registerMethod:methodId
                        handler:^(HttpRequest *request, HttpResponse *response) {
                          [self proxyOrNotSupported:request
@@ -62,4 +67,3 @@
 }
 
 @end
-
