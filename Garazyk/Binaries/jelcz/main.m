@@ -161,6 +161,54 @@ void print_usage(void) {
     printf("  JELCZ_HLS_DIR              HLS output directory\n");
     printf("  JELCZ_HLS_BASE_URL         Base URL for HLS playlist URLs\n");
     printf("  JELCZ_HLS_1080P            Include 1080p HLS variant (default: false)\n");
+    printf("\nExamples:\n");
+    printf("  jelcz serve --port 2586\n");
+    printf("  jelcz status --port 2586\n");
+}
+
+/// Queries `/_health` on a running Jelcz instance (same port resolution as `serve`).
+static int run_status(int argc, const char *argv[]) {
+    JelczConfiguration *config = [JelczConfiguration configurationFromEnvironment];
+
+    for (int i = 2; i < argc; i++) {
+        NSString *arg = [NSString stringWithUTF8String:argv[i]];
+        if ([arg isEqualToString:@"--port"] && i + 1 < argc) {
+            config.port = [[NSString stringWithUTF8String:argv[++i]] integerValue];
+        } else if ([arg hasPrefix:@"-"]) {
+            fprintf(stderr, "Error: unknown option for status: %s\n", argv[i]);
+            print_usage();
+            return 2;
+        } else {
+            fprintf(stderr, "Error: unexpected argument for status: %s\n", argv[i]);
+            print_usage();
+            return 2;
+        }
+    }
+
+    NSString *urlString =
+        [NSString stringWithFormat:@"http://127.0.0.1:%lu/_health", (unsigned long)config.port];
+    NSURL *url = [NSURL URLWithString:urlString];
+    NSError *error = nil;
+    NSData *data = [NSData dataWithContentsOfURL:url options:0 error:&error];
+
+    if (!data || error) {
+        printf("Jelcz status: NOT RUNNING (port %lu)\n", (unsigned long)config.port);
+        if (error) {
+            printf("  Error: %s\n", error.localizedDescription.UTF8String);
+        }
+        return 1;
+    }
+
+    NSDictionary *body = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+    printf("Jelcz status: RUNNING\n");
+    printf("  Port: %lu\n", (unsigned long)config.port);
+    if (body && [body isKindOfClass:[NSDictionary class]]) {
+        id st = body[@"status"];
+        if (st && [st isKindOfClass:[NSString class]]) {
+            printf("  Health: %s\n", [st UTF8String]);
+        }
+    }
+    return 0;
 }
 
 int run_serve(int argc, const char *argv[]) {
@@ -463,8 +511,7 @@ int main(int argc, const char *argv[]) {
             printf("Jelcz 0.1.0 (AT Protocol Video Processing Service)\n");
             return 0;
         } else if ([command isEqualToString:@"status"]) {
-            printf("Status: not implemented\n");
-            return 0;
+            return run_status(argc, argv);
         } else if ([command isEqualToString:@"help"] || [command isEqualToString:@"-h"] || [command isEqualToString:@"--help"]) {
             print_usage();
             return 0;
