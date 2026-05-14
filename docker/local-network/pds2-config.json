@@ -7,5 +7,10 @@
   "plc": {
     "url": "http://local-plc:2582"
   },
+  "rate_limit": {
+    "enabled": false,
+    "blob_limit": 50,
+    "blob_window": 3600
+  },
   "hostname": "second.test"
 }
