@@ -5,12 +5,36 @@ export default function Toolbar() {
 
   async function runAll() {
     setBusy(true);
-    await fetch("/api/scenarios", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: [] }),
-    });
-    setBusy(false);
+    try {
+      // Fetch all available scenarios and extract their IDs
+      const scenariosResp = await fetch("/api/scenarios");
+      const { scenarios } = await scenariosResp.json();
+      const ids = scenarios.map((s: any) => s.id);
+
+      if (ids.length === 0) {
+        console.warn("No scenarios found to run");
+        setBusy(false);
+        return;
+      }
+
+      const resp = await fetch("/api/scenarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
+
+      if (resp.ok) {
+        const data = await resp.json();
+        // Could navigate to run detail page or reload
+        console.log("Run started:", data.runId);
+      } else {
+        console.error("Failed to start run:", await resp.text());
+      }
+    } catch (error) {
+      console.error("Error running scenarios:", error);
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -20,15 +44,8 @@ export default function Toolbar() {
       </div>
       <div class="toolbar-spacer" />
       <div class="toolbar-section">
-        <input
-          type="text"
-          class="filter-input"
-          placeholder="Filter scenarios..."
-        />
-      </div>
-      <div class="toolbar-section">
         <button class="btn btn-primary" onClick={runAll} disabled={busy}>
-          {busy ? "Running..." : "Run All ▾"}
+          {busy ? "Running scenarios..." : "Run All"}
         </button>
       </div>
     </header>

@@ -1,76 +1,114 @@
 import { Handlers, PageProps } from "$fresh/server.ts";
 import { getScenarios } from "../../services/scenario_discovery.ts";
+import { networkManager } from "../../services/network_manager.ts";
 import { db } from "../../db/index.ts";
 import Layout from "../../components/Layout.tsx";
-import Toolbar from "../../components/Toolbar.tsx";
-import Sidebar from "../../components/Sidebar.tsx";
+import Toolbar from "../../islands/Toolbar.tsx";
+import Sidebar from "../../islands/Sidebar.tsx";
 import StatusBar from "../../components/StatusBar.tsx";
 import StepRow from "../../components/StepRow.tsx";
 import ScenarioRunner from "../../islands/ScenarioRunner.tsx";
+import { DiscoveredScenario, ServiceStatus, ScenarioStatus, Step } from "../../services/types.ts";
 
 interface ScenarioPageData {
-  scenario: {
-    id: string;
-    name: string;
-    category: string;
-    needsPds2: boolean;
-  };
-  scenarios: Awaited<ReturnType<typeof getScenarios>>;
-  services: ReturnType<typeof import("../../services/network_manager.ts").networkManager.getStatus>;
+  scenario: DiscoveredScenario;
+  scenarios: DiscoveredScenario[];
+  services: Record<string, ServiceStatus>;
   // Latest result from DB (if any)
   latestResult?: {
-    status: "passed" | "failed";
+    status: ScenarioStatus;
     passed: number;
     failed: number;
     skipped: number;
-    steps: Array<{ name: string; status: string; detail: string; duration_ms: number }>;
+    steps: Step[];
     artifacts?: Record<string, unknown>;
   };
 }
 
 export const handler: Handlers<ScenarioPageData> = {
-  async GET(_req, ctx) {
-    const { id } = ctx.params;
-    const scenarios = await getScenarios();
-    const { networkManager } = await import("../../services/network_manager.ts");
-    const services = networkManager.getStatus();
+  async GET(req, ctx) {
+    try {
+      const { id } = ctx.params;
+      const url = new URL(req.url);
+      const runId = url.searchParams.get("runId");
+      
+      const scenarios = await getScenarios();
+      const services = networkManager.getStatus();
 
-    const scenario = scenarios.find((s) => s.id === id);
-    if (!scenario) {
+      let scenario = scenarios.find((s) => s.id === id);
+      
+      let latestResult: ScenarioPageData["latestResult"] = undefined;
+      let dbScenarioName: string | undefined = undefined;
+      
+      try {
+        let query = `
+          SELECT status, passed, failed, skipped, steps_json as stepsJson, artifacts_json as artifactsJson, scenario_name as scenarioName
+          FROM scenario_results
+          WHERE scenario_id = ?
+        `;
+        const params: string[] = [id];
+
+        if (runId) {
+          query += " AND run_id = ?";
+          params.push(runId);
+        } else {
+          query += " ORDER BY started_at DESC LIMIT 1";
+        }
+
+        const resultRow = db.prepare(query).get(...params) as {
+          status: ScenarioStatus;
+          passed: number;
+          failed: number;
+          skipped: number;
+          stepsJson: string;
+          artifactsJson?: string;
+          scenarioName: string;
+        } | undefined;
+
+        if (resultRow) {
+          dbScenarioName = resultRow.scenarioName;
+          latestResult = {
+            status: resultRow.status,
+            passed: resultRow.passed,
+            failed: resultRow.failed,
+            skipped: resultRow.skipped,
+            steps: (JSON.parse(resultRow.stepsJson || "[]") as any[]).map(s => ({
+              name: s.name,
+              status: s.status,
+              detail: s.detail,
+              durationMs: s.duration_ms,
+            })),
+            artifacts: resultRow.artifactsJson ? JSON.parse(resultRow.artifactsJson) : undefined,
+          };
+        }
+      } catch (e) {
+        console.error("Error fetching scenario result from DB:", e);
+      }
+
+      if (!scenario) {
+        if (dbScenarioName) {
+          scenario = {
+            id,
+            name: dbScenarioName,
+            path: "",
+            category: "unknown",
+            needsPds2: false,
+          };
+        } else {
+          return ctx.renderNotFound();
+        }
+      }
+
+      return ctx.render({
+        scenario,
+        scenarios,
+        services,
+        latestResult,
+      });
+    } catch (e) {
+      console.error("Fatal error in scenario detail handler:", e);
       return ctx.renderNotFound();
     }
-
-    let latestResult: ScenarioPageData["latestResult"] = undefined;
-    
-    try {
-      const resultRow = db.prepare(`
-        SELECT status, passed, failed, skipped, steps_json, artifacts_json
-        FROM scenario_results
-        WHERE scenario_id = ?
-        ORDER BY started_at DESC
-        LIMIT 1
-      `).get(scenario.id) as any;
-
-      if (resultRow) {
-        latestResult = {
-          status: resultRow.status as "passed" | "failed",
-          passed: resultRow.passed,
-          failed: resultRow.failed,
-          skipped: resultRow.skipped,
-          steps: JSON.parse(resultRow.steps_json || "[]"),
-          artifacts: resultRow.artifacts_json ? JSON.parse(resultRow.artifacts_json) : undefined,
-        };
-      }
-    } catch (e) {
-      console.error("Error fetching latest result:", e);
-    }
-
-    return ctx.render({
-      scenario,
-      scenarios,
-      services,
-      latestResult,
-    });
   },
 };
 
@@ -100,7 +138,7 @@ export default function ScenarioDetailPage({ data }: PageProps<ScenarioPageData>
           <div class="card" style="margin-bottom: var(--space-lg);">
             <div class="card-body">
               <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-md);">
-                <span class={`badge ${latestResult.status === "passed" ? "badge-success" : "badge-destructive"}`}>
+                <span class={`badge ${latestResult.status === "passed" ? "badge-success" : latestResult.status === "failed" ? "badge-destructive" : latestResult.status === "running" ? "badge-info" : "badge-secondary"}`}>
                   {latestResult.status.toUpperCase()}
                 </span>
                 <span style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">
@@ -114,7 +152,7 @@ export default function ScenarioDetailPage({ data }: PageProps<ScenarioPageData>
                     name={step.name}
                     status={step.status as "passed" | "failed" | "skipped"}
                     detail={step.detail || undefined}
-                    durationMs={step.duration_ms || undefined}
+                    durationMs={step.durationMs || undefined}
                   />
                 ))}
               </ul>
@@ -130,11 +168,6 @@ export default function ScenarioDetailPage({ data }: PageProps<ScenarioPageData>
 
         <div style="display: flex; gap: var(--space-md);">
           <ScenarioRunner scenarioId={scenario.id} needsPds2={scenario.needsPds2} />
-          {latestResult && (
-            <button class="btn">
-              View Full Report JSON
-            </button>
-          )}
         </div>
 
         {scenario.needsPds2 && (

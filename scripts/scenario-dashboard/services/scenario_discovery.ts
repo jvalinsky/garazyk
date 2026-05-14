@@ -4,28 +4,14 @@
  */
 
 import { join, fromFileUrl } from "$std/path/mod.ts";
-
-export interface DiscoveredScenario {
-  id: string;
-  name: string;
-  path: string;
-  category: string;
-  needsPds2: boolean;
-}
+import { DiscoveredScenario } from "./types.ts";
+import { categorize } from "../utils.ts";
 
 const SCENARIOS_DIR = join(
   fromFileUrl(new URL("../../scenarios/scenarios", import.meta.url)),
 );
 
 const PDS2_SCENARIOS = new Set(["05", "12"]);
-
-function categorize(id: string): string {
-  const num = parseInt(id);
-  if (num <= 10) return "core";
-  if (num <= 20) return "identity";
-  if (num <= 30) return "scale";
-  return "edge";
-}
 
 export async function discoverScenarios(): Promise<DiscoveredScenario[]> {
   const scenarios: DiscoveredScenario[] = [];

@@ -38,14 +38,4 @@ CREATE TABLE IF NOT EXISTS scenario_results (
 
 CREATE INDEX IF NOT EXISTS idx_scenario_results_run ON scenario_results(run_id);
 CREATE INDEX IF NOT EXISTS idx_scenario_results_scenario ON scenario_results(scenario_id);
-
-CREATE TABLE IF NOT EXISTS services (
-  name TEXT PRIMARY KEY,
-  container_id TEXT,
-  port INTEGER,
-  url TEXT,
-  status TEXT NOT NULL DEFAULT 'stopped',
-  last_health_check INTEGER,
-  last_error TEXT
-);
 `;

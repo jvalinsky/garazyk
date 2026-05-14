@@ -19,12 +19,24 @@ export class RawClient {
     return await this.transport.post(method, body, token);
   }
 
+  // Aliases for backward compatibility
+  async get(method: string, params?: Record<string, any>, token?: string) {
+    return await this.xrpcGet(method, params, token);
+  }
+
+  async post(method: string, body?: any, token?: string) {
+    return await this.xrpcPost(method, body, token);
+  }
+
   async postRaw(
     method: string,
     data: Uint8Array,
     contentType: string,
     options: { token?: string; params?: Record<string, any> } = {}
   ) {
+    if (options.params && Object.keys(options.params).length > 0) {
+      throw new Error("postRaw does not support params; use xrpcPost for parameterized requests");
+    }
     return await this.transport.postBinary(method, data, contentType, options.token);
   }
 

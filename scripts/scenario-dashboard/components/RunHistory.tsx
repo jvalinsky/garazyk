@@ -1,27 +1,8 @@
-interface RunInfo {
-  id: string;
-  startedAt: number;
-  finishedAt?: number;
-  passed: number;
-  failed: number;
-  skipped: number;
-  total: number;
-  durationS?: number;
-}
+import { Run } from "../services/types.ts";
+import { formatDate, formatDurationSec } from "../utils.ts";
 
 interface RunHistoryProps {
-  runs: RunInfo[];
-}
-
-function formatDate(ts: number): string {
-  return new Date(ts * 1000).toLocaleString();
-}
-
-function formatDuration(s: number): string {
-  if (s < 60) return `${s.toFixed(1)}s`;
-  const m = Math.floor(s / 60);
-  const sec = Math.round(s % 60);
-  return `${m}m ${sec}s`;
+  runs: Run[];
 }
 
 export default function RunHistory({ runs }: RunHistoryProps) {
@@ -67,7 +48,7 @@ export default function RunHistory({ runs }: RunHistoryProps) {
                   {r.failed > 0 && <span style="color: var(--color-destructive);">{r.failed}✗</span>}{" "}
                   {r.skipped > 0 && <span style="color: var(--color-warning);">{r.skipped}⚠</span>}
                 </td>
-                <td>{r.durationS ? formatDuration(r.durationS) : "—"}</td>
+                <td>{r.durationS ? formatDurationSec(r.durationS) : "—"}</td>
               </tr>
             ))}
           </tbody>

@@ -1,3 +1,5 @@
+import { categorize } from "../utils.ts";
+
 export interface ScenarioMeta {
   id: string;
   name: string;
@@ -26,14 +28,6 @@ const CATEGORIES: Record<string, string> = {
   edge: "Edge Cases",
 };
 
-function categorize(id: string): string {
-  const num = parseInt(id);
-  if (num <= 10) return "core";
-  if (num <= 20) return "identity";
-  if (num <= 30) return "scale";
-  return "edge";
-}
-
 export default function Sidebar({ scenarios, services, activeScenario }: SidebarProps) {
   const grouped: Record<string, ScenarioMeta[]> = {};
   for (const s of scenarios) {
@@ -44,13 +38,16 @@ export default function Sidebar({ scenarios, services, activeScenario }: Sidebar
 
   const runningServices = services.filter((s) => s.status === "running").length;
   const totalServices = services.length;
+  const dotClass = runningServices === 0 ? "stopped"
+               : runningServices < totalServices ? "starting"
+               : "running";
 
   return (
     <aside class="sidebar">
       <div class="sidebar-section">
         <div class="sidebar-section-title">Network</div>
         <div class="sidebar-item">
-          <span class="status-dot running" />
+          <span class={`status-dot ${dotClass}`} />
           <span>{runningServices}/{totalServices} services</span>
         </div>
       </div>

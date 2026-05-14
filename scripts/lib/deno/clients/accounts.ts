@@ -3,32 +3,23 @@ import { TransportLayer, XrpcError } from "../transport.ts";
 export class AccountsClient {
   constructor(private transport: TransportLayer) {}
 
-  async createAccount(handle: string, email: string, password: string, options: { retries?: number } = {}) {
-    const retries = options.retries ?? 3;
-    let lastError: any = null;
-
-    for (let attempt = 1; attempt <= retries; attempt++) {
-      try {
-        return await this.transport.post("com.atproto.server.createAccount", {
-          email,
-          handle,
-          password,
-        });
-      } catch (exc) {
-        lastError = exc;
-        if (exc instanceof XrpcError && exc.status === 400 && typeof exc.body === "object") {
-          const msg = String(exc.body.message || "").toLowerCase();
-          if (["network connection", "could not connect", "timed out"].some(s => msg.includes(s))) {
-            if (attempt < retries) {
-              await new Promise(r => setTimeout(r, 1000 * attempt));
-              continue;
-            }
-          }
+  async createAccount(handle: string, email: string, password: string) {
+    try {
+      return await this.transport.post("com.atproto.server.createAccount", {
+        email,
+        handle,
+        password,
+      });
+    } catch (exc) {
+      // If account already exists, just login to get a session
+      if (exc instanceof XrpcError && exc.status === 400) {
+        const msg = String(exc.body?.message || "").toLowerCase();
+        if (msg.includes("already exists")) {
+          return await this.createSession(handle, password);
         }
-        throw exc;
       }
+      throw exc;
     }
-    throw lastError;
   }
 
   async createSession(identifier: string, password: string) {
@@ -60,25 +51,5 @@ export class AccountsClient {
 
   async describeServer() {
     return await this.transport.get("com.atproto.server.describeServer");
-  }
-
-  async adminLogin(password: string): Promise<string> {
-    const url = `${this.transport["_base_url"]}/admin/login`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
-    
-    if (!res.ok) {
-      throw new XrpcError("/admin/login", res.status, await res.text());
-    }
-    
-    const data = await res.json();
-    const token = data.token || data.ui_admin_token;
-    if (!token) {
-      throw new XrpcError("/admin/login", 200, { error: "missing token in response" });
-    }
-    return token;
   }
 }

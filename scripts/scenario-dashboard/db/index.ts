@@ -1,12 +1,30 @@
 import { join, fromFileUrl } from "$std/path/mod.ts";
 import { Database } from "sqlite3";
+import { SCHEMA } from "./schema.ts";
 import { scanReports } from "../services/report_scanner.ts";
 
 const DB_PATH = join(
   fromFileUrl(new URL("../../scenarios/reports/dashboard.db", import.meta.url)),
 );
 
-export const db = new Database(DB_PATH);
+const isBuild = Deno.args.includes("build");
 
-// Initialize schema and import any existing reports
-await scanReports(db);
+// Export a placeholder or the real DB depending on mode
+export const db = isBuild 
+  ? { prepare: () => ({ all: () => [], run: () => ({}), get: () => null }), exec: () => {} } as any 
+  : new Database(DB_PATH);
+
+if (!isBuild) {
+  // Initialize schema first (sync — required before any queries)
+  db.exec(SCHEMA);
+
+  // Scan reports in background — do not block server startup
+  setTimeout(async () => {
+    try {
+      const n = await scanReports(db);
+      if (n > 0) console.log(`[db] Imported ${n} report(s) on startup`);
+    } catch (e) {
+      console.error("[db] scanReports failed on startup:", e);
+    }
+  }, 0);
+}
