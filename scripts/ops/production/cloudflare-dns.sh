@@ -58,17 +58,12 @@ existing=$(curl -s -X GET \
     -H "${AUTH_HEADER}" \
     -H "Content-Type: application/json")
 
-result_count=$(echo "$existing" | python3 -c "import sys,json; print(len(json.load(sys.stdin).get('result',[])))" 2>/dev/null || echo "0")
+result_count=$(echo "$existing" | deno eval 'const text = await new Response(Deno.stdin.readable).text(); const data = JSON.parse(text); console.log((data.result ?? []).length);' 2>/dev/null || echo "0")
 
 if [[ "$result_count" -gt 0 ]]; then
     warn "CNAME record for '${SUBDOMAIN}' already exists — skipping creation"
     # Print existing record info
-    echo "$existing" | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-for r in data.get('result', []):
-    print(f\"  Name: {r['name']}  →  {r['content']}  (proxied: {r['proxied']})\")
-" 2>/dev/null || true
+    echo "$existing" | deno eval 'const text = await new Response(Deno.stdin.readable).text(); const data = JSON.parse(text); for (const r of data.result ?? []) console.log(`  Name: ${r.name}  ->  ${r.content}  (proxied: ${r.proxied})`);' 2>/dev/null || true
     exit 0
 fi
 
@@ -90,12 +85,12 @@ response=$(curl -s -X POST \
 JSON
 )")
 
-success=$(echo "$response" | python3 -c "import sys,json; print(json.load(sys.stdin).get('success', False))" 2>/dev/null || echo "False")
+success=$(echo "$response" | deno eval 'const text = await new Response(Deno.stdin.readable).text(); const data = JSON.parse(text); console.log(String(data.success ?? false));' 2>/dev/null || echo "false")
 
-if [[ "$success" == "True" ]]; then
+if [[ "$success" == "true" ]]; then
     info "CNAME record created successfully: ${SUBDOMAIN} → ${TARGET}"
 else
     error "Failed to create CNAME record"
-    echo "$response" | python3 -m json.tool 2>/dev/null || echo "$response"
+    echo "$response" | deno eval 'const text = await new Response(Deno.stdin.readable).text(); console.log(JSON.stringify(JSON.parse(text), null, 2));' 2>/dev/null || echo "$response"
     exit 1
 fi

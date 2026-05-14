@@ -1,15 +1,15 @@
 {
   "server": {
     "host": "127.0.0.1",
-    "port": 2585,
-    "issuer": "http://localhost:2585",
+    "port": 2587,
+    "issuer": "http://localhost:2587",
     "available_user_domains": ["second.test", "test"]
-    },
-     "appview": {
-       "url": "http://127.0.0.1:3200",
-       "did": "did:web:localhost",
-       "local_enabled": false
-     },
+  },
+  "appview": {
+    "url": "http://127.0.0.1:3200",
+    "did": "did:web:localhost",
+    "local_enabled": false
+  },
   "database": {
     "service_pool_max_size": 10,
     "user_pool_max_size": 50
