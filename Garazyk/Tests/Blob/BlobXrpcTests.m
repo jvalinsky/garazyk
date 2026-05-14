@@ -182,6 +182,30 @@
     XCTAssertEqual(response.statusCode, 400, @"Should return 400 (or 413) for blob too large");
 }
 
+- (void)testUploadVideoBlobAllowsEmbedVideoSize {
+    NSError *error = nil;
+    NSDictionary *session = [self.controller loginWithHandle:@"blobtest.bsky.social" password:@"password" error:&error];
+    XCTAssertNil(error);
+    NSString *accessJwt = session[@"accessJwt"];
+
+    NSMutableData *videoData = [NSMutableData dataWithLength:2 * 1024 * 1024];
+
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                  methodString:@"POST"
+                                                          path:@"/xrpc/com.atproto.repo.uploadBlob"
+                                                   queryString:@""
+                                                   queryParams:@{}
+                                                       version:@"1.1"
+                                                       headers:@{@"content-type": @"video/mp4", @"authorization": [NSString stringWithFormat:@"Bearer %@", accessJwt]}
+                                                          body:videoData
+                                                 remoteAddress:@"127.0.0.1"];
+
+    HttpResponse *response = [[HttpResponse alloc] init];
+    [self.dispatcher handleRequest:request response:response];
+
+    XCTAssertEqual(response.statusCode, 200, @"Video blobs up to app.bsky.embed.video maxSize should upload");
+}
+
 - (void)testGetBlob {
     NSError *error = nil;
     // 1. Upload a blob initially

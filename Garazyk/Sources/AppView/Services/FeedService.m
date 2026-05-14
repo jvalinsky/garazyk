@@ -10,6 +10,7 @@
 #import "Core/ATURI.h"
 #import "Database/Schema.h"
 #import "Core/NSDateFormatter+ATProto.h"
+#import "AppView/Services/VideoUriBuilder.h"
 @interface FeedService ()
 @property (nonatomic, strong) id<PDSQueryDatabase> database;
 @property (nonatomic, strong) ActorService *actorService;
@@ -39,6 +40,11 @@ static NSDictionary *GZFeedRecordFromJSONString(NSString *value) {
 
     id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
     return GZFeedDictionaryValue(json);
+}
+
+static NSString *GZFeedDIDFromPostURI(NSString *uri) {
+    NSArray<NSString *> *components = [GZFeedStringValue(uri) componentsSeparatedByString:@"/"];
+    return components.count > 2 ? components[2] : @"";
 }
 
 @implementation FeedService
@@ -174,7 +180,7 @@ static NSDictionary *GZFeedRecordFromJSONString(NSString *value) {
     NSString *repo = parsedURI.did;
     NSString *rkey = parsedURI.rkey;
 
-    NSDictionary *threadPost = @{
+    NSMutableDictionary *threadPost = [@{
         @"uri": uri,
         @"cid": [self generateCIDForRecord:postRecord],
         @"author": [self getAuthorInfoForDID:repo error:error] ?: @{@"did": repo ?: @""},
@@ -185,10 +191,14 @@ static NSDictionary *GZFeedRecordFromJSONString(NSString *value) {
         @"indexedAt": [self getIndexedAtForURI:uri] ?: @"",
         @"viewer": @{},
         @"labels": @[]
-    };
+    } mutableCopy];
+    NSDictionary *threadEmbed = [self appViewEmbedForRecord:postRecord did:repo];
+    if (threadEmbed) {
+        threadPost[@"embed"] = threadEmbed;
+    }
 
     NSMutableDictionary *thread = [NSMutableDictionary dictionary];
-    thread[@"post"] = threadPost;
+    thread[@"post"] = [threadPost copy];
 
     if (depth > 0) {
         NSMutableArray *replies = [NSMutableArray array];
@@ -634,7 +644,7 @@ static NSDictionary *GZFeedRecordFromJSONString(NSString *value) {
 
     NSDictionary *author = [self getAuthorInfoForDID:repo error:nil] ?: @{@"did": repo};
 
-    return @{
+    NSMutableDictionary *view = [@{
         @"uri": uri,
         @"cid": cid,
         @"author": author,
@@ -645,16 +655,20 @@ static NSDictionary *GZFeedRecordFromJSONString(NSString *value) {
         @"indexedAt": [self getIndexedAtForURI:uri] ?: [NSDateFormatter atproto_stringFromDate:[NSDate date]],
         @"viewer": @{},
         @"labels": @[]
-    };
+    } mutableCopy];
+    NSDictionary *embedView = [self appViewEmbedForRecord:record did:repo];
+    if (embedView) {
+        view[@"embed"] = embedView;
+    }
+    return [view copy];
 }
 
 - (nullable NSDictionary *)formatPostRecord:(NSString *)uri cid:(NSString *)cid record:(NSDictionary *)record {
     NSString *uriString = GZFeedStringValue(uri) ?: @"";
     NSString *cidString = GZFeedStringValue(cid) ?: @"";
-    NSArray *components = [uriString componentsSeparatedByString:@"/"];
-    NSString *repo = components.count > 2 ? components[2] : @"";
+    NSString *repo = GZFeedDIDFromPostURI(uriString);
 
-    return @{
+    NSMutableDictionary *view = [@{
         @"uri": uriString,
         @"cid": cidString,
         @"author": [self getAuthorInfoForDID:repo error:nil] ?: @{@"did": repo},
@@ -665,7 +679,40 @@ static NSDictionary *GZFeedRecordFromJSONString(NSString *value) {
         @"indexedAt": [self getIndexedAtForURI:uriString] ?: @"",
         @"viewer": @{},
         @"labels": @[]
-    };
+    } mutableCopy];
+    NSDictionary *embedView = [self appViewEmbedForRecord:record did:repo];
+    if (embedView) {
+        view[@"embed"] = embedView;
+    }
+    return [view copy];
+}
+
+- (nullable NSDictionary *)appViewEmbedForRecord:(NSDictionary *)record did:(NSString *)did {
+    NSDictionary *embed = GZFeedDictionaryValue(record[@"embed"]);
+    if (!embed || did.length == 0 || !self.videoUriBuilder) {
+        return nil;
+    }
+
+    NSDictionary *videoView = [self.videoUriBuilder videoViewFromEmbed:embed did:did];
+    if (videoView) {
+        return videoView;
+    }
+
+    if ([GZFeedStringValue(embed[@"$type"]) isEqualToString:@"app.bsky.embed.recordWithMedia"]) {
+        NSDictionary *media = GZFeedDictionaryValue(embed[@"media"]);
+        NSDictionary *mediaView = [self.videoUriBuilder videoViewFromEmbed:media did:did];
+        if (mediaView) {
+            NSMutableDictionary *recordWithMedia = [@{@"$type": @"app.bsky.embed.recordWithMedia#view",
+                                                      @"media": mediaView} mutableCopy];
+            NSDictionary *recordEmbed = GZFeedDictionaryValue(embed[@"record"]);
+            if (recordEmbed) {
+                recordWithMedia[@"record"] = recordEmbed;
+            }
+            return [recordWithMedia copy];
+        }
+    }
+
+    return nil;
 }
 
 - (nullable NSArray *)getFeedGeneratorItems:(NSString *)feedGeneratorURI limit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error {

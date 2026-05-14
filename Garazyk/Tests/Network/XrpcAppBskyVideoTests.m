@@ -36,6 +36,27 @@
     XCTAssertEqual(response.statusCode, 404);
 }
 
+- (void)testVideoXrpcOptionsPreflightIncludesDirectUploadHeaders {
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodOPTIONS
+                                                  methodString:@"OPTIONS"
+                                                          path:@"/xrpc/app.bsky.video.uploadVideo"
+                                                   queryString:@""
+                                                   queryParams:@{}
+                                                       version:@"1.1"
+                                                       headers:@{
+                                                           @"origin": @"http://127.0.0.1:2591",
+                                                           @"access-control-request-headers": @"Authorization, Content-Type"
+                                                       }
+                                                          body:[NSData data]
+                                                 remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [[HttpResponse alloc] init];
+    [self.dispatcher handleRequest:request response:response];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertEqualObjects([response headerForKey:@"Access-Control-Allow-Origin"], @"http://127.0.0.1:2591");
+    XCTAssertTrue([[response headerForKey:@"Access-Control-Allow-Headers"] containsString:@"Authorization"]);
+    XCTAssertTrue([[response headerForKey:@"Access-Control-Allow-Headers"] containsString:@"Content-Type"]);
+}
+
 - (void)testGetJobStatusWithValidJob {
     // Create a job directly in the same service database used by the video XRPC pack.
     NSError *dbError = nil;
@@ -57,8 +78,10 @@
     XCTAssertEqual(response.statusCode, 200);
     NSDictionary *body = response.jsonBody;
     XCTAssertNotNil(body);
-    XCTAssertEqualObjects(body[@"jobId"], @"test-job-status");
-    XCTAssertEqualObjects(body[@"state"], @"JOB_STATE_PENDING");
+    NSDictionary *jobStatus = body[@"jobStatus"];
+    XCTAssertNotNil(jobStatus);
+    XCTAssertEqualObjects(jobStatus[@"jobId"], @"test-job-status");
+    XCTAssertEqualObjects(jobStatus[@"state"], @"JOB_STATE_PENDING");
 }
 
 #pragma mark - uploadVideo Tests

@@ -62,10 +62,7 @@
     view[@"playlist"] = [self playlistURLForDID:did cid:cid];
 
     // Add thumbnail URL
-    NSString *thumbnailCid = embedRecord[@"thumbnail"][@"ref"][@"$link"];
-    if (thumbnailCid) {
-        view[@"thumbnail"] = [self thumbnailURLForDID:did cid:thumbnailCid];
-    }
+    view[@"thumbnail"] = [self thumbnailURLForDID:did cid:cid];
 
     // Add aspect ratio if present
     if (width && height) {

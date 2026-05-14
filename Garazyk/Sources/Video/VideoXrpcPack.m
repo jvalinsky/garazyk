@@ -35,7 +35,7 @@
     }
 
     response.statusCode = HttpStatusOK;
-    [response setJsonBody:[self formatJobResponse:job]];
+    [response setJsonBody:@{@"jobStatus": [self formatJobResponse:job]}];
   }];
 
   [dispatcher registerMethod:@"app.bsky.video.uploadVideo"
@@ -92,11 +92,19 @@
       return;
     }
 
-    // Extract Service Auth token from Authorization header for later blob upload
+    // The browser may authenticate the video-service upload with service auth,
+    // while Garazyk's PDS blob upload path still expects the user's access JWT.
+    NSString *workerUploadToken = [request headerForKey:@"X-Garazyk-Access-JWT"];
+    if (workerUploadToken.length == 0) {
+        workerUploadToken = [request headerForKey:@"X-Garazyk-Access-Token"];
+    }
+
+    // Fall back to the Authorization token for legacy access-token uploads.
     NSString *authHeader = [request headerForKey:@"Authorization"];
-    NSString *serviceToken = nil;
-    if (authHeader.length > 7 && [[authHeader substringToIndex:7] isEqualToString:@"Bearer "]) {
-        serviceToken = [authHeader substringFromIndex:7];
+    if (workerUploadToken.length == 0 &&
+        authHeader.length > 7 &&
+        [[authHeader substringToIndex:7] isEqualToString:@"Bearer "]) {
+        workerUploadToken = [authHeader substringFromIndex:7];
     }
 
     BOOL created = [jobStore createVideoJobWithId:jobId
@@ -104,7 +112,7 @@
                                             blobCid:blobCid
                                            mimeType:mimeType
                                            fileSize:fileSize
-                                    serviceAuthToken:serviceToken
+                                    serviceAuthToken:workerUploadToken
                                               error:&error];
     if (!created) {
       GZ_LOG_ERROR(@"Failed to create video job: %@", error);
