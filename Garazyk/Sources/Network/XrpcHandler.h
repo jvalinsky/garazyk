@@ -120,6 +120,9 @@ typedef BOOL (^XrpcRequestInterceptor)(HttpRequest *request,
  */
 - (void)registerMethod:(NSString *)methodId handler:(XrpcMethodHandler)handler;
 
+/*! Returns YES when a handler has already been registered for methodId. */
+- (BOOL)hasRegisteredMethod:(NSString *)methodId;
+
 /*!
  @method handleRequest:response:
  

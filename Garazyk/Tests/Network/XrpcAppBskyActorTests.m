@@ -27,6 +27,22 @@
     XCTAssertNotNil(response.jsonBody[@"preferences"]);
 }
 
+- (void)testGetPreferencesBypassesProxyInterceptor {
+    self.dispatcher.requestInterceptor = ^BOOL(HttpRequest *request, HttpResponse *response, NSString *methodId, BOOL hasLocalHandler) {
+        response.statusCode = 502;
+        [response setJsonBody:@{@"error": @"UnexpectedProxy", @"message": methodId ?: @""}];
+        return YES;
+    };
+
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+    HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.actor.getPreferences"
+                                             queryString:@""
+                                             queryParams:@{}
+                                                 headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.jsonBody[@"preferences"]);
+}
+
 #pragma mark - putPreferences Tests (PDS-level)
 
 - (void)testPutPreferencesRequiresAuth {
@@ -52,37 +68,39 @@
     XCTAssertEqual(response.statusCode, 200);
 }
 
-#pragma mark - getProfile Tests (proxied — returns 501 without upstream AppView)
+#pragma mark - getProfile Tests
 
-- (void)testGetProfileNotSupportedWithoutUpstream {
+- (void)testGetProfileSuccess {
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.actor.getProfile"
                                              queryString:[NSString stringWithFormat:@"actor=%@", self.userDid]
                                              queryParams:@{@"actor": self.userDid}
                                                  headers:@{}];
-    XCTAssertEqual(response.statusCode, 501);
-    XCTAssertEqualObjects(response.jsonBody[@"error"], @"NotSupported");
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertEqualObjects(response.jsonBody[@"did"], self.userDid);
 }
 
-#pragma mark - getProfiles Tests (proxied — returns 501 without upstream AppView)
+#pragma mark - getProfiles Tests
 
-- (void)testGetProfilesNotSupportedWithoutUpstream {
+- (void)testGetProfilesSuccess {
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.actor.getProfiles"
                                              queryString:[NSString stringWithFormat:@"actors=%@", self.userDid]
                                              queryParams:@{@"actors": self.userDid}
                                                  headers:@{}];
-    XCTAssertEqual(response.statusCode, 501);
-    XCTAssertEqualObjects(response.jsonBody[@"error"], @"NotSupported");
+    XCTAssertEqual(response.statusCode, 200);
+    NSArray *profiles = response.jsonBody[@"profiles"];
+    XCTAssertTrue([profiles isKindOfClass:[NSArray class]]);
+    XCTAssertEqual(profiles.count, 1U);
 }
 
-#pragma mark - searchActors Tests (proxied — returns 501 without upstream AppView)
+#pragma mark - searchActors Tests
 
-- (void)testSearchActorsNotSupportedWithoutUpstream {
+- (void)testSearchActorsSuccess {
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.actor.searchActors"
                                              queryString:@"q=test"
                                              queryParams:@{@"q": @"test"}
                                                  headers:@{}];
-    XCTAssertEqual(response.statusCode, 501);
-    XCTAssertEqualObjects(response.jsonBody[@"error"], @"NotSupported");
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.jsonBody[@"actors"]);
 }
 
 #pragma mark - searchActorsTypeahead Tests (local AppView)
@@ -104,16 +122,16 @@
     XCTAssertNotNil(response.jsonBody[@"actors"]);
 }
 
-#pragma mark - getSuggestions Tests (proxied — returns 501 without upstream AppView)
+#pragma mark - getSuggestions Tests
 
-- (void)testGetSuggestionsNotSupportedWithoutUpstream {
+- (void)testGetSuggestionsSuccess {
     NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.actor.getSuggestions"
                                              queryString:@""
                                              queryParams:@{}
                                                  headers:@{@"authorization": authHeader}];
-    XCTAssertEqual(response.statusCode, 501);
-    XCTAssertEqualObjects(response.jsonBody[@"error"], @"NotSupported");
+    XCTAssertEqual(response.statusCode, 200);
+    XCTAssertNotNil(response.jsonBody[@"actors"]);
 }
 
 @end
