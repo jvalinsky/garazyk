@@ -1,0 +1,24 @@
+diff --git a/rsky-wintermute/src/ingester/mod.rs b/rsky-wintermute/src/ingester/mod.rs
+index 0000000..1111111 100644
+--- a/rsky-wintermute/src/ingester/mod.rs
++++ b/rsky-wintermute/src/ingester/mod.rs
+@@ -236,11 +236,16 @@ impl IngesterManager {
+             }
+         };
+
+-        let clean_hostname = hostname
+-            .trim_start_matches("https://")
+-            .trim_start_matches("http://")
+-            .trim_end_matches('/');
++        let (scheme, clean_hostname) = if let Some(stripped) = hostname.strip_prefix("http://") {
++            ("ws", stripped.trim_end_matches('/'))
++        } else if let Some(stripped) = hostname.strip_prefix("https://") {
++            ("wss", stripped.trim_end_matches('/'))
++        } else {
++            ("wss", hostname.trim_end_matches('/'))
++        };
+
+         let url = match url::Url::parse(&format!(
+-            "wss://{clean_hostname}/xrpc/com.atproto.sync.subscribeRepos"
++            "{scheme}://{clean_hostname}/xrpc/com.atproto.sync.subscribeRepos"
+         )) {
