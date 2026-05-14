@@ -3,7 +3,8 @@ import { parseArgs } from "@std/cli/parse-args";
 import { join, fromFileUrl } from "@std/path";
 import { startLocalNetwork, stopLocalNetwork } from "./lib/deno/docker.ts";
 import { ScenarioResult } from "./lib/deno/runner.ts";
-import { brightBlue, bold, green, red, yellow } from "@std/fmt/colors";
+import { ProgressBar, DurationCache } from "./lib/deno/progress.ts";
+import { brightBlue, bold, green, red, yellow, cyan } from "@std/fmt/colors";
 
 async function main() {
   const args = parseArgs(Deno.args, {
@@ -13,6 +14,7 @@ async function main() {
   });
 
   const scriptDir = fromFileUrl(new URL(".", import.meta.url));
+  const repoRoot = join(scriptDir, "..");
   const scenarioDir = join(scriptDir, "scenarios", "scenarios");
   const scenarios: { id: string; name: string; path: string }[] = [];
 
@@ -48,7 +50,7 @@ async function main() {
 
   const requestedIds = args._.map(String);
   const scenariosToRun = requestedIds.length > 0
-    ? scenarios.filter(s => requestedIds.includes(s.id))
+    ? scenarios.filter(s => requestedIds.map(id => id.padStart(2, "0")).includes(s.id))
     : scenarios;
 
   if (scenariosToRun.length === 0 && requestedIds.length > 0) {
@@ -71,15 +73,34 @@ async function main() {
   const results: ScenarioResult[] = [];
   let allPassed = true;
 
-  for (const s of scenariosToRun) {
-    console.log(`${bold("Executing:")} ${brightBlue(s.id)} - ${s.name}`);
+  const durationCache = new DurationCache(repoRoot);
+  const expectedDurations = scenariosToRun.map(s => durationCache.get(s.id));
+  const pb = new ProgressBar(scenariosToRun.length, expectedDurations);
+
+  for (let i = 0; i < scenariosToRun.length; i++) {
+    const s = scenariosToRun[i];
+    
+    // Clear the progress bar line before printing current task info
+    // but we'll let the progress bar handle its own rendering.
+    pb.start(`${s.id} - ${s.name}`);
+
     try {
       const module = await import(`file://${s.path}`);
       if (typeof module.run === "function") {
         const result: ScenarioResult = await module.run();
+        
+        // Before printing summary, clear progress bar if needed
+        // but here we just print over it or let it be.
+        // To be clean, we can move to next line.
+        Deno.stdout.writeSync(new TextEncoder().encode("\r" + " ".repeat(100) + "\r")); 
+        
         console.log(result.summary());
         results.push(result);
         if (!result.ok) allPassed = false;
+
+        if (result.startedAt && result.finishedAt) {
+          durationCache.set(s.id, result.finishedAt - result.startedAt);
+        }
 
         if (args["run-id"]) {
           try {
@@ -105,7 +126,6 @@ async function main() {
             
             const reportsDir = join(scriptDir, "scenarios", "reports");
             await Deno.mkdir(reportsDir, { recursive: true });
-            
             const safeName = s.name.replace(/[^a-zA-Z0-9_]/g, "_");
             const filename = `${args["run-id"]}-${s.id}_${safeName}.json`;
             await Deno.writeTextFile(join(reportsDir, filename), JSON.stringify(reportFile, null, 2));
@@ -115,16 +135,44 @@ async function main() {
           }
         }
       } else {
+        Deno.stdout.writeSync(new TextEncoder().encode("\r" + " ".repeat(100) + "\r"));
         console.error(red(`  ✗ Error: Scenario ${s.id} does not export a run() function.`));
         allPassed = false;
       }
     } catch (e) {
+      Deno.stdout.writeSync(new TextEncoder().encode("\r" + " ".repeat(100) + "\r"));
       console.error(red(`  ✗ Fatal Error running scenario ${s.id}:`), e);
       allPassed = false;
     }
+    
+    // Write live progress file after each scenario regardless of success/failure
+    if (args["run-id"]) {
+      try {
+        const reportsDir = join(scriptDir, "scenarios", "reports");
+        await Deno.mkdir(reportsDir, { recursive: true });
+        const progress = {
+          runId: args["run-id"],
+          total: scenariosToRun.length,
+          completed: i + 1,
+          currentScenario: s.name,
+          currentScenarioId: s.id,
+          elapsedMs: pb.getElapsedMs(),
+          updatedAt: Date.now(),
+          running: true,
+        };
+        const progressPath = join(reportsDir, `${args["run-id"]}-progress.json`);
+        await Deno.writeTextFile(progressPath, JSON.stringify(progress));
+      } catch (e) {
+        console.error("Failed to write progress file", e);
+      }
+    }
+    
+    pb.update(i + 1);
   }
 
-  console.log(bold("Final Summary:"));
+  pb.finish();
+
+  console.log(bold("\nFinal Summary:"));
   const passedCount = results.filter(r => r.ok).length;
   const failedCount = results.filter(r => !r.ok).length;
 
@@ -141,3 +189,4 @@ async function main() {
 if (import.meta.main) {
   main();
 }
+
