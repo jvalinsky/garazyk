@@ -1,5 +1,91 @@
 export type BrowserFlow = "none" | "smoke" | "login" | "deep";
 
+export type ServiceRole = "pds" | "pds2" | "relay" | "plc" | "appview" | "chat" | "video";
+
+export interface SourceBuild {
+  /** Git remote URL */
+  repo: string;
+  /** Git ref — tag, branch, or commit SHA */
+  ref: string;
+  /** Subdirectory within the repo containing the Dockerfile (default: repo root) */
+  dockerDir?: string;
+  /** Dockerfile name within dockerDir (default: "Dockerfile") */
+  dockerfile?: string;
+  /** Build args to pass to docker build */
+  buildArgs?: Record<string, string>;
+}
+
+export interface SidecarAdapter {
+  /** Docker image tag */
+  image?: string;
+  /** Source build configuration (alternative to image) */
+  source?: SourceBuild;
+  /** Override command */
+  command?: string[];
+  /** Environment variables */
+  env?: Record<string, string>;
+  /** Port mappings — e.g. ["5432:5432"] */
+  ports?: string[];
+  /** Volume mounts */
+  volumes?: string[];
+  /** Health check definition (path-based or custom test) */
+  healthCheck?: {
+    /** HTTP path (null if using customTest instead) */
+    path: string | null;
+    /** Custom healthcheck test command — e.g. ["CMD-SHELL", "pg_isready -U plc"] */
+    customTest?: string[];
+    /** Extra headers for HTTP health checks */
+    headers?: Record<string, string>;
+  };
+}
+
+export interface ServiceAdapter {
+  /** Adapter name — e.g. "garazyk", "reference-pds", "cocoon-pds" */
+  name: string;
+  /** Docker image tag (required for non-local adapters) */
+  image?: string;
+  /** Source build configuration (alternative to image — clone repo and build) */
+  source?: SourceBuild;
+  /** Local build context path (for garazyk services) */
+  buildContext?: string;
+  /** Dockerfile within buildContext */
+  dockerfile?: string;
+  /** Override entrypoint */
+  entrypoint?: string[];
+  /** Override command */
+  command?: string[];
+  /** Environment variables */
+  env?: Record<string, string>;
+  /** Port mappings — e.g. ["2583:2583"] */
+  ports?: string[];
+  /** Volume mounts — e.g. ["local_pds_data:/var/lib/atprotopds"] */
+  volumes?: string[];
+  /** Health check definition */
+  healthCheck: {
+    /** HTTP path — e.g. "/xrpc/com.atproto.server.describeServer" (null for customTest-only) */
+    path: string | null;
+    /** Custom healthcheck test command — e.g. ["CMD-SHELL", "pg_isready"] */
+    customTest?: string[];
+    /** Extra headers (e.g. Authorization for admin endpoints) */
+    headers?: Record<string, string>;
+  };
+  /** Capabilities this adapter supports — e.g. ["describeServer", "createAccount"] */
+  capabilities: string[];
+  /** Service names this adapter depends on */
+  dependsOn?: string[];
+  /** Sidecar containers that run alongside this service (e.g. PostgreSQL for reference PLC) */
+  sidecars?: Record<string, SidecarAdapter>;
+}
+
+export interface TopologyPreset {
+  name: string;
+  description: string;
+  roles: Partial<Record<ServiceRole, ServiceAdapter>>;
+  webClient?: WebClientTopology;
+  /** DNS aliases on the Docker network — e.g. { "local-appview": ["bsky.app"] } */
+  networkAliases?: Record<string, string[]>;
+}
+
 export interface WebClientTopology {
   name: string;
   source: string;
@@ -27,8 +113,11 @@ export interface WebClientTopology {
 }
 
 export interface Topology {
+  preset?: TopologyPreset;
   webClient?: WebClientTopology;
   serviceUrls: Record<string, string>;
+  /** Union of all adapter capabilities from the active preset */
+  capabilities: Set<string>;
 }
 
 const publicWebUrl = Deno.env.get("WEB_CLIENT_URL") || "http://localhost:2591";
@@ -145,7 +234,46 @@ export const WEB_CLIENT_PRESETS: Record<string, WebClientTopology> = {
   },
 };
 
-export function resolveTopology(webClientName?: string): Topology {
+/**
+ * Load a topology preset from scripts/scenarios/topologies/<name>.json.
+ * Validates required fields and returns the parsed TopologyPreset.
+ */
+export function loadTopologyPreset(name: string): TopologyPreset {
+  const scriptDir = new URL(".", import.meta.url).pathname;
+  const repoRoot = scriptDir.replace(/\/scripts\/lib\/deno\/$/, "");
+  const presetPath = `${repoRoot}/scripts/scenarios/topologies/${name}.json`;
+
+  let raw: string;
+  try {
+    raw = Deno.readTextFileSync(presetPath);
+  } catch {
+    throw new Error(
+      `Unknown topology preset: ${name}. File not found: ${presetPath}`,
+    );
+  }
+
+  const preset = JSON.parse(raw) as TopologyPreset;
+
+  if (!preset.name || !preset.description || !preset.roles) {
+    throw new Error(
+      `Invalid topology preset: ${name}. Missing required fields (name, description, roles).`,
+    );
+  }
+
+  for (const [role, adapter] of Object.entries(preset.roles)) {
+    // Skip inheritance markers — they'll be resolved later by resolvePreset
+    if ("inherit" in adapter && typeof (adapter as any).inherit === "string") continue;
+    if (!adapter.name || !adapter.healthCheck || !adapter.capabilities) {
+      throw new Error(
+        `Invalid adapter for role "${role}" in preset "${name}": missing name, healthCheck, or capabilities.`,
+      );
+    }
+  }
+
+  return preset;
+}
+
+export function resolveTopology(webClientName?: string, topologyName?: string): Topology {
   const webClient = webClientName ? WEB_CLIENT_PRESETS[webClientName] : undefined;
   if (webClientName && !webClient) {
     throw new Error(
@@ -153,6 +281,18 @@ export function resolveTopology(webClientName?: string): Topology {
         Object.keys(WEB_CLIENT_PRESETS).join(", ")
       }`,
     );
+  }
+
+  let preset: TopologyPreset | undefined;
+  let capabilities = new Set<string>();
+
+  if (topologyName) {
+    preset = loadTopologyPreset(topologyName);
+    for (const adapter of Object.values(preset.roles)) {
+      for (const cap of adapter.capabilities) {
+        capabilities.add(cap);
+      }
+    }
   }
 
   const serviceUrls: Record<string, string> = {
@@ -169,7 +309,9 @@ export function resolveTopology(webClientName?: string): Topology {
   if (webClient) serviceUrls.webClient = webClient.publicUrl;
 
   return {
+    preset,
     webClient,
     serviceUrls,
+    capabilities,
   };
 }

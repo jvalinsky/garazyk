@@ -35,6 +35,7 @@ TEARDOWN=false
 KEEP_RUNNING=false
 COLLECT_DIAGNOSTICS=false
 SKIP_DOCKER_STAGE="${ATPROTO_E2E_SKIP_DOCKER_STAGE:-false}"
+TOPOLOGY_PRESET=""
 
 while [[ $# -gt 0 ]]; do
     # Keep argument parsing intentionally simple: scenario automation passes a
@@ -59,6 +60,11 @@ while [[ $# -gt 0 ]]; do
         --keep-running) KEEP_RUNNING=true ;;
         --collect-diagnostics) COLLECT_DIAGNOSTICS=true ;;
         --skip-docker-stage) SKIP_DOCKER_STAGE=true ;;
+        --topology)
+            [[ $# -ge 2 ]] || error_exit "--topology requires a value" 2
+            TOPOLOGY_PRESET="$2"
+            shift
+            ;;
         --run-id)
             [[ $# -ge 2 ]] || error_exit "--run-id requires a value" 2
             ATPROTO_E2E_RUN_ID="$2"
@@ -78,6 +84,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --web-client PRESET      Add a generated web-client compose service"
             echo "  --client-flow FLOW       Browser flow name for metadata (none/smoke/login/deep)"
             echo "  --allow-hybrid-network   Allow browser flows to call public ATProto hosts"
+            echo "  --topology PRESET        Use a topology preset from scripts/scenarios/topologies/"
             echo "  --wait-only              Don't start services, just wait for them to be healthy"
             echo "  --teardown               Stop services for this run"
             echo "  --keep-running           Mark this run as intentionally long-lived"
@@ -122,6 +129,35 @@ if [[ -n "$WEB_CLIENT_PRESET" && "$TEARDOWN" != "true" && "$COLLECT_DIAGNOSTICS"
 fi
 if [[ -f "$WEB_CLIENT_COMPOSE_FILE" ]]; then
     COMPOSE_FILES+=("$WEB_CLIENT_COMPOSE_FILE")
+fi
+
+# Compile topology preset to compose file if specified
+TOPOLOGY_COMPOSE_FILE="$ATPROTO_E2E_RUN_DIR/docker-compose.topology.yml"
+TOPOLOGY_SOURCES_JSON="$ATPROTO_E2E_RUN_DIR/topology_sources.json"
+if [[ -n "$TOPOLOGY_PRESET" && "$TEARDOWN" != "true" && "$COLLECT_DIAGNOSTICS" != "true" ]]; then
+    log_info "Compiling topology preset: $TOPOLOGY_PRESET"
+    deno run -A "$SCRIPT_DIR/compile_topology.ts" \
+        --preset "$TOPOLOGY_PRESET" \
+        --output "$TOPOLOGY_COMPOSE_FILE" \
+        --run-dir "$ATPROTO_E2E_RUN_DIR" \
+        --repo-root "$REPO_ROOT" \
+        --sources-json "$TOPOLOGY_SOURCES_JSON"
+    export ATPROTO_TOPOLOGY="$TOPOLOGY_PRESET"
+
+    # Clone source repos if any adapters use source builds
+    if [[ -f "$TOPOLOGY_SOURCES_JSON" ]]; then
+        SOURCE_COUNT=$(python3 -c "import json; print(len(json.load(open('$TOPOLOGY_SOURCES_JSON'))))" 2>/dev/null || echo "0")
+        if [[ "$SOURCE_COUNT" -gt 0 ]]; then
+            log_info "Preparing $SOURCE_COUNT source build(s) for topology: $TOPOLOGY_PRESET"
+            "$SCRIPT_DIR/prepare_topology.sh" \
+                --preset "$TOPOLOGY_PRESET" \
+                --run-dir "$ATPROTO_E2E_RUN_DIR" \
+                --repo-root "$REPO_ROOT"
+        fi
+    fi
+fi
+if [[ -f "$TOPOLOGY_COMPOSE_FILE" ]]; then
+    COMPOSE_FILES+=("$TOPOLOGY_COMPOSE_FILE")
 fi
 
 build_compose_cmd() {

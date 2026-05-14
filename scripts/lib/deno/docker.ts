@@ -7,6 +7,7 @@ export interface LocalNetworkOptions {
   webClient?: string;
   clientFlow?: string;
   allowHybridNetwork?: boolean;
+  topology?: string;
 }
 
 async function repoRoot(): Promise<string> {
@@ -33,6 +34,7 @@ export async function startLocalNetwork(options: LocalNetworkOptions = {}) {
   if (options.webClient) args.push("--web-client", options.webClient);
   if (options.clientFlow) args.push("--client-flow", options.clientFlow);
   if (options.allowHybridNetwork) args.push("--allow-hybrid-network");
+  if (options.topology) args.push("--topology", options.topology);
 
   const command = new Deno.Command("bash", { args, stdout: "inherit", stderr: "inherit" });
   const { code } = await command.output();

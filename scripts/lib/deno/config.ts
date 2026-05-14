@@ -1,6 +1,9 @@
 import { resolveTopology } from "./topology.ts";
 
-const topology = resolveTopology(Deno.env.get("ATPROTO_WEB_CLIENT") || undefined);
+const topology = resolveTopology(
+  Deno.env.get("ATPROTO_WEB_CLIENT") || undefined,
+  Deno.env.get("ATPROTO_TOPOLOGY") || undefined,
+);
 
 export const PDS1 = Deno.env.get("PDS_URL") || "http://localhost:2583";
 export const PDS2 = Deno.env.get("PDS2_URL") || "http://localhost:2587";
@@ -13,7 +16,13 @@ export const SERVICE_URLS: Record<string, string> = {
   pds2: PDS2,
 };
 
+export const TOPOLOGY_CAPABILITIES = topology.capabilities;
+
 export const WEB_CLIENT_TOPOLOGY = topology.webClient;
+
+export const VIDEO_SERVICE_DID = Deno.env.get("VIDEO_SERVICE_DID") ||
+  Deno.env.get("JELCZ_DID") ||
+  "did:web:localhost";
 
 export class Character {
   public did = "";

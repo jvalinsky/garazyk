@@ -1,0 +1,36 @@
+{
+  "name": "cocoon-pds",
+  "description": "Cocoon PDS (Rust) with Garazyk Relay, PLC, and AppView. Tests Rust PDS interop.",
+  "roles": {
+    "plc": { "inherit": "garazyk-default" },
+    "pds": {
+      "name": "cocoon-pds",
+      "source": {
+        "repo": "https://github.com/haileyok/cocoon.git",
+        "ref": "v0.9.0"
+      },
+      "command": ["serve", "--port", "2583"],
+      "env": {
+        "COCOON_PDS_HOSTNAME": "localhost",
+        "COCOON_PDS_PLC_URL": "http://local-plc:2582",
+        "COCOON_PDS_DATA_DIR": "/data"
+      },
+      "ports": ["2583:2583"],
+      "volumes": ["cocoon_pds_data:/data"],
+      "healthCheck": {
+        "path": "/xrpc/com.atproto.server.describeServer"
+      },
+      "capabilities": [
+        "describeServer", "createAccount", "createSession", "getSession",
+        "createRecord", "getRecord", "deleteRecord", "listRecords",
+        "uploadBlob", "getBlob",
+        "resolveHandle", "updateHandle",
+        "subscribeRepos", "getHead", "getRepo", "requestCrawl",
+        "repo", "identity", "blob", "sync"
+      ],
+      "dependsOn": ["local-plc"]
+    },
+    "relay": { "inherit": "garazyk-default" },
+    "appview": { "inherit": "garazyk-default" }
+  }
+}
