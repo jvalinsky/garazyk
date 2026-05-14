@@ -664,23 +664,28 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
             return;
         }
 
-        // Rate Limiting: 10 per 5 min, 50 per day per DID
+        // Rate Limiting: configurable via env vars
         RateLimiter *limiter = [RateLimiter sharedLimiter];
+        NSDictionary *env = [[NSProcessInfo processInfo] environment];
+        NSInteger shortLimit = env[@"PDS_IDENTITY_SHORT_LIMIT"] ? [env[@"PDS_IDENTITY_SHORT_LIMIT"] integerValue] : 10;
+        NSTimeInterval shortWindow = env[@"PDS_IDENTITY_SHORT_WINDOW"] ? [env[@"PDS_IDENTITY_SHORT_WINDOW"] doubleValue] : 300;
         NSString *shortKey = [NSString stringWithFormat:@"identity.updateHandle:5m:%@", did];
-        RateLimitResult *shortResult = [limiter checkRateLimitForKey:shortKey limit:10 windowSeconds:300];
+        RateLimitResult *shortResult = [limiter checkRateLimitForKey:shortKey limit:shortLimit windowSeconds:shortWindow];
         if (!shortResult.allowed) {
             response.statusCode = HttpStatusTooManyRequests;
-            [response setJsonBody:@{@"error": @"RateLimitExceeded", @"message": @"Rate limit exceeded (10 per 5 min)"}];
-            [limiter applyRateLimitHeadersToResponse:response forDid:nil ip:nil]; // Generic headers or custom
+            [response setJsonBody:@{@"error": @"RateLimitExceeded", @"message": [NSString stringWithFormat:@"Rate limit exceeded (%ld per %.0f sec)", (long)shortLimit, shortWindow]}];
+            [limiter applyRateLimitHeadersToResponse:response forDid:nil ip:nil];
             [response setHeader:[NSString stringWithFormat:@"%.0f", shortResult.retryAfter] forKey:@"Retry-After"];
             return;
         }
 
+        NSInteger longLimit = env[@"PDS_IDENTITY_LONG_LIMIT"] ? [env[@"PDS_IDENTITY_LONG_LIMIT"] integerValue] : 50;
+        NSTimeInterval longWindow = env[@"PDS_IDENTITY_LONG_WINDOW"] ? [env[@"PDS_IDENTITY_LONG_WINDOW"] doubleValue] : 86400;
         NSString *longKey = [NSString stringWithFormat:@"identity.updateHandle:1d:%@", did];
-        RateLimitResult *longResult = [limiter checkRateLimitForKey:longKey limit:50 windowSeconds:86400];
+        RateLimitResult *longResult = [limiter checkRateLimitForKey:longKey limit:longLimit windowSeconds:longWindow];
         if (!longResult.allowed) {
             response.statusCode = HttpStatusTooManyRequests;
-            [response setJsonBody:@{@"error": @"RateLimitExceeded", @"message": @"Rate limit exceeded (50 per day)"}];
+            [response setJsonBody:@{@"error": @"RateLimitExceeded", @"message": [NSString stringWithFormat:@"Rate limit exceeded (%ld per %.0f sec)", (long)longLimit, longWindow]}];
             [response setHeader:[NSString stringWithFormat:@"%.0f", longResult.retryAfter] forKey:@"Retry-After"];
             return;
         }

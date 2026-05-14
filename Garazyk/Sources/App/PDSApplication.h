@@ -1,117 +1,57 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-/*!
- @file PDSApplication.h
- 
- @abstract Main application facade for the ATProto PDS.
- 
- @discussion PDSApplication is the new recommended entry point for the PDS.
- It composes all services, controllers, and infrastructure components,
- providing a clean interface for server lifecycle management.
- 
- This class replaces PDSController as the primary entry point for new code.
- PDSController remains available for backward compatibility but delegates
- to PDSApplication internally.
- 
- @copyright Copyright (c) 2025-2026 Jack Valinsky
- */
-
 #import <Foundation/Foundation.h>
-#import "Compat/PDSTypes.h"
+
+@class PDSConfiguration;
+@class PDSDatabase;
+@class PDSServiceDatabases;
+@class PDSDatabasePool;
+@class PDSRepositoryService;
+@class PDSBlobService;
+@class PDSRelayService;
+@class PDSController;
+@class RateLimiter;
+@class JWTMinter;
+@class SubscribeReposHandler;
+@class PDSRecordService;
+@class PDSBlobAuditManager;
+@class HttpServer;
+@protocol PDSAccountService;
+@protocol PDSEmailProvider;
+@protocol PDSAdminController;
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class PDSConfiguration;
-@class PDSServiceDatabases;
-@class PDSDatabasePool;
-@class PDSAccountService;
-@class PDSRecordService;
-@class PDSBlobService;
-@class PDSRepositoryService;
-@class PDSAdminController;
-@class PDSController;
-@class JWTMinter;
-@class HttpServer;
-@class PDSRelayService;
-@class SubscribeReposHandler;
-@class PDSBlobAuditManager;
-@class RateLimiter;
-
-@protocol PDSAccountService;
-@protocol PDSAdminController;
-@protocol PDSEmailProvider;
-
-/*!
- @class PDSApplication
-
- @abstract Main application facade composing all PDS services.
-
- @discussion PDSApplication provides a unified entry point for the PDS,
- managing the lifecycle of all components including:
- 
- - Database pools (service and user databases)
- - Service layer (account, record, blob, repository)
- - Admin controller (moderation, labeling, takedowns)
- - HTTP server (including WebSocket upgrades for subscribeRepos)
- - JWT minting for authentication
-
- @code
- // Create and start the application
- PDSApplication *app = [PDSApplication sharedApplication];
- 
- NSError *error = nil;
- if (![app startWithError:&error]) {
-     NSLog(@"Failed to start: %@", error);
-     return;
- }
- 
- // Access services directly
- NSDictionary *account = [app.accountService getAccountForDid:@"did:plc:..." error:nil];
- 
- // Or use admin controller for administrative operations
- [app.adminController takeDownAccount:@"did:plc:..." reason:@"TOS violation" error:nil];
- 
- // Stop when done
- [app stop];
- @endcode
+/**
+ * PDSApplication is the root object of the PDS server. It initializes and manages
+ * the lifecycle of all services.
  */
 @interface PDSApplication : NSObject
 
-#pragma mark - Singleton
-
-/*!
- @method sharedApplication
-
- @abstract Returns the shared application instance.
-
- @discussion Creates the shared instance on first access using default
- configuration from PDSConfiguration.sharedConfiguration.
-
- @return The shared PDSApplication instance.
+/**
+ * Returns the shared application singleton.
  */
 + (instancetype)sharedApplication;
 
-#pragma mark - Initialization
+/**
+ * Initializes a new PDSApplication with the given data directory.
+ * @param dataDirectory Path to the directory where data and configuration are stored.
+ */
+- (instancetype)initWithDataDirectory:(NSString *)dataDirectory;
 
-/*!
- @method initWithConfiguration:
-
- @abstract Initializes the application with the given configuration.
-
- @param configuration The configuration to use. If nil, uses default configuration.
- @return An initialized PDSApplication instance.
+/**
+ * Initializes a new PDSApplication with an optional configuration.
  */
 - (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration;
 
-- (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration dataDirectory:(nullable NSString *)dataDirectory NS_DESIGNATED_INITIALIZER;
+/**
+ * Initializes a new PDSApplication with configuration and data directory.
+ */
+- (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration
+                        dataDirectory:(nullable NSString *)dataDirectory;
 
-/*!
- @method initWithConfiguration:dataDirectory:serviceMaxSize:userDatabaseMaxSize:didCacheMaxSize:sequencerMaxSize:
-
- @abstract Initializes the application with explicit pool-size composition inputs.
-
- @discussion This is used by legacy compatibility facades to preserve constructor
- semantics while delegating runtime composition to PDSApplication.
+/**
+ * Full initializer for PDSApplication with pool size overrides.
  */
 - (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration
                         dataDirectory:(nullable NSString *)dataDirectory
@@ -120,225 +60,84 @@ NS_ASSUME_NONNULL_BEGIN
                       didCacheMaxSize:(NSUInteger)didCacheMaxSize
                     sequencerMaxSize:(NSUInteger)sequencerMaxSize;
 
-/*!
- @method initWithDataDirectory:
-
- @abstract Initializes the application with a specific data directory.
-
- @param dataDirectory Path to the data directory for databases and blobs.
- @return An initialized PDSApplication instance.
- */
-- (instancetype)initWithDataDirectory:(NSString *)dataDirectory;
-
-- (instancetype)initWithDataDirectory:(NSString *)dataDirectory error:(NSError **)error;
-
-- (instancetype)init NS_UNAVAILABLE;
-
-#pragma mark - Lifecycle
-
-/*!
- @method startWithError:
-
- @abstract Starts the application servers.
-
- @discussion Starts the HTTP server for XRPC endpoints. The
- com.atproto.sync.subscribeRepos stream is exposed via WebSocket upgrade
- on the same HTTP port. All services are initialized during init, so this
- method only starts the network listener.
-
- @param error On return, contains an error if startup failed.
- @return YES if the application started successfully, NO otherwise.
+/**
+ * Starts all PDS services.
+ * @param error populated if startup fails.
  */
 - (BOOL)startWithError:(NSError **)error;
 
-/*!
- @method stop
-
- @abstract Stops the application and releases resources.
-
- @discussion Stops all servers, closes database connections, and flushes
- logs. After calling stop, the application can be restarted with startWithError:.
+/**
+ * Stops all PDS services.
  */
 - (void)stop;
 
-/*!
- @property running
-
- @abstract Whether the application is currently running.
- */
-@property (nonatomic, readonly, getter=isRunning) BOOL running;
-
-#pragma mark - Configuration
-
-/*!
- @property configuration
-
- @abstract The configuration used by this application.
- */
+/*! Configuration for the application. */
 @property (nonatomic, strong, readonly) PDSConfiguration *configuration;
 
-/*!
- @property dataDirectory
-
- @abstract Path to the data directory.
- */
+/*! The data directory used for storage. */
 @property (nonatomic, copy, readonly) NSString *dataDirectory;
 
-/*!
- @property httpPort
+/*! Primary database connection. */
+@property (nonatomic, strong, readonly) PDSDatabase *database;
 
- @abstract The HTTP server port (default: 2583).
-
- @discussion Can be changed before calling startWithError:. After starting,
- reflects the actual port the server is listening on.
- */
-@property (nonatomic, assign) NSUInteger httpPort;
-
-/*!
- @property wsPort
-
- @abstract Compatibility property for subscribeRepos streaming port.
-
- @discussion subscribeRepos is served via WebSocket upgrade on the HTTP port.
- This property is retained for compatibility and reflects the active HTTP port
- after startup.
- */
-@property (nonatomic, assign, readonly) NSUInteger wsPort
-    DEPRECATED_MSG_ATTRIBUTE("subscribeRepos uses HTTP port upgrades; use httpPort");
-
-#pragma mark - Infrastructure
-
-/*!
- @property serviceDatabases
-
- @abstract Service-level database connections.
-
- @discussion Provides access to the shared service database, DID cache,
- and sequencer databases.
- */
+/*! Service databases. */
 @property (nonatomic, strong, readonly) PDSServiceDatabases *serviceDatabases;
 
-/*!
- @property userDatabasePool
-
- @abstract Pool for user-specific (actor) databases.
-
- @discussion Each user's repository data is stored in a separate database
- managed by this pool.
- */
+/*! User database pool. */
 @property (nonatomic, strong, readonly) PDSDatabasePool *userDatabasePool;
 
-/*!
- @property jwtMinter
-
- @abstract JWT minter for creating access and refresh tokens.
- */
-@property (nonatomic, strong, readonly) JWTMinter *jwtMinter;
-
-/*!
- @property httpServer
-
- @abstract The HTTP server instance (available after start).
- */
-@property (nonatomic, strong, readonly, nullable) HttpServer *httpServer;
-
-/*!
- @property relayService
-
- @abstract Service for notifying external relays of updates.
- */
-@property (nonatomic, strong, readonly) PDSRelayService *relayService;
-
-/*!
- @property subscribeReposHandler
-
- @abstract Handler for the subscribeRepos firehose.
- */
-@property (nonatomic, strong, readonly) SubscribeReposHandler *subscribeReposHandler;
-
-/*!
- @property emailProvider
- 
- @abstract The pluggable email provider for sending notifications.
- */
-@property (nonatomic, strong, readonly, nullable) id<PDSEmailProvider> emailProvider;
-
-#pragma mark - Services
-
-/*!
- @property accountService
-
- @abstract Service for account management operations.
-
- @discussion Provides account creation, authentication, token refresh,
- and account deletion.
- */
-@property (nonatomic, strong, readonly) id<PDSAccountService> accountService;
-
-/*!
- @property recordService
-
- @abstract Service for record CRUD operations.
-
- @discussion Provides record creation, retrieval, listing, and deletion
- within user repositories.
- */
-@property (nonatomic, strong, readonly) PDSRecordService *recordService;
-
-/*!
- @property blobService
-
- @abstract Service for blob storage operations.
-
- @discussion Provides blob upload, retrieval, listing, and deletion.
- */
+/*! Blob management service. */
 @property (nonatomic, strong, readonly) PDSBlobService *blobService;
 
-/*!
- @property repositoryService
-
- @abstract Service for repository operations.
-
- @discussion Provides MST management, commit processing, and repo sync.
- */
+/*! Repository management service. */
 @property (nonatomic, strong, readonly) PDSRepositoryService *repositoryService;
 
-#pragma mark - Controllers
+/*! Account management service. */
+@property (nonatomic, strong, readonly) id<PDSAccountService> accountService;
 
-/*!
- @property adminController
+/*! Record management service. */
+@property (nonatomic, strong, readonly) PDSRecordService *recordService;
 
- @abstract Controller for administrative operations.
+/*! Service for notifying external relays of updates. */
+@property (nonatomic, strong, readonly) PDSRelayService *relayService;
 
- @discussion Provides account takedowns, moderation actions, and labeling.
- */
+/*! Administrative operations controller. */
 @property (nonatomic, strong, readonly) id<PDSAdminController> adminController;
 
-/*!
- @property blobAuditManager
- 
- @abstract Manager for blob auditing operations.
- */
+/*! Blob audit manager. */
 @property (nonatomic, strong, readonly) PDSBlobAuditManager *blobAuditManager;
 
-#pragma mark - Backward Compatibility
+/*! Email provider. */
+@property (nonatomic, strong, readonly, nullable) id<PDSEmailProvider> emailProvider;
 
-/*!
- @property legacyController
+/*! The rate limiter for throttling requests. */
+@property (nonatomic, strong, readonly) RateLimiter *rateLimiter;
 
- @abstract The legacy PDSController for backward compatibility.
+/*! JWT minting for access tokens. */
+@property (nonatomic, strong, readonly) JWTMinter *jwtMinter;
 
- @discussion Provides access to a PDSController instance that wraps this
- application. Use this when interfacing with code that expects PDSController.
+/*! Handler for the subscribeRepos firehose. */
+@property (nonatomic, strong, readonly) SubscribeReposHandler *subscribeReposHandler;
 
- @note Prefer using the services directly for new code.
- */
-@property (nonatomic, strong, readonly) PDSController *legacyController;
+/*! The HTTP server instance. */
+@property (nonatomic, strong, readonly) HttpServer *httpServer;
 
-@end
+/*! Port for the HTTP XRPC server (default 2583). */
+@property (nonatomic, assign) NSUInteger httpPort;
 
-NS_ASSUME_NONNULL_END
-ces directly for new code.
+/*! WebSocket port; mirrors httpPort. */
+@property (nonatomic, assign, readonly) NSUInteger wsPort;
+
+/*! Whether the application services are currently running. */
+@property (nonatomic, assign, readonly, getter=isRunning) BOOL running;
+
+/**
+ * A convenience property that returns a legacy PDSController instance.
+ *
+ * @discussion Provides access to a PDSController instance that wraps this
+ * application. Use this when interfacing with code that expects PDSController.
+ *
+ * @note Prefer using the services directly for new code.
  */
 @property (nonatomic, strong, readonly) PDSController *legacyController;
 

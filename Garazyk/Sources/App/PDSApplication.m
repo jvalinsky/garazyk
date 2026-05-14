@@ -49,6 +49,7 @@
 #import "Email/PDSEmailProviderFactory.h"
 #import "Email/PDSSecretsProvider.h"
 #import "Admin/PDSAdminAuth.h"
+#import "Admin/Diagnostics/PDSSystemDiagnosticsHandler.h"
 
 @interface PDSApplication ()
 

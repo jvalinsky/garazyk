@@ -69,6 +69,10 @@ static BOOL PDSHandleResolverRunningTests(void) {
         _failureCache = [[NSCache alloc] init];
         _cacheExpirationInterval = 300.0;
         _rateLimitPerMinute = 100;
+        NSString *envLimit = [[NSProcessInfo processInfo] environment][@"PDS_HANDLE_RESOLVE_LIMIT"];
+        if (envLimit) {
+            _rateLimitPerMinute = [envLimit integerValue];
+        }
         _requestTimestamps = [NSMutableArray array];
         _retryPolicy = [[HttpRetryPolicy alloc] init];
         if (isTestEnv) {
