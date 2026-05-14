@@ -20,6 +20,7 @@
 #import "Services/PDS/PDSRepositoryService.h"
 #import "Admin/PDSAdminController.h"
 #import "Auth/JWT.h"
+#import "Network/RateLimiter.h"
 
 @interface PDSApplicationTests : XCTestCase
 
@@ -103,6 +104,11 @@
     XCTAssertNotNil(self.application.jwtMinter);
     XCTAssertNotNil(self.application.jwtMinter.issuer);
     XCTAssertEqualObjects(self.application.jwtMinter.signingAlgorithm, @"ES256");
+}
+
+- (void)testRateLimiterInitialized {
+    XCTAssertNotNil(self.application.rateLimiter);
+    XCTAssertEqual(self.application.rateLimiter.blobLimit, self.application.configuration.rateLimitBlobLimit);
 }
 
 #pragma mark - Service Tests
@@ -210,6 +216,7 @@
     XCTAssertEqual(legacy.serviceDatabases, self.application.serviceDatabases);
     XCTAssertEqual(legacy.userDatabasePool, self.application.userDatabasePool);
     XCTAssertEqual(legacy.jwtMinter, self.application.jwtMinter);
+    XCTAssertEqual(legacy.rateLimiter, self.application.rateLimiter);
 }
 
 #pragma mark - Port Configuration Tests
