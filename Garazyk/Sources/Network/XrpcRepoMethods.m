@@ -35,6 +35,8 @@
 #import "Auth/Secp256k1.h"
 #import <CommonCrypto/CommonDigest.h>
 
+static const NSUInteger kPDSUploadBlobMaxBytes = 1024 * 1024;
+
 static BOOL parseStrictIntegerString(NSString *value, NSInteger *result);
 static CID *cidFromTaggedCBORValue(CBORValue *value);
 
@@ -515,17 +517,6 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
             return;
         }
 
-        RateLimitResult *blobRateLimit = [rateLimiter checkBlobUploadRateLimitForDid:did];
-        if (!blobRateLimit.allowed) {
-            response.statusCode = HttpStatusTooManyRequests;
-            [response setHeader:[NSString stringWithFormat:@"%ld", (long)blobRateLimit.limit] forKey:@"X-RateLimit-Limit"];
-            [response setHeader:[NSString stringWithFormat:@"%ld", (long)blobRateLimit.remaining] forKey:@"X-RateLimit-Remaining"];
-            [response setHeader:[NSString stringWithFormat:@"%.0f", blobRateLimit.resetSeconds] forKey:@"X-RateLimit-Reset"];
-            [response setHeader:[NSString stringWithFormat:@"%.0f", blobRateLimit.retryAfter] forKey:@"Retry-After"];
-            [response setJsonBody:@{@"error": @"RateLimitExceeded", @"message": @"Blob upload rate limit exceeded"}];
-            return;
-        }
-
         NSData *blobData = request.body;
         if (!blobData || blobData.length == 0) {
             response.statusCode = HttpStatusBadRequest;
@@ -533,7 +524,7 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
             return;
         }
 
-        if (blobData.length > 100 * 1024 * 1024) {
+        if (blobData.length > kPDSUploadBlobMaxBytes) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"BlobTooLarge", @"message": @"Blob too large"}];
             return;
@@ -545,6 +536,18 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
             [response setJsonBody:@{@"error": @"InvalidMimeType", @"message": @"Forbidden MIME type"}];
             return;
         }
+
+        RateLimitResult *blobRateLimit = [rateLimiter checkBlobUploadRateLimitForDid:did];
+        if (!blobRateLimit.allowed) {
+            response.statusCode = HttpStatusTooManyRequests;
+            [response setHeader:[NSString stringWithFormat:@"%ld", (long)blobRateLimit.limit] forKey:@"X-RateLimit-Limit"];
+            [response setHeader:[NSString stringWithFormat:@"%ld", (long)blobRateLimit.remaining] forKey:@"X-RateLimit-Remaining"];
+            [response setHeader:[NSString stringWithFormat:@"%.0f", blobRateLimit.resetSeconds] forKey:@"X-RateLimit-Reset"];
+            [response setHeader:[NSString stringWithFormat:@"%.0f", blobRateLimit.retryAfter] forKey:@"Retry-After"];
+            [response setJsonBody:@{@"error": @"RateLimitExceeded", @"message": @"Blob upload rate limit exceeded"}];
+            return;
+        }
+
         NSError *error = nil;
         NSDictionary *result = [blobService uploadBlob:blobData
                                                 forDid:did
