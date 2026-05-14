@@ -3,6 +3,50 @@
 #import <XCTest/XCTest.h>
 #import "AppView/Services/FeedService.h"
 #import "Database/PDSDatabase.h"
+#import "Database/PDSQueryDatabase.h"
+#import "Core/ATProtoCBORSerialization.h"
+#import "Core/CID.h"
+
+@interface FeedServiceNullRowDatabase : NSObject <PDSQueryDatabase>
+@end
+
+@implementation FeedServiceNullRowDatabase
+
+- (nullable NSArray<NSDictionary *> *)executeParameterizedQuery:(NSString *)sql
+                                                         params:(NSArray *)params
+                                                          error:(NSError **)error {
+    if ([sql containsString:@"COUNT(*)"]) {
+        return @[@{@"count": @0}];
+    }
+    if ([sql containsString:@"created_at"]) {
+        return @[];
+    }
+    if ([sql containsString:@"did IN"] && [params containsObject:@"app.bsky.feed.post"]) {
+        return @[
+            @{
+                @"did": @"did:plc:author",
+                @"rkey": @"post1",
+                @"cid": [NSNull null],
+                @"value": @"{\"$type\":\"app.bsky.feed.post\",\"text\":\"Hello from value\",\"createdAt\":\"2026-05-14T00:00:00Z\"}"
+            }
+        ];
+    }
+    return @[];
+}
+
+- (BOOL)executeParameterizedUpdate:(NSString *)sql params:(NSArray *)params error:(NSError **)error {
+    return YES;
+}
+
+- (BOOL)executeUnsafeRawSQL:(NSString *)sql error:(NSError **)error {
+    return YES;
+}
+
+- (nullable PDSDatabaseBlock *)getBlockWithCid:(NSData *)cid repoDid:(NSString *)repoDid error:(NSError **)error {
+    return nil;
+}
+
+@end
 
 @interface FeedServiceTests : XCTestCase
 @property (nonatomic, strong) NSString *testDirectory;
@@ -53,12 +97,12 @@
     
     NSString *createRecords = @"CREATE TABLE IF NOT EXISTS records ("
         @"id INTEGER PRIMARY KEY, uri TEXT UNIQUE, did TEXT, collection TEXT, rkey TEXT, "
-        @"cid TEXT, value TEXT, created_at REAL, indexed_at REAL)";
+        @"cid TEXT, value TEXT, subject_did TEXT, created_at REAL, indexed_at REAL)";
     BOOL recordsResult = [self.database executeParameterizedUpdate:createRecords params:@[] error:&error];
     XCTAssertTrue(recordsResult, @"Records table: %@", error);
     
     NSString *createBlocks = @"CREATE TABLE IF NOT EXISTS blocks ("
-        @"id INTEGER PRIMARY KEY, cid BLOB UNIQUE, repo_did TEXT, block_data BLOB, size INTEGER)";
+        @"cid BLOB PRIMARY KEY, repo_did TEXT, block_data BLOB, content_type TEXT, size INTEGER, created_at TEXT)";
     XCTAssertTrue([self.database executeParameterizedUpdate:createBlocks params:@[] error:&error], @"Blocks table: %@", error);
 
     NSString *createThreadgates = @"CREATE TABLE IF NOT EXISTS bsky_feed_threadgates ("
@@ -115,6 +159,28 @@
     XCTAssertEqual([timeline[@"feed"] count], 2);
 }
 
+- (void)testGetTimelineIncludesFollowedActorsFromSubjectDID {
+    [self insertPost:@"did:plc:author" rkey:@"self" text:@"Self post"];
+    [self insertPost:@"did:plc:followed" rkey:@"followed" text:@"Followed post"];
+    [self insertFollowFrom:@"did:plc:author" to:@"did:plc:followed" rkey:@"follow"];
+
+    NSError *error = nil;
+    NSDictionary *timeline = [self.service getTimelineForActor:@"did:plc:author" limit:10 cursor:nil error:&error];
+
+    XCTAssertNotNil(timeline);
+    NSArray *items = timeline[@"feed"];
+    XCTAssertEqual(items.count, 2U);
+    NSMutableSet *authors = [NSMutableSet set];
+    for (NSDictionary *item in items) {
+        NSDictionary *author = item[@"author"];
+        if (author[@"did"]) {
+            [authors addObject:author[@"did"]];
+        }
+    }
+    XCTAssertTrue([authors containsObject:@"did:plc:author"]);
+    XCTAssertTrue([authors containsObject:@"did:plc:followed"]);
+}
+
 - (void)testGetTimelineWithLimitReturnsLimitedTimeline {
     for (int i = 0; i < 5; i++) {
         [self insertPost:@"did:plc:author" rkey:[NSString stringWithFormat:@"post%d", i] text:[NSString stringWithFormat:@"Post %d", i]];
@@ -151,6 +217,57 @@
     
     XCTAssertNotNil(feed);
     XCTAssertEqual([feed[@"feed"] count], 2);
+}
+
+- (void)testAuthorFeedToleratesAppViewNullCIDAndUsesStoredValue {
+    FeedService *service = [[FeedService alloc] initWithDatabase:[[FeedServiceNullRowDatabase alloc] init]];
+
+    NSError *error = nil;
+    NSDictionary *feed = [service getAuthorFeedForActor:@"did:plc:author"
+                                                  limit:10
+                                                 cursor:nil
+                                                 filter:nil
+                                                  error:&error];
+
+    XCTAssertNotNil(feed);
+    XCTAssertNil(error);
+    NSArray *items = feed[@"feed"];
+    XCTAssertEqual(items.count, 1U);
+    NSDictionary *post = items.firstObject;
+    XCTAssertEqualObjects(post[@"cid"], @"");
+    XCTAssertEqualObjects(post[@"record"][@"text"], @"Hello from value");
+}
+
+- (void)testAuthorFeedFallsBackToContentAddressedBlockWhenRepoDidDiffers {
+    NSString *sharedCID = @"bafyreicvquiivqmob5wgowdn5rcz6n2mntllvdpcbe45k3jvqiq6tosw4u";
+    CID *cid = [CID cidFromString:sharedCID];
+    XCTAssertNotNil(cid);
+
+    NSDictionary *record = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"Shared CID text",
+        @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]
+    };
+    NSError *error = nil;
+    NSData *blockData = [ATProtoCBORSerialization encodeDataWithJSONObject:record error:&error];
+    XCTAssertNotNil(blockData, @"CBOR encode failed: %@", error);
+
+    NSString *uri = @"at://did:plc:alice/app.bsky.feed.post/shared";
+    BOOL recordInserted = [self.database executeParameterizedUpdate:@"INSERT INTO records (uri, did, collection, rkey, cid, value, created_at, indexed_at) VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))"
+                                                             params:@[uri, @"did:plc:alice", @"app.bsky.feed.post", @"shared", sharedCID, [NSNull null]]
+                                                              error:&error];
+    XCTAssertTrue(recordInserted, @"Record insert failed: %@", error);
+    BOOL blockInserted = [self.database executeParameterizedUpdate:@"INSERT INTO blocks (cid, repo_did, block_data, content_type, size, created_at) VALUES (?, ?, ?, ?, ?, datetime('now'))"
+                                                            params:@[cid.bytes, @"did:plc:carol", blockData, @"application/vnd.ipld.raw", @(blockData.length)]
+                                                             error:&error];
+    XCTAssertTrue(blockInserted, @"Block insert failed: %@", error);
+
+    NSDictionary *feed = [self.service getAuthorFeedForActor:@"did:plc:alice" limit:10 cursor:nil filter:nil error:&error];
+
+    XCTAssertNotNil(feed);
+    NSArray *items = feed[@"feed"];
+    XCTAssertEqual(items.count, 1U);
+    XCTAssertEqualObjects(items.firstObject[@"record"][@"text"], @"Shared CID text");
 }
 
 - (void)testGetAuthorFeedDifferentAuthors {
@@ -365,6 +482,20 @@
     NSError *error = nil;
     NSString *insert = @"INSERT INTO records (uri, did, collection, rkey, cid, value, created_at, indexed_at) VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))";
     [self.database executeParameterizedUpdate:insert params:@[uri, did, @"app.bsky.feed.post", rkey, cid, [[NSString alloc] initWithData:recordData encoding:NSUTF8StringEncoding]] error:&error];
+}
+
+- (void)insertFollowFrom:(NSString *)did to:(NSString *)subjectDID rkey:(NSString *)rkey {
+    NSString *uri = [NSString stringWithFormat:@"at://%@/app.bsky.graph.follow/%@", did, rkey];
+    NSString *cid = [NSString stringWithFormat:@"bafyre%@", [[NSUUID UUID] UUIDString]];
+    NSDictionary *record = @{@"$type": @"app.bsky.graph.follow", @"subject": subjectDID, @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]]};
+    NSData *recordData = [NSJSONSerialization dataWithJSONObject:record options:0 error:nil];
+
+    NSError *error = nil;
+    NSString *insert = @"INSERT INTO records (uri, did, collection, rkey, cid, value, subject_did, created_at, indexed_at) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))";
+    BOOL success = [self.database executeParameterizedUpdate:insert
+                                                      params:@[uri, did, @"app.bsky.graph.follow", rkey, cid, [[NSString alloc] initWithData:recordData encoding:NSUTF8StringEncoding], subjectDID]
+                                                       error:&error];
+    XCTAssertTrue(success, @"Failed to insert follow: %@", error);
 }
 
 @end

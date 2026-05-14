@@ -348,12 +348,20 @@ static AppViewRuntime *_sharedRuntime = nil;
 
     NSError *listenErr = nil;
     if (![_httpServer startWithError:&listenErr]) {
+        NSString *message = listenErr.localizedDescription ?: @"HTTP server failed to start";
         GZ_LOG_WARN(@"[AppViewRuntime] HTTP server failed to start on port %lu: %@",
-                     (unsigned long)config.httpPort, listenErr.localizedDescription);
-        // Non-fatal: admin endpoints unavailable but ingest + backfill can still run
-    } else {
-        GZ_LOG_INFO(@"[AppViewRuntime] HTTP server listening on port %lu", (unsigned long)config.httpPort);
+                     (unsigned long)config.httpPort, message);
+        if (error) {
+            *error = listenErr ?: [NSError errorWithDomain:@"AppViewRuntime"
+                                                      code:2
+                                                  userInfo:@{NSLocalizedDescriptionKey: message}];
+        }
+        [_database close];
+        _database = nil;
+        _httpServer = nil;
+        return NO;
     }
+    GZ_LOG_INFO(@"[AppViewRuntime] HTTP server listening on port %lu", (unsigned long)config.httpPort);
 
     // Start all planes
     [_ingestEngine start];
