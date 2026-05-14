@@ -26,6 +26,10 @@ BUILD_BIN="$(resolve_build_dir "$REPO_ROOT")"
 BINARY_MODE=false
 WITH_PDS2=false
 WITH_PHONE_VERIFICATION=false
+WEB_CLIENT_PRESET=""
+CLIENT_FLOW="none"
+ALLOW_HYBRID_NETWORK=false
+WEB_CLIENT_PORT="${WEB_CLIENT_PORT:-2591}"
 WAIT_ONLY=false
 TEARDOWN=false
 KEEP_RUNNING=false
@@ -39,6 +43,17 @@ while [[ $# -gt 0 ]]; do
         --binary)                BINARY_MODE=true ;;
         --pds2)                  WITH_PDS2=true ;;
         --with-phone-verification) WITH_PHONE_VERIFICATION=true ;;
+        --web-client)
+            [[ $# -ge 2 ]] || error_exit "--web-client requires a value" 2
+            WEB_CLIENT_PRESET="$2"
+            shift
+            ;;
+        --client-flow)
+            [[ $# -ge 2 ]] || error_exit "--client-flow requires a value" 2
+            CLIENT_FLOW="$2"
+            shift
+            ;;
+        --allow-hybrid-network) ALLOW_HYBRID_NETWORK=true ;;
         --wait-only) WAIT_ONLY=true ;;
         --teardown)  TEARDOWN=true ;;
         --keep-running) KEEP_RUNNING=true ;;
@@ -60,6 +75,9 @@ while [[ $# -gt 0 ]]; do
             echo "  --binary                 Start services from build/bin/ (no Docker)"
             echo "  --pds2                   Also start a second PDS on port $SERVICE_PORT_PDS2"
             echo "  --with-phone-verification Start mock Twilio server and configure PDS for phone verification"
+            echo "  --web-client PRESET      Add a generated web-client compose service"
+            echo "  --client-flow FLOW       Browser flow name for metadata (none/smoke/login/deep)"
+            echo "  --allow-hybrid-network   Allow browser flows to call public ATProto hosts"
             echo "  --wait-only              Don't start services, just wait for them to be healthy"
             echo "  --teardown               Stop services for this run"
             echo "  --keep-running           Mark this run as intentionally long-lived"
@@ -87,6 +105,23 @@ fi
 COMPOSE_FILES=("$COMPOSE_DIR/docker-compose.yml")
 if [[ "$WITH_PDS2" == "true" || "$TEARDOWN" == "true" || "$COLLECT_DIAGNOSTICS" == "true" ]]; then
     COMPOSE_FILES+=("$COMPOSE_DIR/docker-compose.scenarios.yml")
+fi
+WEB_CLIENT_COMPOSE_FILE="$ATPROTO_E2E_RUN_DIR/web-client-compose.yml"
+if [[ -n "$WEB_CLIENT_PRESET" && "$TEARDOWN" != "true" && "$COLLECT_DIAGNOSTICS" != "true" ]]; then
+    render_args=(
+        "$SCRIPT_DIR/render_web_client_compose.ts"
+        --preset "$WEB_CLIENT_PRESET"
+        --output "$WEB_CLIENT_COMPOSE_FILE"
+        --run-dir "$ATPROTO_E2E_RUN_DIR"
+        --repo-root "$REPO_ROOT"
+    )
+    if [[ "$ALLOW_HYBRID_NETWORK" == "true" ]]; then
+        render_args+=(--allow-hybrid)
+    fi
+    deno run -A "${render_args[@]}"
+fi
+if [[ -f "$WEB_CLIENT_COMPOSE_FILE" ]]; then
+    COMPOSE_FILES+=("$WEB_CLIENT_COMPOSE_FILE")
 fi
 
 build_compose_cmd() {
@@ -148,6 +183,9 @@ stop_docker_services() {
 # Only targets known Garazyk service binaries to avoid killing Docker infra.
 stop_stale_host_processes() {
     local needed_ports=("$SERVICE_PORT_PLC" "$SERVICE_PORT_PDS" "$SERVICE_PORT_RELAY" "$SERVICE_PORT_APPVIEW" "8080")
+    if [[ -n "$WEB_CLIENT_PRESET" ]]; then
+        needed_ports+=("$WEB_CLIENT_PORT")
+    fi
     if [[ "$WITH_PDS2" == "true" ]]; then
         needed_ports+=("$SERVICE_PORT_PDS2")
     fi
@@ -183,6 +221,9 @@ stop_stale_host_processes() {
 stop_stale_docker_e2e() {
     # Collect the ports we need.
     local needed_ports=("$SERVICE_PORT_PLC" "$SERVICE_PORT_PDS" "$SERVICE_PORT_RELAY" "$SERVICE_PORT_APPVIEW" "8080")
+    if [[ -n "$WEB_CLIENT_PRESET" ]]; then
+        needed_ports+=("$WEB_CLIENT_PORT")
+    fi
     if [[ "$WITH_PDS2" == "true" ]]; then
         needed_ports+=("$SERVICE_PORT_PDS2")
     fi
@@ -253,6 +294,10 @@ fi
 
 if [[ "$TEARDOWN" != "true" ]]; then
     check_scenario_deno_dependencies
+fi
+
+if [[ "$BINARY_MODE" == "true" && -n "$WEB_CLIENT_PRESET" ]]; then
+    error_exit "--web-client is currently supported in Docker local-network mode only" 2
 fi
 
 wait_for_admin_http() {
@@ -492,6 +537,14 @@ wait_for_service plc 60
 wait_for_service pds 60
 wait_for_service relay 60
 wait_for_service appview 90 || error_exit "AppView failed to start within 90s"
+if [[ -n "$WEB_CLIENT_PRESET" ]]; then
+    web_client_health_path="/"
+    if [[ "$WEB_CLIENT_PRESET" == "garazyk-ui" ]]; then
+        web_client_health_path="/lab"
+    fi
+    wait_for_http "http://127.0.0.1:$WEB_CLIENT_PORT$web_client_health_path" "web-client ($WEB_CLIENT_PRESET)" 120 || \
+        error_exit "web-client failed to start within 120s"
+fi
 
 if [[ "$WITH_PDS2" == "true" ]]; then
     wait_for_service pds2 60
@@ -512,6 +565,10 @@ echo "  PLC:     $SERVICE_URL_PLC"
 echo "  PDS:     $SERVICE_URL_PDS"
 echo "  Relay:   $SERVICE_URL_RELAY"
 echo "  AppView: $SERVICE_URL_APPVIEW"
+if [[ -n "$WEB_CLIENT_PRESET" ]]; then
+    echo "  Web UI:  http://127.0.0.1:$WEB_CLIENT_PORT"
+    echo "  Client:  $WEB_CLIENT_PRESET ($CLIENT_FLOW)"
+fi
 if [[ "$WITH_PDS2" == "true" ]]; then
     echo "  PDS2:    $SERVICE_URL_PDS2"
 fi
