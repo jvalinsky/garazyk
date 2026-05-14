@@ -1,0 +1,51 @@
+{
+  "name": "reference-plc",
+  "description": "Bluesky reference PLC directory server (TypeScript, did-method-plc) with Garazyk PDS, Relay, and AppView. Requires a PostgreSQL sidecar. Tests PLC interop with the reference implementation.",
+  "roles": {
+    "plc": {
+      "name": "reference-plc",
+      "source": {
+        "repo": "https://github.com/did-method-plc/did-method-plc.git",
+        "ref": "main",
+        "dockerDir": "packages/server"
+      },
+      "command": ["node", "--enable-source-maps", "index.js"],
+      "env": {
+        "PORT": "2582",
+        "NODE_ENV": "production",
+        "DATABASE_URL": "postgres://plc:plc@local-plc-db:5432/plc",
+        "DEBUG_MODE": "1",
+        "LOG_ENABLED": "true",
+        "LOG_LEVEL": "debug"
+      },
+      "ports": ["2582:3000"],
+      "volumes": [],
+      "healthCheck": {
+        "path": "/_health"
+      },
+      "capabilities": ["createAccount", "didResolution", "operationLog", "handleRotation", "quotaEnforcement"],
+      "dependsOn": ["local-plc-db"],
+      "sidecars": {
+        "local-plc-db": {
+          "image": "postgres:16-alpine",
+          "env": {
+            "POSTGRES_USER": "plc",
+            "POSTGRES_PASSWORD": "plc",
+            "POSTGRES_DB": "plc"
+          },
+          "volumes": ["ref_plc_pg_data:/var/lib/postgresql/data"],
+          "healthCheck": {
+            "path": null,
+            "customTest": ["CMD-SHELL", "pg_isready -U plc"]
+          }
+        }
+      }
+    },
+    "pds": { "inherit": "garazyk-default" },
+    "pds2": { "inherit": "garazyk-default" },
+    "relay": { "inherit": "garazyk-default" },
+    "appview": { "inherit": "garazyk-default" },
+    "chat": { "inherit": "garazyk-default" },
+    "video": { "inherit": "garazyk-default" }
+  }
+}

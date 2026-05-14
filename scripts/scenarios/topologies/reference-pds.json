@@ -1,0 +1,37 @@
+{
+  "name": "reference-pds",
+  "description": "Bluesky reference PDS (Go) with Garazyk Relay, PLC, and AppView. Tests cross-implementation interop.",
+  "roles": {
+    "plc": { "inherit": "garazyk-default" },
+    "pds": {
+      "name": "reference-pds",
+      "source": {
+        "repo": "https://github.com/bluesky-social/pds.git",
+        "ref": "v0.4.219"
+      },
+      "command": ["--port", "2583"],
+      "env": {
+        "PDS_HOSTNAME": "localhost",
+        "PDS_JETSTREAM_URL": "ws://local-relay:2584",
+        "PDS_BLOB_CACHE_LOC": "/tmp/pds-blob-cache",
+        "PDS_DIDPLC_URL": "http://local-plc:2582"
+      },
+      "ports": ["2583:2583"],
+      "volumes": ["ref_pds_data:/data"],
+      "healthCheck": {
+        "path": "/xrpc/com.atproto.server.describeServer"
+      },
+      "capabilities": [
+        "describeServer", "createAccount", "createSession", "getSession",
+        "createRecord", "getRecord", "deleteRecord", "listRecords",
+        "uploadBlob", "getBlob", "listBlobs",
+        "resolveHandle", "updateHandle",
+        "subscribeRepos", "getHead", "getRepo", "requestCrawl",
+        "admin", "repo", "identity", "blob", "sync"
+      ],
+      "dependsOn": ["local-plc"]
+    },
+    "relay": { "inherit": "garazyk-default" },
+    "appview": { "inherit": "garazyk-default" }
+  }
+}
