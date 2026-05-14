@@ -8,30 +8,35 @@ interface Args {
   runDir: string;
   repoRoot: string;
   allowHybrid: boolean;
+  network: string;
 }
 
 function usage(): never {
   console.error(
-    "Usage: render_web_client_compose.ts --preset NAME --output FILE --run-dir DIR --repo-root DIR [--allow-hybrid]",
+    "Usage: render_web_client_compose.ts --preset NAME --output FILE --run-dir DIR --repo-root DIR [--allow-hybrid] [--network NAME]",
   );
   Deno.exit(2);
 }
 
 function parseArgs(argv: string[]): Args {
-  const args: Partial<Args> = { allowHybrid: false };
+  const args: Partial<Args> = { allowHybrid: false, network: "local_net" };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === "--allow-hybrid") {
       args.allowHybrid = true;
       continue;
     }
-    if (arg === "--preset" || arg === "--output" || arg === "--run-dir" || arg === "--repo-root") {
+    if (
+      arg === "--preset" || arg === "--output" || arg === "--run-dir" ||
+      arg === "--repo-root" || arg === "--network"
+    ) {
       const value = argv[++i];
       if (!value) usage();
       if (arg === "--preset") args.preset = value;
       if (arg === "--output") args.output = value;
       if (arg === "--run-dir") args.runDir = value;
       if (arg === "--repo-root") args.repoRoot = value;
+      if (arg === "--network") args.network = value;
       continue;
     }
     usage();
@@ -165,7 +170,7 @@ ${yamlMap(client.env, "      ")}
       retries: ${client.healthCheck.retries}
       start_period: ${client.healthCheck.startPeriodSeconds}s
     networks:
-      - local_net`;
+      - ${args.network}`;
   } else {
     const buildContext = await writeSourceDockerfile(client, args.runDir);
     webClientService = `  web-client:
@@ -187,7 +192,7 @@ ${yamlMap(client.env, "      ")}
       retries: ${client.healthCheck.retries}
       start_period: ${client.healthCheck.startPeriodSeconds}s
     networks:
-      - local_net`;
+      - ${args.network}`;
   }
 
   const blockedHosts = args.allowHybrid || client.allowHybridNetwork
@@ -197,18 +202,18 @@ ${yamlMap(client.env, "      ")}
   return `services:
   local-appview:
     networks:
-      local_net:
+      ${args.network}:
 ${appviewNetwork}
 
   local-plc:
     networks:
-      local_net:
+      ${args.network}:
         aliases:
 ${plcAliases.map((alias) => `          - ${alias}`).join("\n")}
 
   local-relay:
     networks:
-      local_net:
+      ${args.network}:
         aliases:
 ${relayAliases.map((alias) => `          - ${alias}`).join("\n")}
 
@@ -233,10 +238,10 @@ ${webClientService}
       web-client:
         condition: service_healthy
     networks:
-      - local_net
+      - ${args.network}
 
 networks:
-  local_net:
+  ${args.network}:
     external: false
 `;
 }
