@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
 
   local-plc:
@@ -21,6 +19,9 @@ services:
       - local_plc_data:/var/lib/atprotopds
     environment:
       - TZ=UTC
+      - PLC_HOURLY_LIMIT=500
+      - PLC_DAILY_LIMIT=1000
+      - PLC_WEEKLY_LIMIT=5000
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:2582/_health"]
       interval: 5s
@@ -51,6 +52,8 @@ services:
       - PDS_ALLOW_HTTP=1
       - PDS_LEXICON_PATH=/usr/share/atprotopds/lexicons
       - HOME=/var/lib/atprotopds
+      - PDS_RATELIMIT_ENABLED=false
+      - PDS_HANDLE_RESOLVE_LIMIT=10000
       - PDS_DATA_DIR=/var/lib/atprotopds
       - PDS_PLC_KEYS_DIR=/var/lib/atprotopds/keys
       - PDS_MASTER_SECRET=32107992c973da8445b485263cb2bd3157859cb94294a2355e3c4a7b0f825afe

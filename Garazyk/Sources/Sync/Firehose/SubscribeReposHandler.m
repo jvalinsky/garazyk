@@ -123,6 +123,18 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
     _maxReplayEventsPerConnection = kSubscribeReposMaxReplayEventsDefault;
     _maxPendingSendsPerConnection = kSubscribeReposMaxPendingSendsDefault;
     _maxPendingBytesPerConnection = kSubscribeReposMaxPendingBytesDefault;
+
+    // Env overrides for firehose limits
+    NSDictionary *env = [[NSProcessInfo processInfo] environment];
+    if (env[@"PDS_FIREHOSE_MAX_REPLAY"]) {
+      _maxReplayEventsPerConnection = [env[@"PDS_FIREHOSE_MAX_REPLAY"] integerValue];
+    }
+    if (env[@"PDS_FIREHOSE_MAX_PENDING_SENDS"]) {
+      _maxPendingSendsPerConnection = [env[@"PDS_FIREHOSE_MAX_PENDING_SENDS"] integerValue];
+    }
+    if (env[@"PDS_FIREHOSE_MAX_PENDING_BYTES"]) {
+      _maxPendingBytesPerConnection = [env[@"PDS_FIREHOSE_MAX_PENDING_BYTES"] integerValue];
+    }
     _lastCommitRevByDID = [NSMutableDictionary dictionary];
     _backfillSemaphore = dispatch_semaphore_create(3); // Allow max 3 concurrent backfills
 
