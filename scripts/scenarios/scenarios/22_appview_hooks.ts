@@ -108,7 +108,7 @@ export async function run(): Promise<ScenarioResult> {
   await timedCall(
     result, "Search index: actor search",
     async () => {
-      return await av.raw.httpGet("/xrpc/app.bsky.actor.search", { q: "Luna", limit: 5 }, adminToken);
+      return await av.raw.httpGet("/xrpc/app.bsky.actor.searchActors", { q: "Luna", limit: 5 }, adminToken);
     },
     (r) => `actors=${r.actors?.length || 0}`
   );
