@@ -44,7 +44,9 @@
   "rate_limit": {
     "enabled": true,
     "did_limit": 60,
-    "did_window": 60
+    "did_window": 60,
+    "blob_limit": 50,
+    "blob_window": 3600
   },
   "providers": {
     "phone_verification": {
