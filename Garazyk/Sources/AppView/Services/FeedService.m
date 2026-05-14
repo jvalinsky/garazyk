@@ -15,6 +15,32 @@
 @property (nonatomic, strong) ActorService *actorService;
 @end
 
+static NSString *GZFeedStringValue(id value) {
+    return [value isKindOfClass:[NSString class]] ? value : nil;
+}
+
+static NSDictionary *GZFeedDictionaryValue(id value) {
+    return [value isKindOfClass:[NSDictionary class]] ? value : nil;
+}
+
+static NSArray *GZFeedArrayValue(id value) {
+    return [value isKindOfClass:[NSArray class]] ? value : nil;
+}
+
+static NSDictionary *GZFeedRecordFromJSONString(NSString *value) {
+    if (value.length == 0) {
+        return nil;
+    }
+
+    NSData *data = [value dataUsingEncoding:NSUTF8StringEncoding];
+    if (!data) {
+        return nil;
+    }
+
+    id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+    return GZFeedDictionaryValue(json);
+}
+
 @implementation FeedService
 
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database {
@@ -27,11 +53,33 @@
 }
 
 - (nullable NSDictionary *)getRecordBodyFromCID:(NSString *)cidStr did:(NSString *)did error:(NSError **)error {
-    CID *cid = [CID cidFromString:cidStr];
+    NSString *cidString = GZFeedStringValue(cidStr);
+    NSString *repoDID = GZFeedStringValue(did);
+    if (cidString.length == 0 || repoDID.length == 0) return nil;
+
+    CID *cid = [CID cidFromString:cidString];
     if (!cid) return nil;
-    PDSDatabaseBlock *block = [self.database getBlockWithCid:cid.bytes repoDid:did error:error];
-    if (!block || !block.blockData) return nil;
-    return [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:error];
+
+    NSData *blockData = nil;
+    PDSDatabaseBlock *block = [self.database getBlockWithCid:cid.bytes repoDid:repoDID error:error];
+    if (block.blockData) {
+        blockData = block.blockData;
+    }
+
+    if (!blockData) {
+        NSArray *rows = [self.database executeParameterizedQuery:@"SELECT block_data FROM blocks WHERE cid = ? LIMIT 1"
+                                                          params:@[cid.bytes]
+                                                           error:error];
+        if (rows.count > 0) {
+            id value = rows.firstObject[@"block_data"];
+            if ([value isKindOfClass:[NSData class]]) {
+                blockData = value;
+            }
+        }
+    }
+
+    if (!blockData) return nil;
+    return GZFeedDictionaryValue([ATProtoCBORSerialization JSONObjectWithData:blockData error:error]);
 }
 
 - (nullable NSDictionary *)getTimelineForActor:(NSString *)actorDID
@@ -196,7 +244,7 @@
 
     NSMutableArray *feedItems = [NSMutableArray array];
 
-    NSString *query = @"SELECT rkey, cid FROM records WHERE did = ? AND collection = ?";
+    NSString *query = @"SELECT rkey, cid, value FROM records WHERE did = ? AND collection = ?";
     if (cursor) {
         query = [query stringByAppendingString:@" AND rkey < ?"];
     }
@@ -210,19 +258,21 @@
 
     NSArray *rows = [self.database executeParameterizedQuery:query params:args error:error];
     for (NSDictionary *row in rows) {
-        NSDictionary *record = [self getRecordBodyFromCID:row[@"cid"] did:actorDID error:nil];
-        if (record && record[@"subject"]) {
-            NSDictionary *subjectURI = record[@"subject"];
-            NSString *subject = subjectURI[@"uri"];
+        NSString *cid = GZFeedStringValue(row[@"cid"]);
+        NSString *value = GZFeedStringValue(row[@"value"]);
+        NSDictionary *record = [self getRecordBodyFromCID:cid did:actorDID error:nil] ?: GZFeedRecordFromJSONString(value);
+        NSDictionary *subjectURI = GZFeedDictionaryValue(record[@"subject"]);
+        NSString *subject = GZFeedStringValue(subjectURI[@"uri"]);
 
+        if (subject.length > 0) {
             NSDictionary *likedPost = [self getPostByURI:subject error:error];
             if (likedPost) {
-                NSString *rkey = row[@"rkey"] ?: [self generateRkey];
+                NSString *rkey = GZFeedStringValue(row[@"rkey"]) ?: [self generateRkey];
                 NSDictionary *feedItem = @{
                     @"post": [self formatPostRecord:subject ?: @"" cid:[self generateCIDForRecord:likedPost] record:likedPost],
                     @"like": @{
                         @"uri": [NSString stringWithFormat:@"at://%@/app.bsky.feed.like/%@", actorDID, rkey],
-                        @"cid": row[@"cid"],
+                        @"cid": cid ?: @"",
                         @"actor": [self.actorService getProfileForActor:actorDID error:error] ?: @{@"did": actorDID}
                     }
                 };
@@ -260,8 +310,8 @@
 
     NSMutableArray *memberDIDs = [NSMutableArray arrayWithCapacity:memberRows.count];
     for (NSDictionary *row in memberRows) {
-        NSString *did = row[@"subject_did"];
-        if (did && did.length > 0) {
+        NSString *did = GZFeedStringValue(row[@"subject_did"]);
+        if (did.length > 0) {
             [memberDIDs addObject:did];
         }
     }
@@ -292,12 +342,21 @@
 - (nullable NSArray<NSString *> *)getFollowedDIDsForActor:(NSString *)actorDID error:(NSError **)error {
     NSMutableArray *followedDIDs = [NSMutableArray array];
 
-    NSString *query = @"SELECT cid FROM records WHERE did = ? AND collection = ?";
+    NSString *query = @"SELECT subject_did, cid, value FROM records WHERE did = ? AND collection = ?";
     NSArray *rows = [self.database executeParameterizedQuery:query params:@[actorDID, @"app.bsky.graph.follow"] error:error];
     for (NSDictionary *row in rows) {
-        NSDictionary *record = [self getRecordBodyFromCID:row[@"cid"] did:actorDID error:nil];
-        if (record && record[@"subject"]) {
-            [followedDIDs addObject:record[@"subject"]];
+        NSString *subject = GZFeedStringValue(row[@"subject_did"]);
+        if (subject.length > 0) {
+            [followedDIDs addObject:subject];
+            continue;
+        }
+
+        NSString *cid = GZFeedStringValue(row[@"cid"]);
+        NSString *value = GZFeedStringValue(row[@"value"]);
+        NSDictionary *record = [self getRecordBodyFromCID:cid did:actorDID error:nil] ?: GZFeedRecordFromJSONString(value);
+        subject = GZFeedStringValue(record[@"subject"]);
+        if (subject.length > 0) {
+            [followedDIDs addObject:subject];
         }
     }
 
@@ -316,7 +375,8 @@
 
     NSMutableArray *placeholders = [NSMutableArray array];
     NSMutableArray *validatedDIDs = [NSMutableArray array];
-    for (NSString *author in authors) {
+    for (id authorValue in authors) {
+        NSString *author = GZFeedStringValue(authorValue);
         if ([author hasPrefix:@"did:"] && author.length >= 10 && author.length <= 200) {
             [placeholders addObject:@"?"];
             [validatedDIDs addObject:author];
@@ -327,7 +387,7 @@
         return [posts copy];
     }
 
-    NSMutableString *query = [NSMutableString stringWithFormat:@"SELECT did, rkey, cid FROM records WHERE did IN (%@) AND collection = ?",
+    NSMutableString *query = [NSMutableString stringWithFormat:@"SELECT did, rkey, cid, value FROM records WHERE did IN (%@) AND collection = ?",
                              [placeholders componentsJoinedByString:@","]];
     if (cursor) {
         [query appendString:@" AND rkey < ?"];
@@ -343,23 +403,24 @@
     
     NSArray *rows = [self.database executeParameterizedQuery:query params:args error:error];
     for (NSDictionary *row in rows) {
-        NSString *repo = row[@"did"];
-        NSString *rkey = row[@"rkey"];
-        NSString *cid = row[@"cid"];
-        NSString *value = row[@"value"];
+        NSString *repo = GZFeedStringValue(row[@"did"]);
+        NSString *rkey = GZFeedStringValue(row[@"rkey"]);
+        NSString *cid = GZFeedStringValue(row[@"cid"]);
+        NSString *value = GZFeedStringValue(row[@"value"]);
+        if (repo.length == 0 || rkey.length == 0) {
+            continue;
+        }
         
-        // Try to get record from blocks table first
         NSDictionary *record = [self getRecordBodyFromCID:cid did:repo error:nil];
-        if (!record && value && value.length > 0) {
-            // Fall back to value column
-            record = [NSJSONSerialization JSONObjectWithData:[value dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+        if (!record) {
+            record = GZFeedRecordFromJSONString(value);
         }
 
         NSString *uri = [NSString stringWithFormat:@"at://%@/app.bsky.feed.post/%@", repo, rkey];
 
         [posts addObject:@{
             @"uri": uri,
-            @"cid": cid,
+            @"cid": cid ?: @"",
             @"repo": repo,
             @"rkey": rkey,
             @"record": record ?: @{}
@@ -409,13 +470,10 @@
 
         if (rows && rows.count > 0) {
             NSDictionary *row = rows.firstObject;
-            NSString *cid = row[@"cid"];
-            NSString *value = row[@"value"];
+            NSString *cid = GZFeedStringValue(row[@"cid"]);
+            NSString *value = GZFeedStringValue(row[@"value"]);
 
-            NSDictionary *record = nil;
-            if (value && value.length > 0) {
-                record = [NSJSONSerialization JSONObjectWithData:[value dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
-            }
+            NSDictionary *record = GZFeedRecordFromJSONString(value);
 
             if (record) {
                 NSDictionary *generator = @{
@@ -423,8 +481,8 @@
                     @"cid": cid ?: @"",
                     @"did": did,
                     @"creator": [self.actorService getProfileForActor:did error:nil] ?: @{@"did": did},
-                    @"displayName": record[@"displayName"] ?: @"",
-                    @"description": record[@"description"] ?: @"",
+                    @"displayName": GZFeedStringValue(record[@"displayName"]) ?: @"",
+                    @"description": GZFeedStringValue(record[@"description"]) ?: @"",
                     @"avatar": record[@"avatar"] ?: [NSNull null],
                     @"likeCount": @(0),
                     @"onboarding": @(NO)
@@ -438,7 +496,12 @@
 }
 
 - (nullable NSDictionary *)getPostByURI:(NSString *)uri error:(NSError **)error {
-    ATURI *parsedURI = [ATURI uriWithString:uri error:nil];
+    NSString *uriString = GZFeedStringValue(uri);
+    if (uriString.length == 0) {
+        return nil;
+    }
+
+    ATURI *parsedURI = [ATURI uriWithString:uriString error:nil];
     if (!parsedURI) {
         return nil;
     }
@@ -451,19 +514,14 @@
 
     if (rows && rows.count > 0) {
         NSDictionary *row = rows.firstObject;
-        NSString *cid = row[@"cid"];
+        NSString *cid = GZFeedStringValue(row[@"cid"]);
         
-        // Try to get record from blocks table first
         NSDictionary *record = [self getRecordBodyFromCID:cid did:repo error:nil];
         if (record) {
             return record;
         }
         
-        // Fall back to value column if block not found
-        NSString *value = row[@"value"];
-        if (value && value.length > 0) {
-            return [NSJSONSerialization JSONObjectWithData:[value dataUsingEncoding:NSUTF8StringEncoding] options:0 error:error];
-        }
+        return GZFeedRecordFromJSONString(GZFeedStringValue(row[@"value"]));
     }
 
     return nil;
@@ -475,22 +533,24 @@
     NSString *query = @"SELECT did, rkey, cid, value FROM records WHERE collection = ?";
     NSArray *rows = [self.database executeParameterizedQuery:query params:@[@"app.bsky.feed.post"] error:error];
     for (NSDictionary *row in rows) {
-        NSString *cid = row[@"cid"];
-        NSString *repo = row[@"did"];
-        NSString *value = row[@"value"];
+        NSString *cid = GZFeedStringValue(row[@"cid"]);
+        NSString *repo = GZFeedStringValue(row[@"did"]);
+        NSString *value = GZFeedStringValue(row[@"value"]);
+        NSString *rkey = GZFeedStringValue(row[@"rkey"]);
+        if (repo.length == 0 || rkey.length == 0) {
+            continue;
+        }
         
-        // Try to get record from blocks table first
         NSDictionary *record = [self getRecordBodyFromCID:cid did:repo error:nil];
-        if (!record && value && value.length > 0) {
-            // Fall back to value column
-            record = [NSJSONSerialization JSONObjectWithData:[value dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+        if (!record) {
+            record = GZFeedRecordFromJSONString(value);
         }
         
         if (record) {
-            // Check if this record is a reply to the parent URI
-            NSString *parent = record[@"reply"][@"parent"][@"uri"];
+            NSDictionary *reply = GZFeedDictionaryValue(record[@"reply"]);
+            NSDictionary *parentRef = GZFeedDictionaryValue(reply[@"parent"]);
+            NSString *parent = GZFeedStringValue(parentRef[@"uri"]);
             if (parent && [parent isEqualToString:parentURI]) {
-                NSString *rkey = row[@"rkey"];
                 [replyURIs addObject:[NSString stringWithFormat:@"at://%@/app.bsky.feed.post/%@", repo, rkey]];
             }
         }
@@ -504,7 +564,7 @@
     NSString *repo = nil;
     NSString *rkey = nil;
     
-    NSArray<NSString *> *parts = [uri componentsSeparatedByString:@"/"];
+    NSArray<NSString *> *parts = [GZFeedStringValue(uri) componentsSeparatedByString:@"/"];
     if (parts.count >= 4) {
         repo = [parts[2] stringByReplacingOccurrencesOfString:@"at://" withString:@""];
         rkey = parts[3];
@@ -556,7 +616,7 @@
         NSArray *rows = [self.database executeParameterizedQuery:query params:@[repo, @"app.bsky.feed.post", rkey] error:nil];
 
         if (rows && rows.count > 0) {
-            return rows.firstObject[@"created_at"];
+            return GZFeedStringValue(rows.firstObject[@"created_at"]);
         }
     }
     return nil;
@@ -567,11 +627,12 @@
 }
 
 - (nullable NSDictionary *)formatFeedItem:(NSDictionary *)post {
-    NSString *uri = post[@"uri"] ?: @"";
-    NSString *cid = post[@"cid"] ?: @"";
-    NSDictionary *record = post[@"record"] ?: @{};
+    NSString *uri = GZFeedStringValue(post[@"uri"]) ?: @"";
+    NSString *cid = GZFeedStringValue(post[@"cid"]) ?: @"";
+    NSString *repo = GZFeedStringValue(post[@"repo"]) ?: @"";
+    NSDictionary *record = GZFeedDictionaryValue(post[@"record"]) ?: @{};
 
-    NSDictionary *author = [self getAuthorInfoForDID:post[@"repo"] error:nil] ?: @{@"did": post[@"repo"] ?: @""};
+    NSDictionary *author = [self getAuthorInfoForDID:repo error:nil] ?: @{@"did": repo};
 
     return @{
         @"uri": uri,
@@ -588,18 +649,20 @@
 }
 
 - (nullable NSDictionary *)formatPostRecord:(NSString *)uri cid:(NSString *)cid record:(NSDictionary *)record {
-    NSArray *components = [uri componentsSeparatedByString:@"/"];
+    NSString *uriString = GZFeedStringValue(uri) ?: @"";
+    NSString *cidString = GZFeedStringValue(cid) ?: @"";
+    NSArray *components = [uriString componentsSeparatedByString:@"/"];
     NSString *repo = components.count > 2 ? components[2] : @"";
 
     return @{
-        @"uri": uri,
-        @"cid": cid,
+        @"uri": uriString,
+        @"cid": cidString,
         @"author": [self getAuthorInfoForDID:repo error:nil] ?: @{@"did": repo},
-        @"record": record,
-        @"replyCount": @([self getReplyCountForURI:uri]),
-        @"repostCount": @([self getRepostCountForURI:uri]),
-        @"likeCount": @([self getLikeCountForURI:uri]),
-        @"indexedAt": [self getIndexedAtForURI:uri] ?: @"",
+        @"record": GZFeedDictionaryValue(record) ?: @{},
+        @"replyCount": @([self getReplyCountForURI:uriString]),
+        @"repostCount": @([self getRepostCountForURI:uriString]),
+        @"likeCount": @([self getLikeCountForURI:uriString]),
+        @"indexedAt": [self getIndexedAtForURI:uriString] ?: @"",
         @"viewer": @{},
         @"labels": @[]
     };
@@ -612,9 +675,9 @@
     NSArray *rows = [self.database executeParameterizedQuery:query params:@[@"app.bsky.feed.generator", @(limit)] error:error];
 
     for (NSDictionary *row in rows) {
-        NSDictionary *record = [self getRecordBodyFromCID:row[@"cid"] did:row[@"did"] error:nil];
-        if (record && record[@"items"]) {
-            NSArray *feedItems = record[@"items"];
+        NSDictionary *record = [self getRecordBodyFromCID:GZFeedStringValue(row[@"cid"]) did:GZFeedStringValue(row[@"did"]) error:nil];
+        NSArray *feedItems = GZFeedArrayValue(record[@"items"]);
+        if (feedItems) {
             for (NSDictionary *item in feedItems) {
                 [items addObject:item];
             }
