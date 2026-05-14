@@ -133,6 +133,7 @@ SERVICE_PORT_RELAY="${RELAY_PORT:-2584}"
 SERVICE_PORT_APPVIEW="${APPVIEW_PORT:-3200}"
 SERVICE_PORT_CHAT="${CHAT_PORT:-2585}"
 SERVICE_PORT_VIDEO="${VIDEO_PORT:-2586}"
+SERVICE_PORT_PDS2="${PDS2_PORT:-2587}"
 SERVICE_PORT_UI="${UI_PORT:-2590}"
 
 # URLs
@@ -142,6 +143,7 @@ SERVICE_URL_RELAY="http://127.0.0.1:$SERVICE_PORT_RELAY"
 SERVICE_URL_APPVIEW="http://127.0.0.1:$SERVICE_PORT_APPVIEW"
 SERVICE_URL_CHAT="http://127.0.0.1:$SERVICE_PORT_CHAT"
 SERVICE_URL_VIDEO="http://127.0.0.1:$SERVICE_PORT_VIDEO"
+SERVICE_URL_PDS2="http://127.0.0.1:$SERVICE_PORT_PDS2"
 SERVICE_URL_UI="http://127.0.0.1:$SERVICE_PORT_UI"
 
 # Binaries
@@ -151,6 +153,7 @@ SERVICE_BINARY_RELAY="zuk"
 SERVICE_BINARY_APPVIEW="syrena"
 SERVICE_BINARY_CHAT="syrena-chat"
 SERVICE_BINARY_VIDEO="jelcz"
+SERVICE_BINARY_PDS2="kaszlak"
 SERVICE_BINARY_UI="garazyk-ui"
 
 # Health paths
@@ -160,6 +163,7 @@ SERVICE_HEALTH_RELAY="${RELAY_HEALTH_PATH:-/api/relay/health}"
 SERVICE_HEALTH_APPVIEW="${APPVIEW_HEALTH_PATH:-/admin/backfill/status}"
 SERVICE_HEALTH_CHAT="${CHAT_HEALTH_PATH:-/_health}"
 SERVICE_HEALTH_VIDEO="${VIDEO_HEALTH_PATH:-/_health}"
+SERVICE_HEALTH_PDS2="${PDS2_HEALTH_PATH:-/xrpc/com.atproto.server.describeServer}"
 SERVICE_HEALTH_UI="${UI_HEALTH_PATH:-/admin}"
 
 # Health URLs
@@ -169,10 +173,11 @@ SERVICE_HEALTH_URL_RELAY="$SERVICE_URL_RELAY$SERVICE_HEALTH_RELAY"
 SERVICE_HEALTH_URL_APPVIEW="$SERVICE_URL_APPVIEW$SERVICE_HEALTH_APPVIEW"
 SERVICE_HEALTH_URL_CHAT="$SERVICE_URL_CHAT$SERVICE_HEALTH_CHAT"
 SERVICE_HEALTH_URL_VIDEO="$SERVICE_URL_VIDEO$SERVICE_HEALTH_VIDEO"
+SERVICE_HEALTH_URL_PDS2="$SERVICE_URL_PDS2$SERVICE_HEALTH_PDS2"
 SERVICE_HEALTH_URL_UI="$SERVICE_URL_UI$SERVICE_HEALTH_UI"
 
 # All service keys (for iteration)
-_LIB_ALL_SERVICES="plc pds relay appview chat video ui"
+_LIB_ALL_SERVICES="plc pds relay appview chat video pds2 ui"
 
 # Helper to look up a variable by service key prefix
 # Usage: _svc_port plc  →  $SERVICE_PORT_PLC
@@ -406,7 +411,7 @@ wait_for_service() {
 
     local deadline=$(( $(date +%s) + timeout ))
     while [[ $(date +%s) -lt $deadline ]]; do
-        if curl -s -f "${extra_args[@]}" "$url" >/dev/null 2>&1; then
+        if curl -s -f "${extra_args[@]:-}" "$url" >/dev/null 2>&1; then
             log_ok "$label is healthy"
             return 0
         fi

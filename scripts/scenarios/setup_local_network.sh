@@ -124,6 +124,44 @@ stop_docker_services() {
 # the service ports, causing the next run to fail with "port already allocated".
 # This function finds any garazyk-e2e containers bound to our known ports and
 # tears down their entire compose project.
+# Kill any stale host-local PDS binary processes holding our needed ports.
+# Stale binary PDS processes (kaszlak) survive crashed/interrupted runs and
+# block Docker port mapping, causing scenarios to hang on unreachable services.
+# Only targets known Garazyk service binaries to avoid killing Docker infra.
+stop_stale_host_processes() {
+    local needed_ports=("$SERVICE_PORT_PLC" "$SERVICE_PORT_PDS" "$SERVICE_PORT_RELAY" "$SERVICE_PORT_APPVIEW" "8080")
+    if [[ "$WITH_PDS2" == "true" ]]; then
+        needed_ports+=("$SERVICE_PORT_CHAT")
+    fi
+    if [[ "$WITH_PHONE_VERIFICATION" == "true" ]]; then
+        needed_ports+=("8081")
+    fi
+    for port in "${needed_ports[@]}"; do
+        local pids
+        pids=$(lsof -ti :"$port" 2>/dev/null || true)
+        if [[ -n "$pids" ]]; then
+            local filtered_pids=""
+            while read -r pid; do
+                [[ -z "$pid" ]] && continue
+                local cmd
+                cmd=$(ps -p "$pid" -o comm= 2>/dev/null || true)
+                case "$cmd" in
+                    kaszlak|garazyk*|atproto*)
+                        filtered_pids="$filtered_pids $pid"
+                        ;;
+                esac
+            done <<< "$pids"
+            if [[ -n "$filtered_pids" ]]; then
+                log_warn "Stale host process(es) holding port $port (PID(s):$filtered_pids)"
+                for pid in $filtered_pids; do
+                    kill -9 "$pid" 2>/dev/null || true
+                done
+            fi
+        fi
+    done
+    sleep 1
+}
+
 stop_stale_docker_e2e() {
     # Collect the ports we need.
     local needed_ports=("$SERVICE_PORT_PLC" "$SERVICE_PORT_PDS" "$SERVICE_PORT_RELAY" "$SERVICE_PORT_APPVIEW" "8080")
@@ -357,14 +395,14 @@ if [[ "$BINARY_MODE" == "true" ]]; then
     if [[ "$WITH_PDS2" == "true" ]]; then
         PDS2_DATA="$DATA_ROOT/pds2"
         mkdir -p "$PDS2_DATA"
-        log_info "Starting PDS2 on port $SERVICE_PORT_CHAT..."
+        log_info "Starting PDS2 on port $SERVICE_PORT_PDS2..."
         PDS_MASTER_SECRET="test-master-secret-456" \
         PDS_PLC_KEYS_DIR="$PDS2_DATA/keys" \
         PDS_ALLOW_HTTP=1 \
-        "$BUILD_BIN/$SERVICE_BINARY_PDS" serve --config "$CONFIG_DIR/pds2-config.json" --port "$SERVICE_PORT_CHAT" --data-dir "$PDS2_DATA" > "$ATPROTO_E2E_LOG_DIR/pds2.log" 2>&1 &
+        "$BUILD_BIN/$SERVICE_BINARY_PDS" serve --config "$CONFIG_DIR/pds2-config.json" --port "$SERVICE_PORT_PDS2" --data-dir "$PDS2_DATA" > "$ATPROTO_E2E_LOG_DIR/pds2.log" 2>&1 &
         echo "PDS2_PID=$!" >> "$PID_FILE"
         sleep 3
-        wait_for_http "$SERVICE_URL_CHAT/xrpc/com.atproto.server.describeServer" "PDS2" 60
+        wait_for_service pds2 60
     fi
 
     # ── Start Jelcz video service (optional) ─────────────────────────────────
@@ -399,7 +437,7 @@ if [[ "$BINARY_MODE" == "true" ]]; then
     echo "  Video:   $SERVICE_URL_VIDEO"
     echo "  UI:      $SERVICE_URL_UI"
     if [[ "$WITH_PDS2" == "true" ]]; then
-        echo "  PDS2:    $SERVICE_URL_CHAT"
+        echo "  PDS2:    $SERVICE_URL_PDS2"
     fi
     if [[ "$WITH_PHONE_VERIFICATION" == "true" ]]; then
         echo "  Mock Twilio: http://127.0.0.1:8081"
@@ -418,8 +456,9 @@ fi
 if [[ "$WAIT_ONLY" != "true" ]]; then
     log_info "Starting local network (Docker)..."
     if [[ "$WITH_PDS2" == "true" ]]; then
-        log_info "Including second PDS (port $SERVICE_PORT_CHAT)"
+        log_info "Including second PDS (port $SERVICE_PORT_PDS2)"
     fi
+    stop_stale_host_processes
     stop_stale_docker_e2e
     stop_docker_services
     "${COMPOSE_CMD[@]}" up -d
@@ -431,7 +470,7 @@ wait_for_service relay 60
 wait_for_service appview 90 || error_exit "AppView failed to start within 90s"
 
 if [[ "$WITH_PDS2" == "true" ]]; then
-    wait_for_http "$SERVICE_URL_CHAT/xrpc/com.atproto.server.describeServer" "PDS2" 60
+    wait_for_service pds2 60
 fi
 
 echo ""
@@ -450,6 +489,6 @@ echo "  PDS:     $SERVICE_URL_PDS"
 echo "  Relay:   $SERVICE_URL_RELAY"
 echo "  AppView: $SERVICE_URL_APPVIEW"
 if [[ "$WITH_PDS2" == "true" ]]; then
-    echo "  PDS2:    $SERVICE_URL_CHAT"
+    echo "  PDS2:    $SERVICE_URL_PDS2"
 fi
 echo ""
