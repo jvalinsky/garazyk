@@ -62,8 +62,13 @@ function xrpcMethodUsesHttpGet(method) {
     if (!method || typeof method !== 'string') return false;
     const seg = method.includes('.') ? method.slice(method.lastIndexOf('.') + 1) : method;
     const s = seg.toLowerCase();
-    return s.startsWith('get') || s.startsWith('list') || s.startsWith('search') ||
-        s.startsWith('describe') || s.startsWith('resolve');
+    if (s.startsWith('get') || s.startsWith('list') || s.startsWith('search') || s.startsWith('describe')) {
+        return true;
+    }
+    if (s.startsWith('resolve') && s !== 'resolvereport') {
+        return true;
+    }
+    return false;
 }
 
 // ============================================================================
