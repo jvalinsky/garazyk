@@ -297,3 +297,16 @@ if (import.meta.main) {
 | PLC | 1, 5 | DID creation, resolution |
 | Relay API | 5, 9, 10 | /api/relay/health, /api/relay/upstreams |
 | AppView Admin | 3, 5, 9, 18 | /admin/backfill/status, /admin/backfill/queue, /admin/backfill/repos, /admin/backfill/scope/rebuild, /admin/ingest/health, /admin/appview/metrics/stats, /admin/lexicons, /admin/lexicons/collections, /admin/records, /admin/hooks, /admin/hooks/dead-letter, /admin/handlers, /admin/endpoints |
+
+## Topologies
+
+Topologies swap out individual services (PLC, relay, PDS) with alternate implementations to test interop. See [topologies/README.md](topologies/README.md) for the full catalog and known compatibility issues.
+
+### Quick reference
+
+```bash
+# Run with a specific topology
+./scripts/run_scenarios.ts --topology allegedly-plc 01
+./scripts/run_scenarios.ts --topology rsky-relay 01
+./scripts/run_scenarios.ts --topology indigo-relay 01
+```
