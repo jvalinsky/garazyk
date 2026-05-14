@@ -166,6 +166,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
         _configuration = configuration ?: [PDSConfiguration sharedConfiguration];
         _dataDirectory = [dataDirectory copy] ?: (_configuration.dataDirectory ?: [PDSConfiguration defaultDataDirectory]);
         _httpPort = _configuration.serverPort > 0 ? _configuration.serverPort : 2583;
+        _rateLimiter = [RateLimiter sharedLimiter];
         _running = NO;
 
         // M2: Catch unhandled ObjC exceptions
