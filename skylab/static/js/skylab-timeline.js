@@ -31,6 +31,11 @@
         const composerTextEl = document.getElementById('composer-text');
         const composerCountEl = document.getElementById('composer-char-count');
         const composerPostEl = document.getElementById('composer-post');
+        const composerVideoFileEl = document.getElementById('composer-video-file');
+        const composerVideoAltEl = document.getElementById('composer-video-alt');
+        const composerVideoProgressEl = document.getElementById('composer-video-progress');
+        const composerVideoProgressFillEl = document.getElementById('composer-video-progress-fill');
+        const composerVideoProgressTextEl = document.getElementById('composer-video-progress-text');
         const refreshEl = document.getElementById('timeline-refresh');
         const feedEl = document.getElementById('timeline-feed');
         const composerEl = document.getElementById('timeline-composer');
@@ -46,6 +51,7 @@
         let composerErrorEl = null;
         let loading = false;
         let timelineLoadVersion = 0;
+        let composerVideo = null;
 
         // --------------------------------------------------------------------
         // Small DOM helpers
@@ -220,6 +226,23 @@
             }
 
             composerCountEl.textContent = `${composerTextEl.value.length}/${COMPOSER_MAX_LENGTH}`;
+            updateComposerPostButton();
+        }
+
+        function updateComposerPostButton() {
+            if (!composerPostEl || !composerTextEl) return;
+            const text = composerTextEl.value.trim();
+            const videoBusy = composerVideo && composerVideo.state !== 'completed' && composerVideo.state !== 'failed';
+            const hasCompletedVideo = composerVideo?.state === 'completed' && composerVideo.blob;
+            composerPostEl.disabled = videoBusy || (!text && !hasCompletedVideo);
+        }
+
+        function setComposerVideoProgress(percent, text, visible = true) {
+            if (!composerVideoProgressEl || !composerVideoProgressFillEl || !composerVideoProgressTextEl) return;
+            const value = Math.max(0, Math.min(100, Math.round(percent || 0)));
+            composerVideoProgressEl.style.display = visible ? 'block' : 'none';
+            composerVideoProgressFillEl.style.width = `${value}%`;
+            composerVideoProgressTextEl.textContent = text || `${value}%`;
         }
 
         function focusReplyComposer(post) {
@@ -245,6 +268,58 @@
             button.className = `skylab-btn skylab-btn-sm ${className || ''}`.trim();
             button.textContent = label;
             return button;
+        }
+
+        function videoUrlsFromEmbed(post) {
+            const embed = post?.embed || post?.record?.embed;
+            if (!embed) return null;
+            if (embed.$type === 'app.bsky.embed.video#view') {
+                return {
+                    playlist: embed.playlist,
+                    thumbnail: embed.thumbnail,
+                    alt: embed.alt || post?.record?.embed?.alt || '',
+                };
+            }
+            if (embed.$type === 'app.bsky.embed.video') {
+                const blob = embed.video || {};
+                const cid = blob.ref?.$link || blob.cid;
+                const did = post?.author?.did || post?.uri?.split('/')[2] || bridge.auth?.did;
+                const base = bridge.services?.video;
+                if (!cid || !did || !base) return null;
+                return {
+                    playlist: `${base}/watch/${did}/${cid}/playlist.m3u8`,
+                    thumbnail: `${base}/watch/${did}/${cid}/thumbnail.jpg`,
+                    alt: embed.alt || '',
+                };
+            }
+            return null;
+        }
+
+        function attachHls(video, playlist) {
+            if (!playlist) return;
+            if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+                const hls = new Hls();
+                hls.loadSource(playlist);
+                hls.attachMedia(video);
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = playlist;
+            } else {
+                video.src = playlist;
+            }
+        }
+
+        function renderVideoEmbed(post) {
+            const urls = videoUrlsFromEmbed(post);
+            if (!urls?.playlist) return null;
+            const video = document.createElement('video');
+            video.className = 'skylab-post-video';
+            video.controls = true;
+            video.playsInline = true;
+            video.preload = 'metadata';
+            if (urls.thumbnail) video.poster = urls.thumbnail;
+            if (urls.alt) video.setAttribute('aria-label', urls.alt);
+            attachHls(video, urls.playlist);
+            return video;
         }
 
         // --------------------------------------------------------------------
@@ -382,6 +457,10 @@
 
             container.appendChild(headerEl);
             container.appendChild(textEl);
+            const videoEmbedEl = renderVideoEmbed(post);
+            if (videoEmbedEl) {
+                container.appendChild(videoEmbedEl);
+            }
             container.appendChild(actionsEl);
 
             return container;
@@ -541,8 +620,13 @@
             }
 
             const text = composerTextEl.value.trim();
-            if (!text) {
-                showComposerError('Write a post before publishing.');
+            if (!text && !(composerVideo?.state === 'completed' && composerVideo.blob)) {
+                showComposerError('Write a post or attach a processed video before publishing.');
+                return;
+            }
+
+            if (composerVideo && composerVideo.state !== 'completed') {
+                showComposerError('Wait for video processing to finish before publishing.');
                 return;
             }
 
@@ -558,6 +642,21 @@
             }
 
             try {
+                const record = {
+                    $type: 'app.bsky.feed.post',
+                    text,
+                    createdAt: new Date().toISOString(),
+                };
+                if (composerVideo?.blob) {
+                    const embed = {
+                        $type: 'app.bsky.embed.video',
+                        video: composerVideo.blob,
+                    };
+                    const alt = composerVideoAltEl?.value?.trim();
+                    if (alt) embed.alt = alt;
+                    record.embed = embed;
+                }
+
                 const resp = await bridge.xrpc(
                     'com.atproto.repo.createRecord',
                     null,
@@ -565,11 +664,7 @@
                         repo: bridge.auth.did,
                         collection: 'app.bsky.feed.post',
                         rkey: Date.now().toString(),
-                        record: {
-                            $type: 'app.bsky.feed.post',
-                            text,
-                            createdAt: new Date().toISOString(),
-                        },
+                        record,
                     },
                     { service: 'pds', auth: true },
                 );
@@ -579,6 +674,10 @@
                 }
 
                 composerTextEl.value = '';
+                if (composerVideoFileEl) composerVideoFileEl.value = '';
+                if (composerVideoAltEl) composerVideoAltEl.value = '';
+                composerVideo = null;
+                setComposerVideoProgress(0, 'No video attached', false);
                 updateComposerCount();
                 clearComposerError();
             } catch (error) {
@@ -587,7 +686,72 @@
                 if (composerPostEl) {
                     composerPostEl.disabled = false;
                     composerPostEl.textContent = 'Post';
+                    updateComposerPostButton();
                 }
+            }
+        }
+
+        async function pollComposerVideo(jobId) {
+            const tick = async () => {
+                if (!composerVideo || composerVideo.jobId !== jobId) return;
+                try {
+                    const resp = await window.SkyLabVideo.getVideoJobStatus(bridge, jobId);
+                    if (resp.ok) {
+                        const normalized = window.SkyLabVideo.normalizeJobPayload(resp.data, jobId);
+                        const job = normalized.jobStatus || {};
+                        const state = String(job.state || '').toUpperCase().includes('COMPLETE')
+                            ? 'completed'
+                            : String(job.state || '').toUpperCase().includes('FAIL')
+                                ? 'failed'
+                                : 'processing';
+                        composerVideo = {
+                            ...composerVideo,
+                            state,
+                            blob: normalized.blob || composerVideo.blob || null,
+                        };
+                        const progress = state === 'completed' ? 100 : Math.max(0, Math.min(99, Number(job.progress || 0)));
+                        setComposerVideoProgress(progress, state === 'completed' ? 'Video ready' : `Processing video… ${progress}%`, true);
+                        updateComposerPostButton();
+                        if (state === 'completed' || state === 'failed') return;
+                    }
+                } catch (error) {
+                    setComposerVideoProgress(100, error.message || 'Video status unavailable', true);
+                }
+                window.setTimeout(tick, 2000);
+            };
+            tick();
+        }
+
+        async function attachComposerVideo() {
+            const file = composerVideoFileEl?.files?.[0];
+            if (!file) {
+                composerVideo = null;
+                setComposerVideoProgress(0, 'No video attached', false);
+                updateComposerPostButton();
+                return;
+            }
+            try {
+                composerVideo = { state: 'uploading', fileName: file.name };
+                updateComposerPostButton();
+                setComposerVideoProgress(0, 'Uploading video…', true);
+                const upload = await window.SkyLabVideo.uploadVideoFile(bridge, file, {
+                    onProgress: (percent) => setComposerVideoProgress(percent, `Uploading video… ${percent}%`, true),
+                });
+                const normalized = window.SkyLabVideo.normalizeJobPayload(upload.data);
+                if (!normalized.jobId) throw new Error('Video upload did not return a job ID');
+                composerVideo = {
+                    state: 'processing',
+                    jobId: normalized.jobId,
+                    blob: normalized.blob || null,
+                    fileName: file.name,
+                };
+                setComposerVideoProgress(0, 'Processing video…', true);
+                pollComposerVideo(normalized.jobId);
+            } catch (error) {
+                composerVideo = { state: 'failed', error: error.message };
+                setComposerVideoProgress(100, `Video failed: ${error.message || 'unknown error'}`, true);
+                showComposerError(error.message || 'Unable to attach video');
+                updateComposerPostButton();
             }
         }
 
@@ -597,6 +761,10 @@
                 clearComposerError();
             });
             updateComposerCount();
+        }
+
+        if (composerVideoFileEl) {
+            composerVideoFileEl.addEventListener('change', attachComposerVideo);
         }
 
         if (composerPostEl) {
