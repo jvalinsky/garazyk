@@ -289,6 +289,8 @@ export function resolveTopology(webClientName?: string, topologyName?: string): 
   if (topologyName) {
     preset = loadTopologyPreset(topologyName);
     for (const adapter of Object.values(preset.roles)) {
+      // Skip inheritance markers — they don't have capabilities
+      if ("inherit" in adapter && typeof (adapter as any).inherit === "string") continue;
       for (const cap of adapter.capabilities) {
         capabilities.add(cap);
       }

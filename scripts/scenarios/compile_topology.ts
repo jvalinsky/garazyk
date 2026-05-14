@@ -19,14 +19,14 @@ import { parseArgs } from "@std/cli";
 import { compileTopology, CompilerOptions } from "../lib/deno/topology_compiler.ts";
 
 const args = parseArgs(Deno.args, {
-  string: ["preset", "output", "runDir", "repoRoot", "sourcesJson"],
+  string: ["preset", "output", "run-dir", "repo-root", "sources-json"],
   alias: {
     preset: "p",
     output: "o",
   },
   default: {
-    runDir: Deno.makeTempDirSync({ prefix: "topology-" }),
-    repoRoot: new URL("../..", import.meta.url).pathname,
+    "run-dir": Deno.makeTempDirSync({ prefix: "topology-" }),
+    "repo-root": new URL("../..", import.meta.url).pathname,
   },
 });
 
@@ -38,8 +38,8 @@ if (!args.preset) {
 
 const options: CompilerOptions = {
   preset: args.preset,
-  runDir: args.runDir,
-  repoRoot: args.repoRoot,
+  runDir: args["run-dir"],
+  repoRoot: args["repo-root"],
   composeProject: "garazyk-topology",
 };
 
@@ -51,8 +51,8 @@ if (args.output && args.output !== result.composeFile) {
 }
 
 // Write sources JSON if requested
-if (args.sourcesJson && result.sources.length > 0) {
-  await Deno.writeTextFile(args.sourcesJson, JSON.stringify(result.sources, null, 2));
+if (args["sources-json"] && result.sources.length > 0) {
+  await Deno.writeTextFile(args["sources-json"], JSON.stringify(result.sources, null, 2));
 }
 
 console.log(`Topology compiled: ${result.composeFile}`);
