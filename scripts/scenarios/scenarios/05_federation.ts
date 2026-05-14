@@ -1,5 +1,5 @@
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { PDS1, PDS2, getCharacter } from "../../lib/deno/config.ts";
+import { PDS1, PDS2, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 
 function now() {
@@ -134,7 +134,7 @@ export async function run(): Promise<ScenarioResult> {
   );
 
   try {
-    const plcResp = await fetch(`http://localhost:2582/${luna.did}`);
+    const plcResp = await fetch(`${SERVICE_URLS.plc}/${luna.did}`);
     if (plcResp.ok) {
       const didDoc = await plcResp.json();
       result.stepPassed("PLC resolves Luna's DID", `alsoKnownAs=${JSON.stringify(didDoc.alsoKnownAs)}`);
@@ -215,7 +215,7 @@ export async function run(): Promise<ScenarioResult> {
   await new Promise(r => setTimeout(r, 5000));
 
   try {
-    const relayResp = await fetch("http://localhost:2584/api/relay/health");
+    const relayResp = await fetch(`${SERVICE_URLS.relay}/api/relay/health`);
     if (relayResp.ok) {
       result.stepPassed("Relay health check", `body=${(await relayResp.text()).substring(0, 100)}`);
     } else {
@@ -226,7 +226,7 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   try {
-    const upstreamsResp = await fetch("http://localhost:2584/api/relay/upstreams");
+    const upstreamsResp = await fetch(`${SERVICE_URLS.relay}/api/relay/upstreams`);
     if (upstreamsResp.ok) {
       const upstreams = await upstreamsResp.json();
       const count = Array.isArray(upstreams) ? upstreams.length : (upstreams.upstreams?.length || 0);
@@ -239,7 +239,7 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   try {
-    const appviewResp = await fetch("http://localhost:3200/admin/backfill/status", {
+    const appviewResp = await fetch(`${SERVICE_URLS.appview}/admin/backfill/status`, {
       headers: { "Authorization": "Bearer localdevadmin" }
     });
     if (appviewResp.ok) {

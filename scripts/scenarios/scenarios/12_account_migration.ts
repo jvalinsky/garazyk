@@ -1,7 +1,7 @@
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { PDS1, PDS2, getCharacter } from "../../lib/deno/config.ts";
+import { PDS1, PDS2, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Account Migration & PLC Audit");
@@ -29,7 +29,7 @@ export async function run(): Promise<ScenarioResult> {
   await timedCall(
     result, "PLC health check",
     async () => {
-      const res = await fetch("http://localhost:2582/_health");
+      const res = await fetch(`${SERVICE_URLS.plc}/_health`);
       if (res.status !== 200) throw new Error(`PLC status=${res.status}`);
     }
   );
@@ -91,7 +91,7 @@ export async function run(): Promise<ScenarioResult> {
       if (signResp1) {
         const op1 = { ...signResp1.operation };
         delete op1.did;
-        const plcRes = await fetch(`http://localhost:2582/${luna.did}`, {
+        const plcRes = await fetch(`${SERVICE_URLS.plc}/${luna.did}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(op1),
@@ -126,7 +126,7 @@ export async function run(): Promise<ScenarioResult> {
         if (signResp2) {
           const op2 = { ...signResp2.operation };
           delete op2.did;
-          const plcRes2 = await fetch(`http://localhost:2582/${luna.did}`, {
+          const plcRes2 = await fetch(`${SERVICE_URLS.plc}/${luna.did}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(op2),
@@ -145,7 +145,7 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   try {
-    const logResp = await fetch(`http://localhost:2582/${luna.did}/log`);
+    const logResp = await fetch(`${SERVICE_URLS.plc}/${luna.did}/log`);
     if (logResp.status === 200) {
       const operations = await logResp.json();
       result.stepPassed("Fetch PLC operation log", `total_operations=${operations.length}`);
