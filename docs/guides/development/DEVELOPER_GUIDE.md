@@ -21,12 +21,15 @@ Garazyk/
 │   └── Network/              # HTTP server implementation
 ├── Tests/                    # Unit and integration tests
 ├── docs/                     # Documentation
-├── scripts/                  # Professional build and utility scripts
-│   ├── simple_test.sh        # AT Proto PDS integration tests
-│   ├── start_server.sh      # Production server startup script
-│   ├── quality_gate.sh       # Code quality and static analysis
-│   └── run-tests.sh         # Test suite runner
-├── skills/                   # Development skills and best practices
+├── scripts/                  # Build, test, scenario, docs, and operator tooling
+│   ├── run_scenarios.ts      # Deno full-stack scenario runner
+│   ├── scenarios/            # Scenario fixtures, config, and scenario modules
+│   ├── lib/deno/             # Shared Deno clients and runner helpers
+│   ├── build/quality_gate.sh # Code quality and static analysis wrapper
+│   ├── ops/start_server.sh   # Production server startup script
+│   └── test/run-tests.sh     # Test suite runner
+├── deno.json                 # Root Deno configuration for repo scripts
+├── .agents/skills/           # Development skills and best practices
 ├── CMakeLists.txt            # Main build configuration
 └── project.yml               # Xcode project configuration
 ```
@@ -164,12 +167,15 @@ Garazyk/
 │   └── Network/              # HTTP server implementation
 ├── Tests/                    # Unit and integration tests
 ├── docs/                     # Documentation
-├── scripts/                  # Professional build and utility scripts
-│   ├── simple_test.sh        # AT Proto PDS integration tests
-│   ├── start_server.sh      # Production server startup script
-│   ├── quality_gate.sh       # Code quality and static analysis
-│   └── run-tests.sh          # Test suite runner
-├── skills/                   # Development skills and best practices
+├── scripts/                  # Build, test, scenario, docs, and operator tooling
+│   ├── run_scenarios.ts      # Deno full-stack scenario runner
+│   ├── scenarios/            # Scenario fixtures, config, and scenario modules
+│   ├── lib/deno/             # Shared Deno clients and runner helpers
+│   ├── build/quality_gate.sh # Code quality and static analysis wrapper
+│   ├── ops/start_server.sh   # Production server startup script
+│   └── test/run-tests.sh     # Test suite runner
+├── deno.json                 # Root Deno configuration for repo scripts
+├── .agents/skills/           # Development skills and best practices
 ├── CMakeLists.txt            # Main build configuration
 └── project.yml               # Xcode project configuration
 ```
@@ -234,32 +240,21 @@ Fuzzer binaries will be at `./build/fuzzing/`.
 
 ## Script Development Standards
 
-All shell scripts follow the bash scripting standards documented in `docs/guides/SCRIPT_DEVELOPMENT.md`. Key requirements:
+Script standards live in `docs/guides/SCRIPT_DEVELOPMENT.md`. The short version:
 
-### Script Structure
-- Use `#!/usr/bin/env bash` shebang for portability
-- Set shell options: `set -euo pipefail`
-- Include header documentation with purpose and usage
-- Implement proper error handling with trap handlers
-- Use structured logging (debug, info, warn, error)
+- Use Bash for process boundaries, service lifecycle, CI wrappers, and operator glue.
+- Use Deno/TypeScript for XRPC calls, scenario logic, structured JSON, docs analysis, and report generation.
+- Keep shared Deno helpers in `scripts/lib/deno/`.
+- Keep full-stack scenarios in `scripts/scenarios/scenarios/*.ts`.
+- Run `bash -n` or ShellCheck for changed shell scripts.
+- Run `deno fmt --config deno.json --check` and `deno check --config deno.json` for changed TypeScript scripts.
 
-#### Code Quality
-- All scripts pass ShellCheck linting with zero warnings
-- Follow SC2155 best practices (declare and assign separately)
-- Use local variables in functions
-- Validate all inputs and dependencies
+Common entrypoints:
 
-#### Available Scripts
-- `scripts/ops/start_server.sh`: Production server startup with proper process management
-- `scripts/test/run-tests.sh`: Test suite execution with validation
-- `scripts/simple_test.sh`: AT Proto integration testing
-- `scripts/build/quality_gate.sh`: Code quality and static analysis
-
-#### Script Development Workflow
-1. Follow the professional bash scripting skill guidelines
-2. Run ShellCheck before committing: `shellcheck script.sh`
-3. Test scripts on target environment
-4. Update documentation for new scripts
+- `scripts/run_scenarios.ts`: narrative full-stack scenario runner
+- `scripts/build/quality_gate.sh`: code quality and static analysis wrapper
+- `scripts/test/run-tests.sh`: Objective-C test suite wrapper
+- `scripts/docs/repo_docs.ts`: repository documentation registry and validation
 
 ## Adding New API Endpoints
 
