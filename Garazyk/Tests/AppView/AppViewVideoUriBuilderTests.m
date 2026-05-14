@@ -64,7 +64,7 @@
 
     NSDictionary *view = [self.builder videoViewFromEmbed:embed did:@"did:plc:abc"];
     XCTAssertNotNil(view);
-    XCTAssertEqualObjects(view[@"thumbnail"], @"http://localhost:2586/watch/did:plc:abc/bafyreithumb/thumbnail.jpg");
+    XCTAssertEqualObjects(view[@"thumbnail"], @"http://localhost:2586/watch/did:plc:abc/bafyrei123/thumbnail.jpg");
 }
 
 - (void)testVideoViewFromEmbedNilReturnsNil {
