@@ -53,6 +53,19 @@ const APPVIEW_READ_METHODS = new Set([
     'app.bsky.unspecced.searchStarterPacksSkeleton',
 ]);
 
+/**
+ * Lexicon `query` methods are invoked with HTTP GET and query-string params.
+ * The NSID ends with a segment such as getTimeline or listNotifications — not
+ * a prefix on the full NSID (e.g. app.bsky.feed.getTimeline starts with "app").
+ */
+function xrpcMethodUsesHttpGet(method) {
+    if (!method || typeof method !== 'string') return false;
+    const seg = method.includes('.') ? method.slice(method.lastIndexOf('.') + 1) : method;
+    const s = seg.toLowerCase();
+    return s.startsWith('get') || s.startsWith('list') || s.startsWith('search') ||
+        s.startsWith('describe') || s.startsWith('resolve');
+}
+
 // ============================================================================
 // SkyLabBridge
 // ============================================================================
@@ -222,8 +235,7 @@ class SkyLabBridge {
     async xrpc(method, params = null, body = null, options = {}) {
         const service = options.service || this.routeMethod(method);
         const baseUrl = this.serviceUrl(service);
-        const isQuery = method.startsWith('get') || method.startsWith('list') ||
-                        method.startsWith('search') || method.startsWith('describe');
+        const isQuery = xrpcMethodUsesHttpGet(method);
 
         let url;
         if (isQuery && !body) {
