@@ -30,6 +30,7 @@ WAIT_ONLY=false
 TEARDOWN=false
 KEEP_RUNNING=false
 COLLECT_DIAGNOSTICS=false
+SKIP_DOCKER_STAGE="${ATPROTO_E2E_SKIP_DOCKER_STAGE:-false}"
 
 while [[ $# -gt 0 ]]; do
     # Keep argument parsing intentionally simple: scenario automation passes a
@@ -42,6 +43,7 @@ while [[ $# -gt 0 ]]; do
         --teardown)  TEARDOWN=true ;;
         --keep-running) KEEP_RUNNING=true ;;
         --collect-diagnostics) COLLECT_DIAGNOSTICS=true ;;
+        --skip-docker-stage) SKIP_DOCKER_STAGE=true ;;
         --run-id)
             [[ $# -ge 2 ]] || error_exit "--run-id requires a value" 2
             ATPROTO_E2E_RUN_ID="$2"
@@ -62,6 +64,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --teardown               Stop services for this run"
             echo "  --keep-running           Mark this run as intentionally long-lived"
             echo "  --collect-diagnostics    Capture health, logs, and compose state"
+            echo "  --skip-docker-stage      Reuse existing staged Docker binaries"
             echo "  --run-id ID              Reuse or name the shared e2e run directory"
             echo "  --diagnostics-dir DIR    Write diagnostics to DIR"
             exit 0
@@ -99,6 +102,21 @@ build_compose_cmd
 collect_local_diagnostics() {
     atproto_collect_diagnostics "$ATPROTO_E2E_DIAGNOSTICS_DIR" \
         "$COMPOSE_DIR" "$ATPROTO_E2E_COMPOSE_PROJECT" "${COMPOSE_FILES[@]}"
+}
+
+docker_staging_needs_refresh() {
+    local marker="$COMPOSE_DIR/staging/bin/$SERVICE_BINARY_PDS"
+    if [[ ! -x "$marker" ]]; then
+        return 0
+    fi
+
+    local newer_source
+    newer_source=$(find \
+        "$REPO_ROOT/Garazyk" \
+        "$REPO_ROOT/CMakeLists.txt" \
+        "$REPO_ROOT/docker/Dockerfile.gnustep" \
+        -type f -newer "$marker" -print -quit 2>/dev/null || true)
+    [[ -n "$newer_source" ]]
 }
 
 stop_binary_services() {
@@ -341,7 +359,7 @@ if [[ "$BINARY_MODE" == "true" ]]; then
     TWILIO_AUTH_TOKEN="${TWILIO_AUTH_TOKEN:-SK00000000000000000000000000000000}" \
     TWILIO_VERIFY_SERVICE_SID="${TWILIO_VERIFY_SERVICE_SID:-VA00000000000000000000000000000000}" \
     TWILIO_API_BASE_URL="${TWILIO_API_BASE_URL:-http://127.0.0.1:8081/v2/Service}" \
-    "$BUILD_BIN/$SERVICE_BINARY_PDS" serve --config "$CONFIG_DIR/pds-config.json" --port "$SERVICE_PORT_PDS" --data-dir "$PDS_DATA" > "$ATPROTO_E2E_LOG_DIR/pds.log" 2>&1 &
+    "$BUILD_BIN/$SERVICE_BINARY_PDS" serve --config "$CONFIG_DIR/pds-config.json" --port "$SERVICE_PORT_PDS" --data-dir "$PDS_DATA" --foreground > "$ATPROTO_E2E_LOG_DIR/pds.log" 2>&1 &
     echo "PDS_PID=$!" >> "$PID_FILE"
     sleep 3
     wait_for_http "$SERVICE_URL_PDS/xrpc/com.atproto.server.describeServer" "PDS" 60
@@ -399,7 +417,7 @@ if [[ "$BINARY_MODE" == "true" ]]; then
         PDS_MASTER_SECRET="test-master-secret-456" \
         PDS_PLC_KEYS_DIR="$PDS2_DATA/keys" \
         PDS_ALLOW_HTTP=1 \
-        "$BUILD_BIN/$SERVICE_BINARY_PDS" serve --config "$CONFIG_DIR/pds2-config.json" --port "$SERVICE_PORT_PDS2" --data-dir "$PDS2_DATA" > "$ATPROTO_E2E_LOG_DIR/pds2.log" 2>&1 &
+        "$BUILD_BIN/$SERVICE_BINARY_PDS" serve --config "$CONFIG_DIR/pds2-config.json" --port "$SERVICE_PORT_PDS2" --data-dir "$PDS2_DATA" --foreground > "$ATPROTO_E2E_LOG_DIR/pds2.log" 2>&1 &
         echo "PDS2_PID=$!" >> "$PID_FILE"
         sleep 3
         wait_for_service pds2 60
@@ -458,10 +476,18 @@ if [[ "$WAIT_ONLY" != "true" ]]; then
     if [[ "$WITH_PDS2" == "true" ]]; then
         log_info "Including second PDS (port $SERVICE_PORT_PDS2)"
     fi
+    if [[ "$SKIP_DOCKER_STAGE" != "true" ]] && docker_staging_needs_refresh; then
+        log_info "Staging Linux binaries for Docker local network..."
+        "$REPO_ROOT/scripts/stage-docker-binaries.sh"
+    elif [[ "$SKIP_DOCKER_STAGE" == "true" ]]; then
+        log_warn "Reusing existing staged Docker binaries"
+    else
+        log_info "Staged Docker binaries are current"
+    fi
     stop_stale_host_processes
     stop_stale_docker_e2e
     stop_docker_services
-    "${COMPOSE_CMD[@]}" up -d
+    "${COMPOSE_CMD[@]}" up -d --build
 fi
 
 wait_for_service plc 60
