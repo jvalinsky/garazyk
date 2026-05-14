@@ -1,4 +1,4 @@
-import { useState } from "preact/hooks";
+import { useState, useEffect } from "preact/hooks";
 
 interface ServiceInfo {
   name: string;
@@ -17,10 +17,21 @@ export default function NetworkStatus({ services: initial }: NetworkStatusProps)
   const [busy, setBusy] = useState(false);
 
   async function refresh() {
-    const res = await fetch("/api/network");
-    const data = await res.json();
-    setServices(Object.values(data.services));
+    try {
+      const res = await fetch("/api/network/health");
+      const data = await res.json();
+      if (data.services) {
+        setServices(Object.values(data.services));
+      }
+    } catch (e) {
+      console.error("Failed to refresh network status:", e);
+    }
   }
+
+  useEffect(() => {
+    const id = setInterval(refresh, 5000);
+    return () => clearInterval(id);
+  }, []);
 
   async function startAll() {
     setBusy(true);
@@ -112,23 +123,8 @@ export default function NetworkStatus({ services: initial }: NetworkStatusProps)
                     {s.status}
                   </span>
                 </td>
-                <td>
-                  <div style="display: flex; gap: var(--space-xs);">
-                    {s.status === "running" ? (
-                      <button class="btn btn-sm" onClick={() => stopService(s.name)} disabled={busy}>
-                        Stop
-                      </button>
-                    ) : (
-                      <button class="btn btn-sm" onClick={() => startService(s.name)} disabled={busy}>
-                        Start
-                      </button>
-                    )}
-                    {s.status === "running" && (
-                      <button class="btn btn-sm" onClick={() => {}}>
-                        Log
-                      </button>
-                    )}
-                  </div>
+                <td style="color: var(--color-text-tertiary); font-size: var(--font-size-xs);">
+                  Per-service control not yet available
                 </td>
               </tr>
             ))}
