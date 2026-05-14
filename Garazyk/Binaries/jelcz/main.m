@@ -44,6 +44,22 @@
 static HttpServer *gServer = nil;
 static ATProtoVideoWorker *gWorker = nil;
 
+static void setJelczCORSHeaders(HttpRequest *request, HttpResponse *response) {
+    NSString *origin = [request headerForKey:@"Origin"];
+    if (origin.length > 0) {
+        [response setHeader:origin forKey:@"Access-Control-Allow-Origin"];
+        [response setHeader:@"true" forKey:@"Access-Control-Allow-Credentials"];
+        [response setHeader:@"Origin" forKey:@"Vary"];
+    } else {
+        [response setHeader:@"*" forKey:@"Access-Control-Allow-Origin"];
+    }
+    [response setHeader:@"GET, POST, OPTIONS, HEAD" forKey:@"Access-Control-Allow-Methods"];
+    [response setHeader:@"Authorization, Content-Type, Accept, Range, If-None-Match, If-Modified-Since, DPoP, DPoP-Nonce, X-Garazyk-Access-JWT, X-Garazyk-Access-Token, *" forKey:@"Access-Control-Allow-Headers"];
+    [response setHeader:@"Content-Length, Content-Range, Accept-Ranges, DPoP-Nonce, WWW-Authenticate" forKey:@"Access-Control-Expose-Headers"];
+    [response setHeader:@"true" forKey:@"Access-Control-Allow-Private-Network"];
+    [response setHeader:@"86400" forKey:@"Access-Control-Max-Age"];
+}
+
 #pragma mark - Crash Diagnostics
 
 static void crash_signal_handler(int sig) {
@@ -330,9 +346,12 @@ int run_serve(int argc, const char *argv[]) {
 
     // Register XRPC route handler
     void (^xrpcHandler)(HttpRequest *, HttpResponse *) = ^(HttpRequest *request, HttpResponse *response) {
+        setJelczCORSHeaders(request, response);
         [dispatcher handleRequest:request response:response];
     };
 
+    [gServer addRoute:@"OPTIONS" path:@"/xrpc" handler:xrpcHandler];
+    [gServer addRoute:@"OPTIONS" path:@"/xrpc/*" handler:xrpcHandler];
     [gServer addRoute:@"POST" path:@"/xrpc" handler:xrpcHandler];
     [gServer addRoute:@"POST" path:@"/xrpc/*" handler:xrpcHandler];
     [gServer addRoute:@"GET" path:@"/xrpc" handler:xrpcHandler];
@@ -348,7 +367,14 @@ int run_serve(int argc, const char *argv[]) {
 
     // HLS serving routes — serve generated HLS segments and playlists
     // Master playlist: /watch/{did}/{cid}/playlist.m3u8
-    [gServer addRoute:@"GET" path:@"/watch" handler:^(HttpRequest *request, HttpResponse *response) {
+    void (^watchHandler)(HttpRequest *, HttpResponse *) = ^(HttpRequest *request, HttpResponse *response) {
+        setJelczCORSHeaders(request, response);
+        if (request.method == HttpMethodOPTIONS) {
+            response.statusCode = HttpStatusNoContent;
+            [response setBodyData:[NSData data]];
+            return;
+        }
+
         NSString *path = request.path ?: @"";
         // Expect /watch/{did}/{cid}/... or /watch/{did}/{cid}/playlist.m3u8
         NSArray<NSString *> *parts = [path componentsSeparatedByString:@"/"];
@@ -362,6 +388,11 @@ int run_serve(int argc, const char *argv[]) {
         NSString *did = parts[2];
         NSString *cid = parts[3];
         NSString *remainder = [path substringFromIndex:[NSString stringWithFormat:@"/watch/%@/%@/", did, cid].length];
+        if ([remainder containsString:@".."] || [remainder hasPrefix:@"/"]) {
+            response.statusCode = 400;
+            [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Invalid HLS path"}];
+            return;
+        }
 
         NSString *filePath = nil;
         NSString *contentType = @"application/octet-stream";
@@ -372,8 +403,6 @@ int run_serve(int argc, const char *argv[]) {
             contentType = @"application/vnd.apple.mpegurl";
         } else if ([remainder hasSuffix:@"/video.m3u8"] || [remainder hasSuffix:@".m3u8"]) {
             // Variant playlist
-            NSString *safeDid = [did stringByReplacingOccurrencesOfString:@":" withString:@"_"];
-            NSString *safeCid = [cid stringByReplacingOccurrencesOfString:@":" withString:@"_"];
             filePath = [[hlsGenerator hlsDirectoryForDID:did cid:cid] stringByAppendingPathComponent:remainder];
             contentType = @"application/vnd.apple.mpegurl";
         } else if ([remainder hasSuffix:@".ts"]) {
@@ -403,8 +432,13 @@ int run_serve(int argc, const char *argv[]) {
         response.contentType = contentType;
         // Cache HLS files for 1 hour (they're immutable once generated)
         [response setHeader:@"public, max-age=3600" forKey:@"Cache-Control"];
-        response.body = fileData;
-    }];
+        [response setHeader:@"bytes" forKey:@"Accept-Ranges"];
+        [response setBodyData:fileData];
+    };
+    [gServer addRoute:@"OPTIONS" path:@"/watch" handler:watchHandler];
+    [gServer addRoute:@"OPTIONS" path:@"/watch/*" handler:watchHandler];
+    [gServer addRoute:@"GET" path:@"/watch" handler:watchHandler];
+    [gServer addRoute:@"GET" path:@"/watch/*" handler:watchHandler];
 
     // Admin auth helper
     NSString *adminSecret = [NSProcessInfo processInfo].environment[@"JELCZ_ADMIN_SECRET"] ?: @"jelcz-admin-secret";

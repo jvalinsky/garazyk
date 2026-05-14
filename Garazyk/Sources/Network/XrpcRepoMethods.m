@@ -35,7 +35,8 @@
 #import "Auth/Secp256k1.h"
 #import <CommonCrypto/CommonDigest.h>
 
-static const NSUInteger kPDSUploadBlobMaxBytes = 1024 * 1024;
+static const NSUInteger kPDSUploadBlobDefaultMaxBytes = 1024 * 1024;
+static const NSUInteger kPDSUploadBlobVideoMaxBytes = 50 * 1024 * 1024;
 
 static BOOL parseStrictIntegerString(NSString *value, NSInteger *result);
 static CID *cidFromTaggedCBORValue(CBORValue *value);
@@ -67,6 +68,15 @@ static NSString *trimmedNonEmptyString(NSString *value) {
     }
     NSString *trimmed = [value stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     return trimmed.length > 0 ? trimmed : nil;
+}
+
+static NSUInteger maxUploadBlobBytesForContentType(NSString *contentType) {
+    NSString *lowerContentType = [[contentType ?: @"" lowercaseString] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    NSString *mimeType = [lowerContentType componentsSeparatedByString:@";"].firstObject ?: @"";
+    if ([mimeType isEqualToString:@"video/mp4"]) {
+        return kPDSUploadBlobVideoMaxBytes;
+    }
+    return kPDSUploadBlobDefaultMaxBytes;
 }
 
 static BOOL parseStrictIntegerString(NSString *value, NSInteger *result) {
@@ -524,13 +534,14 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
             return;
         }
 
-        if (blobData.length > kPDSUploadBlobMaxBytes) {
+        NSString *contentType = [request headerForKey:@"Content-Type"];
+        NSUInteger maxUploadBytes = maxUploadBlobBytesForContentType(contentType);
+        if (blobData.length > maxUploadBytes) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"BlobTooLarge", @"message": @"Blob too large"}];
             return;
         }
 
-        NSString *contentType = [request headerForKey:@"Content-Type"];
         if (contentType && [contentType isEqualToString:@"application/x-msdownload"]) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidMimeType", @"message": @"Forbidden MIME type"}];

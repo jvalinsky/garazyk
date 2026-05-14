@@ -18,6 +18,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class PDSDatabase;
+@class AppViewVideoUriBuilder;
 
 /*!
  @class FeedService
@@ -34,6 +35,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*! Database connection (exposed for testing). */
 @property (nonatomic, strong, readonly) id<PDSQueryDatabase> database;
+
+/*! Optional video URL builder used to hydrate app.bsky.embed.video views. */
+@property (nonatomic, strong, nullable) AppViewVideoUriBuilder *videoUriBuilder;
 
 
 /*! Get timeline feed for actor with pagination. */
