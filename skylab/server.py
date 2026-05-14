@@ -147,6 +147,18 @@ def _route_method(method: str) -> str:
     return "pds"
 
 
+def _xrpc_method_uses_http_get(method: str) -> bool:
+    """True when the XRPC method is a lexicon query (HTTP GET + query params).
+
+    Match on the final NSID segment: app.bsky.feed.getTimeline -> getTimeline.
+    Full-NSID prefix checks are wrong because NSIDs start with the domain.
+    """
+    if not method:
+        return False
+    seg = method.rsplit(".", 1)[-1].lower()
+    return seg.startswith(("get", "list", "search", "describe", "resolve"))
+
+
 # ---------------------------------------------------------------------------
 # Static file serving
 # ---------------------------------------------------------------------------
@@ -176,6 +188,61 @@ async def get_config():
         "methodRoutes": METHOD_ROUTES,
         "appviewReadMethods": list(APPVIEW_READ_METHODS),
     }
+
+
+@app.get("/skylab/api/debug/appview-timeline")
+async def debug_appview_timeline(request: Request, limit: int = 25) -> JSONResponse:
+    """GET AppView home timeline as JSON (for curl / checks without the browser).
+
+    Example:
+        TOKEN=$(curl -s -X POST .../createSession ... | jq -r .accessJwt)
+        curl -s -H "Authorization: Bearer $TOKEN" \\
+          "http://127.0.0.1:2591/skylab/api/debug/appview-timeline?limit=10"
+    """
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        return JSONResponse(
+            {
+                "ok": False,
+                "error": "expected Authorization: Bearer <accessJwt from PDS createSession>",
+            },
+            status_code=401,
+        )
+    appview = SERVICE_URLS["appview"]
+    url = f"{appview}/xrpc/app.bsky.feed.getTimeline"
+    lim = max(1, min(limit, 100))
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.get(
+                url,
+                params={"limit": lim},
+                headers={"Authorization": auth},
+            )
+    except httpx.RequestError as exc:
+        return JSONResponse(
+            {"ok": False, "error": "proxy_error", "detail": str(exc)},
+            status_code=502,
+        )
+    content_type = resp.headers.get("content-type", "")
+    payload: Any
+    if content_type.startswith("application/json"):
+        try:
+            payload = resp.json()
+        except json.JSONDecodeError:
+            payload = {"raw": resp.text}
+    else:
+        payload = {"raw": resp.text}
+    feed_len = 0
+    if isinstance(payload, dict) and isinstance(payload.get("feed"), list):
+        feed_len = len(payload["feed"])
+    out = {
+        "ok": resp.is_success,
+        "upstreamStatus": resp.status_code,
+        "appview": appview,
+        "feedItemCount": feed_len,
+        "xrpc": payload,
+    }
+    return JSONResponse(out, status_code=resp.status_code)
 
 
 # ---------------------------------------------------------------------------
@@ -235,7 +302,7 @@ async def execute_xrpc(request: Request):
 
     # Fallback: direct server-side proxy
     target_url = SERVICE_URLS.get(service, SERVICE_URLS["pds"])
-    is_query = method.startswith("get") or method.startswith("list") or method.startswith("search")
+    is_query = _xrpc_method_uses_http_get(method)
     url = f"{target_url}/xrpc/{method}"
 
     headers = {}
