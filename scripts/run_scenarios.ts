@@ -1,199 +1,444 @@
 #!/usr/bin/env -S deno run -A
-import { parseArgs } from "@std/cli/parse-args";
-import { join, fromFileUrl } from "@std/path";
+import { fromFileUrl, join } from "@std/path";
+import { bold, brightBlue, green, red, yellow } from "@std/fmt/colors";
 import { startLocalNetwork, stopLocalNetwork } from "./lib/deno/docker.ts";
+import { collectDiagnostics, createRunContext } from "./lib/deno/diagnostics.ts";
+import { resetCharacters, SERVICE_URLS } from "./lib/deno/config.ts";
+import { DurationCache, ProgressBar } from "./lib/deno/progress.ts";
 import { ScenarioResult } from "./lib/deno/runner.ts";
-import { ProgressBar, DurationCache } from "./lib/deno/progress.ts";
-import { brightBlue, bold, green, red, yellow, cyan } from "@std/fmt/colors";
 
-async function main() {
-  const args = parseArgs(Deno.args, {
-    boolean: ["setup-only", "teardown", "pds2", "list", "no-setup", "skip-setup"],
-    string: ["run-id"],
-    alias: { "no-setup": ["keep-running", "skip-setup"] } 
-  });
+interface RunnerArgs {
+  scenarioIds: string[];
+  list: boolean;
+  setupOnly: boolean;
+  setup: boolean;
+  teardown: boolean;
+  teardownOnly: boolean;
+  noSetup: boolean;
+  binary: boolean;
+  pds2: boolean;
+  verbose: boolean;
+  noJson: boolean;
+  keepRunning: boolean;
+  collectDiagnostics: boolean;
+  timeout: number;
+  runId?: string;
+  diagnosticsDir?: string;
+  reportsDir?: string;
+}
 
-  const skipSetup = args["no-setup"] || args["skip-setup"];
+interface ScenarioInfo {
+  id: string;
+  name: string;
+  path: string;
+  needsPds2: boolean;
+}
 
-  if (args["run-id"]) {
-    console.log(`[runner] Run ID: ${args["run-id"]}`);
-    console.log(`[runner] skipSetup: ${skipSetup}`);
+const NEEDS_PDS2 = new Set(["05", "12", "35"]);
+
+function usage(): never {
+  console.log(`Usage: scripts/run_scenarios.ts [options] [scenario ids]
+
+Options:
+  --list                  List scenarios and exit
+  --setup-only            Start the local network and exit
+  --setup                 Explicitly start the local network before running
+  --no-setup              Run against an already-running network
+  --teardown              Stop the local network after running
+  --teardown-only         Stop the local network and exit
+  --binary                Start services from build/bin instead of Docker
+  --pds2                  Include the second PDS
+  --run-id ID             Reuse or name the e2e run directory
+  --diagnostics-dir DIR   Write diagnostics to DIR
+  --reports-dir DIR       Write scenario JSON reports to DIR
+  --collect-diagnostics   Capture diagnostics for the current run and exit
+  --keep-running          Leave services running after setup or execution
+  --timeout SECONDS       Per-scenario timeout (default: 120)
+  --no-json               Do not write JSON reports
+`);
+  Deno.exit(2);
+}
+
+function parseRunnerArgs(argv: string[]): RunnerArgs {
+  const args: RunnerArgs = {
+    scenarioIds: [],
+    list: false,
+    setupOnly: false,
+    setup: false,
+    teardown: false,
+    teardownOnly: false,
+    noSetup: false,
+    binary: false,
+    pds2: false,
+    verbose: false,
+    noJson: false,
+    keepRunning: false,
+    collectDiagnostics: false,
+    timeout: 120,
+  };
+
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    switch (arg) {
+      case "--help":
+      case "-h":
+        usage();
+      case "--list":
+        args.list = true;
+        break;
+      case "--setup-only":
+        args.setupOnly = true;
+        break;
+      case "--setup":
+        args.setup = true;
+        break;
+      case "--teardown":
+        args.teardown = true;
+        break;
+      case "--teardown-only":
+      case "--stop":
+        args.teardownOnly = true;
+        break;
+      case "--no-setup":
+      case "--skip-setup":
+        args.noSetup = true;
+        break;
+      case "--binary":
+        args.binary = true;
+        break;
+      case "--pds2":
+        args.pds2 = true;
+        break;
+      case "--verbose":
+        args.verbose = true;
+        break;
+      case "--no-json":
+        args.noJson = true;
+        break;
+      case "--keep-running":
+        args.keepRunning = true;
+        break;
+      case "--collect-diagnostics":
+        args.collectDiagnostics = true;
+        break;
+      case "--run-id":
+      case "--diagnostics-dir":
+      case "--reports-dir":
+      case "--timeout": {
+        const value = argv[++i];
+        if (!value) {
+          console.error(`${arg} requires a value`);
+          Deno.exit(2);
+        }
+        if (arg === "--run-id") args.runId = value;
+        if (arg === "--diagnostics-dir") args.diagnosticsDir = value;
+        if (arg === "--reports-dir") args.reportsDir = value;
+        if (arg === "--timeout") {
+          const parsed = Number.parseInt(value, 10);
+          if (!Number.isFinite(parsed) || parsed <= 0) {
+            console.error("--timeout must be a positive integer");
+            Deno.exit(2);
+          }
+          args.timeout = parsed;
+        }
+        break;
+      }
+      default:
+        if (arg.startsWith("-")) {
+          console.error(`Unknown option: ${arg}`);
+          Deno.exit(2);
+        }
+        args.scenarioIds.push(arg);
+    }
+  }
+  return args;
+}
+
+function normalizeScenarioId(value: string): string {
+  const match = value.match(/^(\d+)/);
+  return (match ? match[1] : value).padStart(2, "0");
+}
+
+async function discoverScenarios(scenarioDir: string): Promise<ScenarioInfo[]> {
+  const scenarios: ScenarioInfo[] = [];
+  for await (const entry of Deno.readDir(scenarioDir)) {
+    const match = entry.isFile ? entry.name.match(/^(\d+)_(.+)\.ts$/) : null;
+    if (!match) continue;
+    const id = match[1];
+    scenarios.push({
+      id,
+      name: match[2].replace(/_/g, " "),
+      path: join(scenarioDir, entry.name),
+      needsPds2: NEEDS_PDS2.has(id),
+    });
+  }
+  scenarios.sort((a, b) => Number(a.id) - Number(b.id));
+
+  // Keep the historically expensive resilience scenario late in the run so
+  // any service crash cannot mask unrelated earlier failures.
+  const index = scenarios.findIndex((scenario) => scenario.id === "10");
+  if (index >= 0) {
+    const [scenario10] = scenarios.splice(index, 1);
+    const after36 = scenarios.findIndex((scenario) => Number(scenario.id) > 36);
+    scenarios.splice(after36 >= 0 ? after36 : scenarios.length, 0, scenario10);
+  }
+  return scenarios;
+}
+
+function selectScenarios(all: ScenarioInfo[], args: RunnerArgs): ScenarioInfo[] {
+  if (args.scenarioIds.length === 0) {
+    return all.filter((scenario) => !scenario.needsPds2 || args.pds2);
   }
 
+  const requested = new Set(args.scenarioIds.map(normalizeScenarioId));
+  const selected = all.filter((scenario) => requested.has(scenario.id));
+  if (selected.length !== requested.size) {
+    const found = new Set(selected.map((scenario) => scenario.id));
+    const missing = [...requested].filter((id) => !found.has(id));
+    console.error(red(`No scenarios found matching: ${missing.join(", ")}`));
+    Deno.exit(1);
+  }
+  return selected;
+}
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutSeconds: number,
+  label: string,
+): Promise<T> {
+  let timeoutId: number | undefined;
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timeoutId = setTimeout(
+      () => reject(new Error(`${label} timed out after ${timeoutSeconds}s`)),
+      timeoutSeconds * 1000,
+    );
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
+  }
+}
+
+async function runScenario(
+  scenario: ScenarioInfo,
+  timeoutSeconds: number,
+): Promise<ScenarioResult> {
+  resetCharacters();
+  try {
+    const module = await import(`file://${scenario.path}?run=${Date.now()}`);
+    if (typeof module.run !== "function") {
+      const result = new ScenarioResult(scenario.name);
+      result.start();
+      result.stepFailed(`Scenario ${scenario.id} entry point`, "No run() export defined");
+      result.finish();
+      return result;
+    }
+    const result = await withTimeout<ScenarioResult>(
+      module.run(),
+      timeoutSeconds,
+      `Scenario ${scenario.id}`,
+    );
+    if (!result.startedAt) result.startedAt = Date.now();
+    if (!result.finishedAt) result.finishedAt = Date.now();
+    return result;
+  } catch (exc) {
+    const result = new ScenarioResult(scenario.name);
+    result.start();
+    result.stepFailed(
+      `Scenario ${scenario.id} execution`,
+      exc instanceof Error ? exc.message : String(exc),
+    );
+    result.finish();
+    return result;
+  }
+}
+
+async function main() {
+  const args = parseRunnerArgs(Deno.args);
   const scriptDir = fromFileUrl(new URL(".", import.meta.url));
   const repoRoot = join(scriptDir, "..");
   const scenarioDir = join(scriptDir, "scenarios", "scenarios");
-  const scenarios: { id: string; name: string; path: string }[] = [];
-
-  for await (const entry of Deno.readDir(scenarioDir)) {
-    if (entry.isFile && entry.name.endsWith(".ts")) {
-      const match = entry.name.match(/^(\d+)_(.+)\.ts$/);
-      if (match) {
-        scenarios.push({
-          id: match[1],
-          name: match[2].replace(/_/g, " "),
-          path: join(scenarioDir, entry.name),
-        });
-      }
-    }
-  }
-
-  scenarios.sort((a, b) => a.id.localeCompare(b.id));
+  const scenarios = await discoverScenarios(scenarioDir);
 
   if (args.list) {
-    console.log(bold("\nAvailable Scenarios:"));
-    for (const s of scenarios) {
-      console.log(`  ${brightBlue(s.id)} - ${s.name}`);
+    console.log(bold("\nAvailable Scenarios:\n"));
+    console.log(`  ${"ID".padEnd(4)} ${"PDS2".padEnd(5)} Description`);
+    console.log(`  ${"----"} ${"-----"} ${"-----------"}`);
+    for (const scenario of scenarios) {
+      console.log(
+        `  ${brightBlue(scenario.id).padEnd(13)} ${
+          (scenario.needsPds2 ? "yes" : "").padEnd(5)
+        } ${scenario.name}`,
+      );
     }
     console.log("");
-    Deno.exit(0);
+    return;
   }
 
-  if (args.teardown) {
-    console.log("Tearing down local network...");
-    await stopLocalNetwork();
-    Deno.exit(0);
+  const context = await createRunContext(args.runId, args.diagnosticsDir);
+  const reportsDir = args.reportsDir || context.reportsDir;
+
+  if (args.collectDiagnostics) {
+    await collectDiagnostics(context);
+    console.log(`Diagnostics: ${context.diagnosticsDir}`);
+    return;
   }
 
-  const requestedIds = args._.map(String);
-  const scenariosToRun = requestedIds.length > 0
-    ? scenarios.filter(s => requestedIds.map(id => id.padStart(2, "0")).includes(s.id))
-    : scenarios;
-
-  if (scenariosToRun.length === 0 && requestedIds.length > 0) {
-    console.error(red(`No scenarios found matching: ${requestedIds.join(", ")}`));
-    Deno.exit(1);
+  if (args.teardownOnly) {
+    await stopLocalNetwork({
+      useBinary: args.binary,
+      runId: context.runId,
+      diagnosticsDir: context.diagnosticsDir,
+    });
+    return;
   }
 
-  if (!skipSetup) {
-    console.log("Starting local network...");
-    await startLocalNetwork(args.pds2 || scenariosToRun.some(s => s.id === "05"));
+  const selected = selectScenarios(scenarios, args);
+  const withPds2 = args.pds2 || selected.some((scenario) => scenario.needsPds2);
+  let networkStarted = false;
+
+  const stopIfNeeded = async (collect = false) => {
+    if (!networkStarted || args.keepRunning) return;
+    await stopLocalNetwork({
+      useBinary: args.binary,
+      runId: context.runId,
+      diagnosticsDir: context.diagnosticsDir,
+      collectDiagnostics: collect,
+    });
+    networkStarted = false;
+  };
+
+  if (args.setupOnly) {
+    await startLocalNetwork({
+      withPds2,
+      useBinary: args.binary,
+      keepRunning: args.keepRunning,
+      runId: context.runId,
+      diagnosticsDir: context.diagnosticsDir,
+    });
+    networkStarted = true;
+    console.log(`Run directory: ${context.runDir}`);
+    if (args.keepRunning) return;
+
+    console.log("Network is running. Press Ctrl+C to stop.");
+    await new Promise<void>((resolve) => {
+      Deno.addSignalListener("SIGINT", () => resolve());
+      Deno.addSignalListener("SIGTERM", () => resolve());
+    });
+    await stopIfNeeded(true);
+    return;
   }
 
-  if (args["setup-only"]) {
-    console.log("Network started. Exiting.");
-    Deno.exit(0);
-  }
+  const results: Array<{ scenario: ScenarioInfo; result: ScenarioResult }> = [];
+  const reportPaths: string[] = [];
 
-  console.log(bold(`\nRunning ${scenariosToRun.length} scenario(s)...\n`));
-
-  const results: ScenarioResult[] = [];
-  let allPassed = true;
-
-  const durationCache = new DurationCache(repoRoot);
-  const expectedDurations = scenariosToRun.map(s => durationCache.get(s.id));
-  const pb = new ProgressBar(scenariosToRun.length, expectedDurations);
-
-  for (let i = 0; i < scenariosToRun.length; i++) {
-    const s = scenariosToRun[i];
-    
-    // Clear the progress bar line before printing current task info
-    // but we'll let the progress bar handle its own rendering.
-    pb.start(`${s.id} - ${s.name}`);
-
-    try {
-      const module = await import(`file://${s.path}`);
-      if (typeof module.run === "function") {
-        const result: ScenarioResult = await module.run();
-        
-        // Before printing summary, clear progress bar if needed
-        // but here we just print over it or let it be.
-        // To be clean, we can move to next line.
-        Deno.stdout.writeSync(new TextEncoder().encode("\r" + " ".repeat(100) + "\r")); 
-        
-        console.log(result.summary());
-        results.push(result);
-        if (!result.ok) allPassed = false;
-
-        if (result.startedAt && result.finishedAt) {
-          durationCache.set(s.id, result.finishedAt - result.startedAt);
-        }
-
-        if (args["run-id"]) {
-          try {
-            const reportFile = {
-              scenario: s.name,
-              started_at: result.startedAt ? Math.floor(result.startedAt / 1000) : 0,
-              finished_at: result.finishedAt ? Math.floor(result.finishedAt / 1000) : 0,
-              duration_s: (result.finishedAt && result.startedAt) ? (result.finishedAt - result.startedAt) / 1000 : 0,
-              steps: result.steps.map(step => ({
-                name: step.name,
-                status: step.status,
-                detail: step.detail,
-                duration_ms: step.durationMs,
-              })),
-              summary: {
-                passed: result.passed,
-                failed: result.failed,
-                skipped: result.skipped,
-                total: result.steps.length,
-              },
-              ok: result.ok,
-            };
-            
-            const reportsDir = join(scriptDir, "scenarios", "reports");
-            await Deno.mkdir(reportsDir, { recursive: true });
-            const safeName = s.name.replace(/[^a-zA-Z0-9_]/g, "_");
-            const filename = `${args["run-id"]}-${s.id}_${safeName}.json`;
-            await Deno.writeTextFile(join(reportsDir, filename), JSON.stringify(reportFile, null, 2));
-            console.log(`Saved report to ${filename}`);
-          } catch (e) {
-            console.error("Failed to save JSON report", e);
-          }
-        }
-      } else {
-        Deno.stdout.writeSync(new TextEncoder().encode("\r" + " ".repeat(100) + "\r"));
-        console.error(red(`  ✗ Error: Scenario ${s.id} does not export a run() function.`));
-        allPassed = false;
-      }
-    } catch (e) {
-      Deno.stdout.writeSync(new TextEncoder().encode("\r" + " ".repeat(100) + "\r"));
-      console.error(red(`  ✗ Fatal Error running scenario ${s.id}:`), e);
-      allPassed = false;
+  try {
+    if (!args.noSetup || args.setup) {
+      await startLocalNetwork({
+        withPds2,
+        useBinary: args.binary,
+        runId: context.runId,
+        diagnosticsDir: context.diagnosticsDir,
+      });
+      networkStarted = true;
     }
-    
-    // Write live progress file after each scenario regardless of success/failure
-    if (args["run-id"]) {
-      try {
-        const reportsDir = join(scriptDir, "scenarios", "reports");
-        await Deno.mkdir(reportsDir, { recursive: true });
-        const progress = {
-          runId: args["run-id"],
-          total: scenariosToRun.length,
-          completed: i + 1,
-          currentScenario: s.name,
-          currentScenarioId: s.id,
-          elapsedMs: pb.getElapsedMs(),
-          updatedAt: Date.now(),
-          running: true,
-        };
-        const progressPath = join(reportsDir, `${args["run-id"]}-progress.json`);
-        await Deno.writeTextFile(progressPath, JSON.stringify(progress));
-      } catch (e) {
-        console.error("Failed to write progress file", e);
+
+    console.log(bold(`\nRunning ${selected.length} scenario(s)...\n`));
+    const durationCache = new DurationCache(repoRoot);
+    const expectedDurations = selected.map((scenario) => durationCache.get(scenario.id));
+    const progress = new ProgressBar(selected.length, expectedDurations);
+
+    for (let i = 0; i < selected.length; i++) {
+      const scenario = selected[i];
+      progress.start(`${scenario.id} - ${scenario.name}`);
+      const result = await runScenario(scenario, args.timeout);
+      result.metadata = {
+        ...result.metadata,
+        run_id: context.runId,
+        run_dir: context.runDir,
+        diagnostics_dir: context.diagnosticsDir,
+        service_urls: SERVICE_URLS,
+        scenario_id: scenario.id,
+        binary_mode: args.binary,
+        pds2: withPds2,
+      };
+
+      Deno.stdout.writeSync(new TextEncoder().encode("\r" + " ".repeat(120) + "\r"));
+      result.printSummary();
+      results.push({ scenario, result });
+
+      if (result.startedAt && result.finishedAt) {
+        durationCache.set(scenario.id, result.finishedAt - result.startedAt);
       }
+
+      if (!args.noJson) {
+        const reportPath = await result.writeReport(reportsDir, `${scenario.id}_${scenario.name}`);
+        reportPaths.push(reportPath);
+        console.log(`  Report: ${reportPath}`);
+      }
+
+      progress.update(i + 1);
     }
-    
-    pb.update(i + 1);
+    progress.finish();
+  } finally {
+    const shouldCollect = results.some(({ result }) => result.failed > 0);
+    if (shouldCollect) {
+      await collectDiagnostics(context);
+      console.log(`Diagnostics: ${context.diagnosticsDir}`);
+    }
+    if (args.teardown || (!args.noSetup && !args.keepRunning)) {
+      await stopIfNeeded(false);
+    }
   }
 
-  pb.finish();
+  const totalPassed = results.reduce((sum, item) => sum + item.result.passed, 0);
+  const totalFailed = results.reduce((sum, item) => sum + item.result.failed, 0);
+  const totalSkipped = results.reduce((sum, item) => sum + item.result.skipped, 0);
 
-  console.log(bold("\nFinal Summary:"));
-  const passedCount = results.filter(r => r.ok).length;
-  const failedCount = results.filter(r => !r.ok).length;
+  console.log(bold("\nOverall Results"));
+  for (const { scenario, result } of results) {
+    const marker = result.ok ? green("PASS") : red("FAIL");
+    console.log(
+      `  ${marker} ${scenario.id} ${result.scenarioName} (${result.passed}/${result.total} passed, ${result.skipped} skipped)`,
+    );
+  }
+  console.log(
+    `  Total: ${green(`${totalPassed} passed`)}, ${
+      totalFailed > 0 ? red(`${totalFailed} failed`) : "0 failed"
+    }, ${yellow(`${totalSkipped} skipped`)}`,
+  );
 
-  console.log(`  ${green(`${passedCount} Passed`)}`);
-  if (failedCount > 0) {
-    console.log(`  ${red(`${failedCount} Failed`)}`);
+  if (!args.noJson) {
+    await Deno.mkdir(reportsDir, { recursive: true });
+    await Deno.writeTextFile(
+      join(reportsDir, "overall-summary.json"),
+      JSON.stringify(
+        {
+          run_id: context.runId,
+          run_dir: context.runDir,
+          diagnostics_dir: context.diagnosticsDir,
+          reports_dir: reportsDir,
+          scenario_ids: selected.map((scenario) => scenario.id),
+          binary_mode: args.binary,
+          pds2: withPds2,
+          report_paths: reportPaths,
+          summary: {
+            passed: totalPassed,
+            failed: totalFailed,
+            skipped: totalSkipped,
+          },
+          ok: totalFailed === 0,
+        },
+        null,
+        2,
+      ) + "\n",
+    );
   }
 
-  if (!allPassed) {
-    Deno.exit(1);
-  }
+  if (totalFailed > 0) Deno.exit(1);
 }
 
 if (import.meta.main) {
-  main();
+  await main();
 }
-

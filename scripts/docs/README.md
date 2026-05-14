@@ -1,6 +1,6 @@
 # Documentation Tooling
 
-This directory contains Node.js-based tooling for managing, validating, and maintaining the Garazyk documentation ecosystem.
+This directory contains documentation tooling for managing, validating, and maintaining the Garazyk documentation ecosystem. Legacy migration helpers still use Node.js; active repo-wide registry, link, and coverage checks use Deno/TypeScript.
 
 ## Setup
 
@@ -101,20 +101,20 @@ Manages outdated documentation archival.
 npm run archive
 ```
 
-### Repo-Wide Registry and Validation (`repo_docs.py`)
+### Repo-Wide Registry and Validation (`repo_docs.ts`)
 
 Generates canonical metadata and enforces strict internal link/discoverability checks across repository markdown.
 
 **Usage:**
 ```bash
 # Generate registry, link graph, orphan report, and index/backlink pages
-python3 scripts/docs/repo_docs.py sync
+deno run -A scripts/docs/repo_docs.ts sync
 
 # Blocking validation modes
-python3 scripts/docs/repo_docs.py validate --internal-strict --orphans
+deno run -A scripts/docs/repo_docs.ts validate --internal-strict --orphans
 
 # Non-blocking scheduled external link report
-python3 scripts/docs/repo_docs.py validate --external-report
+deno run -A scripts/docs/repo_docs.ts validate --external-report
 ```
 
 ## Development
@@ -135,6 +135,7 @@ npm test
 ## Requirements
 
 - Node.js >= 18.0.0
+- Deno >= 2.0.0
 - Git (for migration tool)
 
 ## Documentation

@@ -9,7 +9,7 @@ export class AdminClient {
 
   async updateSubjectStatus(
     subject: Record<string, any>,
-    options: { takedown?: Record<string, any>; token?: string } = {}
+    options: { takedown?: Record<string, any>; token?: string } = {},
   ) {
     const body: Record<string, any> = { subject };
     if (options.takedown) body.takedown = options.takedown;
@@ -20,17 +20,17 @@ export class AdminClient {
     reasonType: string,
     subject: Record<string, any>,
     reason: string,
-    token: string
+    token: string,
   ) {
     return await this.transport.post(
       "com.atproto.moderation.createReport",
       { reasonType, subject, reason },
-      token
+      token,
     );
   }
 
   async getLabels(uris: string[], token?: string) {
-    // Porting the special repeated-param logic from Python transport.py
+    // Preserve repeated URI parameters for this legacy XRPC shape.
     const params: Record<string, any> = { "uris[]": uris };
     return await this.transport.get("com.atproto.label.getLabels", params, token);
   }

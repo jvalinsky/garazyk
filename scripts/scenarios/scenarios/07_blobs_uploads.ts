@@ -1,5 +1,5 @@
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
-import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 
 function now() {
@@ -10,11 +10,12 @@ function makePng(width = 100, height = 100): Uint8Array {
   // Simple 1x1 base64 transparent PNG, we can just use a dummy binary payload for tests
   // since the PDS just checks mime type and magic bytes (sometimes).
   // A tiny valid PNG:
-  const b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+  const b64 =
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
   const raw = atob(b64);
   const u8 = new Uint8Array(raw.length);
   for (let i = 0; i < raw.length; i++) u8[i] = raw.charCodeAt(i);
-  
+
   // Pad it out to be somewhat unique/larger if needed
   const out = new Uint8Array(u8.length + width * height);
   out.set(u8);
@@ -28,11 +29,12 @@ export async function run(): Promise<ScenarioResult> {
   const client = new XrpcClient(PDS1);
 
   await timedCall(
-    result, "Server health check",
+    result,
+    "Server health check",
     async () => {
       const res = await fetch(`${PDS1}/xrpc/com.atproto.server.describeServer`);
       if (!res.ok) throw new Error("Server not healthy");
-    }
+    },
   );
 
   if (result.failed > 0) {
@@ -44,20 +46,28 @@ export async function run(): Promise<ScenarioResult> {
   for (const name of charNames) {
     const char = getCharacter(name);
     const session = await timedCall(
-      result, `Create account: ${char.name}`,
+      result,
+      `Create account: ${char.name}`,
       async () => {
         try {
-          const res = await client.agent.createAccount({ handle: char.handle, email: char.email, password: char.password });
+          const res = await client.agent.createAccount({
+            handle: char.handle,
+            email: char.email,
+            password: char.password,
+          });
           return res.data;
         } catch (e: any) {
           if (e.message && e.message.includes("already exists")) {
-            const res = await client.agent.login({ identifier: char.handle, password: char.password });
+            const res = await client.agent.login({
+              identifier: char.handle,
+              password: char.password,
+            });
             return res.data;
           }
           throw e;
         }
       },
-      (s) => `did=${s.did}`
+      (s) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -78,18 +88,25 @@ export async function run(): Promise<ScenarioResult> {
 
   const pngData = makePng(200, 200);
   const rosaBlobResp = await timedCall(
-    result, "Rosa uploads food photo",
+    result,
+    "Rosa uploads food photo",
     async () => {
-      return await client.raw.postBinary("com.atproto.repo.uploadBlob", pngData, "image/png", rosa.accessJwt);
+      return await client.raw.postBinary(
+        "com.atproto.repo.uploadBlob",
+        pngData,
+        "image/png",
+        rosa.accessJwt,
+      );
     },
-    (r) => `size=${r.blob?.size || 'unknown'}`
+    (r) => `size=${r.blob?.size || "unknown"}`,
   );
-  
+
   const rosaBlob = rosaBlobResp?.blob;
 
   if (rosaBlob) {
     await timedCall(
-      result, "Rosa posts with image embed",
+      result,
+      "Rosa posts with image embed",
       async () => {
         await client.raw.post("com.atproto.repo.createRecord", {
           repo: rosa.did,
@@ -100,24 +117,30 @@ export async function run(): Promise<ScenarioResult> {
             createdAt: now(),
             embed: {
               $type: "app.bsky.embed.images",
-              images: [{ alt: "Fresh sourdough bread", image: rosaBlob }]
-            }
-          }
+              images: [{ alt: "Fresh sourdough bread", image: rosaBlob }],
+            },
+          },
         }, rosa.accessJwt);
-      }
+      },
     );
   } else {
     result.stepSkipped("Rosa posts with image embed", "No blob available");
   }
 
-  const voltBlobs = [];
+  const voltBlobs: Array<Record<string, unknown>> = [];
   for (let i = 0; i < 4; i++) {
     const data = makePng(100 + i * 10, 100 + i * 10);
     const blobResp = await timedCall(
-      result, `DJ Volt uploads image ${i + 1}`,
+      result,
+      `DJ Volt uploads image ${i + 1}`,
       async () => {
-        return await client.raw.postBinary("com.atproto.repo.uploadBlob", data, "image/png", volt.accessJwt);
-      }
+        return await client.raw.postBinary(
+          "com.atproto.repo.uploadBlob",
+          data,
+          "image/png",
+          volt.accessJwt,
+        );
+      },
     );
     if (blobResp?.blob) {
       voltBlobs.push(blobResp.blob);
@@ -126,7 +149,8 @@ export async function run(): Promise<ScenarioResult> {
 
   if (voltBlobs.length >= 4) {
     await timedCall(
-      result, "DJ Volt posts 4-image album",
+      result,
+      "DJ Volt posts 4-image album",
       async () => {
         await client.raw.post("com.atproto.repo.createRecord", {
           repo: volt.did,
@@ -137,11 +161,14 @@ export async function run(): Promise<ScenarioResult> {
             createdAt: now(),
             embed: {
               $type: "app.bsky.embed.images",
-              images: voltBlobs.slice(0, 4).map((b, i) => ({ alt: `Album concept ${i + 1}`, image: b }))
-            }
-          }
+              images: voltBlobs.slice(0, 4).map((b, i) => ({
+                alt: `Album concept ${i + 1}`,
+                image: b,
+              })),
+            },
+          },
         }, volt.accessJwt);
-      }
+      },
     );
   } else {
     result.stepSkipped("DJ Volt posts 4-image album", "Not enough blobs uploaded");
@@ -149,16 +176,23 @@ export async function run(): Promise<ScenarioResult> {
 
   const bannerData = makePng(600, 200);
   const bannerBlobResp = await timedCall(
-    result, "Luna uploads banner image",
+    result,
+    "Luna uploads banner image",
     async () => {
-      return await client.raw.postBinary("com.atproto.repo.uploadBlob", bannerData, "image/png", luna.accessJwt);
-    }
+      return await client.raw.postBinary(
+        "com.atproto.repo.uploadBlob",
+        bannerData,
+        "image/png",
+        luna.accessJwt,
+      );
+    },
   );
   const bannerBlob = bannerBlobResp?.blob;
 
   if (bannerBlob) {
     await timedCall(
-      result, "Luna sets profile banner",
+      result,
+      "Luna sets profile banner",
       async () => {
         await client.raw.post("com.atproto.repo.createRecord", {
           repo: luna.did,
@@ -167,10 +201,10 @@ export async function run(): Promise<ScenarioResult> {
             $type: "app.bsky.actor.profile",
             displayName: "Luna Starfield",
             description: "Astronomy enthusiast. Looking up, always.",
-            banner: bannerBlob
-          }
+            banner: bannerBlob,
+          },
         }, luna.accessJwt);
-      }
+      },
     );
   }
 
@@ -196,10 +230,16 @@ export async function run(): Promise<ScenarioResult> {
 
   const largeData = new Uint8Array(2 * 1024 * 1024); // 2MB
   await timedCall(
-    result, "Oversized blob upload",
+    result,
+    "Oversized blob upload",
     async () => {
       try {
-        await client.raw.postBinary("com.atproto.repo.uploadBlob", largeData, "application/octet-stream", marcus.accessJwt);
+        await client.raw.postBinary(
+          "com.atproto.repo.uploadBlob",
+          largeData,
+          "application/octet-stream",
+          marcus.accessJwt,
+        );
       } catch (e) {
         if (e instanceof XrpcError && e.status === 400 && e.body?.error === "BlobTooLarge") {
           return e.body;
@@ -208,19 +248,20 @@ export async function run(): Promise<ScenarioResult> {
       }
       throw new Error("Expected BlobTooLarge response");
     },
-    (body) => `error=${body.error}`
+    (body) => `error=${body.error}`,
   );
 
   if (rosaBlob) {
     await timedCall(
-      result, "Records contain blob refs",
+      result,
+      "Records contain blob refs",
       async () => {
         return await client.raw.get("com.atproto.repo.listRecords", {
           repo: rosa.did,
-          collection: "app.bsky.feed.post"
+          collection: "app.bsky.feed.post",
         }, rosa.accessJwt);
       },
-      (r) => `posts_with_embed=${(r.records || []).some((rec: any) => rec.value?.embed)}`
+      (r) => `posts_with_embed=${(r.records || []).some((rec: any) => rec.value?.embed)}`,
     );
   }
 
@@ -229,7 +270,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

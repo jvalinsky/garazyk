@@ -9,10 +9,10 @@ Scenario-based simulation scripts that exercise all four ATProto services (PDS, 
 ./scripts/scenarios/setup_local_network.sh
 
 # 2. Run all scenarios
-python scripts/scenarios/run_scenario.py
+./scripts/run_scenarios.ts --no-setup
 
 # 3. Run a specific scenario
-python scripts/scenarios/run_scenario.py 01
+./scripts/run_scenarios.ts --no-setup 01
 
 # 4. Stop the network when done
 ./scripts/scenarios/teardown_local_network.sh
@@ -21,11 +21,10 @@ python scripts/scenarios/run_scenario.py 01
 ## Prerequisites
 
 - **Docker + Docker Compose** — for running the local-network services
-- **Python 3.10+** — for scenario scripts
-- **pip packages**: `requests` (required), `websockets` (optional, for firehose scenarios)
+- **Deno 2+** — for scenario scripts
 
 ```bash
-pip install requests websockets
+deno --version
 ```
 
 ## Characters
@@ -43,14 +42,16 @@ pip install requests websockets
 | Admin Sentinel | `admin.test` | Admin | Server administrator |
 | Mod Justice | `mod.test` | Moderator | Ozone moderator |
 
-### PDS 2: "The Other Side" (localhost:2585) — federation scenarios only
+### PDS 2: "The Other Side" (localhost:2587) — federation scenarios only
 
 | Character | Handle | Role | Persona |
 |---|---|---|---|
 | Nova Bright | `nova.second.test` | User | Cross-PDS user |
 | Rex Storm | `rex.second.test` | User | Cross-PDS troll |
 
-## Scenarios
+## Core Scenarios
+
+Use `./scripts/run_scenarios.ts --list` for the complete auto-discovered scenario set.
 
 | ID | Name | Description | Services | PDS2? |
 |---|---|---|---|---|
@@ -107,28 +108,28 @@ pip install requests websockets
 
 ```bash
 # Run all scenarios (excludes PDS2 scenarios unless --pds2 is set)
-python scripts/scenarios/run_scenario.py
+./scripts/run_scenarios.ts --no-setup
 
 # Run specific scenarios
-python scripts/scenarios/run_scenario.py 01 03 05
+./scripts/run_scenarios.ts --no-setup 01 03 05
 
 # With second PDS (needed for scenario 05)
-python scripts/scenarios/run_scenario.py --pds2
+./scripts/run_scenarios.ts --pds2
 
 # List available scenarios
-python scripts/scenarios/run_scenario.py --list
+./scripts/run_scenarios.ts --list
 
 # Start network, run scenarios, collect failure diagnostics, then tear down
-python scripts/scenarios/run_scenario.py --setup --teardown
+./scripts/run_scenarios.ts --setup --teardown
 
 # Keep services running after setup for manual inspection
-python scripts/scenarios/run_scenario.py --setup-only --keep-running --run-id local-debug
+./scripts/run_scenarios.ts --setup-only --keep-running --run-id local-debug
 
 # Verbose output
-python scripts/scenarios/run_scenario.py --verbose
+./scripts/run_scenarios.ts --verbose
 
 # Don't write JSON reports
-python scripts/scenarios/run_scenario.py --no-json
+./scripts/run_scenarios.ts --no-json
 ```
 
 ### Stop the Network
@@ -209,117 +210,63 @@ Every supported runner writes diagnostics under
 - `service-logs/*.log` and `pids.txt` for local binary runs
 
 Use `--collect-diagnostics` on `setup_local_network.sh`,
-`teardown_local_network.sh`, `run_scenario.py`, `full_suite_demo.sh`, or
+`teardown_local_network.sh`, `run_scenarios.ts`, `full_suite_demo.sh`, or
 the e2e wrappers to capture the current state without rerunning tests.
 
 ## Architecture
 
 ```
-scripts/scenarios/
-├── README.md                          # This file
-├── lib/                               # Shared Python library
-│   ├── __init__.py
-│   ├── client.py                      # XRPC/HTTP client with auth, retry, logging
-│   ├── characters.py                  # Character definitions
-│   ├── docker.py                      # Docker compose helpers
-│   ├── assertions.py                  # Test assertion helpers
-│   ├── firehose.py                    # WebSocket firehose subscriber
-│   └── report.py                      # Scenario result reporting
-├── scenarios/
-│   ├── __init__.py
-│   ├── 01_account_lifecycle.py
-│   ├── 02_social_graph.py
-│   ├── 03_content_creation.py
-│   ├── 04_moderation_safety.py
-│   ├── 05_federation.py
-│   ├── 06_chat_dms.py
-│   ├── 07_blobs_uploads.py
-│   ├── 08_oauth_sessions.py
-│   ├── 09_firehose_streaming.py
-│   ├── 10_performance_resilience.py
-│   ├── 11_lab_oauth_login.py
-│   ├── 12_account_migration.py
-│   ├── 13_oauth_client_e2e.py
-│   ├── 14_drafts_bookmarks.py
-│   ├── 15_mutes_relationships_starterpacks.py
-│   ├── 16_notification_management.py
-│   ├── 17_actor_preferences_discovery.py
-│   ├── 18_admin_operations.py
-│   ├── 19_contact_age_assurance.py
-│   ├── 20_unspecced_search.py
-│   ├── 21_appview_lexicon_endpoints.py
-│   ├── 22_appview_hooks.py
-│   ├── 23_appview_write_proxy.py
-│   ├── 24_concurrent_write_throughput.py
-│   ├── 25_firehose_fanout_scale.py
-│   ├── 26_appview_ingest_load.py
-│   └── 27_fullstack_soak.py
-├── reports/                           # JSON report output (gitignored)
-├── run_scenario.py                    # Scenario runner
-├── setup_local_network.sh             # Start Docker services
-└── teardown_local_network.sh          # Stop Docker services
+scripts/
+├── run_scenarios.ts                    # Scenario runner
+├── lib/deno/                           # Shared TypeScript scenario helpers
+│   ├── client.ts                       # XRPC/HTTP client with auth, retry, logging
+│   ├── config.ts                       # Service URLs and character fixtures
+│   ├── runner.ts                       # Scenario result reporting
+│   ├── docker.ts                       # Local-network process boundary
+│   └── ...
+└── scenarios/
+    ├── README.md
+    ├── setup_local_network.sh          # Start Docker/binary services
+    ├── teardown_local_network.sh       # Stop services
+    └── scenarios/
+        ├── 01_account_lifecycle.ts
+        ├── 02_social_graph.ts
+        └── ...
 ```
 
 ## Adding a New Scenario
 
-1. Create `scenarios/NN_name.py` with a `run()` function that returns a `ScenarioResult`
-2. Import the shared library: `from lib.client import XrpcClient`, `from lib.characters import get_character`, etc.
-3. Register it in `run_scenario.py`'s `SCENARIO_REGISTRY`
-4. Add characters to `lib/characters.py` if needed
-5. Add any new XRPC helpers to `lib/client.py`
+1. Create `scripts/scenarios/scenarios/NN_name.ts` with a `run()` function that returns a `ScenarioResult`.
+2. Import shared helpers from `../../lib/deno/`.
+3. Use the `NN_` filename prefix; discovery is automatic.
+4. Add characters to `scripts/lib/deno/config.ts` if needed.
+5. Add any new XRPC helpers under `scripts/lib/deno/clients/`.
 
 ### Template
 
-```python
-"""Scenario NN: "Name" — Description
+```ts
+import { XrpcClient } from "../../lib/deno/client.ts";
+import { PDS1 } from "../../lib/deno/config.ts";
+import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 
-What happens and what we're testing.
+export async function run(): Promise<ScenarioResult> {
+  const result = new ScenarioResult("Scenario Name");
+  result.start();
+  const client = new XrpcClient(PDS1);
 
-Services: PDS, AppView
-"""
+  await timedCall(result, "Server health check", async () => {
+    await client.waitForHealthy(30);
+  });
 
-from __future__ import annotations
-import sys
-import time
-from pathlib import Path
+  result.finish();
+  return result;
+}
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from lib.client import XrpcClient, XrpcError
-from lib.characters import get_character, PDS1
-from lib.assertions import assert_success, assert_contains
-from lib.report import ScenarioResult, StepStatus
-
-
-def _now() -> str:
-    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-
-
-def run() -> ScenarioResult:
-    result = ScenarioResult("Scenario Name")
-    result.start()
-
-    client = XrpcClient(PDS1)
-
-    # Wait for server
-    try:
-        client.wait_for_healthy(timeout=30)
-        result.step_passed("Server health check")
-    except RuntimeError as exc:
-        result.step_failed("Server health check", str(exc))
-        result.finish()
-        return result
-
-    # ... your scenario steps ...
-
-    result.finish()
-    return result
-
-
-if __name__ == "__main__":
-    result = run()
-    result.print_summary()
-    sys.exit(result.exit_code)
+if (import.meta.main) {
+  const result = await run();
+  result.printSummary();
+  Deno.exit(result.ok ? 0 : 1);
+}
 ```
 
 ## Endpoint Coverage

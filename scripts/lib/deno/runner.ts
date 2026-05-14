@@ -1,4 +1,5 @@
 import { green, red, yellow } from "@std/fmt/colors";
+import { join } from "@std/path";
 
 export enum StepStatus {
   PASSED = "passed",
@@ -11,7 +12,7 @@ export class StepResult {
     public name: string,
     public status: StepStatus,
     public detail: string = "",
-    public durationMs: number = 0
+    public durationMs: number = 0,
   ) {}
 }
 
@@ -20,6 +21,7 @@ export class ScenarioResult {
   public startedAt: number | null = null;
   public finishedAt: number | null = null;
   public artifacts: Record<string, any> = {};
+  public metadata: Record<string, any> = {};
 
   constructor(public scenarioName: string) {}
 
@@ -53,39 +55,99 @@ export class ScenarioResult {
     this.artifacts[name] = data;
   }
 
-  get passed() { return this.steps.filter(s => s.status === StepStatus.PASSED).length; }
-  get failed() { return this.steps.filter(s => s.status === StepStatus.FAILED).length; }
-  get skipped() { return this.steps.filter(s => s.status === StepStatus.SKIPPED).length; }
-  get ok() { return this.steps.length > 0 && this.failed === 0; }
+  get passed() {
+    return this.steps.filter((s) => s.status === StepStatus.PASSED).length;
+  }
+  get failed() {
+    return this.steps.filter((s) => s.status === StepStatus.FAILED).length;
+  }
+  get skipped() {
+    return this.steps.filter((s) => s.status === StepStatus.SKIPPED).length;
+  }
+  get total() {
+    return this.steps.length;
+  }
+  get ok() {
+    return this.steps.length > 0 && this.failed === 0;
+  }
 
   summary(): string {
     const lines: string[] = [];
-    lines.push(`\n${'='.repeat(60)}`);
+    lines.push(`\n${"=".repeat(60)}`);
     lines.push(`  Scenario: ${this.scenarioName}`);
-    lines.push(`${'='.repeat(60)}`);
+    lines.push(`${"=".repeat(60)}`);
 
     for (const step of this.steps) {
       let icon = "❓";
       let colorFn = (s: string) => s;
-      if (step.status === StepStatus.PASSED) { icon = "✓"; colorFn = green; }
-      if (step.status === StepStatus.FAILED) { icon = "✗"; colorFn = red; }
-      if (step.status === StepStatus.SKIPPED) { icon = "⚠"; colorFn = yellow; }
+      if (step.status === StepStatus.PASSED) {
+        icon = "✓";
+        colorFn = green;
+      }
+      if (step.status === StepStatus.FAILED) {
+        icon = "✗";
+        colorFn = red;
+      }
+      if (step.status === StepStatus.SKIPPED) {
+        icon = "⚠";
+        colorFn = yellow;
+      }
 
       const detailStr = step.detail ? ` — ${step.detail}` : "";
       lines.push(`  ${colorFn(icon)} ${step.name}${detailStr}`);
     }
 
-    lines.push(`${'-'.repeat(60)}`);
+    lines.push(`${"-".repeat(60)}`);
     const pStr = green(`${this.passed} passed`);
     const fStr = this.failed > 0 ? red(`, ${this.failed} failed`) : "";
     const sStr = this.skipped > 0 ? yellow(`, ${this.skipped} skipped`) : "";
-    
+
     lines.push(`  ${pStr}${fStr}${sStr}`);
     if (this.startedAt && this.finishedAt) {
       lines.push(`  Time: ${((this.finishedAt - this.startedAt) / 1000).toFixed(2)}s`);
     }
-    lines.push(`${'='.repeat(60)}\n`);
+    lines.push(`${"=".repeat(60)}\n`);
     return lines.join("\n");
+  }
+
+  printSummary() {
+    console.log(this.summary());
+  }
+
+  toReport() {
+    const startedAt = this.startedAt ?? Date.now();
+    const finishedAt = this.finishedAt ?? startedAt;
+    return {
+      scenario: this.scenarioName,
+      started_at: Math.floor(startedAt / 1000),
+      finished_at: Math.floor(finishedAt / 1000),
+      duration_s: (finishedAt - startedAt) / 1000,
+      steps: this.steps.map((step) => ({
+        name: step.name,
+        status: step.status,
+        detail: step.detail,
+        duration_ms: step.durationMs,
+      })),
+      summary: {
+        passed: this.passed,
+        failed: this.failed,
+        skipped: this.skipped,
+        total: this.total,
+      },
+      ok: this.ok,
+      artifacts: this.artifacts,
+      metadata: this.metadata,
+    };
+  }
+
+  async writeReport(reportsDir: string, filename?: string): Promise<string> {
+    await Deno.mkdir(reportsDir, { recursive: true });
+    const safeName = (filename ?? this.scenarioName)
+      .replace(/[^A-Za-z0-9_.-]+/g, "_")
+      .replace(/^_+|_+$/g, "");
+    const reportPath = join(reportsDir, `${safeName || "scenario"}.json`);
+    await Deno.writeTextFile(reportPath, JSON.stringify(this.toReport(), null, 2) + "\n");
+    return reportPath;
   }
 }
 
@@ -94,7 +156,7 @@ export async function timedCall<T>(
   name: string,
   fn: () => Promise<T> | T,
   detailFn?: (res: T) => string,
-  expectFailure = false
+  expectFailure = false,
 ): Promise<T | null> {
   const start = performance.now();
   try {

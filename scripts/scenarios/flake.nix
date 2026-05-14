@@ -1,5 +1,5 @@
 {
-  description = "ATProto scenario runner — Python environment for end-to-end testing";
+  description = "ATProto scenario runner — Deno environment for end-to-end testing";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -11,20 +11,12 @@
       let
         pkgs = import nixpkgs { inherit system; };
 
-        pythonEnv = pkgs.python3.withPackages (ps: with ps; [
-          requests
-          websockets
-          cbor2
-          playwright
-          psutil
-        ]);
-
       in {
         devShells.default = pkgs.mkShell {
           name = "garazyk-scenarios";
 
           nativeBuildInputs = [
-            pythonEnv
+            pkgs.deno
             pkgs.docker-client
             pkgs.docker-compose
             pkgs.jq
@@ -32,14 +24,14 @@
 
           shellHook = ''
             echo "=== Garazyk ATProto Scenario Runner ==="
-            echo "  python:  $(python3 --version)"
+            echo "  deno:    $(deno --version | head -1)"
             echo "  docker:  $(docker --version 2>/dev/null | head -1 || echo 'not found')"
             echo ""
             echo "Usage:"
-            echo "  python run_scenario.py --list           # List scenarios"
-            echo "  python run_scenario.py --setup          # Start local network"
-            echo "  python run_scenario.py 01 04 10         # Run specific scenarios"
-            echo "  python run_scenario.py --setup --teardown  # Full run"
+            echo "  ../run_scenarios.ts --list              # List scenarios"
+            echo "  ../run_scenarios.ts --setup-only        # Start local network"
+            echo "  ../run_scenarios.ts 01 04 10            # Run specific scenarios"
+            echo "  ../run_scenarios.ts --setup --teardown  # Full run"
           '';
         };
       }

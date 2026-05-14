@@ -16,15 +16,75 @@ function now() {
 
 // Minimal 1×1 PNG for blob test.
 const TINY_PNG = new Uint8Array([
-  0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A,
-  0x00,0x00,0x00,0x0D,0x49,0x48,0x44,0x52,
-  0x00,0x00,0x00,0x01,0x00,0x00,0x00,0x01,
-  0x08,0x02,0x00,0x00,0x00,0x90,0x77,0x53,
-  0xDE,0x00,0x00,0x00,0x0C,0x49,0x44,0x41,
-  0x54,0x08,0xD7,0x63,0xF8,0xCF,0xC0,0x00,
-  0x00,0x00,0x02,0x00,0x01,0xE2,0x21,0xBC,
-  0x33,0x00,0x00,0x00,0x00,0x49,0x45,0x4E,
-  0x44,0xAE,0x42,0x60,0x82,
+  0x89,
+  0x50,
+  0x4E,
+  0x47,
+  0x0D,
+  0x0A,
+  0x1A,
+  0x0A,
+  0x00,
+  0x00,
+  0x00,
+  0x0D,
+  0x49,
+  0x48,
+  0x44,
+  0x52,
+  0x00,
+  0x00,
+  0x00,
+  0x01,
+  0x00,
+  0x00,
+  0x00,
+  0x01,
+  0x08,
+  0x02,
+  0x00,
+  0x00,
+  0x00,
+  0x90,
+  0x77,
+  0x53,
+  0xDE,
+  0x00,
+  0x00,
+  0x00,
+  0x0C,
+  0x49,
+  0x44,
+  0x41,
+  0x54,
+  0x08,
+  0xD7,
+  0x63,
+  0xF8,
+  0xCF,
+  0xC0,
+  0x00,
+  0x00,
+  0x00,
+  0x02,
+  0x00,
+  0x01,
+  0xE2,
+  0x21,
+  0xBC,
+  0x33,
+  0x00,
+  0x00,
+  0x00,
+  0x00,
+  0x49,
+  0x45,
+  0x4E,
+  0x44,
+  0xAE,
+  0x42,
+  0x60,
+  0x82,
 ]);
 
 export async function run(): Promise<ScenarioResult> {
@@ -36,12 +96,9 @@ export async function run(): Promise<ScenarioResult> {
   // "ghost" is not in config.ts BASE_CHARACTERS — create an ephemeral account inline
   // so this scenario is self-contained and always cleans up after itself.
   const suffix = Date.now();
-  const ghostHandle   = `ghost-${suffix}.test`;
-  const ghostEmail    = `ghost-${suffix}@test.com`;
+  const ghostHandle = `ghost-${suffix}.test`;
+  const ghostEmail = `ghost-${suffix}@test.com`;
   const ghostPassword = "ghost_pass_123";
-  let ghostDid: string | null = null;
-  let ghostAccessJwt: string | null = null;
-
   await timedCall(result, "PDS health check", async () => {
     await pds.waitForHealthy(30);
   });
@@ -52,7 +109,8 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   const session = await timedCall(
-    result, "Create ghost account",
+    result,
+    "Create ghost account",
     async () => {
       try {
         return await pds.accounts.createAccount(ghostHandle, ghostEmail, ghostPassword);
@@ -60,16 +118,16 @@ export async function run(): Promise<ScenarioResult> {
         return await pds.accounts.createSession(ghostHandle, ghostPassword);
       }
     },
-    (s) => `did=${s.did}`
+    (s) => `did=${s.did}`,
   );
 
-  if (session) {
-    ghostDid      = session.did;
-    ghostAccessJwt = session.accessJwt;
-  } else {
+  if (!session) {
     result.finish();
     return result;
   }
+
+  const ghostDid = session.did;
+  const ghostAccessJwt = session.accessJwt;
 
   // Seed records before deleting.
   await timedCall(result, "Ghost creates profile + post", async () => {
@@ -88,12 +146,12 @@ export async function run(): Promise<ScenarioResult> {
 
   // Upload a blob so we can verify it becomes inaccessible after account deletion.
   const blobResult = await timedCall(
-    result, "Ghost uploads a blob",
+    result,
+    "Ghost uploads a blob",
     async () => pds.blobs.uploadBlob(TINY_PNG, "image/png", ghostAccessJwt!),
-    (r) => `cid=${(r as any)?.blob?.$link ?? (r as any)?.blob?.ref?.$link ?? "present"}`
+    (r) => `cid=${(r as any)?.blob?.$link ?? (r as any)?.blob?.ref?.$link ?? "present"}`,
   );
-  const blobCid: string | null =
-    (blobResult as any)?.blob?.$link ??
+  const blobCid: string | null = (blobResult as any)?.blob?.$link ??
     (blobResult as any)?.blob?.ref?.$link ??
     null;
 
@@ -101,13 +159,14 @@ export async function run(): Promise<ScenarioResult> {
   // com.atproto.server.deleteAccount requires {did, password} in the body.
   // No Authorization header needed — the password is the credential (XrpcServerMethods.m:1291).
   await timedCall(
-    result, "Hard-delete ghost account",
+    result,
+    "Hard-delete ghost account",
     async () => {
       await pds.raw.post("com.atproto.server.deleteAccount", {
         did: ghostDid,
         password: ghostPassword,
       });
-    }
+    },
   );
 
   if (result.failed > 0) {
@@ -119,7 +178,8 @@ export async function run(): Promise<ScenarioResult> {
   // --- Records gone ---
   // listRecords on a deleted account must be rejected (404 or 400/AccountNotFound).
   await timedCall(
-    result, "Records gone after delete",
+    result,
+    "Records gone after delete",
     async () => {
       await pds.raw.get("com.atproto.repo.listRecords", {
         repo: ghostDid,
@@ -127,44 +187,47 @@ export async function run(): Promise<ScenarioResult> {
       });
     },
     undefined,
-    true  // must throw
+    true, // must throw
   );
 
   // --- Repo CAR gone ---
   // getRepo must return 404 or 400 for the deleted DID.
   await timedCall(
-    result, "Repo CAR inaccessible after delete",
+    result,
+    "Repo CAR inaccessible after delete",
     async () => {
       await pds.raw.xrpcGetBinary("com.atproto.sync.getRepo", {
         params: { did: ghostDid },
       });
     },
     undefined,
-    true  // must throw
+    true, // must throw
   );
 
   // --- Sessions revoked ---
   // The ghost's accessJwt must no longer be accepted after account deletion.
   await timedCall(
-    result, "Sessions revoked after delete",
+    result,
+    "Sessions revoked after delete",
     async () => {
       await pds.accounts.getSession(ghostAccessJwt!);
     },
     undefined,
-    true  // must throw 401
+    true, // must throw 401
   );
 
   // --- Blob inaccessible after account delete ---
   if (blobCid) {
     await timedCall(
-      result, "Blob inaccessible after account delete",
+      result,
+      "Blob inaccessible after account delete",
       async () => {
         await pds.raw.xrpcGetBinary("com.atproto.sync.getBlob", {
           params: { did: ghostDid, cid: blobCid },
         });
       },
       undefined,
-      true  // must throw 404
+      true, // must throw 404
     );
   } else {
     result.stepSkipped("Blob inaccessible after account delete", "no blob was uploaded");
@@ -173,7 +236,7 @@ export async function run(): Promise<ScenarioResult> {
   // Firehose tombstone verification requires a streaming consumer — out of scope for this tier.
   result.stepSkipped(
     "Firehose tombstone emitted",
-    "P2: requires streaming firehose consumer — implement separately"
+    "P2: requires streaming firehose consumer — implement separately",
   );
 
   result.finish();
@@ -181,7 +244,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

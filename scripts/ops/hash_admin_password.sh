@@ -85,16 +85,15 @@ SALT=$(openssl rand -hex $SALT_BYTES)
 PBKDF2_OUTPUT=$(echo -n "$PASSWORD" | openssl enc -aes-256-cbc -S "$SALT" -P -pbkdf2 -iter $ITERATIONS -md sha256 -pass stdin 2>/dev/null || echo "")
 
 if [ -z "$PBKDF2_OUTPUT" ]; then
-    # Fallback: use Python hashlib for secure PBKDF2 derivation
-    echo -e "${YELLOW}Using Python hashlib for PBKDF2...${NC}"
+    # Fallback: use WebCrypto for secure PBKDF2 derivation
+    echo -e "${YELLOW}Using Deno WebCrypto for PBKDF2...${NC}"
 
-    if ! command -v python3 &> /dev/null; then
-        echo -e "${RED}ERROR: python3 is required for the fallback hashing but not installed${NC}" >&2
+    if ! command -v deno &> /dev/null; then
+        echo -e "${RED}ERROR: deno is required for the fallback hashing but not installed${NC}" >&2
         exit 1
     fi
 
-    # Derive hash using Python's hashlib.pbkdf2_hmac
-    HASH=$(python3 -c "import hashlib; print(hashlib.pbkdf2_hmac('sha256', b'$PASSWORD', bytes.fromhex('$SALT'), $ITERATIONS).hex())")
+    HASH=$(PASSWORD_INPUT="$PASSWORD" SALT="$SALT" ITERATIONS="$ITERATIONS" deno eval 'const password = new TextEncoder().encode(Deno.env.get("PASSWORD_INPUT") ?? ""); const saltHex = Deno.env.get("SALT") ?? ""; const salt = Uint8Array.from((saltHex.match(/../g) ?? []).map((part) => parseInt(part, 16))); const iterations = Number(Deno.env.get("ITERATIONS") ?? "0"); const key = await crypto.subtle.importKey("raw", password, "PBKDF2", false, ["deriveBits"]); const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations, hash: "SHA-256" }, key, 256); console.log([...new Uint8Array(bits)].map((byte) => byte.toString(16).padStart(2, "0")).join(""));')
 else
     # Extract the key (hash) from PBKDF2 output
     HASH=$(echo "$PBKDF2_OUTPUT" | grep '^key=' | cut -d= -f2)

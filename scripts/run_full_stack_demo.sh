@@ -91,7 +91,7 @@ log_info "Seeding PDS with accounts and records via XRPC..."
 export PDS_URL="$PDS_URL"
 export PDS_DATA_DIR="$DEMO_ROOT/pds"
 export PDS_BIN="$PDS_BIN"
-python3 "$SCRIPT_DIR/dev/demo_seed.py"
+deno run -A "$SCRIPT_DIR/dev/demo_seed.ts"
 
 log_info "Waiting for indexing..."
 # AppView indexes asynchronously from the relay. The fixed wait keeps this
