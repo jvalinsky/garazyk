@@ -1,7 +1,7 @@
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
-import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Identity Fatigue");
@@ -42,7 +42,7 @@ export async function run(): Promise<ScenarioResult> {
       const op = { ...signResp.operation };
       delete op.did;
       
-      const plcRes = await fetch(`http://localhost:2582/${rosa.did}`, {
+      const plcRes = await fetch(`${SERVICE_URLS.plc}/${rosa.did}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(op),
@@ -73,7 +73,7 @@ export async function run(): Promise<ScenarioResult> {
     const op = { ...signResp.operation };
     delete op.did;
     
-    const plcRes = await fetch(`http://localhost:2582/${rosa.did}`, {
+    const plcRes = await fetch(`${SERVICE_URLS.plc}/${rosa.did}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(op),
