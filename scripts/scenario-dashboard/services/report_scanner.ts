@@ -31,7 +31,7 @@ interface ReportFile {
 }
 
 function parseFilename(filename: string): { timestamp: string; scenarioName: string } | null {
-  // Format: 20260507-183659-account_lifecycle_&_identity.json
+  // Format: 20260507-183659-01_account_lifecycle.json
   const match = filename.match(/^(\d{8}-\d{6})-(.+)\.json$/);
   if (!match) return null;
   return { timestamp: match[1], scenarioName: match[2] };
@@ -51,10 +51,6 @@ function timestampToUnix(ts: string): number {
 export async function scanReports(db: Database): Promise<number> {
   let imported = 0;
 
-  // Create tables if they don't exist
-  const { SCHEMA } = await import("../db/schema.ts");
-  db.exec(SCHEMA);
-
   try {
     // Group reports by run timestamp
     const runGroups: Map<string, Array<{ filename: string; parsed: ReturnType<typeof parseFilename> }>> = new Map();
@@ -63,9 +59,6 @@ export async function scanReports(db: Database): Promise<number> {
       if (!entry.isFile || !entry.name.endsWith(".json")) continue;
       const parsed = parseFilename(entry.name);
       if (!parsed) continue;
-
-      // The "runs" subdirectory contains logs, skip those
-      if (entry.name.includes("/runs/")) continue;
 
       if (!runGroups.has(parsed.timestamp)) {
         runGroups.set(parsed.timestamp, []);
@@ -77,9 +70,11 @@ export async function scanReports(db: Database): Promise<number> {
       const runId = timestamp;
       const startedAt = timestampToUnix(timestamp);
 
-      // Check if this run already exists
+      // Check if this run already exists and has results
       const existing = db.prepare("SELECT id, status FROM runs WHERE id = ?").get<{id: string, status: string}>(runId);
-      if (existing && existing.status === 'completed') continue;
+      const hasResults = db.prepare("SELECT COUNT(*) as count FROM scenario_results WHERE run_id = ?").get<{count: number}>(runId);
+      
+      if (existing && existing.status === 'completed' && hasResults && hasResults.count > 0) continue;
 
       let totalPassed = 0;
       let totalFailed = 0;
@@ -115,9 +110,9 @@ export async function scanReports(db: Database): Promise<number> {
           const content = await Deno.readTextFile(filePath);
           const report: ReportFile = JSON.parse(content);
 
-          const scenarioId = file.parsed!.scenarioName.replace(/_&_?/g, "_").replace(/^(\d+)_/, "$1");
-          // Try to extract numeric ID from the scenario name
+          // Extract numeric ID from the scenario name (format: 01_account_lifecycle)
           const idMatch = file.parsed!.scenarioName.match(/^(\d+)/);
+          const scenarioId = idMatch ? idMatch[1] : "00";
 
           totalPassed += report.summary.passed;
           totalFailed += report.summary.failed;
@@ -134,7 +129,7 @@ export async function scanReports(db: Database): Promise<number> {
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
           ).run(
             runId,
-            idMatch ? idMatch[1] : "00",
+            scenarioId,
             report.scenario,
             report.ok ? "passed" : "failed",
             report.summary.passed,

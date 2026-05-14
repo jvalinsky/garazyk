@@ -1,4 +1,4 @@
-import { TransportLayer } from "../transport.ts";
+import { TransportLayer, XrpcError } from "../transport.ts";
 
 export class AdminClient {
   constructor(private transport: TransportLayer) {}
@@ -33,5 +33,25 @@ export class AdminClient {
     // Porting the special repeated-param logic from Python transport.py
     const params: Record<string, any> = { "uris[]": uris };
     return await this.transport.get("com.atproto.label.getLabels", params, token);
+  }
+
+  async login(password: string): Promise<string> {
+    const url = `${this.transport.baseUrl}/admin/login`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    });
+
+    if (!res.ok) {
+      throw new XrpcError("/admin/login", res.status, await res.text());
+    }
+
+    const data = await res.json();
+    const token = data.token || data.ui_admin_token;
+    if (!token) {
+      throw new XrpcError("/admin/login", 200, { error: "missing token in response" });
+    }
+    return token;
   }
 }
