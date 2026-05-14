@@ -86,9 +86,17 @@ BOOL RateLimiterIsDisabledGlobally(void) {
         _blobLimit = 50;
         _blobWindowSeconds = 3600;
         _enabled = !_rateLimiterDisabledGlobally;
-        GZ_LOG_HTTP_DEBUG(@"RateLimiter init (enabled=%@, global_disabled=%@)",
+
+        // Let PDSConfiguration (which reads config file + env vars) override
+        PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+        if (config && !config.rateLimitEnabled) {
+            _enabled = NO;
+        }
+
+        GZ_LOG_HTTP_DEBUG(@"RateLimiter init (enabled=%@, global_disabled=%@, config_enabled=%@)",
                            @(_enabled),
-                           @(_rateLimiterDisabledGlobally));
+                           @(_rateLimiterDisabledGlobally),
+                           @(config.rateLimitEnabled));
         
         _dbQueue = dispatch_queue_create("com.atproto.ratelimiter.db", DISPATCH_QUEUE_SERIAL);
         
