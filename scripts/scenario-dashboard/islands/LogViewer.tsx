@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useMemo } from "preact/hooks";
-import { AnsiUp } from "ansi_up";
 
 interface LogViewerProps {
   runId: string;
@@ -10,7 +9,16 @@ export default function LogViewer({ runId, status }: LogViewerProps) {
   const [logs, setLogs] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef<HTMLPreElement>(null);
-  const ansiUp = useMemo(() => new AnsiUp(), []);
+  const [ansiUpInstance, setAnsiUpInstance] = useState<any>(null);
+
+  useEffect(() => {
+    // Load ansi_up dynamically to avoid hydration crashes on the client
+    import("ansi_up").then(({ AnsiUp }) => {
+      setAnsiUpInstance(new AnsiUp());
+    }).catch(e => {
+      console.error("Failed to load ansi_up:", e);
+    });
+  }, []);
 
   const fetchLogs = async () => {
     try {
@@ -51,8 +59,15 @@ export default function LogViewer({ runId, status }: LogViewerProps) {
 
   const renderedLogs = useMemo(() => {
     if (!logs) return "";
-    return ansiUp.ansi_to_html(logs);
-  }, [logs, ansiUp]);
+    if (ansiUpInstance) {
+      try {
+        return ansiUpInstance.ansi_to_html(logs);
+      } catch (e) {
+        return logs.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      }
+    }
+    return logs.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }, [logs, ansiUpInstance]);
 
   return (
     <div style="margin-top: var(--space-xl);">
@@ -63,7 +78,7 @@ export default function LogViewer({ runId, status }: LogViewerProps) {
       <pre 
         ref={scrollRef}
         class="log-viewer" 
-        style="height: 500px; max-height: none; background: #000; color: #eee; border: 1px solid #333; overflow-x: auto;"
+        style="height: 500px; max-height: none; background: #000; color: #eee; border: 1px solid #333; overflow-x: auto; padding: 1rem;"
         dangerouslySetInnerHTML={{ __html: renderedLogs || (loading ? "Loading logs..." : "No logs available.") }}
       />
       <div style="font-size: var(--font-size-xs); color: var(--color-text-tertiary); margin-top: var(--space-xs); text-align: right;">
