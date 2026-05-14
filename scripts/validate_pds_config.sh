@@ -11,12 +11,13 @@ fi
 
 echo "Validating PDS config: $CONFIG_PATH"
 
-# Helper to check JSON values using python (more portable than jq for simple checks)
+# Helper to check JSON values without requiring jq.
 check_val() {
     local key=$1
     local expected=$2
     # Strip comments (C-style) before parsing
-    local val=$(python3 -c "import json, re; c=open('$CONFIG_PATH').read(); c=re.sub(r'/\*.*?\*/', '', c, flags=re.DOTALL); d=json.loads(c, strict=False); print(d$key)" 2>/dev/null)
+    local val
+    val=$(CONFIG_PATH="$CONFIG_PATH" KEY_EXPR="$key" deno eval 'const path = Deno.env.get("CONFIG_PATH"); const expr = Deno.env.get("KEY_EXPR") ?? ""; const text = await Deno.readTextFile(path); const data = JSON.parse(text.replace(/\/\*[\s\S]*?\*\//g, "")); const value = Function("d", `return d${expr}`)(data); console.log(String(value));' 2>/dev/null)
     
     if [ "$val" != "$expected" ]; then
         echo "FAIL: $key expected '$expected', got '$val'"
@@ -29,12 +30,12 @@ check_val() {
 RET=0
 
 # Secure Defaults — MANDATORY
-check_val "['session']['invite_code_required']" "True" || RET=1
+check_val "['session']['invite_code_required']" "true" || RET=1
 check_val "['plc']['url']" "https://plc.directory" || RET=1
-check_val "['rate_limit']['enabled']" "True" || RET=1
+check_val "['rate_limit']['enabled']" "true" || RET=1
 
 # Check for any debug flags enabled
-DEBUG_FLAGS=$(python3 -c "import json, re; c=open('$CONFIG_PATH').read(); c=re.sub(r'/\*.*?\*/', '', c, flags=re.DOTALL); d=json.loads(c, strict=False); print(json.dumps(d.get('debug', {})))" 2>/dev/null)
+DEBUG_FLAGS=$(CONFIG_PATH="$CONFIG_PATH" deno eval 'const text = await Deno.readTextFile(Deno.env.get("CONFIG_PATH")); const data = JSON.parse(text.replace(/\/\*[\s\S]*?\*\//g, "")); console.log(JSON.stringify(data.debug ?? {}));' 2>/dev/null)
 if [[ "$DEBUG_FLAGS" == *"true"* ]]; then
     echo "FAIL: Debug flags enabled in $DEBUG_FLAGS"
     RET=1

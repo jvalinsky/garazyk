@@ -1,15 +1,15 @@
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { createRunContext } from "../../lib/deno/diagnostics.ts";
 import { join } from "@std/path";
 import {
+  InstrumentationReport,
   OperationTimer,
   PhaseTimer,
   PrometheusScraper,
   StorageMonitor,
-  InstrumentationReport,
 } from "../../lib/deno/instrumentation.ts";
 
 function now() {
@@ -104,13 +104,15 @@ export async function run(): Promise<ScenarioResult> {
     let createdCount = 0;
     for (const plan of accounts) {
       const session = await timedCall(
-        result, `Create account: ${plan.name}`,
+        result,
+        `Create account: ${plan.name}`,
         async () => {
-          return await globalTimer.measure("create_account", () =>
-            client.accounts.createAccount(plan.handle, plan.email, plan.password)
+          return await globalTimer.measure(
+            "create_account",
+            () => client.accounts.createAccount(plan.handle, plan.email, plan.password),
           );
         },
-        (s) => `did=${s.did}`
+        (s) => `did=${s.did}`,
       );
       if (session) {
         plan.did = session.did;
@@ -118,8 +120,8 @@ export async function run(): Promise<ScenarioResult> {
         createdCount++;
         if (plan.slot <= 5) {
           const char = getCharacter(plan.label);
-          char.did = plan.did;
-          char.accessJwt = plan.accessJwt;
+          char.did = session.did;
+          char.accessJwt = session.accessJwt;
         }
       }
     }
@@ -140,11 +142,16 @@ export async function run(): Promise<ScenarioResult> {
         try {
           const resp = await globalTimer.measure("create_record", () =>
             client.records.createRecord(
-              plan.did!, "app.bsky.feed.post",
-              { $type: "app.bsky.feed.post", text: `Warm-up ${i} from ${plan.name}`, createdAt: now() },
-              plan.accessJwt!, { rkey }
-            )
-          );
+              plan.did!,
+              "app.bsky.feed.post",
+              {
+                $type: "app.bsky.feed.post",
+                text: `Warm-up ${i} from ${plan.name}`,
+                createdAt: now(),
+              },
+              plan.accessJwt!,
+              { rkey },
+            ));
           const createdRkey = resp.uri.split("/").pop();
           plan.warmupRkeys.push(createdRkey);
           warmupSuccesses++;
@@ -164,11 +171,16 @@ export async function run(): Promise<ScenarioResult> {
         try {
           const resp = await globalTimer.measure("create_record", () =>
             client.records.createRecord(
-              plan.did!, "app.bsky.feed.post",
-              { $type: "app.bsky.feed.post", text: `Burst ${i} from ${plan.name}`, createdAt: now() },
-              plan.accessJwt!, { rkey }
-            )
-          );
+              plan.did!,
+              "app.bsky.feed.post",
+              {
+                $type: "app.bsky.feed.post",
+                text: `Burst ${i} from ${plan.name}`,
+                createdAt: now(),
+              },
+              plan.accessJwt!,
+              { rkey },
+            ));
           plan.burstRkeys.push(resp.uri.split("/").pop());
           successes++;
         } catch { /* ignore */ }
@@ -189,11 +201,12 @@ export async function run(): Promise<ScenarioResult> {
       try {
         await globalTimer.measure("create_record", () =>
           client.records.createRecord(
-            plan.did!, "app.bsky.feed.post",
+            plan.did!,
+            "app.bsky.feed.post",
             { $type: "app.bsky.feed.post", text: `Mixed from ${plan.name}`, createdAt: now() },
-            plan.accessJwt!, { rkey: `m${plan.slot}-c` }
-          )
-        );
+            plan.accessJwt!,
+            { rkey: `m${plan.slot}-c` },
+          ));
         c++;
       } catch { /* ignore */ }
 
@@ -201,8 +214,15 @@ export async function run(): Promise<ScenarioResult> {
       const delTarget = plan.warmupRkeys[0] || plan.burstRkeys[0];
       if (delTarget) {
         try {
-          await globalTimer.measure("delete_record", () =>
-            client.records.deleteRecord(plan.did!, "app.bsky.feed.post", delTarget, plan.accessJwt!)
+          await globalTimer.measure(
+            "delete_record",
+            () =>
+              client.records.deleteRecord(
+                plan.did!,
+                "app.bsky.feed.post",
+                delTarget,
+                plan.accessJwt!,
+              ),
           );
           plan.deletedRkeys.add(delTarget);
           d++;
@@ -215,18 +235,27 @@ export async function run(): Promise<ScenarioResult> {
           $type: "com.atproto.repo.applyWrites#create",
           collection: "app.bsky.feed.post",
           rkey: `m${plan.slot}-a`,
-          value: { $type: "app.bsky.feed.post", text: `Batch A from ${plan.name}`, createdAt: now() },
+          value: {
+            $type: "app.bsky.feed.post",
+            text: `Batch A from ${plan.name}`,
+            createdAt: now(),
+          },
         },
         {
           $type: "com.atproto.repo.applyWrites#create",
           collection: "app.bsky.feed.post",
           rkey: `m${plan.slot}-b`,
-          value: { $type: "app.bsky.feed.post", text: `Batch B from ${plan.name}`, createdAt: now() },
-        }
+          value: {
+            $type: "app.bsky.feed.post",
+            text: `Batch B from ${plan.name}`,
+            createdAt: now(),
+          },
+        },
       ];
       try {
-        await globalTimer.measure("apply_writes", () =>
-          client.records.applyWrites(plan.did!, writes, plan.accessJwt!)
+        await globalTimer.measure(
+          "apply_writes",
+          () => client.records.applyWrites(plan.did!, writes, plan.accessJwt!),
         );
         a += 2;
       } catch { /* ignore */ }
@@ -237,24 +266,34 @@ export async function run(): Promise<ScenarioResult> {
     const mixedCreates = mixedResults.reduce((sum, r) => sum + r.c, 0);
     const mixedDeletes = mixedResults.reduce((sum, r) => sum + r.d, 0);
     const mixedApplies = mixedResults.reduce((sum, r) => sum + r.a, 0);
-    result.stepPassed("Mixed workload", `creates=${mixedCreates}, deletes=${mixedDeletes}, applyWrites=${mixedApplies}`);
+    result.stepPassed(
+      "Mixed workload",
+      `creates=${mixedCreates}, deletes=${mixedDeletes}, applyWrites=${mixedApplies}`,
+    );
     phaseTimer.endPhase();
 
     phaseTimer.startPhase("Cooldown");
     for (const plan of accounts) {
       await timedCall(result, `Cooldown verify: ${plan.name}`, async () => {
-        const resp = await globalTimer.measure("list_records", () =>
-          client.records.listRecords(plan.did!, "app.bsky.feed.post", { limit: 100, token: plan.accessJwt })
+        const resp = await globalTimer.measure(
+          "list_records",
+          () =>
+            client.records.listRecords(plan.did!, "app.bsky.feed.post", {
+              limit: 100,
+              token: plan.accessJwt,
+            }),
         );
         const actual = new Set(resp.records.map((r: any) => r.uri.split("/").pop()));
         const expectedCount = 5 + 10 + 1 + 2 - plan.deletedRkeys.size;
-        assert.isTrue(actual.size >= expectedCount, `Expected at least ${expectedCount}, got ${actual.size}`);
+        assert.isTrue(
+          actual.size >= expectedCount,
+          `Expected at least ${expectedCount}, got ${actual.size}`,
+        );
         return { records: actual.size, expected: expectedCount };
       });
     }
     phaseTimer.endPhase();
     workloadCompleted = true;
-
   } finally {
     const prometheusData = await prometheus.stop();
     const storageData = await storageMonitor.stop();
@@ -264,7 +303,7 @@ export async function run(): Promise<ScenarioResult> {
       prometheusData,
       {}, // Process stats not implemented for now
       storageData,
-      phaseTimer.toDict()
+      phaseTimer.toDict(),
     );
 
     result.recordArtifact("instrumentation", report.toDict());
@@ -289,7 +328,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

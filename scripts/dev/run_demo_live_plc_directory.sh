@@ -365,7 +365,7 @@ if [[ "${SEED}" == "true" ]]; then
     DEMO_CREATE_PROFILES="${DEMO_CREATE_PROFILES}" \
     DEMO_SUFFIX="${DEMO_SUFFIX}" \
     DEMO_PASSWORD="${DEMO_PASSWORD}" \
-    python3 "${SCRIPT_DIR}/seed_demo_via_xrpc.py"
+    deno run -A "${SCRIPT_DIR}/seed_demo_via_xrpc.ts"
 fi
 
 echo ""

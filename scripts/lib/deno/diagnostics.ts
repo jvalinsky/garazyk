@@ -21,7 +21,8 @@ export interface E2ERunContext {
 }
 
 function sanitizeRunId(value: string): string {
-  const cleaned = value.trim().replace(/[^A-Za-z0-9_.-]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase();
+  const cleaned = value.trim().replace(/[^A-Za-z0-9_.-]+/g, "-").replace(/^-+|-+$/g, "")
+    .toLowerCase();
   return cleaned || defaultRunId();
 }
 
@@ -33,20 +34,24 @@ function defaultRunId(): string {
 export async function createRunContext(
   runId?: string,
   diagnosticsDir?: string,
-  runDir?: string
+  runDir?: string,
 ): Promise<E2ERunContext> {
   const resolvedRunId = sanitizeRunId(
-    runId || Deno.env.get("ATPROTO_E2E_RUN_ID") || defaultRunId()
+    runId || Deno.env.get("ATPROTO_E2E_RUN_ID") || defaultRunId(),
   );
   const baseDir = Deno.env.get("ATPROTO_E2E_BASE_DIR") || BASE_DIR;
-  const resolvedRunDir = runDir || Deno.env.get("ATPROTO_E2E_RUN_DIR") || join(baseDir, resolvedRunId);
+  const resolvedRunDir = runDir || Deno.env.get("ATPROTO_E2E_RUN_DIR") ||
+    join(baseDir, resolvedRunId);
   const resolvedLogsDir = Deno.env.get("ATPROTO_E2E_LOG_DIR") || join(resolvedRunDir, "logs");
-  const resolvedReportsDir = Deno.env.get("ATPROTO_E2E_REPORTS_DIR") || join(resolvedRunDir, "reports");
-  const resolvedDiagDir = diagnosticsDir || Deno.env.get("ATPROTO_E2E_DIAGNOSTICS_DIR") || join(resolvedRunDir, "diagnostics");
+  const resolvedReportsDir = Deno.env.get("ATPROTO_E2E_REPORTS_DIR") ||
+    join(resolvedRunDir, "reports");
+  const resolvedDiagDir = diagnosticsDir || Deno.env.get("ATPROTO_E2E_DIAGNOSTICS_DIR") ||
+    join(resolvedRunDir, "diagnostics");
   const resolvedPidFile = Deno.env.get("ATPROTO_E2E_PID_FILE") || join(resolvedRunDir, "pids.txt");
-  
+
   const composeRunId = resolvedRunId.replace(/[^a-z0-9-]+/g, "-");
-  const composeProject = Deno.env.get("ATPROTO_E2E_COMPOSE_PROJECT") || `garazyk-e2e-${composeRunId}`;
+  const composeProject = Deno.env.get("ATPROTO_E2E_COMPOSE_PROJECT") ||
+    `garazyk-e2e-${composeRunId}`;
 
   for (const path of [resolvedRunDir, resolvedLogsDir, resolvedReportsDir, resolvedDiagDir]) {
     await Deno.mkdir(path, { recursive: true });
@@ -94,7 +99,7 @@ async function collectHttpEndpoint(
   name: string,
   url: string,
   headers: Record<string, string> = {},
-  timeout = 8000
+  timeout = 8000,
 ) {
   const target = join(outputDir, "http", `${name}.txt`);
   let text: string;
@@ -104,7 +109,9 @@ async function collectHttpEndpoint(
     const resp = await fetch(url, { headers, signal: controller.signal });
     clearTimeout(id);
     const body = (await resp.text()).substring(0, 50000);
-    text = `url=${url}\nhttp_status=${resp.status}\ncontent_type=${resp.headers.get("Content-Type") || ""}\n\n${body}\n`;
+    text = `url=${url}\nhttp_status=${resp.status}\ncontent_type=${
+      resp.headers.get("Content-Type") || ""
+    }\n\n${body}\n`;
   } catch (exc) {
     text = `url=${url}\nerror=${exc}\n`;
   }
@@ -117,12 +124,13 @@ export async function collectDiagnostics(
     serviceUrls?: Record<string, string>;
     appviewAdminSecret?: string;
     label?: string;
-  } = {}
+  } = {},
 ): Promise<string> {
   const outputDir = context.diagnosticsDir;
   await Deno.mkdir(outputDir, { recursive: true });
   const urls = { ...SERVICE_URLS, ...options.serviceUrls };
-  const appviewSecret = options.appviewAdminSecret || Deno.env.get("APPVIEW_ADMIN_SECRET") || "localdevadmin";
+  const appviewSecret = options.appviewAdminSecret || Deno.env.get("APPVIEW_ADMIN_SECRET") ||
+    "localdevadmin";
   const label = options.label || "atproto-e2e";
 
   const metadata: Record<string, any> = {
@@ -155,7 +163,9 @@ export async function collectDiagnostics(
     await Deno.mkdir(logsOut, { recursive: true });
     for await (const entry of Deno.readDir(context.logsDir)) {
       if (entry.isFile && entry.name.endsWith(".log")) {
-        await copy(join(context.logsDir, entry.name), join(logsOut, entry.name), { overwrite: true });
+        await copy(join(context.logsDir, entry.name), join(logsOut, entry.name), {
+          overwrite: true,
+        });
       }
     }
   }
@@ -164,17 +174,55 @@ export async function collectDiagnostics(
 
   await Promise.all([
     collectHttpEndpoint(outputDir, "plc-health", `${urls.plc}/_health`),
-    collectHttpEndpoint(outputDir, "pds-describe-server", `${urls.pds}/xrpc/com.atproto.server.describeServer`),
+    collectHttpEndpoint(
+      outputDir,
+      "pds-describe-server",
+      `${urls.pds}/xrpc/com.atproto.server.describeServer`,
+    ),
     collectHttpEndpoint(outputDir, "relay-health", `${urls.relay}/api/relay/health`),
     collectHttpEndpoint(outputDir, "relay-upstreams", `${urls.relay}/api/relay/upstreams`),
-    collectHttpEndpoint(outputDir, "appview-backfill-status", `${urls.appview}/admin/backfill/status`, authHeader),
-    collectHttpEndpoint(outputDir, "appview-backfill-queue", `${urls.appview}/admin/backfill/queue?limit=10`, authHeader),
-    collectHttpEndpoint(outputDir, "appview-ingest-health", `${urls.appview}/admin/ingest/health`, authHeader),
-    collectHttpEndpoint(outputDir, "appview-metrics-stats", `${urls.appview}/admin/appview/metrics/stats`, authHeader),
-    collectHttpEndpoint(outputDir, "appview-lexicons", `${urls.appview}/admin/lexicons`, authHeader),
+    collectHttpEndpoint(
+      outputDir,
+      "appview-backfill-status",
+      `${urls.appview}/admin/backfill/status`,
+      authHeader,
+    ),
+    collectHttpEndpoint(
+      outputDir,
+      "appview-backfill-queue",
+      `${urls.appview}/admin/backfill/queue?limit=10`,
+      authHeader,
+    ),
+    collectHttpEndpoint(
+      outputDir,
+      "appview-ingest-health",
+      `${urls.appview}/admin/ingest/health`,
+      authHeader,
+    ),
+    collectHttpEndpoint(
+      outputDir,
+      "appview-metrics-stats",
+      `${urls.appview}/admin/appview/metrics/stats`,
+      authHeader,
+    ),
+    collectHttpEndpoint(
+      outputDir,
+      "appview-lexicons",
+      `${urls.appview}/admin/lexicons`,
+      authHeader,
+    ),
     collectHttpEndpoint(outputDir, "appview-hooks", `${urls.appview}/admin/hooks`, authHeader),
-    collectHttpEndpoint(outputDir, "appview-endpoints", `${urls.appview}/admin/endpoints`, authHeader),
-    collectHttpEndpoint(outputDir, "pds2-describe-server", `${urls.chat}/xrpc/com.atproto.server.describeServer`),
+    collectHttpEndpoint(
+      outputDir,
+      "appview-endpoints",
+      `${urls.appview}/admin/endpoints`,
+      authHeader,
+    ),
+    collectHttpEndpoint(
+      outputDir,
+      "pds2-describe-server",
+      `${urls.pds2}/xrpc/com.atproto.server.describeServer`,
+    ),
     collectHttpEndpoint(outputDir, "chat-health", `${urls.chat}/_health`),
     collectHttpEndpoint(outputDir, "video-health", `${urls.video}/_health`),
     collectHttpEndpoint(outputDir, "ui-admin", `${urls.ui}/admin`),
