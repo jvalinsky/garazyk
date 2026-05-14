@@ -8,9 +8,13 @@ title: CLI Reference
 
 The CLI grammar is `kaszlak <command> [flags]`. In this repository you will usually invoke the built binary directly, for example `./build/bin/kaszlak`.
 
+Global flags are only accepted **after** the command name (for example `./build/bin/kaszlak account --help`, not `./build/bin/kaszlak --help`). For top-level usage, run `kaszlak help` or `kaszlak help <command>`.
+
 This page documents the commands that are actually registered in the current codebase.
 
 ## Global Flags
+
+These flags appear after the command: `kaszlak <command> [global flags …] [subcommand args …]`.
 
 | Flag | Purpose |
 | --- | --- |
@@ -18,7 +22,7 @@ This page documents the commands that are actually registered in the current cod
 | `--data-dir`, `-d` | data directory |
 | `--verbose`, `-v` | debug-level logging |
 | `--json`, `-j` | JSON output for supported commands |
-| `--help`, `-h` | usage output |
+| `--help`, `-h` | when placed after a command, forwarded to that command’s parser where supported; not valid as the first argv token |
 
 ## Command Map
 

@@ -6,6 +6,12 @@ title: Kaszlak CLI Usage
 
 **Kaszlak** is the primary command-line interface and daemon for the Garazyk Personal Data Server (PDS). It provides tools for server management, account administration, and interactive repository debugging.
 
+## Invocation
+
+The grammar is `kaszlak <command> [flags]`. Global options (`--config`, `--data-dir`, `--verbose`, `--json`) are parsed **after** the command name, not before it. For example, use `kaszlak help` for a command list, not `kaszlak --help` (the latter is rejected).
+
+See [CLI Reference](../11-reference/cli-reference) for the full command map and per-command flags.
+
 ## Core Commands
 
 ### `serve`
@@ -42,7 +48,7 @@ Low-level repository and MST management.
 
 ## Interactive REPL
 
-Kaszlak includes an interactive shell (REPL) for developers. Enter it by running `kaszlak` without a command or via the `repl` subcommand.
+Kaszlak includes an interactive shell (REPL) for developers. Start it with the `repl` command (aliases: `shell`, `interactive`). A bare `kaszlak` invocation with no command exits with an error; always pass `repl` or another subcommand.
 
 ```bash
 ./kaszlak repl
