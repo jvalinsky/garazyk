@@ -9,20 +9,13 @@
 @class PDSRepositoryService;
 @class PDSServiceDatabases;
 @class RateLimiter;
-@protocol PDSAccountService;
 @protocol PDSAdminController;
+@protocol PDSAccountService;
 
 NS_ASSUME_NONNULL_BEGIN
 
 /**
- * XrpcRepoMethods registers all com.atproto.repo.* endpoint handlers.
- *
- * This module handles repository operations including:
- * - Record CRUD: createRecord, putRecord, deleteRecord, getRecord, listRecords
- * - Repository metadata: describeRepo
- * - Blob operations: uploadBlob, deleteBlob, listMissingBlobs
- * - Batch operations: applyWrites
- * - Repository import: importRepo
+ * XrpcRepoMethods provides registration logic for the com.atproto.repo namespace.
  */
 @interface XrpcRepoMethods : NSObject
 
@@ -37,6 +30,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param blobService Blob service for blob storage
  * @param repositoryService Repository service for MST operations
  * @param serviceDatabases Service-level database access
+ * @param rateLimiter Rate limiter for throttling requests
  */
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                      jwtMinter:(JWTMinter *)jwtMinter
@@ -45,12 +39,8 @@ NS_ASSUME_NONNULL_BEGIN
                  recordService:(PDSRecordService *)recordService
                    blobService:(PDSBlobService *)blobService
              repositoryService:(PDSRepositoryService *)repositoryService
-              serviceDatabases:(PDSServiceDatabases *)serviceDatabases;
-
-@end
-
-NS_ASSUME_NONNULL_END
-Limiter;
+              serviceDatabases:(PDSServiceDatabases *)serviceDatabases
+                   rateLimiter:(RateLimiter *)rateLimiter;
 
 @end
 

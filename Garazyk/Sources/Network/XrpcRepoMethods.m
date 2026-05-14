@@ -223,7 +223,8 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
                  recordService:(PDSRecordService *)recordService
                    blobService:(PDSBlobService *)blobService
              repositoryService:(PDSRepositoryService *)repositoryService
-              serviceDatabases:(PDSServiceDatabases *)serviceDatabases {
+              serviceDatabases:(PDSServiceDatabases *)serviceDatabases
+                   rateLimiter:(RateLimiter *)rateLimiter {
     
     // com.atproto.repo.listRecords
     [dispatcher registerComAtprotoRepoListRecords:^(HttpRequest *request, HttpResponse *response) {
@@ -1184,12 +1185,6 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
         }
 
         response.statusCode = HttpStatusOK;
-        [response setJsonBody:@{@"success": @YES}];
-    }];
-}
-
-@end
-usOK;
         [response setJsonBody:@{@"success": @YES}];
     }];
 }

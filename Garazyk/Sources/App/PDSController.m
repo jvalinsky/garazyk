@@ -576,7 +576,3 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 }
 
 @end
-rror];
-}
-
-@end

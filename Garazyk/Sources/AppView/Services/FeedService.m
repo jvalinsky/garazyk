@@ -665,6 +665,17 @@
         return NO;
     }
     
+    // Validate author (DID) matches post_uri author
+    NSString *authorPrefix = [NSString stringWithFormat:@"at://%@/", did];
+    if (![postUri hasPrefix:authorPrefix]) {
+        if (error) {
+            *error = [NSError errorWithDomain:@"FeedService"
+                                         code:400
+                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Author mismatch: cannot create threadgate for post owned by another user (post: %@, actor: %@)", postUri, did]}];
+        }
+        return NO;
+    }
+    
     NSArray *allow = record[@"allow"];
     NSString *allowJson = nil;
     if (allow) {

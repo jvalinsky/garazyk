@@ -486,7 +486,7 @@ static void registerMethodsWithDispatcherUsingServices(
     PDSRelayService *relayService, id<PDSAdminController> adminController,
     PDSBlobAuditManager *blobAuditManager,
     PDSServiceDatabases *serviceDatabases, PDSDatabasePool *userDatabasePool,
-    JWTMinter *jwtMinter, PDSConfiguration *config,
+    JWTMinter *jwtMinter, RateLimiter *rateLimiter, PDSConfiguration *config,
     id<PDSEmailProvider> emailProvider,
     SubscribeReposHandler *subscribeReposHandler) {
 
@@ -539,7 +539,8 @@ static void registerMethodsWithDispatcherUsingServices(
                             recordService:recordService
                               blobService:blobService
                         repositoryService:repositoryService
-                         serviceDatabases:serviceDatabases];
+                         serviceDatabases:serviceDatabases
+                              rateLimiter:rateLimiter];
 
   [XrpcSyncMethods registerWithDispatcher:dispatcher
                                 jwtMinter:jwtMinter
@@ -617,5 +618,4 @@ static void registerMethodsWithDispatcherUsingServices(
       application.subscribeReposHandler);
 }
 
-@end
 @end
