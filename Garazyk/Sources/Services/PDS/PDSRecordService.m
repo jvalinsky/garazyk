@@ -30,6 +30,61 @@
 NSErrorDomain const PDSRecordServiceErrorDomain = @"com.atproto.pds.record-service";
 
 static const NSTimeInterval kATProtoCreatedAtMaxSkewSeconds = 24.0 * 60.0 * 60.0;
+static const NSInteger kPDSRecordServiceMaxJSONNestingDepth = 32;
+
+static NSError *PDSRecordServiceShapeError(NSString *message) {
+    return [NSError errorWithDomain:PDSRecordServiceErrorDomain
+                               code:2001
+                           userInfo:@{NSLocalizedDescriptionKey: message ?: @"Invalid record JSON shape"}];
+}
+
+static BOOL PDSRecordServiceValidateJSONShapeAtDepth(id value,
+                                                     NSInteger depth,
+                                                     NSString *context,
+                                                     NSError **error) {
+    if (depth > kPDSRecordServiceMaxJSONNestingDepth) {
+        if (error) {
+            *error = PDSRecordServiceShapeError(
+                [NSString stringWithFormat:@"Maximum record nesting depth (%ld) exceeded at %@",
+                                           (long)kPDSRecordServiceMaxJSONNestingDepth,
+                                           context ?: @"record"]);
+        }
+        return NO;
+    }
+
+    if ([value isKindOfClass:[NSDictionary class]]) {
+        NSDictionary *dict = (NSDictionary *)value;
+        for (id key in dict) {
+            NSString *keyContext = [key isKindOfClass:[NSString class]] ? key : [key description];
+            NSString *childContext = context.length > 0
+                ? [NSString stringWithFormat:@"%@.%@", context, keyContext ?: @"(key)"]
+                : keyContext ?: @"record";
+            if (!PDSRecordServiceValidateJSONShapeAtDepth(dict[key], depth + 1, childContext, error)) {
+                return NO;
+            }
+        }
+        return YES;
+    }
+
+    if ([value isKindOfClass:[NSArray class]]) {
+        NSArray *array = (NSArray *)value;
+        for (NSUInteger i = 0; i < array.count; i++) {
+            NSString *childContext = [NSString stringWithFormat:@"%@[%lu]",
+                                                                context ?: @"record",
+                                                                (unsigned long)i];
+            if (!PDSRecordServiceValidateJSONShapeAtDepth(array[i], depth + 1, childContext, error)) {
+                return NO;
+            }
+        }
+        return YES;
+    }
+
+    return YES;
+}
+
+static BOOL PDSRecordServiceValidateRecordJSONShape(NSDictionary *record, NSError **error) {
+    return PDSRecordServiceValidateJSONShapeAtDepth(record, 0, @"record", error);
+}
 
 static NSString *PDSRecordServiceDIDFromATURI(NSString *uri) {
     if (![uri isKindOfClass:[NSString class]] || ![uri hasPrefix:@"at://"]) {
@@ -420,6 +475,14 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
         GZ_LOG_ERROR(@"[PDSRecordService] Invalid rkey: %@", rkey);
         if (error) *error = rkeyError;
         return NO;
+    }
+
+    if (mode != PDSValidationModeOff) {
+        NSError *shapeError = nil;
+        if (!PDSRecordServiceValidateRecordJSONShape(value, &shapeError)) {
+            if (error) *error = shapeError;
+            return NO;
+        }
     }
 
     // Lexicon validation
@@ -882,6 +945,14 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                 return nil;
             }
 
+            if (mode != PDSValidationModeOff) {
+                NSError *shapeError = nil;
+                if (!PDSRecordServiceValidateRecordJSONShape(record, &shapeError)) {
+                    if (error) *error = shapeError;
+                    return nil;
+                }
+            }
+
             // Lexicon validation
             if (mode != PDSValidationModeOff) {
                 ATProtoLexiconValidator *validator = [[ATProtoLexiconValidator alloc]
@@ -997,6 +1068,14 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
             if (![ATProtoValidator validateNSID:collection error:&nsidError]) {
                 if (error) *error = nsidError;
                 return nil;
+            }
+
+            if (mode != PDSValidationModeOff) {
+                NSError *shapeError = nil;
+                if (!PDSRecordServiceValidateRecordJSONShape(record, &shapeError)) {
+                    if (error) *error = shapeError;
+                    return nil;
+                }
             }
 
             if (mode != PDSValidationModeOff) {
