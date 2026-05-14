@@ -22,7 +22,7 @@ export const handler: Handlers = {
         return new Response("Waiting for logs to start...", { status: 404 });
       }
       console.error(`[api] Error reading logs for ${runId}:`, e);
-      return new Response("Error reading logs: " + e.message, { status: 500 });
+      return new Response("Error reading logs: " + (e as Error).message, { status: 500 });
     }
   },
 };
