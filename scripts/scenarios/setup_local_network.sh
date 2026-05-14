@@ -109,8 +109,21 @@ if [[ "$TEARDOWN" != "true" && "$COLLECT_DIAGNOSTICS" != "true" && "$WAIT_ONLY" 
     atproto_e2e_store_latest_run_id "scenario"
 fi
 
-COMPOSE_FILES=("$COMPOSE_DIR/docker-compose.yml")
-if [[ "$WITH_PDS2" == "true" || "$TEARDOWN" == "true" || "$COLLECT_DIAGNOSTICS" == "true" ]]; then
+TOPOLOGY_COMPOSE_FILE="$ATPROTO_E2E_RUN_DIR/docker-compose.topology.yml"
+TOPOLOGY_SOURCES_JSON="$ATPROTO_E2E_RUN_DIR/topology_sources.json"
+TOPOLOGY_MANIFEST_JSON="$ATPROTO_E2E_RUN_DIR/topology-manifest.json"
+TOPOLOGY_MODE=false
+if [[ -n "$TOPOLOGY_PRESET" || -f "$TOPOLOGY_MANIFEST_JSON" ]]; then
+    TOPOLOGY_MODE=true
+    export ATPROTO_TOPOLOGY_MANIFEST="$TOPOLOGY_MANIFEST_JSON"
+fi
+
+if [[ "$TOPOLOGY_MODE" == "true" ]]; then
+    COMPOSE_FILES=("$TOPOLOGY_COMPOSE_FILE")
+else
+    COMPOSE_FILES=("$COMPOSE_DIR/docker-compose.yml")
+fi
+if [[ "$TOPOLOGY_MODE" != "true" && ( "$WITH_PDS2" == "true" || "$TEARDOWN" == "true" || "$COLLECT_DIAGNOSTICS" == "true" ) ]]; then
     COMPOSE_FILES+=("$COMPOSE_DIR/docker-compose.scenarios.yml")
 fi
 WEB_CLIENT_COMPOSE_FILE="$ATPROTO_E2E_RUN_DIR/web-client-compose.yml"
@@ -122,6 +135,9 @@ if [[ -n "$WEB_CLIENT_PRESET" && "$TEARDOWN" != "true" && "$COLLECT_DIAGNOSTICS"
         --run-dir "$ATPROTO_E2E_RUN_DIR"
         --repo-root "$REPO_ROOT"
     )
+    if [[ "$TOPOLOGY_MODE" == "true" ]]; then
+        render_args+=(--network "topology_net")
+    fi
     if [[ "$ALLOW_HYBRID_NETWORK" == "true" ]]; then
         render_args+=(--allow-hybrid)
     fi
@@ -132,17 +148,23 @@ if [[ -f "$WEB_CLIENT_COMPOSE_FILE" ]]; then
 fi
 
 # Compile topology preset to compose file if specified
-TOPOLOGY_COMPOSE_FILE="$ATPROTO_E2E_RUN_DIR/docker-compose.topology.yml"
-TOPOLOGY_SOURCES_JSON="$ATPROTO_E2E_RUN_DIR/topology_sources.json"
 if [[ -n "$TOPOLOGY_PRESET" && "$TEARDOWN" != "true" && "$COLLECT_DIAGNOSTICS" != "true" ]]; then
     log_info "Compiling topology preset: $TOPOLOGY_PRESET"
-    deno run -A "$SCRIPT_DIR/compile_topology.ts" \
-        --preset "$TOPOLOGY_PRESET" \
-        --output "$TOPOLOGY_COMPOSE_FILE" \
-        --run-dir "$ATPROTO_E2E_RUN_DIR" \
-        --repo-root "$REPO_ROOT" \
+    compile_args=(
+        "$SCRIPT_DIR/compile_topology.ts"
+        --preset "$TOPOLOGY_PRESET"
+        --output "$TOPOLOGY_COMPOSE_FILE"
+        --run-dir "$ATPROTO_E2E_RUN_DIR"
+        --repo-root "$REPO_ROOT"
         --sources-json "$TOPOLOGY_SOURCES_JSON"
+        --manifest-json "$TOPOLOGY_MANIFEST_JSON"
+    )
+    if [[ "$WITH_PDS2" == "true" ]]; then
+        compile_args+=(--include-pds2)
+    fi
+    deno run -A "${compile_args[@]}"
     export ATPROTO_TOPOLOGY="$TOPOLOGY_PRESET"
+    export ATPROTO_TOPOLOGY_MANIFEST="$TOPOLOGY_MANIFEST_JSON"
 
     # Clone source repos if any adapters use source builds
     if [[ -f "$TOPOLOGY_SOURCES_JSON" ]]; then
@@ -152,12 +174,10 @@ if [[ -n "$TOPOLOGY_PRESET" && "$TEARDOWN" != "true" && "$COLLECT_DIAGNOSTICS" !
             "$SCRIPT_DIR/prepare_topology.sh" \
                 --preset "$TOPOLOGY_PRESET" \
                 --run-dir "$ATPROTO_E2E_RUN_DIR" \
-                --repo-root "$REPO_ROOT"
+                --repo-root "$REPO_ROOT" \
+                --sources-json "$TOPOLOGY_SOURCES_JSON"
         fi
     fi
-fi
-if [[ -f "$TOPOLOGY_COMPOSE_FILE" ]]; then
-    COMPOSE_FILES+=("$TOPOLOGY_COMPOSE_FILE")
 fi
 
 build_compose_cmd() {
@@ -569,10 +589,17 @@ if [[ "$WAIT_ONLY" != "true" ]]; then
     "${COMPOSE_CMD[@]}" up -d --build
 fi
 
-wait_for_service plc 60
-wait_for_service pds 60
-wait_for_service relay 60
-wait_for_service appview 90 || error_exit "AppView failed to start within 90s"
+if [[ "$TOPOLOGY_MODE" == "true" && -f "$TOPOLOGY_MANIFEST_JSON" ]]; then
+    deno run -A "$SCRIPT_DIR/wait_topology.ts" \
+        --manifest "$TOPOLOGY_MANIFEST_JSON" \
+        --compose-project "$ATPROTO_E2E_COMPOSE_PROJECT" \
+        --compose-file "$TOPOLOGY_COMPOSE_FILE" || error_exit "Topology services failed to start"
+else
+    wait_for_service plc 60
+    wait_for_service pds 60
+    wait_for_service relay 60
+    wait_for_service appview 90 || error_exit "AppView failed to start within 90s"
+fi
 if [[ -n "$WEB_CLIENT_PRESET" ]]; then
     web_client_health_path="/"
     if [[ "$WEB_CLIENT_PRESET" == "garazyk-ui" ]]; then
@@ -582,7 +609,7 @@ if [[ -n "$WEB_CLIENT_PRESET" ]]; then
         error_exit "web-client failed to start within 120s"
 fi
 
-if [[ "$WITH_PDS2" == "true" ]]; then
+if [[ "$TOPOLOGY_MODE" != "true" && "$WITH_PDS2" == "true" ]]; then
     wait_for_service pds2 60
 fi
 
@@ -592,6 +619,9 @@ sleep 5
 echo ""
 echo "  Run:     $ATPROTO_E2E_RUN_DIR"
 echo "  Project: $ATPROTO_E2E_COMPOSE_PROJECT"
+if [[ "$TOPOLOGY_MODE" == "true" ]]; then
+    echo "  Manifest: $TOPOLOGY_MANIFEST_JSON"
+fi
 if [[ "$KEEP_RUNNING" == "true" ]]; then
     echo "  Stop:    $0 --teardown --run-id $ATPROTO_E2E_RUN_ID"
 fi
