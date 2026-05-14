@@ -71,7 +71,7 @@ export default function DashboardPage({ data }: PageProps<PageData>) {
     <Layout title="Dashboard">
       <Toolbar />
       <Sidebar
-        scenarios={scenarios}
+        scenarios={scenarios as any}
         services={serviceList}
       />
       <main class="main-content">
