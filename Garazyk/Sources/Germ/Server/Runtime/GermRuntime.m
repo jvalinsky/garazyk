@@ -67,7 +67,7 @@ static const uint16_t kGermDefaultPort = 8082;
 
     // Apply schema
     NSString *schemaSQL = [[GermMailboxSchemaManager sharedManager] mailboxSchemaSQL];
-    if (![self.db executeParameterizedUpdate:schemaSQL params:@[] error:error]) {
+    if (![self.db executeUnsafeRawSQL:schemaSQL error:error]) {
         return NO;
     }
 
