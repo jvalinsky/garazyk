@@ -33,7 +33,7 @@ export async function run(): Promise<ScenarioResult> {
     result, "Verify account resolution",
     async () => {
       const res = await pds.identity.resolveHandle(luna.handle);
-      assert(res.did === luna.did, `DID mismatch: expected ${luna.did}, got ${res.did}`);
+      assert.isTrue(res.did === luna.did, `DID mismatch: expected ${luna.did}, got ${res.did}`);
       return res;
     },
     (r) => `handle ${luna.handle} -> ${r.did}`
@@ -46,7 +46,7 @@ export async function run(): Promise<ScenarioResult> {
       const didDoc = await res.json();
       const services = didDoc.service || [];
       const pdsEndpoint = services.find((s: any) => s.id === "#atproto_pds" || s.id.includes("atproto_pds"))?.serviceEndpoint;
-      assert(pdsEndpoint, "PDS serviceEndpoint not found in DID doc");
+      assert.isTrue(pdsEndpoint, "PDS serviceEndpoint not found in DID doc");
       return { pdsEndpoint };
     },
     (r) => `serviceEndpoint=${r.pdsEndpoint}`
@@ -59,8 +59,8 @@ export async function run(): Promise<ScenarioResult> {
         headers: { "Accept": "application/json", "Origin": "http://127.0.0.1:8080" }
       });
       const body = await res.json();
-      assert(res.status === 200, `status=${res.status}`);
-      assert(body.resource === "http://127.0.0.1:2583", `unexpected resource: ${body.resource}`);
+      assert.isTrue(res.status === 200, `status=${res.status}`);
+      assert.isTrue(body.resource === "http://127.0.0.1:2583", `unexpected resource: ${body.resource}`);
     }
   );
 
@@ -71,8 +71,8 @@ export async function run(): Promise<ScenarioResult> {
         headers: { "Accept": "application/json", "Origin": "http://127.0.0.1:8080" }
       });
       const body = await res.json();
-      assert(res.status === 200, `status=${res.status}`);
-      assert(body.issuer === "http://127.0.0.1:2583", `unexpected issuer: ${body.issuer}`);
+      assert.isTrue(res.status === 200, `status=${res.status}`);
+      assert.isTrue(body.issuer === "http://127.0.0.1:2583", `unexpected issuer: ${body.issuer}`);
     }
   );
 
@@ -126,7 +126,7 @@ export async function run(): Promise<ScenarioResult> {
 
     await page.waitForSelector("#profile", { timeout: 10000 });
     const displayName = await page.innerText("#display-name");
-    assert(displayName.includes("did:plc:"), `Unexpected display name: ${displayName}`);
+    assert.isTrue(displayName.includes("did:plc:"), `Unexpected display name: ${displayName}`);
     result.stepPassed("Profile displayed", `Logged in as ${displayName}`);
 
     await browser.close();

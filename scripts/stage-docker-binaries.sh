@@ -102,11 +102,11 @@ mkdir -p "$STAGING_DIR/lib"
 docker cp "$CONTAINER_ID:/usr/GNUstep/Local/Library/Libraries/." "$STAGING_DIR/lib/"
 docker cp "$CONTAINER_ID:/usr/GNUstep/Local/lib/." "$STAGING_DIR/lib/" || true
 
-# Copy lexicons if not already present
-if [[ ! -d "$STAGING_DIR/lexicons" ]]; then
-    echo "[stage] Copying lexicons..."
-    docker cp "$CONTAINER_ID:/src/Garazyk/Resources/lexicons" "$STAGING_DIR/lexicons"
-fi
+# Copy lexicons
+echo "[stage] Copying lexicons..."
+rm -rf "$STAGING_DIR/lexicons"
+mkdir -p "$STAGING_DIR/lexicons"
+docker cp "$CONTAINER_ID:/src/Garazyk/Resources/lexicons/." "$STAGING_DIR/lexicons/"
 
 # Copy PLC assets if not already present
 if [[ ! -d "$STAGING_DIR/PLC-assets" ]]; then
