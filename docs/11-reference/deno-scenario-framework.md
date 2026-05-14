@@ -4,57 +4,82 @@ title: Deno Scenario Framework
 
 # Deno Scenario Framework
 
-Garazyk uses a TypeScript-based scenario testing framework powered by Deno to perform multi-service integration tests. These tests live in `scripts/scenarios/scenarios/` and are orchestrated by `scripts/run_scenarios.ts`.
+Garazyk uses Deno and TypeScript for narrative full-stack scenarios. Scenario files live in `scripts/scenarios/scenarios/*.ts`; the root runner is `scripts/run_scenarios.ts`.
 
 ## Architecture
 
-The framework consists of three main layers:
+The framework has four layers:
 
-1.  **Orchestrator (`run_scenarios.ts`)**: Handles service lifecycle (startup/teardown via Docker), scenario discovery, and reporting.
-2.  **Runner Library (`scripts/lib/deno/`)**: Provides standard primitives for writing tests, including `ScenarioResult` for state tracking and `timedCall` for instrumentation.
-3.  **Scenario Scripts**: Narrative-driven tests that import the runner library and export a `run()` function.
+1. **Orchestrator**: `scripts/run_scenarios.ts` discovers scenario modules, selects IDs, manages setup/teardown, applies timeouts, and writes reports.
+2. **Service boundary**: `scripts/scenarios/setup_local_network.sh` starts Docker or local binary services and owns process cleanup.
+3. **Deno libraries**: `scripts/lib/deno/` provides XRPC clients, shared character fixtures, diagnostics, Docker helpers, assertions, and runner primitives.
+4. **Scenario modules**: each `scripts/scenarios/scenarios/*.ts` file exports `run(): Promise<ScenarioResult>`.
 
-## Writing a Scenario
+The default service ports are:
 
-A typical scenario follows this structure:
+| Service | URL |
+| --- | --- |
+| PLC | `http://localhost:2582` |
+| PDS | `http://localhost:2583` |
+| Relay | `http://localhost:2584` |
+| Chat | `http://localhost:2585` |
+| Video | `http://localhost:2586` |
+| PDS2 | `http://localhost:2587` |
+| AppView | `http://localhost:3200` |
+| Admin UI | `http://localhost:2590` |
+
+## Writing A Scenario
+
+Use the shared client and runner primitives rather than hand-rolled fetch wrappers:
 
 ```typescript
-import { ScenarioResult, timedCall } from "../lib/deno/runner.ts";
-import { AtpAgent } from "npm:@atproto/api";
+import { XrpcClient } from "../../lib/deno/client.ts";
+import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Account Lifecycle");
   result.start();
 
-  const agent = new AtpAgent({ service: "http://localhost:2583" });
+  const pds = new XrpcClient(PDS1);
+  const luna = getCharacter("luna");
 
-  await timedCall(result, "Create Account", async () => {
-    return await agent.createAccount({
-      email: "test@example.com",
-      handle: "test.test",
-      password: "password",
-    });
-  });
+  const session = await timedCall(
+    result,
+    "Create account",
+    async () => {
+      const response = await pds.agent.createAccount({
+        handle: luna.handle,
+        email: luna.email,
+        password: luna.password,
+      });
+      return response.data;
+    },
+    (created) => `did=${created.did}`,
+  );
+
+  if (session) {
+    luna.did = session.did;
+    luna.accessJwt = session.accessJwt;
+  }
 
   result.finish();
   return result;
 }
 ```
 
-## Primitives
+## Runner Primitives
 
-### `ScenarioResult`
-Maintains the state of the current run.
-- `stepPassed(name, detail)`: Records a successful step.
-- `stepFailed(name, error)`: Records a failure (stops the run if unhandled).
-- `recordArtifact(name, data)`: Attaches JSON-serializable data to the report.
+`ScenarioResult` records scenario state:
 
-### `timedCall`
-A helper that automatically records the duration of an async block and adds it as a step to the result.
+- `stepPassed(name, detail, durationMs)`
+- `stepFailed(name, detail, durationMs)`
+- `stepSkipped(name, detail, durationMs)`
+- `recordArtifact(name, data)`
+
+`timedCall(result, name, fn, detail?)` wraps an async operation, records duration, and turns thrown errors into failed steps.
 
 ## Running Scenarios
-
-Use the main runner script:
 
 ```bash
 # List available scenarios
@@ -63,23 +88,52 @@ Use the main runner script:
 # Run specific scenarios
 ./scripts/run_scenarios.ts 01 05
 
-# Run without tearing down the network (useful for dashboard)
+# Run against an already-running network
 ./scripts/run_scenarios.ts --no-setup 01
+
+# Start services, run, and tear down
+./scripts/run_scenarios.ts --setup --teardown
+
+# Include scenarios that need the second PDS
+./scripts/run_scenarios.ts --pds2
 ```
 
-## Reporting and Dashboard
+The runner auto-includes PDS2 when a selected scenario is marked as requiring it. Use `--pds2` to include those scenarios in broad runs.
 
-When run with a `--run-id`, the orchestrator writes JSON reports to `scripts/scenarios/reports/`. These reports are automatically absorbed by the **Scenario Dashboard** (Deno Fresh app) via its SQLite backend.
+## Reports And Diagnostics
 
-### JSON Report Format
+Scenario JSON reports are written to the run directory by default:
+
+```text
+/tmp/garazyk-atproto-e2e/<run-id>/reports/
+```
+
+Use `--reports-dir DIR` to override the report location and `--diagnostics-dir DIR` for health snapshots, service logs, and Docker state.
+
+Example report shape:
+
 ```json
 {
   "scenario": "Scenario Name",
   "started_at": 1715535540,
   "finished_at": 1715535545,
+  "duration_s": 5,
   "steps": [
-    { "name": "Step 1", "status": "passed", "duration_ms": 120 }
+    { "name": "Step 1", "status": "passed", "detail": "", "duration_ms": 120 }
   ],
-  "ok": true
+  "summary": { "passed": 1, "failed": 0, "skipped": 0, "total": 1 },
+  "ok": true,
+  "artifacts": {},
+  "metadata": {}
 }
 ```
+
+## Validation
+
+Run targeted type checks after editing runner code or scenarios:
+
+```bash
+deno check --config deno.json scripts/run_scenarios.ts scripts/scenarios/scenarios/*.ts
+```
+
+Run `./scripts/run_scenarios.ts --list` after adding, renaming, or deleting scenario files so discovery stays healthy.
