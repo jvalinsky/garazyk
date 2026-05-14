@@ -35,7 +35,7 @@ export async function run(): Promise<ScenarioResult> {
   result.start();
 
   const client = new XrpcClient(PDS1);
-  await timedCall(result, "PDS health check", async () => { await client.wait_for_healthy(30); });
+  await timedCall(result, "PDS health check", async () => { await client.waitForHealthy(30); });
 
   if (result.failed > 0) return result;
 
@@ -78,7 +78,7 @@ export async function run(): Promise<ScenarioResult> {
       return await client.raw.xrpcGet("chat.bsky.convo.getMessages", { convoId, limit: 20 }, marcus.accessJwt);
     });
     const found = messages?.messages?.some((m: any) => m.text === plaintext);
-    assert(found, "Plaintext not found");
+    assert.isTrue(found, "Plaintext not found");
   }
 
   if (germHealthy) {
@@ -113,8 +113,8 @@ export async function run(): Promise<ScenarioResult> {
         return await germGet("com.germnetwork.mailbox.poll", { agentRef: "marcus-1" }, marcus.accessJwt);
       });
 
-      const foundCt = poll?.messages?.some((m: any) => m.ciphertext?.$bytes === ctB64);
-      assert(foundCt, "Ciphertext not found or mismatch");
+      console.log("Poll result:", JSON.stringify(poll)); const foundCt = poll?.messages?.some((m: any) => m.ciphertext?.$bytes === ctB64);
+      assert.isTrue(foundCt, "Ciphertext not found or mismatch");
       result.stepPassed("Verify: Germ ciphertext is opaque");
     }
   }
