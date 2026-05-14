@@ -1115,6 +1115,97 @@
     XCTAssertTrue(result || !result, @"Result depends on whether optimistic allows unknown NSIDs");
 }
 
+- (NSDictionary *)deeplyNestedUnknownFieldWithLevels:(NSUInteger)levels {
+    NSDictionary *nested = @{@"leaf": @"ok"};
+    for (NSUInteger i = 0; i < levels; i++) {
+        nested = @{@"n": nested};
+    }
+    return nested;
+}
+
+- (void)testPutRecordRejectsDeepUnknownFieldWhenValidationEnabled {
+    NSDictionary *value = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"too deep",
+        @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]],
+        @"testExtra": [self deeplyNestedUnknownFieldWithLevels:40]
+    };
+
+    NSError *error = nil;
+    BOOL result = [self.service putRecord:@"app.bsky.feed.post"
+                                     rkey:@"deep-unknown-field"
+                                    value:value
+                                   forDid:self.testDID
+                           validationMode:PDSValidationModeRequired
+                                    error:&error];
+    XCTAssertFalse(result);
+    XCTAssertNotNil(error);
+    XCTAssertTrue([error.localizedDescription containsString:@"Maximum record nesting depth"]);
+}
+
+- (void)testPutRecordAcceptsShallowUnknownFieldWhenValidationEnabled {
+    NSDictionary *value = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"shallow extra",
+        @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]],
+        @"testExtra": @{@"topic": @"scenario"}
+    };
+
+    NSError *error = nil;
+    BOOL result = [self.service putRecord:@"app.bsky.feed.post"
+                                     rkey:@"shallow-unknown-field"
+                                    value:value
+                                   forDid:self.testDID
+                           validationMode:PDSValidationModeRequired
+                                    error:&error];
+    XCTAssertTrue(result, @"Expected shallow unknown field to pass: %@", error);
+    XCTAssertNil(error);
+}
+
+- (void)testPutRecordAllowsDeepUnknownFieldWhenValidationOff {
+    NSDictionary *value = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"deep validation off",
+        @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]],
+        @"testExtra": [self deeplyNestedUnknownFieldWithLevels:40]
+    };
+
+    NSError *error = nil;
+    BOOL result = [self.service putRecord:@"app.bsky.feed.post"
+                                     rkey:@"deep-validation-off"
+                                    value:value
+                                   forDid:self.testDID
+                           validationMode:PDSValidationModeOff
+                                    error:&error];
+    XCTAssertTrue(result, @"validate=false should bypass record shape validation: %@", error);
+    XCTAssertNil(error);
+}
+
+- (void)testApplyWritesRejectsDeepUnknownFieldWhenValidationEnabled {
+    NSDictionary *record = @{
+        @"$type": @"app.bsky.feed.post",
+        @"text": @"apply too deep",
+        @"createdAt": [self.isoFormatter stringFromDate:[NSDate date]],
+        @"testExtra": [self deeplyNestedUnknownFieldWithLevels:40]
+    };
+    NSDictionary *write = @{
+        @"action": @"create",
+        @"collection": @"app.bsky.feed.post",
+        @"rkey": @"apply-deep-unknown-field",
+        @"value": record
+    };
+
+    NSError *error = nil;
+    NSDictionary *result = [self.service applyWrites:@[write]
+                                              forDid:self.testDID
+                                      validationMode:PDSValidationModeRequired
+                                          swapCommit:nil
+                                               error:&error];
+    XCTAssertNil(result);
+    XCTAssertNotNil(error);
+    XCTAssertTrue([error.localizedDescription containsString:@"Maximum record nesting depth"]);
+}
+
 #pragma mark - CreatedAt Skew
 
 - (void)testPutRecordWithFutureCreatedAtSucceeds {

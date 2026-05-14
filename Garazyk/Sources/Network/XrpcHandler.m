@@ -89,6 +89,13 @@ static XrpcDispatcher *_sharedInstance = nil;
     self.methodHandlers[methodId] = [handler copy];
 }
 
+- (BOOL)hasRegisteredMethod:(NSString *)methodId {
+    if (methodId.length == 0) {
+        return NO;
+    }
+    return self.methodHandlers[methodId] != nil;
+}
+
 - (void)registerMethod:(NSString *)methodId
            middlewares:(NSArray<id<XrpcMiddleware>> *)middlewares
                handler:(XrpcMethodHandler)handler {
@@ -233,20 +240,19 @@ static XrpcDispatcher *_sharedInstance = nil;
     GZ_LOG_INFO(@"XrpcHandler: methodId=%@, handler=%@, protected=%d", 
                  methodId, handler ? @"found" : @"nil", isProtected);
 
+    // Protected methods always execute locally, including when an interceptor
+    // is installed for AppView/chat/ozone routing.
+    if (handler && isProtected) {
+        GZ_LOG_INFO(@"XrpcHandler: Executing protected local handler for method=%@", methodId);
+        [self executeHandler:handler methodId:methodId request:request response:response];
+        return;
+    }
+
     if (self.requestInterceptor) {
         BOOL handled = self.requestInterceptor(request, response, methodId, handler != nil);
         if (handled) {
             return;
         }
-    }
-
-    // 1. Protected methods always execute locally — never proxy them.
-    //    This prevents atproto-proxy header injection from redirecting
-    //    auth/admin requests to an attacker-controlled service.
-    if (handler && isProtected) {
-        GZ_LOG_INFO(@"XrpcHandler: Executing protected local handler for method=%@", methodId);
-        [self executeHandler:handler methodId:methodId request:request response:response];
-        return;
     }
 
     // 2. Handling for atproto-proxy header (Industry standard)
@@ -984,4 +990,3 @@ static XrpcDispatcher *_sharedInstance = nil;
 }
 
 @end
-
