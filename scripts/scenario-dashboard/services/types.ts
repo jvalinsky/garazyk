@@ -71,6 +71,7 @@ export interface Run {
   exitCode?: number;
   stoppedAt?: number;
   stopReason?: string;
+  scenarioParams?: Record<string, unknown>;
 }
 
 export interface ScenarioResult {
