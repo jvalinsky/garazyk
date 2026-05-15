@@ -1,5 +1,7 @@
 import { useSignal } from "@preact/signals";
 import { categorize } from "../utils.ts";
+import { topologyPreview } from "../signals.ts";
+import TopologyInspector from "./TopologyInspector.tsx";
 
 interface ScenarioMeta {
   id: string;
@@ -130,6 +132,8 @@ export default function Sidebar({ scenarios, services, activeScenario }: Sidebar
           </div>
         );
       })}
+
+      <TopologyInspector topology={topologyPreview.value} />
     </aside>
   );
 }
