@@ -15,6 +15,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class BookmarkService;
 @class ContactService;
 @class DraftService;
+@class NotificationService;
 @class JWTMinter;
 @class PDSServiceDatabases;
 @class RateLimiter;
@@ -41,6 +42,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly, nullable) BookmarkService *bookmarkService;
 @property (nonatomic, readonly, nullable) DraftService *draftService;
 @property (nonatomic, readonly, nullable) ContactService *contactService;
+@property (nonatomic, readonly, nullable) NotificationService *notificationService;
 @property (nonatomic, readonly, nullable) id<PDSQueryDatabase> appViewDatabase;
 
 @end
@@ -62,6 +64,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, nullable) BookmarkService *bookmarkService;
 @property (nonatomic, strong, nullable) DraftService *draftService;
 @property (nonatomic, strong, nullable) ContactService *contactService;
+@property (nonatomic, strong, nullable) NotificationService *notificationService;
 @property (nonatomic, strong, nullable) id<PDSQueryDatabase> appViewDatabase;
 
 - (instancetype)initWithDispatcher:(nullable XrpcDispatcher *)dispatcher

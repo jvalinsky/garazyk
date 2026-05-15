@@ -90,10 +90,7 @@ static id<XrpcRoutePackServices> XrpcAppBskyResolvedRoutePackServices(
   }
   [XrpcAppBskyActorPack registerPDSLevelMethodsWithDispatcher:dispatcher services:resolvedServices];
 
-  [XrpcAppBskyNotificationPack registerPDSLevelMethodsWithDispatcher:dispatcher
-                                                      appViewDatabase:appViewDatabase
-                                                            jwtMinter:jwtMinter
-                                                      adminController:adminController];
+  [XrpcAppBskyNotificationPack registerPDSLevelMethodsWithDispatcher:dispatcher services:resolvedServices];
 
   // Bookmarks, chat, and Ozone are PDS-side concerns
   BookmarkService *bookmarkService =
@@ -169,13 +166,11 @@ static id<XrpcRoutePackServices> XrpcAppBskyResolvedRoutePackServices(
   }
   [XrpcAppBskyActorPack registerAppViewMethodsWithDispatcher:dispatcher services:resolvedServices];
 
+  ActorService *actorService = [[ActorService alloc] initWithDatabase:appViewDatabase];
   NotificationService *notificationService =
-      [[NotificationService alloc] initWithDatabase:appViewDatabase
-                                       actorService:[[ActorService alloc]
-                                                        initWithDatabase:appViewDatabase]];
+      [[NotificationService alloc] initWithDatabase:appViewDatabase actorService:actorService];
   GraphService *graphService = [[GraphService alloc] initWithDatabase:appViewDatabase];
   FeedService *feedService = [[FeedService alloc] initWithDatabase:appViewDatabase];
-  ActorService *actorService = [[ActorService alloc] initWithDatabase:appViewDatabase];
   ContactService *contactService = [[ContactService alloc] initWithDatabase:appViewDatabase
                                                                 actorService:actorService];
   AgeAssuranceService *ageAssuranceService = [[AgeAssuranceService alloc] initWithDatabase:appViewDatabase
@@ -204,10 +199,12 @@ static id<XrpcRoutePackServices> XrpcAppBskyResolvedRoutePackServices(
                                       jwtMinter:jwtMinter
                                 adminController:adminController];
 
-  [XrpcAppBskyNotificationPack registerAppViewMethodsWithDispatcher:dispatcher
-                                                        appViewDatabase:appViewDatabase
-                                                              jwtMinter:jwtMinter
-                                                        adminController:adminController];
+  if ([resolvedServices isKindOfClass:[XrpcRoutePackServiceBag class]]) {
+    XrpcRoutePackServiceBag *mutableServices = (XrpcRoutePackServiceBag *)resolvedServices;
+    mutableServices.notificationService = notificationService;
+    mutableServices.appViewDatabase = appViewDatabase;
+  }
+  [XrpcAppBskyNotificationPack registerAppViewMethodsWithDispatcher:dispatcher services:resolvedServices];
 
   if ([resolvedServices isKindOfClass:[XrpcRoutePackServiceBag class]]) {
     ((XrpcRoutePackServiceBag *)resolvedServices).ageAssuranceService =

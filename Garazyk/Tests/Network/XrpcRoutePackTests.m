@@ -7,6 +7,7 @@
 #import "Network/XrpcAppBskyAgeAssurancePack.h"
 #import "Network/XrpcAppBskyBookmarksPack.h"
 #import "Network/XrpcAppBskyActorPack.h"
+#import "Network/XrpcAppBskyNotificationPack.h"
 #import "Network/XrpcAppBskyContactPack.h"
 #import "Network/XrpcAppBskyDraftsPack.h"
 #import "Network/XrpcAppBskyProxyMethodPack.h"
@@ -62,6 +63,11 @@
 - (void)testAppBskyActorPackConformsToProtocol {
   XCTAssertTrue([XrpcAppBskyActorPack conformsToProtocol:@protocol(XrpcRoutePack)]);
   XCTAssertEqualObjects([XrpcAppBskyActorPack routePackIdentifier], @"app.bsky.actor");
+}
+
+- (void)testAppBskyNotificationPackConformsToProtocol {
+  XCTAssertTrue([XrpcAppBskyNotificationPack conformsToProtocol:@protocol(XrpcRoutePack)]);
+  XCTAssertEqualObjects([XrpcAppBskyNotificationPack routePackIdentifier], @"app.bsky.notification");
 }
 
 - (void)testRegistrarRegistersConformingPack {
