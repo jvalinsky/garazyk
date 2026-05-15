@@ -106,6 +106,9 @@ if [[ "$SOURCE_COUNT" -eq 0 ]]; then
     exit 0
 fi
 
+CACHE_ROOT="$REPO_ROOT/docker/local-network/sources_cache"
+mkdir -p "$CACHE_ROOT"
+
 log_info "Preparing $SOURCE_COUNT source build(s) for preset: $PRESET"
 
 for i in $(seq 0 $((SOURCE_COUNT - 1))); do
@@ -122,45 +125,38 @@ for i in $(seq 0 $((SOURCE_COUNT - 1))); do
         continue
     fi
 
-    # Check if the clone already exists with the correct ref
-    CLONE_REUSED=false
-    if [[ -d "$CLONE_DIR/.git" ]]; then
-        CURRENT_REF=$(git -C "$CLONE_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || true)
-        CURRENT_TAG=$(git -C "$CLONE_DIR" describe --tags --exact-match HEAD 2>/dev/null || true)
-        if [[ "$CURRENT_REF" == "$REF" || "$CURRENT_TAG" == "$REF" ]]; then
-            log_ok "Source $NAME: already cloned at $REF, reusing"
-            CLONE_REUSED=true
+    CACHE_DIR="$CACHE_ROOT/$NAME"
+
+    # 1. Ensure CACHE_DIR has a valid clone
+    if [[ ! -d "$CACHE_DIR/.git" ]]; then
+        log_info "Source $NAME: initializing cache at $CACHE_DIR"
+        rm -rf "$CACHE_DIR"
+        mkdir -p "$CACHE_DIR"
+        if [[ "$VERBOSE" == "true" ]]; then
+            git clone "$REPO" "$CACHE_DIR"
         else
-            # Ref mismatch — remove and re-clone
-            log_info "Source $NAME: ref changed ($CURRENT_REF/$CURRENT_TAG -> $REF), re-cloning"
-            rm -rf "$CLONE_DIR"
+            git clone --quiet "$REPO" "$CACHE_DIR"
+        fi
+    else
+        # Proactively fetch to ensure we have the requested ref
+        if [[ "$VERBOSE" == "true" ]]; then
+            git -C "$CACHE_DIR" fetch --tags origin
+        else
+            git -C "$CACHE_DIR" fetch --quiet --tags origin
         fi
     fi
 
-    if [[ "$CLONE_REUSED" != "true" ]]; then
-        log_info "Source $NAME: cloning $REPO at $REF"
-        mkdir -p "$(dirname "$CLONE_DIR")"
+    # 2. Sync CACHE_DIR to match requested REF
+    log_info "Source $NAME: checking out $REF in cache"
+    git -C "$CACHE_DIR" checkout --quiet "$REF"
 
-        # Determine if ref is a branch/tag (shallow clone) or a commit SHA (full clone + checkout)
-        if [[ "$REF" =~ ^[0-9a-f]{7,40}$ ]]; then
-            # Commit SHA — need full clone
-            if [[ "$VERBOSE" == "true" ]]; then
-                git clone "$REPO" "$CLONE_DIR"
-            else
-                git clone --quiet "$REPO" "$CLONE_DIR"
-            fi
-            git -C "$CLONE_DIR" checkout "$REF"
-        else
-            # Branch or tag — shallow clone
-            if [[ "$VERBOSE" == "true" ]]; then
-                git clone --depth 1 --branch "$REF" "$REPO" "$CLONE_DIR"
-            else
-                git clone --quiet --depth 1 --branch "$REF" "$REPO" "$CLONE_DIR"
-            fi
-        fi
-
-        log_ok "Source $NAME: cloned at $REF -> $CLONE_DIR"
-    fi
+    # 3. Fast local copy from cache to CLONE_DIR (per-run directory)
+    log_info "Source $NAME: populating $CLONE_DIR from cache"
+    mkdir -p "$(dirname "$CLONE_DIR")"
+    rm -rf "$CLONE_DIR"
+    
+    # Use cp -a for fast local copy
+    cp -a "$CACHE_DIR" "$CLONE_DIR"
 
     # Copy overlay Dockerfile from Garazyk repo into the cloned source
     if [[ -n "$DOCKERFILE_OVERLAY" ]]; then
