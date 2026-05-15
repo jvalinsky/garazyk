@@ -1,6 +1,7 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli";
 import { TopologyHealthProbe, loadTopologyManifest } from "../lib/deno/topology.ts";
+import { ContainerEventWatcher } from "../lib/deno/docker_events.ts";
 
 const args = parseArgs(Deno.args, {
   string: ["manifest", "compose-project", "compose-file"],
@@ -44,7 +45,11 @@ async function waitHttp(probe: TopologyHealthProbe): Promise<boolean> {
   return false;
 }
 
-async function waitDockerHealth(probe: TopologyHealthProbe): Promise<boolean> {
+/**
+ * CLI-based docker-health polling (original implementation).
+ * Used as fallback when the Docker Engine API is unavailable.
+ */
+async function waitDockerHealthCLI(probe: TopologyHealthProbe): Promise<boolean> {
   const deadline = Date.now() + probe.timeoutSeconds * 1000;
   while (Date.now() < deadline) {
     try {
@@ -76,12 +81,49 @@ async function waitDockerHealth(probe: TopologyHealthProbe): Promise<boolean> {
   return false;
 }
 
+/**
+ * Event-driven docker-health waiting using the Docker Engine API.
+ *
+ * Uses the /events stream to get near-instant notification when a
+ * container becomes healthy, instead of polling every 500ms.
+ * Also detects container crashes (die/oom) immediately.
+ */
+async function waitDockerHealthAPI(
+  probe: TopologyHealthProbe,
+  watcher: ContainerEventWatcher,
+): Promise<boolean> {
+  return await watcher.waitForHealthy(probe.serviceName, probe.timeoutSeconds * 1000);
+}
+
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
+
+// Try to create an event watcher for Docker API-based health checks.
+// Falls back to CLI polling if the Docker socket is unavailable.
+const watcher = await ContainerEventWatcher.create();
+
 for (const probe of manifest.health) {
   console.error(`[INFO]  Waiting for ${probe.label} (${probe.mode})...`);
-  const ok = probe.mode === "http" ? await waitHttp(probe) : await waitDockerHealth(probe);
+
+  let ok: boolean;
+  if (probe.mode === "http") {
+    // HTTP probes always use fetch-based polling (application-level health)
+    ok = await waitHttp(probe);
+  } else if (watcher) {
+    // Docker-health probes use event-driven waiting when API is available
+    ok = await waitDockerHealthAPI(probe, watcher);
+  } else {
+    // Fallback to CLI polling
+    ok = await waitDockerHealthCLI(probe);
+  }
+
   if (!ok) {
     console.error(`[ERROR] ${probe.label} not healthy after ${probe.timeoutSeconds}s`);
+    await watcher?.close();
     Deno.exit(1);
   }
   console.error(`[OK]    ${probe.label} is healthy`);
 }
+
+await watcher?.close();
