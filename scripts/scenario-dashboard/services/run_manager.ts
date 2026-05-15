@@ -52,6 +52,8 @@ class RunManagerImpl implements RunManager {
       runDir,
       reportsDir,
       logPath,
+      // @ts-ignore: dynamically added for DB
+      scenarioParams: config.scenarioParams,
     };
 
     // 1. Save to DB
@@ -147,12 +149,14 @@ class RunManagerImpl implements RunManager {
       INSERT INTO runs (
         id, started_at, status, total_scenarios, pds2, binary_mode,
         topology, runner, web_client, client_flow, scenario_ids_json,
-        run_dir, reports_dir, log_path
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        run_dir, reports_dir, log_path, scenario_params_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       run.id, run.startedAt, run.status, run.totalScenarios, run.pds2 ? 1 : 0, run.binaryMode ? 1 : 0,
       run.topology, run.runner, run.webClient || null, run.clientFlow || null, JSON.stringify(run.scenarioIds),
-      run.runDir, run.reportsDir, run.logPath
+      run.runDir, run.reportsDir, run.logPath,
+      // @ts-ignore
+      run.scenarioParams ? JSON.stringify(run.scenarioParams) : null
     );
   }
 
@@ -213,10 +217,21 @@ class RunManagerImpl implements RunManager {
 
     const logFile = await Deno.open(run.logPath!, { write: true, create: true });
 
+    // Build environment variables from parameters
+    const env: Record<string, string> = {};
+    // @ts-ignore
+    if (run.scenarioParams) {
+      // @ts-ignore
+      for (const [key, val] of Object.entries(run.scenarioParams)) {
+        env[`SCENARIO_PARAM_${key.toUpperCase()}`] = String(val);
+      }
+    }
+
     const command = new Deno.Command("deno", {
       args,
       stdout: "piped",
       stderr: "piped",
+      env,
     });
 
     this.childProcess = command.spawn();

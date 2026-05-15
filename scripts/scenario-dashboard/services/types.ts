@@ -20,6 +20,11 @@ export interface DiscoveredScenario {
   category: string;
   needsPds2: boolean;
   requires?: string[];
+  parameters?: Record<string, {
+    type: "number" | "string" | "boolean";
+    default: string | number | boolean;
+    description: string;
+  }>;
 }
 
 export type ScenarioStatus = "passed" | "failed" | "skipped" | "running";
@@ -39,6 +44,7 @@ export interface RunConfig {
   binaryMode: boolean;
   webClient?: string;
   clientFlow?: string;
+  scenarioParams?: Record<string, any>;
 }
 
 export interface Run {
