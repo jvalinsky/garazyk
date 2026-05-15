@@ -17,6 +17,17 @@ import { validateRoleCapability } from "./lib/deno/topology_registry.ts";
 import { DurationCache, ProgressBar } from "./lib/deno/progress.ts";
 import { ScenarioResult } from "./lib/deno/runner.ts";
 import { runScenarioInDocker } from "./lib/deno/docker_runner.ts";
+import { ContainerEventWatcher, type WatcherEvent } from "./lib/deno/docker_events.ts";
+import { initE2eTracing, isOtelEnabled, shutdownTracing, withSpan } from "./lib/deno/otel.ts";
+import { ContainerStatsSampler } from "./lib/deno/container_stats.ts";
+import { createDockerClient } from "./lib/deno/docker_api.ts";
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KiB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GiB`;
+}
 
 interface RunnerArgs {
   scenarioIds: string[];
@@ -41,6 +52,7 @@ interface RunnerArgs {
   reportsDir?: string;
   topology?: string;
   runner: "host" | "docker";
+  otel: boolean;
 }
 
 function usage(): never {
@@ -67,6 +79,7 @@ Options:
   --keep-running          Leave services running after setup or execution
   --timeout SECONDS       Per-scenario timeout (default: 120)
   --no-json               Do not write JSON reports
+  --otel                  Enable OpenTelemetry tracing (sends to localhost:4318)
 `);
   Deno.exit(2);
 }
@@ -90,6 +103,7 @@ function parseRunnerArgs(argv: string[]): RunnerArgs {
     clientFlow: "none",
     allowHybridNetwork: false,
     runner: "host",
+    otel: false,
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -138,6 +152,9 @@ function parseRunnerArgs(argv: string[]): RunnerArgs {
         break;
       case "--allow-hybrid-network":
         args.allowHybridNetwork = true;
+        break;
+      case "--otel":
+        args.otel = true;
         break;
       case "--topology":
       case "--runner":
@@ -488,6 +505,12 @@ async function main() {
         Deno.env.set("ATPROTO_TOPOLOGY", args.topology);
       }
 
+      // Initialize OpenTelemetry if --otel is set
+      if (args.otel) {
+        initE2eTracing("garazyk-e2e-runner");
+        console.log(`OTel tracing enabled → ${Deno.env.get("OTEL_EXPORTER_OTLP_ENDPOINT") || "http://localhost:4318"}`);
+      }
+
       if (args.collectDiagnostics) {
         await collectDiagnostics(context);
         console.log(`Diagnostics: ${context.diagnosticsDir}`);
@@ -555,50 +578,126 @@ async function main() {
       const expectedDurations = selected.map((scenario) => durationCache.get(scenario.id));
       const progress = new ProgressBar(selected.length, expectedDurations);
 
-      for (let i = 0; i < selected.length; i++) {
-        const scenario = selected[i];
-        progress.start(`${scenario.id} - ${scenario.name}`);
-        const result = await runScenario(
-          scenario,
-          scenario.timeout || args.timeout,
-          args,
-          topology,
-          repoRoot,
-          context.composeProject,
-        );
-        result.metadata = {
-          ...result.metadata,
-          run_id: context.runId,
-          run_dir: context.runDir,
-          diagnostics_dir: context.diagnosticsDir,
-          service_urls: topology.serviceUrls,
-          web_client: topology.webClient || null,
-          client_flow: args.clientFlow,
-          allow_hybrid_network: args.allowHybridNetwork,
-          scenario_id: scenario.id,
-          binary_mode: args.binary,
-          pds2: withPds2,
-          topology: args.topology || null,
-          runner: args.runner,
-        };
-
-        Deno.stdout.writeSync(new TextEncoder().encode("\r" + " ".repeat(120) + "\r"));
-        result.printSummary();
-        results.push({ scenario, result });
-
-        if (result.startedAt && result.finishedAt) {
-          durationCache.set(scenario.id, result.finishedAt - result.startedAt);
-        }
-
-        if (!args.noJson) {
-          const reportPath = await result.writeReport(reportsDir, `${scenario.id}_${scenario.name}`);
-          reportPaths.push(reportPath);
-          console.log(`  Report: ${reportPath}`);
-        }
-
-        progress.update(i + 1);
+      // Start a container event watcher for crash detection during scenarios.
+      // If the Docker API is available, this provides near-instant detection
+      // of container crashes (die/oom events) instead of discovering them
+      // on the next health check poll.
+      const crashWatcher = await ContainerEventWatcher.create();
+      let crashedContainer: { serviceName: string; exitCode: number; oomKilled: boolean } | null = null;
+      if (crashWatcher) {
+        crashWatcher.subscribe((event: WatcherEvent) => {
+          if (event.kind === "died" || event.kind === "oom") {
+            crashedContainer = {
+              serviceName: event.serviceName,
+              exitCode: event.kind === "died" ? event.exitCode : 137,
+              oomKilled: event.kind === "oom" || event.oomKilled,
+            };
+          }
+        });
       }
-      progress.finish();
+
+      // Start a container stats sampler for OTel resource metrics.
+      // Periodically records CPU, memory, network, and block I/O as
+      // OTel gauges/counters visible in SigNoz alongside traces.
+      let statsSampler: ContainerStatsSampler | null = null;
+      if (isOtelEnabled()) {
+        const dockerClient = await createDockerClient();
+        if (dockerClient) {
+          statsSampler = new ContainerStatsSampler({
+            client: dockerClient,
+            composeProject: context.composeProject,
+            intervalMs: 5000,
+            onMemoryPressure: (alert) => {
+              console.warn(yellow(
+                `  Memory pressure: ${alert.serviceName} failcnt=${alert.failcnt} ` +
+                `(${formatBytes(alert.memoryUsageBytes)} / ${formatBytes(alert.memoryLimitBytes)})`,
+              ));
+            },
+          });
+          statsSampler.start();
+        }
+      }
+
+      try {
+        for (let i = 0; i < selected.length; i++) {
+          const scenario = selected[i];
+          progress.start(`${scenario.id} - ${scenario.name}`);
+
+          // Check if a container crashed during the previous scenario
+          if (crashedContainer) {
+            const crashInfo = crashedContainer.oomKilled
+              ? `Container "${crashedContainer.serviceName}" was OOM-killed (exit code ${crashedContainer.exitCode})`
+              : `Container "${crashedContainer.serviceName}" exited unexpectedly (exit code ${crashedContainer.exitCode})`;
+            console.error(red(`\n  Container crash detected: ${crashInfo}`));
+            console.error(yellow(`  Skipping remaining scenarios.`));
+
+            // Collect crash logs if the Docker API is available
+            const crashResult = new ScenarioResult(scenario.name);
+            crashResult.start();
+            crashResult.stepFailed(
+              `Pre-scenario container check`,
+              crashInfo,
+            );
+            crashResult.finish();
+            results.push({ scenario, result: crashResult });
+            break;
+          }
+
+          const result = await withSpan(
+            `scenario.${scenario.id}`,
+            async () => await runScenario(
+              scenario,
+              scenario.timeout || args.timeout,
+              args,
+              topology,
+              repoRoot,
+              context.composeProject,
+            ),
+            {
+              "scenario.id": scenario.id,
+              "scenario.name": scenario.name,
+              "scenario.timeout": scenario.timeout || args.timeout,
+              "scenario.runner": args.runner,
+            },
+          );
+          result.metadata = {
+            ...result.metadata,
+            run_id: context.runId,
+            run_dir: context.runDir,
+            diagnostics_dir: context.diagnosticsDir,
+            service_urls: topology.serviceUrls,
+            web_client: topology.webClient || null,
+            client_flow: args.clientFlow,
+            allow_hybrid_network: args.allowHybridNetwork,
+            scenario_id: scenario.id,
+            binary_mode: args.binary,
+            pds2: withPds2,
+            topology: args.topology || null,
+            runner: args.runner,
+          };
+
+          Deno.stdout.writeSync(new TextEncoder().encode("\r" + " ".repeat(120) + "\r"));
+          result.printSummary();
+          results.push({ scenario, result });
+
+          if (result.startedAt && result.finishedAt) {
+            durationCache.set(scenario.id, result.finishedAt - result.startedAt);
+          }
+
+          if (!args.noJson) {
+            const reportPath = await result.writeReport(reportsDir, `${scenario.id}_${scenario.name}`);
+            reportPaths.push(reportPath);
+            console.log(`  Report: ${reportPath}`);
+          }
+
+          progress.update(i + 1);
+        }
+        progress.finish();
+      } finally {
+        // Clean up the crash watcher and stats sampler
+        await crashWatcher?.close();
+        await statsSampler?.stop();
+      }
     } finally {
       const shouldCollect = results.some(({ result }) => result.failed > 0) || fatalError;
       if (shouldCollect) {
@@ -668,7 +767,18 @@ async function main() {
     }
   }
 
+  // Flush OTel spans before exit
+  if (isOtelEnabled()) {
+    await shutdownTracing();
+  }
+
   if (fatalError || totalFailed > 0) Deno.exit(1);
+  // Force exit when all tests pass. Background async operations
+  // (Docker event stream, container stats sampler) may keep the
+  // event loop alive even after close() is called, because Deno's
+  // reader.read() on Unix socket HTTP responses blocks the event
+  // loop and doesn't respond to abort signals in a timely manner.
+  Deno.exit(0);
 }
 
 async function pathExists(path: string): Promise<boolean> {
