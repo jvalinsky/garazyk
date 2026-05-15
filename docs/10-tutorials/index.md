@@ -4,83 +4,57 @@ title: Tutorials Overview
 
 # Tutorials Overview
 
-## Overview
+The Garazyk tutorials are designed for contributors who want to understand the system's architecture and internals. Rather than providing standalone "toy" projects, these guides focus on how the repository is structured, why specific subsystems exist, and how to verify changes.
 
-The tutorial track is for contributors who want to understand how Garazyk is put together, not for readers who want a sequence of standalone toy projects.
+Each tutorial explores:
+- The purpose and invariants of a subsystem.
+- File locations and ownership in the repository.
+- Verification strategies and common failure modes.
 
-That distinction is deliberate. Earlier tutorial drafts implied "copy this code and it compiles as written," but the repository itself is a richer, more interconnected system than that framing allowed. The tutorials now focus on:
+Longer code samples and shell commands are moved to appendices to keep the main narrative focused on technical concepts.
 
-- why a subsystem exists,
-- where it lives in the repo,
-- how to verify it,
-- and which failure modes matter when you change it.
+## Core Track
 
-Long code and shell material belongs in appendices so the main narrative can stay technical and readable.
+Follow these tutorials to understand the production server from the inside out.
 
-## Recommended Order
+1. [Tutorial 1: Hello PDS](./tutorial-1-hello-pds) — Boot sequence and discovery.
+2. [Tutorial 2: Accounts](./tutorial-2-accounts) — Identity and session management.
+3. [Tutorial 3: Records](./tutorial-3-records) — Repository writes and data invariants.
+4. [Tutorial 4: Authentication](./tutorial-4-auth) — JWT, DPoP, and OAuth2.
+5. [Tutorial 5: Firehose](./tutorial-5-firehose) — Real-time event streaming.
+6. [Subguide: Network from Scratch](./network-from-scratch/) — Sockets, HTTP, and WebSockets.
+7. [Tutorial 6: Deployment](./tutorial-6-deployment) — Production operations and Docker.
 
-1. [Tutorial 1: Hello PDS](./tutorial-1-hello-pds)
-2. [Tutorial 2: Accounts](./tutorial-2-accounts)
-3. [Tutorial 3: Records](./tutorial-3-records)
-4. [Tutorial 4: Authentication](./tutorial-4-auth)
-5. [Tutorial 5: Firehose](./tutorial-5-firehose)
-6. [Subguide: HTTP + WebSocket from Scratch](./network-from-scratch/)
-7. [Tutorial 6: Deployment](./tutorial-6-deployment)
-8. [Tutorial 8: Endpoint Workflow](./tutorial-8-endpoint-workflow)
-9. [Tutorial 9: Blobs and Migrations](./tutorial-9-blobs-and-migrations)
-10. [Tutorial 10: Deep-Dive OAuth2 & DPoP](./tutorial-10-oauth-dpop)
-11. [Tutorial 11: PLC Failover and Resolution](./tutorial-11-plc-resolution)
-12. [Tutorial 12: Federation & Sync](./tutorial-12-federation-sync)
-13. [Tutorial 13: Admin UI Internals & Instrumentation](./tutorial-13-admin-internals)
-14. [Tutorial 14: Advanced Firehose (Filtering & Backfill)](./tutorial-14-advanced-firehose)
-15. [Tutorial 15: Syrena AppView Operation](./tutorial-15-appview-operation)
+## Feature Deep Dives
 
-The first five tutorials plus the network subguide teach the production server from the inside out. [Tutorial 6: Deployment](./tutorial-6-deployment) then shifts to production operations. [Tutorial 8: Endpoint Workflow](./tutorial-8-endpoint-workflow) ties together the end-to-end workflow for adding or changing a feature. [Tutorial 9: Blobs and Migrations](./tutorial-9-blobs-and-migrations) covers the durability layer. [Tutorial 10: Deep-Dive OAuth2 & DPoP](./tutorial-10-oauth-dpop) explains the high-security authentication handshake. [Tutorial 11: PLC Failover and Resolution](./tutorial-11-plc-resolution) covers identity resolution and resilience. [Tutorial 12: Federation & Sync](./tutorial-12-federation-sync) explains the network-wide data flow. [Tutorial 13: Admin UI Internals & Instrumentation](./tutorial-13-admin-internals) covers PDS management and monitoring. [Tutorial 14: Advanced Firehose (Filtering & Backfill)](./tutorial-14-advanced-firehose) dives into production-grade streaming features. [Tutorial 15: Syrena AppView Operation](./tutorial-15-appview-operation) covers the lifecycle of data within the AppView engine, from ingestion to specialized indexing.
+Once you understand the core runtime, explore these specialized topics.
 
-If you want the network internals immediately after the firehose walkthrough, take the advanced track next:
+- [Tutorial 8: Endpoint Workflow](./tutorial-8-endpoint-workflow) — Adding new XRPC methods.
+- [Tutorial 9: Blobs and Migrations](./tutorial-9-blobs-and-migrations) — Managing binary data and repo portability.
+- [Tutorial 10: OAuth2 & DPoP](./tutorial-10-oauth-dpop) — High-security authentication handshakes.
+- [Tutorial 11: PLC Failover and Resolution](./tutorial-11-plc-resolution) — Identity resilience.
+- [Tutorial 12: Federation & Sync](./tutorial-12-federation-sync) — Network-wide data replication.
+- [Tutorial 13: Admin Internals](./tutorial-13-admin-internals) — Monitoring and management.
+- [Tutorial 14: Advanced Firehose](./tutorial-14-advanced-firehose) — Filtering and backfills.
+- [Tutorial 15: AppView Operation](./tutorial-15-appview-operation) — Data ingestion and indexing.
 
-- [Subguide: HTTP + WebSocket from Scratch](./network-from-scratch/)
+## Example Levels
 
-That subguide sits between [Tutorial 5: Firehose](./tutorial-5-firehose) and [Tutorial 6: Deployment](./tutorial-6-deployment). It is the place to study how Garazyk actually accepts sockets, parses HTTP/1.1, upgrades to WebSocket, and hands the connection to `subscribeRepos`.
+We use three levels of examples to guide development:
 
-## What the Tutorials Optimize For
+- **Main Prose**: Architectural explanations and repository walkthroughs.
+- **Inline Snippets**: Small, illustrative examples of a single idea.
+- **Appendices**: Command sequences and code blocks for manual verification.
 
-These tutorials are written for new contributors. They assume you want to answer questions like:
+Always refer to the source files in `Garazyk/Sources/` for the absolute implementation truth.
 
-- Which files matter?
-- What invariant is this subsystem protecting?
-- How do I prove a change is correct?
-- Where do protocol concerns stop and repo-specific concerns start?
-
-They do not assume you need a giant code listing on every page. Where exact commands or samples are still useful, they live in `## Appendix` sections.
-
-## What Is Runnable and What Is Illustrative
-
-The main docs now use three different levels of example material:
-
-| Level | How to treat it |
-| --- | --- |
-| Main tutorial prose | Contributor explanation and repo walkthrough |
-| Inline short snippets | Illustrative, small enough to explain one idea clearly |
-| Appendix code and shell blocks | The longer material you may run, adapt, or compare to the repo |
-
-If you need literal source truth, always prefer the runtime files under `Garazyk/Sources/` and the deployment assets under `docker/pds/`.
-
-## Supporting Reference Pages
-
-Before or during the tutorial track, these pages usually pay off:
+## Supporting Reference
 
 - [Codebase Map](../01-getting-started/codebase-map)
 - [Request Lifecycle](../01-getting-started/request-lifecycle)
-- [Config Reference](../11-reference/config-reference)
-- [CLI Reference](../11-reference/cli-reference)
 - [Testing Map](../11-reference/testing-map)
-- [Explorer, OpenAPI & UI](../11-reference/explorer-openapi-ui)
-
-## Related Reading
-
-- [Overview](../01-getting-started/overview)
-- [Architecture Overview](../01-getting-started/architecture-overview)
+- [API Reference](../11-reference/api-reference)
+- [Config Reference](../11-reference/config-reference)
 
 ## Related
 

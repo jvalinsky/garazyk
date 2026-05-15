@@ -6,9 +6,9 @@ title: Repository Basics
 
 ## Overview
 
-An ATProto repository in Garazyk is the actor-owned bundle of records, stored blocks, commit state, and blob references that make one DID's data portable and syncable.
+An ATProto repository is a collection of records, stored blocks, and commit state that makes an actor's data portable and syncable.
 
-## Repository Shape
+## Repository Structure
 
 ```mermaid
 flowchart TD
@@ -24,48 +24,33 @@ flowchart TD
     Repo --> Blobs
 ```
 
-## The Important Mental Model
+## Key Concepts
 
-Separate these concepts:
+- **Records**: User-facing logical objects (e.g., posts, follows).
+- **Blocks**: IPLD blocks that store encoded record data.
+- **Commits**: Signed snapshots of the repository state.
+- **Blobs**: Large binary files (images, video) stored outside the repository but referenced by it.
+- **Actor Store**: The isolated SQLite database that persists all repository state for a single DID.
 
-- records are user-facing logical objects
-- blocks and commits are repository-structure artifacts
-- blobs are adjacent to the repository but have their own storage path
-- the actor store is the persistence boundary underneath all of it
+## Write Workflow
 
-This separation explains why a request can succeed at the record layer but fail during sync or export.
+A repository mutation involves:
 
-## What A Normal Write Means
-
-A normal write involves more than inserting a record row:
-
-1. validate and normalize the record input
-2. encode and identify the record content
-3. update actor-store state
-4. create and sign the new commit material
-5. expose the result to sync and firehose consumers
-
-The commit deep dive is the most critical repository walkthrough.
-
-## What This Summary Does Not Try To Do
-
-This conceptual map omits inline CBOR, CID, CAR, blob, and commit implementation details. Those details reside in focused deep dives and protocol articles.
+1. Validating the record against its Lexicon schema.
+2. Encoding the record to DAG-CBOR and computing its CID.
+3. Updating the Merkle Search Tree (MST) in the actor store.
+4. Signing a new commit that points to the updated MST root.
+5. Broadcasting the commit to the sync firehose.
 
 ## Related Deep Dives
-
 - [Record Write to Commit Walkthrough](./record-write-to-commit-walkthrough)
 - [Blob Flow Walkthrough](./blob-flow-walkthrough)
+- [CID and Hashing](./cid-and-hashing)
+- [CAR Format](./car-format)
 
 ## Related Reading
-
-- [Blob Storage](./blob-storage)
-- [Blob Lifecycle](./blob-lifecycle)
-- [Repository Data Structures](../02-core-concepts/repository-data-structures-walkthrough)
-- [CID and Hashing](./cid-and-hashing)
-
-## Related
-
-- [Documentation Map](../11-reference/documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
+- [Actor Databases](../05-database-layer/actor-databases)
+- [Lexicon Validation](./lexicon-validation)
+- [Firehose Overview](../08-sync-firehose/firehose-overview)
+- [Glossary](../GLOSSARY)
 

@@ -1,12 +1,12 @@
-# PDSApplication Facade
+# PDS Application Facade
 
-`PDSApplication` is the composition root and primary interface for the PDS. It manages service lifecycles, infrastructure initialization, and server coordination.
+`PDSApplication` is the composition root and primary interface for the PDS. It manages service lifecycles, infrastructure initialization, and subsystem coordination.
 
 ## Service Composition
 
 `PDSApplication` coordinates the following subsystems:
-- **Services**: `PDSAccountService`, `PDSRecordService`, `PDSBlobService`, `PDSRepositoryService`.
-- **Controllers**: `PDSAdminController`, `PDSRelayService`.
+- **Core Services**: `PDSAccountService`, `PDSRecordService`, `PDSBlobService`, `PDSRepositoryService`.
+- **Controllers and Proxies**: `PDSAdminController`, `PDSRelayService`.
 - **Infrastructure**: `PDSServiceDatabases`, `PDSDatabasePool`, `JWTMinter`.
 
 ```mermaid
@@ -22,28 +22,28 @@ flowchart TD
     app --> userDb["PDSDatabasePool"]
 ```
 
-## Initialization
+## Boot Sequence
 
-The `initWithConfiguration:` method executes the boot sequence:
-1. **Infrastructure**: Initializes shared databases (`PDSServiceDatabases`) and the actor connection pool (`PDSDatabasePool`).
-2. **Identity & Auth**: Configures the `JWTMinter` and loads server signing keys via the `PDSKeyManager`.
-3. **Services**: Instantiates domain services with their required infrastructure dependencies.
-4. **Lexicons**: Loads and validates ATProto lexicons for request validation.
+The `initWithConfiguration:` method initializes the server:
+1. **Infrastructure**: Establishes shared database connections (`PDSServiceDatabases`) and actor pools (`PDSDatabasePool`).
+2. **Identity**: Configures the `JWTMinter` and loads server signing keys via `PDSKeyManager`.
+3. **Services**: Instantiates domain services with their required dependencies.
+4. **Validation**: Loads AT Protocol lexicons for request validation.
 
 ## Lifecycle Management
 
 ### Startup
-The HTTP server is started via `[app.httpServer startWithCompletion:]`. This transition enables the request pipeline and firehose streams.
+The HTTP server is activated via `[app.httpServer startWithCompletion:]`. This enables the request pipeline and firehose streams.
 
 ### Shutdown
-Graceful shutdown requires:
+The shutdown process ensures data integrity:
 1. Stopping the `HttpServer` to reject new connections.
 2. Stopping the `PDSRelayService` and firehose broadcasters.
-3. Closing all active database connections in `PDSServiceDatabases` and `PDSDatabasePool`.
+3. Closing active database connections in both service and actor pools.
 
 ## Service Access
 
-Handlers and external callers access domain logic through `PDSApplication` properties.
+Handlers access domain logic through `PDSApplication` properties:
 
 ```objc
 // Account creation
@@ -59,20 +59,21 @@ Handlers and external callers access domain logic through `PDSApplication` prope
                     completion:completion];
 ```
 
-## Health and Monitoring
+## Monitoring
 
 ### Health Checks
-`isHealthy:` verifies the operational status of critical components:
-- Active database connectivity.
-- HTTP server runtime state.
+`isHealthy:` verifies the status of critical components, including database connectivity and HTTP server runtime state.
 
 ### Metrics
-`PDSApplication` captures request metrics (latency, success rates, and error distributions) which are exposed via the `/api/pds/metrics` endpoint for operator inspection.
+`PDSApplication` captures request metrics (latency, success rates, and error distributions) exposed via the `/api/pds/metrics` endpoint.
 
 ## Related
-- [Services Overview](./services-overview)
+- [Services Overview](./account-service)
 - [Account Service](./account-service)
 - [Record Service](./record-service)
+- [Blob Service](./blob-service)
+- [Repository Service](./repository-service)
 - [HTTP Server](../04-network-layer/http-server)
 - [Configuration Reference](../11-reference/config-reference)
+- [Runtime Flow Walkthrough](./runtime-flow-walkthrough)
 

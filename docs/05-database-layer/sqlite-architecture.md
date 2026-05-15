@@ -1,6 +1,6 @@
 # SQLite Architecture
 
-Garazyk utilizes SQLite as a distributed, application-level storage system. Operational data is bifurcated into shared service databases and isolated per-actor stores.
+Garazyk uses SQLite as a distributed, application-level storage system. Data is split between shared service databases and isolated per-actor stores.
 
 ## Architectural Choices
 - **Tenant Isolation**: Actor repository state is isolated into individual database files.
@@ -24,11 +24,18 @@ When modifying persistence logic, identify:
 2. **Scope**: Is the operation scoped to a single actor or the entire runtime?
 3. **Atomicity**: Does the operation require cross-database consistency or specific transaction ordering?
 
-## Related
+## Related Deep Dives
 - [Shared vs Actor Database Boundary](./shared-vs-actor-database-boundary)
 - [Transactions, WAL, and Concurrency](./transactions-wal-and-concurrency)
 - [Service Databases](./service-databases)
 - [Actor Databases](./actor-databases)
 - [WAL Mode](./wal-mode)
 - [Migrations](./migrations)
+- [Zero Downtime Migrations](./zero-downtime-migrations)
+
+## Related Reading
+- [Repository Basics](../07-repository-protocol/repository-basics)
+- [Firehose Overview](../08-sync-firehose/firehose-overview)
+- [Session and JWT Lifecycle](../06-authentication/session-and-jwt-lifecycle)
+- [Glossary](../GLOSSARY)
 

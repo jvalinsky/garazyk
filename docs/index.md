@@ -12,15 +12,16 @@ If documentation and implementation disagree, trust the implementation and updat
 2. [Codebase Map](01-getting-started/codebase-map) — Major subsystems and their locations.
 3. [Request Lifecycle](01-getting-started/request-lifecycle) — Flow of requests through the stack.
 4. [Tutorials Overview](10-tutorials/index) — Guided walkthroughs.
+5. [Glossary](GLOSSARY) — Technical terminology and acronyms.
 
 ## Principles
 
 We prioritize:
 - Descriptive technical writing.
-- Explaining subsystem purpose and invariants.
+- Explaining subsystem invariants and purpose.
 - Repo-grounded examples.
 
-Development happens at the seams between configuration, routing, service composition, storage, and protocol rules.
+Development happens at the intersections of configuration, routing, service composition, storage, and protocol rules.
 
 ## Paths
 
@@ -28,31 +29,32 @@ Development happens at the seams between configuration, routing, service composi
 [Setup](01-getting-started/setup), [Tutorial 1: Hello PDS](10-tutorials/tutorial-1-hello-pds), [Request Lifecycle](01-getting-started/request-lifecycle).
 
 ### Protocol Features
-[Tutorial 8: Endpoint Workflow](10-tutorials/tutorial-8-endpoint-workflow), [API Reference](11-reference/api-reference), [Testing Map](11-reference/testing-map).
+[Tutorial 8: Endpoint Workflow](10-tutorials/tutorial-8-endpoint-workflow), [API Reference](11-reference/api-reference), [Testing Map](11-reference/testing-map), [ATProto PLC Architecture](atproto-plc-architecture).
 
 ### Tooling
-[Explorer, OpenAPI & UI](11-reference/explorer-openapi-ui), [Admin UI Documentation](11-reference/admin-ui-documentation).
+[Explorer, OpenAPI & UI](11-reference/explorer-openapi-ui), [Admin UI Documentation](11-reference/admin-ui-documentation), [Ozone Endpoints](tools-ozone-endpoints).
 
-### Deployment
-[Tutorial 6: Deployment](10-tutorials/tutorial-6-deployment), [Config Reference](11-reference/config-reference).
+### Deployment & Ops
+[Tutorial 6: Deployment](10-tutorials/tutorial-6-deployment), [Config Reference](11-reference/config-reference), [Deployment Guide](DEPLOYMENT_GUIDE), [Monitoring](MONITORING).
 
 ## Organization
 
 - `01-09`: Runtime layers and subsystems.
 - `10`: Tutorials.
 - `11`: Operational and contributor reference.
-- `12`: Diagrams.
+- `12`: [Diagrams](12-diagrams/index).
 
 ## Verification
 
-Before committing behavioral changes, identify:
+Before committing changes, identify:
 1. The file owning the behavior.
-2. Existing tests protecting it.
+2. Existing tests protecting it (see [Testing Guide](TESTING)).
 3. The specific command to verify the change.
 
 ## Related
 
-- [Overview](01-getting-started/overview)
 - [Architecture Overview](01-getting-started/architecture-overview)
-- [Documentation Map](11-reference/documentation-map.md)
+- [Documentation Map](11-reference/documentation-map)
+- [Versioning Strategy](VERSIONING_STRATEGY)
+- [Maintenance Guide](MAINTENANCE)
 

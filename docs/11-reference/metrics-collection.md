@@ -4,79 +4,45 @@ title: Metrics Collection
 
 # Metrics Collection
 
-## Overview
-
-Garazyk collects Prometheus-style metrics across its request path. This page describes the metrics model and how to interpret the available data.
+Garazyk exports Prometheus-style metrics to track server health and performance.
 
 ## Metrics Model
 
-`PDSMetrics` is a singleton that collects counters, gauges, and latency histograms. This common model helps debug requests that cross subsystem boundaries (e.g., an endpoint touching auth, rate limiting, and storage).
+The `PDSMetrics` singleton collects counters, gauges, and histograms from across the runtime. This unified model allows correlation between subsystem events, such as request latency and database pool usage.
 
 ## Metric Families
 
-The PDS exports metrics for:
-
-- HTTP request totals by method and status.
-- Per-endpoint request totals and latency.
-- Repository and blob counts/sizes.
-- Database size.
-- Active connections.
-- Firehose subscribers, events, and sequence numbers.
-- Rate-limit rejections and auth failures.
-- OAuth grants and active sessions.
-
-## Update Points
-
-The metrics system is integrated directly into the runtime:
-
-- `HttpServer`: request counts, status, latency, and connections.
-- `RateLimiter`: rejection types.
-- `AuthVerifier`: auth failure reasons.
-- `OAuth2`: grants and session activity.
-- `SubscribeReposHandler`: firehose and repository commit activity.
+- **HTTP:** Request totals by method, endpoint, and status code.
+- **Repository:** Commit counts and total record counts.
+- **Storage:** Blob counts and total bytes stored.
+- **Database:** SQLite database sizes and active connection counts.
+- **Auth:** Authentication failure reasons and active session counts.
+- **Sync:** Firehose subscriber counts and event sequences.
 
 ## Export Surfaces
 
-- PDS: `GET /metrics` and `GET /admin/metrics`.
-- PLC: `GET /_metrics`.
+| Service | Endpoint | Purpose |
+| --- | --- | --- |
+| PDS | `/metrics` | Public and operational metrics. |
+| PDS | `/admin/metrics` | Authenticated controller-backed metrics. |
+| PLC | `/_metrics` | Identity directory metrics. |
 
-PDS metrics explain application behavior, while PLC metrics explain DID directory behavior.
+## Querying Metrics
 
-## Interpretation Guidelines
-
-- Latency requires endpoint context to be actionable.
-- Read blob growth alongside request rates.
-- Group auth failures by reason before drawing conclusions.
-- Pair firehose metrics with sync or relay activity.
-
-## Limitations
-
-Metrics provide the first diagnostic surface but do not replace:
-- Detailed logs for failure context.
-- Code analysis for control flow truth.
-- Manual verification of UI behavior.
-
-## Related Reading
-
-- [Performance Monitoring](./performance-monitoring)
-- [Logging Strategy](./logging-strategy)
-- [Explorer, OpenAPI & UI](./explorer-openapi-ui)
-
-## Appendix
-
-### Minimal scrape checks
+Use `curl` to inspect the raw Prometheus output:
 
 ```bash
-curl -sS http://127.0.0.1:2583/metrics | rg '^pds_auth_failures_total'
-```
+# Check auth failures
+curl -sS http://127.0.0.1:2583/metrics | grep '^pds_auth_failures_total'
 
-```bash
-curl -sS http://127.0.0.1:2583/metrics | rg '^pds_request_latency_seconds'
+# Check request latency
+curl -sS http://127.0.0.1:2583/metrics | grep '^pds_request_latency_seconds'
 ```
 
 ## Related
 
-- [Documentation Map](documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
+- [Performance Monitoring](./performance-monitoring)
+- [Logging Strategy](./logging-strategy)
+- [Explorer, OpenAPI & UI](./explorer-openapi-ui)
+- [Documentation Map](./documentation-map)
 
