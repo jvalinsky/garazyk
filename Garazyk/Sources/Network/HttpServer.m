@@ -505,7 +505,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
   // Wait for semaphore to limit concurrency
   dispatch_async(
       dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+        dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 600 * NSEC_PER_SEC));
 
         __strong typeof(weakSelf) strongSelf = weakSelf;
         __strong typeof(weakConnection) strongConnection = weakConnection;
@@ -911,7 +911,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
   }
 
   // Wait for all active tasks to complete
-  dispatch_group_wait(self.taskGroup, DISPATCH_TIME_FOREVER);
+  dispatch_group_wait(self.taskGroup, dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
 
   dispatch_sync(_connectionQueue, ^{
     for (id<PDSNetworkConnection> conn in self->_activeConnections) {

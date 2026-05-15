@@ -14,6 +14,7 @@
 #import <sqlite3.h>
 #include <string.h>
 #import "Database/Utils/PDSSQLiteUtils.h"
+#import "Database/Utils/PDSDatabaseUtilities.h"
 
 NSString * const AppViewDatabaseErrorDomain = @"AppViewDatabaseErrorDomain";
 
@@ -387,14 +388,6 @@ static NSString *iso8601Now(void) {
 static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
     if (!str) return nil;
     return [NSDateFormatter atproto_dateFromString:str];
-}
-
-static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
-    if (data.length > 0) {
-        sqlite3_bind_blob(stmt, idx, data.bytes, (int)data.length, SQLITE_TRANSIENT);
-    } else {
-        sqlite3_bind_zeroblob(stmt, idx, 0);
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1048,15 +1041,15 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             return;
         }
 
-        [self _bindParams:params toStatement:stmt];
+        PDSDBBindParams(stmt, params);
 
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             NSMutableDictionary *row = [NSMutableDictionary dictionary];
             int count = sqlite3_column_count(stmt);
             for (int i = 0; i < count; i++) {
                 NSString *name = @(sqlite3_column_name(stmt, i));
-                id val = [self _valueFromStatement:stmt columnIndex:i];
-                if (val) row[name] = val;
+                id val = PDSDBColumnValue(stmt, i);
+                if (val && val != [NSNull null]) row[name] = val;
             }
             [results addObject:row];
         }
@@ -1089,7 +1082,7 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
             return;
         }
 
-        [self _bindParams:params toStatement:stmt];
+        PDSDBBindParams(stmt, params);
 
         rc = sqlite3_step(stmt);
         if (rc != SQLITE_DONE) {
@@ -1143,36 +1136,7 @@ static void bindDataOrZeroBlob(sqlite3_stmt *stmt, int idx, NSData *data) {
 
 #pragma mark - Private Helpers
 
-- (void)_bindParams:(NSArray *)params toStatement:(sqlite3_stmt *)stmt {
-    for (NSUInteger i = 0; i < params.count; i++) {
-        id param = params[i];
-        int idx = (int)(i + 1);
-        if (param == [NSNull null]) {
-            sqlite3_bind_null(stmt, idx);
-        } else if ([param isKindOfClass:[NSString class]]) {
-            sqlite3_bind_text(stmt, idx, [param UTF8String], -1, SQLITE_TRANSIENT);
-        } else if ([param isKindOfClass:[NSData class]]) {
-            bindDataOrZeroBlob(stmt, idx, param);
-        } else if ([param isKindOfClass:[NSNumber class]]) {
-            sqlite3_bind_int64(stmt, idx, [param longLongValue]);
-        }
-    }
-}
 
-- (id)_valueFromStatement:(sqlite3_stmt *)stmt columnIndex:(int)idx {
-    int type = sqlite3_column_type(stmt, idx);
-    switch (type) {
-        case SQLITE_INTEGER: return @(sqlite3_column_int64(stmt, idx));
-        case SQLITE_FLOAT:   return @(sqlite3_column_double(stmt, idx));
-        case SQLITE_TEXT:    return @((const char *)sqlite3_column_text(stmt, idx));
-        case SQLITE_BLOB: {
-            const void *data = sqlite3_column_blob(stmt, idx);
-            int len = sqlite3_column_bytes(stmt, idx);
-            return [NSData dataWithBytes:data length:len];
-        }
-        default: return [NSNull null];
-    }
-}
 
 #pragma mark - Record Materialization
 

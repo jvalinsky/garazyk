@@ -68,7 +68,7 @@ NSString * const ATProtoVideoTranscoderErrorDomain = @"com.atproto.video.transco
         dispatch_semaphore_signal(sema);
     }];
 
-    dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
+    dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, 300 * NSEC_PER_SEC));
     return result;
 }
 

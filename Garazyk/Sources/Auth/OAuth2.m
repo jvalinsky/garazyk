@@ -915,7 +915,13 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
                               error:nil];
 
     [[PDSMetrics sharedMetrics] incrementOAuthTokenGrant:@"authorization_code"];
-    [[PDSMetrics sharedMetrics] setActiveAuthSessions:(NSInteger)self.activeSessions.count];
+    {
+        __block NSInteger count = 0;
+        dispatch_sync(self.sessionQueue, ^{
+            count = (NSInteger)self.activeSessions.count;
+        });
+        [[PDSMetrics sharedMetrics] setActiveAuthSessions:count];
+    }
     completion(session, nil);
 }
 

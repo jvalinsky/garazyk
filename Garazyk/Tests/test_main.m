@@ -853,6 +853,8 @@ int main(int argc, char *argv[]) {
       @"PDSDatabaseReposTests",
       @"PDSDatabaseBlocksTests",
       @"PDSDatabaseBlobsTests",
+      @"PDSDatabaseRecordsTests",
+      @"PDSDatabaseTransactionsTests",
       @"PDSControllerTests",
       @"PDSPLCIntegrationTests",
       @"PDSAdminServiceTests",
