@@ -98,10 +98,45 @@ function resolveToken(opts: any, session: AgentSession): string | undefined {
   return session.accessJwt;
 }
 
-function createAgentProxy(path: string[], client: XrpcClient, session: AgentSession): any {
+/**
+ * A dynamic proxy for XRPC method calls on an authenticated agent.
+ *
+ * Usage:
+ *   await client.agent.createAccount({ handle, email, password });
+ *   await client.agent.login({ identifier, password });
+ *   await client.agent.com.atproto.repo.createRecord({ ... });
+ *
+ * The proxy builds method paths via property access and invokes them
+ * via function call. Returns `{ data }` on success, throws on error.
+ */
+export interface AgentProxy {
+  /** Create a new account and store the session. */
+  createAccount(params: {
+    handle: string;
+    email: string;
+    password: string;
+  }): Promise<{ data: { accessJwt: string; refreshJwt: string; did: string; handle: string } }>;
+  /** Log in with existing credentials and store the session. */
+  login(params: {
+    identifier: string;
+    password: string;
+  }): Promise<{ data: { accessJwt: string; refreshJwt: string; did: string; handle: string } }>;
+  /** Access nested XRPC methods. */
+  [namespace: string]: AgentProxy;
+  /** Invoke the accumulated method path. */
+  (params?: Record<string, any>, opts?: { headers?: Record<string, string> }): Promise<{ data: any }>;
+}
+
+function createAgentProxy(path: string[], client: XrpcClient, session: AgentSession): AgentProxy {
   return new Proxy(function () {}, {
     get(_target, prop: string) {
       if (typeof prop !== "string") return undefined;
+      // Prevent the proxy from becoming accidentally thenable.
+      // If code accesses .then on the proxy (e.g. await proxy or
+      // Promise.resolve(proxy)), returning undefined ensures the
+      // proxy is not treated as a Promise.
+      if (prop === "then") return undefined;
+      if (prop === "toJSON") return undefined;
 
       if (prop === "createAccount") {
         return async (params: {
@@ -150,14 +185,10 @@ function createAgentProxy(path: string[], client: XrpcClient, session: AgentSess
         method.split(".").pop() || "",
       );
 
-      try {
-        const data = isQuery
-          ? await client.rawTransport.get(method, params, token)
-          : await client.rawTransport.post(method, params, token);
-        return { data };
-      } catch (e) {
-        throw e;
-      }
+      const data = isQuery
+        ? await client.rawTransport.get(method, params, token)
+        : await client.rawTransport.post(method, params, token);
+      return { data };
     },
   });
 }
