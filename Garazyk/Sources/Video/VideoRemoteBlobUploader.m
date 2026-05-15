@@ -64,7 +64,7 @@
         dispatch_semaphore_signal(sema);
     }] resume];
 
-    dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
+    dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, 120 * NSEC_PER_SEC));
 
     if (error && blockError) {
         *error = blockError;

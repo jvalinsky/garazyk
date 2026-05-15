@@ -883,7 +883,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
 
 - (void)replayEventsAfterCursor:(NSUInteger)cursor
                    toConnection:(WebSocketConnection *)connection {
-    dispatch_semaphore_wait(_backfillSemaphore, DISPATCH_TIME_FOREVER);
+    dispatch_semaphore_wait(_backfillSemaphore, dispatch_time(DISPATCH_TIME_NOW, 60 * NSEC_PER_SEC));
 
     @try {
         // Try service databases first (PDS mode)

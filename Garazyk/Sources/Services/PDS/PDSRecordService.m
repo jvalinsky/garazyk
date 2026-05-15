@@ -220,6 +220,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
 - (BOOL)authorDID:(NSString *)authorDID hasFollowForDID:(NSString *)targetDID error:(NSError **)error;
 
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSDictionary *> *statsCacheByDid;
+@property (nonatomic, strong) dispatch_queue_t statsCacheQueue;
 
 /*! Per-DID write dispatcher. */
 @property (nonatomic, strong) PDSPerDidWriteDispatcher *writeDispatcher;
@@ -233,6 +234,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
         self.databasePool = databasePool;
         self.recordRepository = [[PDSSQLiteRecordRepository alloc] initWithDatabasePool:databasePool];
         _statsCacheByDid = [NSMutableDictionary dictionary];
+        _statsCacheQueue = dispatch_queue_create("com.atproto.pds.recordservice.stats", DISPATCH_QUEUE_SERIAL);
         _writeDispatcher = [[PDSPerDidWriteDispatcher alloc] initWithConcurrencyLimit:32
                                                               idleEvictionSeconds:60];
     }
@@ -258,7 +260,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
         block();
         dispatch_semaphore_signal(done);
     }];
-    dispatch_semaphore_wait(done, DISPATCH_TIME_FOREVER);
+    dispatch_semaphore_wait(done, dispatch_time(DISPATCH_TIME_NOW, 60 * NSEC_PER_SEC));
 }
 
 #pragma mark - Authorization
@@ -1643,16 +1645,16 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                                      userInfo:@{NSLocalizedDescriptionKey: @"Failed to compute updated MST root"}];
         }
         [[MSTCacheManager sharedManager] removeMSTForDid:did];
-        @synchronized(self.statsCacheByDid) {
+        dispatch_sync(self.statsCacheQueue, ^{
             [self.statsCacheByDid removeObjectForKey:did];
-        }
+        });
         return nil;
     }
 
     // Invalidate stats cache on successful write
-    @synchronized(self.statsCacheByDid) {
+    dispatch_sync(self.statsCacheQueue, ^{
         [self.statsCacheByDid removeObjectForKey:did];
-    }
+    });
 
     NSString *rev = [store latestMutationRevisionWithError:nil];
     if (rev.length == 0) {
@@ -1754,11 +1756,10 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
 }
 
 - (nullable NSDictionary *)getRepoStatsForDid:(NSString *)did error:(NSError **)error {
-    // Stats cache is per-DID, protected by @synchronized for thread safety
-    NSDictionary *cached;
-    @synchronized(self.statsCacheByDid) {
+    __block NSDictionary *cached;
+    dispatch_sync(self.statsCacheQueue, ^{
         cached = self.statsCacheByDid[did];
-    }
+    });
     if (cached) return cached;
 
     PDSActorStore *store = [self.databasePool storeForDid:did error:error];
@@ -1807,9 +1808,9 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
         @"recordCount": @(totalCount)
     };
 
-    @synchronized(self.statsCacheByDid) {
+    dispatch_sync(self.statsCacheQueue, ^{
         self.statsCacheByDid[did] = result;
-    }
+    });
 
     return result;
 }

@@ -242,7 +242,11 @@ static const NSTimeInterval kDefaultIdleEvictionSeconds = 60.0;
         dispatch_async(gateQ, ^{
             // Wait for a concurrency slot on the gate queue (serial, so
             // at most one thread is parked here at a time)
-            dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+            if (dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 300 * NSEC_PER_SEC)) != 0) {
+                GZ_LOG_ERROR(@"[WriteDispatcher] Timed out waiting for concurrency slot for did=%@", did);
+                dispatch_semaphore_signal(semaphore);
+                return;
+            }
 
             // Now dispatch the actual work to the concurrent worker pool
             dispatch_async(workerQ, ^{
@@ -294,7 +298,10 @@ static const NSTimeInterval kDefaultIdleEvictionSeconds = 60.0;
 
         // Dispatch through the gate queue to wait for a concurrency slot
         dispatch_async(gateQueue, ^{
-            dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+            if (dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 300 * NSEC_PER_SEC)) != 0) {
+                GZ_LOG_ERROR(@"[WriteDispatcher] Timed out waiting for concurrency slot for queued did=%@", did);
+                return;
+            }
 
             dispatch_async(workerQueue, ^{
                 @autoreleasepool {

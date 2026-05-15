@@ -85,7 +85,7 @@ static NSString *UIBackendEscapedPathSegment(NSString *segment) {
                                                  xrpcPath:[xrpcPath isKindOfClass:[NSNull class]] ? nil : xrpcPath
                                              bearerToken:token];
 
-            dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+            dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 35 * NSEC_PER_SEC));
             [services addObject:result];
             dispatch_semaphore_signal(semaphore);
 

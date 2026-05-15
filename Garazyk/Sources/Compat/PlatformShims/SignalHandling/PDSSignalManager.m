@@ -13,7 +13,9 @@
 #import <signal.h>
 #import <string.h>
 
-@interface PDSSignalManager ()
+@interface PDSSignalManager () {
+    dispatch_queue_t _signalQueue;
+}
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSMutableArray<PDSSignalHandlerBlock> *> *handlers;
 @property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSValue *> *sources;
 @end
@@ -34,6 +36,7 @@
     if (self) {
         _handlers = [NSMutableDictionary dictionary];
         _sources = [NSMutableDictionary dictionary];
+        _signalQueue = dispatch_queue_create("com.atproto.signal.manager", DISPATCH_QUEUE_SERIAL);
     }
     return self;
 }
@@ -60,17 +63,17 @@
     NSNumber *key = @(signalNumber);
 
     // Add the handler to the list
-    @synchronized(self.handlers) {
+    dispatch_sync(_signalQueue, ^{
         NSMutableArray *list = self.handlers[key];
         if (!list) {
             list = [NSMutableArray array];
             self.handlers[key] = list;
         }
         [list addObject:handler];
-    }
+    });
 
     // Create dispatch source if one doesn't exist for this signal
-    @synchronized(self.sources) {
+    dispatch_sync(_signalQueue, ^{
         if (!self.sources[key]) {
             // Unblock the signal so dispatch_source can receive it
             sigset_t mask;
@@ -99,13 +102,13 @@
                 PDSSignalManager *strongSelf = weakSelf;
                 if (!strongSelf) return;
 
-                NSArray<PDSSignalHandlerBlock> *handlersCopy = nil;
-                @synchronized(strongSelf.handlers) {
+                __block NSArray<PDSSignalHandlerBlock> *handlersCopy = nil;
+                dispatch_sync(strongSelf->_signalQueue, ^{
                     NSMutableArray *list = strongSelf.handlers[key];
                     if (list) {
                         handlersCopy = [list copy];
                     }
-                }
+                });
 
                 for (PDSSignalHandlerBlock block in handlersCopy) {
                     block(signalNumber);
@@ -115,24 +118,24 @@
             dispatch_resume(source);
             self.sources[key] = [NSValue valueWithPointer:(void *)source];
         }
-    }
+    });
 }
 
 - (void)unregisterHandlerForSignal:(int)signalNumber {
     NSNumber *key = @(signalNumber);
 
-    @synchronized(self.handlers) {
+    dispatch_sync(_signalQueue, ^{
         [self.handlers removeObjectForKey:key];
-    }
+    });
 
-    @synchronized(self.sources) {
+    dispatch_sync(_signalQueue, ^{
         NSValue *val = self.sources[key];
         if (val) {
             dispatch_source_t source = (dispatch_source_t)[val pointerValue];
             dispatch_source_cancel(source);
             [self.sources removeObjectForKey:key];
         }
-    }
+    });
 
     // Restore default signal disposition
     struct sigaction sa;

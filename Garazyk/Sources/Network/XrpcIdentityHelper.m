@@ -86,7 +86,7 @@ static BOOL didDocumentContainsHandle(DIDDocument *doc, NSString *handle) {
         dispatch_semaphore_signal(semaphore);
     }];
     
-    dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
     
     if (!resolvedDid && resolveError) {
         if (error) {

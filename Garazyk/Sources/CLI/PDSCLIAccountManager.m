@@ -470,7 +470,7 @@
         dispatch_semaphore_signal(sema);
     }];
     
-    dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
+    dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, 60 * NSEC_PER_SEC));
     
 #if defined(GNUSTEP)
     if (!success) {
@@ -729,7 +729,7 @@
         }
         dispatch_semaphore_signal(sema);
     }];
-    dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
+    dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, 60 * NSEC_PER_SEC));
 
     return success;
 }

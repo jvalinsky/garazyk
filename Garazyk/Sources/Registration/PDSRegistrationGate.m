@@ -113,12 +113,14 @@ NSString *const PDSRegistrationGateErrorDomain = @"com.atproto.pds.registrationg
 #pragma mark - PDSRegistrationGateFactory
 
 static NSMutableDictionary<NSString *, Class> *sCustomGateClasses = nil;
+static dispatch_queue_t sCustomGateQueue = NULL;
 
 @implementation PDSRegistrationGateFactory
 
 + (void)initialize {
     if (self == [PDSRegistrationGateFactory class]) {
         sCustomGateClasses = [NSMutableDictionary dictionary];
+        sCustomGateQueue = dispatch_queue_create("com.atproto.registration.gate", DISPATCH_QUEUE_SERIAL);
     }
 }
 
@@ -178,8 +180,12 @@ static NSMutableDictionary<NSString *, Class> *sCustomGateClasses = nil;
     }
 
     // Custom gates from registry
-    for (NSString *identifier in sCustomGateClasses) {
-        Class gateClass = sCustomGateClasses[identifier];
+    __block NSDictionary<NSString *, Class> *snapshot = nil;
+    dispatch_sync(sCustomGateQueue, ^{
+        snapshot = [sCustomGateClasses copy];
+    });
+    for (NSString *identifier in snapshot) {
+        Class gateClass = snapshot[identifier];
         if ([configuration isRegistrationGateEnabled:identifier]) {
             id<PDSRegistrationGate> gate = [[gateClass alloc] init];
             if (gate) {
@@ -202,21 +208,21 @@ static NSMutableDictionary<NSString *, Class> *sCustomGateClasses = nil;
 }
 
 + (void)registerGateClass:(Class)gateClass forIdentifier:(NSString *)identifier {
-    @synchronized(sCustomGateClasses) {
+    dispatch_sync(sCustomGateQueue, ^{
         sCustomGateClasses[identifier] = gateClass;
-    }
+    });
 }
 
 + (void)unregisterGateForIdentifier:(NSString *)identifier {
-    @synchronized(sCustomGateClasses) {
+    dispatch_sync(sCustomGateQueue, ^{
         [sCustomGateClasses removeObjectForKey:identifier];
-    }
+    });
 }
 
 + (void)resetCustomGates {
-    @synchronized(sCustomGateClasses) {
+    dispatch_sync(sCustomGateQueue, ^{
         [sCustomGateClasses removeAllObjects];
-    }
+    });
 }
 
 @end

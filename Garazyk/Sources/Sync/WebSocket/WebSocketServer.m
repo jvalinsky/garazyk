@@ -172,7 +172,7 @@ static inline int set_reuseaddr(int fd) {
         self.serverSocket = -1;
     }
 
-    dispatch_group_wait(self.taskGroup, DISPATCH_TIME_FOREVER);
+    dispatch_group_wait(self.taskGroup, dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
     self.state = WebSocketServerStateIdle;
 }
 
@@ -410,7 +410,7 @@ static inline int set_reuseaddr(int fd) {
         self.listener = nil;
     }
 
-    dispatch_group_wait(self.taskGroup, DISPATCH_TIME_FOREVER);
+    dispatch_group_wait(self.taskGroup, dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
     self.state = WebSocketServerStateIdle;
 }
 

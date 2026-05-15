@@ -101,7 +101,7 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
         dispatch_semaphore_signal(sema);
     }];
     [task resume];
-    dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
+    dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, 120 * NSEC_PER_SEC));
 
     if (fetchErr) {
         [self _failWithError:fetchErr rateLimitedUntil:nil];
@@ -192,7 +192,7 @@ NSString * const AppViewBackfillWorkerErrorDomain = @"com.atproto.appview.backfi
         data = d; resp = (NSHTTPURLResponse *)r; err = e;
         dispatch_semaphore_signal(sema);
     }] resume];
-    dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
+    dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, 60 * NSEC_PER_SEC));
     if (err || resp.statusCode != 200 || !data) return nil;
 
     NSError *jsonErr = nil;
