@@ -17,7 +17,23 @@ CREATE TABLE IF NOT EXISTS runs (
   git_commit TEXT,
   pds2 INTEGER DEFAULT 0,
   binary_mode INTEGER DEFAULT 0,
-  diagnostics_dir TEXT
+  diagnostics_dir TEXT,
+  
+  -- New columns for expanded run tracking
+  topology TEXT,
+  runner TEXT DEFAULT 'host',
+  web_client TEXT,
+  client_flow TEXT DEFAULT 'none',
+  scenario_ids_json TEXT,
+  run_dir TEXT,
+  reports_dir TEXT,
+  compose_project TEXT,
+  manifest_path TEXT,
+  log_path TEXT,
+  child_pid INTEGER,
+  exit_code INTEGER,
+  stopped_at INTEGER,
+  stop_reason TEXT
 );
 
 CREATE TABLE IF NOT EXISTS scenario_results (
@@ -36,6 +52,15 @@ CREATE TABLE IF NOT EXISTS scenario_results (
   finished_at INTEGER
 );
 
+CREATE TABLE IF NOT EXISTS run_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  run_id TEXT NOT NULL REFERENCES runs(id),
+  event TEXT NOT NULL,
+  timestamp INTEGER NOT NULL,
+  detail_json TEXT
+);
+
 CREATE INDEX IF NOT EXISTS idx_scenario_results_run ON scenario_results(run_id);
 CREATE INDEX IF NOT EXISTS idx_scenario_results_scenario ON scenario_results(scenario_id);
+CREATE INDEX IF NOT EXISTS idx_run_events_run ON run_events(run_id);
 `;

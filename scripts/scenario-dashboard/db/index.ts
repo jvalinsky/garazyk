@@ -1,6 +1,7 @@
 import { join, fromFileUrl } from "$std/path/mod.ts";
 import { Database } from "sqlite3";
 import { SCHEMA } from "./schema.ts";
+import { runMigrations } from "./migrations.ts";
 import { scanReports } from "../services/report_scanner.ts";
 
 const DB_PATH = join(
@@ -15,8 +16,11 @@ export const db = isBuild
   : new Database(DB_PATH);
 
 if (!isBuild) {
-  // Initialize schema first (sync — required before any queries)
+  // Initialize base schema first
   db.exec(SCHEMA);
+
+  // Apply migrations for new features
+  runMigrations(db);
 
   // Scan reports in background — do not block server startup
   setTimeout(async () => {
