@@ -1,24 +1,24 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSServiceContainer.m
+ @file ATProtoServiceContainer.m
  @abstract Implementation of the service container.
  @copyright Copyright (c) 2025 Jack Valinsky
  */
 
-#import "PDSServiceContainer.h"
+#import "ATProtoServiceContainer.h"
 
-@implementation PDSServiceContainer {
+@implementation ATProtoServiceContainer {
     NSMutableDictionary *_instances;
     NSMutableDictionary *_factories;
     NSRecursiveLock *_lock;
 }
 
 + (instancetype)sharedContainer {
-    static PDSServiceContainer *shared = nil;
+    static ATProtoServiceContainer *shared = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        shared = [[PDSServiceContainer alloc] init];
+        shared = [[ATProtoServiceContainer alloc] init];
     });
     return shared;
 }
@@ -40,7 +40,7 @@
     [_lock unlock];
 }
 
-- (void)registerFactory:(id (^)(PDSServiceContainer *))factory forProtocol:(Protocol *)protocol {
+- (void)registerFactory:(id (^)(ATProtoServiceContainer *))factory forProtocol:(Protocol *)protocol {
     NSString *key = NSStringFromProtocol(protocol);
     [_lock lock];
     _factories[key] = [factory copy];
@@ -56,7 +56,7 @@
     instance = _instances[key];
     
     if (!instance) {
-        id (^factory)(PDSServiceContainer *) = _factories[key];
+        id (^factory)(ATProtoServiceContainer *) = _factories[key];
         if (factory) {
             instance = factory(self);
             if (instance) {

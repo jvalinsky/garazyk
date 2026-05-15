@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Admin/PDSAdminAuth.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "App/PDSController.h"
 #import "Admin/PDSAdminAuth.h"
 #import "Auth/JWT.h"
@@ -10,7 +10,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
-#import "Network/PDSHttpServerBuilder.h"
+#import "Network/ATProtoHttpServerBuilder.h"
 #import "Database/Monitoring/PDSHealthCheck.h"
 #import "PDSCLIDefinitions.h"
 #import "Services/PDS/PDSRelayService.h"
@@ -115,11 +115,11 @@
   printf("Data directory: %s\n", [context.dataDir UTF8String]);
   printf("Press Ctrl+C to stop.\n");
 
-  // Load configuration from file into shared PDSConfiguration
+  // Load configuration from file into shared ATProtoServiceConfiguration
   if (context.configPath &&
       [[NSFileManager defaultManager] fileExistsAtPath:context.configPath]) {
     NSError *configError = nil;
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     if (![config loadFromPath:context.configPath error:&configError]) {
       printf("Warning: Failed to load config: %s\n",
              [configError.localizedDescription UTF8String]);
@@ -134,7 +134,7 @@
       if (config.dataDirectory.length > 0 &&
           (context.dataDir == nil ||
            [context.dataDir
-               isEqualToString:[PDSConfiguration defaultDataDirectory]])) {
+               isEqualToString:[ATProtoServiceConfiguration defaultDataDirectory]])) {
         context.dataDir = config.dataDirectory;
       }
     }
@@ -185,7 +185,7 @@
 
   // Initialize PDS controller with specified data directory
   NSString *dataDir = context.dataDir;
-  if ([dataDir isEqualToString:[PDSConfiguration defaultDataDirectory]] ||
+  if ([dataDir isEqualToString:[ATProtoServiceConfiguration defaultDataDirectory]] ||
       [dataDir isEqualToString:@"./data"]) {
     dataDir = @".";
   }
@@ -193,7 +193,7 @@
   // CRITICAL: Set serverPort BEFORE creating PDSController so that
   // PDSApplication uses the correct port for JWT issuer calculation.
   // Without this, JWT minter defaults to port 8080 while server runs on --port.
-  [[PDSConfiguration sharedConfiguration] setServerPort:port];
+  [[ATProtoServiceConfiguration sharedConfiguration] setServerPort:port];
 
   GZ_LOG_INFO_C(GZLogComponentCLI,
                  @"Initializing PDS controller with data directory: %@",
@@ -213,8 +213,8 @@
   // Use the handler from the controller
   SubscribeReposHandler *subscribeReposHandler = controller.subscribeReposHandler;
 
-  PDSHttpServerBuilder *serverBuilder = [[PDSHttpServerBuilder alloc]
-      initWithConfiguration:[PDSConfiguration sharedConfiguration]];
+  ATProtoHttpServerBuilder *serverBuilder = [[ATProtoHttpServerBuilder alloc]
+      initWithConfiguration:[ATProtoServiceConfiguration sharedConfiguration]];
   serverBuilder.port = (NSUInteger)port;
   serverBuilder.controller = controller;
   serverBuilder.jwtMinter = controller.jwtMinter;
@@ -225,7 +225,7 @@
   [HttpResponse setDefaultServerHeader:@"kaszlak/1.0.0 (garazyk)"];
 
   // Calculate canonical issuer with the actual port
-  NSString *canonicalIssuer = [[PDSConfiguration sharedConfiguration] canonicalIssuerWithPortHint:port];
+  NSString *canonicalIssuer = [[ATProtoServiceConfiguration sharedConfiguration] canonicalIssuerWithPortHint:port];
   serverBuilder.issuer = canonicalIssuer;
 
   // Ensure JWT minter issuer matches the server port (belt and suspenders)
@@ -239,7 +239,7 @@
   }
   GZ_LOG_DEBUG_C(
       GZLogComponentCLI,
-      @"PDSCLIServeCommand: Registered routes via PDSHttpServerBuilder");
+      @"PDSCLIServeCommand: Registered routes via ATProtoHttpServerBuilder");
 
   // Register Health Check
   [httpServer addRoute:@"GET"
@@ -302,7 +302,7 @@
       addRoute:@"GET"
           path:@"/.well-known/did.json"
        handler:^(HttpRequest *request, HttpResponse *response) {
-         PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+         ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
 
          // Use issuer URL for did:web hostname (not serverHost which is bind
          // address)
@@ -375,7 +375,7 @@
   // Start relay service to notify external relays to crawl this PDS
   [[controller relayService] start];
 
-  PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+  ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
   NSString *displayHost = config.serverHost ?: @"localhost";
   if ([displayHost isEqualToString:@"0.0.0.0"]) {
     displayHost = @"localhost";

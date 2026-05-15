@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSServiceContainerTests.m
- @abstract Unit tests for PDSServiceContainer.
+ @file ATProtoServiceContainerTests.m
+ @abstract Unit tests for ATProtoServiceContainer.
  @copyright Copyright (c) 2025 Jack Valinsky
  */
 
 #import <XCTest/XCTest.h>
-#import "Core/PDSServiceContainer.h"
+#import "Core/ATProtoServiceContainer.h"
 
 @protocol TestProtocol <NSObject>
 - (NSString *)testMethod;
@@ -29,24 +29,24 @@
 
 @implementation RecursiveImplementation
 - (NSString *)recursiveMethod {
-    PDSServiceContainer *container = [PDSServiceContainer sharedContainer];
+    ATProtoServiceContainer *container = [ATProtoServiceContainer sharedContainer];
     id<TestProtocol> test = [container resolveProtocol:@protocol(TestProtocol)];
     return [test testMethod];
 }
 @end
 
-@interface PDSServiceContainerTests : XCTestCase
+@interface ATProtoServiceContainerTests : XCTestCase
 @end
 
-@implementation PDSServiceContainerTests
+@implementation ATProtoServiceContainerTests
 
 - (void)setUp {
     [super setUp];
-    [[PDSServiceContainer sharedContainer] reset];
+    [[ATProtoServiceContainer sharedContainer] reset];
 }
 
 - (void)testResolveProtocolReturnsRegisteredInstance {
-    PDSServiceContainer *container = [PDSServiceContainer sharedContainer];
+    ATProtoServiceContainer *container = [ATProtoServiceContainer sharedContainer];
     TestImplementation *impl = [[TestImplementation alloc] init];
     
     [container registerInstance:impl forProtocol:@protocol(TestProtocol)];
@@ -56,10 +56,10 @@
 }
 
 - (void)testRegisterFactory {
-    PDSServiceContainer *container = [PDSServiceContainer sharedContainer];
+    ATProtoServiceContainer *container = [ATProtoServiceContainer sharedContainer];
     __block BOOL factoryCalled = NO;
     
-    [container registerFactory:^id _Nonnull(PDSServiceContainer * _Nonnull c) {
+    [container registerFactory:^id _Nonnull(ATProtoServiceContainer * _Nonnull c) {
         factoryCalled = YES;
         return [[TestImplementation alloc] init];
     } forProtocol:@protocol(TestProtocol)];
@@ -78,7 +78,7 @@
 }
 
 - (void)testResolveProtocolReturnsNilAfterReset {
-    PDSServiceContainer *container = [PDSServiceContainer sharedContainer];
+    ATProtoServiceContainer *container = [ATProtoServiceContainer sharedContainer];
     [container registerInstance:[[TestImplementation alloc] init] forProtocol:@protocol(TestProtocol)];
     
     [container reset];
@@ -87,11 +87,11 @@
 }
 
 - (void)testRecursiveResolution {
-    PDSServiceContainer *container = [PDSServiceContainer sharedContainer];
+    ATProtoServiceContainer *container = [ATProtoServiceContainer sharedContainer];
     
     [container registerInstance:[[TestImplementation alloc] init] forProtocol:@protocol(TestProtocol)];
     
-    [container registerFactory:^id _Nonnull(PDSServiceContainer * _Nonnull c) {
+    [container registerFactory:^id _Nonnull(ATProtoServiceContainer * _Nonnull c) {
         return [[RecursiveImplementation alloc] init];
     } forProtocol:@protocol(RecursiveProtocol)];
     

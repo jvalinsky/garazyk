@@ -13,7 +13,7 @@
 
 #import <Foundation/Foundation.h>
 
-@class PDSConfiguration;
+@class ATProtoServiceConfiguration;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -31,7 +31,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy, readonly) NSString *baseURL;
 
 /*! Server configuration. */
-@property (nonatomic, readonly) PDSConfiguration *configuration;
+@property (nonatomic, readonly) ATProtoServiceConfiguration *configuration;
 
 /*! NodeInfo 2.0 discovery document (JRD with links). */
 @property (nonatomic, readonly) NSDictionary *discoveryDocument20;
@@ -69,7 +69,7 @@ NS_ASSUME_NONNULL_BEGIN
  @return Initialized provider, or nil if validation fails.
  */
 - (nullable instancetype)initWithBaseURL:(NSString *)baseURL
-                           configuration:(PDSConfiguration *)configuration;
+                           configuration:(ATProtoServiceConfiguration *)configuration;
 
 /*!
  @brief Refresh NodeInfo documents with current statistics.

@@ -14,7 +14,7 @@
 #import "Auth/OAuth2.h"
 #import "Auth/PDSNonceManager.h"
 #import "Auth/CryptoUtils.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "App/PDSController.h"
 #import "Admin/PDSAdminController.h"
 #import "Admin/PDSAdminAuth.h"
@@ -108,7 +108,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
         }
     }
 
-    PDSConfiguration *configuration = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *configuration = [ATProtoServiceConfiguration sharedConfiguration];
     NSString *issuer = jwtMinter.issuer ?: [configuration canonicalIssuerWithPortHint:0];
     NSURL *issuerURL = [NSURL URLWithString:issuer ?: @""];
     if (scheme.length == 0) {
@@ -221,7 +221,7 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
                                    method:request.methodString
                                       url:dpopURL
                                     nonce:nil
-                             requireNonce:[PDSConfiguration sharedConfiguration].requireDPoPNonce
+                             requireNonce:[ATProtoServiceConfiguration sharedConfiguration].requireDPoPNonce
                             outThumbprint:&dpopThumbprint
                                     error:&dpopError]) {
             if ([dpopError.userInfo[@"use_dpop_nonce"] boolValue]) {
@@ -265,8 +265,8 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
         verifier.publicKey = jwtMinter.publicKey;
     }
 
-    // Use configurable issuer from PDSConfiguration, default to localhost
-    PDSConfiguration *configuration = [PDSConfiguration sharedConfiguration];
+    // Use configurable issuer from ATProtoServiceConfiguration, default to localhost
+    ATProtoServiceConfiguration *configuration = [ATProtoServiceConfiguration sharedConfiguration];
     NSString *expectedIssuer = jwtMinter.issuer ?: [configuration canonicalIssuerWithPortHint:0];
     verifier.expectedIssuer = expectedIssuer;
     // Do not set expectedAudience here; we do custom validation to support did:web variants

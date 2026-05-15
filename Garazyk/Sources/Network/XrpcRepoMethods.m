@@ -21,7 +21,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Auth/JWT.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Repository/CAR.h"
 #import "Repository/STAR.h"
 #import "Lexicon/ATProtoLexiconValidator.h"
@@ -641,7 +641,7 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
         }
 
         // Check if CDN redirect is enabled (Phase 5)
-        PDSConfiguration *configuration = [PDSConfiguration sharedConfiguration];
+        ATProtoServiceConfiguration *configuration = [ATProtoServiceConfiguration sharedConfiguration];
         NSString *cdnURL = [configuration stringForKey:@"cdnURL"];
         if (cdnURL && cdnURL.length > 0) {
             // Return 302 Found redirect to CDN URL

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
 #import "Auth/OAuth2Handler.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 
@@ -22,10 +22,10 @@
 }
 
 - (void)testMetadataConsistency {
-    // 1. Verify PDSConfiguration canonicalization
+    // 1. Verify ATProtoServiceConfiguration canonicalization
     // Note: sharedConfiguration may have been initialized before setUp (dispatch_once),
     // so read PDS_ISSUER env var directly as a fallback.
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     NSString *issuer = config.issuer;
     if (!issuer) {
         const char *envIssuer = getenv("PDS_ISSUER");

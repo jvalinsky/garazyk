@@ -9,7 +9,7 @@
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
 #import "Network/PDSHttpPDSAdminRoutePack.h"
-#import "Network/PDSHttpServerBuilder.h"
+#import "Network/ATProtoHttpServerBuilder.h"
 
 @interface HttpServer (PDSHttpPDSAdminRoutePackTesting)
 - (HttpResponse *)dispatchRequest:(HttpRequest *)request;
@@ -127,7 +127,7 @@
 
 - (void)testBuilderRegistersPrivatePDSAdminRoutes {
     HttpServer *builderServer = [HttpServer serverWithPort:0];
-    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+    ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];
     builder.serviceDatabases = self.databases;
     builder.enableOAuth = NO;
     builder.enableXrpc = NO;

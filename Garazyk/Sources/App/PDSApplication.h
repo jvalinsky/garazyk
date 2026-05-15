@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
 
-@class PDSConfiguration;
+@class ATProtoServiceConfiguration;
 @class PDSDatabase;
 @class PDSServiceDatabases;
 @class PDSDatabasePool;
@@ -42,18 +42,18 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Initializes a new PDSApplication with an optional configuration.
  */
-- (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration;
+- (instancetype)initWithConfiguration:(nullable ATProtoServiceConfiguration *)configuration;
 
 /**
  * Initializes a new PDSApplication with configuration and data directory.
  */
-- (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration
+- (instancetype)initWithConfiguration:(nullable ATProtoServiceConfiguration *)configuration
                         dataDirectory:(nullable NSString *)dataDirectory;
 
 /**
  * Full initializer for PDSApplication with pool size overrides.
  */
-- (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration
+- (instancetype)initWithConfiguration:(nullable ATProtoServiceConfiguration *)configuration
                         dataDirectory:(nullable NSString *)dataDirectory
                        serviceMaxSize:(NSUInteger)serviceMaxSize
                   userDatabaseMaxSize:(NSUInteger)userDatabaseMaxSize
@@ -72,7 +72,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)stop;
 
 /*! Configuration for the application. */
-@property (nonatomic, strong, readonly) PDSConfiguration *configuration;
+@property (nonatomic, strong, readonly) ATProtoServiceConfiguration *configuration;
 
 /*! The data directory used for storage. */
 @property (nonatomic, copy, readonly) NSString *dataDirectory;

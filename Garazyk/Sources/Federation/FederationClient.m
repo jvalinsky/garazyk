@@ -6,7 +6,7 @@
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Lexicon/ATProtoLexiconSchema.h"
 #import "Lexicon/ATProtoLexiconDef.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Network/ATProtoSafeHTTPClient.h"
 #import "Network/SSRFValidator.h"
 #import "Network/HttpRetryPolicy.h"
@@ -45,7 +45,7 @@ static NSString *PDSSanitizedURLString(NSURL *url) {
         }
 
         _didResolver = [[DIDResolver alloc] init];
-        ((DIDResolver *)_didResolver).plcURL = [PDSConfiguration sharedConfiguration].plcURL;
+        ((DIDResolver *)_didResolver).plcURL = [ATProtoServiceConfiguration sharedConfiguration].plcURL;
         _preferredRepoFormat = PDSRepoFormatCAR;
     }
     return self;

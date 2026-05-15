@@ -11,7 +11,7 @@
 #import <XCTest/XCTest.h>
 #import "App/PDSApplication.h"
 #import "App/PDSController.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Services/PDS/PDSAccountService.h"
@@ -237,7 +237,7 @@
 - (void)testConfigurationAvailable {
     // Configuration may be nil if not explicitly set
     // This test just ensures accessing it doesn't crash
-    PDSConfiguration *config = self.application.configuration;
+    ATProtoServiceConfiguration *config = self.application.configuration;
     // May or may not be nil depending on initialization path
     (void)config;
 }

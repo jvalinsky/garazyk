@@ -10,7 +10,7 @@
 #import "Core/ATProtoValidator.h"
 #import "Core/CID.h"
 #import "Core/DID.h"
-#import "Core/PDSDataPaths.h"
+#import "Core/ATProtoDataPaths.h"
 #import "Core/TID.h"
 
 FOUNDATION_EXPORT double ATProtoCoreVersionNumber;

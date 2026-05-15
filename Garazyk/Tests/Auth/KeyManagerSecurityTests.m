@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Auth/PDSAppleKeyManager.h"
 #import "Auth/PDSKeyManagerFactory.h"
 #import "Auth/TestKeyFixtures.h"
@@ -35,9 +35,9 @@
 - (void)testManagerIsKindOfPDSOpenSSLSessionKeyManagerWhenKeychainDisabled {
     NSString *dbPath = nil;
     PDSDatabase *database = [self openTemporaryDatabaseAtPath:&dbPath];
-    BOOL originalUseKeychain = [PDSConfiguration sharedConfiguration].useKeychain;
+    BOOL originalUseKeychain = [ATProtoServiceConfiguration sharedConfiguration].useKeychain;
     @try {
-        [PDSConfiguration sharedConfiguration].useKeychain = NO;
+        [ATProtoServiceConfiguration sharedConfiguration].useKeychain = NO;
 
         id<PDSKeyManager> manager = [PDSKeyManagerFactory createKeyManagerWithDatabase:database];
 #if defined(PDS_OPENSSL_SESSION_KEY_MANAGER_AVAILABLE)
@@ -48,7 +48,7 @@
         XCTSkip(@"OpenSSL-backed session key manager unavailable in this build configuration.");
 #endif
     } @finally {
-        [PDSConfiguration sharedConfiguration].useKeychain = originalUseKeychain;
+        [ATProtoServiceConfiguration sharedConfiguration].useKeychain = originalUseKeychain;
         [database close];
         [[NSFileManager defaultManager] removeItemAtPath:dbPath error:nil];
     }
@@ -60,9 +60,9 @@
 #else
     NSString *dbPath = nil;
     PDSDatabase *database = [self openTemporaryDatabaseAtPath:&dbPath];
-    BOOL originalUseKeychain = [PDSConfiguration sharedConfiguration].useKeychain;
+    BOOL originalUseKeychain = [ATProtoServiceConfiguration sharedConfiguration].useKeychain;
     @try {
-        [PDSConfiguration sharedConfiguration].useKeychain = NO;
+        [ATProtoServiceConfiguration sharedConfiguration].useKeychain = NO;
 
         id<PDSKeyManager> manager = [PDSKeyManagerFactory createKeyManagerWithDatabase:database];
         XCTAssertTrue([manager isKindOfClass:[PDSOpenSSLSessionKeyManager class]]);
@@ -93,7 +93,7 @@
         XCTAssertNotNil(loaded);
         XCTAssertNil(reloadError);
     } @finally {
-        [PDSConfiguration sharedConfiguration].useKeychain = originalUseKeychain;
+        [ATProtoServiceConfiguration sharedConfiguration].useKeychain = originalUseKeychain;
         [database close];
         [[NSFileManager defaultManager] removeItemAtPath:dbPath error:nil];
     }

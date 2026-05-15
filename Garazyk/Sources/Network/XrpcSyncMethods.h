@@ -8,7 +8,7 @@
 @class PDSBlobService;
 @class PDSRepositoryService;
 @class PDSRelayService;
-@class PDSConfiguration;
+@class ATProtoServiceConfiguration;
 @class PDSServiceDatabases;
 @class PDSDatabasePool;
 @protocol PDSAdminController;
@@ -53,7 +53,7 @@ NS_ASSUME_NONNULL_BEGIN
                    blobService:(PDSBlobService *)blobService
              repositoryService:(PDSRepositoryService *)repositoryService
                   relayService:(PDSRelayService *)relayService
-                 configuration:(PDSConfiguration *)config;
+                 configuration:(ATProtoServiceConfiguration *)config;
 
 @end
 

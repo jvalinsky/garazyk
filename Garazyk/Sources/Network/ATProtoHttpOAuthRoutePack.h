@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSHttpOAuthRoutePack.h
+ @file ATProtoHttpOAuthRoutePack.h
 
  @abstract Declares OAuth protocol route-pack registration entry points.
 
@@ -18,7 +18,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSController;
 @class PDSServiceDatabases;
 
-@interface PDSHttpOAuthRoutePack : NSObject
+@interface ATProtoHttpOAuthRoutePack : NSObject
 
 + (void)registerRoutesWithServer:(HttpServer *)server
                 serviceDatabases:(nullable PDSServiceDatabases *)serviceDatabases
