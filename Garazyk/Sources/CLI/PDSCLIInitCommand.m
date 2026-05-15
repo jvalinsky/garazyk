@@ -93,7 +93,7 @@
     
     if (emailChoice == 1) {
         emailProvider = @"smtp";
-        printf("\nWarning: SMTP delivery is not implemented yet; configured SMTP sends will fail closed.\n");
+        printf("\nWarning: SMTP delivery is not implemented. All sends will fail closed with an error.\nUse Resend API for working email delivery.\n\n");
         emailConfig[@"host"] = [PDSCLIInputHelper promptForInput:@"SMTP Host" defaultValue:@"smtp.gmail.com"];
         emailConfig[@"port"] = @([[PDSCLIInputHelper promptForInput:@"SMTP Port" defaultValue:@"587"] integerValue]);
         emailConfig[@"username"] = [PDSCLIInputHelper promptForInput:@"SMTP Username" defaultValue:nil];

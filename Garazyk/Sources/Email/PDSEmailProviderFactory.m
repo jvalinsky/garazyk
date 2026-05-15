@@ -88,7 +88,8 @@ static dispatch_queue_t sRegistryQueue = nil;
                 password:configuration.emailSmtpPassword
                   useTLS:configuration.emailSmtpUseTLS];
         GZ_LOG_WARN(@"SMTP email provider is configured, but SMTP delivery is not implemented. "
-                      @"Email sends will fail closed.");
+                      @"All sends will fail closed with PDSSMTPEmailProviderErrorNotImplemented. "
+                      @"Use PDSResendEmailProvider for working email delivery.");
         return smtp;
     }
 
