@@ -757,3 +757,40 @@
 **Evidence:** GermMailboxService.h/m, GermIdentityService.h/m, GermRuntime.h/m, XrpcGermMailboxPack.h/m, XrpcGermIdentityPack.h/m, GermMailboxSchemaManager.h/m
 **Connects to:** Chat & DMs (Node #14), Admin UI (Node #8)
 **Status:** active (Phases 1-3 complete, Phases 4-6 pending)
+
+---
+
+## Pluggable ATProto Topology with Source Builds
+> Node #1644 | Status: completed
+
+**Current state:** Topology system v2 with registry, schema validation, and manifest-driven runner. 16 topology presets compile successfully. Source build overlays for rsky-relay, rsky-pds, zlay-relay, allegedly-plc, wintermute, and bsky-dataplane.
+
+**Evolution:**
+1. Topology presets were partial Docker Compose overrides layered on base compose — no schema validation, no manifest, no source build support
+2. **Phase 1 — Registry & Schema:** Split topology types into topology_registry.ts (role definitions, port mappings, capability validation) and topology_schema.ts (Zod-validated preset parsing, normalization, manifest serialization)
+3. **Phase 2 — Source Builds:** Added dockerfileOverlay and overlayDir mechanisms. prepare_topology.sh clones repos, applies overlays, and prepares build contexts
+4. **Phase 3 — Manifest-Driven Runner:** compile_topology.ts generates topology-manifest.json with service URLs, capabilities, health probes, diagnostics. run_scenarios.ts uses manifest for service URL resolution and capability filtering
+5. **Phase 4 — Presets:** 16 topology presets: garazyk-default, allegedly-plc, rsky-relay, rsky-pds, zlay-relay, indigo-relay, reference-pds, reference-plc, happyview, appviewlite, cocoon-pds, parakeet, tranquil-pds, indigo-tap, hydrant, wintermute
+
+**Evidence:** topology_registry.ts, topology_schema.ts, topology.ts, topology_compiler.ts, docker/allegedly/, docker/rsky-relay/, docker/rsky-pds/, docker/zlay/, docker/wintermute/, docker/bsky-dataplane/, scripts/scenarios/topologies/*.json
+**Connects to:** Backfill Service Topology Presets (Node #1650), Web Client Interop Harness (Node #1626)
+**Status:** completed
+
+---
+
+## Backfill Service Topology Presets
+> Node #1650 | Status: completed
+
+**Current state:** Three backfill service presets (Indigo Tap, Hydrant, Wintermute) with Docker overlays and documentation. Wintermute uses bsky-dataplane sidecar for schema init — the production pattern from Blacksky.
+
+**Evolution:**
+1. Backfill services were not modeled in the topology system — no way to test alternate indexers
+2. **Decision:** Add `backfill` as a ServiceRole (port 2480, BACKFILL_URL env)
+3. **Indigo Tap:** Go sync utility with SQLite, backfill, verification, filtering. TAP_DISABLE_ACKS=true, TAP_NO_REPLAY=true for local testing
+4. **Hydrant:** Rust indexer on fjall with native ws:// support, XRPC queries, event stream. HYDRANT_FULL_NETWORK=false for filtered indexing
+5. **Wintermute:** Rust firehose indexer writing to PostgreSQL (bsky dataplane schema). Requires bsky-dataplane sidecar to run Kysely migrations before starting. ws:// scheme support patch for local Docker relay connections
+6. **Architecture:** Dependency chain: PostgreSQL → dataplane (migrations) → wintermute (indexing). Wintermute uses ON CONFLICT for all INSERTs, safe to start during migrations
+
+**Evidence:** docker/wintermute/Dockerfile, docker/wintermute/entrypoint.sh, docker/wintermute/patches/01-ws-scheme-support.patch, docker/bsky-dataplane/Dockerfile, docker/bsky-dataplane/dataplane.js, scripts/scenarios/topologies/indigo-tap.json, hydrant.json, wintermute.json, scripts/scenarios/topologies/README.md
+**Connects to:** Pluggable ATProto Topology (Node #1644)
+**Status:** completed

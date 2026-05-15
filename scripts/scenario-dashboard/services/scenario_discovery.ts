@@ -6,12 +6,11 @@
 import { join, fromFileUrl } from "$std/path/mod.ts";
 import { DiscoveredScenario } from "./types.ts";
 import { categorize } from "../utils.ts";
+import { getRequires, needsPds2 } from "../../lib/deno/scenario_metadata.ts";
 
 const SCENARIOS_DIR = join(
   fromFileUrl(new URL("../../scenarios/scenarios", import.meta.url)),
 );
-
-const PDS2_SCENARIOS = new Set(["05", "12"]);
 
 export async function discoverScenarios(): Promise<DiscoveredScenario[]> {
   const scenarios: DiscoveredScenario[] = [];
@@ -21,12 +20,18 @@ export async function discoverScenarios(): Promise<DiscoveredScenario[]> {
       if (entry.isFile && entry.name.endsWith(".ts")) {
         const match = entry.name.match(/^(\d+)_(.+)\.ts$/);
         if (match) {
+          const id = match[1];
+          const requires = getRequires(id).map(r => 
+            r.role ? `${r.role}:${r.capability}` : r.capability
+          );
+
           scenarios.push({
-            id: match[1],
+            id,
             name: match[2].replace(/_/g, " "),
             path: join(SCENARIOS_DIR, entry.name),
-            category: categorize(match[1]),
-            needsPds2: PDS2_SCENARIOS.has(match[1]),
+            category: categorize(id),
+            needsPds2: needsPds2(id),
+            requires,
           });
         }
       }
