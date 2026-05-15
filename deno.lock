@@ -1,6 +1,7 @@
 {
   "version": "5",
   "specifiers": {
+    "jsr:@std/assert@*": "1.0.19",
     "jsr:@std/assert@1": "1.0.19",
     "jsr:@std/cli@*": "1.0.29",
     "jsr:@std/cli@1": "1.0.29",
@@ -13,6 +14,7 @@
     "npm:@atproto/api@0.13": "0.13.35",
     "npm:@ipld/car@^5.3.1": "5.4.6",
     "npm:@ipld/dag-cbor@^9.0.6": "9.2.7",
+    "npm:@opentelemetry/api@1": "1.9.1",
     "npm:playwright@*": "1.60.0",
     "npm:zod@3.25.76": "3.25.76"
   },
@@ -142,6 +144,9 @@
         "cborg",
         "multiformats@13.4.2"
       ]
+    },
+    "@opentelemetry/api@1.9.1": {
+      "integrity": "sha512-gLyJlPHPZYdAk1JENA9LeHejZe1Ti77/pTeFm/nMXmQH/HFZlcS/O2XJB+L8fkbrNSqhdtlvjBVjxwUYanNH5Q=="
     },
     "await-lock@2.2.2": {
       "integrity": "sha512-aDczADvlvTGajTDjcjpJMqRkOF6Qdz3YbPZm/PyW6tKPkx2hlYBzxMhEywM/tU72HrVZjgl5VCdRuMlA7pZ8Gw=="
