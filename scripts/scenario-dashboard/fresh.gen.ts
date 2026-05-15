@@ -22,7 +22,6 @@ import * as $run_runId_ from "./routes/run/[runId].tsx";
 import * as $scenario_id_ from "./routes/scenario/[id].tsx";
 import * as $LogViewer from "./islands/LogViewer.tsx";
 import * as $NetworkStatus from "./islands/NetworkStatus.tsx";
-import * as $RunPoller from "./islands/RunPoller.tsx";
 import * as $RunProgress from "./islands/RunProgress.tsx";
 import * as $ScenarioCard from "./islands/ScenarioCard.tsx";
 import * as $ScenarioRunner from "./islands/ScenarioRunner.tsx";
@@ -55,7 +54,6 @@ const manifest = {
   islands: {
     "./islands/LogViewer.tsx": $LogViewer,
     "./islands/NetworkStatus.tsx": $NetworkStatus,
-    "./islands/RunPoller.tsx": $RunPoller,
     "./islands/RunProgress.tsx": $RunProgress,
     "./islands/ScenarioCard.tsx": $ScenarioCard,
     "./islands/ScenarioRunner.tsx": $ScenarioRunner,

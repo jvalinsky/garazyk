@@ -1,117 +1,69 @@
-import { useState, useEffect } from "preact/hooks";
-import { selectedTopology, activeRun } from "../signals.ts";
+import { useSignal } from "@preact/signals";
+import { useEffect } from "preact/hooks";
+import { useRuntime, getRuntime } from "../runtime.ts";
+
+const IS_BROWSER = typeof globalThis !== "undefined" && "document" in globalThis;
 
 export default function Toolbar() {
-  const [busy, setBusy] = useState(false);
-  const [topologies, setTopologies] = useState<{ name: string }[]>([]);
-  const [showSettings, setShowSettings] = useState(false);
-  const [availableScenarios, setAvailableScenarios] = useState<any[]>([]);
-  const [params, setParams] = useState<Record<string, any>>({});
+  const { state, dispatch } = useRuntime();
+  const s = state.value;
+  const topologies = s.topology.available;
+  const run = s.runs.active;
+  const busy = s.ux.busy;
+  const showSettings = s.ux.settingsOpen;
+  const params = s.ux.scenarioParams;
+  const scenarios = s.scenarios.all;
 
+  const selectedTopology = useSignal("garazyk-default");
+
+  // Restore saved topology selection on mount, then sync changes to
+  // localStorage and Runtime.
   useEffect(() => {
-    fetch("/api/topologies")
-      .then((res) => res.json())
-      .then((data) => setTopologies(data.topologies))
-      .catch((e) => console.error("Failed to fetch topologies", e));
-
-    fetch("/api/scenarios")
-      .then((res) => res.json())
-      .then((data) => {
-        setAvailableScenarios(data.scenarios);
-        const defaults: Record<string, any> = {};
-        for (const s of data.scenarios) {
-          if (s.parameters) {
-            for (const [key, meta] of Object.entries(s.parameters)) {
-              // @ts-ignore
-              defaults[key] = meta.default;
-            }
-          }
-        }
-        setParams(defaults);
-      })
-      .catch((e) => console.error("Failed to fetch scenarios", e));
+    if (!IS_BROWSER) return;
+    const saved = localStorage.getItem("garazyk-dashboard-topology");
+    if (saved) selectedTopology.value = saved;
   }, []);
 
-  const run = activeRun.value;
+  useEffect(() => {
+    if (!IS_BROWSER) return;
+    const unsub = selectedTopology.subscribe((name: string) => {
+      localStorage.setItem("garazyk-dashboard-topology", name);
+      const runtime = getRuntime();
+      if (runtime) runtime.dispatch({ type: "topology/selected", name });
+    });
+    return () => unsub();
+  }, []);
+
   const isStarting = run?.status === "starting";
   const isRunning = run?.status === "running";
   const isStopping = run?.status === "stopping";
   const isActive = isStarting || isRunning || isStopping;
 
-  async function runAll() {
-    setBusy(true);
-    setShowSettings(false);
-    try {
-      const ids = availableScenarios.map((s: any) => s.id);
+  const hasParameters = scenarios.some((sc) => sc.parameters && Object.keys(sc.parameters).length > 0);
 
-      if (ids.length === 0) return;
-
-      const resp = await fetch("/api/runs/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          topology: selectedTopology.value,
-          runner: "host",
-          scenarioIds: ids,
-          pds2: ids.some((id: string) => id === "05" || id === "12"),
-          binaryMode: false,
-          scenarioParams: params,
-        }),
-      });
-
-      if (resp.ok) {
-        const data = await resp.json();
-        window.location.href = `/run/${data.runId}`;
-      }
-    } catch (error) {
-      console.error("Error running scenarios:", error);
-    } finally {
-      setBusy(false);
+  function runAll() {
+    const ids = scenarios.map((sc) => sc.id);
+    if (ids.length === 0) return;
+    if (state.peek().ux.settingsOpen) {
+      dispatch({ type: "ux/toggleSettings" });
     }
+    dispatch({ type: "runs/startRequested", scenarioIds: ids, pds2: ids.some((id) => id === "05" || id === "12") });
   }
 
-  async function stopRun() {
-    if (!run) return;
-    setBusy(true);
-    try {
-      await fetch(`/api/runs/${run.id}/stop`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ graceful: true }),
-      });
-    } catch (error) {
-      console.error("Error stopping run:", error);
-    } finally {
-      setBusy(false);
-    }
+  function stopRun() {
+    dispatch({ type: "runs/stopRequested" });
   }
 
-  async function restartRun() {
-    if (!run) return;
-    setBusy(true);
-    try {
-      const resp = await fetch(`/api/runs/${run.id}/restart`, {
-        method: "POST",
-      });
-      if (resp.ok) {
-        const data = await resp.json();
-        window.location.href = `/run/${data.newRunId}`;
-      }
-    } catch (error) {
-      console.error("Error restarting run:", error);
-    } finally {
-      setBusy(false);
-    }
+  function restartRun() {
+    dispatch({ type: "runs/restartRequested" });
   }
-
-  const hasParameters = availableScenarios.some(s => s.parameters && Object.keys(s.parameters).length > 0);
 
   return (
     <header class="toolbar">
       <div class="toolbar-section">
         <span class="toolbar-title">Garazyk Scenarios</span>
       </div>
-      
+
       <div class="toolbar-spacer" />
 
       <div class="toolbar-section">
@@ -135,7 +87,7 @@ export default function Toolbar() {
         {!isActive ? (
           <div style="display: flex; gap: var(--space-sm);">
             {hasParameters && (
-              <button class="btn btn-secondary" onClick={() => setShowSettings(!showSettings)} disabled={busy}>
+              <button class="btn btn-secondary" onClick={() => dispatch({ type: "ux/toggleSettings" })} disabled={busy}>
                 Settings
               </button>
             )}
@@ -164,45 +116,48 @@ export default function Toolbar() {
           <div class="settings-modal">
             <div class="settings-modal-header">
               <h3>Scenario Settings</h3>
-              <button class="btn-close" onClick={() => setShowSettings(false)}>×</button>
+              <button class="btn-close" onClick={() => dispatch({ type: "ux/toggleSettings" })}>×</button>
             </div>
             <div class="settings-modal-body">
-              {availableScenarios.map(s => {
-                if (!s.parameters || Object.keys(s.parameters).length === 0) return null;
+              {scenarios.map((sc) => {
+                if (!sc.parameters || Object.keys(sc.parameters).length === 0) return null;
                 return (
-                  <div key={s.id} class="scenario-settings-group">
-                    <div class="scenario-settings-title">{s.id} {s.name}</div>
-                    {Object.entries(s.parameters).map(([key, meta]: [string, any]) => (
-                      <div key={key} class="setting-row">
-                        <div class="setting-info">
-                          <div class="setting-label">{key}</div>
-                          <div class="setting-desc">{meta.description}</div>
+                  <div key={sc.id} class="scenario-settings-group">
+                    <div class="scenario-settings-title">{sc.id} {sc.name}</div>
+                    {Object.entries(sc.parameters).map(([key, meta]) => {
+                      const value = params[key] ?? meta.default;
+                      return (
+                        <div key={key} class="setting-row">
+                          <div class="setting-info">
+                            <div class="setting-label">{key}</div>
+                            <div class="setting-desc">{meta.description}</div>
+                          </div>
+                          <div class="setting-input-wrapper">
+                            {meta.type === "number" ? (
+                              <input
+                                type="number"
+                                class="form-input"
+                                value={value as number}
+                                onChange={(e) => dispatch({ type: "ux/setScenarioParam", key, value: Number((e.target as HTMLInputElement).value) })}
+                              />
+                            ) : meta.type === "boolean" ? (
+                              <input
+                                type="checkbox"
+                                checked={value as boolean}
+                                onChange={(e) => dispatch({ type: "ux/setScenarioParam", key, value: (e.target as HTMLInputElement).checked })}
+                              />
+                            ) : (
+                              <input
+                                type="text"
+                                class="form-input"
+                                value={value as string}
+                                onChange={(e) => dispatch({ type: "ux/setScenarioParam", key, value: (e.target as HTMLInputElement).value })}
+                              />
+                            )}
+                          </div>
                         </div>
-                        <div class="setting-input-wrapper">
-                          {meta.type === "number" ? (
-                            <input
-                              type="number"
-                              class="form-input"
-                              value={params[key]}
-                              onChange={(e) => setParams({ ...params, [key]: Number((e.target as HTMLInputElement).value) })}
-                            />
-                          ) : meta.type === "boolean" ? (
-                            <input
-                              type="checkbox"
-                              checked={params[key]}
-                              onChange={(e) => setParams({ ...params, [key]: (e.target as HTMLInputElement).checked })}
-                            />
-                          ) : (
-                            <input
-                              type="text"
-                              class="form-input"
-                              value={params[key]}
-                              onChange={(e) => setParams({ ...params, [key]: (e.target as HTMLInputElement).value })}
-                            />
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 );
               })}

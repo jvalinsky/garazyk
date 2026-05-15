@@ -1,4 +1,4 @@
-import { useState } from "preact/hooks";
+import { useRuntime } from "../runtime.ts";
 
 interface ScenarioRunnerProps {
   scenarioId: string;
@@ -6,33 +6,15 @@ interface ScenarioRunnerProps {
 }
 
 export default function ScenarioRunner({ scenarioId, needsPds2 }: ScenarioRunnerProps) {
-  const [running, setRunning] = useState(false);
+  const { state, dispatch } = useRuntime();
 
-  const handleRun = async () => {
-    setRunning(true);
-    try {
-      const res = await fetch("/api/scenarios", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: [scenarioId], pds2: needsPds2 }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        // Redirect to the new run page
-        window.location.href = `/run/${data.runId}`;
-      } else {
-        alert("Failed to start run");
-      }
-    } catch (e) {
-      alert("Error starting run: " + e);
-    } finally {
-      setRunning(false);
-    }
+  const handleRun = () => {
+    dispatch({ type: "runs/startRequested", scenarioIds: [scenarioId], pds2: needsPds2 });
   };
 
   return (
-    <button class="btn btn-primary" onClick={handleRun} disabled={running}>
-      {running ? "Starting Run..." : "Run This Scenario"}
+    <button class="btn btn-primary" onClick={handleRun} disabled={state.value.ux.busy}>
+      {state.value.ux.busy ? "Starting Run..." : "Run This Scenario"}
     </button>
   );
 }

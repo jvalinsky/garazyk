@@ -1,26 +1,8 @@
-import { useSignal } from "@preact/signals";
 import { categorize } from "../utils.ts";
-import { topologyPreview } from "../signals.ts";
+import { useRuntime } from "../runtime.ts";
 import TopologyInspector from "./TopologyInspector.tsx";
 
-interface ScenarioMeta {
-  id: string;
-  name: string;
-  category: string;
-  needsPds2: boolean;
-  lastStatus?: "passed" | "failed" | "skipped" | null;
-}
-
-interface ServiceStatus {
-  name: string;
-  url: string;
-  status: "running" | "stopped" | "starting" | "error";
-  healthy?: boolean;
-}
-
 interface SidebarProps {
-  scenarios: ScenarioMeta[];
-  services: ServiceStatus[];
   activeScenario?: string;
 }
 
@@ -31,31 +13,30 @@ const CATEGORIES: Record<string, string> = {
   edge: "Edge Cases",
 };
 
-export default function Sidebar({ scenarios, services, activeScenario }: SidebarProps) {
-  const collapsed = useSignal<Set<string>>(new Set(["edge"]));
-  const searchTerm = useSignal("");
+export default function Sidebar({ activeScenario }: SidebarProps) {
+  const { state, dispatch } = useRuntime();
+  const s = state.value;
+  const scenarios = s.scenarios.all;
+  const services = s.network.services;
 
-  const grouped: Record<string, ScenarioMeta[]> = {};
-  for (const s of scenarios) {
-    const cat = categorize(s.id);
+  const collapsedCategories = s.ux.collapsedCategories;
+  const searchTerm = s.ux.searchTerm;
+
+  const grouped: Record<string, typeof scenarios> = {};
+  for (const sc of scenarios) {
+    const cat = categorize(sc.id);
     if (!grouped[cat]) grouped[cat] = [];
-    grouped[cat].push(s);
+    grouped[cat].push(sc);
   }
 
   const toggleCollapsed = (cat: string) => {
-    const next = new Set(collapsed.value);
-    if (next.has(cat)) {
-      next.delete(cat);
-    } else {
-      next.add(cat);
-    }
-    collapsed.value = next;
+    dispatch({ type: "ux/toggleCategory", category: cat });
   };
 
-  const filterScenarios = (scen: ScenarioMeta[]): ScenarioMeta[] => {
-    if (!searchTerm.value) return scen;
-    const term = searchTerm.value.toLowerCase();
-    return scen.filter(s =>
+  const filterScenarios = (scen: typeof scenarios): typeof scenarios => {
+    if (!searchTerm) return scen;
+    const term = searchTerm.toLowerCase();
+    return scen.filter((s) =>
       s.id.includes(term) || s.name.toLowerCase().includes(term)
     );
   };
@@ -73,8 +54,8 @@ export default function Sidebar({ scenarios, services, activeScenario }: Sidebar
           type="text"
           class="filter-input"
           placeholder="Search scenarios..."
-          value={searchTerm.value}
-          onInput={(e) => searchTerm.value = (e.target as HTMLInputElement).value}
+          value={searchTerm}
+          onInput={(e) => dispatch({ type: "ux/setSearchTerm", term: (e.target as HTMLInputElement).value })}
           style="margin-bottom: var(--space-md);"
         />
       </div>
@@ -88,7 +69,7 @@ export default function Sidebar({ scenarios, services, activeScenario }: Sidebar
       </div>
 
       {Object.entries(CATEGORIES).map(([key, label]) => {
-        const isCollapsed = collapsed.value.has(key);
+        const isCollapsed = collapsedCategories.has(key);
         const filtered = filterScenarios(grouped[key] || []);
         const hasResults = filtered.length > 0;
 
@@ -104,24 +85,24 @@ export default function Sidebar({ scenarios, services, activeScenario }: Sidebar
                 {isCollapsed ? "▶" : "▼"}
               </span>
             </div>
-            {!isCollapsed && hasResults && filtered.map((s) => (
+            {!isCollapsed && hasResults && filtered.map((sc) => (
               <a
-                href={`/scenario/${s.id}`}
-                class={`sidebar-item ${activeScenario === s.id ? "active" : ""}`}
-                key={s.id}
+                href={`/scenario/${sc.id}`}
+                class={`sidebar-item ${activeScenario === sc.id ? "active" : ""}`}
+                key={sc.id}
               >
                 <span
                   class={`status-dot ${
-                    s.lastStatus === "passed"
+                    sc.lastStatus === "passed"
                       ? "running"
-                      : s.lastStatus === "failed"
+                      : sc.lastStatus === "failed"
                       ? "failed"
-                      : s.lastStatus === "skipped"
+                      : sc.lastStatus === "skipped"
                       ? "skipped"
                       : "stopped"
                   }`}
                 />
-                <span>{s.id} {s.name}</span>
+                <span>{sc.id} {sc.name}</span>
               </a>
             ))}
             {!isCollapsed && !hasResults && searchTerm && (
@@ -133,7 +114,7 @@ export default function Sidebar({ scenarios, services, activeScenario }: Sidebar
         );
       })}
 
-      <TopologyInspector topology={topologyPreview.value} />
+      <TopologyInspector />
     </aside>
   );
 }

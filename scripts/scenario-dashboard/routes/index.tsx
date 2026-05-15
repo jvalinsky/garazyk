@@ -1,6 +1,5 @@
 import { Handlers, PageProps } from "$fresh/server.ts";
 import { getScenarios } from "../services/scenario_discovery.ts";
-import { networkManager } from "../services/network_manager.ts";
 import { db } from "../db/index.ts";
 import { fetchRuns, fetchLatestResultPerScenario } from "../db/queries.ts";
 import Layout from "../components/Layout.tsx";
@@ -12,7 +11,7 @@ import ScenarioGrid from "../components/ScenarioGrid.tsx";
 import NetworkStatus from "../islands/NetworkStatus.tsx";
 import RunHistory from "../components/RunHistory.tsx";
 import { formatDate } from "../utils.ts";
-import { DiscoveredScenario, ServiceStatus, Run, ScenarioStatus } from "../services/types.ts";
+import type { DiscoveredScenario, Run, ScenarioStatus } from "../services/types.ts";
 
 interface ScenarioWithResults extends DiscoveredScenario {
   lastStatus?: ScenarioStatus | null;
@@ -23,14 +22,12 @@ interface ScenarioWithResults extends DiscoveredScenario {
 
 interface PageData {
   scenarios: ScenarioWithResults[];
-  services: Record<string, ServiceStatus>;
   runs: Run[];
 }
 
 export const handler: Handlers<PageData> = {
   async GET(_req, ctx) {
     const scenariosBase = await getScenarios();
-    const services = networkManager.getStatus();
     const runs = fetchRuns(db, 10);
 
     const latestResults = fetchLatestResultPerScenario(db);
@@ -47,14 +44,13 @@ export const handler: Handlers<PageData> = {
       };
     });
 
-    return ctx.render({ scenarios, services, runs });
+    return ctx.render({ scenarios, runs });
   },
 };
 
 export default function DashboardPage({ data }: PageProps<PageData>) {
-  const { scenarios, services, runs } = data;
+  const { scenarios, runs } = data;
 
-  const serviceList = Object.values(services);
   const scenarioGridData = scenarios.map((s) => ({
     id: s.id,
     name: s.name,
@@ -70,12 +66,9 @@ export default function DashboardPage({ data }: PageProps<PageData>) {
   return (
     <Layout title="Dashboard">
       <Toolbar />
-      <Sidebar
-        scenarios={scenarios as any}
-        services={serviceList}
-      />
+      <Sidebar />
       <main class="main-content">
-        <NetworkStatus services={serviceList} />
+        <NetworkStatus />
         <SummaryCards passed={latestRun?.passed ?? 0} failed={latestRun?.failed ?? 0} skipped={latestRun?.skipped ?? 0} label={summaryLabel} />
         <h2 class="section-heading">Scenarios</h2>
         <ScenarioGrid scenarios={scenarioGridData} />

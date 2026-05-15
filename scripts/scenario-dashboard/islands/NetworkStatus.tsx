@@ -1,57 +1,20 @@
-import { useState, useEffect } from "preact/hooks";
+import { useRuntime } from "../runtime.ts";
 
-interface ServiceInfo {
-  name: string;
-  label: string;
-  url: string;
-  status: "running" | "stopped" | "starting" | "error";
-  healthy?: boolean;
-}
+export default function NetworkStatus() {
+  const { state, dispatch } = useRuntime();
+  const { services } = state.value.network;
+  const busy = state.value.ux.busy;
 
-interface NetworkStatusProps {
-  services: ServiceInfo[];
-}
-
-export default function NetworkStatus({ services: initial }: NetworkStatusProps) {
-  const [services, setServices] = useState(initial);
-  const [busy, setBusy] = useState(false);
-
-  async function refresh() {
-    try {
-      const res = await fetch("/api/network/health");
-      const data = await res.json();
-      if (data.services) {
-        setServices(Object.values(data.services));
-      }
-    } catch (e) {
-      console.error("Failed to refresh network status:", e);
-    }
+  function startAll() {
+    dispatch({ type: "network/startRequested", pds2: false });
   }
 
-  useEffect(() => {
-    const id = setInterval(refresh, 5000);
-    return () => clearInterval(id);
-  }, []);
-
-  async function startAll() {
-    setBusy(true);
-    await fetch("/api/network/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
-    await refresh();
-    setBusy(false);
+  function startPds2() {
+    dispatch({ type: "network/startRequested", pds2: true });
   }
 
-  async function startPds2() {
-    setBusy(true);
-    await fetch("/api/network/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pds2: true }) });
-    await refresh();
-    setBusy(false);
-  }
-
-  async function stopAll() {
-    setBusy(true);
-    await fetch("/api/network/stop", { method: "POST" });
-    await refresh();
-    setBusy(false);
+  function stopAll() {
+    dispatch({ type: "network/stopRequested" });
   }
 
   return (

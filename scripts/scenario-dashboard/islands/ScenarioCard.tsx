@@ -1,6 +1,6 @@
+import { useRuntime } from "../runtime.ts";
 import { ScenarioStatus } from "../services/types.ts";
 import { STATUS_ICONS } from "../utils.ts";
-import { topologyPreview } from "../signals.ts";
 
 interface ScenarioCardProps {
   id: string;
@@ -17,21 +17,19 @@ interface ScenarioCardProps {
 export default function ScenarioCard(
   { id, name, status, passed = 0, failed = 0, skipped = 0, runId, requires = [], needsPds2 = false }: ScenarioCardProps,
 ) {
+  const { state } = useRuntime();
+  const preview = state.value.topology.preview;
+
   const icon = status ? STATUS_ICONS[status] || "?" : "";
   const href = runId ? `/scenario/${id}?runId=${runId}` : `/scenario/${id}`;
-  
-  // Check compatibility
-  const preview = topologyPreview.value;
+
   const missing: string[] = [];
-  
   if (preview) {
     if (needsPds2 && !preview.roles.includes("pds2")) {
       missing.push("pds2");
     }
     for (const req of requires) {
       if (!preview.capabilities.includes(req) && !preview.roles.includes(req.split(":")[0])) {
-        // Simple check: if it's role:capability, check if either is present
-        // (This is a bit simplified compared to the real logic)
         missing.push(req);
       }
     }
@@ -48,7 +46,7 @@ export default function ScenarioCard(
     <a href={href} class={`scenario-card ${!isCompatible ? "incompatible" : ""}`}>
       <div class="card-id">{id}</div>
       <div class="card-name">{name}</div>
-      
+
       {!isCompatible && (
         <div class="compatibility-warning" title={`Missing: ${missing.join(", ")}`}>
           ⚠️ Incompatible
