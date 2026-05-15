@@ -111,13 +111,13 @@ docker cp "$CONTAINER_ID:/src/Garazyk/Resources/lexicons/." "$STAGING_DIR/lexico
 # Copy PLC assets if not already present
 if [[ ! -d "$STAGING_DIR/PLC-assets" ]]; then
     echo "[stage] Copying PLC assets..."
-    cp -R -L "$REPO_ROOT/Garazyk/Sources/PLC/Assets" "$STAGING_DIR/PLC-assets"
+    docker cp "$CONTAINER_ID:/src/Garazyk/Sources/PLC/Assets" "$STAGING_DIR/PLC-assets"
 fi
 
 # Copy Auth assets if not already present
 if [[ ! -d "$STAGING_DIR/Auth-assets" ]]; then
     echo "[stage] Copying Auth assets..."
-    cp -R -L "$REPO_ROOT/Garazyk/Sources/Auth/Assets" "$STAGING_DIR/Auth-assets"
+    docker cp "$CONTAINER_ID:/src/Garazyk/Sources/Auth/Assets" "$STAGING_DIR/Auth-assets"
 fi
 
 # Copy shared design system CSS if not already present

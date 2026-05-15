@@ -1,2 +1,1 @@
 [2026-05-15T20:33:44.712Z] POST-COMMIT: 96446472 "refactor: eliminate @synchronized, DISPATCH_TIME_F" - Run: deciduous add outcome "..." --commit HEAD
-[2026-05-15T20:37:29.934Z] POST-COMMIT: 5f5b87dc "refactor(database): remove legacy Migration/ direc" - Run: deciduous add outcome "..." --commit HEAD

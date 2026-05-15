@@ -35,9 +35,8 @@ export async function runScenario(
   // Docker runner mode: execute the scenario inside a container
   if (args.runner === "docker") {
     try {
-      const dockerResult = await runScenarioInDocker({
+      const exitCode = await runScenarioInDocker({
         repoRoot,
-        runId: Deno.env.get("ATPROTO_E2E_RUN_ID") || undefined,
         composeProject,
         networkName: topology.manifest
           ? `${composeProject}_${topology.manifest.networkName}`
@@ -45,7 +44,6 @@ export async function runScenario(
         internalUrls: topology.internalUrls,
         dockerRunnerEnv: topology.manifest?.env?.dockerRunner,
         capabilities: topology.capabilities,
-        scenarioId: scenario.id,
         scenarioPath: scenario.path,
         timeoutSeconds,
         env: {
@@ -59,13 +57,10 @@ export async function runScenario(
       });
       const result = new ScenarioResult(scenario.name);
       result.start();
-      if (dockerResult.code === 0) {
-        result.stepPassed(`Scenario ${scenario.id} (docker)`, `exit=${dockerResult.code}`);
+      if (exitCode === 0) {
+        result.stepPassed(`Scenario ${scenario.id} (docker)`, `exit=${exitCode}`);
       } else {
-        result.stepFailed(
-          `Scenario ${scenario.id} (docker)`,
-          dockerResult.message || `exit=${dockerResult.code}`,
-        );
+        result.stepFailed(`Scenario ${scenario.id} (docker)`, `exit=${exitCode}`);
       }
       result.finish();
       return result;

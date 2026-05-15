@@ -41,7 +41,7 @@ export async function waitForHttp(
 export async function waitForService(
   serviceName: string,
   composeProject: string,
-  composeFile: string | string[],
+  composeFile: string,
   timeoutSeconds = 60,
   sharedWatcher?: ContainerEventWatcher | null,
 ): Promise<boolean> {
@@ -67,20 +67,14 @@ export async function waitForService(
 export async function waitForServiceCLI(
   serviceName: string,
   composeProject: string,
-  composeFile: string | string[],
+  composeFile: string,
   timeoutSeconds: number,
 ): Promise<boolean> {
   const deadline = Date.now() + timeoutSeconds * 1000;
-  const composeFiles = Array.isArray(composeFile) ? composeFile : [composeFile];
   while (Date.now() < deadline) {
     try {
-      const composeArgs = ["compose", "-p", composeProject];
-      for (const file of composeFiles) {
-        composeArgs.push("-f", file);
-      }
-      composeArgs.push("ps", "-q", serviceName);
       const psProc = new Deno.Command("docker", {
-        args: composeArgs,
+        args: ["compose", "-p", composeProject, "-f", composeFile, "ps", "-q", serviceName],
         stdout: "piped",
       });
       const { code, stdout } = await psProc.output();
@@ -88,12 +82,9 @@ export async function waitForServiceCLI(
         const containerId = new TextDecoder().decode(stdout).trim();
         if (containerId) {
           const inspectProc = new Deno.Command("docker", {
-            args: [
-              "inspect",
-              "--format",
+            args: ["inspect", "--format",
               "{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}",
-              containerId,
-            ],
+              containerId],
             stdout: "piped",
           });
           const { code: ic, stdout: iout } = await inspectProc.output();

@@ -17,7 +17,7 @@ services:
       - "/var/lib/atprotopds/config.json"
       - "--foreground"
     ports:
-      - "2587:2587"
+      - "2587:2585"
     volumes:
       - local_pds2_data:/var/lib/atprotopds
       - ./pds2-config.json:/var/lib/atprotopds/config.json:ro
@@ -34,7 +34,7 @@ services:
       local-plc:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:2587/xrpc/com.atproto.server.describeServer"]
+      test: ["CMD", "curl", "-f", "http://localhost:2585/xrpc/com.atproto.server.describeServer"]
       interval: 5s
       timeout: 3s
       retries: 10

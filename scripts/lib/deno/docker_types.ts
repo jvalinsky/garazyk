@@ -20,7 +20,6 @@ export interface LocalNetworkOptions {
   skipDockerStage?: boolean;
   waitOnly?: boolean;
   collectDiagnostics?: boolean;
-  onSessionStarted?: (session: NetworkSession) => void | Promise<void>;
 }
 
 export interface RunContext {
@@ -32,15 +31,4 @@ export interface RunContext {
   composeProject: string;
   baseDir: string;
   statsSampler?: ContainerStatsSampler;
-}
-
-export interface NetworkSession {
-  runId: string;
-  runDir: string;
-  diagnosticsDir: string;
-  composeProject: string;
-  composeFiles: string[];
-  topologyManifestPath?: string;
-  withPds2: boolean;
-  useBinary: boolean;
 }

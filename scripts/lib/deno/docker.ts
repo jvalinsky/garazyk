@@ -16,15 +16,15 @@ import { waitForHttp, waitForService, waitForServiceCLI } from "./docker_health.
 import { collectDiagnostics } from "./docker_diagnostics.ts";
 import { startBinaryServices, stopBinaryServices } from "./docker_binary.ts";
 import { ContainerEventWatcher } from "./docker_events.ts";
-import { isOtelEnabled, withSpan } from "./otel.ts";
+import { withSpan, isOtelEnabled } from "./otel.ts";
 import { ContainerStatsSampler } from "./container_stats.ts";
 import { createDockerClient } from "./docker_api.ts";
-import type { LocalNetworkOptions, NetworkSession, RunContext } from "./docker_types.ts";
+import type { LocalNetworkOptions, RunContext } from "./docker_types.ts";
 
 // Re-exports for backward compatibility
-export type { LocalNetworkOptions, NetworkSession, RunContext } from "./docker_types.ts";
-export { initRunDir, neededPorts, repoRoot, SERVICE_PORTS, serviceUrl } from "./docker_config.ts";
-export { composeDown, composeUp } from "./docker_compose.ts";
+export type { LocalNetworkOptions, RunContext } from "./docker_types.ts";
+export { SERVICE_PORTS, serviceUrl, neededPorts, initRunDir, repoRoot } from "./docker_config.ts";
+export { composeUp, composeDown } from "./docker_compose.ts";
 export { stopStaleDockerE2e, stopStaleHostProcesses } from "./docker_cleanup.ts";
 export { waitForHttp, waitForService, waitForServiceCLI } from "./docker_health.ts";
 export { collectDiagnostics } from "./docker_diagnostics.ts";
@@ -43,12 +43,9 @@ export { startBinaryServices, stopBinaryServices } from "./docker_binary.ts";
  *
  * In binary mode: starts local binaries and waits for HTTP health.
  */
-export async function startLocalNetwork(
-  options: LocalNetworkOptions = {},
-): Promise<NetworkSession> {
+export async function startLocalNetwork(options: LocalNetworkOptions = {}) {
   return await withSpan("localNetwork.start", async () => {
     const ctx = initRunDir(options.runId);
-    let session: NetworkSession | undefined;
 
     const latestFile = join(ctx.baseDir, "latest-scenario-run-id");
     try {
@@ -65,13 +62,7 @@ export async function startLocalNetwork(
 
     if (options.useBinary) {
       await startBinaryServices(ctx, options);
-      session = createNetworkSession(ctx, {
-        composeFiles: [],
-        withPds2: options.withPds2,
-        useBinary: true,
-      });
-      await options.onSessionStarted?.(session);
-      return session;
+      return;
     }
 
     const root = await repoRoot();
@@ -113,14 +104,6 @@ export async function startLocalNetwork(
       await composeUp(ctx.composeProject, composeFiles);
     }
 
-    session = createNetworkSession(ctx, {
-      composeFiles,
-      topologyManifestPath: options.topology ? topologyManifest : undefined,
-      withPds2: options.withPds2,
-      useBinary: false,
-    });
-    await options.onSessionStarted?.(session);
-
     if (options.topology && Deno.env.get("ATPROTO_TOPOLOGY_MANIFEST")) {
       const { loadTopologyManifest } = await import("./topology.ts");
       const manifest = loadTopologyManifest(topologyManifest);
@@ -134,12 +117,7 @@ export async function startLocalNetwork(
           } else if (watcher) {
             ok = await watcher.waitForHealthy(probe.serviceName, probe.timeoutSeconds * 1000);
           } else {
-            ok = await waitForServiceCLI(
-              probe.serviceName,
-              ctx.composeProject,
-              topologyComposeFile,
-              probe.timeoutSeconds,
-            );
+            ok = await waitForServiceCLI(probe.serviceName, ctx.composeProject, topologyComposeFile, probe.timeoutSeconds);
           }
           if (!ok) {
             await watcher?.close();
@@ -152,47 +130,15 @@ export async function startLocalNetwork(
     } else {
       const sharedWatcher = await ContainerEventWatcher.create();
       try {
-        await requireHealthy(
-          "local-plc",
-          "PLC",
-          ctx.composeProject,
-          composeFiles,
-          60,
-          sharedWatcher,
-        );
-        await requireHealthy(
-          "local-pds",
-          "PDS",
-          ctx.composeProject,
-          composeFiles,
-          60,
-          sharedWatcher,
-        );
-        await requireHealthy(
-          "local-relay",
-          "Relay",
-          ctx.composeProject,
-          composeFiles,
-          60,
-          sharedWatcher,
-        );
-        await requireHealthy(
-          "local-appview",
-          "AppView",
-          ctx.composeProject,
-          composeFiles,
-          90,
-          sharedWatcher,
-        );
+        await waitForService("local-plc", ctx.composeProject, composeFiles[0], 60, sharedWatcher);
+        await waitForService("local-pds", ctx.composeProject, composeFiles[0], 60, sharedWatcher);
+        await waitForService("local-relay", ctx.composeProject, composeFiles[0], 60, sharedWatcher);
+        const appviewOk = await waitForService("local-appview", ctx.composeProject, composeFiles[0], 90, sharedWatcher);
+        if (!appviewOk) {
+          throw new Error("AppView failed to start within 90s");
+        }
         if (options.withPds2) {
-          await requireHealthy(
-            "local-pds2",
-            "PDS2",
-            ctx.composeProject,
-            composeFiles,
-            60,
-            sharedWatcher,
-          );
+          await waitForService("local-pds2", ctx.composeProject, composeFiles[0], 60, sharedWatcher);
         }
       } finally {
         await sharedWatcher?.close();
@@ -212,7 +158,7 @@ export async function startLocalNetwork(
           onMemoryPressure: (alert) => {
             console.warn(
               `[WARN]  Memory pressure: ${alert.serviceName} failcnt=${alert.failcnt} ` +
-                `(${formatBytes(alert.memoryUsageBytes)} / ${formatBytes(alert.memoryLimitBytes)})`,
+              `(${formatBytes(alert.memoryUsageBytes)} / ${formatBytes(alert.memoryLimitBytes)})`,
             );
           },
         });
@@ -222,7 +168,6 @@ export async function startLocalNetwork(
     }
 
     console.log("[OK]    Local network is ready!");
-    return session!;
   });
 }
 
@@ -230,124 +175,29 @@ export async function startLocalNetwork(
  * Stop the local ATProto network.
  */
 export async function stopLocalNetwork(
-  options: NetworkSession | (LocalNetworkOptions & { collectDiagnostics?: boolean }) = {},
+  options: LocalNetworkOptions & { collectDiagnostics?: boolean } = {},
 ) {
   return await withSpan("localNetwork.stop", async () => {
-    const session = await normalizeNetworkSession(options);
-    const ctx = initRunDir(session.runId);
+    const ctx = initRunDir(options.runId);
 
-    if ("collectDiagnostics" in options && options.collectDiagnostics) {
-      await collectDiagnostics(ctx, session.composeFiles);
+    if (options.collectDiagnostics) {
+      await collectDiagnostics(ctx);
     }
 
-    if (session.useBinary) {
+    if (options.useBinary) {
       console.log("[INFO]  Stopping binary services...");
       await stopBinaryServices(ctx);
     } else {
       console.log("[INFO]  Stopping Docker services...");
-      await composeDown(session.composeProject, session.composeFiles);
+      const root = await repoRoot();
+      const composeDir = join(root, "docker/local-network");
+      const composeFiles = [join(composeDir, "docker-compose.yml")];
+      if (options.withPds2 || options.collectDiagnostics) {
+        composeFiles.push(join(composeDir, "docker-compose.scenarios.yml"));
+      }
+      await composeDown(ctx.composeProject, composeFiles);
     }
 
     console.log("[OK]    Teardown complete");
   });
-}
-
-export function createNetworkSession(
-  ctx: RunContext,
-  options: {
-    composeFiles: string[];
-    topologyManifestPath?: string;
-    withPds2?: boolean;
-    useBinary?: boolean;
-  },
-): NetworkSession {
-  return {
-    runId: ctx.runId,
-    runDir: ctx.runDir,
-    diagnosticsDir: ctx.diagnosticsDir,
-    composeProject: ctx.composeProject,
-    composeFiles: [...options.composeFiles],
-    topologyManifestPath: options.topologyManifestPath,
-    withPds2: Boolean(options.withPds2),
-    useBinary: Boolean(options.useBinary),
-  };
-}
-
-export function assertServiceHealthResult(
-  label: string,
-  ok: boolean,
-  timeoutSeconds: number,
-): void {
-  if (!ok) {
-    throw new Error(`${label} failed to start within ${timeoutSeconds}s`);
-  }
-}
-
-export async function composeFilesForOptions(
-  ctx: Pick<RunContext, "runDir">,
-  options: Pick<LocalNetworkOptions, "topology" | "withPds2">,
-): Promise<string[]> {
-  if (options.topology) {
-    const topologyComposeFile = join(ctx.runDir, "docker-compose.topology.yml");
-    if (await pathExists(topologyComposeFile)) {
-      return [topologyComposeFile];
-    }
-  }
-
-  const root = await repoRoot();
-  const composeDir = join(root, "docker/local-network");
-  const composeFiles = [join(composeDir, "docker-compose.yml")];
-  if (options.withPds2) {
-    composeFiles.push(join(composeDir, "docker-compose.scenarios.yml"));
-  }
-  return composeFiles;
-}
-
-async function normalizeNetworkSession(
-  options: NetworkSession | (LocalNetworkOptions & { collectDiagnostics?: boolean }),
-): Promise<NetworkSession> {
-  if ("composeProject" in options && Array.isArray(options.composeFiles)) {
-    return options;
-  }
-
-  const legacyOptions = options as LocalNetworkOptions & { collectDiagnostics?: boolean };
-  const ctx = initRunDir(options.runId);
-  const composeFiles = legacyOptions.useBinary
-    ? []
-    : await composeFilesForOptions(ctx, legacyOptions);
-  return createNetworkSession(ctx, {
-    composeFiles,
-    topologyManifestPath: legacyOptions.topology
-      ? join(ctx.runDir, "topology-manifest.json")
-      : undefined,
-    withPds2: legacyOptions.withPds2,
-    useBinary: legacyOptions.useBinary,
-  });
-}
-
-async function requireHealthy(
-  serviceName: string,
-  label: string,
-  composeProject: string,
-  composeFiles: string[],
-  timeoutSeconds: number,
-  sharedWatcher: ContainerEventWatcher | null,
-): Promise<void> {
-  const ok = await waitForService(
-    serviceName,
-    composeProject,
-    composeFiles,
-    timeoutSeconds,
-    sharedWatcher,
-  );
-  assertServiceHealthResult(label, ok, timeoutSeconds);
-}
-
-async function pathExists(path: string): Promise<boolean> {
-  try {
-    await Deno.stat(path);
-    return true;
-  } catch {
-    return false;
-  }
 }
