@@ -118,6 +118,34 @@ html, body {
   margin-bottom: var(--space-md);
 }
 
+.role-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.role-metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm);
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--separator-color-secondary);
+}
+
+.metric-line {
+  display: flex;
+  gap: var(--space-md);
+  font-family: var(--font-mono, monospace);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.metric-val {
+  white-space: nowrap;
+}
+
 .topology-inspector-label {
   font-size: var(--font-size-xs);
   font-weight: 600;
@@ -156,6 +184,126 @@ html, body {
   background: var(--color-bg-tertiary);
   border-radius: var(--radius-sm);
   border: 1px solid var(--separator-color);
+}
+
+/* Settings Modal */
+.settings-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.settings-modal {
+  width: 100%;
+  max-width: 600px;
+  max-height: 80vh;
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--separator-color);
+}
+
+.settings-modal-header {
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--separator-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-modal-header h3 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.btn-close {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.settings-modal-body {
+  padding: var(--space-lg);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.scenario-settings-group {
+  margin-bottom: var(--space-xl);
+}
+
+.scenario-settings-title {
+  font-weight: 700;
+  font-size: var(--font-size-md);
+  margin-bottom: var(--space-md);
+  color: var(--color-text-primary);
+  border-bottom: 2px solid var(--color-primary);
+  padding-bottom: var(--space-xs);
+  display: inline-block;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--separator-color-secondary);
+}
+
+.setting-row:last-child {
+  border-bottom: none;
+}
+
+.setting-info {
+  flex: 1;
+}
+
+.setting-label {
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  margin-bottom: 2px;
+}
+
+.setting-desc {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.setting-input-wrapper {
+  width: 120px;
+}
+
+.form-input {
+  width: 100%;
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--separator-color);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-family: inherit;
+}
+
+.settings-modal-footer {
+  padding: var(--space-md) var(--space-lg);
+  border-top: 1px solid var(--separator-color);
+  display: flex;
+  justify-content: flex-end;
+  background: var(--color-bg-secondary);
+  border-bottom-left-radius: var(--radius-md);
+  border-bottom-right-radius: var(--radius-md);
 }
 
 .status-dot.stopping {
