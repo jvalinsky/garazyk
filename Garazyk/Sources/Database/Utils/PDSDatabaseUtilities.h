@@ -5,6 +5,40 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+extern NSString * const PDSDBErrorDomain;
+
+typedef NS_ENUM(NSInteger, PDSDBErrorCode) {
+    PDSDBErrorNotOpen = 1000,
+    PDSDBErrorQueryFailed = 1001,
+    PDSDBErrorMigrationFailed = 1002,
+};
+
+#pragma mark - PDSDBConfig
+
+typedef NS_OPTIONS(NSUInteger, PDSDBConfigFlags) {
+    PDSDBConfigFlagWAL              = 1 << 0,
+    PDSDBConfigFlagSynchronousNormal = 1 << 1,
+    PDSDBConfigFlagForeignKeys       = 1 << 2,
+    PDSDBConfigFlagTempStoreMemory   = 1 << 3,
+};
+
+typedef struct {
+    PDSDBConfigFlags flags;
+    int busyTimeout;           // ms (0 = default)
+    int cacheSize;             // pages (positive) or KB (negative)
+    int walAutocheckpoint;     // pages (0 = default)
+    int journalSizeLimit;      // bytes (0 = default)
+    int mmapSize;              // bytes (0 = default)
+    int pageSize;              // bytes (0 = default)
+} PDSDBConfig;
+
+extern const PDSDBConfig PDSDBConfigDefault;
+extern const PDSDBConfig PDSDBConfigActorStore;
+extern const PDSDBConfig PDSDBConfigServiceDatabase;
+extern const PDSDBConfig PDSDBConfigBulkRead;
+
+BOOL PDSDBConfigurePragmas(sqlite3 *db, PDSDBConfig config);
+
 static inline void PDSDBBindValue(sqlite3_stmt *stmt, int idx, id value) {
     if (!stmt || idx < 1) return;
     if (value == nil || value == [NSNull null]) {
@@ -74,3 +108,5 @@ static inline NSError *PDSDBSQLError(NSString *domain, sqlite3 *db, NSInteger co
 }
 
 NS_ASSUME_NONNULL_END
+
+// PDSDBConfig constants and PDSDBConfigurePragmas are defined in PDSDatabaseUtilities.m
