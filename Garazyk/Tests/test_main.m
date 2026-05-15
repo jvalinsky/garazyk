@@ -1081,6 +1081,7 @@ int main(int argc, char *argv[]) {
       @"PDSDatabaseIntegrationTests",
       @"PDSHttpPDSAdminRoutePackTests",
       @"ATProtoHttpXrpcRoutePackTests",
+      @"XrpcRoutePackTests",
       @"GZLoggerPerformanceTests",
       @"RelayXrpcRoutePackTests",
       @"RelayAPIHandlerTests",
