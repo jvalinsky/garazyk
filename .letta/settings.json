@@ -343,7 +343,19 @@
       "Bash(deciduous status 12 completed)",
       "Bash(deciduous status 3 completed)",
       "Bash(deciduous list 2)",
-      "Bash(cmake --build build 2)"
+      "Bash(cmake --build build 2)",
+      "Bash(timeout 60 ./build/tests/AllTests 2)",
+      "Bash(deciduous nodes --limit 60 2)",
+      "Bash(deciduous nodes 2)",
+      "Bash(deciduous link 49 50 -r \"Architecture choice\" -t leads_to)",
+      "Bash(deciduous show 38 2)",
+      "Bash(deciduous add observation \"Current dashboard has 4+ independent polling loops (2s, 3s, 5s) with no coordination\" -d \"signals.ts polls /api/runs/active every 2s, RunProgress polls /api/runs/{id}/progress every 3s, NetworkStatus polls /api/network/health every 5s. Toolbar fetches on mount. Each island independently manages its own fetch + setInterval. This creates race conditions and stale state — RunProgress uses window.location.reload() as a sledgehammer to sync on completion.\" 2)",
+      "Bash(deciduous link 49 51 -r \"evidence: current architecture is out-of-sync by design\" -t leads_to 2)",
+      "Bash(deciduous add decision \"Single Runtime per island with Msg dispatch\" -d \"Each Fresh island gets a single Runtime that owns all I/O. The Runtime runs an effect loop: dispatch(Msg) → update(state) → effects. Effects are async functions (fetch, setTimeout, etc.) that produce Msgs. The island's view() reads from state. No island ever calls fetch or setInterval directly — only the Runtime does. This eliminates the scattered polling and makes the state the single source of truth.\" 2)",
+      "Bash(deciduous link 50 52 -r \"TEA variant: single runtime per island\" -t leads_to)",
+      "Bash(deciduous add decision \"Dashboard state model: unified DashboardState with per-concern slices\" -d \"Instead of each island owning its own state, define a single DashboardState type with slices: { network: NetworkSlice, runs: RunsSlice, scenarios: ScenariosSlice, topology: TopologySlice }. The server renders the initial state. The client Runtime hydrates from server props and then only updates via Msg dispatch. Islands read from their slice. This makes it impossible for the sidebar and the main content to disagree about scenario status because they read from the same state.\" 2)",
+      "Bash(deciduous add decision \"Effect system: Cmd = tagged union of declarative effects, not raw Promises\" -d \"Cmds are data, not functions. Example: { type: 'fetch', url: '/api/network/health', onSuccess: Msg.NetworkHealthReceived, onError: Msg.FetchFailed }. The Runtime interprets Cmds into actual I/O. This makes effects testable (you can assert the update function produces the right Cmds without doing I/O) and replayable (you can replay a sequence of Msgs to reproduce any state). The Runtime also handles deduplication — if a fetch is already in-flight for the same URL, it doesn't fire a duplicate.\" 2)",
+      "Bash(deciduous link 52 54 -r \"effect system is the Cmd interpreter\" -t leads_to)"
     ]
   }
 }

@@ -96,6 +96,28 @@ export interface TopologyPreview {
   capabilities: string[];
 }
 
+export interface LogsSlice {
+  /** Raw log text for the active run */
+  text: string;
+  /** Whether a log fetch is in-flight */
+  fetchInFlight: boolean;
+  /** Current backoff delay for next log poll (ms) */
+  delayMs: number;
+  /** Milliseconds since last log update */
+  lastUpdateMs: number;
+}
+
+export interface MetricsSlice {
+  /** Per-role container stats */
+  stats: Record<string, { cpu: string; mem: string }>;
+  /** Whether a metrics fetch is in-flight */
+  fetchInFlight: boolean;
+  /** Current backoff delay for next metrics poll (ms) */
+  delayMs: number;
+  /** Milliseconds since last metrics update */
+  lastUpdateMs: number;
+}
+
 export interface UxSlice {
   /** Whether a network operation (start/stop) is in progress */
   busy: boolean;
@@ -118,6 +140,8 @@ export interface DashboardState {
   runs: RunsSlice;
   scenarios: ScenariosSlice;
   topology: TopologySlice;
+  logs: LogsSlice;
+  metrics: MetricsSlice;
   ux: UxSlice;
   /** Monotonic tick counter for elapsed time calculations */
   lastTickMs: number;
@@ -166,6 +190,14 @@ export type Msg =
   | { type: "topology/previewFailed"; error: string }
   | { type: "topology/listReceived"; topologies: Array<{ name: string }> }
   | { type: "topology/listFailed"; error: string }
+  // Logs
+  | { type: "logs/received"; text: string }
+  | { type: "logs/failed"; error: string }
+  | { type: "logs/timeout" }
+  // Metrics
+  | { type: "metrics/received"; stats: Record<string, { cpu: string; mem: string }> }
+  | { type: "metrics/failed"; error: string }
+  | { type: "metrics/timeout" }
   // UX
   | { type: "ux/toggleSettings" }
   | { type: "ux/setScenarioParam"; key: string; value: unknown }
@@ -191,6 +223,8 @@ export type Cmd =
 const BASE_HEALTH_CHECK_MS = 5000;
 const BASE_PROGRESS_POLL_MS = 2000;
 const BASE_ACTIVE_POLL_MS = 2000;
+const BASE_LOG_POLL_MS = 2000;
+const BASE_METRICS_POLL_MS = 3000;
 const MAX_BACKOFF_MS = 30000;
 const BACKOFF_MULTIPLIER = 2;
 
@@ -325,6 +359,19 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
       };
 
       cmds.push({ type: "schedule", delayMs: delay, msg: { type: "runs/activeTimeout" } });
+
+      // Kick off log and metrics polling when a run becomes active
+      if (isActive && !state.logs.fetchInFlight) {
+        cmds.push({ type: "schedule", delayMs: 0, msg: { type: "logs/timeout" } });
+      }
+      if (isActive && !state.metrics.fetchInFlight) {
+        cmds.push({ type: "schedule", delayMs: 0, msg: { type: "metrics/timeout" } });
+      }
+
+      // Clear metrics when no active run
+      if (!isActive && Object.keys(state.metrics.stats).length > 0) {
+        return [{ ...state, runs, metrics: { ...state.metrics, stats: {} } }, cmds];
+      }
 
       // If run just completed, clear progress
       if (msg.run && !isActive && state.runs.progress) {
@@ -528,6 +575,96 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
       return [state, []];
     }
 
+    // ── Logs ────────────────────────────────────────────────────────────
+
+    case "logs/received": {
+      const isActive = state.runs.active?.status === "running";
+      const delay = isActive ? BASE_LOG_POLL_MS : BASE_LOG_POLL_MS * 5;
+      const logs: LogsSlice = {
+        ...state.logs,
+        text: msg.text,
+        fetchInFlight: false,
+        delayMs: delay,
+        lastUpdateMs: 0,
+      };
+      const cmds: Cmd[] = [];
+      if (isActive) {
+        cmds.push({ type: "schedule", delayMs: delay, msg: { type: "logs/timeout" } });
+      }
+      return [{ ...state, logs }, cmds];
+    }
+
+    case "logs/failed": {
+      const backoff = Math.min(state.logs.delayMs * BACKOFF_MULTIPLIER, MAX_BACKOFF_MS);
+      const isActive = state.runs.active?.status === "running";
+      const logs: LogsSlice = {
+        ...state.logs,
+        fetchInFlight: false,
+        delayMs: backoff,
+      };
+      const cmds: Cmd[] = [];
+      if (isActive) {
+        cmds.push({ type: "schedule", delayMs: backoff, msg: { type: "logs/timeout" } });
+      }
+      return [{ ...state, logs }, cmds];
+    }
+
+    case "logs/timeout": {
+      if (state.logs.fetchInFlight) return [state, []]; // dedup
+      const runId = state.runs.active?.id;
+      if (!runId) return [state, []];
+      const logs: LogsSlice = { ...state.logs, fetchInFlight: true };
+      return [
+        { ...state, logs },
+        [{ type: "fetch", url: `/api/runs/${runId}/logs`, onSuccess: "logs/received", onError: "logs/failed" }],
+      ];
+    }
+
+    // ── Metrics ─────────────────────────────────────────────────────────
+
+    case "metrics/received": {
+      const isActive = state.runs.active?.status === "running";
+      const delay = isActive ? BASE_METRICS_POLL_MS : BASE_METRICS_POLL_MS * 5;
+      const metrics: MetricsSlice = {
+        ...state.metrics,
+        stats: msg.stats,
+        fetchInFlight: false,
+        delayMs: delay,
+        lastUpdateMs: 0,
+      };
+      const cmds: Cmd[] = [];
+      if (isActive) {
+        cmds.push({ type: "schedule", delayMs: delay, msg: { type: "metrics/timeout" } });
+      }
+      return [{ ...state, metrics }, cmds];
+    }
+
+    case "metrics/failed": {
+      const backoff = Math.min(state.metrics.delayMs * BACKOFF_MULTIPLIER, MAX_BACKOFF_MS);
+      const isActive = state.runs.active?.status === "running";
+      const metrics: MetricsSlice = {
+        ...state.metrics,
+        fetchInFlight: false,
+        delayMs: backoff,
+      };
+      const cmds: Cmd[] = [];
+      if (isActive) {
+        cmds.push({ type: "schedule", delayMs: backoff, msg: { type: "metrics/timeout" } });
+      }
+      return [{ ...state, metrics }, cmds];
+    }
+
+    case "metrics/timeout": {
+      if (state.metrics.fetchInFlight) return [state, []]; // dedup
+      const isActive = state.runs.active?.status === "running";
+      if (!isActive) return [state, []];
+      const metrics: MetricsSlice = { ...state.metrics, fetchInFlight: true };
+      return [
+        { ...state, metrics },
+        [{ type: "fetch", url: "/api/runs/active/metrics", onSuccess: "metrics/received", onError: "metrics/failed" }],
+      ];
+    }
+
     // ── UX ───────────────────────────────────────────────────────────────
 
     case "ux/toggleSettings": {
@@ -564,7 +701,15 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
         ...state.runs,
         lastProgressMs: state.runs.lastProgressMs + delta,
       };
-      return [{ ...state, network, runs, lastTickMs: msg.nowMs }, []];
+      const logs: LogsSlice = {
+        ...state.logs,
+        lastUpdateMs: state.logs.lastUpdateMs + delta,
+      };
+      const metrics: MetricsSlice = {
+        ...state.metrics,
+        lastUpdateMs: state.metrics.lastUpdateMs + delta,
+      };
+      return [{ ...state, network, runs, logs, metrics, lastTickMs: msg.nowMs }, []];
     }
 
     default: {
@@ -603,6 +748,18 @@ export function createInitialState(overrides?: Partial<DashboardState>): Dashboa
       available: [],
       preview: null,
       previewInFlight: false,
+    },
+    logs: {
+      text: "",
+      fetchInFlight: false,
+      delayMs: BASE_LOG_POLL_MS,
+      lastUpdateMs: 0,
+    },
+    metrics: {
+      stats: {},
+      fetchInFlight: false,
+      delayMs: BASE_METRICS_POLL_MS,
+      lastUpdateMs: 0,
     },
     ux: {
       busy: false,

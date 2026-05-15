@@ -1,42 +1,10 @@
-import { useState, useEffect } from "preact/hooks";
 import { useRuntime } from "../runtime.ts";
 
 export default function TopologyInspector() {
   const { state } = useRuntime();
   const s = state.value;
   const topology = s.topology.preview;
-  const activeRun = s.runs.active;
-
-  const [stats, setStats] = useState<Record<string, { cpu: string; mem: string }>>({});
-
-  useEffect(() => {
-    let interval: number | undefined;
-
-    const fetchMetrics = async () => {
-      if (activeRun && activeRun.status === "running") {
-        try {
-          const res = await fetch("/api/runs/active/metrics");
-          if (res.ok) {
-            const data = await res.json();
-            setStats(data.stats);
-          }
-        } catch {
-          // ignore
-        }
-      } else {
-        setStats({});
-      }
-    };
-
-    if (activeRun && activeRun.status === "running") {
-      fetchMetrics();
-      interval = setInterval(fetchMetrics, 3000);
-    }
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [activeRun?.status]);
+  const stats = s.metrics.stats;
 
   if (!topology) {
     return (

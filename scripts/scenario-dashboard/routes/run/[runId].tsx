@@ -9,7 +9,7 @@ import StatusBar from "../../components/StatusBar.tsx";
 import ScenarioCard from "../../islands/ScenarioCard.tsx";
 import SummaryCards from "../../components/SummaryCards.tsx";
 import { formatDate, formatDurationSec } from "../../utils.ts";
-import { Run, ScenarioResult, ScenarioStatus } from "../../services/types.ts";
+import { Run, ScenarioStatus } from "../../services/types.ts";
 
 interface RunPageData {
   runId: string;
