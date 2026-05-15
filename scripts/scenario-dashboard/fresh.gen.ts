@@ -13,6 +13,7 @@ import * as $api_runs_runId_progress from "./routes/api/runs/[runId]/progress.ts
 import * as $api_runs_runId_restart from "./routes/api/runs/[runId]/restart.ts";
 import * as $api_runs_runId_stop from "./routes/api/runs/[runId]/stop.ts";
 import * as $api_runs_active from "./routes/api/runs/active.ts";
+import * as $api_runs_active_metrics from "./routes/api/runs/active/metrics.ts";
 import * as $api_runs_start from "./routes/api/runs/start.ts";
 import * as $api_scenarios from "./routes/api/scenarios.ts";
 import * as $api_topologies_name_ from "./routes/api/topologies/[name].ts";
@@ -28,6 +29,7 @@ import * as $ScenarioCard from "./islands/ScenarioCard.tsx";
 import * as $ScenarioRunner from "./islands/ScenarioRunner.tsx";
 import * as $Sidebar from "./islands/Sidebar.tsx";
 import * as $Toolbar from "./islands/Toolbar.tsx";
+import * as $TopologyInspector from "./islands/TopologyInspector.tsx";
 import type { Manifest } from "$fresh/server.ts";
 
 const manifest = {
@@ -43,6 +45,7 @@ const manifest = {
     "./routes/api/runs/[runId]/restart.ts": $api_runs_runId_restart,
     "./routes/api/runs/[runId]/stop.ts": $api_runs_runId_stop,
     "./routes/api/runs/active.ts": $api_runs_active,
+    "./routes/api/runs/active/metrics.ts": $api_runs_active_metrics,
     "./routes/api/runs/start.ts": $api_runs_start,
     "./routes/api/scenarios.ts": $api_scenarios,
     "./routes/api/topologies/[name].ts": $api_topologies_name_,
@@ -60,6 +63,7 @@ const manifest = {
     "./islands/ScenarioRunner.tsx": $ScenarioRunner,
     "./islands/Sidebar.tsx": $Sidebar,
     "./islands/Toolbar.tsx": $Toolbar,
+    "./islands/TopologyInspector.tsx": $TopologyInspector,
   },
   baseUrl: import.meta.url,
 } satisfies Manifest;
