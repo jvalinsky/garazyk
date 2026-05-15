@@ -34,6 +34,8 @@ export interface CompilerOptions {
   manifestFile?: string;
   /** Include the default second PDS when the selected scenarios need one */
   includePds2?: boolean;
+  /** Enable OpenTelemetry: inject OTel env vars into services and add SigNoz to compose */
+  otel?: boolean;
 }
 
 export interface CompilerResult {
@@ -105,6 +107,122 @@ export function validatePreset(preset: TopologyPreset): string[] {
 }
 
 /**
+ * Render SigNoz OTel infrastructure services into the compose YAML.
+ *
+ * Adds ClickHouse, Zookeeper, OTel Collector, and SigNoz UI.
+ * The OTel Collector listens on 4317 (gRPC) and 4318 (HTTP).
+ * The SigNoz UI is on port 3301 (remapped from 8080 to avoid conflict).
+ */
+function renderSigNozServices(lines: string[], volumes: Set<string>): void {
+  lines.push("  # --- SigNoz OpenTelemetry Backend ---");
+
+  // ClickHouse
+  lines.push("  clickhouse:");
+  lines.push("    image: clickhouse/clickhouse-server:25.5");
+  lines.push("    container_name: signoz-clickhouse");
+  lines.push("    volumes:");
+  lines.push("      - signoz_clickhouse_data:/var/lib/clickhouse");
+  lines.push("      - signoz_clickhouse_logs:/var/log/clickhouse-server");
+  lines.push("    environment:");
+  lines.push("      - CLICKHOUSE_DB=signoz");
+  lines.push("    healthcheck:");
+  lines.push("      test: [\"CMD\", \"wget\", \"--spider\", \"-q\", \"localhost:8123/clickhouse\"]");
+  lines.push("      interval: 10s");
+  lines.push("      timeout: 5s");
+  lines.push("      retries: 5");
+  lines.push("      start_period: 10s");
+  lines.push("    networks:");
+  lines.push("      - topology_net");
+
+  // Zookeeper
+  lines.push("  signoz-zookeeper:");
+  lines.push("    image: bitnami/zookeeper:3.7");
+  lines.push("    container_name: signoz-zookeeper");
+  lines.push("    environment:");
+  lines.push("      - ALLOW_ANONYMOUS_LOGIN=yes");
+  lines.push("      - ZOO_ENABLE_PROMETHEUS_METRICS=no");
+  lines.push("    volumes:");
+  lines.push("      - signoz_zookeeper_data:/bitnami/zookeeper");
+  lines.push("    healthcheck:");
+  lines.push("      test: [\"CMD\", \"bash\", \"-c\", \"echo ruok | nc localhost 2181 | grep imok\"]");
+  lines.push("      interval: 10s");
+  lines.push("      timeout: 5s");
+  lines.push("      retries: 5");
+  lines.push("    networks:");
+  lines.push("      - topology_net");
+
+  // OTel Collector
+  lines.push("  signoz-otel-collector:");
+  lines.push("    image: signoz/signoz-otel-collector:v0.144.4");
+  lines.push("    container_name: signoz-otel-collector");
+  lines.push("    entrypoint: [\"/bin/sh\"]");
+  lines.push("    command:");
+  lines.push("      - -c");
+  lines.push("      - |");
+  lines.push("        /signoz-otel-collector migrate sync check && \\");
+  lines.push("        /signoz-otel-collector --config=/etc/otel-collector-config.yaml --manager-config=/etc/manager-config.yaml --copy-path=/var/tmp/collector-config.yaml");
+  lines.push("    volumes:");
+  lines.push("      - ../docker/otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml");
+  lines.push("      - ../docker/otel/otel-collector-opamp-config.yaml:/etc/manager-config.yaml");
+  lines.push("    environment:");
+  lines.push("      - OTEL_RESOURCE_ATTRIBUTES=host.name=signoz-host,os.type=linux");
+  lines.push("      - LOW_CARDINAL_EXCEPTION_GROUPING=false");
+  lines.push("      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_DSN=tcp://clickhouse:9000");
+  lines.push("      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_CLUSTER=cluster");
+  lines.push("      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_REPLICATION=false");
+  lines.push("      - SIGNOZ_OTEL_COLLECTOR_TIMEOUT=10m");
+  lines.push("    ports:");
+  lines.push("      - \"4317:4317\"");
+  lines.push("      - \"4318:4318\"");
+  lines.push("    depends_on:");
+  lines.push("      clickhouse:");
+  lines.push("        condition: service_healthy");
+  lines.push("      signoz-zookeeper:");
+  lines.push("        condition: service_healthy");
+  lines.push("    healthcheck:");
+  lines.push("      test: [\"CMD\", \"wget\", \"--spider\", \"-q\", \"localhost:13133/\"]");
+  lines.push("      interval: 10s");
+  lines.push("      timeout: 5s");
+  lines.push("      retries: 5");
+  lines.push("      start_period: 15s");
+  lines.push("    networks:");
+  lines.push("      - topology_net");
+
+  // SigNoz UI
+  lines.push("  signoz:");
+  lines.push("    image: signoz/signoz:v0.123.0");
+  lines.push("    container_name: signoz");
+  lines.push("    ports:");
+  lines.push("      - \"3301:8080\"");
+  lines.push("    volumes:");
+  lines.push("      - signoz_sqlite_data:/var/lib/signoz/");
+  lines.push("    environment:");
+  lines.push("      - SIGNOZ_ALERTMANAGER_PROVIDER=signoz");
+  lines.push("      - SIGNOZ_TELEMETRYSTORE_CLICKHOUSE_DSN=tcp://clickhouse:9000");
+  lines.push("      - SIGNOZ_SQLSTORE_SQLITE_PATH=/var/lib/signoz/signoz.db");
+  lines.push("      - SIGNOZ_TOKENIZER_JWT_SECRET=localdev-signoz-secret");
+  lines.push("    depends_on:");
+  lines.push("      clickhouse:");
+  lines.push("        condition: service_healthy");
+  lines.push("      signoz-otel-collector:");
+  lines.push("        condition: service_healthy");
+  lines.push("    healthcheck:");
+  lines.push("      test: [\"CMD\", \"wget\", \"--spider\", \"-q\", \"localhost:8080/api/v1/health\"]");
+  lines.push("      interval: 30s");
+  lines.push("      timeout: 5s");
+  lines.push("      retries: 3");
+  lines.push("      start_period: 15s");
+  lines.push("    networks:");
+  lines.push("      - topology_net");
+
+  // Register volumes
+  volumes.add("signoz_clickhouse_data");
+  volumes.add("signoz_clickhouse_logs");
+  volumes.add("signoz_zookeeper_data");
+  volumes.add("signoz_sqlite_data");
+}
+
+/**
  * Render a docker-compose YAML string from a topology preset.
  */
 export function renderComposeYaml(
@@ -171,10 +289,21 @@ export function renderComposeYaml(
     }
 
     // Environment
+    const envEntries: string[] = [];
     if (adapter.env) {
-      service.environment = Object.entries(adapter.env).map(
-        ([k, v]) => `${k}=${v}`,
-      );
+      for (const [k, v] of Object.entries(adapter.env)) {
+        envEntries.push(`${k}=${v}`);
+      }
+    }
+    // Inject OpenTelemetry environment variables when --otel is set
+    if (options.otel) {
+      envEntries.push(`OTEL_SERVICE_NAME=${adapter.name}`);
+      envEntries.push("OTEL_EXPORTER_OTLP_ENDPOINT=http://signoz-otel-collector:4318");
+      envEntries.push("OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf");
+      envEntries.push("OTEL_RESOURCE_ATTRIBUTES=service.version=dev,deployment.environment=e2e");
+    }
+    if (envEntries.length > 0) {
+      service.environment = envEntries;
     }
 
     // Depends on
@@ -296,6 +425,11 @@ export function renderComposeYaml(
       lines.push(`      start_period: ${hc.start_period}`);
     }
     renderNetworks(lines, svc.networks);
+  }
+
+  // Add SigNoz OTel infrastructure when --otel is set
+  if (options.otel) {
+    renderSigNozServices(lines, volumes);
   }
 
   lines.push("");
