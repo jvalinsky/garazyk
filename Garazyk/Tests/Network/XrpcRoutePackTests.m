@@ -6,6 +6,7 @@
 #import "Network/HttpResponse.h"
 #import "Network/XrpcAppBskyAgeAssurancePack.h"
 #import "Network/XrpcAppBskyBookmarksPack.h"
+#import "Network/XrpcAppBskyActorPack.h"
 #import "Network/XrpcAppBskyContactPack.h"
 #import "Network/XrpcAppBskyDraftsPack.h"
 #import "Network/XrpcAppBskyProxyMethodPack.h"
@@ -56,6 +57,11 @@
 - (void)testAppBskyContactPackConformsToProtocol {
   XCTAssertTrue([XrpcAppBskyContactPack conformsToProtocol:@protocol(XrpcRoutePack)]);
   XCTAssertEqualObjects([XrpcAppBskyContactPack routePackIdentifier], @"app.bsky.contact");
+}
+
+- (void)testAppBskyActorPackConformsToProtocol {
+  XCTAssertTrue([XrpcAppBskyActorPack conformsToProtocol:@protocol(XrpcRoutePack)]);
+  XCTAssertEqualObjects([XrpcAppBskyActorPack routePackIdentifier], @"app.bsky.actor");
 }
 
 - (void)testRegistrarRegistersConformingPack {
