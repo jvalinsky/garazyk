@@ -7,6 +7,34 @@ const REPORTS_DIR = join(
 );
 const LOCK_FILE = join(REPORTS_DIR, "active-run.json");
 
+/**
+ * Simple async mutex for serializing state transitions.
+ * Prevents concurrent startRun/stopRun calls from racing.
+ */
+class AsyncMutex {
+  #queue: (() => void)[] = [];
+  #locked = false;
+
+  async acquire(): Promise<() => void> {
+    if (!this.#locked) {
+      this.#locked = true;
+      return () => this.#release();
+    }
+    return new Promise((resolve) => {
+      this.#queue.push(() => resolve(() => this.#release()));
+    });
+  }
+
+  #release() {
+    if (this.#queue.length > 0) {
+      const next = this.#queue.shift()!;
+      next();
+    } else {
+      this.#locked = false;
+    }
+  }
+}
+
 export interface RunManager {
   getActiveRun(): Run | undefined;
   startRun(config: RunConfig): Promise<{ runId: string } | { conflict: string }>;
@@ -17,12 +45,22 @@ export interface RunManager {
 class RunManagerImpl implements RunManager {
   private activeRun: Run | undefined = undefined;
   private childProcess: Deno.ChildProcess | undefined = undefined;
+  private #mutex = new AsyncMutex();
 
   getActiveRun(): Run | undefined {
     return this.activeRun;
   }
 
   async startRun(config: RunConfig): Promise<{ runId: string } | { conflict: string }> {
+    const release = await this.#mutex.acquire();
+    try {
+      return await this.#startRunInner(config);
+    } finally {
+      release();
+    }
+  }
+
+  async #startRunInner(config: RunConfig): Promise<{ runId: string } | { conflict: string }> {
     if (this.activeRun) {
       return { conflict: `Run ${this.activeRun.id} is already active` };
     }
@@ -52,7 +90,6 @@ class RunManagerImpl implements RunManager {
       runDir,
       reportsDir,
       logPath,
-      // @ts-ignore: dynamically added for DB
       scenarioParams: config.scenarioParams,
     };
 
@@ -71,6 +108,15 @@ class RunManagerImpl implements RunManager {
   }
 
   async stopRun(runId: string, graceful: boolean = true): Promise<void> {
+    const release = await this.#mutex.acquire();
+    try {
+      return await this.#stopRunInner(runId, graceful);
+    } finally {
+      release();
+    }
+  }
+
+  async #stopRunInner(runId: string, graceful: boolean = true): Promise<void> {
     if (!this.activeRun || this.activeRun.id !== runId) {
       return;
     }
@@ -155,7 +201,6 @@ class RunManagerImpl implements RunManager {
       run.id, run.startedAt, run.status, run.totalScenarios, run.pds2 ? 1 : 0, run.binaryMode ? 1 : 0,
       run.topology, run.runner, run.webClient || null, run.clientFlow || null, JSON.stringify(run.scenarioIds),
       run.runDir, run.reportsDir, run.logPath,
-      // @ts-ignore
       run.scenarioParams ? JSON.stringify(run.scenarioParams) : null
     );
   }
@@ -174,7 +219,11 @@ class RunManagerImpl implements RunManager {
   }
 
   private async writeLockFile(run: Run) {
-    await Deno.writeTextFile(LOCK_FILE, JSON.stringify(run, null, 2));
+    // Write atomically: temp file + rename. On the same filesystem,
+    // rename is atomic, so a crash can't leave a partial lock file.
+    const tempPath = LOCK_FILE + ".tmp";
+    await Deno.writeTextFile(tempPath, JSON.stringify(run, null, 2));
+    await Deno.rename(tempPath, LOCK_FILE);
   }
 
   private async clearLockFile() {
@@ -187,8 +236,12 @@ class RunManagerImpl implements RunManager {
 
   private isPidAlive(pid: number): boolean {
     try {
-      Deno.kill(pid, "SIGCONT"); // Signal 0 doesn't exist in Deno.kill, but SIGCONT is harmless if alive
-      return true;
+      // Use kill -0 to check if a process exists without sending a signal.
+      // SIGCONT (the previous approach) is not harmless — it can resume
+      // a stopped process. Signal 0 (SIGNULL) checks existence only.
+      const cmd = new Deno.Command("kill", { args: ["-0", String(pid)] });
+      const status = cmd.outputSync();
+      return status.code === 0;
     } catch {
       return false;
     }
@@ -219,9 +272,7 @@ class RunManagerImpl implements RunManager {
 
     // Build environment variables from parameters
     const env: Record<string, string> = {};
-    // @ts-ignore
     if (run.scenarioParams) {
-      // @ts-ignore
       for (const [key, val] of Object.entries(run.scenarioParams)) {
         env[`SCENARIO_PARAM_${key.toUpperCase()}`] = String(val);
       }
@@ -240,21 +291,28 @@ class RunManagerImpl implements RunManager {
     this.updateRunInDb(run);
     await this.writeLockFile(run);
 
-    // Pipe outputs to log file
-    this.childProcess.stdout.pipeTo(logFile.writable, { preventClose: true });
-    
-    // For stderr, use a manual loop to avoid locking logFile.writable
-    (async () => {
+    // Pipe outputs to log file.
+    // Use Promise.all to coordinate both streams, and only close
+    // logFile after both are done. This prevents the stdout pipe
+    // from consuming logFile.writable before the stderr loop can
+    // write to it, or vice versa.
+    const stdoutDone = this.childProcess.stdout.pipeTo(logFile.writable, { preventClose: true });
+
+    const stderrDone = (async () => {
       try {
         for await (const chunk of this.childProcess!.stderr) {
           await logFile.write(chunk);
         }
       } catch (e) {
         console.error(`[run-manager] Error logging stderr for ${run.id}:`, e);
-      } finally {
-        logFile.close();
       }
     })();
+
+    // Wait for both streams to finish, then close the log file.
+    // This runs in the background — the caller doesn't await it.
+    Promise.all([stdoutDone, stderrDone]).then(() => {
+      try { logFile.close(); } catch { /* already closed */ }
+    });
 
     // Monitor completion
     this.childProcess.status.then(async (status) => {
