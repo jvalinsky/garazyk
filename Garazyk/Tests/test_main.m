@@ -515,7 +515,8 @@ static NSDictionary<NSString *, NSString *> *PDSGatedClassMap(void) {
       @"PLCReplicaServerTests"         : @"socket",
       @"PDSWebSocketServerTests"       : @"socket",
       @"PDSWebSocketTransportTests"    : @"socket",
-      @"WebSocketServerTests"          : @"socket"
+      @"WebSocketServerTests"          : @"socket",
+      @"ConstellationRuntimeTests"     : @"socket"
     };
   });
   return map;
@@ -1016,6 +1017,10 @@ int main(int argc, char *argv[]) {
       @"AppViewIngestEngineTests",
       @"AppViewBackfillTests",
       @"AppViewBackfillWorkerTests",
+      @"ConstellationSourceSpecTests",
+      @"ConstellationDatabaseTests",
+      @"ConstellationXrpcRoutePackTests",
+      @"ConstellationRuntimeTests",
       @"IPLDBlockIntegrityTests",
       @"SecItemPersistenceTests",
       @"Arc4randomTests",

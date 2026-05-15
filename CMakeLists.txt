@@ -707,6 +707,33 @@ target_link_libraries(ATProtoAppViewServer PRIVATE
   ${SECP256K1_LIBRARIES}
 )
 
+# Constellation-style link index service library
+file(GLOB_RECURSE ATPROTO_CONSTELLATION_SOURCES
+  "Garazyk/Sources/Constellation/*.m"
+  "Garazyk/Sources/Constellation/*.c"
+)
+
+add_library(ATProtoConstellation STATIC ${ATPROTO_CONSTELLATION_SOURCES})
+
+target_include_directories(ATProtoConstellation PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
+  ${SECP256K1_INCLUDE_DIRS}
+)
+
+target_link_libraries(ATProtoConstellation PRIVATE
+  ATProtoAppViewServer
+  ATProtoStorage
+  ATProtoServices
+  ATProtoSync
+  ATProtoTransport
+  ATProtoXRPC
+  ATProtoCore
+  ATProtoRuntime
+  ${PLATFORM_LIBRARIES}
+  ${SECP256K1_LIBRARIES}
+)
+
 # AppView Server binary (syrena)
 add_executable(syrena
   Garazyk/Binaries/syrena/main.m
@@ -754,6 +781,60 @@ target_compile_definitions(syrena PRIVATE
 
 # Without -ObjC, category methods are not linked from static libraries
 set_target_properties(syrena PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+  LINK_FLAGS "-ObjC"
+)
+
+# Constellation link index binary
+add_executable(constellation
+  Garazyk/Binaries/constellation/main.m
+)
+
+target_include_directories(constellation PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
+  ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
+  ${SECP256K1_INCLUDE_DIRS}
+)
+
+if(APPLE)
+  target_link_libraries(constellation PRIVATE
+    ATProtoConstellation
+    ATProtoAppViewServer
+    ATProtoRuntime
+    ATProtoStorage
+    ATProtoServices
+    ATProtoSync
+    ATProtoTransport
+    ATProtoXRPC
+    ATProtoCore
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+    ${READLINE_LIBRARY}
+  )
+else()
+  target_link_libraries(constellation PRIVATE
+    -Wl,--whole-archive
+    ATProtoConstellation
+    ATProtoAppViewServer
+    ATProtoRuntime
+    ATProtoStorage
+    ATProtoServices
+    ATProtoSync
+    ATProtoTransport
+    ATProtoXRPC
+    ATProtoCore
+    -Wl,--no-whole-archive
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+    ${READLINE_LIBRARY}
+  )
+endif()
+
+target_compile_definitions(constellation PRIVATE
+  SQLITE_THREADSAFE=2
+)
+
+set_target_properties(constellation PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
   LINK_FLAGS "-ObjC"
 )
@@ -1391,6 +1472,7 @@ if(BUILD_TESTS)
     ATProtoStorage
     ATProtoCore
     ATProtoPLC
+    ATProtoConstellation
     ATProtoAppViewServer
     ${PLATFORM_LIBRARIES}
     ${SECP256K1_LIBRARIES}
@@ -1419,6 +1501,7 @@ if(BUILD_TESTS)
        ATProtoStorage
        ATProtoCore
        ATProtoPLC
+       ATProtoConstellation
        ATProtoAppViewServer
        -Wl,--no-whole-archive
        ${PLATFORM_LIBRARIES}
@@ -1611,6 +1694,7 @@ message(STATUS "  kaszlak           - PDS CLI tool")
 message(STATUS "  campagnola        - PLC directory server")
 message(STATUS "  zuk               - Relay server")
 message(STATUS "  syrena            - Standalone AppView server")
+message(STATUS "  constellation     - Standalone link index service")
 message(STATUS "  garazyk-ui        - Dedicated admin UI server")
 message(STATUS "  AllTests          - Unit tests")
 message(STATUS "  fuzz_xrpc         - XRPC fuzzer")
