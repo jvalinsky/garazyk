@@ -177,9 +177,10 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
 
     // XRPC API handler
     [self.httpServer addHandlerForPath:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
-        GZ_LOG_INFO(@"UI Server: Handling XRPC request: %@", request.path);
-        [weakSelf.xrpcDispatcher handleRequest:request response:response];
-        GZ_LOG_INFO(@"UI Server: Finished XRPC request: %@ (status %ld)", request.path, (long)response.statusCode);
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (strongSelf) {
+            [strongSelf.xrpcDispatcher handleRequest:request response:response];
+        }
     }];
 
     // Static asset serving: /css/*, /js/*, /img/* (prefix routes via addHandlerForPath)
