@@ -1,4 +1,11 @@
 #!/usr/bin/env -S deno run -A
+import {
+  formatRequirement,
+  hasRequirement,
+  normalizeScenarioRequirements,
+  SCENARIO_MANIFESTS,
+} from "./lib/deno/scenario_metadata.ts";
+import type { ScenarioInfo, ScenarioManifest } from "./lib/deno/scenario_metadata.ts";
 import { fromFileUrl, join } from "@std/path";
 import { bold, brightBlue, green, red, yellow } from "@std/fmt/colors";
 import { startLocalNetwork, stopLocalNetwork } from "./lib/deno/docker.ts";
@@ -35,55 +42,6 @@ interface RunnerArgs {
   topology?: string;
   runner: "host" | "docker";
 }
-
-export interface ScenarioInfo {
-  id: string;
-  name: string;
-  path: string;
-  needsPds2: boolean;
-  browserFlows: BrowserFlow[];
-  requires: Array<string | ScenarioRequirement>;
-  optional: Array<string | ScenarioRequirement>;
-  timeout?: number;
-}
-
-export interface ScenarioManifest {
-  requires?: Array<string | ScenarioRequirement>;
-  optional?: Array<string | ScenarioRequirement>;
-  needsPds2?: boolean;
-  browserFlows?: BrowserFlow[];
-  timeout?: number;
-}
-
-export const SCENARIO_MANIFESTS: Record<string, ScenarioManifest> = {
-  "01": { requires: ["plc:didResolution"] },
-  "05": {
-    needsPds2: true,
-    requires: [
-      "plc:didResolution",
-      "relay:subscribeRepos",
-      "relay:requestCrawl",
-      "appview:backfill",
-    ],
-  },
-  "09": { requires: ["relay:subscribeRepos", "relay:requestCrawl", "appview:backfill"] },
-  "10": { requires: ["appview:backfill", "relay:subscribeRepos"] },
-  "11": { browserFlows: ["smoke", "login"] },
-  "12": {
-    needsPds2: true,
-    requires: [
-      "plc:didResolution",
-      "plc:operationLog",
-      "plc:handleRotation",
-      "plc:quotaEnforcement",
-    ],
-  },
-  "13": { browserFlows: ["login"] },
-  "32": { requires: ["plc:didResolution", "plc:handleRotation", "plc:quotaEnforcement"] },
-  "35": { needsPds2: true, requires: ["plc:didResolution"] },
-  "42": { requires: ["plc:didResolution"] },
-  "59": { browserFlows: ["smoke", "login", "deep"] },
-};
 
 function usage(): never {
   console.log(`Usage: scripts/run_scenarios.ts [options] [scenario ids]
@@ -277,39 +235,6 @@ async function discoverScenarios(scenarioDir: string): Promise<ScenarioInfo[]> {
     scenarios.splice(after36 >= 0 ? after36 : scenarios.length, 0, scenario10);
   }
   return scenarios;
-}
-
-function normalizeScenarioRequirements(
-  values: Array<string | ScenarioRequirement>,
-  label: string,
-): ScenarioRequirement[] {
-  return values.map((value) => {
-    const requirement = parseScenarioRequirement(value);
-    if (requirement.role) {
-      const error = validateRoleCapability(requirement.role, requirement.capability);
-      if (error) {
-        throw new Error(`Invalid scenario requirement ${label}: ${error}`);
-      }
-    }
-    return requirement;
-  });
-}
-
-function formatRequirement(requirement: string | ScenarioRequirement): string {
-  const parsed = typeof requirement === "string"
-    ? parseScenarioRequirement(requirement)
-    : requirement;
-  return parsed.role ? `${parsed.role}:${parsed.capability}` : parsed.capability;
-}
-
-function hasRequirement(topology: Topology, requirement: string | ScenarioRequirement): boolean {
-  const parsed = typeof requirement === "string"
-    ? parseScenarioRequirement(requirement)
-    : requirement;
-  if (parsed.role) {
-    return topology.capabilitiesByRole[parsed.role]?.has(parsed.capability) || false;
-  }
-  return topology.capabilities.has(parsed.capability);
 }
 
 export function selectScenarios(
@@ -546,6 +471,15 @@ async function main() {
     });
     networkStarted = false;
   };
+
+  // Add signal handler for graceful shutdown
+  const handleSignal = async () => {
+    console.log(yellow("\nInterrupt received. Stopping gracefully..."));
+    await stopIfNeeded(true);
+    Deno.exit(130);
+  };
+  Deno.addSignalListener("SIGINT", handleSignal);
+  Deno.addSignalListener("SIGTERM", handleSignal);
 
   if (args.setupOnly) {
     await startLocalNetwork({
