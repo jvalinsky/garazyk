@@ -971,9 +971,12 @@ static NSError *STARError(NSInteger code, NSString *format, ...) {
 
     // Build MST from the CAR blocks
     MST *mst = [[MST alloc] initWithRootCID:dataCID];
-    // TODO: Walk the MST from the CAR blocks to reconstruct the tree
-    // This requires deserializing MST nodes from the CAR blocks
-    // For now, we create a basic STAR-L0 with just the commit
+    // FIXME: MST reconstruction from CAR blocks not implemented.
+    // The MST nodes stored in the CAR file must be deserialized and
+    // walked to reconstruct the full Merkle Search Tree. Currently
+    // only the commit is used, producing a degenerate STAR-L0 with
+    // no tree structure. This limits verification to commit-level
+    // signatures rather than per-record proofs.
 
     STARL0Writer *writer = [[STARL0Writer alloc] initWithCommit:commit];
     // The block provider looks up record data from the CAR block index
