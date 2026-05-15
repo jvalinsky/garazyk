@@ -9,7 +9,7 @@ export const handler: Handlers = {
     // Wait, URL(".") is the dir [runId]/, so URL("..") is runs/, etc.
     // Let's use 6 levels: ../../../../../../
     const repoRoot = fromFileUrl(new URL("../../../../../../", import.meta.url));
-    const logPath = join(repoRoot, "scripts", "scenarios", "reports", "logs", `${runId}.log`);
+    const logPath = join(repoRoot, "scenarios", "reports", "runs", runId, "run.log");
 
     try {
       const content = await Deno.readTextFile(logPath);

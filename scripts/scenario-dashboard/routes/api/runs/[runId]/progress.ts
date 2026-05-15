@@ -26,7 +26,7 @@ export const handler: Handlers = {
         headers: { "Content-Type": "application/json" },
       });
     } catch {
-      const logPath = join(repoRoot, "scripts", "scenarios", "reports", "logs", `${runId}.log`);
+      const logPath = join(repoRoot, "scenarios", "reports", "runs", runId, "run.log");
       let lastActivity = run?.startedAt ? run.startedAt * 1000 : now;
       try {
         const stat = await Deno.stat(logPath);

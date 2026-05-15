@@ -197,7 +197,7 @@ class RunManagerImpl implements RunManager {
   private async spawnRunner(run: Run) {
     const args = [
       "run", "-A",
-      join(fromFileUrl(new URL("../../../run_scenarios.ts", import.meta.url))),
+      join(fromFileUrl(new URL("../../run_scenarios.ts", import.meta.url))),
       "--run-id", run.id,
       "--topology", run.topology!,
       "--runner", run.runner!,
