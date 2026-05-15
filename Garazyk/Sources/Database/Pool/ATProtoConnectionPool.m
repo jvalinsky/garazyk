@@ -1,11 +1,32 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "Database/Pool/PDSConnectionPool.h"
+#import "Database/Pool/ATProtoConnectionPool.h"
+#import "Database/Utils/ATProtoDatabaseUtilities.h"
 #import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 #import <sqlite3.h>
 
-@interface PDSConnectionPool ()
+static BOOL ATProtoConnectionPoolApplyCustomPragma(sqlite3 *db,
+                                                   NSString *name,
+                                                   NSString *value) {
+    if (!db || name.length == 0 || value.length == 0) {
+        return NO;
+    }
+
+    NSString *sql = [NSString stringWithFormat:@"PRAGMA %@ = %@", name, value];
+    char *errMsg = NULL;
+    int rc = sqlite3_exec(db, sql.UTF8String, NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        if (errMsg) {
+            GZ_LOG_DB_WARN(@"Failed to set %@: %s", name, errMsg);
+            sqlite3_free(errMsg);
+        }
+        return NO;
+    }
+    return YES;
+}
+
+@interface ATProtoConnectionPool ()
 // Pool state
 @property (nonatomic, strong) NSMutableArray<NSNumber *> *availablePool;  // sqlite3* as NSNumber
 @property (nonatomic, strong) NSMutableSet<NSNumber *> *inUsePool;
@@ -21,7 +42,7 @@
 
 @end
 
-@implementation PDSConnectionPool
+@implementation ATProtoConnectionPool
 
 - (instancetype)initWithPath:(NSString *)path {
     return [self initWithPath:path minConnections:2 maxConnections:32];
@@ -183,69 +204,33 @@
         return NULL;
     }
 
-    // Configure connection
-    char *errMsg = NULL;
-
-    // Busy timeout
-    sqlite3_busy_timeout(db, self.busyTimeout);
-
-    // Journal mode (WAL for performance)
-    NSString *journalSQL = [NSString stringWithFormat:@"PRAGMA journal_mode = %@",
-                           self.journalMode];
-    sqlite3_exec(db, journalSQL.UTF8String, NULL, NULL, &errMsg);
-    if (errMsg) {
-        GZ_LOG_DB_WARN(@"Failed to set journal mode: %s", errMsg);
-        sqlite3_free(errMsg);
-        errMsg = NULL;
+    ATProtoDBConfig config = {
+        .flags = ATProtoDBConfigFlagForeignKeys,
+        .busyTimeout = (int)self.busyTimeout,
+        .cacheSize = -8000,
+        .walAutocheckpoint = 5000,
+        .journalSizeLimit = 16777216,
+        .mmapSize = 0,
+        .pageSize = 0,
+    };
+    if ([self.journalMode caseInsensitiveCompare:@"WAL"] == NSOrderedSame) {
+        config.flags |= ATProtoDBConfigFlagWAL;
+    }
+    if ([self.synchronousMode caseInsensitiveCompare:@"NORMAL"] == NSOrderedSame) {
+        config.flags |= ATProtoDBConfigFlagSynchronousNormal;
     }
 
-    // Synchronous mode
-    NSString *syncSQL = [NSString stringWithFormat:@"PRAGMA synchronous = %@",
-                        self.synchronousMode];
-    sqlite3_exec(db, syncSQL.UTF8String, NULL, NULL, &errMsg);
-    if (errMsg) {
-        GZ_LOG_DB_WARN(@"Failed to set synchronous mode: %s", errMsg);
-        sqlite3_free(errMsg);
-        errMsg = NULL;
+    if (!ATProtoDBConfigurePragmas(db, config)) {
+        GZ_LOG_DB_ERROR(@"Failed to configure connection pragmas for %@", self.databasePath);
+        sqlite3_close(db);
+        return NULL;
     }
 
-    // Foreign keys (always enabled for data integrity)
-    sqlite3_exec(db, "PRAGMA foreign_keys = ON", NULL, NULL, &errMsg);
-    if (errMsg) {
-        GZ_LOG_DB_WARN(@"Failed to enable foreign keys: %s", errMsg);
-        sqlite3_free(errMsg);
-        errMsg = NULL;
+    if ((config.flags & ATProtoDBConfigFlagWAL) == 0) {
+        ATProtoConnectionPoolApplyCustomPragma(db, @"journal_mode", self.journalMode);
     }
-
-    // WAL autocheckpoint: 5000 pages instead of default 1000.
-    // Reduces checkpoint frequency, improving write throughput under
-    // concurrent load. The default 1000-page checkpoint fires too
-    // often when multiple writers are active (32 per-DID dispatchers).
-    sqlite3_exec(db, "PRAGMA wal_autocheckpoint = 5000", NULL, NULL, &errMsg);
-    if (errMsg) {
-        GZ_LOG_DB_WARN(@"Failed to set wal_autocheckpoint: %s", errMsg);
-        sqlite3_free(errMsg);
-        errMsg = NULL;
-    }
-
-    // Journal size limit: 16MB — prevents unbounded WAL growth.
-    // Without this, a burst of writes can grow the WAL file until
-    // it consumes all available disk space.
-    sqlite3_exec(db, "PRAGMA journal_size_limit = 16777216", NULL, NULL, &errMsg);
-    if (errMsg) {
-        GZ_LOG_DB_WARN(@"Failed to set journal_size_limit: %s", errMsg);
-        sqlite3_free(errMsg);
-        errMsg = NULL;
-    }
-
-    // Cache size: 8MB per connection — improves read performance for
-    // hot data (MST nodes, record lookups). Negative value means
-    // kilobytes (SQLite convention).
-    sqlite3_exec(db, "PRAGMA cache_size = -8000", NULL, NULL, &errMsg);
-    if (errMsg) {
-        GZ_LOG_DB_WARN(@"Failed to set cache_size: %s", errMsg);
-        sqlite3_free(errMsg);
-        errMsg = NULL;
+    if ((config.flags & ATProtoDBConfigFlagSynchronousNormal) == 0) {
+        ATProtoConnectionPoolApplyCustomPragma(db, @"synchronous", self.synchronousMode);
     }
 
     return db;

@@ -5,48 +5,53 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-extern NSString * const PDSDBErrorDomain;
+extern NSString * const ATProtoDBErrorDomain;
 
-typedef NS_ENUM(NSInteger, PDSDBErrorCode) {
-    PDSDBErrorNotOpen = 1000,
-    PDSDBErrorQueryFailed = 1001,
-    PDSDBErrorMigrationFailed = 1002,
+typedef NS_ENUM(NSInteger, ATProtoDBErrorCode) {
+    ATProtoDBErrorNotOpen = 1000,
+    ATProtoDBErrorQueryFailed = 1001,
+    ATProtoDBErrorMigrationFailed = 1002,
 };
 
-#pragma mark - PDSDBConfig
+#pragma mark - ATProtoDBConfig
 
-typedef NS_OPTIONS(NSUInteger, PDSDBConfigFlags) {
-    PDSDBConfigFlagWAL              = 1 << 0,
-    PDSDBConfigFlagSynchronousNormal = 1 << 1,
-    PDSDBConfigFlagForeignKeys       = 1 << 2,
-    PDSDBConfigFlagTempStoreMemory   = 1 << 3,
+typedef NS_OPTIONS(NSUInteger, ATProtoDBConfigFlags) {
+    ATProtoDBConfigFlagWAL              = 1 << 0,
+    ATProtoDBConfigFlagSynchronousNormal = 1 << 1,
+    ATProtoDBConfigFlagForeignKeys       = 1 << 2,
+    ATProtoDBConfigFlagTempStoreMemory   = 1 << 3,
 };
 
 typedef struct {
-    PDSDBConfigFlags flags;
+    ATProtoDBConfigFlags flags;
     int busyTimeout;           // ms (0 = default)
     int cacheSize;             // pages (positive) or KB (negative)
     int walAutocheckpoint;     // pages (0 = default)
     int journalSizeLimit;      // bytes (0 = default)
     int mmapSize;              // bytes (0 = default)
     int pageSize;              // bytes (0 = default)
-} PDSDBConfig;
+} ATProtoDBConfig;
 
-extern const PDSDBConfig PDSDBConfigDefault;
-extern const PDSDBConfig PDSDBConfigActorStore;
-extern const PDSDBConfig PDSDBConfigServiceDatabase;
-extern const PDSDBConfig PDSDBConfigBulkRead;
+extern const ATProtoDBConfig ATProtoDBConfigDefault;
+extern const ATProtoDBConfig ATProtoDBConfigActorStore;
+extern const ATProtoDBConfig ATProtoDBConfigServiceDatabase;
+extern const ATProtoDBConfig ATProtoDBConfigBulkRead;
 
-BOOL PDSDBConfigurePragmas(sqlite3 *db, PDSDBConfig config);
+BOOL ATProtoDBConfigurePragmas(sqlite3 *db, ATProtoDBConfig config);
 
-static inline void PDSDBBindValue(sqlite3_stmt *stmt, int idx, id value) {
+static inline void ATProtoDBBindValue(sqlite3_stmt *stmt, int idx, id value) {
     if (!stmt || idx < 1) return;
     if (value == nil || value == [NSNull null]) {
         sqlite3_bind_null(stmt, idx);
     } else if ([value isKindOfClass:[NSString class]]) {
         sqlite3_bind_text(stmt, idx, [value UTF8String], -1, SQLITE_TRANSIENT);
     } else if ([value isKindOfClass:[NSData class]]) {
-        sqlite3_bind_blob(stmt, idx, [value bytes], (int)[value length], SQLITE_TRANSIENT);
+        NSData *data = (NSData *)value;
+        if (data.length == 0) {
+            sqlite3_bind_zeroblob(stmt, idx, 0);
+        } else {
+            sqlite3_bind_blob(stmt, idx, data.bytes, (int)data.length, SQLITE_TRANSIENT);
+        }
     } else if ([value isKindOfClass:[NSNumber class]]) {
         const char *objCType = [value objCType];
         if (strcmp(objCType, @encode(double)) == 0 ||
@@ -58,13 +63,13 @@ static inline void PDSDBBindValue(sqlite3_stmt *stmt, int idx, id value) {
     }
 }
 
-static inline void PDSDBBindParams(sqlite3_stmt *stmt, NSArray *params) {
+static inline void ATProtoDBBindParams(sqlite3_stmt *stmt, NSArray *params) {
     for (NSUInteger i = 0; i < params.count; i++) {
-        PDSDBBindValue(stmt, (int)(i + 1), params[i]);
+        ATProtoDBBindValue(stmt, (int)(i + 1), params[i]);
     }
 }
 
-static inline id PDSDBColumnValue(sqlite3_stmt *stmt, int col) {
+static inline id ATProtoDBColumnValue(sqlite3_stmt *stmt, int col) {
     if (!stmt) return nil;
     int type = sqlite3_column_type(stmt, col);
     switch (type) {
@@ -87,7 +92,7 @@ static inline id PDSDBColumnValue(sqlite3_stmt *stmt, int col) {
     }
 }
 
-static inline NSString *PDSDBPlaceholders(NSUInteger count) {
+static inline NSString *ATProtoDBPlaceholders(NSUInteger count) {
     if (count == 0) return @"";
     NSMutableArray *placeholders = [NSMutableArray arrayWithCapacity:count];
     for (NSUInteger i = 0; i < count; i++) {
@@ -96,17 +101,17 @@ static inline NSString *PDSDBPlaceholders(NSUInteger count) {
     return [placeholders componentsJoinedByString:@", "];
 }
 
-static inline NSError *PDSDBError(NSString *domain, NSString *message, NSInteger code) {
+static inline NSError *ATProtoDBError(NSString *domain, NSString *message, NSInteger code) {
     return [NSError errorWithDomain:domain
                                code:code
                            userInfo:@{NSLocalizedDescriptionKey: message ?: @"Unknown error"}];
 }
 
-static inline NSError *PDSDBSQLError(NSString *domain, sqlite3 *db, NSInteger code) {
+static inline NSError *ATProtoDBSQLError(NSString *domain, sqlite3 *db, NSInteger code) {
     const char *msg = db ? sqlite3_errmsg(db) : "Unknown error";
-    return PDSDBError(domain, @(msg), code);
+    return ATProtoDBError(domain, @(msg), code);
 }
 
 NS_ASSUME_NONNULL_END
 
-// PDSDBConfig constants and PDSDBConfigurePragmas are defined in PDSDatabaseUtilities.m
+// ATProtoDBConfig constants and ATProtoDBConfigurePragmas are defined in ATProtoDatabaseUtilities.m

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSConnectionPool.h
+ @file ATProtoConnectionPool.h
 
  @abstract SQLite connection pooling for improved performance.
 
@@ -23,7 +23,7 @@
 
  Usage:
  @code
- PDSConnectionPool *pool = [[PDSConnectionPool alloc]
+ ATProtoConnectionPool *pool = [[ATProtoConnectionPool alloc]
      initWithPath:@"/path/to/db.sqlite" minConnections:2 maxConnections:10];
 
  sqlite3 *conn = [pool acquireConnection];
@@ -40,7 +40,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class PDSConnectionPool
+ @class ATProtoConnectionPool
 
  @abstract Thread-safe SQLite connection pool.
 
@@ -50,7 +50,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  Thread-safety: All methods are thread-safe via dispatch_queue.
  */
-@interface PDSConnectionPool : NSObject
+@interface ATProtoConnectionPool : NSObject
 
 #pragma mark - Initialization
 

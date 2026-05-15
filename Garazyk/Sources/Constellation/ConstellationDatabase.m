@@ -6,7 +6,9 @@
 #import "Constellation/ConstellationSourceSpec.h"
 #import "Auth/Crypto/AuthCryptoBase64URL.h"
 #import "Core/NSDateFormatter+ATProto.h"
-#import "Database/Pool/PDSConnectionPool.h"
+#import "Database/Connection/ATProtoConnectionManagerPooled.h"
+#import "Database/Pool/ATProtoConnectionPool.h"
+#import "Database/Utils/ATProtoDatabaseUtilities.h"
 #import "Debug/GZLogger.h"
 
 #import <sqlite3.h>
@@ -23,49 +25,10 @@ static int64_t ConstellationIndexValue(int64_t seq) {
 }
 
 static NSError *ConstellationDBError(sqlite3 *db, int code, NSString *fallback) {
-    const char *message = db ? sqlite3_errmsg(db) : NULL;
-    NSString *description = message ? [NSString stringWithUTF8String:message] : fallback;
-    return [NSError errorWithDomain:ConstellationDatabaseErrorDomain
-                               code:code
-                           userInfo:@{NSLocalizedDescriptionKey: description ?: @"SQLite error"}];
-}
-
-static void ConstellationBind(sqlite3_stmt *stmt, NSArray *params) {
-    for (NSUInteger i = 0; i < params.count; i++) {
-        id value = params[i];
-        int index = (int)i + 1;
-        if (value == [NSNull null]) {
-            sqlite3_bind_null(stmt, index);
-        } else if ([value isKindOfClass:[NSString class]]) {
-            sqlite3_bind_text(stmt, index, [value UTF8String], -1, SQLITE_TRANSIENT);
-        } else if ([value isKindOfClass:[NSNumber class]]) {
-            sqlite3_bind_int64(stmt, index, [value longLongValue]);
-        } else if ([value isKindOfClass:[NSData class]]) {
-            NSData *data = (NSData *)value;
-            sqlite3_bind_blob(stmt, index, data.bytes, (int)data.length, SQLITE_TRANSIENT);
-        }
+    if (db) {
+        return ATProtoDBSQLError(ConstellationDatabaseErrorDomain, db, code);
     }
-}
-
-static id ConstellationColumnValue(sqlite3_stmt *stmt, int index) {
-    int type = sqlite3_column_type(stmt, index);
-    switch (type) {
-        case SQLITE_INTEGER:
-            return @(sqlite3_column_int64(stmt, index));
-        case SQLITE_FLOAT:
-            return @(sqlite3_column_double(stmt, index));
-        case SQLITE_TEXT: {
-            const unsigned char *text = sqlite3_column_text(stmt, index);
-            return text ? [NSString stringWithUTF8String:(const char *)text] : @"";
-        }
-        case SQLITE_BLOB: {
-            const void *bytes = sqlite3_column_blob(stmt, index);
-            int length = sqlite3_column_bytes(stmt, index);
-            return bytes ? [NSData dataWithBytes:bytes length:(NSUInteger)length] : [NSData data];
-        }
-        default:
-            return [NSNull null];
-    }
+    return ATProtoDBError(ConstellationDatabaseErrorDomain, fallback ?: @"SQLite error", code);
 }
 
 static NSArray<NSString *> *ConstellationCleanFilters(NSArray<NSString *> *values) {
@@ -86,11 +49,7 @@ static void ConstellationAppendInClause(NSMutableString *sql,
                                         NSArray<NSString *> *values) {
     NSArray<NSString *> *cleaned = ConstellationCleanFilters(values);
     if (cleaned.count == 0) return;
-    NSMutableArray<NSString *> *placeholders = [NSMutableArray arrayWithCapacity:cleaned.count];
-    for (NSUInteger i = 0; i < cleaned.count; i++) {
-        [placeholders addObject:@"?"];
-    }
-    [sql appendFormat:@" AND %@ IN (%@)", column, [placeholders componentsJoinedByString:@", "]];
+    [sql appendFormat:@" AND %@ IN (%@)", column, ATProtoDBPlaceholders(cleaned.count)];
     [params addObjectsFromArray:cleaned];
 }
 
@@ -119,8 +78,8 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
 }
 
 @interface ConstellationDatabase ()
-@property (nonatomic, strong) PDSConnectionPool *pool;
-@property (nonatomic, strong) dispatch_queue_t writerQueue;
+@property (nonatomic, strong) ATProtoConnectionPool *pool;
+@property (nonatomic, strong) ATProtoConnectionManagerPooled *connectionManager;
 @end
 
 @implementation ConstellationDatabase
@@ -149,14 +108,14 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
         }
     }
 
-    _pool = [[PDSConnectionPool alloc] initWithPath:path minConnections:1 maxConnections:8];
+    _pool = [[ATProtoConnectionPool alloc] initWithPath:path minConnections:1 maxConnections:8];
     if (!_pool) {
         if (error) *error = [NSError errorWithDomain:ConstellationDatabaseErrorDomain
                                                 code:2
                                             userInfo:@{NSLocalizedDescriptionKey: @"Failed to create connection pool"}];
         return nil;
     }
-    _writerQueue = dispatch_queue_create("dev.garazyk.constellation.database.writer", DISPATCH_QUEUE_SERIAL);
+    _connectionManager = [[ATProtoConnectionManagerPooled alloc] initWithPool:_pool];
     return self;
 }
 
@@ -211,28 +170,27 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
         ");"
         "CREATE INDEX IF NOT EXISTS idx_constellation_handles_did ON constellation_handles(did);";
 
-    sqlite3 *db = [self.pool acquireConnectionWithTimeout:10.0];
-    if (!db) {
-        if (error) *error = [NSError errorWithDomain:ConstellationDatabaseErrorDomain
-                                                code:3
-                                            userInfo:@{NSLocalizedDescriptionKey: @"Timed out acquiring database connection"}];
-        return NO;
-    }
-    char *errmsg = NULL;
-    int rc = sqlite3_exec(db, schema.UTF8String, NULL, NULL, &errmsg);
-    if (rc != SQLITE_OK) {
-        if (error) {
+    __block BOOL migrated = NO;
+    __block NSError *innerError = nil;
+    [self.connectionManager execute:^(sqlite3 *db) {
+        char *errmsg = NULL;
+        int rc = sqlite3_exec(db, schema.UTF8String, NULL, NULL, &errmsg);
+        if (rc != SQLITE_OK) {
             NSString *message = errmsg ? [NSString stringWithUTF8String:errmsg] : @"Migration failed";
-            *error = [NSError errorWithDomain:ConstellationDatabaseErrorDomain
-                                         code:rc
-                                     userInfo:@{NSLocalizedDescriptionKey: message}];
+            innerError = [NSError errorWithDomain:ConstellationDatabaseErrorDomain
+                                             code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey: message}];
+            if (errmsg) {
+                sqlite3_free(errmsg);
+            }
+            return;
         }
-        if (errmsg) sqlite3_free(errmsg);
-        [self.pool releaseConnection:db];
-        return NO;
+        migrated = YES;
+    } error:&innerError];
+    if (!migrated && error) {
+        *error = innerError;
     }
-    [self.pool releaseConnection:db];
-    return YES;
+    return migrated;
 }
 
 - (BOOL)indexRecord:(NSDictionary *)record
@@ -664,45 +622,43 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
 - (nullable NSArray<NSDictionary *> *)executeQuery:(NSString *)sql
                                             params:(NSArray *)params
                                              error:(NSError **)error {
-    sqlite3 *db = [self.pool acquireConnectionWithTimeout:10.0];
-    if (!db) {
-        if (error) *error = [NSError errorWithDomain:ConstellationDatabaseErrorDomain
-                                                code:3
-                                            userInfo:@{NSLocalizedDescriptionKey: @"Timed out acquiring database connection"}];
-        return nil;
-    }
-
-    sqlite3_stmt *stmt = NULL;
-    int rc = sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL);
-    if (rc != SQLITE_OK) {
-        if (error) *error = ConstellationDBError(db, rc, @"Failed to prepare query");
-        [self.pool releaseConnection:db];
-        return nil;
-    }
-    ConstellationBind(stmt, params ?: @[]);
-
-    NSMutableArray<NSDictionary *> *rows = [NSMutableArray array];
-    while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
-        NSMutableDictionary *row = [NSMutableDictionary dictionary];
-        int count = sqlite3_column_count(stmt);
-        for (int i = 0; i < count; i++) {
-            const char *name = sqlite3_column_name(stmt, i);
-            if (!name) continue;
-            row[[NSString stringWithUTF8String:name]] = ConstellationColumnValue(stmt, i);
+    __block NSArray<NSDictionary *> *result = nil;
+    __block NSError *innerError = nil;
+    [self.connectionManager execute:^(sqlite3 *db) {
+        sqlite3_stmt *stmt = NULL;
+        int rc = sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL);
+        if (rc != SQLITE_OK) {
+            innerError = ConstellationDBError(db, rc, @"Failed to prepare query");
+            return;
         }
-        [rows addObject:row];
-    }
+        ATProtoDBBindParams(stmt, params ?: @[]);
 
-    if (rc != SQLITE_DONE) {
-        if (error) *error = ConstellationDBError(db, rc, @"Failed to execute query");
+        NSMutableArray<NSDictionary *> *rows = [NSMutableArray array];
+        while ((rc = sqlite3_step(stmt)) == SQLITE_ROW) {
+            NSMutableDictionary *row = [NSMutableDictionary dictionary];
+            int count = sqlite3_column_count(stmt);
+            for (int i = 0; i < count; i++) {
+                const char *name = sqlite3_column_name(stmt, i);
+                if (!name) continue;
+                row[[NSString stringWithUTF8String:name]] = ATProtoDBColumnValue(stmt, i) ?: [NSNull null];
+            }
+            [rows addObject:row];
+        }
+
+        if (rc != SQLITE_DONE) {
+            innerError = ConstellationDBError(db, rc, @"Failed to execute query");
+            sqlite3_finalize(stmt);
+            return;
+        }
+
         sqlite3_finalize(stmt);
-        [self.pool releaseConnection:db];
-        return nil;
-    }
+        result = [rows copy];
+    } error:&innerError];
 
-    sqlite3_finalize(stmt);
-    [self.pool releaseConnection:db];
-    return [rows copy];
+    if (!result && error) {
+        *error = innerError;
+    }
+    return result;
 }
 
 - (BOOL)executeUpdate:(NSString *)sql
@@ -715,7 +671,7 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
         if (error) *error = ConstellationDBError(db, rc, @"Failed to prepare update");
         return NO;
     }
-    ConstellationBind(stmt, params ?: @[]);
+    ATProtoDBBindParams(stmt, params ?: @[]);
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE) {
         if (error) *error = ConstellationDBError(db, rc, @"Failed to execute update");
@@ -728,51 +684,12 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
 
 - (BOOL)performWriteTransaction:(BOOL (^)(sqlite3 *db, NSError **error))block
                           error:(NSError **)error {
-    __block BOOL ok = YES;
+    __block BOOL innerOK = YES;
     __block NSError *innerError = nil;
-
-    dispatch_sync(self.writerQueue, ^{
-        sqlite3 *db = [self.pool acquireConnectionWithTimeout:30.0];
-        if (!db) {
-            innerError = [NSError errorWithDomain:ConstellationDatabaseErrorDomain
-                                             code:3
-                                         userInfo:@{NSLocalizedDescriptionKey: @"Timed out acquiring database connection"}];
-            ok = NO;
-            return;
-        }
-
-        char *errmsg = NULL;
-        int rc = sqlite3_exec(db, "BEGIN IMMEDIATE", NULL, NULL, &errmsg);
-        if (rc != SQLITE_OK) {
-            NSString *message = errmsg ? [NSString stringWithUTF8String:errmsg] : @"Failed to begin transaction";
-            innerError = [NSError errorWithDomain:ConstellationDatabaseErrorDomain
-                                             code:rc
-                                         userInfo:@{NSLocalizedDescriptionKey: message}];
-            if (errmsg) sqlite3_free(errmsg);
-            [self.pool releaseConnection:db];
-            ok = NO;
-            return;
-        }
-
-        ok = block(db, &innerError);
-        if (!ok) {
-            sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
-            [self.pool releaseConnection:db];
-            return;
-        }
-
-        rc = sqlite3_exec(db, "COMMIT", NULL, NULL, &errmsg);
-        if (rc != SQLITE_OK) {
-            NSString *message = errmsg ? [NSString stringWithUTF8String:errmsg] : @"Failed to commit transaction";
-            innerError = [NSError errorWithDomain:ConstellationDatabaseErrorDomain
-                                             code:rc
-                                         userInfo:@{NSLocalizedDescriptionKey: message}];
-            if (errmsg) sqlite3_free(errmsg);
-            sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
-            ok = NO;
-        }
-        [self.pool releaseConnection:db];
-    });
+    BOOL ok = [self.connectionManager transact:^(sqlite3 *db, BOOL *rollback) {
+        innerOK = block(db, &innerError);
+        *rollback = !innerOK;
+    } error:&innerError];
 
     if (!ok && error) *error = innerError;
     return ok;

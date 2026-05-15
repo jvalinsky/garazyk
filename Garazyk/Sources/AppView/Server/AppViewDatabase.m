@@ -14,7 +14,7 @@
 #import <sqlite3.h>
 #include <string.h>
 #import "Database/Utils/PDSSQLiteUtils.h"
-#import "Database/Utils/PDSDatabaseUtilities.h"
+#import "Database/Utils/ATProtoDatabaseUtilities.h"
 
 NSString * const AppViewDatabaseErrorDomain = @"AppViewDatabaseErrorDomain";
 
@@ -449,11 +449,17 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
         return nil;
     }
 
-    // WAL for concurrent reads
-    sqlite3_exec(_db, "PRAGMA journal_mode=WAL;", NULL, NULL, NULL);
-    sqlite3_exec(_db, "PRAGMA synchronous=NORMAL;", NULL, NULL, NULL);
-    sqlite3_exec(_db, "PRAGMA foreign_keys=ON;", NULL, NULL, NULL);
-    sqlite3_exec(_db, "PRAGMA busy_timeout=5000;", NULL, NULL, NULL);
+    if (!ATProtoDBConfigurePragmas(_db, ATProtoDBConfigDefault)) {
+        if (error) {
+            *error = [NSError errorWithDomain:AppViewDatabaseErrorDomain
+                                         code:rc
+                                     userInfo:@{NSLocalizedDescriptionKey:
+                                                    @"Failed to configure SQLite pragmas"}];
+        }
+        sqlite3_close_v2(_db);
+        _db = NULL;
+        return nil;
+    }
 
     return self;
 }
@@ -1041,14 +1047,14 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
             return;
         }
 
-        PDSDBBindParams(stmt, params);
+        ATProtoDBBindParams(stmt, params);
 
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             NSMutableDictionary *row = [NSMutableDictionary dictionary];
             int count = sqlite3_column_count(stmt);
             for (int i = 0; i < count; i++) {
                 NSString *name = @(sqlite3_column_name(stmt, i));
-                id val = PDSDBColumnValue(stmt, i);
+                id val = ATProtoDBColumnValue(stmt, i);
                 if (val && val != [NSNull null]) row[name] = val;
             }
             [results addObject:row];
@@ -1082,7 +1088,7 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
             return;
         }
 
-        PDSDBBindParams(stmt, params);
+        ATProtoDBBindParams(stmt, params);
 
         rc = sqlite3_step(stmt);
         if (rc != SQLITE_DONE) {
@@ -1430,12 +1436,7 @@ static NSDate * _Nullable iso8601Parse(NSString * _Nullable str) {
 }
 
 - (NSString *)parameterPlaceholdersForCount:(NSUInteger)count {
-    if (count == 0) return @"";
-    NSMutableArray *placeholders = [NSMutableArray arrayWithCapacity:count];
-    for (NSUInteger i = 0; i < count; i++) {
-        [placeholders addObject:@"?"];
-    }
-    return [placeholders componentsJoinedByString:@", "];
+    return ATProtoDBPlaceholders(count);
 }
 
 #pragma mark - Transactions
