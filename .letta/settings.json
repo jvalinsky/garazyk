@@ -325,7 +325,25 @@
       "Bash(deciduous link 1644 1650 -t enables -r \"Backfill presets use the swappable topology system\")",
       "Bash(deciduous status 1644 completed)",
       "Bash(deciduous prompt 1650 \"Backfill service topology presets for cross-implementation interop testing.\n\nThree implementations:\n- Indigo Tap (Go): sync utility, SQLite, backfill/verification, port 2480\n- Hydrant (Rust): fjall indexer, native ws://, XRPC queries, port 3000\n- Wintermute (Rust): PostgreSQL indexer, bsky-dataplane sidecar for schema init, port 9090\n\nKey architectural decision: Wintermute uses bsky-dataplane sidecar (from bluesky-social/atproto) to run Kysely migrations, creating the bsky schema. This is the production pattern from Blacksky (outof-coffee/atproto). Wintermute then writes to the same DB with ON CONFLICT for safety.\n\nFiles: docker/wintermute/, docker/bsky-dataplane/, scripts/scenarios/topologies/indigo-tap.json, hydrant.json, wintermute.json, topologies/README.md\" 2)",
-      "Bash(deciduous narratives --help 2)"
+      "Bash(deciduous narratives --help 2)",
+      "Bash(deciduous add goal \"P0: Safety & Correctness\" -d \"Fix 6 critical issues: withSpanSync, POST retries, unhandledrejection, Deno.exit, stdout pipe, path traversal\" -c 95)",
+      "Bash(deciduous link 2 3 -r \"P0 is highest priority\")",
+      "Bash(for i in 7 8 9 10 11 12)",
+      "Bash(deciduous doc attach 3 .deciduous/scratch/2026-05-e2e-harness-remediation/p0-safety-correctness.md)",
+      "Bash(deno check scripts/lib/deno/otel.ts 2)",
+      "Bash(deno check scripts/lib/deno/transport.ts 2)",
+      "Bash(deno check scripts/lib/deno/client.ts 2)",
+      "Bash(deciduous status 8 completed)",
+      "Bash(deno check scripts/run_scenarios.ts 2)",
+      "Bash(deciduous status 10 completed)",
+      "Bash(deno check scripts/scenario-dashboard/services/run_manager.ts 2)",
+      "Bash(deciduous status 11 completed)",
+      "Bash(deno check scripts/lib/deno/topology.ts 2)",
+      "Bash(deno check scripts/lib/deno/docker_runner.ts 2)",
+      "Bash(deciduous status 12 completed)",
+      "Bash(deciduous status 3 completed)",
+      "Bash(deciduous list 2)",
+      "Bash(cmake --build build 2)"
     ]
   }
 }
