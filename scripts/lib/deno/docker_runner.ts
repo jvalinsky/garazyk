@@ -5,7 +5,7 @@
  * and lets scenarios run against remote Docker hosts.
  */
 
-import { join } from "@std/path";
+import { join, relative, resolve } from "@std/path";
 
 export interface DockerRunnerOptions {
   /** Absolute path to the repo root */
@@ -54,7 +54,15 @@ export async function runScenarioInDocker(options: DockerRunnerOptions): Promise
     }
   }
 
-  const scenarioRelPath = options.scenarioPath.replace(options.repoRoot + "/", "");
+  // Derive the relative path from repo root, and verify it doesn't escape.
+  // This prevents a scenarioPath like "/repo/../etc/passwd" from reading
+  // files outside the mounted workspace inside the container.
+  const scenarioRelPath = relative(options.repoRoot, resolve(options.scenarioPath));
+  if (scenarioRelPath.startsWith("..") || scenarioRelPath.startsWith("/")) {
+    throw new Error(
+      `Scenario path escapes repo root: "${options.scenarioPath}" (relative: ${scenarioRelPath}, repo: ${options.repoRoot})`,
+    );
+  }
 
   const cmd = [
     "docker",
