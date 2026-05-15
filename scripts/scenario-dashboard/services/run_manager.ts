@@ -102,7 +102,18 @@ class RunManagerImpl implements RunManager {
     this.activeRun = run;
 
     // 3. Spawn process
-    await this.spawnRunner(run);
+    try {
+      await this.spawnRunner(run);
+    } catch (e) {
+      console.error(`[run-manager] Failed to spawn runner for ${runId}:`, e);
+      run.status = "error";
+      run.stopReason = "spawn_failed";
+      run.finishedAt = Date.now();
+      this.updateRunInDb(run);
+      await this.clearLockFile();
+      this.activeRun = undefined;
+      return { runId };
+    }
 
     return { runId };
   }

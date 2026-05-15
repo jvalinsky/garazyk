@@ -20,7 +20,7 @@ export function categorize(id: string): string {
 export const STATUS_ICONS: Record<string, string> = {
   passed: "✓",
   failed: "✗",
-  skipped: "⚠",
+  skipped: "–",
   running: "⟳",
 };
 
