@@ -307,7 +307,25 @@
       "Bash(deno task dev 2)",
       "Bash(deno task dev 2 &)",
       "Bash(deno task -c scripts/scenario-dashboard/deno.json dev 2 &)",
-      "Bash(deno eval \"const r = await fetch('https://deno.land/x/fresh@1.7.3/src/mod.ts', {redirect: 'follow'}); console.log(r.status, r.url)\" 2)"
+      "Bash(deno eval \"const r = await fetch('https://deno.land/x/fresh@1.7.3/src/mod.ts', {redirect: 'follow'}); console.log(r.status, r.url)\" 2)",
+      "Bash(deciduous nodes -t goal 2)",
+      "Bash(deciduous show 1635 2)",
+      "Bash(deciduous show 1647 2)",
+      "Bash(deciduous show 1644 2)",
+      "Bash(deciduous show 1646 2)",
+      "Bash(deciduous show 1645 2)",
+      "Bash(deciduous show 1648 2)",
+      "Bash(deciduous add goal \"Backfill service topology presets (Indigo Tap, Hydrant, Wintermute)\" --confidence 90 2)",
+      "Bash(deciduous add decision \"Add backfill as a ServiceRole alongside pds/relay/plc/appview. Three backfill implementations: Indigo Tap (Go, SQLite, sync utility), Hydrant (Rust, fjall, native ws://), Wintermute (Rust, PostgreSQL, requires bsky-dataplane sidecar for schema init). Wintermute uses the production pattern from Blacksky: dataplane runs Kysely migrations, Wintermute writes to same DB with ON CONFLICT.\" --confidence 90 2)",
+      "Bash(deciduous add action \"Implemented backfill role in topology_registry.ts, three topology presets (indigo-tap.json, hydrant.json, wintermute.json), Dockerfile overlays for wintermute and bsky-dataplane, ws:// scheme support patch for Wintermute, and topologies/README.md documentation\" --confidence 90 2)",
+      "Bash(deciduous add outcome \"All three backfill topologies compile successfully. Dependency chain verified: PostgreSQL → dataplane (migrations) → wintermute (indexing). Memory gotchas updated with backfill service details.\" --confidence 90 2)",
+      "Bash(deciduous link 1650 leads_to 1651)",
+      "Bash(deciduous link --help 2)",
+      "Bash(deciduous link 1650 1651 -t leads_to -r \"Backfill role decision\")",
+      "Bash(deciduous link 1644 1650 -t enables -r \"Backfill presets use the swappable topology system\")",
+      "Bash(deciduous status 1644 completed)",
+      "Bash(deciduous prompt 1650 \"Backfill service topology presets for cross-implementation interop testing.\n\nThree implementations:\n- Indigo Tap (Go): sync utility, SQLite, backfill/verification, port 2480\n- Hydrant (Rust): fjall indexer, native ws://, XRPC queries, port 3000\n- Wintermute (Rust): PostgreSQL indexer, bsky-dataplane sidecar for schema init, port 9090\n\nKey architectural decision: Wintermute uses bsky-dataplane sidecar (from bluesky-social/atproto) to run Kysely migrations, creating the bsky schema. This is the production pattern from Blacksky (outof-coffee/atproto). Wintermute then writes to the same DB with ON CONFLICT for safety.\n\nFiles: docker/wintermute/, docker/bsky-dataplane/, scripts/scenarios/topologies/indigo-tap.json, hydrant.json, wintermute.json, topologies/README.md\" 2)",
+      "Bash(deciduous narratives --help 2)"
     ]
   }
 }

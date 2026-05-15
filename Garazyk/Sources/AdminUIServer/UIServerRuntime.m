@@ -8,7 +8,9 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
+#import "Network/XrpcHandler.h"
 #import "Auth/CryptoUtils.h"
+#import "Debug/GZLogger.h"
 
 static NSString *UIEscaped(NSString *value) {
     if (![value isKindOfClass:[NSString class]]) {
@@ -83,6 +85,7 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
 @property(nonatomic, strong, readwrite) UIServiceConfig *configuration;
 @property(nonatomic, strong) UIAuthManager *authManager;
 @property(nonatomic, strong) UIBackendClient *backendClient;
+@property(nonatomic, strong) XrpcDispatcher *xrpcDispatcher;
 @property(nonatomic, assign, readwrite, getter=isRunning) BOOL running;
 
 @end
@@ -122,6 +125,24 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
         return NO;
     }
 
+    self.xrpcDispatcher = [[XrpcDispatcher alloc] init];
+    
+    // Register standard health endpoint
+    [self.xrpcDispatcher registerMethod:@"_health" handler:^(HttpRequest *req, HttpResponse *res) {
+        res.statusCode = 200;
+        [res setJsonBody:@{@"version": @"1.0.0"}];
+    }];
+
+    // Register com.atproto.server.describeServer
+    [self.xrpcDispatcher registerComAtprotoServerDescribeServer:^(HttpRequest *req, HttpResponse *res) {
+        res.statusCode = 200;
+        [res setJsonBody:@{
+            @"availableUserDomains": @[],
+            @"inviteCodeRequired": @YES,
+            @"phoneVerificationRequired": @NO
+        }];
+    }];
+
     [HttpResponse setDefaultServerHeader:@"garazyk-ui/1.0.0"];
     [self registerRoutes];
 
@@ -153,6 +174,13 @@ static void UIApplyNonceCSP(HttpResponse *response, NSString *nonce, NSString *p
 
 - (void)registerRoutes {
     __weak typeof(self) weakSelf = self;
+
+    // XRPC API handler
+    [self.httpServer addHandlerForPath:@"/xrpc" handler:^(HttpRequest *request, HttpResponse *response) {
+        GZ_LOG_INFO(@"UI Server: Handling XRPC request: %@", request.path);
+        [weakSelf.xrpcDispatcher handleRequest:request response:response];
+        GZ_LOG_INFO(@"UI Server: Finished XRPC request: %@ (status %ld)", request.path, (long)response.statusCode);
+    }];
 
     // Static asset serving: /css/*, /js/*, /img/* (prefix routes via addHandlerForPath)
     [self.httpServer addHandlerForPath:@"/css/" handler:^(HttpRequest *request, HttpResponse *response) {
