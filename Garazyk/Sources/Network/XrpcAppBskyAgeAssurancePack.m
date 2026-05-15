@@ -7,151 +7,188 @@
  */
 
 #import "Network/XrpcAppBskyAgeAssurancePack.h"
+
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/XrpcErrorHelper.h"
 #import "Network/XrpcHandler.h"
+#import "Network/XrpcHandlerContext.h"
+#import "Network/XrpcRoutePackServices.h"
 #import "AppView/Services/AgeAssuranceService.h"
 
 @implementation XrpcAppBskyAgeAssurancePack
 
++ (NSString *)routePackIdentifier {
+  return @"app.bsky.ageassurance";
+}
+
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-           ageAssuranceService:(nullable AgeAssuranceService *)ageAssuranceService {
-    // app.bsky.ageassurance.begin - Initiate age assurance
-    [dispatcher registerMethod:@"app.bsky.ageassurance.begin"
-                       handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        if (!authHeader) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
-            return;
-        }
+           ageAssuranceService:(AgeAssuranceService *)ageAssuranceService {
+  XrpcRoutePackServiceBag *services =
+      [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+                                                jwtMinter:dispatcher.jwtMinter
+                                          adminController:nil
+                                             configuration:nil
+                                         serviceDatabases:nil
+                                               rateLimiter:nil];
+  services.ageAssuranceService = ageAssuranceService;
+  [self registerWithDispatcher:dispatcher services:services];
+}
 
-        // Extract DID from auth header (simplified: assume it's the DID)
-        NSString *token = [authHeader hasPrefix:@"Bearer "] ? [authHeader substringFromIndex:7] : authHeader;
-        NSString *did = token; 
++ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+                      services:(id<XrpcRoutePackServices>)services {
+  AgeAssuranceService *ageAssuranceService = nil;
+  if ([services respondsToSelector:@selector(ageAssuranceService)]) {
+    ageAssuranceService = services.ageAssuranceService;
+  }
 
-        NSDictionary *body = request.jsonBody;
-        NSString *email = body[@"email"];
-        NSString *language = body[@"language"];
-        NSString *countryCode = body[@"countryCode"];
-        NSString *regionCode = body[@"regionCode"];
+  id<XrpcRoutePackServices> resolvedServices = services;
+  if (!resolvedServices) {
+    resolvedServices =
+        [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+                                                  jwtMinter:dispatcher.jwtMinter
+                                            adminController:nil
+                                               configuration:nil
+                                           serviceDatabases:nil
+                                                 rateLimiter:nil];
+  }
 
-        if (!email || !language || !countryCode) {
-            [XrpcErrorHelper setValidationError:response message:@"email, language, and countryCode are required"];
-            return;
-        }
+  [dispatcher registerMethod:@"app.bsky.ageassurance.begin"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+                       XrpcHandlerContext *context =
+                           [[XrpcHandlerContext alloc] initWithRequest:request
+                                                             response:response
+                                                             services:resolvedServices];
+                       NSString *did = nil;
+                       if (![context requireAuthenticatedDID:&did]) {
+                         return;
+                       }
 
-        if (ageAssuranceService) {
-            NSError *error = nil;
-            NSDictionary *result = [ageAssuranceService beginAgeAssurance:did
-                                                                    email:email
-                                                                 language:language
-                                                              countryCode:countryCode
-                                                               regionCode:regionCode
-                                                                    error:&error];
-            if (error) {
-                [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
-                return;
-            }
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:result];
-        } else {
-            // Create age assurance state (Mock)
-            NSString *stateId = [[NSUUID UUID] UUIDString];
-            NSString *token = [[NSUUID UUID] UUIDString];
+                       NSDictionary *body = request.jsonBody;
+                       NSString *email = body[@"email"];
+                       NSString *language = body[@"language"];
+                       NSString *countryCode = body[@"countryCode"];
+                       NSString *regionCode = body[@"regionCode"];
 
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:@{
-                @"id": stateId,
-                @"status": @"pending",
-                @"token": token
-            }];
-        }
-    }];
+                       if (!email || !language || !countryCode) {
+                         [XrpcErrorHelper setValidationError:response
+                                                     message:@"email, language, and countryCode are required"];
+                         return;
+                       }
 
-    // app.bsky.ageassurance.getConfig - Get age assurance configuration
-    [dispatcher registerMethod:@"app.bsky.ageassurance.getConfig"
-                       handler:^(HttpRequest *request, HttpResponse *response) {
-        if (ageAssuranceService) {
-            NSError *error = nil;
-            NSDictionary *config = [ageAssuranceService getAgeAssuranceConfig:&error];
-            if (error) {
-                [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
-                return;
-            }
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:config];
-        } else {
-            // Return default configuration
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:@{
-                @"enabled": @YES,
-                @"methods": @[
-                    @{@"type": @"email", @"description": @"Verify age via email"},
-                    @{@"type": @"id", @"description": @"Verify age with ID document"}
-                ],
-                @"minimumAge": @18,
-                @"supportedCountries": @[@"US", @"CA", @"GB", @"AU", @"NZ"]
-            }];
-        }
-    }];
+                       if (ageAssuranceService) {
+                         NSError *error = nil;
+                         NSDictionary *result =
+                             [ageAssuranceService beginAgeAssurance:did
+                                                              email:email
+                                                           language:language
+                                                        countryCode:countryCode
+                                                         regionCode:regionCode
+                                                              error:&error];
+                         if (error) {
+                           [XrpcErrorHelper setInternalServerError:response
+                                                           message:error.localizedDescription];
+                           return;
+                         }
+                         response.statusCode = HttpStatusOK;
+                         [response setJsonBody:result];
+                         return;
+                       }
 
-    // app.bsky.ageassurance.getState - Get age assurance state
-    [dispatcher registerMethod:@"app.bsky.ageassurance.getState"
-                       handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        if (!authHeader) {
-            [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
-            return;
-        }
-        
-        // Extract DID
-        NSString *token = [authHeader hasPrefix:@"Bearer "] ? [authHeader substringFromIndex:7] : authHeader;
-        NSString *did = token;
+                       NSString *stateId = [[NSUUID UUID] UUIDString];
+                       NSString *token = [[NSUUID UUID] UUIDString];
+                       response.statusCode = HttpStatusOK;
+                       [response setJsonBody:@{
+                         @"id" : stateId,
+                         @"status" : @"pending",
+                         @"token" : token
+                       }];
+                     }];
 
-        NSString *countryCode = [request queryParamForKey:@"countryCode"];
-        NSString *regionCode = [request queryParamForKey:@"regionCode"];
+  [dispatcher registerMethod:@"app.bsky.ageassurance.getConfig"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+                       (void)request;
+                       if (ageAssuranceService) {
+                         NSError *error = nil;
+                         NSDictionary *config = [ageAssuranceService getAgeAssuranceConfig:&error];
+                         if (error) {
+                           [XrpcErrorHelper setInternalServerError:response
+                                                           message:error.localizedDescription];
+                           return;
+                         }
+                         response.statusCode = HttpStatusOK;
+                         [response setJsonBody:config];
+                         return;
+                       }
 
-        if (!countryCode) {
-            [XrpcErrorHelper setValidationError:response message:@"countryCode is required"];
-            return;
-        }
+                       response.statusCode = HttpStatusOK;
+                       [response setJsonBody:@{
+                         @"enabled" : @YES,
+                         @"methods" : @[
+                           @{@"type" : @"email", @"description" : @"Verify age via email"},
+                           @{@"type" : @"id", @"description" : @"Verify age with ID document"}
+                         ],
+                         @"minimumAge" : @18,
+                         @"supportedCountries" : @[ @"US", @"CA", @"GB", @"AU", @"NZ" ]
+                       }];
+                     }];
 
-        if (ageAssuranceService) {
-            NSError *error = nil;
-            NSDictionary *state = [ageAssuranceService getAgeAssuranceState:did
-                                                               countryCode:countryCode
-                                                                regionCode:regionCode
-                                                                     error:&error];
-            if (error) {
-                [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
-                return;
-            }
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:@{
-                @"state": state ?: @{ @"id": @"", @"status": @"none" },
-                @"metadata": @{
-                    @"countryCode": countryCode,
-                    @"regionCode": regionCode ?: @"",
-                    @"computedAt": [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]]
-                }
-            }];
-        } else {
-            // Return mock state
-            response.statusCode = HttpStatusOK;
-            [response setJsonBody:@{
-                @"state": @{
-                    @"id": @"",
-                    @"status": @"none"
-                },
-                @"metadata": @{
-                    @"countryCode": countryCode,
-                    @"regionCode": regionCode ?: @"",
-                    @"computedAt": [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]]
-                }
-            }];
-        }
-    }];
+  [dispatcher registerMethod:@"app.bsky.ageassurance.getState"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+                       XrpcHandlerContext *context =
+                           [[XrpcHandlerContext alloc] initWithRequest:request
+                                                             response:response
+                                                             services:resolvedServices];
+                       NSString *did = nil;
+                       if (![context requireAuthenticatedDID:&did]) {
+                         return;
+                       }
+
+                       NSString *countryCode = [request queryParamForKey:@"countryCode"];
+                       NSString *regionCode = [request queryParamForKey:@"regionCode"];
+                       if (!countryCode) {
+                         [XrpcErrorHelper setValidationError:response
+                                                     message:@"countryCode is required"];
+                         return;
+                       }
+
+                       if (ageAssuranceService) {
+                         NSError *error = nil;
+                         NSDictionary *state = [ageAssuranceService getAgeAssuranceState:did
+                                                                             countryCode:countryCode
+                                                                              regionCode:regionCode
+                                                                                   error:&error];
+                         if (error) {
+                           [XrpcErrorHelper setInternalServerError:response
+                                                           message:error.localizedDescription];
+                           return;
+                         }
+                         response.statusCode = HttpStatusOK;
+                         [response setJsonBody:@{
+                           @"state" : state ?: @{@"id" : @"", @"status" : @"none"},
+                           @"metadata" : @{
+                             @"countryCode" : countryCode,
+                             @"regionCode" : regionCode ?: @"",
+                             @"computedAt" : [NSString
+                                 stringWithFormat:@"%.0f",
+                                                  [[NSDate date] timeIntervalSince1970]]
+                           }
+                         }];
+                         return;
+                       }
+
+                       response.statusCode = HttpStatusOK;
+                       [response setJsonBody:@{
+                         @"state" : @{@"id" : @"", @"status" : @"none"},
+                         @"metadata" : @{
+                           @"countryCode" : countryCode,
+                           @"regionCode" : regionCode ?: @"",
+                           @"computedAt" : [NSString
+                               stringWithFormat:@"%.0f",
+                                                [[NSDate date] timeIntervalSince1970]]
+                         }
+                       }];
+                     }];
 }
 
 @end

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Network/XrpcRoutePackServices.h"
 
+#import "AppView/Services/AgeAssuranceService.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "Auth/JWT.h"
 #import "Database/Service/ServiceDatabases.h"
