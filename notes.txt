@@ -1,0 +1,250 @@
+Architectural and Implementation Frameworks for High-Performance Docker Client APIs in Deno
+The engineering of a robust Docker client within the Deno ecosystem necessitates a departure from traditional Node.js-centric methodologies, favoring instead the native, security-first capabilities of the Deno runtime. This transition is underpinned by the evolution of the Docker Engine API, a RESTful interface that has served as the backbone of container orchestration for over a decade.1 To construct a "proper" client, one must move beyond simple HTTP wrappers and address the underlying complexities of Unix domain socket communication, binary stream multiplexing, and the granular permission model that distinguishes Deno from its predecessors.3 The following analysis provides an exhaustive architectural blueprint for developers seeking to implement professional-grade Docker integration using modern TypeScript and Deno's stabilized networking APIs.
+The Docker Engine API Landscape and Versioning Mechanics
+The Docker Engine API is the primary conduit through which clients interact with the Docker daemon, dockerd. It is designed as a versioned, RESTful service that manages the lifecycle of containers, images, volumes, and networks.1 A fundamental requirement for any client is the implementation of version negotiation, a mechanism that allows the client and server to agree on a common protocol version before data exchange begins.1
+
+Docker Version
+Maximum API Version
+Minimum API Version
+Significant Changes
+29.4
+1.54
+1.40
+Advanced health check options and network isolation features.1
+28.0
+1.48
+1.24
+Introduction of enhanced volume management and swarm task stabilization.1
+25.0
+1.44
+1.24
+Critical updates to container resource monitoring and storage drivers.1
+20.10
+1.41
+1.12
+Standardization of the cgroups v2 integration.1
+
+The rationale for this strict versioning is the potential for architectural drift between the client and the daemon. If a daemon is newer than the client, the client may be unaware of deprecated endpoints or new security headers. Conversely, a newer client might request functionality that an older daemon cannot fulfill.1 Consequently, a proper Deno client must either perform an initial /version handshake to determine the daemon’s capabilities or allow the developer to explicitly pin the API version in the request URL (e.g., http://localhost/v1.43/containers/json).1 This ensures predictability in the returned JSON structures, which is vital for the type-safety guarantees expected in TypeScript environments.6
+Communication Infrastructure and Transport Layer Engineering
+Communication with the Docker daemon occurs across three primary socket types: Unix domain sockets, TCP sockets, and file descriptors managed by system managers like systemd.8 For local development and system-level tools, the Unix domain socket—typically located at /var/run/docker.sock—is the industry standard due to its efficiency and inherent security.10
+Unix Domain Socket Dynamics
+Unix domain sockets facilitate inter-process communication (IPC) on the same host, bypassing the overhead of the network stack.10 In Deno, accessing this socket historically required low-level manipulation of the Deno.connect API. However, the stabilization of Deno.createHttpClient has introduced a more idiomatic approach.12 By defining a custom HTTP client that uses the Unix transport, developers can utilize the standard fetch API for Docker commands while the underlying data flows through the local socket.12
+The implementation of this transport layer must account for the specific path constraints of different operating systems. On macOS, Docker Desktop may place the socket at /var/run/docker.sock or within a user’s library folder, while Linux distributions might use /run/docker.sock depending on the init system.8 A proper client must be configurable to adapt to these environments, often through the detection of the DOCKER_HOST environment variable.1
+Remote TCP Access and Mutual TLS (mTLS)
+Exposing the Docker daemon over a network via TCP ports 2375 (unencrypted) or 2376 (encrypted) introduces significant security risks.11 Since the Docker daemon runs with root privileges, an unsecured API endpoint provides an attacker with full control over the host system.11 For professional applications, implementing a Deno client that interacts with a remote daemon requires the use of Mutual TLS (mTLS).17
+Deno’s createHttpClient supports mTLS through the provision of certificate authorities (caCerts), client certificates (cert), and private keys (key).20 This configuration ensures that only clients with a valid, CA-signed certificate can issue commands to the daemon, while also allowing the client to verify the server’s identity.19
+
+Component
+Responsibility
+Requirement
+CA Certificate
+Verifies the daemon's certificate chain.
+Must be PEM encoded for Deno compatibility.21
+Client Cert
+Identifies the client to the daemon.
+Required when tlsverify is enabled on the daemon.19
+Client Key
+Authenticates the certificate ownership.
+Must be handled securely and not exposed in logs.11
+Port 2375
+Unencrypted communication.
+Should be restricted to localhost or trusted private networks.11
+Port 2376
+Encrypted communication.
+Standard port for secure Docker Engine API access.11
+
+The transition from unencrypted to encrypted communication is often managed via environment variables like DOCKER_TLS_VERIFY. A robust Deno client should respect these variables to align with existing Docker tooling and workflows.1
+Native Deno Transport Implementation and Node.js Compatibility
+The Deno runtime has made significant strides in Node.js compatibility, yet native APIs remain the gold standard for Docker client development. The node:http module in Deno provides a socketPath option that attempts to mimic the behavior of Node's HTTP module.15 However, discrepancies have been identified in specific versions (notably Deno 2.1.4), where socketPath was ignored, leading to failed connections in libraries like dockerode.15
+Architecturally, relying on native Deno APIs such as Deno.HttpClient is preferred. This approach avoids the overhead of the compatibility layer and leverages Deno's internal, Rust-backed HTTP implementation, which is optimized for high-throughput streaming.24 The use of fetch with a custom client allows for a declarative request style that is more consistent with modern web development patterns than the imperative nature of node:http.request.22
+Furthermore, the stabilization of Deno.createHttpClient in Deno 2.0 ensures that these APIs are no longer subject to the "unstable" flag requirement, making them suitable for production-ready container management tools.13 This stabilization reflects Deno's commitment to providing a consistent networking interface that accommodates non-standard transports like Unix and VSOCK, which are essential for cloud-native and virtualization use cases.12
+Binary Protocol Engineering: Multiplexing and Stream Framing
+One of the most technically demanding aspects of the Docker Engine API is its handling of process streams for operations such as attach, exec, and logs.29 When a container is run without a pseudo-TTY (TTY: false), Docker multiplexes the stdout and stderr streams into a single binary channel.30 This allows a single HTTP connection to carry multiple logical streams, but it requires the client to implement a specific demultiplexing algorithm to parse the data correctly.30
+The 8-Byte Framing Protocol
+The multiplexed stream consists of a series of frames, each preceded by an 8-byte header. This header provides the metadata necessary to route the subsequent payload to the correct output destination.30
+
+Bytes
+Purpose
+Description
+0
+Stream Identifier
+0 = stdin, 1 = stdout, 2 = stderr.30
+1 - 3
+Reserved
+Always null bytes (0x00).30
+4 - 7
+Payload Size
+A 32-bit big-endian unsigned integer representing the byte length of the following payload.30
+
+Without a proper demultiplexer, the 8-byte headers appear as "garbage characters" (such as symbols like 'Q' or '@') when the binary stream is interpreted directly as UTF-8 text.31 This occurs because the binary values of the stream type and size fields may map to printable or unprintable ASCII characters.31 Therefore, a proper Docker client must process the response body as a byte stream (Uint8Array) and extract the payload based on the size defined in the header.30
+TTY Mode and Raw Streaming
+The multiplexing behavior is toggled by the Tty flag in the container configuration.31 When Tty is set to true, Docker allocates a pseudo-terminal for the process, and the resulting stream is raw—meaning it contains no headers and merges all output into a single stream.31 While this simplifies parsing, it makes it impossible for the client to programmatically distinguish between stdout and stderr after the fact.30 For most programmatic integrations, multiplexed mode (TTY: false) is the superior choice, as it preserves the semantic distinction between normal output and error messages.29
+Stream Processing Architecture: Utilizing the Web Streams API
+Deno’s implementation of the Web Streams API provides an ideal framework for handling Docker's multiplexed streams. By using ReadableStream, WritableStream, and TransformStream, developers can build efficient, non-blocking pipelines that process container logs in real-time without overwhelming system memory.36
+Designing a Demultiplexing TransformStream
+A "proper" Docker client in Deno should implement the demultiplexing logic as a TransformStream. This stream receives the raw binary chunks from the Docker API and yields objects containing the stream type and the parsed text payload.36
+The transform function must handle "partial headers" and "fragmented payloads." Because network packets can arrive in arbitrary sizes, the transformer must maintain an internal buffer to accumulate bytes until at least 8 bytes are available for the header, and subsequently, until the full payload size has been reached.39
+Buffer Accumulation: Incoming chunks are appended to a stateful Uint8Array buffer.
+Header Extraction: If the buffer length is ≥ 8, the first byte is read to determine the stream type, and bytes 4–7 are converted from Big-Endian to a JavaScript number.30
+Payload Delivery: Once the buffer contains at least 8 + payloadSize bytes, the payload is sliced from the buffer and enqueued to the readable side of the TransformStream.36
+Recurrence: The processed bytes are removed from the buffer, and the cycle repeats if enough data remains.39
+This streaming approach is essential for memory-intensive tasks, such as monitoring long-running application logs or capturing large amounts of build data.36 It ensures that the Deno process remains responsive, as it only processes small chunks of data at a time rather than buffering the entire response.36
+Interactive Sessions, Protocol Hijacking, and WebSockets
+Interactive communication with a container—essential for docker exec -it style interactions—requires the HTTP connection to be "hijacked" or upgraded.32 In a hijacked connection, the client sends an Upgrade: tcp or Upgrade: websocket header, prompting the Docker daemon to switch from the request-response model to a raw, bidirectional stream.32
+WebSocket Integration for Console Access
+The Docker Engine API provides WebSocket endpoints for many operations, particularly those requiring browser-based terminal access.5 Deno's native WebSocket constructor can be used in tandem with Deno.createHttpClient to facilitate these connections.43
+By passing a custom HTTP client configured for Unix sockets to the WebSocket constructor, Deno can establish a WebSocket session over the local Docker socket.42 This is a powerful feature that allows Deno applications to provide real-time terminal interfaces with minimal code. The WebSocket lifecycle (OPEN, MESSAGE, ERROR, CLOSE) maps directly to the container process events, simplifying the implementation of interactive dashboards and remote CLI tools.42
+Connection Upgrades and Hijacking Challenges
+Protocol hijacking remains one of the more complex areas of the Docker API. While standard REST calls are handled easily by fetch, hijacked connections often require the client to drop down to the TCP/Unix socket level after the initial handshake.32 In Deno, this can be achieved by using the upgrade events in Deno.serve for incoming requests or by utilizing the WebSocket API for outgoing ones.40
+A common pitfall is the failure to handle the "101 Switching Protocols" response correctly. Standard HTTP clients might interpret this as a terminal response, whereas a proper Docker client must understand that the connection is now a raw byte stream.40 This is where Deno's integration with Rust's hyper HTTP stack provides an advantage, as it handles the low-level details of protocol switching more robustly than many pure-JavaScript implementations.24
+Security and Permission Modeling in the Deno Runtime
+Deno’s security model is built on the principle of least privilege, requiring explicit opt-in for every sensitive operation.4 For a Docker client, this means managing a specific set of permissions that are critical for both the client’s functionality and the host’s security.
+Granular Permission Management
+
+Permission Flag
+Purpose in Docker Client
+Security Implication
+--allow-read=/var/run/docker.sock
+Allows the client to connect to the daemon.
+Necessary for all local operations.10
+--allow-write=/var/run/docker.sock
+Allows sending commands and stdin data.
+High-risk; allows modifying container state.9
+--allow-net
+Required for remote TCP/TLS API access.
+Can be restricted to specific IP addresses for mTLS.4
+--allow-env
+Used to read DOCKER_HOST and DOCKER_CERT_PATH.
+Essential for automatic config discovery.1
+--allow-ffi
+Might be used for highly specialized local plugins.
+Extremely high-risk; bypasses the Deno sandbox.13
+
+The rationale for these permissions is that the Docker daemon effectively grants root access to the host.11 If a Deno script is compromised, an attacker with --allow-write=/var/run/docker.sock can launch a privileged container, mount the host's root filesystem, and take complete control of the machine.9 Therefore, developers should use the most restrictive flags possible, such as limiting --allow-net to the specific daemon IP or using Deno's new --deny-* flags to block access to sensitive directories.4
+Containerizing the Deno Client
+When the Deno client itself is run inside a container (the "Docker-out-of-Docker" pattern), the host's socket is typically volume-mounted into the container.50 This requires the Deno application to run as a user with permissions to access the socket file.9 Official Deno Docker images often include a deno user, but if that user does not have permission to read the /var/run/docker.sock (which is often owned by root and the docker group), the client will fail with a "permission denied" error.9
+Strategies to mitigate this include:
+Adding the deno user to the docker group within the Dockerfile.10
+Running the container with a specific group ID matching the host’s Docker group.10
+Using TLS-based TCP access instead of socket mounting to provide a network-level boundary.9
+Extending Beyond the Engine: Registry API and OCI Compliance
+A comprehensive Docker client API often needs to interact with more than just the Engine; it may also need to communicate with Docker Registries (like Docker Hub or GitHub Container Registry).51 These registries use the OCI Distribution Specification (Registry API V2), which, while similar in its RESTful nature, involves different authentication schemes and resource models.51
+
+Registry Endpoint
+Method
+Purpose
+/v2/
+GET
+Verification of V2 API support.51
+/v2/<name>/tags/list
+GET
+Enumeration of available image tags.51
+/v2/<name>/manifests/<ref>
+GET/PUT
+Retrieval or upload of image manifests.51
+/v2/<name>/blobs/<digest>
+GET
+Pulling of specific image layers (blobs).51
+/v2/_catalog/
+GET
+Listing of all repositories in a registry.51
+
+Implementing a registry client in Deno requires handling Bearer token authentication, often involving a multi-step handshake where the client first receives a 401 Unauthorized response with a WWW-Authenticate header, fetches a token from an auth server, and then retries the original request.51 Deno’s native fetch handles the header manipulation for this process with ease, making it a strong candidate for building OCI-compliant tooling.24
+Emerging Extensions: Docker Model Runner and AI Integration
+The Docker ecosystem has recently expanded to include specialized APIs for AI model management and inference, known as the Docker Model Runner (DMR).53 For a Deno developer, these endpoints offer a way to interact with large language models (LLMs) through familiar Docker infrastructure.53
+The DMR API provides compatibility with standard AI formats like OpenAI and Anthropic, allowing a Docker client to act as a bridge between container management and AI inference.53
+
+DMR Endpoint
+Method
+Functionality
+/engines/v1/chat/completions
+POST
+OpenAI-compatible chat interface.53
+/api/chat
+POST
+Ollama-compatible chat completions.53
+/models/create
+POST
+Pulling and preparing local AI models.53
+/anthropic/v1/messages
+POST
+Anthropic-compatible messaging.53
+
+Integrating these endpoints into a Deno Docker client allows for advanced automation scenarios, such as containers that can self-heal or optimize their own configuration using local LLMs.53 These APIs utilize the same underlying transport mechanisms (Unix/TCP) as the Engine API, ensuring that a properly built client can support them with minimal architectural changes.53
+Production Readiness: Lifecycle, Observability, and Error Handling
+For a Docker client to be production-ready, it must address the lifecycle of HTTP connections and provide visibility into its operations. Deno’s built-in support for OpenTelemetry (OTel) provides a zero-config mechanism for tracing API requests.25
+Observability with OpenTelemetry
+By enabling the --unstable-otel flag (or using the stable integration in Deno 2.x), the runtime automatically creates spans for every outgoing fetch call to the Docker API.25 This is invaluable for debugging performance bottlenecks, such as slow image pulls or delayed container start times. The OTel integration propagates trace context through standard headers, allowing developers to see the entire lifecycle of a container operation from the initial user request to the daemon's internal processing.25
+Resource Management and Lifecycle
+Managing the Deno.HttpClient resource is critical for long-running Deno applications.26 Each client instance maintains its own connection pool; if clients are created frequently without being closed, the application will eventually exhaust the host's file descriptors.26
+The "Disposable" pattern is the recommended way to handle this in Deno:
+The Deno.HttpClient implements the Disposable interface.26
+Developers should use the using keyword (introduced in TypeScript 5.2 and supported by Deno) to ensure the client is closed as soon as it is no longer needed.
+Alternatively, for a persistent Docker SDK, a single client instance should be shared across the entire application lifecycle to maximize connection reuse and reduce the overhead of TLS handshakes.43
+Comprehensive Error Handling
+The Docker API uses standard HTTP status codes, but the interpretation can be nuanced.1 A 200 OK for an exec start command might still contain a binary multiplexed stream with "garbage" if headers aren't parsed, while a 409 Conflict often indicates that a container name is already in use.1 A proper Deno client must map these codes to descriptive errors and provide the developer with access to the underlying daemon error message, which is typically returned as a JSON object in the response body.1
+Strategic Implementation Conclusions
+Building a "proper" Docker client in Deno is not merely about achieving functionality; it is about embracing the architectural shifts toward security, streams, and web standards. The transition from legacy Node.js implementations to native Deno APIs represents a significant improvement in the robustness and performance of system-level tools.
+Key Strategic Takeaways:
+Native Over Shims: Prioritize Deno.createHttpClient and fetch over node:http. The native stack offers better performance and tighter integration with Deno's security model.12
+Stream Everything: Leverage the Web Streams API for all process outputs and image transfers. The binary framing protocol of the Docker API demands a stream-first approach to avoid memory corruption and latency.30
+Security-First Permissions: Utilize Deno's granular flags to limit the client’s attack surface. The privileged nature of the Docker daemon requires that any client code be sandboxed as strictly as possible.4
+Embrace Modern Tooling: Integrate with Deno’s built-in OTel support and workspace features to build maintainable, observable, and scalable container management solutions.4
+By adhering to these principles, developers can create Docker integrations that are not only powerful and efficient but also inherently more secure and easier to maintain than those built on older runtimes. As the container ecosystem continues to evolve toward OCI compliance and AI-driven automation, the Deno runtime provides the necessary primitives to build the next generation of cloud-native infrastructure tools.
+Works cited
+Docker Engine API, accessed May 14, 2026, https://docs.docker.com/reference/api/engine/
+Docker Engine, accessed May 14, 2026, https://docs.docker.com/engine/
+Develop with Docker Engine SDKs, accessed May 14, 2026, https://docs.docker.com/reference/api/engine/sdk/
+Deno and Docker - Deno Docs, accessed May 14, 2026, https://docs.deno.com/runtime/reference/docker/
+Docker Engine API v1.43 reference, accessed May 14, 2026, https://docs.docker.com/reference/api/engine/version/v1.43/
+Deploying Deno with Docker - Deno Docs, accessed May 14, 2026, https://docs.deno.com/examples/deploying_deno_with_docker/
+Deno 1.42: Better dependency management with JSR, accessed May 14, 2026, https://deno.com/blog/v1.42
+How to connect to Docker daemon if unix:///var/run/docker.sock is not available and docker is running - Super User, accessed May 14, 2026, https://superuser.com/questions/1741326/how-to-connect-to-docker-daemon-if-unix-var-run-docker-sock-is-not-available
+Permission denied while trying to connect to the Docker daemon socket - General, accessed May 14, 2026, https://forums.docker.com/t/permission-denied-while-trying-to-connect-to-the-docker-daemon-socket/72570
+cannot connect to the Docker daemon at unix:///var/run/docker.sock | by Shubham K. Sawant, accessed May 14, 2026, https://shubhamksawant.medium.com/cannot-connect-to-the-docker-daemon-at-unix-var-run-docker-sock-4197fba6c0ed
+Securing the Docker Ecosystem: Part 1: Strategies to Secure the Docker Daemon, accessed May 14, 2026, https://blog.secureflag.com/2020/11/19/securing-the-docker-ecosystem-part-1-the-docker-daemon/
+Deno 2.4：deno bundle 回归| Deno - Deno 运行环境, accessed May 14, 2026, https://deno.org.cn/blog/v2.4
+Deno 2.0 Release Candidate, accessed May 14, 2026, https://deno.com/blog/v2.0-release-candidate
+Using fetch for unix socket · Issue #8821 · denoland/deno - GitHub, accessed May 14, 2026, https://github.com/denoland/deno/issues/8821
+Deno 2.1.4 - node:http's http.request socketPath option fails in Deno, but works in Node. · Issue #27675 - GitHub, accessed May 14, 2026, https://github.com/denoland/deno/issues/27675
+Connecting via unix-socket to the docker-daemon, accessed May 14, 2026, https://forums.docker.com/t/connecting-via-unix-socket-to-the-docker-daemon/17396
+Configure remote access for Docker daemon, accessed May 14, 2026, https://docs.docker.com/engine/daemon/remote-access/
+TLS authentication should be enabled for Docker daemon to restrict remote access, accessed May 14, 2026, https://docs.datadoghq.com/security/default_rules/3jt-ywj-82c/
+Docker Securing the Daemon - KodeKloud, accessed May 14, 2026, https://notes.kodekloud.com/docs/Certified-Kubernetes-Security-Specialist-CKS/Cluster-Setup-and-Hardening/Docker-Securing-the-Daemon/page
+fetch() with createHttpClient mTLS fails against IIS endpoint using TLS renegotiation (connection error) · Issue #32245 · denoland/deno - GitHub, accessed May 14, 2026, https://github.com/denoland/deno/issues/32245
+Deno.createHttpClient - Deno documentation - Deno Docs, accessed May 14, 2026, https://docs.deno.com/api/deno/~/Deno.createHttpClient
+Custom HTTP client with fetch in Deno | Tech Tonic - Medium, accessed May 14, 2026, https://medium.com/deno-the-complete-reference/custom-http-client-with-fetch-in-deno-890055d397ba
+Node mTLS from scratch - DEV Community, accessed May 14, 2026, https://dev.to/woovi/node-mtls-from-scratch-3p4e
+A list of every web API in Deno, accessed May 14, 2026, https://deno.com/blog/every-web-api-in-deno
+How to Use Automatic Tracing for Deno.serve and Fetch with Zero Configuration, accessed May 14, 2026, https://oneuptime.com/blog/post/2026-02-06-automatic-tracing-deno-serve-fetch-zero-config/view
+Deno.HttpClient - Deno documentation, accessed May 14, 2026, https://docs.deno.com/api/deno/~/Deno.HttpClient
+Deno.serve - Deno documentation, accessed May 14, 2026, https://docs.deno.com/api/deno/~/Deno.serve
+HTTP Server - Deno documentation, accessed May 14, 2026, https://docs.deno.com/api/deno/http-server
+Handling multiplexed streams - Docker SDK for Python - Read the Docs, accessed May 14, 2026, https://docker-py.readthedocs.io/en/stable/user_guides/multiplex.html
+Logs Multiplexing in Docker - DEV Community, accessed May 14, 2026, https://dev.to/amoabakelvin/logs-multiplexing-in-docker-31ko
+[Docker] `docker exec` API Responses returns Garbage Characters | Oscar's Notebook, accessed May 14, 2026, https://oscarchou.com/posts/troubleshoot/garbage-characters-in-docker-api-exec-responses/
+Attach to a container | Docker Engine | Postman API Network, accessed May 14, 2026, https://www.postman.com/api-evangelist/docker/request/xbmjowa/attach-to-a-container
+Attaching and streaming logs from containers started with tty=true does not work properly · Issue #630 · docker/docker-py - GitHub, accessed May 14, 2026, https://github.com/docker/docker-py/issues/630
+4.3 Encode and decode | The Internals of Deno - GitBook, accessed May 14, 2026, https://choubey.gitbook.io/internals-of-deno/bridge/4.4-encode-and-decode
+Improper log multiplexing on `docker logs` for containers with tty · Issue #19696 - GitHub, accessed May 14, 2026, https://github.com/moby/moby/issues/19696
+How to Handle Streams in Deno - OneUptime, accessed May 14, 2026, https://oneuptime.com/blog/post/2026-01-31-deno-streams/view
+A beginner's guide to streams in Deno | Tech Tonic - Medium, accessed May 14, 2026, https://medium.com/deno-the-complete-reference/a-beginners-guide-to-streams-in-deno-760d51750763
+Browser APIs in Deno, accessed May 14, 2026, https://docs.deno.com/examples/browser_apis_in_deno/
+An introduction to TransformStreams | k-nut - Blog, accessed May 14, 2026, https://blog.k-nut.eu/an-introduction-to-transformstreams
+Deno.upgradeWebSocket - Deno documentation, accessed May 14, 2026, https://docs.deno.com/api/deno/~/Deno.upgradeWebSocket
+Support Deno.upgradeWebSocket with node:http upgrade events · Issue #33220 - GitHub, accessed May 14, 2026, https://github.com/denoland/deno/issues/33220
+Writing a WebSocket server in JavaScript (Deno) - Web APIs | MDN, accessed May 14, 2026, https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API/Writing_a_WebSocket_server_in_JavaScript_Deno
+How to Call a REST API, using an HTTP/SOCKS Proxy? : r/Deno - Reddit, accessed May 14, 2026, https://www.reddit.com/r/Deno/comments/1r9p8d2/how_to_call_a_rest_api_using_an_httpsocks_proxy/
+WebSocketOptions.client - WebSockets - Web documentation - Deno Docs, accessed May 14, 2026, https://docs.deno.com/api/web/~/WebSocketOptions.client
+How to Build WebSocket Servers in Deno - OneUptime, accessed May 14, 2026, https://oneuptime.com/blog/post/2026-01-31-deno-websocket-servers/view
+Real-time file processing with Deno and Websockets | Transloadit, accessed May 14, 2026, https://transloadit.com/devtips/real-time-file-processing-with-deno-and-websockets/
+Does fetch() support upgrading the connection to a websocket? - Deno Discord Server, accessed May 14, 2026, https://questions.deno.com/m/1194215236455112716
+Running Deno in Docker containers | Tech Tonic - Medium, accessed May 14, 2026, https://medium.com/deno-the-complete-reference/running-deno-in-docker-35756ffff66d
+Run TypeScript & Deno Natively in AWS Lambda | by Zac Charles - Medium, accessed May 14, 2026, https://zaccharles.medium.com/run-typescript-deno-natively-in-aws-lambda-995c77221a60
+Containerize a Deno application - Docker Docs, accessed May 14, 2026, https://docs.docker.com/guides/deno/containerize/
+cloudydeno/docker-registry-client - GitHub, accessed May 14, 2026, https://github.com/cloudydeno/docker-registry-client
+HTTP Headers - Deno Docs, accessed May 14, 2026, https://docs.deno.com/deploy/classic/api/runtime-headers/
+DMR REST API - Docker Docs, accessed May 14, 2026, https://docs.docker.com/ai/model-runner/api-reference/
+Fetch - Deno documentation, accessed May 14, 2026, https://docs.deno.com/api/deno/fetch
+Bun v1.3.14, accessed May 14, 2026, https://bun.com/blog/bun-v1.3.14
+
