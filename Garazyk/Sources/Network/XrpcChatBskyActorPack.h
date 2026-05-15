@@ -7,14 +7,15 @@
  */
 
 #import <Foundation/Foundation.h>
+#import "Network/XrpcRoutePack.h"
 
 @class XrpcDispatcher;
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface XrpcChatBskyActorPack : NSObject
+@interface XrpcChatBskyActorPack : NSObject <XrpcRoutePack>
 
-/*! Register all chat.bsky.actor and chat.bsky.moderation routes with the dispatcher. */
+/*! Legacy entry point; builds a minimal services bag from the dispatcher. */
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher;
 
 @end

@@ -1,0 +1,32 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
+#import "Network/XrpcRoutePackServices.h"
+
+#import "App/ATProtoServiceConfiguration.h"
+#import "Auth/JWT.h"
+#import "Database/Service/ServiceDatabases.h"
+#import "Network/RateLimiter.h"
+#import "Network/XrpcHandler.h"
+#import "Admin/PDSAdminController.h"
+
+@implementation XrpcRoutePackServiceBag
+
+- (instancetype)initWithDispatcher:(XrpcDispatcher *)dispatcher
+                         jwtMinter:(JWTMinter *)jwtMinter
+                   adminController:(id<PDSAdminController>)adminController
+                      configuration:(ATProtoServiceConfiguration *)configuration
+                  serviceDatabases:(PDSServiceDatabases *)serviceDatabases
+                        rateLimiter:(RateLimiter *)rateLimiter {
+  self = [super init];
+  if (self) {
+    _dispatcher = dispatcher;
+    _jwtMinter = jwtMinter;
+    _adminController = adminController;
+    _configuration = configuration;
+    _serviceDatabases = serviceDatabases;
+    _rateLimiter = rateLimiter;
+  }
+  return self;
+}
+
+@end
