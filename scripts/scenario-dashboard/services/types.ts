@@ -19,6 +19,7 @@ export interface DiscoveredScenario {
   path: string;
   category: string;
   needsPds2: boolean;
+  requires?: string[];
 }
 
 export type ScenarioStatus = "passed" | "failed" | "skipped" | "running";
@@ -30,11 +31,21 @@ export interface Step {
   durationMs?: number;
 }
 
+export interface RunConfig {
+  topology: string;
+  runner: "host" | "docker";
+  scenarioIds: string[];
+  pds2: boolean;
+  binaryMode: boolean;
+  webClient?: string;
+  clientFlow?: string;
+}
+
 export interface Run {
   id: string;
   startedAt: number;
   finishedAt?: number;
-  status: "running" | "completed" | "error";
+  status: "starting" | "running" | "stopping" | "completed" | "error";
   totalScenarios: number;
   passed: number;
   failed: number;
@@ -42,6 +53,18 @@ export interface Run {
   durationS?: number;
   pds2?: boolean;
   binaryMode?: boolean;
+  topology?: string;
+  runner?: "host" | "docker";
+  webClient?: string;
+  clientFlow?: string;
+  scenarioIds?: string[];
+  runDir?: string;
+  reportsDir?: string;
+  logPath?: string;
+  childPid?: number;
+  exitCode?: number;
+  stoppedAt?: number;
+  stopReason?: string;
 }
 
 export interface ScenarioResult {
