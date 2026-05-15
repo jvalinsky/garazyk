@@ -9,7 +9,15 @@ import {
   TopologyPreset,
 } from "./topology.ts";
 import { normalizeTopologyPreset, parseRawTopologyPresetV1 } from "./topology_schema.ts";
-import { ScenarioInfo, selectScenarios } from "../../run_scenarios.ts";
+import { ScenarioInfo } from "./scenario_metadata.ts";
+import { selectScenarios } from "./scenario_selector.ts";
+import { parseScenarioRequirement } from "./topology_schema.ts";
+import type { ScenarioRequirement } from "./topology_schema.ts";
+
+/** Helper to convert string-form requirements to ScenarioRequirement objects. */
+function req(...strings: string[]): ScenarioRequirement[] {
+  return strings.map(parseScenarioRequirement);
+}
 
 const VALID_ADAPTER: ServiceAdapter = {
   name: "test-pds",
@@ -543,8 +551,9 @@ Deno.test("selectScenarios: role-scoped requirements filter default runs", () =>
       path: "/tmp/01.ts",
       needsPds2: false,
       browserFlows: [],
-      requires: ["plc:didResolution"],
+      requires: req("plc:didResolution"),
       optional: [],
+      parameters: {},
     },
     {
       id: "09",
@@ -552,8 +561,9 @@ Deno.test("selectScenarios: role-scoped requirements filter default runs", () =>
       path: "/tmp/09.ts",
       needsPds2: false,
       browserFlows: [],
-      requires: ["relay:subscribeRepos", "appview:backfill"],
+      requires: req("relay:subscribeRepos", "appview:backfill"),
       optional: [],
+      parameters: {},
     },
   ];
 
@@ -563,7 +573,7 @@ Deno.test("selectScenarios: role-scoped requirements filter default runs", () =>
     pds2: false,
   }, topology);
 
-  assertEquals(selected.map((scenario) => scenario.id), ["01"]);
+  assertEquals(selected.map((scenario: ScenarioInfo) => scenario.id), ["01"]);
 });
 
 Deno.test("selectScenarios: optional capabilities do not block default runs", () => {
@@ -583,8 +593,9 @@ Deno.test("selectScenarios: optional capabilities do not block default runs", ()
       path: "/tmp/01.ts",
       needsPds2: false,
       browserFlows: [],
-      requires: ["plc:didResolution"],
-      optional: ["appview:backfill"],
+      requires: req("plc:didResolution"),
+      optional: req("appview:backfill"),
+      parameters: {},
     },
   ];
 
@@ -594,7 +605,7 @@ Deno.test("selectScenarios: optional capabilities do not block default runs", ()
     pds2: false,
   }, topology);
 
-  assertEquals(selected.map((scenario) => scenario.id), ["01"]);
+  assertEquals(selected.map((scenario: ScenarioInfo) => scenario.id), ["01"]);
 });
 
 Deno.test("selectScenarios: PDS2 scenarios are filtered by default and auto-enable when explicitly selected", () => {
@@ -614,8 +625,9 @@ Deno.test("selectScenarios: PDS2 scenarios are filtered by default and auto-enab
       path: "/tmp/35.ts",
       needsPds2: true,
       browserFlows: [],
-      requires: ["plc:didResolution"],
+      requires: req("plc:didResolution"),
       optional: [],
+      parameters: {},
     },
   ];
 
@@ -624,15 +636,15 @@ Deno.test("selectScenarios: PDS2 scenarios are filtered by default and auto-enab
     clientFlow: "none",
     pds2: false,
   }, topology);
-  assertEquals(defaultSelected.map((scenario) => scenario.id), []);
+  assertEquals(defaultSelected.map((scenario: ScenarioInfo) => scenario.id), []);
 
   const explicitSelected = selectScenarios(scenarios, {
     scenarioIds: ["35"],
     clientFlow: "none",
     pds2: false,
   }, topology);
-  assertEquals(explicitSelected.map((scenario) => scenario.id), ["35"]);
-  assertEquals(explicitSelected.some((scenario) => scenario.needsPds2), true);
+  assertEquals(explicitSelected.map((scenario: ScenarioInfo) => scenario.id), ["35"]);
+  assertEquals(explicitSelected.some((scenario: ScenarioInfo) => scenario.needsPds2), true);
 });
 
 Deno.test("selectScenarios: explicit scenario IDs bypass missing requirements", () => {
@@ -653,8 +665,9 @@ Deno.test("selectScenarios: explicit scenario IDs bypass missing requirements", 
       path: "/tmp/09.ts",
       needsPds2: false,
       browserFlows: [],
-      requires: ["relay:subscribeRepos", "appview:backfill"],
+      requires: req("relay:subscribeRepos", "appview:backfill"),
       optional: [],
+      parameters: {},
     },
   ];
 
@@ -664,7 +677,7 @@ Deno.test("selectScenarios: explicit scenario IDs bypass missing requirements", 
     pds2: false,
   }, topology);
 
-  assertEquals(selected.map((scenario) => scenario.id), ["09"]);
+  assertEquals(selected.map((scenario: ScenarioInfo) => scenario.id), ["09"]);
 });
 
 Deno.test("compileTopology: every topology preset resolves, renders, and writes manifest", async () => {
@@ -676,7 +689,7 @@ Deno.test("compileTopology: every topology preset resolves, renders, and writes 
       const result = await compileTopology({
         preset,
         runDir,
-        repoRoot: "/Users/jack/Software/garazyk",
+        repoRoot: Deno.cwd(),
         composeProject: "test",
       });
       assertEquals((await Deno.stat(result.composeFile)).isFile, true);
