@@ -62,7 +62,7 @@ export default function ScenarioCard(
       )}
       {(passed + failed + skipped) > 0 && (
         <div style="font-size: var(--font-size-xs); color: var(--color-text-tertiary); margin-top: var(--space-xs);">
-          {passed}✓ {failed}✗ {skipped}⚠
+          {passed}✓ {failed}✗ {skipped}–
         </div>
       )}
     </a>

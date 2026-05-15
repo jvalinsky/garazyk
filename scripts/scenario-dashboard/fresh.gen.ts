@@ -6,7 +6,6 @@ import * as $api_network_health from "./routes/api/network/health.ts";
 import * as $api_network_index from "./routes/api/network/index.ts";
 import * as $api_network_start from "./routes/api/network/start.ts";
 import * as $api_network_stop from "./routes/api/network/stop.ts";
-import * as $api_runs from "./routes/api/runs.ts";
 import * as $api_runs_runId_ from "./routes/api/runs/[runId].ts";
 import * as $api_runs_runId_logs from "./routes/api/runs/[runId]/logs.ts";
 import * as $api_runs_runId_progress from "./routes/api/runs/[runId]/progress.ts";
@@ -38,7 +37,6 @@ const manifest = {
     "./routes/api/network/index.ts": $api_network_index,
     "./routes/api/network/start.ts": $api_network_start,
     "./routes/api/network/stop.ts": $api_network_stop,
-    "./routes/api/runs.ts": $api_runs,
     "./routes/api/runs/[runId].ts": $api_runs_runId_,
     "./routes/api/runs/[runId]/logs.ts": $api_runs_runId_logs,
     "./routes/api/runs/[runId]/progress.ts": $api_runs_runId_progress,
