@@ -1,4 +1,4 @@
-import { join } from "@std/path";
+import { join, resolve, relative } from "@std/path";
 import {
   createTopologyManifest,
   defaultPortForRole,
@@ -518,7 +518,20 @@ function renderVolume(volume: string, adapter: ServiceAdapter, repoRoot: string)
       ? adapter.buildContext
       : join(repoRoot, adapter.buildContext))
     : repoRoot;
-  return [join(base, source), ...parts.slice(1)].join(":");
+
+  const resolvedSource = resolve(join(base, source));
+  const resolvedBase = resolve(base);
+
+  // Verify the resolved path stays under the base directory.
+  // This prevents path traversal via preset-controlled volume sources.
+  const rel = relative(resolvedBase, resolvedSource);
+  if (rel.startsWith("..") || rel.startsWith("/")) {
+    throw new Error(
+      `Volume source path escapes base directory: "${source}" (resolved: ${resolvedSource}, base: ${resolvedBase})`,
+    );
+  }
+
+  return [resolvedSource, ...parts.slice(1)].join(":");
 }
 
 function renderNetworks(lines: string[], networks: any) {
@@ -584,6 +597,15 @@ function renderSidecarService(
   if (sidecar.configFiles && parentCloneDir) {
     for (const [containerPath, sourceRelPath] of Object.entries(sidecar.configFiles)) {
       const hostPath = join(parentCloneDir, sourceRelPath);
+      // Verify the config file path stays under the parent clone directory.
+      const resolvedHost = resolve(hostPath);
+      const resolvedClone = resolve(parentCloneDir);
+      const rel = relative(resolvedClone, resolvedHost);
+      if (rel.startsWith("..") || rel.startsWith("/")) {
+        throw new Error(
+          `Config file path escapes clone directory: "${sourceRelPath}" (resolved: ${resolvedHost}, clone: ${resolvedClone})`,
+        );
+      }
       allVolumes.push(`${hostPath}:${containerPath}:ro`);
     }
   }

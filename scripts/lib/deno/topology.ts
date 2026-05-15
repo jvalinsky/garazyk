@@ -1,4 +1,4 @@
-import { join } from "@std/path";
+import { join, resolve, relative } from "@std/path";
 import {
   DEFAULT_PORTS,
   DEFAULT_SERVICE_NAMES,
@@ -487,8 +487,26 @@ function normalizeAdapter(
  * Validates required fields and returns the parsed TopologyPreset.
  */
 export function loadTopologyPreset(name: string): TopologyPreset {
+  // Validate preset name — only alphanumeric, hyphens, underscores.
+  // Prevents path traversal (e.g. "../../etc/passwd").
+  if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
+    throw new Error(
+      `Invalid topology preset name: "${name}". Only alphanumeric characters, hyphens, and underscores are allowed.`,
+    );
+  }
+
   const repoRoot = repoRootFromModule();
-  const presetPath = `${repoRoot}/scripts/scenarios/topologies/${name}.json`;
+  const topologiesDir = join(repoRoot, "scripts/scenarios/topologies");
+  const presetPath = join(topologiesDir, `${name}.json`);
+
+  // Verify the resolved path stays under the topologies directory.
+  const resolvedPath = resolve(presetPath);
+  const resolvedDir = resolve(topologiesDir);
+  if (!resolvedPath.startsWith(resolvedDir + "/") && resolvedPath !== resolvedDir) {
+    throw new Error(
+      `Preset path escapes topologies directory: ${presetPath} (resolved: ${resolvedPath})`,
+    );
+  }
 
   let rawText: string;
   try {
