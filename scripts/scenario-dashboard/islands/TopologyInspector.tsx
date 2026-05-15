@@ -1,44 +1,34 @@
 import { useState, useEffect } from "preact/hooks";
-import { activeRun } from "../signals.ts";
+import { useRuntime } from "../runtime.ts";
 
-/**
- * Topology Inspector — shows details about a selected topology.
- */
+export default function TopologyInspector() {
+  const { state } = useRuntime();
+  const s = state.value;
+  const topology = s.topology.preview;
+  const activeRun = s.runs.active;
 
-export interface TopologyPreview {
-  name: string;
-  description?: string;
-  roles: string[];
-  capabilities: string[];
-}
-
-interface TopologyInspectorProps {
-  topology: TopologyPreview | null;
-}
-
-export default function TopologyInspector({ topology }: TopologyInspectorProps) {
   const [stats, setStats] = useState<Record<string, { cpu: string; mem: string }>>({});
 
   useEffect(() => {
     let interval: number | undefined;
 
     const fetchMetrics = async () => {
-      if (activeRun.value && activeRun.value.status === "running") {
+      if (activeRun && activeRun.status === "running") {
         try {
           const res = await fetch("/api/runs/active/metrics");
           if (res.ok) {
             const data = await res.json();
             setStats(data.stats);
           }
-        } catch (e) {
-          console.error("Failed to fetch metrics", e);
+        } catch {
+          // ignore
         }
       } else {
         setStats({});
       }
     };
 
-    if (activeRun.value && activeRun.value.status === "running") {
+    if (activeRun && activeRun.status === "running") {
       fetchMetrics();
       interval = setInterval(fetchMetrics, 3000);
     }
@@ -46,7 +36,7 @@ export default function TopologyInspector({ topology }: TopologyInspectorProps) 
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [activeRun.value?.status]);
+  }, [activeRun?.status]);
 
   if (!topology) {
     return (
@@ -69,16 +59,16 @@ export default function TopologyInspector({ topology }: TopologyInspectorProps) 
         <div class="topology-inspector-label">Roles</div>
         <div class="role-grid">
           {topology.roles.map((role) => {
-            const s = stats[role];
+            const st = stats[role];
             return (
               <div key={role} class="role-metric-card">
                 <div class="role-name-wrapper">
                   <span class="badge badge-secondary">{role}</span>
                 </div>
-                {s && (
+                {st && (
                   <div class="metric-line">
-                    <span class="metric-val">CPU: {s.cpu}</span>
-                    <span class="metric-val">RAM: {s.mem}</span>
+                    <span class="metric-val">CPU: {st.cpu}</span>
+                    <span class="metric-val">RAM: {st.mem}</span>
                   </div>
                 )}
               </div>
@@ -100,4 +90,3 @@ export default function TopologyInspector({ topology }: TopologyInspectorProps) 
     </div>
   );
 }
-
