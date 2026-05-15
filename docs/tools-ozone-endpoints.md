@@ -949,9 +949,9 @@ Many endpoints support batch operations with limits:
 ### Error Handling
 
 Common error patterns:
-- `NotFound` errors - Resource does not exist
-- `AlreadyExists` errors - Duplicate resource
-- `Unauthorized` - Insufficient permissions
+- **NotFound** errors - Resource does not exist
+- **AlreadyExists** errors - Duplicate resource
+- **Unauthorized** - Insufficient permissions
 - Batch operations return partial success with `succeeded` and `failed` arrays
 
 ### Moderation Events
@@ -1019,3 +1019,17 @@ Tracks account/record state on hosting service:
 - tools.ozone.signature.defs
 - tools.ozone.team.defs
 - tools.ozone.verification.defs
+one.moderation.defs
+- tools.ozone.report.defs
+- tools.ozone.safelink.defs
+- tools.ozone.set.defs
+- tools.ozone.setting.defs
+- tools.ozone.signature.defs
+- tools.ozone.team.defs
+- tools.ozone.verification.defs
+
+## Related
+- [API Reference](11-reference/api-reference)
+- [Admin UI Documentation](11-reference/admin-ui-documentation)
+- [PDS Architecture](01-getting-started/architecture-overview)
+- [Glossary](GLOSSARY)

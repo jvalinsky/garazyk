@@ -206,23 +206,28 @@ function normalizeScenarioId(value: string): string {
 
 async function discoverScenarios(scenarioDir: string): Promise<ScenarioInfo[]> {
   const scenarios: ScenarioInfo[] = [];
-  for await (const entry of Deno.readDir(scenarioDir)) {
-    const match = entry.isFile ? entry.name.match(/^(\d+)_(.+)\.ts$/) : null;
-    if (!match) continue;
-    const id = match[1];
-    const manifest = SCENARIO_MANIFESTS[id] || {};
-    const requires = normalizeScenarioRequirements(manifest.requires || [], `${id}.requires`);
-    const optional = normalizeScenarioRequirements(manifest.optional || [], `${id}.optional`);
-    scenarios.push({
-      id,
-      name: match[2].replace(/_/g, " "),
-      path: join(scenarioDir, entry.name),
-      needsPds2: manifest.needsPds2 || false,
-      browserFlows: manifest.browserFlows || [],
-      requires,
-      optional,
-      timeout: manifest.timeout,
-    });
+  try {
+    for await (const entry of Deno.readDir(scenarioDir)) {
+      const match = entry.isFile ? entry.name.match(/^(\d+)_(.+)\.ts$/) : null;
+      if (!match) continue;
+      const id = match[1];
+      const manifest = SCENARIO_MANIFESTS[id] || {};
+      const requires = normalizeScenarioRequirements(manifest.requires || [], `${id}.requires`);
+      const optional = normalizeScenarioRequirements(manifest.optional || [], `${id}.optional`);
+      scenarios.push({
+        id,
+        name: match[2].replace(/_/g, " "),
+        path: join(scenarioDir, entry.name),
+        needsPds2: manifest.needsPds2 || false,
+        browserFlows: manifest.browserFlows || [],
+        requires,
+        optional,
+        timeout: manifest.timeout,
+      });
+    }
+  } catch (err) {
+    console.error(red(`Failed to discover scenarios in ${scenarioDir}: ${err.message}`));
+    Deno.exit(1);
   }
   scenarios.sort((a, b) => Number(a.id) - Number(b.id));
 
@@ -433,210 +438,237 @@ async function main() {
   if (existingTopologyManifest) {
     Deno.env.set("ATPROTO_TOPOLOGY_MANIFEST", topologyManifestPath);
   }
-  let topology = resolveTopology(args.webClient, args.topology, {
-    manifestPath: existingTopologyManifest ? topologyManifestPath : undefined,
-  });
 
-  // Set topology env var so scenarios pick up the right SERVICE_URLS
-  if (args.topology) {
-    Deno.env.set("ATPROTO_TOPOLOGY", args.topology);
-  }
-
-  if (args.collectDiagnostics) {
-    await collectDiagnostics(context);
-    console.log(`Diagnostics: ${context.diagnosticsDir}`);
-    return;
-  }
-
-  if (args.teardownOnly) {
-    await stopLocalNetwork({
-      useBinary: args.binary,
-      runId: context.runId,
-      diagnosticsDir: context.diagnosticsDir,
-    });
-    return;
-  }
-
-  const selected = selectScenarios(scenarios, args, topology);
-  const withPds2 = args.pds2 || selected.some((scenario) => scenario.needsPds2);
+  const results: Array<{ scenario: ScenarioInfo; result: ScenarioResult }> = [];
+  const reportPaths: string[] = [];
+  let fatalError: any = null;
   let networkStarted = false;
 
   const stopIfNeeded = async (collect = false) => {
     if (!networkStarted || args.keepRunning) return;
-    await stopLocalNetwork({
-      useBinary: args.binary,
-      runId: context.runId,
-      diagnosticsDir: context.diagnosticsDir,
-      collectDiagnostics: collect,
-    });
-    networkStarted = false;
+    try {
+      await stopLocalNetwork({
+        useBinary: args.binary,
+        runId: context.runId,
+        diagnosticsDir: context.diagnosticsDir,
+        collectDiagnostics: collect,
+      });
+    } catch (err) {
+      console.error(red(`Error stopping local network: ${err.message}`));
+    } finally {
+      networkStarted = false;
+    }
   };
 
   // Add signal handler for graceful shutdown
   const handleSignal = async () => {
     console.log(yellow("\nInterrupt received. Stopping gracefully..."));
-    await stopIfNeeded(true);
+    try {
+      await stopIfNeeded(true);
+    } catch (err) {
+      console.error(red(`Failed to stop network on signal: ${err.message}`));
+    }
     Deno.exit(130);
   };
   Deno.addSignalListener("SIGINT", handleSignal);
   Deno.addSignalListener("SIGTERM", handleSignal);
 
-  if (args.setupOnly) {
-    await startLocalNetwork({
-      withPds2,
-      useBinary: args.binary,
-      keepRunning: args.keepRunning,
-      runId: context.runId,
-      diagnosticsDir: context.diagnosticsDir,
-      webClient: args.webClient,
-      clientFlow: args.clientFlow,
-      allowHybridNetwork: args.allowHybridNetwork,
-      topology: args.topology,
-    });
-    networkStarted = true;
-    console.log(`Run directory: ${context.runDir}`);
-    if (args.keepRunning) return;
-
-    console.log("Network is running. Press Ctrl+C to stop.");
-    await new Promise<void>((resolve) => {
-      Deno.addSignalListener("SIGINT", () => resolve());
-      Deno.addSignalListener("SIGTERM", () => resolve());
-    });
-    await stopIfNeeded(true);
-    return;
-  }
-
-  const results: Array<{ scenario: ScenarioInfo; result: ScenarioResult }> = [];
-  const reportPaths: string[] = [];
+  let selected: ScenarioInfo[] = [];
+  let topology: Topology;
+  let withPds2 = false;
 
   try {
-    if (!args.noSetup || args.setup) {
-      await startLocalNetwork({
-        withPds2,
-        useBinary: args.binary,
-        runId: context.runId,
-        diagnosticsDir: context.diagnosticsDir,
-        webClient: args.webClient,
-        clientFlow: args.clientFlow,
-        allowHybridNetwork: args.allowHybridNetwork,
-        topology: args.topology,
-      });
-      networkStarted = true;
-      if (topologyManifestPath) Deno.env.set("ATPROTO_TOPOLOGY_MANIFEST", topologyManifestPath);
+    try {
       topology = resolveTopology(args.webClient, args.topology, {
-        manifestPath: topologyManifestPath,
-        includePds2: withPds2,
+        manifestPath: existingTopologyManifest ? topologyManifestPath : undefined,
       });
-    }
 
-    console.log(bold(`\nRunning ${selected.length} scenario(s)...\n`));
-    const durationCache = new DurationCache(repoRoot);
-    const expectedDurations = selected.map((scenario) => durationCache.get(scenario.id));
-    const progress = new ProgressBar(selected.length, expectedDurations);
-
-    for (let i = 0; i < selected.length; i++) {
-      const scenario = selected[i];
-      progress.start(`${scenario.id} - ${scenario.name}`);
-      const result = await runScenario(
-        scenario,
-        scenario.timeout || args.timeout,
-        args,
-        topology,
-        repoRoot,
-        context.composeProject,
-      );
-      result.metadata = {
-        ...result.metadata,
-        run_id: context.runId,
-        run_dir: context.runDir,
-        diagnostics_dir: context.diagnosticsDir,
-        service_urls: topology.serviceUrls,
-        web_client: topology.webClient || null,
-        client_flow: args.clientFlow,
-        allow_hybrid_network: args.allowHybridNetwork,
-        scenario_id: scenario.id,
-        binary_mode: args.binary,
-        pds2: withPds2,
-        topology: args.topology || null,
-        runner: args.runner,
-      };
-
-      Deno.stdout.writeSync(new TextEncoder().encode("\r" + " ".repeat(120) + "\r"));
-      result.printSummary();
-      results.push({ scenario, result });
-
-      if (result.startedAt && result.finishedAt) {
-        durationCache.set(scenario.id, result.finishedAt - result.startedAt);
+      // Set topology env var so scenarios pick up the right SERVICE_URLS
+      if (args.topology) {
+        Deno.env.set("ATPROTO_TOPOLOGY", args.topology);
       }
 
-      if (!args.noJson) {
-        const reportPath = await result.writeReport(reportsDir, `${scenario.id}_${scenario.name}`);
-        reportPaths.push(reportPath);
-        console.log(`  Report: ${reportPath}`);
+      if (args.collectDiagnostics) {
+        await collectDiagnostics(context);
+        console.log(`Diagnostics: ${context.diagnosticsDir}`);
+        return;
       }
 
-      progress.update(i + 1);
+      if (args.teardownOnly) {
+        await stopLocalNetwork({
+          useBinary: args.binary,
+          runId: context.runId,
+          diagnosticsDir: context.diagnosticsDir,
+        });
+        return;
+      }
+
+      selected = selectScenarios(scenarios, args, topology);
+      withPds2 = args.pds2 || selected.some((scenario) => scenario.needsPds2);
+
+      if (args.setupOnly) {
+        await startLocalNetwork({
+          withPds2,
+          useBinary: args.binary,
+          keepRunning: args.keepRunning,
+          runId: context.runId,
+          diagnosticsDir: context.diagnosticsDir,
+          webClient: args.webClient,
+          clientFlow: args.clientFlow,
+          allowHybridNetwork: args.allowHybridNetwork,
+          topology: args.topology,
+        });
+        networkStarted = true;
+        console.log(`Run directory: ${context.runDir}`);
+        if (args.keepRunning) return;
+
+        console.log("Network is running. Press Ctrl+C to stop.");
+        await new Promise<void>((resolve) => {
+          Deno.addSignalListener("SIGINT", () => resolve());
+          Deno.addSignalListener("SIGTERM", () => resolve());
+        });
+        await stopIfNeeded(true);
+        return;
+      }
+
+      if (!args.noSetup || args.setup) {
+        await startLocalNetwork({
+          withPds2,
+          useBinary: args.binary,
+          runId: context.runId,
+          diagnosticsDir: context.diagnosticsDir,
+          webClient: args.webClient,
+          clientFlow: args.clientFlow,
+          allowHybridNetwork: args.allowHybridNetwork,
+          topology: args.topology,
+        });
+        networkStarted = true;
+        if (topologyManifestPath) Deno.env.set("ATPROTO_TOPOLOGY_MANIFEST", topologyManifestPath);
+        topology = resolveTopology(args.webClient, args.topology, {
+          manifestPath: topologyManifestPath,
+          includePds2: withPds2,
+        });
+      }
+
+      console.log(bold(`\nRunning ${selected.length} scenario(s)...\n`));
+      const durationCache = new DurationCache(repoRoot);
+      const expectedDurations = selected.map((scenario) => durationCache.get(scenario.id));
+      const progress = new ProgressBar(selected.length, expectedDurations);
+
+      for (let i = 0; i < selected.length; i++) {
+        const scenario = selected[i];
+        progress.start(`${scenario.id} - ${scenario.name}`);
+        const result = await runScenario(
+          scenario,
+          scenario.timeout || args.timeout,
+          args,
+          topology,
+          repoRoot,
+          context.composeProject,
+        );
+        result.metadata = {
+          ...result.metadata,
+          run_id: context.runId,
+          run_dir: context.runDir,
+          diagnostics_dir: context.diagnosticsDir,
+          service_urls: topology.serviceUrls,
+          web_client: topology.webClient || null,
+          client_flow: args.clientFlow,
+          allow_hybrid_network: args.allowHybridNetwork,
+          scenario_id: scenario.id,
+          binary_mode: args.binary,
+          pds2: withPds2,
+          topology: args.topology || null,
+          runner: args.runner,
+        };
+
+        Deno.stdout.writeSync(new TextEncoder().encode("\r" + " ".repeat(120) + "\r"));
+        result.printSummary();
+        results.push({ scenario, result });
+
+        if (result.startedAt && result.finishedAt) {
+          durationCache.set(scenario.id, result.finishedAt - result.startedAt);
+        }
+
+        if (!args.noJson) {
+          const reportPath = await result.writeReport(reportsDir, `${scenario.id}_${scenario.name}`);
+          reportPaths.push(reportPath);
+          console.log(`  Report: ${reportPath}`);
+        }
+
+        progress.update(i + 1);
+      }
+      progress.finish();
+    } finally {
+      const shouldCollect = results.some(({ result }) => result.failed > 0) || fatalError;
+      if (shouldCollect) {
+        await collectDiagnostics(context);
+        console.log(`Diagnostics: ${context.diagnosticsDir}`);
+      }
+      if (args.teardown || (!args.noSetup && !args.keepRunning)) {
+        await stopIfNeeded(false);
+      }
     }
-    progress.finish();
-  } finally {
-    const shouldCollect = results.some(({ result }) => result.failed > 0);
-    if (shouldCollect) {
-      await collectDiagnostics(context);
-      console.log(`Diagnostics: ${context.diagnosticsDir}`);
-    }
-    if (args.teardown || (!args.noSetup && !args.keepRunning)) {
-      await stopIfNeeded(false);
-    }
+  } catch (err) {
+    fatalError = err;
+    console.error(red(`\nFatal error: ${err.message}`));
   }
 
   const totalPassed = results.reduce((sum, item) => sum + item.result.passed, 0);
   const totalFailed = results.reduce((sum, item) => sum + item.result.failed, 0);
   const totalSkipped = results.reduce((sum, item) => sum + item.result.skipped, 0);
 
-  console.log(bold("\nOverall Results"));
-  for (const { scenario, result } of results) {
-    const marker = result.ok ? green("PASS") : red("FAIL");
+  if (results.length > 0) {
+    console.log(bold("\nOverall Results"));
+    for (const { scenario, result } of results) {
+      const marker = result.ok ? green("PASS") : red("FAIL");
+      console.log(
+        `  ${marker} ${scenario.id} ${result.scenarioName} (${result.passed}/${result.total} passed, ${result.skipped} skipped)`,
+      );
+    }
     console.log(
-      `  ${marker} ${scenario.id} ${result.scenarioName} (${result.passed}/${result.total} passed, ${result.skipped} skipped)`,
+      `  Total: ${green(`${totalPassed} passed`)}, ${
+        totalFailed > 0 ? red(`${totalFailed} failed`) : "0 failed"
+      }, ${yellow(`${totalSkipped} skipped`)}`,
     );
   }
-  console.log(
-    `  Total: ${green(`${totalPassed} passed`)}, ${
-      totalFailed > 0 ? red(`${totalFailed} failed`) : "0 failed"
-    }, ${yellow(`${totalSkipped} skipped`)}`,
-  );
 
   if (!args.noJson) {
-    await Deno.mkdir(reportsDir, { recursive: true });
-    await Deno.writeTextFile(
-      join(reportsDir, "overall-summary.json"),
-      JSON.stringify(
-        {
-          run_id: context.runId,
-          run_dir: context.runDir,
-          diagnostics_dir: context.diagnosticsDir,
-          reports_dir: reportsDir,
-          scenario_ids: selected.map((scenario) => scenario.id),
-          binary_mode: args.binary,
-          pds2: withPds2,
-          web_client: topology.webClient || null,
-          client_flow: args.clientFlow,
-          service_urls: topology.serviceUrls,
-          report_paths: reportPaths,
-          summary: {
-            passed: totalPassed,
-            failed: totalFailed,
-            skipped: totalSkipped,
+    try {
+      await Deno.mkdir(reportsDir, { recursive: true });
+      await Deno.writeTextFile(
+        join(reportsDir, "overall-summary.json"),
+        JSON.stringify(
+          {
+            run_id: context.runId,
+            run_dir: context.runDir,
+            diagnostics_dir: context.diagnosticsDir,
+            reports_dir: reportsDir,
+            scenario_ids: selected.map((scenario) => scenario.id),
+            binary_mode: args.binary,
+            pds2: withPds2,
+            web_client: topology?.webClient || null,
+            client_flow: args.clientFlow,
+            service_urls: topology?.serviceUrls,
+            report_paths: reportPaths,
+            summary: {
+              passed: totalPassed,
+              failed: fatalError ? totalFailed + 1 : totalFailed,
+              skipped: totalSkipped,
+            },
+            ok: !fatalError && totalFailed === 0,
+            error: fatalError?.message,
           },
-          ok: totalFailed === 0,
-        },
-        null,
-        2,
-      ) + "\n",
-    );
+          null,
+          2,
+        ) + "\n",
+      );
+    } catch (err) {
+      console.error(red(`Failed to write overall summary: ${err.message}`));
+    }
   }
 
-  if (totalFailed > 0) Deno.exit(1);
+  if (fatalError || totalFailed > 0) Deno.exit(1);
 }
 
 async function pathExists(path: string): Promise<boolean> {

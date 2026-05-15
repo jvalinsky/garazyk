@@ -4,19 +4,19 @@ title: Compatibility Layer
 
 # Compatibility Layer
 
-## Overview
+Garazyk uses a narrow compatibility layer to keep shared Objective-C code buildable across macOS and Linux without hiding the underlying platform differences. This layer consists of headers, macros, and shims that bridge gaps in Foundation and system APIs.
 
-Garazyk's compatibility layer is a narrow set of headers, macros, and test shims that keep shared Objective-C code buildable while allowing true platform-specific implementations.
+## Architecture
 
-## Full Flow
+The compatibility layer acts as a shim between shared logic and platform-specific implementations.
 
 ```mermaid
 flowchart TD
-    Shared["Shared Objective-C code"]
-    Compat["Compat headers and macros"]
-    Apple["Apple Foundation and Security APIs"]
-    GNU["GNUstep and OpenSSL backed fallbacks"]
-    Platform["Platform specific runtime code"]
+    Shared["Shared Objective-C logic"]
+    Compat["Compatibility Headers & Macros"]
+    Apple["Apple Foundation & Security"]
+    GNU["GNUstep & OpenSSL Fallbacks"]
+    Platform["Platform Runtime Code"]
 
     Shared --> Compat
     Compat --> Apple
@@ -24,50 +24,38 @@ flowchart TD
     Shared --> Platform
 ```
 
-## What Lives Here Today
+## Core Components
 
-The current `Compat/` tree does a few concrete jobs:
+The `Compat/` directory manages several critical tasks:
 
-- `Compat/Foundation/Foundation.h` selects Apple Foundation or GNUstep Foundation
-- `Compat/Foundation/NSDataCompat.*` and `NSErrorCompat.h` paper over GNUstep gaps that shared code depends on
-- `Compat/LinuxXCTestCompat.h` keeps the test surface usable on GNUstep
-- `Compat/PDSTypes.h` defines CF bridging fallbacks and dispatch-queue storage macros such as `PDS_GCD_OBJC_SUPPORT` and `PDS_DISPATCH_QUEUE_STRONG`
+- **Foundation Selection**: `Compat/Foundation/Foundation.h` automatically selects between Apple's Foundation and GNUstep's implementation.
+- **API Gaps**: `NSDataCompat` and `NSErrorCompat` provide missing functionality in older GNUstep versions that our shared code expects.
+- **Test Compatibility**: `LinuxXCTestCompat.h` enables our XCTest-based suite to run under the GNUstep test runner.
+- **GCD & Types**: `PDSTypes.h` defines macros like `PDS_GCD_OBJC_SUPPORT` to handle differences in how Dispatch objects are treated by the runtime.
 
-If you need compatibility, check whether one of these files already provides it.
+## Limitations by Design
 
-## What It Deliberately Does Not Hide
+We do not use the compatibility layer to pretend the platforms are identical. It specifically avoids hiding:
 
-The compatibility layer does not erase:
+- The split between Apple's Network framework and BSD sockets on Linux.
+- Differences between Keychain and OpenSSL-based key management.
+- Significant behavioral gaps in Foundation implementations.
 
-- the macOS versus GNUstep networking split
-- Keychain versus OpenSSL-backed key-management differences
-- runtime differences in dispatch object ownership
-- behavior gaps in Foundation implementations
+These require explicit platform-specific implementations rather than simple macros.
 
-These differences require real platform-specific code, not just macros.
+## Contributor Guidelines
 
-## Contributor Rule Of Thumb
+When adding cross-platform code:
 
-If you add a new cross-platform dependency, prefer one of these approaches:
-
-1. put the smallest possible compatibility shim in `Compat/` when the API gap is narrow and mechanical
-2. keep the platform split explicit when the behavior difference is substantial
-
-Avoid sprinkling raw `#if` branches across business logic.
-
-## Related Deep Dives
-
-- [macOS vs GNUstep Boundary](./macos-vs-gnustep-boundary)
-
-## Related Reading
-
-- [macOS and Linux Compatibility](./macos-linux)
-- [Platform-Specific Network Transport](./network-transport)
-- [Setup](../01-getting-started/setup)
+1. Use `Compat/` for narrow, mechanical API gaps (e.g., a missing constant or a simple method shim).
+2. Keep the platform split explicit in the source file (e.g., using `PDSNetworkTransportMac.m` vs `PDSNetworkTransportLinux.m`) for substantial behavior differences.
+3. Avoid deep `#if` branching within business logic.
 
 ## Related
 
+- [macOS vs GNUstep Boundary](./macos-vs-gnustep-boundary)
+- [macOS and Linux Compatibility](./macos-linux)
+- [Network Transport](./network-transport)
+- [ARC Runtime](./arc-runtime)
 - [Documentation Map](../11-reference/documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
 

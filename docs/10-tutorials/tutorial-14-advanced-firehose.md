@@ -1,115 +1,62 @@
 ---
-title: "Tutorial 14: Advanced Firehose (Filtering & Backfill)"
+title: "Tutorial 14: Advanced Firehose"
 ---
 
-# Tutorial 14: Advanced Firehose (Filtering & Backfill)
+# Tutorial 14: Advanced Firehose
 
-## Overview
+Building on the basics of event streaming, this tutorial covers the production features of the Garazyk firehose: backfill replay, cursor validation, and backpressure management.
 
-The Firehose is the real-time heartbeat of the AT Protocol. While Tutorial 5 covered the basics of connecting, this tutorial dives into the production-grade features of the Garazyk Firehose: how it handles historical data (backfill), manages slow consumers (backpressure), and validates cursors to ensure network consistency.
+## Backfill and Replay
 
-**Learning Objectives:**
-- Understand the backfill logic in `SubscribeReposHandler.m`.
-- Analyze cursor validation rules and error frames (`FutureCursor`, `OutdatedCursor`).
-- Explore the backpressure mechanisms used to protect the server.
-- Verify Firehose resumption using cursors.
+When a client connects with a `cursor` parameter, they are requesting a "catch-up" on missed events.
 
-**Estimated Time:** 40-50 minutes
+### Replay Logic
+The `SubscribeReposHandler` manages this process:
+1. **Query:** Fetches events from the `service_events` table where the sequence number is greater than the provided cursor.
+2. **Stream:** Sequentially sends these historical events to the client.
+3. **Transition:** Once the replay is complete, the connection automatically switches to live updates.
 
-## Prerequisites
+Garazyk enforces a `maxReplayEventsPerConnection` limit (default 10,000) to protect server resources from excessive backfill requests.
 
-- Complete [Tutorial 5: Firehose](./tutorial-5-firehose).
-- Familiarity with SQLite and basic networking concepts.
-- `deciduous` CLI tool installed.
+## Cursor Validation
 
----
+The server applies several rules to determine cursor validity:
 
-## Step 1: Track the Goal with Deciduous
+- **Future Cursor:** If the requested sequence number is higher than the server's current head, the connection is rejected.
+- **Malformed Cursor:** Non-numeric or negative values are rejected.
+- **Outdated Cursor:** If the requested event has been pruned or is beyond the replay window, the server sends an `#info` frame with an `OutdatedCursor` code.
 
-Record your intent to study the streaming resilience layer:
+## Backpressure and Flow Control
 
-```bash
-deciduous add goal "Audit Advanced Firehose Features" -c 95
-# Track your analysis
-deciduous add action "Traced backfill replay logic" -c 90
-```
-
----
-
-## Step 2: The Backfill Mechanism
-
-When a client connects with a `cursor` query parameter, they aren't just looking for live updates; they want to "catch up" on events they missed.
-
-### `replayEventsAfterCursor:toConnection:`
-Look at `SubscribeReposHandler.m`. When a valid cursor is provided:
-1.  **Database Query**: The handler queries the `service_events` table for all events with a sequence number greater than the cursor.
-2.  **Sequential Replay**: The PDS streams these historical events to the client in order.
-3.  **Handoff**: Once the replay is complete, the client automatically transitions to "Live Mode" for new incoming events.
-
-**Technical Detail:**
-Garazyk enforces a `maxReplayEventsPerConnection` (default 10,000) to prevent a single client from exhausting server resources during a massive backfill.
-
----
-
-## Step 3: Cursor Validation and Safety
-
-Not every cursor requested by a client is valid. The PDS performs several checks:
-
-- **FutureCursor**: If the requested cursor is higher than the server's current sequence number, the connection is rejected.
-- **InvalidCursor**: If the cursor is not a non-negative integer.
-- **OutdatedCursor**: If the requested cursor is so old that the events have been pruned or exceed the replay window, the server sends an `#info` frame with the `OutdatedCursor` code.
-
----
-
-## Step 4: Protecting the Server (Backpressure)
-
-A high-volume Firehose can easily overwhelm a slow client. If the client's output buffer fills up, it can cause memory issues on the server.
+A high-volume firehose can overwhelm slow consumers. Garazyk protects itself by monitoring the send buffer for every connection.
 
 ### `ConsumerTooSlow`
-Look at `sendEventData:toConnectionWithBackpressureCheck:` in `SubscribeReposHandler.m`:
-- **Limit Checks**: The PDS tracks `pendingSendCount` and `pendingSendBytes` for every connection.
-- **Dropping**: If a client exceeds these limits (default 512 pending sends or 16MB), the server sends a `ConsumerTooSlow` error frame and **immediately closes the connection**.
+If a client falls too far behind:
+1. **Thresholds:** The PDS checks `pendingSendCount` (limit 512) and `pendingSendBytes` (limit 16MB).
+2. **Disconnection:** If either threshold is exceeded, the server sends a `ConsumerTooSlow` error and closes the connection.
 
----
+## Verification
 
-## Step 5: Verification and Manual Backfill
-
-### Simulate a Backfill Request
-You can test backfill by requesting a cursor from the past. First, find a valid sequence number from your server logs or metrics.
-
+### Test Backfill
+Request a sequence number from the recent past to trigger a replay:
 ```bash
-# Connect with a past cursor (e.g., 100)
-# Note: You may need a specialized tool like 'wscat' to handle the protocol frames
-wscat -c "ws://127.0.0.1:2583/xrpc/com.atproto.sync.subscribeRepos?cursor=100"
+# Example using websocat
+websocat "ws://127.0.0.1:2583/xrpc/com.atproto.sync.subscribeRepos?cursor=100"
 ```
 
 ### Observe Backpressure
-To test backpressure, you can use a script that connects and then "sleeps" without reading from the socket.
-
----
+A client that connects but fails to read from the socket will eventually trigger a `ConsumerTooSlow` disconnection.
 
 ## Troubleshooting
 
-| Failure Mode | Symptom | Mitigation |
+| Symptom | Cause | Resolution |
 | --- | --- | --- |
-| **Pruned Events** | `OutdatedCursor` info frame. | The client must perform a full repository sync (checkout) as they can no longer catch up via Firehose. |
-| **Slow Consumer** | Connection closed with `ConsumerTooSlow`. | The client should use a faster parser or implement an internal buffer/queue to consume events faster. |
-| **Database Latency** | Backfill stalls or slows down PDS writes. | Ensure the `service_events` table has an index on the sequence column and consider moving events to a dedicated store. |
+| `OutdatedCursor` | Event pruned | The client must perform a full repository re-sync; it can no longer catch up via the firehose. |
+| `ConsumerTooSlow` | Slow client | Optimize the client-side parser or implement an internal event queue. |
+| Stalled Backfill | DB Latency | Ensure the `service_events` table is correctly indexed on the sequence column. |
 
-## Next Steps
+## See Also
 
-1. Return to [Tutorial 6: Deployment](./tutorial-6-deployment) for production ops.
-2. Review the [Network Subguide](./network-from-scratch/) for transport-level internals.
-3. Check [Event Replay](../08-sync-firehose/event-replay) for cursor logic proofs.
-
-## Summary
-
-The advanced features of the Garazyk Firehose ensure that the network remains synchronized even during client outages or high-traffic spikes. By mastering cursors, backfill, and backpressure, you can build consumers that are both resilient and efficient.
-
-Always use `deciduous` to document changes to Firehose logic or performance tuning.
-
-## Related
-
-- [Documentation Map](../11-reference/documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
+- [Event Replay](../08-sync-firehose/event-replay)
+- [Backpressure Reference](../08-sync-firehose/backpressure)
+- [Tutorial 5: Firehose](./tutorial-5-firehose)

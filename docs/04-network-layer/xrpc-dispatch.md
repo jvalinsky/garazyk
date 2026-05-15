@@ -1,27 +1,28 @@
 # XRPC Dispatch
 
-XRPC dispatch is the adapter between transport-level requests and domain logic. Once a request matches the `/xrpc/*` prefix, this layer resolves the NSID and invokes the registered handler.
+XRPC dispatch bridges transport-level HTTP requests and domain logic. When a request matches the `/xrpc/*` prefix, the dispatch layer resolves the [NSID](../GLOSSARY.md#nsid) and invokes the registered handler.
 
-## Responsibilities
-- **NSID Resolution**: Mapping request paths to specific AT Protocol methods.
-- **Registration Verification**: Ensuring the requested method is registered in the runtime.
-- **Glue Logic**: Applying authentication policies, lexicon validation, and standardizing error shapes.
-- **Result Translation**: Converting service or handler results into HTTP response payloads.
+The `XrpcDispatcher` handles:
+- **NSID Resolution**: Mapping request paths to AT Protocol methods.
+- **Registration**: Matching methods against those defined in the `XrpcMethodRegistry`.
+- **Glue Logic**: Enforcing authentication policies (via `XrpcAuthHelper`), performing lexicon validation, and standardizing error formats.
+- **Result Translation**: Converting service results into JSON or blob HTTP response payloads.
 
-The dispatch layer does not define repository mutations, blob policies, or identity resolution rules; these are delegated to the underlying services and identity modules.
+This layer delegates repository mutations, blob storage, and identity resolution to specialized [services](../03-application-layer/services-overview).
 
 ## Implementation Boundary
-`XrpcDispatcher` represents the boundary between request arrival and service execution. 
-- **Method exists, wrong behavior**: The bug likely resides in the service layer or domain handler.
-- **Method not found (404/501)**: The bug resides in the registration or dispatch mapping.
-- **Auth/Validation failure**: The failure occurs within the dispatch glue logic before service code executes.
 
-## Investigation Points
-Investigate the XRPC dispatch layer when:
-- An endpoint returns a "method not found" or "invalid request" error.
-- Authentication fails before domain services are invoked.
-- The response structure suggests a protocol-level serialization error.
-- Multiple handlers appear to conflict for the same NSID.
+`XrpcDispatcher` and its associated route packs (e.g., `PDSHttpXrpcRoutePack`) define the boundary between the network and the application.
+
+If an endpoint returns a `404 Not Found` or `501 Not Implemented`, the method is likely missing from the `XrpcMethodRegistry`. If authentication fails before the service code executes, the issue typically lies in the `XrpcAuthHelper` or the dispatcher's middleware stack.
+
+## Debugging Dispatch
+
+Investigate the XRPC dispatch layer if:
+- A registered NSID fails to resolve or returns unexpected routing errors.
+- Authentication fails globally or for specific authenticated methods. See [Auth Helpers](./auth-helpers).
+- The response structure violates AT Protocol expectations (e.g., incorrect error field names).
+- You need to add middleware that affects all XRPC calls, such as global logging or rate limiting.
 
 ## Related
 - [HTTP Request and Route Pipeline](./http-request-and-route-pipeline)

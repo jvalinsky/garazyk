@@ -4,174 +4,93 @@ title: "Tutorial 2: Account Management"
 
 # Tutorial 2: Account Management
 
-## Overview
+This tutorial explains how Garazyk manages identities and sessions. Account creation is more than just a single endpoint; it involves handles, invite policies, PLC resolution, and token issuance.
 
-This tutorial explains how Garazyk turns a running server into a multi-user system. Account creation, identity policy, and session issuance fit together across configuration, services, and protocol methods.
-
-Contributors often mistake account creation for a single endpoint problem. It is a system boundary involving handles, invite policy, PLC behavior, token issuance, and shared service data.
-
-## What You'll Build
-
-You will build an accurate mental model of the account lifecycle in the real repo:
-
-- account creation
-- session creation
-- JWT issuance
-- invite-policy interaction
-- handle and DID constraints
-
-**Learning Objectives:**
-- Identify where account and session behavior actually lives
-- Understand which configuration values shape registration behavior
-- Trace `createAccount` and `createSession` from XRPC registration into service logic
-- Verify account flows with tests and small runtime checks
-
-**Estimated Time:** 35-45 minutes
-
-## Prerequisites
-
-- Complete [Tutorial 1: Hello PDS](./tutorial-1-hello-pds)
-- Read [Email & Verification](../06-authentication/email-and-verification)
-- Be comfortable reading service and auth code together
+## Learning Objectives
+- Identify where account and session logic lives in the repository.
+- Understand how configuration values shape registration behavior.
+- Trace `createAccount` and `createSession` from the XRPC entry point into the service logic.
+- Verify account flows using existing tests.
 
 ## Architecture Overview
 
 ```mermaid
 flowchart LR
-  Client["Client"] --> Xrpc["XRPC server methods"]
+  Client["Client"] --> Xrpc["XRPC Methods"]
   Xrpc --> Account["PDSAccountService"]
-  Account --> ServiceDb["Service database"]
-  Account --> Jwt["JWT and auth helpers"]
-  Account --> Plc["PLC and identity policy"]
+  Account --> ServiceDb["Service Database"]
+  Account --> Jwt["JWT Helpers"]
+  Account --> Plc["PLC & Identity Policy"]
 ```
 
-## Step 1: Start with the Service, Not the Endpoint
+## Step 1: The Service Layer
 
-The best starting point is:
+The core of account management lives in the `PDSAccountService`. This layer reconciles configuration policy with user requests.
 
-- `Garazyk/Sources/Services/PDS/PDSAccountService.m`
-- `Garazyk/Sources/Services/PDS/PDSAccountService.h`
+- **`Garazyk/Sources/Services/PDS/PDSAccountService.m`**: Owns the business rules for registration, handle validation, and password hashing.
+- **`Garazyk/Sources/Services/PDS/PDSAccountService.h`**: Defines the interface for account lookups and state transitions.
 
-Why start there?
+As you read the service code, observe how it handles invite codes and domain validation.
 
-- the service owns the business rules,
-- the service has to reconcile config policy with user-facing behavior,
-- and the service boundary is easier to test than the transport layer.
+## Step 2: XRPC Entry Points
 
-Look for how it handles:
+The network layer exposes the service logic through protocol methods. The typical flow involves:
 
-- registration requirements,
-- handle validation,
-- email and password expectations,
-- account lookup and state transitions.
+1. **XRPC Registration**: Methods are registered in `PDSHttpServerBuilder.m`.
+2. **Input Validation**: Request bodies are parsed and validated against lexicon schemas.
+3. **Service Invocation**: The handler calls the relevant `PDSAccountService` method.
+4. **Response Shaping**: Success results are converted into the format expected by the client (e.g., returning a DID and session tokens).
 
-## Step 2: Trace the XRPC Entry Points
+## Step 3: Policy Configuration
 
-Once you know the service shape, move outward to the network layer. The account tutorial is really about how service rules become public protocol behavior.
+Account behavior is strictly governed by the server configuration. A registration failure is often a policy mismatch rather than a bug.
 
-The important path is:
+- **`session.invite_code_required`**: Determines if an invite is mandatory for new accounts.
+- **`availableUserDomains`**: Restricts the handles that can be registered on this PDS.
+- **`identity.plc_url`**: Configures where the PDS sends DID documents for new users.
 
-1. XRPC method registration
-2. input parsing and validation
-3. account service invocation
-4. token or response shaping
+## Step 4: Session vs. Account Creation
 
-The exact method registration lives in the network layer, and that is where you should confirm which methods the server really exposes today.
+While related, these are distinct paths in the codebase:
 
-## Step 3: Understand the Config-Driven Policy
+- **Account Creation**: Validates identity availability, applies invite policies, and creates the initial repository state.
+- **Session Creation**: Authenticates an existing account and issues a JWT token set. See [Tutorial 4: Authentication](./tutorial-4-auth) for details on the token lifecycle.
 
-Account behavior depends heavily on configuration:
+## Step 5: Verification and Testing
 
-- `session.invite_code_required`
-- issuer and available user domains
-- PLC mode and endpoint selection
-- email and verification provider choices
+Use the existing test suite to verify the account lifecycle without running the full server.
 
-This is why account bugs often look like endpoint bugs at first. A registration flow can fail because policy is stricter than the caller expected, not because the endpoint implementation is broken.
-
-## Step 4: Trace Session Creation Separately
-
-Account creation and session creation are related but not identical contributor tasks.
-
-Account creation answers:
-
-- can this identity be created,
-- under current policy,
-- with current validation rules?
-
-Session creation answers:
-
-- can an existing account authenticate,
-- can it receive the expected token set,
-- and does the token reflect the configured issuer and security model?
-
-That second path is why this tutorial should be read together with [Tutorial 4: Authentication](./tutorial-4-auth), not instead of it.
-
-## Step 5: Read the Matching Tests
-
-The fastest way to stabilize your understanding is to move from source to tests:
-
-- `Garazyk/Tests/App/Services/PDSAccountServiceTests.m`
-- `Garazyk/Tests/Auth/JWTTests.m`
-- `Garazyk/Tests/CLI/PDSCLIAccountCommandTests.m`
-
-Those files show:
-
-- what the project already promises,
-- how account state is verified,
-- and which invariants were important enough to capture in tests.
-
-## Step 6: Verify with Small, Honest Checks
-
-Use small runtime checks to validate the account path, but be explicit about what assumptions they require:
-
-- invite-code policy,
-- local or production-like issuer,
-- mock versus real PLC and email integrations.
-
-That keeps the tutorial accurate instead of pretending one command sequence works in every configuration.
+- **`Garazyk/Tests/App/Services/PDSAccountServiceTests.m`**: Validates registration rules and state changes.
+- **`Garazyk/Tests/Auth/JWTTests.m`**: Tests the correctness of issued session tokens.
+- **`Garazyk/Tests/CLI/PDSCLIAccountCommandTests.m`**: Ensures the CLI can manage accounts directly.
 
 ## Troubleshooting
 
-| Symptom | Likely cause | Where to look |
-| --- | --- | --- |
-| account creation rejected unexpectedly | invite or domain policy mismatch | config plus account service |
-| session creation fails for a real account | auth or token path issue | account service plus JWT/auth helpers |
-| handle looks valid to a human but fails | validator rules are stricter than expected | handle validation and identity logic |
-| CLI and XRPC behave differently | transport vs service assumptions | CLI command implementation and XRPC registration |
+- **Registration rejected**: Check if `invite_code_required` is enabled and verify the `availableUserDomains` list.
+- **Session fails for existing account**: Ensure the password hasher configuration matches the one used during registration.
+- **Handle validation failure**: Validator rules in `PDSAccountService` may be stricter than those of other PDS implementations.
 
 ## Next Steps
 
-1. Continue to [Tutorial 3: Records](./tutorial-3-records).
-2. Keep [Config Reference](../11-reference/config-reference) nearby when tracing policy-sensitive behavior.
-3. Revisit [Tutorial 4: Authentication](./tutorial-4-auth) once the account lifecycle feels clear.
+1. Move to [Tutorial 3: Records](./tutorial-3-records) to see how data is added to an account.
+2. Keep the [Config Reference](../11-reference/config-reference) open to understand the policy settings.
 
-## Summary
-
-Account management in Garazyk is a layered system:
-
-- service-level rules,
-- config-driven registration policy,
-- network-layer method exposure,
-- and token issuance as a separate concern.
-
-If you understand those layers, account bugs become much easier to localize.
-
-## Appendix
-
-### Small verification sequence
+## Appendix: Manual Verification
 
 ```bash
-./build/bin/kaszlak serve --config ./config.json --data-dir ./pds-data --foreground &
+# Start the server
+./build/bin/kaszlak serve --config ./config/examples/local.json --foreground &
 PID=$!
 sleep 2
+
+# List existing accounts
 ./build/bin/kaszlak account list
-curl -sS -X POST http://127.0.0.1:2583/xrpc/com.atproto.server.createAccount \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"alice@example.com","handle":"alice.test","password":"password","inviteCode":"..."}'
+
+# Create a session via curl
 curl -sS -X POST http://127.0.0.1:2583/xrpc/com.atproto.server.createSession \
   -H 'Content-Type: application/json' \
-  -d '{"identifier":"alice.test","password":"password"}'
+  -d '{"identifier":"alice.test","password":"password"}' | jq .
+
 kill $PID
 ```
 

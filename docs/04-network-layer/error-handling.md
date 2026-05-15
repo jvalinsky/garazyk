@@ -4,82 +4,51 @@ title: Error Handling
 
 # Error Handling
 
-## Overview
+`XrpcErrorHelper` provides a standardized interface for common XRPC and HTTP failures. This consistency ensures that clients and protocol explorers receive predictable error shapes.
 
-`XrpcErrorHelper` exists to keep common XRPC failures predictable. The goal is
-not to eliminate every custom error in the codebase. The goal is to make the
-most common transport-level failures consistent enough that contributors and
-clients can reason about them quickly.
+## Standard Error Format
 
-## The Standard Error Shape
-
-The helper standardizes responses around this JSON shape:
+The helper standardizes responses using the expected AT Protocol JSON structure:
 
 ```json
 {
   "error": "InvalidRequest",
-  "message": "Human-readable description"
+  "message": "Detailed description of the failure"
 }
 ```
 
-That format matters because many request failures are handled before a service
-ever runs. A stable transport-level shape keeps parsing and testing simple.
+Standardizing these responses at the transport layer simplifies client-side parsing and automated testing.
 
-## Common Helper Cases
+## Common Error Cases
 
-The current helper covers the most common XRPC failure classes:
+The helper covers the most frequent failure classes:
 
-- authentication required
-- authorization failure
-- invalid request
-- not found
-- internal server error
-- method not allowed
-- a few convenience cases such as account or lexicon not found
+- **Authentication**: `AuthenticationRequired`, `InvalidToken`.
+- **Authorization**: `Forbidden`, `InsufficientPrivileges`.
+- **Validation**: `InvalidRequest`, `LexiconNotFound`.
+- **Resource Management**: `NotFound`, `AccountNotFound`.
+- **Transport**: `MethodNotAllowed`, `InternalServerError`.
 
-This is the right level of abstraction for a shared network-layer helper. It
-standardizes the recurring cases without pretending every endpoint-specific
-domain error should look identical.
+## Method Management
 
-## Why `MethodNotAllowed` Is Special
+When a `MethodNotAllowed` error is issued, the helper automatically attaches the `Allow` header to the response. This provides clients with immediate feedback on the supported HTTP methods for the requested path.
 
-The method-not-allowed helper also sets the `Allow` header. That small detail is
-important because it turns an error response into something a client or
-contributor can act on immediately.
+## Usage Guidelines
 
-It is a good example of why shared error helpers exist at all: the right
-transport behavior is easy to forget when every route authors its own response
-by hand.
+`XrpcErrorHelper` should be the default choice for standard transport and authorization failures.
 
-## What The Helper Does Not Cover
+Handlers should use the helper when:
+- The failure matches a common protocol error class.
+- A bespoke response payload is not required by the lexicon.
+- Consistency across the API is a priority.
 
-Not every runtime error flows through `XrpcErrorHelper`. Some handlers still
-emit custom errors because they need endpoint-specific status, lexicon-shaped
-messages, or protocol-specific behavior.
-
-That is fine. The docs should describe the helper as the standard path for
-common XRPC failures, not as the only error path in the repository.
-
-## When To Use The Helper
-
-Use the helper when:
-
-- the failure is a standard transport or authorization case
-- the endpoint does not need a bespoke payload shape
-- consistency across handlers is more important than local customization
-
-Do not use it to hide a domain-specific error that callers actually need to
-distinguish.
-
-## Related Reading
-
-- [Auth Helpers](./auth-helpers)
-- [API Reference](../11-reference/api-reference)
-- [Troubleshooting](../11-reference/troubleshooting)
+For errors requiring specific lexicon-defined shapes or complex metadata, handlers may construct custom response objects.
 
 ## Related
 
+- [Auth Helpers](./auth-helpers)
+- [XRPC Dispatch](./xrpc-dispatch)
+- [API Reference](../11-reference/api-reference)
+- [Troubleshooting](../11-reference/troubleshooting)
 - [Documentation Map](../11-reference/documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
 

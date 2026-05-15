@@ -52,29 +52,29 @@ title: Glossary
 
 **Defense in Depth** — Security strategy using multiple layers of protection.
 
-**DID** — Decentralized Identifier. Unique identifier for an actor in the AT Protocol.
+**DID** — Decentralized Identifier. Unique identifier for an actor in the AT Protocol. See [Identity](01-getting-started/overview.md#identity).
 
-**DoS** — Denial of Service. Attack that attempts to make a service unavailable.
+**DoS** — Denial of Service. Attack attempting to make a service unavailable. See [DoS Protection](04-network-layer/dos-protection.md).
 
-**DPoP** — Demonstration of Proof-of-Possession. OAuth 2.0 extension for binding tokens to keys.
+**DPoP** — Demonstration of Proof-of-Possession. OAuth 2.0 extension binding tokens to keys. See [OAuth 2.0 & DPoP](06-authentication/oauth2-dpop.md).
 
 ## E
 
-**ECDSA** — Elliptic Curve Digital Signature Algorithm. Cryptographic signature scheme used for JWT signing.
+**ECDSA** — Elliptic Curve Digital Signature Algorithm. Cryptographic signature scheme used for JWT signing. See [Cryptography](02-core-concepts/cryptography.md).
 
-**Endpoint** — HTTP route that handles a specific request type.
+**Endpoint** — HTTP route handling a specific request type. See [API Reference](11-reference/api-reference.md).
 
-**E2E Testing** — End-to-end testing that validates complete workflows from client to database.
+**E2E Testing** — End-to-end testing validating complete workflows. See [Testing Guide](TESTING.md).
 
-**Event** — A change notification in the firehose stream.
+**Event** — A change notification in the firehose stream. See [Firehose Overview](08-sync-firehose/firehose-overview.md).
 
 ## F
 
-**Firehose** — Real-time stream of repository commits. Accessed via subscribeRepos WebSocket.
+**Firehose** — Real-time stream of repository commits via `subscribeRepos`. See [Firehose Overview](08-sync-firehose/firehose-overview.md).
 
-**Flow Control** — Mechanism to manage data transmission rate between producer and consumer.
+**Flow Control** — Mechanism managing data transmission rate between producer and consumer.
 
-**Fuzzing** — Automated testing technique that provides random or malformed input to find bugs and vulnerabilities.
+**Fuzzing** — Automated testing providing malformed input to find bugs. See [Testing Guide](TESTING.md).
 
 ## G
 
@@ -144,85 +144,85 @@ title: Glossary
 
 ## O
 
-**OAuth 2.0** — Authorization framework for delegated access.
+**OAuth 2.0** — Authorization framework for delegated access. See [OAuth 2.0 & DPoP](06-authentication/oauth2-dpop.md).
 
 **OAuthProvider** — Component implementing OAuth 2.0 server.
 
-**Observability** — Ability to understand system state through metrics, logs, and traces.
+**Observability** — Understanding system state via metrics, logs, and traces. See [Monitoring.md](MONITORING.md).
 
-**Orphan Blob** — Blob that is no longer referenced by any record.
+**Orphan Blob** — Blob no longer referenced by any record. See [Blob Lifecycle](07-repository-protocol/blob-lifecycle.md).
 
 ## P
 
-**PDS** — Personal Data Server. Server that stores and manages user data in AT Protocol.
+**PDS** — Personal Data Server. Stores and manages user data in AT Protocol. See [Architecture Overview](01-getting-started/architecture-overview.md).
 
 **PDSApplication** — Main application facade coordinating all services.
 
-**PDSConfiguration** — Configuration object loaded from config.json.
+**PDSConfiguration** — Configuration object loaded from `config.json`. See [Config Reference](11-reference/config-reference.md).
 
-**PDSController** — Legacy facade (use PDSApplication instead).
+**PDSController** — Legacy facade (use `PDSApplication` instead).
 
-**PLC** — Public Ledger of Credentials. Directory service for DID documents.
+**PLC** — Public Ledger of Credentials. Directory service for DID documents. See [PLC Architecture](atproto-plc-architecture.md).
 
 **PLC Directory** — Centralized directory for DID document storage and resolution.
 
 **Prepared Statement** — Pre-compiled SQL query for efficient execution.
 
-**Property-Based Testing (PBT)** — Testing methodology that verifies code satisfies general properties across randomly generated inputs rather than specific test cases.
+**Property-Based Testing (PBT)** — Testing methodology verifying code satisfies general properties. See [Testing Guide](TESTING.md).
 
 ## R
 
-**Rate Limiting** — Technique to control the rate of requests to prevent abuse.
+**Rate Limiting** — Controlling request rate to prevent abuse. See [Rate Limiting](04-network-layer/rate-limiting.md).
 
-**Record** — Data object stored in a repository (e.g., a post, profile).
+**Record** — Data object stored in a repository (e.g., a post, profile). See [Record Service](03-application-layer/record-service.md).
 
 **RecordService** — Service for record CRUD operations.
 
-**Repository** — Collection of records and metadata for an actor.
+**Repository** — Collection of records and metadata for an actor. See [Repository Basics](07-repository-protocol/repository-basics.md).
 
 **RepositoryService** — Service for repository operations and MST management.
 
-**Relay** — External service notified of repository updates.
+**Relay** — External service notified of repository updates. See [Relay Service](03-application-layer/relay-service.md).
 
 **RelayService** — Service for notifying external relays.
 
 **Retry Policy** — Strategy for retrying failed operations with backoff.
 
-**Replay Window** — Maximum number of historical events that can be replayed to reconnecting clients.
+**Replay Window** — Maximum number of historical events replayed to reconnecting clients. See [Event Replay](08-sync-firehose/event-replay.md).
 
 ## S
 
-**Secrets Management** — Secure storage and handling of cryptographic keys and sensitive data.
+**Secrets Management** — Secure storage and handling of cryptographic keys. See [Security Best Practices](06-authentication/security-best-practices.md).
 
-**Security Audit** — Systematic review of code for security vulnerabilities.
+**Security Audit** — Systematic review of code for vulnerabilities.
 
-**Service** — Component providing specific functionality (Account, Record, Blob, etc.).
+**Service** — Component providing specific functionality (Account, Record, Blob, etc.). See [Services Overview](03-application-layer/services-overview.md).
 
-**ServiceDatabase** — Shared database for service-level data.
+**ServiceDatabase** — Shared database for service-level data. See [Service Databases](05-database-layer/service-databases.md).
 
 **Signature** — Cryptographic proof of authenticity and non-repudiation.
 
-**SQLite** — Embedded SQL database engine used for persistence.
+**SQLite** — Embedded SQL database engine used for persistence. See [SQLite Architecture](05-database-layer/sqlite-architecture.md).
 
-**Structured Logging** — Logging format with consistent fields for parsing and analysis.
+**Structured Logging** — Logging format with consistent fields. See [Monitoring.md](MONITORING.md).
 
-**SubscribeRepos** — XRPC method providing real-time repository updates via WebSocket.
+**SubscribeRepos** — XRPC method providing firehose updates via WebSocket. See [Firehose Overview](08-sync-firehose/firehose-overview.md).
 
-**Sequence Number** — Monotonically increasing integer assigned to each firehose event that defines canonical ordering.
+**Sequence Number** — Monotonically increasing integer assigned to each firehose event. See [Event Ordering](08-sync-firehose/event-ordering.md).
 
 ## T
 
-**Test Coverage** — Metric measuring the percentage of code executed by tests.
+**Test Coverage** — Metric measuring the percentage of code executed by tests. See [Testing Guide](TESTING.md).
 
-**Test Discovery** — Process of automatically finding and registering test methods at runtime.
+**Test Discovery** — Automatically finding and registering test methods. See [Test Organization](11-reference/test-organization.md).
 
-**Test Runner** — Component that executes tests and reports results.
+**Test Runner** — Component executing tests and reporting results.
 
-**Throttling** — Limiting the rate of operations to prevent resource exhaustion.
+**Throttling** — Limiting operation rate to prevent resource exhaustion. See [Request Throttling](04-network-layer/request-throttling.md).
 
-**TOTP** — Time-based One-Time Password. Multi-factor authentication method.
+**TOTP** — Time-based One-Time Password. MFA method. See [TOTP 2FA Plan](totp-2fa-plan.md).
 
-**Transaction** — Atomic database operation ensuring consistency.
+**Transaction** — Atomic database operation ensuring consistency. See [SQLite Architecture](05-database-layer/sqlite-architecture.md).
 
 **TLS** — Transport Layer Security. Protocol for encrypted communication.
 
@@ -230,25 +230,27 @@ title: Glossary
 
 **URI** — Uniform Resource Identifier. Unique identifier for a resource.
 
-**XRPC** — AT Protocol's RPC mechanism built on HTTP.
+**XRPC** — AT Protocol's RPC mechanism built on HTTP. See [XRPC Dispatch](04-network-layer/xrpc-dispatch.md).
 
 ## V
 
-**Verification** — Process of confirming authenticity of signatures or tokens.
+**Verification** — Confirming authenticity of signatures or tokens.
+
+**Visual Guide** — Architectural and process diagrams. See [Diagram Reference](12-diagrams/index.md).
 
 ## W
 
-**WAL** — Write-Ahead Logging. SQLite mode for improved concurrency.
+**WAL** — Write-Ahead Logging. SQLite mode for improved concurrency. See [WAL Mode](05-database-layer/wal-mode.md).
 
-**WebAuthn** — Web Authentication standard for passwordless authentication.
+**WebAuthn** — Web Authentication standard for passwordless login. See [TOTP 2FA Plan](totp-2fa-plan.md).
 
-**WebSocket** — Protocol for full-duplex communication over HTTP.
+**WebSocket** — Protocol for full-duplex communication over HTTP. See [WebSocket Server](08-sync-firehose/websocket-server.md).
 
 **WebSocketServer** — Component handling WebSocket connections.
 
 ## X
 
-**XRPC** — Extensible RPC. AT Protocol's method invocation mechanism.
+**XRPC** — Extensible RPC. AT Protocol's method invocation mechanism. See [XRPC Dispatch](04-network-layer/xrpc-dispatch.md).
 
 **XrpcDispatcher** — Component routing XRPC requests to handlers.
 
@@ -293,6 +295,10 @@ title: Glossary
 | PLC | Public Ledger of Credentials |
 | SQL | Structured Query Language |
 | TLS | Transport Layer Security |
+| TOTP | Time-based One-Time Password |
+| URI | Uniform Resource Identifier |
+| XRPC | Extensible RPC |
+sport Layer Security |
 | TOTP | Time-based One-Time Password |
 | URI | Uniform Resource Identifier |
 | XRPC | Extensible RPC |
