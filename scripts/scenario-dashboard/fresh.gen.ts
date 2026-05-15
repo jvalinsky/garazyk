@@ -10,14 +10,21 @@ import * as $api_runs from "./routes/api/runs.ts";
 import * as $api_runs_runId_ from "./routes/api/runs/[runId].ts";
 import * as $api_runs_runId_logs from "./routes/api/runs/[runId]/logs.ts";
 import * as $api_runs_runId_progress from "./routes/api/runs/[runId]/progress.ts";
+import * as $api_runs_runId_restart from "./routes/api/runs/[runId]/restart.ts";
+import * as $api_runs_runId_stop from "./routes/api/runs/[runId]/stop.ts";
+import * as $api_runs_active from "./routes/api/runs/active.ts";
+import * as $api_runs_start from "./routes/api/runs/start.ts";
 import * as $api_scenarios from "./routes/api/scenarios.ts";
+import * as $api_topologies_name_ from "./routes/api/topologies/[name].ts";
+import * as $api_topologies_index from "./routes/api/topologies/index.ts";
 import * as $index from "./routes/index.tsx";
 import * as $run_runId_ from "./routes/run/[runId].tsx";
 import * as $scenario_id_ from "./routes/scenario/[id].tsx";
 import * as $LogViewer from "./islands/LogViewer.tsx";
 import * as $NetworkStatus from "./islands/NetworkStatus.tsx";
-import * as $RunProgress from "./islands/RunProgress.tsx";
 import * as $RunPoller from "./islands/RunPoller.tsx";
+import * as $RunProgress from "./islands/RunProgress.tsx";
+import * as $ScenarioCard from "./islands/ScenarioCard.tsx";
 import * as $ScenarioRunner from "./islands/ScenarioRunner.tsx";
 import * as $Sidebar from "./islands/Sidebar.tsx";
 import * as $Toolbar from "./islands/Toolbar.tsx";
@@ -33,7 +40,13 @@ const manifest = {
     "./routes/api/runs/[runId].ts": $api_runs_runId_,
     "./routes/api/runs/[runId]/logs.ts": $api_runs_runId_logs,
     "./routes/api/runs/[runId]/progress.ts": $api_runs_runId_progress,
+    "./routes/api/runs/[runId]/restart.ts": $api_runs_runId_restart,
+    "./routes/api/runs/[runId]/stop.ts": $api_runs_runId_stop,
+    "./routes/api/runs/active.ts": $api_runs_active,
+    "./routes/api/runs/start.ts": $api_runs_start,
     "./routes/api/scenarios.ts": $api_scenarios,
+    "./routes/api/topologies/[name].ts": $api_topologies_name_,
+    "./routes/api/topologies/index.ts": $api_topologies_index,
     "./routes/index.tsx": $index,
     "./routes/run/[runId].tsx": $run_runId_,
     "./routes/scenario/[id].tsx": $scenario_id_,
@@ -41,8 +54,9 @@ const manifest = {
   islands: {
     "./islands/LogViewer.tsx": $LogViewer,
     "./islands/NetworkStatus.tsx": $NetworkStatus,
-    "./islands/RunProgress.tsx": $RunProgress,
     "./islands/RunPoller.tsx": $RunPoller,
+    "./islands/RunProgress.tsx": $RunProgress,
+    "./islands/ScenarioCard.tsx": $ScenarioCard,
     "./islands/ScenarioRunner.tsx": $ScenarioRunner,
     "./islands/Sidebar.tsx": $Sidebar,
     "./islands/Toolbar.tsx": $Toolbar,
