@@ -13,6 +13,7 @@
  * @module docker_api
  */
 
+import { formatBytes } from "./format.ts";
 import { withSpan } from "./otel.ts";
 
 // ---------------------------------------------------------------------------
@@ -262,7 +263,8 @@ export class DockerApiClient {
       const ok = await this.ping();
       this._available = ok;
       return ok;
-    } catch {
+    } catch (e) {
+      console.warn("[docker-api] failed to initialize Docker client", e);
       this._available = false;
       this.client = null;
       return false;
@@ -288,7 +290,8 @@ export class DockerApiClient {
       // Consume the body to avoid resource leaks
       await resp.body?.cancel().catch(() => {});
       return resp.status === 200;
-    } catch {
+    } catch (e) {
+      console.warn("[docker-api] ping failed", e);
       return false;
     }
   }
@@ -662,12 +665,6 @@ export function formatMemory(stats: ContainerStats): string {
   return `${formatBytes(usage)} / ${formatBytes(limit)}`;
 }
 
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KiB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GiB`;
-}
 
 // ---------------------------------------------------------------------------
 // Log stream demultiplexing
