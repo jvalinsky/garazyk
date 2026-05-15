@@ -4,6 +4,8 @@
 
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "Network/XrpcAppBskyAgeAssurancePack.h"
+#import "Network/XrpcAppBskyProxyMethodPack.h"
 #import "Network/XrpcChatBskyActorPack.h"
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcHandlerContext.h"
@@ -19,6 +21,17 @@
 - (void)testChatBskyActorPackConformsToProtocol {
   XCTAssertTrue([XrpcChatBskyActorPack conformsToProtocol:@protocol(XrpcRoutePack)]);
   XCTAssertEqualObjects([XrpcChatBskyActorPack routePackIdentifier], @"chat.bsky.actor");
+}
+
+- (void)testAppBskyProxyPackConformsToProtocol {
+  XCTAssertTrue([XrpcAppBskyProxyMethodPack conformsToProtocol:@protocol(XrpcRoutePack)]);
+  XCTAssertEqualObjects([XrpcAppBskyProxyMethodPack routePackIdentifier], @"app.bsky.proxy");
+}
+
+- (void)testAppBskyAgeAssurancePackConformsToProtocol {
+  XCTAssertTrue([XrpcAppBskyAgeAssurancePack conformsToProtocol:@protocol(XrpcRoutePack)]);
+  XCTAssertEqualObjects([XrpcAppBskyAgeAssurancePack routePackIdentifier],
+                        @"app.bsky.ageassurance");
 }
 
 - (void)testRegistrarRegistersConformingPack {

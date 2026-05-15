@@ -41,6 +41,23 @@
 
 static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
 
+static id<XrpcRoutePackServices> XrpcAppBskyResolvedRoutePackServices(
+    XrpcDispatcher *dispatcher,
+    PDSServiceDatabases *serviceDatabases,
+    JWTMinter *jwtMinter,
+    id<PDSAdminController> adminController,
+    id<XrpcRoutePackServices> routePackServices) {
+  if (routePackServices) {
+    return routePackServices;
+  }
+  return [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+                                                  jwtMinter:jwtMinter
+                                            adminController:adminController
+                                               configuration:nil
+                                           serviceDatabases:serviceDatabases
+                                                 rateLimiter:nil];
+}
+
 @implementation XrpcAppBskyMethods
 
 + (void)setRetainedLifecycleHandler:(RecordLifecycleHandler *)handler {
@@ -52,7 +69,14 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
                                   recordService:(nullable PDSRecordService *)recordService
                                       jwtMinter:(nullable JWTMinter *)jwtMinter
                                 adminController:(nullable id<PDSAdminController>)adminController
-                                  emailProvider:(nullable id<PDSEmailProvider>)emailProvider {
+                                  emailProvider:(nullable id<PDSEmailProvider>)emailProvider
+                              routePackServices:(nullable id<XrpcRoutePackServices>)routePackServices {
+  id<XrpcRoutePackServices> resolvedServices =
+      XrpcAppBskyResolvedRoutePackServices(dispatcher,
+                                           serviceDatabases,
+                                           jwtMinter,
+                                           adminController,
+                                           routePackServices);
   NSError *appViewDbError = nil;
   PDSDatabase *appViewDatabase =
       [serviceDatabases serviceDatabaseWithError:&appViewDbError];
@@ -86,15 +110,7 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
                                      appViewDatabase:appViewDatabase
                                           jwtMinter:jwtMinter
                                     adminController:adminController];
-      XrpcRoutePackServiceBag *chatActorServices =
-          [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
-                                                    jwtMinter:jwtMinter
-                                              adminController:adminController
-                                                 configuration:nil
-                                             serviceDatabases:serviceDatabases
-                                                   rateLimiter:nil];
-      [XrpcChatBskyActorPack registerWithDispatcher:dispatcher
-                                           services:chatActorServices];
+      [XrpcChatBskyActorPack registerWithDispatcher:dispatcher services:resolvedServices];
       [XrpcChatBskyConvoPack registerWithDispatcher:dispatcher
                                     appViewDatabase:appViewDatabase
                                   serviceDatabase:appViewDatabase
@@ -120,14 +136,22 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
                   recordService:(nullable PDSRecordService *)recordService
                        jwtMinter:(nullable JWTMinter *)jwtMinter
                  adminController:(nullable id<PDSAdminController>)adminController
-                   emailProvider:(nullable id<PDSEmailProvider>)emailProvider {
+                   emailProvider:(nullable id<PDSEmailProvider>)emailProvider
+               routePackServices:(nullable id<XrpcRoutePackServices>)routePackServices {
+  id<XrpcRoutePackServices> resolvedServices =
+      XrpcAppBskyResolvedRoutePackServices(dispatcher,
+                                           serviceDatabases,
+                                           jwtMinter,
+                                           adminController,
+                                           routePackServices);
 
   [self registerPDSLevelMethodsWithDispatcher:dispatcher
                               serviceDatabases:serviceDatabases
                                  recordService:recordService
                                      jwtMinter:jwtMinter
                                adminController:adminController
-                                 emailProvider:emailProvider];
+                                 emailProvider:emailProvider
+                             routePackServices:resolvedServices];
 
   NSError *appViewDbError = nil;
   PDSDatabase *appViewDatabase =
@@ -135,7 +159,7 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
 
   if ([ATProtoServiceConfiguration sharedConfiguration].appViewURL.length > 0) {
     GZ_LOG_INFO(@"Local AppView disabled; only registering proxy and PDS-side handlers.");
-    [XrpcAppBskyProxyMethodPack registerProxyOnlyMethodsWithDispatcher:dispatcher];
+    [XrpcAppBskyProxyMethodPack registerWithDispatcher:dispatcher services:resolvedServices];
     return;
   }
 
@@ -186,7 +210,11 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
                                                               jwtMinter:jwtMinter
                                                         adminController:adminController];
 
-  [XrpcAppBskyAgeAssurancePack registerWithDispatcher:dispatcher ageAssuranceService:ageAssuranceService];
+  if ([resolvedServices isKindOfClass:[XrpcRoutePackServiceBag class]]) {
+    ((XrpcRoutePackServiceBag *)resolvedServices).ageAssuranceService =
+        ageAssuranceService;
+  }
+  [XrpcAppBskyAgeAssurancePack registerWithDispatcher:dispatcher services:resolvedServices];
   [XrpcAppBskyContactPack registerWithDispatcher:dispatcher contactService:contactService jwtMinter:jwtMinter adminController:adminController];
   // Register video XRPC endpoints (only in internal mode)
   NSString *videoMode = [[[NSProcessInfo processInfo] environment] objectForKey:@"PDS_VIDEO_MODE"];
@@ -209,7 +237,7 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
                                 ageAssuranceService:ageAssuranceService
                                    searchIndexService:searchIndexService
                                          feedService:feedService];
-  [XrpcAppBskyProxyMethodPack registerProxyOnlyMethodsWithDispatcher:dispatcher];
+  [XrpcAppBskyProxyMethodPack registerWithDispatcher:dispatcher services:resolvedServices];
 }
 
 

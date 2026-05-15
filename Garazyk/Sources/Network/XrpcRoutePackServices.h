@@ -10,6 +10,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@class AgeAssuranceService;
 @class ATProtoServiceConfiguration;
 @class JWTMinter;
 @class PDSServiceDatabases;
@@ -31,6 +32,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly, nullable) PDSServiceDatabases *serviceDatabases;
 @property (nonatomic, readonly, nullable) RateLimiter *rateLimiter;
 
+/*! Pack-specific services populated before registration when needed. */
+@property (nonatomic, readonly, nullable) AgeAssuranceService *ageAssuranceService;
+
 @end
 
 /*!
@@ -46,6 +50,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly, nullable) ATProtoServiceConfiguration *configuration;
 @property (nonatomic, readonly, nullable) PDSServiceDatabases *serviceDatabases;
 @property (nonatomic, readonly, nullable) RateLimiter *rateLimiter;
+@property (nonatomic, strong, nullable) AgeAssuranceService *ageAssuranceService;
 
 - (instancetype)initWithDispatcher:(nullable XrpcDispatcher *)dispatcher
                          jwtMinter:(nullable JWTMinter *)jwtMinter

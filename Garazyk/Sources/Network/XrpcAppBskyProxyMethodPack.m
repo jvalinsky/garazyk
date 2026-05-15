@@ -7,40 +7,35 @@
 #import "Network/HttpResponse.h"
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcProxyHandler.h"
+#import "Network/XrpcRoutePackServices.h"
 
 @implementation XrpcAppBskyProxyMethodPack
 
-+ (void)setUnsupportedError:(HttpResponse *)response methodId:(NSString *)methodId {
-  response.statusCode = 501;
-  [response setJsonBody:@{
-    @"error" : @"NotSupported",
-    @"message" : [NSString
-        stringWithFormat:@"Method '%@' is not supported by this PDS",
-                         methodId]
-  }];
-}
-
-+ (void)proxyOrNotSupported:(HttpRequest *)request
-                   response:(HttpResponse *)response
-                   methodId:(NSString *)methodId
-                 dispatcher:(XrpcDispatcher *)dispatcher {
-  if (dispatcher.proxyURL) {
-    GZ_LOG_INFO(@"Proxying XRPC method '%@' to %@", methodId,
-                 dispatcher.proxyURL);
-    XrpcProxyHandler *proxy = [[XrpcProxyHandler alloc]
-        initWithProxyURL:dispatcher.proxyURL
-             upstreamDID:dispatcher.upstreamDID
-                  minter:dispatcher.jwtMinter];
-    [proxy handleRequest:request response:response];
-  } else {
-    GZ_LOG_INFO(
-        @"Method '%@' not supported locally and no upstream AppView configured",
-        methodId);
-    [self setUnsupportedError:response methodId:methodId];
-  }
++ (NSString *)routePackIdentifier {
+  return @"app.bsky.proxy";
 }
 
 + (void)registerProxyOnlyMethodsWithDispatcher:(XrpcDispatcher *)dispatcher {
+  XrpcRoutePackServiceBag *services =
+      [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+                                                jwtMinter:dispatcher.jwtMinter
+                                          adminController:nil
+                                             configuration:nil
+                                         serviceDatabases:nil
+                                               rateLimiter:nil];
+  [self registerWithDispatcher:dispatcher services:services];
+}
+
++ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+                      services:(id<XrpcRoutePackServices>)services {
+  XrpcDispatcher *resolvedDispatcher = services.dispatcher ?: dispatcher;
+  if (!resolvedDispatcher) {
+    return;
+  }
+  [self registerProxyOnlyMethodsOnDispatcher:resolvedDispatcher];
+}
+
++ (void)registerProxyOnlyMethodsOnDispatcher:(XrpcDispatcher *)dispatcher {
   NSArray<NSString *> *methodIds = @[
     @"app.bsky.actor.getProfile",
     @"app.bsky.actor.getProfiles",
@@ -63,6 +58,34 @@
                                           methodId:methodId
                                         dispatcher:dispatcher];
                        }];
+  }
+}
+
++ (void)setUnsupportedError:(HttpResponse *)response methodId:(NSString *)methodId {
+  response.statusCode = 501;
+  [response setJsonBody:@{
+    @"error" : @"NotSupported",
+    @"message" : [NSString
+        stringWithFormat:@"Method '%@' is not supported by this PDS", methodId]
+  }];
+}
+
++ (void)proxyOrNotSupported:(HttpRequest *)request
+                   response:(HttpResponse *)response
+                   methodId:(NSString *)methodId
+                 dispatcher:(XrpcDispatcher *)dispatcher {
+  if (dispatcher.proxyURL) {
+    GZ_LOG_INFO(@"Proxying XRPC method '%@' to %@", methodId, dispatcher.proxyURL);
+    XrpcProxyHandler *proxy = [[XrpcProxyHandler alloc]
+        initWithProxyURL:dispatcher.proxyURL
+             upstreamDID:dispatcher.upstreamDID
+                  minter:dispatcher.jwtMinter];
+    [proxy handleRequest:request response:response];
+  } else {
+    GZ_LOG_INFO(
+        @"Method '%@' not supported locally and no upstream AppView configured",
+        methodId);
+    [self setUnsupportedError:response methodId:methodId];
   }
 }
 
