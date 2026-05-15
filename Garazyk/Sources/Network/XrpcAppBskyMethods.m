@@ -98,18 +98,17 @@ static id<XrpcRoutePackServices> XrpcAppBskyResolvedRoutePackServices(
   // Bookmarks, chat, and Ozone are PDS-side concerns
   BookmarkService *bookmarkService =
       [[BookmarkService alloc] initWithDatabase:appViewDatabase];
+  if ([resolvedServices isKindOfClass:[XrpcRoutePackServiceBag class]]) {
+    XrpcRoutePackServiceBag *mutableServices = (XrpcRoutePackServiceBag *)resolvedServices;
+    mutableServices.bookmarkService = bookmarkService;
+    mutableServices.appViewDatabase = appViewDatabase;
+  }
 
-  [XrpcAppBskyBookmarksPack registerWithDispatcher:dispatcher
-                                    bookmarkService:bookmarkService
-                                          jwtMinter:jwtMinter
-                                    adminController:adminController];
+  [XrpcAppBskyBookmarksPack registerWithDispatcher:dispatcher services:resolvedServices];
 
   // Only register local chat handlers if a remote chat service is not configured
   if (!dispatcher.chatURL) {
-      [XrpcChatBskyGroupPack registerWithDispatcher:dispatcher
-                                     appViewDatabase:appViewDatabase
-                                          jwtMinter:jwtMinter
-                                    adminController:adminController];
+      [XrpcChatBskyGroupPack registerWithDispatcher:dispatcher services:resolvedServices];
       [XrpcChatBskyActorPack registerWithDispatcher:dispatcher services:resolvedServices];
       [XrpcChatBskyConvoPack registerWithDispatcher:dispatcher
                                     appViewDatabase:appViewDatabase
@@ -125,10 +124,10 @@ static id<XrpcRoutePackServices> XrpcAppBskyResolvedRoutePackServices(
                              adminController:adminController];
 
   DraftService *draftService = [[DraftService alloc] initWithDatabase:appViewDatabase];
-  [XrpcAppBskyDraftsPack registerWithDispatcher:dispatcher
-                                    draftService:draftService
-                                       jwtMinter:jwtMinter
-                                 adminController:adminController];
+  if ([resolvedServices isKindOfClass:[XrpcRoutePackServiceBag class]]) {
+    ((XrpcRoutePackServiceBag *)resolvedServices).draftService = draftService;
+  }
+  [XrpcAppBskyDraftsPack registerWithDispatcher:dispatcher services:resolvedServices];
 }
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher

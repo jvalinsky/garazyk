@@ -6,50 +6,65 @@
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcErrorHelper.h"
 #import "Network/XrpcHandler.h"
+#import "Network/XrpcHandlerContext.h"
+#import "Network/XrpcRoutePackServices.h"
 
 @implementation XrpcAppBskyBookmarksPack
+
++ (NSString *)routePackIdentifier {
+  return @"app.bsky.bookmark";
+}
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                bookmarkService:(BookmarkService *)bookmarkService
                      jwtMinter:(JWTMinter *)jwtMinter
                adminController:(id<PDSAdminController>)adminController {
+  XrpcRoutePackServiceBag *services =
+      [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+                                                jwtMinter:jwtMinter
+                                          adminController:adminController
+                                             configuration:nil
+                                         serviceDatabases:nil
+                                               rateLimiter:nil];
+  services.bookmarkService = bookmarkService;
+  [self registerWithDispatcher:dispatcher services:services];
+}
+
++ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+                      services:(id<XrpcRoutePackServices>)services {
+  BookmarkService *bookmarkService = services.bookmarkService;
+  if (!bookmarkService) {
+    return;
+  }
+
+  id<XrpcRoutePackServices> resolvedServices = services;
+
   [dispatcher registerAppBskyBookmarkGetBookmarks:^(HttpRequest *request,
                                                     HttpResponse *response) {
-    NSString *authHeader = [request headerForKey:@"Authorization"];
-    if (!authHeader) {
-      [XrpcErrorHelper setAuthenticationError:response
-                                      message:@"Authentication required"];
-      return;
-    }
-
-    NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                        jwtMinter:jwtMinter
-                                                  adminController:adminController
-                                                          request:request
-                                                         response:response];
-    if (!actorDID) {
+    XrpcHandlerContext *context =
+        [[XrpcHandlerContext alloc] initWithRequest:request
+                                           response:response
+                                           services:resolvedServices];
+    NSString *actorDID = nil;
+    if (![context requireAuthenticatedDID:&actorDID]) {
       return;
     }
 
     NSInteger limit = 50;
-    if (!XrpcParseLimit(request.queryParams[@"limit"], &limit, 1, 100,
-                        response)) {
+    if (!XrpcParseLimit(request.queryParams[@"limit"], &limit, 1, 100, response)) {
       return;
     }
 
     NSString *cursor = [request queryParamForKey:@"cursor"];
-
     NSError *error = nil;
     NSDictionary *result = [bookmarkService getBookmarksForActor:actorDID
                                                            limit:limit
                                                           cursor:cursor
                                                            error:&error];
     if (error) {
-      [XrpcErrorHelper setInternalServerError:response
-                                      message:error.localizedDescription];
+      [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
       return;
     }
 
@@ -59,26 +74,18 @@
 
   [dispatcher registerAppBskyBookmarkCreateBookmark:^(HttpRequest *request,
                                                       HttpResponse *response) {
-    NSString *authHeader = [request headerForKey:@"Authorization"];
-    if (!authHeader) {
-      [XrpcErrorHelper setAuthenticationError:response
-                                      message:@"Authentication required"];
-      return;
-    }
-
-    NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                        jwtMinter:jwtMinter
-                                                  adminController:adminController
-                                                          request:request
-                                                         response:response];
-    if (!actorDID) {
+    XrpcHandlerContext *context =
+        [[XrpcHandlerContext alloc] initWithRequest:request
+                                           response:response
+                                           services:resolvedServices];
+    NSString *actorDID = nil;
+    if (![context requireAuthenticatedDID:&actorDID]) {
       return;
     }
 
     NSDictionary *body = [request jsonBody];
     NSString *subjectURI = body[@"uri"];
     NSString *subjectCID = body[@"cid"];
-
     if (!subjectURI) {
       [XrpcErrorHelper setValidationError:response message:@"Missing uri"];
       return;
@@ -92,8 +99,7 @@
                                                createdAt:now
                                                    error:&error];
     if (!success) {
-      [XrpcErrorHelper setInternalServerError:response
-                                      message:error.localizedDescription];
+      [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
       return;
     }
 
@@ -103,25 +109,17 @@
 
   [dispatcher registerAppBskyBookmarkDeleteBookmark:^(HttpRequest *request,
                                                       HttpResponse *response) {
-    NSString *authHeader = [request headerForKey:@"Authorization"];
-    if (!authHeader) {
-      [XrpcErrorHelper setAuthenticationError:response
-                                      message:@"Authentication required"];
-      return;
-    }
-
-    NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                        jwtMinter:jwtMinter
-                                                  adminController:adminController
-                                                          request:request
-                                                         response:response];
-    if (!actorDID) {
+    XrpcHandlerContext *context =
+        [[XrpcHandlerContext alloc] initWithRequest:request
+                                           response:response
+                                           services:resolvedServices];
+    NSString *actorDID = nil;
+    if (![context requireAuthenticatedDID:&actorDID]) {
       return;
     }
 
     NSDictionary *body = [request jsonBody];
     NSString *subjectURI = body[@"uri"];
-
     if (!subjectURI) {
       [XrpcErrorHelper setValidationError:response message:@"Missing uri"];
       return;
@@ -132,8 +130,7 @@
                                                                did:actorDID
                                                              error:&error];
     if (!success) {
-      [XrpcErrorHelper setInternalServerError:response
-                                      message:error.localizedDescription];
+      [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
       return;
     }
 

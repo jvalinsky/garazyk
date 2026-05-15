@@ -245,10 +245,17 @@ async function main() {
 
       if (args.otel) {
         initE2eTracing("garazyk-e2e-runner");
-        console.log(`OTel tracing enabled → ${Deno.env.get("OTEL_EXPORTER_OTLP_ENDPOINT") || "http://localhost:4318"}`);
+        console.log(
+          `OTel tracing enabled → ${
+            Deno.env.get("OTEL_EXPORTER_OTLP_ENDPOINT") || "http://localhost:4318"
+          }`,
+        );
       }
 
       if (args.collectDiagnostics) {
+        if (args.topology && topologyManifestPath) {
+          Deno.env.set("ATPROTO_TOPOLOGY_MANIFEST", topologyManifestPath);
+        }
         await collectDiagnostics(context);
         console.log(`Diagnostics: ${context.diagnosticsDir}`);
         return;
@@ -259,6 +266,9 @@ async function main() {
           useBinary: args.binary,
           runId: context.runId,
           diagnosticsDir: context.diagnosticsDir,
+          topology: args.topology,
+          withPds2: args.pds2,
+          collectDiagnostics: args.collectDiagnostics,
         });
         return;
       }
@@ -267,7 +277,7 @@ async function main() {
       withPds2 = args.pds2 || selected.some((scenario) => scenario.needsPds2);
 
       if (args.setupOnly) {
-        await startLocalNetwork({
+        const session = await startLocalNetwork({
           withPds2,
           useBinary: args.binary,
           keepRunning: args.keepRunning,
@@ -277,8 +287,9 @@ async function main() {
           clientFlow: args.clientFlow,
           allowHybridNetwork: args.allowHybridNetwork,
           topology: args.topology,
+          onSessionStarted: (session) => lifecycle.registerNetworkSession(session),
         });
-        lifecycle.markNetworkStarted();
+        lifecycle.markNetworkStarted(session);
         console.log(`Run directory: ${context.runDir}`);
         if (args.keepRunning) return;
 
@@ -289,7 +300,7 @@ async function main() {
       }
 
       if (!args.noSetup || args.setup) {
-        await startLocalNetwork({
+        const session = await startLocalNetwork({
           withPds2,
           useBinary: args.binary,
           runId: context.runId,
@@ -298,8 +309,9 @@ async function main() {
           clientFlow: args.clientFlow,
           allowHybridNetwork: args.allowHybridNetwork,
           topology: args.topology,
+          onSessionStarted: (session) => lifecycle.registerNetworkSession(session),
         });
-        lifecycle.markNetworkStarted();
+        lifecycle.markNetworkStarted(session);
         if (topologyManifestPath) Deno.env.set("ATPROTO_TOPOLOGY_MANIFEST", topologyManifestPath);
         topology = resolveTopology(args.webClient, args.topology, {
           manifestPath: topologyManifestPath,
@@ -318,11 +330,17 @@ async function main() {
       );
       results.push(...loopResult.results);
       reportPaths.push(...loopResult.reportPaths);
+    } catch (err) {
+      fatalError = err;
+      throw err;
     } finally {
       await lifecycle.finalizeRun({
         results,
         fatalError,
         collectDiagnostics: async () => {
+          if (args.topology && topologyManifestPath) {
+            Deno.env.set("ATPROTO_TOPOLOGY_MANIFEST", topologyManifestPath);
+          }
           await collectDiagnostics(context);
         },
       });

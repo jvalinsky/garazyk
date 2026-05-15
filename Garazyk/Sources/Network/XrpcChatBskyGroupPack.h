@@ -8,6 +8,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "Network/XrpcRoutePack.h"
 
 @class XrpcDispatcher;
 @protocol PDSQueryDatabase;
@@ -16,7 +17,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface XrpcChatBskyGroupPack : NSObject
+@interface XrpcChatBskyGroupPack : NSObject <XrpcRoutePack>
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase

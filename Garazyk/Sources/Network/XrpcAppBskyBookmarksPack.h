@@ -8,6 +8,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "Network/XrpcRoutePack.h"
 
 @class BookmarkService;
 @class JWTMinter;
@@ -16,7 +17,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface XrpcAppBskyBookmarksPack : NSObject
+@interface XrpcAppBskyBookmarksPack : NSObject <XrpcRoutePack>
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                bookmarkService:(BookmarkService *)bookmarkService

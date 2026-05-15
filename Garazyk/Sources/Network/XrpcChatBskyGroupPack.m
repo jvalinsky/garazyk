@@ -2,36 +2,67 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Network/XrpcChatBskyGroupPack.h"
 
-#import "Debug/GZLogger.h"
+#import "Admin/PDSAdminAuth.h"
+#import "AppView/Services/ActorService.h"
+#import "AppView/Services/GroupService.h"
+#import "Database/PDSDatabase.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/XrpcErrorHelper.h"
-#import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcHandler.h"
-#import "AppView/Services/GroupService.h"
-#import "AppView/Services/ActorService.h"
-#import "Database/PDSDatabase.h"
-#import "Admin/PDSAdminAuth.h"
+#import "Network/XrpcHandlerContext.h"
+#import "Network/XrpcRoutePackServices.h"
+
+static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
+                                                   HttpResponse *response,
+                                                   id<XrpcRoutePackServices> services) {
+  XrpcHandlerContext *context =
+      [[XrpcHandlerContext alloc] initWithRequest:request
+                                         response:response
+                                         services:services];
+  NSString *actorDID = nil;
+  if (![context requireAuthenticatedDID:&actorDID]) {
+    return nil;
+  }
+  return actorDID;
+}
 
 @implementation XrpcChatBskyGroupPack
+
++ (NSString *)routePackIdentifier {
+  return @"chat.bsky.group";
+}
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
                     jwtMinter:(JWTMinter *)jwtMinter
               adminController:(id<PDSAdminController>)adminController {
+  XrpcRoutePackServiceBag *services =
+      [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+                                                jwtMinter:jwtMinter
+                                          adminController:adminController
+                                             configuration:nil
+                                         serviceDatabases:nil
+                                               rateLimiter:nil];
+  services.appViewDatabase = appViewDatabase;
+  [self registerWithDispatcher:dispatcher services:services];
+}
 
-    GroupService *groupService = [[GroupService alloc] initWithDatabase:appViewDatabase];
-    ActorService *actorService = [[ActorService alloc] initWithDatabase:appViewDatabase];
++ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+                      services:(id<XrpcRoutePackServices>)services {
+  id<PDSQueryDatabase> appViewDatabase = services.appViewDatabase;
+  if (!appViewDatabase) {
+    return;
+  }
+
+  id<XrpcRoutePackServices> resolvedServices = services;
+  GroupService *groupService = [[GroupService alloc] initWithDatabase:appViewDatabase];
+  (void)[[ActorService alloc] initWithDatabase:appViewDatabase];
 
     // chat.bsky.group.createGroup - Create new group
     [dispatcher registerMethod:@"chat.bsky.group.createGroup"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -64,12 +95,7 @@
     // chat.bsky.group.deleteGroup - Delete group (Admin only)
     [dispatcher registerMethod:@"chat.bsky.group.deleteGroup"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
         if (![[PDSAdminAuth sharedAuth] isAdminDid:actorDID]) {
@@ -98,12 +124,7 @@
     // chat.bsky.group.editGroup - Edit group metadata
     [dispatcher registerMethod:@"chat.bsky.group.editGroup"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -168,12 +189,7 @@
     // chat.bsky.group.addMembers - Add members to group
     [dispatcher registerMethod:@"chat.bsky.group.addMembers"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -214,12 +230,7 @@
     // chat.bsky.group.removeMembers - Remove members from group
     [dispatcher registerMethod:@"chat.bsky.group.removeMembers"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -286,12 +297,7 @@
     // chat.bsky.group.listGroups - List all groups (Admin only)
     [dispatcher registerMethod:@"chat.bsky.group.listGroups"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
         if (![[PDSAdminAuth sharedAuth] isAdminDid:actorDID]) {
@@ -318,12 +324,7 @@
     // chat.bsky.group.listInviteLinks - List all invite links (Admin only)
     [dispatcher registerMethod:@"chat.bsky.group.listInviteLinks"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
         if (![[PDSAdminAuth sharedAuth] isAdminDid:actorDID]) {
@@ -350,12 +351,7 @@
     // chat.bsky.group.createJoinLink - Create invite link
     [dispatcher registerMethod:@"chat.bsky.group.createJoinLink"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -394,12 +390,7 @@
     // chat.bsky.group.editJoinLink - Edit invite link
     [dispatcher registerMethod:@"chat.bsky.group.editJoinLink"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -431,12 +422,7 @@
     // chat.bsky.group.disableJoinLink - Disable invite link
     [dispatcher registerMethod:@"chat.bsky.group.disableJoinLink"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -461,12 +447,7 @@
     // chat.bsky.group.requestJoin - Request to join group
     [dispatcher registerMethod:@"chat.bsky.group.requestJoin"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -493,12 +474,7 @@
     // chat.bsky.group.approveJoinRequest - Approve join request
     [dispatcher registerMethod:@"chat.bsky.group.approveJoinRequest"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -525,12 +501,7 @@
     // chat.bsky.group.rejectJoinRequest - Reject join request
     [dispatcher registerMethod:@"chat.bsky.group.rejectJoinRequest"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -557,12 +528,7 @@
     // chat.bsky.group.listJoinRequests - List pending join requests
     [dispatcher registerMethod:@"chat.bsky.group.listJoinRequests"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
         NSString *groupUri = [request queryParamForKey:@"groupUri"];
@@ -593,12 +559,7 @@
     // chat.bsky.group.leaveGroup - Leave a group
     [dispatcher registerMethod:@"chat.bsky.group.leaveGroup"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -627,12 +588,7 @@
     // chat.bsky.group.sendMessage - Send message to group
     [dispatcher registerMethod:@"chat.bsky.group.sendMessage"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -698,12 +654,7 @@
     // chat.bsky.group.addReaction - Add reaction to group message
     [dispatcher registerMethod:@"chat.bsky.group.addReaction"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -736,12 +687,7 @@
     // chat.bsky.group.removeReaction - Remove reaction from group message
     [dispatcher registerMethod:@"chat.bsky.group.removeReaction"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -774,12 +720,7 @@
     // chat.bsky.group.deleteMessageForSelf - Delete message for self
     [dispatcher registerMethod:@"chat.bsky.group.deleteMessageForSelf"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -804,12 +745,7 @@
     // chat.bsky.group.enableJoinLink - Re-enable a disabled join link
     [dispatcher registerMethod:@"chat.bsky.group.enableJoinLink"
                        handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                           jwtMinter:jwtMinter
-                                                     adminController:adminController
-                                                             request:request
-                                                            response:response];
+        NSString *actorDID = XrpcChatBskyGroupAuthenticatedDID(request, response, resolvedServices);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
