@@ -12,6 +12,11 @@
 #import "Debug/GZLogger.h"
 #import <Foundation/Foundation.h>
 
+static BOOL PDSNetworkTransportMacUsesPlainTCP(NSUInteger port) {
+    return port == 0 || port == 80 || port == 2583 || port == 2584 ||
+           port == 2582 || port == 3200 || port == 3210;
+}
+
 @implementation PDSNetworkTransportFactory
 
 + (id<PDSNetworkListener>)createListenerWithPort:(NSUInteger)port {
@@ -58,7 +63,7 @@
                           [host isEqualToString:@"localhost"];
         
         // Use plain TCP for loopback or known plain ports
-        if (isLoopback || port == 80 || port == 2583 || port == 2584 || port == 2582 || port == 3200) {
+        if (isLoopback || PDSNetworkTransportMacUsesPlainTCP(port)) {
             parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
         } else {
             parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DEFAULT_CONFIGURATION, NW_PARAMETERS_DEFAULT_CONFIGURATION);
@@ -178,7 +183,7 @@
     if (self) {
         _port = port;
         nw_parameters_t parameters;
-        if (port == 0 || port == 80 || port == 2583 || port == 2584 || port == 2582 || port == 3200) {
+        if (PDSNetworkTransportMacUsesPlainTCP(port)) {
             parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
         } else {
             parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DEFAULT_CONFIGURATION, NW_PARAMETERS_DEFAULT_CONFIGURATION);
