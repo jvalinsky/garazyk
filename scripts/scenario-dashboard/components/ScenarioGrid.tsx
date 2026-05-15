@@ -1,4 +1,4 @@
-import ScenarioCard from "./ScenarioCard.tsx";
+import ScenarioCard from "../islands/ScenarioCard.tsx";
 
 interface ScenarioGridProps {
   scenarios: Array<{
