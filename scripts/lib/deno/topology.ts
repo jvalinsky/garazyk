@@ -1,25 +1,17 @@
-import { join, resolve, relative } from "@std/path";
-import {
-  DEFAULT_PORTS,
-  DEFAULT_SERVICE_NAMES,
-  defaultRolePort,
-  defaultServiceName,
-  KnownServiceRole,
-  ROLE_ENV_REGISTRY,
-  roleEnvKey,
-} from "./topology_registry.ts";
-import {
-  normalizeTopologyPreset,
-  parseRawTopologyPresetV1,
-  parseTopologyManifestJson,
-  type RawTopologyPresetV1,
-  type ResolvedTopology,
-} from "./topology_schema.ts";
+/**
+ * ATProto network topology management — presets, inheritance, and resolution.
+ *
+ * Re-exports types and manifest helpers from topology_types.ts and
+ * topology_manifest.ts for backward compatibility.
+ *
+ * @module topology
+ */
 
-export type BrowserFlow = "none" | "smoke" | "login" | "deep";
+import { join, resolve } from "@std/path";
+import { parseRawTopologyPresetV1, normalizeTopologyPreset } from "./topology_schema.ts";
 
-export type ServiceRole = KnownServiceRole;
-
+// Re-export all types
+export type { BrowserFlow, ServiceRole } from "./topology_types.ts";
 export type {
   ContainerSpec,
   DiagnosticProbeSpec,
@@ -32,276 +24,72 @@ export type {
   ScenarioRequirement,
   SidecarSpec,
   VolumeSpec,
-} from "./topology_schema.ts";
+} from "./topology_types.ts";
+export type {
+  DiagnosticProbeConfig,
+  InheritedAdapter,
+  ServiceAdapter,
+  ServiceRole as ServiceRoleAlias,
+  SidecarAdapter,
+  SourceBuild,
+  SourceBuildInfo,
+  Topology,
+  TopologyDiagnosticProbe,
+  TopologyHealthProbe,
+  TopologyManifest,
+  TopologyPreset,
+  TopologyResolveOptions,
+  WebClientTopology,
+} from "./topology_types.ts";
 
-export interface InheritedAdapter {
-  inherit: string;
-}
+// Re-export manifest helpers
+export {
+  sanitizeTopologyName,
+  serviceNameForRole,
+  defaultPortForRole,
+  parsePortMapping,
+  publicUrlForRole,
+  internalUrlForRole,
+  roleToEnvKey,
+  createTopologyManifest,
+  writeTopologyManifest,
+  loadTopologyManifest,
+} from "./topology_manifest.ts";
 
-export interface SourceBuild {
-  /** Git remote URL */
-  repo: string;
-  /** Git ref — tag, branch, or commit SHA */
-  ref: string;
-  /** Subdirectory within the repo containing the Dockerfile (default: repo root) */
-  dockerDir?: string;
-  /** Dockerfile name within dockerDir (default: "Dockerfile") */
-  dockerfile?: string;
-  /** Build args to pass to docker build */
-  buildArgs?: Record<string, string>;
-  /**
-   * Path to a Dockerfile in the Garazyk repo to copy into the cloned source
-   * directory after cloning. Useful when the upstream repo doesn't ship a
-   * Dockerfile. Path is relative to the Garazyk repo root.
-   */
-  dockerfileOverlay?: string;
-  /**
-   * Path to a directory in the Garazyk repo to copy into the cloned source
-   * directory after cloning. The directory's contents are merged into the
-   * clone root (existing files are overwritten). Useful for shipping patches,
-   * config overlays, or additional build files alongside the Dockerfile.
-   * Path is relative to the Garazyk repo root.
-   */
-  overlayDir?: string;
-}
+// Re-export constants
+export { ROLE_TO_SERVICE, ROLE_TO_PORT, ROLE_TO_ENV } from "./topology_types.ts";
 
-export interface SidecarAdapter {
-  /** Docker image tag */
-  image?: string;
-  /** Source build configuration (alternative to image) */
-  source?: SourceBuild;
-  /** Override command */
-  command?: string[];
-  /** Environment variables */
-  env?: Record<string, string>;
-  /** Port mappings — e.g. ["5432:5432"] */
-  ports?: string[];
-  /** Volume mounts */
-  volumes?: string[];
-  /**
-   * Config files to bind-mount from the parent adapter's source clone.
-   * Keys are container paths (e.g. "/etc/garage.toml"),
-   * values are paths relative to the source clone root (e.g. "garage.toml").
-   * The compiler resolves these to absolute bind mounts at render time.
-   */
-  configFiles?: Record<string, string>;
-  /** Health check definition (path-based or custom test) */
-  healthCheck?: {
-    /** HTTP path (null if using customTest instead) */
-    path: string | null;
-    /** Custom healthcheck test command — e.g. ["CMD-SHELL", "pg_isready -U plc"] */
-    customTest?: string[];
-    /** Extra headers for HTTP health checks */
-    headers?: Record<string, string>;
-  };
-  /** Services this sidecar depends on (must be healthy before starting) */
-  dependsOn?: string[];
-  /** Per-service diagnostic HTTP probes */
-  diagnostics?: DiagnosticProbeConfig[];
-}
+// ---------------------------------------------------------------------------
+// Internal imports
+// ---------------------------------------------------------------------------
 
-export interface ServiceAdapter {
-  /** Optional v2 role marker; the map key remains authoritative for v1 presets */
-  role?: ServiceRole;
-  /** Adapter name — e.g. "garazyk", "reference-pds", "cocoon-pds" */
-  name: string;
-  /** Optional explicit Docker Compose service name */
-  serviceName?: string;
-  /** v2 container block; normalized into the top-level adapter shape */
-  container?: Partial<ServiceAdapter>;
-  /** Docker image tag (required for non-local adapters) */
-  image?: string;
-  /** Source build configuration (alternative to image — clone repo and build) */
-  source?: SourceBuild;
-  /** Local build context path (for garazyk services) */
-  buildContext?: string;
-  /** Dockerfile within buildContext */
-  dockerfile?: string;
-  /** Override entrypoint */
-  entrypoint?: string[];
-  /** Override command */
-  command?: string[];
-  /** Environment variables */
-  env?: Record<string, string>;
-  /** Port mappings — e.g. ["2583:2583"] */
-  ports?: string[];
-  /** Volume mounts — e.g. ["local_pds_data:/var/lib/atprotopds"] */
-  volumes?: string[];
-  /** Health check definition */
-  healthCheck: {
-    /** HTTP path — e.g. "/xrpc/com.atproto.server.describeServer" (null for customTest-only) */
-    path: string | null;
-    /** Custom healthcheck test command — e.g. ["CMD-SHELL", "pg_isready"] */
-    customTest?: string[];
-    /** Extra headers (e.g. Authorization for admin endpoints) */
-    headers?: Record<string, string>;
-  };
-  /** Capabilities this adapter supports — e.g. ["describeServer", "createAccount"] */
-  capabilities: string[];
-  /** Service names this adapter depends on */
-  dependsOn?: string[];
-  /** Sidecar containers that run alongside this service (e.g. PostgreSQL for reference PLC) */
-  sidecars?: Record<string, SidecarAdapter>;
-  /** Per-service diagnostic HTTP probes */
-  diagnostics?: DiagnosticProbeConfig[];
-  /** Environment variables injected into scenario runners for this service */
-  scenarioEnv?: Record<string, string>;
-}
+import {
+  sanitizeTopologyName,
+  serviceNameForRole,
+  publicUrlForRole,
+  internalUrlForRole,
+  roleToEnvKey,
+  loadTopologyManifest,
+} from "./topology_manifest.ts";
+import type {
+  InheritedAdapter,
+  ServiceAdapter,
+  ServiceRole,
+  Topology,
+  TopologyPreset,
+  TopologyResolveOptions,
+  WebClientTopology,
+} from "./topology_types.ts";
+import {
+  defaultServiceName,
+  defaultRolePort,
+  KnownServiceRole,
+  roleEnvKey,
+} from "./topology_registry.ts";
 
-export interface TopologyPreset {
-  name: string;
-  description: string;
-  roles: Partial<Record<ServiceRole, ServiceAdapter | InheritedAdapter>>;
-  webClient?: WebClientTopology;
-  /** DNS aliases on the Docker network — e.g. { "local-appview": ["bsky.app"] } */
-  networkAliases?: Record<string, string[]>;
-}
-
-export interface DiagnosticProbeConfig {
-  name?: string;
-  path?: string;
-  url?: string;
-  headers?: Record<string, string>;
-}
-
-export interface WebClientTopology {
-  name: string;
-  source: string;
-  ref: string;
-  buildPreset: "garazyk-ui" | "social-app" | "witchsky";
-  serveCommand: string[];
-  publicUrl: string;
-  internalUrl: string;
-  env: Record<string, string>;
-  healthCheck: {
-    url: string;
-    intervalSeconds: number;
-    timeoutSeconds: number;
-    retries: number;
-    startPeriodSeconds: number;
-  };
-  oauthRedirects: string[];
-  capabilities: string[];
-  browserFlow: {
-    smoke: string;
-    login: string;
-    deep: string;
-  };
-  allowHybridNetwork?: boolean;
-}
-
-export interface Topology {
-  preset?: TopologyPreset;
-  webClient?: WebClientTopology;
-  serviceUrls: Record<string, string>;
-  internalUrls: Record<string, string>;
-  serviceNames: Record<string, string>;
-  /** Union of all adapter capabilities from the active preset */
-  capabilities: Set<string>;
-  capabilitiesByRole: Record<string, Set<string>>;
-  manifest?: TopologyManifest;
-  resolved?: ResolvedTopology;
-}
-
-export interface SourceBuildInfo {
-  /** Adapter name */
-  name: string;
-  /** Git remote URL */
-  repo: string;
-  /** Git ref — tag, branch, or commit SHA */
-  ref: string;
-  /** Subdirectory containing the Dockerfile */
-  dockerDir: string;
-  /** Dockerfile name */
-  dockerfile: string;
-  /** Build args */
-  buildArgs: Record<string, string>;
-  /** Dockerfile overlay path (relative to repo root) */
-  dockerfileOverlay: string;
-  /** Overlay directory path (relative to repo root) — contents are merged into the clone */
-  overlayDir: string;
-  /** Local path where the repo should be cloned */
-  cloneDir: string;
-}
-
-export interface TopologyHealthProbe {
-  role: string;
-  serviceName: string;
-  label: string;
-  mode: "http" | "docker-health";
-  url?: string;
-  path?: string | null;
-  headers?: Record<string, string>;
-  timeoutSeconds: number;
-}
-
-export interface TopologyDiagnosticProbe {
-  name: string;
-  role: string;
-  serviceName: string;
-  url: string;
-  headers?: Record<string, string>;
-}
-
-export interface TopologyManifest {
-  version: 1 | 2;
-  name: string;
-  description: string;
-  runDir: string;
-  repoRoot: string;
-  composeFile: string;
-  networkName: string;
-  serviceUrls: Record<string, string>;
-  internalUrls: Record<string, string>;
-  serviceNames: Record<string, string>;
-  capabilities: string[];
-  capabilitiesByRole: Record<string, string[]>;
-  scenarioEnv: Record<string, string>;
-  health: TopologyHealthProbe[];
-  diagnostics: TopologyDiagnosticProbe[];
-  sources: SourceBuildInfo[];
-  urls?: {
-    host: Record<string, string>;
-    docker: Record<string, string>;
-  };
-  env?: {
-    hostRunner: Record<string, string>;
-    dockerRunner: Record<string, string>;
-    scenario: Record<string, string>;
-  };
-  capabilitiesV2?: {
-    all: string[];
-    byRole: Record<string, string[]>;
-  };
-  resources?: Record<string, {
-    cpu?: string;
-    memory?: string;
-    localDisk?: string;
-  }>;
-  services?: Record<string, {
-    role: string;
-    name: string;
-    serviceName: string;
-    capabilities: string[];
-    dependencies: {
-      requested: string[];
-      composeServiceNames: string[];
-    };
-    secrets: string[];
-  }>;
-}
-
-export interface TopologyResolveOptions {
-  repoRoot?: string;
-  runDir?: string;
-  composeFile?: string;
-  manifestPath?: string;
-  includePds2?: boolean;
-}
-
-export const ROLE_TO_SERVICE: Record<ServiceRole, string> = DEFAULT_SERVICE_NAMES;
-export const ROLE_TO_PORT: Record<ServiceRole, string> = DEFAULT_PORTS;
-export const ROLE_TO_ENV: Record<string, string> = ROLE_ENV_REGISTRY;
+// ---------------------------------------------------------------------------
+// Web client presets
+// ---------------------------------------------------------------------------
 
 function readEnv(name: string): string | undefined {
   try {
@@ -425,52 +213,18 @@ export const WEB_CLIENT_PRESETS: Record<string, WebClientTopology> = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// Repo root
+// ---------------------------------------------------------------------------
+
 function repoRootFromModule(): string {
   const scriptDir = new URL(".", import.meta.url).pathname;
   return scriptDir.replace(/\/scripts\/lib\/deno\/$/, "");
 }
 
-export function sanitizeTopologyName(name: string): string {
-  return name.replace(/[^a-zA-Z0-9._-]/g, "_");
-}
-
-export function serviceNameForRole(role: string, adapter?: ServiceAdapter): string {
-  return adapter?.serviceName || defaultServiceName(role);
-}
-
-export function defaultPortForRole(role: string): string {
-  return defaultRolePort(role);
-}
-
-export function parsePortMapping(mapping?: string): { hostPort: string; containerPort: string } {
-  if (!mapping) return { hostPort: "", containerPort: "" };
-  const parts = mapping.split(":");
-  if (parts.length === 1) return { hostPort: parts[0], containerPort: parts[0] };
-  return {
-    hostPort: parts[parts.length - 2],
-    containerPort: parts[parts.length - 1],
-  };
-}
-
-export function publicUrlForRole(role: string, adapter: ServiceAdapter): string {
-  const parsed = parsePortMapping(adapter.ports?.[0]);
-  const port = parsed.hostPort || defaultPortForRole(role);
-  return `http://localhost:${port}`;
-}
-
-export function internalUrlForRole(role: string, adapter: ServiceAdapter): string {
-  const parsed = parsePortMapping(adapter.ports?.[0]);
-  const port = parsed.containerPort || parsed.hostPort || defaultPortForRole(role);
-  return `http://${serviceNameForRole(role, adapter)}:${port}`;
-}
-
-export function roleToEnvKey(role: string): string {
-  return roleEnvKey(role);
-}
-
-function clonePreset(preset: TopologyPreset): TopologyPreset {
-  return JSON.parse(JSON.stringify(preset)) as TopologyPreset;
-}
+// ---------------------------------------------------------------------------
+// Preset loading
+// ---------------------------------------------------------------------------
 
 function normalizeAdapter(
   raw: ServiceAdapter | InheritedAdapter,
@@ -482,13 +236,14 @@ function normalizeAdapter(
   return merged;
 }
 
+function clonePreset(preset: TopologyPreset): TopologyPreset {
+  return JSON.parse(JSON.stringify(preset)) as TopologyPreset;
+}
+
 /**
  * Load a topology preset from scripts/scenarios/topologies/<name>.json.
- * Validates required fields and returns the parsed TopologyPreset.
  */
 export function loadTopologyPreset(name: string): TopologyPreset {
-  // Validate preset name — only alphanumeric, hyphens, underscores.
-  // Prevents path traversal (e.g. "../../etc/passwd").
   if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
     throw new Error(
       `Invalid topology preset name: "${name}". Only alphanumeric characters, hyphens, and underscores are allowed.`,
@@ -499,7 +254,6 @@ export function loadTopologyPreset(name: string): TopologyPreset {
   const topologiesDir = join(repoRoot, "scripts/scenarios/topologies");
   const presetPath = join(topologiesDir, `${name}.json`);
 
-  // Verify the resolved path stays under the topologies directory.
   const resolvedPath = resolve(presetPath);
   const resolvedDir = resolve(topologiesDir);
   if (!resolvedPath.startsWith(resolvedDir + "/") && resolvedPath !== resolvedDir) {
@@ -530,7 +284,6 @@ export function loadTopologyPreset(name: string): TopologyPreset {
 
   for (const [role, adapter] of Object.entries(preset.roles)) {
     preset.roles[role as ServiceRole] = normalizeAdapter(adapter);
-    // Skip inheritance markers — they'll be resolved later by resolvePreset
     if ("inherit" in adapter && typeof (adapter as any).inherit === "string") continue;
     const concrete = preset.roles[role as ServiceRole] as ServiceAdapter;
     if (!concrete.name || !concrete.healthCheck || !concrete.capabilities) {
@@ -542,6 +295,10 @@ export function loadTopologyPreset(name: string): TopologyPreset {
 
   return preset;
 }
+
+// ---------------------------------------------------------------------------
+// Inheritance resolution
+// ---------------------------------------------------------------------------
 
 function resolveInheritedAdapter(
   role: ServiceRole,
@@ -600,208 +357,9 @@ export function resolvePreset(
   };
 }
 
-function sourceInfo(
-  name: string,
-  source: SourceBuild,
-  runDir: string,
-  cloneName = name,
-): SourceBuildInfo {
-  return {
-    name,
-    repo: source.repo,
-    ref: source.ref,
-    dockerDir: source.dockerDir || ".",
-    dockerfile: source.dockerfile || "Dockerfile",
-    buildArgs: source.buildArgs || {},
-    dockerfileOverlay: source.dockerfileOverlay || "",
-    overlayDir: source.overlayDir || "",
-    cloneDir: join(runDir, "sources", sanitizeTopologyName(cloneName)),
-  };
-}
-
-export function createTopologyManifest(
-  preset: TopologyPreset,
-  options: {
-    runDir: string;
-    repoRoot: string;
-    composeFile?: string;
-  },
-): TopologyManifest {
-  const serviceUrls: Record<string, string> = {};
-  const internalUrls: Record<string, string> = {};
-  const serviceNames: Record<string, string> = {};
-  const capabilitiesByRole: Record<string, string[]> = {};
-  const capabilitySet = new Set<string>();
-  const scenarioEnv: Record<string, string> = {};
-  const hostRunnerEnv: Record<string, string> = {};
-  const dockerRunnerEnv: Record<string, string> = {};
-  const scenarioOnlyEnv: Record<string, string> = {};
-  const health: TopologyHealthProbe[] = [];
-  const diagnostics: TopologyDiagnosticProbe[] = [];
-  const sources: SourceBuildInfo[] = [];
-  const resources: TopologyManifest["resources"] = {};
-  const services: NonNullable<TopologyManifest["services"]> = {};
-
-  for (const [role, adapterValue] of Object.entries(preset.roles)) {
-    if ("inherit" in adapterValue) {
-      throw new Error(
-        `Preset "${preset.name}" still has unresolved inheritance for role "${role}"`,
-      );
-    }
-    const adapter = adapterValue as ServiceAdapter;
-    const serviceName = serviceNameForRole(role, adapter);
-    const publicUrl = publicUrlForRole(role, adapter);
-    const internalUrl = internalUrlForRole(role, adapter);
-
-    serviceUrls[role] = publicUrl;
-    internalUrls[role] = internalUrl;
-    serviceNames[role] = serviceName;
-    hostRunnerEnv[roleToEnvKey(role)] = publicUrl;
-    dockerRunnerEnv[roleToEnvKey(role)] = internalUrl;
-    scenarioEnv[roleToEnvKey(role)] = publicUrl;
-    Object.assign(scenarioEnv, adapter.scenarioEnv || {});
-    Object.assign(scenarioOnlyEnv, adapter.scenarioEnv || {});
-
-    const roleCapabilities = [...adapter.capabilities];
-    capabilitiesByRole[role] = roleCapabilities;
-    for (const cap of roleCapabilities) capabilitySet.add(cap);
-    services[role] = {
-      role,
-      name: adapter.name,
-      serviceName,
-      capabilities: roleCapabilities,
-      dependencies: {
-        requested: adapter.dependsOn || [],
-        composeServiceNames: adapter.dependsOn || [],
-      },
-      secrets: Object.keys(adapter.env || {}).filter((key) =>
-        /(SECRET|TOKEN|PASSWORD|JWT|KEY)/i.test(key)
-      ),
-    };
-
-    if (adapter.source) {
-      sources.push(sourceInfo(adapter.name, adapter.source, options.runDir));
-    }
-    if ((adapter as any).resources) {
-      resources[role] = (adapter as any).resources;
-    }
-
-    const healthCheck = adapter.healthCheck;
-    const timeoutSeconds = role === "appview" ? 90 : 60;
-    if (healthCheck?.path) {
-      const probe: TopologyHealthProbe = {
-        role,
-        serviceName,
-        label: role.toUpperCase(),
-        mode: "http",
-        url: `${publicUrl}${healthCheck.path}`,
-        path: healthCheck.path,
-        headers: healthCheck.headers,
-        timeoutSeconds,
-      };
-      health.push(probe);
-      diagnostics.push({
-        name: `${role}-health`,
-        role,
-        serviceName,
-        url: probe.url!,
-        headers: healthCheck.headers,
-      });
-    } else if (healthCheck?.customTest) {
-      health.push({
-        role,
-        serviceName,
-        label: role.toUpperCase(),
-        mode: "docker-health",
-        path: null,
-        timeoutSeconds,
-      });
-    }
-
-    for (const probe of adapter.diagnostics || []) {
-      const url = probe.url || `${publicUrl}${probe.path || ""}`;
-      diagnostics.push({
-        name: probe.name || `${role}-${diagnostics.length}`,
-        role,
-        serviceName,
-        url,
-        headers: probe.headers,
-      });
-    }
-
-    for (const [sidecarName, sidecar] of Object.entries(adapter.sidecars || {})) {
-      if (sidecar.source) {
-        sources.push(sourceInfo(sidecarName, sidecar.source, options.runDir, sidecarName));
-      }
-    }
-  }
-
-  scenarioEnv.ATPROTO_TOPOLOGY = preset.name;
-  scenarioEnv.ATPROTO_TOPOLOGY_CAPABILITIES = [...capabilitySet].sort().join(",");
-  scenarioOnlyEnv.ATPROTO_TOPOLOGY = preset.name;
-  scenarioOnlyEnv.ATPROTO_TOPOLOGY_CAPABILITIES = [...capabilitySet].sort().join(",");
-
-  return {
-    version: 2,
-    name: preset.name,
-    description: preset.description,
-    runDir: options.runDir,
-    repoRoot: options.repoRoot,
-    composeFile: options.composeFile || join(options.runDir, "docker-compose.topology.yml"),
-    networkName: "topology_net",
-    serviceUrls,
-    internalUrls,
-    serviceNames,
-    capabilities: [...capabilitySet].sort(),
-    capabilitiesByRole,
-    scenarioEnv,
-    health,
-    diagnostics,
-    sources,
-    urls: {
-      host: serviceUrls,
-      docker: internalUrls,
-    },
-    env: {
-      hostRunner: {
-        ...hostRunnerEnv,
-        ATPROTO_TOPOLOGY: preset.name,
-        ATPROTO_TOPOLOGY_CAPABILITIES: [...capabilitySet].sort().join(","),
-      },
-      dockerRunner: {
-        ...dockerRunnerEnv,
-        ATPROTO_TOPOLOGY: preset.name,
-        ATPROTO_TOPOLOGY_CAPABILITIES: [...capabilitySet].sort().join(","),
-      },
-      scenario: scenarioOnlyEnv,
-    },
-    capabilitiesV2: {
-      all: [...capabilitySet].sort(),
-      byRole: capabilitiesByRole,
-    },
-    resources,
-    services,
-  };
-}
-
-export function writeTopologyManifest(path: string, manifest: TopologyManifest): Promise<void> {
-  parseTopologyManifestJson(manifest, path);
-  return Deno.writeTextFile(path, JSON.stringify(manifest, null, 2) + "\n");
-}
-
-export function loadTopologyManifest(path?: string): TopologyManifest | undefined {
-  const explicitPath = path || readEnv("ATPROTO_TOPOLOGY_MANIFEST");
-  const manifestPath = explicitPath;
-  if (!manifestPath) return undefined;
-  try {
-    return parseTopologyManifestJson(
-      JSON.parse(Deno.readTextFileSync(manifestPath)),
-      manifestPath,
-    ) as TopologyManifest;
-  } catch (exc) {
-    throw new Error(`Unable to load topology manifest ${manifestPath}: ${exc}`);
-  }
-}
+// ---------------------------------------------------------------------------
+// URL defaults
+// ---------------------------------------------------------------------------
 
 function capabilitiesByRoleToSets(
   capabilitiesByRole: Record<string, string[]>,
@@ -831,11 +389,15 @@ function defaultServiceUrls(webClient?: WebClientTopology): Record<string, strin
 function defaultInternalUrls(serviceUrls: Record<string, string>): Record<string, string> {
   return Object.fromEntries(
     Object.entries(serviceUrls).map(([role, url]) => {
-      const serviceName = ROLE_TO_SERVICE[role as ServiceRole] || `local-${role}`;
+      const serviceName = defaultServiceName(role);
       return [role, url.replace(/localhost|127\.0\.0\.1/, serviceName)];
     }),
   );
 }
+
+// ---------------------------------------------------------------------------
+// Topology resolution
+// ---------------------------------------------------------------------------
 
 export function resolveTopology(
   webClientName?: string,
