@@ -1,0 +1,8 @@
+# SigNoz OTel Collector OpAMP management config
+# Used by the collector for dynamic configuration updates
+
+management:
+  enabled: false
+
+# Minimal config — OpAMP is not needed for the e2e test harness.
+# The collector reads its primary config from otel-collector-config.yaml.

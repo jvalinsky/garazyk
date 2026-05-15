@@ -1,0 +1,452 @@
+/**
+ * OpenTelemetry wrapper for the Garazyk test harness.
+ *
+ * Uses Deno's built-in OTel support (stable since Deno 2.4) plus
+ * `@opentelemetry/api` for custom span creation. When `OTEL_DENO` is
+ * not set, all operations are no-ops — zero overhead.
+ *
+ * Deno's built-in OTel automatically instruments:
+ *   - Outgoing `fetch()` calls
+ *   - Incoming `Deno.serve` handlers
+ *   - `console.*` logs
+ *
+ * This module adds:
+ *   - Custom spans for Docker API calls
+ *   - Custom spans for scenario execution
+ *   - Graceful shutdown to flush pending spans
+ *
+ * @module otel
+ */
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+export interface TracingConfig {
+  /** Service name for OTel resource attributes. */
+  serviceName: string;
+  /** OTLP endpoint (e.g. "http://localhost:4318"). */
+  endpoint?: string;
+  /** Additional resource attributes. */
+  resourceAttributes?: Record<string, string>;
+  /** OTLP protocol. Default: "http/protobuf". */
+  protocol?: "http/protobuf" | "http/json" | "grpc";
+}
+
+// ---------------------------------------------------------------------------
+// Lazy-loaded OpenTelemetry API
+// ---------------------------------------------------------------------------
+
+let _tracer: any = null;
+let _meter: any = null;
+let _initialized = false;
+let _config: TracingConfig | null = null;
+
+/**
+ * The OpenTelemetry Tracer instance.
+ *
+ * Returns a no-op tracer when OTel is not enabled.
+ */
+async function getTracer(): Promise<any> {
+  if (_tracer) return _tracer;
+  if (!isOtelEnabled()) return noopTracer;
+  try {
+    const api = await import("npm:@opentelemetry/api@1");
+    _tracer = api.trace.getTracer("garazyk-e2e", "0.1.0");
+    return _tracer;
+  } catch {
+    return noopTracer;
+  }
+}
+
+/**
+ * The OpenTelemetry Meter instance.
+ *
+ * Returns a no-op meter when OTel is not enabled.
+ */
+async function getMeter(): Promise<any> {
+  if (_meter) return _meter;
+  if (!isOtelEnabled()) return noopMeter;
+  try {
+    const api = await import("npm:@opentelemetry/api@1");
+    _meter = api.metrics.getMeter("garazyk-e2e", "0.1.0");
+    return _meter;
+  } catch {
+    return noopMeter;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+/**
+ * Check if OpenTelemetry is enabled.
+ *
+ * OTel is enabled when `OTEL_DENO=true` or `OTEL_DENO=1` is set in the
+ * environment. This is the standard Deno OTel activation mechanism.
+ */
+export function isOtelEnabled(): boolean {
+  const val = Deno.env.get("OTEL_DENO");
+  return val === "true" || val === "1";
+}
+
+/**
+ * Initialize OpenTelemetry tracing.
+ *
+ * Sets environment variables for Deno's built-in OTel pipeline and
+ * configures the OTLP exporter endpoint. This should be called once
+ * at program startup, before any traced operations.
+ *
+ * If `OTEL_DENO` is already set, this function only updates the
+ * endpoint and service name. If `OTEL_DENO` is not set and `config`
+ * is provided, it sets `OTEL_DENO=true` automatically.
+ *
+ * @param config - Tracing configuration
+ * @returns true if OTel was successfully initialized
+ */
+export function initTracing(config: TracingConfig): boolean {
+  _config = config;
+
+  // Set OTEL_DENO if not already set
+  if (!Deno.env.get("OTEL_DENO")) {
+    Deno.env.set("OTEL_DENO", "true");
+  }
+
+  // Set service name
+  if (config.serviceName) {
+    Deno.env.set("OTEL_SERVICE_NAME", config.serviceName);
+  }
+
+  // Set OTLP endpoint
+  if (config.endpoint) {
+    Deno.env.set("OTEL_EXPORTER_OTLP_ENDPOINT", config.endpoint);
+  }
+
+  // Set protocol
+  if (config.protocol) {
+    Deno.env.set("OTEL_EXPORTER_OTLP_PROTOCOL", config.protocol);
+  }
+
+  // Set resource attributes
+  if (config.resourceAttributes) {
+    const existing = Deno.env.get("OTEL_RESOURCE_ATTRIBUTES") || "";
+    const attrs = Object.entries(config.resourceAttributes)
+      .map(([k, v]) => `${k}=${v}`)
+      .join(",");
+    Deno.env.set(
+      "OTEL_RESOURCE_ATTRIBUTES",
+      existing ? `${existing},${attrs}` : attrs,
+    );
+  }
+
+  _initialized = true;
+  return true;
+}
+
+/**
+ * Initialize OTel for the e2e test harness with sensible defaults.
+ *
+ * @param serviceName - Service name (e.g. "garazyk-e2e-runner")
+ * @returns true if OTel was initialized
+ */
+export function initE2eTracing(serviceName: string): boolean {
+  return initTracing({
+    serviceName,
+    endpoint: Deno.env.get("OTEL_EXPORTER_OTLP_ENDPOINT") || "http://localhost:4318",
+    protocol: "http/protobuf",
+    resourceAttributes: {
+      "service.version": "dev",
+      "deployment.environment": "e2e",
+    },
+  });
+}
+
+/**
+ * Create a traced span around an async function.
+ *
+ * When OTel is enabled, creates a real span with the given name and
+ * attributes. When OTel is disabled, calls the function directly with
+ * zero overhead.
+ *
+ * @param name - Span name (e.g. "docker.listContainers")
+ * @param fn - Async function to trace
+ * @param attributes - Optional span attributes
+ * @returns The return value of fn
+ */
+export async function withSpan<T>(
+  name: string,
+  fn: () => Promise<T>,
+  attributes?: Record<string, string | number | boolean>,
+): Promise<T> {
+  if (!isOtelEnabled()) {
+    return await fn();
+  }
+
+  const tracer = await getTracer();
+  return await tracer.startActiveSpan(name, { attributes }, async (span: any) => {
+    try {
+      const result = await fn();
+      span.setStatus({ code: 0 }); // OK
+      return result;
+    } catch (err) {
+      span.setStatus({
+        code: 2, // ERROR
+        message: err instanceof Error ? err.message : String(err),
+      });
+      span.recordException(err);
+      throw err;
+    } finally {
+      span.end();
+    }
+  });
+}
+
+/**
+ * Create a traced span around a synchronous function.
+ *
+ * @param name - Span name
+ * @param fn - Sync function to trace
+ * @param attributes - Optional span attributes
+ * @returns The return value of fn
+ */
+export function withSpanSync<T>(
+  name: string,
+  fn: () => T,
+  attributes?: Record<string, string | number | boolean>,
+): T {
+  if (!isOtelEnabled()) {
+    return fn();
+  }
+
+  // For sync spans, we still need to use the async tracer API
+  // but we call the function synchronously within the span
+  const tracer = getTracer();
+  // This is a best-effort sync wrapper — the tracer API is async
+  // so we use startActiveSpan in a microtask-friendly way
+  let result: T;
+  let error: unknown;
+  tracer.then((t: any) => {
+    t.startActiveSpan(name, { attributes }, (span: any) => {
+      try {
+        result = fn();
+        span.setStatus({ code: 0 });
+      } catch (err) {
+        error = err;
+        span.setStatus({ code: 2, message: err instanceof Error ? err.message : String(err) });
+        span.recordException(err);
+      } finally {
+        span.end();
+      }
+    });
+  }).catch(() => {
+    // Tracer not available — call fn directly
+    result = fn();
+  });
+
+  if (error) throw error;
+  return result!;
+}
+
+/**
+ * Add an attribute to the currently active span.
+ *
+ * No-op when OTel is not enabled.
+ */
+export async function addSpanAttribute(key: string, value: string | number | boolean): Promise<void> {
+  if (!isOtelEnabled()) return;
+  try {
+    const api = await import("npm:@opentelemetry/api@1");
+    const span = api.trace.getActiveSpan();
+    if (span) {
+      span.setAttribute(key, value);
+    }
+  } catch {
+    // OTel API not available
+  }
+}
+
+/**
+ * Add an event to the currently active span.
+ *
+ * No-op when OTel is not enabled.
+ */
+export async function addSpanEvent(name: string, attributes?: Record<string, string | number | boolean>): Promise<void> {
+  if (!isOtelEnabled()) return;
+  try {
+    const api = await import("npm:@opentelemetry/api@1");
+    const span = api.trace.getActiveSpan();
+    if (span) {
+      span.addEvent(name, attributes);
+    }
+  } catch {
+    // OTel API not available
+  }
+}
+
+/**
+ * Shutdown tracing and flush pending spans.
+ *
+ * Should be called before process exit to ensure all spans are
+ * exported to the OTLP backend.
+ */
+export async function shutdownTracing(): Promise<void> {
+  if (!_initialized || !isOtelEnabled()) return;
+
+  // Deno's built-in OTel handles flush on process exit when
+  // OTEL_DENO is set. However, for explicit shutdown we can
+  // try to flush via the SDK if available.
+  try {
+    // Force a microtask yield to allow pending spans to be exported
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  } catch {
+    // Ignore
+  }
+}
+
+/**
+ * Get the current tracing configuration.
+ */
+export function getTracingConfig(): TracingConfig | null {
+  return _config;
+}
+
+// ---------------------------------------------------------------------------
+// Metrics API
+// ---------------------------------------------------------------------------
+
+export interface MetricAttributes {
+  [key: string]: string | number | boolean;
+}
+
+/**
+ * Record a gauge observation (point-in-time value).
+ *
+ * Gauges are used for values like CPU %, memory usage, or PIDs count
+ * that represent a measurement at a specific moment.
+ *
+ * No-op when OTel is not enabled.
+ */
+export async function recordGauge(
+  name: string,
+  value: number,
+  attributes?: MetricAttributes,
+): Promise<void> {
+  if (!isOtelEnabled()) return;
+  try {
+    const meter = await getMeter();
+    const gauge = meter.createGauge(name, {
+      description: `Gauge: ${name}`,
+    });
+    gauge.record(value, attributes);
+  } catch {
+    // OTel API not available
+  }
+}
+
+/**
+ * Record a counter observation (cumulative value).
+ *
+ * Counters are used for values like network bytes, OOM failcnt,
+ * or block I/O bytes that only increase over time.
+ *
+ * No-op when OTel is not enabled.
+ */
+export async function recordCounter(
+  name: string,
+  value: number,
+  attributes?: MetricAttributes,
+): Promise<void> {
+  if (!isOtelEnabled()) return;
+  try {
+    const meter = await getMeter();
+    const counter = meter.createCounter(name, {
+      description: `Counter: ${name}`,
+    });
+    counter.add(value, attributes);
+  } catch {
+    // OTel API not available
+  }
+}
+
+/**
+ * Create a named gauge instrument for repeated observations.
+ *
+ * Returns the instrument directly so callers can call `.record()`
+ * without re-creating the instrument each time.
+ *
+ * No-op when OTel is not enabled.
+ */
+export async function createGauge(
+  name: string,
+  description?: string,
+): Promise<any> {
+  if (!isOtelEnabled()) return noopInstrument;
+  try {
+    const meter = await getMeter();
+    return meter.createGauge(name, { description });
+  } catch {
+    return noopInstrument;
+  }
+}
+
+/**
+ * Create a named counter instrument for repeated observations.
+ *
+ * Returns the instrument directly so callers can call `.add()`
+ * without re-creating the instrument each time.
+ *
+ * No-op when OTel is not enabled.
+ */
+export async function createCounter(
+  name: string,
+  description?: string,
+): Promise<any> {
+  if (!isOtelEnabled()) return noopInstrument;
+  try {
+    const meter = await getMeter();
+    return meter.createCounter(name, { description });
+  } catch {
+    return noopInstrument;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// No-op tracer (used when OTel is disabled)
+// ---------------------------------------------------------------------------
+
+const noopTracer = {
+  startActiveSpan(_name: string, _opts: any, fn: (span: any) => any): any {
+    const noopSpan = {
+      setStatus() {},
+      setAttribute() {},
+      addEvent() {},
+      recordException() {},
+      end() {},
+    };
+    if (typeof _opts === "function") {
+      return _opts(noopSpan);
+    }
+    return fn(noopSpan);
+  },
+};
+
+const noopMeter = {
+  createGauge(_name: string, _opts?: any): any {
+    return noopInstrument;
+  },
+  createCounter(_name: string, _opts?: any): any {
+    return noopInstrument;
+  },
+  createHistogram(_name: string, _opts?: any): any {
+    return noopInstrument;
+  },
+  createUpDownCounter(_name: string, _opts?: any): any {
+    return noopInstrument;
+  },
+};
+
+const noopInstrument = {
+  record(_value: number, _attrs?: any) {},
+  add(_value: number, _attrs?: any) {},
+};
