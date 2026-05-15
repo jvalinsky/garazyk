@@ -7,6 +7,7 @@
  */
 
 #import <Foundation/Foundation.h>
+#import "Network/XrpcRoutePack.h"
 
 @class XrpcDispatcher;
 @class ContactService;
@@ -15,9 +16,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface XrpcAppBskyContactPack : NSObject
+@interface XrpcAppBskyContactPack : NSObject <XrpcRoutePack>
 
-/*! Register all app.bsky.contact routes with the dispatcher. */
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                  contactService:(ContactService *)contactService
                       jwtMinter:(JWTMinter *)jwtMinter

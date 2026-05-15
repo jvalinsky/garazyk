@@ -68,15 +68,11 @@
     XCTAssertEqual(response.statusCode, 401);
 }
 
-- (void)testGetMatchesRequiresValidToken {
-    // Contact pack uses custom extractDIDFromBearer which only accepts raw DID
-    // tokens, not JWTs. With a JWT, it returns 401.
-    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+- (void)testGetMatchesRejectsInvalidToken {
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.contact.getMatches"
                                              queryString:@""
                                              queryParams:@{}
-                                                 headers:@{@"authorization": authHeader}];
-    // The custom auth extractor doesn't parse JWTs, so this returns 401
+                                                 headers:@{@"authorization": @"Bearer invalid-token"}];
     XCTAssertEqual(response.statusCode, 401);
 }
 
@@ -107,14 +103,11 @@
     XCTAssertEqual(response.statusCode, 401);
 }
 
-- (void)testGetSyncStatusRequiresValidToken {
-    // Contact pack uses custom extractDIDFromBearer which only accepts raw DID
-    // tokens, not JWTs. With a JWT, it returns 401.
-    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+- (void)testGetSyncStatusRejectsInvalidToken {
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.contact.getSyncStatus"
                                              queryString:@""
                                              queryParams:@{}
-                                                 headers:@{@"authorization": authHeader}];
+                                                 headers:@{@"authorization": @"Bearer invalid-token"}];
     XCTAssertEqual(response.statusCode, 401);
 }
 
