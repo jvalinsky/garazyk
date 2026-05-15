@@ -1,8 +1,12 @@
 {
   "server": {
+    "host": "0.0.0.0",
+    "port": 2587,
     "data_dir": "/var/lib/atprotopds",
-    "host": "localhost",
-    "port": 2585
+    "issuer": "http://127.0.0.1:2587",
+    "available_user_domains": [
+      "second.test"
+    ]
   },
   "plc": {
     "url": "http://local-plc:2582"
@@ -11,6 +15,9 @@
     "enabled": false,
     "blob_limit": 50,
     "blob_window": 3600
+  },
+  "auth": {
+    "master_secret": "32107992c973da8445b485263cb2bd3157859cb94294a2355e3c4a7b0f825afe"
   },
   "hostname": "second.test"
 }
