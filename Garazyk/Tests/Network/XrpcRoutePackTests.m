@@ -5,8 +5,11 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/XrpcAppBskyAgeAssurancePack.h"
+#import "Network/XrpcAppBskyBookmarksPack.h"
+#import "Network/XrpcAppBskyDraftsPack.h"
 #import "Network/XrpcAppBskyProxyMethodPack.h"
 #import "Network/XrpcChatBskyActorPack.h"
+#import "Network/XrpcChatBskyGroupPack.h"
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcHandlerContext.h"
 #import "Network/XrpcRoutePack.h"
@@ -32,6 +35,21 @@
   XCTAssertTrue([XrpcAppBskyAgeAssurancePack conformsToProtocol:@protocol(XrpcRoutePack)]);
   XCTAssertEqualObjects([XrpcAppBskyAgeAssurancePack routePackIdentifier],
                         @"app.bsky.ageassurance");
+}
+
+- (void)testAppBskyBookmarksPackConformsToProtocol {
+  XCTAssertTrue([XrpcAppBskyBookmarksPack conformsToProtocol:@protocol(XrpcRoutePack)]);
+  XCTAssertEqualObjects([XrpcAppBskyBookmarksPack routePackIdentifier], @"app.bsky.bookmark");
+}
+
+- (void)testAppBskyDraftsPackConformsToProtocol {
+  XCTAssertTrue([XrpcAppBskyDraftsPack conformsToProtocol:@protocol(XrpcRoutePack)]);
+  XCTAssertEqualObjects([XrpcAppBskyDraftsPack routePackIdentifier], @"app.bsky.draft");
+}
+
+- (void)testChatBskyGroupPackConformsToProtocol {
+  XCTAssertTrue([XrpcChatBskyGroupPack conformsToProtocol:@protocol(XrpcRoutePack)]);
+  XCTAssertEqualObjects([XrpcChatBskyGroupPack routePackIdentifier], @"chat.bsky.group");
 }
 
 - (void)testRegistrarRegistersConformingPack {
