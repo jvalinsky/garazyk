@@ -17,6 +17,7 @@
 @class RecordLifecycleHandler;
 @protocol PDSAdminController;
 @protocol PDSEmailProvider;
+@protocol XrpcRoutePackServices;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -44,18 +45,19 @@ NS_ASSUME_NONNULL_BEGIN
                                 recordService:(nullable PDSRecordService *)recordService
                                     jwtMinter:(nullable JWTMinter *)jwtMinter
                               adminController:(nullable id<PDSAdminController>)adminController
-                                emailProvider:(nullable id<PDSEmailProvider>)emailProvider;
+                                emailProvider:(nullable id<PDSEmailProvider>)emailProvider
+                            routePackServices:(nullable id<XrpcRoutePackServices>)routePackServices;
 
 /**
  @brief Register all app.bsky.* endpoint handlers.
  */
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-
               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                  recordService:(nullable PDSRecordService *)recordService
-                       jwtMinter:(nullable JWTMinter *)jwtMinter
-                 adminController:(nullable id<PDSAdminController>)adminController
-                   emailProvider:(nullable id<PDSEmailProvider>)emailProvider;
+                     jwtMinter:(nullable JWTMinter *)jwtMinter
+               adminController:(nullable id<PDSAdminController>)adminController
+                 emailProvider:(nullable id<PDSEmailProvider>)emailProvider
+             routePackServices:(nullable id<XrpcRoutePackServices>)routePackServices;
 
 /**
  @brief Store the RecordLifecycleHandler for the process lifetime.

@@ -46,6 +46,7 @@
 #import "Network/XrpcVendorMethods.h"
 #import "Network/XrpcLexiconResolver.h"
 #import "Network/XrpcProxyInterceptor.h"
+#import "Network/XrpcRoutePackServices.h"
 #import "Network/XrpcServerMethods.h"
 #import "Network/XrpcServiceAuthHelper.h"
 #import "Network/XrpcSyncMethods.h"
@@ -511,6 +512,14 @@ static void registerMethodsWithDispatcherUsingServices(
     GZ_LOG_ERROR(@"Failed to create registration gate: %@", gateError);
   }
 
+  XrpcRoutePackServiceBag *routePackServices =
+      [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+                                                jwtMinter:jwtMinter
+                                          adminController:adminController
+                                             configuration:config
+                                         serviceDatabases:serviceDatabases
+                                               rateLimiter:rateLimiter];
+
   // Register domain modules in order
   [XrpcServerMethods registerWithDispatcher:dispatcher
                                   jwtMinter:jwtMinter
@@ -558,7 +567,8 @@ static void registerMethodsWithDispatcherUsingServices(
                                recordService:recordService
                                     jwtMinter:jwtMinter
                               adminController:adminController
-                                emailProvider:emailProvider];
+                                emailProvider:emailProvider
+                            routePackServices:routePackServices];
 
   [XrpcAdminMethods registerWithDispatcher:dispatcher
 
