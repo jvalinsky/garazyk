@@ -96,6 +96,48 @@ class NetworkManager {
     return generate();
   }
 
+  async getContainerStats(): Promise<Record<string, { cpu: string; mem: string }>> {
+    const stats: Record<string, { cpu: string; mem: string }> = {};
+
+    try {
+      // Execute docker stats for all running containers
+      const command = new Deno.Command("docker", {
+        args: ["stats", "--no-stream", "--format", "json"],
+      });
+      const { stdout } = await command.output();
+      const output = new TextDecoder().decode(stdout);
+      
+      const lines = output.trim().split("\n").filter(l => l.trim());
+      for (const line of lines) {
+        try {
+          const data = JSON.parse(line);
+          const name = data.Name;
+          
+          // Map container name to service name (e.g. garazyk-e2e-2026-05-14T...-plc-1 -> plc)
+          // Look for patterns like *-<service>-1
+          let serviceName = name;
+          const match = name.match(/-(.+)-\d+$/);
+          if (match) {
+            serviceName = match[1];
+          } else if (name.startsWith("local-")) {
+            serviceName = name.replace("local-", "");
+          }
+
+          stats[serviceName] = {
+            cpu: data.CPUPerc,
+            mem: data.MemUsage,
+          };
+        } catch {
+          continue;
+        }
+      }
+    } catch (e) {
+      console.error("[network] failed to get container stats:", e);
+    }
+
+    return stats;
+  }
+
 
   /**
    * Proactively look for running docker containers matching our services

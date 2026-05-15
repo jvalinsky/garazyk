@@ -1,5 +1,5 @@
 import { signal } from "@preact/signals";
-import { TopologyPreview } from "./components/TopologyInspector.tsx";
+import { TopologyPreview } from "./islands/TopologyInspector.tsx";
 import { Run } from "./services/types.ts";
 
 export const selectedTopology = signal("garazyk-default");
