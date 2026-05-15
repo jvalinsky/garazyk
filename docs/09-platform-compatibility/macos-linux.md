@@ -4,19 +4,19 @@ title: macOS and Linux Compatibility
 
 # macOS and Linux Compatibility
 
-## Overview
+Garazyk targets both macOS and Linux (via GNUstep) without abstracting away the unique characteristics of each environment. Shared logic sits on top of platform-specific drivers for networking, cryptography, and key storage.
 
-Garazyk targets both macOS and Linux/GNUstep without pretending both environments behave the same. Shared code sits on top of compat headers and platform abstractions, while crypto, key storage, networking, and some Foundation behavior still diverge in meaningful ways.
+## Development Workflow
 
-## Full Flow
+While most business logic is shared, the runtime environments diverge in several key areas.
 
 ```mermaid
 flowchart TD
-    Shared["Shared server code"]
-    Compat["Compat macros and headers"]
-    Mac["macOS runtime and Apple frameworks"]
-    Linux["GNUstep runtime and Linux fallbacks"]
-    Verify["Contributor cross platform verification"]
+    Shared["Shared server logic"]
+    Compat["Compatibility macros & headers"]
+    Mac["macOS & Apple Frameworks"]
+    Linux["GNUstep & Linux Fallbacks"]
+    Verify["Cross-platform verification"]
 
     Shared --> Compat
     Compat --> Mac
@@ -25,45 +25,33 @@ flowchart TD
     Linux --> Verify
 ```
 
-## Where The Platforms Differ In Practice
+## Primary Divergence Points
 
-In this repo, the high-value differences are:
+We maintain explicit implementations where behavior or performance requirements differ significantly between platforms:
 
-- networking: macOS uses the Network framework transport, while Linux uses non-blocking BSD sockets with dispatch sources
-- key storage and crypto: Apple code can use Security-framework and Keychain-backed paths, while GNUstep paths fall back to OpenSSL-backed managers
-- Foundation and tests: GNUstep needs targeted compatibility helpers where Apple Foundation or XCTest behavior is assumed
-- dispatch ownership: queue storage and ARC interaction are not identical across platforms
+- **Networking**: macOS uses the `Network.framework` for transport, while Linux uses non-blocking BSD sockets driven by `dispatch` sources.
+- **Security**: Apple platforms use `Security.framework` and the system Keychain. Linux fallbacks utilize OpenSSL-backed managers for key operations.
+- **Foundation**: We use targeted compatibility helpers where GNUstep's Foundation behavior differs from Apple's implementation, particularly in URL handling and data encoding.
+- **GCD Integration**: The interaction between Grand Central Dispatch (GCD) and the Objective-C runtime varies; we use macros in `PDSTypes.h` to ensure safe object ownership across both.
 
-These seams frequently turn a macOS-only patch into a Linux regression.
+## Contributor Checklist
 
-## What Contributors Should Verify
+Before submitting changes, verify that your updates do not introduce platform-specific regressions:
 
-Before you ship a cross-platform change, check:
+1. Did you add a dependency on an Apple-only framework (like `Combine` or `CryptoKit`)?
+2. Does your code assume Keychain persistence that might not be available on Linux?
+3. Did you rely on `dispatch` object ownership patterns that only work on the Apple runtime?
+4. If you modified network logic, did you test against both the macOS and Linux transport drivers?
 
-- did you introduce a framework call that exists only on Apple platforms?
-- did you assume Keychain behavior where the GNUstep path uses OpenSSL or memory fallback?
-- did you rely on dispatch object ownership that only works when Objective-C integration is available?
-- did you change network behavior without checking both transport implementations?
+## Build Systems
 
-If the answer to any of those is yes, the change needs deliberate platform review.
-
-## Where Build Guidance Lives
-
-This page is about runtime boundaries, not build commands. Use the getting-started docs for the supported build flow, especially the macOS `xcodegen` workflow and the current out-of-source build rules.
-
-## Related Deep Dives
-
-- [macOS vs GNUstep Boundary](./macos-vs-gnustep-boundary)
-
-## Related Reading
-
-- [Compatibility Layer](./compatibility-layer)
-- [Platform-Specific Network Transport](./network-transport)
-- [Setup](../01-getting-started/setup)
+This guide focuses on runtime boundaries. For build instructions, see the [Setup](../01-getting-started/setup) guide for macOS (`xcodegen`) and the CMake workflow for Linux.
 
 ## Related
 
+- [Compatibility Layer](./compatibility-layer)
+- [macOS vs GNUstep Boundary](./macos-vs-gnustep-boundary)
+- [Network Transport](./network-transport)
+- [ARC Runtime](./arc-runtime)
 - [Documentation Map](../11-reference/documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
 

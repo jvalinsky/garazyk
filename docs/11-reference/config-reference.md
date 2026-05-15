@@ -4,210 +4,65 @@ title: Configuration Reference
 
 # Configuration Reference
 
-## Overview
+Garazyk configuration is loaded via JSON files and can be overridden by environment variables. If the code and this documentation disagree, the `PDSConfiguration` source is the final authority.
 
-This page documents the configuration keys that `PDSConfiguration` actually reads today. It is intentionally narrower and more operational than older config docs.
-
-The most important rule is simple:
-
-> Use the keys the loader reads, not the keys older examples happened to show.
-
-## Two Sources of Truth
-
-Garazyk configuration comes from:
-
-- JSON config files loaded through `PDSConfiguration`
-- environment variables that override config-file values
-
-Contributor confusion usually comes from mixing those two layers or assuming the runtime defaults are secure production defaults.
-
-## Real Key Shapes
+## Core Settings
 
 ### Server
-
-| Key | Purpose |
-| --- | --- |
-| `server.host` | bind host |
-| `server.port` | bind port |
-| `server.data_dir` | base data directory |
-| `server.issuer` | canonical issuer, if explicitly set |
-| `server.available_user_domains` | allowed handle domains |
-
-Related env overrides:
-
-- `PDS_HOST`
-- `PDS_HOSTNAME`
-- `PDS_DATA_DIR`
-- `PDS_ISSUER`
-- `PDS_AVAILABLE_USER_DOMAINS`
+| Key | Env Override | Purpose |
+| --- | --- | --- |
+| `server.host` | `PDS_HOST` | Bind host address. |
+| `server.port` | `PDS_PORT` | Bind port number. |
+| `server.data_dir` | `PDS_DATA_DIR` | Base directory for databases and blobs. |
+| `server.issuer` | `PDS_ISSUER` | Canonical service DID. |
 
 ### PLC
-
 | Key | Purpose |
 | --- | --- |
-| `plc.url` | PLC directory URL |
-| `plc.retry_count` | retry count |
-| `plc.retry_delay_ms` | retry delay in milliseconds |
+| `plc.url` | PLC directory URL. Use `mock` for local tests. |
+| `plc.retry_count` | Number of retries for failed PLC requests. |
 
-### Debug
-
+### Database Pools
 | Key | Purpose |
 | --- | --- |
-| `debug.verbose_logging` | verbose debug logging toggle |
-| `debug.in_memory_databases` | use in-memory DBs |
-| `debug.reset_on_startup` | reset state at startup |
-| `debug.use_new_repository` | opt into alternate repository implementation |
+| `database.user_pool_max_size` | Max connections for actor-store databases. |
+| `database.service_pool_max_size` | Max connections for the shared service database. |
 
-### Database pools
-
-| Key | Purpose |
-| --- | --- |
-| `database.user_pool_max_size` | actor-store pool size |
-| `database.service_pool_max_size` | shared service DB pool size |
-| `database.did_cache_pool_max_size` | DID cache pool size |
-| `database.sequencer_pool_max_size` | sequencer pool size |
-
-### Session
-
-| Key | Purpose |
-| --- | --- |
-| `session.access_token_ttl_seconds` | access token TTL |
-| `session.refresh_token_ttl_seconds` | refresh token TTL |
-| `session.invite_code_required` | registration policy toggle |
-
-### Verification and email
-
-| Key | Purpose |
-| --- | --- |
-| `phone_verification.provider` | verification provider selector |
-| `email.provider` | `none`, `mock`, `smtp`, or `resend`; `smtp` is accepted but delivery is not implemented |
-| `email.smtp_host` | SMTP host for future SMTP support |
-| `email.smtp_port` | SMTP port |
-| `email.smtp_username` | SMTP username |
-| `email.smtp_password` | SMTP password |
-| `email.smtp_use_tls` | SMTP TLS toggle |
-| `email.resend_api_key_source` | Resend secret source |
-| `email.resend_api_key_env_var` | env var name for Resend key |
-| `email.resend_keychain_service` | keychain service name |
-| `email.resend_keychain_account` | keychain account name |
-| `email.resend_from_address` | default from address |
-| `email.resend_api_endpoint` | optional Resend API override |
-
-### Rate limiting
-
-| Key | Purpose |
-| --- | --- |
-| `rate_limit.enabled` | master toggle |
-| `rate_limit.requests_per_minute` | general request budget |
-| `rate_limit.burst_size` | burst allowance |
-| `rate_limit.did_limit` | DID-scoped request limit |
-| `rate_limit.did_window` | DID window in seconds |
-| `rate_limit.ip_limit` | IP-scoped request limit |
-| `rate_limit.ip_window` | IP window in seconds |
-| `rate_limit.blob_limit` | blob upload limit |
-| `rate_limit.blob_window` | blob limit window |
-
-Key env overrides use the `PDS_RATELIMIT_*` prefix.
+### Rate Limiting
+| Key | Env Override | Purpose |
+| --- | --- | --- |
+| `rate_limit.enabled` | `PDS_RATELIMIT_ENABLED` | Master toggle. |
+| `rate_limit.requests_per_minute` | `PDS_RATELIMIT_RPM` | General request budget. |
 
 ### Logging
+| Key | Values | Purpose |
+| --- | --- | --- |
+| `logging.level` | `debug`, `info`, `warn`, `error` | Minimum log level. |
+| `logging.format` | `text`, `json` | Output format. |
 
-| Key | Purpose |
-| --- | --- |
-| `logging.file_path` | log file path |
-| `logging.level` | `debug`, `info`, `warn`, or `error` |
-| `logging.format` | `text`, `json`, or `both` |
-| `logging.max_file_size_mb` | rotation size |
-| `logging.max_files` | retained rotated files |
-| `logging.async` | async logging toggle |
-| `logging.components` | enabled component list |
-
-### NodeInfo and links
-
-| Key | Purpose |
-| --- | --- |
-| `nodeinfo.enabled` | NodeInfo route toggle |
-| `nodeinfo.software_name` | NodeInfo software name |
-| `nodeinfo.software_version` | NodeInfo software version |
-| `nodeinfo.repository_url` | repository URL |
-| `nodeinfo.homepage_url` | homepage URL |
-| `nodeinfo.open_registrations` | open registration flag for discovery |
-| `links.privacy_policy` | privacy policy URL |
-| `links.terms_of_service` | terms URL |
+## External Services
 
 ### Relays and AppView
-
 | Key | Purpose |
 | --- | --- |
-| `relays` | relay URL array |
-| `appview.url` | upstream AppView URL |
-| `appview.did` | upstream AppView DID |
-| `appview.local_enabled` | local AppView toggle |
+| `relays` | Array of relay URLs to notify of updates. |
+| `appview.url` | Upstream AppView endpoint. |
+| `appview.did` | Upstream AppView DID. |
 
-### Ozone and Moderation
-
-| Key | Purpose |
-| --- | --- |
-| `ozone.url` | Ozone moderation service URL |
-| `ozone.did` | Ozone service DID |
-
-### Blob storage
-
-| Key | Purpose |
-| --- | --- |
-| `blob_storage.storage_type` | `disk` or `s3` |
-| `blob_storage.s3_bucket` | S3 bucket name |
-| `blob_storage.s3_region` | S3 region |
-| `blob_storage.s3_endpoint` | S3 endpoint override |
-| `blob_storage.s3_access_key_id` | S3 credentials |
-| `blob_storage.s3_secret_access_key` | S3 credentials |
-| `blob_storage.cdn_url` | CDN base URL for blobs |
-
-### Video processing
-
-| Key | Purpose |
-| --- | --- |
-| `PDS_VIDEO_MODE` | `internal` (default, in-process) or `external` (delegate to jelcz side-car) |
-| `video.max_concurrent_jobs` | Max simultaneous video processing jobs (default: 2) |
-| `video.poll_interval_seconds` | Worker poll interval for pending jobs (default: 5) |
-| `video.max_concurrent_exports` | Max parallel AVAssetExportSession operations (default: 2) |
-| `video.default_quality` | Default transcoding quality preset (`480p`, `720p`, `1080p`, `hevc`) |
-
-When `PDS_VIDEO_MODE=internal`, the video worker is started automatically by `PDSApplication`. When `external`, the PDS does not process video and the jelcz side-car handles it.
-
-### Jelcz Side-Car
-
-| Key | Default | Purpose |
+### Blob Storage
+| Key | Values | Purpose |
 | --- | --- | --- |
-| `JELCZ_PORT` | 2586 | HTTP port |
-| `JELCZ_DATA_DIR` | `./data/jelcz` | Database directory |
-| `JELCZ_BLOB_DIR` | `./data/jelcz/blobs` | Blob storage directory |
-| `JELCZ_PDS_URL` | `http://localhost:2583` | PDS endpoint for blob upload |
-| `JELCZ_DID` | `did:web:localhost` | Jelcz's DID for Service Auth |
-| `JELCZ_S3_BUCKET` | (none) | S3 bucket for blob storage |
-| `JELCZ_S3_REGION` | `us-east-1` | S3 region |
-| `JELCZ_S3_ENDPOINT` | (none) | S3-compatible endpoint |
-| `JELCZ_S3_ACCESS_KEY` | (none) | S3 access key |
-| `JELCZ_S3_SECRET_KEY` | (none) | S3 secret key |
-| `JELCZ_MAX_CONCURRENT_JOBS` | 2 | Max parallel transcoding jobs |
-| `JELCZ_POLL_INTERVAL` | 5.0 | Job poll interval (seconds) |
-| `JELCZ_MAX_UPLOAD_BYTES` | 104857600 | Max upload size (100MB) |
-| `JELCZ_MAX_OUTPUT_BYTES` | 52428800 | Max transcoded output size (50MB) |
-| `JELCZ_MAX_DURATION` | 180 | Max video duration (seconds) |
+| `blob_storage.storage_type` | `disk`, `s3` | Storage backend. |
+| `blob_storage.s3_bucket` | (string) | S3 bucket name. |
 
-This `appview` block is the current loader shape. Older camelCase examples such as `appViewURL` and `localAppViewEnabled` should be treated as stale unless the code changes.
+## Video Processing
 
-## Defaults vs Recommended Practice
-
-`PDSConfiguration` includes development-oriented defaults. Some of the important ones are surprising if you read them as deployment guidance:
-
-| Runtime default | Why it exists | Production implication |
+| Key | Mode | Purpose |
 | --- | --- | --- |
-| `invite_code_required = NO` | friction-free local setup | do not copy into production docs |
-| `server.port = 8080` in config object | class-level default before CLI overrides | `kaszlak serve` still defaults to 2583 |
+| `PDS_VIDEO_MODE` | `internal` | Process video in the PDS. |
+| | `external` | Delegate to the `jelcz` side-car. |
 
-Use runtime defaults to understand the code. Use deployment docs to understand the safe operational baseline.
-
-## Minimal Local Example
+## Example Configuration
 
 ```json
 {
@@ -216,43 +71,14 @@ Use runtime defaults to understand the code. Use deployment docs to understand t
     "port": 2583,
     "data_dir": "./pds-data"
   },
-  "plc": { "url": "mock" },
-  "session": { "invite_code_required": false }
+  "plc": { "url": "https://plc.directory" },
+  "session": { "invite_code_required": true }
 }
 ```
 
-## Recommended Production Baseline
-
-For production-oriented contributor work, keep these expectations in mind:
-
-- real issuer
-- real PLC directory
-- invite codes enabled
-- debug flags disabled
-- explicit AppView settings if proxying remote AppView traffic
-- explicit `PDS_TRUST_PROXY_HEADERS=1` when running behind the documented nginx setup
-
-Use [Tutorial 6: Deployment](../10-tutorials/tutorial-6-deployment) for the operational walkthrough.
-
-## Common Drift Patterns
-
-These are the config mistakes older docs tended to make:
-
-- camelCase keys instead of snake_case
-- documenting keys the loader does not read
-- treating class defaults as safe deployment defaults
-- omitting the environment-variable override layer
-
-If a config example and the code disagree, trust `PDSConfiguration`.
-
-## Related Reading
+## Related
 
 - [Setup](../01-getting-started/setup)
 - [Email & Verification](../06-authentication/email-and-verification)
-- [Tutorial 6: Deployment](../10-tutorials/tutorial-6-deployment)
-
-## Related
-
-- [Documentation Map](documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
+- [Deployment](../10-tutorials/tutorial-6-deployment)
+- [Documentation Map](./documentation-map)

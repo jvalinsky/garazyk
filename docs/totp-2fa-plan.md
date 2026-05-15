@@ -4,142 +4,62 @@ title: "TOTP 2FA Plan: Current State & Next Steps"
 
 # TOTP 2FA Plan: Current State & Next Steps
 
-## What Exists Today
+## Implementation Status
 
-| Layer | Status | Details |
-|-------|--------|---------|
-| **`TOTPGenerator`** | ✅ Complete | RFC 6238, SHA-256, 6 digits, 30s period, dynamic truncation |
-| **`TOTPService`** | ✅ Complete | Secret generation (160-bit), QR code (macOS CoreImage / Linux libqrencode), verification with ±30s drift |
-| **DB Schema** | ✅ Complete | `tfa_enabled`, `tfa_secret`, `recovery_codes` columns + migration ALTERs |
-| **OAuth2 token exchange** | ✅ Complete | Checks `account.tfaEnabled`, requires `tfa_code` param, returns `interaction_required` error |
-| **Unit tests** | ✅ Complete | Base32, generation, verification, QR format, YubiKey fallback |
+| Component | Status | Details |
+|-----------|--------|---------|
+| **`TOTPGenerator`** | ✅ Complete | RFC 6238, SHA-256, 6 digits, 30s period. |
+| **`TOTPService`** | ✅ Complete | Secret generation (160-bit), QR code (libqrencode/CoreImage), ±30s drift verification. |
+| **DB Schema** | ✅ Complete | Columns for `tfa_enabled`, `tfa_secret`, and `recovery_codes`. |
+| **OAuth2 Exchange** | ✅ Complete | Checks `tfaEnabled`, requires `tfa_code`, returns `interaction_required`. |
+| **Unit Tests** | ✅ Complete | Base32, generation, verification, and YubiKey fallback. |
 
-## What's Missing
+## Pending Requirements
 
-### 1. Enrollment Endpoints (No way to turn 2FA on/off)
+### 1. Enrollment Endpoints
+We lack the XRPC endpoints required for 2FA lifecycle management:
 
-There are **zero XRPC endpoints** for 2FA lifecycle management. You need:
+- **`com.atproto.server.enableTwoFactor`** (Procedure)
+  - Generates a secret and QR code PNG.
+  - Returns `{ secret, qrCode, uri }` but does not enable 2FA until confirmed.
+- **`com.atproto.server.confirmTwoFactor`** (Procedure)
+  - Verifies the provided code against the pending secret.
+  - Persists the secret and generates recovery codes on success.
+- **`com.atproto.server.disableTwoFactor`** (Procedure)
+  - Requires a valid TOTP or recovery code to clear 2FA settings.
 
-- **`com.atproto.server.enableTwoFactor`** (procedure, auth required)
-  1. Client calls with empty body (or `{ "type": "totp" }`)
-  2. PDS generates a secret via `TOTPService generateSecret`
-  3. PDS generates QR PNG via `generateQRCodeImageForSecret:accountName:issuer:`
-  4. PDS returns `{ "secret": "<base32>", "qrCode": "<base64-png>", "uri": "otpauth://totp/..." }` — but does **not** set `tfa_enabled` yet
-  5. This is a "pending enrollment" state — secret stored temporarily (e.g., in a time-limited cache or a `tfa_pending_secret` column) until confirmed
+### 2. Recovery Codes
+The `recovery_codes` column is present but unused.
+- Generate 8–10 single-use codes during confirmation.
+- Store as bcrypt hashes (not plaintext).
+- Implement verification and consumption logic in `PDSDatabase`.
 
-- **`com.atproto.server.confirmTwoFactor`** (procedure, auth required)
-  1. Client sends `{ "code": "123456" }` — the code from their authenticator app after scanning QR
-  2. PDS verifies the code against the pending secret
-  3. On success: sets `tfa_enabled = 1`, persists `tfa_secret`, generates recovery codes, returns `{ "recoveryCodes": ["xxxx-xxxx", ...] }`
-  4. On failure: returns error, does not enable 2FA
+### 3. `createSession` Integration
+The legacy password-based `createSession` handler must be updated to check `tfa_enabled`.
+- If 2FA is active, require `authFactorToken` as defined in the AT Protocol.
 
-- **`com.atproto.server.disableTwoFactor`** (procedure, auth required)
-  1. Client sends `{ "code": "123456" }` (current TOTP code) or `{ "recoveryCode": "xxxx-xxxx" }`
-  2. PDS verifies, then clears `tfa_enabled`, `tfa_secret`, `recovery_codes`
+### 4. Rate Limiting & Replay Protection
+- **Rate Limiting:** Implement per-account limits (e.g., 5 failures per 15 minutes) to prevent brute-forcing the 6-digit space.
+- **Replay Protection:** Store `tfa_last_used_counter` and reject any codes with a counter ≤ the last used value.
 
-- **`com.atproto.server.regenerateRecoveryCodes`** (procedure, auth required)
-  1. Requires a valid TOTP code to authorize
-  2. Generates new set of recovery codes, invalidates old ones
+### 5. `getSession` Metadata
+Update `com.atproto.server.getSession` to include a `twoFactorEnabled` boolean so clients can adjust their UI accordingly.
 
-### 2. Recovery Codes Implementation
+## Integration Flow
 
-The `recovery_codes` BLOB column exists but is never populated or checked.
+### Enrollment
+1. Client calls `enableTwoFactor`.
+2. PDS returns secret/QR.
+3. User scans QR and provides a code to `confirmTwoFactor`.
+4. PDS returns recovery codes and enables 2FA.
 
-- Generate 8–10 single-use codes at enrollment confirmation (e.g., `XXXX-XXXX` format, cryptographically random)
-- Store as a JSON array of bcrypt hashes (not plaintext) in the `recovery_codes` column
-- When used, remove the hash from the array (single-use)
-- Recovery codes should work anywhere a TOTP code works (OAuth2 token exchange, disabling 2FA)
-- Add `TOTPService +verifyRecoveryCode:againstHashes:` and a method to mark codes as consumed in `PDSDatabase`
+### Authentication
+1. Client attempts login.
+2. PDS returns `interaction_required` / `AuthFactorTokenRequired`.
+3. Client prompts for TOTP.
+4. Client resubmits with the `tfa_code`.
 
-### 3. `createSession` 2FA Gap
-
-The legacy `com.atproto.server.createSession` handler (XrpcServerMethods.m:515) **does not check `tfa_enabled` at all**. A user with 2FA enabled can bypass it entirely through the legacy session flow.
-
-Options:
-- **(Recommended)** Add the same check: if `account.tfaEnabled && !body[@"authFactorToken"]`, return `{ "error": "AuthFactorTokenRequired" }`. The AT Protocol uses `authFactorToken` in the `createSession` input for this purpose.
-- Alternatively, if the PDS is OAuth2-only, deprecate/remove `createSession` password flow entirely.
-
-### 4. Rate Limiting on 2FA Attempts
-
-Currently there's no rate limiting on TOTP verification. An attacker with a valid auth code grant could brute-force the 6-digit code (1M possibilities) rapidly.
-
-- Add per-account rate limiting: max 5 failed 2FA attempts per 15-minute window
-- After exceeding: lock out 2FA attempts for that account for a cooldown period
-- Track in-memory (dispatch queue + dictionary) or add a `tfa_failed_attempts` / `tfa_lockout_until` column
-
-### 5. TOTP Code Replay Protection
-
-Within the ±30s verification window, the same code can be replayed. RFC 6238 §5.2 recommends rejecting reused codes.
-
-- Track the last successfully used counter value per account (add `tfa_last_used_counter INTEGER` column)
-- Reject codes whose counter ≤ the last used counter
-
-### 6. `getSession` Should Surface 2FA Status
-
-The `com.atproto.server.getSession` response should include a field like `"twoFactorEnabled": true` so clients know whether the account has 2FA active.
-
-## Client Integration Guide
-
-### Enrollment Flow
-
-```
-
-Client                                PDS
-  |                                    |
-  |-- POST enableTwoFactor ----------->|
-  |<-- { secret, qrCode, uri } --------|
-  |                                    |
-  | [User scans QR in authenticator]   |
-  |                                    |
-  |-- POST confirmTwoFactor { code } ->|
-  |<-- { recoveryCodes: [...] } -------|
-  |                                    |
-  | [Client displays recovery codes    |
-  |  and asks user to save them]       |
-```
-
-### Login Flow (OAuth2)
-
-```
-
-Client                                PDS
-  |                                    |
-  |-- POST /oauth/token { code } ----->|
-  |<-- 400 { error: "interaction_required",
-  |          error_description: "Two-factor authentication code required" }
-  |                                    |
-  | [Client shows TOTP input field]    |
-  |                                    |
-  |-- POST /oauth/token { code,        |
-  |        tfa_code: "123456" } ------>|
-  |<-- 200 { access_token, ... } ------|
-```
-
-### Login Flow (Legacy `createSession`)
-
-```
-
-Client                                PDS
-  |                                    |
-  |-- POST createSession { id, pw } -->|
-  |<-- 401 { error: "AuthFactorTokenRequired" }
-  |                                    |
-  |-- POST createSession { id, pw,     |
-  |        authFactorToken: "123456" }->|
-  |<-- 200 { did, handle, tokens } ----|
-```
-
-### Recovery Code Flow
-
-Same as above, but client sends a recovery code in place of the TOTP code. The PDS should accept either.
-
-## Suggested Implementation Order
-
-1. **Enrollment endpoints** (`enableTwoFactor` + `confirmTwoFactor`) — critical missing piece; without it there's no way to enroll
-2. **Recovery codes** — must ship alongside enrollment so users aren't locked out
-3. **`createSession` 2FA check** — close the bypass gap
-4. **`disableTwoFactor` endpoint** — users need an off switch
-5. **Rate limiting** on 2FA attempts
-6. **Replay protection** (last-used counter)
-7. **`getSession` 2FA status** field
-8. **E2E tests** — enrollment → login → recovery → disable cycle
+## Related
+- [Security Best Practices](06-authentication/security-best-practices)
+- [OAuth 2.0 & DPoP](06-authentication/oauth2-dpop)
+- [API Reference](11-reference/api-reference)

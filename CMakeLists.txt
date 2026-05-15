@@ -823,18 +823,35 @@ target_include_directories(garazyk-ui PRIVATE
 # It needs HttpServer (in ATProtoTransport) and logging (in ATProtoCore).
 # However, ATProtoTransport depends on components in the other libs, so we link
 # them all to satisfy transitive symbol dependencies.
-target_link_libraries(garazyk-ui PRIVATE
-  ATProtoAppViewServer
-  ATProtoRuntime
-  ATProtoStorage
-  ATProtoServices
-  ATProtoSync
-  ATProtoTransport
-  ATProtoCore
-  ${PLATFORM_LIBRARIES}
-  ${SECP256K1_LIBRARIES}
-  ${READLINE_LIBRARY}
-)
+if(APPLE)
+  target_link_libraries(garazyk-ui PRIVATE
+    ATProtoAppViewServer
+    ATProtoRuntime
+    ATProtoStorage
+    ATProtoServices
+    ATProtoSync
+    ATProtoTransport
+    ATProtoCore
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+    ${READLINE_LIBRARY}
+  )
+else()
+  target_link_libraries(garazyk-ui PRIVATE
+    -Wl,--whole-archive
+    ATProtoAppViewServer
+    ATProtoRuntime
+    ATProtoStorage
+    ATProtoServices
+    ATProtoSync
+    ATProtoTransport
+    ATProtoCore
+    -Wl,--no-whole-archive
+    ${PLATFORM_LIBRARIES}
+    ${SECP256K1_LIBRARIES}
+    ${READLINE_LIBRARY}
+  )
+endif()
 
 target_compile_definitions(garazyk-ui PRIVATE
   SQLITE_THREADSAFE=2
