@@ -62,6 +62,20 @@ export function runMigrations(db: Database) {
       throw e;
     }
   }
+
+  // Migration 3: Ensure scenario_params_json exists
+  if (currentVersion < 3) {
+    console.log("[db] Applying migration v3: Ensure scenario_params_json exists...");
+    try {
+      addColumns(db, "runs", [
+        "scenario_params_json TEXT",
+      ]);
+      recordMigration(db, 3);
+    } catch (e) {
+      console.error("[db] Migration v3 failed:", e);
+      throw e;
+    }
+  }
 }
 
 function getCurrentVersion(db: Database): number {
