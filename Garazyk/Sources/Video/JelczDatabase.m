@@ -1,25 +1,16 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Video/JelczDatabase.h"
-#import "Database/Utils/PDSSQLiteUtils.h"
+#import "Database/Connection/ATProtoConnectionManagerSerial.h"
+#import "Database/Utils/ATProtoDatabaseUtilities.h"
 #import "Core/NSDateFormatter+ATProto.h"
-#import "Debug/GZLogger.h"
-#import "Compat/PDSTypes.h"
 #import <sqlite3.h>
-
-// Suppress -Wblock-capture-autoreleasing: all block captures in this file
-// use dispatch_sync, which completes before the method returns.
-#pragma clang diagnostic ignored "-Wblock-capture-autoreleasing"
 
 NSString * const JelczDatabaseErrorDomain = @"com.atproto.jelcz.database";
 
-static const char *kJelczDatabaseQueueKey = "kJelczDatabaseQueueKey";
-
 @interface JelczDatabase ()
 @property (nonatomic, readwrite) NSURL *databaseURL;
-@property (nonatomic, readwrite) BOOL isOpen;
-@property (nonatomic, assign) sqlite3 *db;
-@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t dbQueue;
+@property (nonatomic, strong) ATProtoConnectionManagerSerial *connectionManager;
 @end
 
 @implementation JelczDatabase
@@ -29,8 +20,7 @@ static const char *kJelczDatabaseQueueKey = "kJelczDatabaseQueueKey";
     self = [super init];
     if (self) {
         _databaseURL = [NSURL fileURLWithPath:path];
-        _dbQueue = dispatch_queue_create("com.atproto.jelcz.database", DISPATCH_QUEUE_SERIAL);
-        dispatch_queue_set_specific(_dbQueue, kJelczDatabaseQueueKey, (void *)kJelczDatabaseQueueKey, NULL);
+        _connectionManager = [[ATProtoConnectionManagerSerial alloc] initWithLabel:@"com.atproto.jelcz.database"];
 
         if (![self openDatabaseWithError:error]) {
             return nil;
@@ -40,48 +30,34 @@ static const char *kJelczDatabaseQueueKey = "kJelczDatabaseQueueKey";
 }
 
 - (BOOL)openDatabaseWithError:(NSError **)error {
-    if (self.isOpen) return YES;
+    if (self.connectionManager.isOpen) {
+        return YES;
+    }
 
     NSString *dir = self.databaseURL.URLByDeletingLastPathComponent.path;
-    if (dir) {
+    if (dir.length > 0) {
         [[NSFileManager defaultManager] createDirectoryAtPath:dir
                                   withIntermediateDirectories:YES
                                                    attributes:nil
                                                         error:nil];
     }
 
-    int rc = sqlite3_open_v2(self.databaseURL.path.UTF8String, &_db,
-                              SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
-    if (rc != SQLITE_OK) {
-        if (error) {
-            *error = [NSError errorWithDomain:JelczDatabaseErrorDomain
-                                         code:rc
-                                     userInfo:@{NSLocalizedDescriptionKey:
-                                                    [NSString stringWithUTF8String:sqlite3_errmsg(_db)]}];
-        }
+    if (![self.connectionManager openWithPath:self.databaseURL.path
+                                       config:ATProtoDBConfigDefault
+                                        error:error]) {
         return NO;
     }
 
-    // Enable WAL mode
-    sqlite3_exec(_db, "PRAGMA journal_mode=WAL", NULL, NULL, NULL);
-    sqlite3_exec(_db, "PRAGMA foreign_keys=ON", NULL, NULL, NULL);
-
-    // Create schema
     if (![self createSchemaWithError:error]) {
-        sqlite3_close(_db);
-        _db = NULL;
+        [self.connectionManager close];
         return NO;
     }
 
-    self.isOpen = YES;
     return YES;
 }
 
 - (void)closeDatabase {
-    if (!self.isOpen) return;
-    sqlite3_close(_db);
-    _db = NULL;
-    self.isOpen = NO;
+    [self.connectionManager close];
 }
 
 - (BOOL)createSchemaWithError:(NSError **)error {
@@ -114,19 +90,28 @@ static const char *kJelczDatabaseQueueKey = "kJelczDatabaseQueueKey";
         "CREATE INDEX IF NOT EXISTS idx_video_jobs_state ON video_jobs(state);"
         "CREATE INDEX IF NOT EXISTS idx_video_jobs_created ON video_jobs(created_at);";
 
-    char *errMsg = NULL;
-    int rc = sqlite3_exec(_db, sql, NULL, NULL, &errMsg);
-    if (rc != SQLITE_OK) {
-        if (error) {
-            *error = [NSError errorWithDomain:JelczDatabaseErrorDomain
-                                         code:rc
-                                     userInfo:@{NSLocalizedDescriptionKey:
-                                                    errMsg ? [NSString stringWithUTF8String:errMsg] : @"Schema creation failed"}];
+    __block BOOL created = NO;
+    __block NSError *innerError = nil;
+    [self.connectionManager execute:^(sqlite3 *db) {
+        char *errMsg = NULL;
+        int rc = sqlite3_exec(db, sql, NULL, NULL, &errMsg);
+        if (rc != SQLITE_OK) {
+            NSString *message = errMsg ? [NSString stringWithUTF8String:errMsg] : @"Schema creation failed";
+            innerError = [NSError errorWithDomain:JelczDatabaseErrorDomain
+                                             code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey: message}];
+            if (errMsg) {
+                sqlite3_free(errMsg);
+            }
+            return;
         }
-        if (errMsg) sqlite3_free(errMsg);
-        return NO;
+        created = YES;
+    } error:&innerError];
+
+    if (!created && error) {
+        *error = innerError;
     }
-    return YES;
+    return created;
 }
 
 #pragma mark - VideoJobStore protocol
@@ -134,42 +119,45 @@ static const char *kJelczDatabaseQueueKey = "kJelczDatabaseQueueKey";
 - (nullable NSDictionary *)getVideoJobById:(NSString *)jobId
                                      error:(NSError **)error {
     __block NSDictionary *result = nil;
-    dispatch_sync(_dbQueue, ^{
+    __block NSError *innerError = nil;
+    [self.connectionManager execute:^(sqlite3 *db) {
         const char *sql = "SELECT * FROM video_jobs WHERE job_id = ?";
         sqlite3_stmt *stmt = NULL;
-        int rc = sqlite3_prepare_v2(_db, sql, -1, &stmt, NULL);
+        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
         if (rc != SQLITE_OK) {
-            if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:rc];
+            innerError = [self errorWithMessage:sqlite3_errmsg(db) code:rc];
             return;
         }
 
         sqlite3_bind_text(stmt, 1, jobId.UTF8String, -1, SQLITE_TRANSIENT);
-
         if (sqlite3_step(stmt) == SQLITE_ROW) {
             result = [self rowFromStatement:stmt];
         }
-
         sqlite3_finalize(stmt);
-    });
+    } error:&innerError];
+    if (!result && error) {
+        *error = innerError;
+    }
     return result;
 }
 
 - (BOOL)createVideoJobWithId:(NSString *)jobId
                          did:(NSString *)did
-                      blobCid:(NSString *)blobCid
-                     mimeType:(NSString *)mimeType
-                     fileSize:(NSNumber *)fileSize
-              serviceAuthToken:(nullable NSString *)token
-                        error:(NSError **)error {
+                     blobCid:(NSString *)blobCid
+                    mimeType:(NSString *)mimeType
+                    fileSize:(NSNumber *)fileSize
+             serviceAuthToken:(nullable NSString *)token
+                       error:(NSError **)error {
     __block BOOL result = NO;
-    dispatch_sync(_dbQueue, ^{
+    __block NSError *innerError = nil;
+    [self.connectionManager execute:^(sqlite3 *db) {
         NSString *now = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
         const char *sql = "INSERT INTO video_jobs (job_id, did, blob_cid, mime_type, file_size, service_auth_token, state, progress, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'PENDING', 0, ?, ?)";
 
         sqlite3_stmt *stmt = NULL;
-        int rc = sqlite3_prepare_v2(_db, sql, -1, &stmt, NULL);
+        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
         if (rc != SQLITE_OK) {
-            if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:rc];
+            innerError = [self errorWithMessage:sqlite3_errmsg(db) code:rc];
             return;
         }
 
@@ -188,14 +176,15 @@ static const char *kJelczDatabaseQueueKey = "kJelczDatabaseQueueKey";
 
         rc = sqlite3_step(stmt);
         sqlite3_finalize(stmt);
-
         if (rc != SQLITE_DONE) {
-            if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:rc];
+            innerError = [self errorWithMessage:sqlite3_errmsg(db) code:rc];
             return;
         }
-
         result = YES;
-    });
+    } error:&innerError];
+    if (!result && error) {
+        *error = innerError;
+    }
     return result;
 }
 
@@ -205,14 +194,15 @@ static const char *kJelczDatabaseQueueKey = "kJelczDatabaseQueueKey";
                     message:(nullable NSString *)message
                       error:(NSError **)error {
     __block BOOL result = NO;
-    dispatch_sync(_dbQueue, ^{
+    __block NSError *innerError = nil;
+    [self.connectionManager execute:^(sqlite3 *db) {
         NSString *now = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
         const char *sql = "UPDATE video_jobs SET state = ?, progress = ?, message = ?, updated_at = ? WHERE job_id = ?";
 
         sqlite3_stmt *stmt = NULL;
-        int rc = sqlite3_prepare_v2(_db, sql, -1, &stmt, NULL);
+        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
         if (rc != SQLITE_OK) {
-            if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:rc];
+            innerError = [self errorWithMessage:sqlite3_errmsg(db) code:rc];
             return;
         }
 
@@ -228,28 +218,31 @@ static const char *kJelczDatabaseQueueKey = "kJelczDatabaseQueueKey";
 
         rc = sqlite3_step(stmt);
         sqlite3_finalize(stmt);
-
         result = (rc == SQLITE_DONE);
-        if (!result && error) {
-            *error = [self errorWithMessage:sqlite3_errmsg(_db) code:rc];
+        if (!result) {
+            innerError = [self errorWithMessage:sqlite3_errmsg(db) code:rc];
         }
-    });
+    } error:&innerError];
+    if (!result && error) {
+        *error = innerError;
+    }
     return result;
 }
 
 - (BOOL)updateVideoJobResults:(NSString *)jobId
-              processedBlobCid:(nullable NSString *)processedBlobCid
-             thumbnailBlobCid:(nullable NSString *)thumbnailBlobCid
-                        error:(NSError **)error {
+             processedBlobCid:(nullable NSString *)processedBlobCid
+            thumbnailBlobCid:(nullable NSString *)thumbnailBlobCid
+                       error:(NSError **)error {
     __block BOOL result = NO;
-    dispatch_sync(_dbQueue, ^{
+    __block NSError *innerError = nil;
+    [self.connectionManager execute:^(sqlite3 *db) {
         NSString *now = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
         const char *sql = "UPDATE video_jobs SET processed_blob_cid = ?, thumbnail_blob_cid = ?, state = 'COMPLETED', progress = 100, updated_at = ? WHERE job_id = ?";
 
         sqlite3_stmt *stmt = NULL;
-        int rc = sqlite3_prepare_v2(_db, sql, -1, &stmt, NULL);
+        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
         if (rc != SQLITE_OK) {
-            if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:rc];
+            innerError = [self errorWithMessage:sqlite3_errmsg(db) code:rc];
             return;
         }
 
@@ -268,26 +261,29 @@ static const char *kJelczDatabaseQueueKey = "kJelczDatabaseQueueKey";
 
         rc = sqlite3_step(stmt);
         sqlite3_finalize(stmt);
-
         result = (rc == SQLITE_DONE);
-        if (!result && error) {
-            *error = [self errorWithMessage:sqlite3_errmsg(_db) code:rc];
+        if (!result) {
+            innerError = [self errorWithMessage:sqlite3_errmsg(db) code:rc];
         }
-    });
+    } error:&innerError];
+    if (!result && error) {
+        *error = innerError;
+    }
     return result;
 }
 
 - (BOOL)incrementVideoJobRetry:(NSString *)jobId
                          error:(NSError **)error {
     __block BOOL result = NO;
-    dispatch_sync(_dbQueue, ^{
+    __block NSError *innerError = nil;
+    [self.connectionManager execute:^(sqlite3 *db) {
         NSString *now = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
         const char *sql = "UPDATE video_jobs SET retry_count = retry_count + 1, state = 'PENDING', error_message = NULL, updated_at = ? WHERE job_id = ?";
 
         sqlite3_stmt *stmt = NULL;
-        int rc = sqlite3_prepare_v2(_db, sql, -1, &stmt, NULL);
+        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
         if (rc != SQLITE_OK) {
-            if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:rc];
+            innerError = [self errorWithMessage:sqlite3_errmsg(db) code:rc];
             return;
         }
 
@@ -296,28 +292,31 @@ static const char *kJelczDatabaseQueueKey = "kJelczDatabaseQueueKey";
 
         rc = sqlite3_step(stmt);
         sqlite3_finalize(stmt);
-
         result = (rc == SQLITE_DONE);
-        if (!result && error) {
-            *error = [self errorWithMessage:sqlite3_errmsg(_db) code:rc];
+        if (!result) {
+            innerError = [self errorWithMessage:sqlite3_errmsg(db) code:rc];
         }
-    });
+    } error:&innerError];
+    if (!result && error) {
+        *error = innerError;
+    }
     return result;
 }
 
 - (BOOL)updateVideoJobDimensions:(NSString *)jobId
-                            width:(NSInteger)width
-                           height:(NSInteger)height
-                            error:(NSError **)error {
+                           width:(NSInteger)width
+                          height:(NSInteger)height
+                           error:(NSError **)error {
     __block BOOL result = NO;
-    dispatch_sync(_dbQueue, ^{
+    __block NSError *innerError = nil;
+    [self.connectionManager execute:^(sqlite3 *db) {
         NSString *now = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
         const char *sql = "UPDATE video_jobs SET width = ?, height = ?, updated_at = ? WHERE job_id = ?";
 
         sqlite3_stmt *stmt = NULL;
-        int rc = sqlite3_prepare_v2(_db, sql, -1, &stmt, NULL);
+        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
         if (rc != SQLITE_OK) {
-            if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:rc];
+            innerError = [self errorWithMessage:sqlite3_errmsg(db) code:rc];
             return;
         }
 
@@ -328,27 +327,30 @@ static const char *kJelczDatabaseQueueKey = "kJelczDatabaseQueueKey";
 
         rc = sqlite3_step(stmt);
         sqlite3_finalize(stmt);
-
         result = (rc == SQLITE_DONE);
-        if (!result && error) {
-            *error = [self errorWithMessage:sqlite3_errmsg(_db) code:rc];
+        if (!result) {
+            innerError = [self errorWithMessage:sqlite3_errmsg(db) code:rc];
         }
-    });
+    } error:&innerError];
+    if (!result && error) {
+        *error = innerError;
+    }
     return result;
 }
 
 - (BOOL)updateVideoJobDuration:(NSString *)jobId
-                      seconds:(NSInteger)seconds
+                       seconds:(NSInteger)seconds
                          error:(NSError **)error {
     __block BOOL result = NO;
-    dispatch_sync(_dbQueue, ^{
+    __block NSError *innerError = nil;
+    [self.connectionManager execute:^(sqlite3 *db) {
         NSString *now = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
         const char *sql = "UPDATE video_jobs SET duration_seconds = ?, updated_at = ? WHERE job_id = ?";
 
         sqlite3_stmt *stmt = NULL;
-        int rc = sqlite3_prepare_v2(_db, sql, -1, &stmt, NULL);
+        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
         if (rc != SQLITE_OK) {
-            if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:rc];
+            innerError = [self errorWithMessage:sqlite3_errmsg(db) code:rc];
             return;
         }
 
@@ -358,55 +360,60 @@ static const char *kJelczDatabaseQueueKey = "kJelczDatabaseQueueKey";
 
         rc = sqlite3_step(stmt);
         sqlite3_finalize(stmt);
-
         result = (rc == SQLITE_DONE);
-        if (!result && error) {
-            *error = [self errorWithMessage:sqlite3_errmsg(_db) code:rc];
+        if (!result) {
+            innerError = [self errorWithMessage:sqlite3_errmsg(db) code:rc];
         }
-    });
+    } error:&innerError];
+    if (!result && error) {
+        *error = innerError;
+    }
     return result;
 }
 
 - (NSArray<NSDictionary *> *)queryPendingJobsWithLimit:(NSInteger)limit
                                                  error:(NSError **)error {
     __block NSArray<NSDictionary *> *result = @[];
-    dispatch_sync(_dbQueue, ^{
+    __block NSError *innerError = nil;
+    [self.connectionManager execute:^(sqlite3 *db) {
         const char *sql = "SELECT * FROM video_jobs WHERE state = 'PENDING' ORDER BY created_at ASC LIMIT ?";
         sqlite3_stmt *stmt = NULL;
-        int rc = sqlite3_prepare_v2(_db, sql, -1, &stmt, NULL);
+        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
         if (rc != SQLITE_OK) {
-            if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:rc];
+            innerError = [self errorWithMessage:sqlite3_errmsg(db) code:rc];
             return;
         }
 
         sqlite3_bind_int64(stmt, 1, limit);
-
         NSMutableArray<NSDictionary *> *rows = [NSMutableArray array];
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             [rows addObject:[self rowFromStatement:stmt]];
         }
-
         sqlite3_finalize(stmt);
         result = rows;
-    });
+    } error:&innerError];
+    if (result.count == 0 && error && innerError) {
+        *error = innerError;
+    }
     return result;
 }
 
 - (NSArray<NSDictionary *> *)listVideoJobsWithState:(nullable NSString *)state
-                                               limit:(NSUInteger)limit
-                                              offset:(NSUInteger)offset
-                                               error:(NSError **)error {
+                                              limit:(NSUInteger)limit
+                                             offset:(NSUInteger)offset
+                                              error:(NSError **)error {
     __block NSArray<NSDictionary *> *result = @[];
-    dispatch_sync(_dbQueue, ^{
-        const char *sql = nil;
+    __block NSError *innerError = nil;
+    [self.connectionManager execute:^(sqlite3 *db) {
+        const char *sql = NULL;
         sqlite3_stmt *stmt = NULL;
-        int rc;
+        int rc = SQLITE_OK;
 
         if (state.length > 0) {
             sql = "SELECT * FROM video_jobs WHERE state = ? ORDER BY created_at DESC LIMIT ? OFFSET ?";
-            rc = sqlite3_prepare_v2(_db, sql, -1, &stmt, NULL);
+            rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
             if (rc != SQLITE_OK) {
-                if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:rc];
+                innerError = [self errorWithMessage:sqlite3_errmsg(db) code:rc];
                 return;
             }
             sqlite3_bind_text(stmt, 1, state.UTF8String, -1, SQLITE_TRANSIENT);
@@ -414,9 +421,9 @@ static const char *kJelczDatabaseQueueKey = "kJelczDatabaseQueueKey";
             sqlite3_bind_int64(stmt, 3, (int64_t)offset);
         } else {
             sql = "SELECT * FROM video_jobs ORDER BY created_at DESC LIMIT ? OFFSET ?";
-            rc = sqlite3_prepare_v2(_db, sql, -1, &stmt, NULL);
+            rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
             if (rc != SQLITE_OK) {
-                if (error) *error = [self errorWithMessage:sqlite3_errmsg(_db) code:rc];
+                innerError = [self errorWithMessage:sqlite3_errmsg(db) code:rc];
                 return;
             }
             sqlite3_bind_int64(stmt, 1, (int64_t)limit);
@@ -427,10 +434,12 @@ static const char *kJelczDatabaseQueueKey = "kJelczDatabaseQueueKey";
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             [rows addObject:[self rowFromStatement:stmt]];
         }
-
         sqlite3_finalize(stmt);
         result = rows;
-    });
+    } error:&innerError];
+    if (result.count == 0 && error && innerError) {
+        *error = innerError;
+    }
     return result;
 }
 
@@ -442,37 +451,14 @@ static const char *kJelczDatabaseQueueKey = "kJelczDatabaseQueueKey";
     for (int i = 0; i < cols; i++) {
         const char *name = sqlite3_column_name(stmt, i);
         NSString *colName = [NSString stringWithUTF8String:name];
-        id value = [NSNull null];
-
-        int type = sqlite3_column_type(stmt, i);
-        switch (type) {
-            case SQLITE_TEXT:
-                value = [NSString stringWithUTF8String:(const char *)sqlite3_column_text(stmt, i)];
-                break;
-            case SQLITE_INTEGER:
-                value = @(sqlite3_column_int64(stmt, i));
-                break;
-            case SQLITE_FLOAT:
-                value = @(sqlite3_column_double(stmt, i));
-                break;
-            case SQLITE_NULL:
-                value = [NSNull null];
-                break;
-            default:
-                value = [NSNull null];
-                break;
-        }
-
-        row[colName] = value;
+        row[colName] = ATProtoDBColumnValue(stmt, i) ?: [NSNull null];
     }
     return row;
 }
 
 - (NSError *)errorWithMessage:(const char *)message code:(int)code {
-    return [NSError errorWithDomain:JelczDatabaseErrorDomain
-                               code:code
-                           userInfo:@{NSLocalizedDescriptionKey:
-                                          message ? [NSString stringWithUTF8String:message] : @"Unknown database error"}];
+    NSString *description = message ? [NSString stringWithUTF8String:message] : @"Unknown database error";
+    return ATProtoDBError(JelczDatabaseErrorDomain, description, code);
 }
 
 @end

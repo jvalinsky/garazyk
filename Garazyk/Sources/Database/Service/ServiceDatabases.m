@@ -11,7 +11,7 @@
 #import "Database/Schema/PDSSchemaManager.h"
 #import "Database/Migrations/PDSMigrationManager.h"
 #import "Core/NSDateFormatter+ATProto.h"
-#import "Core/PDSDataPaths.h"
+#import "Core/ATProtoDataPaths.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import <CommonCrypto/CommonCrypto.h>
 #import <CommonCrypto/CommonKeyDerivation.h>
@@ -101,7 +101,7 @@ static NSString *refreshTokenSessionID(NSString *refreshToken) {
                  sequencerMaxSize:(NSUInteger)sequencerMaxSize {
     self = [super init];
     if (self) {
-        PDSDataPaths *paths = [PDSDataPaths pathsForBaseDirectory:directory];
+        ATProtoDataPaths *paths = [ATProtoDataPaths pathsForBaseDirectory:directory];
         [paths createDirectoriesWithError:nil];
 
         _serviceDbPath = paths.serviceDirectory;

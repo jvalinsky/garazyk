@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "Database/Utils/PDSDatabaseUtilities.h"
+#import "Database/Utils/ATProtoDatabaseUtilities.h"
 #import <sqlite3.h>
 
-NSString * const PDSDBErrorDomain = @"com.garazyk.db";
+NSString * const ATProtoDBErrorDomain = @"com.garazyk.db";
 
-const PDSDBConfig PDSDBConfigDefault = {
-    .flags = PDSDBConfigFlagWAL | PDSDBConfigFlagSynchronousNormal | PDSDBConfigFlagForeignKeys,
+const ATProtoDBConfig ATProtoDBConfigDefault = {
+    .flags = ATProtoDBConfigFlagWAL | ATProtoDBConfigFlagSynchronousNormal | ATProtoDBConfigFlagForeignKeys,
     .busyTimeout = 5000,
     .cacheSize = 0,
     .walAutocheckpoint = 0,
@@ -15,8 +15,8 @@ const PDSDBConfig PDSDBConfigDefault = {
     .pageSize = 0,
 };
 
-const PDSDBConfig PDSDBConfigActorStore = {
-    .flags = PDSDBConfigFlagWAL | PDSDBConfigFlagSynchronousNormal | PDSDBConfigFlagForeignKeys,
+const ATProtoDBConfig ATProtoDBConfigActorStore = {
+    .flags = ATProtoDBConfigFlagWAL | ATProtoDBConfigFlagSynchronousNormal | ATProtoDBConfigFlagForeignKeys,
     .busyTimeout = 5000,
     .cacheSize = -64000,
     .walAutocheckpoint = 1000,
@@ -25,9 +25,9 @@ const PDSDBConfig PDSDBConfigActorStore = {
     .pageSize = 0,
 };
 
-const PDSDBConfig PDSDBConfigServiceDatabase = {
-    .flags = PDSDBConfigFlagWAL | PDSDBConfigFlagSynchronousNormal
-             | PDSDBConfigFlagForeignKeys | PDSDBConfigFlagTempStoreMemory,
+const ATProtoDBConfig ATProtoDBConfigServiceDatabase = {
+    .flags = ATProtoDBConfigFlagWAL | ATProtoDBConfigFlagSynchronousNormal
+             | ATProtoDBConfigFlagForeignKeys | ATProtoDBConfigFlagTempStoreMemory,
     .busyTimeout = 5000,
     .cacheSize = -32000,
     .walAutocheckpoint = 0,
@@ -36,8 +36,8 @@ const PDSDBConfig PDSDBConfigServiceDatabase = {
     .pageSize = 0,
 };
 
-const PDSDBConfig PDSDBConfigBulkRead = {
-    .flags = PDSDBConfigFlagWAL | PDSDBConfigFlagSynchronousNormal,
+const ATProtoDBConfig ATProtoDBConfigBulkRead = {
+    .flags = ATProtoDBConfigFlagWAL | ATProtoDBConfigFlagSynchronousNormal,
     .busyTimeout = 10000,
     .cacheSize = -128000,
     .walAutocheckpoint = 0,
@@ -46,32 +46,32 @@ const PDSDBConfig PDSDBConfigBulkRead = {
     .pageSize = 0,
 };
 
-BOOL PDSDBConfigurePragmas(sqlite3 *db, PDSDBConfig config) {
+BOOL ATProtoDBConfigurePragmas(sqlite3 *db, ATProtoDBConfig config) {
     if (!db) return NO;
     char *errMsg = NULL;
 
-    if (config.flags & PDSDBConfigFlagWAL) {
+    if (config.flags & ATProtoDBConfigFlagWAL) {
         int rc = sqlite3_exec(db, "PRAGMA journal_mode=WAL", NULL, NULL, &errMsg);
         if (rc != SQLITE_OK) {
             sqlite3_free(errMsg); errMsg = NULL;
         }
     }
 
-    if (config.flags & PDSDBConfigFlagSynchronousNormal) {
+    if (config.flags & ATProtoDBConfigFlagSynchronousNormal) {
         int rc = sqlite3_exec(db, "PRAGMA synchronous=NORMAL", NULL, NULL, &errMsg);
         if (rc != SQLITE_OK) {
             sqlite3_free(errMsg); errMsg = NULL;
         }
     }
 
-    if (config.flags & PDSDBConfigFlagForeignKeys) {
+    if (config.flags & ATProtoDBConfigFlagForeignKeys) {
         int rc = sqlite3_exec(db, "PRAGMA foreign_keys=ON", NULL, NULL, &errMsg);
         if (rc != SQLITE_OK) {
             sqlite3_free(errMsg); errMsg = NULL;
         }
     }
 
-    if (config.flags & PDSDBConfigFlagTempStoreMemory) {
+    if (config.flags & ATProtoDBConfigFlagTempStoreMemory) {
         int rc = sqlite3_exec(db, "PRAGMA temp_store=MEMORY", NULL, NULL, &errMsg);
         if (rc != SQLITE_OK) {
             sqlite3_free(errMsg); errMsg = NULL;

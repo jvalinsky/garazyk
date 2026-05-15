@@ -23,7 +23,7 @@
 #import "PDSActorStore+Account.h"
 #import "PDSActorStore+Blob.h"
 #import "Auth/CryptoUtils.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import <sqlite3.h>
 
 extern void PDSActorStoreLinkAccountCategory(void);
@@ -514,7 +514,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 }
 
 - (BOOL)storeRotationKeyPrivate:(NSData *)privateKey publicKey:(NSData *)compressedPublicKey error:(NSError **)error {
-    NSString *masterSecret = self.masterSecret ?: [PDSConfiguration sharedConfiguration].masterSecret;
+    NSString *masterSecret = self.masterSecret ?: [ATProtoServiceConfiguration sharedConfiguration].masterSecret;
     if (masterSecret.length == 0) return NO;
     return [self storeRotationKeyPrivate:privateKey publicKey:compressedPublicKey encryptedWithPassword:masterSecret error:error];
 }
@@ -532,7 +532,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 }
 
 - (nullable NSData *)rotationKeyDecryptedWithError:(NSError **)error {
-    NSString *masterSecret = self.masterSecret ?: [PDSConfiguration sharedConfiguration].masterSecret;
+    NSString *masterSecret = self.masterSecret ?: [ATProtoServiceConfiguration sharedConfiguration].masterSecret;
     if (masterSecret.length == 0) return nil;
     return [self rotationKeyDecryptedWithPassword:masterSecret error:error];
 }

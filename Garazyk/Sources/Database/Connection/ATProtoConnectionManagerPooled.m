@@ -1,17 +1,17 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "Database/Connection/PDSConnectionManager_Pooled.h"
-#import "Database/Pool/PDSConnectionPool.h"
+#import "Database/Connection/ATProtoConnectionManagerPooled.h"
+#import "Database/Pool/ATProtoConnectionPool.h"
 
-@interface PDSConnectionManager_Pooled ()
+@interface ATProtoConnectionManagerPooled ()
 @property (nonatomic, readwrite, getter=isOpen) BOOL open;
 @property (nonatomic, readwrite, copy) NSString *databasePath;
-@property (nonatomic, strong) PDSConnectionPool *pool;
+@property (nonatomic, strong) ATProtoConnectionPool *pool;
 @end
 
-@implementation PDSConnectionManager_Pooled
+@implementation ATProtoConnectionManagerPooled
 
-- (instancetype)initWithPool:(PDSConnectionPool *)pool {
+- (instancetype)initWithPool:(ATProtoConnectionPool *)pool {
     if ((self = [super init])) {
         _pool = pool;
         _databasePath = [pool.databasePath copy];
@@ -24,11 +24,13 @@
     [self close];
 }
 
-- (BOOL)openWithPath:(NSString *)path config:(PDSDBConfig)config error:(NSError **)error {
+- (BOOL)openWithPath:(NSString *)path config:(ATProtoDBConfig)config error:(NSError **)error {
+    (void)path;
+    (void)config;
     if (error) {
-        *error = PDSDBError(PDSDBErrorDomain,
-                            @"PDSConnectionManager_Pooled requires initWithPool:",
-                            PDSDBErrorQueryFailed);
+        *error = ATProtoDBError(ATProtoDBErrorDomain,
+                            @"ATProtoConnectionManagerPooled requires initWithPool:",
+                            ATProtoDBErrorQueryFailed);
     }
     return NO;
 }
@@ -42,8 +44,8 @@
     if (!block) return NO;
     if (!self.pool) {
         if (error) {
-            *error = PDSDBError(PDSDBErrorDomain,
-                                @"Pool not available", PDSDBErrorNotOpen);
+            *error = ATProtoDBError(ATProtoDBErrorDomain,
+                                @"Pool not available", ATProtoDBErrorNotOpen);
         }
         return NO;
     }
@@ -51,9 +53,9 @@
     sqlite3 *db = [self.pool acquireConnection];
     if (!db) {
         if (error) {
-            *error = PDSDBError(PDSDBErrorDomain,
+            *error = ATProtoDBError(ATProtoDBErrorDomain,
                                 @"Failed to acquire connection from pool",
-                                PDSDBErrorNotOpen);
+                                ATProtoDBErrorNotOpen);
         }
         return NO;
     }
@@ -67,8 +69,8 @@
     if (!block) return NO;
     if (!self.pool) {
         if (error) {
-            *error = PDSDBError(PDSDBErrorDomain,
-                                @"Pool not available", PDSDBErrorNotOpen);
+            *error = ATProtoDBError(ATProtoDBErrorDomain,
+                                @"Pool not available", ATProtoDBErrorNotOpen);
         }
         return NO;
     }
@@ -76,18 +78,18 @@
     sqlite3 *db = [self.pool acquireConnection];
     if (!db) {
         if (error) {
-            *error = PDSDBError(PDSDBErrorDomain,
+            *error = ATProtoDBError(ATProtoDBErrorDomain,
                                 @"Failed to acquire connection from pool",
-                                PDSDBErrorNotOpen);
+                                ATProtoDBErrorNotOpen);
         }
         return NO;
     }
 
     char *errMsg = NULL;
-    int rc = sqlite3_exec(db, "BEGIN", NULL, NULL, &errMsg);
+    int rc = sqlite3_exec(db, "BEGIN IMMEDIATE", NULL, NULL, &errMsg);
     if (rc != SQLITE_OK) {
         if (error) {
-            *error = PDSDBSQLError(PDSDBErrorDomain, db, PDSDBErrorQueryFailed);
+            *error = ATProtoDBSQLError(ATProtoDBErrorDomain, db, ATProtoDBErrorQueryFailed);
         }
         sqlite3_free(errMsg);
         [self.pool releaseConnection:db];
@@ -101,9 +103,9 @@
         sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
         [self.pool releaseConnection:db];
         if (error) {
-            *error = PDSDBError(PDSDBErrorDomain,
+            *error = ATProtoDBError(ATProtoDBErrorDomain,
                                 @"Transaction rolled back",
-                                PDSDBErrorQueryFailed);
+                                ATProtoDBErrorQueryFailed);
         }
         return NO;
     }
@@ -111,7 +113,7 @@
     rc = sqlite3_exec(db, "COMMIT", NULL, NULL, &errMsg);
     if (rc != SQLITE_OK) {
         if (error) {
-            *error = PDSDBSQLError(PDSDBErrorDomain, db, PDSDBErrorQueryFailed);
+            *error = ATProtoDBSQLError(ATProtoDBErrorDomain, db, ATProtoDBErrorQueryFailed);
         }
         sqlite3_free(errMsg);
         sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL);
