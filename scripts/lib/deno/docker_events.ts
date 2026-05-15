@@ -341,16 +341,16 @@ export class ContainerEventWatcher {
     if (this._closed) return;
     this._closed = true;
 
+    // Remove the scoped AbortError suppression handler.
+    if (this._unhandledRejectionHandler) {
+      globalThis.removeEventListener("unhandledrejection", this._unhandledRejectionHandler);
+      this._unhandledRejectionHandler = null;
+    }
+
     // Abort the event stream. This causes the pending reader.read()
     // in streamEvents() to reject with AbortError, which is caught
     // by the .catch() handler and converted to done=true.
-    try {
-      this.abortController.abort();
-    } catch (err) {
-      if (!(err instanceof DOMException && err.name === "AbortError")) {
-        throw err;
-      }
-    }
+    this.abortController.abort();
 
     // Reject all pending waiters
     for (const waiter of this.waiters) {
@@ -370,15 +370,6 @@ export class ContainerEventWatcher {
         new Promise<void>((resolve) => setTimeout(resolve, 100)),
       ]);
       this.eventLoopPromise = null;
-    }
-
-    if (this._unhandledRejectionHandler) {
-      const handler = this._unhandledRejectionHandler;
-      const cleanupTimer = setTimeout(() => {
-        globalThis.removeEventListener("unhandledrejection", handler);
-      }, 5000);
-      Deno.unrefTimer(cleanupTimer);
-      this._unhandledRejectionHandler = null;
     }
 
     this.client.close();
