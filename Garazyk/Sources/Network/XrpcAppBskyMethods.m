@@ -85,10 +85,10 @@ static id<XrpcRoutePackServices> XrpcAppBskyResolvedRoutePackServices(
                  appViewDbError.localizedDescription ?: @"unknown error");
   }
 
-  [XrpcAppBskyActorPack registerPDSLevelMethodsWithDispatcher:dispatcher
-                                               appViewDatabase:appViewDatabase
-                                                      jwtMinter:jwtMinter
-                                                adminController:adminController];
+  if ([resolvedServices isKindOfClass:[XrpcRoutePackServiceBag class]]) {
+    ((XrpcRoutePackServiceBag *)resolvedServices).appViewDatabase = appViewDatabase;
+  }
+  [XrpcAppBskyActorPack registerPDSLevelMethodsWithDispatcher:dispatcher services:resolvedServices];
 
   [XrpcAppBskyNotificationPack registerPDSLevelMethodsWithDispatcher:dispatcher
                                                       appViewDatabase:appViewDatabase
@@ -164,10 +164,10 @@ static id<XrpcRoutePackServices> XrpcAppBskyResolvedRoutePackServices(
 
   GZ_LOG_INFO(@"Local AppView enabled; registering full suite of app.bsky.* handlers.");
   
-  [XrpcAppBskyActorPack registerAppViewMethodsWithDispatcher:dispatcher
-                                                appViewDatabase:appViewDatabase
-                                                      jwtMinter:jwtMinter
-                                                adminController:adminController];
+  if ([resolvedServices isKindOfClass:[XrpcRoutePackServiceBag class]]) {
+    ((XrpcRoutePackServiceBag *)resolvedServices).appViewDatabase = appViewDatabase;
+  }
+  [XrpcAppBskyActorPack registerAppViewMethodsWithDispatcher:dispatcher services:resolvedServices];
 
   NotificationService *notificationService =
       [[NotificationService alloc] initWithDatabase:appViewDatabase
