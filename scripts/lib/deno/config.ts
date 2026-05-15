@@ -7,6 +7,9 @@ const topology = resolveTopology(
 
 export const PDS1 = Deno.env.get("PDS_URL") || topology.serviceUrls.pds || "http://localhost:2583";
 export const PDS2 = Deno.env.get("PDS2_URL") || topology.serviceUrls.pds2 || "http://localhost:2587";
+// Admin credentials for local development PDS/AppView instances.
+// These are NOT production secrets — they are the default credentials
+// for locally-run test services. Set the env vars to override.
 export const APPVIEW_ADMIN_SECRET = Deno.env.get("APPVIEW_ADMIN_SECRET") || "localdevadmin";
 export const PDS_ADMIN_PASSWORD = Deno.env.get("PDS_ADMIN_PASSWORD") || "admin-localdev";
 
@@ -45,7 +48,31 @@ export class Character {
   }
 }
 
-const BASE_CHARACTERS: Record<string, any> = {
+// ---------------------------------------------------------------------------
+// Character Registry — pure factory, no global mutable state
+// ---------------------------------------------------------------------------
+
+/** A registry of test characters, scoped to specific PDS URLs. */
+export interface CharacterRegistry {
+  getCharacter(name: string): Character;
+  getCharactersByRole(role: string): Character[];
+  getCharactersByPds(pdsUrl: string): Character[];
+  all(): Record<string, Character>;
+}
+
+/** Character template — no PDS URLs baked in. */
+interface CharacterTemplate {
+  name: string;
+  handle: string;
+  email: string;
+  password: string;
+  persona: string;
+  role: "user" | "admin" | "mod";
+  /** Which PDS to assign to: "pds1" or "pds2" */
+  pds: "pds1" | "pds2";
+}
+
+const BASE_TEMPLATES: Record<string, CharacterTemplate> = {
   luna: {
     name: "Luna Starfield",
     handle: "luna.test",
@@ -53,7 +80,7 @@ const BASE_CHARACTERS: Record<string, any> = {
     password: "luna_pass_123",
     persona: "Astronomy enthusiast, posts about space, follows science accounts, friendly",
     role: "user",
-    pdsUrl: PDS1,
+    pds: "pds1",
   },
   marcus: {
     name: "Marcus Code",
@@ -62,7 +89,7 @@ const BASE_CHARACTERS: Record<string, any> = {
     password: "marcus_pass_123",
     persona: "Developer, posts about ATProto, builds tools, helpful",
     role: "user",
-    pdsUrl: PDS1,
+    pds: "pds1",
   },
   rosa: {
     name: "Chef Rosa",
@@ -71,7 +98,7 @@ const BASE_CHARACTERS: Record<string, any> = {
     password: "rosa_pass_123",
     persona: "Food blogger, posts recipes, uploads food photos, social butterfly",
     role: "user",
-    pdsUrl: PDS1,
+    pds: "pds1",
   },
   volt: {
     name: "DJ Volt",
@@ -80,7 +107,7 @@ const BASE_CHARACTERS: Record<string, any> = {
     password: "volt_pass_123",
     persona: "Music producer, posts about beats and shows, energetic",
     role: "user",
-    pdsUrl: PDS1,
+    pds: "pds1",
   },
   troll: {
     name: "Trollface McGee",
@@ -89,7 +116,7 @@ const BASE_CHARACTERS: Record<string, any> = {
     password: "troll_pass_123",
     persona: "Bad actor, posts spam and harassment, gets reported",
     role: "user",
-    pdsUrl: PDS1,
+    pds: "pds1",
   },
   quiet: {
     name: "Quiet Observer",
@@ -98,7 +125,7 @@ const BASE_CHARACTERS: Record<string, any> = {
     password: "quiet_pass_123",
     persona: "Lurker, reads feeds, few posts, follows many",
     role: "user",
-    pdsUrl: PDS1,
+    pds: "pds1",
   },
   admin: {
     name: "Admin Sentinel",
@@ -107,7 +134,7 @@ const BASE_CHARACTERS: Record<string, any> = {
     password: "admin_pass_123",
     persona: "Server administrator, handles reports and takedowns, posts announcements",
     role: "admin",
-    pdsUrl: PDS1,
+    pds: "pds1",
   },
   mod: {
     name: "Mod Justice",
@@ -116,7 +143,7 @@ const BASE_CHARACTERS: Record<string, any> = {
     password: "mod_pass_123",
     persona: "Ozone moderator, reviews reports, applies labels, uses tools.ozone",
     role: "mod",
-    pdsUrl: PDS1,
+    pds: "pds1",
   },
   nova: {
     name: "Nova Bright",
@@ -125,7 +152,7 @@ const BASE_CHARACTERS: Record<string, any> = {
     password: "nova_pass_123",
     persona: "Cross-PDS user, interacts with PDS 1 users, tests federation",
     role: "user",
-    pdsUrl: PDS2,
+    pds: "pds2",
   },
   rex: {
     name: "Rex Storm",
@@ -134,15 +161,27 @@ const BASE_CHARACTERS: Record<string, any> = {
     password: "rex_pass_123",
     persona: "Cross-PDS troll, gets into conflicts across PDS boundaries",
     role: "user",
-    pdsUrl: PDS2,
+    pds: "pds2",
   },
 };
 
-function buildCharacters(): Record<string, Character> {
+/**
+ * Create a fresh character registry with unique handles/emails.
+ *
+ * Each call produces a new set of characters with a unique suffix,
+ * so multiple registries can coexist without handle collisions.
+ *
+ * @param pds1Url - URL for the primary PDS (default: PDS1 from env/topology)
+ * @param pds2Url - URL for the secondary PDS (default: PDS2 from env/topology)
+ */
+export function createCharacterRegistry(
+  pds1Url: string = PDS1,
+  pds2Url: string = PDS2,
+): CharacterRegistry {
   const suffix = Math.floor(Date.now() % 0xFFFF).toString(16).padStart(4, "0");
   const chars: Record<string, Character> = {};
 
-  for (const [key, tpl] of Object.entries(BASE_CHARACTERS)) {
+  for (const [key, tpl] of Object.entries(BASE_TEMPLATES)) {
     const handleParts = tpl.handle.split(".");
     const handle = handleParts.length > 1
       ? `${handleParts[0]}-${suffix}.${handleParts.slice(1).join(".")}`
@@ -151,6 +190,8 @@ function buildCharacters(): Record<string, Character> {
     const emailParts = tpl.email.split("@");
     const email = `${emailParts[0]}-${suffix}@${emailParts[1]}`;
 
+    const pdsUrl = tpl.pds === "pds2" ? pds2Url : pds1Url;
+
     chars[key] = new Character(
       tpl.name,
       handle,
@@ -158,28 +199,47 @@ function buildCharacters(): Record<string, Character> {
       tpl.password,
       tpl.persona,
       tpl.role,
-      tpl.pdsUrl,
+      pdsUrl,
     );
   }
-  return chars;
+
+  return {
+    getCharacter(name: string): Character {
+      const char = chars[name.toLowerCase()];
+      if (!char) throw new Error(`Character not found: ${name}`);
+      return char;
+    },
+    getCharactersByRole(role: string): Character[] {
+      return Object.values(chars).filter((c) => c.role === role);
+    },
+    getCharactersByPds(pdsUrl: string): Character[] {
+      return Object.values(chars).filter((c) => c.pdsUrl === pdsUrl);
+    },
+    all(): Record<string, Character> {
+      return { ...chars };
+    },
+  };
 }
 
-let registry = buildCharacters();
+// ---------------------------------------------------------------------------
+// Legacy module-level API (backward compat)
+// ---------------------------------------------------------------------------
+
+// A default registry for callers that haven't migrated to the factory API.
+let registry = createCharacterRegistry();
 
 export function resetCharacters() {
-  registry = buildCharacters();
+  registry = createCharacterRegistry();
 }
 
 export function getCharacter(name: string): Character {
-  const char = registry[name.toLowerCase()];
-  if (!char) throw new Error(`Character not found: ${name}`);
-  return char;
+  return registry.getCharacter(name);
 }
 
 export function getCharactersByRole(role: string): Character[] {
-  return Object.values(registry).filter((c) => c.role === role);
+  return registry.getCharactersByRole(role);
 }
 
 export function getCharactersByPds(pdsUrl: string): Character[] {
-  return Object.values(registry).filter((c) => c.pdsUrl === pdsUrl);
+  return registry.getCharactersByPds(pdsUrl);
 }
