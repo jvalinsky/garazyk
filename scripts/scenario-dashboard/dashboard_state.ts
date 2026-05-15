@@ -91,7 +91,8 @@ export interface TopologySlice {
 
 export interface TopologyPreview {
   name: string;
-  services: Array<{ role: string; url: string; capabilities: string[] }>;
+  description?: string;
+  roles: string[];
   capabilities: string[];
 }
 
