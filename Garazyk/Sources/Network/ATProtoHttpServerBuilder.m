@@ -1,35 +1,35 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSHttpServerBuilder.m
+ @file ATProtoHttpServerBuilder.m
 
  @abstract Builds and wires HTTP server runtime components and route packs.
 
  @discussion Constructs the HTTP server instance, installs route packs, and applies runtime configuration for transport and routing layers before request serving begins.
  */
 
-#import "PDSHttpServerBuilder.h"
+#import "ATProtoHttpServerBuilder.h"
 #import "App/PDSApplication.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "App/PDSController.h"
-#import "Network/PDSHttpMetricsRoutePack.h"
-#import "Network/PDSHttpMSTViewerRoutePack.h"
-#import "Network/PDSHttpNodeInfoRoutePack.h"
-#import "Network/PDSHttpOAuthRoutePack.h"
+#import "Network/ATProtoHttpMetricsRoutePack.h"
+#import "Network/ATProtoHttpMSTViewerRoutePack.h"
+#import "Network/ATProtoHttpNodeInfoRoutePack.h"
+#import "Network/ATProtoHttpOAuthRoutePack.h"
 #import "Network/PDSHttpPDSAdminRoutePack.h"
-#import "Network/PDSHttpRelayAPIRoutePack.h"
-#import "Network/PDSHttpWellKnownRoutePack.h"
-#import "Network/PDSHttpXrpcRoutePack.h"
+#import "Network/ATProtoHttpRelayAPIRoutePack.h"
+#import "Network/ATProtoHttpWellKnownRoutePack.h"
+#import "Network/ATProtoHttpXrpcRoutePack.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
 #import <Foundation/Foundation.h>
 
-@interface PDSHttpServerBuilder ()
-@property(nonatomic, strong, nullable) PDSConfiguration *configuration;
+@interface ATProtoHttpServerBuilder ()
+@property(nonatomic, strong, nullable) ATProtoServiceConfiguration *configuration;
 @end
 
-@implementation PDSHttpServerBuilder
+@implementation ATProtoHttpServerBuilder
 
 #pragma mark - Initialization
 
@@ -46,7 +46,7 @@
   return self;
 }
 
-- (instancetype)initWithConfiguration:(PDSConfiguration *)configuration {
+- (instancetype)initWithConfiguration:(ATProtoServiceConfiguration *)configuration {
   self = [self init];
   if (self) {
     _configuration = configuration;
@@ -60,7 +60,7 @@
 }
 
 - (NSArray<NSString *> *)getCorsAllowedOrigins {
-  PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+  ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
   NSArray<NSString *> *defaultOrigins = @[ @"*" ];
   NSString *originsStr = [config stringForKey:@"cors.allowed_origins"];
   NSArray<NSString *> *origins = originsStr ? [originsStr componentsSeparatedByString:@","] : nil;
@@ -68,21 +68,21 @@
 }
 
 - (NSString *)getCorsAllowedMethods {
-  PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+  ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
   NSString *defaultMethods = @"GET, POST, PUT, DELETE, OPTIONS, HEAD";
   NSString *methods = [config stringForKey:@"cors.allowed_methods"];
   return methods ?: defaultMethods;
 }
 
 - (NSString *)getCorsAllowedHeaders {
-  PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+  ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
   NSString *defaultHeaders = @"DPoP, Authorization, Content-Type, *";
   NSString *headers = [config stringForKey:@"cors.allowed_headers"];
   return headers ?: defaultHeaders;
 }
 
 - (NSString *)getCorsMaxAge {
-  PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+  ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
   NSInteger defaultMaxAge = 86400;
   NSInteger maxAge = [config integerForKey:@"cors.max_age"];
   return [NSString
@@ -105,7 +105,7 @@
   if (!server) {
     if (error) {
       *error =
-          [NSError errorWithDomain:@"PDSHttpServerBuilderErrorDomain"
+          [NSError errorWithDomain:@"ATProtoHttpServerBuilderErrorDomain"
                               code:1
                           userInfo:@{
                             NSLocalizedDescriptionKey : @"Server cannot be nil"
@@ -117,7 +117,7 @@
   // Registration order is intentionally fixed:
   // auth -> xrpc -> optional packs -> well-known -> relay API -> metrics
   if (self.enableOAuth) {
-    [PDSHttpOAuthRoutePack registerRoutesWithServer:server
+    [ATProtoHttpOAuthRoutePack registerRoutesWithServer:server
                                    serviceDatabases:self.serviceDatabases
                                           jwtMinter:self.jwtMinter
                                       dataDirectory:self.dataDirectory
@@ -129,7 +129,7 @@
                                     serviceDatabases:self.serviceDatabases];
 
   if (self.enableXrpc) {
-    [PDSHttpXrpcRoutePack registerRoutesWithServer:server
+    [ATProtoHttpXrpcRoutePack registerRoutesWithServer:server
                                         dispatcher:self.xrpcDispatcher
                                        application:self.application
                                         controller:self.controller
@@ -143,7 +143,7 @@
   }
 
   if (self.enableNodeInfo) {
-    [PDSHttpNodeInfoRoutePack registerRoutesWithServer:server
+    [ATProtoHttpNodeInfoRoutePack registerRoutesWithServer:server
                                                 issuer:self.issuer
                                                   port:self.port
                                          configuration:self.configuration
@@ -151,9 +151,9 @@
                                             controller:self.controller];
   }
 
-  [PDSHttpRelayAPIRoutePack registerRoutesWithServer:server];
+  [ATProtoHttpRelayAPIRoutePack registerRoutesWithServer:server];
 
-  [PDSHttpWellKnownRoutePack registerRoutesWithServer:server
+  [ATProtoHttpWellKnownRoutePack registerRoutesWithServer:server
                                       serviceDatabases:self.serviceDatabases
                                             controller:self.controller
                                          configuration:self.configuration
@@ -164,10 +164,10 @@
                                                     forRequest:request];
                                         }];
 
-  [PDSHttpMetricsRoutePack registerRoutesWithServer:server];
+  [ATProtoHttpMetricsRoutePack registerRoutesWithServer:server];
 
   if (self.enableMSTViewer) {
-    [PDSHttpMSTViewerRoutePack registerRoutesWithServer:server
+    [ATProtoHttpMSTViewerRoutePack registerRoutesWithServer:server
                                              controller:self.controller];
   }
 

@@ -15,7 +15,7 @@
 #import "Auth/PDSAppleKeyManager.h"
 #import "Auth/JWT.h"
 #import "Auth/Secp256k1.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Database/PDSDatabase.h"
 #import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
@@ -187,7 +187,7 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
 #if defined(GNUSTEP)
         _useKeychain = NO;
 #else
-        _useKeychain = [PDSConfiguration sharedConfiguration].useKeychain;
+        _useKeychain = [ATProtoServiceConfiguration sharedConfiguration].useKeychain;
 #endif
         [self loadKeysFromDatabase];
     }
@@ -204,7 +204,7 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
 #if defined(GNUSTEP)
         _useKeychain = NO;
 #else
-        _useKeychain = [PDSConfiguration sharedConfiguration].useKeychain;
+        _useKeychain = [ATProtoServiceConfiguration sharedConfiguration].useKeychain;
 #endif
         [self loadKeysFromDatabase];
     }
@@ -222,7 +222,7 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
 #if defined(GNUSTEP)
         _useKeychain = NO;
 #else
-        _useKeychain = [PDSConfiguration sharedConfiguration].useKeychain;
+        _useKeychain = [ATProtoServiceConfiguration sharedConfiguration].useKeychain;
 #endif
         [self loadKeysFromDatabase];
     }
@@ -240,7 +240,7 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
 #if defined(GNUSTEP)
         _useKeychain = NO;
 #else
-        _useKeychain = [PDSConfiguration sharedConfiguration].useKeychain;
+        _useKeychain = [ATProtoServiceConfiguration sharedConfiguration].useKeychain;
 #endif
     }
     return self;
@@ -296,7 +296,7 @@ static NSString *PDSBase64URLStringFromData(NSData *data) {
         keyType = kSecAttrKeyTypeECSECPrimeRandom;
     }
 
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     BOOL useSE = (self.useKeychain && config.useSecureEnclave);
     NSString *keychainTag = [self keychainTagForKeyID:keyID];
 

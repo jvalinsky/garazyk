@@ -9,7 +9,7 @@
  */
 
 #import "PDSApplication.h"
-#import "PDSConfiguration.h"
+#import "ATProtoServiceConfiguration.h"
 #import "PDSReadinessCheck.h"
 #import "PDSController.h"
 #import "Admin/PDSAdminController.h"
@@ -34,14 +34,14 @@
 #import "Video/VideoLocalBlobUploader.h"
 #import "Video/VideoPDSAuthProvider.h"
 #import "Network/HttpServer.h"
-#import "Network/PDSHttpServerBuilder.h"
+#import "Network/ATProtoHttpServerBuilder.h"
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcMethodRegistry.h"
 #import "Network/RateLimiter.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
 #import "Admin/Diagnostics/Analytics/PDSSequencerAnalyticsCollector.h"
 #import "Admin/Diagnostics/PDSSequencerHealthHandler.h"
-#import "Core/PDSServiceContainer.h"
+#import "Core/ATProtoServiceContainer.h"
 #import "Core/DID.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Debug/GZLogger.h"
@@ -53,7 +53,7 @@
 
 @interface PDSApplication ()
 
-@property (nonatomic, strong, readwrite) PDSConfiguration *configuration;
+@property (nonatomic, strong, readwrite) ATProtoServiceConfiguration *configuration;
 @property (nonatomic, copy, readwrite) NSString *dataDirectory;
 @property (nonatomic, strong, readwrite) PDSServiceDatabases *serviceDatabases;
 @property (nonatomic, strong, readwrite) PDSDatabasePool *userDatabasePool;
@@ -100,7 +100,7 @@ static BOOL PDSApplicationShouldUseEphemeralJWTKeyForTests(void) {
         return YES;
     }
 
-    return ![PDSConfiguration sharedConfiguration].useKeychain;
+    return ![ATProtoServiceConfiguration sharedConfiguration].useKeychain;
 }
 
 static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
@@ -129,7 +129,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     static PDSApplication *shared = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        shared = [[PDSApplication alloc] initWithConfiguration:[PDSConfiguration sharedConfiguration]];
+        shared = [[PDSApplication alloc] initWithConfiguration:[ATProtoServiceConfiguration sharedConfiguration]];
     });
     return shared;
 }
@@ -148,7 +148,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
 
 #pragma mark - Initialization
 
-- (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration {
+- (instancetype)initWithConfiguration:(nullable ATProtoServiceConfiguration *)configuration {
     return [self initWithConfiguration:configuration dataDirectory:nil];
 }
 
@@ -160,11 +160,11 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     return [self initWithConfiguration:nil dataDirectory:dataDirectory];
 }
 
-- (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration dataDirectory:(nullable NSString *)dataDirectory {
+- (instancetype)initWithConfiguration:(nullable ATProtoServiceConfiguration *)configuration dataDirectory:(nullable NSString *)dataDirectory {
     self = [super init];
     if (self) {
-        _configuration = configuration ?: [PDSConfiguration sharedConfiguration];
-        _dataDirectory = [dataDirectory copy] ?: (_configuration.dataDirectory ?: [PDSConfiguration defaultDataDirectory]);
+        _configuration = configuration ?: [ATProtoServiceConfiguration sharedConfiguration];
+        _dataDirectory = [dataDirectory copy] ?: (_configuration.dataDirectory ?: [ATProtoServiceConfiguration defaultDataDirectory]);
         _httpPort = _configuration.serverPort > 0 ? _configuration.serverPort : 2583;
         _rateLimiter = [RateLimiter sharedLimiter];
         _running = NO;
@@ -187,7 +187,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     return self;
 }
 
-- (instancetype)initWithConfiguration:(nullable PDSConfiguration *)configuration
+- (instancetype)initWithConfiguration:(nullable ATProtoServiceConfiguration *)configuration
                         dataDirectory:(nullable NSString *)dataDirectory
                        serviceMaxSize:(NSUInteger)serviceMaxSize
                   userDatabaseMaxSize:(NSUInteger)userDatabaseMaxSize
@@ -396,7 +396,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
 
 - (void)initializeServices {
     // Setup Service Container
-    PDSServiceContainer *container = [PDSServiceContainer sharedContainer];
+    ATProtoServiceContainer *container = [ATProtoServiceContainer sharedContainer];
     [container reset];
     
     // Initialize Account Service
@@ -507,7 +507,7 @@ static void PDSApplicationLogEphemeralJWTKeyModeOnce(void) {
     _xrpcDispatcher = [XrpcDispatcher sharedDispatcher];
 
     // HTTP server
-    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] initWithConfiguration:_configuration];
+    ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] initWithConfiguration:_configuration];
     builder.port = self.httpPort;
     builder.dataDirectory = _dataDirectory;
     builder.application = self;  // Prefer application for service-based registration

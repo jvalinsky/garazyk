@@ -9,7 +9,7 @@
 
 #import <CommonCrypto/CommonDigest.h>
 
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Auth/Secp256k1.h"
 
 #if !defined(GNUSTEP)
@@ -35,7 +35,7 @@ static NSString * const kSigningKeyAccountPrefix = @"signing-key-";
 #if defined(GNUSTEP)
         _useKeychain = NO;
 #else
-        _useKeychain = [PDSConfiguration sharedConfiguration].useKeychain;
+        _useKeychain = [ATProtoServiceConfiguration sharedConfiguration].useKeychain;
 #endif
     }
     return self;

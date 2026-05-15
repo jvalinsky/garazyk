@@ -9,7 +9,7 @@
 #import "Auth/JWT.h"
 #import "Core/DID.h"
 #import "Debug/GZLogger.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 
 @interface XrpcDispatcher ()
 
@@ -124,7 +124,7 @@ static XrpcDispatcher *_sharedInstance = nil;
 }
 
 - (void)setCorsHeaders:(HttpResponse *)response forRequest:(HttpRequest *)request {
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     NSArray<NSString *> *allowedOrigins = [config arrayForKey:@"cors.allowed_origins"];
     if (!allowedOrigins) {
         allowedOrigins = @[@"*"];
@@ -428,7 +428,7 @@ static XrpcDispatcher *_sharedInstance = nil;
 
     // Use DIDResolver to get document
     DIDResolver *resolver = [[DIDResolver alloc] init];
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     if (config.plcURL.length > 0) {
         resolver.plcURL = config.plcURL;
     }

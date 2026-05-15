@@ -10,7 +10,7 @@
 
 #import "Registration/PDSOAuthOnlyRegistrationGate.h"
 #import "Registration/PDSRegistrationGate.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 
 @implementation PDSOAuthOnlyRegistrationGate
 
@@ -19,7 +19,7 @@
 }
 
 - (BOOL)validateRegistrationRequest:(NSDictionary *)body
-                       configuration:(PDSConfiguration *)configuration
+                       configuration:(ATProtoServiceConfiguration *)configuration
                                error:(NSError **)error {
     // This gate always rejects direct API signups.
     // Registration must go through the OAuth2 flow instead.

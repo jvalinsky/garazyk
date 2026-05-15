@@ -6,14 +6,14 @@
 #import "CLI/PDSCLIReplCommand.h"
 #import "Debug/GZLogger.h"
 #import "Compat/Foundation/NSDataCompat.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 
 @implementation PDSCLICommandContext
 
 - (instancetype)init {
     self = [super init];
     if (self) {
-        _dataDir = [PDSConfiguration defaultDataDirectory];
+        _dataDir = [ATProtoServiceConfiguration defaultDataDirectory];
         
         // If we're using the platform default, but it's not writable (common in restricted containers),
         // fallback to the current directory.

@@ -3,15 +3,15 @@
 #import "PDSBlobProviderFactory.h"
 #import "PDSCloudStorageBlobProvider.h"
 #import "PDSDiskBlobProvider.h"
-#import "App/PDSConfiguration.h"
-#import "Core/PDSDataPaths.h"
+#import "App/ATProtoServiceConfiguration.h"
+#import "Core/ATProtoDataPaths.h"
 #import "Debug/GZLogger.h"
 
 NSString * const PDSBlobProviderFactoryErrorDomain = @"com.atproto.pds.blobproviderfactory";
 
 @implementation PDSBlobProviderFactory
 
-+ (nullable id<PDSBlobProvider>)blobProviderWithConfiguration:(PDSConfiguration *)configuration
++ (nullable id<PDSBlobProvider>)blobProviderWithConfiguration:(ATProtoServiceConfiguration *)configuration
                                                         error:(NSError **)error {
     if (!configuration) {
         if (error) {
@@ -45,10 +45,10 @@ NSString * const PDSBlobProviderFactoryErrorDomain = @"com.atproto.pds.blobprovi
 
 #pragma mark - Private Helpers
 
-+ (nullable id<PDSBlobProvider>)diskBlobProviderWithConfiguration:(PDSConfiguration *)configuration
++ (nullable id<PDSBlobProvider>)diskBlobProviderWithConfiguration:(ATProtoServiceConfiguration *)configuration
                                                             error:(NSError **)error {
     // Get blob storage directory from data paths
-    PDSDataPaths *dataPaths = configuration.dataPaths;
+    ATProtoDataPaths *dataPaths = configuration.dataPaths;
     if (!dataPaths) {
         if (error) {
             *error = [NSError errorWithDomain:PDSBlobProviderFactoryErrorDomain
@@ -73,7 +73,7 @@ NSString * const PDSBlobProviderFactoryErrorDomain = @"com.atproto.pds.blobprovi
     return [[PDSDiskBlobProvider alloc] initWithStorageDirectory:blobStorageDir];
 }
 
-+ (nullable id<PDSBlobProvider>)cloudStorageBlobProviderWithConfiguration:(PDSConfiguration *)configuration
++ (nullable id<PDSBlobProvider>)cloudStorageBlobProviderWithConfiguration:(ATProtoServiceConfiguration *)configuration
                                                                   error:(NSError **)error {
     // Read S3 configuration from config or environment variables
     NSString *bucket = [configuration stringForKey:@"s3Bucket"];

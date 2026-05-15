@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSHttpMetricsRoutePack.h
+ @file ATProtoHttpMetricsRoutePack.h
 
  @abstract Declares metrics route-pack registration entry points.
 
@@ -14,7 +14,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class HttpServer;
 
-@interface PDSHttpMetricsRoutePack : NSObject
+@interface ATProtoHttpMetricsRoutePack : NSObject
 
 + (void)registerRoutesWithServer:(HttpServer *)server;
 
