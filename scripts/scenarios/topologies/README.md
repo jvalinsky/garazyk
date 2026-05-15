@@ -24,11 +24,11 @@ deno run -A scripts/run_scenarios.ts --topology <name> 01
 | `indigo-relay` | Relay | [indigo](https://github.com/bluesky-social/indigo) (Go) | Bluesky reference relay |
 | `reference-plc` | PLC | [did-method-plc](https://github.com/did-method-plc/did-method-plc) (TypeScript) | Reference PLC with Postgres sidecar |
 | `reference-pds` | PDS | [bluesky-social/pds](https://github.com/bluesky-social/pds) (TypeScript) | Reference PDS |
-| `cocoon-pds` | PDS | Cocoon PDS | Alternate PDS |
-| `parakeet` | PLC | Parakeet PLC | Alternate PLC |
-| `happyview` | AppView | HappyView | Alternate AppView |
-| `appviewlite` | AppView | AppViewLite | Alternate AppView |
-| `tranquil-pds` | PDS | Tranquil PDS | Alternate PDS |
+| `cocoon-pds` | PDS | [Cocoon PDS](https://github.com/haileyok/cocoon) (Go) | Alternate PDS |
+| `parakeet` | PLC | [Parakeet AppServer](https://gitlab.com/parakeet-social/parakeet) (Rust) | Alternate AppView / PLC |
+| `happyview` | AppView | [HappyView](https://github.com/trezy/happyview) (TypeScript/Rust) | Alternate AppView |
+| `appviewlite` | AppView | [AppViewLite](https://github.com/alnkesq/AppViewLite) (C#/.NET 9) | Alternate AppView |
+| `tranquil-pds` | PDS | [Tranquil PDS](https://github.com/likeco/tranquil) (Rust) | Alternate PDS |
 | `indigo-tap` | Backfill | [Indigo Tap](https://github.com/bluesky-social/indigo) (Go) | Sync utility with backfill, verification, filtering |
 | `hydrant` | Backfill | [Hydrant](https://tangled.org/ptr.pet/hydrant) (Rust) | Fast indexer with XRPC queries, event stream, optional relay mode |
 | `wintermute` | Backfill | [Wintermute](https://github.com/blacksky-algorithms/rsky) (Rust) | Monolithic firehose indexer writing to PostgreSQL; requires bsky-dataplane sidecar for schema init |

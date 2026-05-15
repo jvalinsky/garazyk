@@ -1,6 +1,6 @@
 {
   "name": "tranquil-pds",
-  "description": "Tranquil PDS (TypeScript/Deno) with Garazyk Relay, PLC, and AppView. Tests Deno PDS interop.",
+  "description": "Tranquil PDS (Rust) with Garazyk Relay, PLC, and AppView. Tests Rust PDS interop.",
   "roles": {
     "plc": { "inherit": "garazyk-default" },
     "pds": {

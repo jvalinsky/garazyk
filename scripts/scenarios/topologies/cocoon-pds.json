@@ -1,6 +1,6 @@
 {
   "name": "cocoon-pds",
-  "description": "Cocoon PDS (Rust) with Garazyk Relay, PLC, and AppView. Tests Rust PDS interop.",
+  "description": "Cocoon PDS (Go) with Garazyk Relay, PLC, and AppView. Tests Go PDS interop.",
   "roles": {
     "plc": { "inherit": "garazyk-default" },
     "pds": {
