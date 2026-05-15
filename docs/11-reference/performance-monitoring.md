@@ -4,137 +4,89 @@ title: Performance Monitoring
 
 # Performance Monitoring
 
-## Overview
+Performance analysis in Garazyk relies on exported runtime signals. Profiling the entire system is inefficient for debugging regressions. Use this sequence to investigate slowdowns:
 
-Performance work in Garazyk starts with the runtime signals the server already
-exports. This codebase has enough moving parts that
-"profile everything" is usually the slowest way to debug a regression.
+1. Identify the slow surface.
+2. Read metrics for that surface.
+3. Check logs for the owning component.
+4. Inspect the service or database path that the endpoint calls.
 
-The useful order is:
+## Monitoring Surfaces
 
-1. identify the slow surface
-2. read the metrics for that surface
-3. check logs for the owning component
-4. inspect the service or database path that the endpoint calls
+The PDS and PLC server expose operational signals through distinct endpoints.
 
-## The Main Monitoring Surfaces
-
-The PDS exposes three practical monitoring surfaces:
-
-| Surface | Why it matters |
+| Surface | Description |
 | --- | --- |
-| `/metrics` | Prometheus-style counters and gauges for HTTP, blobs, repos, auth, firehose, and rate limiting |
-| `/admin/metrics` | authenticated operational view backed by controller metrics |
-| `/admin/health` | authenticated health summary backed by `PDSHealthCheck` |
+| `/metrics` | Prometheus counters for HTTP, blobs, repos, auth, firehose, and rate limiting. |
+| `/admin/metrics` | Authenticated controller metrics. |
+| `/admin/health` | Authenticated health summary from `PDSHealthCheck`. |
+| `PLC GET /_health` | PLC server health status. |
+| `PLC GET /_metrics` | PLC-specific operational metrics. |
 
-The PLC server has its own operational surfaces:
+## PDS Metrics
 
-- `GET /_health`
-- `GET /_metrics`
+The implementation tracks primary operational signals:
 
-Treat the PDS and PLC metrics as related but separate systems. They answer
-different operational questions.
+- Request counts by method, endpoint, and status.
+- Request latency histograms.
+- Active connection counts.
+- Repository and commit counts.
+- Blob counts and storage volume.
+- Database size and connection pool state.
+- Firehose subscriber count, event counts, and sequence.
+- Rate-limit rejection counts.
+- Auth failure reasons and session counts.
 
-## What The PDS Already Measures
+These signals typically locate regressions without requiring external profiling tools.
 
-The current metrics implementation covers the signals contributors usually need
-first:
+## Metric Sources
 
-- request count by method, endpoint, and status
-- request latency histogram
-- active connection count
-- repository count and commit count
-- blob count and blob storage bytes
-- database size
-- firehose subscriber count, event counts, and sequence
-- rate-limit rejection counts
-- auth failure reasons
-- OAuth grant counts and active auth sessions
+The runtime path updates metrics directly:
 
-That is enough to locate most regressions before you need a profiler.
+- **HTTP Server**: Request counts, statuses, latency, and active connections.
+- **Rate Limiter**: Rejected request counts.
+- **Auth**: Failure reasons and session counts.
+- **Sync**: Firehose and repository commit metrics via `subscribeRepos`.
 
-## Where Those Signals Come From
+Check `/metrics` first to observe actual process behavior.
 
-The metrics are not theoretical. They are updated in the runtime path:
+## Storage and Database Pressure
 
-- the HTTP server records request counts, statuses, latency, and active
-  connections
-- the rate limiter records rejected requests
-- auth verification records failure reasons
-- OAuth flows record grant and session metrics
-- subscribeRepos updates firehose and repository commit metrics
+Performance issues often manifest as storage pressure before request failures occur. Monitor these metrics together:
 
-That integration is why `/metrics` should be your first stop. It describes the
-behavior the running process is actually executing.
-
-## Database And Storage Pressure
-
-Performance problems in this codebase often become visible as storage pressure
-before they become visible as request failures.
-
-Watch these together:
-
-- request latency for the affected endpoint
+- Request latency for the affected endpoint.
 - `pds_database_size_bytes`
-- blob count and blob storage bytes
-- controller-backed database pool metrics from `/admin/metrics`
+- Blob count and storage bytes.
+- Controller-backed database pool metrics from `/admin/metrics`.
 
-This combination usually tells you whether the problem is route-local,
-database-bound, or global capacity pressure.
+Correlation distinguishes route-local issues from global capacity or database-bound pressure.
 
-## Logging Complements Metrics
+## Correlating Logs and Metrics
 
-Metrics tell you that something is slow. Logs tell you which component is
-responsible.
+Metrics identify that a slowdown exists. Logs identify the responsible component. Use the [Logging Strategy](./logging-strategy) to interpret latency spikes. Narrow `Database`, `Service`, `Sync`, or `Blob` component logs to the failing path.
 
-Use [Logging Strategy](./logging-strategy) alongside this page. A latency spike
-on a repository endpoint is much easier to interpret when the `Database`,
-`Service`, `Sync`, or `Blob` component logs are narrowed to the failing path.
+## Debugging Workflow
 
-## A Practical Debugging Loop
+1. Locate the slow endpoint or workflow.
+2. Inspect matching request and latency metrics.
+3. Check for correlated auth, rate-limit, or storage metrics.
+4. Narrow component logging if the owner remains unclear.
+5. Review service code before employing external profiling.
 
-When performance degrades, use this loop:
-
-1. find the endpoint or workflow that feels slow
-2. inspect the matching request and latency metrics
-3. look for correlated auth, rate-limit, blob, or firehose metrics
-4. enable or narrow component logging if the owner is still unclear
-5. read the owning service code before reaching for external profiling tools
-
-This order keeps debugging grounded in the architecture the application already
-has.
-
-## What This Page Does Not Promise
-
-Garazyk does not currently ship a full tracing stack or a built-in distributed
-performance analysis system. The observability model today is metrics plus
-component logs plus targeted code inspection.
-
-That is a limitation, but it is also an honest one. The docs should not imply a
-more elaborate monitoring platform than the repository provides.
-
-## Related Reading
+## Related Resources
 
 - [Metrics Collection](./metrics-collection)
 - [Logging Strategy](./logging-strategy)
 - [Troubleshooting](./troubleshooting)
 - [Services Overview](../03-application-layer/services-overview)
+- [Documentation Map](documentation-map.md)
 
-## Appendix
-
-### Minimal runtime checks
-
-```bash
-curl -sS http://127.0.0.1:2583/metrics | rg '^pds_(http|blob|repo|firehose)'
-```
+## Appendix: Runtime Checks
 
 ```bash
+# PDS metrics
+curl -sS http://127.0.0.1:2583/metrics | grep '^pds_'
+
+# PLC metrics
 curl -sS http://127.0.0.1:2582/_metrics | head
 ```
-
-## Related
-
-- [Documentation Map](documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
-

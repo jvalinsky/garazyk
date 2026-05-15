@@ -4,11 +4,11 @@ title: Documentation Migration
 
 # Documentation Migration Guide
 
-The Garazyk PDS documentation has moved from Jekyll to VitePress. This guide details URL changes and new features.
+The Garazyk documentation has migrated from Jekyll to VitePress. This guide details URL mapping and new features.
 
-## URL Structure Changes
+## URL Mapping
 
-VitePress uses extensionless URLs. While automatic redirects are in place for legacy `.html` paths, bookmarks and internal links should be updated to the new format.
+VitePress uses extensionless URLs. While automatic redirects handle legacy `.html` paths, update your bookmarks and internal links to the new format.
 
 | Content | Legacy URL (Jekyll) | New URL (VitePress) |
 |---------|--------------------|---------------------|
@@ -16,24 +16,26 @@ VitePress uses extensionless URLs. While automatic redirects are in place for le
 | Overview | `/docs/01-getting-started/overview.html` | `/docs/01-getting-started/overview` |
 | Tutorials | `/docs/10-tutorials/tutorial-1.html` | `/docs/10-tutorials/tutorial-1` |
 
-Anchor links (e.g., `#prerequisites`) remain unchanged.
+### Automatic Redirects
+VitePress handles the following automatically:
+1. **Extension removal:** `/docs/page.html` → `/docs/page`
+2. **Trailing slashes:** `/docs/page/` → `/docs/page`
+3. **Index files:** `/docs/section/` → `/docs/section/index`
 
 ## New Features
 
-### Search
-- **Shortcut**: `Cmd+K` (Mac) or `Ctrl+K` (Linux/Windows).
-- **Function**: Full-text indexing across prose and code blocks with fuzzy matching.
+### Full-Text Search
+- **Shortcut:** `Cmd+K` (Mac) or `Ctrl+K` (Linux/Windows).
+- Fuzzy matching across all prose and code blocks.
 
 ### Code Blocks
-- **Syntax Highlighting**: Native support for Objective-C, Go, and Shell.
-- **Interactivity**: Copy-to-clipboard buttons and code group tabs for platform-specific examples.
+- Native syntax highlighting for Objective-C, Go, and Shell.
+- Integrated copy-to-clipboard buttons and tabbed code groups.
 
 ### Navigation
-- **Sidebar**: Collapsible section management and persistent scroll state.
-- **Breadcrumbs**: Path tracing for the current document.
+- Collapsible sidebar with persistent scroll state.
+- Breadcrumbs for path tracing.
 
-## Frequently Asked Questions
-
-- **Will old links work?**: Yes, server-side redirects handle legacy paths.
-- **How do I report broken links?**: Open an issue on GitHub with the source page and the broken destination.
-- **Is the old site available?**: The Jekyll site is archived. All content has been migrated and enhanced in the VitePress version.
+## Related
+- [URL Mapping (Legacy)](URL_MAPPING)
+- [Maintenance Guide](MAINTENANCE)

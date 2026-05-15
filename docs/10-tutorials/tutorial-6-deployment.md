@@ -4,24 +4,7 @@ title: "Tutorial 6: Production Deployment"
 
 # Tutorial 6: Production Deployment
 
-## Overview
-
-This tutorial covers production deployment: a Linux container runtime using Docker Compose, Nginx as a reverse proxy, and explicit configuration for protocol interoperability.
-
-**Learning Objectives:**
-- Understand the production topology.
-- Configure the PDS with production-safe settings.
-- Verify public discovery routing after deployment.
-- Identify common deployment mistakes.
-
-**Estimated Time:** 35-50 minutes
-
-## Prerequisites
-
-- Docker and Docker Compose installed on the target host.
-- A DNS name pointing at the deployment host.
-- TLS certificates managed by Nginx or the deployment platform.
-- Access to the repository checkout on the deployment host.
+This tutorial covers the production runtime: Linux containers, Nginx reverse proxying, and the configuration required for protocol interoperability.
 
 ## Deployment Topology
 
@@ -36,81 +19,73 @@ flowchart TD
   Relay --> PDS
 ```
 
-### Key Principles
-- **Nginx**: Handles TLS termination and trusted proxy headers.
-- **Isolation**: The PDS remains behind the reverse proxy.
-- **Persistence**: Durable state is mounted via explicit volumes.
+### Infrastructure Components
+- **Nginx:** Handles TLS termination and forwards trusted proxy headers.
+- **PDS (kaszlak):** Remains isolated behind the proxy.
+- **Persistence:** Durable state is stored in explicit Docker volumes.
 
-## Docker Compose Configuration
+## Docker Compose
 
-The canonical Docker Compose root is located in `docker/pds/`. Commands should be executed from this directory to ensure correct path resolution for configuration and volumes.
+The canonical Docker setup is in `docker/pds/`. 
 
-The `docker-compose.yml` file performs the following:
-- Builds from `docker/Dockerfile.gnustep`.
-- Mounts `/var/lib/atprotopds` as the persistent data volume.
-- Mounts `docker/pds/config.json` as a read-only configuration.
-- Sets `PDS_TRUST_PROXY_HEADERS=1` to support reverse proxying.
+The `docker-compose.yml` handles:
+- Building from `docker/Dockerfile.gnustep`.
+- Mounting `/var/lib/atprotopds` as a persistent volume.
+- Loading `config.json` as read-only.
+- Setting `PDS_TRUST_PROXY_HEADERS=1` to allow Nginx to pass client IP and protocol information.
 
-## Production Configuration
+## Configuration Requirements
 
-These settings are required for a standard, interoperable PDS deployment.
+Standard interoperability requires these settings:
 
-| Setting | Value | Rationale |
+| Setting | Recommendation | Rationale |
 | --- | --- | --- |
-| `session.invite_code_required` | `true` | Prevents unauthorized registration. |
-| `plc.url` | `https://plc.directory` | Ensures network-wide DID resolution. |
-| `server.issuer` | Public HTTPS URL | Sets the discovery identity for clients. |
-| `PDS_TRUST_PROXY_HEADERS` | `1` | Enables Nginx header forwarding. |
+| `session.invite_code_required` | `true` | Prevents open registration on the public web. |
+| `plc.url` | `https://plc.directory` | Resolves network-wide identity. |
+| `server.issuer` | Your public HTTPS URL | Defines the discovery identity for clients. |
+| `PDS_TRUST_PROXY_HEADERS` | `1` | Required for correct IP logging and protocol detection behind Nginx. |
 
-### AppView and Relay Settings
-Ensure the AppView configuration uses the correct key format:
+### Upstream Services
+
+Configure your PDS to communicate with the wider network:
 
 ```json
 {
   "appview": {
     "url": "https://api.bsky.app",
-    "did": "did:web:api.bsky.app",
-    "local_enabled": false
+    "did": "did:web:api.bsky.app"
   },
   "relays": ["https://bsky.network"]
 }
 ```
 
-## Verification
+## Running the PDS
 
-Verify a new deployment by checking discovery metadata and public routing. The diagram above shows a full AppView and Relay topology, but the `docker-compose.yml` provided in `docker/pds` is a minimal, PDS-only configuration.
-
-Before running compose, you must create the external volume:
+Initialize the volume and start the services from the `docker/pds` directory:
 
 ```bash
-cd docker/pds
 docker volume create local_pds_data
 docker compose up -d
-docker compose logs --tail=100 pds
+docker compose logs -f pds
+```
+
+Verify the deployment by checking the server's public metadata:
+
+```bash
 curl -sS https://your-pds.com/xrpc/com.atproto.server.describeServer | jq .
 ```
 
 ## Backup and Recovery
 
-Durable state is stored in the `/var/lib/atprotopds` volume. Backup procedures should target the contents of this volume rather than the container itself.
+All critical state lives in the `/var/lib/atprotopds` volume. Back up the contents of this volume directly. Do not rely on container snapshots for data durability.
 
-## Troubleshooting
+## Common Pitfalls
 
-- **Working Directory**: Running compose commands from the repository root instead of `docker/pds/`.
-- **Local Defaults**: Using development settings (e.g., mock PLC) in a production environment.
-- **Direct Exposure**: Bypassing Nginx and exposing the PDS port directly to the internet.
+- **Relative Paths:** Running `docker compose` from the repository root instead of `docker/pds/`.
+- **Insecure Defaults:** Accidentally using development settings (like mock PLC) in production.
+- **Direct Access:** Exposing the PDS port (usually 2583) to the internet instead of routing through Nginx.
 
-## Next Steps
+## See Also
 
-1. Review [Configuration Reference](../11-reference/config-reference).
-2. Review [Monitoring](../11-reference/performance-monitoring) before enabling public traffic.
-
-## Summary
-
-A production deployment should make the public HTTPS issuer, PLC directory, proxy headers, and persistent data volume explicit. Treat local defaults as developer conveniences, not deployment policy.
-
-## Related
-
-- [Documentation Map](../11-reference/documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
+- [Configuration Reference](../11-reference/config-reference)
+- [Performance Monitoring](../11-reference/performance-monitoring)

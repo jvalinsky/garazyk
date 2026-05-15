@@ -4,14 +4,13 @@ title: ATProto PLC Architecture
 
 # ATProto PLC Architecture
 
-This document describes the architecture and data flows for the PLC DID operations in the objpds PDS implementation.
+This document describes the architecture and data flows for the Public Ledger of Credentials (PLC) operations in the PDS.
 
 ## 0. Server-Level Rotation Key
 
-The PDS maintains a dedicated **PLCRotationKeyManager** for signing PLC operations. This is distinct from per-account signing keys:
+The PDS maintains a dedicated **PLCRotationKeyManager** for signing PLC operations. This key is distinct from individual account signing keys.
 
 ```
-
   +-----------------------+
   |  PLCRotationKeyManager|
   |                       |
@@ -19,24 +18,24 @@ The PDS maintains a dedicated **PLCRotationKeyManager** for signing PLC operatio
   |  did:key:zQ3sh...     |
   +-----------------------+
             |
-            | Signs ALL PLC operations for this PDS
+            | Signs all PLC operations for this PDS
             v
   +-----------------------+
   |  Genesis / Update Ops |
   +-----------------------+
 ```
 
-**Key Points:**
-- One server rotation key per PDS instance
-- Stored in `data/plc_rotation_key.bin`
-- Used to sign both genesis and update operations
-- Must be included in `rotationKeys` array for all operations
+**Implementation Details:**
+- One server rotation key per PDS instance.
+- Persisted at `data/plc_rotation_key.bin`.
+- Signs both genesis and update operations.
+- Included in the `rotationKeys` array for all operations.
 
 ## 1. The Operation Chain (The Ledger)
-The "Log" is a linked list of signed operations. Each operation points to the hash of the previous one, making the history immutable and verifiable.
+
+The ledger is a linked list of signed operations. Each operation includes the CID (Content Identifier) of the previous operation, ensuring an immutable and verifiable history.
 
 ```
-
   OPERATION 0 (Genesis)      OPERATION 1 (Update)       OPERATION 2 (Rotation)
  +----------------------+   +----------------------+   +----------------------+
  | type: plc_operation  |   | type: plc_operation  |   | type: plc_operation  |
@@ -51,20 +50,20 @@ The "Log" is a linked list of signed operations. Each operation points to the ha
             `--------------------------`--------------------------`---> [ AUDIT LOG ]
 ```
 
-## 2. Submission Flow (The Write Path)
-How a PDS (or User) updates their identity.
+## 2. Submission Flow
+
+How a PDS or user updates their identity on the network.
 
 ```
-
-      [ PDS / USER ]                    [ objpds ]
+      [ PDS / USER ]                    [ PDS Backend ]
             |                                  |
     1. Create Op JSON                          |
     2. Sign with R-Key                         |
     3. POST /xrpc/com.atproto.identity.submitPlcOperation
             |                                  | 4. VALIDATE:
-            |                                  |    - Server rotation key in rotationKeys?
-            |                                  |    - services.atproto_pds.type correct?
-            |                                  |    - services.atproto_pds.endpoint matches?
+            |                                  |    - Server rotation key present?
+            |                                  |    - service type matches?
+            |                                  |    - service endpoint matches?
             |                                  |    - alsoKnownAs contains handle?
             |                                  |    - prev matches last op CID?
             |                                  |    - Signature valid?
@@ -74,12 +73,12 @@ How a PDS (or User) updates their identity.
             |                                  | 5. FORWARD to PLC Directory
 ```
 
-## 3. Resolution Flow (The Read Path)
-How any server on the internet determines your current PDS address or handle.
+## 3. Resolution Flow
+
+How external services determine a PDS address or handle for a given DID.
 
 ```
-
-      [ RESOLVER ]                      [ objpds ]
+      [ RESOLVER ]                      [ PDS Backend ]
             |                                  |
     1. GET /did:plc:123  --------------------->|
             |                                  | 2. Fetch full history from DB
@@ -88,7 +87,7 @@ How any server on the internet determines your current PDS address or handle.
             |<---------------------------------|
             |
     4. REPLAY LOG:
-       - Start with Empty Doc
+       - Start with empty document
        - Apply Op0 -> Doc { handle: alice.com, ... }
        - Apply Op1 -> Doc { handle: bob.com, ... }
        - Apply Op2 -> Doc { pds: https://pds, ... }
@@ -102,11 +101,11 @@ How any server on the internet determines your current PDS address or handle.
 ```
 
 ## 4. Signing Flow (signPlcOperation)
-How the PDS prepares a signed PLC operation for submission.
+
+The internal process for preparing a signed PLC operation for submission.
 
 ```
-
-      [ AUTHENTICATED USER ]            [ objpds ]
+      [ AUTHENTICATED USER ]            [ PDS Backend ]
             |                                  |
     1. POST /xrpc/com.atproto.identity.signPlcOperation
             |     { token: "ABC123" }          |
@@ -114,19 +113,18 @@ How the PDS prepares a signed PLC operation for submission.
             |                                  |    - Token valid for DID?
             |                                  |          |
             |                                  | 3. FETCH AUDIT LOG:
-            |                                  |    - Get all operations for DID
-            |                                  |    - Detect tombstone -> REJECT
+            |                                  |    - Retrieve all operations for DID
+            |                                  |    - Reject if tombstoned
             |                                  |          |
             |                                  | 4. CALCULATE PREV:
-            |                                  |    - Get last operation
-            |                                  |    - Calculate CID( lastOp )
+            |                                  |    - Get last operation CID
             |                                  |          |
             |                                  | 5. BUILD OPERATION:
             |                                  |    - rotationKeys: [ serverKey, ... ]
             |                                  |    - verificationMethods: { atproto: actorKey }
             |                                  |    - alsoKnownAs: [ at://handle ]
             |                                  |    - services: { atproto_pds: {...} }
-            |                                  |    - prev: CID( lastOp )
+            |                                  |    - prev: CID(lastOp)
             |                                  |          |
             |                                  | 6. SIGN:
             |                                  |    - CBOR encode operation
@@ -137,56 +135,36 @@ How the PDS prepares a signed PLC operation for submission.
             |<---------------------------------|
 ```
 
-## 5. Integration with PDS
-How the PDS uses PLC operations.
-
-```
-
-    +-----------------------+           +-----------------------+
-    |  SEPTEMBER (PDS)      |           |  PLC DIRECTORY        |
-    |                       |           |                       |
-    |  [ Account Service ]--|---HTTP--->|  [ Remote Server ]    |
-    |  [ Repo Service    ]  | (Update)  |                       |
-    |  [ PLCRotationKey  ]  |           |                       |
-    +-----------------------+           +-----------------------+
-                ^                                   |
-                |                                   |
-                `------------- HTTP ----------------'
-                           (Resolution)
-```
-
-## 6. Security Considerations
+## 5. Security Considerations
 
 ### Rotation Key Management
-- Server rotation key is stored on disk at `data/plc_rotation_key.bin`
-- Key is generated on first use if not present
-- Loss of this key prevents future PLC operations for all accounts
+- The server rotation key is critical. Losing it prevents any future identity updates for all accounts on this PDS.
+- It is stored at `data/plc_rotation_key.bin`.
 
 ### Validation Gates
-The PDS enforces these validations before forwarding operations:
-1. **Rotation Keys**: Server key must be present
-2. **Service Type**: Must be `AtprotoPersonalDataServer`
-3. **Service Endpoint**: Must match configured server URL
-4. **Handle**: Must match account's current handle
-5. **Prev CID**: Must match last operation (prevents replay)
-6. **Tombstone**: Rejects operations on deactivated accounts
+The PDS enforces these checks before forwarding operations to the PLC directory:
+1. **Rotation Keys**: The server-level key must be included.
+2. **Service Type**: Must be `AtprotoPersonalDataServer`.
+3. **Service Endpoint**: Must match the configured PDS URL.
+4. **Handle**: Must match the account's registered handle.
+5. **Prev CID**: Must match the last known operation to prevent replay or fork attacks.
+6. **Tombstone**: Rejects operations for deactivated accounts.
 
 ### DID Resolution Security
-- `Accept` header includes `application/did+ld+json,application/json`
-- Redirect following is disabled to prevent SSRF via malicious PLC servers
+- `Accept` header strictly requires `application/did+ld+json` or `application/json`.
+- Redirects are disabled during resolution to prevent SSRF.
 
-## Related Documentation
+## Related
 
 ### Architecture
-- [PDS Architecture](architecture/atproto_pds_architecture) - Overall PDS system design
-- [Architecture Analysis](architecture/ARCHITECTURE_ANALYSIS) - Detailed architecture review
-- [Data Models](architecture/atproto_data_models) - ATProto data structures
-- [Architecture Diagrams](architecture/DIAGRAMS_MERMAID) - Visual architecture diagrams
+- [PDS Architecture](01-getting-started/architecture-overview)
+- [Diagrams](12-diagrams/index)
+- [Data Models](02-core-concepts/cbor-and-car)
 
 ### Testing
-- [Identity & Auth Tests](tests/00-identity-auth/README) - DID resolution, JWT tests
-- [Integration Tests](tests/06-integration/plc) - PLC integration testing
+- [Testing Guide](TESTING)
+- [Identity & Auth Tests](11-reference/testing-map)
 
-### OAuth & Security
-- [OAuth 2.0 Overview](oauth2/README) - OAuth implementation details
-- [Security Analysis](security/SECURITY_ANALYSIS_REPORT) - Security posture review
+### Security
+- [Monitoring](MONITORING)
+- [Glossary](GLOSSARY)

@@ -4,142 +4,83 @@ title: Troubleshooting
 
 # Troubleshooting
 
-## Overview
+Troubleshoot Garazyk by starting from the failing surface rather than the whole codebase. Request failures, relay problems, and PLC resolution issues often look similar to users but originate in different parts of the runtime.
 
-Troubleshoot Garazyk by starting from the failing surface,
-not the whole codebase. A request failure, a relay problem, and a PLC
-resolution issue look similar to a user, but they live in different parts
-of the runtime.
+## Symptom Surface Map
 
-This page is a workflow map, not a dump of generic shell commands.
-
-## Start With The Surface
-
-Use this first split:
-
-| Symptom | Start here |
+| Symptom | Start Here |
 | --- | --- |
-| server will not start | config, data paths, port binding, startup logs |
-| one XRPC endpoint fails | auth helper, handler, owning service, closest tests |
-| blobs look wrong | blob service, blob storage, sync/blob endpoints |
-| repository export or sync breaks | repository service, subscribeRepos, sync handlers |
-| DID or handle resolution fails | DID resolver, PLC config, identity methods |
-| admin or explorer view is wrong | admin handler or `/api/pds/*` surface, then backing service |
-| system is slow | `/metrics`, component logs, then owning service |
-
-This split separates each path's source of truth.
+| Server will not start | Config, data paths, port binding, and startup logs. |
+| Single XRPC endpoint fails | Auth helper, handler, owning service, and closest tests. |
+| Blobs are missing or incorrect | Blob service, storage provider, and sync/blob endpoints. |
+| Repository export or sync breaks | Repository service, `subscribeRepos`, and sync handlers. |
+| DID or handle resolution fails | DID resolver, PLC config, and identity methods. |
+| Admin or explorer view is wrong | Admin handler or `/api/pds/*` surface. |
+| System is slow | `/metrics`, component logs, and the owning service. |
 
 ## Startup Failures
 
-When the process fails early, read the startup order before touching request
-code. `PDSApplication` configures logging and rate limiting first, then
-initializes infrastructure, then services, then the HTTP server wiring.
+If the process fails early, read the startup order in `PDSApplication`. It configures logging and rate limiting first, then initializes infrastructure, services, and the HTTP server.
 
-A startup failure is usually one of these:
-
-- invalid configuration
-- unreadable or missing data directory
-- database initialization failure
-- key manager or issuer setup failure
-- port binding conflict
-
-If the server never reaches route registration, endpoint-level debugging is a
-waste of time.
+Common startup failures:
+- Invalid configuration or unreadable data directory.
+- Database initialization failure.
+- Key manager or issuer setup failure.
+- Port binding conflict.
 
 ## Authentication Failures
 
-For request-level auth failures, start with [Auth Helpers](../04-network-layer/auth-helpers).
+For request-level auth failures, consult [Auth Helpers](../04-network-layer/auth-helpers).
 
-The key questions are:
+Check these first:
+- Is the request using `Bearer` or `DPoP`?
+- Did DPoP nonce enforcement challenge the client?
+- Does the token issuer or audience match the server identity?
+- Is the token bound to the expected DPoP key?
+- Is the target account suspended or taken down?
 
-- is the request using `Bearer` or `DPoP`?
-- did DPoP nonce enforcement challenge the client?
-- does the token issuer or audience match the configured server identity?
-- is the token bound to the expected DPoP key?
-- is the target account suspended or taken down?
+## Blob and Repository Failures
 
-Most "mysterious" auth failures fall into one of these five cases.
+Records reference blobs, and repository exports include blob-related behavior. Use this split to narrow the search:
 
-## Blob And Repository Failures
+- **Blob problems**: Upload, list, MIME validation, and provider storage.
+- **Repository problems**: MST rebuild, CAR export, commit metadata, and sync views.
 
-Blob and repository issues get confused because records reference
-blobs and repository exports include blob-related behavior nearby in the
-codebase.
+## Identity and PLC Failures
 
-Use this split:
+Identity debugging usually involves one of these mismatches:
+- The DID string is invalid for the supported method.
+- PLC state or audit history does not validate.
+- The handle, `alsoKnownAs`, or service endpoint does not match the identity state.
 
-- blob problems: upload, list, get, delete, MIME validation, provider storage
-- repository problems: MST rebuild, CAR export, commit metadata, sync views
+## Slow Systems
 
-Do not assume automatic cleanup exists. If something looks "stuck", check
-whether the code ever implements the cleanup or import path you expect.
+If performance degrades:
+1. Inspect `/metrics`.
+2. Narrow the endpoint or subsystem.
+3. Read the matching component logs.
+4. Inspect the owning service or database path.
 
-## Identity And PLC Failures
+## When to Use Tests
 
-Identity debugging usually involves one of three mismatches:
+Read tests early if behavior is surprising but consistent, an endpoint returns the wrong shape, or identity/repository invariants seem broken. Explicit tests are often the fastest way to separate a bug from a documented limitation.
 
-- the DID string is invalid for the supported method
-- PLC state or audit history does not validate
-- the handle, `alsoKnownAs`, or service endpoint does not match the expected
-  identity state
-
-Start identity work with the DID and PLC pages, not the
-UI that displays the result.
-
-## Slow Or Degrading Systems
-
-If the system is slow:
-
-1. inspect `/metrics`
-2. narrow the endpoint or subsystem
-3. read the matching component logs
-4. inspect the owning service or database path
-
-Performance issues are easier to fix when you identify the pressure point:
-auth, repository export, blob handling, or sync delivery.
-
-## When Tests Should Drive The Investigation
-
-Read tests early when:
-
-- behavior looks surprising but consistent
-- an endpoint returns the wrong shape
-- identity or repository invariants seem broken
-- you are unsure whether a limitation is intentional or missing work
-
-The repository's explicit tests are often the fastest way to
-separate a bug from a documented gap.
-
-## Related Deep Dives
+## Related Resources
 
 - [Troubleshooting a Failing Endpoint](./troubleshooting-a-failing-endpoint)
 - [Test Selection Workflow](./test-selection-workflow)
-
-## Related Reading
-
 - [Objective-C Research Map](./objective-c-research-map)
 - [Performance Monitoring](./performance-monitoring)
 - [Logging Strategy](./logging-strategy)
 - [Metrics Collection](./metrics-collection)
-- [Auth Helpers](../04-network-layer/auth-helpers)
-- [Repository Service](../03-application-layer/repository-service)
-- [Blob Service](../03-application-layer/blob-service)
+- [Documentation Map](documentation-map.md)
 
-## Appendix
-
-### Quick public checks
+## Appendix: Health Checks
 
 ```bash
+# Describe server
 curl -sS http://127.0.0.1:2583/xrpc/com.atproto.server.describeServer | jq .
-```
 
-```bash
+# Metrics snapshot
 curl -sS http://127.0.0.1:2583/metrics | head
 ```
-
-## Related
-
-- [Documentation Map](documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
-

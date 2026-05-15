@@ -4,7 +4,7 @@ title: Request Lifecycle
 
 # Request Lifecycle
 
-Garazyk processes requests through a sequence: transport, protocol dispatch, service logic, and persistence. 
+Garazyk processes requests through a defined sequence: transport, protocol dispatch, service logic, and persistence.
 
 ## The Request Path
 
@@ -35,77 +35,74 @@ sequenceDiagram
 ```
 
 ## Stage 1: Transport and Routing
-`HttpServer` handles raw byte streams. `PDSHttpServerBuilder` defines route registration order.
 
-- **Route registration**: If a request misses a handler, verify registration order in the builder.
-- **Static assets**: Explorer and Admin UI assets are served directly by the builder.
-- **Environment**: Configuration differences between local and production environments often affect builder routing.
+The `HttpServer` handles raw byte streams and TLS. It uses a [Sans-I/O architecture](../04-network-layer/sans-io) where the protocol logic (`HttpProtocolSession`) is decoupled from the socket.
 
-### Builder Endpoints
-- `/xrpc/*`: Protocol methods.
-- `/api/pds/*`: Explorer and OpenAPI inspection.
-- `/ui`: Admin UI.
-- `/api/mst/*`: MST inspection utilities.
-- `/oauth/*` and `/.well-known/*`: Auth and discovery.
+- **Routing**: `PDSHttpServerBuilder` defines the order of route registration.
+- **Static Assets**: The Explorer and Admin UI assets are served directly via the builder.
+
+### Primary Endpoints
+- `/xrpc/*`: AT Protocol methods.
+- `/api/pds/*`: Operator-facing inspection and OpenAPI docs.
+- `/ui/*`: Admin UI.
+- `/oauth/*` and `/.well-known/*`: Identity and discovery.
 
 ## Stage 2: Protocol Dispatch
-The XRPC layer handles normalization and registration:
-- `XrpcDispatcher`: Normalizes requests, looks up methods, and standardizes error shapes.
-- `XrpcMethodRegistry`: Maps NSIDs to Objective-C handler blocks.
-- **Auth and Validation**: Auth helpers and input validation run during dispatch.
+
+The XRPC layer standardizes how protocol methods are handled:
+- `XrpcDispatcher`: Normalizes requests, looks up handlers, and ensures consistent error shapes.
+- `XrpcMethodRegistry`: Maps NSIDs to Objective-C blocks.
+
+Auth verification (JWT, DPoP) and input validation occur at this stage. See the [XRPC Dispatch](../04-network-layer/xrpc-dispatch) guide for more.
 
 ## Stage 3: Service Logic
-Domain-specific logic resides in the service layer:
-- **Account Flows**: Account and authentication services.
-- **Repository Writes**: Record and repository services.
-- **Blob Management**: Blob storage and quota logic.
-- **Admin/AppView**: Dedicated controllers and services.
 
-This layer enforces business rules and protocol semantics.
+Domain-specific logic is encapsulated in the service layer:
+- **Account**: Lifecycle and session management.
+- **Repository**: Record CRUD and MST mutations.
+- **Blob**: Binary storage and quota enforcement.
+
+Services are coordinated through the `PDSApplication` facade. Explore the [Services Overview](../03-application-layer/services-overview) for details.
 
 ## Stage 4: Persistence
-Storage is bifurcated:
-- **Service Databases**: Shared operational state (users, DIDs).
-- **Actor Databases**: Per-account repository state (MST, records).
 
-Failures in one storage path do not necessarily indicate health issues in the other.
+Garazyk uses a bifurcated storage model:
+- **Shared Databases**: System-wide state like user accounts and DIDs.
+- **Actor Databases**: Per-account repository state, including MSTs and records.
+
+See [Shared vs Actor Database Boundary](../05-database-layer/shared-vs-actor-database-boundary) for the rationale.
 
 ## Stage 5: Side Effects
-Specific requests trigger secondary operations:
-- **Repository Mutations**: Update MST state and notify relays.
-- **Streaming**: Sync endpoints use long-lived WebSocket connections.
-- **Telemetry**: Metrics and logs capture operational context.
+
+Mutations trigger secondary operations:
+- **Relay Notifications**: Relays are notified of repository changes.
+- **Firehose**: Events are pushed to the `subscribeRepos` stream.
+- **Metrics**: Operational telemetry is captured.
 
 ## Common Request Patterns
 
 ### XRPC Write Flow
 1. Route matches `/xrpc/...`.
-2. Dispatcher resolves the NSID.
-3. Auth and validation run.
-4. Service mutates actor state.
-5. Repository and relay side effects execute.
-6. Response returns state metadata.
+2. Dispatcher resolves the NSID and verifies auth.
+3. Domain service mutates the actor database.
+4. Repository state is updated (MST), and relays are notified.
+5. Response returns the new state (e.g., CID of the new record).
 
 ### Inspection Flow
-Endpoints under `/api/pds/*` expose server state and generated OpenAPI documentation for operators.
-
-### Admin UI Flow
-The Admin UI (`/ui`) and Explorer assets validate route wiring before making API calls into `/api/pds/*` or `/xrpc/*`.
+Endpoints under `/api/pds/*` allow operators to inspect server state and review generated documentation without going through the protocol dispatch.
 
 ## Debugging by Symptom
 
 | Symptom | Primary Check |
 | --- | --- |
-| 404 or wrong handler | `PDSHttpServerBuilder` registration |
-| Auth failure | XRPC auth helpers and config |
-| Logic error | Service layer |
-| State corruption | Database and repository code |
-| UI rendering issues | `/ui` asset path or `/api/pds/*` responses |
+| 404 or wrong handler | `PDSHttpServerBuilder` registration order. |
+| Auth failure | `XrpcAuthHelper` and config settings. |
+| Logic error | Domain service implementation. |
+| State corruption | Repository or database layer logic. |
 
-## Related
+## Related Reading
 
-- [Codebase Map](./codebase-map)
-- [Services Overview](../03-application-layer/services-overview)
-- [HTTP Server](../04-network-layer/http-server)
-- [Documentation Map](../11-reference/documentation-map.md)
+- [Codebase Map](./codebase-map) — Locate relevant source files.
+- [Architecture Overview](./architecture-overview) — System-wide design.
+- [HTTP Server](../04-network-layer/http-server) — Deep dive into the transport layer.
 

@@ -4,47 +4,44 @@ title: Docs Workspace Guide
 
 # Docs Workspace Guide
 
-`docs/` is the canonical documentation workspace for Garazyk.
+`docs/` is the canonical documentation for Garazyk.
 
-For contributor-facing guidance, start with the numbered VitePress sections and the site home page:
+## Primary Documentation
 
-- [Home](index)
-- [Getting Started](01-getting-started/overview)
-- [Tutorials Overview](10-tutorials/index)
-- [Reference](11-reference/api-reference)
-- [Documentation Map](11-reference/documentation-map)
+- [Home](index) — Contributor entry point.
+- [Getting Started](01-getting-started/overview) — High-level concepts and setup.
+- [Tutorials](10-tutorials/index) — Hands-on guides.
+- [Reference](11-reference/api-reference) — API and configuration catalogs.
+- [Documentation Map](11-reference/documentation-map) — File-level index.
 
-## What Lives Here
+## Structure
 
-The documentation tree has two different roles:
-
-| Area | Role |
+| Path | Purpose |
 | --- | --- |
-| numbered sections such as `01-getting-started/` and `11-reference/` | primary contributor documentation |
-| `tests/`, `oauth2/`, `security/`, and similar folders | deep reference, audit, or historical material |
+| `01-09/` | Core runtime layers (Auth, DB, Network, etc.) |
+| `10/` | Tutorials and walkthroughs |
+| `11/` | Operational and contributor reference |
+| `12/` | [Diagram Reference](12-diagrams/index) |
+| `archive/` | Historical or deprecated material |
 
-That split is intentional. The VitePress site should guide newcomers through the active contributor path first, while still keeping the denser background material available in-repo.
+## Maintenance & Operations
 
-## Deep Reference Collections
+- [Deployment Guide](DEPLOYMENT_GUIDE) — Production and staging workflows.
+- [Monitoring Guide](MONITORING) — Build and health checks.
+- [Maintenance Guide](MAINTENANCE) — Content update procedures.
+- [Versioning Strategy](VERSIONING_STRATEGY) — How we handle docs for different releases.
+- [Migration Guide](MIGRATION_GUIDE) — Legacy Jekyll to VitePress mapping.
+- [Update Checklist](DOCUMENTATION_UPDATE_CHECKLIST) — Verification steps for PRs.
 
-- [tests/README](tests/README)
-- [oauth2/README](oauth2/README)
-- [security/README](security/README)
-
-Use those when you need a catalog or historical detail that would be too dense for the main contributor flow.
-
-## Repository Links
+## External Resources
 
 - [Main Project README](../README)
-- [Build Guide](../BUILD)
-- [Contributing Guide](../CONTRIBUTING)
-- [Documentation and Comment Style Guide](../DOCUMENTATION)
 - [Agent Instructions (AGENTS.md)](../AGENTS)
-- [Repository Documentation Index](repo-index/index)
+- [Glossary](GLOSSARY)
 
 ## Related
 
-- [Documentation Map](11-reference/documentation-map.md)
-- [Contributor Guide](index.md)
-- [Repository Documentation Index](repo-index/index.md)
+- [Documentation Map](11-reference/documentation-map)
+- [Contributor Guide](index)
+- [Repository Documentation Index](repo-index/index)
 

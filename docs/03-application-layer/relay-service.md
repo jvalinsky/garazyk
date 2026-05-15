@@ -4,74 +4,47 @@ title: Relay Service
 
 # Relay Service
 
-## Overview
+`PDSRelayService` is an outbound notification service. It notifies configured relays to crawl the PDS when local records change. It does not aggregate global repository events; that role is performed by the **[Zuk Relay Server](./relay-server)**.
 
-`PDSRelayService` is an outbound hinting service. It notifies configured relays to crawl this PDS when local records change. It does not aggregate global repo events or provide a firehose — that is the role of the **[Zuk Relay Server](./relay-server)**.
+## Triggering Mechanism
 
-## How It Is Triggered
+The service subscribes to `PDSRecordDidChangeNotification`, emitted by the [Record Service](./record-service) after successful record mutations. This ensures that relay notifications occur only after the local data is persisted.
 
-The relay service subscribes to `PDSRecordDidChangeNotification`, which the
-record service emits when record mutations occur.
-
-This means relay notification is downstream from successful local record work.
-The relay service is not deciding whether a repository change happened. It is
-reacting after the record layer already did.
-
-## What The Service Actually Sends
+## Notification Process
 
 When triggered, the service:
+1.  Collects affected DIDs in memory.
+2.  Debounces notifications for one second to collapse burst writes.
+3.  Enforces a twenty-minute minimum interval between notifications to a specific relay.
+4.  Sends `POST /xrpc/com.atproto.sync.requestCrawl` to each configured relay, including the PDS hostname in the payload.
 
-- collects the affected DIDs in memory
-- debounces notifications for one second
-- enforces a twenty-minute minimum interval between relay notifications
-- sends `POST /xrpc/com.atproto.sync.requestCrawl` to each configured relay
-- includes this PDS hostname in the JSON body
+This notification is a crawl hint, not a detailed replication feed.
 
-That is intentionally smaller than a per-DID replication feed. The current
-message is a crawl hint, not a detailed change payload.
+## Debounce Logic
 
-## Why The Debounce Exists
+Record writes often arrive in bursts (e.g., during a profile update or batch write). The one-second debounce prevents swamping relays with redundant requests. The twenty-minute threshold prevents repetitive "nagging" during sustained user activity.
 
-Record writes often arrive in bursts. Without a debounce, one local workflow
-could trigger a swarm of redundant relay requests. The one-second delay lets the
-service collapse nearby writes into one crawl hint.
+## Scope and Limits
 
-The longer twenty-minute threshold serves a different purpose: keep the server
-from repeatedly nagging relays during sustained write activity.
+`PDSRelayService` focuses strictly on notification. It does not implement:
+- Durable retry queues.
+- Per-DID replication payloads.
+- Acknowledgement tracking or backfill state.
+- Firehose subscription logic.
 
-## What The Service Does Not Do
+## Relationship to Sync Components
 
-The relay service does not currently provide:
-
-- a durable retry queue
-- per-DID relay payloads
-- acknowledgement tracking
-- backfill state
-- firehose subscription logic
-
-Those are separate problems. The docs should not describe this class as if it
-already solved them.
-
-## Relationship To Other Sync Components
-
-Do not confuse `PDSRelayService` with `SubscribeReposHandler` or `RelayClient`.
-
-- `PDSRelayService` asks relays to crawl us
-- `SubscribeReposHandler` serves our own firehose and sync surfaces
-- `RelayClient` consumes remote relay feeds
-
-Each of those pieces belongs to sync, but they solve different sides of the
-federation story.
-
-## Related Reading
-
-- [Repository Service](./repository-service)
-- [Services Overview](./services-overview)
-- [Request Lifecycle](../01-getting-started/request-lifecycle)
+`PDSRelayService` is one part of the federation stack:
+- **`PDSRelayService`**: Requests that relays crawl the local PDS.
+- **`SubscribeReposHandler`**: Serves the local [Firehose](../08-sync-firehose/firehose-overview) and sync surfaces.
+- **`RelayClient`**: Consumes remote relay feeds for local indexing.
 
 ## Related
 
+- [Repository Service](./repository-service)
+- [Record Service](./record-service)
+- [Services Overview](./services-overview)
+- [Firehose Overview](../08-sync-firehose/firehose-overview)
+- [Request Lifecycle](../01-getting-started/request-lifecycle)
 - [Documentation Map](../11-reference/documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
 

@@ -4,84 +4,55 @@ title: Blob Service
 
 # Blob Service
 
-## Overview
+`PDSBlobService` is the application-layer facade for blob storage. It translates between protocol callers and the storage primitives managed by `BlobStorage`.
 
-`PDSBlobService` is the application-layer facade over blob storage. Its job is
-not to invent a second storage model. Its job is to translate between protocol
-or explorer callers and the storage primitives that `BlobStorage` already owns.
+This separation ensures that high-level callers receive AT Protocol-compliant responses while the storage layer focuses on CIDs, metadata, and provider operations.
 
-That separation matters because blob callers want ATProto-friendly shapes, while
-the storage layer wants CIDs, metadata, and provider operations.
+## Core Operations
 
-## What The Service Owns
+The service manages several application-facing operations:
 
-The blob service currently owns five application-facing operations:
+- **Upload**: Accepts a raw data stream and returns an AT Protocol blob object.
+- **Retrieve**: Fetches blob bytes or a file-backed stream description.
+- **List**: Enumerates blobs associated with a specific DID.
+- **Delete**: Removes a blob and its associated metadata.
 
-- upload a blob for a DID
-- retrieve blob bytes for a DID
-- retrieve a file-backed blob stream description for a DID
-- list blobs for a DID
-- delete a blob for a DID
+Handlers should depend on these operations rather than accessing `BlobStorage` directly.
 
-These are the operations handlers should depend on. New route code should not
-reach straight into `BlobStorage` unless it is deliberately extending the
-storage contract.
+## Protocol Translation
 
-## Why The Service Exists
-
-`BlobStorage` is concerned with validation, CID computation, provider access,
-and metadata persistence. `PDSBlobService` is concerned with shaping those
-results for the rest of the application.
-
-The most visible example is upload. The service returns the ATProto blob object
-that record-writing code expects:
+While `BlobStorage` handles validation, CID computation, and persistence, `PDSBlobService` shapes results for the AT Protocol. For example, an upload returns the expected JSON structure:
 
 - `$type: "blob"`
-- `ref.$link`
-- `mimeType`
-- `size`
-
-That is exactly the kind of translation that belongs in the application layer.
+- `ref.$link`: The CID of the blob.
+- `mimeType`: The media type.
+- `size`: The size in bytes.
 
 ## Read Paths
 
-The service supports two read styles:
+The service supports two read styles to accommodate different handler needs:
 
-- buffered reads for callers that need the blob data immediately
-- file-backed reads for handlers that can serve a provider path directly
+- **Buffered Reads**: For callers that need the complete blob data immediately.
+- **File-backed Reads**: Allows handlers to serve a provider path directly, optimizing for large files.
 
-This design is small but useful. Higher layers do not have to understand the
-provider implementation, and lower layers do not have to know anything about
-HTTP response construction.
+## Access Points
 
-## Where Callers Enter
+Callers typically reach the service through:
 
-Blob-related handlers and compatibility surfaces currently reach the service
-through:
+- **XRPC Methods**: Handlers in `com.atproto.repo.*` and `com.atproto.sync.*`.
+- **Method Registry**: The centralized [XrpcMethodRegistry](../04-network-layer/method-registry).
+- **Controller Facade**: The legacy `PDSController` (new code should prefer the service directly).
 
-- XRPC repo and sync methods
-- the generated method registry
-- the legacy `PDSController` facade
+## Scope and Limitations
 
-The compatibility point matters because older code still routes through
-`PDSController`, but new code should prefer the service directly.
+`PDSBlobService` focuses on data transport and translation. It does not currently implement:
 
-## What The Service Does Not Do
+- Quota accounting (managed at the handler or dedicated quota layer).
+- Automatic garbage collection.
+- Background verification or repair jobs.
+- Record-reference tracking beyond the immediate storage flow.
 
-`PDSBlobService` does not currently implement:
-
-- quota accounting
-- automatic garbage collection
-- background verification or repair jobs
-- record-reference tracking beyond the storage and protocol flows that already
-  exist
-
-That is why blob lifecycle docs must stay explicit. The service is honest about
-what it does, and the docs should be too.
-
-## Implementation Map
-
-Start here when you change blob application behavior:
+## Implementation Reference
 
 - `Garazyk/Sources/Services/PDS/PDSBlobService.h`
 - `Garazyk/Sources/Services/PDS/PDSBlobService.m`
@@ -89,16 +60,12 @@ Start here when you change blob application behavior:
 - `Garazyk/Sources/Network/XrpcRepoMethods.m`
 - `Garazyk/Sources/Network/XrpcSyncMethods.m`
 
-## Related Reading
+## Related
 
 - [Blob Storage](../07-repository-protocol/blob-storage)
 - [Blob Lifecycle](../07-repository-protocol/blob-lifecycle)
-- [Blob Optimization](../07-repository-protocol/blob-optimization)
 - [Services Overview](./services-overview)
-
-## Related
-
+- [Account Service](./account-service)
+- [Record Service](./record-service)
 - [Documentation Map](../11-reference/documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
 

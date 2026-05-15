@@ -1,63 +1,58 @@
 # Services Overview
 
-The service layer translates protocol requests into application logic. `PDSApplication` is the composition root, managing infrastructure, core services, and route wiring.
+The service layer translates protocol requests into application logic. [PDSApplication](./pds-application) acts as the composition root, coordinating infrastructure, domain services, and route dispatch.
 
-## Architecture
+## Architectural Layers
 
-Garazyk separates concerns into three layers:
-- **Handlers**: Parse requests and shape responses.
+Garazyk separates concerns into three distinct layers:
+- **Handlers**: Parse requests and shape responses (see [XRPC Dispatch](../04-network-layer/xrpc-dispatch)).
 - **Services**: Coordinate business logic and subsystem interactions.
-- **Persistence**: Manage database and repository state.
+- **Persistence**: Manage database state and repository integrity.
 
-## Service Composition
+## Application Services
 
-`PDSApplication` initializes shared infrastructure:
-- Configuration and logging.
-- Rate limiting and JWT infrastructure.
-- Service databases and the actor database pool.
+`PDSApplication` initializes the core application services:
 
-It then assembles the application services:
-- **Account Service**: Manages accounts and authentication.
-- **Record Service**: Handles record CRUD.
-- **Blob Service**: Manages binary data and storage.
-- **Repository Service**: Oversees MST and repository integrity.
-- **Admin/Safety Services**: Age assurance, chat moderation, and administrative controls.
-- **Relay Service**: Handles firehose and notification propagation.
+- **[Account Service](./account-service)**: Manages user accounts, authentication, and session lifecycles.
+- **[Record Service](./record-service)**: Handles record creation, retrieval, and validation.
+- **[Blob Service](./blob-service)**: Manages binary data storage and AT Protocol blob objects.
+- **[Repository Service](./repository-service)**: Oversees [MST reconstruction](../02-core-concepts/mst-trees) and repository exports.
+- **[Admin](./admin-service) & [Safety](./safety-and-compliance) Services**: Manage age assurance, chat moderation, and administrative controls.
+- **[Relay Service](./relay-service)**: Handles outbound notification propagation for the [firehose](../08-sync-firehose/firehose-overview).
 
-### Standalone Servers
-Garazyk implements standalone servers for specialized protocol roles:
-- **Syrena (AppView)**: Consumes the firehose to build read-models.
-- **Zuk (Relay)**: Aggregates data from multiple PDS instances.
-- **Campagnola (PLC)**: Implements the `did:plc` directory server.
+## Standalone Servers
+
+In addition to the PDS, the codebase supports specialized protocol roles:
+- **Syrena ([AppView](./appview-server))**: Consumes the firehose to build specialized read-models.
+- **Zuk ([Relay](./relay-server))**: Aggregates data from multiple PDS instances for indexing.
+- **Campagnola (PLC)**: Implements the [PLC](../GLOSSARY.md#plc) directory server.
 
 ## Request Execution Flow
-1. **Routing**: Matches the request in the HTTP builder or XRPC layer.
-2. **Pre-processing**: Auth and validation run in middleware or helpers.
-3. **Coordination**: The handler calls the relevant domain service.
+
+A typical request follows this sequence:
+1. **Routing**: The [HTTP Server](../04-network-layer/http-server) or [XRPC Dispatch](../04-network-layer/xrpc-dispatch) layer matches the request.
+2. **Pre-processing**: [Auth Helpers](../04-network-layer/auth-helpers) and [Input Validation](../04-network-layer/input-validation) run before service logic.
+3. **Coordination**: The handler invokes the relevant domain service.
 4. **Persistence**: The service executes repository or database operations.
-5. **Response**: The handler shapes the final payload.
+5. **Response**: The handler shapes the final payload for the client.
 
-## Implementation Guidelines
-
-### PDSController
-`PDSController` is a legacy facade. New implementation should target services directly.
+## Implementation Standards
 
 ### Service Boundaries
-Add or extend services for logic that:
+Extend or create services for logic that:
 - Spans multiple handlers or protocol namespaces.
-- Coordinates multiple persistence layers.
-- Requires a testable boundary independent of transport.
+- Coordinates multiple persistence layers (e.g., database and MST).
+- Requires a testable boundary independent of the HTTP transport.
 
-Services must represent a meaningful architectural seam. Trivial logic remains in handlers or helpers.
+### Legacy Facade
+`PDSController` is a legacy interface maintained for compatibility. New features should target the domain services directly.
 
 ## Related
 
 - [Request Lifecycle](../01-getting-started/request-lifecycle)
 - [Runtime Flow Walkthrough](./runtime-flow-walkthrough)
-- [Syrena AppView](./appview-server)
-- [Zuk Relay](./relay-server)
-- [Safety and Compliance](./safety-and-compliance)
-- [Blob Service](./blob-service)
-- [Repository Service](./repository-service)
+- [PDS Application Facade](./pds-application)
+- [HTTP Server](../04-network-layer/http-server)
+- [XRPC Dispatch](../04-network-layer/xrpc-dispatch)
 - [Documentation Map](../11-reference/documentation-map.md)
 

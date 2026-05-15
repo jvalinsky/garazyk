@@ -1,30 +1,23 @@
 ---
-title: MST Implementation Details
+title: Merkle Search Tree (MST) Implementation
 ---
 
 # Merkle Search Tree (MST) Implementation
 
-Garazyk uses Merkle Search Trees (MST) to cryptographically prove the state of an actor's repository. The `PDSRepositoryService` manages the MST and persists it within each user's isolated Actor Database via the `PDSDatabasePool`.
+Garazyk uses Merkle Search Trees (MST) to cryptographically prove repository state. The `PDSRepositoryService` manages tree updates and persistence.
 
-## Core Responsibilities
-
-1. **Commit Generation:** Mutations to a repository (creating a post, liking, following) require updating the MST. `PDSRepositoryService` computes the new tree root and generates a signed commit object.
-2. **Block Serialization (CAR files):** The AT Protocol exchanges data using Content Addressable aRchives (CAR). When a client requests a repository sync, the service serializes MST blocks into a CAR stream.
-3. **Repository Sync:** The MST structure allows efficient diffing between a client's known state and the server's current state for partial syncs.
-
-## The MST Data Structure
+## Data Structure
 
 An MST is a deterministic, content-addressed search tree.
-- **Keys** are record paths (e.g., `app.bsky.feed.post/3k123...`).
-- **Values** are the CID (Content Identifier) of the CBOR-encoded record.
-- **Nodes** contain key-value pairs and CIDs pointing to child nodes.
-- **Tree height** is determined by hashing the keys. Identical contents always result in the same tree structure and root CID, regardless of insertion order.
+- **Keys:** Record paths (e.g., `app.bsky.feed.post/3k123...`).
+- **Values:** CIDs of CBOR-encoded records.
+- **Nodes:** Content-addressed blocks containing key-value pairs and child pointers.
 
-## Database Integration
+Tree height is determined by hashing keys, ensuring that identical contents result in the same root CID regardless of insertion order.
 
-Loading the entire MST into memory for every operation is not viable because SQLite is the storage engine. 
+## Persistence
 
-`PDSDatabasePool` stores MST nodes in the Actor DB. A typical table schema for nodes:
+MST nodes are stored in each user's actor database.
 
 ```sql
 CREATE TABLE mst_nodes (
@@ -33,20 +26,25 @@ CREATE TABLE mst_nodes (
 );
 ```
 
-When a record is inserted:
-1. The system encodes the record to CBOR and computes its CID.
-2. `PDSRepositoryService` loads only the required path of MST nodes from the database.
-3. The system inserts the new key-value pair, splitting or merging nodes based on the deterministic height algorithm.
-4. The system hashes new nodes and saves their CBOR representations to the database.
-5. `PDSRepositoryService` generates a new signed commit object pointing to the new root CID.
+When a record is modified:
+1. The record is encoded as CBOR to determine its CID.
+2. The `PDSRepositoryService` loads the relevant branch of the tree from SQLite.
+3. The new key-value pair is inserted, and nodes are split or merged according to the height algorithm.
+4. New nodes are hashed and saved to the database.
+5. A new signed commit points to the updated root CID.
 
-## Block Serialization and CAR Generation
+## CAR Generation
 
-The AT Protocol requires serving MST nodes and record blocks via CAR files for methods like `com.atproto.sync.getRepo`.
+For repository synchronization (e.g., `com.atproto.sync.getRepo`), Garazyk streams MST nodes and records into a Content Addressable aRchive (CAR).
 
-Garazyk implements a stream-oriented CAR generator. It avoids buffering the entire repository:
+The generator avoids buffering the entire repository:
 1. It writes the CAR header with the root CID.
-2. It traverses the requested MST nodes.
-3. It yields the CID and CBOR payload directly to the `HttpServer` output stream for each node and record block.
+2. It traverses the tree nodes and yields their CID and CBOR payload directly to the HTTP output stream.
 
-Streaming prevents buffering the repository into memory, even when serving repositories with hundreds of thousands of records.
+This streaming approach ensures that repositories with millions of records can be served with minimal memory overhead.
+
+## Related
+
+- [Repository Service](../03-application-layer/repository-service)
+- [Database Layer](../05-database-layer/index)
+- [Documentation Map](./documentation-map)

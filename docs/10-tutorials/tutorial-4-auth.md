@@ -4,171 +4,90 @@ title: "Tutorial 4: Authentication"
 
 # Tutorial 4: Authentication
 
-## Overview
+Authentication in Garazyk manages the trust boundaries between the client, the PDS, and other network actors. This tutorial covers the integration of JWT, DPoP, and OAuth2 within the repository.
 
-Authentication in Garazyk is where the repo’s contributor story becomes security-sensitive. This tutorial is therefore organized around trust boundaries, not around long code listings.
-
-The real system combines:
-
-- issuer and token rules,
-- JWT signing and verification,
-- DPoP proof handling,
-- OAuth authorization-server behavior,
-- and XRPC auth enforcement.
-
-Contributors who understand those boundaries make better changes and avoid cargo-culting old examples into security-critical code.
-
-## What You'll Build
-
-You will build a mental model of the authentication stack:
-
-- what the server signs,
-- what it verifies,
-- where OAuth routes live,
-- how DPoP changes token usage,
-- and where endpoint auth policy is enforced.
-
-**Learning Objectives:**
-- Distinguish JWT, DPoP, OAuth, and XRPC auth responsibilities
-- Identify the core files that own security behavior
-- Understand how issuer configuration affects runtime behavior
-- Verify auth changes with focused tests instead of giant example payloads
-
-**Estimated Time:** 45-60 minutes
-
-## Prerequisites
-
-- Complete [Tutorial 2: Accounts](./tutorial-2-accounts)
-- Read [Config Reference](../11-reference/config-reference)
-- Read [Security Best Practices](../06-authentication/security-best-practices)
+## Learning Objectives
+- Distinguish between the roles of JWT, DPoP, and OAuth2 in the AT Protocol.
+- Identify the core implementation files that own security behavior.
+- Understand how server configuration affects token issuance and verification.
+- Verify authentication changes using the project's test suite.
 
 ## Architecture Overview
 
 ```mermaid
 flowchart LR
-  Client["Client"] --> OAuth["OAuth and auth routes"]
-  OAuth --> Jwt["JWT mint and verify"]
-  Client --> DPoP["DPoP proof"]
-  Jwt --> Xrpc["XRPC auth enforcement"]
+  Client["Client"] --> OAuth["OAuth & Auth Routes"]
+  OAuth --> Jwt["JWT Minting & Verification"]
+  Client --> DPoP["DPoP Proofs"]
+  Jwt --> Xrpc["XRPC Auth Enforcement"]
   DPoP --> Xrpc
-  Xrpc --> Services["Authorized service calls"]
+  Xrpc --> Services["Authorized Service Calls"]
 ```
 
-## Step 1: Separate the Auth Layers
+## Step 1: Authentication Layers
 
-Start by assigning each subsystem a clear job:
+To navigate the codebase, it is helpful to treat each security component as a distinct layer:
 
-| Subsystem | Primary role |
-| --- | --- |
-| `JWT` | token structure, signing, verification, issuer claims |
-| `DPoPUtil` and related crypto helpers | proof binding and verification |
-| `OAuth2` and `OAuth2Handler` | authorization-server behavior and route handling |
-| XRPC auth helpers | enforcing token expectations at method boundaries |
+- **JWT**: Manages token structure, signing, and verification.
+- **DPoP**: Handles cryptographic binding of tokens to client keys to prevent replay attacks.
+- **OAuth2**: Implements the authorization server behavior, including route handling and client metadata.
+- **XRPC Enforcement**: Applies token expectations at the method boundary (e.g., ensuring a repository write is authorized for that specific DID).
 
-This separation is the most important contributor takeaway. Security docs drift quickly when they describe all of auth as one undifferentiated thing.
+## Step 2: Core Implementation Files
 
-## Step 2: Trace Issuer and Configuration Effects
+Start your investigation with these files:
 
-Authentication behavior depends heavily on configuration:
+- **`Garazyk/Sources/Auth/JWT.m`**: The foundation for minting and validating access and refresh tokens.
+- **`Garazyk/Sources/Auth/OAuth2.m`**: Contains the logic for the OAuth2 authorization flow.
+- **`Garazyk/Sources/Auth/DPoPUtil.m`**: Utilities for verifying DPoP proofs.
+- **`Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m`**: Platform-specific cryptographic primitives for DPoP.
 
-- explicit issuer
-- local versus public host assumptions
-- token TTLs
-- app-view and service-auth expectations
+As you read, look for how `PDSConfiguration` values like `issuerDid` influence these components.
 
-If the auth path looks wrong, the bug may be configuration-driven rather than algorithmic. That is why contributors should read `PDSConfiguration` together with the auth code instead of treating config as an afterthought.
+## Step 3: Endpoint Enforcement
 
-## Step 3: Read the Core Files
+A valid token is only useful if it is correctly enforced at the network layer.
 
-The most useful source entry points are:
+1. **Route Middleware**: Observe how `PDSHttpServerBuilder.m` applies authentication requirements to specific XRPC methods.
+2. **Auth Context**: See how the `PDSAuthContext` is populated from the request headers and passed to the handlers.
+3. **Identity Verification**: Confirm that handlers verify the token's `sub` (subject) matches the repository being modified.
 
-- `Garazyk/Sources/Auth/JWT.m`
-- `Garazyk/Sources/Auth/OAuth2.m`
-- `Garazyk/Sources/Auth/OAuth2Handler.m`
-- `Garazyk/Sources/Auth/DPoPUtil.m`
-- `Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m`
+## Step 4: Verification and Testing
 
-Read them with one question in mind:
+Authentication has the most rigorous test coverage in the project. Use these tests to validate your changes:
 
-> Which invariant does this file protect that another layer should not duplicate?
-
-That question keeps the system readable.
-
-## Step 4: Connect Auth to Endpoint Enforcement
-
-Security behavior is not finished when tokens are minted correctly. It matters only if the right endpoints enforce the right expectations.
-
-The network layer is where contributors confirm:
-
-- which endpoints require auth,
-- which tokens are accepted,
-- how issuer and audience checks are interpreted,
-- and where auth failures are turned into client-visible errors.
-
-This is also the point where an apparently correct JWT implementation can still produce the wrong system behavior.
-
-## Step 5: Use the Tests as the Specification
-
-Auth has one of the strongest test surfaces in the repo. Start with:
-
-- `Garazyk/Tests/Auth/JWTTests.m`
-- `Garazyk/Tests/Auth/OAuth2Tests.m`
-- `Garazyk/Tests/Auth/OAuthDPoPTests.m`
-- `Garazyk/Tests/Auth/OAuthIntegrationTests.m`
-- `Garazyk/Tests/Security/JWTSecurityTests.m`
-
-These tests are a better contributor guide than old tutorial-sized code blocks because they show what the project is actually protecting today.
-
-## Step 6: Verify Discovery and Metadata Too
-
-Authentication changes often leak into discovery surfaces:
-
-- OAuth metadata
-- well-known endpoints
-- discovery output tied to issuer configuration
-
-That means auth work is never just an internal crypto concern. It changes what clients learn about the server.
+- **`Garazyk/Tests/Auth/JWTTests.m`**: Validates token signing and expiration logic.
+- **`Garazyk/Tests/Auth/OAuthDPoPTests.m`**: Tests the cryptographic binding of DPoP.
+- **`Garazyk/Tests/Security/JWTSecurityTests.m`**: Specifically targets common vulnerabilities like the "none" algorithm or signature stripping.
+- **`Garazyk/Tests/Auth/OAuthIntegrationTests.m`**: Runs the full end-to-end authorization code flow.
 
 ## Troubleshooting
 
-| Symptom | Likely cause | Where to look |
-| --- | --- | --- |
-| tokens mint but requests still fail | endpoint enforcement mismatch | XRPC auth helpers and route behavior |
-| auth works locally but not on public host | issuer mismatch | config plus JWT/OAuth metadata |
-| DPoP flow fails intermittently | proof construction or replay assumptions | DPoP utilities and related tests |
-| OAuth routes behave unexpectedly | route handler and metadata drift | `OAuth2Handler`, server metadata tests |
+- **Tokens rejected by server**: Verify that the `issuer` in the token matches the server's configured `issuerDid`.
+- **DPoP proof failure**: Check for clock skew between the client and server, or ensure the `htu` and `htm` claims match the current request.
+- **OAuth metadata 404**: Confirm that the `.well-known/oauth-authorization-server` route is correctly registered in the server builder.
 
 ## Next Steps
 
-1. Continue to [Tutorial 5: Firehose](./tutorial-5-firehose).
-2. Use [Explorer, OpenAPI & UI](../11-reference/explorer-openapi-ui) when validating auth-sensitive tooling surfaces.
-3. Revisit [Tutorial 6: Deployment](./tutorial-6-deployment) for production-safe auth settings.
+1. Move to [Tutorial 5: Firehose](./tutorial-5-firehose) to see how authenticated events are streamed.
+2. Review [Tutorial 10: OAuth2 & DPoP](./tutorial-10-oauth-dpop) for a deep dive into the high-security handshake.
 
-## Summary
-
-Authentication in Garazyk is a layered trust system:
-
-- configuration defines identity and policy,
-- JWT and DPoP define token semantics,
-- OAuth exposes authorization-server behavior,
-- and XRPC enforcement turns those rules into real access control.
-
-Understanding those boundaries is the difference between a safe auth change and a superficial one.
-
-## Appendix
-
-### Small auth verification loop
+## Appendix: Manual Verification
 
 ```bash
-./build/bin/kaszlak serve --config ./config.json --data-dir ./pds-data --foreground &
+# Start the server
+./build/bin/kaszlak serve --config ./config/examples/local.json --foreground &
 PID=$!
 sleep 2
+
+# Verify OAuth2 metadata is reachable
 curl -sS http://127.0.0.1:2583/.well-known/oauth-authorization-server | jq .
+
+# Verify discovery metadata
 curl -sS http://127.0.0.1:2583/xrpc/com.atproto.server.describeServer | jq .
-./build/tests/AllTests -XCTest JWTTests
+
 kill $PID
 ```
-
 
 ## Related
 

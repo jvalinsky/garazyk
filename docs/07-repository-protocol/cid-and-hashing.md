@@ -414,14 +414,12 @@ return YES;
 **Source:** `Garazyk/Sources/Core/CID.m` (lines 280-295); `Garazyk/Sources/Blob/BlobStorage.m` (lines 95-115)
 
 ## See Also
+- [CBOR Serialization](./cbor-serialization)
+- [CAR Format](./car-format)
+- [Blob Storage](./blob-storage)
 
-- [CBOR Serialization](cbor-serialization)
-- [CAR Format](car-format)
-- [Blob Storage](blob-storage)
-
-## Related
-
-- [Documentation Map](../11-reference/documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
+## Related Reading
+- [Repository Basics](./repository-basics)
+- [Record Write to Commit Walkthrough](./record-write-to-commit-walkthrough)
+- [Glossary](../GLOSSARY)
 

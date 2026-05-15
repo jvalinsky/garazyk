@@ -1,119 +1,74 @@
----
-title: Testing Map
----
-
 # Testing Map
 
-## Overview
+Map code changes to the smallest relevant test surface rather than relying on full suite runs.
 
-The test suite is large enough that "run all tests" is not a good default debugging strategy. New contributors need a map from a code change to the smallest test surface that can falsify it.
+## Test Directory Organization
 
-This page turns the raw test catalog into a contributor workflow.
+The `Garazyk/Tests/` structure reflects runtime subsystems:
 
-## How the Test Tree Is Organized
-
-`Garazyk/Tests/` mirrors the runtime areas closely enough that the fastest way to find tests is often to match directory names.
-
-| Test area | Covers |
+| Test Area | Components Covered |
 | --- | --- |
-| `Tests/Auth/`, `Tests/Identity/` | JWT, OAuth, DPoP, handle and DID logic |
-| `Tests/Network/`, `Tests/XRPC/` | HTTP stack, dispatch, route behavior, protocol surfaces |
-| `Tests/Database/` | service DBs, actor stores, pools, migrations, monitoring |
-| `Tests/Repository/`, `Tests/Core/` | MST, CAR, CBOR, repository primitives |
-| `Tests/Services/`, `Tests/App/Services/` | business logic and service composition |
-| `Tests/AppView/` | actor, feed, graph, notification read-model services |
-| `Tests/Email/` | provider integrations and secrets resolution |
-| `Tests/PLC/`, `Tests/plc_e2e/` | PLC behavior and end-to-end PLC flows |
-| `Tests/CLI/`, `Tests/Admin/` | operator and admin workflows |
-| `Tests/Sync/`, `Tests/Federation/`, `Tests/Integration/` | firehose, federation, and higher-level integration paths |
-| `Tests/Interop/` | compliance against official AT Protocol fixtures |
-| `Tests/Safety/` | age assurance, chat moderation, and audit logs |
+| `Tests/Auth/`, `Tests/Identity/` | JWT, OAuth, DPoP, and handle/DID logic. |
+| `Tests/Network/`, `Tests/XRPC/` | HTTP stack, dispatch, routing, and protocol surfaces. |
+| `Tests/Database/` | Service databases, actor stores, pools, and migrations. |
+| `Tests/Repository/`, `Tests/Core/` | MST, CAR, CBOR, and repository primitives. |
+| `Tests/Services/` | Business logic and service composition. |
+| `Tests/AppView/` | Actor, feed, graph, and notification read-models. |
+| `Tests/Email/` | Provider integrations and secrets. |
+| `Tests/PLC/`, `Tests/plc_e2e/` | PLC behavior and end-to-end flows. |
+| `Tests/CLI/`, `Tests/Admin/` | Operator and administrator workflows. |
+| `Tests/Sync/`, `Tests/Federation/` | Firehose, federation, and high-level integration. |
+| `Tests/Interop/` | AT Protocol reference fixture compliance. |
+| `Tests/Safety/` | Age assurance, moderation, and audit logs. |
 
-For the detailed per-class index, use the deep reference under [`docs/tests/`](../tests/README). Treat that directory as catalog material, while this page is the contributor-facing entry point.
+## Recommendations
 
-## What to Run Before You Change Something
-
-| If you changed | Start with |
+| Category of Change | Initial Test Suite |
 | --- | --- |
-| core protocol logic (DID, NSID, CID) | interop tests (`Tests/Interop/`) |
-| trust and safety features | safety tests (`Tests/Safety/`) |
-| configuration parsing or env overrides | utility/config tests plus the affected integration path |
-| account, auth, or OAuth flows | auth tests, identity tests, then relevant integration tests |
-| HTTP or XRPC routing | network and XRPC tests |
-| record or repository behavior | repository/core tests, then service tests |
-| database access, migrations, or pooling | database tests and any affected service tests |
-| `/api/pds/*`, `/ui`, or Explorer tooling | app/UI tests plus manual smoke checks |
-| PLC or handle resolution | PLC and identity tests |
-| deployment-sensitive behavior | integration tests plus manual compose-based verification |
+| Core protocol (DID, NSID, CID) | `Tests/Interop/` |
+| Trust and safety features | `Tests/Safety/` |
+| Account and OAuth flows | `Tests/Auth/` and `Tests/Identity/` |
+| HTTP or XRPC routing | `Tests/Network/` and `Tests/XRPC/` |
+| Record or repository behavior | `Tests/Repository/` and `Tests/Services/` |
+| Database access or migrations | `Tests/Database/` and affected services |
+| PLC or handle resolution | `Tests/PLC/` and identity tests |
 
-## Required Contributor Habits
+## Contributor Requirements
 
-### Register new test classes
+### Register Test Classes
+Register every new test class in the `testClasses` array within `Garazyk/Tests/test_main.m`. Unregistered tests will not execute.
 
-This repository has an explicit test runner registration requirement. If you add a new test class, it must be added to `testClasses` in `Garazyk/Tests/test_main.m`.
-
-If you forget, the test may compile and still never run.
-
-### Use the smallest useful scope first
-
-Good contributor workflow:
-
-1. run the closest unit or subsystem test,
-2. run the broader suite that protects the integration seam you touched,
-3. only then fall back to the full `AllTests` run.
-
-This preserves iteration speed and makes failures easier to interpret.
+### Iterative Verification
+1. Run the closest unit or subsystem test.
+2. Execute the suite protecting the relevant integration seam.
+3. Perform a full `AllTests` run as a final check.
 
 ## Core Commands
 
 ```bash
+# Build
 xcodegen generate
 xcodebuild -scheme AllTests build
+
+# Run
 ./build/tests/AllTests
-```
 
-Useful targeted patterns:
-
-```bash
+# Run specific suite
 ./build/tests/AllTests -only-testing:AllTests/OAuth2Tests
-./build/tests/AllTests -only-testing:AllTests/NodeInfoTests
-./build/tests/AllTests 2>&1 | grep -E "Test (Case|Suite)"
 ```
 
-## Where the Docs Live
+## Manual Verification
 
-Testing documentation is currently split between the VitePress reference section and the older detailed test catalog:
+Verify these surfaces manually even when tests pass:
+- OpenAPI rendering at `/api/pds/docs`.
+- Static asset delivery in the `/ui`.
+- Docker deployment from `docker/pds/`.
+- Auth redirects and browser transitions.
 
-- contributor path: this page plus [Test Organization](./test-organization), [Property-Based Testing](./property-based-testing), and [E2E Testing](./e2e-testing)
-- deep inventory: [`docs/tests/`](../tests/README)
-
-That split is intentional for this pass. The site exposes the contributor path directly and keeps the inventory pages available for deeper lookup.
-
-## Manual Verification Still Matters
-
-Some surfaces are easier to trust after a manual spot check even when tests pass:
-
-- `/api/pds/docs` and OpenAPI rendering
-- `/ui` static asset delivery and tab loading
-- Docker deployment behavior from `docker/pds/`
-- auth flows that depend on real redirects or browser state
-
-Use tests to protect invariants. Use manual checks to confirm the contributor tooling experience.
-
-## Related Deep Dives
+## Related Resources
 
 - [Test Selection Workflow](./test-selection-workflow)
-
-## Related Reading
-
 - [Test Organization](./test-organization)
 - [Property-Based Testing](./property-based-testing)
 - [E2E Testing](./e2e-testing)
-- [docs/tests/README](../tests/README)
-
-## Related
-
 - [Documentation Map](documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
-

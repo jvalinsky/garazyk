@@ -4,453 +4,99 @@ title: ARC Runtime Considerations
 
 # ARC Runtime Considerations
 
-## Overview
-
-Automatic Reference Counting (ARC) is supported on both macOS and GNUstep, but with important differences:
-- Both platforms use ARC by default
-- Runtime behavior differs slightly
-- Memory management patterns are the same
-- Debugging tools vary by platform
+Automatic Reference Counting (ARC) is supported on both macOS and GNUstep. While the memory management patterns are identical, the underlying runtime behavior and debugging tools differ.
 
 ## ARC Basics
 
-### Reference Counting
+ARC manages object lifetimes by tracking references. When the last strong reference to an object is removed, the runtime deallocates it.
 
-ARC automatically manages object lifetime through reference counting:
+### Reference Types
 
-```objc
-// Strong reference (default)
-@property (nonatomic, strong) NSString *name;  // Increments retain count
-
-// Weak reference
-@property (nonatomic, weak) PDSApplication *app;  // Doesn't increment retain count
-
-// Unowned reference (rare)
-@property (nonatomic, unsafe_unretained) NSObject *object;  // Manual management
-```
+- **Strong** (default): Increments the retain count. The object stays alive as long as a strong reference exists.
+- **Weak**: Does not increment the retain count. If the object is deallocated, the reference automatically becomes `nil`.
+- **Unsafe Unretained**: Similar to weak but does not zero out when the object is deallocated. Use this only for legacy or specialized low-level code.
 
 ### Retain Cycles
 
-ARC prevents most retain cycles, but some still occur:
+Cycles occur when two objects hold strong references to each other, preventing either from being deallocated. We break these by using weak references for child-to-parent links or delegates.
 
 ```objc
-// PROBLEM: Retain cycle
-@interface Parent : NSObject
-@property (nonatomic, strong) Child *child;
-@end
-
-@interface Child : NSObject
-@property (nonatomic, strong) Parent *parent;  // Cycle!
-@end
-
-// SOLUTION: Use weak reference
-@interface Child : NSObject
-@property (nonatomic, weak) Parent *parent;  // No cycle
+// Pattern: Weak delegate to prevent cycles
+@interface PDSService : NSObject
+@property (nonatomic, weak) id<PDSServiceDelegate> delegate;
 @end
 ```
 
-## macOS ARC Runtime
+## Platform Runtimes
 
-### Xcode/clang ARC
+### macOS (Xcode/Clang)
 
-macOS uses the Xcode/clang ARC runtime:
+On macOS, the runtime handles deallocation immediately when the reference count reaches zero. 
 
-```objc
-// In PDSApplication.m
-- (instancetype)initWithConfiguration:(PDSConfiguration *)config {
-    self = [super init];
-    if (!self) return nil;
-    
-    // ARC automatically manages these
-    self.configuration = config;  // Strong reference
-    self.services = [NSMutableDictionary dictionary];
-    
-    return self;
-}
+#### Memory Debugging
+- Enable `MallocStackLogging` to track allocations.
+- Use `leaks -atExit` to identify memory that wasn't cleaned up.
+- The Xcode Memory Graph provides a visual way to find retain cycles during active debugging.
 
-- (void)dealloc {
-    // ARC calls this automatically
-    // No need to release properties
-    NSLog(@"PDSApplication deallocated");
-}
-```
+### GNUstep (Linux)
 
-### Memory Debugging on macOS
+GNUstep uses the GNUstep 2.2 runtime. While ARC works the same way for developers, the actual `dealloc` call might be slightly delayed compared to macOS.
 
-```bash
-# Enable malloc debugging
-export MallocStackLogging=1
-export MallocStackLoggingNoCompact=1
-
-# Run with Instruments
-instruments -t "Allocations" ./build/bin/kaszlak
-
-# Check for leaks
-leaks -atExit -- ./build/bin/kaszlak
-```
-
-## Xcode Memory Graph
-
-```objc
-// In Xcode debugger
-// 1. Run with breakpoint
-// 2. Click "Debug Memory Graph" button
-// 3. Inspect object references
-// 4. Identify retain cycles
-```
-
-## GNUstep ARC Runtime
-
-### GNUstep 2.2 Runtime
-
-GNUstep uses the GNUstep 2.2 runtime with ARC support:
-
-```objc
-// In PDSApplication.m (GNUstep)
-- (instancetype)initWithConfiguration:(PDSConfiguration *)config {
-    self = [super init];
-    if (!self) return nil;
-    
-    // ARC works the same on GNUstep
-    self.configuration = config;
-    self.services = [NSMutableDictionary dictionary];
-    
-    return self;
-}
-
-- (void)dealloc {
-    // ARC calls this automatically on GNUstep too
-    NSLog(@"PDSApplication deallocated");
-}
-```
-
-### Memory Debugging on GNUstep
-
-```bash
-# Enable GNUstep memory debugging
-export GNUSTEP_MEMORY_DEBUG=1
-
-# Run with valgrind
-valgrind --leak-check=full ./build/bin/kaszlak
-
-# Check for leaks
-valgrind --leak-check=summary ./build/bin/kaszlak
-```
+#### Memory Debugging
+- Use `valgrind --leak-check=full` to find leaks on Linux.
+- Set `GNUSTEP_MEMORY_DEBUG=1` for additional runtime checks.
 
 ## Autoreleasepool
 
-### When to Use Autoreleasepool
+Use `@autoreleasepool` blocks to manage temporary objects in tight loops. This prevents memory spikes by draining temporary objects immediately rather than waiting for the next runloop cycle.
 
 ```objc
-// In PDSRecordService.m
-- (void)processRecordsInBatch:(NSArray *)records {
-    // Create autorelease pool for batch processing
-    @autoreleasepool {
-        for (NSDictionary *record in records) {
-            // Temporary objects created here
-            NSString *uri = [self createURI:record];
-            NSData *encoded = [self encodeRecord:record];
-            
-            // Objects are released at end of pool
-        }
-    }
-    
-    // All temporary objects released here
-}
-```
-
-### Nested Autoreleasepool
-
-```objc
-// In CommitBroadcaster.m
-- (void)broadcastCommits:(NSArray *)commits {
-    @autoreleasepool {
-        for (NSDictionary *commit in commits) {
-            @autoreleasepool {
-                // Inner pool for each commit
-                NSData *jsonData = [NSJSONSerialization dataWithJSONObject:commit 
-                                                                   options:0 
-                                                                     error:nil];
-                [self sendToSubscribers:jsonData];
-            }
-            // Inner pool drained here
+- (void)processLargeBatch:(NSArray *)items {
+    for (id item in items) {
+        @autoreleasepool {
+            // Temporary objects created here are released at the end of the block.
+            [self handleItem:item];
         }
     }
 }
 ```
 
-## Weak References
+## Block Memory Management
 
-### Preventing Retain Cycles
-
-```objc
-// In SubscribeReposHandler.h
-@interface SubscribeReposHandler : NSObject
-
-@property (nonatomic, weak) CommitBroadcaster *broadcaster;  // Weak to prevent cycle
-@property (nonatomic, strong) NSMutableArray *subscriptions;
-
-@end
-
-// In SubscribeReposHandler.m
-- (void)handleWebSocketUpgrade:(HttpRequest *)request 
-                     response:(HttpResponse *)response {
-    
-    // Check if broadcaster is still alive
-    CommitBroadcaster *broadcaster = self.broadcaster;
-    if (!broadcaster) {
-        NSLog(@"Broadcaster was deallocated");
-        return;
-    }
-    
-    [broadcaster registerSubscription:context];
-}
-```
-
-### Weak Reference Patterns
+Blocks capture variables from their surrounding scope. To avoid capturing `self` strongly (which creates a retain cycle if the block is stored in a property of `self`), use the weak-strong dance:
 
 ```objc
-// Pattern 1: Weak self in blocks
-- (void)startServer {
-    __weak typeof(self) weakSelf = self;
+__weak typeof(self) weakSelf = self;
+[self.queue addOperationWithBlock:^{
+    __strong typeof(weakSelf) strongSelf = weakSelf;
+    if (!strongSelf) return;
     
-    dispatch_async(self.queue, ^{
-        __strong typeof(weakSelf) strongSelf = weakSelf;
-        if (!strongSelf) return;  // Object was deallocated
-        
-        [strongSelf doWork];
-    });
-}
-
-// Pattern 2: Weak delegate
-@property (nonatomic, weak) id<PDSDelegate> delegate;
-
-- (void)notifyDelegate {
-    if ([self.delegate respondsToSelector:@selector(didFinish)]) {
-        [self.delegate didFinish];
-    }
-}
+    [strongSelf performAction];
+}];
 ```
 
 ## Memory Pressure
 
-### Handling Low Memory
+The server responds to memory warnings by clearing non-essential caches.
 
-```objc
-// In PDSApplication.m
-- (void)setupMemoryWarningHandler {
-#if __APPLE__
-    [[NSNotificationCenter defaultCenter] addObserver:self 
-                                             selector:@selector(handleMemoryWarning:) 
-                                                 name:UIApplicationDidReceiveMemoryWarningNotification 
-                                               object:nil];
-#endif
-}
+- **macOS**: Responds to `UIApplicationDidReceiveMemoryWarningNotification` (or equivalent system events).
+- **GNUstep**: Usually requires manual monitoring of RSS or responding to custom signals.
 
-- (void)handleMemoryWarning:(NSNotification *)notification {
-    NSLog(@"Memory warning received");
-    
-    // 1. Clear caches
-    [self.databasePool clearCache];
-    [self.blobStorage clearTemporaryFiles];
-    
-    // 2. Reduce buffer sizes
-    self.maxSendBufferSize = 5 * 1024 * 1024;  // Reduce from 10MB to 5MB
-    
-    // 3. Force garbage collection (if available)
-    @autoreleasepool {
-        // Drain autorelease pool
-    }
-}
-```
-
-## Debugging Memory Issues
-
-### Identifying Leaks
-
-```objc
-// In PDSApplication.m
-- (void)debugMemoryUsage {
-    // 1. Get memory statistics
-    struct mallinfo info = mallinfo();
-    NSLog(@"Total allocated: %d bytes", info.uordblks);
-    NSLog(@"Total free: %d bytes", info.fordblks);
-    
-    // 2. Check object counts
-    NSLog(@"Active objects: %lu", [NSObject instanceCount]);
-    
-    // 3. Monitor specific classes
-    [self logInstanceCountForClass:[PDSRecordService class]];
-    [self logInstanceCountForClass:[WebSocketConnection class]];
-}
-
-- (void)logInstanceCountForClass:(Class)cls {
-    unsigned int count = 0;
-    Class *classes = objc_copyClassList(&count);
-    
-    for (unsigned int i = 0; i < count; i++) {
-        if (classes[i] == cls) {
-            NSLog(@"%@ instances: %u", NSStringFromClass(cls), 
-                  [cls instanceCount]);
-        }
-    }
-    
-    free(classes);
-}
-```
-
-### Memory Profiling
-
-```objc
-// In PDSApplication.m
-- (void)startMemoryProfiling {
-    dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, 
-                                                     dispatch_get_main_queue());
-    
-    dispatch_source_set_timer(timer,
-                             dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC),
-                             5 * NSEC_PER_SEC,
-                             1 * NSEC_PER_SEC);
-    
-    dispatch_source_set_event_handler(timer, ^{
-        [self logMemoryUsage];
-    });
-    
-    dispatch_resume(timer);
-}
-
-- (void)logMemoryUsage {
-    struct task_basic_info info;
-    mach_msg_type_number_t size = TASK_BASIC_INFO_COUNT;
-    
-    kern_return_t kerr = task_info(mach_task_self(),
-                                   TASK_BASIC_INFO,
-                                   (task_info_t)&info,
-                                   &size);
-    
-    if (kerr == KERN_SUCCESS) {
-        NSLog(@"Memory usage: %.2f MB", info.resident_size / 1024.0 / 1024.0);
-    }
-}
-```
-
-## Platform Differences
-
-### macOS vs GNUstep
-
-| Feature | macOS | GNUstep |
-|---------|-------|---------|
-| ARC Support | Full | Full (2.2+) |
-| Autorelease Pool | Yes | Yes |
-| Weak References | Yes | Yes |
-| Memory Debugging | Instruments | valgrind |
-| Dealloc Timing | Immediate | May be delayed |
-| Autoreleasepool Drain | Automatic | Automatic |
-
-### Dealloc Timing
-
-```objc
-// macOS: Dealloc called immediately when refcount reaches 0
-- (void)testDeallocTiming {
-    @autoreleasepool {
-        NSString *str = [[NSString alloc] initWithString:@"test"];
-        NSLog(@"Created: %@", str);
-    }  // Dealloc called here on macOS
-}
-
-// GNUstep: Dealloc may be delayed
-- (void)testDeallocTimingGNUstep {
-    @autoreleasepool {
-        NSString *str = [[NSString alloc] initWithString:@"test"];
-        NSLog(@"Created: %@", str);
-    }  // Dealloc may be called later on GNUstep
-}
-```
+The `PDSApplication` class centralizes this by calling `clearCache` on `databasePool` and `blobStorage`.
 
 ## Best Practices
 
-1. **Use strong references by default** — Only use weak when necessary
-2. **Avoid retain cycles** — Use weak for delegates and observers
-3. **Use autoreleasepool in loops** — Prevent memory buildup
-4. **Check weak references** — Always verify before use
-5. **Profile memory usage** — Monitor on both platforms
-6. **Handle memory warnings** — Clear caches when needed
-7. **Test on both platforms** — Verify behavior matches
-8. **Document memory ownership** — Clearly mark strong/weak
-
-## Common Pitfalls
-
-1. **Forgetting weak self in blocks** — Causes retain cycles
-2. **Not checking weak references** — May be nil unexpectedly
-3. **Excessive autoreleasepool nesting** — Reduces performance
-4. **Ignoring memory warnings** — Causes crashes on low memory
-5. **Platform-specific memory behavior** — Different dealloc timing
-6. **Circular delegate references** — Use weak for delegates
-7. **Not profiling memory** — Leaks go undetected
-8. **Assuming immediate dealloc** — May be delayed on GNUstep
-
-## Testing Memory Management
-
-```objc
-// In Garazyk/Tests/MemoryTests.m
-@interface MemoryTests : XCTestCase
-@end
-
-@implementation MemoryTests
-
-- (void)testNoRetainCycles {
-    // 1. Create objects
-    PDSApplication *app = [[PDSApplication alloc] initWithConfiguration:config];
-    SubscribeReposHandler *handler = [[SubscribeReposHandler alloc] init];
-    handler.broadcaster = app.broadcaster;
-    
-    // 2. Release objects
-    app = nil;
-    handler = nil;
-    
-    // 3. Verify deallocation
-    XCTAssertTrue(YES);  // If we get here, no crash
-}
-
-- (void)testWeakReferenceBehavior {
-    __weak NSString *weakStr = nil;
-    
-    @autoreleasepool {
-        NSString *str = [[NSString alloc] initWithString:@"test"];
-        weakStr = str;
-        XCTAssertNotNil(weakStr);
-    }
-    
-    // After pool drains, weak reference should be nil
-    XCTAssertNil(weakStr);
-}
-
-- (void)testAutoreleasePoolDraining {
-    NSMutableArray *objects = [NSMutableArray array];
-    
-    @autoreleasepool {
-        for (int i = 0; i < 1000; i++) {
-            NSString *str = [NSString stringWithFormat:@"String %d", i];
-            [objects addObject:str];
-        }
-    }
-    
-    // Objects should still be alive (strong references in array)
-    XCTAssertEqual(objects.count, 1000);
-}
-
-@end
-```
-
-## Next Steps
-
-- **[Network Transport](network-transport)** — Platform-specific network I/O
-- **[Compatibility Layer](compatibility-layer)** — Compatibility shims
-- **[macOS/Linux](macos-linux)** — Platform overview
+1. Prefer strong references for ownership and weak references for observation or delegation.
+2. Always verify a weak reference isn't `nil` before use if the object might have been deallocated.
+3. Use autorelease pools inside loops that create many small objects.
+4. Profile memory on both platforms; a leak on Linux might not show up clearly on macOS and vice versa.
+5. Document ownership in header files if a relationship isn't standard.
 
 ## Related
 
+- [Compatibility Layer](./compatibility-layer)
+- [macOS vs GNUstep Boundary](./macos-vs-gnustep-boundary)
+- [Network Transport](./network-transport)
 - [Documentation Map](../11-reference/documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
+- [Testing Map](../11-reference/testing-map.md)
 

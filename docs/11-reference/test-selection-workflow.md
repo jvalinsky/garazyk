@@ -1,14 +1,8 @@
----
-title: Test Selection Workflow
----
-
 # Test Selection Workflow
 
-## Goal
+Target tests that protect the specific logic you modified rather than running the full `AllTests` suite immediately.
 
-Read this page when you know what you changed but do not know which tests to run first. The goal is to map common contributor changes to the smallest useful test surfaces before you fall back to `AllTests`.
-
-## Full Flow
+## Selection Flow
 
 ```mermaid
 flowchart TD
@@ -17,7 +11,7 @@ flowchart TD
     Unit["Closest unit or subsystem tests"]
     Integration["Cross-seam integration tests"]
     Manual["Manual verification where needed"]
-    Full["AllTests only after narrower checks"]
+    Full["AllTests final pass"]
 
     Change --> Scope
     Scope --> Unit
@@ -26,65 +20,48 @@ flowchart TD
     Manual --> Full
 ```
 
-## Why This Matters
+## Mapping Changes to Tests
 
-Running the full suite first is a poor default. It is slower, noisier, and less informative than running tests that protect the specific code you changed.
+- **Routes and Handlers**: Run Network or XRPC tests.
+- **Auth and Token Logic**: Run Auth tests.
+- **Repository or Blob Mutation**: Run Service tests, then Integration or Sync tests.
+- **Database Migrations**: Run Database tests.
+- **Explorer Tooling**: Run targeted docs/UI checks and manual smoke verification.
 
-Ask "what should fail if I broke this change?" instead of "what can I run?"
+The `Garazyk/Tests/` directory structure reflects these categories.
 
-## Walkthrough: Mapping A Change To Tests
+## Registration
 
-Use these defaults:
+Register every new test class in `testClasses` within `Garazyk/Tests/test_main.m`. Unregistered tests will compile but fail to run. If a test appears to pass suspiciously quickly, verify its registration.
 
-- route or handler registration change: network tests first
-- auth or token logic change: auth tests first
-- record, repository, or blob mutation change: service tests, then integration commit or sync tests
-- database pool or migration change: database tests first
-- UI or Explorer tooling change: targeted docs or UI checks plus manual smoke verification
+## Escalation Sequence
 
-This pattern matches the `Garazyk/Tests/` directory structure, making directory names your first map.
+1. Execute the closest targeted suite.
+2. Run the adjacent integration seam.
+3. Perform a manual smoke check on the user-facing surface.
+4. Run `AllTests` for final verification.
 
-## The Registration Footgun
+## Full Stack Scenario Testing
 
-A new test class must be added to `testClasses` in `Garazyk/Tests/test_main.m`.
-
-If you forget that step, a test can compile and still never run. Any test-selection workflow should include checking registration when a new class appears to be "passing" too quietly.
-
-## Where To Debug When This Breaks
-
-- Start in the closest subsystem test directory before inventing new integration coverage.
-- Start in `Garazyk/Tests/test_main.m` when a new test class seems invisible.
-- Start in manual verification only after targeted automated checks stop giving you new information.
-
-## Tests That Should Fail If This Changes
-
-- `Garazyk/Tests/Network/PDSHttpServerBuilderTests.m`
-- `Garazyk/Tests/Auth/OAuth2HandlerTests.m`
-- `Garazyk/Tests/App/Services/PDSBlobServiceTests.m`
-- `Garazyk/Tests/Database/Pool/DatabasePoolTests.m`
-
-## Appendix
-
-### Default escalation path
-
-1. run the closest targeted suite
-2. run the adjacent integration seam
-3. do the smallest manual smoke check that matches the user-facing surface
-4. run `AllTests` last
-
-## Scenario Testing (Full Stack)
-
-For broad behavioral changes affecting multiple services (PDS, AppView, Relay), use the narrative scenario suite:
+Use the scenario suite for changes affecting multiple services (PDS, AppView, Relay):
 
 ```bash
+# List scenarios
 ./scripts/run_scenarios.ts --list
+
+# Run specific scenarios
 ./scripts/run_scenarios.ts --no-setup 01 05
+
+# Full setup and teardown
 ./scripts/run_scenarios.ts --setup --teardown
 ```
 
-Scenarios are Deno/TypeScript modules under `scripts/scenarios/scenarios/*.ts`. The runner auto-discovers them and skips PDS2-only scenarios during broad runs unless `--pds2` is set or the focused selection requires PDS2.
+Scenarios reside in `scripts/scenarios/scenarios/*.ts`. The runner skips PDS2-only scenarios by default unless you include the `--pds2` flag.
 
-## Related
+## Related Resources
 
+- [Testing Map](./testing-map)
+- [Test Organization](./test-organization)
+- [Property-Based Testing](./property-based-testing)
+- [E2E Testing](./e2e-testing)
 - [Documentation Map](documentation-map.md)
-- [Contributor Guide](../index.md)

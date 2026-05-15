@@ -4,17 +4,21 @@ title: Chat Service (PDS2)
 
 # Chat Service (PDS2)
 
-Garazyk supports a secondary PDS instance, referred to as **PDS2** or the **Chat Service**, used for testing federation and multi-PDS interactions.
+Garazyk supports a secondary PDS instance, referred to as **PDS2** or the **Chat Service**, primarily used for testing federation and multi-PDS interactions.
 
 ## Overview
 
-While a single Garazyk PDS is functional, certain AT Protocol features—such as cross-PDS data synchronization, account migration, and multi-tenant federation—require a second node during testing.
+While a single Garazyk PDS is functional for local development, certain AT Protocol features require a multi-node environment to verify:
 
-PDS2 is an instance of the Garazyk binary, configured with a distinct identity and isolated storage.
+- **Cross-PDS Synchronization**: Validating data propagation between independent authorities.
+- **Account Migration**: Testing the transfer of user repositories between servers.
+- **Multi-Tenant Federation**: Simulating interactions across the broader network.
+
+PDS2 is a standard instance of the Garazyk binary, configured with a distinct identity and isolated storage to act as a peer node.
 
 ## Configuration
 
-In the local developer environment (orchestrated by `scripts/scenarios/setup_local_network.sh`), PDS2 is configured with the following characteristics:
+In the local developer environment (orchestrated by `scripts/reseed_local_network.sh`), PDS2 is configured with its own ports and data directories:
 
 | Parameter | Primary PDS | PDS2 (Chat) |
 | --- | --- | --- |
@@ -23,16 +27,16 @@ In the local developer environment (orchestrated by `scripts/scenarios/setup_loc
 | **Data Directory** | `./data/pds` | `./data/pds2` |
 | **PLC Keys** | `./data/pds/keys` | `./data/pds2/keys` |
 
-## Usage in Scenarios
+## Role in Scenarios
 
-PDS2 is used in scenarios that require two distinct authorities. For example:
+PDS2 provides a second authority for end-to-end testing:
 
-*   **Scenario 05 (Federation)**: Validates that a record created on PDS1 is successfully indexed by the Relay and AppView, and is reachable by an agent authenticated against PDS2.
-*   **Scenario 12 (Account Migration)**: Exercises the migration of a user repository from PDS1 to PDS2, including PLC rotation key updates and synchronization of the Merkle Search Tree (MST).
+- **Federation (Scenario 05)**: Verifies that a record created on PDS1 is indexed by the Relay and AppView, and remains reachable by an agent authenticated against PDS2.
+- **Account Migration (Scenario 12)**: Exercises the migration of a user repository from PDS1 to PDS2, including PLC rotation key updates and MST synchronization.
 
-## Enabling PDS2
+## Execution
 
-PDS2 is not started by default to save resources. To enable it:
+PDS2 is disabled by default to conserve resources. It can be started via the CLI or the scenario dashboard:
 
 ### CLI (Deno)
 ```bash
@@ -40,8 +44,17 @@ PDS2 is not started by default to save resources. To enable it:
 ```
 
 ### Scenario Dashboard
-Click the **"Start with PDS2"** button in the Network Status panel.
+Use the **"Start with PDS2"** toggle in the Network Status panel.
 
 ## Implementation Details
 
-PDS2 runs the same XRPC method packs as the primary PDS. It is "Chat-focused" only in the sense that it serves as the destination for E2E messaging tests in the narrative scenario suite. It does not contain a different codebase from the main PDS.
+PDS2 runs the same code and XRPC method packs as the primary PDS. It is "Chat-focused" only in the sense that it serves as the destination for messaging tests in the narrative scenario suite.
+
+## Related
+
+- [Services Overview](./services-overview)
+- [PDS Application Facade](./pds-application)
+- [Relay Server](./relay-server)
+- [AppView Server](./appview-server)
+- [Testing ATProto Federation](../07-repository-protocol/testing-atproto-federation)
+- [Scenario Testing Guide](../docs/tests/scenario-testing.md)

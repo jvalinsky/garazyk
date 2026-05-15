@@ -202,57 +202,43 @@ make AllTests
 
 ## Interpreting Results
 
-The tests use XCTest's `measureBlock:` for consistent benchmarking. Results include:
-- **Average**: Mean execution time across 10 iterations
-- **RSD**: Relative Standard Deviation (lower = more consistent)
-- **Baseline**: No baseline set; results are relative to current hardware
+Tests use XCTest's `measureBlock:` for benchmarking. Results include:
+- **Average:** Mean execution time across 10 iterations.
+- **RSD:** Relative Standard Deviation (lower indicates more consistent results).
 
 **Regression Detection:**
-- XCTest flags tests with >10% regression from the baseline
-- For reliable comparisons, run on consistent hardware
-- Monitor trends across commits rather than absolute values
+- XCTest flags execution time increases >10% from the set baseline.
+- For reliable benchmarks, run tests on consistent hardware.
+- Prioritize trends across commits over absolute single-run values.
 
 ## Network & Synchronization
 
 The networking layer handles HTTP/1.1 requests, XRPC methods, and WebSocket firehose synchronization.
 
 ### Core Networking
-Tests in `Tests/Network` validate the custom HTTP stack used for portability-sensitive paths (Linux/BSD).
+Tests in `Tests/Network` validate the custom HTTP stack used for portability (Linux/BSD).
 
-*   **HTTP Stack** (`HttpServerTests`, `HttpRequestParsingTests`, `HttpResponseTests`):
-    *   **Parsing**: GET query parameters, POST JSON bodies, Multipart forms, and `Transfer-Encoding: chunked`.
-    *   **Routing**: `HttpRouterTests` and `HttpRouteTrieTests` validate performant O(k) routing with support for parameterized (`/users/:id`) and wildcard (`/files/*`) paths.
-    *   **Memory Management**: `HttpBufferPoolTests` ensures high-throughput scenarios do not cause excessive GC pressure by recycling data buffers.
-    *   **Transport**: `PDSNetworkTransportLinuxTests` verifies BSD socket operations (recv/send, buffering) for non-Apple platforms.
+*   **HTTP Stack:** Covers GET/POST parsing, chunked encoding, and routing. `HttpRouteTrieTests` validates O(k) routing for parameterized paths.
+*   **Memory Management:** `HttpBufferPoolTests` ensures high-throughput scenarios recycle data buffers to reduce GC pressure.
+*   **Transport:** `PDSNetworkTransportLinuxTests` verifies BSD socket operations on non-Apple platforms.
 
 ### XRPC Protocol
-Tests in `Tests/XRPC` ensure the PDS strictly adheres to the [XRPC specification](https://atproto.com/specs/xrpc).
+Tests in `Tests/XRPC` ensure strict adherence to the [XRPC specification](https://atproto.com/specs/xrpc).
 
-*   **Input Validation** (`XrpcInputValidationTests`): ensures strict type checking:
-    *   **Query Params**: Validates Booleans (`true`/`false`), Integers, and Arrays (`?tag=a&tag=b`).
-    *   **Content-Type**: Enforces `application/json` for RPC bodies.
-    *   **Limits**: Checks rejection of oversized payloads and malformed query strings.
-*   **Error Mapping** (`XrpcErrorResponseTests`): validates that internal errors map to correct XRPC error codes and HTTP statuses:
-    *   `InvalidToken` / `ExpiredToken` -> 401 Unauthorized
-    *   `RateLimitExceeded` -> 429 Too Many Requests
-    *   `RecordNotFound` -> 404 Not Found
-*   **Integration** (`XrpcIntegrationTests`): mocks external services (PLC Directory, Handle Resolver) to verify the PDS acts correctly as both an XRPC client and server.
+*   **Input Validation:** Enforces type checking for query params and JSON bodies.
+*   **Error Mapping:** Validates that internal errors map to correct XRPC status codes (e.g., `RateLimitExceeded` to 429).
+*   **Integration:** Mocks external services (PLC Directory, Handle Resolver) to verify PDS behavior as both client and server.
 
 ### Synchronization (Firehose)
-Tests in `Tests/Sync` cover the real-time event stream used to replicate data across the AT Protocol network.
+Tests in `Tests/Sync` cover the real-time event stream.
 
-*   **WebSocket Layer** (`WebSocketServerTests`): Verify the HTTP-to-WebSocket upgrade handshake (RFC 6455), subprotocol negotiation, and connection lifecycle.
-*   **Event Formatting** (`EventFormatterTests`): verifies **DAG-CBOR** encoding/decoding compliance:
-    *   Roundtrip tests for primitive types and nested structures.
-    *   Specific encoding for `#commit`, `#identity`, and `#error` event frames.
-*   **Broadcasting** (`SubscribeReposHandlerTests`): ensures that:
-    *   Repository commits (`RepoCommit`) are correctly translated into stream events.
-    *   Operations (creates, updates, deletes) are broadcast to all active subscribers.
-    *   Cursors and filters are respected.
+*   **WebSocket Layer:** Verifies RFC 6455 handshakes and connection lifecycle.
+*   **Event Formatting:** Ensures **DAG-CBOR** compliance for `#commit` and `#identity` frames.
+*   **Broadcasting:** Validates that repository updates reach all active subscribers while respecting cursors and filters.
 
 ### Security & Reliability
-*   **Rate Limiting** (`RateLimiterTests`): verifies token bucket implementation for DID-based (5000/hr) and IP-based (100/min) limits, ensuring headers (`X-RateLimit-Remaining`) are set correctly.
-*   **SSL Pinning** (`SSLPinningTests`): validates configuration for secure server-to-server communication.
+*   **Rate Limiting:** Verifies token bucket enforcement for DID and IP-based limits.
+*   **SSL Pinning:** Validates secure server-to-server communication config.
 
 ## Application & Database Layer
 
@@ -316,22 +302,23 @@ These services reside above the database layer and implement the business logic 
 ## Related Documentation
 
 ### Test Documentation
-- [Test Documentation Index](tests/README) - Complete index of all test classes
-- [Identity & Auth Tests](tests/00-identity-auth/README) - JWT, crypto, OAuth, MFA tests
-- [Repository Tests](tests/01-repository/README) - MST, CAR, CBOR tests
-- [Network Tests](tests/02-network/README) - HTTP, XRPC, WebSocket tests
-- [Database Tests](tests/03-database/README) - ActorStore, pool, service tests
-- [Application Tests](tests/04-application/README) - Services, controller, CLI tests
-- [Security Tests](tests/05-security/README) - Hardening, validation, auth security
-- [Integration Tests](tests/06-integration/README) - E2E, federation, PLC tests
+- [Test Documentation Index](tests/README.md) - Complete index of all test classes
+- [Identity & Auth Tests](tests/00-identity-auth/README.md) - JWT, crypto, OAuth, MFA tests
+- [Repository Tests](tests/01-repository/README.md) - MST, CAR, CBOR tests
+- [Network Tests](tests/02-network/README.md) - HTTP, XRPC, WebSocket tests
+- [Database Tests](tests/03-database/README.md) - ActorStore, pool, service tests
+- [Application Tests](tests/04-application/README.md) - Services, controller, CLI tests
+- [Security Tests](tests/05-security/README.md) - Hardening, validation, auth security
+- [Integration Tests](tests/06-integration/README.md) - E2E, federation, PLC tests
 
 ### Guides
-- [Developer Guide](./guides/development/DEVELOPER_GUIDE) - Development setup and workflows
-- [Setup Guide](guides/SETUP_GUIDE) - Initial project setup
+- [Developer Guide](guides/development/DEVELOPER_GUIDE.md) - Development setup and workflows
+- [Setup Guide](guides/SETUP_GUIDE.md) - Initial project setup
+- [Diagram Reference](12-diagrams/index.md) - Architectural and process diagrams
 
 ### Security
-- [Security Testing Plan](security/SECURITY_TESTING_PLAN) - Security test methodology
-- [Security Analysis Report](security/SECURITY_ANALYSIS_REPORT) - Security audit results
+- [Security Testing Plan](security/SECURITY_TESTING_PLAN.md) - Security test methodology
+- [Security Analysis Report](security/SECURITY_ANALYSIS_REPORT.md) - Security audit results
 
 ## Sources & References
 

@@ -14,7 +14,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![System Architecture](system-architecture.svg)
 
-**Description:** Complete overview of the Garazyk PDS system architecture, showing all major components and their interactions.
+**Description:** Overview of the Garazyk PDS system architecture, showing core components and their interactions.
 
 **Used in:**
 - [Architecture Overview](../01-getting-started/architecture-overview.md)
@@ -28,7 +28,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![Database Pool Architecture](database-pool-architecture.svg)
 
-**Description:** Illustrates the SQLite database architecture with separate service databases and per-user actor databases.
+**Description:** SQLite database architecture featuring separate service databases and per-user actor databases.
 
 **Used in:**
 - [SQLite Architecture](../05-database-layer/sqlite-architecture.md)
@@ -42,7 +42,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![Request Flow](request-flow.svg)
 
-**Description:** Shows the complete lifecycle of an HTTP request through the PDS system.
+**Description:** Lifecycle of an HTTP request through the PDS stack.
 
 **Used in:**
 - [HTTP Server](../04-network-layer/http-server.md)
@@ -58,7 +58,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![OAuth 2.0 with DPoP Flow](oauth2-dpop-flow.svg)
 
-**Description:** Complete OAuth 2.0 authorization flow with DPoP (Demonstrating Proof-of-Possession) token binding.
+**Description:** OAuth 2.0 authorization flow with DPoP (Demonstrating Proof-of-Possession) token binding.
 
 **Used in:**
 - [OAuth 2.0 & DPoP](../06-authentication/oauth2-dpop.md)
@@ -72,7 +72,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![JWT Token Flow](jwt-token-flow.svg)
 
-**Description:** JWT token creation, validation, and refresh flow in the PDS system.
+**Description:** JWT token creation, validation, and refresh flow.
 
 **Used in:**
 - [JWT Tokens](../06-authentication/jwt-tokens.md)
@@ -86,7 +86,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![Cryptography Flow](cryptography-flow.svg)
 
-**Description:** Cryptographic operations including key generation, signing, and verification.
+**Description:** Key generation, signing, and verification operations.
 
 **Used in:**
 - [Cryptography](../02-core-concepts/cryptography.md)
@@ -100,7 +100,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![Key Rotation Flow](key-rotation-flow.svg)
 
-**Description:** Process for rotating cryptographic keys without service disruption.
+**Description:** Rotating cryptographic keys without service disruption.
 
 **Used in:**
 - [Key Rotation](../06-authentication/key-rotation.md)
@@ -128,7 +128,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![Defense in Depth Architecture](defense-in-depth-architecture.svg)
 
-**Description:** Multi-layered security architecture with defense at every level.
+**Description:** Multi-layered security architecture with defenses at the network, application, and data levels.
 
 **Used in:**
 - [Security Best Practices](../06-authentication/security-best-practices.md)
@@ -144,7 +144,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![CBOR Encoding Example](cbor-encoding-example.svg)
 
-**Description:** Demonstrates how data is encoded using CBOR (Concise Binary Object Representation).
+**Description:** Data encoding using CBOR (Concise Binary Object Representation).
 
 **Used in:**
 - [CBOR and CAR](../02-core-concepts/cbor-and-car.md)
@@ -158,7 +158,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![MST Tree Structure](mst-tree-structure.svg)
 
-**Description:** Merkle Search Tree structure used for repository data organization.
+**Description:** Merkle Search Tree structure for repository data organization.
 
 **Used in:**
 - [MST Trees](../02-core-concepts/mst-trees.md)
@@ -172,7 +172,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![DID Resolution Flow](did-resolution-flow.svg)
 
-**Description:** Process for resolving Decentralized Identifiers (DIDs) to DID documents.
+**Description:** Resolving Decentralized Identifiers (DIDs) to DID documents via PLC.
 
 **Used in:**
 - [PLC Directory](../02-core-concepts/plc-directory.md)
@@ -216,7 +216,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![Rate Limiting Algorithm](rate-limiting-algorithm.svg)
 
-**Description:** Token bucket algorithm for rate limiting requests.
+**Description:** Token bucket algorithm for managing request limits.
 
 **Used in:**
 - [Rate Limiting](../04-network-layer/rate-limiting.md)
@@ -288,7 +288,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![Blob Upload Flow](blob-upload-flow.svg)
 
-**Description:** Complete process for uploading and storing blob data.
+**Description:** Workflow for uploading, validating, and storing blob data.
 
 **Used in:**
 - [Blob Storage](../07-repository-protocol/blob-storage.md)
@@ -302,7 +302,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![Blob Garbage Collection Flow](blob-garbage-collection-flow.svg)
 
-**Description:** Process for identifying and removing unreferenced blobs.
+**Description:** Identification and removal of unreferenced blobs.
 
 **Used in:**
 - [Blob Garbage Collection](../07-repository-protocol/blob-garbage-collection.md)
@@ -332,7 +332,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![Commit Broadcasting Flow](commit-broadcasting-flow.svg)
 
-**Description:** Process for broadcasting repository commits to subscribers via firehose.
+**Description:** Broadcasting repository commits to subscribers via firehose.
 
 **Used in:**
 - [Commit Broadcasting](../08-sync-firehose/commit-broadcasting.md)
@@ -361,7 +361,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![Backpressure Flow](backpressure-flow.svg)
 
-**Description:** Backpressure handling for slow consumers in the firehose.
+**Description:** Backpressure handling for slow firehose consumers.
 
 **Used in:**
 - [Backpressure](../08-sync-firehose/backpressure.md)
@@ -375,7 +375,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![Event Ordering Guarantee](event-ordering-guarantee.svg)
 
-**Description:** Mechanisms ensuring correct event ordering in the firehose.
+**Description:** Mechanisms for ensuring correct event ordering in the firehose.
 
 **Used in:**
 - [Event Ordering](../08-sync-firehose/event-ordering.md)
@@ -419,7 +419,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![Database Schema](database-schema.svg)
 
-**Description:** Complete database schema showing all tables and relationships.
+**Description:** Database schema showing tables and relationships.
 
 **Used in:**
 - [SQLite Architecture](../05-database-layer/sqlite-architecture.md)
@@ -433,7 +433,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![Migration Workflow](migration-workflow.svg)
 
-**Description:** Database migration process with version tracking and rollback.
+**Description:** Database migration process with version tracking and rollback support.
 
 **Used in:**
 - [Migration Strategy](../05-database-layer/migration-strategy.md)
@@ -447,7 +447,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![Rollback Procedure](rollback-procedure.svg)
 
-**Description:** Process for rolling back failed database migrations.
+**Description:** Procedure for rolling back failed database migrations.
 
 **Used in:**
 - [Migration Rollback](../05-database-layer/migration-rollback.md)
@@ -461,7 +461,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![Data Integrity Verification](data-integrity-verification.svg)
 
-**Description:** Multi-level data integrity checking and verification.
+**Description:** Multi-level data integrity checking and verification workflow.
 
 **Used in:**
 - [Data Integrity](../05-database-layer/data-integrity.md)
@@ -507,7 +507,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![Logging Pipeline](logging-pipeline.svg)
 
-**Description:** Complete logging pipeline from log statements to aggregation systems.
+**Description:** Logging pipeline from emission to aggregation.
 
 **Used in:**
 - [Logging Strategy](../11-reference/logging-strategy.md)
@@ -521,7 +521,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![Metrics Collection Architecture](metrics-collection-architecture.svg)
 
-**Description:** System for collecting, aggregating, and exposing metrics.
+**Description:** Architecture for collecting, aggregating, and exposing system metrics.
 
 **Used in:**
 - [Metrics Collection](../11-reference/metrics-collection.md)
@@ -535,7 +535,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![Performance Monitoring Flow](performance-monitoring-flow.svg)
 
-**Description:** End-to-end performance monitoring and alerting flow.
+**Description:** End-to-end flow for performance monitoring and alerting.
 
 **Used in:**
 - [Performance Monitoring](../11-reference/performance-monitoring.md)
@@ -551,7 +551,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![Test Organization Structure](test-organization-structure.svg)
 
-**Description:** Organization of test suites and test discovery mechanism.
+**Description:** Organization of test suites and discovery mechanisms.
 
 **Used in:**
 - [Test Organization](../11-reference/test-organization.md)
@@ -565,7 +565,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![Property-Based Testing Flow](property-based-testing-flow.svg)
 
-**Description:** Property-based testing workflow with input generation and shrinking.
+**Description:** Property-based testing workflow including input generation and shrinking.
 
 **Used in:**
 - [Property-Based Testing](../11-reference/property-based-testing.md)
@@ -579,7 +579,7 @@ This page indexes all diagrams in the Garazyk PDS documentation. The diagrams il
 
 ![E2E Test Architecture](e2e-test-architecture.svg)
 
-**Description:** End-to-end test architecture with real server and client interactions.
+**Description:** End-to-end test architecture featuring real server and client interactions.
 
 **Used in:**
 - [E2E Testing](../11-reference/e2e-testing.md)

@@ -4,34 +4,44 @@ title: Admin UI Documentation
 
 # Admin UI Documentation
 
-This hub maps Admin UI documentation into the canonical `docs/` path and points to the current standalone service. The UI is built using **HTMX** and **Objective-C** server-side templates.
+This page tracks Admin UI documentation and links to the standalone service. The UI uses **HTMX** and server-side **Objective-C** templates.
 
-## Current Runtime
+## Configuration and Runtime
 
-- Binary: `./build/bin/garazyk-ui`
-- Architecture: HTMX 1.9.10 + Vanilla CSS + Objective-C Rendering
-- Default URL: `http://127.0.0.1:2590/admin`
-- Login password variable: `GARAZYK_UI_ADMIN_PASSWORD`
-- Backend URL variables: `GARAZYK_UI_PDS_URL`, `GARAZYK_UI_PLC_URL`, `GARAZYK_UI_RELAY_URL`, `GARAZYK_UI_APPVIEW_URL`, `GARAZYK_UI_CHAT_URL`
-- Optional bearer-token variables: `GARAZYK_UI_PDS_TOKEN`, `GARAZYK_UI_PLC_TOKEN`, `GARAZYK_UI_RELAY_TOKEN`, `GARAZYK_UI_APPVIEW_TOKEN`, `GARAZYK_UI_CHAT_TOKEN`
+The Admin UI runs as a separate binary that communicates with the PDS and other network services.
 
-## Canonical References
+- **Binary:** `./build/bin/garazyk-ui`
+- **Architecture:** HTMX 1.9.10, Vanilla CSS, and Objective-C rendering.
+- **Default URL:** `http://127.0.0.1:2590/admin`
+- **Admin Password:** Set via `GARAZYK_UI_ADMIN_PASSWORD`.
 
-- [Documentation Map](./documentation-map)
-- [Explorer, OpenAPI & UI](./explorer-openapi-ui)
+### Service URLs
+Configure these variables to point the UI to your local or remote services:
+- `GARAZYK_UI_PDS_URL`
+- `GARAZYK_UI_PLC_URL`
+- `GARAZYK_UI_RELAY_URL`
+- `GARAZYK_UI_APPVIEW_URL`
+- `GARAZYK_UI_CHAT_URL`
 
-## Source-Adjacent Admin UI Docs
+### Optional Bearer Tokens
+If your services require authentication, provide tokens using:
+- `GARAZYK_UI_PDS_TOKEN`
+- `GARAZYK_UI_PLC_TOKEN`
+- `GARAZYK_UI_RELAY_TOKEN`
+- `GARAZYK_UI_APPVIEW_TOKEN`
+- `GARAZYK_UI_CHAT_TOKEN`
+
+## Source-Adjacent Documentation
+
+Detailed implementation notes live in the source tree:
 
 - [Admin UI Architecture](../../Garazyk/Sources/Admin/ADMINUI_ARCHITECTURE.md)
-- [Admin UI Delivery Summary](../../Garazyk/Sources/Admin/ADMINUI_DELIVERY_SUMMARY.md)
-- [Admin UI Implementation Status](../../Garazyk/Sources/Admin/ADMINUI_IMPLEMENTATION_STATUS.md)
 - [Admin UI Integration](../../Garazyk/Sources/Admin/ADMINUI_INTEGRATION.md)
-- [Admin UI Integration Complete](../../Garazyk/Sources/Admin/ADMINUI_INTEGRATION_COMPLETE.md)
 - [Admin Diagnostics](../../Garazyk/Sources/Admin/Diagnostics/README.md)
 
 ## Related
 
-- [Source-Adjacent Documentation](./source-adjacent-documentation)
-- [Tooling and Skills Documentation](./tooling-and-skills-documentation)
+- [Explorer, OpenAPI & UI](./explorer-openapi-ui)
+- [Tooling and Skills](./tooling-and-skills-documentation)
 - [Documentation Map](./documentation-map)
 - [Contributor Guide](../index.md)

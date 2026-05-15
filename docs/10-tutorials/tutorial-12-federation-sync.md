@@ -4,128 +4,62 @@ title: "Tutorial 12: Federation & Sync"
 
 # Tutorial 12: Federation & Sync
 
-## Overview
+Garazyk operates within a federated network where data is replicated between Personal Data Servers (PDS), Relays, and AppViews.
 
-Garazyk is part of a federated network where data flows between Personal Data Servers (PDS), Relays, and AppViews. This tutorial explains how your PDS synchronizes state with the network and consumes data from upstream Relays.
+## Federation Topology
 
-**Learning Objectives:**
-- Understand the roles of PDS, Relay, and AppView.
-- Trace upstream connections in `RelayClient.m`.
-- Analyze reconnection and cursor management in `RelayUpstreamManager.m`.
-- Verify federation health and event flow.
+Your PDS is the authority for your data. It pushes events to a Relay via a firehose. Conversely, your PDS can pull data from a Relay to stay updated on other users.
 
-**Estimated Time:** 40-50 minutes
+- **PDS:** The authoritative host for repository records.
+- **Relay:** A high-volume aggregator that re-broadcasts firehoses from many PDSs.
+- **AppView:** A consumer that transforms firehose data into optimized read models (e.g., search, feeds).
 
-## Prerequisites
+## Upstream Subscriptions
 
-- Complete [Tutorial 5: Firehose](./tutorial-5-firehose).
-- Familiarity with WebSocket basics and JSON lines.
-- `deciduous` CLI tool installed.
+The `RelayClient` manages connections to upstream Relays.
 
----
+### Connection Lifecycle
+1. **Handshake:** Initiates a WebSocket connection to `com.atproto.sync.subscribeRepos`.
+2. **Cursor Management:** Passes the last known sequence number as a `cursor`. This ensures the PDS resumes exactly where it left off, avoiding data gaps.
+3. **Event Handling:** Processes `Commit`, `Identity`, and `Handle` events via the `FirehoseSubscriptionDelegate`.
 
-## Step 1: Track the Goal with Deciduous
+## Upstream Management
 
-Record your intent to study the federation layer:
+`RelayUpstreamManager` orchestrates one or more `RelayClient` instances.
 
-```bash
-deciduous add goal "Audit Federation and Sync Logic" -c 95
-# Track your analysis
-deciduous add action "Traced RelayClient cursor persistence" -c 90
-```
+- **Resilience:** Uses exponential backoff to handle connection failures.
+- **Auto-Reconnect:** Continuously attempts to restore connections to configured upstreams.
+- **Monitoring:** Tracks host status and exposes health metrics.
 
----
+## Persistence
 
-## Step 2: The Federation Topology
+The PDS must remember its position in each upstream's stream. `RelayClient` persists the latest sequence number (`seq`) to the database. Upon restart, it reads these cursors to re-establish its "place in line."
 
-In the AT Protocol, your PDS is the authority for your data. To make that data discoverable, the PDS "pushes" events to a **Relay** via a firehose. Conversely, your PDS may "pull" data from a Relay to stay updated on other users.
-
-- **PDS**: Your personal server, where you create and store records.
-- **Relay**: A high-volume aggregator that consumes firehoses from many PDSs and re-broadcasts them.
-- **AppView**: A consumer that processes firehose data into high-level features like global search or global feeds.
-
----
-
-## Step 3: Subscribing to Upstream Relays
-
-Garazyk uses the `RelayClient` to connect to upstream Relays. Look at `establishConnection` in `Garazyk/Sources/Sync/Relay/RelayClient.m`:
-
-1.  **WebSocket Handshake**: It initiates a connection to `/xrpc/com.atproto.sync.subscribeRepos`.
-2.  **Cursor Management**: If a `currentSeq` is known, it passes it as a `cursor` query parameter. This allows the PDS to resume exactly where it left off, avoiding data gaps.
-3.  **Event Handling**: It implements the `FirehoseSubscriptionDelegate` to process `Commit`, `Identity`, and `Handle` events.
-
----
-
-## Step 4: Managing Multiple Upstreams
-
-The `RelayUpstreamManager` acts as an orchestrator for one or more `RelayClient` instances.
-
-### Resilience and Reconnection
-Look at `scheduleReconnectForUpstream:` in `Garazyk/Sources/Sync/Relay/RelayUpstreamManager.m`:
-- **Exponential Backoff**: If a connection fails, the manager schedules a retry with increasing delays.
-- **Auto-Reconnect**: By default, the manager will indefinitely attempt to restore connections to your configured upstreams.
-- **Health Monitoring**: The manager tracks the status of each host (`Active`, `Disconnected`, `Error`) and exposes this via metrics.
-
----
-
-## Step 5: Persistence and State
-
-The PDS must remember its position in each upstream's firehose. `RelayClient` maintains a `cursorStorage` map (backed by the PDS database) to save the latest `seq` (sequence number) received from each repo.
-
-**Technical Detail:**
-When the PDS restarts, it reads these cursors from the database and uses them to re-establish its "place in line" with the Relays.
-
----
-
-## Step 6: Verification and Debugging
-
-### Check Active Upstreams
-You can see which Relays your PDS is currently connected to:
-
-```bash
-# Assuming an admin tool or API exposure
-curl -sS http://127.0.0.1:2583/api/pds/upstreams | jq .
-```
+## Verification
 
 ### Monitor Event Flow
-The `RelayMetrics` class tracks the number of events received and the latest sequence numbers:
-
+Check relay-specific metrics to verify event consumption:
 ```bash
 curl -sS http://127.0.0.1:2583/_metrics | grep relay_
 ```
 
-### Trace WebSocket Traffic
-If you have access to the PDS logs, look for `RelayClient` entries to see the handshake and cursor usage:
-
+### Inspect Logs
+Watch for `RelayClient` entries to verify handshakes and cursor usage:
 ```bash
 tail -f pds.log | grep RelayClient
 ```
 
----
-
 ## Troubleshooting
 
-| Failure Mode | Symptom | Mitigation |
+| Symptom | Cause | Resolution |
 | --- | --- | --- |
-| **Cursor Gap** | Missing events after a PDS restart. | Check if the cursor was correctly persisted to the database before shutdown. |
-| **Reconnection Storm** | High CPU/Network due to rapid retries. | Ensure the `RelayUpstreamManager` is using a sane `baseReconnectInterval` and `maxReconnectAttempts`. |
-| **Authentication Failed** | Status 401 on connect. | The upstream Relay requires a valid `accessToken` which is missing or expired in your configuration. |
-| **Backpressure** | `RelayEventBuffer` full or dropped events. | The PDS is consuming events slower than the Relay is sending them. Optimize the `RelayDownstreamHandler`. |
+| Data Gaps | Cursor not persisted | Verify that sequence numbers are being saved to the database. |
+| Reconnect Storm | Aggressive retry policy | Adjust the base reconnect interval in `RelayUpstreamManager`. |
+| 401 Unauthorized | Auth failure | Ensure the `accessToken` for the upstream Relay is valid and configured. |
+| Dropped Events | Backpressure | The PDS is consuming events slower than the Relay is sending them. Optimize the downstream handler. |
 
-## Next Steps
+## See Also
 
-1. Move to [Tutorial 13: Admin UI Internals & Instrumentation](./tutorial-13-admin-internals).
-2. Review [Firehose Overview](../08-sync-firehose/firehose-overview) for protocol-level sync rules.
-3. Check [Metrics Collection](../11-reference/metrics-collection) for relay monitoring.
-
-## Summary
-
-Federation connects a standalone PDS to a global network. Using `RelayClient` and `RelayUpstreamManager` keeps your PDS in sync with the network.
-
-Use `deciduous` to document changes to federation settings or sync logic.
-
-## Related
-
-- [Documentation Map](../11-reference/documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
+- [Firehose Overview](../08-sync-firehose/firehose-overview)
+- [Metrics Collection](../11-reference/metrics-collection)
+- [Tutorial 5: Firehose](./tutorial-5-firehose)

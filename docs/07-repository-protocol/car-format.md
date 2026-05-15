@@ -235,14 +235,12 @@ if (!success) {
    - Monitor memory usage
 
 ## See Also
+- [CBOR Serialization](./cbor-serialization)
+- [CID and Hashing](./cid-and-hashing)
+- [Repository Basics](./repository-basics)
 
-- [CBOR Serialization](cbor-serialization)
-- [CID and Hashing](cid-and-hashing)
-- [Repository Basics](repository-basics)
-
-## Related
-
-- [Documentation Map](../11-reference/documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
+## Related Reading
+- [Record Write to Commit Walkthrough](./record-write-to-commit-walkthrough)
+- [Firehose Overview](../08-sync-firehose/firehose-overview)
+- [Glossary](../GLOSSARY)
 
