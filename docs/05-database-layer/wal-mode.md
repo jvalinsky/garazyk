@@ -6,47 +6,30 @@ title: WAL Mode
 
 ## Overview
 
-Garazyk enables SQLite WAL mode so reads can continue while writes are being staged. That is an important performance and concurrency choice, but it is only one part of the storage story.
+Garazyk enables SQLite Write-Ahead Logging (WAL) mode so reads can continue while writes are being staged. This is critical for performance in a multi-actor environment.
 
-## What WAL Gives The Runtime
+## Benefits of WAL Mode
 
-In this repo, WAL mode helps with:
+- **Concurrent Access**: Read-heavy workloads for shared operational state are not blocked by writes.
+- **Repository Performance**: Repository reads can occur during write activity without contention.
+- **Practical Concurrency**: Provides a balance between the simplicity of SQLite and the need for concurrent access.
 
-- read-heavy workloads around shared operational state
-- repository reads during write activity
-- practical concurrency without abandoning SQLite
+## What WAL Does Not Solve
 
-It improves the storage model, but it does not remove the need for explicit transaction boundaries or queueing discipline.
+WAL mode is not a magic bullet. It does not replace the need for:
 
-## What WAL Does Not Replace
-
-WAL mode does not replace:
-
-- actor-store transaction serialization
-- service-layer ordering decisions across multiple store families
-- careful prepared-statement usage
-- migration and schema discipline
-
-If a write path is logically wrong, WAL will not make it safe.
-
-## Why Contributors Should Care
-
-When storage bugs look like timing or lock problems, this page is the conceptual starting point. The deeper analysis still belongs in the transaction and boundary docs, because the runtime's actual behavior depends on WAL plus queueing plus transaction scope.
+- **Transaction Serialization**: Actor-store writes must still be serialized on their respective queues.
+- **Ordering Decisions**: Service-layer coordination is still required across multiple store families.
+- **Prepared Statements**: Proper use of prepared statements is still mandatory for performance and security.
+- **Schema Discipline**: Migrations must still be handled carefully.
 
 ## Related Deep Dives
-
 - [Shared vs Actor Database Boundary](./shared-vs-actor-database-boundary)
 - [Transactions, WAL, and Concurrency](./transactions-wal-and-concurrency)
+- [SQLite Architecture](./sqlite-architecture)
 
 ## Related Reading
-
-- [SQLite Architecture](./sqlite-architecture)
 - [Service Databases](./service-databases)
 - [Actor Databases](./actor-databases)
-
-## Related
-
-- [Documentation Map](../11-reference/documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
+- [Glossary](../GLOSSARY)
 

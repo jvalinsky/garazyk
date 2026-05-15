@@ -4,21 +4,21 @@ title: Platform-Specific Network Transport
 
 # Platform-Specific Network Transport
 
-## Overview
+`PDSNetworkTransport` is the server-side abstraction that allows the `HttpServer` to accept and manage connections without depending on a specific platform's network stack. We avoid using heavy wrappers like `libcurl` or `CFNetwork` in favor of native drivers: `Network.framework` on macOS and BSD sockets on Linux.
 
-`PDSNetworkTransport` is the server-side transport abstraction that lets `HttpServer` accept and use connections without hard-coding one platform's network stack. The current implementations do not use CFNetwork or libcurl. macOS uses the Network framework, and Linux/GNUstep uses non-blocking BSD sockets with dispatch-driven I/O.
+## Architecture
 
-## Full Flow
+The transport layer sits at the bottom of the network stack, providing raw byte streams to the higher-level HTTP and WebSocket parsers.
 
 ```mermaid
 flowchart TD
     Server["HttpServer"]
     Factory["PDSNetworkTransportFactory"]
-    Listener["Listener accepts connection"]
-    Conn["Connection send and receive bytes"]
-    Meta["remoteAddress feeds logs and rate limiting"]
-    Mac["Network framework implementation"]
-    Linux["BSD socket implementation"]
+    Listener["Listener (Accepts Connections)"]
+    Conn["Connection (I/O)"]
+    Meta["Metadata (Remote Address, Rate Limiting)"]
+    Mac["Network.framework Driver"]
+    Linux["BSD Socket Driver"]
 
     Server --> Factory
     Factory --> Mac
@@ -29,54 +29,36 @@ flowchart TD
     Conn --> Meta
 ```
 
-## What This Abstraction Owns
+## Transport Responsibilities
 
-The transport layer owns:
+The transport layer manages the following:
 
-- listener lifecycle
-- accepted-connection callbacks
-- byte-oriented send and receive operations
-- connection state changes
-- peer-address reporting for logging and rate limiting
+- **Listener Lifecycle**: Binding to interfaces and ports, and handling the accept loop.
+- **Connection Callbacks**: Notifying the server when a new client connects.
+- **Byte Stream I/O**: Performing non-blocking send and receive operations.
+- **State Management**: Tracking whether a connection is active, closing, or failed.
+- **Peer Identification**: Reporting the remote IP address for logging and rate limiting.
 
-This allows `HttpServer` to parse requests and manage connection lifecycles independent of the platform.
+## High-Level Pipeline
 
-## What It Does Not Own
+By abstracting the transport, the `HttpServer` remains focused on protocol logic. It doesn't need to know if it's talking to a macOS kernel object or a Linux file descriptor.
 
-The transport layer does not decide:
+- **HTTP Parsing**: Handled in `HttpServer` via `HttpParser`.
+- **Routing**: Managed by the `HttpRouter`.
+- **Event Streaming**: Handled by the WebSocket and Firehose components.
 
-- HTTP parsing rules
-- route registration or dispatch
-- XRPC semantics
-- WebSocket protocol behavior above the raw connection
+## Implementation Details
 
-Those concerns sit above it in `HttpServer`, dispatch code, and the firehose stack.
-
-## The Real Platform Split
-
-Today the split is explicit:
-
-- `PDSNetworkTransportMac` wraps `nw_listener_t` and `nw_connection_t` from the Network framework
-- `PDSNetworkTransportLinux` wraps non-blocking BSD sockets and dispatch sources
-- `PDSNetworkTransportFactory` chooses the right implementation for the current build target
-- `HttpServer` attaches `newConnectionHandler` and copies `remoteAddress` into request state for logging and IP-based rate limiting
-
-If networking behaves differently between platforms, inspect these implementations first.
-
-## Related Deep Dives
-
-- [HTTP Request and Route Pipeline](../04-network-layer/http-request-and-route-pipeline)
-- [macOS vs GNUstep Boundary](./macos-vs-gnustep-boundary)
-
-## Related Reading
-
-- [HTTP Server](../04-network-layer/http-server)
-- [WebSocket Server](../08-sync-firehose/websocket-server)
-- [macOS and Linux Compatibility](./macos-linux)
+- **macOS (`PDSNetworkTransportMac`)**: Wraps `nw_listener_t` and `nw_connection_t`. It benefits from system-level optimizations for power and throughput.
+- **Linux (`PDSNetworkTransportLinux`)**: Uses non-blocking BSD sockets integrated with `libdispatch` sources. This ensures the server remains performant on Linux without requiring Apple-specific frameworks.
+- **Factory (`PDSNetworkTransportFactory`)**: Automatically selects the correct implementation at compile time based on the target platform.
 
 ## Related
 
+- [HTTP Request and Route Pipeline](../04-network-layer/http-request-and-route-pipeline)
+- [macOS vs GNUstep Boundary](./macos-vs-gnustep-boundary)
+- [HTTP Server](../04-network-layer/http-server)
+- [WebSocket Server](../08-sync-firehose/websocket-server)
+- [macOS and Linux Compatibility](./macos-linux)
 - [Documentation Map](../11-reference/documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
 

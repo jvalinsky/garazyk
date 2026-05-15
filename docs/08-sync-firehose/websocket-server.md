@@ -6,25 +6,23 @@ outline: deep
 
 # WebSocket Server
 
-## Overview
-
 The firehose production path routes through the main server:
 
 ```text
 HttpServer -> WebSocketUpgradeHandler -> WebSocketConnection -> SubscribeReposHandler
 ```
 
-The firehose begins as an HTTP request on the main port and becomes a WebSocket after upgrade.
+Requests start as standard HTTP on the main port and upgrade to WebSocket connections.
 
-## Current production path
+## Production Path
 
-In the current runtime:
+The runtime handles the upgrade through these stages:
 
-- `PDSHttpServerBuilder` registers `/xrpc/com.atproto.sync.subscribeRepos` as a WebSocket route.
-- `HttpServer` detects the route and validates the upgrade request.
-- `WebSocketUpgradeHandler` computes `Sec-WebSocket-Accept`.
-- **`WebSocketProtocolSession`** (Sans-I/O) handles framing, masking, and heartbeats once switched.
-- `SubscribeReposHandler` accepts the upgraded connection and manages event subscription.
+1. `PDSHttpServerBuilder` registers `/xrpc/com.atproto.sync.subscribeRepos` as a WebSocket route.
+2. `HttpServer` detects the route and validates the upgrade request.
+3. `WebSocketUpgradeHandler` computes the `Sec-WebSocket-Accept` header.
+4. `WebSocketProtocolSession` (Sans-I/O) handles framing, masking, and heartbeats once switched.
+5. `SubscribeReposHandler` accepts the connection and manages event subscription.
 
 ```mermaid
 flowchart TD
@@ -37,33 +35,25 @@ flowchart TD
   Replay --> Live["Live firehose stream"]
 ```
 
-If you are debugging today's implementation, start in this path first.
+## Legacy Standalone Server
 
-## Legacy standalone server
+`Garazyk/Sources/Sync/WebSocketServer.{h,m}` contains a legacy listener based on Network.framework. This class remains for compatibility and specific test seams but is deprecated in favor of `SubscribeReposHandler`.
 
-The repository still contains `Garazyk/Sources/Sync/WebSocketServer.{h,m}`.
-That class owns a separate listener based on Network.framework and still exists
-for compatibility and older test seams.
+Only use the legacy class when:
+- Explicitly required by compatibility tests.
+- Auditing historical behavior.
+- Comparing connection-acceptance paths.
 
-This legacy path is deprecated in favor of the current `SubscribeReposHandler`.
+## Responsibilities
 
-Use the legacy class only when:
+The WebSocket layer manages:
+- RFC 6455 handshake validation.
+- Frame encoding and decoding.
+- Ping/pong and close frame handling.
+- Connection health and timeout detection.
+- Handoff of upgraded sockets to firehose subscribers.
 
-- a compatibility test explicitly exercises it,
-- you are auditing historical behavior,
-- or you are comparing old and new connection-acceptance paths.
-
-## What this layer owns
-
-The WebSocket layer answers these questions:
-
-- did the upgrade request satisfy RFC 6455 handshake requirements,
-- how are frames encoded and decoded on the socket,
-- how are ping/pong and close frames handled,
-- when is a connection considered too slow or dead,
-- and how does an upgraded socket become a firehose subscriber.
-
-These are transport and framing concerns, distinct from event replay or commit sequencing.
+Transport and framing are separate from event replay and commit sequencing.
 
 ## Main runtime seams
 

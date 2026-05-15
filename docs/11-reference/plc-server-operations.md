@@ -4,123 +4,68 @@ title: PLC Server Operations
 
 # PLC Server Operations
 
-## Overview
+Garazyk includes a standalone PLC server that validates identity operations, stores history, and serves DID documents and audit logs. This server manages identity history independently of account or repository state.
 
-Garazyk ships a standalone PLC server alongside the PDS. Its job is narrower
-than the PDS job: accept PLC operations, validate them, store history, and
-serve current DID documents plus audit logs.
+## Runtime Model
 
-This boundary ensures PLC operational guidance focuses on identity
-history, not account or repository state.
+The PLC server entry point supports two primary configuration flags:
 
-## The Runtime Model
+- `--port <number>`: Sets the listen port (defaults to `2582`).
+- `--database <path>`: Specifies a persistent SQLite store.
 
-The PLC server entry point accepts two operational flags:
+Omitting `--database` causes the server to use `PLCMockStore`. This in-memory mode is suitable for local development but does not persist identity history across restarts. Use `--database` for production.
 
-- `--port <number>` to choose the listen port, default `2582`
-- `--database <path>` to use a persistent SQLite store
+## HTTP Interface
 
-If you omit `--database`, the server uses `PLCMockStore` and runs entirely in
-memory. That is appropriate for tests and short-lived local development. It is
-not appropriate for any environment where identity history must survive a
-restart.
+- `GET /:did`: Resolves the current DID document.
+- `GET /:did/log`: Returns the PLC operation history.
+- `POST /:did`: Submits a new operation.
+- `GET /_health`: Health status.
+- `GET /_metrics`: Operational metrics.
 
-## Public HTTP Surface
+## Persistence Strategy
 
-The standalone PLC server exposes a small surface:
+Choose the persistence mode based on the environment:
 
-- `GET /:did` resolves the current DID document
-- `GET /:did/log` returns the PLC operation history
-- `POST /:did` submits an operation
-- `GET /_health` exposes a health check
-- `GET /_metrics` exposes PLC metrics
+- **In-memory (`PLCMockStore`)**: Fast startup for local development and testing.
+- **SQLite (`PLCPersistentStore`)**: Durable identity history and replay capability for production.
 
-This small API makes the PLC easier to reason about by only exposing operations that define identity state.
+## Validation and Auditing
 
-## Why Persistence Is Optional In Dev And Mandatory In Real Ops
+`PLCAuditor` processes all submitted operations to verify integrity:
 
-`PLCPersistentStore` uses SQLite for durable history. `PLCMockStore` keeps the
-same API shape but discards everything on restart.
+- DID format and operation structure.
+- `prev` history hash links and signature validity.
+- Rotation key authority and tombstone rules.
+- Field normalization for `alsoKnownAs` and service endpoints.
+- Rate limits for operation frequency.
 
-The reason to keep both is simple:
+## DID State Mechanics
 
-- local development needs low-friction startup
-- operational identity infrastructure needs durable history and replay
+A PLC DID reflects the replayed result of its operation history. The current state includes rotation keys, verification methods, `alsoKnownAs`, services, and tombstone status. DID mismatches usually indicate history or normalization errors rather than lookup failures.
 
-Do not treat these two modes as interchangeable.
+## Operational Guidelines
 
-## Validation And Audit Rules
+- Enable persistent storage for any non-ephemeral environment.
+- Monitor health and metrics separately from the main PDS metrics.
+- Treat the operation log as the source of truth for resolving document discrepancies.
+- Analyze auditor rules to diagnose validation failures.
 
-PLC state is not just "last write wins". The server runs submitted operations
-through `PLCAuditor`, which verifies:
+The PLC server does not handle PDS account state, repository ownership, or application handles.
 
-- DID format and operation shape
-- hash-linked `prev` history
-- rotation-key authority
-- signature validity
-- tombstone and recovery rules
-- normalization of fields such as `alsoKnownAs` and service endpoints
-- rate limits for operation frequency
-
-The durable
-store is only as useful as the replay and validation rules protecting it.
-
-## Understanding DID State
-
-A PLC DID is the replayed result of an operation history. The current state
-contains the fields contributors care about most:
-
-- rotation keys
-- verification methods
-- `alsoKnownAs`
-- services
-- tombstone status
-
-A DID mismatch is usually a history or normalization problem, not a
-simple key-value lookup failure.
-
-## Operational Habits That Matter
-
-If you are operating the standalone PLC server:
-
-- use persistent storage anywhere restarts matter
-- keep health and metrics checks separate from the PDS metrics surface
-- treat the operation log as the source of truth when a DID document looks wrong
-- debug validation failures through auditor rules before changing storage
-
-Those habits keep identity debugging grounded in the actual data model.
-
-## What This Server Does Not Replace
-
-The PLC server does not replace:
-
-- PDS account state
-- repository ownership checks inside the PDS
-- application-layer handle or session logic
-
-It only owns DID document history and validation.
-
-## Related Reading
+## Related Resources
 
 - [PLC Directory](../02-core-concepts/plc-directory)
 - [DID Document Updates](../02-core-concepts/did-document-updates)
 - [ATProto Basics](../02-core-concepts/atproto-basics)
+- [Documentation Map](documentation-map.md)
 
-## Appendix
-
-### Minimal PLC checks
+## Appendix: Operational Checks
 
 ```bash
+# Health check
 curl -sS http://127.0.0.1:2582/_health | jq .
-```
 
-```bash
+# Metrics
 curl -sS http://127.0.0.1:2582/_metrics | head
 ```
-
-## Related
-
-- [Documentation Map](documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
-

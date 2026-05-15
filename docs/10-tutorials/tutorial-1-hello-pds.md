@@ -4,99 +4,78 @@ title: "Tutorial 1: Hello PDS"
 
 # Tutorial 1: Hello PDS
 
-## Overview
+This tutorial traces the Garazyk startup sequence and the `describeServer` discovery response. This path demonstrates how the codebase loads configuration, registers routes, and exposes protocol discovery metadata.
 
-This tutorial traces the Garazyk startup sequence and the `describeServer` discovery response. That path shows how the codebase loads configuration, registers routes, and exposes protocol discovery.
-
-**Learning Objectives:**
-- Trace the PDS boot path from CLI command to HTTP listener.
-- Find where `com.atproto.server.describeServer` is registered and handled.
-- Verify that discovery metadata matches local configuration.
-
-**Estimated Time:** 25-35 minutes
+## Learning Objectives
+- Trace the PDS boot path from the CLI command to the active HTTP listener.
+- Locate where `com.atproto.server.describeServer` is registered and handled.
+- Verify that discovery metadata correctly reflects local configuration.
 
 ## Prerequisites
+- Build `kaszlak` from the repository root.
+- Install `jq` for inspecting JSON responses.
+- Access to a terminal to run the server in the foreground.
 
-- XcodeGen and Xcode installed on macOS.
-- `kaszlak` buildable from the repository root.
-- `jq` installed for JSON inspection.
+## The Startup Sequence
 
-## Startup Path
+The PDS bootstraps through the CLI. The sequence involves loading configuration, initializing the application state, and registering network routes.
 
-The PDS bootstraps through the CLI. The sequence involves configuration loading, application initialization, and route registration.
+### Key Implementation Files
 
-### Core Components
+- **`Garazyk/Sources/CLI/main.m`**: Parses CLI flags and dispatches commands.
+- **`Garazyk/Sources/CLI/PDSCLIServeCommand.m`**: Initializes the server when you run `kaszlak serve`.
+- **`Garazyk/Sources/App/PDSConfiguration.m`**: Merges configuration files with environment variable overrides.
+- **`Garazyk/Sources/App/PDSApplication.m`**: Acts as the composition root, managing the lifecycle of all major services.
+- **`Garazyk/Sources/Network/PDSHttpServerBuilder.m`**: Maps XRPC methods to their respective handlers.
+- **`Garazyk/Sources/Network/HttpServer.m`**: Manages the underlying TCP listener and HTTP state machine.
 
-| File | Responsibility |
-| --- | --- |
-| `Garazyk/Sources/CLI/main.m` | Parses CLI flags and dispatches commands. |
-| `Garazyk/Sources/CLI/PDSCLIServeCommand.m` | Initializes the server from the `serve` command. |
-| `Garazyk/Sources/App/PDSConfiguration.m` | Loads configuration and environment overrides. |
-| `Garazyk/Sources/App/PDSApplication.m` | Composition root for the PDS runtime. |
-| `Garazyk/Sources/Network/PDSHttpServerBuilder.m` | Registers server routes and handlers. |
-| `Garazyk/Sources/Network/HttpServer.m` | Manages the HTTP listener. |
+## Protocol Discovery: `describeServer`
 
-## Discovery: `describeServer`
+The `com.atproto.server.describeServer` endpoint is usually the first request a client makes to discover a PDS's capabilities. It returns the server's DID, available handle domains, and registration policies.
 
-The `com.atproto.server.describeServer` endpoint is typically the first protocol response a client requests. It reflects the PDS configuration, including the issuer DID, available domains, and registration policy.
+### Tracing the Implementation
 
-### Trace the Endpoint
-1. **Registration**: See how the route is added in `PDSHttpServerBuilder.m`.
-2. **Dispatch**: Observe how the XRPC dispatcher routes the request to the handler.
-3. **Configuration**: Inspect how values like the issuer and invite policy are derived from `PDSConfiguration`.
+1. **Registration**: Open `PDSHttpServerBuilder.m` and find where the `describeServer` handler is attached to the XRPC dispatcher.
+2. **Handling**: Trace the dispatcher to `PDSDescribeServerHandler.m`.
+3. **Configuration**: Observe how the handler pulls the `issuerDid` and `availableUserDomains` from the `PDSConfiguration` object.
 
 ## Verification
 
-After building and starting the server, verify the discovery route.
+Build the server and query the discovery endpoint to confirm it reflects your local settings.
 
 ```bash
-xcodegen generate
-xcodebuild -scheme kaszlak build
-./build/bin/kaszlak serve --config ./config.json --data-dir ./pds-data --foreground &
+# Build and start the server
+./build/bin/kaszlak serve --config ./config/examples/local.json --foreground &
 PID=$!
 sleep 2
+
+# Query the discovery endpoint
 curl -sS http://127.0.0.1:2583/xrpc/com.atproto.server.describeServer | jq .
+
+# Cleanup
 kill $PID
 ```
 
-Check that:
-- The route returns a 200 OK.
-- The `did` matches your configured issuer.
-- The `availableUserDomains` match your configuration.
+### Success Criteria
+- The request returns a `200 OK` status.
+- The `did` field matches the `issuerDid` in your configuration.
+- The `availableUserDomains` array contains the expected domains.
 
 ## Troubleshooting
 
-| Symptom | Check |
-| --- | --- |
-| `xcodebuild` cannot find the scheme | Run `xcodegen generate` again from the repository root. |
-| `curl` cannot connect | Confirm `kaszlak serve` is still running and listening on port `2583`. |
-| Discovery fields look wrong | Check `config.json`, CLI overrides, and `PDSConfiguration.m`. |
+- **Server fails to bind**: Ensure no other process is using port 2583. Use `lsof -i :2583` to check.
+- **Empty discovery response**: Verify that your configuration file includes the `service` and `identity` blocks.
+- **Route not found (404)**: Confirm that the server started successfully and the XRPC dispatcher isn't reporting registration errors in the logs.
 
-## Testing Invariants
-
-Refer to these tests to understand the expected behavior of the boot and discovery paths:
+## Relevant Tests
+- `Garazyk/Tests/App/PDSConfigurationTests.m`
 - `Garazyk/Tests/Network/XrpcMethodRegistryTests.m`
 - `Garazyk/Tests/XRPC/XrpcHandlerTests.m`
-- `Garazyk/Tests/App/PDSConfigurationTests.m`
-
-## Decision Tracking
-
-Use `deciduous` to record your progress and findings as you explore the codebase.
-
-```bash
-deciduous add goal "Trace PDS boot path" -c 95
-deciduous add action "Verified describeServer handler registration" -c 90
-deciduous link <goal_id> <action_id>
-```
 
 ## Next Steps
 
-1. Continue to [Tutorial 2: Accounts](./tutorial-2-accounts).
-2. Read [Request Lifecycle](../01-getting-started/request-lifecycle) for the HTTP path.
-
-## Summary
-
-The discovery endpoint is the smallest useful slice of the PDS runtime. If you can trace it from CLI startup to XRPC response, the rest of the server is easier to debug.
+1. Continue to [Tutorial 2: Accounts](./tutorial-2-accounts) to learn how users are created.
+2. Read the [Request Lifecycle](../01-getting-started/request-lifecycle) for a deep dive into the network stack.
 
 ## Related
 

@@ -4,22 +4,22 @@
 
 ## Overview
 
-The `XrpcAppBskyMethods.m` file (~3259 lines) has been decomposed into namespace packs for better maintainability and testability. This document tracks the phased refactoring approach.
+We are decomposing the monolithic `XrpcAppBskyMethods.m` (~3259 lines) into modular namespace packs to improve maintainability and testability.
 
 ## Phase 1: Infrastructure (COMPLETE)
 
-Created 4 namespace pack modules:
+We have created four initial namespace pack modules:
 
-| Pack | Scope | Lines |
+| Pack | Scope | Approx. Lines |
 |------|-------|-------|
-| `XrpcAppBskyActorPack` | Profile, preferences, search | ~200 |
-| `XrpcAppBskyFeedPack` | Timeline, posts, likes, generators | ~200 |
-| `XrpcAppBskyGraphPack` | Follows, mutes, blocks, relationships | ~210 |
-| `XrpcAppBskyNotificationPack` | Notifications, push | ~170 |
+| `XrpcAppBskyActorPack` | Profile, preferences, and search. | ~200 |
+| `XrpcAppBskyFeedPack` | Timelines, posts, likes, and generators. | ~200 |
+| `XrpcAppBskyGraphPack` | Follows, mutes, blocks, and relationships. | ~210 |
+| `XrpcAppBskyNotificationPack` | Notifications and push delivery. | ~170 |
 
-## Phase 2: Integration (FUTURE)
+## Phase 2: Integration (PLANNED)
 
-The main `XrpcAppBskyMethods.m` will delegate to packs:
+In this phase, `XrpcAppBskyMethods.m` will be refactored to delegate method registration to the individual packs:
 
 ```objc
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
@@ -32,44 +32,17 @@ The main `XrpcAppBskyMethods.m` will delegate to packs:
                                      appViewDatabase:appViewDatabase
                                           jwtMinter:jwtMinter
                                     adminController:adminController];
-
-    [XrpcAppBskyFeedPack registerWithDispatcher:dispatcher
-                                   appViewDatabase:appViewDatabase
-                                        jwtMinter:jwtMinter
-                                  adminController:adminController];
-
-    // ... etc
-
-    // Only register remaining inline handlers (draft, video, chat, unspecced)
+    // ...
 }
 ```
 
 ## Benefits
 
-1. **Reduced file size** - Main file will drop to ~500 lines (coordination only)
-2. **Focused testing** - Each pack can be tested independently
-3. **Parallel development** - Teams can work on different packs without conflicts
-4. **Clear boundaries** - Code organization matches Lexicon namespaces
+1. **Maintainability:** Reduces the primary handler file size to coordination only.
+2. **Isolation:** Each pack can be tested and developed independently without affecting other namespaces.
+3. **Clarity:** Code organization now directly maps to ATProto Lexicon namespaces.
 
-## File Locations
-
-```
-Garazyk/Sources/Network/
-├── XrpcAppBskyMethods.h/.m        # Coordinator (future)
-├── XrpcAppBskyActorPack.h/.m      # Actor namespace
-├── XrpcAppBskyFeedPack.h/.m       # Feed namespace
-├── XrpcAppBskyGraphPack.h/.m      # Graph namespace
-├── XrpcAppBskyNotificationPack.h/.m # Notification namespace
-└── XrpcAppBskyProxyMethodPack.h/.m  # Proxy-only methods (existing)
-```
-
-## Build Integration
-
-Files are automatically picked up by the existing CMake glob:
-
-```cmake
-file(GLOB_RECURSE ATPROTO_XRPC_SOURCES
-  "Garazyk/Sources/Network/Xrpc*.m"
-  ...
-)
-```
+## Related
+- [Architecture Overview](01-getting-started/architecture-overview)
+- [API Reference](11-reference/api-reference)
+- [Method Registry](04-network-layer/method-registry)

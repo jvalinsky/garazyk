@@ -4,127 +4,66 @@ title: "Tutorial 11: PLC Failover and Resolution"
 
 # Tutorial 11: PLC Failover and Resolution
 
-## Overview
+Identity in the AT Protocol is grounded in DIDs (Decentralized Identifiers). Most users rely on `did:plc`, which uses a PLC (Placeholder) directory to map their identity to a rotation key and a PDS endpoint.
 
-Identity in the AT Protocol is grounded in DIDs (Decentralized Identifiers). Most users use `did:plc`, which relies on a PLC (Placeholder) directory to map their identity to a rotation key and a PDS endpoint. This tutorial explains how Garazyk resolves these identities and maintains availability through failover mechanisms.
+## The DID Resolution Path
 
-**Learning Objectives:**
-- Trace a DID resolution request from the PDS to a PLC directory.
-- Understand the retry and timeout policies in `DIDPLCResolver.m`.
-- Explore the internal implementation of a PLC directory in `PLCServer.m`.
-- Configure and verify PLC failover scenarios.
-
-**Estimated Time:** 35-45 minutes
-
-## Prerequisites
-
-- Complete [Tutorial 1: Hello PDS](./tutorial-1-hello-pds).
-- Familiarity with JSON-LD and DID documents.
-- `deciduous` CLI tool installed.
-
----
-
-## Step 1: Track the Goal with Deciduous
-
-Record your intent to study the identity resolution layer:
-
-```bash
-deciduous add goal "Audit PLC Resolution and Failover" -c 95
-# Track your analysis
-deciduous add action "Traced DID resolution retry logic" -c 90
-```
-
----
-
-## Step 2: The DID Resolution Path
-
-When the PDS needs to verify a signature or find another user's server, it must resolve their DID. For `did:plc`, this means making an HTTP request to a PLC directory.
+When the PDS needs to verify a signature or locate another user's server, it must resolve their DID. For `did:plc`, this involves querying a PLC directory.
 
 ### `DIDPLCResolver.m`
-The `DIDPLCResolver` is the core component for this task. It:
-1.  **Validates** the DID format.
-2.  **Checks a local cache** (to avoid redundant network calls).
-3.  **Executes an HTTP GET** to `<plc_url>/<did>`.
+The resolver handles the network-level details:
+1. **Validation:** Ensures the DID format is correct.
+2. **Caching:** Checks a local cache to avoid redundant network calls.
+3. **Execution:** Performs an HTTP GET to `<plc_url>/<did>`.
 
-**Technical Detail:**
-Look at `executeRequest:attempt:transform:completion:` in `Garazyk/Sources/PLC/DIDPLCResolver.m`. It uses an `HttpRetryPolicy` to handle transient network errors. If the primary PLC directory is slow or returns a 5xx error, the resolver will retry based on the configured policy.
+The resolver uses an `HttpRetryPolicy` to handle transient network errors. If the primary PLC directory is unavailable, the system can be configured to retry or fail over to a secondary directory.
 
----
+## Hosting a PLC Directory
 
-## Step 3: Hosting a PLC Directory
+Garazyk includes a full implementation of a PLC directory in `PLCServer.m`.
 
-Garazyk is not just a PDS; it also contains a complete implementation of a PLC directory.
+### Operations and Audit Logs
+- **Operations:** Clients submit `plc_operation` (to update keys or services) or `plc_tombstone` (to delete an identity).
+- **Validation:** Every operation is validated for structure and signature.
+- **Audit Log:** The server maintains a verifiable history of all identity operations at `/log/audit`.
 
-### `PLCServer.m`
-The `PLCServer` manages a history of operations for each DID.
-- **Operations**: Clients submit `plc_operation` (to update keys/services) or `plc_tombstone` (to delete an identity).
-- **Validation**: Every incoming operation is strictly validated for size, signature, and structure (`PLCValidateIncomingOperation`).
-- **Audit Log**: The server maintains a full audit log (`/log/audit`), allowing anyone to verify the history of an identity.
+## Failover Configuration
 
----
-
-## Step 4: Configuring Failover
-
-In a production environment, relying on a single PLC directory is a risk. Garazyk allows you to configure primary and fallback PLC URLs.
+In production, relying on a single PLC directory is a single point of failure. Garazyk supports primary and fallback PLC URLs.
 
 ### Failover Logic
-While the `DIDPLCResolver` itself targets a single URL, the higher-level `PDSPLCClient` (or equivalent service coordinator) can be configured with multiple resolvers.
-- **Primary**: The main directory (e.g., `https://plc.directory`).
-- **Fallback**: A local replica or a secondary community directory.
+The `PDSPLCClient` manages multiple resolvers:
+- **Primary:** The main network directory (e.g., `https://plc.directory`).
+- **Fallback:** A local replica or secondary community directory.
 
-If the primary resolver returns a terminal network error, the system switches to the fallback to ensure identity resolution continues.
+If the primary resolver returns a terminal network error, the system switches to the fallback to ensure identity resolution remains available.
 
----
+## Verification
 
-## Step 5: Verification and Monitoring
-
-### Manual DID Resolution
-You can simulate the resolver's work using `curl`:
-
+### Manual Resolution
+Test resolution using `curl`:
 ```bash
-# Resolve a known DID from the official directory
 curl -sS https://plc.directory/did:plc:l37j664qzpjk3hlh4mbuvbmh | jq .
 ```
 
-### Check PLC Server Health
-If you are running a local PLC replica:
-
+### Health and Metrics
+If running a local PLC server, check its health and performance:
 ```bash
-curl -sS http://127.0.0.1:2582/_health | jq .
-```
-
-### Inspect Metrics
-Garazyk's PLC implementation exports Prometheus-compatible metrics:
-
-```bash
+curl -sS http://127.0.0.1:2582/_health
 curl -sS http://127.0.0.1:2582/_metrics
 ```
 
----
-
 ## Troubleshooting
 
-| Failure Mode | Symptom | Mitigation |
+| Symptom | Cause | Resolution |
 | --- | --- | --- |
-| **PLC Timeout** | `Synchronous DID resolution timed out`. | Increase the `timeout` in `DIDPLCResolver` or check PLC server latency. |
-| **Invalid Signature** | `Audit failed: Invalid signature`. | The submitted operation was not signed by a valid rotation key. |
-| **Tombstoned DID** | Status 410 (Gone). | The identity has been permanently deleted from the PLC directory. |
-| **Cache Staleness** | Stale DID document. | The `DIDPLCResolver` cache might need a lower TTL or manual invalidation during updates. |
+| Resolution Timeout | High latency or server down | Increase the resolver timeout or check PLC server health. |
+| Invalid Signature | Auth failure | The operation was not signed by a valid rotation key. |
+| 410 Gone | Tombstoned DID | The identity has been permanently deleted from the directory. |
+| Stale Data | Cache staleness | Lower the TTL or manually invalidate the resolver cache. |
 
-## Next Steps
+## See Also
 
-1. Move to [Tutorial 12: Federation & Sync](./tutorial-12-federation-sync).
-2. Review [PLC Failover](../11-reference/plc-failover) for production topology advice.
-3. Check [PLC Server Operations](../11-reference/plc-server-operations) for admin commands.
-
-## Summary
-
-Identity resolution enables AT Protocol interoperability. `DIDPLCResolver` retry policies and `PLCServer` keep your PDS connected to the network during outages.
-
-Use `deciduous` to document changes to identity resolution or PLC configuration.
-
-## Related
-
-- [Documentation Map](../11-reference/documentation-map.md)
-- [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
+- [PLC Failover Reference](../11-reference/plc-failover)
+- [PLC Server Operations](../11-reference/plc-server-operations)
+- [Tutorial 1: Hello PDS](./tutorial-1-hello-pds)
