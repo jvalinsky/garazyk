@@ -1,6 +1,6 @@
 {
   "name": "reference-pds",
-  "description": "Bluesky reference PDS (Go) with Garazyk Relay, PLC, and AppView. Tests cross-implementation interop.",
+  "description": "Bluesky reference PDS (TypeScript) with Garazyk Relay, PLC, and AppView. Tests cross-implementation interop.",
   "roles": {
     "plc": { "inherit": "garazyk-default" },
     "pds": {
