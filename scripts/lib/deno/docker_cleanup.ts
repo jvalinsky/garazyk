@@ -5,8 +5,8 @@
  */
 
 import {
-  composeServiceName,
   type ContainerSummary,
+  composeServiceName,
   createDockerClient,
   findPortConflicts,
   findStaleProjectsOnPorts,
@@ -29,16 +29,8 @@ export async function stopStaleDockerE2e(
 
   const ports = neededPorts(opts);
   const staleProjects = await findStaleProjectsOnPorts(client, ports, currentProject);
-  for (const project of [...staleProjects]) {
-    if (!project.startsWith("garazyk-e2e-")) {
-      staleProjects.delete(project);
-    }
-  }
 
-  if (staleProjects.size === 0) {
-    await assertNoUnmanagedDockerConflicts(client, ports, currentProject);
-    return [];
-  }
+  if (staleProjects.size === 0) return [];
 
   const projectNames = [...staleProjects];
   console.log(`[WARN] Stale e2e projects holding needed ports: ${projectNames.join(", ")}`);
@@ -47,8 +39,6 @@ export async function stopStaleDockerE2e(
     console.log(`[INFO] Tearing down stale compose project: ${project}`);
     await composeDown(project);
   }
-
-  await assertNoUnmanagedDockerConflicts(client, ports, currentProject);
 
   return projectNames;
 }
@@ -63,15 +53,7 @@ async function stopStaleDockerE2eCLI(
   for (const port of ports) {
     try {
       const proc = new Deno.Command("docker", {
-        args: [
-          "ps",
-          "--filter",
-          `publish=${port}`,
-          "--filter",
-          "name=garazyk-e2e",
-          "--format",
-          "{{.ID}}",
-        ],
+        args: ["ps", "--filter", `publish=${port}`, "--filter", "name=garazyk-e2e", "--format", "{{.ID}}"],
         stdout: "piped",
       });
       const { code, stdout } = await proc.output();
@@ -80,18 +62,13 @@ async function stopStaleDockerE2eCLI(
       const containerIds = new TextDecoder().decode(stdout).trim().split("\n").filter(Boolean);
       for (const cid of containerIds) {
         const inspectProc = new Deno.Command("docker", {
-          args: [
-            "inspect",
-            "--format",
-            '{{index .Config.Labels "com.docker.compose.project"}}',
-            cid,
-          ],
+          args: ["inspect", "--format", "{{index .Config.Labels \"com.docker.compose.project\"}}", cid],
           stdout: "piped",
         });
         const { code: ic, stdout: iout } = await inspectProc.output();
         if (ic !== 0) continue;
         const project = new TextDecoder().decode(iout).trim();
-        if (project && project !== currentProject && project.startsWith("garazyk-e2e-")) {
+        if (project && project !== currentProject) {
           staleProjects.add(project);
         }
       }
@@ -115,20 +92,9 @@ async function stopStaleDockerE2eCLI(
 // Stale host process cleanup
 // ---------------------------------------------------------------------------
 
-export async function stopStaleHostProcesses(
-  opts: { withPds2?: boolean; otel?: boolean },
-): Promise<void> {
+export async function stopStaleHostProcesses(opts: { withPds2?: boolean; otel?: boolean }): Promise<void> {
   const ports = neededPorts(opts);
-  const knownBinaries = new Set([
-    "kaszlak",
-    "garazyk-ui",
-    "campagnola",
-    "zuk",
-    "syrena",
-    "syrena-chat",
-    "jelcz",
-  ]);
-  const unmanagedConflicts: string[] = [];
+  const knownBinaries = new Set(["kaszlak", "garazyk-ui", "campagnola", "zuk", "syrena", "syrena-chat", "jelcz"]);
 
   for (const port of ports) {
     try {
@@ -158,8 +124,6 @@ export async function stopStaleHostProcesses(
           } catch {
             /* cleanup */
           }
-        } else {
-          unmanagedConflicts.push(`${port} held by PID ${pid} (${cmd})`);
         }
       }
     } catch (e) {
@@ -167,33 +131,5 @@ export async function stopStaleHostProcesses(
     }
   }
 
-  if (unmanagedConflicts.length > 0) {
-    throw new Error(
-      `Required ports are in use by unmanaged processes: ${unmanagedConflicts.join(", ")}. ` +
-        "Stop those processes or choose different ports before starting the scenario network.",
-    );
-  }
-
   await new Promise((resolve) => setTimeout(resolve, 1000));
-}
-
-async function assertNoUnmanagedDockerConflicts(
-  client: Awaited<ReturnType<typeof createDockerClient>>,
-  ports: number[],
-  currentProject: string,
-): Promise<void> {
-  if (!client) return;
-  const conflicts = await findPortConflicts(client, ports, currentProject);
-  const unmanaged = conflicts.filter((conflict) =>
-    !conflict.projectName || !conflict.projectName.startsWith("garazyk-e2e-")
-  );
-  if (unmanaged.length === 0) return;
-  const details = unmanaged.map((conflict) =>
-    `${conflict.port} held by ${conflict.containerName}` +
-    (conflict.projectName ? ` (compose project ${conflict.projectName})` : "")
-  );
-  throw new Error(
-    `Required ports are in use by unmanaged Docker containers: ${details.join(", ")}. ` +
-      "Stop those containers before starting the scenario network.",
-  );
 }
