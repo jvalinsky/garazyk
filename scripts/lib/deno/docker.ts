@@ -15,6 +15,7 @@
  */
 
 import { join } from "@std/path";
+import { formatBytes } from "./format.ts";
 import {
   type ContainerSummary,
   composeServiceName,
@@ -53,12 +54,6 @@ export interface LocalNetworkOptions {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KiB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GiB`;
-}
 export interface RunContext {
   runId: string;
   runDir: string;
@@ -226,8 +221,8 @@ async function stopStaleDockerE2eCLI(
           staleProjects.add(project);
         }
       }
-    } catch {
-      // Continue
+    } catch (e) {
+      console.warn("[docker] failed to inspect stale Docker projects on port", port, e);
     }
   }
 
@@ -284,12 +279,12 @@ export async function stopStaleHostProcesses(opts: LocalNetworkOptions): Promise
             const killProc = new Deno.Command("kill", { args: ["-9", pid] });
             await killProc.output();
           } catch {
-            // Process may have already exited
+            /* cleanup */
           }
         }
       }
-    } catch {
-      // lsof may not be available
+    } catch (e) {
+      console.debug("[docker] lsof lookup failed for port", port, e);
     }
   }
 
@@ -368,8 +363,8 @@ export async function waitForHttp(
         console.log(`[OK]    ${label} is healthy`);
         return true;
       }
-    } catch {
-      // Keep polling
+    } catch (e) {
+      console.debug("[docker] HTTP probe failed for", label, url, e);
     }
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
@@ -451,8 +446,8 @@ async function waitForServiceCLI(
           }
         }
       }
-    } catch {
-      // Service may not be registered yet
+    } catch (e) {
+      console.debug("[docker] Docker service probe failed for", serviceName, e);
     }
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
@@ -570,7 +565,7 @@ async function collectDockerDiagnostics(
     }).output();
     await Deno.writeTextFile(join(dockerDir, "ps.txt"), new TextDecoder().decode(stdout));
   } catch {
-    // Best effort
+    /* cleanup */
   }
 
   // docker compose config
@@ -582,7 +577,7 @@ async function collectDockerDiagnostics(
     }).output();
     await Deno.writeTextFile(join(dockerDir, "config.txt"), new TextDecoder().decode(stdout));
   } catch {
-    // Best effort
+    /* cleanup */
   }
 
   // docker compose logs --tail=3000
@@ -594,7 +589,7 @@ async function collectDockerDiagnostics(
     }).output();
     await Deno.writeTextFile(join(dockerDir, "logs.txt"), new TextDecoder().decode(stdout));
   } catch {
-    // Best effort
+    /* cleanup */
   }
 }
 
@@ -738,12 +733,12 @@ export async function stopBinaryServices(ctx: RunContext): Promise<void> {
           const killProc = new Deno.Command("kill", { args: [match[1]] });
           await killProc.output();
         } catch {
-          // Process may have already exited
+          /* cleanup */
         }
       }
     }
   } catch {
-    // PID file may not exist
+    /* cleanup */
   }
   try {
     Deno.removeSync(ctx.pidFile);

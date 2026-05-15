@@ -29,7 +29,7 @@ import {
 import { addSpanEvent, withSpan } from "./otel.ts";
 
 // ---------------------------------------------------------------------------
-// Global AbortError suppression
+// Scoped AbortError suppression
 // ---------------------------------------------------------------------------
 
 // Deno's unhandled rejection tracker fires before the microtask queue
@@ -37,14 +37,11 @@ import { addSpanEvent, withSpan } from "./otel.ts";
 // abortController.abort() interrupts a pending reader.read() on the
 // Docker event stream (the only way to break out of a Unix socket
 // read in Deno), the AbortError is reported as unhandled even though
-// the .catch() in streamEvents() handles it. This global handler
-// suppresses those expected AbortError rejections.
-globalThis.addEventListener("unhandledrejection", (e) => {
-  const reason = (e as PromiseRejectionEvent).reason;
-  if (reason instanceof DOMException && reason.name === "AbortError") {
-    e.preventDefault();
-  }
-});
+// the .catch() in streamEvents() handles it.
+//
+// We install a suppression handler scoped to the ContainerEventWatcher
+// lifecycle — it's added in the constructor and removed in close().
+// This avoids masking real AbortError bugs elsewhere in the process.
 
 // ---------------------------------------------------------------------------
 // Types
@@ -256,9 +253,20 @@ export class ContainerEventWatcher {
   private subscribers: Array<(event: WatcherEvent) => void> = [];
   private _closed = false;
   private eventLoopPromise: Promise<void> | null = null;
+  private _unhandledRejectionHandler: ((e: PromiseRejectionEvent) => void) | null = null;
 
   private constructor(client: DockerApiClient) {
     this.client = client;
+
+    // Install a scoped AbortError suppression handler.
+    // This is removed in close() to avoid masking real bugs elsewhere.
+    this._unhandledRejectionHandler = (e) => {
+      const reason = e.reason;
+      if (reason instanceof DOMException && reason.name === "AbortError") {
+        e.preventDefault();
+      }
+    };
+    globalThis.addEventListener("unhandledrejection", this._unhandledRejectionHandler);
   }
 
   /**
@@ -333,12 +341,15 @@ export class ContainerEventWatcher {
     if (this._closed) return;
     this._closed = true;
 
+    // Remove the scoped AbortError suppression handler.
+    if (this._unhandledRejectionHandler) {
+      globalThis.removeEventListener("unhandledrejection", this._unhandledRejectionHandler);
+      this._unhandledRejectionHandler = null;
+    }
+
     // Abort the event stream. This causes the pending reader.read()
     // in streamEvents() to reject with AbortError, which is caught
     // by the .catch() handler and converted to done=true.
-    // The global unhandledrejection handler (registered at module
-    // load time) suppresses the AbortError that Deno reports before
-    // the microtask queue processes the .catch().
     this.abortController.abort();
 
     // Reject all pending waiters
