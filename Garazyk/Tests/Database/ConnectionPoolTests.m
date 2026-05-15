@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 // ConnectionPoolTests.m
-// Basic tests for PDSConnectionPool without XCTest framework
+// Basic tests for ATProtoConnectionPool without XCTest framework
 
 #import <Foundation/Foundation.h>
-#import "Database/Pool/PDSConnectionPool.h"
+#import "Database/Pool/ATProtoConnectionPool.h"
 #include <sqlite3.h>
 
 @interface ConnectionPoolTest : NSObject
@@ -59,7 +59,7 @@
     NSString *tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"test_pool_1.db"];
     [[NSFileManager defaultManager] removeItemAtPath:tempPath error:nil];
 
-    PDSConnectionPool *pool = [[PDSConnectionPool alloc] initWithPath:tempPath
+    ATProtoConnectionPool *pool = [[ATProtoConnectionPool alloc] initWithPath:tempPath
                                                        minConnections:2
                                                        maxConnections:5];
 
@@ -99,7 +99,7 @@
     NSString *tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"test_pool_2.db"];
     [[NSFileManager defaultManager] removeItemAtPath:tempPath error:nil];
 
-    PDSConnectionPool *pool = [[PDSConnectionPool alloc] initWithPath:tempPath
+    ATProtoConnectionPool *pool = [[ATProtoConnectionPool alloc] initWithPath:tempPath
                                                        minConnections:1
                                                        maxConnections:3];
 
@@ -147,7 +147,7 @@
     NSString *tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"test_pool_3.db"];
     [[NSFileManager defaultManager] removeItemAtPath:tempPath error:nil];
 
-    PDSConnectionPool *pool = [[PDSConnectionPool alloc] initWithPath:tempPath
+    ATProtoConnectionPool *pool = [[ATProtoConnectionPool alloc] initWithPath:tempPath
                                                        minConnections:1
                                                        maxConnections:2];
 

@@ -1,19 +1,19 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "Database/Connection/PDSConnectionManager_Serial.h"
+#import "Database/Connection/ATProtoConnectionManagerSerial.h"
 #import "Compat/PDSTypes.h"
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wblock-capture-autoreleasing"
 
-@interface PDSConnectionManager_Serial ()
+@interface ATProtoConnectionManagerSerial ()
 @property (nonatomic, readwrite, getter=isOpen) BOOL open;
 @property (nonatomic, readwrite, copy) NSString *databasePath;
 @property (nonatomic, readwrite) sqlite3 *db;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t queue;
 @end
 
-@implementation PDSConnectionManager_Serial
+@implementation ATProtoConnectionManagerSerial
 
 - (instancetype)initWithLabel:(NSString *)label {
     if ((self = [super init])) {
@@ -27,7 +27,7 @@
     [self close];
 }
 
-- (BOOL)openWithPath:(NSString *)path config:(PDSDBConfig)config error:(NSError **)error {
+- (BOOL)openWithPath:(NSString *)path config:(ATProtoDBConfig)config error:(NSError **)error {
     __block BOOL result = NO;
     dispatch_sync(self.queue, ^{
         if (self.db) {
@@ -39,7 +39,7 @@
         int rc = sqlite3_open(path.fileSystemRepresentation, &_db);
         if (rc != SQLITE_OK) {
             if (error) {
-                *error = PDSDBSQLError(PDSDBErrorDomain, _db, PDSDBErrorNotOpen);
+                *error = ATProtoDBSQLError(ATProtoDBErrorDomain, _db, ATProtoDBErrorNotOpen);
             }
             if (_db) {
                 sqlite3_close_v2(_db);
@@ -49,11 +49,11 @@
             return;
         }
 
-        if (!PDSDBConfigurePragmas(_db, config)) {
+        if (!ATProtoDBConfigurePragmas(_db, config)) {
             if (error) {
-                *error = PDSDBError(PDSDBErrorDomain,
+                *error = ATProtoDBError(ATProtoDBErrorDomain,
                                     @"Failed to configure database pragmas",
-                                    PDSDBErrorQueryFailed);
+                                    ATProtoDBErrorQueryFailed);
             }
             sqlite3_close_v2(_db);
             _db = NULL;
@@ -83,8 +83,8 @@
     if (!block) return NO;
     if (!self.db) {
         if (error) {
-            *error = PDSDBError(PDSDBErrorDomain,
-                                @"Database not open", PDSDBErrorNotOpen);
+            *error = ATProtoDBError(ATProtoDBErrorDomain,
+                                @"Database not open", ATProtoDBErrorNotOpen);
         }
         return NO;
     }
@@ -105,8 +105,8 @@
     if (!block) return NO;
     if (!self.db) {
         if (error) {
-            *error = PDSDBError(PDSDBErrorDomain,
-                                @"Database not open", PDSDBErrorNotOpen);
+            *error = ATProtoDBError(ATProtoDBErrorDomain,
+                                @"Database not open", ATProtoDBErrorNotOpen);
         }
         return NO;
     }
@@ -122,8 +122,8 @@
         int rc = sqlite3_exec(self.db, "BEGIN", NULL, NULL, &errMsg);
         if (rc != SQLITE_OK) {
             if (error) {
-                *error = PDSDBSQLError(PDSDBErrorDomain, self.db,
-                                       PDSDBErrorQueryFailed);
+                *error = ATProtoDBSQLError(ATProtoDBErrorDomain, self.db,
+                                       ATProtoDBErrorQueryFailed);
             }
             sqlite3_free(errMsg);
             result = NO;
@@ -136,17 +136,17 @@
         if (rollback) {
             sqlite3_exec(self.db, "ROLLBACK", NULL, NULL, NULL);
             if (error) {
-                *error = PDSDBError(PDSDBErrorDomain,
+                *error = ATProtoDBError(ATProtoDBErrorDomain,
                                     @"Transaction rolled back",
-                                    PDSDBErrorQueryFailed);
+                                    ATProtoDBErrorQueryFailed);
             }
             result = NO;
         } else {
             rc = sqlite3_exec(self.db, "COMMIT", NULL, NULL, &errMsg);
             if (rc != SQLITE_OK) {
                 if (error) {
-                    *error = PDSDBSQLError(PDSDBErrorDomain, self.db,
-                                           PDSDBErrorQueryFailed);
+                    *error = ATProtoDBSQLError(ATProtoDBErrorDomain, self.db,
+                                           ATProtoDBErrorQueryFailed);
                 }
                 sqlite3_free(errMsg);
                 sqlite3_exec(self.db, "ROLLBACK", NULL, NULL, NULL);

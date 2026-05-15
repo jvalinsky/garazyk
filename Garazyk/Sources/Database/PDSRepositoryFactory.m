@@ -7,7 +7,7 @@
  */
 
 #import "PDSRepositoryFactory.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Core/Repositories/PDSLegacyAccountRepository.h"
 #import "Core/Repositories/PDSSQLiteAccountRepository.h"
@@ -23,7 +23,7 @@ NS_ASSUME_NONNULL_BEGIN
 @implementation PDSRepositoryFactory
 
 + (id<PDSAccountRepository>)accountRepositoryWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases {
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     
     if (config.useNewRepositoryImplementation) {
         return [[PDSSQLiteAccountRepository alloc] initWithServicePool:serviceDatabases.servicePool];
