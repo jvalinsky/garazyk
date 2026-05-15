@@ -3,6 +3,8 @@
 #import "PDSSMTPEmailProvider.h"
 #import "Debug/GZLogger.h"
 
+#pragma message "SMTP email delivery is not implemented — use PDSResendEmailProvider or PDSMockEmailProvider"
+
 NSString * const PDSSMTPEmailProviderErrorDomain = @"com.atproto.pds.smtpemailprovider";
 
 static NSError *PDSSMTPEmailProviderUnsupportedError(void) {
