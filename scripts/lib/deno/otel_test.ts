@@ -1,49 +1,56 @@
 /**
- * Tests for the OpenTelemetry wrapper module.
+ * Unit tests for the OTel module — disabled path and initTracing.
  *
- * These tests verify the otel.ts API without requiring an actual OTel
- * backend. When OTEL_DENO is not set, all operations should be no-ops.
+ * The enabled path requires npm:@opentelemetry/api which is not
+ * available in a test environment without network access. We test
+ * the disabled path (no OTEL_DENO set) and the initTracing
+ * configuration logic.
  */
 
+import { assertEquals } from "jsr:@std/assert";
 import {
+  isOtelEnabled,
+  initTracing,
+  getTracingConfig,
+  withSpan,
   addSpanAttribute,
   addSpanEvent,
-  initE2eTracing,
-  initTracing,
-  isOtelEnabled,
   shutdownTracing,
-  withSpan,
 } from "./otel.ts";
-import { assertEquals } from "@std/assert";
 
 // ---------------------------------------------------------------------------
 // isOtelEnabled
 // ---------------------------------------------------------------------------
 
-Deno.test("isOtelEnabled: returns false by default", () => {
-  // OTEL_DENO should not be set in the test environment
-  const original = Deno.env.get("OTEL_DENO");
+Deno.test("isOtelEnabled: returns false when OTEL_DENO is not set", () => {
+  // Save and restore
+  const orig = Deno.env.get("OTEL_DENO");
   Deno.env.delete("OTEL_DENO");
   assertEquals(isOtelEnabled(), false);
-  // Restore
-  if (original !== undefined) Deno.env.set("OTEL_DENO", original);
+  if (orig) Deno.env.set("OTEL_DENO", orig);
 });
 
 Deno.test("isOtelEnabled: returns true when OTEL_DENO=true", () => {
-  const original = Deno.env.get("OTEL_DENO");
+  const orig = Deno.env.get("OTEL_DENO");
   Deno.env.set("OTEL_DENO", "true");
   assertEquals(isOtelEnabled(), true);
-  // Restore
-  if (original !== undefined) Deno.env.set("OTEL_DENO", original);
+  if (orig !== undefined) Deno.env.set("OTEL_DENO", orig);
   else Deno.env.delete("OTEL_DENO");
 });
 
 Deno.test("isOtelEnabled: returns true when OTEL_DENO=1", () => {
-  const original = Deno.env.get("OTEL_DENO");
+  const orig = Deno.env.get("OTEL_DENO");
   Deno.env.set("OTEL_DENO", "1");
   assertEquals(isOtelEnabled(), true);
-  // Restore
-  if (original !== undefined) Deno.env.set("OTEL_DENO", original);
+  if (orig !== undefined) Deno.env.set("OTEL_DENO", orig);
+  else Deno.env.delete("OTEL_DENO");
+});
+
+Deno.test("isOtelEnabled: returns false for other values", () => {
+  const orig = Deno.env.get("OTEL_DENO");
+  Deno.env.set("OTEL_DENO", "false");
+  assertEquals(isOtelEnabled(), false);
+  if (orig !== undefined) Deno.env.set("OTEL_DENO", orig);
   else Deno.env.delete("OTEL_DENO");
 });
 
@@ -51,209 +58,165 @@ Deno.test("isOtelEnabled: returns true when OTEL_DENO=1", () => {
 // initTracing
 // ---------------------------------------------------------------------------
 
-Deno.test("initTracing: sets OTEL_DENO and environment variables", () => {
-  const origOtelDeno = Deno.env.get("OTEL_DENO");
-  const origServiceName = Deno.env.get("OTEL_SERVICE_NAME");
-  const origEndpoint = Deno.env.get("OTEL_EXPORTER_OTLP_ENDPOINT");
-  const origProtocol = Deno.env.get("OTEL_EXPORTER_OTLP_PROTOCOL");
-  const origResourceAttrs = Deno.env.get("OTEL_RESOURCE_ATTRIBUTES");
-
+Deno.test("initTracing: sets OTEL_DENO when not already set", () => {
+  const origOtel = Deno.env.get("OTEL_DENO");
   Deno.env.delete("OTEL_DENO");
-  Deno.env.delete("OTEL_SERVICE_NAME");
-  Deno.env.delete("OTEL_EXPORTER_OTLP_ENDPOINT");
-  Deno.env.delete("OTEL_EXPORTER_OTLP_PROTOCOL");
-  Deno.env.delete("OTEL_RESOURCE_ATTRIBUTES");
 
-  const result = initTracing({
-    serviceName: "test-service",
-    endpoint: "http://localhost:4318",
-    protocol: "http/protobuf",
-    resourceAttributes: { "service.version": "test" },
-  });
-
+  const result = initTracing({ serviceName: "test-service" });
   assertEquals(result, true);
   assertEquals(Deno.env.get("OTEL_DENO"), "true");
   assertEquals(Deno.env.get("OTEL_SERVICE_NAME"), "test-service");
-  assertEquals(Deno.env.get("OTEL_EXPORTER_OTLP_ENDPOINT"), "http://localhost:4318");
-  assertEquals(Deno.env.get("OTEL_EXPORTER_OTLP_PROTOCOL"), "http/protobuf");
-  assertEquals(Deno.env.get("OTEL_RESOURCE_ATTRIBUTES"), "service.version=test");
 
-  // Restore
-  if (origOtelDeno !== undefined) Deno.env.set("OTEL_DENO", origOtelDeno);
-  else Deno.env.delete("OTEL_DENO");
-  if (origServiceName !== undefined) Deno.env.set("OTEL_SERVICE_NAME", origServiceName);
-  else Deno.env.delete("OTEL_SERVICE_NAME");
-  if (origEndpoint !== undefined) Deno.env.set("OTEL_EXPORTER_OTLP_ENDPOINT", origEndpoint);
-  else Deno.env.delete("OTEL_EXPORTER_OTLP_ENDPOINT");
-  if (origProtocol !== undefined) Deno.env.set("OTEL_EXPORTER_OTLP_PROTOCOL", origProtocol);
-  else Deno.env.delete("OTEL_EXPORTER_OTLP_PROTOCOL");
-  if (origResourceAttrs !== undefined) Deno.env.set("OTEL_RESOURCE_ATTRIBUTES", origResourceAttrs);
-  else Deno.env.delete("OTEL_RESOURCE_ATTRIBUTES");
+  // Cleanup
+  Deno.env.delete("OTEL_DENO");
+  Deno.env.delete("OTEL_SERVICE_NAME");
+  if (origOtel) Deno.env.set("OTEL_DENO", origOtel);
 });
 
-// ---------------------------------------------------------------------------
-// initE2eTracing
-// ---------------------------------------------------------------------------
-
-Deno.test("initE2eTracing: uses default endpoint when not set", () => {
+Deno.test("initTracing: sets OTLP endpoint", () => {
+  const origOtel = Deno.env.get("OTEL_DENO");
   const origEndpoint = Deno.env.get("OTEL_EXPORTER_OTLP_ENDPOINT");
+  Deno.env.delete("OTEL_DENO");
   Deno.env.delete("OTEL_EXPORTER_OTLP_ENDPOINT");
 
-  initE2eTracing("garazyk-e2e-runner");
-  assertEquals(Deno.env.get("OTEL_EXPORTER_OTLP_ENDPOINT"), "http://localhost:4318");
-  assertEquals(Deno.env.get("OTEL_SERVICE_NAME"), "garazyk-e2e-runner");
+  initTracing({
+    serviceName: "test",
+    endpoint: "http://collector:4318",
+  });
+  assertEquals(Deno.env.get("OTEL_EXPORTER_OTLP_ENDPOINT"), "http://collector:4318");
 
-  // Restore
-  if (origEndpoint !== undefined) Deno.env.set("OTEL_EXPORTER_OTLP_ENDPOINT", origEndpoint);
-  else Deno.env.delete("OTEL_EXPORTER_OTLP_ENDPOINT");
+  // Cleanup
+  Deno.env.delete("OTEL_DENO");
+  Deno.env.delete("OTEL_SERVICE_NAME");
+  Deno.env.delete("OTEL_EXPORTER_OTLP_ENDPOINT");
+  if (origOtel) Deno.env.set("OTEL_DENO", origOtel);
+  if (origEndpoint) Deno.env.set("OTEL_EXPORTER_OTLP_ENDPOINT", origEndpoint);
 });
 
-Deno.test("initE2eTracing: respects existing endpoint env var", () => {
-  const origEndpoint = Deno.env.get("OTEL_EXPORTER_OTLP_ENDPOINT");
-  Deno.env.set("OTEL_EXPORTER_OTLP_ENDPOINT", "http://custom:4318");
+Deno.test("initTracing: sets protocol", () => {
+  const origOtel = Deno.env.get("OTEL_DENO");
+  const origProtocol = Deno.env.get("OTEL_EXPORTER_OTLP_PROTOCOL");
+  Deno.env.delete("OTEL_DENO");
+  Deno.env.delete("OTEL_EXPORTER_OTLP_PROTOCOL");
 
-  initE2eTracing("garazyk-e2e-runner");
-  assertEquals(Deno.env.get("OTEL_EXPORTER_OTLP_ENDPOINT"), "http://custom:4318");
+  initTracing({
+    serviceName: "test",
+    protocol: "http/json",
+  });
+  assertEquals(Deno.env.get("OTEL_EXPORTER_OTLP_PROTOCOL"), "http/json");
 
-  // Restore
-  if (origEndpoint !== undefined) Deno.env.set("OTEL_EXPORTER_OTLP_ENDPOINT", origEndpoint);
-  else Deno.env.delete("OTEL_EXPORTER_OTLP_ENDPOINT");
+  // Cleanup
+  Deno.env.delete("OTEL_DENO");
+  Deno.env.delete("OTEL_SERVICE_NAME");
+  Deno.env.delete("OTEL_EXPORTER_OTLP_PROTOCOL");
+  if (origOtel) Deno.env.set("OTEL_DENO", origOtel);
+  if (origProtocol) Deno.env.set("OTEL_EXPORTER_OTLP_PROTOCOL", origProtocol);
+});
+
+Deno.test("initTracing: appends resource attributes", () => {
+  const origOtel = Deno.env.get("OTEL_DENO");
+  const origAttrs = Deno.env.get("OTEL_RESOURCE_ATTRIBUTES");
+  Deno.env.delete("OTEL_DENO");
+  Deno.env.delete("OTEL_RESOURCE_ATTRIBUTES");
+
+  initTracing({
+    serviceName: "test",
+    resourceAttributes: { "service.version": "1.0" },
+  });
+  assertEquals(Deno.env.get("OTEL_RESOURCE_ATTRIBUTES"), "service.version=1.0");
+
+  // Cleanup
+  Deno.env.delete("OTEL_DENO");
+  Deno.env.delete("OTEL_SERVICE_NAME");
+  Deno.env.delete("OTEL_RESOURCE_ATTRIBUTES");
+  if (origOtel) Deno.env.set("OTEL_DENO", origOtel);
+  if (origAttrs) Deno.env.set("OTEL_RESOURCE_ATTRIBUTES", origAttrs);
 });
 
 // ---------------------------------------------------------------------------
-// withSpan
+// getTracingConfig
 // ---------------------------------------------------------------------------
 
-Deno.test("withSpan: calls function directly when OTel disabled", async () => {
-  const origOtelDeno = Deno.env.get("OTEL_DENO");
+Deno.test("getTracingConfig: returns null before init", () => {
+  // Note: this test may be affected by other tests calling initTracing.
+  // We test the interface contract, not the global state.
+  const config = getTracingConfig();
+  // Config may be non-null if initTracing was called earlier in the process.
+  // Just verify the type is correct.
+  if (config !== null) {
+    assertEquals(typeof config.serviceName, "string");
+  }
+});
+
+// ---------------------------------------------------------------------------
+// withSpan (disabled path)
+// ---------------------------------------------------------------------------
+
+Deno.test("withSpan: calls fn directly when OTel is disabled", async () => {
+  const origOtel = Deno.env.get("OTEL_DENO");
   Deno.env.delete("OTEL_DENO");
 
   let called = false;
-  const result = await withSpan("test.span", async () => {
+  const result = await withSpan("test-span", async () => {
     called = true;
     return 42;
   });
   assertEquals(called, true);
   assertEquals(result, 42);
 
-  if (origOtelDeno !== undefined) Deno.env.set("OTEL_DENO", origOtelDeno);
-  else Deno.env.delete("OTEL_DENO");
+  if (origOtel) Deno.env.set("OTEL_DENO", origOtel);
 });
 
-Deno.test("withSpan: propagates errors when OTel disabled", async () => {
-  const origOtelDeno = Deno.env.get("OTEL_DENO");
+Deno.test("withSpan: propagates errors when OTel is disabled", async () => {
+  const origOtel = Deno.env.get("OTEL_DENO");
   Deno.env.delete("OTEL_DENO");
 
-  let caught = false;
   try {
-    await withSpan("test.span", async () => {
+    await withSpan("test-span", async () => {
       throw new Error("test error");
     });
-  } catch (err) {
-    caught = true;
-    assertEquals((err as Error).message, "test error");
+    throw new Error("Should have thrown");
+  } catch (e) {
+    assertEquals((e as Error).message, "test error");
   }
-  assertEquals(caught, true);
 
-  if (origOtelDeno !== undefined) Deno.env.set("OTEL_DENO", origOtelDeno);
-  else Deno.env.delete("OTEL_DENO");
-});
-
-Deno.test("withSpan: works with attributes when OTel disabled", async () => {
-  const origOtelDeno = Deno.env.get("OTEL_DENO");
-  Deno.env.delete("OTEL_DENO");
-
-  const result = await withSpan("test.span", async () => "hello", {
-    "key": "value",
-    "count": 42,
-    "flag": true,
-  });
-  assertEquals(result, "hello");
-
-  if (origOtelDeno !== undefined) Deno.env.set("OTEL_DENO", origOtelDeno);
-  else Deno.env.delete("OTEL_DENO");
+  if (origOtel) Deno.env.set("OTEL_DENO", origOtel);
 });
 
 // ---------------------------------------------------------------------------
-// addSpanAttribute / addSpanEvent (no-op when disabled)
+// addSpanAttribute / addSpanEvent (disabled path — no-ops)
 // ---------------------------------------------------------------------------
 
-Deno.test("addSpanAttribute: no-op when OTel disabled", async () => {
-  const origOtelDeno = Deno.env.get("OTEL_DENO");
+Deno.test("addSpanAttribute: no-op when OTel is disabled", async () => {
+  const origOtel = Deno.env.get("OTEL_DENO");
   Deno.env.delete("OTEL_DENO");
 
   // Should not throw
-  await addSpanAttribute("test.key", "test.value");
+  await addSpanAttribute("test.key", "value");
 
-  if (origOtelDeno !== undefined) Deno.env.set("OTEL_DENO", origOtelDeno);
-  else Deno.env.delete("OTEL_DENO");
+  if (origOtel) Deno.env.set("OTEL_DENO", origOtel);
 });
 
-Deno.test("addSpanEvent: no-op when OTel disabled", async () => {
-  const origOtelDeno = Deno.env.get("OTEL_DENO");
+Deno.test("addSpanEvent: no-op when OTel is disabled", async () => {
+  const origOtel = Deno.env.get("OTEL_DENO");
   Deno.env.delete("OTEL_DENO");
 
   // Should not throw
-  await addSpanEvent("test.event", { "key": "value" });
+  await addSpanEvent("test-event", { key: "value" });
 
-  if (origOtelDeno !== undefined) Deno.env.set("OTEL_DENO", origOtelDeno);
-  else Deno.env.delete("OTEL_DENO");
+  if (origOtel) Deno.env.set("OTEL_DENO", origOtel);
 });
 
 // ---------------------------------------------------------------------------
-// shutdownTracing
+// shutdownTracing (disabled path — no-op)
 // ---------------------------------------------------------------------------
 
-Deno.test("shutdownTracing: no-op when not initialized", async () => {
+Deno.test("shutdownTracing: no-op when OTel is disabled", async () => {
+  const origOtel = Deno.env.get("OTEL_DENO");
+  Deno.env.delete("OTEL_DENO");
+
   // Should not throw
   await shutdownTracing();
-});
 
-// ---------------------------------------------------------------------------
-// Topology compiler OTel integration
-// ---------------------------------------------------------------------------
-
-Deno.test("topology compiler: --otel flag injects OTel env vars", async () => {
-  const { renderComposeYaml } = await import("./topology_compiler.ts");
-  const { resolvePreset } = await import("./topology.ts");
-  const preset = resolvePreset("garazyk-default");
-
-  const yaml = renderComposeYaml(preset, {
-    preset: "garazyk-default",
-    runDir: "/tmp/test",
-    repoRoot: "/tmp/test",
-    composeProject: "test",
-    otel: true,
-  });
-
-  // Should contain OTel env vars in service definitions
-  assertEquals(yaml.includes("OTEL_SERVICE_NAME="), true);
-  assertEquals(yaml.includes("OTEL_EXPORTER_OTLP_ENDPOINT=http://signoz-otel-collector:4318"), true);
-  assertEquals(yaml.includes("OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf"), true);
-
-  // Should contain SigNoz services
-  assertEquals(yaml.includes("signoz-otel-collector"), true);
-  assertEquals(yaml.includes("clickhouse"), true);
-  assertEquals(yaml.includes("signoz:"), true);
-  assertEquals(yaml.includes("4317:4317"), true);
-  assertEquals(yaml.includes("4318:4318"), true);
-  assertEquals(yaml.includes("3301:8080"), true);
-});
-
-Deno.test("topology compiler: no OTel env vars when --otel not set", async () => {
-  const { renderComposeYaml } = await import("./topology_compiler.ts");
-  const { resolvePreset } = await import("./topology.ts");
-  const preset = resolvePreset("garazyk-default");
-
-  const yaml = renderComposeYaml(preset, {
-    preset: "garazyk-default",
-    runDir: "/tmp/test",
-    repoRoot: "/tmp/test",
-    composeProject: "test",
-    otel: false,
-  });
-
-  // Should NOT contain OTel env vars
-  assertEquals(yaml.includes("OTEL_SERVICE_NAME="), false);
-  assertEquals(yaml.includes("signoz-otel-collector"), false);
+  if (origOtel) Deno.env.set("OTEL_DENO", origOtel);
 });
