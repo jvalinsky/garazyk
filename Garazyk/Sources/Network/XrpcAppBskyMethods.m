@@ -214,7 +214,10 @@ static id<XrpcRoutePackServices> XrpcAppBskyResolvedRoutePackServices(
         ageAssuranceService;
   }
   [XrpcAppBskyAgeAssurancePack registerWithDispatcher:dispatcher services:resolvedServices];
-  [XrpcAppBskyContactPack registerWithDispatcher:dispatcher contactService:contactService jwtMinter:jwtMinter adminController:adminController];
+  if ([resolvedServices isKindOfClass:[XrpcRoutePackServiceBag class]]) {
+    ((XrpcRoutePackServiceBag *)resolvedServices).contactService = contactService;
+  }
+  [XrpcAppBskyContactPack registerWithDispatcher:dispatcher services:resolvedServices];
   // Register video XRPC endpoints (only in internal mode)
   NSString *videoMode = [[[NSProcessInfo processInfo] environment] objectForKey:@"PDS_VIDEO_MODE"];
   BOOL videoInternal = (videoMode == nil || [videoMode isEqualToString:@"internal"]);
