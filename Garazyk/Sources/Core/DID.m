@@ -186,7 +186,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
 
     for (NSString *did in dids) {
         [self resolveDID:did completion:^(NSDictionary *document, NSError *error) {
-            @synchronized(results) {
+            dispatch_sync(self->_cacheQueue, ^{
                 if (error) {
                     // Store error information for failed resolutions
                     results[did] = @{@"error": error};
@@ -200,7 +200,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
                 if (remaining == 0) {
                     completion(results, batchError);
                 }
-            }
+            });
         }];
     }
 }
