@@ -6,7 +6,7 @@ import Toolbar from "../../islands/Toolbar.tsx";
 import RunProgress from "../../islands/RunProgress.tsx";
 import LogViewer from "../../islands/LogViewer.tsx";
 import StatusBar from "../../components/StatusBar.tsx";
-import ScenarioCard from "../../components/ScenarioCard.tsx";
+import ScenarioCard from "../../islands/ScenarioCard.tsx";
 import SummaryCards from "../../components/SummaryCards.tsx";
 import { formatDate, formatDurationSec } from "../../utils.ts";
 import { Run, ScenarioResult, ScenarioStatus } from "../../services/types.ts";
