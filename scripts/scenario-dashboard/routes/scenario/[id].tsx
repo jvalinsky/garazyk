@@ -1,6 +1,5 @@
 import { Handlers, PageProps } from "$fresh/server.ts";
 import { getScenarios } from "../../services/scenario_discovery.ts";
-import { networkManager } from "../../services/network_manager.ts";
 import { db } from "../../db/index.ts";
 import Layout from "../../components/Layout.tsx";
 import Toolbar from "../../islands/Toolbar.tsx";
@@ -8,13 +7,10 @@ import Sidebar from "../../islands/Sidebar.tsx";
 import StatusBar from "../../components/StatusBar.tsx";
 import StepRow from "../../components/StepRow.tsx";
 import ScenarioRunner from "../../islands/ScenarioRunner.tsx";
-import { DiscoveredScenario, ServiceStatus, ScenarioStatus, Step } from "../../services/types.ts";
+import type { DiscoveredScenario, ScenarioStatus, Step } from "../../services/types.ts";
 
 interface ScenarioPageData {
   scenario: DiscoveredScenario;
-  scenarios: DiscoveredScenario[];
-  services: Record<string, ServiceStatus>;
-  // Latest result from DB (if any)
   latestResult?: {
     status: ScenarioStatus;
     passed: number;
@@ -31,9 +27,8 @@ export const handler: Handlers<ScenarioPageData> = {
       const { id } = ctx.params;
       const url = new URL(req.url);
       const runId = url.searchParams.get("runId");
-      
+
       const scenarios = await getScenarios();
-      const services = networkManager.getStatus();
 
       let scenario = scenarios.find((s) => s.id === id);
       
@@ -101,8 +96,6 @@ export const handler: Handlers<ScenarioPageData> = {
 
       return ctx.render({
         scenario,
-        scenarios,
-        services,
         latestResult,
       });
     } catch (e) {
@@ -113,16 +106,12 @@ export const handler: Handlers<ScenarioPageData> = {
 };
 
 export default function ScenarioDetailPage({ data }: PageProps<ScenarioPageData>) {
-  const { scenario, scenarios, services, latestResult } = data;
+  const { scenario, latestResult } = data;
 
   return (
     <Layout title={`Scenario ${scenario.id}: ${scenario.name}`}>
       <Toolbar />
-      <Sidebar
-        scenarios={scenarios}
-        services={Object.values(services)}
-        activeScenario={scenario.id}
-      />
+      <Sidebar activeScenario={scenario.id} />
       <main class="main-content">
         <div style="margin-bottom: var(--space-lg);">
           <a href="/" style="color: var(--color-accent); text-decoration: none; font-size: var(--font-size-sm);">
