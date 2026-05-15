@@ -8,6 +8,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "Network/XrpcRoutePack.h"
 
 @class XrpcDispatcher;
 @class DraftService;
@@ -16,7 +17,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface XrpcAppBskyDraftsPack : NSObject
+@interface XrpcAppBskyDraftsPack : NSObject <XrpcRoutePack>
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                   draftService:(DraftService *)draftService
