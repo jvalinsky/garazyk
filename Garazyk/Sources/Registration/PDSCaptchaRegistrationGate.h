@@ -22,6 +22,12 @@ NS_ASSUME_NONNULL_BEGIN
  @class PDSCaptchaRegistrationGate
 
  @abstract Requires a valid CAPTCHA token for account registration.
+
+ @warning Server-side CAPTCHA verification is **not implemented**. When a
+          secret key is configured, the token is accepted without contacting
+          the Turnstile/hCaptcha siteverify endpoint. Without a secret key,
+          only token presence is checked. Full server-side verification will
+          be added when outbound HTTP client infrastructure is available.
  */
 @interface PDSCaptchaRegistrationGate : NSObject <PDSRegistrationGate>
 

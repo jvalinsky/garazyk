@@ -8,9 +8,12 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @class PDSSMTPEmailProvider
  * @abstract SMTP provider configuration holder.
- * @discussion SMTP delivery is not implemented. Send attempts fail closed with
- * PDSSMTPEmailProviderErrorNotImplemented so configured deployments do not
- * report messages as delivered.
+ *
+ * @warning SMTP delivery is **not implemented**. All send attempts fail
+ *          closed with PDSSMTPEmailProviderErrorNotImplemented so that
+ *          configured deployments never report messages as delivered.
+ *          Use PDSResendEmailProvider or PDSMockEmailProvider for working
+ *          email delivery.
  */
 extern NSString * const PDSSMTPEmailProviderErrorDomain;
 

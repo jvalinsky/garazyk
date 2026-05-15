@@ -12,6 +12,8 @@
 #import "Registration/PDSRegistrationGate.h"
 #import "App/PDSConfiguration.h"
 
+#pragma message "CAPTCHA server-side verification is not implemented — tokens are accepted without siteverify"
+
 @interface PDSCaptchaRegistrationGate ()
 @property (nonatomic, copy) NSString *provider;
 @property (nonatomic, copy, nullable) NSString *siteKey;
@@ -55,10 +57,12 @@
     // For Turnstile: POST https://challenges.cloudflare.com/turnstile/v0/siteverify
     // For hCaptcha: POST https://hcaptcha.com/siteverify
     //
-    // TODO: Implement server-side siteverify HTTP call.
-    // The current implementation accepts the presence of a non-empty token.
-    // Full verification will be added when the HTTP client infrastructure
-    // is available for outbound verification requests.
+    // FIXME: Server-side siteverify HTTP call not implemented.
+    // The current implementation accepts the presence of a non-empty token
+    // without verifying it against the provider's siteverify endpoint.
+    // This is a security gap — tokens could be fabricated. Full verification
+    // requires an outbound HTTP client, which is not yet available in the
+    // infrastructure layer.
 
     if (!_secretKey || _secretKey.length == 0) {
         // No secret key configured — accept token presence only
@@ -78,8 +82,11 @@
         verifyURL = @"https://challenges.cloudflare.com/turnstile/v0/siteverify";
     }
 
-    // TODO: Implement HTTP POST to verifyURL with secret + token
-    // For now, accept the token if a secret key is configured
+    // FIXME: HTTP POST to verifyURL with secret + token not implemented.
+    // Currently accepts any token when a secret key is configured.
+    // Must POST to the provider's siteverify endpoint with
+    //   { secret: <secretKey>, response: <token> }
+    // and check the success field in the JSON response.
     #pragma unused(verifyURL)
     return YES;
 }
