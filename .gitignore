@@ -208,3 +208,4 @@ docker/local-network/oauth-client/dist/
 objc-jupyter-wasm/.letta/
 objc-jupyter-wasm/result
 result
+docker/local-network/sources_cache/
