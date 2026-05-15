@@ -8,9 +8,7 @@
 #import "Identity/ATProtoHandleValidator.h"
 #import "Debug/GZLogger.h"
 #import "Core/NSDateFormatter+ATProto.h"
-#import "Database/Migration/PDSMigrationExecutor.h"
-#import "Database/Migration/PDSServiceMigration001.h"
-#import "Database/Migration/PDSServiceMigration002.h"
+#import "Database/Migrations/PDSMigrationManager.h"
 #if !defined(__linux__) && !defined(__GNUstep__)
 #import <Security/Security.h>
 #endif
@@ -120,16 +118,11 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
         [self setWalMode:error];
         [self createSchema:error];
 
-        // Run pending migrations
-        PDSMigrationExecutor *executor = [[PDSMigrationExecutor alloc] init];
-        NSArray *migrations = @[
-            [[PDSServiceMigration001 alloc] init],
-            [[PDSServiceMigration002 alloc] init],
-            // Future migrations go here
-        ];
-        if (![executor executePendingMigrationsOnDatabase:self migrations:migrations error:error]) {
+        // Run pending migrations via PDSMigrationManager
+        PDSMigrationManager *migrationManager = [PDSMigrationManager pdsDatabaseMigrationManager];
+        if (![migrationManager migrateDatabase:_db error:error]) {
             GZ_LOG_DB_ERROR(@"Failed to execute pending migrations: %@", *error);
-            [self close];  // Clean up on failure
+            [self close];
             result = NO;
             return;
         }
@@ -900,7 +893,7 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
     }
 
     // Inline ALTERs removed — all schema evolution is now handled by
-    // versioned migrations (PDSServiceMigration002+). Columns that
+    // versioned migrations (V11AddLegacyColumns+). Columns that
     // were previously added here (password_salt, tfa_enabled, etc.)
     // are already in the CREATE TABLE statements for fresh databases,
     // and are added to old databases by the migration system.

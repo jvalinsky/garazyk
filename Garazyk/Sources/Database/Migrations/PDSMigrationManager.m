@@ -1456,6 +1456,129 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 @end
 
+#pragma mark - V10 Legacy Schema Version Bridge
+
+@interface V10LegacySchemaBridge : NSObject <PDSMigration>
+@end
+
+@implementation V10LegacySchemaBridge
+
+- (NSInteger)version { return 10; }
+
+- (NSString *)name { return @"legacy_schema_version_bridge"; }
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    const char *checkSQL = "SELECT name FROM sqlite_master WHERE type='table' AND name='schema_version'";
+    sqlite3_stmt *stmt = NULL;
+    int rc = sqlite3_prepare_v2(db, checkSQL, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) return YES;
+
+    BOOL hasLegacyTable = (sqlite3_step(stmt) == SQLITE_ROW);
+    sqlite3_finalize(stmt);
+
+    if (!hasLegacyTable) return YES;
+
+    const char *createMigrations = "CREATE TABLE IF NOT EXISTS _migrations ("
+        "version INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at REAL NOT NULL)";
+    char *errMsg = NULL;
+    rc = sqlite3_exec(db, createMigrations, NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: errMsg ? @(errMsg) : @"Failed to create _migrations table"}];
+        }
+        if (errMsg) sqlite3_free(errMsg);
+        return NO;
+    }
+
+    const char *copySQL = "INSERT OR IGNORE INTO _migrations (version, name, applied_at) "
+        "SELECT version, COALESCE(description, 'migrated'), COALESCE(applied_at, strftime('%s', 'now')) "
+        "FROM schema_version";
+    rc = sqlite3_exec(db, copySQL, NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: errMsg ? @(errMsg) : @"Failed to copy schema_version entries"}];
+        }
+        if (errMsg) sqlite3_free(errMsg);
+        return NO;
+    }
+
+    sqlite3_exec(db, "DROP TABLE IF EXISTS schema_version", NULL, NULL, NULL);
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    const char *createSQL = "CREATE TABLE IF NOT EXISTS schema_version ("
+        "version INTEGER NOT NULL, description TEXT, applied_at INTEGER DEFAULT (strftime('%s', 'now')))";
+    sqlite3_exec(db, createSQL, NULL, NULL, NULL);
+
+    const char *copyBackSQL = "INSERT OR IGNORE INTO schema_version (version, description, applied_at) "
+        "SELECT version, name, applied_at FROM _migrations WHERE version <= 2";
+    sqlite3_exec(db, copyBackSQL, NULL, NULL, NULL);
+    return YES;
+}
+
+@end
+
+#pragma mark - V11 Legacy Column Additions
+
+@interface V11AddLegacyColumns : NSObject <PDSMigration>
+@end
+
+@implementation V11AddLegacyColumns
+
+- (NSInteger)version { return 11; }
+
+- (NSString *)name { return @"add_legacy_columns"; }
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    NSArray<NSString *> *alterStatements = @[
+        @"ALTER TABLE accounts ADD COLUMN age_assurance TEXT",
+        @"ALTER TABLE accounts ADD COLUMN age_verified_at TEXT",
+        @"ALTER TABLE accounts ADD COLUMN webauthn_enabled INTEGER DEFAULT 0",
+        @"ALTER TABLE records ADD COLUMN indexed_at TEXT NOT NULL DEFAULT ''",
+        @"ALTER TABLE jwt_signing_keys ADD COLUMN keychain_tag TEXT",
+    ];
+
+    for (NSString *sql in alterStatements) {
+        char *errMsg = NULL;
+        int rc = sqlite3_exec(db, sql.UTF8String, NULL, NULL, &errMsg);
+        if (rc != SQLITE_OK) {
+            NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"";
+            if (errMsg) sqlite3_free(errMsg);
+            if ([msg containsString:@"duplicate column name"]) continue;
+            if (error) {
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"V11 up failed on %@: %@", sql, msg]}];
+            }
+            return NO;
+        }
+        if (errMsg) sqlite3_free(errMsg);
+    }
+
+    char *errMsg = NULL;
+    int rc = sqlite3_exec(db, "UPDATE records SET indexed_at = created_at WHERE indexed_at = ''", NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        if (errMsg) sqlite3_free(errMsg);
+    }
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    if (error) {
+        *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                     code:PDSMigrationErrorMigrationFailed
+                                 userInfo:@{NSLocalizedDescriptionKey: @"V11AddLegacyColumns is not reversible"}];
+    }
+    return NO;
+}
+
+@end
+
 #pragma mark - Convenience Factory Methods
 
 @implementation PDSMigrationManager (Factory)
@@ -1478,6 +1601,13 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     PDSMigrationManager *manager = [[PDSMigrationManager alloc] init];
     [manager registerMigration:[[V1InitialSchema alloc] initWithSchemaType:@"actor"]];
     [manager registerMigration:[[BlobsMimeTypeRename alloc] initWithVersion:2]];
+    return manager;
+}
+
++ (instancetype)pdsDatabaseMigrationManager {
+    PDSMigrationManager *manager = [[PDSMigrationManager alloc] init];
+    [manager registerMigration:[[V10LegacySchemaBridge alloc] init]];
+    [manager registerMigration:[[V11AddLegacyColumns alloc] init]];
     return manager;
 }
 
