@@ -51,13 +51,16 @@
 - Records + Transactions ✅ (just added — 2 new test files, 12 test methods)
 - Registered in test_main.m
 
-### C3: Plan 1 — PDSDatabase Decomposition 🔜
-- Split 3,804-line PDSDatabase.m into 11 category files
-- Characterization tests now in place
-- **Next logical step**
+### C3: Plan 1 — PDSDatabase Decomposition ✅
+- Split 3,804-line PDSDatabase.m into 14 categories + 5 model classes (commit 1cb6bf90)
+- Remaining 1,200-line core contains lifecycle, queue safety, statement mgmt, SQLite setup, schema creation, and query execution
 
-### C4: Plan 6 — Legacy Migration Cleanup 📋
-- Remove legacy Migration/ directory, unify on PDSMigrationManager
+### C4: Plan 6 — Legacy Migration Cleanup ✅
+- Removed legacy Migration/ directory (7 files)
+- Unified on PDSMigrationManager
+- Added V10LegacySchemaBridge (schema_version → _migrations table bridge)
+- Added V11AddLegacyColumns (ALTER TABLE columns for upgrade path)
+- PDSDatabase.m now uses `[PDSMigrationManager pdsDatabaseMigrationManager]`
 
 ### C5-C8: 📋 Remaining roadmap (tests → DB protocol → XRPC protocol → binary entry points)
 
@@ -66,7 +69,7 @@
 ## Execution Strategy (Updated)
 
 ```
-B1 → C1 → B2 → B3(deferred) → C2 → C3 → C4 → C5 → C6 → C7 → C8
+B1 → C1 → B2 → C2 → C3(already done) → C4 → B3(deferred) → C5 → C6 → C7 → C8
 ```
 
 ## Rollback Notes
