@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Network/XrpcSyncMethods.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Services/PDS/PDSBlobService.h"
 #import "Services/PDS/PDSRecordService.h"
 #import "Services/PDS/PDSRelayService.h"
@@ -32,7 +32,7 @@ static void setSubscribeReposUpgradeRequired(HttpRequest *request,
                                              HttpResponse *response);
 static NSString *normalizedHostnameString(NSString *hostInput);
 static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
-                                        PDSConfiguration *config);
+                                        ATProtoServiceConfiguration *config);
 
 static NSString *trimmedNonEmptyString(NSString *value) {
   if (![value isKindOfClass:[NSString class]]) {
@@ -133,7 +133,7 @@ static NSString *normalizedHostnameString(NSString *hostInput) {
 }
 
 static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
-                                        PDSConfiguration *config) {
+                                        ATProtoServiceConfiguration *config) {
   NSError *accountsError = nil;
   NSArray<PDSDatabaseAccount *> *accounts =
       [serviceDatabases getAllAccountsWithError:&accountsError];
@@ -157,7 +157,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
                    blobService:(PDSBlobService *)blobService
              repositoryService:(PDSRepositoryService *)repositoryService
                   relayService:(PDSRelayService *)relayService
-                 configuration:(PDSConfiguration *)config {
+                 configuration:(ATProtoServiceConfiguration *)config {
   (void)relayService;
 
   // com.atproto.sync.getRepo

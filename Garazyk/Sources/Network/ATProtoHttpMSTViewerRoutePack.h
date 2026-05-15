@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSHttpMSTViewerRoutePack.h
+ @file ATProtoHttpMSTViewerRoutePack.h
 
  @abstract Declares MST viewer route-pack registration entry points.
 
@@ -15,7 +15,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class HttpServer;
 @class PDSController;
 
-@interface PDSHttpMSTViewerRoutePack : NSObject
+@interface ATProtoHttpMSTViewerRoutePack : NSObject
 
 + (void)registerRoutesWithServer:(HttpServer *)server
                       controller:(nullable PDSController *)controller;

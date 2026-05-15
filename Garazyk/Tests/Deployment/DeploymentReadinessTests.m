@@ -11,18 +11,18 @@
  */
 
 #import <XCTest/XCTest.h>
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "App/PDSReadinessCheck.h"
 
 @interface DeploymentReadinessTests : XCTestCase
-@property (nonatomic, strong) PDSConfiguration *configuration;
+@property (nonatomic, strong) ATProtoServiceConfiguration *configuration;
 @end
 
 @implementation DeploymentReadinessTests
 
 - (void)setUp {
     [super setUp];
-    self.configuration = [PDSConfiguration sharedConfiguration];
+    self.configuration = [ATProtoServiceConfiguration sharedConfiguration];
 }
 
 - (void)tearDown {

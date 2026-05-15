@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
-#import "Network/PDSHttpServerBuilder.h"
+#import "Network/ATProtoHttpServerBuilder.h"
 #import "App/OAuthDemo/OAuthDemoHandler.h"
 #import "App/PDSController.h"
 #import "Network/HttpRequest.h"
@@ -60,7 +60,7 @@
 }
 
 - (void)testBuilderSetsDataDirectoryOnOAuthDemoHandler {
-    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+    ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];
     NSString *testDir = @"/tmp/test-data-dir";
     builder.dataDirectory = testDir;
 

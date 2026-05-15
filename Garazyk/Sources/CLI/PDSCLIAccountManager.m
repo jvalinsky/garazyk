@@ -7,7 +7,7 @@
 #import "PDSCLIInputHelper.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Schema.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "Auth/Secp256k1.h"
 #import "Auth/CryptoUtils.h"
@@ -29,10 +29,10 @@
 
 + (NSString *)dataDirForContext:(PDSCLICommandContext *)context {
     NSDictionary *config = [context loadConfig];
-    NSString *dataDir = config[@"server"][@"data_dir"] ?: [PDSConfiguration defaultDataDirectory];
+    NSString *dataDir = config[@"server"][@"data_dir"] ?: [ATProtoServiceConfiguration defaultDataDirectory];
     
     // Command line flag should override config file
-    if (context.dataDir && ![context.dataDir isEqualToString:[PDSConfiguration defaultDataDirectory]] && ![context.dataDir isEqualToString:@"./data"]) {
+    if (context.dataDir && ![context.dataDir isEqualToString:[ATProtoServiceConfiguration defaultDataDirectory]] && ![context.dataDir isEqualToString:@"./data"]) {
         dataDir = context.dataDir;
     }
     return dataDir;
@@ -157,11 +157,11 @@
                               email:(NSString *)email
                             handle:(NSString *)handle
                           password:(NSString *)password {
-    // Ensure PDSConfiguration loads from the config file (otherwise defaults apply,
+    // Ensure ATProtoServiceConfiguration loads from the config file (otherwise defaults apply,
     // which has debugSkipPlcOperations=YES and plcURL="mock")
     if (context.configPath && [[NSFileManager defaultManager] fileExistsAtPath:context.configPath]) {
         NSError *configError = nil;
-        PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+        ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
         if (![config loadFromPath:context.configPath error:&configError]) {
             GZ_LOG_WARN(@"Failed to load config from %@: %@", context.configPath, configError.localizedDescription);
         }
@@ -217,7 +217,7 @@
     NSString *pdsHostname = [self pdsHostnameForContext:context];
     NSString *pdsEndpoint = [self pdsServiceEndpointForContext:context];
 
-    if ([PDSConfiguration sharedConfiguration].masterSecret.length == 0) {
+    if ([ATProtoServiceConfiguration sharedConfiguration].masterSecret.length == 0) {
         if (context.verbose) {
             GZ_LOG_ERROR(@"PDS_MASTER_SECRET not configured");
         }
@@ -426,7 +426,7 @@
     GZ_LOG_INFO(@"Calculated DID from signed genesis op: %@", did);
     
     // 6. POST genesis operation to PLC Server
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     NSString *plcUrl = [NSProcessInfo processInfo].environment[@"PDS_PLC_URL"] ?: config.plcURL;
     
     // Check for "skip" or "mock" mode - generate DID without network registration (for tests)

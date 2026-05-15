@@ -19,7 +19,7 @@
 @protocol PDSEmailProvider;
 @protocol PDSSecretsProvider;
 
-@class PDSConfiguration;
+@class ATProtoServiceConfiguration;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -40,7 +40,7 @@ NS_ASSUME_NONNULL_BEGIN
  @return An email provider instance, or nil on failure.
  */
 + (nullable id<PDSEmailProvider>)providerWithName:(NSString *)name
-                                    configuration:(PDSConfiguration *)configuration
+                                    configuration:(ATProtoServiceConfiguration *)configuration
                                    secretsProvider:(nullable id<PDSSecretsProvider>)secretsProvider
                                              error:(NSError **)error;
 

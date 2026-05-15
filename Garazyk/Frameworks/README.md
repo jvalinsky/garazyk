@@ -16,4 +16,4 @@ continues.
 Umbrella ownership rules:
 
 - `ATProtoTransport` exports transport/runtime-agnostic HTTP primitives only.
-- `ATProtoRuntime` exports bootstrap/composition APIs such as `PDSHttpServerBuilder`.
+- `ATProtoRuntime` exports bootstrap/composition APIs such as `ATProtoHttpServerBuilder`.

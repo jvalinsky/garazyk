@@ -7,7 +7,7 @@
 #import "Database/PDSDatabase.h"
 #import "Auth/Session.h"
 #import "Debug/GZLogger.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 
 @interface OAuth2Server (Testing)
 - (Session *)createSessionForDID:(NSString *)did
@@ -25,7 +25,7 @@
 
 - (void)setUp {
     [super setUp];
-    [PDSConfiguration sharedConfiguration].useKeychain = NO;
+    [ATProtoServiceConfiguration sharedConfiguration].useKeychain = NO;
     NSString *dbPath = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"test-%@.db", [[NSUUID UUID] UUIDString]]];
     self.database = [PDSDatabase databaseAtURL:[NSURL fileURLWithPath:dbPath]];
     NSError *error = nil;

@@ -23,7 +23,7 @@
 #import "Auth/CryptoUtils.h"
 #import "Auth/PDSReplayCache.h"
 #import "Auth/PDSNonceManager.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Auth/Crypto/AuthCryptoJWK.h"
 #import "Auth/Crypto/AuthCryptoDPoP.h"
 #import "Auth/Crypto/AuthCryptoBase64URL.h"
@@ -73,7 +73,7 @@ static BOOL OAuth2ShouldUseEphemeralJWTKeyForTests(void) {
         return YES;
     }
 
-    return ![PDSConfiguration sharedConfiguration].useKeychain;
+    return ![ATProtoServiceConfiguration sharedConfiguration].useKeychain;
 }
 
 static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
@@ -489,7 +489,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
         _jwtMinter.issuer = self.issuer;
         _jwtMinter.audience = self.issuer;
         _didResolver = [[DIDResolver alloc] init];
-        _didResolver.plcURL = [PDSConfiguration sharedConfiguration].plcURL;
+        _didResolver.plcURL = [ATProtoServiceConfiguration sharedConfiguration].plcURL;
         _handleResolver = [[HandleResolver alloc] init];
         _database = database;
 
@@ -825,7 +825,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
             return;
         }
 
-        NSString *origin = [PDSConfiguration sharedConfiguration].issuer;
+        NSString *origin = [ATProtoServiceConfiguration sharedConfiguration].issuer;
         BOOL verified = NO;
         uint32_t newSignCount = 0;
         NSDictionary *matchedCredential = nil;

@@ -9,7 +9,7 @@
  */
 
 #import "SSLPinningManager.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import <Security/Security.h>
 #import <CommonCrypto/CommonCrypto.h>
 #import <stdint.h>
@@ -31,7 +31,7 @@ NSString *const SSLPinningErrorDomain = @"com.atproto.pds.sslpinning";
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         // Use configuration to determine if pinning is enabled
-        PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+        ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
         shared = [[SSLPinningManager alloc] initWithPinningEnabled:config.sslPinningEnabled];
     });
     return shared;

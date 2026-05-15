@@ -3,7 +3,7 @@
 #import <XCTest/XCTest.h>
 #import "App/PDSController.h"
 #import "App/PDSApplication.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
 #import "Network/XrpcMethodRegistry.h"
@@ -191,7 +191,7 @@
         return configuredIssuer;
     }
 
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     NSString *host = config.serverHost;
     NSString *normalized = [[host ?: @"" lowercaseString] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     BOOL local = normalized.length == 0 ||

@@ -5,7 +5,7 @@
 #import "Network/HttpResponse.h"
 #import "Network/XrpcAuthHelper.h"
 #import "Auth/JWT.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Debug/GZLogger.h"
 
 @implementation XrpcProxyHandler
@@ -68,7 +68,7 @@
     // Reference: ATProto S2S Auth
     NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
     NSDictionary *payload = @{
-        @"iss": self.minter.issuer ?: [[PDSConfiguration sharedConfiguration] canonicalIssuer],
+        @"iss": self.minter.issuer ?: [[ATProtoServiceConfiguration sharedConfiguration] canonicalIssuer],
         @"sub": userDid,
         @"aud": upstreamDID,
         @"iat": @((NSInteger)now),

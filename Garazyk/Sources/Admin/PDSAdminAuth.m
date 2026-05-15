@@ -3,7 +3,7 @@
 #import "Admin/PDSAdminAuth.h"
 #import "Auth/JWT.h"
 #import "App/PDSController.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Debug/GZLogger.h"
 #import <CommonCrypto/CommonKeyDerivation.h>
 #include <stdlib.h>
@@ -100,8 +100,8 @@ static NSString *PDSAdminAuthResolvedIssuer(NSDictionary *env, BOOL *requiredBut
         return nil;
     }
     
-    // Fall back to canonical issuer from PDSConfiguration.
-    PDSConfiguration *configuration = [PDSConfiguration sharedConfiguration];
+    // Fall back to canonical issuer from ATProtoServiceConfiguration.
+    ATProtoServiceConfiguration *configuration = [ATProtoServiceConfiguration sharedConfiguration];
     NSString *configIssuer = [configuration canonicalIssuerWithPortHint:0];
     if (configIssuer.length > 0) {
         if (requiredButMissing) *requiredButMissing = NO;
@@ -109,7 +109,7 @@ static NSString *PDSAdminAuthResolvedIssuer(NSDictionary *env, BOOL *requiredBut
     }
     
     if (requiredButMissing) *requiredButMissing = NO;
-    return [[PDSConfiguration sharedConfiguration] canonicalIssuerWithPortHint:0];
+    return [[ATProtoServiceConfiguration sharedConfiguration] canonicalIssuerWithPortHint:0];
 }
 
 static NSInteger PDSAdminAuthParsePositiveInteger(NSString *value) {

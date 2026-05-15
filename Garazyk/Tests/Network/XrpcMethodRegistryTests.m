@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
 #import "App/PDSApplication.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "App/PDSController.h"
 #import "Auth/DPoPUtil.h"
 #import "Auth/JWT.h"

@@ -17,7 +17,7 @@
 #import "Database/Pool/DatabasePool.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Identity/HandleResolver.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "PLC/PLCRotationKeyManager.h"
@@ -40,7 +40,7 @@
 + (BOOL)validatePlcOperationToken:(NSString *)token forDid:(NSString *)did;
 @end
 
-static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
+static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) {
     NSString *plcUrl = configuration.plcURL;
     return [plcUrl isEqualToString:@"mock"] ||
            [plcUrl isEqualToString:@"skip"] ||
@@ -54,7 +54,7 @@ static BOOL XrpcIdentityUsesMockPLC(PDSConfiguration *configuration) {
                adminController:(id<PDSAdminController>)adminController
               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
               userDatabasePool:(PDSDatabasePool *)userDatabasePool
-                 configuration:(PDSConfiguration *)configuration
+                 configuration:(ATProtoServiceConfiguration *)configuration
                  emailProvider:(nullable id<PDSEmailProvider>)emailProvider
          subscribeReposHandler:(nullable SubscribeReposHandler *)subscribeReposHandler {
     

@@ -15,7 +15,7 @@
 #import "Network/XrpcMethodRegistry.h"
 #import "Network/XrpcServiceAuthHelper.h"
 #import "Registration/PDSRegistrationGate.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Services/PDS/PDSAccountService.h"
 #import "Services/PDS/PDSRepositoryService.h"
 #import "Admin/PDSAdminController.h"
@@ -45,7 +45,7 @@ static NSString *const kServiceAuthLxmCreateAccount = @"com.atproto.server.creat
 static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
                                                         HttpResponse *response,
                                                         NSString *did,
-                                                        PDSConfiguration *config);
+                                                        ATProtoServiceConfiguration *config);
 static BOOL createInviteCodeInDatabase(PDSServiceDatabases *serviceDatabases,
                                        NSString *accountDid,
                                        NSInteger maxUses,
@@ -223,8 +223,8 @@ static NSDictionary *payloadDictionaryFromJWT(JWT *jwt, NSError **error) {
 static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
                                                         HttpResponse *response,
                                                         NSString *did,
-                                                        PDSConfiguration *config) {
-    PDSConfiguration *effectiveConfig = config ?: [PDSConfiguration sharedConfiguration];
+                                                        ATProtoServiceConfiguration *config) {
+    ATProtoServiceConfiguration *effectiveConfig = config ?: [ATProtoServiceConfiguration sharedConfiguration];
 
     NSString *authHeader = [request headerForKey:@"Authorization"];
     if (!authHeader || ![authHeader hasPrefix:@"Bearer "]) {
@@ -330,7 +330,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
              repositoryService:(PDSRepositoryService *)repositoryService
               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
               userDatabasePool:(PDSDatabasePool *)userDatabasePool
-                 configuration:(PDSConfiguration *)config
+                 configuration:(ATProtoServiceConfiguration *)config
     enforceDidWebServiceAuth:(BOOL)enforceDidWebServiceAuth
             registrationGate:(nullable id<PDSRegistrationGate>)registrationGate {
 
@@ -358,7 +358,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
 #pragma mark - Endpoint Registration Methods
 
 + (void)registerDescribeServerWithDispatcher:(XrpcDispatcher *)dispatcher
-                               configuration:(PDSConfiguration *)config
+                               configuration:(ATProtoServiceConfiguration *)config
                             registrationGate:(nullable id<PDSRegistrationGate>)registrationGate {
     [dispatcher registerComAtprotoServerDescribeServer:^(HttpRequest *request, HttpResponse *response) {
         NSString *issuer = [config canonicalIssuerWithPortHint:0];
@@ -398,7 +398,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
                                       repositoryService:(PDSRepositoryService *)repositoryService
                                        serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                                        userDatabasePool:(PDSDatabasePool *)userDatabasePool
-                                          configuration:(PDSConfiguration *)config
+                                          configuration:(ATProtoServiceConfiguration *)config
                              enforceDidWebServiceAuth:(BOOL)enforceDidWebServiceAuth
                                      registrationGate:(nullable id<PDSRegistrationGate>)registrationGate {
     // This method will be implemented in multiple parts due to size constraints
@@ -448,7 +448,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
                                      accountService:(id<PDSAccountService>)accountService
                                   repositoryService:(PDSRepositoryService *)repositoryService
                                    serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                                      configuration:(PDSConfiguration *)config
+                                      configuration:(ATProtoServiceConfiguration *)config
                          enforceDidWebServiceAuth:(BOOL)enforceDidWebServiceAuth
                                  registrationGate:(nullable id<PDSRegistrationGate>)registrationGate {
     [dispatcher registerComAtprotoServerCreateAccount:^(HttpRequest *request, HttpResponse *response) {
