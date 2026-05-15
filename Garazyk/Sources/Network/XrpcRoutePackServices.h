@@ -13,6 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class AgeAssuranceService;
 @class ATProtoServiceConfiguration;
 @class BookmarkService;
+@class ContactService;
 @class DraftService;
 @class JWTMinter;
 @class PDSServiceDatabases;
@@ -39,6 +40,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly, nullable) AgeAssuranceService *ageAssuranceService;
 @property (nonatomic, readonly, nullable) BookmarkService *bookmarkService;
 @property (nonatomic, readonly, nullable) DraftService *draftService;
+@property (nonatomic, readonly, nullable) ContactService *contactService;
 @property (nonatomic, readonly, nullable) id<PDSQueryDatabase> appViewDatabase;
 
 @end
@@ -59,6 +61,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, nullable) AgeAssuranceService *ageAssuranceService;
 @property (nonatomic, strong, nullable) BookmarkService *bookmarkService;
 @property (nonatomic, strong, nullable) DraftService *draftService;
+@property (nonatomic, strong, nullable) ContactService *contactService;
 @property (nonatomic, strong, nullable) id<PDSQueryDatabase> appViewDatabase;
 
 - (instancetype)initWithDispatcher:(nullable XrpcDispatcher *)dispatcher
