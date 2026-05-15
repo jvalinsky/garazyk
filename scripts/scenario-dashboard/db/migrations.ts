@@ -33,6 +33,7 @@ export function runMigrations(db: Database) {
         "exit_code INTEGER",
         "stopped_at INTEGER",
         "stop_reason TEXT",
+        "scenario_params_json TEXT",
       ]);
       recordMigration(db, 1);
     } catch (e) {
