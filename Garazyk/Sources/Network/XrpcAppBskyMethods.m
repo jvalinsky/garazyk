@@ -35,6 +35,7 @@
 #import "Blob/PDSBlobProvider.h"
 #import "Network/XrpcChatBskyGroupPack.h"
 #import "Network/XrpcChatBskyActorPack.h"
+#import "Network/XrpcRoutePackServices.h"
 #import "Network/XrpcChatBskyConvoPack.h"
 #import "Network/XrpcToolsOzonePack.h"
 
@@ -85,7 +86,15 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
                                      appViewDatabase:appViewDatabase
                                           jwtMinter:jwtMinter
                                     adminController:adminController];
-      [XrpcChatBskyActorPack registerWithDispatcher:dispatcher];
+      XrpcRoutePackServiceBag *chatActorServices =
+          [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+                                                    jwtMinter:jwtMinter
+                                              adminController:adminController
+                                                 configuration:nil
+                                             serviceDatabases:serviceDatabases
+                                                   rateLimiter:nil];
+      [XrpcChatBskyActorPack registerWithDispatcher:dispatcher
+                                           services:chatActorServices];
       [XrpcChatBskyConvoPack registerWithDispatcher:dispatcher
                                     appViewDatabase:appViewDatabase
                                   serviceDatabase:appViewDatabase
