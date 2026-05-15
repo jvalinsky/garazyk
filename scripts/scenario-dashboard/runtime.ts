@@ -180,6 +180,10 @@ export function constructMsg(onSuccess: string, data: unknown): Msg {
       return { type: "runs/stopSucceeded" };
     case "runs/restartSucceeded":
       return { type: "runs/restartSucceeded", newRunId: String(d.newRunId) };
+    case "logs/received":
+      return { type: "logs/received", text: typeof data === "string" ? data : String(data) };
+    case "metrics/received":
+      return { type: "metrics/received", stats: (d.stats ?? {}) as never };
     default:
       throw new Error(`Unknown success msg type: ${onSuccess}`);
   }
@@ -209,6 +213,10 @@ export function constructErrorMsg(onError: string, error: string): Msg {
       return { type: "network/startFailed", error };
     case "network/stopFailed":
       return { type: "network/stopFailed", error };
+    case "logs/failed":
+      return { type: "logs/failed", error };
+    case "metrics/failed":
+      return { type: "metrics/failed", error };
     default:
       throw new Error(`Unknown error msg type: ${onError}`);
   }
