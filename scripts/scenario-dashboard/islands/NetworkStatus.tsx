@@ -54,18 +54,6 @@ export default function NetworkStatus({ services: initial }: NetworkStatusProps)
     setBusy(false);
   }
 
-  async function startService(name: string) {
-    setBusy(true);
-    // placeholder — per-service start not implemented yet
-    setBusy(false);
-  }
-
-  async function stopService(name: string) {
-    setBusy(true);
-    // placeholder — per-service stop not implemented yet
-    setBusy(false);
-  }
-
   return (
     <div class="card" style="margin-bottom: var(--space-xl);">
       <div class="card-header">
@@ -89,7 +77,6 @@ export default function NetworkStatus({ services: initial }: NetworkStatusProps)
               <th>Service</th>
               <th>URL</th>
               <th>Status</th>
-              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -122,9 +109,6 @@ export default function NetworkStatus({ services: initial }: NetworkStatusProps)
                   }`}>
                     {s.status}
                   </span>
-                </td>
-                <td style="color: var(--color-text-tertiary); font-size: var(--font-size-xs);">
-                  Per-service control not yet available
                 </td>
               </tr>
             ))}
