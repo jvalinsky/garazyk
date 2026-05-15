@@ -4,6 +4,8 @@
 #import "Auth/TOTPGenerator.h"
 #import "Debug/GZLogger.h"
 
+#pragma message "YubiKey hardware OATH is not implemented — running in software-only TOTP mode"
+
 NSString * const YubiKeyOATHErrorDomain = @"com.atproto.pds.yubikey.oath";
 
 @interface YubiKeyOATHManager ()

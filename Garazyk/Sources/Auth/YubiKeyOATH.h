@@ -106,6 +106,13 @@ typedef NS_ENUM(NSInteger, YubiKeyOATHError) {
  Supports YubiKey 5 series over USB/NFC. Provides TOTP generation for hardware
  two-factor authentication.
 
+ @warning Hardware YubiKey operations are **not implemented**. The manager
+          runs in software-only mode: TOTP generation falls back to the
+          software TOTPGenerator, and all hardware operations (setOATHSecret,
+          listCredentials, deleteCredential, resetAllCredentials) fail with
+          YubiKeyOATHErrorNotImplemented. Install the YubiKit SDK and
+          implement the hardware backend to enable YubiKey support.
+
  Thread-safety: Methods are not thread-safe. Use from main thread only.
  */
 @interface YubiKeyOATHManager : NSObject <YubiKeyOATH>
