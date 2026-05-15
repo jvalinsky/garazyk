@@ -21,6 +21,12 @@ export interface ScenarioManifest {
   browserFlows?: BrowserFlow[];
   /** Per-scenario timeout override in seconds */
   timeout?: number;
+  /** Configurable parameters for the scenario */
+  parameters?: Record<string, {
+    type: "number" | "string" | "boolean";
+    default: string | number | boolean;
+    description: string;
+  }>;
 }
 
 /**
@@ -43,6 +49,12 @@ export interface ScenarioInfo {
   optional: ScenarioRequirement[];
   /** Per-scenario timeout override in seconds */
   timeout?: number;
+  /** Configurable parameters for the scenario */
+  parameters: Record<string, {
+    type: "number" | "string" | "boolean";
+    default: string | number | boolean;
+    description: string;
+  }>;
 }
 
 /**
@@ -76,14 +88,28 @@ export const SCENARIO_MANIFESTS: Record<string, ScenarioManifest> = {
   "32": { requires: ["plc:didResolution", "plc:handleRotation", "plc:quotaEnforcement"] },
   "35": { needsPds2: true, requires: ["plc:didResolution"] },
   "42": { requires: ["plc:didResolution"] },
-  "59": { browserFlows: ["smoke", "login", "deep"] },
+  "59": { 
+    browserFlows: ["smoke", "login", "deep"],
+    parameters: {
+      "scale": { type: "number", default: 1, description: "Number of threads/posts to create" },
+      "depth": { type: "number", default: 2, description: "Maximum reply depth" },
+    }
+  },
 };
+
 
 /**
  * Check if a scenario requires PDS2.
  */
 export function needsPds2(scenarioId: string): boolean {
   return SCENARIO_MANIFESTS[scenarioId]?.needsPds2 === true;
+}
+
+/**
+ * Get parameters for a scenario.
+ */
+export function getParameters(scenarioId: string) {
+  return SCENARIO_MANIFESTS[scenarioId]?.parameters || {};
 }
 
 /**
