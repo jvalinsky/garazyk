@@ -151,6 +151,58 @@ export class ScenarioResult {
   }
 }
 
+/**
+ * Discriminated outcome from timedCallChecked.
+ * - `{ ok: true, value: T }` — the call succeeded
+ * - `{ ok: false, value: null }` — the call failed (or expected failure succeeded)
+ */
+export type TimedCallOutcome<T> =
+  | { ok: true; value: T }
+  | { ok: false; value: null };
+
+/**
+ * Like timedCall, but returns a discriminated union instead of T | null.
+ * Prefer this over timedCall for new code — the ok/value split makes
+ * it impossible to accidentally use a null value without checking.
+ */
+export async function timedCallChecked<T>(
+  result: ScenarioResult,
+  name: string,
+  fn: () => Promise<T> | T,
+  detailFn?: (res: T) => string,
+  expectFailure = false,
+): Promise<TimedCallOutcome<T>> {
+  const start = performance.now();
+  try {
+    const val = await fn();
+    const duration = Math.round(performance.now() - start);
+    if (expectFailure) {
+      result.stepFailed(name, "Expected failure but call succeeded", duration);
+      return { ok: false, value: null };
+    }
+    const detail = detailFn ? detailFn(val) : "";
+    result.stepPassed(name, detail, duration);
+    return { ok: true, value: val };
+  } catch (e: any) {
+    const duration = Math.round(performance.now() - start);
+    if (expectFailure) {
+      result.stepPassed(name, "Failed as expected", duration);
+      return { ok: false, value: null };
+    }
+    result.stepFailed(name, e.message || String(e), duration);
+    return { ok: false, value: null };
+  }
+}
+
+/**
+ * Unwrap a timedCallChecked outcome, returning the value or throwing.
+ * Useful when the caller knows the step must have succeeded.
+ */
+export function unwrapOutcome<T>(outcome: TimedCallOutcome<T>): T {
+  if (outcome.ok) return outcome.value;
+  throw new Error("timedCall step failed — use outcome.ok to check first");
+}
+
 export async function timedCall<T>(
   result: ScenarioResult,
   name: string,
@@ -158,24 +210,6 @@ export async function timedCall<T>(
   detailFn?: (res: T) => string,
   expectFailure = false,
 ): Promise<T | null> {
-  const start = performance.now();
-  try {
-    const val = await fn();
-    const duration = Math.round(performance.now() - start);
-    if (expectFailure) {
-      result.stepFailed(name, "Expected failure but call succeeded", duration);
-      return null;
-    }
-    const detail = detailFn ? detailFn(val) : "";
-    result.stepPassed(name, detail, duration);
-    return val;
-  } catch (e: any) {
-    const duration = Math.round(performance.now() - start);
-    if (expectFailure) {
-      result.stepPassed(name, "Failed as expected", duration);
-      return null;
-    }
-    result.stepFailed(name, e.message || String(e), duration);
-    return null; // Return null so tests don't crash but report failure
-  }
+  const outcome = await timedCallChecked(result, name, fn, detailFn, expectFailure);
+  return outcome.ok ? outcome.value : null;
 }
