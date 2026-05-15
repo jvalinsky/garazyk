@@ -64,23 +64,32 @@ export async function run(): Promise<ScenarioResult> {
     const cmd = new Deno.Command("git", { args: ["rev-parse", "--show-toplevel"] });
     const { stdout } = await cmd.output();
     const repoRoot = new TextDecoder().decode(stdout).trim() || Deno.cwd();
-    const binPath = `${repoRoot}/build/bin/kaszlak`;
+    const binPaths = [
+      `${repoRoot}/build/bin/kaszlak`,
+      `${repoRoot}/docker/local-network/staging/bin/kaszlak`,
+    ];
     
-    try {
-      const stat = await Deno.stat(binPath);
-      if (stat.isFile) {
-        const regCmd = new Deno.Command(binPath, {
-          args: ["oauth", "client", "register", "--client-id", "scenario-test-client", "--redirect-uri", `${PDS1}/oauth/callback`]
-        });
-        const regRes = await regCmd.output();
-        if (regRes.code === 0) {
-          result.stepPassed("OAuth client registered");
-        } else {
-          result.stepSkipped("OAuth client registered", `CLI returned ${regRes.code}`);
+    let registered = false;
+    for (const binPath of binPaths) {
+      try {
+        const stat = await Deno.stat(binPath);
+        if (stat.isFile) {
+          const regCmd = new Deno.Command(binPath, {
+            args: ["oauth", "client", "register", "--client-id", "scenario-test-client", "--redirect-uri", `${PDS1}/oauth/callback`]
+          });
+          const regRes = await regCmd.output();
+          if (regRes.code === 0) {
+            result.stepPassed("OAuth client registered");
+            registered = true;
+            break;
+          }
         }
+      } catch {
+        // try next
       }
-    } catch {
-      result.stepSkipped("OAuth client registered", "kaszlak binary not found");
+    }
+    if (!registered) {
+      result.stepSkipped("OAuth client registered", "kaszlak binary not found or registration failed");
     }
   } catch (exc: any) {
     result.stepSkipped("OAuth client registered", String(exc));
@@ -196,6 +205,7 @@ export async function run(): Promise<ScenarioResult> {
 
   if (marcusSession) {
     marcus.accessJwt = marcusSession.accessJwt;
+    marcus.refreshJwt = marcusSession.refreshJwt;
     marcusRefreshJwt = marcusSession.refreshJwt;
   }
 
