@@ -11,8 +11,8 @@
 #import "Network/RateLimiter.h"
 #import "Compat/PDSTypes.h"
 #import "Network/HttpResponse.h"
-#import "Core/PDSDataPaths.h"
-#import "App/PDSConfiguration.h"
+#import "Core/ATProtoDataPaths.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Debug/GZLogger.h"
 #import "Database/Utils/PDSSQLiteUtils.h"
 #import "Metrics/PDSMetrics.h"
@@ -87,8 +87,8 @@ BOOL RateLimiterIsDisabledGlobally(void) {
         _blobWindowSeconds = 3600;
         _enabled = !_rateLimiterDisabledGlobally;
 
-        // Let PDSConfiguration (which reads config file + env vars) override
-        PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+        // Let ATProtoServiceConfiguration (which reads config file + env vars) override
+        ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
         if (config && !config.rateLimitEnabled) {
             _enabled = NO;
         }
@@ -124,9 +124,9 @@ BOOL RateLimiterIsDisabledGlobally(void) {
     if (_db) return YES;
     
     if (!_databasePath) {
-        PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+        ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
         NSString *baseDir = config ? config.dataPaths.serviceDirectory
-                                   : [PDSDataPaths pathsForBaseDirectory:[PDSConfiguration defaultDataDirectory]].serviceDirectory;
+                                   : [ATProtoDataPaths pathsForBaseDirectory:[ATProtoServiceConfiguration defaultDataDirectory]].serviceDirectory;
         [[NSFileManager defaultManager] createDirectoryAtPath:baseDir withIntermediateDirectories:YES attributes:nil error:nil];
         _databasePath = [baseDir stringByAppendingPathComponent:@"ratelimits.db"];
     }

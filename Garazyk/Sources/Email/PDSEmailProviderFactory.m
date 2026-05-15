@@ -16,7 +16,7 @@
 #import "Email/PDSSecretsProvider.h"
 #import "Email/PDSKeychainSecretsProvider.h"
 #import "Email/PDSEnvironmentSecretsProvider.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Debug/GZLogger.h"
 
 NSString *const PDSEmailProviderFactoryErrorDomain = @"com.atproto.pds.emailproviderfactory";
@@ -47,7 +47,7 @@ static dispatch_queue_t sRegistryQueue = nil;
 }
 
 + (nullable id)providerWithIdentifier:(NSString *)identifier
-                         configuration:(PDSConfiguration *)configuration
+                         configuration:(ATProtoServiceConfiguration *)configuration
                         secretsProvider:(nullable id<PDSSecretsProvider>)secretsProvider
                                   error:(NSError **)error {
     return [self providerWithName:identifier
@@ -59,7 +59,7 @@ static dispatch_queue_t sRegistryQueue = nil;
 #pragma mark - Public API
 
 + (nullable id<PDSEmailProvider>)providerWithName:(NSString *)name
-                                    configuration:(PDSConfiguration *)configuration
+                                    configuration:(ATProtoServiceConfiguration *)configuration
                                    secretsProvider:(nullable id<PDSSecretsProvider>)secretsProvider
                                              error:(NSError **)error {
     NSString *provider = [self normalizedProviderName:name];
@@ -169,7 +169,7 @@ static dispatch_queue_t sRegistryQueue = nil;
              [NSCharacterSet whitespaceAndNewlineCharacterSet]] lowercaseString];
 }
 
-+ (nullable PDSResendEmailProvider *)createResendProviderWithConfiguration:(PDSConfiguration *)configuration
++ (nullable PDSResendEmailProvider *)createResendProviderWithConfiguration:(ATProtoServiceConfiguration *)configuration
                                                             secretsProvider:(nullable id<PDSSecretsProvider>)secretsProvider
                                                                       error:(NSError **)error {
     if (!configuration.resendFromAddress || configuration.resendFromAddress.length == 0) {

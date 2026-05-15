@@ -15,7 +15,7 @@
 
 #import <Foundation/Foundation.h>
 
-@class PDSConfiguration;
+@class ATProtoServiceConfiguration;
 @protocol PDSSecretsProvider;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -42,7 +42,7 @@ NS_ASSUME_NONNULL_BEGIN
  @return A provider instance, or nil on failure.
  */
 + (nullable id)providerWithIdentifier:(NSString *)identifier
-                         configuration:(PDSConfiguration *)configuration
+                         configuration:(ATProtoServiceConfiguration *)configuration
                         secretsProvider:(nullable id<PDSSecretsProvider>)secretsProvider
                                   error:(NSError **)error;
 
@@ -96,7 +96,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (nullable id)resolveProviderForProtocol:(Protocol *)protocol
                                identifier:(NSString *)identifier
-                            configuration:(PDSConfiguration *)configuration
+                            configuration:(ATProtoServiceConfiguration *)configuration
                            secretsProvider:(nullable id<PDSSecretsProvider>)secretsProvider
                                      error:(NSError **)error;
 

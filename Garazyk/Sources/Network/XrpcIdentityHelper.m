@@ -11,7 +11,7 @@
 #import "Identity/HandleResolver.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Core/ATProtoValidator.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "PLC/DIDPLCResolver.h"
@@ -145,7 +145,7 @@ static BOOL didDocumentContainsHandle(DIDDocument *doc, NSString *handle) {
 
 + (NSDictionary *)resolveDid:(NSString *)did
             serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-               configuration:(PDSConfiguration *)configuration
+               configuration:(ATProtoServiceConfiguration *)configuration
                        error:(NSError **)error {
     if (![did hasPrefix:@"did:"]) {
         if (error) {
@@ -246,7 +246,7 @@ static BOOL didDocumentContainsHandle(DIDDocument *doc, NSString *handle) {
     return nil;
 }
 
-+ (NSDictionary *)defaultPdsServiceForConfig:(PDSConfiguration *)configuration {
++ (NSDictionary *)defaultPdsServiceForConfig:(ATProtoServiceConfiguration *)configuration {
     NSString *serviceEndpoint = [configuration canonicalIssuerWithPortHint:0];
     return @{
         @"atproto_pds": @{

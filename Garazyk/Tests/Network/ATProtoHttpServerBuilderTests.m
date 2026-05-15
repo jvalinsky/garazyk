@@ -1,17 +1,17 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSHttpServerBuilderTests.m
+ @file ATProtoHttpServerBuilderTests.m
 
- @abstract Unit tests for PDSHttpServerBuilder.
+ @abstract Unit tests for ATProtoHttpServerBuilder.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
 #import <XCTest/XCTest.h>
-#import "Network/PDSHttpServerBuilder.h"
+#import "Network/ATProtoHttpServerBuilder.h"
 #import "Network/HttpServer.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "App/PDSController.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
 #import "Database/Service/ServiceDatabases.h"
@@ -21,12 +21,12 @@
 #import <arpa/inet.h>
 #import <CoreFoundation/CoreFoundation.h>
 
-@interface PDSHttpServerBuilderTests : XCTestCase
+@interface ATProtoHttpServerBuilderTests : XCTestCase
 @property (nonatomic, strong) HttpServer *testServer;
 @property (nonatomic, strong) NSString *testDirectory;
 @end
 
-@implementation PDSHttpServerBuilderTests
+@implementation ATProtoHttpServerBuilderTests
 
 - (void)tearDown {
     // Ensure server is stopped and cleaned up after each test
@@ -98,8 +98,8 @@
         return;
     }
     
-    // Build HTTP server with PDSHttpServerBuilder
-    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+    // Build HTTP server with ATProtoHttpServerBuilder
+    ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];
     builder.controller = controller;
     builder.port = 0; // Use ephemeral port
     
@@ -252,7 +252,7 @@
 #pragma mark - Initialization Tests
 
 - (void)testInitWithDefaults {
-    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+    ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];
     
     XCTAssertNotNil(builder);
     XCTAssertEqual(builder.port, 2583);
@@ -264,8 +264,8 @@
 }
 
 - (void)testInitWithConfigurationSetsDefaultPortWithNilConfig {
-    // Note: This test needs PDSConfiguration to be mockable or use shared instance
-    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] initWithConfiguration:nil];
+    // Note: This test needs ATProtoServiceConfiguration to be mockable or use shared instance
+    ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] initWithConfiguration:nil];
     
     XCTAssertNotNil(builder);
     // With nil configuration, should use defaults
@@ -275,7 +275,7 @@
 #pragma mark - Property Tests
 
 - (void)testPortConfigurationSetsPort {
-    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+    ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];
     
     builder.port = 8080;
     XCTAssertEqual(builder.port, 8080);
@@ -285,7 +285,7 @@
 }
 
 - (void)testFeatureFlagsCanBeDisabled {
-    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+    ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];
     
     builder.enableXrpc = NO;
     builder.enableOAuth = NO;
@@ -301,7 +301,7 @@
 }
 
 - (void)testIssuerConfigurationSetsIssuer {
-    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+    ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];
     
     XCTAssertNil(builder.issuer);
     
@@ -312,7 +312,7 @@
 #pragma mark - Build Tests
 
 - (void)testBuildWithMinimalConfigurationReturnsNonNullServerAndNoError {
-    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+    ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];
     
     // Disable features that require dependencies
     builder.enableXrpc = NO;
@@ -329,7 +329,7 @@
 }
 
 - (void)testBuildReturnsServerWithCorrectPort {
-    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+    ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];
     builder.port = 9999;
 
     // Disable features that require dependencies
@@ -349,18 +349,18 @@
 #pragma mark - Configure Server Tests
 
 - (void)testConfigureServerWithNilServerFails {
-    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+    ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];
     
     NSError *error = nil;
     BOOL result = [builder configureServer:nil error:&error];
     
     XCTAssertFalse(result);
     XCTAssertNotNil(error);
-    XCTAssertEqualObjects(error.domain, @"PDSHttpServerBuilderErrorDomain");
+    XCTAssertEqualObjects(error.domain, @"ATProtoHttpServerBuilderErrorDomain");
 }
 
 - (void)testConfigureServerWithValidServerSucceeds {
-    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+    ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];
 
     // Disable features that require dependencies
     builder.enableXrpc = NO;
@@ -381,7 +381,7 @@
 #pragma mark - Feature Flag Behavior Tests
 
 - (void)testXrpcNotRegisteredWhenControllerMissing {
-    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+    ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];
     builder.enableXrpc = YES;
     builder.controller = nil;  // No controller
     
@@ -407,7 +407,7 @@
             initWithServiceDatabases:controller.serviceDatabases
                     userDatabasePool:controller.userDatabasePool];
 
-    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+    ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];
     builder.controller = controller;
     builder.subscribeReposHandler = subscribeReposHandler;
     builder.enableOAuth = NO;
@@ -432,7 +432,7 @@
     NSString *tempDir = [self makeTemporaryDirectory];
     PDSController *controller = [[PDSController alloc] initWithDirectory:tempDir serviceMaxSize:10 userDatabaseSize:10];
 
-    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+    ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];
     builder.controller = controller;
     builder.enableOAuth = NO;
     builder.enableOAuthDemo = NO;
@@ -453,7 +453,7 @@
 }
 
 - (void)testOAuthNotRegisteredWhenDependenciesMissing {
-    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+    ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];
     builder.enableOAuth = YES;
     builder.serviceDatabases = nil;  // No databases
     builder.jwtMinter = nil;         // No minter
@@ -481,7 +481,7 @@
     NSString *previousUIURL = [[[NSProcessInfo processInfo] environment][@"PDS_UI_SERVER_URL"] copy];
     setenv("PDS_UI_SERVER_URL", "http://ui.local:4599", 1);
     @try {
-        PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+        ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];
         builder.controller = controller;
         builder.port = 0;
 
@@ -542,7 +542,7 @@
 #pragma mark - Multiple Build Tests
 
 - (void)testBuilderCanBuildMultipleServers {
-    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+    ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];
 
     // Disable features that require dependencies
     builder.enableXrpc = NO;
@@ -567,7 +567,7 @@
 #pragma mark - Edge Cases
 
 - (void)testBuildWithZeroPortReturnsNonNullServer {
-    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+    ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];
     builder.port = 0;  // Usually means "pick an available port"
 
     // Disable features that require dependencies
@@ -586,7 +586,7 @@
 }
 
 - (void)testConfigureServerCanBeCalledMultipleTimesReturnsSuccess {
-    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+    ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];
 
     // Disable features that require dependencies
     builder.enableXrpc = NO;
@@ -644,7 +644,7 @@
     JWTMinter *jwtMinter = [[JWTMinter alloc] init];
     jwtMinter.issuer = @"http://localhost";
     
-    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+    ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];
     builder.controller = controller;
     builder.serviceDatabases = serviceDatabases;
     builder.jwtMinter = jwtMinter;
@@ -719,7 +719,7 @@
     NSString *tempDir = [self makeTemporaryDirectory];
     PDSController *controller = [[PDSController alloc] initWithDirectory:tempDir serviceMaxSize:10 userDatabaseSize:10];
     
-    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+    ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];
     builder.controller = controller;
     builder.port = 0;
     builder.enableNodeInfo = YES;
@@ -785,7 +785,7 @@
     NSString *tempDir = [self makeTemporaryDirectory];
     PDSController *controller = [[PDSController alloc] initWithDirectory:tempDir serviceMaxSize:10 userDatabaseSize:10];
     
-    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+    ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];
     builder.controller = controller;
     builder.port = 0;
     builder.enableXrpc = YES;
@@ -833,7 +833,7 @@
                                                            serviceMaxSize:10
                                                           userDatabaseSize:10];
 
-    PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+    ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];
     builder.controller = controller;
     builder.port = 0;
     builder.enableXrpc = YES;

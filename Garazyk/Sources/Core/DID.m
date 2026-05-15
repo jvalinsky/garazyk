@@ -15,7 +15,7 @@
 #import "Core/DID.h"
 #import "Core/ATURI.h"
 #import "Core/CID.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Debug/GZLogger.h"
 #import "Network/ATProtoSafeHTTPClient.h"
 
@@ -111,7 +111,7 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         shared = [[DIDResolver alloc] init];
-        shared.plcURL = [PDSConfiguration sharedConfiguration].plcURL;
+        shared.plcURL = [ATProtoServiceConfiguration sharedConfiguration].plcURL;
     });
     return shared;
 }

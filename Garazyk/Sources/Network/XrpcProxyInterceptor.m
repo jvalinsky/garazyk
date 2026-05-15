@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Network/XrpcProxyInterceptor.h"
 
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Auth/JWT.h"
 #import "Core/DID.h"
 #import "Debug/GZLogger.h"
@@ -120,7 +120,7 @@ static BOOL isInternalRequest(HttpRequest *request) {
 }
 
 static NSURL *proxyBaseURLFromDescriptor(NSString *descriptor,
-                                         PDSConfiguration *config,
+                                         ATProtoServiceConfiguration *config,
                                          BOOL isTrusted,
                                          NSError **error) {
   NSString *trimmedDescriptor = trimmedNonEmptyString(descriptor);
@@ -265,7 +265,7 @@ static NSURL *proxyURLForMethodAndQuery(NSURL *baseURL, NSString *methodId,
   return components.URL;
 }
 
-static NSString *configuredAppViewProxyDescriptor(PDSConfiguration *config) {
+static NSString *configuredAppViewProxyDescriptor(ATProtoServiceConfiguration *config) {
   NSString *envDescriptor = trimmedNonEmptyString(
       [[NSProcessInfo processInfo] environment][@"PDS_APPVIEW_DESCRIPTOR"]);
   if (envDescriptor.length > 0) {
@@ -293,7 +293,7 @@ static NSString *configuredAppViewProxyDescriptor(PDSConfiguration *config) {
 
 static BOOL proxyXrpcRequest(HttpRequest *request, HttpResponse *response,
                              NSString *methodId, NSString *proxyDescriptor,
-                             PDSConfiguration *config,
+                             ATProtoServiceConfiguration *config,
                              BOOL explicitProxyHeader,
                              BOOL isTrusted,
                              JWTMinter *jwtMinter,
@@ -489,7 +489,7 @@ static BOOL proxyXrpcRequest(HttpRequest *request, HttpResponse *response,
 @implementation XrpcProxyInterceptor
 
 + (void)installOnDispatcher:(XrpcDispatcher *)dispatcher
-              configuration:(PDSConfiguration *)configuration
+              configuration:(ATProtoServiceConfiguration *)configuration
                   jwtMinter:(JWTMinter *)jwtMinter
             adminController:(id<PDSAdminController>)adminController
            serviceDatabases:(PDSServiceDatabases *)serviceDatabases

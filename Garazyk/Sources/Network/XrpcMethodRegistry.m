@@ -5,7 +5,7 @@
 #import "Admin/PDSAdminAuth.h"
 #import "Admin/PDSAdminController.h"
 #import "App/PDSApplication.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "App/PDSController.h"
 #import "Services/PDS/PDSAccountService.h"
 #import "Services/PDS/PDSBlobService.h"
@@ -486,7 +486,7 @@ static void registerMethodsWithDispatcherUsingServices(
     PDSRelayService *relayService, id<PDSAdminController> adminController,
     PDSBlobAuditManager *blobAuditManager,
     PDSServiceDatabases *serviceDatabases, PDSDatabasePool *userDatabasePool,
-    JWTMinter *jwtMinter, RateLimiter *rateLimiter, PDSConfiguration *config,
+    JWTMinter *jwtMinter, RateLimiter *rateLimiter, ATProtoServiceConfiguration *config,
     id<PDSEmailProvider> emailProvider,
     SubscribeReposHandler *subscribeReposHandler) {
 
@@ -591,7 +591,7 @@ static void registerMethodsWithDispatcherUsingServices(
   if (!dispatcher || !controller) {
     return;
   }
-  PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+  ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
   registerMethodsWithDispatcherUsingServices(
       self, dispatcher, controller.accountService, controller.recordService,
       controller.blobService, controller.repositoryService,

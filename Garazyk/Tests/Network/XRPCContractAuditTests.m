@@ -7,7 +7,7 @@
 // dispatcher or individual handlers — that failure is the intended signal.
 #import <XCTest/XCTest.h>
 #import "App/PDSApplication.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcMethodRegistry.h"
 #import "Network/HttpRequest.h"

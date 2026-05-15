@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSDataPaths.h
+ @file ATProtoDataPaths.h
 
  @abstract Unified path configuration for all PDS data directories.
 
@@ -31,7 +31,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface PDSDataPaths : NSObject
+@interface ATProtoDataPaths : NSObject
 
 @property (nonatomic, copy, readonly) NSString *baseDirectory;
 

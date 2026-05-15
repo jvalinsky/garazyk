@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSHttpWellKnownRoutePack.m
+ @file ATProtoHttpWellKnownRoutePack.m
 
  @abstract Registers well-known HTTP routes for discovery and protocol metadata exposure.
 
  @discussion Adds standardized well-known endpoint paths used by clients and federated services for discovery. Focuses on route registration and dispatch wiring, leaving payload generation to handlers.
  */
 
-#import "Network/PDSHttpWellKnownRoutePack.h"
+#import "Network/ATProtoHttpWellKnownRoutePack.h"
 
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "App/PDSController.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Service/ServiceDatabases.h"
@@ -20,16 +20,16 @@
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
 
-@implementation PDSHttpWellKnownRoutePack
+@implementation ATProtoHttpWellKnownRoutePack
 
 + (void)registerRoutesWithServer:(HttpServer *)server
                 serviceDatabases:(nullable PDSServiceDatabases *)serviceDatabases
                       controller:(nullable PDSController *)controller
-                   configuration:(nullable PDSConfiguration *)configuration
-                  setCorsHeaders:(PDSHttpSetCorsHeadersBlock)setCorsHeaders {
+                   configuration:(nullable ATProtoServiceConfiguration *)configuration
+                  setCorsHeaders:(ATProtoHttpSetCorsHeadersBlock)setCorsHeaders {
   __weak PDSServiceDatabases *weakServiceDatabases = serviceDatabases;
   __weak PDSController *weakController = controller;
-  __weak PDSConfiguration *weakConfiguration = configuration;
+  __weak ATProtoServiceConfiguration *weakConfiguration = configuration;
 
   NSString *_Nullable (^normalizedHostFromHostHeader)(NSString *_Nullable) =
       ^NSString *_Nullable(NSString *_Nullable hostHeader) {
@@ -112,7 +112,7 @@
           return;
         }
 
-        PDSConfiguration *config = weakConfiguration;
+        ATProtoServiceConfiguration *config = weakConfiguration;
         NSArray<NSString *> *allowedDomains =
             config.availableUserDomains ?: @[];
         if (!hostMatchesAllowedDomains(handle, allowedDomains)) {
@@ -183,7 +183,7 @@
                       }
                     }];
 
-  GZ_LOG_DEBUG(@"PDSHttpWellKnownRoutePack: .well-known routes registered");
+  GZ_LOG_DEBUG(@"ATProtoHttpWellKnownRoutePack: .well-known routes registered");
 }
 
 @end

@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "AdminAuthXrpcTestBase.h"
 #import "Admin/PDSAdminAuth.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Database/Service/ServiceDatabases.h"
 
-@interface PDSConfiguration (Test)
+@interface ATProtoServiceConfiguration (Test)
 - (void)applyConfig:(NSDictionary *)config;
 @end
 
@@ -26,7 +26,7 @@
     setenv("PDS_ADMIN_PASSWORD", "password", 1);
     setenv("PDS_MASTER_SECRET", "test-master-secret-123", 1);
     setenv("PDS_PLC_URL", "mock", 1);
-    [[PDSConfiguration sharedConfiguration] applyConfig:@{@"server": @{}}];
+    [[ATProtoServiceConfiguration sharedConfiguration] applyConfig:@{@"server": @{}}];
 
     self.tempURL = [NSURL fileURLWithPath:NSTemporaryDirectory()];
     self.tempURL = [self.tempURL URLByAppendingPathComponent:[[NSUUID UUID] UUIDString]];

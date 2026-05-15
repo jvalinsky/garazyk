@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Network/XrpcLexiconResolver.h"
 
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/ATProtoValidator.h"
 #import "Core/CID.h"
@@ -26,7 +26,7 @@ static NSString *const kLexiconResolverUserAgent = @"atprotopds/0.1.0";
 
 + (nullable NSDictionary *)buildResolveResponseWithSchema:(NSDictionary *)schema
                                                      nsid:(NSString *)nsid
-                                            configuration:(PDSConfiguration *)configuration
+                                            configuration:(ATProtoServiceConfiguration *)configuration
                                                     error:(NSError **)error {
   if (!schema || ![schema isKindOfClass:[NSDictionary class]]) {
     if (error) {
@@ -469,7 +469,7 @@ static BOOL PDSLexiconResolverRunningTests(void) {
 }
 
 + (nullable NSDictionary *)fetchLexiconJSONViaAuthorityForNSID:(NSString *)nsid
-                                                  configuration:(PDSConfiguration *)configuration
+                                                  configuration:(ATProtoServiceConfiguration *)configuration
                                                           error:(NSError **)error {
   if (PDSLexiconResolverRunningTests()) {
       if ([nsid containsString:@".nonexistent"] || [nsid hasSuffix:@".test"]) {
@@ -605,7 +605,7 @@ static BOOL PDSLexiconResolverRunningTests(void) {
 }
 
 + (nullable NSDictionary *)resolveLexiconResponseForNSID:(NSString *)nsid
-                                           configuration:(PDSConfiguration *)configuration
+                                           configuration:(ATProtoServiceConfiguration *)configuration
                                                    error:(NSError **)error {
   NSError *loadError = nil;
   NSDictionary *schema = [self loadLexiconJSONForNSID:nsid
@@ -638,7 +638,7 @@ static BOOL PDSLexiconResolverRunningTests(void) {
 }
 
 + (void)registerResolveLexiconMethodOnDispatcher:(XrpcDispatcher *)dispatcher
-                                   configuration:(PDSConfiguration *)configuration {
+                                   configuration:(ATProtoServiceConfiguration *)configuration {
   [dispatcher registerComAtprotoLexiconResolveLexicon:^(
                   HttpRequest *request, HttpResponse *response) {
     if (request.method != HttpMethodGET) {

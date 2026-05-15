@@ -1,17 +1,17 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSHttpOAuthRoutePack.m
+ @file ATProtoHttpOAuthRoutePack.m
 
  @abstract Registers core OAuth-related HTTP routes for authentication protocol endpoints.
 
  @discussion Wires OAuth endpoint paths into server routing and delegates implementation to auth/runtime handlers. Establishes endpoint exposure and integration points without implementing token/state logic directly.
  */
 
-#import "Network/PDSHttpOAuthRoutePack.h"
+#import "Network/ATProtoHttpOAuthRoutePack.h"
 
 #import "App/PDSApplication.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "App/PDSController.h"
 #import "Auth/JWT.h"
 #import "Auth/OAuth2.h"
@@ -22,7 +22,7 @@
 #import "Debug/GZLogger.h"
 #import "Network/HttpServer.h"
 
-@implementation PDSHttpOAuthRoutePack
+@implementation ATProtoHttpOAuthRoutePack
 
 + (void)registerRoutesWithServer:(HttpServer *)server
                 serviceDatabases:(nullable PDSServiceDatabases *)serviceDatabases
@@ -31,7 +31,7 @@
                      application:(nullable PDSApplication *)application
                       controller:(nullable PDSController *)controller {
   if (!serviceDatabases || !jwtMinter) {
-    GZ_LOG_WARN(@"PDSHttpOAuthRoutePack: OAuth routes not registered - missing "
+    GZ_LOG_WARN(@"ATProtoHttpOAuthRoutePack: OAuth routes not registered - missing "
                  @"serviceDatabases or jwtMinter");
     return;
   }
@@ -39,7 +39,7 @@
   NSError *dbError = nil;
   PDSDatabase *db = [serviceDatabases serviceDatabaseWithError:&dbError];
   if (!db) {
-    GZ_LOG_WARN(@"PDSHttpOAuthRoutePack: OAuth routes not registered - could "
+    GZ_LOG_WARN(@"ATProtoHttpOAuthRoutePack: OAuth routes not registered - could "
                  @"not get service database: %@",
                  dbError);
     return;
@@ -49,7 +49,7 @@
   oauthHandler.minter = jwtMinter;
   oauthHandler.dataDirectory = dataDirectory;
 
-  PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+  ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
   oauthHandler.oauthServer.issuer = config.issuer;
 
   if (application.accountService) {
@@ -58,13 +58,13 @@
     oauthHandler.accountService = controller.accountService;
   }
   [oauthHandler registerRoutesWithServer:server];
-  GZ_LOG_DEBUG(@"PDSHttpOAuthRoutePack: OAuth routes registered");
+  GZ_LOG_DEBUG(@"ATProtoHttpOAuthRoutePack: OAuth routes registered");
 
   WebAuthnRegistrationHandler *webauthnHandler =
       [[WebAuthnRegistrationHandler alloc] initWithDatabase:db
                                                 serverOrigin:config.issuer];
   [webauthnHandler registerRoutesWithServer:server];
-  GZ_LOG_DEBUG(@"PDSHttpOAuthRoutePack: WebAuthn routes registered");
+  GZ_LOG_DEBUG(@"ATProtoHttpOAuthRoutePack: WebAuthn routes registered");
 }
 
 @end

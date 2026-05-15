@@ -17,7 +17,7 @@
 #import "PDSController.h"
 #import "Network/HttpServer.h"
 #import "Network/XrpcHandler.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Debug/GZLogger.h"
 #import "Network/XrpcMethodRegistry.h"
 #import "Database/PDSDatabase.h"

@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "PDSConfiguration.h"
+#import "ATProtoServiceConfiguration.h"
 #import "Compat/Foundation/NSDataCompat.h"
-#import "Core/PDSDataPaths.h"
+#import "Core/ATProtoDataPaths.h"
 #import "Debug/GZLogger.h"
 
-NSString *const PDSConfigErrorDomain = @"com.atproto.pds.config";
+NSString *const ATProtoServiceConfigErrorDomain = @"com.atproto.pds.config";
 
 static NSString *PDSConfigTrimmed(NSString *value) {
   if (![value isKindOfClass:[NSString class]]) {
@@ -81,7 +81,7 @@ static BOOL PDSConfigRunningUnderTests(void) {
          [processName containsString:@"xctest"];
 }
 
-@interface PDSConfiguration ()
+@interface ATProtoServiceConfiguration ()
 - (BOOL)dictionary:(NSDictionary *)dictionary hasValueForKey:(NSString *)key;
 @property (nonatomic, assign) BOOL plcReplicaEnabled;
 @property (nonatomic, copy, nullable) NSString *plcReplicaUpstreamURL;
@@ -93,19 +93,19 @@ static BOOL PDSConfigRunningUnderTests(void) {
 @property (nonatomic, assign) BOOL metricsPerAccountLabels;
 @end
 
-@implementation PDSConfiguration {
+@implementation ATProtoServiceConfiguration {
   NSDictionary *_config;
   NSString *_phoneVerificationProvider;
   NSDictionary *_registrationConfig;
   NSDictionary *_providersConfig;
-  PDSDataPaths *_dataPaths;
+  ATProtoDataPaths *_dataPaths;
 }
 
 + (instancetype)sharedConfiguration {
-  static PDSConfiguration *shared = nil;
+  static ATProtoServiceConfiguration *shared = nil;
   static dispatch_once_t onceToken;
   dispatch_once(&onceToken, ^{
-    shared = [[PDSConfiguration alloc] init];
+    shared = [[ATProtoServiceConfiguration alloc] init];
   });
   return shared;
 }
@@ -125,7 +125,7 @@ static BOOL PDSConfigRunningUnderTests(void) {
 
 + (nullable instancetype)configurationWithPath:(NSString *)path
                                          error:(NSError **)error {
-  PDSConfiguration *config = [[PDSConfiguration alloc] init];
+  ATProtoServiceConfiguration *config = [[ATProtoServiceConfiguration alloc] init];
   if ([config loadFromPath:path error:error]) {
     return config;
   }
@@ -280,8 +280,8 @@ static BOOL PDSConfigRunningUnderTests(void) {
   if (![fm fileExistsAtPath:path]) {
     if (error) {
       *error = [NSError
-          errorWithDomain:PDSConfigErrorDomain
-                     code:PDSConfigErrorFileNotFound
+          errorWithDomain:ATProtoServiceConfigErrorDomain
+                     code:ATProtoServiceConfigErrorFileNotFound
                  userInfo:@{
                    NSLocalizedDescriptionKey : [NSString
                        stringWithFormat:@"Config file not found: %@", path]
@@ -301,8 +301,8 @@ static BOOL PDSConfigRunningUnderTests(void) {
   if (!data) {
     if (error) {
       *error = [NSError
-          errorWithDomain:PDSConfigErrorDomain
-                     code:PDSConfigErrorFileNotFound
+          errorWithDomain:ATProtoServiceConfigErrorDomain
+                     code:ATProtoServiceConfigErrorFileNotFound
                  userInfo:@{
                    NSLocalizedDescriptionKey : [NSString
                        stringWithFormat:@"Failed to read config file: %@",
@@ -316,8 +316,8 @@ static BOOL PDSConfigRunningUnderTests(void) {
   if (data.length > 10 * 1024 * 1024) {
     if (error) {
       *error = [NSError
-          errorWithDomain:PDSConfigErrorDomain
-                     code:PDSConfigErrorFileNotFound
+          errorWithDomain:ATProtoServiceConfigErrorDomain
+                     code:ATProtoServiceConfigErrorFileNotFound
                  userInfo:@{
                    NSLocalizedDescriptionKey : @"Config file exceeds 10MB limit"
                  }];
@@ -331,8 +331,8 @@ static BOOL PDSConfigRunningUnderTests(void) {
   if (!yamlConfig && parseError) {
     if (error) {
       *error = [NSError
-          errorWithDomain:PDSConfigErrorDomain
-                     code:PDSConfigErrorInvalidFormat
+          errorWithDomain:ATProtoServiceConfigErrorDomain
+                     code:ATProtoServiceConfigErrorInvalidFormat
                  userInfo:@{
                    NSLocalizedDescriptionKey : [NSString
                        stringWithFormat:@"Failed to parse config file: %@",
@@ -1150,9 +1150,9 @@ static BOOL PDSConfigRunningUnderTests(void) {
   return fallbackHost.length > 0 ? fallbackHost : @"localhost";
 }
 
-- (PDSDataPaths *)dataPaths {
+- (ATProtoDataPaths *)dataPaths {
   if (!_dataPaths) {
-    _dataPaths = [PDSDataPaths pathsForBaseDirectory:self.dataDirectory];
+    _dataPaths = [ATProtoDataPaths pathsForBaseDirectory:self.dataDirectory];
   }
   return _dataPaths;
 }

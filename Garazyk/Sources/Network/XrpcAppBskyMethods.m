@@ -3,7 +3,7 @@
 #import "Network/XrpcAppBskyMethods.h"
 #import "Network/XrpcHandler.h"
 
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "AppView/Services/ActorService.h"
 #import "AppView/Services/BookmarkService.h"
 #import "AppView/Services/ContactService.h"
@@ -124,7 +124,7 @@ static RecordLifecycleHandler *_retainedLifecycleHandler = nil;
   PDSDatabase *appViewDatabase =
       [serviceDatabases serviceDatabaseWithError:&appViewDbError];
 
-  if ([PDSConfiguration sharedConfiguration].appViewURL.length > 0) {
+  if ([ATProtoServiceConfiguration sharedConfiguration].appViewURL.length > 0) {
     GZ_LOG_INFO(@"Local AppView disabled; only registering proxy and PDS-side handlers.");
     [XrpcAppBskyProxyMethodPack registerProxyOnlyMethodsWithDispatcher:dispatcher];
     return;

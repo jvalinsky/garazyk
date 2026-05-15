@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
 #import "Admin/PDSAdminAuth.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "App/PDSController.h"
 #import "Auth/JWT.h"
 
@@ -112,7 +112,7 @@
     XCTAssertNotNil(jwt);
     XCTAssertNil(jwtError);
     XCTAssertNotNil(jwt.payload.iss, @"Should have an issuer");
-    NSString *expectedIssuer = [[PDSConfiguration sharedConfiguration] canonicalIssuerWithPortHint:0];
+    NSString *expectedIssuer = [[ATProtoServiceConfiguration sharedConfiguration] canonicalIssuerWithPortHint:0];
     XCTAssertTrue([jwt.payload.iss hasPrefix:expectedIssuer], @"Fallback issuer should start with canonical issuer");
 }
 
