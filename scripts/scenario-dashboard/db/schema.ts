@@ -33,7 +33,8 @@ CREATE TABLE IF NOT EXISTS runs (
   child_pid INTEGER,
   exit_code INTEGER,
   stopped_at INTEGER,
-  stop_reason TEXT
+  stop_reason TEXT,
+  scenario_params_json TEXT
 );
 
 CREATE TABLE IF NOT EXISTS scenario_results (
