@@ -1,24 +1,19 @@
 #!/usr/bin/env -S deno run -A
-import { bold, brightBlue, green, red, yellow } from "@std/fmt/colors";
+import { bold, brightBlue } from "@std/fmt/colors";
 import { fromFileUrl, join } from "@std/path";
 import { startLocalNetwork, stopLocalNetwork } from "./lib/deno/docker.ts";
 import { collectDiagnostics, createRunContext } from "./lib/deno/diagnostics.ts";
 import { resolveTopology, WEB_CLIENT_PRESETS } from "./lib/deno/topology.ts";
 import type { BrowserFlow, Topology } from "./lib/deno/topology.ts";
-import { DurationCache, ProgressBar } from "./lib/deno/progress.ts";
-import { ContainerEventWatcher, type WatcherEvent } from "./lib/deno/docker_events.ts";
-import { initE2eTracing, isOtelEnabled, shutdownTracing, withSpan } from "./lib/deno/otel.ts";
-import { ContainerStatsSampler } from "./lib/deno/container_stats.ts";
-import { createDockerClient } from "./lib/deno/docker_api.ts";
-import { formatBytes } from "./lib/deno/format.ts";
 import { formatRequirement } from "./lib/deno/scenario_metadata.ts";
 import type { ScenarioInfo } from "./lib/deno/scenario_metadata.ts";
 import { discoverScenarios, selectScenarios } from "./lib/deno/scenario_selector.ts";
-import { runScenario } from "./lib/deno/scenario_runner.ts";
+import { runScenarioLoop } from "./lib/deno/run_loop.ts";
 import { createProcessLifecycle } from "./lib/deno/process_lifecycle.ts";
 import { writeOverallSummary } from "./lib/deno/report_writer.ts";
-import type { RunnerArgs } from "./lib/deno/run_scenarios_types.ts";
+import { initE2eTracing, isOtelEnabled, shutdownTracing } from "./lib/deno/otel.ts";
 import { ScenarioResult } from "./lib/deno/runner.ts";
+import type { RunnerArgs } from "./lib/deno/run_scenarios_types.ts";
 
 function usage(): never {
   console.log(`Usage: scripts/run_scenarios.ts [options] [scenario ids]
@@ -244,12 +239,10 @@ async function main() {
         manifestPath: existingTopologyManifest ? topologyManifestPath : undefined,
       });
 
-      // Set topology env var so scenarios pick up the right SERVICE_URLS
       if (args.topology) {
         Deno.env.set("ATPROTO_TOPOLOGY", args.topology);
       }
 
-      // Initialize OpenTelemetry if --otel is set
       if (args.otel) {
         initE2eTracing("garazyk-e2e-runner");
         console.log(`OTel tracing enabled → ${Deno.env.get("OTEL_EXPORTER_OTLP_ENDPOINT") || "http://localhost:4318"}`);
@@ -314,136 +307,17 @@ async function main() {
         });
       }
 
-      console.log(bold(`\nRunning ${selected.length} scenario(s)...\n`));
-      const durationCache = new DurationCache(repoRoot);
-      const expectedDurations = selected.map((scenario) => durationCache.get(scenario.id));
-      const progress = new ProgressBar(selected.length, expectedDurations);
-
-      // Start a container event watcher for crash detection during scenarios.
-      // If the Docker API is available, this provides near-instant detection
-      // of container crashes (die/oom events) instead of discovering them
-      // on the next health check poll.
-      const crashWatcher = await ContainerEventWatcher.create();
-      let crashedContainer: { serviceName: string; exitCode: number; oomKilled: boolean } | null = null;
-      if (crashWatcher) {
-        crashWatcher.subscribe((event: WatcherEvent) => {
-          if (event.kind === "died" || event.kind === "oom") {
-            crashedContainer = {
-              serviceName: event.serviceName,
-              exitCode: event.kind === "died" ? event.exitCode : 137,
-              oomKilled: event.kind === "oom" || event.oomKilled,
-            };
-          }
-        });
-      }
-
-      // Start a container stats sampler for OTel resource metrics.
-      // Periodically records CPU, memory, network, and block I/O as
-      // OTel gauges/counters visible in SigNoz alongside traces.
-      let statsSampler: ContainerStatsSampler | null = null;
-      if (isOtelEnabled()) {
-        const dockerClient = await createDockerClient();
-        if (dockerClient) {
-          statsSampler = new ContainerStatsSampler({
-            client: dockerClient,
-            composeProject: context.composeProject,
-            intervalMs: 5000,
-            onMemoryPressure: (alert) => {
-              console.warn(yellow(
-                `  Memory pressure: ${alert.serviceName} failcnt=${alert.failcnt} ` +
-                `(${formatBytes(alert.memoryUsageBytes)} / ${formatBytes(alert.memoryLimitBytes)})`,
-              ));
-            },
-          });
-          statsSampler.start();
-        }
-      }
-
-      try {
-        for (let i = 0; i < selected.length; i++) {
-          const scenario = selected[i];
-          progress.start(`${scenario.id} - ${scenario.name}`);
-
-          // Check if a container crashed during the previous scenario
-          if (crashedContainer) {
-            const crash = crashedContainer as {
-              serviceName: string;
-              exitCode: number;
-              oomKilled: boolean;
-            };
-            const crashInfo = crash.oomKilled
-              ? `Container "${crash.serviceName}" was OOM-killed (exit code ${crash.exitCode})`
-              : `Container "${crash.serviceName}" exited unexpectedly (exit code ${crash.exitCode})`;
-            console.error(red(`\n  Container crash detected: ${crashInfo}`));
-            console.error(yellow(`  Skipping remaining scenarios.`));
-
-            // Collect crash logs if the Docker API is available
-            const crashResult = new ScenarioResult(scenario.name);
-            crashResult.start();
-            crashResult.stepFailed(
-              `Pre-scenario container check`,
-              crashInfo,
-            );
-            crashResult.finish();
-            results.push({ scenario, result: crashResult });
-            break;
-          }
-
-          const result = await withSpan(
-            `scenario.${scenario.id}`,
-            async () => await runScenario(
-              scenario,
-              scenario.timeout || args.timeout,
-              args,
-              topology,
-              repoRoot,
-              context.composeProject,
-            ),
-            {
-              "scenario.id": scenario.id,
-              "scenario.name": scenario.name,
-              "scenario.timeout": scenario.timeout || args.timeout,
-              "scenario.runner": args.runner,
-            },
-          );
-          result.metadata = {
-            ...result.metadata,
-            run_id: context.runId,
-            run_dir: context.runDir,
-            diagnostics_dir: context.diagnosticsDir,
-            service_urls: topology.serviceUrls,
-            web_client: topology.webClient || null,
-            client_flow: args.clientFlow,
-            allow_hybrid_network: args.allowHybridNetwork,
-            scenario_id: scenario.id,
-            binary_mode: args.binary,
-            pds2: withPds2,
-            topology: args.topology || null,
-            runner: args.runner,
-          };
-
-          Deno.stdout.writeSync(new TextEncoder().encode("\r" + " ".repeat(120) + "\r"));
-          result.printSummary();
-          results.push({ scenario, result });
-
-          if (result.startedAt && result.finishedAt) {
-            durationCache.set(scenario.id, result.finishedAt - result.startedAt);
-          }
-
-          if (!args.noJson) {
-            const reportPath = await result.writeReport(reportsDir, `${scenario.id}_${scenario.name}`);
-            reportPaths.push(reportPath);
-            console.log(`  Report: ${reportPath}`);
-          }
-
-          progress.update(i + 1);
-        }
-        progress.finish();
-      } finally {
-        // Clean up the crash watcher and stats sampler
-        await crashWatcher?.close();
-        await statsSampler?.stop();
-      }
+      const loopResult = await runScenarioLoop(
+        selected,
+        args,
+        topology,
+        repoRoot,
+        context.composeProject,
+        reportsDir,
+        { runId: context.runId, runDir: context.runDir, diagnosticsDir: context.diagnosticsDir },
+      );
+      results.push(...loopResult.results);
+      reportPaths.push(...loopResult.reportPaths);
     } finally {
       await lifecycle.finalizeRun({
         results,
@@ -456,7 +330,7 @@ async function main() {
   } catch (err) {
     fatalError = err;
     const message = err instanceof Error ? err.message : String(err);
-    console.error(red(`\nFatal error: ${message}`));
+    console.error(`\nFatal error: ${message}`);
   }
 
   const { totalPassed, totalFailed, totalSkipped } = await writeOverallSummary({
@@ -475,7 +349,6 @@ async function main() {
     withPds2,
   });
 
-  // Flush OTel spans before exit
   if (isOtelEnabled()) {
     await shutdownTracing();
   }
