@@ -5,7 +5,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class PDSConfiguration;
+@class ATProtoServiceConfiguration;
 
 /*!
  @interface PDSBlobProviderFactory
@@ -31,7 +31,7 @@ NS_ASSUME_NONNULL_BEGIN
     - "s3": returns PDSCloudStorageBlobProvider with S3 settings
     - other values: returns nil with error
  */
-+ (nullable id<PDSBlobProvider>)blobProviderWithConfiguration:(PDSConfiguration *)configuration
++ (nullable id<PDSBlobProvider>)blobProviderWithConfiguration:(ATProtoServiceConfiguration *)configuration
                                                         error:(NSError **)error;
 
 @end

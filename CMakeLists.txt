@@ -310,7 +310,7 @@ file(GLOB_RECURSE ATPROTO_CORE_SOURCES
   "Garazyk/Sources/Security/*.c"
   "Garazyk/Sources/Lexicon/*.m"
   "Garazyk/Sources/Lexicon/*.c"
-  "Garazyk/Sources/App/PDSConfiguration.m"
+  "Garazyk/Sources/App/ATProtoServiceConfiguration.m"
 )
 list(FILTER ATPROTO_CORE_SOURCES EXCLUDE REGEX ".*/Core/Repositories/.*\\.m$")
 list(FILTER ATPROTO_CORE_SOURCES EXCLUDE REGEX ".*/Core/Repositories/.*\\.c$")
@@ -365,16 +365,16 @@ file(GLOB_RECURSE ATPROTO_TRANSPORT_SOURCES
 )
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/Xrpc.*\\.m$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/Xrpc.*\\.c$")
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpXrpcRoutePack\\.m$")
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpXrpcRoutePack\\.m$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/RelayXrpcRoutePack\\.m$")
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/AppViewXRpcRoutePack\\.m$")
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/PDSHttpServerBuilder\\.m$")
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/Network/ATProtoHttpServerBuilder\\.m$")
 # UI route packs migrated to garazyk-ui — exclude from service binaries
 
 file(GLOB_RECURSE ATPROTO_XRPC_SOURCES
   "Garazyk/Sources/Network/Xrpc*.m"
   "Garazyk/Sources/Network/Xrpc*.c"
-  "Garazyk/Sources/Network/PDSHttpXrpcRoutePack.m"
+  "Garazyk/Sources/Network/ATProtoHttpXrpcRoutePack.m"
   "Garazyk/Sources/Network/RelayXrpcRoutePack.m"
   "Garazyk/Sources/Network/AppViewXRpcRoutePack.m"
 )
@@ -402,10 +402,10 @@ file(GLOB_RECURSE ATPROTO_RUNTIME_SOURCES
   "Garazyk/Sources/CLI/*.c"
   "Garazyk/Sources/Auth/PDS/*.m"
   "Garazyk/Sources/Auth/PDS/*.c"
-  "Garazyk/Sources/Network/PDSHttpServerBuilder.m"
+  "Garazyk/Sources/Network/ATProtoHttpServerBuilder.m"
 )
 list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/Services/.*")
-list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/PDSConfiguration\\.m$")
+list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/ATProtoServiceConfiguration\\.m$")
 
 # Handle platform-specific network transport implementations.
 list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/PDSNetworkTransport(Mac|Linux)\\.m$")

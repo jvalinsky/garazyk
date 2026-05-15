@@ -11,7 +11,7 @@
 #import "Debug/GZLogRedactor.h"
 #import "AppView/Services/ActorService.h"
 #import "Database/PDSDatabase.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import <CommonCrypto/CommonCrypto.h>
 
 @implementation ContactService {
@@ -256,7 +256,7 @@
 
 - (NSString *)hashPhone:(NSString *)phone {
     // Derive salt from master secret (M8)
-    NSString *masterSecret = [PDSConfiguration sharedConfiguration].masterSecret;
+    NSString *masterSecret = [ATProtoServiceConfiguration sharedConfiguration].masterSecret;
     if (masterSecret.length == 0) {
         GZ_LOG_WARN(@"ContactService: masterSecret is missing, using weak fallback salt");
         masterSecret = @"pds_contact_weak_salt_v1";

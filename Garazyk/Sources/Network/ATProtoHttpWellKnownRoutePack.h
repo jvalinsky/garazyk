@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSHttpWellKnownRoutePack.h
+ @file ATProtoHttpWellKnownRoutePack.h
 
  @abstract Declares well-known route-pack registration entry points.
 
@@ -9,22 +9,22 @@
  */
 
 #import <Foundation/Foundation.h>
-#import "Network/PDSHttpRoutePackTypes.h"
+#import "Network/ATProtoHttpRoutePackTypes.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
 @class HttpServer;
-@class PDSConfiguration;
+@class ATProtoServiceConfiguration;
 @class PDSController;
 @class PDSServiceDatabases;
 
-@interface PDSHttpWellKnownRoutePack : NSObject
+@interface ATProtoHttpWellKnownRoutePack : NSObject
 
 + (void)registerRoutesWithServer:(HttpServer *)server
                 serviceDatabases:(nullable PDSServiceDatabases *)serviceDatabases
                       controller:(nullable PDSController *)controller
-                   configuration:(nullable PDSConfiguration *)configuration
-                  setCorsHeaders:(PDSHttpSetCorsHeadersBlock)setCorsHeaders;
+                   configuration:(nullable ATProtoServiceConfiguration *)configuration
+                  setCorsHeaders:(ATProtoHttpSetCorsHeadersBlock)setCorsHeaders;
 
 @end
 

@@ -13,7 +13,7 @@
 
 #import "Core/PDSProviderRegistry.h"
 #import "Core/PDSProviderHTTPClient.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Email/PDSEmailProviderFactory.h"
 
 #pragma mark - Mock Provider Factory
@@ -21,7 +21,7 @@
 @interface PDSTestProviderFactory : NSObject <PDSProviderFactory>
 + (NSArray<NSString *> *)supportedIdentifiers;
 + (nullable id)providerWithIdentifier:(NSString *)identifier
-                         configuration:(PDSConfiguration *)configuration
+                         configuration:(ATProtoServiceConfiguration *)configuration
                         secretsProvider:(nullable id)secretsProvider
                                   error:(NSError **)error;
 @end
@@ -33,7 +33,7 @@
 }
 
 + (nullable id)providerWithIdentifier:(NSString *)identifier
-                         configuration:(PDSConfiguration *)configuration
+                         configuration:(ATProtoServiceConfiguration *)configuration
                         secretsProvider:(nullable id)secretsProvider
                                   error:(NSError **)error {
     if ([identifier isEqualToString:@"test_provider"]) {
@@ -91,7 +91,7 @@
     [[PDSProviderRegistry sharedRegistry] registerFactory:[PDSTestProviderFactory class]
                                               forProtocol:testProtocol];
 
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     NSError *error = nil;
     id provider = [[PDSProviderRegistry sharedRegistry] resolveProviderForProtocol:testProtocol
                                                                        identifier:@"test_provider"
@@ -104,7 +104,7 @@
 
 - (void)testResolveProviderReturnsNilForUnknownProtocol {
     Protocol *unknownProtocol = @protocol(NSObject);
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     NSError *error = nil;
     id provider = [[PDSProviderRegistry sharedRegistry] resolveProviderForProtocol:unknownProtocol
                                                                        identifier:@"test"
@@ -120,7 +120,7 @@
     [[PDSProviderRegistry sharedRegistry] registerFactory:[PDSTestProviderFactory class]
                                               forProtocol:testProtocol];
 
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     NSError *error = nil;
     id provider = [[PDSProviderRegistry sharedRegistry] resolveProviderForProtocol:testProtocol
                                                                        identifier:@"nonexistent"

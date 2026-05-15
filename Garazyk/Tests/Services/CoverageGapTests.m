@@ -99,7 +99,7 @@
     
     // We need to import PDSHttpServer.h to access port
     // But PDSController hides it.
-    // However, PDSConfiguration has serverPort.
+    // However, ATProtoServiceConfiguration has serverPort.
     // PDSController init uses standard port if not specified? 
     // `initWithDirectory:...` doesn't take port.
     // It likely uses 2583 or random?

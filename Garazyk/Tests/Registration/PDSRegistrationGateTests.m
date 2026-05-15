@@ -17,7 +17,7 @@
 #import "Registration/PDSPhoneOTPRegistrationGate.h"
 #import "Registration/PDSCaptchaRegistrationGate.h"
 #import "Registration/PDSOAuthOnlyRegistrationGate.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Database/Service/ServiceDatabases.h"
 
 #pragma mark - Stub Gate (always fails)
@@ -32,7 +32,7 @@
 }
 
 - (BOOL)validateRegistrationRequest:(NSDictionary *)body
-                       configuration:(PDSConfiguration *)configuration
+                       configuration:(ATProtoServiceConfiguration *)configuration
                                error:(NSError **)error {
     if (error) {
         *error = [NSError errorWithDomain:PDSRegistrationGateErrorDomain
@@ -58,7 +58,7 @@
 }
 
 - (BOOL)validateRegistrationRequest:(NSDictionary *)body
-                       configuration:(PDSConfiguration *)configuration
+                       configuration:(ATProtoServiceConfiguration *)configuration
                                error:(NSError **)error {
     return YES;
 }
@@ -225,7 +225,7 @@
 #pragma mark - Factory
 
 - (void)testFactoryReturnsOpenGateWhenNoGatesEnabled {
-    PDSConfiguration *config = [[PDSConfiguration alloc] init];
+    ATProtoServiceConfiguration *config = [[ATProtoServiceConfiguration alloc] init];
     // Default config has inviteCodeRequired = NO
 
     NSError *error = nil;
@@ -237,7 +237,7 @@
 }
 
 - (void)testFactoryReturnsInviteCodeGateWhenEnabled {
-    PDSConfiguration *config = [[PDSConfiguration alloc] init];
+    ATProtoServiceConfiguration *config = [[ATProtoServiceConfiguration alloc] init];
     // Enable invite code required via KVC
     [config setValue:@YES forKey:@"inviteCodeRequired"];
 
@@ -254,7 +254,7 @@
                                     forIdentifier:@"stub_passing"];
 
     // Verify the factory doesn't crash with custom gates registered
-    PDSConfiguration *config = [[PDSConfiguration alloc] init];
+    ATProtoServiceConfiguration *config = [[ATProtoServiceConfiguration alloc] init];
     NSError *error = nil;
     id<PDSRegistrationGate> gate = [PDSRegistrationGateFactory gateFromConfiguration:config
                                                                    serviceDatabases:nil

@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSHttpServerBuilder.h
+ @file ATProtoHttpServerBuilder.h
 
  @abstract Builder for configuring and creating HTTP server instances.
 
- @discussion PDSHttpServerBuilder encapsulates HTTP server route configuration,
+ @discussion ATProtoHttpServerBuilder encapsulates HTTP server route configuration,
  extracting this responsibility from PDSController. It configures XRPC handlers,
  OAuth endpoints, explore UI, and other routes in a testable, reusable manner.
 
@@ -19,14 +19,14 @@ NS_ASSUME_NONNULL_BEGIN
 @class HttpServer;
 @class PDSController;
 @class PDSApplication;
-@class PDSConfiguration;
+@class ATProtoServiceConfiguration;
 @class JWTMinter;
 @class PDSServiceDatabases;
 @class XrpcDispatcher;
 @class SubscribeReposHandler;
 
 /*!
- @class PDSHttpServerBuilder
+ @class ATProtoHttpServerBuilder
 
  @abstract Builds and configures HTTP server instances for the PDS.
 
@@ -35,7 +35,7 @@ NS_ASSUME_NONNULL_BEGIN
  of concerns and enables easier testing of server configuration.
 
  @code
- PDSHttpServerBuilder *builder = [[PDSHttpServerBuilder alloc] init];
+ ATProtoHttpServerBuilder *builder = [[ATProtoHttpServerBuilder alloc] init];
  builder.port = 2583;
  builder.controller = controller;
  builder.jwtMinter = minter;
@@ -48,7 +48,7 @@ NS_ASSUME_NONNULL_BEGIN
  }
  @endcode
  */
-@interface PDSHttpServerBuilder : NSObject
+@interface ATProtoHttpServerBuilder : NSObject
 
 #pragma mark - Configuration Properties
 
@@ -115,7 +115,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param configuration The PDS configuration to use.
  @return An initialized builder configured from settings.
  */
-- (instancetype)initWithConfiguration:(PDSConfiguration *)configuration;
+- (instancetype)initWithConfiguration:(ATProtoServiceConfiguration *)configuration;
 
 #pragma mark - Building
 

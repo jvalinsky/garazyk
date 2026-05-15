@@ -9,7 +9,7 @@
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
 #import "Admin/PDSAdminController.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Services/Core/PDSPhoneVerificationProvider.h"
 #import "Email/PDSEnvironmentSecretsProvider.h"
 #import "Identity/ATProtoHandleValidator.h"
@@ -160,7 +160,7 @@ static NSDictionary *labelLookupParamsFromRequest(HttpRequest *request, NSString
               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                      jwtMinter:(JWTMinter *)jwtMinter
                adminController:(id<PDSAdminController>)adminController
-                 configuration:(PDSConfiguration *)configuration {
+                 configuration:(ATProtoServiceConfiguration *)configuration {
     
     // Non-standard internal extensions for admin label management
     // com.atproto.label.createLabel and com.atproto.label.getLabels are internal admin-only methods

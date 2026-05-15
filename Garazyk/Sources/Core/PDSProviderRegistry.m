@@ -9,7 +9,7 @@
  */
 
 #import "Core/PDSProviderRegistry.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Email/PDSSecretsProvider.h"
 
 // Force emission of the PDSProviderFactory protocol metadata symbol.
@@ -21,7 +21,7 @@
 @implementation _PDSProviderFactoryToken
 
 + (nullable id)providerWithIdentifier:(NSString *)identifier
-                         configuration:(PDSConfiguration *)configuration
+                         configuration:(ATProtoServiceConfiguration *)configuration
                         secretsProvider:(nullable id<PDSSecretsProvider>)secretsProvider
                                   error:(NSError **)error {
     return nil;
@@ -84,7 +84,7 @@ typedef NS_ENUM(NSInteger, PDSProviderRegistryErrorCode) {
 
 - (nullable id)resolveProviderForProtocol:(Protocol *)protocol
                                identifier:(NSString *)identifier
-                            configuration:(PDSConfiguration *)configuration
+                            configuration:(ATProtoServiceConfiguration *)configuration
                            secretsProvider:(nullable id<PDSSecretsProvider>)secretsProvider
                                      error:(NSError **)error {
     NSString *key = NSStringFromProtocol(protocol);

@@ -10,7 +10,7 @@
 
 #import "Registration/PDSPhoneOTPRegistrationGate.h"
 #import "Registration/PDSRegistrationGate.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Services/Core/PDSPhoneVerificationProvider.h"
 
 @interface PDSPhoneOTPRegistrationGate ()
@@ -32,7 +32,7 @@
 }
 
 - (BOOL)validateRegistrationRequest:(NSDictionary *)body
-                       configuration:(PDSConfiguration *)configuration
+                       configuration:(ATProtoServiceConfiguration *)configuration
                                error:(NSError **)error {
     NSString *phoneCode = body[@"phoneVerificationCode"];
     if (!phoneCode || phoneCode.length == 0) {

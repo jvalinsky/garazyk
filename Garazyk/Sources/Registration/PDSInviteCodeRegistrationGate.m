@@ -11,7 +11,7 @@
 #import "Registration/PDSInviteCodeRegistrationGate.h"
 #import "Registration/PDSRegistrationGate.h"
 #import "Database/Service/ServiceDatabases.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 
 @implementation PDSInviteCodeRegistrationGate
 
@@ -28,7 +28,7 @@
 }
 
 - (BOOL)validateRegistrationRequest:(NSDictionary *)body
-                       configuration:(PDSConfiguration *)configuration
+                       configuration:(ATProtoServiceConfiguration *)configuration
                                error:(NSError **)error {
     NSString *inviteCode = body[@"inviteCode"];
     if (!inviteCode || inviteCode.length == 0) {

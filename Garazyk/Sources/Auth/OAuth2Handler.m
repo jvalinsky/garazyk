@@ -20,7 +20,7 @@
 #import "Network/ATProtoSafeHTTPClient.h"
 #import "Network/SSRFValidator.h"
 
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Services/PDS/PDSAccountService.h"
 #import "Debug/GZLogger.h"
 
@@ -155,12 +155,12 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
 
     // Keep env override behavior for tests/runtime while canonicalizing issuer
     // shape.
-    PDSConfiguration *configuration = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *configuration = [ATProtoServiceConfiguration sharedConfiguration];
     NSString *envIssuer =
         [[NSProcessInfo processInfo] environment][@"PDS_ISSUER"];
     NSString *issuer = nil;
     if (envIssuer.length > 0) {
-      PDSConfiguration *envConfiguration = [[PDSConfiguration alloc] init];
+      ATProtoServiceConfiguration *envConfiguration = [[ATProtoServiceConfiguration alloc] init];
       envConfiguration.issuer = envIssuer;
       issuer = [envConfiguration canonicalIssuerWithPortHint:0];
     } else {
@@ -1076,7 +1076,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
     return NO;
   }
 
-  NSString *expectedAud = [PDSConfiguration sharedConfiguration].issuer;
+  NSString *expectedAud = [ATProtoServiceConfiguration sharedConfiguration].issuer;
   if (!expectedAud) {
     expectedAud = @"https://pds.garazyk.xyz";
   }
@@ -1468,7 +1468,7 @@ static dispatch_once_t sAuthGlobalsQueueOnceToken;
 }
 
 - (void)setCorsHeaders:(HttpResponse *)response forRequest:(HttpRequest *)request {
-  PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+  ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
   NSArray<NSString *> *allowedOrigins =
       [config arrayForKey:@"cors.allowed_origins"];
   if (!allowedOrigins) {

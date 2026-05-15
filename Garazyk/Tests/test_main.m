@@ -15,7 +15,7 @@
 #define XCTAssertIsInstance(expr, classExpr) \
     XCTAssertTrue([(expr) isKindOfClass:(classExpr)], @"Expected %@ to be instance of %@", (expr), (classExpr))
 #endif
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Auth/OAuthConformanceTests.h"
 #import "Auth/OAuthPublicClientTests.h"
 #import "Network/HttpResponse.h"
@@ -366,8 +366,8 @@ static NSDictionary<NSString *, NSString *> *PDSBuildCategoryMap(void) {
                            @"ATProtoDateTime", @"NSDateFormatterATProto",
                            @"ATProtoError", @"DIDValidation",
                            @"Identifier", @"RecordPathValidation",
-                           @"PDSDataPaths", @"PDSAccountManager",
-                           @"PDSServiceContainer", @"PDSProviderRegistry"],
+                           @"ATProtoDataPaths", @"PDSAccountManager",
+                           @"ATProtoServiceContainer", @"PDSProviderRegistry"],
       @"Auth":           @[@"Crypto", @"JWT", @"OAuth", @"TOTP",
                            @"Secp256k1", @"PDSNonce", @"YubiKey",
                            @"WebAuthn", @"PDSOpenSSLKeyManager",
@@ -405,7 +405,7 @@ static NSDictionary<NSString *, NSString *> *PDSBuildCategoryMap(void) {
       @"Email":          @[@"PDSEmail", @"PDSEnvironment", @"PDSKeychain",
                            @"PDSMockEmail", @"PDSSMTP", @"PDSResend"],
       @"App":            @[@"PDSAccount", @"PDSBlob", @"PDSRecord",
-                           @"PDSRepository", @"PDSRelay", @"PDSConfiguration",
+                           @"PDSRepository", @"PDSRelay", @"ATProtoServiceConfiguration",
                            @"PDSPhone", @"AppDelegate", @"PDSApplication"],
       @"CharacterizationTests": @[@"ActorStoreCharacterization",
                                   @"MSTCharacterization",
@@ -510,7 +510,7 @@ static NSDictionary<NSString *, NSString *> *PDSGatedClassMap(void) {
       @"HttpServerTests"               : @"socket",
       @"OAuth2EndpointTests"            : @"socket",
       @"PDSApplicationTests"           : @"socket",
-      @"PDSHttpServerBuilderTests"     : @"socket",
+      @"ATProtoHttpServerBuilderTests"     : @"socket",
       @"PLCServerTests"                : @"socket",
       @"PLCReplicaServerTests"         : @"socket",
       @"PDSWebSocketServerTests"       : @"socket",
@@ -773,9 +773,9 @@ int main(int argc, char *argv[]) {
     [RateLimiter sharedLimiter].enabled = NO;
 
     // Disable biometric protection for tests
-    [PDSConfiguration sharedConfiguration].useBiometricProtection = NO;
+    [ATProtoServiceConfiguration sharedConfiguration].useBiometricProtection = NO;
     // Disable keychain usage for tests (use in-memory/ephemeral keys)
-    [PDSConfiguration sharedConfiguration].useKeychain = NO;
+    [ATProtoServiceConfiguration sharedConfiguration].useKeychain = NO;
 
     // Ensure listeners bind to loopback by default in tests to avoid macOS
     // Local Network permission prompts.
@@ -799,7 +799,7 @@ int main(int argc, char *argv[]) {
 
     if ([[[NSProcessInfo processInfo] environment][@"PDS_USE_NEW_REPOS"]
             isEqualToString:@"1"]) {
-      [PDSConfiguration sharedConfiguration].useNewRepositoryImplementation =
+      [ATProtoServiceConfiguration sharedConfiguration].useNewRepositoryImplementation =
           YES;
       fprintf(stderr, "TESTING: Enabled new repository implementation\n");
     }
@@ -855,6 +855,7 @@ int main(int argc, char *argv[]) {
       @"PDSDatabaseBlobsTests",
       @"PDSDatabaseRecordsTests",
       @"PDSDatabaseTransactionsTests",
+      @"ATProtoDatabaseUtilitiesTests",
       @"PDSControllerTests",
       @"PDSPLCIntegrationTests",
       @"PDSAdminServiceTests",
@@ -923,13 +924,13 @@ int main(int argc, char *argv[]) {
       @"SessionStoreTests",
       @"AppDelegateTests",
       @"HttpServerTests",
-      @"PDSHttpServerBuilderTests",
+      @"ATProtoHttpServerBuilderTests",
       @"WebSocketServerTests",
       @"MSTPersistenceTests",
       @"MSTRebalancingTests",
       @"MSTUTF8Tests",
       @"HttpResponseTests",
-      @"PDSConfigurationTests",
+      @"ATProtoServiceConfigurationTests",
       @"PDSPhoneVerificationProviderTests",
       @"EventFormatterTests",
       @"PDSBlobServiceTests",
@@ -966,8 +967,8 @@ int main(int argc, char *argv[]) {
       @"KeyManagerSecurityTests",
       @"ATProtoErrorTests",
       @"ProtocolCompileTests",
-      @"PDSServiceContainerTests",
-      @"PDSDataPathsTests",
+      @"ATProtoServiceContainerTests",
+      @"ATProtoDataPathsTests",
       @"PDSAccountManagerTests",
       @"Base58Tests",
       @"PLCDIDKeyTests",
@@ -1079,7 +1080,7 @@ int main(int argc, char *argv[]) {
       @"PDSCLINukeCommandTests",
       @"PDSDatabaseIntegrationTests",
       @"PDSHttpPDSAdminRoutePackTests",
-      @"PDSHttpXrpcRoutePackTests",
+      @"ATProtoHttpXrpcRoutePackTests",
       @"GZLoggerPerformanceTests",
       @"RelayXrpcRoutePackTests",
       @"RelayAPIHandlerTests",

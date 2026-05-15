@@ -5,7 +5,7 @@
 #import "Security/PDSAuthzManager.h"
 #import "Admin/PDSAdminAuth.h"
 #import "Identity/ATProtoHandleValidator.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 
 @interface ProductionSecurityTests : XCTestCase
 @end

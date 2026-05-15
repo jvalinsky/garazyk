@@ -3,10 +3,10 @@
 #import "PLCRotationKeyManager.h"
 #import "Auth/Secp256k1.h"
 #import "Security/PDSKeyEnvelope.h"
-#import "Core/PDSDataPaths.h"
+#import "Core/ATProtoDataPaths.h"
 #import "Debug/GZLogger.h"
 #import "Auth/CryptoUtils.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 
 #ifdef LINUX
 #include <sys/stat.h>
@@ -47,8 +47,8 @@ static NSString *PLCRotationKeyStorageDirectory(void) {
         return explicitKeysDirectory;
     }
 
-    PDSDataPaths *paths =
-        [PDSDataPaths pathsForBaseDirectory:PDSDefaultDataDirectory()];
+    ATProtoDataPaths *paths =
+        [ATProtoDataPaths pathsForBaseDirectory:PDSDefaultDataDirectory()];
     return paths.keysDirectory;
 }
 
@@ -278,7 +278,7 @@ static NSString *PLCRotationKeyStorageDirectory(void) {
 }
 
 - (nullable NSData *)encryptionKeyWithError:(NSError **)error {
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     NSString *secret = config.masterSecret;
     if (secret.length == 0) {
         if (error) {

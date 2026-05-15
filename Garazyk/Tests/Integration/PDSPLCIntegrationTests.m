@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
 #import "App/PDSController.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Pool/DatabasePool.h"
 
@@ -88,7 +88,7 @@
     // Configure controller to use our test PLC server
     self.controller.plcServerURL = [NSString stringWithFormat:@"http://127.0.0.1:%lu", (unsigned long)self.plcPort];
     
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     config.plcURL = self.controller.plcServerURL;
 
     // If the environment can't open listeners (EPERM) or can't reach localhost, skip.
@@ -115,7 +115,7 @@
     }
     [self.database close];
     
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     config.plcURL = @"mock";
     
     [super tearDown];

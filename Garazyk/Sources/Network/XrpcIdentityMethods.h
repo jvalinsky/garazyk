@@ -14,7 +14,7 @@
 @class JWTMinter;
 @class PDSServiceDatabases;
 @class PDSDatabasePool;
-@class PDSConfiguration;
+@class ATProtoServiceConfiguration;
 @class SubscribeReposHandler;
 @protocol PDSAdminController;
 @protocol PDSEmailProvider;
@@ -59,7 +59,7 @@ NS_ASSUME_NONNULL_BEGIN
                adminController:(id<PDSAdminController>)adminController
               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
               userDatabasePool:(PDSDatabasePool *)userDatabasePool
-                 configuration:(PDSConfiguration *)configuration
+                 configuration:(ATProtoServiceConfiguration *)configuration
                  emailProvider:(nullable id<PDSEmailProvider>)emailProvider
          subscribeReposHandler:(nullable SubscribeReposHandler *)subscribeReposHandler;
 

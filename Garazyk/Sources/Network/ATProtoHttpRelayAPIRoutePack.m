@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSHttpRelayAPIRoutePack.m
+ @file ATProtoHttpRelayAPIRoutePack.m
 
  @abstract Registers relay API HTTP routes for relay-facing operational and sync endpoints.
 
  @discussion Maps relay API paths into the HTTP router and delegates execution to relay/runtime components. Maintains route namespace and registration concerns separate from relay business logic.
  */
 
-#import "Network/PDSHttpRelayAPIRoutePack.h"
+#import "Network/ATProtoHttpRelayAPIRoutePack.h"
 
 #import "Debug/GZLogger.h"
 #import "Network/HttpRequest.h"
@@ -16,7 +16,7 @@
 #import "Network/HttpServer.h"
 #import "Sync/Relay/RelayAPIHandler.h"
 
-@implementation PDSHttpRelayAPIRoutePack
+@implementation ATProtoHttpRelayAPIRoutePack
 
 + (void)registerRoutesWithServer:(HttpServer *)server {
   RelayAPIHandler *relayAPIHandler = [RelayAPIHandler sharedHandler];
@@ -81,7 +81,7 @@
               [relayAPIHandler handleRequest:request response:response];
             }];
 
-  GZ_LOG_DEBUG(@"PDSHttpRelayAPIRoutePack: Relay API routes registered");
+  GZ_LOG_DEBUG(@"ATProtoHttpRelayAPIRoutePack: Relay API routes registered");
 }
 
 @end

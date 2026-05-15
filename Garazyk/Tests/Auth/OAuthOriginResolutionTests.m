@@ -15,7 +15,7 @@
     // Since it's private, we'll use a category to expose it or just test via the public handler.
     
     // For now, let's test the public metadata endpoint logic if possible.
-    // Actually, I'll just add a test for the PDSConfiguration canonicalization which is used as fallback.
+    // Actually, I'll just add a test for the ATProtoServiceConfiguration canonicalization which is used as fallback.
 }
 
 @end

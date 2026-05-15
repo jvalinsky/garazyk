@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSConfiguration.h
+ @file ATProtoServiceConfiguration.h
 
  @abstract Application configuration management.
 
@@ -15,39 +15,39 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class PDSDataPaths;
+@class ATProtoDataPaths;
 
 // Forward declarations for logging types
 typedef NS_ENUM(NSInteger, GZLogLevel);
 typedef NS_ENUM(NSInteger, GZLogFormat);
 
 /*! Error domain for configuration errors. */
-extern NSString *const PDSConfigErrorDomain;
+extern NSString *const ATProtoServiceConfigErrorDomain;
 
 /*!
- @enum PDSConfigError
+ @enum ATProtoServiceConfigError
 
  @abstract Error codes for configuration operations.
 
- @constant PDSConfigErrorFileNotFound Configuration file not found.
- @constant PDSConfigErrorInvalidFormat Configuration format is invalid.
- @constant PDSConfigErrorMissingValue Required value is missing.
+ @constant ATProtoServiceConfigErrorFileNotFound Configuration file not found.
+ @constant ATProtoServiceConfigErrorInvalidFormat Configuration format is invalid.
+ @constant ATProtoServiceConfigErrorMissingValue Required value is missing.
  */
-typedef NS_ENUM(NSInteger, PDSConfigError) {
-    PDSConfigErrorFileNotFound = 1,
-    PDSConfigErrorInvalidFormat = 2,
-    PDSConfigErrorMissingValue = 3
+typedef NS_ENUM(NSInteger, ATProtoServiceConfigError) {
+    ATProtoServiceConfigErrorFileNotFound = 1,
+    ATProtoServiceConfigErrorInvalidFormat = 2,
+    ATProtoServiceConfigErrorMissingValue = 3
 };
 
 /*!
- @class PDSConfiguration
+ @class ATProtoServiceConfiguration
 
  @abstract Application configuration settings.
 
  @discussion Provides typed access to configuration values for server,
  database, authentication, rate limiting, and debugging.
  */
-@interface PDSConfiguration : NSObject
+@interface ATProtoServiceConfiguration : NSObject
 
 #pragma mark - Server & Infrastructure
 
@@ -91,7 +91,7 @@ typedef NS_ENUM(NSInteger, PDSConfigError) {
 @property (nonatomic, readonly) NSString *dataDirectory;
 
 /*! @abstract Lazily-created path configuration derived from dataDirectory. */
-@property (nonatomic, strong, readonly) PDSDataPaths *dataPaths;
+@property (nonatomic, strong, readonly) ATProtoDataPaths *dataPaths;
 
 /*! @abstract Maximum user database pool size. */
 @property (nonatomic, readonly) NSUInteger userDatabasePoolMaxSize;

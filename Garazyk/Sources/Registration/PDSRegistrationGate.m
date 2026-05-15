@@ -13,7 +13,7 @@
 #import "Registration/PDSPhoneOTPRegistrationGate.h"
 #import "Registration/PDSCaptchaRegistrationGate.h"
 #import "Registration/PDSOAuthOnlyRegistrationGate.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Services/Core/PDSPhoneVerificationProvider.h"
 #import "Email/PDSEnvironmentSecretsProvider.h"
@@ -61,7 +61,7 @@ NSString *const PDSRegistrationGateErrorDomain = @"com.atproto.pds.registrationg
 }
 
 - (BOOL)validateRegistrationRequest:(NSDictionary *)body
-                       configuration:(PDSConfiguration *)configuration
+                       configuration:(ATProtoServiceConfiguration *)configuration
                                error:(NSError **)error {
     // No gates = open registration
     if (self.mutableGates.count == 0) {
@@ -103,7 +103,7 @@ NSString *const PDSRegistrationGateErrorDomain = @"com.atproto.pds.registrationg
 }
 
 - (BOOL)validateRegistrationRequest:(NSDictionary *)body
-                       configuration:(PDSConfiguration *)configuration
+                       configuration:(ATProtoServiceConfiguration *)configuration
                                error:(NSError **)error {
     return YES;
 }
@@ -124,7 +124,7 @@ static dispatch_queue_t sCustomGateQueue = NULL;
     }
 }
 
-+ (nullable id<PDSRegistrationGate>)gateFromConfiguration:(PDSConfiguration *)configuration
++ (nullable id<PDSRegistrationGate>)gateFromConfiguration:(ATProtoServiceConfiguration *)configuration
                                          serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                                                     error:(NSError **)error {
     PDSCompositeRegistrationGate *composite = [[PDSCompositeRegistrationGate alloc] init];

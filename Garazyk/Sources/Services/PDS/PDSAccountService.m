@@ -6,7 +6,7 @@
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
 #import "Database/ActorStore/PDSActorStoreInternal.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "Auth/JWT.h"
 #import "Debug/GZLogger.h"
@@ -175,7 +175,7 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     }
     handle = [ATProtoHandleValidator normalizeHandle:handle];
 
-    if (self.databasePool && [PDSConfiguration sharedConfiguration].masterSecret.length == 0) {
+    if (self.databasePool && [ATProtoServiceConfiguration sharedConfiguration].masterSecret.length == 0) {
         if (error) {
             *error = [NSError errorWithDomain:@"com.atproto.server"
                                          code:1
@@ -603,7 +603,7 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
                                     signingKey:(Secp256k1KeyPair *)signingKey
                                    rotationKey:(Secp256k1KeyPair *)rotationKey
                                          error:(NSError **)error {
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     NSString *pdsURL = config.canonicalIssuer;
     
     NSString *signingKeyMultibase = [signingKey didKeyString];
@@ -671,7 +671,7 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
                                            signingKey:(Secp256k1KeyPair *)signingKey
                                           rotationKey:(Secp256k1KeyPair *)rotationKey
                                                 error:(NSError **)error {
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     NSString *plcURLString = config.plcURL;
     
     // Check for "skip" or "mock" mode - generate DID without network registration (for tests)

@@ -12,7 +12,7 @@
 
 @class HandleResolver;
 @class PDSServiceDatabases;
-@class PDSConfiguration;
+@class ATProtoServiceConfiguration;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -90,7 +90,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (nullable NSDictionary *)resolveDid:(NSString *)did
                      serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                        configuration:(PDSConfiguration *)configuration
+                        configuration:(ATProtoServiceConfiguration *)configuration
                                 error:(NSError **)error;
 
 /**
@@ -101,7 +101,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param configuration PDS configuration
  * @return Service dictionary
  */
-+ (NSDictionary *)defaultPdsServiceForConfig:(PDSConfiguration *)configuration;
++ (NSDictionary *)defaultPdsServiceForConfig:(ATProtoServiceConfiguration *)configuration;
 
 /**
  * Resolve identity information for an identifier (handle or DID).

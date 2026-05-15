@@ -5,7 +5,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class PDSConfiguration;
+@class ATProtoServiceConfiguration;
 @class XrpcDispatcher;
 
 extern NSErrorDomain const XrpcLexiconResolverErrorDomain;
@@ -13,11 +13,11 @@ extern NSErrorDomain const XrpcLexiconResolverErrorDomain;
 @interface XrpcLexiconResolver : NSObject
 
 + (nullable NSDictionary *)resolveLexiconResponseForNSID:(NSString *)nsid
-                                           configuration:(PDSConfiguration *)configuration
+                                           configuration:(ATProtoServiceConfiguration *)configuration
                                                    error:(NSError **)error;
 
 + (void)registerResolveLexiconMethodOnDispatcher:(XrpcDispatcher *)dispatcher
-                                   configuration:(PDSConfiguration *)configuration;
+                                   configuration:(ATProtoServiceConfiguration *)configuration;
 
 /*! Extracts the PDS service endpoint from a DID document. */
 + (nullable NSString *)pdsEndpointFromDidDocument:(DIDDocument *)document

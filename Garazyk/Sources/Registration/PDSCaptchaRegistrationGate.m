@@ -10,7 +10,7 @@
 
 #import "Registration/PDSCaptchaRegistrationGate.h"
 #import "Registration/PDSRegistrationGate.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 
 #pragma message "CAPTCHA server-side verification is not implemented — tokens are accepted without siteverify"
 
@@ -39,7 +39,7 @@
 }
 
 - (BOOL)validateRegistrationRequest:(NSDictionary *)body
-                       configuration:(PDSConfiguration *)configuration
+                       configuration:(ATProtoServiceConfiguration *)configuration
                                error:(NSError **)error {
     NSString *captchaToken = body[@"captchaToken"];
     if (!captchaToken || captchaToken.length == 0) {

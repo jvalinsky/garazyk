@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSHttpRoutePackTypes.h
+ @file ATProtoHttpRoutePackTypes.h
 
  @abstract Declares shared types used by HTTP route-pack registration components.
 
@@ -15,7 +15,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class HttpRequest;
 @class HttpResponse;
 
-typedef void (^PDSHttpSetCorsHeadersBlock)(HttpResponse *response,
+typedef void (^ATProtoHttpSetCorsHeadersBlock)(HttpResponse *response,
                                            HttpRequest *request);
 
 NS_ASSUME_NONNULL_END

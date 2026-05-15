@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "NodeInfoProvider.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "NodeInfoSchemas.h"
 
 @implementation NodeInfoProvider {
     NSString *_baseURL;
-    PDSConfiguration *_configuration;
+    ATProtoServiceConfiguration *_configuration;
     NSDictionary *_nodeInfo20;
     NSDictionary *_nodeInfo21;
     NSDictionary *_discoveryDocument20;
@@ -14,7 +14,7 @@
 }
 
 - (nullable instancetype)initWithBaseURL:(NSString *)baseURL
-                          configuration:(PDSConfiguration *)configuration {
+                          configuration:(ATProtoServiceConfiguration *)configuration {
     if (!baseURL || [baseURL length] == 0) {
         return nil;
     }

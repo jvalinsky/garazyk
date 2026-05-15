@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSHttpRelayAPIRoutePack.h
+ @file ATProtoHttpRelayAPIRoutePack.h
 
  @abstract Declares relay API route-pack registration entry points.
 
@@ -14,7 +14,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class HttpServer;
 
-@interface PDSHttpRelayAPIRoutePack : NSObject
+@interface ATProtoHttpRelayAPIRoutePack : NSObject
 
 + (void)registerRoutesWithServer:(HttpServer *)server;
 

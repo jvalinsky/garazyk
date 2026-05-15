@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "PDSCLIDefinitions.h"
 #import "PDSCLIInputHelper.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import <Foundation/Foundation.h>
 
 #pragma mark - Init Command

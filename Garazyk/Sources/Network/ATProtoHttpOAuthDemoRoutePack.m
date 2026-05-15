@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSHttpOAuthDemoRoutePack.m
+ @file ATProtoHttpOAuthDemoRoutePack.m
 
  @abstract Registers HTTP routes for OAuth demo and interactive auth demonstration flows.
 
  @discussion Binds OAuth demonstration endpoints into the HTTP router for local/demo usage and forwards execution to dedicated handlers. Route registration is owned here; OAuth protocol business rules remain elsewhere.
  */
 
-#import "Network/PDSHttpOAuthDemoRoutePack.h"
+#import "Network/ATProtoHttpOAuthDemoRoutePack.h"
 
 #import "App/OAuthDemo/OAuthDemoHandler.h"
 #import "App/PDSController.h"
@@ -17,13 +17,13 @@
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
 
-@implementation PDSHttpOAuthDemoRoutePack
+@implementation ATProtoHttpOAuthDemoRoutePack
 
 + (void)registerRoutesWithServer:(HttpServer *)server
                    dataDirectory:(nullable NSString *)dataDirectory
                       controller:(nullable PDSController *)controller {
   if (dataDirectory.length == 0 && !controller) {
-    GZ_LOG_WARN(@"PDSHttpOAuthDemoRoutePack: OAuth Demo routes not registered - "
+    GZ_LOG_WARN(@"ATProtoHttpOAuthDemoRoutePack: OAuth Demo routes not registered - "
                  @"missing dataDirectory and controller");
     return;
   }
@@ -46,7 +46,7 @@
              [oauthDemoHandler handleRequest:request response:response];
            }];
 
-  GZ_LOG_DEBUG(@"PDSHttpOAuthDemoRoutePack: OAuth Demo routes registered");
+  GZ_LOG_DEBUG(@"ATProtoHttpOAuthDemoRoutePack: OAuth Demo routes registered");
 }
 
 @end

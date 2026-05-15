@@ -16,21 +16,21 @@
 #import "App/MSTViewer/MSTViewerHandler.h"
 #import "App/NodeInfo/NodeInfoHandler.h"
 #import "App/OAuthDemo/OAuthDemoHandler.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Auth/JWT.h"
 #import "Auth/OAuth2Handler.h"
 #import "Auth/PDSKeyManagerFactory.h"
 #import "Auth/Secp256k1.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Core/ATProtoError.h"
-#import "Core/PDSServiceContainer.h"
+#import "Core/ATProtoServiceContainer.h"
 #import "Core/TID.h"
 #import "Debug/GZLogger.h"
 #import "Lexicon/ATProtoLexiconRegistry.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
-#import "Network/PDSHttpServerBuilder.h"
+#import "Network/ATProtoHttpServerBuilder.h"
 #import "Network/RateLimiter.h"
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcMethodRegistry.h"
@@ -167,7 +167,7 @@ NSString *const kDefaultPlcServerURL = @"https://plc.directory";
 - (instancetype)initWithDirectory:(NSString *)directory
                    serviceMaxSize:(NSUInteger)serviceMaxSize
                  userDatabaseSize:(NSUInteger)userDatabaseSize {
-  PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+  ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
   PDSApplication *application =
       [[PDSApplication alloc] initWithConfiguration:config
                                       dataDirectory:directory

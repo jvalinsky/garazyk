@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
 #import "App/PDSController.h"
-#import "App/PDSConfiguration.h"
-#import "Core/PDSServiceContainer.h"
+#import "App/ATProtoServiceConfiguration.h"
+#import "Core/ATProtoServiceContainer.h"
 #import "Email/PDSEmailProvider.h"
 #import "Email/PDSMockEmailProvider.h"
 
@@ -27,7 +27,7 @@
                                                   error:nil];
 
     // Configure the PDS for mock email
-    // Since PDSConfiguration.sharedConfiguration is a singleton, 
+    // Since ATProtoServiceConfiguration.sharedConfiguration is a singleton, 
     // we set environment variables to influence it during tests if needed, 
     // but here we can just initialize the controller directly.
     setenv("PDS_EMAIL_PROVIDER", "mock", 1);
@@ -66,7 +66,7 @@
     // PDSController doesn't expose accountService or emailProvider directly, 
     // but we can access it via the service container.
     
-    id<PDSEmailProvider> emailProvider = [[PDSServiceContainer sharedContainer] resolveProtocol:@protocol(PDSEmailProvider)];
+    id<PDSEmailProvider> emailProvider = [[ATProtoServiceContainer sharedContainer] resolveProtocol:@protocol(PDSEmailProvider)];
     XCTAssertNotNil(emailProvider, @"Email provider should be registered");
     XCTAssertTrue([emailProvider isKindOfClass:[PDSMockEmailProvider class]], @"Should use the mock provider");
     

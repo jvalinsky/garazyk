@@ -6,7 +6,7 @@
  */
 
 #import "PDSReadinessCheck.h"
-#import "PDSConfiguration.h"
+#import "ATProtoServiceConfiguration.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
 #import "Auth/PDSKeyManagerFactory.h"
@@ -16,7 +16,7 @@ NSString * const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
 
 @implementation PDSReadinessCheck
 
-+ (BOOL)performReadinessChecksWithConfig:(PDSConfiguration *)config
++ (BOOL)performReadinessChecksWithConfig:(ATProtoServiceConfiguration *)config
                                    error:(NSError **)error {
     PDSServiceDatabases *serviceDatabases = [[PDSServiceDatabases alloc] initWithDirectory:config.dataDirectory
                                                                             serviceMaxSize:100
@@ -25,7 +25,7 @@ NSString * const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
     return [self performReadinessChecksWithConfig:config serviceDatabases:serviceDatabases error:error];
 }
 
-+ (BOOL)performReadinessChecksWithConfig:(PDSConfiguration *)config
++ (BOOL)performReadinessChecksWithConfig:(ATProtoServiceConfiguration *)config
                            serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                                        error:(NSError **)error {
     GZ_LOG_CORE_INFO(@"Starting server readiness checks...");
@@ -66,7 +66,7 @@ NSString * const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
 
 #pragma mark - Individual Checks
 
-+ (BOOL)checkDatabasePools:(PDSConfiguration *)config serviceDatabases:(PDSServiceDatabases *)serviceDatabases error:(NSError **)error {
++ (BOOL)checkDatabasePools:(ATProtoServiceConfiguration *)config serviceDatabases:(PDSServiceDatabases *)serviceDatabases error:(NSError **)error {
     // Attempt to acquire connection from service pool
     @try {
         NSError *dbError = nil;
@@ -99,7 +99,7 @@ NSString * const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
     }
 }
 
-+ (BOOL)checkPLCDirectory:(PDSConfiguration *)config error:(NSError **)error {
++ (BOOL)checkPLCDirectory:(ATProtoServiceConfiguration *)config error:(NSError **)error {
     // Skip check in mock/test mode - matches pattern in XrpcIdentityMethods.m and PDSAccountService.m
     if ([config.plcURL isEqualToString:@"mock"] ||
         config.plcURL.length == 0 ||
@@ -149,7 +149,7 @@ NSString * const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
     return NO;
 }
 
-+ (BOOL)checkSigningKeys:(PDSConfiguration *)config serviceDatabases:(PDSServiceDatabases *)serviceDatabases error:(NSError **)error {
++ (BOOL)checkSigningKeys:(ATProtoServiceConfiguration *)config serviceDatabases:(PDSServiceDatabases *)serviceDatabases error:(NSError **)error {
     @try {
         NSError *dbError = nil;
         PDSDatabase *db = [serviceDatabases serviceDatabaseWithError:&dbError];
@@ -194,7 +194,7 @@ NSString * const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
     }
 }
 
-+ (BOOL)checkBlobStorage:(PDSConfiguration *)config error:(NSError **)error {
++ (BOOL)checkBlobStorage:(ATProtoServiceConfiguration *)config error:(NSError **)error {
     if ([config.blobStorageType isEqualToString:@"disk"]) {
         // Test disk blob storage by writing a test file
         NSString *testPath = [config.dataDirectory stringByAppendingPathComponent:@".readiness_test"];
@@ -227,7 +227,7 @@ NSString * const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
     return YES;
 }
 
-+ (BOOL)checkDiskSpace:(PDSConfiguration *)config error:(NSError **)error {
++ (BOOL)checkDiskSpace:(ATProtoServiceConfiguration *)config error:(NSError **)error {
     NSError *fsError = nil;
     NSDictionary *attrs = [[NSFileManager defaultManager]
                           attributesOfFileSystemForPath:config.dataDirectory

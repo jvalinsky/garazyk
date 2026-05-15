@@ -6,7 +6,7 @@
 @class PDSServiceDatabases;
 @class JWTMinter;
 @protocol PDSAdminController;
-@class PDSConfiguration;
+@class ATProtoServiceConfiguration;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -36,7 +36,7 @@ NS_ASSUME_NONNULL_BEGIN
               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                      jwtMinter:(JWTMinter *)jwtMinter
                adminController:(id<PDSAdminController>)adminController
-                 configuration:(PDSConfiguration *)configuration;
+                 configuration:(ATProtoServiceConfiguration *)configuration;
 
 @end
 

@@ -17,7 +17,7 @@
 
 #import <Foundation/Foundation.h>
 
-@class PDSConfiguration;
+@class ATProtoServiceConfiguration;
 @class PDSServiceDatabases;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -69,7 +69,7 @@ typedef NS_ENUM(NSInteger, PDSRegistrationGateErrorCode) {
  @return YES if the request passes this gate, NO otherwise.
  */
 - (BOOL)validateRegistrationRequest:(NSDictionary *)body
-                       configuration:(PDSConfiguration *)configuration
+                       configuration:(ATProtoServiceConfiguration *)configuration
                                error:(NSError **)error;
 
 @end
@@ -131,7 +131,7 @@ typedef NS_ENUM(NSInteger, PDSRegistrationGateErrorCode) {
  @param error On failure, set to a configuration error.
  @return A registration gate (composite if multiple gates enabled, single otherwise).
  */
-+ (nullable id<PDSRegistrationGate>)gateFromConfiguration:(PDSConfiguration *)configuration
++ (nullable id<PDSRegistrationGate>)gateFromConfiguration:(ATProtoServiceConfiguration *)configuration
                                          serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                                                     error:(NSError **)error;
 

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSHttpNodeInfoRoutePack.h
+ @file ATProtoHttpNodeInfoRoutePack.h
 
  @abstract Declares node-info route-pack registration entry points.
 
@@ -14,15 +14,15 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class HttpServer;
 @class PDSApplication;
-@class PDSConfiguration;
+@class ATProtoServiceConfiguration;
 @class PDSController;
 
-@interface PDSHttpNodeInfoRoutePack : NSObject
+@interface ATProtoHttpNodeInfoRoutePack : NSObject
 
 + (void)registerRoutesWithServer:(HttpServer *)server
                           issuer:(nullable NSString *)issuer
                             port:(NSUInteger)port
-                   configuration:(nullable PDSConfiguration *)configuration
+                   configuration:(nullable ATProtoServiceConfiguration *)configuration
                      application:(nullable PDSApplication *)application
                       controller:(nullable PDSController *)controller;
 

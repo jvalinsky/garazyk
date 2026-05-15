@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "Network/PDSHttpXrpcRoutePack.h"
+#import "Network/ATProtoHttpXrpcRoutePack.h"
 
 #import "App/PDSApplication.h"
 #import "App/PDSController.h"
@@ -13,14 +13,14 @@
 #import "Network/XrpcMethodRegistry.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
 
-@implementation PDSHttpXrpcRoutePack
+@implementation ATProtoHttpXrpcRoutePack
 
 + (void)registerRoutesWithServer:(HttpServer *)server
                       dispatcher:(nullable XrpcDispatcher *)dispatcher
                      application:(nullable PDSApplication *)application
                       controller:(nullable PDSController *)controller
            subscribeReposHandler:(nullable SubscribeReposHandler *)subscribeReposHandler
-                  setCorsHeaders:(PDSHttpSetCorsHeadersBlock)setCorsHeaders {
+                  setCorsHeaders:(ATProtoHttpSetCorsHeadersBlock)setCorsHeaders {
   XrpcDispatcher *resolvedDispatcher = dispatcher;
   if (!resolvedDispatcher) {
     resolvedDispatcher = [[XrpcDispatcher alloc] init];
@@ -93,7 +93,7 @@
   }
 
   if (subscribeReposHandler) {
-    GZ_LOG_SYNC_INFO(@"PDSHttpXrpcRoutePack: Registering WebSocket route for subscribeRepos");
+    GZ_LOG_SYNC_INFO(@"ATProtoHttpXrpcRoutePack: Registering WebSocket route for subscribeRepos");
     // OPTIONS preflight for WebSocket upgrade
     [server addRoute:@"OPTIONS"
                 path:@"/xrpc/com.atproto.sync.subscribeRepos"
@@ -117,7 +117,7 @@
                       }];
   }
 
-  GZ_LOG_DEBUG(@"PDSHttpXrpcRoutePack: XRPC routes registered");
+  GZ_LOG_DEBUG(@"ATProtoHttpXrpcRoutePack: XRPC routes registered");
 }
 
 @end

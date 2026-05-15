@@ -5,7 +5,7 @@
 
  @abstract Configuration contract for the standalone AppView server.
 
- @discussion Loaded from the same config file as PDSConfiguration (or a
+ @discussion Loaded from the same config file as ATProtoServiceConfiguration (or a
  dedicated appview.conf file in the data directory), keyed under the
  `appview.*` namespace.
 

@@ -12,7 +12,7 @@
 
 #if defined(__APPLE__) && !defined(GNUSTEP)
 #import "PDSAppleKeyManager.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #if defined(PDS_OPENSSL_SESSION_KEY_MANAGER_AVAILABLE)
 #import "PDSOpenSSLSessionKeyManager.h"
 #endif
@@ -24,7 +24,7 @@
 
 + (id<PDSKeyManager>)createKeyManagerWithDatabase:(PDSDatabase *)database {
 #if defined(__APPLE__) && !defined(GNUSTEP)
-    if (![PDSConfiguration sharedConfiguration].useKeychain) {
+    if (![ATProtoServiceConfiguration sharedConfiguration].useKeychain) {
 #if defined(PDS_OPENSSL_SESSION_KEY_MANAGER_AVAILABLE)
         return [[PDSOpenSSLSessionKeyManager alloc] initWithDatabase:database];
 #else

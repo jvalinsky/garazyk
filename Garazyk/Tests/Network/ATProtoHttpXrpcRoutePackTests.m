@@ -4,26 +4,26 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
-#import "Network/PDSHttpXrpcRoutePack.h"
+#import "Network/ATProtoHttpXrpcRoutePack.h"
 #import "Network/XrpcHandler.h"
 
-@interface HttpServer (PDSHttpXrpcRoutePackTesting)
+@interface HttpServer (ATProtoHttpXrpcRoutePackTesting)
 - (HttpResponse *)dispatchRequest:(HttpRequest *)request;
 - (nullable RequestHandler)handlerForRoute:(NSString *)path
                                     method:(NSString *)method
                                 parameters:(NSDictionary<NSString *, NSString *> *_Nullable *_Nullable)parameters;
 @end
 
-@interface PDSHttpXrpcRoutePackTests : XCTestCase
+@interface ATProtoHttpXrpcRoutePackTests : XCTestCase
 @property(nonatomic, strong) HttpServer *server;
 @end
 
-@implementation PDSHttpXrpcRoutePackTests
+@implementation ATProtoHttpXrpcRoutePackTests
 
 - (void)setUp {
     [super setUp];
     self.server = [HttpServer serverWithPort:0];
-    [PDSHttpXrpcRoutePack registerRoutesWithServer:self.server
+    [ATProtoHttpXrpcRoutePack registerRoutesWithServer:self.server
                                         dispatcher:[[XrpcDispatcher alloc] init]
                                        application:nil
                                         controller:nil

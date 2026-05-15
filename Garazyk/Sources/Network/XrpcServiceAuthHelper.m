@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Network/XrpcServiceAuthHelper.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 
 NSString *XrpcDidWebIdentifierFromIssuer(NSString *issuer, NSString *fallbackHost) {
     NSURLComponents *components = [NSURLComponents componentsWithString:issuer];
@@ -28,7 +28,7 @@ NSString *XrpcDidWebIdentifierFromIssuer(NSString *issuer, NSString *fallbackHos
     return [NSString stringWithFormat:@"did:web:%@", host];
 }
 
-NSArray<NSString *> *XrpcServiceAuthExpectedAudiences(PDSConfiguration *config) {
+NSArray<NSString *> *XrpcServiceAuthExpectedAudiences(ATProtoServiceConfiguration *config) {
     NSString *issuer = [config canonicalIssuerWithPortHint:0];
     NSString *canonicalHost = [config canonicalHostname];
     NSMutableOrderedSet<NSString *> *audiences = [NSMutableOrderedSet orderedSet];

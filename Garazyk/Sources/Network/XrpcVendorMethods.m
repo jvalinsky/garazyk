@@ -20,7 +20,7 @@
 #import "Database/ActorStore/PDSActorStoreInternal.h"
 #import "Services/PDS/PDSRepositoryService.h"
 #import "Database/Pool/DatabasePool.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Metrics/PDSMetrics.h"
 #import "Debug/GZLogger.h"
 
@@ -179,7 +179,7 @@
         }
 
         // Check soft quotas and emit metrics if configured
-        PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+        ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
         PDSMetrics *metrics = [PDSMetrics sharedMetrics];
 
         unsigned long long blobBytes = [usage[@"blobBytes"] unsignedLongLongValue];

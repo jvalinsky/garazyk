@@ -4,7 +4,7 @@
 #import "Debug/GZLogger.h"
 #import "PDSCLIInputHelper.h"
 #import "Database/PDSDatabase.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "CLI/PDSCLIAccountManager.h"
 #import "Identity/ATProtoHandleValidator.h"
 

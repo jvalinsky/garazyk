@@ -4,7 +4,7 @@
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "NodeInfoProvider.h"
 #import "NodeInfoSchemas.h"
 #import "Debug/GZLogger.h"
@@ -54,7 +54,7 @@
 }
 
 - (void)updateProvider {
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     NSString *effectiveIssuer = _issuer ?: config.canonicalIssuer;
 
     if (!effectiveIssuer || (!_configured && !_issuer)) {
@@ -112,7 +112,7 @@
 
 - (void)setCorsHeaders:(HttpResponse *)response
            forRequest:(HttpRequest *)request {
-  PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+  ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
   NSArray<NSString *> *allowedOrigins =
       [config arrayForKey:@"cors.allowed_origins"];
   if (!allowedOrigins) {

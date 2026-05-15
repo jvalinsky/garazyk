@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
-#import "Core/PDSDataPaths.h"
+#import "Core/ATProtoDataPaths.h"
 
-@interface PDSDataPathsTests : XCTestCase
+@interface ATProtoDataPathsTests : XCTestCase
 @property (nonatomic, strong) NSString *tempBaseDir;
 @end
 
-@implementation PDSDataPathsTests
+@implementation ATProtoDataPathsTests
 
 - (void)setUp {
     [super setUp];
@@ -22,7 +22,7 @@
 }
 
 - (void)testInitDerivesExpectedDirectories {
-    PDSDataPaths *paths = [[PDSDataPaths alloc] initWithBaseDirectory:@"/tmp/pds"];
+    ATProtoDataPaths *paths = [[ATProtoDataPaths alloc] initWithBaseDirectory:@"/tmp/pds"];
     XCTAssertEqualObjects(paths.baseDirectory, @"/tmp/pds");
     XCTAssertEqualObjects(paths.serviceDirectory, @"/tmp/pds/service");
     XCTAssertEqualObjects(paths.didCacheDirectory, @"/tmp/pds/did_cache");
@@ -34,13 +34,13 @@
 }
 
 - (void)testFactoryMatchesInitializer {
-    PDSDataPaths *paths = [PDSDataPaths pathsForBaseDirectory:@"/tmp/factory"];
+    ATProtoDataPaths *paths = [ATProtoDataPaths pathsForBaseDirectory:@"/tmp/factory"];
     XCTAssertEqualObjects(paths.baseDirectory, @"/tmp/factory");
     XCTAssertEqualObjects(paths.keysDirectory, @"/tmp/factory/keys");
 }
 
 - (void)testCreateDirectoriesCreatesAllExpectedPaths {
-    PDSDataPaths *paths = [[PDSDataPaths alloc] initWithBaseDirectory:self.tempBaseDir];
+    ATProtoDataPaths *paths = [[ATProtoDataPaths alloc] initWithBaseDirectory:self.tempBaseDir];
     NSError *error = nil;
     XCTAssertTrue([paths createDirectoriesWithError:&error]);
     XCTAssertNil(error);
@@ -64,7 +64,7 @@
 }
 
 - (void)testCreateDirectoriesIsIdempotent {
-    PDSDataPaths *paths = [[PDSDataPaths alloc] initWithBaseDirectory:self.tempBaseDir];
+    ATProtoDataPaths *paths = [[ATProtoDataPaths alloc] initWithBaseDirectory:self.tempBaseDir];
     NSError *error = nil;
     XCTAssertTrue([paths createDirectoriesWithError:&error]);
     XCTAssertNil(error);
@@ -73,25 +73,25 @@
 }
 
 - (void)testActorStorePathForStandardDidShardsByMethodAndPrefix {
-    PDSDataPaths *paths = [[PDSDataPaths alloc] initWithBaseDirectory:@"/var/pds"];
+    ATProtoDataPaths *paths = [[ATProtoDataPaths alloc] initWithBaseDirectory:@"/var/pds"];
     NSString *result = [paths actorStorePathForDid:@"did:plc:abcdef1234"];
     XCTAssertEqualObjects(result, @"/var/pds/plc/ab/did:plc:abcdef1234");
 }
 
 - (void)testActorStorePathEqualsResultForNonStandardDid {
-    PDSDataPaths *paths = [[PDSDataPaths alloc] initWithBaseDirectory:@"/var/pds"];
+    ATProtoDataPaths *paths = [[ATProtoDataPaths alloc] initWithBaseDirectory:@"/var/pds"];
     NSString *result = [paths actorStorePathForDid:@"abc"];
     XCTAssertEqualObjects(result, @"/var/pds/ab/abc");
 }
 
 - (void)testActorStorePathEqualsResultForEmptyDid {
-    PDSDataPaths *paths = [[PDSDataPaths alloc] initWithBaseDirectory:@"/var/pds"];
+    ATProtoDataPaths *paths = [[ATProtoDataPaths alloc] initWithBaseDirectory:@"/var/pds"];
     NSString *result = [paths actorStorePathForDid:@""];
     XCTAssertEqualObjects(result, @"/var/pds");
 }
 
 - (void)testKeyPathForDid {
-    PDSDataPaths *paths = [[PDSDataPaths alloc] initWithBaseDirectory:@"/tmp/pds"];
+    ATProtoDataPaths *paths = [[ATProtoDataPaths alloc] initWithBaseDirectory:@"/tmp/pds"];
     NSString *result = [paths keyPathForDid:@"did:plc:abc"];
     XCTAssertEqualObjects(result, @"/tmp/pds/keys/did:plc:abc");
 }

@@ -4,7 +4,7 @@
 #import "App/NodeInfo/NodeInfoProvider.h"
 #import "App/NodeInfo/NodeInfoHandler.h"
 #import "App/NodeInfo/NodeInfoSchemas.h"
-#import "App/PDSConfiguration.h"
+#import "App/ATProtoServiceConfiguration.h"
 
 @interface NodeInfoTests : XCTestCase
 @end
@@ -20,7 +20,7 @@
 }
 
 - (void)testProviderInitialization {
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     XCTAssertNotNil(config);
 
     NSString *baseURL = @"https://pds.example.com";
@@ -32,7 +32,7 @@
 }
 
 - (void)testProviderVersionFieldsMatchExpected {
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     NodeInfoProvider *provider = [[NodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
 
     NSDictionary *nodeInfo20 = provider.nodeInfo20;
@@ -43,7 +43,7 @@
 }
 
 - (void)testProviderSoftwareFields {
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     NodeInfoProvider *provider = [[NodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
 
     NSDictionary *nodeInfo21 = provider.nodeInfo21;
@@ -54,7 +54,7 @@
 }
 
 - (void)testProviderProtocolsFieldContainsAtproto {
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     NodeInfoProvider *provider = [[NodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
 
     NSDictionary *nodeInfo21 = provider.nodeInfo21;
@@ -64,7 +64,7 @@
 }
 
 - (void)testProviderServicesField {
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     NodeInfoProvider *provider = [[NodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
 
     NSDictionary *nodeInfo21 = provider.nodeInfo21;
@@ -75,7 +75,7 @@
 }
 
 - (void)testProviderOpenRegistrations {
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     NodeInfoProvider *provider = [[NodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
 
     NSDictionary *nodeInfo21 = provider.nodeInfo21;
@@ -83,7 +83,7 @@
 }
 
 - (void)testProviderUsageField {
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     NodeInfoProvider *provider = [[NodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
 
     NSDictionary *nodeInfo21 = provider.nodeInfo21;
@@ -98,7 +98,7 @@
 }
 
 - (void)testProviderMetadataField {
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     NodeInfoProvider *provider = [[NodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
 
     NSDictionary *nodeInfo21 = provider.nodeInfo21;
@@ -106,7 +106,7 @@
 }
 
 - (void)testProviderDiscoveryDocument {
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
     NodeInfoProvider *provider = [[NodeInfoProvider alloc] initWithBaseURL:@"https://pds.example.com" configuration:config];
 
     NSDictionary *discovery21 = provider.discoveryDocument21;
@@ -121,7 +121,7 @@
 }
 
 - (void)testProviderInvalidBaseURL {
-    PDSConfiguration *config = [PDSConfiguration sharedConfiguration];
+    ATProtoServiceConfiguration *config = [ATProtoServiceConfiguration sharedConfiguration];
 
     XCTAssertNil([[NodeInfoProvider alloc] initWithBaseURL:nil configuration:config]);
     XCTAssertNil([[NodeInfoProvider alloc] initWithBaseURL:@"" configuration:config]);

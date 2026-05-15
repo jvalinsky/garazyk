@@ -89,7 +89,7 @@ typedef NS_ENUM(NSUInteger, DIDCacheStatus) {
 
 /*!
  @method sharedResolver
- @abstract Returns a shared resolver configured with the PLC URL from PDSConfiguration.
+ @abstract Returns a shared resolver configured with the PLC URL from ATProtoServiceConfiguration.
  @discussion Reuses a single NSURLSession and DID document cache across all callers.
  */
 + (instancetype)sharedResolver;

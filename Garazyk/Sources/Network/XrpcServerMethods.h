@@ -13,7 +13,7 @@
 
 @class XrpcDispatcher;
 @class JWTMinter;
-@class PDSConfiguration;
+@class ATProtoServiceConfiguration;
 @class PDSServiceDatabases;
 @class PDSDatabasePool;
 @class PDSRepositoryService;
@@ -61,7 +61,7 @@ NS_ASSUME_NONNULL_BEGIN
              repositoryService:(PDSRepositoryService *)repositoryService
               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
               userDatabasePool:(PDSDatabasePool *)userDatabasePool
-                 configuration:(PDSConfiguration *)config
+                 configuration:(ATProtoServiceConfiguration *)config
     enforceDidWebServiceAuth:(BOOL)enforceDidWebServiceAuth
             registrationGate:(nullable id<PDSRegistrationGate>)registrationGate;
 
