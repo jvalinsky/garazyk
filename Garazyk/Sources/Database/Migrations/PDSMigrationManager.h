@@ -265,6 +265,19 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (instancetype)actorStoreMigrationManager;
 
+/*!
+ @method pdsDatabaseMigrationManager
+
+ @abstract Create migration manager for the legacy monolithic PDSDatabase.
+
+ @discussion Pre-configured with V10 bridge (schema_version → _migrations) and
+ V11 legacy column additions. Used by PDSDatabase.m for backward compatibility
+ with the old monolithic migration system.
+
+ @return Migration manager for PDSDatabase.
+ */
++ (instancetype)pdsDatabaseMigrationManager;
+
 @end
 
 #pragma mark - Error Domain
