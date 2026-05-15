@@ -66,7 +66,7 @@ static NSString *ChatAuthURLByAppendingPath(NSString *baseURL, NSString *path) {
             }
             dispatch_semaphore_signal(semaphore);
         }];
-    dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
 
     if (!data || (statusCode != 0 && (statusCode < 200 || statusCode >= 300))) {
         GZ_LOG_ERROR(@"ChatAuthManager: failed to fetch JWKS from %@: status=%ld error=%@",

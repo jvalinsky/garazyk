@@ -107,7 +107,7 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
         }];
 
     [task resume];
-    dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 120 * NSEC_PER_SEC));
 
     if (responseError && error) {
         *error = responseError;
@@ -164,7 +164,7 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
         }];
 
     [task resume];
-    dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 120 * NSEC_PER_SEC));
 
     if (responseError && error) {
         *error = responseError;
@@ -217,7 +217,7 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
         }];
 
     [task resume];
-    dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 120 * NSEC_PER_SEC));
 
     if (responseError && error) {
         *error = responseError;
@@ -254,7 +254,7 @@ NSString * const PDSCloudStorageBlobProviderErrorDomain = @"com.atproto.pds.clou
         }];
 
     [task resume];
-    dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 120 * NSEC_PER_SEC));
 
     return exists;
 }
