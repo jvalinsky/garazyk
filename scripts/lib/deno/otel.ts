@@ -203,52 +203,6 @@ export async function withSpan<T>(
 }
 
 /**
- * Create a traced span around a synchronous function.
- *
- * @param name - Span name
- * @param fn - Sync function to trace
- * @param attributes - Optional span attributes
- * @returns The return value of fn
- */
-export function withSpanSync<T>(
-  name: string,
-  fn: () => T,
-  attributes?: Record<string, string | number | boolean>,
-): T {
-  if (!isOtelEnabled()) {
-    return fn();
-  }
-
-  // For sync spans, we still need to use the async tracer API
-  // but we call the function synchronously within the span
-  const tracer = getTracer();
-  // This is a best-effort sync wrapper — the tracer API is async
-  // so we use startActiveSpan in a microtask-friendly way
-  let result: T;
-  let error: unknown;
-  tracer.then((t: any) => {
-    t.startActiveSpan(name, { attributes }, (span: any) => {
-      try {
-        result = fn();
-        span.setStatus({ code: 0 });
-      } catch (err) {
-        error = err;
-        span.setStatus({ code: 2, message: err instanceof Error ? err.message : String(err) });
-        span.recordException(err);
-      } finally {
-        span.end();
-      }
-    });
-  }).catch(() => {
-    // Tracer not available — call fn directly
-    result = fn();
-  });
-
-  if (error) throw error;
-  return result!;
-}
-
-/**
  * Add an attribute to the currently active span.
  *
  * No-op when OTel is not enabled.
@@ -293,14 +247,29 @@ export async function addSpanEvent(name: string, attributes?: Record<string, str
 export async function shutdownTracing(): Promise<void> {
   if (!_initialized || !isOtelEnabled()) return;
 
+  // Try to flush pending spans via the OpenTelemetry SDK.
   // Deno's built-in OTel handles flush on process exit when
-  // OTEL_DENO is set. However, for explicit shutdown we can
-  // try to flush via the SDK if available.
+  // OTEL_DENO is set, but explicit shutdown gives us control
+  // over timing and error reporting.
   try {
-    // Force a microtask yield to allow pending spans to be exported
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    const api = await import("npm:@opentelemetry/api@1");
+    const provider = api.trace.getTracerProvider();
+    // The SDK's TracerProvider has a forceFlush() method, but
+    // the API type doesn't expose it. Try to call it if present.
+    if (typeof (provider as any).forceFlush === "function") {
+      await Promise.race([
+        (provider as any).forceFlush(),
+        new Promise<void>((resolve) => setTimeout(resolve, 2000)),
+      ]);
+    } else if (typeof (provider as any).shutdown === "function") {
+      await Promise.race([
+        (provider as any).shutdown(),
+        new Promise<void>((resolve) => setTimeout(resolve, 2000)),
+      ]);
+    }
   } catch {
-    // Ignore
+    // SDK not available or flush failed — Deno's built-in OTel
+    // will flush on process exit anyway.
   }
 }
 
