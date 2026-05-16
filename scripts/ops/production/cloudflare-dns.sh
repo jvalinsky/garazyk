@@ -16,7 +16,7 @@ die()   { error "$*"; exit 1; }
 TOKEN=""
 ZONE_ID=""
 SUBDOMAIN=""
-TARGET="DEPLOY_HOST"
+TARGET="${DEPLOY_HOST:-}"
 
 usage() {
     cat <<EOF
@@ -28,7 +28,7 @@ Arguments:
   --token      Cloudflare API token
   --zone-id    Cloudflare zone ID for the domain
   --subdomain  Subdomain to create (e.g. "alice" for alice.garazyk.xyz)
-  --target     CNAME target (default: DEPLOY_HOST)
+  --target     CNAME target (default: \$DEPLOY_HOST)
 EOF
     exit 1
 }
