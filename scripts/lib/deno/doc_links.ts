@@ -92,25 +92,37 @@ export class MarkdownLinkTester {
     const target = this.resolveLink(sourceFile, href);
     if (!target) return;
 
-    if (!await this.fileExists(target.path)) {
+    let targetPath = target.path;
+    let exists = await this.fileExists(targetPath);
+    if (!exists && !targetPath.split(/[/\\]/).pop()?.includes(".")) {
+      if (await this.fileExists(targetPath + ".md")) {
+        targetPath += ".md";
+        exists = true;
+      } else if (await this.fileExists(join(targetPath, "index.md"))) {
+        targetPath = join(targetPath, "index.md");
+        exists = true;
+      }
+    }
+
+    if (!exists) {
       this.logError(
         this.relRepo(sourceFile),
         line,
-        `Broken link: '${href}' -> target file not found: ${target.path}`,
+        `Broken link: '${href}' -> target file not found: ${targetPath}`,
       );
       return;
     }
 
-    if (target.anchor && target.path.endsWith(".md")) {
+    if (target.anchor && targetPath.endsWith(".md")) {
       try {
-        const targetContent = await Deno.readTextFile(target.path);
+        const targetContent = await Deno.readTextFile(targetPath);
         const anchors = this.extractAnchors(targetContent);
         if (!anchors.has(target.anchor)) {
           this.logError(
             this.relRepo(sourceFile),
             line,
             `Broken anchor: '${href}' -> anchor '#${target.anchor}' not found in ${
-              target.path.split("/").at(-1)
+              targetPath.split("/").at(-1)
             }`,
           );
         }

@@ -209,5 +209,4 @@ The diagram is production-ready and provides developers with a clear, accurate r
 
 - [Documentation Map](../11-reference/documentation-map.md)
 - [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
 

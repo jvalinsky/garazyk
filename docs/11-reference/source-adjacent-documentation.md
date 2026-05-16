@@ -24,5 +24,4 @@ This index tracks documentation located alongside implementation code in the rep
 - [Codebase Map](../01-getting-started/codebase-map)
 - [Architecture Overview](../01-getting-started/architecture-overview)
 - [Tooling and Skills Documentation](./tooling-and-skills-documentation)
-- [Repository Documentation Index](../repo-index/index)
 - [Contributor Guide](../index.md)
