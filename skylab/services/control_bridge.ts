@@ -18,6 +18,7 @@ export interface BrowserClient {
 }
 
 export interface PendingCommand {
+  clientId: string;
   resolve: (result: unknown) => void;
   reject: (error: Error) => void;
   timer: number;
@@ -45,6 +46,7 @@ export interface ClientState {
 // ---------------------------------------------------------------------------
 
 let _clientIdCounter = 0;
+let _eventSeq = 0;
 
 /** Connected browser clients */
 const browserClients: BrowserClient[] = [];
@@ -91,7 +93,7 @@ export function unregisterClient(id: string): void {
 
   // Cancel any pending commands for this client
   for (const [cmdId, pending] of pendingCommands.entries()) {
-    if (!pending.resolve) continue;
+    if (pending.clientId !== id) continue;
     clearTimeout(pending.timer);
     pending.reject(new Error("Browser client disconnected"));
     pendingCommands.delete(cmdId);
@@ -124,7 +126,14 @@ const COMMAND_TIMEOUT_MS = 30_000;
  * Rejects on timeout or if no browser is connected.
  */
 export function dispatchCommand(
-  cmd: { type: string; id?: string; method?: string; params?: unknown; body?: unknown; service?: string },
+  cmd: {
+    type?: string;
+    id?: string;
+    method?: string;
+    params?: unknown;
+    body?: unknown;
+    service?: string;
+  },
 ): Promise<unknown> {
   return new Promise((resolve, reject) => {
     const client = getFirstBrowserClient();
@@ -141,7 +150,7 @@ export function dispatchCommand(
       reject(new Error("Browser did not respond within 30s"));
     }, COMMAND_TIMEOUT_MS);
 
-    pendingCommands.set(cmdId, { resolve, reject, timer });
+    pendingCommands.set(cmdId, { clientId: client.id, resolve, reject, timer });
 
     try {
       client.socket.send(JSON.stringify(fullCmd));
@@ -174,7 +183,7 @@ export function resolveCommand(cmdId: string, result: unknown): void {
  */
 export function recordEvent(event: Record<string, unknown>): EventLogEntry {
   const entry: EventLogEntry = {
-    seq: eventLog.length + 1,
+    seq: ++_eventSeq,
     timestamp: Date.now() / 1000,
     ...event,
   };
@@ -215,7 +224,12 @@ export function clearEvents(): void {
  * Get the current client state snapshot.
  */
 export function getState(): ClientState {
-  return { ...clientState };
+  return {
+    ...clientState,
+    timeline: [...clientState.timeline],
+    chats: [...clientState.chats],
+    firehose: { ...clientState.firehose },
+  };
 }
 
 /**
@@ -223,7 +237,8 @@ export function getState(): ClientState {
  */
 export function updateState(partial: Record<string, unknown>): void {
   for (const [key, value] of Object.entries(partial)) {
-    (clientState as Record<string, unknown>)[key] = value;
+    const state = clientState as unknown as Record<string, unknown>;
+    state[key] = value;
   }
 }
 
@@ -249,11 +264,15 @@ export function resetState(): void {
  */
 export function broadcastToBrowsers(message: unknown): void {
   const data = JSON.stringify(message);
+  const dead: string[] = [];
   for (const client of browserClients) {
     try {
       client.socket.send(data);
     } catch {
-      // Ignore send errors — client may have disconnected
+      dead.push(client.id);
     }
+  }
+  for (const id of dead) {
+    unregisterClient(id);
   }
 }
