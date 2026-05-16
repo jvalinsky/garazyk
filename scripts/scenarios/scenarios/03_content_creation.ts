@@ -1,6 +1,26 @@
+/**
+ * @module scenarios/03_content_creation
+ *
+ * Scenario: Content creation and engagement (posts, replies, quotes, likes, and deletion)
+ *
+ * Behavior:
+ * - Create test accounts and profiles
+ * - Post different types of content (text, reply, quote)
+ * - Users like posts and bookmark content
+ * - Verify feed generation, thread views, and notifications
+ * - Delete a post and confirm it is gone
+ *
+ * Expectations:
+ * - Content is created and retrievable
+ * - Interactions (replies, quotes, likes, bookmarks) are tracked correctly
+ * - Deletion of records works and is verifiable
+ */
+
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { PDS1, getCharacter } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 
 function now() {
   return new Date().toISOString();
@@ -40,6 +60,10 @@ async function createPost(
   return rec;
 }
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Content Creation & Interaction");
   result.start();
@@ -205,7 +229,7 @@ export async function run(): Promise<ScenarioResult> {
     "This post will be deleted soon. Don't get attached!",
     result
   );
-  
+
   if (rosaTemp) {
     const rkey = rosaTemp.uri.split("/").pop()!;
     await timedCall(
@@ -237,7 +261,7 @@ export async function run(): Promise<ScenarioResult> {
   await new Promise(r => setTimeout(r, 3000));
 
   const luna = getCharacter("luna");
-  
+
   await timedCall(
     result, "Luna's timeline",
     async () => {

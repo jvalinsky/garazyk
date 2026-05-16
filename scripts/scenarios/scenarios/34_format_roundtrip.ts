@@ -1,7 +1,29 @@
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
-import { assert } from "../../lib/deno/assertions.ts";
-import { XrpcClient } from "../../lib/deno/client.ts";
+/**
+ * @module scenarios/34_format_roundtrip
+ *
+ * Scenario: 34 format roundtrip
+ *
+ * Behavior:
+ * - Executes the 34 format roundtrip scenario.
+ * - Validates core operations.
+ *
+ * Expectations:
+ * - Scenario completes successfully without errors.
+ */
+
 import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { ScenarioResult } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
+import { XrpcClient } from "../../lib/deno/client.ts";
+import { assert } from "../../lib/deno/assertions.ts";
+import { timedCall } from "../../lib/deno/runner.ts";
+
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
+
 
 function now() {
   return new Date().toISOString();

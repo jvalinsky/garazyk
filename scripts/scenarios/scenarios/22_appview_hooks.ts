@@ -1,4 +1,25 @@
+/**
+ * @module scenarios/22_appview_hooks
+ *
+ * Scenario: Verifies AppView index hooks, dead-letter reporting, and record browsing.
+ *
+ * Behavior:
+ * - Initializes PDS and AppView clients.
+ * - Creates test accounts and generates records.
+ * - Checks the AppView hook registry status.
+ * - Performs search index queries and validates dead-letter table behavior.
+ * - Exercises administrative record browsing endpoints with various filters (DID, collection, pagination).
+ *
+ * Expectations:
+ * - Hooks are registered and registry status is returned.
+ * - Search indices show the created content.
+ * - Dead-letter reporting handles requests for entries correctly.
+ * - Admin record browsing correctly enforces collection filtering and returns results.
+ */
+
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { PDS1, SERVICE_URLS, APPVIEW_ADMIN_SECRET, getCharacter } from "../../lib/deno/config.ts";
@@ -7,6 +28,10 @@ function now() {
   return new Date().toISOString();
 }
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("AppView Index Hooks & Dead Letter");
   result.start();

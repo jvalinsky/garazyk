@@ -1,4 +1,25 @@
+/**
+ * @module scenarios/23_appview_write_proxy
+ *
+ * Scenario: Verifies the AppView write proxy capability and OAuth2 authentication handling.
+ *
+ * Behavior:
+ * - Initializes PDS and AppView clients.
+ * - Creates/updates user accounts and profiles.
+ * - Performs record creation via both PDS direct and AppView proxy routes.
+ * - Tests OAuth2/Bearer token validation on AppView endpoints (profile lookups).
+ * - Queries AppView admin metrics, ingest health, and endpoint stats.
+ *
+ * Expectations:
+ * - Direct PDS record creation succeeds.
+ * - AppView proxy correctly accepts or denies repo modification attempts.
+ * - OAuth2 tokens are correctly validated for public and authed AppView endpoints.
+ * - Admin diagnostic endpoints return valid metrics.
+ */
+
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
 import { PDS1, SERVICE_URLS, APPVIEW_ADMIN_SECRET, getCharacter } from "../../lib/deno/config.ts";
@@ -7,6 +28,10 @@ function now() {
   return new Date().toISOString();
 }
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("AppView Write Proxy & OAuth2");
   result.start();

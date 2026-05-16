@@ -1,8 +1,30 @@
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
-import { assert } from "../../lib/deno/assertions.ts";
-import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
-import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
+/**
+ * @module scenarios/48_websocket_reconnection
+ *
+ * Scenario: 48 websocket reconnection
+ *
+ * Behavior:
+ * - Executes the 48 websocket reconnection scenario.
+ * - Validates core operations.
+ *
+ * Expectations:
+ * - Scenario completes successfully without errors.
+ */
+
 import { FirehoseClient } from "../../lib/deno/firehose.ts";
+import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
+import { ScenarioResult } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
+import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
+import { assert } from "../../lib/deno/assertions.ts";
+import { timedCall } from "../../lib/deno/runner.ts";
+
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
+
 
 function now() {
   return new Date().toISOString();
@@ -19,7 +41,7 @@ export async function run(): Promise<ScenarioResult> {
 
   if (result.failed > 0) return result;
 
-  const session = await pds.accounts.createAccount(luna.handle, luna.email, luna.password).catch(() => 
+  const session = await pds.accounts.createAccount(luna.handle, luna.email, luna.password).catch(() =>
     pds.accounts.createSession(luna.handle, luna.password)
   );
 
@@ -33,10 +55,10 @@ export async function run(): Promise<ScenarioResult> {
 
   const relayUrl = SERVICE_URLS.relay;
   const fh = new FirehoseClient(relayUrl);
-  
+
   let lastSeq = 0;
   const eventsBefore: any[] = [];
-  
+
   await timedCall(result, "Subscribe to firehose (first)", async () => {
     await fh.subscribe((ev) => {
       eventsBefore.push(ev);

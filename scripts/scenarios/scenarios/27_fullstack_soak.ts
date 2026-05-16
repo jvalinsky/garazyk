@@ -1,8 +1,16 @@
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
-import { assert } from "../../lib/deno/assertions.ts";
-import { XrpcClient } from "../../lib/deno/client.ts";
-import { PDS1, SERVICE_URLS, APPVIEW_ADMIN_SECRET, getCharacter, Character } from "../../lib/deno/config.ts";
-import { createRunContext } from "../../lib/deno/diagnostics.ts";
+/**
+ * @module scenarios/27_fullstack_soak
+ *
+ * Scenario: 27 fullstack soak
+ *
+ * Behavior:
+ * - Executes the 27 fullstack soak scenario.
+ * - Validates core operations.
+ *
+ * Expectations:
+ * - Scenario completes successfully without errors.
+ */
+
 import {
   OperationTimer,
   PhaseTimer,
@@ -10,7 +18,21 @@ import {
   StorageMonitor,
   InstrumentationReport,
 } from "../../lib/deno/instrumentation.ts";
+import { PDS1, SERVICE_URLS, APPVIEW_ADMIN_SECRET, getCharacter, Character } from "../../lib/deno/config.ts";
+import { ScenarioResult } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
+import { XrpcClient } from "../../lib/deno/client.ts";
+import { assert } from "../../lib/deno/assertions.ts";
+import { createRunContext } from "../../lib/deno/diagnostics.ts";
 import { join } from "@std/path";
+import { timedCall } from "../../lib/deno/runner.ts";
+
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
+
 
 const WORKLOAD_SECONDS = 120;
 const WORKER_COUNT = 10;
@@ -86,7 +108,7 @@ export async function run(): Promise<ScenarioResult> {
         acc.did = session.did;
         acc.accessJwt = session.accessJwt;
         activeAccounts.push(acc);
-        
+
         await timer.measure("setup_profile", () =>
           client.records.putRecord(acc.did, "app.bsky.actor.profile", "self", {
             $type: "app.bsky.actor.profile",
@@ -110,11 +132,11 @@ export async function run(): Promise<ScenarioResult> {
     const workerLoop = async (id: number) => {
       const workerClient = new XrpcClient(PDS1);
       const postPool: any[] = [];
-      
+
       while (Date.now() < deadline) {
         const acc = activeAccounts[Math.floor(Math.random() * activeAccounts.length)];
         const op = Math.random();
-        
+
         try {
           if (op < 0.3) { // Post
             const resp = await timer.measure("create_post", () =>
@@ -144,7 +166,7 @@ export async function run(): Promise<ScenarioResult> {
             );
           }
         } catch { /* ignore workload errors */ }
-        
+
         await new Promise(r => setTimeout(r, 100 + Math.random() * 200));
       }
     };
@@ -156,7 +178,7 @@ export async function run(): Promise<ScenarioResult> {
     phaseTimer.startPhase("Consistency verification");
     // Wait for indexing
     await new Promise(r => setTimeout(r, 5000));
-    
+
     await timedCall(result, "PDS check", async () => {
       const resp = await client.accounts.describeServer();
       assert.isTrue(resp.availableUserDomains.length > 0);

@@ -1,6 +1,23 @@
+/**
+ * @module scenarios/35_interrupted_migration
+ *
+ * Scenario: Interrupted Account Migration
+ *
+ * Behavior:
+ * - Creates an account on PDS1 and uploads a blob.
+ * - Requests a PLC operation signature from PDS1.
+ * - Initiates an interrupted account migration path.
+ * - Verifies that PDS1 retains authority over the identity.
+ *
+ * Expectations:
+ * - PDS1 remains the authoritative PDS for the identity following the failed migration attempt.
+ */
+
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
-import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
+import { XrpcClient } from "../../lib/deno/client.ts";
 import { PDS1, PDS2, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
 
 function now() {
@@ -15,6 +32,10 @@ const MINIMAL_PNG = new Uint8Array([
   0x4e, 0x44, 0xae, 0x42, 0x60, 0x82
 ]);
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Interrupted Account Migration");
   result.start();
@@ -65,7 +86,7 @@ export async function run(): Promise<ScenarioResult> {
   });
 
   await timedCall(
-    result, "Initiate failed import to PDS2 (Interruption)",
+    result, "Initiate failed migration",
     async () => {
       await pds2.raw.xrpcPost("com.atproto.server.createAccount", {
         handle: luna.handle,
