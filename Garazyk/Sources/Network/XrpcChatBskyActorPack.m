@@ -87,9 +87,11 @@
   [dispatcher registerMethod:@"chat.bsky.actor.declaration"
                      handler:^(HttpRequest *request, HttpResponse *response) {
                        // Authenticate via ChatAuthManager (same pattern as ConvoPack)
+                       NSString *methodNSID = request.pathParameters[@"method"] ?: @"chat.bsky.actor.declaration";
                        NSString *actorDID =
                            [[ChatAuthManager sharedManager] authenticateRequest:request
-                                                                        response:response];
+                                                                        response:response
+                                                                   expectedMethod:methodNSID];
                        if (!actorDID) {
                          return;
                        }
