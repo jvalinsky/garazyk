@@ -19,7 +19,6 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString * const DIDPLCResolverErrorDomain;
 
 /*!
- @enum DIDPLCResolverErrorCode
 
  @abstract Error codes for DID PLC resolution operations.
 

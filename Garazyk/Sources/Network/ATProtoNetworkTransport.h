@@ -23,7 +23,6 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @enum ATProtoNetworkConnectionState
 
  @abstract Connection lifecycle states.
 
@@ -42,7 +41,6 @@ typedef NS_ENUM(NSInteger, ATProtoNetworkConnectionState) {
 };
 
 /*!
- @enum ATProtoNetworkListenerState
 
  @abstract Listener lifecycle states.
 

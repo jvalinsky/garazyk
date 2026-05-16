@@ -19,7 +19,6 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString * const HandleErrorDomain;
 
 /*!
- @enum HandleError
 
  @abstract Error codes for handle resolution.
 

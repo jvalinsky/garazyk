@@ -20,7 +20,6 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSErrorDomain const DIDErrorDomain;
 
 /*!
- @enum DIDErrorCode
 
  @abstract Error codes for DID resolution failures.
 
@@ -37,7 +36,6 @@ typedef NS_ENUM(NSInteger, DIDErrorCode) {
 };
 
 /*!
- @enum DIDCacheStatus
 
  @abstract Freshness status for cached DID documents.
 

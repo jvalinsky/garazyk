@@ -23,7 +23,6 @@ NS_ASSUME_NONNULL_BEGIN
  */
 
 /*!
- @typedef XrpcMethodHandler
  
  @abstract Block type for handling XRPC method calls.
  
@@ -33,7 +32,6 @@ NS_ASSUME_NONNULL_BEGIN
 typedef void (^XrpcMethodHandler)(HttpRequest *request, HttpResponse *response);
 
 /*!
- @typedef XrpcRequestInterceptor
 
  @abstract Optional pre-dispatch interceptor for XRPC requests.
 

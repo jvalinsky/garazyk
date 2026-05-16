@@ -23,7 +23,6 @@ NS_ASSUME_NONNULL_BEGIN
  */
 
 /*!
- @typedef RequestHandler
  
  @abstract Block type for handling HTTP requests.
  

@@ -11,7 +11,6 @@ NS_ASSUME_NONNULL_BEGIN
 @class JWTMinter;
 
 /*!
- @typedef ServiceAuthSigningKeyResolver
  
  @abstract Block that resolves a user DID to their actor key manager
  for signing service auth JWTs.

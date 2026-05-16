@@ -19,7 +19,6 @@ NS_ASSUME_NONNULL_BEGIN
 @class ATProtoLexiconDef;
 
 /*!
- @enum ATProtoValidationMode
 
  @abstract Validation mode for record operations.
 

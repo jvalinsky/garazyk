@@ -24,7 +24,6 @@ NS_ASSUME_NONNULL_BEGIN
  */
 
 /*!
- @enum MSTNodeKind
 
  @abstract Specifies the type of an MST node.
 
@@ -37,7 +36,6 @@ typedef NS_ENUM(NSUInteger, MSTNodeKind) {
 };
 
 /*!
- @enum MSTDiffOperationType
 
  @abstract Specifies the type of change in an MST diff operation.
 

@@ -36,7 +36,6 @@ NS_ASSUME_NONNULL_BEGIN
  */
 
 /*!
- @enum STARVariant
 
  @abstract Specifies the STAR format variant.
 
@@ -49,7 +48,6 @@ typedef NS_ENUM(NSUInteger, STARVariant) {
 };
 
 /*!
- @enum STARItemType
 
  @abstract Type of item encountered during STAR stream parsing.
  */
@@ -395,7 +393,6 @@ FOUNDATION_EXPORT NSString *const STARContentTypeLite;
 FOUNDATION_EXPORT NSString *const CARContentType;
 
 /*!
- @enum PDSRepoFormat
 
  @abstract Repository serialization format for content negotiation.
  */

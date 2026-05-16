@@ -32,17 +32,16 @@ NS_ASSUME_NONNULL_BEGIN
 @class HttpResponse;
 
 /**
- * @enum RateLimitType
- * @brief Types of rate limits tracked by the system
- *
- * @constant RateLimitTypeDID Per-DID API request limit (default 5000/hour)
- * @constant RateLimitTypeIP Per-IP request limit for unauthenticated requests (default 100/min)
- * @constant RateLimitTypeBlob Per-DID blob upload limit (default 50/hour)
+ * @abstract Rate limit buckets tracked by request identity and resource type.
  */
 typedef NS_ENUM(NSInteger, RateLimitType) {
+    /** Per-DID API request limit. */
     RateLimitTypeDID,
+    /** Per-IP request limit for unauthenticated requests. */
     RateLimitTypeIP,
+    /** Per-DID blob upload limit. */
     RateLimitTypeBlob,
+    /** Caller-defined bucket for endpoint-specific limits. */
     RateLimitTypeCustom
 };
 

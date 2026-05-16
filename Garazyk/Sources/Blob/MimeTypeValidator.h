@@ -20,7 +20,6 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString * const MimeTypeErrorDomain;
 
 /*!
- @enum MimeTypeError
 
  @abstract Error codes for MIME validation.
 
@@ -39,7 +38,6 @@ typedef NS_ENUM(NSInteger, MimeTypeError) {
 };
 
 /*!
- @enum MimeCategory
 
  @abstract MIME type categories with distinct size limits.
 

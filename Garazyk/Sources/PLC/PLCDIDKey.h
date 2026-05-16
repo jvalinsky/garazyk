@@ -16,7 +16,6 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @enum PLCDIDKeyType
 
  @abstract Key types supported for DID keys in PLC operations.
 

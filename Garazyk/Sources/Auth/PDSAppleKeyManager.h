@@ -17,22 +17,20 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString * const KeyManagerErrorDomain;
 
 /**
- * @enum KeyManagerError
- * @brief Error codes for key management operations
- *
- * @constant KeyManagerErrorKeyGenerationFailed Key generation failed (e.g., insufficient entropy)
- * @constant KeyManagerErrorKeyNotFound Requested key ID not found in storage
- * @constant KeyManagerErrorSigningFailed Signing operation failed (e.g., key corruption)
- * @constant KeyManagerErrorInvalidKeyData Key data format is invalid or corrupted
- * @constant KeyManagerErrorExportFailed Key export to JWK format failed
- * @constant KeyManagerErrorImportFailed Importing external key failed validation
+ * @abstract Error codes reported by Apple-backed key management operations.
  */
 typedef NS_ENUM(NSInteger, KeyManagerError) {
+    /** Key generation failed because Security.framework could not create key material. */
     KeyManagerErrorKeyGenerationFailed = 1000,
+    /** The requested key identifier was not found in storage. */
     KeyManagerErrorKeyNotFound,
+    /** Signing failed because the key or requested algorithm could not complete the operation. */
     KeyManagerErrorSigningFailed,
+    /** Stored or imported key data was malformed or unsupported. */
     KeyManagerErrorInvalidKeyData,
+    /** Exporting a key to JWK or related interchange data failed. */
     KeyManagerErrorExportFailed,
+    /** Imported key material failed validation. */
     KeyManagerErrorImportFailed
 };
 

@@ -16,7 +16,6 @@ NS_ASSUME_NONNULL_BEGIN
  */
 
 /*!
- @enum GZLogLevel
 
  @abstract Log severity levels.
 
@@ -33,7 +32,6 @@ typedef NS_ENUM(NSInteger, GZLogLevel) {
 };
 
 /*!
- @enum GZLogFormat
 
  @abstract Log output format options.
 

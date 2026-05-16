@@ -19,7 +19,6 @@ NS_ASSUME_NONNULL_BEGIN
 typedef NSData * _Nullable (^HttpResponseBodyChunkProducer)(NSError **error);
 
 /*!
- @enum HttpStatusCode
 
  @abstract Common HTTP status codes.
  */

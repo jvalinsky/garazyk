@@ -30,7 +30,6 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString *const PDSPlivoProviderErrorDomain;
 
 /*!
- @enum PDSPlivoProviderErrorCode
 
  @abstract Error codes for Plivo provider operations.
  */

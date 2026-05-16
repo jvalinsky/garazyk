@@ -26,7 +26,6 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString *const PDSRegistrationGateErrorDomain;
 
 /*!
- @enum PDSRegistrationGateErrorCode
 
  @abstract Error codes for registration gate validation failures.
  */

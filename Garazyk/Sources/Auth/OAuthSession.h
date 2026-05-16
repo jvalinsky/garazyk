@@ -20,7 +20,6 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString * const OAuthErrorDomain;
 
 /*!
- @enum OAuthError
 
  @abstract OAuth 2.0 error codes per RFC 6749.
 

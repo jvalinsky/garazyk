@@ -23,7 +23,6 @@ extern NSString * const ATProtoErrorDomain;
 extern NSString * const ATProtoErrorUnderlyingCauseKey;
 
 /*!
- @enum ATProtoErrorCode
  @abstract Standard error codes.
  */
 typedef NS_ENUM(NSInteger, ATProtoErrorCode) {
