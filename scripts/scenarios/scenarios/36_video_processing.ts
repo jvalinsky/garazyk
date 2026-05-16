@@ -61,25 +61,29 @@ export async function run(): Promise<ScenarioResult> {
 
   if (uploadResp) {
     const jobId = uploadResp.jobStatus?.jobId;
-    let finalState = null;
-    let jobResp = null;
-
-    for (let i = 0; i < 60; i++) {
-      try {
-        jobResp = await videoClient.raw.xrpcGet("app.bsky.video.getJobStatus", { jobId }, videoAuthToken);
-        const state = (jobResp.jobStatus || jobResp).state;
-        if (state === "JOB_STATE_COMPLETED" || state === "JOB_STATE_FAILED") {
-          finalState = state;
-          break;
-        }
-      } catch { /* ignore */ }
-      await new Promise(r => setTimeout(r, 2000));
-    }
-
-    if (finalState === "JOB_STATE_COMPLETED") {
-      result.stepPassed("Video job completed");
+    if (!jobId) {
+      result.stepFailed("Video job polling", "Upload response missing jobId — cannot poll job status");
     } else {
-      result.stepFailed("Video job completed", `Final state: ${finalState}`);
+      let finalState = null;
+      let jobResp = null;
+
+      for (let i = 0; i < 60; i++) {
+        try {
+          jobResp = await videoClient.raw.xrpcGet("app.bsky.video.getJobStatus", { jobId }, videoAuthToken);
+          const state = (jobResp.jobStatus || jobResp).state;
+          if (state === "JOB_STATE_COMPLETED" || state === "JOB_STATE_FAILED") {
+            finalState = state;
+            break;
+          }
+        } catch { /* ignore */ }
+        await new Promise(r => setTimeout(r, 2000));
+      }
+
+      if (finalState === "JOB_STATE_COMPLETED") {
+        result.stepPassed("Video job completed");
+      } else {
+        result.stepFailed("Video job completed", `Final state: ${finalState}`);
+      }
     }
   }
 
