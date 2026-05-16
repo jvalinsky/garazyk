@@ -1,34 +1,34 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSNetworkTransportLinux.h
+ @file ATProtoNetworkTransportLinux.h
 
- @abstract Linux/BSD socket implementation of PDS network transports.
+ @abstract Linux/BSD socket implementation of AT Protocol network transports.
 
- @discussion Provides concrete implementations of PDSNetworkConnection and
- PDSNetworkListener using BSD sockets and libdispatch for event handling.
+ @discussion Provides concrete implementations of ATProtoNetworkConnection and
+ ATProtoNetworkListener using BSD sockets and libdispatch for event handling.
 
  This file is only compiled on Linux targets (GNUstep).
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
-#import "PDSNetworkTransport.h"
+#import "ATProtoNetworkTransport.h"
 #import <stdint.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class PDSNetworkConnectionLinux
+ @class ATProtoNetworkConnectionLinux
 
  @abstract BSD socket-based connection implementation for Linux.
 
  @discussion Handles TCP connections using non-blocking BSD sockets with
  dispatch_source for I/O event notification.
 
- @see PDSNetworkConnection
+ @see ATProtoNetworkConnection
  */
-@interface PDSNetworkConnectionLinux : NSObject <PDSNetworkConnection>
+@interface ATProtoNetworkConnectionLinux : NSObject <ATProtoNetworkConnection>
 
 /*!
  @method initWithHost:port:
@@ -59,16 +59,16 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 /*!
- @class PDSNetworkListenerLinux
+ @class ATProtoNetworkListenerLinux
 
  @abstract BSD socket-based listener implementation for Linux.
 
  @discussion Listens on a TCP port using non-blocking BSD sockets with
  dispatch_source for incoming connection notification.
 
- @see PDSNetworkListener
+ @see ATProtoNetworkListener
  */
-@interface PDSNetworkListenerLinux : NSObject <PDSNetworkListener>
+@interface ATProtoNetworkListenerLinux : NSObject <ATProtoNetworkListener>
 
 /*!
  @method initWithPort:

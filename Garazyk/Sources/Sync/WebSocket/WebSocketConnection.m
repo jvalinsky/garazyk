@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Sync/WebSocket/WebSocketConnection.h"
 #import "Compat/PDSTypes.h"
-#import "Network/PDSNetworkTransport.h"
+#import "Network/ATProtoNetworkTransport.h"
 #import "Network/HttpParsing.h"
 #import "Sync/WebSocket/WebSocketProtocolSession.h"
 #import "Debug/GZLogger.h"
@@ -30,7 +30,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 @property(nonatomic, copy, readwrite, nullable)
     NSDictionary<NSString *, id> *queryParams;
 
-@property(nonatomic, strong) id<PDSNetworkConnection> connection;
+@property(nonatomic, strong) id<ATProtoNetworkConnection> connection;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG)
     dispatch_queue_t connectionQueue;
 @property(nonatomic, strong) NSMutableData *writeBuffer;
@@ -71,7 +71,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
   return self;
 }
 
-- (instancetype)initWithConnection:(id<PDSNetworkConnection>)connection {
+- (instancetype)initWithConnection:(id<ATProtoNetworkConnection>)connection {
   self = [super init];
   if (self) {
     [self commonInit];
@@ -139,7 +139,7 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 - (void)start {
   __weak typeof(self) weakSelf = self;
   self.connection.stateChangedHandler =
-      ^(PDSNetworkConnectionState state, NSError *_Nullable error) {
+      ^(ATProtoNetworkConnectionState state, NSError *_Nullable error) {
         [weakSelf handlePDSStateChange:state error:error];
       };
 
@@ -153,10 +153,10 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
     return;
   }
   __weak typeof(self) weakSelf = self;
-  void (^originalHandler)(PDSNetworkConnectionState, NSError *) =
+  void (^originalHandler)(ATProtoNetworkConnectionState, NSError *) =
       self.connection.stateChangedHandler;
   self.connection.stateChangedHandler =
-      ^(PDSNetworkConnectionState state, NSError *_Nullable error) {
+      ^(ATProtoNetworkConnectionState state, NSError *_Nullable error) {
         if (originalHandler) {
           originalHandler(state, error);
         }
@@ -195,14 +195,14 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
       "com.atproto.pds.websocket.connection", DISPATCH_QUEUE_SERIAL);
 
   self.connection =
-      [PDSNetworkTransportFactory createConnectionWithHost:self.host
+      [ATProtoNetworkTransportFactory createConnectionWithHost:self.host
                                                       port:self.port];
 
   [self setupInitialState];
 
   __weak typeof(self) weakSelf = self;
   self.connection.stateChangedHandler =
-      ^(PDSNetworkConnectionState state, NSError *_Nullable error) {
+      ^(ATProtoNetworkConnectionState state, NSError *_Nullable error) {
         [weakSelf handlePDSStateChange:state error:error];
       };
 
@@ -222,13 +222,13 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
     dispatch_async(self.writeQueue, completion);
 }
 
-- (void)handlePDSStateChange:(PDSNetworkConnectionState)state
+- (void)handlePDSStateChange:(ATProtoNetworkConnectionState)state
                        error:(NSError *)error {
 
   GZ_LOG_SYNC_DEBUG(@"WebSocket connection %p state change: %ld", self, (long)state);
   dispatch_async(dispatch_get_main_queue(), ^{
     switch (state) {
-    case PDSNetworkConnectionStateReady: {
+    case ATProtoNetworkConnectionStateReady: {
       if (self.host && self.path) {
           [self sendHandshake];
       } else {
@@ -242,17 +242,17 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
       break;
     }
 
-    case PDSNetworkConnectionStateWaiting:
+    case ATProtoNetworkConnectionStateWaiting:
       GZ_LOG_SYNC_DEBUG(@"WebSocket connection %p is waiting for network availability: %@", self, error.localizedDescription ?: @"no error");
       break;
 
-    case PDSNetworkConnectionStateCancelled:
+    case ATProtoNetworkConnectionStateCancelled:
       self.state = WebSocketConnectionStateClosed;
       [self stopHeartbeat];
       [self notifyCloseWithCode:0 reason:@"Connection cancelled"];
       break;
 
-    case PDSNetworkConnectionStateFailed:
+    case ATProtoNetworkConnectionStateFailed:
       self.state = WebSocketConnectionStateClosed;
       [self stopHeartbeat];
       if (error) {
@@ -777,5 +777,3 @@ NSInteger const WebSocketConnectionErrorCodeWriteFailed = 2002;
 }
 
 @end
-
-

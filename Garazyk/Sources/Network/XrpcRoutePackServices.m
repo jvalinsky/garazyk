@@ -16,7 +16,9 @@
                          jwtMinter:(JWTMinter *)jwtMinter
                    adminController:(id<PDSAdminController>)adminController
                       configuration:(ATProtoServiceConfiguration *)configuration
+                        adminSecret:(NSString *)adminSecret
                   serviceDatabases:(PDSServiceDatabases *)serviceDatabases
+                  userDatabasePool:(PDSDatabasePool *)userDatabasePool
                         rateLimiter:(RateLimiter *)rateLimiter {
   self = [super init];
   if (self) {
@@ -24,7 +26,9 @@
     _jwtMinter = jwtMinter;
     _adminController = adminController;
     _configuration = configuration;
+    _adminSecret = [adminSecret copy];
     _serviceDatabases = serviceDatabases;
+    _userDatabasePool = userDatabasePool;
     _rateLimiter = rateLimiter;
   }
   return self;

@@ -32,13 +32,13 @@ Garazyk uses a layered architecture to support both monolithic (PDS) and distrib
         │        XrpcMethodRegistry                       │
         │  ┌──────────────────────────────────────────┐  │
         │  │ Domain Method Handlers:                  │  │
-        │  │ - XrpcServerMethods                      │  │
-        │  │ - XrpcRepoMethods                        │  │
-        │  │ - XrpcSyncMethods                        │  │
-        │  │ - XrpcIdentityMethods                    │  │
-        │  │ - XrpcAdminMethods                       │  │
-        │  │ - XrpcLabelMethods                       │  │
-        │  │ - XrpcAppBskyMethods                     │  │
+        │  │ - XrpcServerPack                      │  │
+        │  │ - XrpcRepoPack                        │  │
+        │  │ - XrpcSyncPack                        │  │
+        │  │ - XrpcIdentityPack                    │  │
+        │  │ - XrpcAdminPack                       │  │
+        │  │ - XrpcLabelPack                       │  │
+        │  │ - XrpcAppBskyPack                        │  │
         │  └──────────────────────────────────────────┘  │
         └────────────┬─────────────────────────────────────┘
                      │

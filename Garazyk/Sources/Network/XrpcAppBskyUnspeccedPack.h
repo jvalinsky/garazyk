@@ -8,20 +8,11 @@
 //
 
 #import <Foundation/Foundation.h>
-
-@class XrpcDispatcher;
-@class AgeAssuranceService;
-@class SearchIndexService;
-@class FeedService;
+#import "Network/XrpcRoutePack.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface XrpcAppBskyUnspeccedPack : NSObject
-
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-           ageAssuranceService:(nullable AgeAssuranceService *)ageAssuranceService
-              searchIndexService:(nullable SearchIndexService *)searchIndexService
-                    feedService:(nullable FeedService *)feedService;
+@interface XrpcAppBskyUnspeccedPack : NSObject <XrpcRoutePack>
 
 @end
 

@@ -158,7 +158,7 @@ title: Glossary
 
 **PDSApplication** — Main application facade coordinating all services.
 
-**PDSConfiguration** — Configuration object loaded from `config.json`. See [Config Reference](11-reference/config-reference.md).
+**ATProtoServiceConfiguration** — Configuration object loaded from `config.json`. See [Config Reference](11-reference/config-reference.md).
 
 **PDSController** — Legacy facade (use `PDSApplication` instead).
 

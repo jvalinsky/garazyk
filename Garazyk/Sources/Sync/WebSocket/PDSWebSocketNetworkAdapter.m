@@ -10,11 +10,11 @@
 
 #import "PDSWebSocketNetworkAdapter.h"
 #import "WebSocketCodec.h"
-#import "Network/PDSNetworkTransport.h"
+#import "Network/ATProtoNetworkTransport.h"
 #import "Compat/PDSTypes.h"
 
 @interface PDSWebSocketNetworkAdapter ()
-@property (nonatomic, strong) id<PDSNetworkConnection> connection;
+@property (nonatomic, strong) id<ATProtoNetworkConnection> connection;
 @property (nonatomic, strong) WebSocketCodec *codec;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t eventQueue;
 @property (nonatomic, assign) BOOL isRunning;
@@ -51,7 +51,7 @@
     _errorHandler = [errorHandler copy];
 }
 
-- (instancetype)initWithConnection:(id<PDSNetworkConnection>)connection {
+- (instancetype)initWithConnection:(id<ATProtoNetworkConnection>)connection {
     self = [super init];
     if (self) {
         _connection = connection;

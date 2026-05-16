@@ -18,7 +18,7 @@ Requests start as standard HTTP on the main port and upgrade to WebSocket connec
 
 The runtime handles the upgrade through these stages:
 
-1. `PDSHttpServerBuilder` registers `/xrpc/com.atproto.sync.subscribeRepos` as a WebSocket route.
+1. `ATProtoHttpServerBuilder` registers `/xrpc/com.atproto.sync.subscribeRepos` as a WebSocket route.
 2. `HttpServer` detects the route and validates the upgrade request.
 3. `WebSocketUpgradeHandler` computes the `Sec-WebSocket-Accept` header.
 4. `WebSocketProtocolSession` (Sans-I/O) handles framing, masking, and heartbeats once switched.

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "CharacterizationTestBase.h"
 #import "Network/XrpcMethodRegistry.h"
+#import "Network/XrpcIdentityHelper.h"
 #import "Network/XrpcHandler.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
@@ -83,13 +84,13 @@
     NSString *multibase = [NSString stringWithFormat:@"z%@", [CID base58btcEncode:multicodec]];
 
     NSError *decodeError = nil;
-    NSData *decoded = [XrpcMethodRegistry publicKeyBytesFromMultibase:multibase error:&decodeError];
+    NSData *decoded = [XrpcIdentityHelper publicKeyBytesFromMultibase:multibase error:&decodeError];
     XCTAssertNotNil(decoded);
     XCTAssertNil(decodeError);
     XCTAssertEqualObjects(decoded, keyPair.compressedPublicKey);
 
     NSError *invalidError = nil;
-    XCTAssertNil([XrpcMethodRegistry publicKeyBytesFromMultibase:@"xnot-supported" error:&invalidError]);
+    XCTAssertNil([XrpcIdentityHelper publicKeyBytesFromMultibase:@"xnot-supported" error:&invalidError]);
     XCTAssertNotNil(invalidError);
 }
 

@@ -8,20 +8,11 @@
 //
 
 #import <Foundation/Foundation.h>
-
-@class XrpcDispatcher;
-@protocol PDSQueryDatabase;
-@class JWTMinter;
-@protocol PDSAdminController;
+#import "Network/XrpcRoutePack.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface XrpcToolsOzonePack : NSObject
-
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-               appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
-                    jwtMinter:(JWTMinter *)jwtMinter
-              adminController:(id<PDSAdminController>)adminController;
+@interface XrpcToolsOzonePack : NSObject <XrpcRoutePack>
 
 @end
 

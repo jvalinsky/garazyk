@@ -44,7 +44,7 @@ Enabled account-specific rotation keys to resolve handle update issues for migra
 - **CryptoUtils**: Centralized PBKDF2 and AES-256-CBC implementation using `CommonCrypto`.
 - **ActorStore**: Database layer for per-account data, updated to handle encrypted rotation keys.
 - **PDSAppleKeyManager**: Refactored to support hardware-backed key generation and storage by reference.
-- **XrpcIdentityMethods**: Integrated priority-based key loading for identity operations.
+- **XrpcIdentityPack**: Integrated priority-based key loading for identity operations.
 
 ## Security Audit Results
 

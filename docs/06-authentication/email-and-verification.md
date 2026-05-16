@@ -98,7 +98,7 @@ Therefore, provider choice belongs in configuration, and docs should explain the
 
 If you are changing onboarding or account flows, you usually need to inspect:
 
-- `PDSConfiguration` for provider selection and env overrides,
+- `ATProtoServiceConfiguration` for provider selection and env overrides,
 - account service code for when verification is enforced,
 - email provider implementations under `Garazyk/Sources/Email/`,
 - the tests in `Garazyk/Tests/Email/` and related account/auth tests.

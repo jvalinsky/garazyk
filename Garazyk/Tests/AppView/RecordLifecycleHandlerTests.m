@@ -7,7 +7,7 @@
 #import "AppView/Services/GraphService.h"
 #import "AppView/Services/FeedService.h"
 #import "Database/PDSDatabase.h"
-#import "Network/XrpcAppBskyMethods.h"
+#import "Network/XrpcAppBskyPack.h"
 
 @interface RecordLifecycleHandlerTests : XCTestCase
 @property (nonatomic, strong) NSString *testDirectory;
@@ -61,19 +61,19 @@
 #pragma mark - Retention Tests
 
 - (void)testHandlerIsRetainedByStaticStorage {
-    // Verify that the static storage in XrpcAppBskyMethods retains the handler.
+    // Verify that the static storage in XrpcAppBskyPack retains the handler.
     // This is a regression test for the bug where RecordLifecycleHandler was
     // stored in a local __attribute__((unused)) variable and immediately
     // deallocated because NSNotificationCenter does not retain observers.
     RecordLifecycleHandler *handler = self.handler;
-    [XrpcAppBskyMethods setRetainedLifecycleHandler:handler];
+    [XrpcAppBskyPack setRetainedLifecycleHandler:handler];
 
     // The handler should still be alive after setting it
     XCTAssertNotNil(handler,
         @"RecordLifecycleHandler should remain alive after being stored in static storage");
 
     // Clean up
-    [XrpcAppBskyMethods setRetainedLifecycleHandler:nil];
+    [XrpcAppBskyPack setRetainedLifecycleHandler:nil];
 }
 
 - (void)testHandlerObservesRecordChangeNotification {
@@ -82,7 +82,7 @@
     XCTestExpectation *exp = [self expectationWithDescription:@"Handler received notification"];
 
     RecordLifecycleHandler *handler = self.handler;
-    [XrpcAppBskyMethods setRetainedLifecycleHandler:handler];
+    [XrpcAppBskyPack setRetainedLifecycleHandler:handler];
 
     // Post a record change notification — the handler should receive it
     // without crashing (it may not process it fully due to missing data,
@@ -109,13 +109,13 @@
     [self waitForExpectationsWithTimeout:2.0 handler:nil];
 
     // Clean up
-    [XrpcAppBskyMethods setRetainedLifecycleHandler:nil];
+    [XrpcAppBskyPack setRetainedLifecycleHandler:nil];
 }
 
 - (void)testHandlerNotCrashingWithIncompleteNotificationData {
     // Verify the handler gracefully handles notifications with missing data.
     // This should not crash even if some fields are nil.
-    [XrpcAppBskyMethods setRetainedLifecycleHandler:self.handler];
+    [XrpcAppBskyPack setRetainedLifecycleHandler:self.handler];
 
     NSDictionary *userInfo = @{
         @"did": @"did:plc:test123"
@@ -131,7 +131,7 @@
     XCTAssertNotNil(self.handler, @"Handler should still be alive after incomplete notification");
 
     // Clean up
-    [XrpcAppBskyMethods setRetainedLifecycleHandler:nil];
+    [XrpcAppBskyPack setRetainedLifecycleHandler:nil];
 }
 
 @end

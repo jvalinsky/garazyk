@@ -39,7 +39,7 @@ static BOOL PDSEnvEnabled(const char *name) {
 
 ### Gated Class Lists (`test_main.m:241-299`)
 - **Integration tests** (require `PDS_RUN_INTEGRATION_TESTS=1`): PDSPLCIntegrationTests, PDSIntegrationTests, RelayIntegrationTests, OAuthIntegrationTests, EmailIntegrationTests, FirehoseIntegrationTests, etc. (14 classes)
-- **Socket tests** (require `PDS_RUN_SOCKET_TESTS=1`, or `PDS_RUN_INTEGRATION_TESTS=1`): HealthEndpointIntegrationTests, HttpServerTests, OAuth2EndpointTests, PDSApplicationTests, PDSHttpServerBuilderTests, PLCServerTests, PDSWebSocketServerTests, etc. (10 classes)
+- **Socket tests** (require `PDS_RUN_SOCKET_TESTS=1`, or `PDS_RUN_INTEGRATION_TESTS=1`): HealthEndpointIntegrationTests, HttpServerTests, OAuth2EndpointTests, PDSApplicationTests, ATProtoHttpServerBuilderTests, PLCServerTests, PDSWebSocketServerTests, etc. (10 classes)
 
 ### Running Gated Tests
 ```bash
@@ -54,7 +54,7 @@ PDS_RUN_SOCKET_TESTS=1 build/tests/AllTests
 Set automatically by `test_main.m:445`. Checked in production code at:
 - `PDSApplication.m:89` — disables full app initialization
 - `HandleResolver.m:54-60` — disables network DNS lookups
-- `PDSConfiguration.m:72` — uses test-safe defaults
+- `ATProtoServiceConfiguration.m:72` — uses test-safe defaults
 - `XrpcLexiconResolver.m:463` — disables remote lexicon fetching
 - `FederationClient.m:24` — disables real federation requests
 - `OAuth2.m:60` — disables OAuth flows

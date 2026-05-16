@@ -21,7 +21,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpRouteTrie.h"
-#import "Network/PDSNetworkTransport.h"
+#import "Network/ATProtoNetworkTransport.h"
 #import "Network/RateLimiter.h"
 #import "Network/WebSocketUpgradeHandler.h"
 #import "Network/HttpProtocolSession.h"
@@ -66,7 +66,7 @@
 @property(nonatomic, readwrite, nullable) NSString *host;
 @property(atomic, readwrite) NSUInteger port;
 @property(atomic, readwrite, getter=isRunning) BOOL running;
-@property(nonatomic, strong) id<PDSNetworkListener> listener;
+@property(nonatomic, strong) id<ATProtoNetworkListener> listener;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t serverQueue;
 @property(nonatomic, strong)
     NSMutableDictionary<NSString *, HttpRouteTrie *> *routeTries;
@@ -83,11 +83,11 @@
 @property(atomic, assign) BOOL startupFinished;
 @property(nonatomic, strong, nullable) NSError *startupError;
 @property(nonatomic, strong)
-    NSMutableSet<id<PDSNetworkConnection>> *activeConnections;
+    NSMutableSet<id<ATProtoNetworkConnection>> *activeConnections;
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG)
     dispatch_queue_t connectionQueue;
 @property(nonatomic, strong)
-    NSMapTable<id<PDSNetworkConnection>, id> *connectionStates;
+    NSMapTable<id<ATProtoNetworkConnection>, id> *connectionStates;
 
 @property(nonatomic, PDS_DISPATCH_QUEUE_STRONG)
     dispatch_semaphore_t concurrencySemaphore;
@@ -99,18 +99,18 @@
 
 - (HttpQueuedResponse *)queueItemForResponse:(HttpResponse *)response;
 - (void)enqueueResponse:(HttpResponse *)response
-           forConnection:(id<PDSNetworkConnection>)connection;
+           forConnection:(id<ATProtoNetworkConnection>)connection;
 - (void)sendNextQueuedResponseForState:(HttpConnectionState *)state
-                             connection:(id<PDSNetworkConnection>)connection;
+                             connection:(id<ATProtoNetworkConnection>)connection;
 - (void)finalizeQueuedResponseSend:(HttpQueuedResponse *)queueItem
                           forState:(HttpConnectionState *)state
-                        connection:(id<PDSNetworkConnection>)connection;
+                        connection:(id<ATProtoNetworkConnection>)connection;
 - (void)streamFileQueueItem:(HttpQueuedResponse *)queueItem
                  forState:(HttpConnectionState *)state
-               connection:(id<PDSNetworkConnection>)connection;
+               connection:(id<ATProtoNetworkConnection>)connection;
 - (void)streamGeneratedQueueItem:(HttpQueuedResponse *)queueItem
                        forState:(HttpConnectionState *)state
-                     connection:(id<PDSNetworkConnection>)connection;
+                     connection:(id<ATProtoNetworkConnection>)connection;
 - (HttpResponse *)dispatchRequest:(HttpRequest *)request;
 - (RequestHandler _Nullable)handlerForRoute:(NSString *)path
                                    method:(NSString *)method
@@ -224,11 +224,11 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 
   if (self.host.length > 0) {
     self.listener =
-        [PDSNetworkTransportFactory createListenerWithHost:self.host
+        [ATProtoNetworkTransportFactory createListenerWithHost:self.host
                                                       port:self.port];
   } else {
     self.listener =
-        [PDSNetworkTransportFactory createListenerWithPort:self.port];
+        [ATProtoNetworkTransportFactory createListenerWithPort:self.port];
   }
 
   if (!self.listener) {
@@ -245,13 +245,13 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 
   __weak typeof(self) weakSelf = self;
   self.listener.stateChangedHandler =
-      ^(PDSNetworkListenerState state, NSError *_Nullable error) {
+      ^(ATProtoNetworkListenerState state, NSError *_Nullable error) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf)
           return;
 
         switch (state) {
-        case PDSNetworkListenerStateReady:
+        case ATProtoNetworkListenerStateReady:
           strongSelf.listenerReady = YES;
           strongSelf.running = YES;
           strongSelf.port = strongSelf.listener.port;
@@ -260,7 +260,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
                             (unsigned long)strongSelf.port);
           dispatch_semaphore_signal(strongSelf.readySemaphore);
           break;
-        case PDSNetworkListenerStateFailed:
+        case ATProtoNetworkListenerStateFailed:
           strongSelf.listenerReady = NO;
           strongSelf.running = NO;
           strongSelf.startupFinished = YES;
@@ -268,7 +268,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
           GZ_LOG_HTTP_ERROR(@"HTTPServer failed to start: %@", error);
           dispatch_semaphore_signal(strongSelf.readySemaphore);
           break;
-        case PDSNetworkListenerStateCancelled:
+        case ATProtoNetworkListenerStateCancelled:
           strongSelf.listenerReady = NO;
           strongSelf.running = NO;
           strongSelf.startupFinished = YES;
@@ -281,7 +281,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
         }
       };
 
-  self.listener.newConnectionHandler = ^(id<PDSNetworkConnection> connection) {
+  self.listener.newConnectionHandler = ^(id<ATProtoNetworkConnection> connection) {
     [weakSelf handleNewConnection:connection];
   };
 
@@ -324,7 +324,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
   return YES;
 }
 
-- (void)handleNewConnection:(id<PDSNetworkConnection>)connection {
+- (void)handleNewConnection:(id<ATProtoNetworkConnection>)connection {
   dispatch_async(_connectionQueue, ^{
     [self->_activeConnections addObject:connection];
     [[PDSMetrics sharedMetrics] setActiveConnections:(NSInteger)self->_activeConnections.count];
@@ -336,17 +336,17 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
       connectionState.transportQueue ?: self.serverQueue;
 
   __weak typeof(self) weakSelf = self;
-  __weak id<PDSNetworkConnection> weakConnection = connection;
+  __weak id<ATProtoNetworkConnection> weakConnection = connection;
 
   connection.stateChangedHandler =
-      ^(PDSNetworkConnectionState state, NSError *_Nullable error) {
+      ^(ATProtoNetworkConnectionState state, NSError *_Nullable error) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         __strong typeof(weakConnection) strongConnection = weakConnection;
         if (!strongSelf || !strongConnection)
           return;
 
         switch (state) {
-        case PDSNetworkConnectionStateReady: {
+        case ATProtoNetworkConnectionStateReady: {
           HttpConnectionState *connState = [strongSelf connectionStateForConnection:strongConnection];
           [connState.driver setRemoteAddressForRequests:strongConnection.remoteAddress];
           HttpConnectionIOCoordinator *coordinator = [[HttpConnectionIOCoordinator alloc]
@@ -397,7 +397,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
           [coordinator start];
           break;
         }
-        case PDSNetworkConnectionStateFailed: {
+        case ATProtoNetworkConnectionStateFailed: {
           dispatch_async(strongSelf.connectionQueue, ^{
             [strongSelf.activeConnections removeObject:strongConnection];
             [strongSelf.connectionStates removeObjectForKey:strongConnection];
@@ -406,7 +406,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
           [strongConnection cancel];
           break;
         }
-        case PDSNetworkConnectionStateCancelled: {
+        case ATProtoNetworkConnectionStateCancelled: {
           dispatch_async(strongSelf.connectionQueue, ^{
             [strongSelf.activeConnections removeObject:strongConnection];
             [strongSelf.connectionStates removeObjectForKey:strongConnection];
@@ -423,7 +423,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 }
 
 - (void)handleUpgradeEventForState:(HttpConnectionState *)state
-                         connection:(id<PDSNetworkConnection>)connection {
+                         connection:(id<ATProtoNetworkConnection>)connection {
   HttpRequest *request = [state.driver currentUpgradeRequest];
   if (!request) return;
 
@@ -463,7 +463,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 
 
 - (HttpConnectionState *)connectionStateForConnection:
-    (id<PDSNetworkConnection>)connection {
+    (id<ATProtoNetworkConnection>)connection {
   __block HttpConnectionState *state = nil;
   dispatch_sync(self.connectionQueue, ^{
     state = [self.connectionStates objectForKey:connection];
@@ -483,9 +483,9 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 }
 
 - (void)dispatchRequest:(HttpRequest *)request
-           onConnection:(id<PDSNetworkConnection>)connection {
+           onConnection:(id<ATProtoNetworkConnection>)connection {
   __weak typeof(self) weakSelf = self;
-  __weak id<PDSNetworkConnection> weakConnection = connection;
+  __weak id<ATProtoNetworkConnection> weakConnection = connection;
   HttpRequest *requestRef = request;
 
   // Capture dispatch objects as strong locals so they survive into the block.
@@ -578,7 +578,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 }
 
 - (void)enqueueResponse:(HttpResponse *)response
-          forConnection:(id<PDSNetworkConnection>)connection {
+          forConnection:(id<ATProtoNetworkConnection>)connection {
   HttpConnectionState *state = [self connectionStateForConnection:connection];
   HttpQueuedResponse *queueItem = [self queueItemForResponse:response];
 
@@ -601,7 +601,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 }
 
 - (void)sendNextQueuedResponseForState:(HttpConnectionState *)state
-                            connection:(id<PDSNetworkConnection>)connection {
+                            connection:(id<ATProtoNetworkConnection>)connection {
   if (state.outputQueue.count == 0 || state.sendingActive) {
     return;
   }
@@ -687,7 +687,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 
 - (void)finalizeQueuedResponseSend:(HttpQueuedResponse *)queueItem
                            forState:(HttpConnectionState *)state
-                         connection:(id<PDSNetworkConnection>)connection {
+                         connection:(id<ATProtoNetworkConnection>)connection {
   if (state.outputQueue.count > 0) {
     [state.outputQueue removeObjectAtIndex:0];
   }
@@ -710,7 +710,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 
 - (void)streamFileQueueItem:(HttpQueuedResponse *)queueItem
                    forState:(HttpConnectionState *)state
-                 connection:(id<PDSNetworkConnection>)connection {
+                 connection:(id<ATProtoNetworkConnection>)connection {
   NSFileHandle *fileHandle =
       [NSFileHandle fileHandleForReadingAtPath:queueItem.bodyFilePath];
   if (!fileHandle) {
@@ -783,7 +783,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
 
 - (void)streamGeneratedQueueItem:(HttpQueuedResponse *)queueItem
                          forState:(HttpConnectionState *)state
-                       connection:(id<PDSNetworkConnection>)connection {
+                       connection:(id<ATProtoNetworkConnection>)connection {
   __weak typeof(self) weakSelf = self;
   __block void (^sendNextChunk)(void) = nil;
   sendNextChunk = ^{
@@ -914,7 +914,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
   dispatch_group_wait(self.taskGroup, dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
 
   dispatch_sync(_connectionQueue, ^{
-    for (id<PDSNetworkConnection> conn in self->_activeConnections) {
+    for (id<ATProtoNetworkConnection> conn in self->_activeConnections) {
       [conn cancel];
     }
     [self->_activeConnections removeAllObjects];
@@ -971,7 +971,7 @@ static const NSUInteger kHttpGeneratedQueueBudget = 64 * 1024;
   return handler;
 }
 
-- (void)sendResponse:(HttpResponse *)response onConnection:(id<PDSNetworkConnection>)connection {
+- (void)sendResponse:(HttpResponse *)response onConnection:(id<ATProtoNetworkConnection>)connection {
   [self enqueueResponse:response forConnection:connection];
 }
 

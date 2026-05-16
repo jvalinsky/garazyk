@@ -3,7 +3,7 @@
 
 #import <XCTest/XCTest.h>
 #import "Database/PDSDatabase.h"
-#import "Database/PDSBlock.h"
+#import "Database/PDSDatabaseBlock.h"
 
 @interface PDSDatabaseBlocksTests : XCTestCase
 @property (nonatomic, strong) PDSDatabase *database;

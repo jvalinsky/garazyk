@@ -38,7 +38,7 @@ The `/api/relay/*` surface manages relay administrative tasks. This is distinct 
 ## Tracing Endpoints
 
 To find the implementation for an endpoint:
-1. Locate the route registration in `PDSHttpServerBuilder` or a specific route pack.
+1. Locate the route registration in `ATProtoHttpServerBuilder` or a specific route pack.
 2. Identify the handler owning the request parsing and response shaping.
 3. Trace the call into the service, repository, or database layer.
 

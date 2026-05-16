@@ -128,12 +128,12 @@ Program terminated with signal SIGILL, Illegal instruction.
 #0  dispatch_group_leave () from /usr/local/lib/libdispatch.so
 #1  __41_i_HttpServer__readRequestFromConnection__block_invoke
     at HttpServer.m:378
-#2  -[PDSNetworkConnectionLinux processReadRequests:error:]
-    at PDSNetworkTransportLinux.m:462
-#3  -[PDSNetworkConnectionLinux handleRead]
-    at PDSNetworkTransportLinux.m:388
-#4  __42_i_PDSNetworkConnectionLinux__setupSources_block_invoke
-    at PDSNetworkTransportLinux.m:366
+#2  -[ATProtoNetworkConnectionLinux processReadRequests:error:]
+    at ATProtoNetworkTransportLinux.m:462
+#3  -[ATProtoNetworkConnectionLinux handleRead]
+    at ATProtoNetworkTransportLinux.m:388
+#4  __42_i_ATProtoNetworkConnectionLinux__setupSources_block_invoke
+    at ATProtoNetworkTransportLinux.m:366
 #5  _dispatch_client_callout () from libdispatch.so
 #6  _dispatch_continuation_pop () from libdispatch.so
 #7  _dispatch_source_latch_and_call () from libdispatch.so
@@ -151,7 +151,7 @@ The `readRequestFromConnection` method:
 2. Starts a `receiveWithMinimumLength:completion:` async read
 3. When data arrives, the completion block calls `handleReceivedData` then `dispatch_group_leave(group)`
 
-The completion is called by `processReadRequests:error:` in `PDSNetworkTransportLinux.m`, which runs a **while loop** over all pending read requests. The flow:
+The completion is called by `processReadRequests:error:` in `ATProtoNetworkTransportLinux.m`, which runs a **while loop** over all pending read requests. The flow:
 
 1. `handleRead` receives EOF (`received == 0`) → calls `processReadRequests:YES error:nil`
 2. `processReadRequests` loops, fires completion with `(data, isComplete=YES, nil)`
@@ -223,7 +223,7 @@ The crash persists. The `+0x3D700` offset in libdispatch is hit consistently aft
    - https://github.com/apple/swift-corelibs-libdispatch/issues
    - Whether building with an older tag (e.g., `swift-5.10-RELEASE`) fixes the issue
 
-5. **NWConnection / socket lifecycle**: The Linux network transport (`PDSNetworkTransportLinux.m`) uses raw sockets with dispatch sources. If the dispatch source fires after the connection object is deallocated, the callback hits freed memory.
+5. **NWConnection / socket lifecycle**: The Linux network transport (`ATProtoNetworkTransportLinux.m`) uses raw sockets with dispatch sources. If the dispatch source fires after the connection object is deallocated, the callback hits freed memory.
 
 ## Workaround in place
 

@@ -21,8 +21,8 @@ The `ATProtoPDS` framework contains the core logic, which is used to produce sev
 
 | Directory | Responsibility | Key Symbols |
 | --- | --- | --- |
-| `App/` | Composition root, configuration, and app lifecycle. | `PDSApplication`, `PDSConfiguration` |
-| `Network/` | HTTP routing, protocol sessions, and auth gates. | `PDSHttpServer`, `XrpcDispatcher` |
+| `App/` | Composition root, configuration, and app lifecycle. | `PDSApplication`, `ATProtoServiceConfiguration` |
+| `Network/` | HTTP routing, protocol sessions, and auth gates. | `HttpServer`, `XrpcDispatcher` |
 | `Database/` | Service DBs, actor stores, pooling, and migrations. | `PDSDatabasePool`, `PDSServiceDatabases` |
 | `Repository/` | MST, CAR, commit logic, and repository state. | `PDSRepository`, `PDSMST` |
 | `Auth/` | JWT, DPoP, OAuth, and signing paths. | `XrpcAuthHelper`, `OAuth2Handler` |
@@ -38,8 +38,8 @@ The `ATProtoPDS` framework contains the core logic, which is used to produce sev
 
 1. [Overview](./overview) — High-level architecture and vocabulary.
 2. [Request Lifecycle](./request-lifecycle) — Trace a request end-to-end.
-3. `PDSConfiguration.m` — Configuration surface.
-4. `PDSHttpServerBuilder.m` — Server setup and routing.
+3. `ATProtoServiceConfiguration.m` — Configuration surface.
+4. `ATProtoHttpServerBuilder.m` — Server setup and routing.
 5. `XrpcMethodRegistry.m` — Protocol method registration.
 6. `Garazyk/Sources/Services/PDS/` — Core service logic.
 7. `Garazyk/Tests/App/Services/` — Corresponding service tests.
@@ -49,7 +49,7 @@ The `ATProtoPDS` framework contains the core logic, which is used to produce sev
 ```mermaid
 flowchart LR
   Client["Client or Tool"] --> Http["HttpServer"]
-  Http --> Builder["PDSHttpServerBuilder"]
+  Http --> Builder["ATProtoHttpServerBuilder"]
   Builder --> Xrpc["XRPC and UI routes"]
   Xrpc --> Services["Services and controllers"]
   Services --> Data["Database, repository, blob, PLC"]
