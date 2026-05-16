@@ -1,4 +1,22 @@
 #!/usr/bin/env -S deno run -A
+
+/**
+ * @module run_scenarios
+ * 
+ * Scenario Runner: Orchestrates E2E ATProto service testing.
+ * 
+ * Behavior:
+ * - Parses CLI arguments for runner configuration.
+ * - Manages the lifecycle of the local Docker-based test network.
+ * - Discovers and executes scenarios based on user selection and network topology.
+ * - Collects and reports scenario results, diagnostics, and performance data.
+ * 
+ * Expectations:
+ * - Local services are correctly initialized or connected.
+ * - Selected scenarios run within their specified timeouts.
+ * - Test reports and diagnostics are generated upon completion.
+ */
+
 import { bold, brightBlue } from "@std/fmt/colors";
 import { fromFileUrl, join } from "@std/path";
 import { startLocalNetwork, stopLocalNetwork } from "./lib/deno/docker.ts";
@@ -15,6 +33,10 @@ import { initE2eTracing, isOtelEnabled, shutdownTracing } from "./lib/deno/otel.
 import { ScenarioResult } from "./lib/deno/runner.ts";
 import type { RunnerArgs } from "./lib/deno/run_scenarios_types.ts";
 
+/**
+ * Displays usage information for the test runner.
+ * @returns never
+ */
 function usage(): never {
   console.log(`Usage: scripts/run_scenarios.ts [options] [scenario ids]
 
@@ -44,6 +66,11 @@ Options:
   Deno.exit(2);
 }
 
+/**
+ * Parses command-line arguments into the RunnerArgs configuration object.
+ * @param argv - The array of CLI arguments
+ * @returns The parsed runner arguments
+ */
 function parseRunnerArgs(argv: string[]): RunnerArgs {
   const args: RunnerArgs = {
     scenarioIds: [],
@@ -176,6 +203,10 @@ function parseRunnerArgs(argv: string[]): RunnerArgs {
   return args;
 }
 
+/**
+ * Main entry point for the scenario runner.
+ * @returns A promise that resolves when execution completes
+ */
 async function main() {
   const args = parseRunnerArgs(Deno.args);
   const scriptDir = fromFileUrl(new URL(".", import.meta.url));
@@ -316,8 +347,6 @@ async function main() {
         reportsDir,
         { runId: context.runId, runDir: context.runDir, diagnosticsDir: context.diagnosticsDir },
       );
-      results.push(...loopResult.results);
-      reportPaths.push(...loopResult.reportPaths);
     } finally {
       await lifecycle.finalizeRun({
         results,
@@ -358,6 +387,11 @@ async function main() {
   lifecycle.scheduleDrainTimeout();
 }
 
+/**
+ * Checks if a path exists on the filesystem.
+ * @param path - The path to check
+ * @returns True if the path exists, otherwise false
+ */
 async function pathExists(path: string): Promise<boolean> {
   try {
     await Deno.stat(path);

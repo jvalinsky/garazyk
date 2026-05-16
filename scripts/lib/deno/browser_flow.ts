@@ -1,3 +1,4 @@
+/** Public network leak detection for browser-based E2E tests. @module browser_flow */
 import type { Page } from "npm:playwright";
 
 const DEFAULT_BLOCKED_PUBLIC_HOSTS = [
@@ -7,6 +8,7 @@ const DEFAULT_BLOCKED_PUBLIC_HOSTS = [
   "plc.directory",
 ];
 
+/** Resolve the set of public hosts to block during tests. */
 export function blockedPublicHosts(): string[] {
   const configured = Deno.env.get("ATPROTO_BLOCKED_PUBLIC_HOSTS");
   if (configured !== undefined) {
@@ -15,6 +17,7 @@ export function blockedPublicHosts(): string[] {
   return Deno.env.get("ATPROTO_ALLOW_HYBRID_NETWORK") === "1" ? [] : DEFAULT_BLOCKED_PUBLIC_HOSTS;
 }
 
+/** Attach a request interceptor to detect unwanted outbound calls to public hosts. */
 export function attachPublicNetworkLeakGuard(page: Page): string[] {
   const blockedHosts = blockedPublicHosts();
   const leaks: string[] = [];

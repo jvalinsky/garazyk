@@ -1,3 +1,4 @@
+/** Scenario run report aggregation and summary writing. @module report_writer */
 import { bold, green, red, yellow } from "@std/fmt/colors";
 import { join } from "@std/path";
 import type { ScenarioInfo } from "./scenario_metadata.ts";
@@ -5,6 +6,7 @@ import type { RunnerArgs } from "./run_scenarios_types.ts";
 import type { ScenarioResult } from "./runner.ts";
 import type { Topology } from "./topology.ts";
 
+/** A single scenario result paired with its metadata. */
 export interface OverallResultItem {
   scenario: ScenarioInfo;
   result: ScenarioResult;

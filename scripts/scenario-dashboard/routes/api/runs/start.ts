@@ -1,7 +1,9 @@
+/** API: /api/runs/start — POST to start a new run. @module api/runs/start */
 import { Handlers } from "$fresh/server.ts";
 import { runManager } from "../../../services/run_manager.ts";
 import { RunConfig } from "../../../services/types.ts";
 
+/** POST /api/runs/start — starts a new run with the given RunConfig. */
 export const handler: Handlers = {
   async POST(req) {
     const config = await req.json() as RunConfig;

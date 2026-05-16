@@ -1,4 +1,5 @@
-/**
+/** @module scenario_metadata
+ *
  * Shared scenario metadata for the scenario runner and dashboard.
  * Centralizes scenario requirements, PDS2 needs, and browser flow declarations.
  */

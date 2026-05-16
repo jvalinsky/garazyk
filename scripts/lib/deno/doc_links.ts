@@ -1,5 +1,7 @@
+/** Markdown link checker that validates internal file and anchor references. @module doc_links */
 import { join, relative, resolve } from "jsr:@std/path@1";
 
+/** Options for configuring a Markdown link check run. */
 export interface LinkCheckOptions {
   docsDir: string;
   repoRoot: string;
@@ -11,6 +13,7 @@ export interface LinkCheckOptions {
 
 const linkPattern = /\[([^\]]+)\]\(([^)]+)\)/g;
 
+/** Test all markdown links in a docs directory for broken references and anchors. */
 export class MarkdownLinkTester {
   errors: string[] = [];
   warnings: string[] = [];
@@ -164,6 +167,7 @@ export class MarkdownLinkTester {
     }
   }
 
+  /** Walk all markdown files and test their links. */
   async testAll() {
     const files: string[] = [];
     for await (const file of this.walkMarkdown(this.options.docsDir)) {
@@ -181,6 +185,7 @@ export class MarkdownLinkTester {
     }
   }
 
+  /** Print error/warning results to stdout. Returns true if no errors. */
   printResults(): boolean {
     console.log(`\n${"=".repeat(80)}`);
     console.log(this.options.title || "LINK TESTING RESULTS");

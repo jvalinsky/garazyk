@@ -1,3 +1,4 @@
+/** Scenario execution — host runner and Docker runner modes with timeout support. @module scenario_runner */
 import type { ScenarioInfo } from "./scenario_metadata.ts";
 import type { RunnerArgs } from "./run_scenarios_types.ts";
 import type { Topology } from "./topology.ts";
@@ -5,6 +6,15 @@ import { ScenarioResult } from "./runner.ts";
 import { runScenarioInDocker } from "./docker_runner.ts";
 import { withSpan } from "./otel.ts";
 
+/**
+ * Race a promise against a timeout
+ * @typeParam T - The expected result type
+ * @param promise - The promise to race against the timeout
+ * @param timeoutSeconds - Maximum wait time in seconds
+ * @param label - Description for the timeout error message
+ * @returns The resolved value
+ * @throws Error if the timeout elapses before the promise resolves
+ */
 export async function withTimeout<T>(
   promise: Promise<T>,
   timeoutSeconds: number,
@@ -24,6 +34,16 @@ export async function withTimeout<T>(
   }
 }
 
+/**
+ * Run a scenario in the configured execution mode
+ * @param scenario - The scenario to execute
+ * @param timeoutSeconds - Maximum allowed runtime in seconds
+ * @param args - Runner arguments
+ * @param topology - The resolved topology
+ * @param repoRoot - The repository root path
+ * @param composeProject - The Docker Compose project name
+ * @returns The completed scenario result
+ */
 export async function runScenario(
   scenario: ScenarioInfo,
   timeoutSeconds: number,

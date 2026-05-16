@@ -1,3 +1,5 @@
+/** Service role registry — names, ports, capabilities, and env key mappings. @module topology_registry */
+
 export const KNOWN_SERVICE_ROLES = [
   "plc",
   "pds",
@@ -200,18 +202,22 @@ export const CAPABILITY_REGISTRY: Record<KnownServiceRole, readonly string[]> = 
 const KNOWN_ROLE_SET = new Set<string>(KNOWN_SERVICE_ROLES);
 const EXPERIMENTAL_CAPABILITY_PATTERN = /^x-[A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+$/;
 
+/** Check if a role name is one of the known built-in service roles. */
 export function isKnownServiceRole(role: string): role is KnownServiceRole {
   return KNOWN_ROLE_SET.has(role);
 }
 
+/** Check if a role name follows the experimental x-<name> pattern. */
 export function isExperimentalRole(role: string): role is `x-${string}` {
   return /^x-[A-Za-z0-9][A-Za-z0-9_.-]*$/.test(role);
 }
 
+/** Check if a capability follows the experimental x-namespace:name pattern. */
 export function isExperimentalCapability(capability: string): boolean {
   return EXPERIMENTAL_CAPABILITY_PATTERN.test(capability);
 }
 
+/** Get the environment variable name for a service role's URL. */
 export function roleEnvKey(
   role: string,
   experimentalRoles: Record<string, ExperimentalRoleMetadata> = {},
@@ -222,10 +228,12 @@ export function roleEnvKey(
   return `${role.toUpperCase().replace(/[^A-Z0-9]+/g, "_")}_URL`;
 }
 
+/** Get the default Docker Compose service name for a role. */
 export function defaultServiceName(role: string): string {
   return isKnownServiceRole(role) ? DEFAULT_SERVICE_NAMES[role] : `local-${role}`;
 }
 
+/** Get the default host port for a service role. */
 export function defaultRolePort(
   role: string,
   experimentalRoles: Record<string, ExperimentalRoleMetadata> = {},

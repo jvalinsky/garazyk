@@ -1,11 +1,14 @@
+/** Process lifecycle management — signal handling, graceful shutdown, cleanup orchestration. @module process_lifecycle */
 import { red, yellow } from "@std/fmt/colors";
 import type { RunnerArgs } from "./run_scenarios_types.ts";
 
+/** Context passed to process lifecycle handlers. */
 export interface ProcessLifecycleContext {
   runId: string;
   diagnosticsDir: string;
 }
 
+/** Configuration for creating a process lifecycle manager. */
 export interface ProcessLifecycleOptions {
   args: Pick<RunnerArgs, "binary" | "keepRunning" | "teardown" | "noSetup">;
   context: ProcessLifecycleContext;
@@ -17,6 +20,7 @@ export interface ProcessLifecycleOptions {
   }) => Promise<void>;
 }
 
+/** Interface for process lifecycle control — signals, shutdown, and timeout management. */
 export interface ProcessLifecycle {
   markNetworkStarted(): void;
   stopIfNeeded(collect?: boolean): Promise<void>;
@@ -30,6 +34,7 @@ export interface ProcessLifecycle {
   scheduleDrainTimeout(timeoutMs?: number): number;
 }
 
+/** Create a process lifecycle object with signal handling, graceful teardown, and drain timeout. */
 export function createProcessLifecycle(options: ProcessLifecycleOptions): ProcessLifecycle {
   let networkStarted = false;
 

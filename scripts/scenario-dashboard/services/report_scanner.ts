@@ -11,6 +11,7 @@ const REPORTS_DIR = join(
   fromFileUrl(new URL("../../scenarios/reports", import.meta.url)),
 );
 
+/** Internal report file structure parsed from JSON. */
 interface ReportFile {
   scenario: string;
   started_at: number;
@@ -51,6 +52,7 @@ async function readRunReportFiles(
   return reports;
 }
 
+/** Import report files from a run's reports directory into the database. Returns count of imported reports. */
 export async function importRunReports(db: Database, run: Run): Promise<number> {
   if (!run.reportsDir) return 0;
   const reports = await readRunReportFiles(run.reportsDir);
@@ -132,6 +134,7 @@ function timestampToUnix(ts: string): number {
   return Math.floor(new Date(Date.UTC(year, month, day, hour, min, sec)).getTime() / 1000);
 }
 
+/** Scan the reports directory for unprocessed reports and import them as historical runs. Returns count of imports. */
 export async function scanReports(db: Database): Promise<number> {
   let imported = 0;
 

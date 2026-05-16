@@ -1,3 +1,4 @@
+/** E2E run diagnostics collection — metadata, HTTP probes, log bundling. @module diagnostics */
 import { join, resolve } from "@std/path";
 import { copy, exists } from "@std/fs";
 import { loadTopologyManifest } from "./topology.ts";
@@ -10,6 +11,7 @@ const SECRET_PATTERNS = [
   /((?:JWT|TOKEN|PASSWORD|SECRET|MASTER_SECRET|ADMIN_SECRET)=)\S+/g,
 ];
 
+/** Context for a single E2E run, holding paths for logs, reports, and diagnostics. */
 export interface E2ERunContext {
   runId: string;
   runDir: string;
@@ -31,6 +33,7 @@ function defaultRunId(): string {
   return `${now}-${Deno.pid}`;
 }
 
+/** Create the E2E run context, ensuring all directories exist. */
 export async function createRunContext(
   runId?: string,
   diagnosticsDir?: string,
@@ -118,6 +121,7 @@ async function collectHttpEndpoint(
   await writeText(target, text);
 }
 
+/** Collect diagnostics for the current run: metadata, git info, service logs, HTTP probes. */
 export async function collectDiagnostics(
   context: E2ERunContext,
   options: {

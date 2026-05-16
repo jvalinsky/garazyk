@@ -1,3 +1,5 @@
+/** Human-readable formatting utilities. @module format */
+
 /**
  * Format a byte count as a human-readable string.
  *

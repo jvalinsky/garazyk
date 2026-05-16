@@ -1,3 +1,4 @@
+/** Progress bar and historical duration cache for scenario execution tracking. @module progress */
 import { join } from "@std/path";
 import { bold, brightBlue, cyan, green, yellow, gray } from "@std/fmt/colors";
 

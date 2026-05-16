@@ -1,3 +1,4 @@
+/** Operation timing, metrics scraping, storage monitoring, and instrumentation reports. @module instrumentation */
 import { join } from "@std/path";
 import { exists } from "@std/fs";
 
@@ -8,6 +9,7 @@ export interface MetricsSample {
   metrics: Record<string, number>;
 }
 
+/** Tracks operation counts and duration distribution (min, max, mean, percentiles). */
 export class OperationStats {
   public count = 0;
   private durations: number[] = [];
@@ -53,6 +55,7 @@ export class OperationStats {
   }
 }
 
+/** Measures duration of named async operations and collects timing stats. */
 export class OperationTimer {
   private stats: Record<string, OperationStats> = {};
 
@@ -84,6 +87,7 @@ export class OperationTimer {
   }
 }
 
+/** Tracks the duration of named execution phases. */
 export class PhaseTimer {
   private phases: Record<string, number> = {};
   private currentPhase: string | null = null;
@@ -106,6 +110,7 @@ export class PhaseTimer {
   }
 }
 
+/** Periodically scrapes Prometheus metrics endpoints and records time-series data. */
 export class PrometheusScraper {
   private samples: Record<string, MetricsSample[]> = {};
   private intervalId?: number;
@@ -166,6 +171,7 @@ export class PrometheusScraper {
   }
 }
 
+/** Periodically samples database and WAL file sizes at configured paths. */
 export class StorageMonitor {
   private stats: Record<string, any[]> = {};
   private intervalId?: number;
@@ -207,6 +213,7 @@ export class StorageMonitor {
   }
 }
 
+/** Aggregate report combining operation stats, metrics, process stats, and storage data. */
 export class InstrumentationReport {
   constructor(
     public operationStats: Record<string, any>,

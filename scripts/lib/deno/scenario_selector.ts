@@ -1,3 +1,4 @@
+/** Scenario discovery and selection — filesystem scanning, filtering, capability matching. @module scenario_selector */
 import { red, yellow } from "@std/fmt/colors";
 import { join } from "@std/path";
 import {

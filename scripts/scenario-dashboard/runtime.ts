@@ -1,3 +1,4 @@
+/** TEA Runtime — interprets Cmds into I/O, drives the state signal, and exposes dispatch. @module runtime */
 import { signal } from "@preact/signals";
 import type { Cmd, DashboardState, Msg, RunProgress, TopologyPreview } from "./dashboard_state.ts";
 import { bootCmds, createInitialState, update } from "./dashboard_state.ts";
@@ -7,6 +8,7 @@ const IS_BROWSER = typeof globalThis !== "undefined" && "document" in globalThis
 // Wraps a Preact Signal to present a non-nullable DashboardState type.
 // Preact Signal<T> resolves as value: T|undefined in the version served
 // by esm.sh; this wrapper contains the cast in one place.
+/** Wraps a Preact Signal to present a non-nullable DashboardState type. */
 class TypedSignal {
   private sig: ReturnType<typeof signal<DashboardState>>;
 
@@ -31,6 +33,7 @@ class TypedSignal {
   }
 }
 
+/** Handle returned by createRuntime — accessor for state, dispatch, and cleanup. */
 interface RuntimeHandle {
   state: TypedSignal;
   dispatch: (msg: Msg) => void;
@@ -39,12 +42,14 @@ interface RuntimeHandle {
 
 let _runtime: RuntimeHandle | null = null;
 
+/** Get or create the singleton runtime. Returns null outside the browser. */
 export function getRuntime(): RuntimeHandle | null {
   if (!IS_BROWSER) return null;
   if (!_runtime) _runtime = createRuntime();
   return _runtime;
 }
 
+/** Hook for islands to access the runtime state signal and dispatch. SSR-safe. */
 export function useRuntime(): { state: TypedSignal; dispatch: (msg: Msg) => void } {
   const runtime = getRuntime();
   if (!runtime) {
@@ -54,6 +59,7 @@ export function useRuntime(): { state: TypedSignal; dispatch: (msg: Msg) => void
   return { state: runtime.state, dispatch: runtime.dispatch };
 }
 
+/** Create the runtime: initializes state, boot cmds, and the tick interval. */
 function createRuntime(initialState?: DashboardState): RuntimeHandle {
   const state = new TypedSignal(initialState ?? createInitialState());
   const timerIds: number[] = [];
@@ -163,6 +169,7 @@ function createRuntime(initialState?: DashboardState): RuntimeHandle {
 
 // Maps API response shapes to Msg constructors.
 // Each endpoint's response shape was verified against route handler code.
+/** Maps API response shapes to Msg constructors. */
 export function constructMsg(
   onSuccess: string,
   data: unknown,
@@ -272,6 +279,7 @@ function isTopologyPreview(value: unknown): value is TopologyPreview {
     Array.isArray(value.capabilities);
 }
 
+/** Maps error response strings to error Msg constructors. */
 export function constructErrorMsg(
   onError: string,
   error: string,

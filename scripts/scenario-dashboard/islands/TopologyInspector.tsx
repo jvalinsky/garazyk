@@ -1,5 +1,7 @@
+/** Topology inspector island — shows selected topology details and per-role metrics. @module TopologyInspector */
 import { useRuntime } from "../runtime.ts";
 
+/** Render topology details: roles, metrics, and capabilities. */
 export default function TopologyInspector() {
   const { state } = useRuntime();
   const s = state.value;

@@ -1,10 +1,13 @@
+/** Run history table component — shows recent runs with results. @module RunHistory */
 import { Run } from "../services/types.ts";
 import { formatDate, formatDurationSec } from "../utils.ts";
 
+/** Props for the RunHistory component. */
 interface RunHistoryProps {
   runs: Run[];
 }
 
+/** Render a table of past runs with timing and pass/fail/skip counts. */
 export default function RunHistory({ runs }: RunHistoryProps) {
   if (runs.length === 0) {
     return (

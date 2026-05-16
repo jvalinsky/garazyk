@@ -12,6 +12,7 @@ import { SERVICE_PORTS, serviceUrl, repoRoot } from "./docker_config.ts";
 import { waitForHttp } from "./docker_health.ts";
 import type { RunContext, LocalNetworkOptions } from "./docker_types.ts";
 
+/** Start local ATProto services from build binaries (PLC, PDS, Relay, AppView). */
 export async function startBinaryServices(
   ctx: RunContext,
   opts: LocalNetworkOptions,
@@ -126,6 +127,7 @@ async function appendPid(pidFile: string, label: string, pid: number): Promise<v
   await Deno.writeTextFile(pidFile, existing + line);
 }
 
+/** Stop all binary services tracked in the run's PID file. */
 export async function stopBinaryServices(ctx: RunContext): Promise<void> {
   try {
     const content = await Deno.readTextFile(ctx.pidFile);

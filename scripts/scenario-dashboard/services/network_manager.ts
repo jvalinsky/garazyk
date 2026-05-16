@@ -7,6 +7,8 @@
  * API calls instead of CLI subprocesses for container discovery, stats,
  * and log streaming. Falls back to CLI-based operations when the socket
  * is unavailable.
+ *
+ * @module network_manager
  */
 
 import { fromFileUrl, join } from "$std/path/mod.ts";
@@ -31,6 +33,7 @@ const SCRIPTS_DIR = join(
   fromFileUrl(new URL("../../scenarios", import.meta.url)),
 );
 
+/** Manages Docker service lifecycle, health checks, container stats, and log streaming. */
 class NetworkManager {
   private services: Map<string, ServiceStatus> = new Map();
   private healthInterval?: number;
@@ -603,4 +606,5 @@ class NetworkManager {
   }
 }
 
+/** Singleton network manager instance. */
 export const networkManager = new NetworkManager();

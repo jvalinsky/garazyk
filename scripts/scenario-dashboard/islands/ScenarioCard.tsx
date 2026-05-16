@@ -1,7 +1,9 @@
+/** Scenario card island — clickable card showing scenario status and compatibility. @module ScenarioCard */
 import { useRuntime } from "../runtime.ts";
 import { ScenarioStatus } from "../services/types.ts";
 import { STATUS_ICONS } from "../utils.ts";
 
+/** Props for the ScenarioCard component. */
 interface ScenarioCardProps {
   id: string;
   name: string;
@@ -14,6 +16,7 @@ interface ScenarioCardProps {
   needsPds2?: boolean;
 }
 
+/** Render a scenario card showing ID, name, last status, and compatibility warnings. */
 export default function ScenarioCard(
   { id, name, status, passed = 0, failed = 0, skipped = 0, runId, requires = [], needsPds2 = false }: ScenarioCardProps,
 ) {

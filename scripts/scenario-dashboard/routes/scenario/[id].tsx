@@ -105,6 +105,7 @@ export const handler: Handlers<ScenarioPageData> = {
   },
 };
 
+/** Scenario detail page component. */
 export default function ScenarioDetailPage({ data }: PageProps<ScenarioPageData>) {
   const { scenario, latestResult } = data;
 

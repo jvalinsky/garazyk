@@ -1,3 +1,4 @@
+/** Sidebar island — search, network status, categorized scenario list, and topology inspector. @module Sidebar */
 import { categorize } from "../utils.ts";
 import { useRuntime } from "../runtime.ts";
 import TopologyInspector from "./TopologyInspector.tsx";
@@ -13,6 +14,7 @@ const CATEGORIES: Record<string, string> = {
   edge: "Edge Cases",
 };
 
+/** Render the sidebar with search, service summary, categorized scenario nav, and topology. */
 export default function Sidebar({ activeScenario }: SidebarProps) {
   const { state, dispatch } = useRuntime();
   const s = state.value;

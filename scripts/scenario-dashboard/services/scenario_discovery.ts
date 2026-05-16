@@ -12,6 +12,7 @@ const SCENARIOS_DIR = join(
   fromFileUrl(new URL("../../scenarios/scenarios", import.meta.url)),
 );
 
+/** Scan the scenarios directory and return all discovered scenarios. */
 export async function discoverScenarios(): Promise<DiscoveredScenario[]> {
   const scenarios: DiscoveredScenario[] = [];
 
@@ -48,6 +49,7 @@ export async function discoverScenarios(): Promise<DiscoveredScenario[]> {
 /** Cache discovered scenarios for the lifetime of the process */
 let cached: DiscoveredScenario[] | null = null;
 
+/** Get cached discovered scenarios (process-lifetime cache). */
 export async function getScenarios(): Promise<DiscoveredScenario[]> {
   if (!cached) {
     cached = await discoverScenarios();

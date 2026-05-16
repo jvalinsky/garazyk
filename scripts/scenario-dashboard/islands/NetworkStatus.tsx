@@ -1,5 +1,7 @@
+/** Network status island — displays ATProto service table with start/stop controls. @module NetworkStatus */
 import { useRuntime } from "../runtime.ts";
 
+/** Render the network services table with start/stop/start-pds2 buttons. */
 export default function NetworkStatus() {
   const { state, dispatch } = useRuntime();
   const { services } = state.value.network;

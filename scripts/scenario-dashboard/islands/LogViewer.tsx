@@ -1,11 +1,14 @@
+/** Log viewer island — fetches and renders ANSI-colored run logs with auto-scroll. @module LogViewer */
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { useRuntime } from "../runtime.ts";
 
+/** Props for the LogViewer component. */
 interface LogViewerProps {
   runId: string;
   status: string;
 }
 
+/** Interactive log viewer with ANSI rendering and auto-scroll. */
 export default function LogViewer({ runId, status }: LogViewerProps) {
   const { state, dispatch } = useRuntime();
   const s = state.value;
