@@ -1104,6 +1104,7 @@ int main(int argc, char *argv[]) {
       @"PDSTelegramGatewayPhoneVerificationProviderTests",
       @"GermRecordTests",
       @"GermMailboxServiceTests",
+      @"ChatConfigurationTests",
       @"ChatServiceTests",
       @"ModerationServiceTests",
       @"GermIdentityServiceTests",
