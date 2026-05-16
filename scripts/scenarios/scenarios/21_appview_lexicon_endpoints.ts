@@ -182,7 +182,13 @@ export async function run(): Promise<ScenarioResult> {
   await timedCall(
     result, "Admin auth: wrong secret rejected",
     async () => {
-      return await av.raw.httpGet("/admin/lexicons", undefined, "wrong-secret-value");
+      const resp = await av.raw.httpGet("/admin/lexicons", undefined, "wrong-secret-value");
+      // If we get here, the request didn't throw — that's a bug
+      // (wrong secret should be rejected with 401/403)
+      if (resp && typeof resp === "object" && !("error" in resp)) {
+        throw new Error("Wrong admin secret was accepted — expected 401/403 rejection");
+      }
+      return resp;
     },
     undefined,
     true
