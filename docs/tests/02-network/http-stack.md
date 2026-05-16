@@ -19,8 +19,8 @@ Tests for HTTP server implementation, routing, request/response handling, and st
 
 ```objc
 // Swizzle factory to return fake listener
-static PDSNetworkListener *fakeListener;
-PDSNetworkTransportFactory originalFactory = PDSNetworkTransportFactoryCreateListener(^(uint16_t port) {
+static ATProtoNetworkListener *fakeListener;
+ATProtoNetworkTransportFactory originalFactory = ATProtoNetworkTransportFactoryCreateListener(^(uint16_t port) {
     return fakeListener;
 });
 
@@ -34,7 +34,7 @@ XCTAssertEqual(error.code, -1);
 **Fake objects** implement listener/connection protocols:
 
 ```objc
-@interface PDSFakeListener : NSObject <PDSNetworkListener>
+@interface PDSFakeListener : NSObject <ATProtoNetworkListener>
 @property (nonatomic, assign) PDSListenerState state;
 @property (nonatomic, copy) void (^onReady)(void);
 @end

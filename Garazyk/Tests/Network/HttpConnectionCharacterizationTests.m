@@ -4,14 +4,14 @@
 #import "Network/HttpServer.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
-#import "Network/PDSNetworkTransport.h"
+#import "Network/ATProtoNetworkTransport.h"
 
 // Mock connection
-@interface MockHttpConnection : NSObject <PDSNetworkConnection>
+@interface MockHttpConnection : NSObject <ATProtoNetworkConnection>
 @property (nonatomic, strong) NSMutableData *writtenData;
 @property (nonatomic, copy) void (^readCompletion)(NSData *, BOOL, NSError *);
-@property (nonatomic, assign) PDSNetworkConnectionState state;
-@property (nonatomic, copy) void (^stateChangedHandler)(PDSNetworkConnectionState, NSError *);
+@property (nonatomic, assign) ATProtoNetworkConnectionState state;
+@property (nonatomic, copy) void (^stateChangedHandler)(ATProtoNetworkConnectionState, NSError *);
 @property (nonatomic, readonly) NSString *remoteAddress;
 @property (nonatomic, readonly) NSString *remoteHost;
 @property (nonatomic, readonly) uint16_t remotePort;
@@ -30,7 +30,7 @@
 - (instancetype)init {
     if (self = [super init]) {
         _writtenData = [NSMutableData data];
-        _state = PDSNetworkConnectionStateReady;
+        _state = ATProtoNetworkConnectionStateReady;
         _remoteAddress = @"127.0.0.1";
         _remoteHost = @"127.0.0.1";
         _remotePort = 12345;
@@ -47,7 +47,7 @@
 
 - (void)cancel {
     self.isCancelled = YES;
-    self.state = PDSNetworkConnectionStateCancelled;
+    self.state = ATProtoNetworkConnectionStateCancelled;
     if (self.stateChangedHandler) {
         self.stateChangedHandler(self.state, nil);
     }
@@ -89,10 +89,10 @@
 @end
 
 @interface HttpServer (Testing)
-- (void)handleNewConnection:(id<PDSNetworkConnection>)connection;
+- (void)handleNewConnection:(id<ATProtoNetworkConnection>)connection;
 @property (nonatomic, strong) dispatch_queue_t serverQueue;
 @property (nonatomic, strong) dispatch_group_t taskGroup;
-@property (nonatomic, strong) NSMutableArray<id<PDSNetworkConnection>> *activeConnections;
+@property (nonatomic, strong) NSMutableArray<id<ATProtoNetworkConnection>> *activeConnections;
 @end
 
 @interface HttpConnectionCharacterizationTests : XCTestCase

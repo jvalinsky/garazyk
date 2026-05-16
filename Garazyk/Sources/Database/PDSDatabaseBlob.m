@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "Database/PDSDatabase.h"
+#import "Database/PDSDatabaseBlob.h"
+#import "Core/NSDateFormatter+ATProto.h"
 
 @implementation PDSDatabaseBlob
 
@@ -9,9 +10,15 @@
     if (self) {
         _cid = row[@"cid"];
         _did = row[@"did"];
-        _mimeType = row[@"mimeType"];
+        _mimeType = row[@"mime_type"] ?: row[@"mimeType"];
         _size = [row[@"size"] integerValue];
-        _createdAt = [NSDate dateWithTimeIntervalSince1970:[row[@"created_at"] doubleValue]];
+        
+        id createdAt = row[@"created_at"];
+        if ([createdAt isKindOfClass:[NSString class]]) {
+            _createdAt = [NSDateFormatter atproto_dateFromString:createdAt];
+        } else {
+            _createdAt = [NSDate dateWithTimeIntervalSince1970:[createdAt doubleValue]];
+        }
     }
     return self;
 }

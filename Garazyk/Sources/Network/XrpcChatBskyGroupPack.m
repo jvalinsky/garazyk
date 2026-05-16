@@ -42,7 +42,9 @@ static NSString *XrpcChatBskyGroupAuthenticatedDID(HttpRequest *request,
                                                 jwtMinter:jwtMinter
                                           adminController:adminController
                                              configuration:nil
+                                               adminSecret:nil
                                          serviceDatabases:nil
+                                         userDatabasePool:nil
                                                rateLimiter:nil];
   services.appViewDatabase = appViewDatabase;
   [self registerWithDispatcher:dispatcher services:services];

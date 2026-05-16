@@ -103,7 +103,7 @@
 - (void)testJwtMinterInitialized {
     XCTAssertNotNil(self.application.jwtMinter);
     XCTAssertNotNil(self.application.jwtMinter.issuer);
-    XCTAssertEqualObjects(self.application.jwtMinter.signingAlgorithm, @"ES256");
+    XCTAssertEqualObjects(self.application.jwtMinter.signingAlgorithm, @"ES256K");
 }
 
 - (void)testRateLimiterInitialized {

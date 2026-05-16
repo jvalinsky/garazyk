@@ -14,7 +14,14 @@
 @interface XrpcDispatcher ()
 
 @property (nonatomic, strong) NSMutableDictionary<NSString *, XrpcMethodHandler> *methodHandlers;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, XrpcMethodHandler> *internalHandlers;
 @property (nonatomic, strong) NSSet<NSString *> *protectedMethods;
+
+- (BOOL)validateHTTPMethodForMethodId:(NSString *)methodId
+                               request:(HttpRequest *)request
+                              response:(HttpResponse *)response;
+- (NSSet<NSString *> *)queryMethodIds;
+- (NSSet<NSString *> *)procedureMethodIds;
 
 @end
 
@@ -38,6 +45,7 @@ static XrpcDispatcher *_sharedInstance = nil;
     self = [super init];
     if (self) {
         _methodHandlers = [NSMutableDictionary dictionary];
+        _internalHandlers = [NSMutableDictionary dictionary];
         
         // Methods that MUST be handled locally by the PDS
         _protectedMethods = [NSSet setWithArray:@[
@@ -86,6 +94,10 @@ static XrpcDispatcher *_sharedInstance = nil;
 }
 
 - (void)registerMethod:(NSString *)methodId handler:(XrpcMethodHandler)handler {
+    if ([methodId hasPrefix:@"_"]) {
+        self.internalHandlers[methodId] = [handler copy];
+        return;
+    }
     self.methodHandlers[methodId] = [handler copy];
 }
 
@@ -93,7 +105,7 @@ static XrpcDispatcher *_sharedInstance = nil;
     if (methodId.length == 0) {
         return NO;
     }
-    return self.methodHandlers[methodId] != nil;
+    return self.methodHandlers[methodId] != nil || self.internalHandlers[methodId] != nil;
 }
 
 - (void)registerMethod:(NSString *)methodId
@@ -234,11 +246,15 @@ static XrpcDispatcher *_sharedInstance = nil;
         return;
     }
 
-    XrpcMethodHandler handler = self.methodHandlers[methodId];
+    XrpcMethodHandler handler = self.methodHandlers[methodId] ?: self.internalHandlers[methodId];
     BOOL isProtected = [self isMethodProtected:methodId];
 
     GZ_LOG_INFO(@"XrpcHandler: methodId=%@, handler=%@, protected=%d", 
                  methodId, handler ? @"found" : @"nil", isProtected);
+
+    if (![self validateHTTPMethodForMethodId:methodId request:request response:response]) {
+        return;
+    }
 
     // Protected methods always execute locally, including when an interceptor
     // is installed for AppView/chat/ozone routing.
@@ -370,6 +386,75 @@ static XrpcDispatcher *_sharedInstance = nil;
         @"error": @"MethodNotFound",
         @"message": [NSString stringWithFormat:@"XRPC method '%@' not found", methodId]
     }];
+}
+
+- (BOOL)validateHTTPMethodForMethodId:(NSString *)methodId
+                               request:(HttpRequest *)request
+                              response:(HttpResponse *)response {
+    HttpMethod expectedMethod = HttpMethodUnknown;
+    if ([[self queryMethodIds] containsObject:methodId]) {
+        expectedMethod = HttpMethodGET;
+    } else if ([[self procedureMethodIds] containsObject:methodId]) {
+        expectedMethod = HttpMethodPOST;
+    }
+
+    if (expectedMethod == HttpMethodUnknown || request.method == expectedMethod) {
+        return YES;
+    }
+
+    NSString *allowedMethod = expectedMethod == HttpMethodGET ? @"GET" : @"POST";
+    response.statusCode = HttpStatusMethodNotAllowed;
+    [response setHeader:allowedMethod forKey:@"Allow"];
+    [response setJsonBody:@{
+        @"error": @"MethodNotAllowed",
+        @"message": [NSString stringWithFormat:@"Expected %@ for %@", allowedMethod, methodId]
+    }];
+    return NO;
+}
+
+- (NSSet<NSString *> *)queryMethodIds {
+    static NSSet<NSString *> *queryMethods = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        queryMethods = [NSSet setWithArray:@[
+            @"com.atproto.admin.getSubjectStatus",
+            @"com.atproto.identity.resolveHandle",
+            @"com.atproto.repo.describeRepo",
+            @"com.atproto.repo.getRecord",
+            @"com.atproto.repo.listRecords",
+            @"com.atproto.server.describeServer",
+            @"com.atproto.server.getAccountInviteCodes",
+            @"com.atproto.server.getSession",
+            @"com.atproto.sync.getLatestCommit",
+            @"com.atproto.sync.getRepo",
+            @"com.atproto.sync.listRepos",
+        ]];
+    });
+    return queryMethods;
+}
+
+- (NSSet<NSString *> *)procedureMethodIds {
+    static NSSet<NSString *> *procedureMethods = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        procedureMethods = [NSSet setWithArray:@[
+            @"com.atproto.admin.updateSubjectStatus",
+            @"com.atproto.identity.updateHandle",
+            @"com.atproto.repo.applyWrites",
+            @"com.atproto.repo.createRecord",
+            @"com.atproto.repo.deleteRecord",
+            @"com.atproto.repo.putRecord",
+            @"com.atproto.repo.uploadBlob",
+            @"com.atproto.server.createAccount",
+            @"com.atproto.server.createInviteCode",
+            @"com.atproto.server.createInviteCodes",
+            @"com.atproto.server.createSession",
+            @"com.atproto.server.deleteAccount",
+            @"com.atproto.server.deleteSession",
+            @"com.atproto.server.refreshSession",
+        ]];
+    });
+    return procedureMethods;
 }
 
 #pragma mark - Proxy Method Allowlist

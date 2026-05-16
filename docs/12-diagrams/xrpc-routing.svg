@@ -60,27 +60,27 @@
 
   <!-- Domain Handlers -->
   <rect x="50" y="420" width="300" height="80" class="handler" rx="5"/>
-  <text x="200" y="450" class="text" font-weight="bold">XrpcServerMethods</text>
+  <text x="200" y="450" class="text" font-weight="bold">XrpcServerPack</text>
   <text x="200" y="470" class="text">• describeServer</text>
   <text x="200" y="490" class="text">• createAccount</text>
 
   <rect x="250" y="420" width="300" height="80" class="handler" rx="5"/>
-  <text x="400" y="450" class="text" font-weight="bold">XrpcRepoMethods</text>
+  <text x="400" y="450" class="text" font-weight="bold">XrpcRepoPack</text>
   <text x="400" y="470" class="text">• createRecord</text>
   <text x="400" y="490" class="text">• deleteRecord</text>
 
   <rect x="450" y="420" width="300" height="80" class="handler" rx="5"/>
-  <text x="600" y="450" class="text" font-weight="bold">XrpcSyncMethods</text>
+  <text x="600" y="450" class="text" font-weight="bold">XrpcSyncPack</text>
   <text x="600" y="470" class="text">• getRepo</text>
   <text x="600" y="490" class="text">• subscribeRepos</text>
 
   <rect x="650" y="420" width="300" height="80" class="handler" rx="5"/>
-  <text x="800" y="450" class="text" font-weight="bold">XrpcIdentityMethods</text>
+  <text x="800" y="450" class="text" font-weight="bold">XrpcIdentityPack</text>
   <text x="800" y="470" class="text">• resolveHandle</text>
   <text x="800" y="490" class="text">• getProfile</text>
 
   <rect x="850" y="420" width="300" height="80" class="handler" rx="5"/>
-  <text x="1000" y="450" class="text" font-weight="bold">XrpcAppBskyMethods</text>
+  <text x="1000" y="450" class="text" font-weight="bold">XrpcAppBskyPack</text>
   <text x="1000" y="470" class="text">• createPost</text>
   <text x="1000" y="490" class="text">• likeRecord</text>
 
@@ -121,7 +121,7 @@
   <text x="50" y="700" class="title" text-anchor="start">Routing Flow:</text>
   <text x="50" y="730" class="text" text-anchor="start">1. Request arrives with NSID (e.g., com.atproto.repo.createRecord)</text>
   <text x="50" y="755" class="text" text-anchor="start">2. XrpcDispatcher extracts NSID and queries XrpcMethodRegistry</text>
-  <text x="50" y="780" class="text" text-anchor="start">3. Registry routes to appropriate domain module (e.g., XrpcRepoMethods)</text>
+  <text x="50" y="780" class="text" text-anchor="start">3. Registry routes to appropriate domain module (e.g., XrpcRepoPack)</text>
   <text x="50" y="805" class="text" text-anchor="start">4. Domain handler calls corresponding service (e.g., PDSRecordService)</text>
   <text x="50" y="830" class="text" text-anchor="start">5. Service executes business logic and returns response</text>
   <text x="50" y="855" class="text" text-anchor="start">6. Response is serialized and sent back to client</text>

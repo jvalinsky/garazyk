@@ -8,7 +8,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
-#import "Network/PDSNetworkTransport.h"
+#import "Network/ATProtoNetworkTransport.h"
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcMethodRegistry.h"
 #import "Sync/Firehose/SubscribeReposHandler.h"
@@ -104,7 +104,7 @@
 
     [server addWebSocketRoute:@"/xrpc/com.atproto.sync.subscribeRepos"
                       handler:^(HttpRequest *request, HttpResponse *response,
-                                id<PDSNetworkConnection> connection) {
+                                id<ATProtoNetworkConnection> connection) {
                         SubscribeReposHandler *strongSubscribeReposHandler =
                             weakSubscribeReposHandler;
                         if (!strongSubscribeReposHandler) {

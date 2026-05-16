@@ -69,7 +69,7 @@
   <!-- Domain Handler -->
   <rect x="300" y="640" width="400" height="80" class="process" rx="5"/>
   <text x="500" y="670" class="text" font-weight="bold">Domain Handler</text>
-  <text x="500" y="690" class="text">(e.g., XrpcRepoMethods)</text>
+  <text x="500" y="690" class="text">(e.g., XrpcRepoPack)</text>
   <text x="500" y="710" class="text">• Parse parameters</text>
 
   <!-- Arrow -->

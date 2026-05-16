@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "Database/PDSDatabase.h"
+#import "Database/PDSDatabaseRecord.h"
+#import "Core/NSDateFormatter+ATProto.h"
 
 @implementation PDSDatabaseRecord
 
@@ -12,11 +13,23 @@
         _collection = row[@"collection"];
         _rkey = row[@"rkey"];
         _cid = row[@"cid"];
-        _createdAt = [NSDate dateWithTimeIntervalSince1970:[row[@"created_at"] doubleValue]];
         _value = row[@"value"];
         _rev = row[@"rev"];
         _subjectDid = row[@"subject_did"];
-        _indexedAt = [NSDate dateWithTimeIntervalSince1970:[row[@"indexed_at"] doubleValue]];
+
+        id createdAt = row[@"created_at"];
+        if ([createdAt isKindOfClass:[NSString class]]) {
+            _createdAt = [NSDateFormatter atproto_dateFromString:createdAt];
+        } else {
+            _createdAt = [NSDate dateWithTimeIntervalSince1970:[createdAt doubleValue]];
+        }
+
+        id indexedAt = row[@"indexed_at"];
+        if ([indexedAt isKindOfClass:[NSString class]]) {
+            _indexedAt = [NSDateFormatter atproto_dateFromString:indexedAt];
+        } else {
+            _indexedAt = [NSDate dateWithTimeIntervalSince1970:[indexedAt doubleValue]];
+        }
     }
     return self;
 }

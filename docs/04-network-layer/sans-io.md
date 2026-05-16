@@ -21,9 +21,9 @@ Located in `Garazyk/Sources/Network/HttpServer.m` and related handlers:
 - **`HttpConnectionIOCoordinator`**: Coordinates the read/write loop between the transport and the session.
 
 ### 3. Platform Transport
-The `PDSNetworkTransport.h` interface abstracts the underlying OS networking:
-- **`PDSNetworkTransportMac`**: Uses Apple's `Network.framework`.
-- **`PDSNetworkTransportLinux`**: Uses BSD sockets and `dispatch_source_t`.
+The `ATProtoNetworkTransport.h` interface abstracts the underlying OS networking:
+- **`ATProtoNetworkTransportMac`**: Uses Apple's `Network.framework`.
+- **`ATProtoNetworkTransportLinux`**: Uses BSD sockets and `dispatch_source_t`.
 
 ## Data Flow
 

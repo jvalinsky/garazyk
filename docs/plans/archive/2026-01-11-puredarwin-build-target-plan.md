@@ -27,7 +27,7 @@ Create a PureDarwin build target with **full feature parity** to macOS builds, t
 
 ### Phase 2: Core API Replacements (Full Parity Focus)
 1. **Network Transport (Complete Rewrite for Parity)**:
-   - Implement BSD sockets + libdispatch alternative in `PDSNetworkTransportDarwin.m`
+   - Implement BSD sockets + libdispatch alternative in `ATProtoNetworkTransportDarwin.m`
    - Maintain async performance equivalent to Network.framework using kqueue/epoll patterns
    - Add connection pooling and TLS support using OpenSSL (CMake subproject)
 

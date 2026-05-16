@@ -220,7 +220,7 @@ Tests in `Tests/Network` validate the custom HTTP stack used for portability (Li
 
 *   **HTTP Stack:** Covers GET/POST parsing, chunked encoding, and routing. `HttpRouteTrieTests` validates O(k) routing for parameterized paths.
 *   **Memory Management:** `HttpBufferPoolTests` ensures high-throughput scenarios recycle data buffers to reduce GC pressure.
-*   **Transport:** `PDSNetworkTransportLinuxTests` verifies BSD socket operations on non-Apple platforms.
+*   **Transport:** `ATProtoNetworkTransportLinuxTests` verifies BSD socket operations on non-Apple platforms.
 
 ### XRPC Protocol
 Tests in `Tests/XRPC` ensure strict adherence to the [XRPC specification](https://atproto.com/specs/xrpc).
@@ -293,7 +293,7 @@ These services reside above the database layer and implement the business logic 
 
 ### Configuration & Handlers
 
-*   **Configuration** (`PDSConfigurationTests`)
+*   **Configuration** (`ATProtoServiceConfigurationTests`)
     *   **What it tests:** Loading configuration from files and environment variables, ensuring proper precedence (Env > Config File > Defaults).
 
 *   **Handlers** (`ExploreHandlerTests`, `MSTViewerHandlerTests`)

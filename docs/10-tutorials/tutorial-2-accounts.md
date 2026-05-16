@@ -36,7 +36,7 @@ As you read the service code, observe how it handles invite codes and domain val
 
 The network layer exposes the service logic through protocol methods. The typical flow involves:
 
-1. **XRPC Registration**: Methods are registered in `PDSHttpServerBuilder.m`.
+1. **XRPC Registration**: Methods are registered in `ATProtoHttpServerBuilder.m`.
 2. **Input Validation**: Request bodies are parsed and validated against lexicon schemas.
 3. **Service Invocation**: The handler calls the relevant `PDSAccountService` method.
 4. **Response Shaping**: Success results are converted into the format expected by the client (e.g., returning a DID and session tokens).

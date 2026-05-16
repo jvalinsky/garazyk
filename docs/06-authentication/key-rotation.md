@@ -32,7 +32,7 @@ The live rotation-key path spans a few concrete files:
 
 - `Garazyk/Sources/PLC/PLCRotationKeyManager.m` loads or generates the server rotation key and persists it on disk, encrypting it when the master-secret path is available.
 - `Garazyk/Sources/Database/ActorStore/ActorStore.m` can store and retrieve per-DID rotation keys in encrypted form.
-- `Garazyk/Sources/Network/XrpcIdentityMethods.m` builds PLC operations, requires `rotationKeys` on update paths, and chooses whether to sign with the actor-specific key or the server-wide key.
+- `Garazyk/Sources/Network/XrpcIdentityPack.m` builds PLC operations, requires `rotationKeys` on update paths, and chooses whether to sign with the actor-specific key or the server-wide key.
 - the PLC validation layer rejects malformed `did:key` material and verifies signature chains before accepting state.
 
 The process loads keys, chooses the signer, produces a valid PLC operation, and keeps the state consistent with directory verification.

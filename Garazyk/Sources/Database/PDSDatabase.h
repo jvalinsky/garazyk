@@ -2,28 +2,11 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
 #import <sqlite3.h>
-#import "PDSBlock.h"
-#import "PDSQueryDatabase.h"
+#import "Database/PDSQueryDatabase.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
 @class PDSDatabase;
-
-/*!
- @protocol PDSDatabaseModel
- @abstract Protocol for database model objects that can initialize themselves from a dictionary row.
- */
-@protocol PDSDatabaseModel <NSObject>
-
-/*!
- @method initWithDatabaseRow:
- @abstract Initializes a new model object from a dictionary representing a database row.
- @param row A dictionary where keys are column names and values are column data.
- @return An initialized model object, or nil if initialization failed.
- */
-- (nullable instancetype)initWithDatabaseRow:(NSDictionary<NSString *, id> *)row;
-
-@end
 
 /*!
  @header PDSDatabase.h
@@ -189,182 +172,13 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
 
 @end
 
-/*!
- @class PDSDatabaseAccount
- 
- @abstract Represents a PDS account record in the database.
- 
- @discussion This class models account data stored in the database, including
- identity information (DID, handle, email), credentials (password hash, JWT tokens),
- and metadata (creation time, invite status).
- 
- @see PDSDatabase (Accounts)
- */
-@interface PDSDatabaseAccount : NSObject <PDSDatabaseModel>
-
-/*! The decentralized identifier (DID) for this account. */
-@property (nonatomic, copy) NSString *did;
-
-/*! The handle (username) for this account. */
-@property (nonatomic, copy) NSString *handle;
-
-/*! Optional email address for password recovery and notifications. */
-@property (nonatomic, copy, nullable) NSString *email;
-
-/*! Bcrypt hash of the account password. */
-@property (nonatomic, copy, nullable) NSData *passwordHash;
-
-/*! Salt used for password hashing. */
-@property (nonatomic, copy, nullable) NSData *passwordSalt;
-
-/*! JWT access token for API authentication. */
-@property (nonatomic, copy, nullable) NSData *accessJwt;
-
-/*! JWT refresh token for obtaining new access tokens. */
-@property (nonatomic, copy, nullable) NSData *refreshJwt;
-
-/*! Account status (e.g., "active", "deactivated"). */
-@property (nonatomic, copy) NSString *status;
-
-/*! Unix timestamp when the account was deactivated. */
-@property (nonatomic, assign) NSTimeInterval deactivatedAt;
-
-/*! Unix timestamp when the account was created. */
-@property (nonatomic, assign) NSTimeInterval createdAt;
-
-/*! Unix timestamp when the account was last updated. */
-@property (nonatomic, assign) NSTimeInterval updatedAt;
-
-/*! Whether invite codes are enabled for this account. */
-@property (nonatomic, assign) BOOL inviteEnabled;
-
-/*! Whether 2FA (TOTP/Passkey) is enabled. */
-@property (nonatomic, assign) BOOL tfaEnabled;
-
-/*! Whether WebAuthn is enabled for this account. */
-@property (nonatomic, assign) BOOL webauthnEnabled;
-
-/*! Encrypted TOTP secret or other 2FA secret data. */
-@property (nonatomic, copy, nullable) NSData *tfaSecret;
-
-/*! JSON array of hashed recovery codes. */
-@property (nonatomic, copy, nullable) NSData *recoveryCodes;
-
-/*! Age assurance level. */
-@property (nonatomic, copy, nullable) NSString *ageAssurance;
-
-/*! Timestamp when age was verified. */
-@property (nonatomic, copy, nullable) NSString *ageVerifiedAt;
-
-@end
-
-/*!
- @class PDSDatabaseRepo
- 
- @abstract Represents a repository in the database.
- 
- @discussion A repository contains a user's collection of records and blocks.
- Each repository is identified by its owner's DID and has a current root CID
- representing the state of the Merkle Search Tree.
- 
- @see PDSDatabase (Repos)
- */
-@interface PDSDatabaseRepo : NSObject <PDSDatabaseModel>
-
-/*! The DID of the repository owner. */
-@property (nonatomic, copy) NSString *ownerDid;
-
-/*! The current root CID of the repository's Merkle Search Tree. */
-@property (nonatomic, copy) NSData *rootCid;
-
-/*! Optional serialized collection index data. */
-@property (nonatomic, copy, nullable) NSData *collectionData;
-
-/*! Date when the repository was created. */
-@property (nonatomic, strong) NSDate *createdAt;
-
-/*! Date when the repository was last updated. */
-@property (nonatomic, strong) NSDate *updatedAt;
-
-@end
-
-/*!
- @class PDSDatabaseRecord
- 
- @abstract Represents a single record in a repository.
- 
- @discussion Records are the fundamental data units in ATProto repositories.
- Each record is identified by a URI (repo DID + collection + rkey) and has
- an associated CID for content-addressable retrieval.
- 
- @see PDSDatabase (Records)
- */
-@interface PDSDatabaseRecord : NSObject <PDSDatabaseModel>
-
-/*! The AT-URI identifying this record (e.g., at://did:plc:z.../app.bsky.actor.profile/self). */
-@property (nonatomic, copy) NSString *uri;
-
-/*! The DID of the repository that contains this record. */
-@property (nonatomic, copy) NSString *did;
-
-/*! The collection namespace for this record (e.g., app.bsky.actor.profile). */
-@property (nonatomic, copy) NSString *collection;
-
-/*! The record key within the collection. */
-@property (nonatomic, copy) NSString *rkey;
-
-/*! The CID of the record content. */
-@property (nonatomic, copy) NSString *cid;
-
-/*! Date when the record was created. */
-@property (nonatomic, strong) NSDate *createdAt;
-
-/*! The raw value of the record (JSON string). */
-@property (nonatomic, copy, nullable) NSString *value;
-
-/*! Revision TID when this record was last written. */
-@property (nonatomic, copy, nullable) NSString *rev;
-
-/*! The subject DID for relationship records (e.g. follow target). */
-@property (nonatomic, copy, nullable) NSString *subjectDid;
-
-/*! Date when the record was indexed by the PDS. */
-@property (nonatomic, strong, nullable) NSDate *indexedAt;
-
-@end
-
-/*!
- @class PDSDatabaseBlob
- 
- @abstract Represents a blob reference stored in the database.
- 
- @discussion Blobs are large binary data attachments stored separately from
- repository blocks. This class tracks blob metadata for retrieval and quota
- management.
- 
- @see PDSDatabase (Blobs)
- */
-@interface PDSDatabaseBlob : NSObject <PDSDatabaseModel>
-
-/*! The CID of the blob. */
-@property (nonatomic, copy) NSData *cid;
-
-/*! The DID of the account that uploaded this blob. */
-@property (nonatomic, copy) NSString *did;
-
-/*! The MIME type of the blob content. */
-@property (nonatomic, copy, nullable) NSString *mimeType;
-
-/*! The size of the blob in bytes. */
-@property (nonatomic, assign) NSInteger size;
-
-/*! Date when the blob was uploaded. */
-@property (nonatomic, strong) NSDate *createdAt;
-
-@end
-
-
 NS_ASSUME_NONNULL_END
+
+#import "Database/PDSDatabaseAccount.h"
+#import "Database/PDSDatabaseRepo.h"
+#import "Database/PDSDatabaseRecord.h"
+#import "Database/PDSDatabaseBlob.h"
+#import "Database/PDSDatabaseBlock.h"
 
 // ── Category imports ─────────────────────────────────────────────────
 // Importing here (after @interface) preserves backward compatibility:

@@ -12,44 +12,47 @@
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcErrorHelper.h"
+#import "Network/XrpcRoutePackServices.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Chat/Server/ChatAuthManager.h"
 #import "Chat/Server/Services/ChatService.h"
 #import "Chat/Server/Config/ChatSchemaManager.h"
 #import "Database/PDSDatabase.h"
+#import "Database/Service/ServiceDatabases.h"
 #import "Core/DID.h"
 #import "Debug/GZLogger.h"
 
 @implementation XrpcChatBskyConvoPack
 
++ (NSString *)routePackIdentifier {
+  return @"chat.bsky.convo";
+}
+
 static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
                                             HttpResponse *response,
-                                            JWTMinter *jwtMinter,
-                                            id<PDSAdminController> adminController) {
+                                            id<XrpcRoutePackServices> services) {
     NSString *authHeader = [request headerForKey:@"Authorization"];
     if (!authHeader) {
         [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
         return nil;
     }
 
-    if (!jwtMinter && !adminController) {
+    if (!services.jwtMinter && !services.adminController) {
         return [[ChatAuthManager sharedManager] authenticateRequest:request response:response];
     }
 
     return [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                         jwtMinter:jwtMinter
-                                   adminController:adminController
+                                         jwtMinter:services.jwtMinter
+                                   adminController:services.adminController
                                            request:request
                                           response:response];
 }
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-                 appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
-               serviceDatabase:(nullable id<PDSQueryDatabase>)serviceDatabase
-                      jwtMinter:(nullable JWTMinter *)jwtMinter
-                adminController:(nullable id<PDSAdminController>)adminController
-                   adminSecret:(nullable NSString *)adminSecret {
+                      services:(id<XrpcRoutePackServices>)services {
+    id<PDSQueryDatabase> appViewDatabase = services.appViewDatabase;
+    PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
 
     // Ensure chat schema tables exist
     PDSDatabase *db = (PDSDatabase *)appViewDatabase;
@@ -66,7 +69,7 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
-        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, jwtMinter, adminController);
+        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
         if (!actorDID) return;
 
         // getConvoForMembers is a query (GET); members arrive as repeated
@@ -113,7 +116,7 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
-        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, jwtMinter, adminController);
+        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -142,7 +145,7 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
-        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, jwtMinter, adminController);
+        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -171,7 +174,7 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
-        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, jwtMinter, adminController);
+        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
         if (!actorDID) return;
 
         NSError *error = nil;
@@ -200,7 +203,7 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
-        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, jwtMinter, adminController);
+        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -229,7 +232,7 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
-        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, jwtMinter, adminController);
+        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -258,7 +261,7 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
-        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, jwtMinter, adminController);
+        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -291,7 +294,7 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
-        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, jwtMinter, adminController);
+        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -323,7 +326,7 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
-        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, jwtMinter, adminController);
+        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -352,7 +355,7 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
-        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, jwtMinter, adminController);
+        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -381,7 +384,7 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
-        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, jwtMinter, adminController);
+        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -413,7 +416,7 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
-        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, jwtMinter, adminController);
+        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -442,7 +445,7 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
-        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, jwtMinter, adminController);
+        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -471,7 +474,7 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
-        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, jwtMinter, adminController);
+        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -499,7 +502,7 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
-        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, jwtMinter, adminController);
+        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
 
         NSInteger limit = 50;
         NSString *limitStr = [request queryParamForKey:@"limit"];
@@ -518,7 +521,8 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
                                                      cursor:cursor
                                                       error:&error];
         } else {
-            // Admin fallback: validate admin secret explicitly
+            // Admin fallback: validate admin secret explicitly from config
+            NSString *adminSecret = services.adminSecret;
             NSString *token = authHeader;
             if ([authHeader hasPrefix:@"Bearer "]) {
                 token = [authHeader substringFromIndex:@"Bearer ".length];
@@ -540,8 +544,11 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
 
         // Reshape to lexicon convoView format
         NSMutableArray *convoViews = [NSMutableArray array];
+        PDSDatabase *serviceDatabase = [serviceDatabases serviceDatabaseWithError:nil];
         NSDictionary *handleMap = [self resolveHandlesForDids:[[self collectDidsFromConversations:convos] allObjects]
                                              serviceDatabase:serviceDatabase];
+        [serviceDatabase close];
+
         for (NSDictionary *convo in (convos ?: @[])) {
             [convoViews addObject:[self convoViewFromInternalDict:convo handleMap:handleMap]];
         }
@@ -567,7 +574,7 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
-        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, jwtMinter, adminController);
+        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
         if (!actorDID) return;
 
         NSString *convoId = [request queryParamForKey:@"convoId"];
@@ -590,7 +597,9 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
             NSString *did = member[@"did"];
             if (did) [convoDids addObject:did];
         }
+        PDSDatabase *serviceDatabase = [serviceDatabases serviceDatabaseWithError:nil];
         NSDictionary *handleMap = [self resolveHandlesForDids:[convoDids allObjects] serviceDatabase:serviceDatabase];
+        [serviceDatabase close];
         [response setJsonBody:@{@"convo": [self convoViewFromInternalDict:convo handleMap:handleMap]}];
     }];
 
@@ -602,10 +611,11 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
-        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, jwtMinter, adminController);
+        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
 
-        // Admin fallback: if no valid JWT, check admin secret
+        // Admin fallback: if no valid JWT, check admin secret from config
         if (!actorDID) {
+            NSString *adminSecret = services.adminSecret;
             NSString *token = authHeader;
             if ([authHeader hasPrefix:@"Bearer "]) {
                 token = [authHeader substringFromIndex:@"Bearer ".length];
@@ -650,8 +660,10 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
             NSString *did = msg[@"senderDid"];
             if (did) [senderDids addObject:did];
         }
+        PDSDatabase *serviceDatabase = [serviceDatabases serviceDatabaseWithError:nil];
         NSDictionary *handleMap = [self resolveHandlesForDids:[senderDids allObjects]
                                              serviceDatabase:serviceDatabase];
+        [serviceDatabase close];
 
         for (NSUInteger i = 0; i < (messages ?: @[]).count; i++) {
             NSDictionary *msg = messages[i];
@@ -688,7 +700,7 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
-        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, jwtMinter, adminController);
+        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
         if (!actorDID) return;
 
         NSDictionary *body = request.jsonBody;
@@ -725,7 +737,9 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
         NSString *senderDid = sentMessage[@"senderDid"] ?: @"";
         NSMutableDictionary *sender = [NSMutableDictionary dictionary];
         sender[@"did"] = senderDid;
+        PDSDatabase *serviceDatabase = [serviceDatabases serviceDatabaseWithError:nil];
         NSDictionary *handleMap = [self resolveHandlesForDids:@[senderDid] serviceDatabase:serviceDatabase];
+        [serviceDatabase close];
         NSString *handle = handleMap[senderDid];
         if (handle) sender[@"handle"] = handle;
         view[@"sender"] = sender;
@@ -742,7 +756,7 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
-        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, jwtMinter, adminController);
+        NSString *actorDID = XrpcChatActorDIDForRequest(request, response, services);
         if (!actorDID) return;
 
         NSInteger limit = 50;

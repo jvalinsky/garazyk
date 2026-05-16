@@ -22,7 +22,7 @@ the PLC history still points at the old handle.
 ```mermaid
 sequenceDiagram
   participant Client as Authenticated caller
-  participant Identity as XrpcIdentityMethods
+  participant Identity as XrpcIdentityPack
   participant PLC as DIDPLCResolver
   participant Replay as PLCStateReplayer
   participant DB as Service databases

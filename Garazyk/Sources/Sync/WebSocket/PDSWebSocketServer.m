@@ -10,11 +10,11 @@
 
 #import "PDSWebSocketServer.h"
 #import "PDSWebSocketNetworkAdapter.h"
-#import "Network/PDSNetworkTransport.h"
+#import "Network/ATProtoNetworkTransport.h"
 #import "Compat/PDSTypes.h"
 
 @interface PDSWebSocketServer ()
-@property (nonatomic, strong, nullable) id<PDSNetworkListener> listener;
+@property (nonatomic, strong, nullable) id<ATProtoNetworkListener> listener;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t eventQueue;
 @property (nonatomic, assign) NSUInteger requestedPort;
 @property (nonatomic, copy) PDSWebSocketListenerFactory listenerFactory;
@@ -23,8 +23,8 @@
 @implementation PDSWebSocketServer
 
 - (instancetype)initWithPort:(NSUInteger)port {
-    return [self initWithPort:port listenerFactory:^id<PDSNetworkListener> _Nullable(NSUInteger requestedPort) {
-        return [PDSNetworkTransportFactory createListenerWithPort:requestedPort];
+    return [self initWithPort:port listenerFactory:^id<ATProtoNetworkListener> _Nullable(NSUInteger requestedPort) {
+        return [ATProtoNetworkTransportFactory createListenerWithPort:requestedPort];
     }];
 }
 
@@ -51,7 +51,7 @@
     __block NSError *blockError = nil;
 
     dispatch_sync(_eventQueue, ^{
-        id<PDSNetworkListener> listener = self.listenerFactory ? self.listenerFactory(self.requestedPort) : nil;
+        id<ATProtoNetworkListener> listener = self.listenerFactory ? self.listenerFactory(self.requestedPort) : nil;
         if (!listener) {
             blockError = [NSError errorWithDomain:@"PDSWebSocketServer"
                                              code:-1
@@ -61,7 +61,7 @@
 
         // Set up connection handler
         __weak typeof(self) weakSelf = self;
-        listener.newConnectionHandler = ^(id<PDSNetworkConnection> connection) {
+        listener.newConnectionHandler = ^(id<ATProtoNetworkConnection> connection) {
             __strong typeof(weakSelf) strongSelf = weakSelf;
             if (!strongSelf) return;
 
@@ -78,11 +78,11 @@
         };
 
         // Set up error handler
-        listener.stateChangedHandler = ^(PDSNetworkListenerState state, NSError * _Nullable listenerError) {
+        listener.stateChangedHandler = ^(ATProtoNetworkListenerState state, NSError * _Nullable listenerError) {
             __strong typeof(weakSelf) strongSelf = weakSelf;
             if (!strongSelf) return;
 
-            if (state == PDSNetworkListenerStateFailed && listenerError && strongSelf.errorHandler) {
+            if (state == ATProtoNetworkListenerStateFailed && listenerError && strongSelf.errorHandler) {
                 dispatch_async(strongSelf.eventQueue, ^{
                     strongSelf.errorHandler(listenerError);
                 });

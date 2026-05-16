@@ -1,46 +1,39 @@
-# XrpcAppBskyMethods Namespace Pack Refactoring
+# XrpcAppBskyPack Namespace Pack Refactoring
 
-**Status:** Phase 1 Infrastructure Complete
+**Status:** Phase 2 Complete
 
 ## Overview
 
-We are decomposing the monolithic `XrpcAppBskyMethods.m` (~3259 lines) into modular namespace packs to improve maintainability and testability.
+We have decomposed the monolithic `XrpcAppBskyMethods.m` into modular namespace packs and standardized the top-level coordination into `XrpcAppBskyPack`.
 
-## Phase 1: Infrastructure (COMPLETE)
+## Modular Architecture
 
-We have created four initial namespace pack modules:
+The `app.bsky` namespace is now managed by several specialized packs, all orchestrated by `XrpcAppBskyPack`:
 
-| Pack | Scope | Approx. Lines |
-|------|-------|-------|
-| `XrpcAppBskyActorPack` | Profile, preferences, and search. | ~200 |
-| `XrpcAppBskyFeedPack` | Timelines, posts, likes, and generators. | ~200 |
-| `XrpcAppBskyGraphPack` | Follows, mutes, blocks, and relationships. | ~210 |
-| `XrpcAppBskyNotificationPack` | Notifications and push delivery. | ~170 |
+| Pack | Scope |
+|------|-------|
+| `XrpcAppBskyActorPack` | Profile, preferences, and search. |
+| `XrpcAppBskyFeedPack` | Timelines, posts, likes, and generators. |
+| `XrpcAppBskyGraphPack` | Follows, mutes, blocks, and relationships. |
+| `XrpcAppBskyNotificationPack` | Notifications and push delivery. |
+| `XrpcAppBskyDraftsPack` | Draft management. |
+| `XrpcAppBskyBookmarksPack` | Bookmark management. |
+| `XrpcAppBskyProxyMethodPack` | Request forwarding to remote AppView. |
+| `XrpcAppBskyUnspeccedPack` | Unspecced internal APIs. |
 
-## Phase 2: Integration (PLANNED)
+## Integration
 
-In this phase, `XrpcAppBskyMethods.m` will be refactored to delegate method registration to the individual packs:
+`XrpcMethodRegistry` now delegates to `XrpcAppBskyPack` using the standard `XrpcRoutePack` protocol:
 
 ```objc
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-              serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                      jwtMinter:(JWTMinter *)jwtMinter
-                adminController:(id<PDSAdminController>)adminController {
-
-    // Delegate to namespace packs
-    [XrpcAppBskyActorPack registerWithDispatcher:dispatcher
-                                     appViewDatabase:appViewDatabase
-                                          jwtMinter:jwtMinter
-                                    adminController:adminController];
-    // ...
-}
+[XrpcAppBskyPack registerWithDispatcher:dispatcher services:routePackServices];
 ```
 
 ## Benefits
 
-1. **Maintainability:** Reduces the primary handler file size to coordination only.
-2. **Isolation:** Each pack can be tested and developed independently without affecting other namespaces.
-3. **Clarity:** Code organization now directly maps to ATProto Lexicon namespaces.
+1. **Maintainability:** The primary coordination file is now focused on dependency management rather than endpoint logic.
+2. **Isolation:** Each domain pack is independent and adheres to the `XrpcRoutePack` interface.
+3. **Clarity:** Code organization directly reflects the ATProto Lexicon namespaces.
 
 ## Related
 - [Architecture Overview](01-getting-started/architecture-overview)

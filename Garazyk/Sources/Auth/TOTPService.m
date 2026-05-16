@@ -130,7 +130,7 @@
 }
 
 - (nullable NSString *)generateTOTPToken:(NSError **)error {
-    // Try hardware token first (currently software-only), fall back to software
+    // YubiKeyOATHManager is software-only in the PDS process.
     NSString *token = [self.yubiKeyManager generateTOTPForSecret:self.secret counter:self.counter error:error];
     if (token) {
         return token;

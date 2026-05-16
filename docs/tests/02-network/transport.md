@@ -8,15 +8,15 @@ Tests for network transport layer, SSL pinning, and rate limiting.
 
 ## Test Classes
 
-### PDSNetworkTransportTests
-**File:** `Tests/Network/PDSNetworkTransportTests.m`
+### ATProtoNetworkTransportTests
+**File:** `Tests/Network/ATProtoNetworkTransportTests.m`
 
 **Purpose:** Linux network transport listener (skipped on macOS).
 
 ---
 
-### PDSNetworkTransportLinuxTests
-**File:** `Tests/Network/PDSNetworkTransportLinuxTests.m`
+### ATProtoNetworkTransportLinuxTests
+**File:** `Tests/Network/ATProtoNetworkTransportLinuxTests.m`
 
 **Purpose:** Linux-specific socket operations using Unix socket pairs.
 
@@ -31,7 +31,7 @@ int clientFd = sv[0];
 int serverFd = sv[1];
 
 // Test buffered read
-PDSNetworkTransportLinux *transport = [[PDSNetworkTransportLinux alloc] initWithFd:serverFd];
+ATProtoNetworkTransportLinux *transport = [[ATProtoNetworkTransportLinux alloc] initWithFd:serverFd];
 NSData *data = [transport receiveWithTimeout:5.0 isComplete:&complete error:&error];
 ```
 
@@ -141,7 +141,7 @@ NSDictionary *headers = @{
 ```bash
 ./build/tests/AllTests -only-testing:AllTests/RateLimiterTests
 ./build/tests/AllTests -only-testing:AllTests/SSLPinningTests
-./build/tests/AllTests -only-testing:AllTests/PDSNetworkTransportLinuxTests
+./build/tests/AllTests -only-testing:AllTests/ATProtoNetworkTransportLinuxTests
 ```
 
 ## Rate Limit Configuration

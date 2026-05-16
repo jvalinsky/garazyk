@@ -9,16 +9,23 @@
 #import "Network/XrpcErrorHelper.h"
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcHandler.h"
+#import "Network/XrpcRoutePackServices.h"
 #import "Ozone/Services/ModerationService.h"
 #import "Database/PDSDatabase.h"
 
 @implementation XrpcToolsOzonePack
 
-static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, JWTMinter *jwtMinter, id<PDSAdminController> adminController) {
++ (NSString *)routePackIdentifier {
+  return @"tools.ozone";
+}
+
+static NSString *ExtractAdminDid(HttpRequest *request,
+                                 HttpResponse *response,
+                                 id<XrpcRoutePackServices> services) {
     NSString *authHeader = [request headerForKey:@"Authorization"];
     NSString *adminDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                       jwtMinter:jwtMinter
-                                                 adminController:adminController
+                                                       jwtMinter:services.jwtMinter
+                                                 adminController:services.adminController
                                                          request:request
                                                         response:response];
     if (!adminDid) return nil;
@@ -35,18 +42,16 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
 }
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-               appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
-                    jwtMinter:(JWTMinter *)jwtMinter
-              adminController:(id<PDSAdminController>)adminController {
+                      services:(id<XrpcRoutePackServices>)services {
 
-    ModerationService *moderationService = [[ModerationService alloc] initWithDatabase:appViewDatabase];
+    ModerationService *moderationService = [[ModerationService alloc] initWithDatabase:services.appViewDatabase];
 
 #pragma mark - Moderation Core Endpoints (15)
 
     // tools.ozone.moderation.emitEvent - Emit moderation event
     [dispatcher registerMethod:@"tools.ozone.moderation.emitEvent"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
@@ -70,7 +75,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.moderation.queryStatuses - Query moderation statuses
     [dispatcher registerMethod:@"tools.ozone.moderation.queryStatuses"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSString *limitStr = [request queryParamForKey:@"limit"];
@@ -93,7 +98,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.moderation.queryEvents - Query moderation events
     [dispatcher registerMethod:@"tools.ozone.moderation.queryEvents"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSString *limitStr = [request queryParamForKey:@"limit"];
@@ -115,7 +120,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.moderation.getEvent - Get moderation event
     [dispatcher registerMethod:@"tools.ozone.moderation.getEvent"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSString *eventId = [request queryParamForKey:@"id"];
@@ -138,7 +143,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.moderation.getRecord - Get record
     [dispatcher registerMethod:@"tools.ozone.moderation.getRecord"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSString *uri = [request queryParamForKey:@"uri"];
@@ -161,7 +166,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.moderation.getRecords - Get multiple records
     [dispatcher registerMethod:@"tools.ozone.moderation.getRecords"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
@@ -185,7 +190,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.moderation.getRepo - Get repository
     [dispatcher registerMethod:@"tools.ozone.moderation.getRepo"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSString *did = [request queryParamForKey:@"did"];
@@ -208,7 +213,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.moderation.getRepos - Get multiple repositories
     [dispatcher registerMethod:@"tools.ozone.moderation.getRepos"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
@@ -232,7 +237,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.moderation.searchRepos - Search repositories
     [dispatcher registerMethod:@"tools.ozone.moderation.searchRepos"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSString *limitStr = [request queryParamForKey:@"limit"];
@@ -253,7 +258,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.moderation.getSubjectStatus - Get subject status
     [dispatcher registerMethod:@"tools.ozone.moderation.getSubjectStatus"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSString *subject = [request queryParamForKey:@"did"];
@@ -279,7 +284,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.moderation.getReporterStats - Get reporter statistics
     [dispatcher registerMethod:@"tools.ozone.moderation.getReporterStats"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSString *did = [request queryParamForKey:@"did"];
@@ -302,7 +307,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.moderation.getAccountTimeline - Get account event timeline
     [dispatcher registerMethod:@"tools.ozone.moderation.getAccountTimeline"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSString *did = [request queryParamForKey:@"did"];
@@ -329,7 +334,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.moderation.scheduleAction - Schedule moderation action
     [dispatcher registerMethod:@"tools.ozone.moderation.scheduleAction"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
@@ -354,7 +359,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.moderation.listScheduledActions - List scheduled actions
     [dispatcher registerMethod:@"tools.ozone.moderation.listScheduledActions"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSError *error = nil;
@@ -371,7 +376,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.moderation.cancelScheduledAction - Cancel scheduled action
     [dispatcher registerMethod:@"tools.ozone.moderation.cancelScheduledAction"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
@@ -395,7 +400,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.moderation.cancelScheduledActions - Cancel all scheduled actions for subjects
     [dispatcher registerMethod:@"tools.ozone.moderation.cancelScheduledActions"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
@@ -423,7 +428,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.moderation.getSubjects - Get subject details
     [dispatcher registerMethod:@"tools.ozone.moderation.getSubjects"
                        handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSString *subjectsParam = [request queryParamForKey:@"subjects"];
@@ -452,7 +457,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.team.addMember
     [dispatcher registerMethod:@"tools.ozone.team.addMember"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
@@ -475,7 +480,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.team.updateMember
     [dispatcher registerMethod:@"tools.ozone.team.updateMember"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
@@ -501,7 +506,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.team.deleteMember
     [dispatcher registerMethod:@"tools.ozone.team.deleteMember"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
@@ -525,7 +530,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.team.listMembers
     [dispatcher registerMethod:@"tools.ozone.team.listMembers"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSError *error = nil;
@@ -544,7 +549,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.set.upsertSet (replaces create/update)
     [dispatcher registerMethod:@"tools.ozone.set.upsertSet"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
@@ -584,7 +589,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.set.deleteSet
     [dispatcher registerMethod:@"tools.ozone.set.deleteSet"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
@@ -608,7 +613,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.set.getValues
     [dispatcher registerMethod:@"tools.ozone.set.getValues"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSString *setId = [request queryParamForKey:@"id"];
@@ -638,7 +643,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.set.querySets
     [dispatcher registerMethod:@"tools.ozone.set.querySets"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSInteger limit = 50;
@@ -663,7 +668,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.set.addValues
     [dispatcher registerMethod:@"tools.ozone.set.addValues"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
@@ -688,7 +693,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.set.deleteValues
     [dispatcher registerMethod:@"tools.ozone.set.deleteValues"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
@@ -715,7 +720,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.communication.createTemplate
     [dispatcher registerMethod:@"tools.ozone.communication.createTemplate"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
@@ -741,7 +746,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.communication.updateTemplate
     [dispatcher registerMethod:@"tools.ozone.communication.updateTemplate"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
@@ -769,7 +774,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.communication.deleteTemplate
     [dispatcher registerMethod:@"tools.ozone.communication.deleteTemplate"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
@@ -793,7 +798,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.communication.listTemplates
     [dispatcher registerMethod:@"tools.ozone.communication.listTemplates"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSError *error = nil;
@@ -812,7 +817,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.verification.grantVerifications
     [dispatcher registerMethod:@"tools.ozone.verification.grantVerifications"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
@@ -836,7 +841,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.verification.revokeVerifications
     [dispatcher registerMethod:@"tools.ozone.verification.revokeVerifications"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
@@ -860,7 +865,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.verification.listVerifications
     [dispatcher registerMethod:@"tools.ozone.verification.listVerifications"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSError *error = nil;
@@ -879,7 +884,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.safelink.queryRules
     [dispatcher registerMethod:@"tools.ozone.safelink.queryRules"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSString *limitStr = [request queryParamForKey:@"limit"];
@@ -902,7 +907,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.safelink.queryEvents
     [dispatcher registerMethod:@"tools.ozone.safelink.queryEvents"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSString *limitStr = [request queryParamForKey:@"limit"];
@@ -918,7 +923,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.safelink.addRule
     [dispatcher registerMethod:@"tools.ozone.safelink.addRule"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
@@ -949,7 +954,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.safelink.updateRule
     [dispatcher registerMethod:@"tools.ozone.safelink.updateRule"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
@@ -976,7 +981,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.safelink.removeRule
     [dispatcher registerMethod:@"tools.ozone.safelink.removeRule"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
@@ -1003,7 +1008,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.setting.upsertOption
     [dispatcher registerMethod:@"tools.ozone.setting.upsertOption"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
@@ -1032,7 +1037,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.setting.listOptions
     [dispatcher registerMethod:@"tools.ozone.setting.listOptions"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSString *scope = [request queryParamForKey:@"scope"];
@@ -1052,7 +1057,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.setting.removeOptions
     [dispatcher registerMethod:@"tools.ozone.setting.removeOptions"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
@@ -1072,7 +1077,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.signature.findRelatedAccounts
     [dispatcher registerMethod:@"tools.ozone.signature.findRelatedAccounts"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
@@ -1099,7 +1104,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.signature.findCorrelation
     [dispatcher registerMethod:@"tools.ozone.signature.findCorrelation"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;
@@ -1127,7 +1132,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.signature.searchAccounts
     [dispatcher registerMethod:@"tools.ozone.signature.searchAccounts"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSString *query = [request queryParamForKey:@"query"];
@@ -1155,7 +1160,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.hosting.getAccountHistory
     [dispatcher registerMethod:@"tools.ozone.hosting.getAccountHistory"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSString *did = [request queryParamForKey:@"did"];
@@ -1190,7 +1195,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.server.getConfig
     [dispatcher registerMethod:@"tools.ozone.server.getConfig"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSError *error = nil;
@@ -1207,7 +1212,7 @@ static NSString *ExtractAdminDid(HttpRequest *request, HttpResponse *response, J
     // tools.ozone.server.updateConfig
     [dispatcher registerMethod:@"tools.ozone.server.updateConfig"
                      handler:^(HttpRequest *request, HttpResponse *response) {
-        NSString *adminDid = ExtractAdminDid(request, response, jwtMinter, adminController);
+        NSString *adminDid = ExtractAdminDid(request, response, services);
         if (!adminDid) return;
 
         NSDictionary *body = request.jsonBody;

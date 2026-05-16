@@ -1,21 +1,27 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "Network/XrpcModerationMethods.h"
+#import "Network/XrpcModerationPack.h"
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcErrorHelper.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/XrpcHandler.h"
+#import "Network/XrpcRoutePackServices.h"
 #import "Admin/PDSAdminController.h"
 #import "Core/ATProtoValidator.h"
 #import "Debug/GZLogger.h"
 
-@implementation XrpcModerationMethods
+@implementation XrpcModerationPack
+
++ (NSString *)routePackIdentifier {
+  return @"com.atproto.moderation";
+}
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-                     jwtMinter:(JWTMinter *)jwtMinter
-               adminController:(id<PDSAdminController>)adminController
-              serviceDatabases:(PDSServiceDatabases *)serviceDatabases {
+                      services:(id<XrpcRoutePackServices>)services {
+    
+    JWTMinter *jwtMinter = services.jwtMinter;
+    id<PDSAdminController> adminController = services.adminController;
 
     [dispatcher registerComAtprotoModerationCreateReport:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];

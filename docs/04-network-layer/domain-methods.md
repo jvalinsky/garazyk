@@ -6,13 +6,13 @@ title: Domain Methods
 
 ## Overview
 
-Domain methods are the concrete implementations of XRPC endpoints organized by domain. Each domain module (XrpcRepoMethods, XrpcServerMethods, etc.) implements a set of related endpoints and handles the request/response cycle for those endpoints.
+Domain methods are the concrete implementations of XRPC endpoints organized by domain. Each domain module (XrpcRepoPack, XrpcServerPack, etc.) implements a set of related endpoints and handles the request/response cycle for those endpoints.
 
 ## Architecture
 
 ```mermaid
 flowchart TD
-    module["Domain method module<br/>for example XrpcRepoMethods"] --> handler["Request handler<br/>parse + validate + authorize"]
+    module["Domain method module<br/>for example XrpcRepoPack"] --> handler["Request handler<br/>parse + validate + authorize"]
     handler --> services["Service layer<br/>business logic + data access"]
 ```
 
@@ -22,10 +22,10 @@ Each domain module follows a consistent pattern:
 
 ### 1. Initialization
 
-**Implementation (from XrpcRepoMethods.m):**
+**Implementation (from XrpcRepoPack.m):**
 
 ```objc
-@interface XrpcRepoMethods : NSObject
+@interface XrpcRepoPack : NSObject
 
 @property (nonatomic, strong) PDSRecordService *recordService;
 @property (nonatomic, strong) PDSBlobService *blobService;
@@ -93,7 +93,7 @@ if (!did) {
 
 ### Step 2: Parse Request Parameters
 
-**Implementation (from XrpcRepoMethods.m):**
+**Implementation (from XrpcRepoPack.m):**
 
 ```objc
 // Parse JSON body
@@ -243,7 +243,7 @@ response.body = responseData;
 
 ## Common Domain Modules
 
-### XrpcServerMethods
+### XrpcServerPack
 
 Account and server operations:
 
@@ -268,7 +268,7 @@ Account and server operations:
 }
 ```
 
-### XrpcRepoMethods
+### XrpcRepoPack
 
 Record and blob operations:
 
@@ -295,7 +295,7 @@ Record and blob operations:
 }
 ```
 
-### XrpcSyncMethods
+### XrpcSyncPack
 
 Repository synchronization:
 
@@ -319,7 +319,7 @@ Repository synchronization:
 }
 ```
 
-### XrpcIdentityMethods
+### XrpcIdentityPack
 
 DID and handle resolution:
 
@@ -337,7 +337,7 @@ DID and handle resolution:
 }
 ```
 
-### XrpcModerationMethods
+### XrpcModerationPack
 
 Moderation and safety operations:
 

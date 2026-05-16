@@ -15,7 +15,7 @@ title: Behaviors to Track (Remaining Work)
 
 ## Recently Resolved
 - `did:key` parsing now supports secp256k1 + P-256 multicodecs via `PLCDIDKey` (Garazyk/Sources/PLC/PLCDIDKey.m).
-- Linux transport outbound connects resolve hostnames + IPv4/IPv6 via `getaddrinfo()` and try subsequent candidates when async connect fails (Garazyk/Sources/Network/PDSNetworkTransportLinux.m).
+- Linux transport outbound connects resolve hostnames + IPv4/IPv6 via `getaddrinfo()` and try subsequent candidates when async connect fails (Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m).
 - Admin auth no longer uses a hardcoded password (Garazyk/Sources/Admin/PDSAdminAuth.m).
 - Admin endpoints now require per-request JWT verification (scope includes `admin`) and support server-side logout invalidation via issued-at cutoff (Garazyk/Sources/Admin/PDSAdminAuth.m).
 - Server JWT signing key is persisted to disk so sessions survive restarts (override path with `PDS_JWT_PRIVATE_KEY_PATH`) (Garazyk/Sources/Auth/JWTSigningKeyStore.m).

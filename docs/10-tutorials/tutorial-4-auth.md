@@ -42,13 +42,13 @@ Start your investigation with these files:
 - **`Garazyk/Sources/Auth/DPoPUtil.m`**: Utilities for verifying DPoP proofs.
 - **`Garazyk/Sources/Auth/Crypto/AuthCryptoDPoP.m`**: Platform-specific cryptographic primitives for DPoP.
 
-As you read, look for how `PDSConfiguration` values like `issuerDid` influence these components.
+As you read, look for how `ATProtoServiceConfiguration` values like `issuerDid` influence these components.
 
 ## Step 3: Endpoint Enforcement
 
 A valid token is only useful if it is correctly enforced at the network layer.
 
-1. **Route Middleware**: Observe how `PDSHttpServerBuilder.m` applies authentication requirements to specific XRPC methods.
+1. **Route Middleware**: Observe how `ATProtoHttpServerBuilder.m` applies authentication requirements to specific XRPC methods.
 2. **Auth Context**: See how the `PDSAuthContext` is populated from the request headers and passed to the handlers.
 3. **Identity Verification**: Confirm that handlers verify the token's `sub` (subject) matches the repository being modified.
 

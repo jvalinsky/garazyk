@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "Network/XrpcLabelMethods.h"
+#import "Network/XrpcLabelPack.h"
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcIdentityHelper.h"
+#import "Network/XrpcRoutePackServices.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Database/Service/ServiceDatabases.h"
@@ -152,15 +153,21 @@ static NSDictionary *labelLookupParamsFromRequest(HttpRequest *request, NSString
     return params;
 }
 
-#pragma mark - XrpcLabelMethods Implementation
+#pragma mark - XrpcLabelPack Implementation
 
-@implementation XrpcLabelMethods
+@implementation XrpcLabelPack
+
++ (NSString *)routePackIdentifier {
+  return @"com.atproto.label";
+}
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-              serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                     jwtMinter:(JWTMinter *)jwtMinter
-               adminController:(id<PDSAdminController>)adminController
-                 configuration:(ATProtoServiceConfiguration *)configuration {
+                      services:(id<XrpcRoutePackServices>)services {
+    
+    PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
+    JWTMinter *jwtMinter = services.jwtMinter;
+    id<PDSAdminController> adminController = services.adminController;
+    ATProtoServiceConfiguration *configuration = services.configuration;
     
     // Non-standard internal extensions for admin label management
     // com.atproto.label.createLabel and com.atproto.label.getLabels are internal admin-only methods

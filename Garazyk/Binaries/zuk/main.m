@@ -30,7 +30,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/RelayXrpcRoutePack.h"
-#import "Network/PDSNetworkTransport.h"
+#import "Network/ATProtoNetworkTransport.h"
 #import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 #import "Core/NSDateFormatter+ATProto.h"
@@ -427,7 +427,7 @@ int main(int argc, const char * argv[]) {
         __weak SubscribeReposHandler *weakSubscribeReposHandler = subscribeReposHandler;
         [server addWebSocketRoute:@"/xrpc/com.atproto.sync.subscribeRepos"
                            handler:^(HttpRequest *request, HttpResponse *response,
-                                     id<PDSNetworkConnection> connection) {
+                                     id<ATProtoNetworkConnection> connection) {
             SubscribeReposHandler *strongHandler = weakSubscribeReposHandler;
             if (!strongHandler) {
                 [connection cancel];

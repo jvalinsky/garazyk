@@ -4,7 +4,7 @@ title: Configuration Reference
 
 # Configuration Reference
 
-Garazyk configuration is loaded via JSON files and can be overridden by environment variables. If the code and this documentation disagree, the `PDSConfiguration` source is the final authority.
+Garazyk configuration is loaded via JSON files and can be overridden by environment variables. If the code and this documentation disagree, the `ATProtoServiceConfiguration` source is the final authority.
 
 ## Core Settings
 
