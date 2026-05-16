@@ -1,97 +1,77 @@
 # Garazyk
 
-AT Protocol stack in portable Objective-C — PDS, AppView, Relay, PLC Server, and Admin UI. Runs on macOS (Apple frameworks) and Linux (GNUstep).
+Garazyk is an AT Protocol stack written in Objective-C. It provides federated social networking services capable of running on macOS (Apple frameworks) and Linux (GNUstep).
 
-## Architecture
+## The Stack
 
-Garazyk implements the ATProto service topology in an Objective-C codebase:
+This repository contains core AT Protocol services that can be self-hosted individually or together as a local network:
 
-- **PDS** — Personal Data Server: repo hosting, XRPC endpoints, blob storage, account management
-- **AppView** — indexing, backfill, profile/feed/notification queries
-- **Relay** (BGS) — firehose aggregation, crawl dispatch, event stream
-- **PLC Server** — DID PLC directory: rotation key management, operation log, export
-- **Admin UI** — Standalone HTMX service for live monitoring and administration.
-- **Scenario Dashboard** — Deno Fresh application for orchestrating narrative integration tests.
+- **PDS (Personal Data Server)**: Handles user repository hosting, blob storage, account management, and serves XRPC endpoints.
+- **AppView**: Provides indexing, backfill processing, and serves profile, feed, and notification queries.
+- **Relay (BGS)**: Handles firehose aggregation, dispatches network crawls, and broadcasts the global event stream.
+- **PLC Server**: A decentralized identity directory providing rotation key management, operation logs, and DID resolution.
+- **Admin UI**: A standalone HTMX-based web interface for live monitoring, moderation, and administration of the PDS.
 
-The stack uses a sans-I/O HTTP architecture (`HttpProtocolDriver`, `HttpConnectionIOCoordinator`, `HttpResponseSender`) with WebSocket firehose support, `GZLogger` with PII redaction, OAuth2 provider (PKCE, DPoP, refresh token rotation, passkey), AVFoundation video transcoding (H.264/H.265, FFmpeg on Linux), and MST/CAR repository encoding.
+## Deployment & Self-Hosting
 
-26 source modules, 33 test directories, 2676+ tests. See [Codebase Map](docs/01-getting-started/codebase-map.md) for the layout.
+Run the Garazyk stack for testing or local development via the included Docker Compose configuration:
+
+```bash
+docker compose up
+```
+
+### Production Deployment
+
+Garazyk services speak plain HTTP. **For production use, place the services behind a reverse proxy (like Caddy or Nginx) to terminate TLS/HTTPS.** Without HTTPS, the AT Protocol OAuth flow and Bluesky federation will refuse connections.
+
+For instructions on provisioning reverse proxies, configuring environment variables (`PDS_ISSUER`, `PDS_ADMIN_PASSWORD`), and managing database backups, read the **[Deployment Guide](docs/guides/DEPLOYMENT.md)**.
+
+## Technical Architecture
+
+Garazyk implements the ATProto topology:
+
+- **Sans-I/O Networking:** The HTTP stack separates protocol state (`HttpProtocolDriver`) from connection management (`HttpConnectionIOCoordinator`), enabling the code to run across bare-metal sockets or behind WebSocket proxies.
+- **Database Layer:** Storage is managed via SQLite in WAL (Write-Ahead Log) mode.
+- **Media Processing:** Video transcoding utilizes AVFoundation hardware acceleration on macOS and FFmpeg on Linux for H.264/H.265 processing.
+- **WASM execution:** The repository includes a WASM kernel (`objc-jupyter-wasm/`) capable of executing Objective-C in the browser via an integrated C interpreter.
+
+For system design, data models, and request lifecycle, see the **[Architecture Overview](docs/architecture/atproto_pds_architecture.md)**.
+
+## Building from Source
 
 ### Prerequisites
-
 - **macOS**: `brew install cmake xcodegen deno`
 - **Linux**: `apt install clang cmake libsqlite3-dev libssl-dev gnustep-devel` (and [install Deno](https://deno.land/manual/getting_started/installation))
 
-### macOS
-
+### macOS Build
 ```bash
 xcodegen generate
 xcodebuild -scheme AllTests build
 ./build/tests/AllTests
-xcodebuild -scheme kaszlak build
 ```
 
-### Linux/GNUstep
-
+### Linux/GNUstep Build
 ```bash
 cmake -S . -B build-linux -DCMAKE_BUILD_TYPE=Debug
 cmake --build build-linux -j
 ./build-linux/tests/AllTests
 ```
 
-### Nix (WASM kernel)
-
-```bash
-cd objc-jupyter-wasm && nix build .#kernel-wasm
-```
-
-## WASM Kernel
-
-`objc-jupyter-wasm/` — a C interpreter compiled to WASM via wasi-sdk, capable of running Objective-C in the browser. Node.js test scripts load the WASM and execute ObjC through a JSON bridge. Host bridges provide SHA-256, CBOR, base32/base58, and random bytes that WASM can't do natively. 20 ATProto tutorial notebooks cover identifiers, CID, DAG-CBOR, CAR, MST, XRPC dispatch, and more.
-
 ## Testing
 
-- **2676+ tests** across 33 test directories
-- **Deno Scenarios** — TypeScript integration tests in `scripts/scenarios/` orchestrating the local Docker network
-- **Scenario Dashboard** — Browser-based UI for running tests and viewing historical results via SQLite
-- **Fuzzing** — corpus, harnesses, crashers, and mutators in `fuzzing/`
-- **Coverage builds** — `cmake -DENABLE_COVERAGE=ON` with LLVM profraw
+Garazyk includes a test suite with over 2,600 tests. 
+The project features a **Deno Scenario Framework** (`scripts/scenarios/`) that orchestrates integration tests against the local Docker network to validate federation and OAuth flows.
 
-See [Test Organization](docs/11-reference/test-organization.md), [Test Selection Workflow](docs/11-reference/test-selection-workflow.md), and [Deno Scenario Framework](docs/11-reference/deno-scenario-framework.md).
+## Documentation Directory
 
-## Docker
+The `docs/` folder is the source of truth for operators and contributors. 
 
-Local-network stack for development and testing:
-
-```bash
-docker compose up
-```
-
-Includes PDS, Admin UI, and supporting services. See [Docs Site Deployment Guide](docs/DEPLOYMENT_GUIDE.md) and [Service Orchestration](docs/guides/SERVICE_ORCHESTRATION_GUIDE.md).
-
-## Documentation
-
-`docs/` is the canonical source of truth for contributor and operator documentation. Root files are entrypoints — long-form content lives in `docs/`.
-
-- [Contributor Guide](docs/index.md)
-- [Documentation Map](docs/11-reference/documentation-map.md)
-- [Setup](docs/01-getting-started/setup.md)
+- **[Deployment Guide](docs/guides/DEPLOYMENT.md)**
+- **[Architecture Overview](docs/architecture/atproto_pds_architecture.md)**
+- [Contributor Setup](docs/01-getting-started/setup.md)
 - [Codebase Map](docs/01-getting-started/codebase-map.md)
-- [Request Lifecycle](docs/01-getting-started/request-lifecycle.md)
-- [Context Map](docs/01-getting-started/context-map.md)
-- [Services Setup](docs/guides/services-setup.md)
-- [Tutorials](docs/10-tutorials/index.md)
-- [CLI Reference](docs/11-reference/cli-reference.md)
-- [Admin UI Documentation](docs/11-reference/admin-ui-documentation.md)
+- [Developer Tutorials](docs/10-tutorials/index.md)
 - [Deno Scenario Framework](docs/11-reference/deno-scenario-framework.md)
-- [Spec Version & Lexicon Compliance](docs/11-reference/spec-version.md)
-
-## Contributing
-
-1. Build using the platform commands above.
-2. Run focused tests first, then broader suites. Register new test classes in `Garazyk/Tests/test_main.m`.
-3. Update `docs/` for any contributor-facing behavior change.
-4. Keep internal markdown links valid across the repository.
 
 ## Licensing
 
@@ -132,14 +112,3 @@ original work that calls into GNUstepBase, not derived from it.
 
 These directories retain their original licenses and are **not** covered by
 the Unlicense/CC0 dedication. See their respective `LICENSE`/`COPYING` files.
-
-### Attribution
-
-- `Garazyk/Sources/Repository/MSTWalker.h/.m` — based on the
-  [atproto MST walker](https://github.com/bluesky-social/atproto/blob/main/packages/repo/src/mst/walker.ts)
-  (MIT OR Apache-2.0, Bluesky Social PBC). The Objective-C implementation is
-  original; the algorithm and data structures follow the reference.
-
-## Agent Tools
-
-AI assistants use `deciduous` decision tracking. See [AGENTS.md](AGENTS.md) for operational guidance and [AGENTS_QUICKREF.md](AGENTS_QUICKREF.md) for build commands.
