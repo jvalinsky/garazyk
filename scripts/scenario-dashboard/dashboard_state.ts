@@ -16,7 +16,7 @@
  * The Runtime interprets Cmds into real I/O.
  */
 
-import type { ServiceStatus, Run, ScenarioResult } from "./services/types.ts";
+import type { Run, ScenarioResult, ServiceStatus } from "./services/types.ts";
 
 // ---------------------------------------------------------------------------
 // State slices
@@ -30,19 +30,33 @@ export interface NetworkSlice {
   healthCheckDelayMs: number;
   /** Whether a health check fetch is in-flight */
   healthCheckInFlight: boolean;
+  /** Latest health request token */
+  healthToken: number;
 }
 
 export interface RunsSlice {
   /** Currently active run, if any */
   active: Run | null;
-  /** Progress data for the active run */
-  progress: RunProgress | null;
+  /** Run currently being viewed by route islands */
+  viewedRunId: string | null;
+  /** Progress data keyed by run id */
+  progressByRunId: Record<string, RunProgress>;
   /** Milliseconds since last progress update */
   lastProgressMs: number;
+  /** Current backoff delay for next active run poll (ms) */
+  activeDelayMs: number;
+  /** Whether an active-run fetch is in-flight */
+  activeInFlight: boolean;
+  /** Latest active-run request token */
+  activeToken: number;
   /** Current backoff delay for next progress poll (ms) */
   progressDelayMs: number;
   /** Whether a progress fetch is in-flight */
   progressInFlight: boolean;
+  /** Run id for the current progress fetch */
+  progressInFlightRunId: string | null;
+  /** Latest progress request token */
+  progressToken: number;
 }
 
 export interface RunProgress {
@@ -63,6 +77,8 @@ export interface ScenariosSlice {
   all: ScenarioMeta[];
   /** Whether scenario list fetch is in-flight */
   fetchInFlight: boolean;
+  /** Latest scenarios request token */
+  token: number;
 }
 
 export interface ScenarioMeta {
@@ -87,6 +103,10 @@ export interface TopologySlice {
   preview: TopologyPreview | null;
   /** Whether topology preview fetch is in-flight */
   previewInFlight: boolean;
+  /** Name for current preview request */
+  previewInFlightName: string | null;
+  /** Latest preview request token */
+  previewToken: number;
 }
 
 export interface TopologyPreview {
@@ -97,10 +117,14 @@ export interface TopologyPreview {
 }
 
 export interface LogsSlice {
-  /** Raw log text for the active run */
-  text: string;
+  /** Raw log text keyed by run id */
+  textByRunId: Record<string, string>;
   /** Whether a log fetch is in-flight */
   fetchInFlight: boolean;
+  /** Run id for the current log fetch */
+  inFlightRunId: string | null;
+  /** Latest log request token */
+  token: number;
   /** Current backoff delay for next log poll (ms) */
   delayMs: number;
   /** Milliseconds since last log update */
@@ -112,6 +136,8 @@ export interface MetricsSlice {
   stats: Record<string, { cpu: string; mem: string }>;
   /** Whether a metrics fetch is in-flight */
   fetchInFlight: boolean;
+  /** Latest metrics request token */
+  token: number;
   /** Current backoff delay for next metrics poll (ms) */
   delayMs: number;
   /** Milliseconds since last metrics update */
@@ -153,9 +179,9 @@ export interface DashboardState {
 
 export type Msg =
   // Network health
-  | { type: "network/healthReceived"; services: ServiceStatus[] }
-  | { type: "network/healthFailed"; error: string }
-  | { type: "network/healthTimeout" }
+  | { type: "network/healthReceived"; services: ServiceStatus[]; token?: number }
+  | { type: "network/healthFailed"; error: string; token?: number }
+  | { type: "network/healthTimeout"; token?: number }
   // Network control
   | { type: "network/startRequested"; pds2: boolean }
   | { type: "network/startSucceeded" }
@@ -164,13 +190,15 @@ export type Msg =
   | { type: "network/stopSucceeded" }
   | { type: "network/stopFailed"; error: string }
   // Active run
-  | { type: "runs/activeReceived"; run: Run | null }
-  | { type: "runs/activeFailed"; error: string }
-  | { type: "runs/activeTimeout" }
+  | { type: "runs/activeReceived"; run: Run | null; token?: number }
+  | { type: "runs/activeFailed"; error: string; token?: number }
+  | { type: "runs/activeTimeout"; token?: number }
   // Run progress
-  | { type: "runs/progressReceived"; progress: RunProgress }
-  | { type: "runs/progressFailed"; error: string }
-  | { type: "runs/progressTimeout" }
+  | { type: "runs/hydrateRun"; run: Run }
+  | { type: "runs/viewRun"; runId: string }
+  | { type: "runs/progressReceived"; progress: RunProgress; runId?: string; token?: number }
+  | { type: "runs/progressFailed"; error: string; runId?: string; token?: number }
+  | { type: "runs/progressTimeout"; runId?: string; token?: number }
   // Run control
   | { type: "runs/startRequested"; scenarioIds: string[]; pds2: boolean }
   | { type: "runs/startSucceeded"; runId: string }
@@ -186,18 +214,22 @@ export type Msg =
   | { type: "scenarios/failed"; error: string }
   // Topology
   | { type: "topology/selected"; name: string }
-  | { type: "topology/previewReceived"; preview: TopologyPreview }
-  | { type: "topology/previewFailed"; error: string }
+  | { type: "topology/previewReceived"; preview: TopologyPreview; name?: string; token?: number }
+  | { type: "topology/previewFailed"; error: string; name?: string; token?: number }
   | { type: "topology/listReceived"; topologies: Array<{ name: string }> }
   | { type: "topology/listFailed"; error: string }
   // Logs
-  | { type: "logs/received"; text: string }
-  | { type: "logs/failed"; error: string }
-  | { type: "logs/timeout" }
+  | { type: "logs/received"; text: string; runId?: string; token?: number }
+  | { type: "logs/failed"; error: string; runId?: string; token?: number }
+  | { type: "logs/timeout"; runId?: string; token?: number }
   // Metrics
-  | { type: "metrics/received"; stats: Record<string, { cpu: string; mem: string }> }
-  | { type: "metrics/failed"; error: string }
-  | { type: "metrics/timeout" }
+  | {
+    type: "metrics/received";
+    stats: Record<string, { cpu: string; mem: string }>;
+    token?: number;
+  }
+  | { type: "metrics/failed"; error: string; token?: number }
+  | { type: "metrics/timeout"; token?: number }
   // UX
   | { type: "ux/toggleSettings" }
   | { type: "ux/setScenarioParam"; key: string; value: unknown }
@@ -211,7 +243,15 @@ export type Msg =
 // ---------------------------------------------------------------------------
 
 export type Cmd =
-  | { type: "fetch"; url: string; method?: string; body?: unknown; onSuccess: string; onError: string }
+  | {
+    type: "fetch";
+    url: string;
+    method?: string;
+    body?: unknown;
+    onSuccess: string;
+    onError: string;
+    meta?: Record<string, unknown>;
+  }
   | { type: "schedule"; delayMs: number; msg: Msg }
   | { type: "navigate"; url: string }
   | { type: "none" };
@@ -232,11 +272,28 @@ const BACKOFF_MULTIPLIER = 2;
 // update() — pure state transition function
 // ---------------------------------------------------------------------------
 
+function isLiveRun(run: Run | null | undefined): boolean {
+  return run?.status === "running" || run?.status === "starting" || run?.status === "stopping";
+}
+
+function nextToken(token: number | undefined): number {
+  return (token ?? 0) + 1;
+}
+
+function shouldAccept(current: number, token: number | undefined): boolean {
+  return token === undefined || token === current;
+}
+
+function selectedProgressRunId(state: DashboardState, msgRunId?: string): string | null {
+  return msgRunId ?? state.runs.viewedRunId ?? state.runs.active?.id ?? null;
+}
+
 export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]] {
   switch (msg.type) {
     // ── Network health ──────────────────────────────────────────────────
 
     case "network/healthReceived": {
+      if (!shouldAccept(state.network.healthToken, msg.token)) return [state, []];
       const cmds: Cmd[] = [];
 
       const network: NetworkSlice = {
@@ -248,12 +305,17 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
       };
 
       // Schedule next health check
-      cmds.push({ type: "schedule", delayMs: BASE_HEALTH_CHECK_MS, msg: { type: "network/healthTimeout" } });
+      cmds.push({
+        type: "schedule",
+        delayMs: BASE_HEALTH_CHECK_MS,
+        msg: { type: "network/healthTimeout" },
+      });
 
       return [{ ...state, network }, cmds];
     }
 
     case "network/healthFailed": {
+      if (!shouldAccept(state.network.healthToken, msg.token)) return [state, []];
       const backoff = Math.min(
         state.network.healthCheckDelayMs * BACKOFF_MULTIPLIER,
         MAX_BACKOFF_MS,
@@ -275,15 +337,18 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
         // Already in flight — skip (deduplication)
         return [state, []];
       }
+      const token = nextToken(state.network.healthToken);
       const network: NetworkSlice = {
         ...state.network,
         healthCheckInFlight: true,
+        healthToken: token,
       };
       const cmd: Cmd = {
         type: "fetch",
         url: "/api/network/health",
         onSuccess: "network/healthReceived",
         onError: "network/healthFailed",
+        meta: { token },
       };
       return [{ ...state, network }, [cmd]];
     }
@@ -291,6 +356,7 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
     // ── Network control ─────────────────────────────────────────────────
 
     case "network/startRequested": {
+      if (state.ux.busy || isLiveRun(state.runs.active)) return [state, []];
       const body = msg.pds2 ? { pds2: true } : {};
       return [
         { ...state, ux: { ...state.ux, busy: true } },
@@ -310,7 +376,12 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
       return [
         { ...state, ux: { ...state.ux, busy: false } },
         [
-          { type: "fetch", url: "/api/network/health", onSuccess: "network/healthReceived", onError: "network/healthFailed" },
+          {
+            type: "fetch",
+            url: "/api/network/health",
+            onSuccess: "network/healthReceived",
+            onError: "network/healthFailed",
+          },
         ],
       ];
     }
@@ -320,6 +391,7 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
     }
 
     case "network/stopRequested": {
+      if (state.ux.busy || isLiveRun(state.runs.active)) return [state, []];
       return [
         { ...state, ux: { ...state.ux, busy: true } },
         [{
@@ -336,7 +408,12 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
       return [
         { ...state, ux: { ...state.ux, busy: false } },
         [
-          { type: "fetch", url: "/api/network/health", onSuccess: "network/healthReceived", onError: "network/healthFailed" },
+          {
+            type: "fetch",
+            url: "/api/network/health",
+            onSuccess: "network/healthReceived",
+            onError: "network/healthFailed",
+          },
         ],
       ];
     }
@@ -348,21 +425,34 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
     // ── Active run ──────────────────────────────────────────────────────
 
     case "runs/activeReceived": {
+      if (!shouldAccept(state.runs.activeToken, msg.token)) return [state, []];
       const cmds: Cmd[] = [];
-      const isActive = msg.run?.status === "running" || msg.run?.status === "starting" || msg.run?.status === "stopping";
+      const isActive = isLiveRun(msg.run);
       const delay = isActive ? BASE_ACTIVE_POLL_MS : BASE_ACTIVE_POLL_MS * 5; // 10s when idle
 
       const runs: RunsSlice = {
         ...state.runs,
         active: msg.run,
-        progressInFlight: false,
+        activeInFlight: false,
+        activeDelayMs: delay,
       };
 
       cmds.push({ type: "schedule", delayMs: delay, msg: { type: "runs/activeTimeout" } });
 
       // Kick off log and metrics polling when a run becomes active
-      if (isActive && !state.logs.fetchInFlight) {
-        cmds.push({ type: "schedule", delayMs: 0, msg: { type: "logs/timeout" } });
+      if (isActive && msg.run && !state.runs.progressInFlight) {
+        cmds.push({
+          type: "schedule",
+          delayMs: 0,
+          msg: { type: "runs/progressTimeout", runId: msg.run.id },
+        });
+      }
+      if (isActive && msg.run && !state.logs.fetchInFlight) {
+        cmds.push({
+          type: "schedule",
+          delayMs: 0,
+          msg: { type: "logs/timeout", runId: msg.run.id },
+        });
       }
       if (isActive && !state.metrics.fetchInFlight) {
         cmds.push({ type: "schedule", delayMs: 0, msg: { type: "metrics/timeout" } });
@@ -374,66 +464,126 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
       }
 
       // If run just completed, clear progress
-      if (msg.run && !isActive && state.runs.progress) {
-        return [{ ...state, runs: { ...runs, progress: null } }, cmds];
+      if (msg.run && !isActive && state.runs.progressByRunId[msg.run.id]) {
+        const progressByRunId = { ...state.runs.progressByRunId };
+        delete progressByRunId[msg.run.id];
+        return [{ ...state, runs: { ...runs, progressByRunId } }, cmds];
       }
 
       return [{ ...state, runs }, cmds];
     }
 
     case "runs/activeFailed": {
-      const backoff = Math.min(state.runs.progressDelayMs * BACKOFF_MULTIPLIER, MAX_BACKOFF_MS);
+      if (!shouldAccept(state.runs.activeToken, msg.token)) return [state, []];
+      const backoff = Math.min(state.runs.activeDelayMs * BACKOFF_MULTIPLIER, MAX_BACKOFF_MS);
       const cmds: Cmd[] = [];
       cmds.push({ type: "schedule", delayMs: backoff, msg: { type: "runs/activeTimeout" } });
-      return [{ ...state, runs: { ...state.runs, progressInFlight: false, progressDelayMs: backoff } }, cmds];
+      return [
+        { ...state, runs: { ...state.runs, activeInFlight: false, activeDelayMs: backoff } },
+        cmds,
+      ];
     }
 
     case "runs/activeTimeout": {
-      if (state.runs.progressInFlight) return [state, []]; // dedup
-      const runs: RunsSlice = { ...state.runs, progressInFlight: true };
+      if (state.runs.activeInFlight) return [state, []]; // dedup
+      const token = nextToken(state.runs.activeToken);
+      const runs: RunsSlice = { ...state.runs, activeInFlight: true, activeToken: token };
       return [
         { ...state, runs },
-        [{ type: "fetch", url: "/api/runs/active", onSuccess: "runs/activeReceived", onError: "runs/activeFailed" }],
+        [{
+          type: "fetch",
+          url: "/api/runs/active",
+          onSuccess: "runs/activeReceived",
+          onError: "runs/activeFailed",
+          meta: { token },
+        }],
       ];
     }
 
     // ── Run progress ────────────────────────────────────────────────────
 
+    case "runs/hydrateRun": {
+      return [{ ...state, runs: { ...state.runs, viewedRunId: msg.run.id } }, [
+        { type: "schedule", delayMs: 0, msg: { type: "runs/progressTimeout", runId: msg.run.id } },
+        { type: "schedule", delayMs: 0, msg: { type: "logs/timeout", runId: msg.run.id } },
+      ]];
+    }
+
+    case "runs/viewRun": {
+      return [{ ...state, runs: { ...state.runs, viewedRunId: msg.runId } }, [
+        { type: "schedule", delayMs: 0, msg: { type: "runs/progressTimeout", runId: msg.runId } },
+        { type: "schedule", delayMs: 0, msg: { type: "logs/timeout", runId: msg.runId } },
+      ]];
+    }
+
     case "runs/progressReceived": {
+      const runId = msg.runId ?? msg.progress.runId;
+      if (
+        runId !== state.runs.progressInFlightRunId ||
+        !shouldAccept(state.runs.progressToken, msg.token)
+      ) return [state, []];
       const cmds: Cmd[] = [];
-      const isActive = state.runs.active?.status === "running";
+      const isActive = state.runs.active?.id === runId && isLiveRun(state.runs.active);
       const delay = isActive ? BASE_PROGRESS_POLL_MS : BASE_PROGRESS_POLL_MS * 5;
 
       const runs: RunsSlice = {
         ...state.runs,
-        progress: msg.progress,
+        progressByRunId: { ...state.runs.progressByRunId, [runId]: msg.progress },
         lastProgressMs: 0,
         progressDelayMs: delay,
         progressInFlight: false,
+        progressInFlightRunId: null,
       };
 
       if (isActive) {
-        cmds.push({ type: "schedule", delayMs: delay, msg: { type: "runs/progressTimeout" } });
+        cmds.push({
+          type: "schedule",
+          delayMs: delay,
+          msg: { type: "runs/progressTimeout", runId },
+        });
       }
 
       return [{ ...state, runs }, cmds];
     }
 
     case "runs/progressFailed": {
+      const runId = msg.runId ?? state.runs.progressInFlightRunId;
+      if (
+        runId !== state.runs.progressInFlightRunId ||
+        !shouldAccept(state.runs.progressToken, msg.token)
+      ) return [state, []];
       const backoff = Math.min(state.runs.progressDelayMs * BACKOFF_MULTIPLIER, MAX_BACKOFF_MS);
       const cmds: Cmd[] = [];
-      const isActive = state.runs.active?.status === "running";
+      const isActive = state.runs.active?.id === runId && isLiveRun(state.runs.active);
       if (isActive) {
-        cmds.push({ type: "schedule", delayMs: backoff, msg: { type: "runs/progressTimeout" } });
+        cmds.push({
+          type: "schedule",
+          delayMs: backoff,
+          msg: { type: "runs/progressTimeout", runId },
+        });
       }
-      return [{ ...state, runs: { ...state.runs, progressInFlight: false, progressDelayMs: backoff } }, cmds];
+      return [{
+        ...state,
+        runs: {
+          ...state.runs,
+          progressInFlight: false,
+          progressInFlightRunId: null,
+          progressDelayMs: backoff,
+        },
+      }, cmds];
     }
 
     case "runs/progressTimeout": {
       if (state.runs.progressInFlight) return [state, []]; // dedup
-      const runId = state.runs.active?.id;
+      const runId = selectedProgressRunId(state, msg.runId);
       if (!runId) return [state, []];
-      const runs: RunsSlice = { ...state.runs, progressInFlight: true };
+      const token = nextToken(state.runs.progressToken);
+      const runs: RunsSlice = {
+        ...state.runs,
+        progressInFlight: true,
+        progressInFlightRunId: runId,
+        progressToken: token,
+      };
       return [
         { ...state, runs },
         [{
@@ -441,6 +591,7 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
           url: `/api/runs/${runId}/progress`,
           onSuccess: "runs/progressReceived",
           onError: "runs/progressFailed",
+          meta: { runId, token },
         }],
       ];
     }
@@ -448,6 +599,7 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
     // ── Run control ─────────────────────────────────────────────────────
 
     case "runs/startRequested": {
+      if (state.ux.busy || isLiveRun(state.runs.active)) return [state, []];
       return [
         { ...state, ux: { ...state.ux, busy: true } },
         [{
@@ -480,6 +632,7 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
     }
 
     case "runs/stopRequested": {
+      if (state.ux.busy) return [state, []];
       const runId = state.runs.active?.id;
       if (!runId) return [state, []];
       return [
@@ -504,6 +657,7 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
     }
 
     case "runs/restartRequested": {
+      if (state.ux.busy) return [state, []];
       const runId = state.runs.active?.id;
       if (!runId) return [state, []];
       return [
@@ -532,7 +686,10 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
     // ── Scenarios ────────────────────────────────────────────────────────
 
     case "scenarios/received": {
-      return [{ ...state, scenarios: { ...state.scenarios, all: msg.scenarios, fetchInFlight: false } }, []];
+      return [{
+        ...state,
+        scenarios: { ...state.scenarios, all: msg.scenarios, fetchInFlight: false },
+      }, []];
     }
 
     case "scenarios/failed": {
@@ -542,33 +699,90 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
     // ── Topology ─────────────────────────────────────────────────────────
 
     case "topology/selected": {
+      if (isLiveRun(state.runs.active)) return [state, []];
       if (msg.name === state.topology.selected) {
         return [state, []]; // no-op when same topology
       }
+      const token = nextToken(state.topology.previewToken);
       return [
-        { ...state, topology: { ...state.topology, selected: msg.name, previewInFlight: true } },
+        {
+          ...state,
+          topology: {
+            ...state.topology,
+            selected: msg.name,
+            previewInFlight: true,
+            previewInFlightName: msg.name,
+            previewToken: token,
+          },
+        },
         [{
           type: "fetch",
           url: `/api/topologies/${msg.name}`,
           onSuccess: "topology/previewReceived",
           onError: "topology/previewFailed",
+          meta: { name: msg.name, token },
         }],
       ];
     }
 
     case "topology/previewReceived": {
+      if (msg.name && msg.name !== state.topology.previewInFlightName) return [state, []];
+      if (!shouldAccept(state.topology.previewToken, msg.token)) return [state, []];
       return [
-        { ...state, topology: { ...state.topology, preview: msg.preview, previewInFlight: false } },
+        {
+          ...state,
+          topology: {
+            ...state.topology,
+            preview: msg.preview,
+            previewInFlight: false,
+            previewInFlightName: null,
+          },
+        },
         [],
       ];
     }
 
     case "topology/previewFailed": {
-      return [{ ...state, topology: { ...state.topology, previewInFlight: false } }, []];
+      if (msg.name && msg.name !== state.topology.previewInFlightName) return [state, []];
+      if (!shouldAccept(state.topology.previewToken, msg.token)) return [state, []];
+      return [{
+        ...state,
+        topology: { ...state.topology, previewInFlight: false, previewInFlightName: null },
+      }, []];
     }
 
     case "topology/listReceived": {
-      return [{ ...state, topology: { ...state.topology, available: msg.topologies } }, []];
+      const names = msg.topologies.map((t) => t.name);
+      const fallback = names.includes("garazyk-default")
+        ? "garazyk-default"
+        : names[0] ?? state.topology.selected;
+      const selected = names.includes(state.topology.selected) ? state.topology.selected : fallback;
+      const cmds: Cmd[] = [];
+      if (selected !== state.topology.selected || !state.topology.preview) {
+        const token = nextToken(state.topology.previewToken);
+        cmds.push({
+          type: "fetch",
+          url: `/api/topologies/${selected}`,
+          onSuccess: "topology/previewReceived",
+          onError: "topology/previewFailed",
+          meta: { name: selected, token },
+        });
+        return [{
+          ...state,
+          topology: {
+            ...state.topology,
+            available: msg.topologies,
+            selected,
+            previewInFlight: true,
+            previewInFlightName: selected,
+            previewToken: token,
+          },
+        }, cmds];
+      }
+      return [
+        { ...state, topology: { ...state.topology, available: msg.topologies, selected } },
+        cmds,
+      ];
     }
 
     case "topology/listFailed": {
@@ -578,52 +792,70 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
     // ── Logs ────────────────────────────────────────────────────────────
 
     case "logs/received": {
-      const isActive = state.runs.active?.status === "running";
+      const runId = msg.runId ?? state.logs.inFlightRunId;
+      if (
+        !runId || runId !== state.logs.inFlightRunId || !shouldAccept(state.logs.token, msg.token)
+      ) return [state, []];
+      const isActive = state.runs.active?.id === runId && isLiveRun(state.runs.active);
       const delay = isActive ? BASE_LOG_POLL_MS : BASE_LOG_POLL_MS * 5;
       const logs: LogsSlice = {
         ...state.logs,
-        text: msg.text,
+        textByRunId: { ...state.logs.textByRunId, [runId]: msg.text },
         fetchInFlight: false,
+        inFlightRunId: null,
         delayMs: delay,
         lastUpdateMs: 0,
       };
       const cmds: Cmd[] = [];
       if (isActive) {
-        cmds.push({ type: "schedule", delayMs: delay, msg: { type: "logs/timeout" } });
+        cmds.push({ type: "schedule", delayMs: delay, msg: { type: "logs/timeout", runId } });
       }
       return [{ ...state, logs }, cmds];
     }
 
     case "logs/failed": {
+      const runId = msg.runId ?? state.logs.inFlightRunId;
+      if (
+        !runId || runId !== state.logs.inFlightRunId || !shouldAccept(state.logs.token, msg.token)
+      ) return [state, []];
       const backoff = Math.min(state.logs.delayMs * BACKOFF_MULTIPLIER, MAX_BACKOFF_MS);
-      const isActive = state.runs.active?.status === "running";
+      const isActive = state.runs.active?.id === runId && isLiveRun(state.runs.active);
       const logs: LogsSlice = {
         ...state.logs,
         fetchInFlight: false,
+        inFlightRunId: null,
         delayMs: backoff,
       };
       const cmds: Cmd[] = [];
       if (isActive) {
-        cmds.push({ type: "schedule", delayMs: backoff, msg: { type: "logs/timeout" } });
+        cmds.push({ type: "schedule", delayMs: backoff, msg: { type: "logs/timeout", runId } });
       }
       return [{ ...state, logs }, cmds];
     }
 
     case "logs/timeout": {
       if (state.logs.fetchInFlight) return [state, []]; // dedup
-      const runId = state.runs.active?.id;
+      const runId = msg.runId ?? state.runs.viewedRunId ?? state.runs.active?.id;
       if (!runId) return [state, []];
-      const logs: LogsSlice = { ...state.logs, fetchInFlight: true };
+      const token = nextToken(state.logs.token);
+      const logs: LogsSlice = { ...state.logs, fetchInFlight: true, inFlightRunId: runId, token };
       return [
         { ...state, logs },
-        [{ type: "fetch", url: `/api/runs/${runId}/logs`, onSuccess: "logs/received", onError: "logs/failed" }],
+        [{
+          type: "fetch",
+          url: `/api/runs/${runId}/logs`,
+          onSuccess: "logs/received",
+          onError: "logs/failed",
+          meta: { runId, token },
+        }],
       ];
     }
 
     // ── Metrics ─────────────────────────────────────────────────────────
 
     case "metrics/received": {
-      const isActive = state.runs.active?.status === "running";
+      if (!shouldAccept(state.metrics.token, msg.token)) return [state, []];
+      const isActive = isLiveRun(state.runs.active);
       const delay = isActive ? BASE_METRICS_POLL_MS : BASE_METRICS_POLL_MS * 5;
       const metrics: MetricsSlice = {
         ...state.metrics,
@@ -640,8 +872,9 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
     }
 
     case "metrics/failed": {
+      if (!shouldAccept(state.metrics.token, msg.token)) return [state, []];
       const backoff = Math.min(state.metrics.delayMs * BACKOFF_MULTIPLIER, MAX_BACKOFF_MS);
-      const isActive = state.runs.active?.status === "running";
+      const isActive = isLiveRun(state.runs.active);
       const metrics: MetricsSlice = {
         ...state.metrics,
         fetchInFlight: false,
@@ -656,12 +889,19 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
 
     case "metrics/timeout": {
       if (state.metrics.fetchInFlight) return [state, []]; // dedup
-      const isActive = state.runs.active?.status === "running";
+      const isActive = isLiveRun(state.runs.active);
       if (!isActive) return [state, []];
-      const metrics: MetricsSlice = { ...state.metrics, fetchInFlight: true };
+      const token = nextToken(state.metrics.token);
+      const metrics: MetricsSlice = { ...state.metrics, fetchInFlight: true, token };
       return [
         { ...state, metrics },
-        [{ type: "fetch", url: "/api/runs/active/metrics", onSuccess: "metrics/received", onError: "metrics/failed" }],
+        [{
+          type: "fetch",
+          url: "/api/runs/active/metrics",
+          onSuccess: "metrics/received",
+          onError: "metrics/failed",
+          meta: { token },
+        }],
       ];
     }
 
@@ -731,33 +971,46 @@ export function createInitialState(overrides?: Partial<DashboardState>): Dashboa
       lastHealthCheckMs: 0,
       healthCheckDelayMs: BASE_HEALTH_CHECK_MS,
       healthCheckInFlight: false,
+      healthToken: 0,
     },
     runs: {
       active: null,
-      progress: null,
+      viewedRunId: null,
+      progressByRunId: {},
       lastProgressMs: 0,
+      activeDelayMs: BASE_ACTIVE_POLL_MS,
+      activeInFlight: false,
+      activeToken: 0,
       progressDelayMs: BASE_PROGRESS_POLL_MS,
       progressInFlight: false,
+      progressInFlightRunId: null,
+      progressToken: 0,
     },
     scenarios: {
       all: [],
       fetchInFlight: false,
+      token: 0,
     },
     topology: {
       selected: "garazyk-default",
       available: [],
       preview: null,
       previewInFlight: false,
+      previewInFlightName: null,
+      previewToken: 0,
     },
     logs: {
-      text: "",
+      textByRunId: {},
       fetchInFlight: false,
+      inFlightRunId: null,
+      token: 0,
       delayMs: BASE_LOG_POLL_MS,
       lastUpdateMs: 0,
     },
     metrics: {
       stats: {},
       fetchInFlight: false,
+      token: 0,
       delayMs: BASE_METRICS_POLL_MS,
       lastUpdateMs: 0,
     },
@@ -779,9 +1032,29 @@ export function createInitialState(overrides?: Partial<DashboardState>): Dashboa
 
 export function bootCmds(): Cmd[] {
   return [
-    { type: "fetch", url: "/api/network/health", onSuccess: "network/healthReceived", onError: "network/healthFailed" },
-    { type: "fetch", url: "/api/runs/active", onSuccess: "runs/activeReceived", onError: "runs/activeFailed" },
-    { type: "fetch", url: "/api/scenarios", onSuccess: "scenarios/received", onError: "scenarios/failed" },
-    { type: "fetch", url: "/api/topologies", onSuccess: "topology/listReceived", onError: "topology/listFailed" },
+    {
+      type: "fetch",
+      url: "/api/network/health",
+      onSuccess: "network/healthReceived",
+      onError: "network/healthFailed",
+    },
+    {
+      type: "fetch",
+      url: "/api/runs/active",
+      onSuccess: "runs/activeReceived",
+      onError: "runs/activeFailed",
+    },
+    {
+      type: "fetch",
+      url: "/api/scenarios",
+      onSuccess: "scenarios/received",
+      onError: "scenarios/failed",
+    },
+    {
+      type: "fetch",
+      url: "/api/topologies",
+      onSuccess: "topology/listReceived",
+      onError: "topology/listFailed",
+    },
   ];
 }
