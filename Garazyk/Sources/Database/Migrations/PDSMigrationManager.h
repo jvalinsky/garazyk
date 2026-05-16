@@ -50,6 +50,9 @@ NS_ASSUME_NONNULL_BEGIN
  - Upgrade: Checks _migrations table, runs only missing migrations
  - No legacy support: Databases without _migrations table are errors
  */
+/**
+ * @abstract Applies and tracks ordered database schema migrations.
+ */
 @interface PDSMigrationManager : NSObject
 
 /*!
@@ -134,6 +137,12 @@ NS_ASSUME_NONNULL_BEGIN
  @param error Error output if migration fails.
  @return YES if all migrations succeed, NO on error.
  */
+/**
+ * @abstract Migrate database.
+ * @param db SQLite database connection used by the operation.
+ * @param error Receives details when the operation fails.
+ * @return YES when the operation succeeds; otherwise NO.
+ */
 - (BOOL)migrateDatabase:(sqlite3 *)db error:(NSError **)error;
 
 /*!
@@ -148,6 +157,13 @@ NS_ASSUME_NONNULL_BEGIN
  @param version Target schema version.
  @param error Error output if migration fails.
  @return YES if migration succeeds, NO on error.
+ */
+/**
+ * @abstract Migrate database.
+ * @param db SQLite database connection used by the operation.
+ * @param version Migration version number.
+ * @param error Receives details when the operation fails.
+ * @return YES when the operation succeeds; otherwise NO.
  */
 - (BOOL)migrateDatabase:(sqlite3 *)db
               toVersion:(NSInteger)version
@@ -165,6 +181,13 @@ NS_ASSUME_NONNULL_BEGIN
  @param version Target version to rollback to (0 to rollback all).
  @param error Error output if rollback fails.
  @return YES if rollback succeeds, NO on error.
+ */
+/**
+ * @abstract Rollback to version.
+ * @param db SQLite database connection used by the operation.
+ * @param version Migration version number.
+ * @param error Receives details when the operation fails.
+ * @return YES when the operation succeeds; otherwise NO.
  */
 - (BOOL)rollbackToVersion:(sqlite3 *)db
                  version:(NSInteger)version
@@ -276,6 +299,10 @@ NS_ASSUME_NONNULL_BEGIN
 
  @return Migration manager for PDSDatabase.
  */
+/**
+ * @abstract Pds database migration manager.
+ * @return An initialized instance.
+ */
 + (instancetype)pdsDatabaseMigrationManager;
 
 @end
@@ -290,7 +317,6 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString * const PDSMigrationErrorDomain;
 
 /*!
- @enum PDSMigrationErrorCode
 
  @abstract Error codes for migration operations.
  */

@@ -4,6 +4,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Database operations for OAuth client records.
+ */
 @interface PDSDatabase (OAuthClients)
 
 - (nullable NSDictionary *)getClientWithID:(NSString *)clientID error:(NSError **)error;
@@ -12,6 +15,12 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)createOAuthClient:(NSDictionary *)client error:(NSError **)error;
 - (BOOL)seedTestClient:(NSError **)error;
 - (nullable NSArray<NSDictionary *> *)getAllOAuthClientsWithError:(NSError **)error;
+/**
+ * @abstract Delete oauth client with id.
+ * @param clientID OAuth client identifier.
+ * @param error Receives details when the operation fails.
+ * @return YES when the operation succeeds; otherwise NO.
+ */
 - (BOOL)deleteOAuthClientWithID:(NSString *)clientID error:(NSError **)error;
 
 @end

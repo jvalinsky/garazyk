@@ -7,6 +7,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class ATProtoConnectionPool;
 
+/**
+ * @abstract Provides pooled database connection access.
+ */
 @interface ATProtoConnectionManagerPooled : NSObject <ATProtoConnectionManager>
 
 - (instancetype)initWithPool:(ATProtoConnectionPool *)pool;

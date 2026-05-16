@@ -41,6 +41,9 @@ NS_ASSUME_NONNULL_BEGIN
  [database executeSQL:sql error:nil];
  @endcode
  */
+/**
+ * @abstract Creates and validates the PDS database schema.
+ */
 @interface PDSSchemaManager : NSObject
 
 /*!
@@ -174,6 +177,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (NSString *)ozoneEventsTableSchema;
 - (NSString *)ozoneSetsTableSchema;
+/**
+ * @abstract Ozone set members table schema.
+ * @return The requested string, or nil when unavailable.
+ */
 - (NSString *)ozoneSetMembersTableSchema;
 - (NSString *)ozoneTemplatesTableSchema;
 - (NSString *)ozoneTeamTableSchema;
@@ -183,6 +190,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - BSky AppView Schemas
 
+/**
+ * @abstract Bsky age assurance table schema.
+ * @return The requested string, or nil when unavailable.
+ */
 - (NSString *)bskyAgeAssuranceTableSchema;
 
 - (NSString *)bskyDraftsTableSchema;

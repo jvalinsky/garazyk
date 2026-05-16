@@ -4,6 +4,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Database operations for repository blocks.
+ */
 @interface PDSDatabase (Blocks)
 
 - (BOOL)saveBlock:(PDSDatabaseBlock *)block error:(NSError **)error;

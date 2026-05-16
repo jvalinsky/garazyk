@@ -4,6 +4,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Admin audit log database operations.
+ */
 @interface PDSDatabase (AdminAudit)
 
 - (BOOL)insertAuditLogEntry:(NSDictionary *)entry error:(NSError **)error;

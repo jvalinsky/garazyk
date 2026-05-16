@@ -4,6 +4,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Database operations for admin configuration values.
+ */
 @interface PDSDatabase (AdminConfig)
 
 - (nullable NSString *)getAdminConfigValue:(NSString *)key error:(NSError **)error;

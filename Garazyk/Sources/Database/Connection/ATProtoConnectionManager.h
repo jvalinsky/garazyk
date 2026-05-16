@@ -6,6 +6,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Supplies database connections to storage components.
+ */
 @protocol ATProtoConnectionManager <NSObject>
 
 @property (nonatomic, readonly, getter=isOpen) BOOL open;
@@ -14,6 +17,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)openWithPath:(NSString *)path config:(ATProtoDBConfig)config error:(NSError **)error;
 - (void)close;
 
+/**
+ * @abstract Execute.
+ * @param error Receives details when the operation fails.
+ * @return YES when the operation succeeds; otherwise NO.
+ */
 - (BOOL)execute:(void(^)(sqlite3 *db))block error:(NSError **)error;
 - (BOOL)transact:(void(^)(sqlite3 *db, BOOL *rollback))block error:(NSError **)error;
 

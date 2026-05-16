@@ -16,6 +16,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface PDSActorStore ()
 
+/**
+ * @abstract Actor DID.
+ */
 @property (nonatomic, copy, readwrite) NSString *did;
 @property (nonatomic, copy, readwrite) NSString *dbPath;
 @property (nonatomic, strong, readwrite, nullable) PDSDatabase *database;
@@ -25,6 +28,9 @@ NS_ASSUME_NONNULL_BEGIN
 #if defined(GNUSTEP)
 @property (nonatomic, assign) dispatch_queue_t transactionQueue;
 #else
+/**
+ * @abstract Queue used to serialize actor-store transactions.
+ */
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t transactionQueue;
 #endif
 

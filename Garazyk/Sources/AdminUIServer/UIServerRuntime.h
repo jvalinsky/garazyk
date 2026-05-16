@@ -8,6 +8,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Runs the Admin UI HTTP service lifecycle.
+ */
 @interface UIServerRuntime : NSObject
 
 @property(nonatomic, strong, readonly) UIServiceConfig *configuration;
@@ -16,6 +19,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (instancetype)initWithConfiguration:(UIServiceConfig *)configuration;
 - (BOOL)startWithError:(NSError **)error;
 - (void)stop;
+/**
+ * @abstract Dispatch request for testing.
+ * @param request HTTP request to authenticate or dispatch.
+ * @return Result produced by the operation.
+ */
 - (HttpResponse *)dispatchRequestForTesting:(HttpRequest *)request;
 
 @end

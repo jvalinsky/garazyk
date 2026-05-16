@@ -20,6 +20,9 @@ NS_ASSUME_NONNULL_BEGIN
  extension in PDSDatabase.m and accessed via self.property in category
  files — do NOT re-declare them here.
  */
+/**
+ * @abstract Internal database helpers shared by PDSDatabase categories.
+ */
 @interface PDSDatabase (Private)
 
 // ── Properties from class extension (re-declared for category visibility) ──

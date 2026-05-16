@@ -4,6 +4,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Database operations for account sessions.
+ */
 @interface PDSDatabase (Sessions)
 
 - (NSArray<NSDictionary *> *)listSessionsForDid:(NSString *)did error:(NSError **)error;
@@ -12,6 +15,13 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)revokeSession:(NSString *)token error:(NSError **)error;
 - (BOOL)revokeAllSessionsForDid:(NSString *)did error:(NSError **)error;
 - (NSArray<NSDictionary *> *)listAppPasswordsForDid:(NSString *)did error:(NSError **)error;
+/**
+ * @abstract Revoke app password.
+ * @param passwordId Application password identifier.
+ * @param did Actor DID for the request.
+ * @param error Receives details when the operation fails.
+ * @return YES when the operation succeeds; otherwise NO.
+ */
 - (BOOL)revokeAppPassword:(NSString *)passwordId forDid:(NSString *)did error:(NSError **)error;
 
 @end

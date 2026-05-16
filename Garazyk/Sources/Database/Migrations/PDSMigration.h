@@ -7,7 +7,7 @@
 
  @discussion Defines the interface for migration classes that transform
  database schema. Each migration has a version number, name, and up/down
- methods for/down applying and reversing the migration.
+ methods for applying and reversing the migration.
 
  Migrations are applied in version order and tracked in the _migrations
  table. The down method must reverse all changes made by up.
@@ -49,8 +49,6 @@ NS_ASSUME_NONNULL_BEGIN
 @required
 
 /*!
- @property version
-
  @abstract Unique version number for this migration.
 
  @discussion Version numbers must be monotonically increasing. Migrations
@@ -61,8 +59,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSInteger)version;
 
 /*!
- @property name
-
  @abstract Human-readable name for this migration.
 
  @discussion Used in logging and error messages. Should be lowercase
@@ -73,8 +69,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)name;
 
 /*!
- @method up:error:
-
  @abstract Apply this migration to the database.
 
  @discussion Creates tables, adds columns, or modifies schema. Called
@@ -87,8 +81,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)up:(sqlite3 *)db error:(NSError **)error;
 
 /*!
- @method down:error:
-
  @abstract Reverse this migration.
 
  @discussion Removes tables, drops columns, or reverses schema changes.

@@ -16,6 +16,9 @@ NS_ASSUME_NONNULL_BEGIN
  * 
  * @see PDSDatabase (Blobs)
  */
+/**
+ * @abstract Represents blob metadata stored for an actor.
+ */
 @interface PDSDatabaseBlob : NSObject <PDSDatabaseModel>
 
 /** The CID of the blob. */

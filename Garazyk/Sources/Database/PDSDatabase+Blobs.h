@@ -47,6 +47,14 @@ NS_ASSUME_NONNULL_BEGIN
  @param error On return, contains an error if the operation failed.
  @return An array of blob objects.
  */
+/**
+ * @abstract Get blobs for did.
+ * @param did Actor DID for the request.
+ * @param limit Maximum number of records to return.
+ * @param offset Zero-based result offset.
+ * @param error Receives details when the operation fails.
+ * @return The response array, or nil when the request fails.
+ */
 - (NSArray<PDSDatabaseBlob *> *)getBlobsForDid:(NSString *)did limit:(NSInteger)limit offset:(NSInteger)offset error:(NSError **)error;
 
 /*!

@@ -5,6 +5,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Provides serialized database connection access.
+ */
 @interface ATProtoConnectionManagerSerial : NSObject <ATProtoConnectionManager>
 
 - (instancetype)initWithLabel:(NSString *)label;

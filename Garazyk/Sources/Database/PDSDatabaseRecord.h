@@ -16,6 +16,9 @@ NS_ASSUME_NONNULL_BEGIN
  * 
  * @see PDSDatabase (Records)
  */
+/**
+ * @abstract Represents a persisted repository record row.
+ */
 @interface PDSDatabaseRecord : NSObject <PDSDatabaseModel>
 
 /** The AT-URI identifying this record (e.g., at://did:plc:z.../app.bsky.actor.profile/self). */

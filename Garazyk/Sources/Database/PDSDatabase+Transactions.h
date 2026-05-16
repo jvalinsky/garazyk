@@ -24,6 +24,11 @@ NS_ASSUME_NONNULL_BEGIN
  @param error On return, contains an error if the operation failed.
  @return YES if the transaction began successfully, NO otherwise.
  */
+/**
+ * @abstract Begin transaction with error.
+ * @param error Receives details when the operation fails.
+ * @return YES when the operation succeeds; otherwise NO.
+ */
 - (BOOL)beginTransactionWithError:(NSError **)error;
 
 /*!
@@ -63,6 +68,11 @@ NS_ASSUME_NONNULL_BEGIN
  error pointer to set if an error occurs.
  @param error On return, contains an error if the transaction failed.
  @return YES if the transaction committed successfully, NO otherwise.
+ */
+/**
+ * @abstract Transact with block.
+ * @param error Receives details when the operation fails.
+ * @return YES when the operation succeeds; otherwise NO.
  */
 - (BOOL)transactWithBlock:(void (^)(NSError **error))block error:(NSError **)error;
 

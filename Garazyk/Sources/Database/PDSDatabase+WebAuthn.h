@@ -4,6 +4,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Database operations for WebAuthn credentials.
+ */
 @interface PDSDatabase (WebAuthn)
 
 - (BOOL)storeWebAuthnCredential:(NSDictionary *)credential
@@ -13,6 +16,14 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)deleteWebAuthnCredential:(NSData *)credentialId
                        forDid:(NSString *)did
                         error:(NSError **)error;
+/**
+ * @abstract Update web authn credential sign count.
+ * @param credentialId WebAuthn credential identifier.
+ * @param did Actor DID for the request.
+ * @param signCount WebAuthn signature counter.
+ * @param error Receives details when the operation fails.
+ * @return YES when the operation succeeds; otherwise NO.
+ */
 - (BOOL)updateWebAuthnCredentialSignCount:(NSData *)credentialId
                               forDid:(NSString *)did
                            signCount:(uint32_t)signCount

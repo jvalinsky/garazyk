@@ -33,6 +33,9 @@ typedef NS_ENUM(NSInteger, PDSHealthStatus) {
     PDSHealthStatusCritical,
 };
 
+/**
+ * @abstract Reports database health and readiness state.
+ */
 @interface PDSHealthCheck : NSObject
 
 + (instancetype)sharedInstance;
@@ -41,6 +44,10 @@ typedef NS_ENUM(NSInteger, PDSHealthStatus) {
 
 - (void)configureWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases;
 
+/**
+ * @abstract Perform health check.
+ * @return The response dictionary, or nil when the request fails.
+ */
 - (NSDictionary<NSString *, id> *)performHealthCheck;
 
 - (PDSHealthStatus)checkDatabaseIntegrity:(NSError **)error;
@@ -48,6 +55,10 @@ typedef NS_ENUM(NSInteger, PDSHealthStatus) {
 - (NSDictionary<NSString *, NSNumber *> *)getTableSizes;
 - (NSUInteger)getFragmentationPercent;
 
+/**
+ * @abstract Collect metrics.
+ * @return The response dictionary, or nil when the request fails.
+ */
 - (NSDictionary<NSString *, id> *)collectMetrics;
 
 - (NSArray<NSString *> *)getWarnings;

@@ -38,6 +38,13 @@ NS_ASSUME_NONNULL_BEGIN
  @param error On return, contains an error if the operation failed.
  @return YES if the root was updated successfully, NO otherwise.
  */
+/**
+ * @abstract Update repo root.
+ * @param ownerDid Actor DID for the request.
+ * @param rootCid Repository root CID.
+ * @param error Receives details when the operation fails.
+ * @return YES when the operation succeeds; otherwise NO.
+ */
 - (BOOL)updateRepoRoot:(NSString *)ownerDid rootCid:(NSData *)rootCid error:(NSError **)error;
 
 /*!
