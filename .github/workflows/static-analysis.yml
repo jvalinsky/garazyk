@@ -154,6 +154,10 @@ jobs:
         run: |
           deno task --config scripts/deno.json doc-lint
 
+      - name: Run TypeScript Documentation Coverage
+        run: |
+          deno task --config scripts/deno.json doc:ts-coverage:ci
+
   objc-doc-coverage:
     name: Objective-C Documentation Coverage
     runs-on: ubuntu-24.04

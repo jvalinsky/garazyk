@@ -131,6 +131,12 @@ deno task --config scripts/deno.json doc-lint
 # Regenerate committed TypeDoc HTML under scripts/docs/api/
 npm --prefix scripts/docs run api:ts
 
+# Report TypeScript documentation coverage for harness and dashboard exports
+deno task --config scripts/deno.json doc:ts-coverage
+
+# Enforce the current conservative CI baseline for the public harness
+deno task --config scripts/deno.json doc:ts-coverage:ci
+
 # Generate local Deno HTML docs under scripts/docs/
 deno task --config scripts/deno.json doc:serve
 ```
