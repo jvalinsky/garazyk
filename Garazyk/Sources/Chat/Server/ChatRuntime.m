@@ -99,10 +99,13 @@
 
     self.httpServer = [HttpServer serverWithHost:@"0.0.0.0" port:self.configuration.httpPort]; // Bind to all interfaces for Docker support
 
-    // Configure auth manager with PDS URL for JWT signature verification
+    // Configure auth manager with PDS URL and service DID for JWT verification
     if (self.configuration.pdsUrl.length > 0) {
         [ChatAuthManager sharedManager].pdsUrl = self.configuration.pdsUrl;
     }
+    // Set the service DID for audience validation in service auth JWTs.
+    // The aud claim must match this service's DID (with #bsky_chat fragment).
+    [ChatAuthManager sharedManager].serviceDID = self.configuration.serviceDID;
 
     // Add health endpoint
     [self.httpServer addRoute:@"GET"
