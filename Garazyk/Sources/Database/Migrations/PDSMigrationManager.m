@@ -1552,9 +1552,29 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
         return NO;
     }
 
-    const char *copySQL = "INSERT OR IGNORE INTO _migrations (version, name, applied_at) "
-        "SELECT version, COALESCE(description, 'migrated'), COALESCE(applied_at, strftime('%s', 'now')) "
-        "FROM schema_version";
+    // schema_version may lack the applied_at column — use a subquery to detect
+    // and provide a default rather than referencing a possibly-missing column.
+    const char *hasAppliedAtSQL = "SELECT COUNT(*) FROM pragma_table_info('schema_version') WHERE name='applied_at'";
+    sqlite3_stmt *hasColStmt = NULL;
+    BOOL hasAppliedAt = NO;
+    rc = sqlite3_prepare_v2(db, hasAppliedAtSQL, -1, &hasColStmt, NULL);
+    if (rc == SQLITE_OK) {
+        if (sqlite3_step(hasColStmt) == SQLITE_ROW) {
+            hasAppliedAt = (sqlite3_column_int(hasColStmt, 0) > 0);
+        }
+        sqlite3_finalize(hasColStmt);
+    }
+
+    const char *copySQL = NULL;
+    if (hasAppliedAt) {
+        copySQL = "INSERT OR IGNORE INTO _migrations (version, name, applied_at) "
+            "SELECT version, COALESCE(description, 'migrated'), applied_at "
+            "FROM schema_version";
+    } else {
+        copySQL = "INSERT OR IGNORE INTO _migrations (version, name, applied_at) "
+            "SELECT version, COALESCE(description, 'migrated'), strftime('%s', 'now') "
+            "FROM schema_version";
+    }
     rc = sqlite3_exec(db, copySQL, NULL, NULL, &errMsg);
     if (rc != SQLITE_OK) {
         if (error) {
