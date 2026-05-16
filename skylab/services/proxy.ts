@@ -49,6 +49,21 @@ export function proxyUpstreamHeaders(req: Request): Record<string, string> {
   return headers;
 }
 
+export async function parseProxyResponse(resp: Response): Promise<unknown> {
+  const contentType = resp.headers.get("content-type") || "";
+  const text = await resp.text();
+
+  if (contentType.includes("application/json")) {
+    try {
+      return JSON.parse(text);
+    } catch {
+      return { raw: text };
+    }
+  }
+
+  return { raw: text };
+}
+
 /**
  * Proxy a request to the target service.
  *
@@ -65,7 +80,10 @@ export async function proxyRequest(
   const baseUrl = SERVICE_URLS[service];
   if (!baseUrl) {
     return Response.json(
-      { error: "unknown_service", detail: `Service '${service}' not configured` },
+      {
+        error: "unknown_service",
+        detail: `Service '${service}' not configured`,
+      },
       { status: 400 },
     );
   }
@@ -89,19 +107,7 @@ export async function proxyRequest(
       body,
     });
 
-    const contentType = resp.headers.get("content-type") || "";
-    let payload: unknown;
-
-    if (contentType.includes("application/json")) {
-      try {
-        payload = await resp.json();
-      } catch {
-        payload = { raw: await resp.text() };
-      }
-    } else {
-      payload = { raw: await resp.text() };
-    }
-
+    const payload = await parseProxyResponse(resp);
     return Response.json(payload, { status: resp.status });
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
@@ -144,7 +150,10 @@ export async function proxyPassthrough(
   const baseUrl = SERVICE_URLS[service];
   if (!baseUrl) {
     return Response.json(
-      { error: "unknown_service", detail: `Service '${service}' not configured` },
+      {
+        error: "unknown_service",
+        detail: `Service '${service}' not configured`,
+      },
       { status: 400 },
     );
   }
