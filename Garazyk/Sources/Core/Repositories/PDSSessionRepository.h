@@ -4,7 +4,8 @@
  * @file PDSSessionRepository.h
  * @abstract Protocol for session token management.
  * @discussion Defines the contract for refresh token persistence operations.
- * This repository handles the mapping between refresh tokens and account DIDs.
+ * This repository handles the mapping between refresh tokens and account DIDs,
+ * enabling token-based session management for OAuth 2.0 flows.
  */
 
 #import <Foundation/Foundation.h>
@@ -12,13 +13,26 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /**
+ * @protocol PDSSessionRepository
  * @abstract Protocol for session token management.
- * @discussion Implementations provide storage and lookup operations for refresh tokens,
- * enabling session validation and multi-device management.
+ * @discussion Implementations provide storage and lookup operations for
+ * refresh tokens. This enables:
  *
- * Thread Safety: Implementations must be thread-safe for concurrent access.
- * Security: Refresh tokens are long-lived credentials. Implementations should
- * consider encryption at rest and secure revocation.
+ * - Token-based session validation
+ * - Multi-device session management
+ * - Token revocation (single or all)
+ *
+ * @b Thread Safety: Implementations must be thread-safe for concurrent
+ * access from multiple request handlers.
+ *
+ * @b Security: Refresh tokens are long-lived credentials. Implementations
+ * should consider:
+ * - Encryption at rest
+ * - Secure deletion on revocation
+ * - Rate limiting on lookups
+ *
+ * @see PDSAccountService
+ * @see Session
  */
 @protocol PDSSessionRepository <NSObject>
 
@@ -52,6 +66,8 @@ NS_ASSUME_NONNULL_BEGIN
  * @param did The account DID whose tokens should be revoked.
  * @param error Receives failure details.
  * @return YES if all tokens were revoked successfully, NO otherwise.
+ * @discussion This is typically called during account deletion or security
+ * events requiring all sessions to be invalidated.
  */
 - (BOOL)revokeAllRefreshTokensForAccountDid:(NSString *)did error:(NSError **)error;
 
