@@ -1,8 +1,0 @@
-# Custom Vue Components
-
-This directory will contain custom Vue components for the VitePress theme.
-
-Examples:
-- CodeTabs.vue - Tabbed code blocks for platform-specific examples
-- DiagramZoom.vue - Zoomable diagram viewer
-- TutorialProgress.vue - Tutorial progress tracker
