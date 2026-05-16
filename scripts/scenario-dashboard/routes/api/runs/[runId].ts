@@ -1,7 +1,7 @@
+/** API: /api/runs/[runId] — GET run status by ID. @module api/runs/[runId] */
 import { Handlers } from "$fresh/server.ts";
-import { db } from "../../../db/index.ts";
-import { fetchRun } from "../../../db/queries.ts";
 
+/** Response shape for run status endpoint. */
 interface RunStatusResponse {
   status: string;
   passed: number;
@@ -9,6 +9,7 @@ interface RunStatusResponse {
   skipped: number;
 }
 
+/** GET /api/runs/[runId] — returns run status and result counts. */
 export const handler: Handlers<RunStatusResponse> = {
   GET(_req, ctx) {
     const { runId } = ctx.params;

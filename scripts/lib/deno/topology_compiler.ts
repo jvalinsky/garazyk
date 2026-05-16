@@ -1,3 +1,4 @@
+/** Topology compilation — validate presets, render Docker Compose YAML, and write manifests. @module topology_compiler */
 import { join, resolve, relative } from "@std/path";
 import {
   createTopologyManifest,
@@ -38,6 +39,7 @@ export interface CompilerOptions {
   otel?: boolean;
 }
 
+/** Result of compiling a topology preset into Docker Compose files and manifest. */
 export interface CompilerResult {
   /** Path to rendered docker-compose.topology.yml */
   composeFile: string;

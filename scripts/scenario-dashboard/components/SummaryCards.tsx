@@ -1,3 +1,5 @@
+/** Summary cards — shows pass/fail/skip counts with optional label. @module SummaryCards */
+
 interface SummaryCardsProps {
   passed: number;
   failed: number;
@@ -5,6 +7,7 @@ interface SummaryCardsProps {
   label?: string;
 }
 
+/** Render pass/fail/skip summary cards. */
 export default function SummaryCards({ passed, failed, skipped, label }: SummaryCardsProps) {
   return (
     <div>

@@ -1,3 +1,4 @@
+/** Database initialization — opens the SQLite DB, applies schema and migrations, scans reports. @module db */
 import { join, fromFileUrl } from "$std/path/mod.ts";
 import { Database } from "sqlite3";
 import { SCHEMA } from "./schema.ts";
@@ -11,6 +12,7 @@ const DB_PATH = join(
 const isBuild = Deno.args.includes("build");
 
 // Export a placeholder or the real DB depending on mode
+/** Singleton SQLite database handle (or stub during build). */
 export const db = isBuild 
   ? { prepare: () => ({ all: () => [], run: () => ({}), get: () => null }), exec: () => {} } as any 
   : new Database(DB_PATH);

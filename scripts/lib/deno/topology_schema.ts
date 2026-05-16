@@ -1,3 +1,4 @@
+/** Zod schemas and normalization for topology presets, manifests, and service specs. @module topology_schema */
 import { z } from "zod";
 import {
   defaultRolePort,
@@ -12,6 +13,7 @@ import {
 const stringRecordSchema = z.record(z.string(), z.string());
 const stringArraySchema = z.array(z.string());
 
+/** Zod schema for source build definitions */
 export const sourceBuildSchema = z.object({
   repo: z.string().min(1),
   ref: z.string().min(1),
@@ -28,14 +30,17 @@ const legacyHealthSchema = z.object({
   headers: stringRecordSchema.optional(),
 }).strict();
 
+/** Zod schema for normalized port mappings */
 export const portSpecSchema = z.object({
   host: z.string().optional(),
   container: z.string(),
   protocol: z.enum(["tcp", "udp"]).default("tcp"),
 }).strict();
 
+/** Normalized port mapping for container specs */
 export type PortSpec = z.infer<typeof portSpecSchema>;
 
+/** Zod schema for normalized volume mappings */
 export const volumeSpecSchema = z.object({
   kind: z.enum(["named", "bind"]),
   source: z.string(),
@@ -43,16 +48,20 @@ export const volumeSpecSchema = z.object({
   mode: z.string().optional(),
 }).strict();
 
+/** Normalized volume mapping for container specs */
 export type VolumeSpec = z.infer<typeof volumeSpecSchema>;
 
+/** Zod schema for resource hints */
 export const resourcesSchema = z.object({
   cpu: z.string().optional(),
   memory: z.string().optional(),
   localDisk: z.string().optional(),
 }).strict();
 
+/** Normalized resource requests for a service */
 export type ResourceHints = z.infer<typeof resourcesSchema>;
 
+/** Zod schema for HTTP health probes */
 export const httpHealthProbeSchema = z.object({
   type: z.literal("http"),
   url: z.string().optional(),
@@ -61,26 +70,31 @@ export const httpHealthProbeSchema = z.object({
   timeoutSeconds: z.number().int().positive().default(60),
 }).strict();
 
+/** Zod schema for docker health probes */
 export const dockerHealthProbeSchema = z.object({
   type: z.literal("docker"),
   serviceName: z.string().min(1),
   timeoutSeconds: z.number().int().positive().default(60),
 }).strict();
 
+/** Zod schema for command health probes */
 export const commandHealthProbeSchema = z.object({
   type: z.literal("command"),
   customTest: stringArraySchema.min(1),
   timeoutSeconds: z.number().int().positive().default(60),
 }).strict();
 
+/** Discriminated union of supported health probes */
 export const healthProbeSchema = z.discriminatedUnion("type", [
   httpHealthProbeSchema,
   dockerHealthProbeSchema,
   commandHealthProbeSchema,
 ]);
 
+/** Normalized health probe definition */
 export type HealthProbeSpec = z.infer<typeof healthProbeSchema>;
 
+/** Discriminated union of supported diagnostic probes */
 export const diagnosticProbeSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("http"),
@@ -101,15 +115,19 @@ export const diagnosticProbeSchema = z.discriminatedUnion("type", [
   }).strict(),
 ]);
 
+/** Normalized diagnostic probe definition */
 export type DiagnosticProbeSpec = z.infer<typeof diagnosticProbeSchema>;
 
+/** Zod schema for scenario requirements */
 export const scenarioRequirementSchema = z.object({
   role: z.string().min(1).optional(),
   capability: z.string().min(1),
 }).strict();
 
+/** Scenario requirement with optional role scoping */
 export type ScenarioRequirement = z.infer<typeof scenarioRequirementSchema>;
 
+/** Parse a scenario requirement from string ("role:capability") or object form. */
 export function parseScenarioRequirement(value: string | ScenarioRequirement): ScenarioRequirement {
   if (typeof value !== "string") return scenarioRequirementSchema.parse(value);
   const [role, capability, extra] = value.split(":");
@@ -146,12 +164,15 @@ const containerPrimitiveSchema = z.object({
   configFiles: stringRecordSchema.optional(),
 }).strict();
 
+/** Zod schema for raw sidecar specifications */
 export const rawSidecarSpecSchema = containerPrimitiveSchema.extend({
   capabilities: z.array(z.string()).optional(),
 });
 
+/** Raw sidecar specification before normalization */
 export type RawSidecarSpec = z.infer<typeof rawSidecarSpecSchema>;
 
+/** Zod schema for raw service specifications */
 export const rawServiceSpecSchema = containerPrimitiveSchema.extend({
   role: z.string().optional(),
   name: z.string().min(1),
@@ -162,17 +183,22 @@ export const rawServiceSpecSchema = containerPrimitiveSchema.extend({
   scenarioEnv: stringRecordSchema.optional(),
 }).strict();
 
+/** Raw service specification before normalization */
 export type RawServiceSpec = z.infer<typeof rawServiceSpecSchema>;
 
+/** Zod schema for inherited service references */
 export const inheritedServiceSchema = z.object({ inherit: z.string().min(1) }).strict();
+/** Inheritance marker for raw topology presets */
 export type InheritedServiceSpec = z.infer<typeof inheritedServiceSchema>;
 
+/** Zod schema for experimental role metadata */
 export const experimentalRoleSchema = z.object({
   envVar: z.string().regex(/^[A-Z][A-Z0-9_]*$/),
   defaultPort: z.string().regex(/^\d+$/),
   runnerExposure: z.enum(["host", "docker", "both", "none"]),
 }).strict();
 
+/** Zod schema for version 1 topology presets */
 export const rawTopologyPresetV1Schema = z.object({
   name: z.string().min(1),
   description: z.string().min(1),
@@ -182,84 +208,154 @@ export const rawTopologyPresetV1Schema = z.object({
   networkAliases: z.record(z.array(z.string())).optional(),
 }).strict();
 
+/** Raw topology preset shape before normalization */
 export type RawTopologyPresetV1 = z.infer<typeof rawTopologyPresetV1Schema>;
 
+/** Normalized topology preset ready for resolution
+ *
+ * @remarks
+ * Role entries are either normalized services or inheritance markers, and experimental role metadata must be present when experimental roles are used
+ */
 export interface NormalizedTopologyPreset {
+  /** Preset name */
   name: string;
+  /** Preset description */
   description: string;
+  /** Service definitions keyed by role */
   roles: Record<string, NormalizedServiceSpec | InheritedServiceSpec>;
+  /** Experimental role metadata keyed by role */
   experimentalRoles: Record<string, ExperimentalRoleMetadata>;
+  /** Optional host aliases keyed by service name */
   networkAliases?: Record<string, string[]>;
+  /** Optional browser client payload preserved from the raw preset */
   webClient?: unknown;
 }
 
+/** Normalized container specification used by services and sidecars
+ *
+ * @remarks
+ * Collection fields are fully normalized and defaults are applied before resolution
+ */
 export interface ContainerSpec {
+  /** Container image to run */
   image?: string;
+  /** Source build used when the container is built locally */
   source?: z.infer<typeof sourceBuildSchema>;
+  /** Build context path for local builds */
   buildContext?: string;
+  /** Dockerfile name for local builds */
   dockerfile?: string;
+  /** Entrypoint command passed to the container */
   entrypoint?: string[];
+  /** Command arguments passed to the container */
   command?: string[];
+  /** Environment variables injected into the container */
   env: Record<string, string>;
+  /** Normalized port mappings */
   ports: PortSpec[];
+  /** Normalized volume mappings */
   volumes: VolumeSpec[];
+  /** Resource requests and limits */
   resources?: ResourceHints;
+  /** Secret keys inferred or declared for the container */
   secrets: string[];
+  /** Normalized health probe, if present */
   health?: HealthProbeSpec;
+  /** Normalized diagnostic probes */
   diagnostics: DiagnosticProbeSpec[];
+  /** Upstream dependencies expressed by name */
   dependsOn: string[];
+  /** Config files materialized for the container */
   configFiles?: Record<string, string>;
 }
 
+/** Normalized sidecar specification */
 export interface SidecarSpec extends ContainerSpec {
+  /** Capability flags advertised by the sidecar */
   capabilities: string[];
 }
 
+/** Normalized service specification keyed by role
+ *
+ * @remarks
+ * `serviceName`, `sidecars`, and `scenarioEnv` are always populated after normalization
+ */
 export interface NormalizedServiceSpec extends ContainerSpec {
+  /** Role name for the service */
   role: string;
+  /** Human-readable service label */
   name: string;
+  /** Compose service name */
   serviceName: string;
+  /** Capability flags advertised by the service */
   capabilities: string[];
+  /** Normalized sidecars keyed by sidecar name */
   sidecars: Record<string, SidecarSpec>;
+  /** Scenario environment variables exported by the service */
   scenarioEnv: Record<string, string>;
 }
 
+/** Resolved service snapshot with URLs and environment maps
+ *
+ * @remarks
+ * This shape is derived from {@link NormalizedServiceSpec} and adds runtime-only URLs, env maps, and dependency resolution
+ */
 export interface ResolvedTopologyService extends Omit<NormalizedServiceSpec, "env"> {
+  /** Host and docker URLs for the service */
   urls: {
     host: string;
     docker: string;
   };
+  /** Environment maps grouped by execution target */
   env: {
     containerEnv: Record<string, string>;
     hostRunnerEnv: Record<string, string>;
     dockerRunnerEnv: Record<string, string>;
     scenarioEnv: Record<string, string>;
   };
+  /** Requested and resolved dependencies */
   dependencies: {
     requested: string[];
     composeServiceNames: string[];
   };
 }
 
+/** Fully resolved topology model
+ *
+ * @remarks
+ * All maps are keyed by role unless otherwise noted, and the URL, env, health, diagnostics, and source summaries are ready for manifests and dashboards
+ */
 export interface ResolvedTopology {
+  /** Topology name */
   name: string;
+  /** Topology description */
   description: string;
+  /** Resolved services keyed by role */
   services: Record<string, ResolvedTopologyService>;
+  /** Experimental role metadata keyed by role */
   experimentalRoles: Record<string, ExperimentalRoleMetadata>;
+  /** All capabilities across the topology */
   capabilities: string[];
+  /** Capabilities grouped by role */
   capabilitiesByRole: Record<string, string[]>;
+  /** Host and docker URLs keyed by role */
   urls: {
     host: Record<string, string>;
     docker: Record<string, string>;
   };
+  /** Runner and scenario environment maps */
   env: {
     hostRunner: Record<string, string>;
     dockerRunner: Record<string, string>;
     scenario: Record<string, string>;
   };
+  /** Compose service names keyed by role */
   serviceNames: Record<string, string>;
+  /** Health probes annotated with role metadata */
   health: Array<HealthProbeSpec & { role: string; serviceName: string; label: string }>;
+  /** Diagnostic probes annotated with role metadata */
   diagnostics: Array<DiagnosticProbeSpec & { role: string; serviceName: string }>;
+  /** Source build summaries annotated with role metadata */
   sources: Array<{
     role: string;
     serviceName: string;
@@ -274,12 +370,14 @@ export interface ResolvedTopology {
   }>;
 }
 
+/** Parse and validate a raw topology preset JSON value */
 export function parseRawTopologyPresetV1(value: unknown, pathLabel: string): RawTopologyPresetV1 {
   const result = rawTopologyPresetV1Schema.safeParse(value);
   if (result.success) return result.data;
   throw new Error(`Invalid topology preset ${pathLabel}:\n${formatZodError(result.error)}`);
 }
 
+/** Normalize raw topology preset data into a {@link NormalizedTopologyPreset} */
 export function normalizeTopologyPreset(raw: RawTopologyPresetV1): NormalizedTopologyPreset {
   const experimentalRoles = raw.experimentalRoles || {};
   validateRoleDeclarations(raw.roles, experimentalRoles, raw.name);
@@ -303,6 +401,7 @@ export function normalizeTopologyPreset(raw: RawTopologyPresetV1): NormalizedTop
   };
 }
 
+/** Resolve a {@link NormalizedTopologyPreset} into runtime topology data */
 export function resolveNormalizedTopologyPreset(
   preset: NormalizedTopologyPreset,
 ): ResolvedTopology {
@@ -467,6 +566,7 @@ function normalizeSidecars(
   );
 }
 
+/** Normalize port declarations from string or object form */
 export function normalizePorts(raw: string[] | PortSpec[] | undefined): PortSpec[] {
   return (raw || []).map((port) => {
     if (typeof port !== "string") return portSpecSchema.parse(port);
@@ -482,11 +582,13 @@ export function normalizePorts(raw: string[] | PortSpec[] | undefined): PortSpec
   });
 }
 
+/** Render a normalized {@link PortSpec} as Docker port syntax */
 export function renderPortSpec(port: PortSpec): string {
   const base = port.host ? `${port.host}:${port.container}` : port.container;
   return port.protocol === "udp" ? `${base}/udp` : base;
 }
 
+/** Normalize volume declarations from string or object form */
 export function normalizeVolumes(raw: string[] | VolumeSpec[] | undefined): VolumeSpec[] {
   return (raw || []).map((volume) => {
     if (typeof volume !== "string") return volumeSpecSchema.parse(volume);
@@ -504,6 +606,7 @@ export function normalizeVolumes(raw: string[] | VolumeSpec[] | undefined): Volu
   });
 }
 
+/** Render a structured VolumeSpec back to a colon-separated string. */
 export function renderVolumeSpec(volume: VolumeSpec): string {
   return [volume.source, volume.target, volume.mode].filter(Boolean).join(":");
 }
@@ -615,6 +718,7 @@ function formatList(items: string[]): string {
   return items.map((item) => `  - ${item}`).join("\n");
 }
 
+/** Format a Zod validation error into a human-readable string. */
 export function formatZodError(error: z.ZodError): string {
   return error.issues.map((issue) => {
     const path = issue.path.length ? issue.path.join(".") : "(root)";
@@ -703,10 +807,17 @@ const topologyManifestV2Schema = topologyManifestV1Schema.extend({
   ),
 }).strict();
 
+/** Zod schema for versioned topology manifests
+ *
+ * @remarks
+ * Supports the version 1 and version 2 manifest layouts
+ */
 export const topologyManifestSchema = z.union([topologyManifestV1Schema, topologyManifestV2Schema]);
 
+/** Validated topology manifest JSON */
 export type ParsedTopologyManifest = z.infer<typeof topologyManifestSchema>;
 
+/** Parse and validate a topology manifest JSON value. */
 export function parseTopologyManifestJson(
   value: unknown,
   pathLabel: string,
