@@ -19,10 +19,13 @@ import {
   dispatchCommand,
   getBrowserClientCount,
 } from "../../services/control_bridge.ts";
-import { proxyUpstreamHeaders } from "../../services/proxy.ts";
+import {
+  parseProxyResponse,
+  proxyUpstreamHeaders,
+} from "../../services/proxy.ts";
 
 export const handler: Handlers = {
-  async POST(req) {
+  async POST(req: Request) {
     const body = await req.json();
     const method: string = body.method || "";
     const params: Record<string, string> = body.params || {};
@@ -62,7 +65,7 @@ export const handler: Handlers = {
     const isQuery = xrpcMethodUsesHttpGet(method);
     const url = `${targetUrl}/xrpc/${method}`;
 
-    const headers: Record<string, string> = { Accept: "application/json" };
+    const headers = proxyUpstreamHeaders(req);
     const authHeader: string | undefined = body.authorization;
     if (authHeader) {
       headers["Authorization"] = authHeader;
@@ -72,28 +75,19 @@ export const handler: Handlers = {
       let resp: Response;
 
       if (isQuery && !xrpcBody) {
-        resp = await fetch(`${url}?${new URLSearchParams(params)}`, { headers });
+        resp = await fetch(`${url}?${new URLSearchParams(params)}`, {
+          headers,
+        });
       } else {
+        headers["Content-Type"] = "application/json";
         resp = await fetch(url, {
           method: "POST",
-          headers: { ...headers, "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify(xrpcBody || params),
         });
       }
 
-      const contentType = resp.headers.get("content-type") || "";
-      let payload: unknown;
-
-      if (contentType.includes("application/json")) {
-        try {
-          payload = await resp.json();
-        } catch {
-          payload = { raw: await resp.text() };
-        }
-      } else {
-        payload = { raw: await resp.text() };
-      }
-
+      const payload = await parseProxyResponse(resp);
       return Response.json(payload, { status: resp.status });
     } catch (err) {
       const detail = err instanceof Error ? err.message : String(err);
