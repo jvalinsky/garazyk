@@ -5,30 +5,16 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Auth/JWT.h"
+#import "Auth/Secp256k1.h"
+#import "Core/DID.h"
 #import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
+#import <CommonCrypto/CommonDigest.h>
 
 @interface ChatAuthManager ()
-@property (nonatomic, strong, nullable) JWTVerifier *verifier;
-@property (nonatomic, strong, nullable) NSData *cachedPublicKey;
-@property (nonatomic, copy, nullable) NSString *cachedPdsUrl;
-@property (nonatomic, assign) NSTimeInterval lastKeyFetchTime;
-@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t keyCacheQueue;
+@property (nonatomic, strong) DIDResolver *didResolver;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t verificationQueue;
 @end
-
-static const NSTimeInterval kKeyRefreshInterval = 3600.0; // Re-fetch JWKS every hour
-
-static NSString *ChatAuthURLByAppendingPath(NSString *baseURL, NSString *path) {
-    NSString *trimmedBase = [baseURL stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-    NSString *trimmedPath = [path stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"/"]];
-    if (trimmedBase.length == 0 || trimmedPath.length == 0) {
-        return nil;
-    }
-    if ([trimmedBase hasSuffix:@"/"]) {
-        return [trimmedBase stringByAppendingString:trimmedPath];
-    }
-    return [NSString stringWithFormat:@"%@/%@", trimmedBase, trimmedPath];
-}
 
 @implementation ChatAuthManager
 
@@ -37,161 +23,31 @@ static NSString *ChatAuthURLByAppendingPath(NSString *baseURL, NSString *path) {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         shared = [[ChatAuthManager alloc] init];
-        shared->_keyCacheQueue = dispatch_queue_create("com.atproto.chat.auth.keycache", DISPATCH_QUEUE_SERIAL);
+        shared->_didResolver = [DIDResolver sharedResolver];
+        shared->_verificationQueue = dispatch_queue_create("com.atproto.chat.auth.verification", DISPATCH_QUEUE_SERIAL);
     });
     return shared;
 }
 
-#pragma mark - JWKS Public Key Fetching
-
-- (nullable NSDictionary *)fetchJWKSDictionaryFromURLString:(NSString *)jwksURL {
-    NSURL *endpointURL = [NSURL URLWithString:jwksURL];
-    if (!endpointURL) {
-        return nil;
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _didResolver = [DIDResolver sharedResolver];
+        _verificationQueue = dispatch_queue_create("com.atproto.chat.auth.verification", DISPATCH_QUEUE_SERIAL);
     }
-
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:endpointURL
-                                                           cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
-                                                       timeoutInterval:10.0];
-
-    __block NSData *data = nil;
-    __block NSError *fetchError = nil;
-    __block NSInteger statusCode = 0;
-    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-    [[ATProtoSafeHTTPClient sharedClient] performSafeDataTaskWithRequest:request options:[ATProtoSafeHTTPClientOptions defaultOptions] completion:^(NSData * _Nullable responseData, NSHTTPURLResponse * _Nullable response, NSError * _Nullable error) {
-            data = responseData;
-            fetchError = error;
-            if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
-                statusCode = [(NSHTTPURLResponse *)response statusCode];
-            }
-            dispatch_semaphore_signal(semaphore);
-        }];
-    dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_SEC));
-
-    if (!data || (statusCode != 0 && (statusCode < 200 || statusCode >= 300))) {
-        GZ_LOG_ERROR(@"ChatAuthManager: failed to fetch JWKS from %@: status=%ld error=%@",
-                      jwksURL, (long)statusCode, fetchError);
-        return nil;
-    }
-
-    id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
-    if (![json isKindOfClass:[NSDictionary class]]) {
-        GZ_LOG_ERROR(@"ChatAuthManager: JWKS from %@ was not a JSON object", jwksURL);
-        return nil;
-    }
-
-    return json;
-}
-
-- (nullable NSDictionary *)firstJWKFromJWKSObject:(NSDictionary *)jwks {
-    NSArray *keys = jwks[@"keys"];
-    if ([keys isKindOfClass:[NSArray class]] && keys.count > 0) {
-        NSDictionary *firstKey = keys[0];
-        return [firstKey isKindOfClass:[NSDictionary class]] ? firstKey : nil;
-    }
-
-    return [jwks[@"kty"] isKindOfClass:[NSString class]] ? jwks : nil;
-}
-
-- (nullable NSData *)fetchPublicKeyFromPDS {
-    NSString *url = self.pdsUrl;
-    if (url.length == 0) {
-        return nil;
-    }
-
-    // Check cache under queue protection
-    __block NSData *cachedKey = nil;
-    __block BOOL cacheHit = NO;
-    dispatch_sync(self.keyCacheQueue, ^{
-        if (self.cachedPublicKey && [url isEqualToString:self.cachedPdsUrl]
-            && ([[NSDate date] timeIntervalSince1970] - self.lastKeyFetchTime) < kKeyRefreshInterval) {
-            cachedKey = self.cachedPublicKey;
-            cacheHit = YES;
-        }
-    });
-    if (cacheHit) {
-        return cachedKey;
-    }
-
-    NSArray<NSString *> *jwksURLs = @[
-        ChatAuthURLByAppendingPath(url, @"oauth/jwks"),
-        ChatAuthURLByAppendingPath(url, @".well-known/jwks.json"),
-    ];
-
-    NSDictionary *jwk = nil;
-    for (NSString *jwksURL in jwksURLs) {
-        NSDictionary *jwks = [self fetchJWKSDictionaryFromURLString:jwksURL];
-        jwk = jwks ? [self firstJWKFromJWKSObject:jwks] : nil;
-        if (jwk) {
-            break;
-        }
-    }
-
-    if (!jwk) {
-        return cachedKey;
-    }
-
-    NSData *publicKey = [self publicKeyFromJWK:jwk];
-    if (publicKey) {
-        dispatch_sync(self.keyCacheQueue, ^{
-            self.cachedPublicKey = publicKey;
-            self.cachedPdsUrl = url;
-            self.lastKeyFetchTime = [[NSDate date] timeIntervalSince1970];
-        });
-        GZ_LOG_INFO(@"ChatAuthManager: fetched public key from PDS JWKS");
-    }
-    return publicKey ?: cachedKey;
-}
-
-- (nullable NSData *)publicKeyFromJWK:(NSDictionary *)jwk {
-    // Validate JWK type and curve
-    NSString *kty = jwk[@"kty"];
-    NSString *crv = jwk[@"crv"];
-    if (![kty isEqualToString:@"EC"]) {
-        GZ_LOG_ERROR(@"ChatAuthManager: JWK kty is not EC: %@", kty);
-        return nil;
-    }
-    if (![crv isEqualToString:@"P-256"] && ![crv isEqualToString:@"secp256k1"]) {
-        GZ_LOG_ERROR(@"ChatAuthManager: JWK crv not supported: %@ (expected P-256 or secp256k1)", crv);
-        return nil;
-    }
-
-    // Extract x and y coordinates for EC public key
-    NSString *x = jwk[@"x"];
-    NSString *y = jwk[@"y"];
-    if (!x || !y) {
-        return nil;
-    }
-
-    // Decode base64url-encoded x and y coordinates
-    NSData *xData = [[NSData alloc] initWithBase64EncodedString:[self base64URLToBase64:x] options:0];
-    NSData *yData = [[NSData alloc] initWithBase64EncodedString:[self base64URLToBase64:y] options:0];
-    if (!xData || !yData) {
-        return nil;
-    }
-
-    // Construct uncompressed EC public key: 0x04 || x || y
-    NSMutableData *keyData = [NSMutableData dataWithBytes:"\x04" length:1];
-    [keyData appendData:xData];
-    [keyData appendData:yData];
-    return [keyData copy];
-}
-
-- (NSString *)base64URLToBase64:(NSString *)base64URL {
-    NSString *s = [base64URL stringByReplacingOccurrencesOfString:@"-" withString:@"+"];
-    s = [s stringByReplacingOccurrencesOfString:@"_" withString:@"/"];
-    // Pad with = to make length a multiple of 4
-    NSUInteger padding = (4 - (s.length % 4)) % 4;
-    for (NSUInteger i = 0; i < padding; i++) {
-        s = [s stringByAppendingString:@"="];
-    }
-    return s;
+    return self;
 }
 
 #pragma mark - Authentication
 
 - (nullable NSString *)authenticateRequest:(HttpRequest *)request
                                   response:(nullable HttpResponse *)response {
+    return [self authenticateRequest:request response:response expectedMethod:nil];
+}
+
+- (nullable NSString *)authenticateRequest:(HttpRequest *)request
+                                  response:(nullable HttpResponse *)response
+                             expectedMethod:(nullable NSString *)expectedLxm {
     NSString *authHeader = [request headerForKey:@"Authorization"];
     if (!authHeader) {
         if (response) {
@@ -201,6 +57,7 @@ static NSString *ChatAuthURLByAppendingPath(NSString *baseURL, NSString *path) {
         return nil;
     }
 
+    // Extract token from Authorization header
     NSString *token = nil;
     if ([authHeader hasPrefix:@"Bearer "]) {
         token = [authHeader substringFromIndex:7];
@@ -214,6 +71,7 @@ static NSString *ChatAuthURLByAppendingPath(NSString *baseURL, NSString *path) {
         return nil;
     }
 
+    // Parse the JWT
     NSError *error = nil;
     JWT *jwt = [JWT jwtWithToken:token error:&error];
     if (!jwt) {
@@ -224,17 +82,22 @@ static NSString *ChatAuthURLByAppendingPath(NSString *baseURL, NSString *path) {
         return nil;
     }
 
-    NSString *did = jwt.payload.sub;
-    if (!did) {
+    // 1. Reject forbidden typ values per spec
+    //    Service tokens must not be OAuth access tokens, refresh tokens, or DPoP proofs.
+    NSString *typ = jwt.header.typ;
+    if ([typ isEqualToString:@"at+jwt"] ||
+        [typ isEqualToString:@"refresh+jwt"] ||
+        [typ isEqualToString:@"dpop+jwt"]) {
+        GZ_LOG_ERROR(@"ChatAuthManager: rejected JWT with forbidden typ: %@", typ);
         if (response) {
             response.statusCode = 401;
-            [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"JWT subject missing"}];
+            [response setJsonBody:@{@"error": @"BadJwtType", @"message": [NSString stringWithFormat:@"Invalid JWT type \"%@\"", typ]}];
         }
         return nil;
     }
 
-    // Check expiration
-    if (jwt.payload.exp && [jwt.payload.exp timeIntervalSinceNow] < 0) {
+    // 2. Validate expiration
+    if (!jwt.payload.exp || [jwt.payload.exp timeIntervalSinceNow] < 0) {
         if (response) {
             response.statusCode = 401;
             [response setJsonBody:@{@"error": @"ExpiredToken", @"message": @"JWT expired"}];
@@ -242,49 +105,224 @@ static NSString *ChatAuthURLByAppendingPath(NSString *baseURL, NSString *path) {
         return nil;
     }
 
-    // Verify JWT signature if PDS URL is configured
-    NSData *publicKey = [self fetchPublicKeyFromPDS];
-    if (publicKey) {
-        JWTVerifier *verifier = [[JWTVerifier alloc] init];
-        verifier.publicKey = publicKey;
-        verifier.allowedAlgorithms = @[@"ES256", @"ES256K"];
-
-        NSError *verifyError = nil;
-        if (![verifier verifyJWT:jwt error:&verifyError]) {
-            GZ_LOG_WARN(@"ChatAuthManager: local JWT verification failed (%@), falling back to PDS session check",
-                         verifyError.localizedDescription);
-            // Local verification failed (e.g. JWKS key type mismatch).
-            // Fall back to PDS-verified auth: call com.atproto.server.getSession
-            // with the same token and let the PDS validate it.
-            NSString *pdsDid = [self validateTokenViaPDS:token];
-            if (pdsDid) {
-                return pdsDid;
-            }
-            if (response) {
-                response.statusCode = 401;
-                [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"JWT signature verification failed"}];
-            }
-            return nil;
-        }
-    } else if (self.pdsUrl.length > 0) {
-        // PDS URL is configured but we couldn't fetch the key — try PDS session check
-        GZ_LOG_WARN(@"ChatAuthManager: JWKS key unavailable, falling back to PDS session check");
-        NSString *pdsDid = [self validateTokenViaPDS:token];
-        if (pdsDid) {
-            return pdsDid;
-        }
+    // 3. Validate audience (aud) against this service's DID
+    NSString *aud = jwt.payload.aud;
+    if (!aud.length) {
         if (response) {
-            response.statusCode = 503;
-            [response setJsonBody:@{@"error": @"KeyUnavailable", @"message": @"Cannot verify token: PDS public key unavailable"}];
+            response.statusCode = 401;
+            [response setJsonBody:@{@"error": @"BadJwtAudience", @"message": @"JWT audience (aud) missing"}];
         }
         return nil;
     }
-    // If no pdsUrl is configured, we trust the PDS proxy (legacy behavior for proxied-only deployments)
 
-    return did;
+    if (self.serviceDID.length > 0 && ![aud isEqualToString:self.serviceDID]) {
+        // Also accept without fragment as a fallback (some PDS implementations
+        // may not include the fragment in aud)
+        NSString *audWithoutFragment = aud;
+        NSRange hashRange = [aud rangeOfString:@"#"];
+        if (hashRange.location != NSNotFound) {
+            audWithoutFragment = [aud substringToIndex:hashRange.location];
+        }
+
+        NSString *serviceDIDWithoutFragment = self.serviceDID;
+        NSRange serviceHashRange = [self.serviceDID rangeOfString:@"#"];
+        if (serviceHashRange.location != NSNotFound) {
+            serviceDIDWithoutFragment = [self.serviceDID substringToIndex:serviceHashRange.location];
+        }
+
+        if (![audWithoutFragment isEqualToString:serviceDIDWithoutFragment] &&
+            ![aud isEqualToString:serviceDIDWithoutFragment]) {
+            GZ_LOG_ERROR(@"ChatAuthManager: JWT audience mismatch: aud=%@, expected=%@", aud, self.serviceDID);
+            if (response) {
+                response.statusCode = 401;
+                [response setJsonBody:@{@"error": @"BadJwtAudience", @"message": @"JWT audience does not match service DID"}];
+            }
+            return nil;
+        }
+    }
+
+    // 4. Validate lexicon method (lxm) if expected
+    NSString *lxm = jwt.payload.lxm;
+    if (expectedLxm.length > 0 && ![lxm isEqualToString:expectedLxm]) {
+        NSString *message = lxm.length > 0
+            ? [NSString stringWithFormat:@"Bad JWT lexicon method (\"lxm\"). must match: %@", expectedLxm]
+            : [NSString stringWithFormat:@"Missing JWT lexicon method (\"lxm\"). must match: %@", expectedLxm];
+        GZ_LOG_ERROR(@"ChatAuthManager: %@", message);
+        if (response) {
+            response.statusCode = 401;
+            [response setJsonBody:@{@"error": @"BadJwtLexiconMethod", @"message": message}];
+        }
+        return nil;
+    }
+
+    // 5. Validate issuer (iss) — must be a valid DID
+    NSString *iss = jwt.payload.iss;
+    if (!iss.length) {
+        if (response) {
+            response.statusCode = 401;
+            [response setJsonBody:@{@"error": @"BadJwtIss", @"message": @"JWT issuer (iss) missing"}];
+        }
+        return nil;
+    }
+
+    // Strip fragment from iss if present (e.g., "did:plc:xxx#atproto" → "did:plc:xxx")
+    NSString *issDID = iss;
+    NSRange issFragmentRange = [iss rangeOfString:@"#"];
+    if (issFragmentRange.location != NSNotFound) {
+        issDID = [iss substringToIndex:issFragmentRange.location];
+    }
+
+    if (![issDID hasPrefix:@"did:"]) {
+        if (response) {
+            response.statusCode = 401;
+            [response setJsonBody:@{@"error": @"BadJwtIss", @"message": @"JWT issuer is not a valid DID"}];
+        }
+        return nil;
+    }
+
+    // 6. Resolve issuer DID to get signing key and verify signature
+    NSString *verifiedDID = [self verifyServiceAuthJWT:jwt issuerDID:issDID error:&error];
+    if (!verifiedDID) {
+        // Signature verification failed — try with fresh key (key rotation)
+        GZ_LOG_WARN(@"ChatAuthManager: initial signature verification failed for %@, retrying with fresh key: %@", issDID, error);
+        verifiedDID = [self verifyServiceAuthJWT:jwt issuerDID:issDID forceRefresh:YES error:&error];
+    }
+
+    if (!verifiedDID) {
+        // Final fallback: if this is a proxied request from a PDS that still
+        // uses the legacy PDS-signed token format, try the old validation path.
+        // The legacy token has iss=PDS DID and sub=user DID.
+        if (jwt.payload.sub.length > 0 && [jwt.payload.sub hasPrefix:@"did:"]) {
+            GZ_LOG_WARN(@"ChatAuthManager: service auth verification failed, attempting legacy PDS-signed token fallback for sub=%@", jwt.payload.sub);
+            NSString *legacyDID = [self validateLegacyPDSToken:jwt];
+            if (legacyDID) {
+                return legacyDID;
+            }
+        }
+
+        GZ_LOG_ERROR(@"ChatAuthManager: JWT signature verification failed for issuer %@: %@", issDID, error);
+        if (response) {
+            response.statusCode = 401;
+            [response setJsonBody:@{@"error": @"BadJwtSignature", @"message": @"JWT signature does not match issuer"}];
+        }
+        return nil;
+    }
+
+    return verifiedDID;
 }
 
-#pragma mark - PDS Session Verification (Fallback)
+#pragma mark - Signature Verification
+
+- (nullable NSString *)verifyServiceAuthJWT:(JWT *)jwt
+                                 issuerDID:(NSString *)issDID
+                                     error:(NSError **)error {
+    return [self verifyServiceAuthJWT:jwt issuerDID:issDID forceRefresh:NO error:error];
+}
+
+- (nullable NSString *)verifyServiceAuthJWT:(JWT *)jwt
+                                 issuerDID:(NSString *)issDID
+                             forceRefresh:(BOOL)forceRefresh
+                                     error:(NSError **)error {
+    // Resolve the issuer's DID document to get the signing key
+    NSDictionary *atprotoData = [self.didResolver resolveAtprotoDataForDID:issDID forceRefresh:forceRefresh error:error];
+    if (!atprotoData) {
+        GZ_LOG_ERROR(@"ChatAuthManager: failed to resolve DID %@: %@", issDID, error ? *error : @"(unknown)");
+        return nil;
+    }
+
+    NSData *signingKeyBytes = atprotoData[@"signingKeyBytes"];
+    if (!signingKeyBytes.length) {
+        // Try the did:key string instead
+        NSString *signingKeyStr = atprotoData[@"signingKey"];
+        if (signingKeyStr.length) {
+            GZ_LOG_WARN(@"ChatAuthManager: got signing key as did:key string but need raw bytes for verification: %@", signingKeyStr);
+        }
+        if (error) {
+            *error = [NSError errorWithDomain:@"ChatAuthManager"
+                                         code:401
+                                     userInfo:@{NSLocalizedDescriptionKey: @"No signing key found in DID document"}];
+        }
+        return nil;
+    }
+
+    // Verify the JWT signature using the resolved signing key
+    NSString *alg = jwt.header.alg ?: @"";
+    NSData *signingInputData = [jwt.signingInput dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *signatureData = [JWT base64URLDecode:jwt.encodedSignature error:error];
+    if (!signatureData) return nil;
+
+    BOOL verified = NO;
+
+    if ([alg isEqualToString:@"ES256K"]) {
+        // ES256K verification using secp256k1
+        Secp256k1 *secp = [Secp256k1 shared];
+        unsigned char hash[32];
+        CC_SHA256(signingInputData.bytes, (CC_LONG)signingInputData.length, hash);
+        NSData *hashData = [NSData dataWithBytes:hash length:32];
+        verified = [secp verifySignature:signatureData forHash:hashData withPublicKey:signingKeyBytes error:error];
+    } else if ([alg isEqualToString:@"ES256"]) {
+        // ES256 (P-256) verification — not typical for atproto but supported
+        // This would require Security framework SecKeyVerifySignature
+        GZ_LOG_WARN(@"ChatAuthManager: ES256 verification not yet implemented for service auth");
+        if (error) {
+            *error = [NSError errorWithDomain:@"ChatAuthManager"
+                                         code:401
+                                     userInfo:@{NSLocalizedDescriptionKey: @"ES256 verification not implemented"}];
+        }
+        return nil;
+    } else {
+        if (error) {
+            *error = [NSError errorWithDomain:@"ChatAuthManager"
+                                         code:401
+                                     userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Unsupported JWT algorithm: %@", alg]}];
+        }
+        return nil;
+    }
+
+    if (!verified) {
+        if (error && !*error) {
+            *error = [NSError errorWithDomain:@"ChatAuthManager"
+                                         code:401
+                                     userInfo:@{NSLocalizedDescriptionKey: @"JWT signature verification failed"}];
+        }
+        return nil;
+    }
+
+    // Return the issuer DID (without fragment) as the authenticated user
+    return issDID;
+}
+
+#pragma mark - Legacy PDS Token Fallback
+
+/*! Validate a legacy PDS-signed token (iss=PDS DID, sub=user DID).
+    This supports gradual migration from the old format. */
+- (nullable NSString *)validateLegacyPDSToken:(JWT *)jwt {
+    // Legacy tokens have sub=user DID and are signed with the PDS key.
+    // We can't verify the PDS key here, but we can trust the sub claim
+    // if the token came from a PDS we trust (configured via pdsUrl).
+    NSString *sub = jwt.payload.sub;
+    if (!sub.length || ![sub hasPrefix:@"did:"]) {
+        return nil;
+    }
+
+    // Check expiration
+    if (jwt.payload.exp && [jwt.payload.exp timeIntervalSinceNow] < 0) {
+        return nil;
+    }
+
+    // Try to verify via PDS session check as a last resort
+    if (self.pdsUrl.length > 0) {
+        NSString *pdsDid = [self validateTokenViaPDS:[jwt encodedToken]];
+        if (pdsDid.length > 0) {
+            return pdsDid;
+        }
+    }
+
+    // If no PDS URL configured, trust the sub claim (legacy behavior)
+    return sub;
+}
+
+#pragma mark - PDS Session Verification (Legacy Fallback)
 
 /*! Validate a token by calling the PDS's com.atproto.server.getSession.
     Returns the DID on success, nil on failure. */
@@ -336,6 +374,20 @@ static NSString *ChatAuthURLByAppendingPath(NSString *baseURL, NSString *path) {
 
     GZ_LOG_INFO(@"ChatAuthManager: PDS session check verified DID: %@", did);
     return did;
+}
+
+#pragma mark - URL Helpers
+
+static NSString *ChatAuthURLByAppendingPath(NSString *baseURL, NSString *path) {
+    NSString *trimmedBase = [baseURL stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    NSString *trimmedPath = [path stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"/"]];
+    if (trimmedBase.length == 0 || trimmedPath.length == 0) {
+        return nil;
+    }
+    if ([trimmedBase hasSuffix:@"/"]) {
+        return [trimmedBase stringByAppendingString:trimmedPath];
+    }
+    return [NSString stringWithFormat:@"%@/%@", trimmedBase, trimmedPath];
 }
 
 @end

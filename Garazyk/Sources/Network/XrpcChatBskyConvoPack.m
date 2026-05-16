@@ -40,7 +40,11 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
     }
 
     if (!services.jwtMinter && !services.adminController) {
-        return [[ChatAuthManager sharedManager] authenticateRequest:request response:response];
+        // Extract method NSID from request path for lxm validation
+        NSString *methodNSID = request.pathParameters[@"method"] ?: @"";
+        return [[ChatAuthManager sharedManager] authenticateRequest:request
+                                                           response:response
+                                                      expectedMethod:methodNSID.length > 0 ? methodNSID : nil];
     }
 
     return [XrpcAuthHelper extractDIDFromAuthHeader:authHeader

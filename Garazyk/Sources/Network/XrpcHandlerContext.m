@@ -9,6 +9,7 @@
 #import "Network/XrpcRoutePackServices.h"
 #import "Auth/JWT.h"
 #import "Admin/PDSAdminController.h"
+#import "Chat/Server/ChatAuthManager.h"
 
 @implementation XrpcHandlerContext
 
@@ -55,8 +56,18 @@
     return YES;
   }
 
+  // No jwtMinter/adminController — this is a standalone service (e.g., chat).
+  // Use ChatAuthManager to validate the service auth JWT.
+  NSString *methodNSID = _request.pathParameters[@"method"] ?: @"";
+  NSString *resolvedDID = [[ChatAuthManager sharedManager] authenticateRequest:_request
+                                                                      response:_response
+                                                                 expectedMethod:methodNSID.length > 0 ? methodNSID : nil];
+  if (!resolvedDID) {
+    return NO;
+  }
+  _authenticatedDID = resolvedDID;
   if (did) {
-    *did = nil;
+    *did = resolvedDID;
   }
   return YES;
 }
