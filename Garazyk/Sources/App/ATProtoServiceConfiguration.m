@@ -247,7 +247,16 @@ static BOOL ATProtoServiceConfigRunningUnderTests(void) {
     _crawlRelays = @[];
 
     // Security defaults
+    // Biometric protection and keychain require Apple platform APIs
+    // (Secure Enclave, LAContext, Security.framework keychain). On
+    // GNUstep/Linux these are unavailable, so default to NO.
+#if defined(GNUSTEP) || defined(LINUX)
+    _useBiometricProtection = NO;
+    _useKeychain = NO;
+#else
     _useBiometricProtection = runningUnderTests ? NO : YES;
+    _useKeychain = runningUnderTests ? NO : YES;
+#endif
     if ([self envVarExists:@"PDS_USE_BIOMETRIC_PROTECTION"]) {
       _useBiometricProtection =
           [self boolFromEnv:@"PDS_USE_BIOMETRIC_PROTECTION"
@@ -255,7 +264,6 @@ static BOOL ATProtoServiceConfigRunningUnderTests(void) {
     }
     GZ_LOG_INFO_C(GZLogComponentCore, @"Biometric protection: %@", _useBiometricProtection ? @"ENABLED" : @"DISABLED");
 
-    _useKeychain = runningUnderTests ? NO : YES;
     if ([self envVarExists:@"PDS_USE_KEYCHAIN"]) {
       _useKeychain = [self boolFromEnv:@"PDS_USE_KEYCHAIN"
                                default:_useKeychain];
@@ -411,12 +419,21 @@ static BOOL ATProtoServiceConfigRunningUnderTests(void) {
   }
 
   if ([self envVarExists:@"PDS_USE_KEYCHAIN"]) {
+#if defined(GNUSTEP) || defined(LINUX)
+    _useKeychain = [self boolFromEnv:@"PDS_USE_KEYCHAIN" default:NO];
+#else
     _useKeychain = [self boolFromEnv:@"PDS_USE_KEYCHAIN" default:YES];
+#endif
   }
 
   if ([self envVarExists:@"PDS_USE_BIOMETRIC_PROTECTION"]) {
+#if defined(GNUSTEP) || defined(LINUX)
+    _useBiometricProtection =
+        [self boolFromEnv:@"PDS_USE_BIOMETRIC_PROTECTION" default:NO];
+#else
     _useBiometricProtection =
         [self boolFromEnv:@"PDS_USE_BIOMETRIC_PROTECTION" default:YES];
+#endif
   }
 
   _requireDPoPNonce = [self boolFromEnv:@"PDS_REQUIRE_DPOP_NONCE" default:NO];
