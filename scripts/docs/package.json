@@ -14,7 +14,8 @@
     "repo:sync": "deno run -A ../../scripts/docs/repo_docs.ts sync",
     "repo:related": "deno run -A ../../scripts/docs/repo_docs.ts enrich-related",
     "repo:validate:strict": "deno run -A ../../scripts/docs/repo_docs.ts validate --internal-strict --orphans",
-    "repo:validate:external": "deno run -A ../../scripts/docs/repo_docs.ts validate --external-report"
+    "repo:validate:external": "deno run -A ../../scripts/docs/repo_docs.ts validate --external-report",
+    "api:ts": "cd .. && typedoc --options typedoc.json"
   },
   "keywords": [
     "documentation",
@@ -34,7 +35,9 @@
   },
   "devDependencies": {
     "@mermaid-js/mermaid-cli": "^10.6.1",
-    "eslint": "^8.56.0"
+    "eslint": "^8.56.0",
+    "typedoc": "^0.28.14",
+    "typescript": "^5.8.0"
   },
   "engines": {
     "node": ">=18.0.0"

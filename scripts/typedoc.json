@@ -1,0 +1,33 @@
+{
+  "name": "Garazyk Deno Harness",
+  "entryPoints": [
+    "lib/deno/mod.ts",
+    "lib/deno/client.ts",
+    "lib/deno/runner.ts",
+    "lib/deno/config.ts",
+    "lib/deno/assertions.ts",
+    "lib/deno/transport.ts",
+    "lib/deno/clients/index.ts",
+    "lib/deno/docker.ts",
+    "lib/deno/docker_api.ts",
+    "lib/deno/docker_types.ts",
+    "lib/deno/topology.ts",
+    "lib/deno/topology_schema.ts",
+    "lib/deno/topology_types.ts",
+    "lib/deno/scenario_runner.ts",
+    "lib/deno/scenario_metadata.ts",
+    "lib/deno/otel.ts"
+  ],
+  "entryPointStrategy": "resolve",
+  "out": "docs/api",
+  "includeVersion": true,
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "validation": {
+    "notDocumented": true
+  },
+  "plugin": [],
+  "lightHighlightTheme": "github-light",
+  "darkHighlightTheme": "github-dark",
+  "skipErrorChecking": true
+}
