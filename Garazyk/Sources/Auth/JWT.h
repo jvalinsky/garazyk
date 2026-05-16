@@ -452,6 +452,34 @@ typedef NS_ENUM(NSInteger, JWTError) {
                            error:(NSError **)error;
 
 /*!
+ @method mintServiceAuthJWTForDID:aud:lxm:actorKeyManager:error:
+ 
+ @abstract Mints a service-to-service auth JWT per AT Protocol spec.
+ 
+ @discussion Creates a short-lived JWT signed with the user's repo signing
+ key. Per the AT Protocol XRPC spec, service auth JWTs must have:
+ - iss: user's DID (the requesting account)
+ - aud: target service DID (optionally with service fragment)
+ - lxm: lexicon method NSID
+ - iat: issued-at timestamp
+ - exp: expiration (iat + 60 seconds)
+ - jti: random 16-hex nonce for replay prevention
+ - Header: { typ: "JWT", alg: "ES256K" }
+ 
+ @param userDID The DID of the requesting user (becomes iss claim).
+ @param audienceDID The DID of the target service (becomes aud claim).
+ @param methodNSID The lexicon method NSID (becomes lxm claim).
+ @param actorKeyManager The user's signing key manager for ES256K signing.
+ @param error On return, contains an error if minting failed.
+ @return The signed JWT string, or nil on failure.
+ */
+- (nullable NSString *)mintServiceAuthJWTForDID:(NSString *)userDID
+                                            aud:(NSString *)audienceDID
+                                            lxm:(NSString *)methodNSID
+                                actorKeyManager:(id<PDSActorKeyManager>)actorKeyManager
+                                           error:(NSError **)error;
+
+/*!
  @method toJWKS
  
  @abstract Exports the configured keys as a JWK Set.
