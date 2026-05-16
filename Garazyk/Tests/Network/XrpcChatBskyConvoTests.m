@@ -321,6 +321,23 @@
 
 #pragma mark - Batch Operations Tests
 
+- (void)testSendMessage {
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
+
+    NSString *convoId = [self createConvoWithAuth:authHeader];
+    XCTAssertNotNil(convoId, @"Failed to create conversation");
+
+    HttpResponse *sendResponse = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.sendMessage"
+                                                           body:@{
+                                                               @"convoId": convoId,
+                                                               @"message": @{@"text": @"hello"}
+                                                           }
+                                                        headers:@{@"authorization": authHeader}];
+    XCTAssertEqual(sendResponse.statusCode, 200);
+    XCTAssertNotNil(sendResponse.jsonBody[@"id"]);
+    XCTAssertEqualObjects(sendResponse.jsonBody[@"text"], @"hello");
+}
+
 - (void)testSendMessageBatchRequiresAuth {
     HttpResponse *response = [self sendJsonRequestWithPath:@"/xrpc/chat.bsky.convo.sendMessageBatch"
                                                       body:@{@"convoId": @"convo/test", @"messages": @[@{@"text": @"hello"}]}
