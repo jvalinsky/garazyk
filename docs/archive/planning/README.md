@@ -21,7 +21,6 @@ This directory is the canonical archive index for historical planning artifacts.
 
 - Keep pointer stubs at old paths while links transition.
 - Record file moves in [Doc Migration Map](../../metadata/doc-migration-map.json).
-- Keep archive documents discoverable via [Repository Documentation Index](../../repo-index/index).
 
 ## Related
 

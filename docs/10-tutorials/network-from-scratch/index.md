@@ -142,5 +142,4 @@ Continue to [Part 1: HTTP transport and parser](./http-transport-and-parser).
 
 - [Documentation Map](../../11-reference/documentation-map.md)
 - [Contributor Guide](../../index.md)
-- [Repository Documentation Index](../../repo-index/index.md)
 

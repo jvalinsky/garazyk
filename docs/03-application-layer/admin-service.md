@@ -583,5 +583,4 @@ Start here when you change administrative or moderation behavior:
 
 - [Documentation Map](../11-reference/documentation-map.md)
 - [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
 
