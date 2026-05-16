@@ -1,25 +1,43 @@
 /**
- * Shared Type Definitions
+ * Shared type definitions for the scenario dashboard
+ *
+ * @module dashboard_types
  */
 
+/** Service operational status type. */
 export type ServiceStatusType = "running" | "stopped" | "starting" | "error";
 
+/** Status of a single ATProto service in the local network */
 export interface ServiceStatus {
+  /** Internal service name */
   name: string;
+  /** Human-readable service label */
   label: string;
+  /** Service URL shown in the dashboard */
   url: string;
+  /** Exposed port for the service */
   port: number;
+  /** Current lifecycle state */
   status: ServiceStatusType;
+  /** Cached health flag when available */
   healthy?: boolean;
 }
 
+/** A scenario discovered via file-system scan */
 export interface DiscoveredScenario {
+  /** Stable scenario identifier */
   id: string;
+  /** Human-readable scenario name */
   name: string;
+  /** Filesystem path to the scenario entry point */
   path: string;
+  /** Scenario category used for grouping in the dashboard */
   category: string;
+  /** Whether the scenario requires PDS2 */
   needsPds2: boolean;
+  /** Required scenarios or capabilities */
   requires?: string[];
+  /** Parameter metadata keyed by parameter name */
   parameters?: Record<string, {
     type: "number" | "string" | "boolean";
     default: string | number | boolean;
@@ -27,66 +45,125 @@ export interface DiscoveredScenario {
   }>;
 }
 
+/** Result status of a scenario run. */
 export type ScenarioStatus = "passed" | "failed" | "skipped" | "running";
+/** A single scenario parameter value type. */
 export type ScenarioParamValue = string | number | boolean;
 
+/** A single step within a scenario result */
 export interface Step {
+  /** Step name */
   name: string;
+  /** Step status */
   status: ScenarioStatus;
+  /** Additional detail for the step */
   detail?: string;
+  /** Step duration in milliseconds */
   durationMs?: number;
 }
 
+/** Configuration for starting a new run */
 export interface RunConfig {
+  /** Topology preset name */
   topology: string;
+  /** Runner implementation to use */
   runner: "host" | "docker";
+  /** Scenario identifiers selected for the run */
   scenarioIds: string[];
+  /** Include the PDS2 role set */
   pds2: boolean;
+  /** Use locally built binaries instead of Docker images */
   binaryMode: boolean;
+  /** Browser client name or preset */
   webClient?: string;
+  /** Browser flow depth or preset */
   clientFlow?: string;
+  /** Scenario parameter overrides keyed by scenario id */
   scenarioParams?: Record<string, ScenarioParamValue>;
 }
 
+/** A run record, in progress or historical
+ *
+ * @remarks
+ * Epoch timestamps are stored in milliseconds and the scenario parameter map mirrors the original run configuration
+ */
 export interface Run {
+  /** Run identifier */
   id: string;
+  /** Epoch milliseconds when the run started */
   startedAt: number;
+  /** Epoch milliseconds when the run finished */
   finishedAt?: number;
+  /** Current lifecycle state */
   status: "starting" | "running" | "stopping" | "completed" | "error";
+  /** Total scenarios scheduled for the run */
   totalScenarios: number;
+  /** Number of passed scenarios */
   passed: number;
+  /** Number of failed scenarios */
   failed: number;
+  /** Number of skipped scenarios */
   skipped: number;
+  /** Total run duration in seconds */
   durationS?: number;
+  /** Whether the PDS2 role set was included */
   pds2?: boolean;
+  /** Whether the run used local binaries */
   binaryMode?: boolean;
+  /** Topology preset used for the run */
   topology?: string;
+  /** Runner implementation used for the run */
   runner?: "host" | "docker";
+  /** Browser client selected for the run */
   webClient?: string;
+  /** Browser flow depth or preset selected for the run */
   clientFlow?: string;
+  /** Scenario identifiers included in the run */
   scenarioIds?: string[];
+  /** Directory containing run artifacts */
   runDir?: string;
+  /** Directory containing generated reports */
   reportsDir?: string;
+  /** Path to the run log */
   logPath?: string;
+  /** PID of the spawned run process */
   childPid?: number;
+  /** Process exit code when available */
   exitCode?: number;
+  /** Epoch milliseconds when the run stopped */
   stoppedAt?: number;
+  /** Reason the run stopped */
   stopReason?: string;
+  /** Scenario parameter overrides keyed by scenario id */
   scenarioParams?: Record<string, ScenarioParamValue>;
 }
 
+/** Result of a single scenario within a run */
 export interface ScenarioResult {
+  /** Primary key for the result record */
   id: number;
+  /** Parent run identifier */
   runId: string;
+  /** Scenario identifier */
   scenarioId: string;
+  /** Human-readable scenario name */
   scenarioName: string;
+  /** Final scenario status */
   status: ScenarioStatus;
+  /** Number of passed assertions or steps */
   passed: number;
+  /** Number of failed assertions or steps */
   failed: number;
+  /** Number of skipped assertions or steps */
   skipped: number;
+  /** Scenario duration in milliseconds */
   durationMs?: number;
+  /** Serialized step list JSON */
   stepsJson: string;
+  /** Serialized artifact metadata JSON */
   artifactsJson?: string;
+  /** Epoch milliseconds when the scenario started */
   startedAt?: number;
+  /** Epoch milliseconds when the scenario finished */
   finishedAt?: number;
 }

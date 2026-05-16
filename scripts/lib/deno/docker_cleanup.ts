@@ -18,6 +18,7 @@ import { composeDown } from "./docker_compose.ts";
 // Stale container cleanup
 // ---------------------------------------------------------------------------
 
+/** Stop Docker Compose projects holding ports needed by the current run. */
 export async function stopStaleDockerE2e(
   opts: { withPds2?: boolean; otel?: boolean },
   currentProject: string,
@@ -92,6 +93,7 @@ async function stopStaleDockerE2eCLI(
 // Stale host process cleanup
 // ---------------------------------------------------------------------------
 
+/** Kill host processes (local ATProto binaries) that are holding needed ports. */
 export async function stopStaleHostProcesses(opts: { withPds2?: boolean; otel?: boolean }): Promise<void> {
   const ports = neededPorts(opts);
   const knownBinaries = new Set(["kaszlak", "garazyk-ui", "campagnola", "zuk", "syrena", "syrena-chat", "jelcz"]);

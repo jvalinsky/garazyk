@@ -1,5 +1,7 @@
+/** Scenario card grid component. @module ScenarioGrid */
 import ScenarioCard from "../islands/ScenarioCard.tsx";
 
+/** Props for the ScenarioGrid component. */
 interface ScenarioGridProps {
   scenarios: Array<{
     id: string;
@@ -11,6 +13,7 @@ interface ScenarioGridProps {
   }>;
 }
 
+/** Render a grid of ScenarioCard components. */
 export default function ScenarioGrid({ scenarios }: ScenarioGridProps) {
   return (
     <div class="scenario-grid">

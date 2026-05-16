@@ -1,3 +1,4 @@
+/** Scenario runner button island — dispatches a start-run request for a single scenario. @module ScenarioRunner */
 import { useRuntime } from "../runtime.ts";
 
 interface ScenarioRunnerProps {
@@ -5,6 +6,7 @@ interface ScenarioRunnerProps {
   needsPds2: boolean;
 }
 
+/** Render a "Run This Scenario" button. */
 export default function ScenarioRunner({ scenarioId, needsPds2 }: ScenarioRunnerProps) {
   const { state, dispatch } = useRuntime();
 

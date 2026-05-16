@@ -1,3 +1,5 @@
+/** Mock Twilio SMS verification server for E2E testing. @module mock_twilio */
+
 export interface MockVerificationState {
   code: string;
   createdAt: number;
@@ -9,6 +11,7 @@ export interface MockState {
   alwaysApproveCodes: string[];
 }
 
+/** Client for controlling a mock Twilio server via its __control HTTP API. */
 export class MockTwilioServer {
   private baseUrl: string;
   private process: Deno.ChildProcess | null = null;
@@ -115,6 +118,7 @@ export class MockTwilioServer {
   }
 }
 
+/** Start a mock Twilio server process and wait for it to become healthy. */
 export async function startMockTwilioServer(port = 8081): Promise<MockTwilioServer> {
   const server = new MockTwilioServer(`http://127.0.0.1:${port}`);
   server.startProcess();
@@ -122,6 +126,7 @@ export async function startMockTwilioServer(port = 8081): Promise<MockTwilioServ
   return server;
 }
 
+/** Stop a mock Twilio server process. */
 export function stopMockTwilioServer(server: MockTwilioServer): void {
   server.stopProcess();
 }

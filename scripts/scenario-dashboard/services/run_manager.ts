@@ -1,3 +1,4 @@
+/** Run Manager — manages the lifecycle of scenario runs. @module run_manager */
 import { fromFileUrl, join } from "$std/path/mod.ts";
 import { db } from "../db/index.ts";
 import { Run, RunConfig } from "./types.ts";
@@ -13,6 +14,7 @@ const LOCK_FILE = join(REPORTS_DIR, "active-run.json");
  * Simple async mutex for serializing state transitions.
  * Prevents concurrent startRun/stopRun calls from racing.
  */
+/** Simple async mutex for serializing state transitions. */
 class AsyncMutex {
   #queue: (() => void)[] = [];
   #locked = false;
@@ -37,6 +39,7 @@ class AsyncMutex {
   }
 }
 
+/** Public interface for the run manager. */
 export interface RunManager {
   getActiveRun(): Run | undefined;
   startRun(
@@ -466,4 +469,5 @@ class RunManagerImpl implements RunManager {
   }
 }
 
+/** Singleton run manager instance. */
 export const runManager = new RunManagerImpl();
