@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import "Sync/WebSocket/WebSocketServer.h"
 #ifdef __APPLE__
-#import "Network/PDSNetworkTransportMac.h"
+#import "Network/ATProtoNetworkTransportMac.h"
 #endif
 #import "Compat/PDSTypes.h"
 #import "Sync/WebSocket/WebSocketConnection.h"
@@ -349,7 +349,7 @@ static inline int set_reuseaddr(int fd) {
     nw_listener_set_new_connection_handler(listener, ^(nw_connection_t connection) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return;
-        PDSNetworkConnectionMac *adapter = [[PDSNetworkConnectionMac alloc] initWithConnection:connection];
+        ATProtoNetworkConnectionMac *adapter = [[ATProtoNetworkConnectionMac alloc] initWithConnection:connection];
         WebSocketConnection *webSocketConnection = [[WebSocketConnection alloc] initWithConnection:adapter];
         [strongSelf addConnection:webSocketConnection];
         webSocketConnection.delegate = strongSelf;

@@ -117,7 +117,7 @@ static BOOL isValidDID(NSString *did) {
 
         [server addWebSocketRoute:@"/xrpc/com.atproto.sync.subscribeRepos"
                           handler:^(HttpRequest *request, HttpResponse *response,
-                                    id<PDSNetworkConnection> connection) {
+                                    id<ATProtoNetworkConnection> connection) {
                               [_subscribeReposHandler acceptUpgradedConnection:connection
                                                                          request:request];
                           }];

@@ -6,8 +6,9 @@
  @abstract TOTP service for two-factor authentication management.
 
  @discussion Provides high-level TOTP operations including secret generation,
- QR code creation for authenticator apps, and code verification. Integrates
- with hardware tokens via YubiKey OATH.
+ QR code creation for authenticator apps, and code verification. YubiKey
+ Authenticator/OATH is treated as a client-side TOTP source; phishing-resistant
+ YubiKey login uses WebAuthn security-key authentication.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -22,12 +23,13 @@ NS_ASSUME_NONNULL_BEGIN
 
  @abstract Manages TOTP-based two-factor authentication.
 
- @discussion Supports software authenticators via QR code enrollment and
- hardware tokens via YubiKey integration.
+ @discussion Supports software authenticators via QR code enrollment. Users may
+ store the same TOTP secret in YubiKey Authenticator, but the PDS verifies only
+ the submitted code and does not communicate with local YubiKey hardware.
  */
 @interface TOTPService : NSObject
 
-/*! YubiKey OATH manager for hardware token support. */
+/*! Software-only OATH helper retained for compatibility with existing tests. */
 @property (nonatomic, strong, readonly) YubiKeyOATHManager *yubiKeyManager;
 
 /*! The shared secret for TOTP generation. */

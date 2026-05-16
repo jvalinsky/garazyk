@@ -65,7 +65,7 @@ Because `ATProtoPDS` is written in low-level, high-performance Objective-C, we c
 
 ### The `XrpcHandler` Lifecycle
 
-By heavily utilizing the `XrpcHandler` abstract classes (such as `XrpcRepoMethods` or `XrpcIdentityMethods`), the PDS architectural design ensures that endpoint route handlers *only* execute application logic when the incoming data correctly matches the ATProto standard 1-to-1.
+By heavily utilizing the `XrpcHandler` abstract classes (such as `XrpcRepoPack` or `XrpcIdentityPack`), the PDS architectural design ensures that endpoint route handlers *only* execute application logic when the incoming data correctly matches the ATProto standard 1-to-1.
 
 The lifecycle of an incoming repository mutation travels through a strict sieve:
 

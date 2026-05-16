@@ -23,7 +23,7 @@
 @property (nonatomic, strong) RelayEventBuffer *eventBuffer;
 @property (nonatomic, strong) SubscribeReposHandler *subscribeReposHandler;
 @property (nonatomic, assign) int64_t currentSequence;
-@property (nonatomic, strong) NSMutableArray<id<PDSNetworkConnection>> *downstreamConnections;
+@property (nonatomic, strong) NSMutableArray<id<ATProtoNetworkConnection>> *downstreamConnections;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t handlerQueue;
 @end
 

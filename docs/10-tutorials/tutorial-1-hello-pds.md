@@ -24,9 +24,9 @@ The PDS bootstraps through the CLI. The sequence involves loading configuration,
 
 - **`Garazyk/Sources/CLI/main.m`**: Parses CLI flags and dispatches commands.
 - **`Garazyk/Sources/CLI/PDSCLIServeCommand.m`**: Initializes the server when you run `kaszlak serve`.
-- **`Garazyk/Sources/App/PDSConfiguration.m`**: Merges configuration files with environment variable overrides.
+- **`Garazyk/Sources/App/ATProtoServiceConfiguration.m`**: Merges configuration files with environment variable overrides.
 - **`Garazyk/Sources/App/PDSApplication.m`**: Acts as the composition root, managing the lifecycle of all major services.
-- **`Garazyk/Sources/Network/PDSHttpServerBuilder.m`**: Maps XRPC methods to their respective handlers.
+- **`Garazyk/Sources/Network/ATProtoHttpServerBuilder.m`**: Maps XRPC methods to their respective handlers.
 - **`Garazyk/Sources/Network/HttpServer.m`**: Manages the underlying TCP listener and HTTP state machine.
 
 ## Protocol Discovery: `describeServer`
@@ -35,9 +35,9 @@ The `com.atproto.server.describeServer` endpoint is usually the first request a 
 
 ### Tracing the Implementation
 
-1. **Registration**: Open `PDSHttpServerBuilder.m` and find where the `describeServer` handler is attached to the XRPC dispatcher.
+1. **Registration**: Open `ATProtoHttpServerBuilder.m` and find where the `describeServer` handler is attached to the XRPC dispatcher.
 2. **Handling**: Trace the dispatcher to `PDSDescribeServerHandler.m`.
-3. **Configuration**: Observe how the handler pulls the `issuerDid` and `availableUserDomains` from the `PDSConfiguration` object.
+3. **Configuration**: Observe how the handler pulls the `issuerDid` and `availableUserDomains` from the `ATProtoServiceConfiguration` object.
 
 ## Verification
 
@@ -68,7 +68,7 @@ kill $PID
 - **Route not found (404)**: Confirm that the server started successfully and the XRPC dispatcher isn't reporting registration errors in the logs.
 
 ## Relevant Tests
-- `Garazyk/Tests/App/PDSConfigurationTests.m`
+- `Garazyk/Tests/App/ATProtoServiceConfigurationTests.m`
 - `Garazyk/Tests/Network/XrpcMethodRegistryTests.m`
 - `Garazyk/Tests/XRPC/XrpcHandlerTests.m`
 

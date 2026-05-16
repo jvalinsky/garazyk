@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "Network/XrpcRepoMethods.h"
+#import "Network/XrpcRepoPack.h"
 #import "Admin/PDSAdminController.h"
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcErrorHelper.h"
 #import "Network/XrpcMethodRegistry.h"
+#import "Network/XrpcRoutePackServices.h"
 #import "Network/RateLimiter.h"
 #import "Services/PDS/PDSAccountService.h"
 #import "Services/PDS/PDSRecordService.h"
@@ -116,7 +117,11 @@ static NSString *normalizedAtHandleFromAlsoKnownAs(NSArray<NSString *> *alsoKnow
     return nil;
 }
 
-@implementation XrpcRepoMethods
+@implementation XrpcRepoPack
+
++ (NSString *)routePackIdentifier {
+  return @"com.atproto.repo";
+}
 
 static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCIDBytes, NSString *did, CARReader *reader, NSString *rev);
 
@@ -229,14 +234,14 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
 }
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-                     jwtMinter:(JWTMinter *)jwtMinter
-               adminController:(id<PDSAdminController>)adminController
-                accountService:(id<PDSAccountService>)accountService
-                 recordService:(PDSRecordService *)recordService
-                   blobService:(PDSBlobService *)blobService
-             repositoryService:(PDSRepositoryService *)repositoryService
-              serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                   rateLimiter:(RateLimiter *)rateLimiter {
+                      services:(id<XrpcRoutePackServices>)services {
+    
+    JWTMinter *jwtMinter = services.jwtMinter;
+    id<PDSAdminController> adminController = services.adminController;
+    PDSRecordService *recordService = services.recordService;
+    PDSBlobService *blobService = services.blobService;
+    PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
+    RateLimiter *rateLimiter = services.rateLimiter;
     
     // com.atproto.repo.listRecords
     [dispatcher registerComAtprotoRepoListRecords:^(HttpRequest *request, HttpResponse *response) {

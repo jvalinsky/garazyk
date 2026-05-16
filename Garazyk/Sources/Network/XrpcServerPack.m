@@ -1,19 +1,20 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 //
-//  XrpcServerMethods.m
+//  XrpcServerPack.m
 //  ATProtoPDS
 //
 //  Domain module for com.atproto.server.* XRPC endpoints.
 //
 
-#import "Network/XrpcServerMethods.h"
+#import "Network/XrpcServerPack.h"
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcIdentityHelper.h"
 #import "Network/XrpcErrorHelper.h"
 #import "Network/XrpcMethodRegistry.h"
 #import "Network/XrpcServiceAuthHelper.h"
+#import "Network/XrpcRoutePackServices.h"
 #import "Registration/PDSRegistrationGate.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "Services/PDS/PDSAccountService.h"
@@ -21,6 +22,7 @@
 #import "Admin/PDSAdminController.h"
 #import "Admin/PDSAdminAuth.h"
 #import "Auth/JWT.h"
+#import "Auth/PDSSecondFactorService.h"
 #import "Auth/Secp256k1.h"
 #import "Core/ATProtoValidator.h"
 #import "Database/Service/ServiceDatabases.h"
@@ -267,7 +269,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
     }
 
     NSError *decodeError = nil;
-    NSData *signingKeyBytes = [XrpcMethodRegistry publicKeyBytesFromMultibase:signingKey error:&decodeError];
+    NSData *signingKeyBytes = [XrpcIdentityHelper publicKeyBytesFromMultibase:signingKey error:&decodeError];
     if (!signingKeyBytes) {
         response.statusCode = HttpStatusUnauthorized;
         [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Unable to decode signing key"}];
@@ -319,20 +321,29 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
     return YES;
 }
 
-#pragma mark - XrpcServerMethods Implementation
+#pragma mark - XrpcServerPack Implementation
 
-@implementation XrpcServerMethods
+@implementation XrpcServerPack
+
++ (NSString *)routePackIdentifier {
+  return @"com.atproto.server";
+}
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-                     jwtMinter:(JWTMinter *)jwtMinter
-               adminController:(id<PDSAdminController>)adminController
-                accountService:(id<PDSAccountService>)accountService
-             repositoryService:(PDSRepositoryService *)repositoryService
-              serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-              userDatabasePool:(PDSDatabasePool *)userDatabasePool
-                 configuration:(ATProtoServiceConfiguration *)config
-    enforceDidWebServiceAuth:(BOOL)enforceDidWebServiceAuth
-            registrationGate:(nullable id<PDSRegistrationGate>)registrationGate {
+                      services:(id<XrpcRoutePackServices>)services {
+    
+    ATProtoServiceConfiguration *config = services.configuration;
+    PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
+    
+    // Create registration gate from configuration
+    NSError *gateError = nil;
+    id<PDSRegistrationGate> registrationGate =
+        [PDSRegistrationGateFactory gateFromConfiguration:config
+                                         serviceDatabases:serviceDatabases
+                                                    error:&gateError];
+    if (gateError) {
+      GZ_LOG_ERROR(@"Failed to create registration gate: %@", gateError);
+    }
 
     // Register com.atproto.server.describeServer
     [self registerDescribeServerWithDispatcher:dispatcher
@@ -344,15 +355,8 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
 
     // Register account and session methods
     [self registerAccountAndSessionMethodsWithDispatcher:dispatcher
-                                               jwtMinter:jwtMinter
-                                         adminController:adminController
-                                          accountService:accountService
-                                       repositoryService:repositoryService
-                                        serviceDatabases:serviceDatabases
-                                        userDatabasePool:userDatabasePool
-                                           configuration:config
-                              enforceDidWebServiceAuth:enforceDidWebServiceAuth
-                                      registrationGate:registrationGate];
+                                               services:services
+                                       registrationGate:registrationGate];
 }
 
 #pragma mark - Endpoint Registration Methods
@@ -392,65 +396,43 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
 }
 
 + (void)registerAccountAndSessionMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
-                                              jwtMinter:(JWTMinter *)jwtMinter
-                                        adminController:(id<PDSAdminController>)adminController
-                                         accountService:(id<PDSAccountService>)accountService
-                                      repositoryService:(PDSRepositoryService *)repositoryService
-                                       serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                                       userDatabasePool:(PDSDatabasePool *)userDatabasePool
-                                          configuration:(ATProtoServiceConfiguration *)config
-                             enforceDidWebServiceAuth:(BOOL)enforceDidWebServiceAuth
+                                              services:(id<XrpcRoutePackServices>)services
                                      registrationGate:(nullable id<PDSRegistrationGate>)registrationGate {
     // This method will be implemented in multiple parts due to size constraints
     // Part 1: createAccount, createSession, getSession, refreshSession, deleteSession
     [self registerAccountCreationAndSessionEndpoints:dispatcher
-                                           jwtMinter:jwtMinter
-                                     adminController:adminController
-                                      accountService:accountService
-                                   repositoryService:repositoryService
-                                    serviceDatabases:serviceDatabases
-                                       configuration:config
-                          enforceDidWebServiceAuth:enforceDidWebServiceAuth
-                                  registrationGate:registrationGate];
+                                           services:services
+                                   registrationGate:registrationGate];
     
     // Part 2: Invite codes
     [self registerInviteCodeEndpoints:dispatcher
-                            jwtMinter:jwtMinter
-                      adminController:adminController
-                     serviceDatabases:serviceDatabases];
+                            services:services];
     
     // Part 3: App passwords
     [self registerAppPasswordEndpoints:dispatcher
-                             jwtMinter:jwtMinter
-                       adminController:adminController
-                      serviceDatabases:serviceDatabases];
+                             services:services];
     
     // Part 4: Email and account management
     [self registerEmailAndAccountEndpoints:dispatcher
-                                 jwtMinter:jwtMinter
-                           adminController:adminController
-                            accountService:accountService
-                          serviceDatabases:serviceDatabases
-                          userDatabasePool:userDatabasePool];
+                                 services:services];
     
     // Part 5: Account lifecycle (getAccount, deleteAccount, checkAccountStatus, activate, deactivate)
     [self registerAccountLifecycleEndpoints:dispatcher
-                                  jwtMinter:jwtMinter
-                            adminController:adminController
-                             accountService:accountService];
+                                  services:services];
 }
 
 #pragma mark - Helper Registration Methods
 
 + (void)registerAccountCreationAndSessionEndpoints:(XrpcDispatcher *)dispatcher
-                                          jwtMinter:(JWTMinter *)jwtMinter
-                                    adminController:(id<PDSAdminController>)adminController
-                                     accountService:(id<PDSAccountService>)accountService
-                                  repositoryService:(PDSRepositoryService *)repositoryService
-                                   serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                                      configuration:(ATProtoServiceConfiguration *)config
-                         enforceDidWebServiceAuth:(BOOL)enforceDidWebServiceAuth
+                                          services:(id<XrpcRoutePackServices>)services
                                  registrationGate:(nullable id<PDSRegistrationGate>)registrationGate {
+    JWTMinter *jwtMinter = services.jwtMinter;
+    id<PDSAdminController> adminController = services.adminController;
+    id<PDSAccountService> accountService = services.accountService;
+    PDSRepositoryService *repositoryService = services.repositoryService;
+    PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
+    ATProtoServiceConfiguration *config = services.configuration;
+    BOOL enforceDidWebServiceAuth = NO; // Default to NO as per registry
     [dispatcher registerComAtprotoServerCreateAccount:^(HttpRequest *request, HttpResponse *response) {
         NSDictionary *body = request.jsonBody;
         NSString *email = body[@"email"];
@@ -541,6 +523,7 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
         NSDictionary *body = request.jsonBody;
         NSString *identifier = body[@"identifier"];
         NSString *password = body[@"password"];
+        NSString *authFactorToken = body[@"authFactorToken"];
 
         if (!identifier || !password) {
             response.statusCode = HttpStatusBadRequest;
@@ -551,9 +534,19 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
         NSError *error = nil;
         NSDictionary *session = [accountService loginWithIdentifier:identifier
                                                             password:password
+                                                     authFactorToken:authFactorToken
                                                                error:&error];
 
         if (error) {
+            if ([error.domain isEqualToString:PDSSecondFactorErrorDomain] &&
+                [error.userInfo[PDSSecondFactorATProtoErrorKey] isEqualToString:@"AuthFactorTokenRequired"]) {
+                response.statusCode = HttpStatusUnauthorized;
+                [response setHeader:@"no-store" forKey:@"Cache-Control"];
+                [response setHeader:@"no-cache" forKey:@"Pragma"];
+                [response setJsonBody:@{@"error": @"AuthFactorTokenRequired",
+                                        @"message": error.localizedDescription ?: @"Two-factor authentication required"}];
+                return;
+            }
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{@"error": @"AuthenticationFailed", @"message": error.localizedDescription}];
             return;
@@ -670,9 +663,10 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
 }
 
 + (void)registerInviteCodeEndpoints:(XrpcDispatcher *)dispatcher
-                           jwtMinter:(JWTMinter *)jwtMinter
-                     adminController:(id<PDSAdminController>)adminController
-                    serviceDatabases:(PDSServiceDatabases *)serviceDatabases {
+                           services:(id<XrpcRoutePackServices>)services {
+    JWTMinter *jwtMinter = services.jwtMinter;
+    id<PDSAdminController> adminController = services.adminController;
+    PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
     [dispatcher registerComAtprotoServerCreateInviteCode:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request response:response];
@@ -803,9 +797,11 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
 }
 
 + (void)registerAppPasswordEndpoints:(XrpcDispatcher *)dispatcher
-                            jwtMinter:(JWTMinter *)jwtMinter
-                      adminController:(id<PDSAdminController>)adminController
-                     serviceDatabases:(PDSServiceDatabases *)serviceDatabases {
+                             services:(id<XrpcRoutePackServices>)services {
+    JWTMinter *jwtMinter = services.jwtMinter;
+    id<PDSAdminController> adminController = services.adminController;
+    PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
+
     [dispatcher registerComAtprotoServerCreateAppPassword:^(HttpRequest *request, HttpResponse *response) {
         if (request.method != HttpMethodPOST) {
             response.statusCode = HttpStatusMethodNotAllowed;
@@ -920,11 +916,13 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
 }
 
 + (void)registerEmailAndAccountEndpoints:(XrpcDispatcher *)dispatcher
-                                jwtMinter:(JWTMinter *)jwtMinter
-                          adminController:(id<PDSAdminController>)adminController
-                           accountService:(id<PDSAccountService>)accountService
-                         serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                         userDatabasePool:(PDSDatabasePool *)userDatabasePool {
+                                 services:(id<XrpcRoutePackServices>)services {
+    JWTMinter *jwtMinter = services.jwtMinter;
+    id<PDSAdminController> adminController = services.adminController;
+    id<PDSAccountService> accountService = services.accountService;
+    PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
+    PDSDatabasePool *userDatabasePool = services.userDatabasePool;
+
     [dispatcher registerComAtprotoServerRequestEmailConfirmation:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request response:response];
@@ -1263,9 +1261,10 @@ static BOOL validateDidWebServiceAuthForAccountCreation(HttpRequest *request,
 }
 
 + (void)registerAccountLifecycleEndpoints:(XrpcDispatcher *)dispatcher
-                                 jwtMinter:(JWTMinter *)jwtMinter
-                           adminController:(id<PDSAdminController>)adminController
-                            accountService:(id<PDSAccountService>)accountService {
+                                  services:(id<XrpcRoutePackServices>)services {
+    JWTMinter *jwtMinter = services.jwtMinter;
+    id<PDSAdminController> adminController = services.adminController;
+    id<PDSAccountService> accountService = services.accountService;
     [dispatcher registerComAtprotoServerGetAccount:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request response:response];

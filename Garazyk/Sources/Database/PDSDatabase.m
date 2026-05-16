@@ -3,6 +3,7 @@
 #import "Database/PDSDatabase.h"
 #import <sqlite3.h>
 #import "Database/Utils/PDSSQLiteUtils.h"
+#import "Database/Utils/ATProtoDatabaseUtilities.h"
 #import "Compat/PDSTypes.h"
 #import "Database/Schema.h"
 #import "Identity/ATProtoHandleValidator.h"
@@ -37,6 +38,38 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
 @property (nonatomic, strong) NSMutableDictionary *statementCache;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t dbQueue;
 @property (nonatomic, strong) NSMutableArray<NSString *> *statementCacheOrder;
+
+@end
+
+#pragma mark - PDSDatabase (Private)
+
+@implementation PDSDatabase (Private)
+
+- (void)bindData:(nullable NSData *)data toStatement:(sqlite3_stmt *)stmt index:(int)index {
+    ATProtoDBBindValue(stmt, index, data);
+}
+
+- (NSString *)iso8601StringFromDate:(NSDate *)date {
+    if (!date) return @"";
+    return [NSDateFormatter atproto_stringFromDate:date];
+}
+
+- (nullable NSDate *)dateFromISO8601String:(NSString *)string {
+    if (!string) return nil;
+    return [[NSDateFormatter atproto_iso8601Formatter] dateFromString:string];
+}
+
+- (nullable NSDate *)dateFromIso8601String:(NSString *)string {
+    return [self dateFromISO8601String:string];
+}
+
+- (NSString *)parameterPlaceholdersForCount:(NSUInteger)count {
+    return ATProtoDBPlaceholders(count);
+}
+
+- (NSString *)expandPlaceholdersForArray:(NSArray *)values {
+    return ATProtoDBPlaceholders(values.count);
+}
 
 @end
 
@@ -989,31 +1022,10 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
 - (id)valueFromStatement:(sqlite3_stmt *)stmt columnIndex:(int)colIndex {
     __block id result = nil;
     [self safeExecuteSync:^{
-
-    int type = sqlite3_column_type(stmt, colIndex);
-    switch (type) {
-        case SQLITE_INTEGER:
-            result = @(sqlite3_column_int64(stmt, colIndex));
-            return;
-        case SQLITE_FLOAT:
-            result = @(sqlite3_column_double(stmt, colIndex));
-            return;
-        case SQLITE_BLOB: {
-            const void *bytes = sqlite3_column_blob(stmt, colIndex);
-            int size = sqlite3_column_bytes(stmt, colIndex);
-            result = [NSData dataWithBytes:bytes length:size];
-            return;
-        }
-        case SQLITE_TEXT: {
-            const unsigned char *text = sqlite3_column_text(stmt, colIndex);
-            result = @((const char *)text);
-            return;
-        }
-        case SQLITE_NULL:
-        default:
+        result = ATProtoDBColumnValue(stmt, colIndex);
+        if (result == [NSNull null]) {
             result = nil;
-            return;
-    }
+        }
     }];
     return result;
 }
@@ -1071,26 +1083,7 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
         return;
     }
 
-    for (NSUInteger i = 0; i < params.count; i++) {
-        id param = params[i];
-        int paramIndex = (int)(i + 1);
-
-        if (param == [NSNull null]) {
-            sqlite3_bind_null(stmt, paramIndex);
-        } else if ([param isKindOfClass:[NSString class]]) {
-            sqlite3_bind_text(stmt, paramIndex, [param UTF8String], -1, SQLITE_TRANSIENT);
-        } else if ([param isKindOfClass:[NSNumber class]]) {
-            const char *objCType = [param objCType];
-            if (strcmp(objCType, @encode(double)) == 0 || 
-                strcmp(objCType, @encode(float)) == 0) {
-                sqlite3_bind_double(stmt, paramIndex, [param doubleValue]);
-            } else {
-                sqlite3_bind_int64(stmt, paramIndex, [param longLongValue]);
-            }
-        } else if ([param isKindOfClass:[NSData class]]) {
-            sqlite3_bind_blob(stmt, paramIndex, [param bytes], (int)[param length], SQLITE_STATIC);
-        }
-    }
+    ATProtoDBBindParams(stmt, params);
 
     NSMutableArray *results = [NSMutableArray array];
     while (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -1154,26 +1147,7 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
         return;
     }
 
-    for (NSUInteger i = 0; i < params.count; i++) {
-        id param = params[i];
-        int paramIndex = (int)(i + 1);
-
-        if (param == [NSNull null]) {
-            sqlite3_bind_null(stmt, paramIndex);
-        } else if ([param isKindOfClass:[NSString class]]) {
-            sqlite3_bind_text(stmt, paramIndex, [param UTF8String], -1, SQLITE_TRANSIENT);
-        } else if ([param isKindOfClass:[NSNumber class]]) {
-            const char *objCType = [param objCType];
-            if (strcmp(objCType, @encode(double)) == 0 || 
-                strcmp(objCType, @encode(float)) == 0) {
-                sqlite3_bind_double(stmt, paramIndex, [param doubleValue]);
-            } else {
-                sqlite3_bind_int64(stmt, paramIndex, [param longLongValue]);
-            }
-        } else if ([param isKindOfClass:[NSData class]]) {
-            sqlite3_bind_blob(stmt, paramIndex, [param bytes], (int)[param length], SQLITE_STATIC);
-        }
-    }
+    ATProtoDBBindParams(stmt, params);
 
     BOOL success = (sqlite3_step(stmt) == SQLITE_DONE);
 
@@ -1189,5 +1163,3 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
 }
 
 @end
-
-

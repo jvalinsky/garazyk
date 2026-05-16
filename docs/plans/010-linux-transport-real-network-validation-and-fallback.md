@@ -1,8 +1,8 @@
 ---
-title: "Linux: finish real-network support for `PDSNetworkTransportLinux`"
+title: "Linux: finish real-network support for `ATProtoNetworkTransportLinux`"
 ---
 
-# Linux: finish real-network support for `PDSNetworkTransportLinux`
+# Linux: finish real-network support for `ATProtoNetworkTransportLinux`
 
 ## Summary
 
@@ -10,7 +10,7 @@ Harden and validate the Linux/GNUstep network transport with real Linux verifica
 
 ## Background / current state (as of 2026-02-12)
 
-- File: `Garazyk/Sources/Network/PDSNetworkTransportLinux.m`
+- File: `Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m`
 - Status:
   - non-blocking connect/read/write exists
   - hostname resolution via `getaddrinfo()` exists
@@ -118,7 +118,7 @@ Out-of-scope:
 
 ## Files likely touched
 
-- `Garazyk/Sources/Network/PDSNetworkTransportLinux.m`
+- `Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m`
 - `Garazyk/Tests/Network/*` (new tests)
 - `docs/GNUSTEP_COMPATIBILITY.md` (if behavior/constraints need documenting)
 

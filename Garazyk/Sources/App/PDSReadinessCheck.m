@@ -100,8 +100,9 @@ NSString * const PDSReadinessErrorDomain = @"com.atproto.pds.readiness";
 }
 
 + (BOOL)checkPLCDirectory:(ATProtoServiceConfiguration *)config error:(NSError **)error {
-    // Skip check in mock/test mode - matches pattern in XrpcIdentityMethods.m and PDSAccountService.m
+    // Skip check in mock/test mode - matches pattern in XrpcIdentityPack.m and PDSAccountService.m
     if ([config.plcURL isEqualToString:@"mock"] ||
+        [config.plcURL isEqualToString:@"skip"] ||
         config.plcURL.length == 0 ||
         [config.plcURL hasPrefix:@"http://127.0.0.1"] ||
         [config.plcURL hasPrefix:@"http://localhost"]) {

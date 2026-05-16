@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-#import "Network/XrpcSyncMethods.h"
+#import "Network/XrpcSyncPack.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "Services/PDS/PDSBlobService.h"
 #import "Services/PDS/PDSRecordService.h"
@@ -21,6 +21,7 @@
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcMethodRegistry.h"
+#import "Network/XrpcRoutePackServices.h"
 #import "Repository/CAR.h"
 #import "Repository/MST.h"
 #import "Repository/STAR.h"
@@ -146,19 +147,23 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   };
 }
 
-@implementation XrpcSyncMethods
+@implementation XrpcSyncPack
+
++ (NSString *)routePackIdentifier {
+  return @"com.atproto.sync";
+}
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-                     jwtMinter:(JWTMinter *)jwtMinter
-               adminController:(id<PDSAdminController>)adminController
-              serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-              userDatabasePool:(PDSDatabasePool *)userDatabasePool
-                 recordService:(PDSRecordService *)recordService
-                   blobService:(PDSBlobService *)blobService
-             repositoryService:(PDSRepositoryService *)repositoryService
-                  relayService:(PDSRelayService *)relayService
-                 configuration:(ATProtoServiceConfiguration *)config {
-  (void)relayService;
+                      services:(id<XrpcRoutePackServices>)services {
+    
+    JWTMinter *jwtMinter = services.jwtMinter;
+    id<PDSAdminController> adminController = services.adminController;
+    PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
+    PDSDatabasePool *userDatabasePool = services.userDatabasePool;
+    PDSRecordService *recordService = services.recordService;
+    PDSBlobService *blobService = services.blobService;
+    PDSRepositoryService *repositoryService = services.repositoryService;
+    ATProtoServiceConfiguration *config = services.configuration;
 
   // com.atproto.sync.getRepo
   [dispatcher registerComAtprotoSyncGetRepo:^(HttpRequest *request,

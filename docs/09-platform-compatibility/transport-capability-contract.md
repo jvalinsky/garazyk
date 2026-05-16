@@ -1,6 +1,6 @@
 # Transport Capability Contract
 
-This document defines the portability expectations for `PDSNetworkTransport` implementations across all supported platforms.
+This document defines the portability expectations for `ATProtoNetworkTransport` implementations across all supported platforms.
 
 ## Required Capabilities
 

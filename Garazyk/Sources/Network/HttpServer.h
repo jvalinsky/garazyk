@@ -8,7 +8,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class HttpRequest;
 @class HttpResponse;
 @class HttpServer;
-@protocol PDSNetworkConnection;
+@protocol ATProtoNetworkConnection;
 
 /*!
  @header HttpServer.h
@@ -31,7 +31,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param response The response object to populate.
  */
 typedef void (^RequestHandler)(HttpRequest *request, HttpResponse *response);
-typedef void (^WebSocketRequestHandler)(HttpRequest *request, HttpResponse *response, id<PDSNetworkConnection> connection);
+typedef void (^WebSocketRequestHandler)(HttpRequest *request, HttpResponse *response, id<ATProtoNetworkConnection> connection);
 
 /*!
  @class HttpServer

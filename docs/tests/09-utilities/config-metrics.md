@@ -8,8 +8,8 @@ Tests for PDS configuration, metrics, and node info.
 
 ## Test Classes
 
-### PDSConfigurationTests
-**File:** `Tests/App/PDSConfigurationTests.m`
+### ATProtoServiceConfigurationTests
+**File:** `Tests/App/ATProtoServiceConfigurationTests.m`
 **Purpose:** Configuration loading and environment overrides.
 
 See [Controller Tests](../04-application/controller#pdsconfigurationtests) for full details.
@@ -53,7 +53,7 @@ Default Values (lowest priority)
 ## Running These Tests
 
 ```bash
-./build/tests/AllTests -only-testing:AllTests/PDSConfigurationTests
+./build/tests/AllTests -only-testing:AllTests/ATProtoServiceConfigurationTests
 ./build/tests/AllTests -only-testing:AllTests/NodeInfoTests
 ```json
 

@@ -74,10 +74,10 @@ Each part assumes the previous one already established the lower layer.
 
 | Area | Primary files | Why they matter |
 | --- | --- | --- |
-| Platform transport | `Garazyk/Sources/Network/PDSNetworkTransport.h`, `PDSNetworkTransportMac.m`, `PDSNetworkTransportLinux.m` | Own the listener and byte-stream abstraction used by `HttpServer` |
+| Platform transport | `Garazyk/Sources/Network/ATProtoNetworkTransport.h`, `ATProtoNetworkTransportMac.m`, `ATProtoNetworkTransportLinux.m` | Own the listener and byte-stream abstraction used by `HttpServer` |
 | HTTP server | `Garazyk/Sources/Network/HttpServer.m` | Owns accepted connections, per-connection state, dispatch limits, and response sending |
 | HTTP parsing | `Garazyk/Sources/Network/Http1Parser.m`, `HttpChunkedBodyParser.m` | Turn raw bytes into a structured `HttpRequest` |
-| Routing | `Garazyk/Sources/Network/HttpRouteTrie.m`, `PDSHttpServerBuilder.m` | Map parsed requests to the correct handler family |
+| Routing | `Garazyk/Sources/Network/HttpRouteTrie.m`, `ATProtoHttpServerBuilder.m` | Map parsed requests to the correct handler family |
 | HTTP response flow | `Garazyk/Sources/Network/HttpResponse.m`, `Http1PipelinePolicy.m` | Serialize responses, stream files or producer chunks, and keep pipelined requests ordered |
 | WebSocket upgrade | `Garazyk/Sources/Network/WebSocketUpgradeHandler.m` | Validates RFC 6455 upgrade headers and emits the `101 Switching Protocols` response |
 | WebSocket runtime | `Garazyk/Sources/Sync/WebSocketConnection.m`, `WebSocketCodec.m`, `WebSocketHeartbeatPolicy.m` | Own state, framing, ping/pong, and outbound backpressure |
@@ -87,7 +87,7 @@ Each part assumes the previous one already established the lower layer.
 
 | Behavior | Test classes |
 | --- | --- |
-| Platform listener/connection behavior | `PDSNetworkTransportTests`, `PDSNetworkTransportLinuxTests` |
+| Platform listener/connection behavior | `ATProtoNetworkTransportTests`, `ATProtoNetworkTransportLinuxTests` |
 | HTTP request framing | `Http1ParserTests`, `HttpChunkedBodyParserTests` |
 | Route matching | `HttpRouteTrieTests` |
 | Response queueing and chunk streaming | `HttpServerTests` |

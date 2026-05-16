@@ -6,32 +6,32 @@
 #import "Network/HttpServer.h"
 #import "Network/HttpProtocolDriver.h"
 #import "Network/HttpResponse.h"
-#import "Network/PDSNetworkTransport.h"
+#import "Network/ATProtoNetworkTransport.h"
 
-typedef id<PDSNetworkListener> (^PDSListenerFactory)(NSUInteger port);
+typedef id<ATProtoNetworkListener> (^PDSListenerFactory)(NSUInteger port);
 static const NSUInteger kGeneratedChunkCap = 64 * 1024;
 
 static PDSListenerFactory sListenerFactory = nil;
 static IMP sOriginalCreateListenerIMP = NULL;
 
-static id<PDSNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteger port) {
+static id<ATProtoNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteger port) {
     if (sListenerFactory) {
         return sListenerFactory(port);
     }
     return nil;
 }
 
-@interface PDSFakeListener : NSObject <PDSNetworkListener>
-@property (nonatomic, copy, nullable) void (^stateChangedHandler)(PDSNetworkListenerState state, NSError * _Nullable error);
-@property (nonatomic, copy, nullable) void (^newConnectionHandler)(id<PDSNetworkConnection> connection);
+@interface PDSFakeListener : NSObject <ATProtoNetworkListener>
+@property (nonatomic, copy, nullable) void (^stateChangedHandler)(ATProtoNetworkListenerState state, NSError * _Nullable error);
+@property (nonatomic, copy, nullable) void (^newConnectionHandler)(id<ATProtoNetworkConnection> connection);
 @property (nonatomic, assign) NSUInteger port;
-@property (nonatomic, assign) PDSNetworkListenerState stateToReport;
+@property (nonatomic, assign) ATProtoNetworkListenerState stateToReport;
 @property (nonatomic, strong, nullable) NSError *errorToReport;
 @end
 
 @implementation PDSFakeListener
 
-- (instancetype)initWithPort:(NSUInteger)port state:(PDSNetworkListenerState)state error:(NSError *)error {
+- (instancetype)initWithPort:(NSUInteger)port state:(ATProtoNetworkListenerState)state error:(NSError *)error {
     self = [super init];
     if (self) {
         _port = port;
@@ -51,18 +51,18 @@ static id<PDSNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteger p
 
 - (void)cancel {
     if (self.stateChangedHandler) {
-        self.stateChangedHandler(PDSNetworkListenerStateCancelled, nil);
+        self.stateChangedHandler(ATProtoNetworkListenerStateCancelled, nil);
     }
 }
 
 @end
 
 @interface HttpServer (Testing)
-- (void)sendResponse:(HttpResponse *)response onConnection:(id<PDSNetworkConnection>)connection;
+- (void)sendResponse:(HttpResponse *)response onConnection:(id<ATProtoNetworkConnection>)connection;
 @end
 
-@interface PDSFakeConnection : NSObject <PDSNetworkConnection>
-@property (nonatomic, copy, nullable) void (^stateChangedHandler)(PDSNetworkConnectionState state, NSError * _Nullable error);
+@interface PDSFakeConnection : NSObject <ATProtoNetworkConnection>
+@property (nonatomic, copy, nullable) void (^stateChangedHandler)(ATProtoNetworkConnectionState state, NSError * _Nullable error);
 @property (nonatomic, strong, readonly, nullable) NSString *remoteAddress;
 @property (nonatomic, strong) NSMutableArray<NSData *> *sentData;
 @property (nonatomic, assign) NSUInteger receiveCallCount;
@@ -85,7 +85,7 @@ static id<PDSNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteger p
 - (void)startWithQueue:(dispatch_queue_t)queue {
     dispatch_async(queue, ^{
         if (self.stateChangedHandler) {
-            self.stateChangedHandler(PDSNetworkConnectionStateReady, nil);
+            self.stateChangedHandler(ATProtoNetworkConnectionStateReady, nil);
         }
     });
 }
@@ -93,7 +93,7 @@ static id<PDSNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteger p
 - (void)cancel {
     self.cancelCalled = YES;
     if (self.stateChangedHandler) {
-        self.stateChangedHandler(PDSNetworkConnectionStateCancelled, nil);
+        self.stateChangedHandler(ATProtoNetworkConnectionStateCancelled, nil);
     }
 }
 
@@ -132,7 +132,7 @@ static id<PDSNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteger p
 }
 
 - (void)swizzleListenerFactory {
-    Method method = class_getClassMethod([PDSNetworkTransportFactory class], @selector(createListenerWithPort:));
+    Method method = class_getClassMethod([ATProtoNetworkTransportFactory class], @selector(createListenerWithPort:));
     if (!method) {
         return;
     }
@@ -146,7 +146,7 @@ static id<PDSNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteger p
     if (!sOriginalCreateListenerIMP) {
         return;
     }
-    Method method = class_getClassMethod([PDSNetworkTransportFactory class], @selector(createListenerWithPort:));
+    Method method = class_getClassMethod([ATProtoNetworkTransportFactory class], @selector(createListenerWithPort:));
     if (method) {
         method_setImplementation(method, sOriginalCreateListenerIMP);
     }
@@ -165,9 +165,9 @@ static id<PDSNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteger p
 }
 
 - (void)testStartFailsWhenListenerReportsFailure {
-    sListenerFactory = ^id<PDSNetworkListener>(NSUInteger port) {
+    sListenerFactory = ^id<ATProtoNetworkListener>(NSUInteger port) {
         NSError *listenerError = [NSError errorWithDomain:@"test.listener" code:42 userInfo:nil];
-        return [[PDSFakeListener alloc] initWithPort:port state:PDSNetworkListenerStateFailed error:listenerError];
+        return [[PDSFakeListener alloc] initWithPort:port state:ATProtoNetworkListenerStateFailed error:listenerError];
     };
     HttpServer *server = [HttpServer serverWithPort:0];
 
@@ -180,8 +180,8 @@ static id<PDSNetworkListener> TestCreateListener(id self, SEL _cmd, NSUInteger p
 }
 
 - (void)testStartSucceedsWhenListenerReady {
-    sListenerFactory = ^id<PDSNetworkListener>(NSUInteger port) {
-        return [[PDSFakeListener alloc] initWithPort:12345 state:PDSNetworkListenerStateReady error:nil];
+    sListenerFactory = ^id<ATProtoNetworkListener>(NSUInteger port) {
+        return [[PDSFakeListener alloc] initWithPort:12345 state:ATProtoNetworkListenerStateReady error:nil];
     };
     HttpServer *server = [HttpServer serverWithPort:0];
 

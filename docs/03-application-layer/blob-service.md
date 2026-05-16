@@ -57,8 +57,8 @@ Callers typically reach the service through:
 - `Garazyk/Sources/Services/PDS/PDSBlobService.h`
 - `Garazyk/Sources/Services/PDS/PDSBlobService.m`
 - `Garazyk/Sources/Blob/BlobStorage.m`
-- `Garazyk/Sources/Network/XrpcRepoMethods.m`
-- `Garazyk/Sources/Network/XrpcSyncMethods.m`
+- `Garazyk/Sources/Network/XrpcRepoPack.m`
+- `Garazyk/Sources/Network/XrpcSyncPack.m`
 
 ## Related
 

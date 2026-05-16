@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSNetworkTransportLinux.m
+ @file ATProtoNetworkTransportLinux.m
 
  @abstract Implements Linux network transport integration for server connection handling.
 
  @discussion Provides platform-specific transport wiring for Linux environments, bridging socket/runtime behavior into protocol/session layers. Focuses on transport mechanics rather than endpoint execution.
  */
 
-#import "PDSNetworkTransportLinux.h"
+#import "ATProtoNetworkTransportLinux.h"
 #import <Foundation/Foundation.h>
 
 #import <sys/socket.h>
@@ -21,19 +21,19 @@
 #import <fcntl.h>
 
 #ifndef __APPLE__
-@implementation PDSNetworkTransportFactory
+@implementation ATProtoNetworkTransportFactory
 
-+ (id<PDSNetworkListener>)createListenerWithPort:(NSUInteger)port {
++ (id<ATProtoNetworkListener>)createListenerWithPort:(NSUInteger)port {
     NSString *bindHost = [[NSProcessInfo processInfo] environment][@"PDS_LISTEN_HOST"];
-    return [[PDSNetworkListenerLinux alloc] initWithHost:bindHost port:port];
+    return [[ATProtoNetworkListenerLinux alloc] initWithHost:bindHost port:port];
 }
 
-+ (id<PDSNetworkListener>)createListenerWithHost:(nullable NSString *)host port:(NSUInteger)port {
-    return [[PDSNetworkListenerLinux alloc] initWithHost:host port:port];
++ (id<ATProtoNetworkListener>)createListenerWithHost:(nullable NSString *)host port:(NSUInteger)port {
+    return [[ATProtoNetworkListenerLinux alloc] initWithHost:host port:port];
 }
 
-+ (id<PDSNetworkConnection>)createConnectionWithHost:(NSString *)host port:(NSUInteger)port {
-    return [[PDSNetworkConnectionLinux alloc] initWithHost:host port:port];
++ (id<ATProtoNetworkConnection>)createConnectionWithHost:(NSString *)host port:(NSUInteger)port {
+    return [[ATProtoNetworkConnectionLinux alloc] initWithHost:host port:port];
 }
 
 @end
@@ -48,8 +48,8 @@
 @implementation PDSReadRequest
 @end
 
-static const void *kPDSNetworkConnectionQueueSpecificKey =
-    &kPDSNetworkConnectionQueueSpecificKey;
+static const void *kATProtoNetworkConnectionQueueSpecificKey =
+    &kATProtoNetworkConnectionQueueSpecificKey;
 
 static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
     NSString *raw = [[NSProcessInfo processInfo] environment][@"PDS_LINUX_CONNECT_TIMEOUT_MS"];
@@ -63,7 +63,7 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
     return (NSUInteger)parsed;
 }
 
-@implementation PDSNetworkConnectionLinux {
+@implementation ATProtoNetworkConnectionLinux {
     int _sockfd;
     dispatch_source_t _connectSource;
     dispatch_source_t _connectTimeoutSource;
@@ -134,7 +134,7 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
     if (_queue == NULL) {
         return NO;
     }
-    return dispatch_get_specific(kPDSNetworkConnectionQueueSpecificKey) ==
+    return dispatch_get_specific(kATProtoNetworkConnectionQueueSpecificKey) ==
            (__bridge void *)self;
 }
 
@@ -176,7 +176,7 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
     _isCancelled = NO;
     if (_queue) {
         dispatch_queue_set_specific(_queue,
-                                    kPDSNetworkConnectionQueueSpecificKey,
+                                    kATProtoNetworkConnectionQueueSpecificKey,
                                     (__bridge void *)self, NULL);
     }
     
@@ -190,7 +190,7 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
     [self setupSources];
     
     if (self.stateChangedHandler) {
-        self.stateChangedHandler(PDSNetworkConnectionStateReady, nil);
+        self.stateChangedHandler(ATProtoNetworkConnectionStateReady, nil);
     }
 }
 
@@ -289,8 +289,8 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
     if (gai != 0 || res == NULL) {
         if (self.stateChangedHandler) {
             NSString *message = gai != 0 ? [NSString stringWithUTF8String:gai_strerror(gai)] : @"No address candidates";
-            self.stateChangedHandler(PDSNetworkConnectionStateFailed,
-                                     [NSError errorWithDomain:@"PDSNetworkTransport"
+            self.stateChangedHandler(ATProtoNetworkConnectionStateFailed,
+                                     [NSError errorWithDomain:@"ATProtoNetworkTransport"
                                                          code:-2
                                                      userInfo:@{NSLocalizedDescriptionKey: message ?: @"Address resolution failed"}]);
         }
@@ -339,7 +339,7 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
             [self cleanupConnectState];
             [self setupSources];
             if (self.stateChangedHandler) {
-                self.stateChangedHandler(PDSNetworkConnectionStateReady, nil);
+                self.stateChangedHandler(ATProtoNetworkConnectionStateReady, nil);
             }
             return;
         }
@@ -374,7 +374,7 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
     [self cleanupConnectState];
 
     if (self.stateChangedHandler && !_isCancelled) {
-        self.stateChangedHandler(PDSNetworkConnectionStateFailed, error);
+        self.stateChangedHandler(ATProtoNetworkConnectionStateFailed, error);
     }
 }
 
@@ -416,7 +416,7 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
     [self cleanupConnectState];
     [self setupSources];
     if (self.stateChangedHandler) {
-        self.stateChangedHandler(PDSNetworkConnectionStateReady, nil);
+        self.stateChangedHandler(ATProtoNetworkConnectionStateReady, nil);
     }
 }
 
@@ -471,7 +471,7 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
         _writeOffset = 0;
         [self flushPendingSendCompletionsWithError:error];
         if (self.stateChangedHandler) {
-            self.stateChangedHandler(PDSNetworkConnectionStateFailed, error);
+            self.stateChangedHandler(ATProtoNetworkConnectionStateFailed, error);
         }
     } else {
         _writeOffset += sent;
@@ -573,7 +573,7 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
     }
     
     if (self.stateChangedHandler) {
-        self.stateChangedHandler(PDSNetworkConnectionStateCancelled, nil);
+        self.stateChangedHandler(ATProtoNetworkConnectionStateCancelled, nil);
     }
 }
 
@@ -633,7 +633,7 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
         _writeOffset = 0;
         [self flushPendingSendCompletionsWithError:sendError];
         if (self.stateChangedHandler) {
-            self.stateChangedHandler(PDSNetworkConnectionStateFailed, sendError);
+            self.stateChangedHandler(ATProtoNetworkConnectionStateFailed, sendError);
         }
         return;
     } else if ((NSUInteger)sent < data.length) {
@@ -673,7 +673,7 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
 
 @end
 
-@implementation PDSNetworkListenerLinux {
+@implementation ATProtoNetworkListenerLinux {
     int _listenfd;
     dispatch_source_t _source;
     dispatch_queue_t _queue;
@@ -773,7 +773,7 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
     dispatch_resume(_source);
     
     if (self.stateChangedHandler) {
-        self.stateChangedHandler(PDSNetworkListenerStateReady, nil);
+        self.stateChangedHandler(ATProtoNetworkListenerStateReady, nil);
     }
 }
 
@@ -788,7 +788,7 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
         NSString *address =
             [NSString stringWithFormat:@"%@:%u", ipAddress ?: @"unknown",
                                        (unsigned int)ntohs(addr.sin_port)];
-        PDSNetworkConnectionLinux *conn = [[PDSNetworkConnectionLinux alloc] initWithSocket:clientfd address:address];
+        ATProtoNetworkConnectionLinux *conn = [[ATProtoNetworkConnectionLinux alloc] initWithSocket:clientfd address:address];
         self.newConnectionHandler(conn);
     } else {
         close(clientfd);
@@ -797,7 +797,7 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
 
 - (void)failWithError:(NSError *)error {
     if (self.stateChangedHandler) {
-        self.stateChangedHandler(PDSNetworkListenerStateFailed, error);
+        self.stateChangedHandler(ATProtoNetworkListenerStateFailed, error);
     }
     [self cancel];
 }
@@ -813,7 +813,7 @@ static NSUInteger connectTimeoutMillisecondsFromEnvironment(void) {
     }
     
     if (self.stateChangedHandler) {
-        self.stateChangedHandler(PDSNetworkListenerStateCancelled, nil);
+        self.stateChangedHandler(ATProtoNetworkListenerStateCancelled, nil);
     }
 }
 

@@ -70,7 +70,7 @@ Answering these makes debugging easier.
 ## Tests That Should Fail If This Changes
 
 - `Garazyk/Tests/App/PDSApplicationTests.m`
-- `Garazyk/Tests/Network/PDSHttpServerBuilderTests.m`
+- `Garazyk/Tests/Network/ATProtoHttpServerBuilderTests.m`
 - `Garazyk/Tests/App/Services/PDSRecordServiceTests.m`
 - `Garazyk/Tests/Auth/OAuth2HandlerTests.m`
 

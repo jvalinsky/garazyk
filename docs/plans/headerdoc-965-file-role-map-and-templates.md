@@ -26,8 +26,8 @@ This plan maps each #965 file to a semantic role and provides role-specific Head
 - `Garazyk/Sources/Network/HttpProtocolSession.h`
 - `Garazyk/Sources/Network/HttpProtocolSession.m`
 - `Garazyk/Sources/Network/HttpRequest.m`
-- `Garazyk/Sources/Network/PDSNetworkTransportLinux.m`
-- `Garazyk/Sources/Network/PDSNetworkTransportMac.m`
+- `Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m`
+- `Garazyk/Sources/Network/ATProtoNetworkTransportMac.m`
 - `Garazyk/Sources/Network/WebSocketUpgradeHandler.m`
 
 ### ROUTING
