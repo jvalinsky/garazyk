@@ -231,5 +231,3 @@ objc-jupyter-wasm/result
 result
 docker/local-network/sources_cache/
 build/
-*.json
-*.py
