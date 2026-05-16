@@ -130,4 +130,3 @@ These defaults clarify what is runnable, what is safe, and what depends on deplo
 
 - [Documentation Map](../11-reference/documentation-map.md)
 - [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)

@@ -98,5 +98,4 @@ For the HTTP setup that precedes the upgrade, read:
 
 - [Documentation Map](../11-reference/documentation-map.md)
 - [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
 
