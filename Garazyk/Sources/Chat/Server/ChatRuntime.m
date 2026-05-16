@@ -127,6 +127,29 @@
                                                   "           ''                                                                        "];
                      }];
 
+    // DID document endpoint (did:web support)
+    [self.httpServer addRoute:@"GET"
+                        path:@"/.well-known/did.json"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+                         ChatConfiguration *c = self.configuration;
+                         NSString *did = c.serviceDID;
+                         NSString *scheme = [c.serviceDomain containsString:@":"] ? @"http" : @"https";
+                         NSString *endpoint = c.serviceDomain
+                             ? [NSString stringWithFormat:@"%@://%@", scheme, c.serviceDomain]
+                             : [NSString stringWithFormat:@"http://localhost:%lu", (unsigned long)c.httpPort];
+                         NSDictionary *doc = @{
+                             @"@context": @[@"https://www.w3.org/ns/did/v1"],
+                             @"id": did,
+                             @"service": @[@{
+                                 @"id": @"#bsky_chat",
+                                 @"type": @"BskyChatService",
+                                 @"serviceEndpoint": endpoint
+                             }]
+                         };
+                         response.statusCode = 200;
+                         [response setJsonBody:doc];
+                     }];
+
     // Add XRPC Route
     __weak typeof(self) weakSelf = self;
     [self.httpServer addRoute:@"*" path:@"/xrpc/*" handler:^(HttpRequest *request, HttpResponse *response) {

@@ -24,6 +24,8 @@ Garazyk separates concerns into three distinct layers:
 
 In addition to the PDS, the codebase supports specialized protocol roles:
 - **Syrena ([AppView](./appview-server))**: Consumes the firehose to build specialized read-models.
+- **syrena-chat ([Chat](./chat-service))**: Provides `chat.bsky.*` direct messaging and group chat.
+- **Germ ([E2EE Mailbox](./germ-service))**: Ephemeral encrypted message relay.
 - **Zuk ([Relay](./relay-server))**: Aggregates data from multiple PDS instances for indexing.
 - **Campagnola (PLC)**: Implements the [PLC](../GLOSSARY.md#plc) directory server.
 

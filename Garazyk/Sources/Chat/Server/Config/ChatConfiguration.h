@@ -16,6 +16,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy) NSString *adminSecret;
 @property (nonatomic, copy) NSString *pdsUrl;
 
+@property (nonatomic, copy) NSString *serviceDomain;
+@property (nonatomic, readonly) NSString *serviceDID;
+
 + (instancetype)defaultConfiguration;
 - (BOOL)loadFromFile:(NSString *)path error:(NSError **)error;
 - (void)loadFromEnvironment;
