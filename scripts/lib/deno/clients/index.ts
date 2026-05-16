@@ -1,3 +1,7 @@
+/**
+ * Client library barrel exports.
+ * @module index
+ */
 export { AccountsClient } from "./accounts.ts";
 export { IdentityClient } from "./identity.ts";
 export { RecordsClient } from "./records.ts";
