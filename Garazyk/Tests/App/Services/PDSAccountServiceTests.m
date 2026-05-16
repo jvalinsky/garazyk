@@ -5,6 +5,7 @@
 #import "Auth/JWT.h"
 #import "Auth/PDSKeyManagerFactory.h"
 #import "Auth/Base32Utils.h"
+#import "Auth/CryptoUtils.h"
 #import "Auth/PDSSecondFactorService.h"
 #import "Auth/TOTPGenerator.h"
 #import "Database/Pool/DatabasePool.h"
@@ -18,6 +19,28 @@
 @end
 
 @implementation PDSAccountServiceTests
+
+- (BOOL)insertPendingFactorToken:(NSString *)token
+                          forDid:(NSString *)did
+                         expires:(NSTimeInterval)expiresAt
+                           error:(NSError **)error {
+    PDSDatabase *db = [self.service.serviceDatabases serviceDatabaseWithError:error];
+    if (!db) return NO;
+
+    NSData *tokenData = [token dataUsingEncoding:NSUTF8StringEncoding];
+    NSData *tokenHash = [CryptoUtils sha256:tokenData];
+    NSString *sql = @"INSERT INTO pending_factor_tokens (id, token_hash, account_did, method, challenge, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+    return [db executeParameterizedUpdate:sql
+                                   params:@[[[NSUUID UUID] UUIDString],
+                                            tokenHash,
+                                            did,
+                                            @"webauthn",
+                                            [@"challenge" dataUsingEncoding:NSUTF8StringEncoding],
+                                            @(expiresAt),
+                                            @(now)]
+                                    error:error];
+}
 
 - (void)setUp {
     [super setUp];
@@ -193,6 +216,68 @@
     XCTAssertNotNil(error);
     NSArray *sessions = [self.service.serviceDatabases listRefreshTokenSessionsForAccountDid:account.did error:nil];
     XCTAssertEqual(sessions.count, 1U, @"Only the account-creation refresh token should exist");
+}
+
+- (void)testWebAuthnFactorTokenIsSingleUse {
+    NSError *error = nil;
+    [self.service createAccountForEmail:@"mfa-webauthn-once@example.com"
+                               password:@"password123"
+                                 handle:@"mfa-webauthn-once.example.com"
+                                    did:nil
+                                  error:&error];
+    XCTAssertNil(error);
+
+    PDSDatabaseAccount *account = [self.service.serviceDatabases getAccountByEmail:@"mfa-webauthn-once@example.com" error:&error];
+    account.webauthnEnabled = YES;
+    XCTAssertTrue([self.service.serviceDatabases updateAccount:account error:&error]);
+    NSString *factorToken = @"test-webauthn-factor-token";
+    XCTAssertTrue([self insertPendingFactorToken:factorToken
+                                          forDid:account.did
+                                         expires:[[NSDate dateWithTimeIntervalSinceNow:300] timeIntervalSince1970]
+                                           error:&error]);
+
+    error = nil;
+    NSDictionary *session = [self.service loginWithIdentifier:@"mfa-webauthn-once.example.com"
+                                                     password:@"password123"
+                                              authFactorToken:factorToken
+                                                        error:&error];
+    XCTAssertNotNil(session);
+    XCTAssertNil(error);
+
+    error = nil;
+    NSDictionary *reused = [self.service loginWithIdentifier:@"mfa-webauthn-once.example.com"
+                                                    password:@"password123"
+                                             authFactorToken:factorToken
+                                                       error:&error];
+    XCTAssertNil(reused);
+    XCTAssertNotNil(error);
+}
+
+- (void)testExpiredWebAuthnFactorTokenFails {
+    NSError *error = nil;
+    [self.service createAccountForEmail:@"mfa-webauthn-expired@example.com"
+                               password:@"password123"
+                                 handle:@"mfa-webauthn-expired.example.com"
+                                    did:nil
+                                  error:&error];
+    XCTAssertNil(error);
+
+    PDSDatabaseAccount *account = [self.service.serviceDatabases getAccountByEmail:@"mfa-webauthn-expired@example.com" error:&error];
+    account.webauthnEnabled = YES;
+    XCTAssertTrue([self.service.serviceDatabases updateAccount:account error:&error]);
+    XCTAssertTrue([self insertPendingFactorToken:@"expired-factor-token"
+                                          forDid:account.did
+                                         expires:[[NSDate dateWithTimeIntervalSinceNow:-60] timeIntervalSince1970]
+                                           error:&error]);
+
+    error = nil;
+    NSDictionary *session = [self.service loginWithIdentifier:@"mfa-webauthn-expired.example.com"
+                                                     password:@"password123"
+                                              authFactorToken:@"expired-factor-token"
+                                                        error:&error];
+    XCTAssertNil(session);
+    XCTAssertEqualObjects(error.domain, PDSSecondFactorErrorDomain);
+    XCTAssertEqual(error.code, PDSSecondFactorErrorExpiredToken);
 }
 
 - (void)testRefreshAccessToken_RotatesRefreshToken {
