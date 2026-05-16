@@ -1,18 +1,19 @@
 #!/usr/bin/env -S deno run -A
 import { XrpcClient } from "./lib/deno/client.ts";
 import {
+  chatGetConvoForMembers,
+  chatSendMessage,
   createAccountOrLogin,
+  createChatServiceContext,
   createRecordIdempotent,
   DEFAULT_ACCOUNTS,
   DEFAULT_POSTS_TEMPLATES,
-  getConvoForMembers,
   nowIso,
-  sendMessage,
   waitForServer,
 } from "./lib/deno/seed.ts";
 
 const pdsUrl = (Deno.env.get("PDS_URL") || "http://127.0.0.1:2583").replace(/\/$/, "");
-const chatUrl = (Deno.env.get("CHAT_URL") || pdsUrl).replace(/\/$/, "");
+const chatUrl = (Deno.env.get("CHAT_URL") || "http://127.0.0.1:2585").replace(/\/$/, "");
 
 const conversations: Record<string, Array<[string, string]>> = {
   "alice.test|bob.test": [
@@ -54,13 +55,16 @@ async function main() {
   await waitForServer(pdsUrl);
   console.log("  [SETUP] PDS is healthy");
   console.log(`  [SETUP] Target Chat: ${chatUrl}`);
-  if (chatUrl !== pdsUrl) {
-    await waitForServer(chatUrl);
-    console.log("  [SETUP] Chat is healthy");
-  }
+  await waitForServer(chatUrl);
+  console.log("  [SETUP] Chat is healthy");
 
   const pds = new XrpcClient(pdsUrl);
-  const chat = new XrpcClient(chatUrl);
+  const chatContext = createChatServiceContext(
+    pds,
+    chatUrl,
+    Deno.env.get("CHAT_SERVICE_DID") || undefined,
+  );
+  console.log(`  [SETUP] Chat DID: ${chatContext.serviceDid}`);
   const now = nowIso();
   const sessions: Record<string, Record<string, string>> = {};
   const dids: Record<string, string> = {};
@@ -179,7 +183,10 @@ async function main() {
     console.log(`  [CHAT]   ${capitalizedHandle(h1)} <-> ${capitalizedHandle(h2)}`);
 
     try {
-      const convo = await getConvoForMembers(chat, sessions[h1].accessJwt, [dids[h1], dids[h2]]);
+      const convo = await chatGetConvoForMembers(chatContext, sessions[h1].accessJwt, [
+        dids[h1],
+        dids[h2],
+      ]);
       const convoId = (convo.convo ?? convo).id;
       if (!convoId) {
         seedErrors.push(`chat ${h1}<->${h2}: no convo id returned`);
@@ -187,7 +194,7 @@ async function main() {
       }
 
       for (const [sender, text] of messages) {
-        await sendMessage(chat, sessions[sender].accessJwt, convoId, text);
+        await chatSendMessage(chatContext, sessions[sender].accessJwt, convoId, text);
         chatCount++;
       }
       console.log(`  [CHAT]     Sent ${messages.length} messages`);

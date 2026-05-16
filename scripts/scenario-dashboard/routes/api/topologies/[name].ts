@@ -10,7 +10,8 @@ export const handler: Handlers = {
         headers: { "Content-Type": "application/json" },
       });
     } catch (e) {
-      return new Response(JSON.stringify({ error: e.message }), {
+      const message = e instanceof Error ? e.message : String(e);
+      return new Response(JSON.stringify({ error: message }), {
         status: 404,
         headers: { "Content-Type": "application/json" },
       });

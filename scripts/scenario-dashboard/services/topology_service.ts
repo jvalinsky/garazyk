@@ -11,7 +11,6 @@ export async function getTopologyPreview(name: string) {
     name,
     description: topology.description,
     roles: Object.keys(topology.roles || {}),
-    capabilities: Array.from(topology.capabilities || []),
-    // Add more preview info if needed
+    capabilities: [],
   };
 }
