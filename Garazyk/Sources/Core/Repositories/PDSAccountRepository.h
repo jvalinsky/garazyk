@@ -4,7 +4,9 @@
  * @file PDSAccountRepository.h
  * @abstract Protocol for account data access.
  * @discussion Defines the contract for account persistence operations, decoupling
- * the service layer from concrete database implementations.
+ * the service layer from concrete database implementations. This allows for
+ * different storage backends (SQLite, in-memory, etc.) without changing
+ * business logic.
  */
 
 #import <Foundation/Foundation.h>
@@ -12,30 +14,37 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class PDSDatabaseAccount;
-
 /**
+ * @protocol PDSAccountRepository
  * @abstract Protocol for account data access operations.
  * @discussion Implementations provide CRUD operations for PDS accounts.
- * The repository pattern abstracts the underlying storage mechanism.
+ * The repository pattern abstracts the underlying storage mechanism,
+ * allowing the service layer to remain storage-agnostic.
  *
- * Thread Safety: Implementations must be thread-safe for read operations.
+ * @b Implementations:
+ * - PDSSQLiteAccountRepository: SQLite-backed persistent storage
+ * - PDSLegacyAccountRepository: Legacy database format support
+ *
+ * @b Thread Safety: Implementations must be thread-safe for read operations.
  * Write operations should be serialized by the caller.
+ *
+ * @see PDSAccountService
+ * @see PDSDatabaseAccount
  */
 @protocol PDSAccountRepository <NSObject>
 
 /**
  * @abstract Finds an account by its DID.
  * @param did The decentralized identifier to search for.
- * @param error Receives failure details.
+ * @param error On return, contains an error if the lookup failed.
  * @return The account object, or nil if not found or an error occurred.
  */
 - (nullable PDSDatabaseAccount *)accountForDid:(NSString *)did error:(NSError **)error;
 
 /**
  * @abstract Finds an account by its handle.
- * @param handle The handle (username) to search for.
- * @param error Receives failure details.
+ * @param handle The handle (username) to search for (e.g., "alice.bsky.social").
+ * @param error On return, contains an error if the lookup failed.
  * @return The account object, or nil if not found or an error occurred.
  */
 - (nullable PDSDatabaseAccount *)accountForHandle:(NSString *)handle error:(NSError **)error;
@@ -43,7 +52,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Finds an account by its email address.
  * @param email The email address to search for.
- * @param error Receives failure details.
+ * @param error On return, contains an error if the lookup failed.
  * @return The account object, or nil if not found or an error occurred.
  */
 - (nullable PDSDatabaseAccount *)accountForEmail:(NSString *)email error:(NSError **)error;
@@ -51,16 +60,16 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @abstract Persists a new or updated account.
  * @param account The account object to save.
- * @param error Receives failure details.
- * @return YES if saved successfully, NO otherwise.
+ * @param error On return, contains an error if the save failed.
+ * @return YES if the account was saved successfully, NO otherwise.
  */
 - (BOOL)saveAccount:(PDSDatabaseAccount *)account error:(NSError **)error;
 
 /**
  * @abstract Deletes an account and its associated data.
  * @param did The DID of the account to delete.
- * @param error Receives failure details.
- * @return YES if deleted successfully, NO otherwise.
+ * @param error On return, contains an error if the deletion failed.
+ * @return YES if the account was deleted successfully, NO otherwise.
  * @warning This operation is irreversible and removes all associated data.
  */
 - (BOOL)deleteAccount:(NSString *)did error:(NSError **)error;
@@ -69,7 +78,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @abstract Lists accounts with keyset pagination.
  * @param limit Maximum number of accounts to return.
  * @param cursor Exclusive lower bound for pagination (DID string), or nil for first page.
- * @param error Receives failure details.
+ * @param error On return, contains an error if the query failed.
  * @return An array of account objects, or nil if an error occurred.
  */
 - (nullable NSArray<PDSDatabaseAccount *> *)listAccountsWithLimit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error;
