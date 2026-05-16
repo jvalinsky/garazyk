@@ -1,23 +1,11 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-/*!
- @header RepoCommit.h
- @abstract ATProto repository commit structure.
- 
- @discussion RepoCommit represents an atomic commit to a user's ATProto repository.
- Commits form a cryptographically-signed chain where each commit references
- the previous commit's CID (content identifier), creating an immutable history.
- 
- Each commit contains:
- - Reference to repository data (Merkle Search Tree root)
- - Revision identifier (TID-based)
- - Link to previous commit
- - Cryptographic signature (secp256k1)
- 
- Commits are serialized using DAG-CBOR and stored in CAR (Content Addressable
- Archive) format for efficient transport and storage.
- 
- @see MST, CID, CAR
+/**
+ * @file RepoCommit.h
+ * @abstract ATProto repository commit structure.
+ * @discussion RepoCommit represents an atomic commit to a user's ATProto repository.
+ * Commits form a cryptographically-signed chain where each commit references the
+ * previous commit's CID (content identifier), creating an immutable history.
  */
 
 #import <Foundation/Foundation.h>
@@ -27,162 +15,97 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-/*!
- @class RepoCommit
- @abstract Represents an atomic commit to an ATProto repository.
- 
- @discussion RepoCommit models the commit structure in ATProto repositories. Each commit
- is identified by a revision string (TID) and contains a reference to the
- repository data (Merkle Search Tree root CID) and the previous commit's CID.
- 
- Commit Chain:
- - First commit: prevCID is nil (genesis commit)
- - Subsequent commits: prevCID links to parent, forming chain
- - Each commit is signed with repository owner's private key
- - Commits are immutable once created
- 
- Storage Format:
- - Serialized as DAG-CBOR (codec 0x71)
- - Packaged in CAR v1 format for transport
- - CID computed from unsigned commit data (before signature)
- 
- Usage:
- @code
- RepoCommit *commit = [RepoCommit createCommitWithDid:@"did:plc:..."
-                                                 data:mstRootCID
-                                                  rev:[TID generate]
-                                                 prev:prevCommitCID];
- [commit signWithPrivateKey:privateKeyData error:&err];
- NSData *carData = [commit serialize];
- @endcode
+/**
+ * @abstract Represents an atomic commit to an ATProto repository.
+ * @discussion RepoCommit models the commit structure in ATProto repositories. Each commit
+ * is identified by a revision string (TID) and contains a reference to the
+ * repository data (Merkle Search Tree root CID) and the previous commit's CID.
+ * Commits are immutable and cryptographically signed.
  */
 @interface RepoCommit : NSObject <NSSecureCoding>
 
-/*! Decentralized identifier of the repository owner. */
+/** @abstract Decentralized identifier of the repository owner. */
 @property (nonatomic, copy) NSString *did;
 
-/*! Commit format version (currently 3 per ATProto spec). */
+/** @abstract Commit format version (currently 3). */
 @property (nonatomic, assign) NSInteger version;
 
-/*! CID of the repository data (MST root), or nil for empty repo. */
+/** @abstract CID of the repository data (MST root), or nil for empty repo. */
 @property (nonatomic, strong, nullable) CID *dataCID;
 
-/*! Revision identifier (TID-based timestamp) uniquely identifying this commit. */
+/** @abstract Revision identifier (TID). */
 @property (nonatomic, copy) NSString *rev;
 
-/*! CID of the previous commit in the chain, or nil for genesis commit. */
+/** @abstract CID of the previous commit, or nil for genesis commit. */
 @property (nonatomic, strong, nullable) CID *prevCID;
 
-/*! Cryptographic signature (secp256k1) over the unsigned commit data. */
+/** @abstract Cryptographic signature (secp256k1). */
 @property (nonatomic, strong, nullable) NSData *signature;
 
-/*!
- @method createCommitWithDid:data:rev:prev:
- @abstract Create a new repository commit.
- 
- @param did Repository owner's DID.
- @param dataCID CID of repository data (MST root), or nil for empty repo.
- @param rev Revision identifier (TID), or nil to auto-generate.
- @param prevCID Previous commit's CID, or nil for genesis commit.
- @return Unsigned RepoCommit instance (call signWithPrivateKey: before use).
+/**
+ * @abstract Creates a new repository commit.
+ * @param did Repository owner's DID.
+ * @param dataCID CID of repository data.
+ * @param rev Revision identifier (TID), or nil to auto-generate.
+ * @param prevCID Previous commit's CID.
+ * @return Unsigned RepoCommit instance.
  */
 + (instancetype)createCommitWithDid:(NSString *)did
                               data:(nullable CID *)dataCID
                                rev:(nullable NSString *)rev
                              prev:(nullable CID *)prevCID;
 
-/*!
- @method serialize
- @abstract Serialize unsigned commit to DAG-CBOR.
- 
- @discussion Produces DAG-CBOR encoding of the commit map without signature.
- Used for computing the commit hash to be signed.
- 
- @return DAG-CBOR encoded unsigned commit data.
+/**
+ * @abstract Serializes unsigned commit to DAG-CBOR.
+ * @return DAG-CBOR encoded data.
  */
 - (NSData *)serialize;
 
-/*!
- @method serializeSigned
- @abstract Serialize signed commit to DAG-CBOR.
- 
- @discussion Produces DAG-CBOR encoding of the commit map including the signature.
- This is the format stored in the database and included in CAR files.
- 
- @return DAG-CBOR encoded signed commit data, or nil if signature is missing or serialization fails.
+/**
+ * @abstract Serializes signed commit to DAG-CBOR.
+ * @return DAG-CBOR encoded signed data, or nil if incomplete.
  */
 - (nullable NSData *)serializeSigned;
 
-/*!
- @method exportCAR
- @abstract Export the signed commit as a CAR v1 file.
- 
- @discussion Produces a Content Addressable Archive containing the signed commit block.
- The commit CID is used as the CAR root.
- 
- @return CAR-encoded commit data ready for storage or transmission, or nil if commit is unsigned.
+/**
+ * @abstract Exports the signed commit as a CAR v1 file.
+ * @return CAR-encoded data, or nil if commit is unsigned.
  */
 - (nullable NSData *)exportCAR;
 
-/*!
- @method computeHash
- @abstract Compute SHA-256 hash of the unsigned commit data.
- 
- @discussion Hash is computed over the DAG-CBOR encoding of the commit structure
- (excluding signature field). Used for signature generation.
- 
- @return SHA-256 digest (32 bytes), or nil if serialization fails.
+/**
+ * @abstract Computes SHA-256 hash of the unsigned commit data.
+ * @return SHA-256 digest, or nil on failure.
  */
 - (nullable NSData *)computeHash;
 
-/*!
- @method computeCID
- @abstract Compute CID for this commit.
- 
- @discussion CID is computed from the unsigned commit data using:
- - Multicodec: DAG-CBOR (0x71)
- - Multihash: SHA-256 (0x12)
- 
- @return CID v1 identifying this commit.
+/**
+ * @abstract Computes the CID for this commit.
+ * @return CID v1 identifying this commit.
  */
 - (CID *)computeCID;
 
-/*!
- @method signWithPrivateKey:error:
- @abstract Sign the commit with a private key.
- 
- @discussion Computes hash of unsigned commit data and signs with secp256k1.
- Sets the signature property on success.
- 
- @param privateKey Raw secp256k1 private key (32 bytes).
- @param error Error pointer for signing failures.
- @return YES if signed successfully, NO on failure.
+/**
+ * @abstract Signs the commit with a private key.
+ * @param privateKey Raw secp256k1 private key (32 bytes).
+ * @param error Receives failure details.
+ * @return YES if successful.
  */
 - (BOOL)signWithPrivateKey:(NSData *)privateKey error:(NSError **)error;
 
-/*!
- @method verifySignatureWithPublicKey:error:
- @abstract Verify the commit signature.
- 
- @discussion Recomputes hash of unsigned commit data and verifies signature
- using secp256k1.
- 
- @param publicKey Raw secp256k1 public key (33 or 65 bytes).
- @param error Error pointer for verification failures.
- @return YES if signature is valid, NO otherwise.
+/**
+ * @abstract Verifies the commit signature.
+ * @param publicKey Raw secp256k1 public key.
+ * @param error Receives failure details.
+ * @return YES if valid.
  */
 - (BOOL)verifySignatureWithPublicKey:(NSData *)publicKey error:(NSError **)error;
 
-/*!
- @method fromCARData:error:
- @abstract Deserialize commit from CAR v1 data.
- 
- @discussion Parses CAR format, extracts commit block, and decodes DAG-CBOR structure.
- Validates commit structure and signature presence.
- 
- @param carData CAR v1 encoded commit data.
- @param error Error pointer for parsing failures.
- @return RepoCommit instance or nil on parse failure.
+/**
+ * @abstract Deserializes commit from CAR v1 data.
+ * @param carData CAR v1 encoded data.
+ * @param error Receives failure details.
+ * @return RepoCommit instance or nil.
  */
 + (nullable instancetype)fromCARData:(NSData *)carData error:(NSError **)error;
 
