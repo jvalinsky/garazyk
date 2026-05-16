@@ -8,6 +8,35 @@
 @property (nonatomic, weak) id<PDSQueryDatabase> database;
 @end
 
+static NSArray<NSString *> *ChatServiceNormalizeMemberDids(NSArray<NSString *> *memberDids) {
+    NSMutableArray<NSString *> *normalized = [NSMutableArray array];
+    NSMutableSet<NSString *> *seen = [NSMutableSet set];
+    NSCharacterSet *trimSet = [NSCharacterSet whitespaceAndNewlineCharacterSet];
+
+    for (id value in memberDids ?: @[]) {
+        if (![value isKindOfClass:[NSString class]]) {
+            continue;
+        }
+
+        NSString *did = [(NSString *)value stringByTrimmingCharactersInSet:trimSet];
+        if (did.length == 0 || [seen containsObject:did]) {
+            continue;
+        }
+
+        [seen addObject:did];
+        [normalized addObject:did];
+    }
+
+    return [normalized copy];
+}
+
+static BOOL ChatServiceTableExists(PDSDatabase *database, NSString *tableName) {
+    NSArray *rows = [database executeParameterizedQuery:@"SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1"
+                                                 params:@[tableName]
+                                                  error:nil];
+    return rows.count > 0;
+}
+
 @implementation ChatService
 
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database {
@@ -28,9 +57,10 @@
 - (nullable NSDictionary *)createConversationWithMembers:(NSArray<NSString *> *)memberDids
                                                     mode:(NSString *)mode
                                                   error:(NSError **)error {
-    if (memberDids.count < 2) {
+    NSArray<NSString *> *normalizedMemberDids = ChatServiceNormalizeMemberDids(memberDids);
+    if (normalizedMemberDids.count < 2) {
         if (error) *error = [NSError errorWithDomain:@"ChatService" code:400
-                                             userInfo:@{NSLocalizedDescriptionKey: @"Conversation requires at least 2 members"}];
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Conversation requires at least 2 distinct members"}];
         return nil;
     }
 
@@ -53,7 +83,7 @@
     if (!success) return nil;
 
     // Add members
-    for (NSString *memberDid in memberDids) {
+    for (NSString *memberDid in normalizedMemberDids) {
         NSString *memberQuery = @"INSERT INTO conversation_members (convo_id, member_did, status, joined_at) VALUES (?, ?, ?, ?)";
         success = [(PDSDatabase *)self.database executeParameterizedUpdate:memberQuery
                                                    params:@[convoId, memberDid, @"pending", now]
@@ -66,14 +96,15 @@
 
 - (nullable NSDictionary *)getConversationForMembers:(NSArray<NSString *> *)memberDids
                                                error:(NSError **)error {
-    if (memberDids.count < 2) {
+    NSArray<NSString *> *normalizedMemberDids = ChatServiceNormalizeMemberDids(memberDids);
+    if (normalizedMemberDids.count < 2) {
         if (error) *error = [NSError errorWithDomain:@"ChatService" code:400
-                                             userInfo:@{NSLocalizedDescriptionKey: @"Need at least 2 members"}];
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Need at least 2 distinct members"}];
         return nil;
     }
 
     // Sort members for deterministic query
-    NSArray *sortedMembers = [memberDids sortedArrayUsingSelector:@selector(compare:)];
+    NSArray *sortedMembers = [normalizedMemberDids sortedArrayUsingSelector:@selector(compare:)];
 
     // Build query that checks ALL members are present and no extras exist.
     // For N members: each member must be in the conversation, AND the total
@@ -83,10 +114,10 @@
 
     for (NSUInteger i = 0; i < sortedMembers.count; i++) {
         if (i > 0) [query appendString:@" AND "];
-        [query appendFormat:@"c.id IN (SELECT convo_id FROM conversation_members WHERE member_did = ?)"];
+        [query appendFormat:@"c.id IN (SELECT convo_id FROM conversation_members WHERE member_did = ? AND status != 'left')"];
         [params addObject:sortedMembers[i]];
     }
-    [query appendFormat:@" AND (SELECT COUNT(*) FROM conversation_members WHERE convo_id = c.id) = ? LIMIT 1"];
+    [query appendFormat:@" AND (SELECT COUNT(*) FROM conversation_members WHERE convo_id = c.id AND status != 'left') = ? LIMIT 1"];
     [params addObject:@(sortedMembers.count)];
 
     NSError *queryError = nil;
@@ -104,7 +135,7 @@
     }
 
     // Create new conversation if not found
-    return [self createConversationWithMembers:memberDids error:error];
+    return [self createConversationWithMembers:normalizedMemberDids error:error];
 }
 
 - (nullable NSDictionary *)getConversationWithId:(NSString *)convoId
@@ -124,10 +155,15 @@
     NSDictionary *convoRow = rows[0];
 
     // Fetch members
-    NSString *membersQuery = @"SELECT member_did, status, muted, last_read_id, joined_at FROM conversation_members WHERE convo_id = ?";
+    NSString *membersQuery = @"SELECT member_did, status, muted, last_read_id, joined_at FROM conversation_members WHERE convo_id = ? AND status != 'left'";
     NSArray *memberRows = [(PDSDatabase *)self.database executeParameterizedQuery:membersQuery
                                                                             params:@[convoId]
                                                                              error:nil] ?: @[];
+    if (memberRows.count == 0) {
+        if (error) *error = [NSError errorWithDomain:@"ChatService" code:404
+                                             userInfo:@{NSLocalizedDescriptionKey: @"Conversation has no active members"}];
+        return nil;
+    }
 
     NSMutableArray *members = [NSMutableArray array];
     NSMutableArray *memberDids = [NSMutableArray array];
@@ -167,7 +203,7 @@
     NSString *query = @"SELECT DISTINCT c.id, c.created_at, c.updated_at "
                      @"FROM conversations c "
                      @"JOIN conversation_members cm ON c.id = cm.convo_id "
-                     @"WHERE cm.member_did = ?";
+                     @"WHERE cm.member_did = ? AND cm.status != 'left'";
     if (cursor) {
         query = [query stringByAppendingString:@" AND c.id < ?"];
     }
@@ -249,6 +285,40 @@
                                                  error:error];
     if (success) {
         [self logChatEvent:@"leave" convoId:convoId actorDid:memberDid data:nil error:nil];
+
+        NSArray *activeRows = [(PDSDatabase *)self.database executeParameterizedQuery:@"SELECT COUNT(*) AS count FROM conversation_members WHERE convo_id = ? AND status != 'left'"
+                                                                               params:@[convoId]
+                                                                                error:nil] ?: @[];
+        NSInteger activeCount = [activeRows.firstObject[@"count"] integerValue];
+        if (activeCount == 0) {
+            PDSDatabase *database = (PDSDatabase *)self.database;
+            BOOL ok = [database executeParameterizedUpdate:@"DELETE FROM message_reactions WHERE message_id IN (SELECT id FROM messages WHERE convo_id = ?)"
+                                                    params:@[convoId]
+                                                     error:error];
+            if (!ok) return NO;
+
+            ok = [database executeParameterizedUpdate:@"DELETE FROM messages WHERE convo_id = ?"
+                                               params:@[convoId]
+                                                error:error];
+            if (!ok) return NO;
+
+            ok = [database executeParameterizedUpdate:@"DELETE FROM conversation_members WHERE convo_id = ?"
+                                               params:@[convoId]
+                                                error:error];
+            if (!ok) return NO;
+
+            if (ChatServiceTableExists(database, @"chat_event_log")) {
+                ok = [database executeParameterizedUpdate:@"DELETE FROM chat_event_log WHERE convo_id = ?"
+                                                   params:@[convoId]
+                                                    error:error];
+                if (!ok) return NO;
+            }
+
+            ok = [database executeParameterizedUpdate:@"DELETE FROM conversations WHERE id = ?"
+                                               params:@[convoId]
+                                                error:error];
+            if (!ok) return NO;
+        }
     }
     return success;
 }
@@ -314,6 +384,17 @@
                                  text:(nullable NSString *)text
                             embedJson:(nullable NSString *)embedJson
                                 error:(NSError **)error {
+    NSArray *membershipRows = [(PDSDatabase *)self.database executeParameterizedQuery:@"SELECT 1 FROM conversation_members WHERE convo_id = ? AND member_did = ? AND status != 'left' LIMIT 1"
+                                                                               params:@[convoId, senderDid]
+                                                                                error:error];
+    if (!membershipRows || membershipRows.count == 0) {
+        if (error && !*error) {
+            *error = [NSError errorWithDomain:@"ChatService" code:403
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Sender is not an active conversation member"}];
+        }
+        return nil;
+    }
+
     NSString *messageId = [NSString stringWithFormat:@"msg/%@", [[NSUUID UUID] UUIDString]];
     NSString *now = [NSString stringWithFormat:@"%.0f", [[NSDate date] timeIntervalSince1970]];
 
