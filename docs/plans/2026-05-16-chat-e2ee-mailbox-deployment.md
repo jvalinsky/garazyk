@@ -1,13 +1,13 @@
 # Plan: Deploy E2EE Mailbox (Germ) for chat.garazyk.xyz
 
-**Objective:** Configure and serve the `chat.garazyk.xyz` domain on the remote `DEPLOY_HOST` server, proxying requests to the Garazyk "Germ" E2EE mailbox service.
+**Objective:** Configure and serve the `chat.garazyk.xyz` domain on the remote production server, proxying requests to the Garazyk "Germ" E2EE mailbox service.
 
 ## 1. Build the `germ` Binary
 The `germ` binary is the standalone E2EE mailbox service defined in `Garazyk/Binaries/germ/main.m`, but it is not currently built on the remote server.
 
 ```bash
-ssh DEPLOY_USER@DEPLOY_HOST
-cd DEPLOY_DIR/objpds/build-linux
+ssh $DEPLOY_USER@$DEPLOY_HOST
+cd $DEPLOY_DIR/build-linux
 cmake --build . --target germ
 ```
 
@@ -15,8 +15,8 @@ cmake --build . --target germ
 Create a dedicated data directory for the Germ SQLite database to persist ephemeral mailboxes and ciphertexts.
 
 ```bash
-mkdir -p DEPLOY_DIR/germ-data
-chown DEPLOY_USER:DEPLOY_USER DEPLOY_DIR/germ-data
+mkdir -p $DEPLOY_DIR/germ-data
+chown $DEPLOY_USER:$DEPLOY_USER $DEPLOY_DIR/germ-data
 ```
 
 ## 3. Create Systemd Service
@@ -30,10 +30,10 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=DEPLOY_USER
-Group=DEPLOY_USER
-WorkingDirectory=DEPLOY_DIR/objpds
-ExecStart=DEPLOY_DIR/objpds/build-linux/bin/germ serve --port 8082 --data-dir DEPLOY_DIR/germ-data
+User=$DEPLOY_USER
+Group=$DEPLOY_USER
+WorkingDirectory=$DEPLOY_DIR
+ExecStart=$DEPLOY_DIR/build-linux/bin/germ serve --port 8082 --data-dir $DEPLOY_DIR/germ-data
 Restart=on-failure
 RestartSec=5
 NoNewPrivileges=yes

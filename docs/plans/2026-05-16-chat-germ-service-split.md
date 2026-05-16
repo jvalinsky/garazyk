@@ -6,7 +6,7 @@
 
 - `chat.garazyk.xyz` → nginx → `127.0.0.1:8082` (germ binary)
 - `germ.garazyk.xyz` → does not exist (no DNS, no nginx, no TLS)
-- PDS (`DEPLOY_HOST`) → handles `chat.bsky.*` locally (no `PDS_CHAT_URL` set)
+- PDS (production server) → handles `chat.bsky.*` locally (no `PDS_CHAT_URL` set)
 - bsky clients hitting `chat.garazyk.xyz` get `MethodNotFound` for all `chat.bsky.*` methods
 
 ## Target State
@@ -37,8 +37,8 @@ bsky client
 ### 1. Build `syrena-chat` on the remote server
 
 ```bash
-ssh DEPLOY_USER@DEPLOY_HOST
-cd DEPLOY_DIR/objpds/build-linux
+ssh $DEPLOY_USER@$DEPLOY_HOST
+cd $DEPLOY_DIR/build-linux
 cmake --build . --target syrena-chat
 ```
 
@@ -51,8 +51,8 @@ Verify the binary exists and runs:
 ### 2. Create data directory for syrena-chat
 
 ```bash
-mkdir -p DEPLOY_DIR/chat-data
-chown DEPLOY_USER:DEPLOY_USER DEPLOY_DIR/chat-data
+mkdir -p $DEPLOY_DIR/chat-data
+chown $DEPLOY_USER:$DEPLOY_USER $DEPLOY_DIR/chat-data
 ```
 
 ### 3. Create systemd service for syrena-chat
@@ -67,10 +67,10 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=DEPLOY_USER
-Group=DEPLOY_USER
-WorkingDirectory=DEPLOY_DIR/objpds
-ExecStart=DEPLOY_DIR/objpds/build-linux/bin/syrena-chat serve --port 2585 --data-dir DEPLOY_DIR/chat-data
+User=$DEPLOY_USER
+Group=$DEPLOY_USER
+WorkingDirectory=$DEPLOY_DIR
+ExecStart=$DEPLOY_DIR/build-linux/bin/syrena-chat serve --port 2585 --data-dir $DEPLOY_DIR/chat-data
 Environment=CHAT_PDS_URL=http://127.0.0.1:2583
 Environment=CHAT_PLC_URL=http://127.0.0.1:2582
 Restart=on-failure
@@ -115,10 +115,10 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=DEPLOY_USER
-Group=DEPLOY_USER
-WorkingDirectory=DEPLOY_DIR/objpds
-ExecStart=DEPLOY_DIR/objpds/build-linux/bin/germ serve --port 8082 --data-dir DEPLOY_DIR/germ-data
+User=$DEPLOY_USER
+Group=$DEPLOY_USER
+WorkingDirectory=$DEPLOY_DIR
+ExecStart=$DEPLOY_DIR/build-linux/bin/germ serve --port 8082 --data-dir $DEPLOY_DIR/germ-data
 Restart=on-failure
 RestartSec=5
 NoNewPrivileges=yes
