@@ -1,8 +1,0 @@
-# Public Assets Directory
-
-This directory contains static assets that will be served at the root of the site.
-
-Contents:
-- diagrams/ - SVG diagrams (copied from 12-diagrams/)
-- logo.svg - Site logo
-- favicon.ico - Site favicon
