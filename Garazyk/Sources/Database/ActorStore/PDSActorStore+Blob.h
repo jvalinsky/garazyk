@@ -38,6 +38,9 @@ NS_ASSUME_NONNULL_BEGIN
  @see PDSActorStore
  @see PDSDatabaseBlob
  */
+/**
+ * @abstract Actor store operations for blob references.
+ */
 @interface PDSActorStore (Blob)
 
 @end

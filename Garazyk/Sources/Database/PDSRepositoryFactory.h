@@ -19,6 +19,9 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSDatabasePool;
 @class PDSServiceDatabases;
 
+/**
+ * @abstract Creates repository storage objects backed by the configured database.
+ */
 @interface PDSRepositoryFactory : NSObject
 
 /*! 
