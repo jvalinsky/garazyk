@@ -43,5 +43,4 @@ title: Docs Workspace Guide
 
 - [Documentation Map](11-reference/documentation-map)
 - [Contributor Guide](index)
-- [Repository Documentation Index](repo-index/index)
 

@@ -282,4 +282,4 @@ GitHub: `DavidBuchanan314/millipds` (149 stars)
 - [../tests/02-network/xrpc.md](../tests/02-network/xrpc) - XRPC test documentation
 
 ### Security Documentation
-- <!-- Link placeholder: ../security/ --> - Security audit and hardening guides
+- [../security/README](../security/README) - Security audit and hardening guides

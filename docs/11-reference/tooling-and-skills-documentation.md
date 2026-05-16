@@ -29,4 +29,3 @@ This hub maps documentation for repository tooling, scripts, and skills.
 - [Documentation Map](./documentation-map)
 - [Testing Map](./testing-map)
 - [CLI Reference](./cli-reference)
-- [Repository Documentation Index](../repo-index/index.md)

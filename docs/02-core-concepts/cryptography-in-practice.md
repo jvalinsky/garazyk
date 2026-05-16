@@ -128,5 +128,4 @@ That framing is usually more useful than starting from the algorithm names.
 
 - [Documentation Map](../11-reference/documentation-map.md)
 - [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
 

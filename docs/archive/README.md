@@ -15,7 +15,6 @@ This directory contains older documentation that is no longer actively maintaine
 ## Canonical Archive Hubs
 
 - [Planning Archive](planning/README)
-- [Repository Documentation Index](../repo-index/index)
 - [Documentation Map](../11-reference/documentation-map)
 
 ## Notes

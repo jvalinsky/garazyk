@@ -604,5 +604,4 @@ echo "test" | kaszlak key sign --did did:plc:abc123
 
 - [Documentation Map](../11-reference/documentation-map.md)
 - [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
 

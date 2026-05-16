@@ -95,5 +95,4 @@ It also is not a universal fairness scheduler across every route. If a path is b
 
 - [Documentation Map](../11-reference/documentation-map.md)
 - [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
 

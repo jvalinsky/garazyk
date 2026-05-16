@@ -64,5 +64,4 @@ These failures often appear as remote PLC rejections, but the root cause is usua
 
 - [Documentation Map](../11-reference/documentation-map.md)
 - [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
 
