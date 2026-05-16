@@ -2,10 +2,10 @@ import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
 import {
   APPVIEW_ADMIN_SECRET,
+  getCharacter,
   PDS1,
   SERVICE_URLS,
   VIDEO_SERVICE_DID,
-  getCharacter,
 } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 
@@ -79,9 +79,15 @@ export async function run(): Promise<ScenarioResult> {
   const video = new XrpcClient(SERVICE_URLS.video);
   const luna = getCharacter("luna");
 
-  await timedCall(result, "PDS health check", async () => { await pds.waitForHealthy(30); });
-  await timedCall(result, "AppView health check", async () => { await waitForAppViewHealthy(30); });
-  await timedCall(result, "Jelcz health check", async () => { await video.waitForHealthy(30); });
+  await timedCall(result, "PDS health check", async () => {
+    await pds.waitForHealthy(30);
+  });
+  await timedCall(result, "AppView health check", async () => {
+    await waitForAppViewHealthy(30);
+  });
+  await timedCall(result, "Jelcz health check", async () => {
+    await video.waitForHealthy(30);
+  });
 
   if (result.failed > 0) {
     result.finish();
@@ -115,11 +121,19 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   const finalJob = await timedCall(result, "Upload MP4 and poll to completion", async () => {
-    const upload = await uploadVideo(await readTestVideo(), luna.did, serviceAuth.token, luna.accessJwt);
+    const upload = await uploadVideo(
+      await readTestVideo(),
+      luna.did,
+      serviceAuth.token,
+      luna.accessJwt,
+    );
     const jobId = upload.jobStatus?.jobId || upload.jobId;
     assert.isTrue(!!jobId, "upload response should include jobStatus.jobId");
     const status = await waitForVideoJob(video, jobId, luna.accessJwt);
-    assert.isTrue(status.state === "JOB_STATE_COMPLETED", `expected completed job, got ${status.state}`);
+    assert.isTrue(
+      status.state === "JOB_STATE_COMPLETED",
+      `expected completed job, got ${status.state}`,
+    );
     assert.isTrue(!!status.blob?.ref?.$link, "completed job should include blob ref");
     return status;
   }, (status) => `cid=${status.blob.ref.$link}`);
@@ -150,13 +164,23 @@ export async function run(): Promise<ScenarioResult> {
   await timedCall(result, "AppView returns playable video embed", async () => {
     let post = null;
     for (let i = 0; i < 20; i++) {
-      const body = await appview.raw.xrpcGet("app.bsky.feed.getPosts", { uris: created.uri }, luna.accessJwt);
+      const body = await appview.raw.xrpcGet(
+        "app.bsky.feed.getPosts",
+        { uris: created.uri },
+        luna.accessJwt,
+      );
       post = body.posts?.[0] || null;
       if (post?.embed?.$type === "app.bsky.embed.video#view") break;
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-    assert.isTrue(post?.embed?.$type === "app.bsky.embed.video#view", "post should include video view embed");
-    assert.isTrue(post.embed.cid === finalJob.blob.ref.$link, "view cid should match uploaded blob");
+    assert.isTrue(
+      post?.embed?.$type === "app.bsky.embed.video#view",
+      "post should include video view embed",
+    );
+    assert.isTrue(
+      post.embed.cid === finalJob.blob.ref.$link,
+      "view cid should match uploaded blob",
+    );
     assert.isTrue(post.embed.playlist?.includes("/watch/"), "view should include HLS playlist URL");
     assert.isTrue(post.embed.thumbnail?.includes("/watch/"), "view should include thumbnail URL");
     return post.embed;
@@ -166,10 +190,16 @@ export async function run(): Promise<ScenarioResult> {
     const cid = finalJob.blob.ref.$link;
     const playlist = await fetch(`${SERVICE_URLS.video}/watch/${luna.did}/${cid}/playlist.m3u8`);
     assert.isTrue(playlist.ok, `playlist HTTP ${playlist.status}`);
-    assert.isTrue((playlist.headers.get("content-type") || "").includes("mpegurl"), "playlist should be HLS content");
+    assert.isTrue(
+      (playlist.headers.get("content-type") || "").includes("mpegurl"),
+      "playlist should be HLS content",
+    );
     const thumbnail = await fetch(`${SERVICE_URLS.video}/watch/${luna.did}/${cid}/thumbnail.jpg`);
     assert.isTrue(thumbnail.ok, `thumbnail HTTP ${thumbnail.status}`);
-    assert.isTrue((thumbnail.headers.get("access-control-allow-origin") || "").length > 0, "thumbnail should include CORS");
+    assert.isTrue(
+      (thumbnail.headers.get("access-control-allow-origin") || "").length > 0,
+      "thumbnail should include CORS",
+    );
   });
 
   result.finish();

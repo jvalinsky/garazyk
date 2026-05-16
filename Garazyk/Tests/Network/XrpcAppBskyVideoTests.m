@@ -4,7 +4,9 @@
 #import "Database/PDSDatabase.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Video/VideoJobStore.h"
+#import "Video/VideoJWTAuthProvider.h"
 #import "Video/VideoXrpcPack.h"
+#import "Auth/JWT.h"
 
 // Expose private class methods for testing
 @interface ATProtoVideoXrpcPack (Testing)
@@ -18,6 +20,32 @@
 @end
 
 @implementation ATProtoVideoXrpcPackTests
+
+- (NSString *)unsignedServiceAuthTokenWithAudience:(NSString *)audience {
+    NSDictionary *header = @{@"alg": @"ES256K", @"typ": @"JWT"};
+    NSDictionary *payload = @{
+        @"iss": @"did:plc:testactor",
+        @"aud": audience,
+        @"lxm": @"app.bsky.video.uploadVideo",
+        @"exp": @((NSInteger)([[NSDate date] timeIntervalSince1970] + 60))
+    };
+
+    NSError *error = nil;
+    NSData *headerData = [NSJSONSerialization dataWithJSONObject:header options:0 error:&error];
+    XCTAssertNil(error);
+    NSData *payloadData = [NSJSONSerialization dataWithJSONObject:payload options:0 error:&error];
+    XCTAssertNil(error);
+
+    NSString *encodedHeader = [JWT base64URLEncodeData:headerData error:&error];
+    XCTAssertNil(error);
+    NSString *encodedPayload = [JWT base64URLEncodeData:payloadData error:&error];
+    XCTAssertNil(error);
+    NSString *encodedSignature = [JWT base64URLEncodeData:[@"invalid-signature" dataUsingEncoding:NSUTF8StringEncoding]
+                                                    error:&error];
+    XCTAssertNil(error);
+
+    return [NSString stringWithFormat:@"%@.%@.%@", encodedHeader, encodedPayload, encodedSignature];
+}
 
 #pragma mark - getJobStatus Tests
 
@@ -100,6 +128,30 @@
                                                      body:[NSData data]
                                                   headers:@{@"authorization": authHeader}];
     XCTAssertEqual(response.statusCode, 400);
+}
+
+- (void)testVideoServiceAuthAcceptsAudienceFragment {
+    VideoJWTAuthProvider *provider =
+        [[VideoJWTAuthProvider alloc] initWithExpectedAudience:@"did:web:localhost"
+                                                        pdsURL:@"http://localhost:2583"
+                                                        plcURL:@"http://localhost:2582"];
+    NSString *token = [self unsignedServiceAuthTokenWithAudience:@"did:web:localhost#bsky_video"];
+    HttpRequest *request = [[HttpRequest alloc] initWithMethod:HttpMethodPOST
+                                                  methodString:@"POST"
+                                                          path:@"/xrpc/app.bsky.video.uploadVideo"
+                                                   queryString:@""
+                                                   queryParams:@{}
+                                                       version:@"1.1"
+                                                       headers:@{@"authorization": [NSString stringWithFormat:@"Bearer %@", token]}
+                                                          body:[NSData data]
+                                                 remoteAddress:@"127.0.0.1"];
+    HttpResponse *response = [[HttpResponse alloc] init];
+
+    NSString *did = [provider authenticateRequest:request response:response];
+
+    XCTAssertNil(did);
+    XCTAssertEqual(response.statusCode, HttpStatusUnauthorized);
+    XCTAssertEqualObjects(response.jsonBody[@"message"], @"Token verification failed");
 }
 
 #pragma mark - getUploadLimits Tests
