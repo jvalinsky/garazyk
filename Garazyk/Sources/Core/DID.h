@@ -141,6 +141,8 @@ typedef NS_ENUM(NSUInteger, DIDCacheStatus) {
 
 - (nullable NSDictionary *)resolveAtprotoDataForDID:(NSString *)did error:(NSError **)error;
 
+- (nullable NSDictionary *)resolveAtprotoDataForDID:(NSString *)did forceRefresh:(BOOL)forceRefresh error:(NSError **)error;
+
 - (void)seedCacheWithDID:(NSString *)did documentJSON:(NSDictionary *)json;
 
 /*!

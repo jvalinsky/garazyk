@@ -17,6 +17,7 @@
 #import "Auth/PDSKeyManagerProtocol.h"
 #import "Auth/PDSActorKeyManagerProtocol.h"
 #import <CommonCrypto/CommonDigest.h>
+#import <Security/SecRandom.h>
 #import "Security/PDSSecurityCompare.h"
 
 NSString * const JWTErrorDomain = @"com.atproto.pds.jwt";
@@ -481,6 +482,41 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     if (!signatureEncoded) return nil;
 
     return [NSString stringWithFormat:@"%@.%@.%@", headerEncoded, payloadEncoded, signatureEncoded];
+}
+
+- (NSString *)mintServiceAuthJWTForDID:(NSString *)userDID
+                                   aud:(NSString *)audienceDID
+                                   lxm:(NSString *)methodNSID
+                       actorKeyManager:(id<PDSActorKeyManager>)actorKeyManager
+                                  error:(NSError **)error {
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+
+    // Generate 128-bit random nonce (16 hex characters)
+    NSMutableData *nonceData = [NSMutableData dataWithLength:16];
+    int result = SecRandomCopyBytes(kSecRandomDefault, 16, nonceData.mutableBytes);
+    if (result != errSecSuccess) {
+        if (error) {
+            *error = [NSError errorWithDomain:JWTErrorDomain
+                                         code:JWTErrorSigningFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Failed to generate jti nonce"}];
+        }
+        return nil;
+    }
+    NSMutableString *jti = [NSMutableString stringWithCapacity:32];
+    const unsigned char *bytes = (const unsigned char *)nonceData.bytes;
+    for (NSUInteger i = 0; i < 16; i++) {
+        [jti appendFormat:@"%02x", bytes[i]];
+    }
+
+    NSMutableDictionary *payload = [NSMutableDictionary dictionary];
+    payload[@"iss"] = userDID;
+    payload[@"aud"] = audienceDID;
+    payload[@"lxm"] = methodNSID;
+    payload[@"iat"] = @((NSInteger)now);
+    payload[@"exp"] = @((NSInteger)(now + 60)); // 60 seconds per spec
+    payload[@"jti"] = jti;
+
+    return [self signPayload:payload actorKeyManager:actorKeyManager error:error];
 }
 
 
