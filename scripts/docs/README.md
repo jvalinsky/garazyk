@@ -122,8 +122,14 @@ deno run -A scripts/docs/repo_docs.ts validate --external-report
 The scenario harness API is documented from `scripts/lib/deno/mod.ts`.
 
 ```bash
+# Install or refresh the docs package dependencies after package metadata changes
+npm --prefix scripts/docs install
+
 # Lint exported TSDoc/JSDoc and public type references
 deno task --config scripts/deno.json doc-lint
+
+# Regenerate committed TypeDoc HTML under scripts/docs/api/
+npm --prefix scripts/docs run api:ts
 
 # Generate local Deno HTML docs under scripts/docs/
 deno task --config scripts/deno.json doc:serve
