@@ -21,7 +21,22 @@ export function fetchRun(db: Database, runId: string): Run | undefined {
       duration_s as durationS,
       status,
       pds2,
-      binary_mode as binaryMode
+      binary_mode as binaryMode,
+      topology,
+      runner,
+      web_client as webClient,
+      client_flow as clientFlow,
+      scenario_ids_json as scenarioIdsJson,
+      run_dir as runDir,
+      reports_dir as reportsDir,
+      log_path as logPath,
+      compose_project as composeProject,
+      manifest_path as manifestPath,
+      child_pid as childPid,
+      exit_code as exitCode,
+      stopped_at as stoppedAt,
+      stop_reason as stopReason,
+      scenario_params_json as scenarioParamsJson
     FROM runs
     WHERE id = ?
   `).get(runId) as Run | undefined;
@@ -43,7 +58,22 @@ export function fetchRuns(db: Database, limit = 10): Run[] {
       duration_s as durationS,
       status,
       pds2,
-      binary_mode as binaryMode
+      binary_mode as binaryMode,
+      topology,
+      runner,
+      web_client as webClient,
+      client_flow as clientFlow,
+      scenario_ids_json as scenarioIdsJson,
+      run_dir as runDir,
+      reports_dir as reportsDir,
+      log_path as logPath,
+      compose_project as composeProject,
+      manifest_path as manifestPath,
+      child_pid as childPid,
+      exit_code as exitCode,
+      stopped_at as stoppedAt,
+      stop_reason as stopReason,
+      scenario_params_json as scenarioParamsJson
     FROM runs
     ORDER BY started_at DESC
     LIMIT ?
@@ -51,21 +81,27 @@ export function fetchRuns(db: Database, limit = 10): Run[] {
 }
 
 /**
- * Fetch the latest result for each scenario using a deterministic correlated subquery.
- * Guarantees that the returned columns (status, passed, failed, skipped) come from the same
- * row as the maximum started_at timestamp for each scenario.
+ * Fetch the latest result for each scenario using a window function.
  */
 export function fetchLatestResultPerScenario(
   db: Database,
-): Array<{ scenario_id: string; status: ScenarioStatus; passed: number; failed: number; skipped: number }> {
+): Array<
+  {
+    scenario_id: string;
+    status: ScenarioStatus;
+    passed: number;
+    failed: number;
+    skipped: number;
+  }
+> {
   return db.prepare(`
     SELECT scenario_id, status, passed, failed, skipped
-    FROM scenario_results sr
-    WHERE started_at = (
-      SELECT MAX(started_at)
+    FROM (
+      SELECT scenario_id, status, passed, failed, skipped,
+        ROW_NUMBER() OVER (PARTITION BY scenario_id ORDER BY started_at DESC, id DESC) AS rn
       FROM scenario_results
-      WHERE scenario_id = sr.scenario_id
     )
+    WHERE rn = 1
   `).all() as Array<{
     scenario_id: string;
     status: ScenarioStatus;
