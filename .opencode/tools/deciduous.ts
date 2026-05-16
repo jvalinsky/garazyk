@@ -1,9 +1,4 @@
-// OpenCode Custom Tool: Deciduous Decision Graph
-// Wraps the deciduous CLI for direct graph operations from OpenCode
-//
-// This tool allows agents to interact with the decision graph without
-// needing to use the bash tool directly.
-
+/** Wraps the deciduous CLI for direct decision-graph operations from OpenCode. */
 import { tool } from "@opencode-ai/plugin"
 
 export default tool({

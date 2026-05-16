@@ -14,7 +14,6 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString * const PDSPhoneVerificationProviderErrorDomain;
 
 /*!
- @enum PDSPhoneVerificationProviderErrorCode
 
  @abstract Error codes for provider configuration and request failures.
  */

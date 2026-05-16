@@ -1,7 +1,4 @@
-// OpenCode Plugin: Post-Commit Reminder
-// Reminds to link commits to the decision graph after git commit
-// This ensures commits are connected to the reasoning that led to them
-
+/** Reminds to link commits to the decision graph after git commit. */
 import type { Plugin } from "@opencode-ai/plugin"
 
 export const PostCommitReminder: Plugin = async ({ $ }) => {

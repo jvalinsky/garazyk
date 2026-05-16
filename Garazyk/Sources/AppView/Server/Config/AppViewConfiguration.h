@@ -39,7 +39,6 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @enum AppViewMode
 
  @abstract Operating mode for app.bsky.* request handling.
 

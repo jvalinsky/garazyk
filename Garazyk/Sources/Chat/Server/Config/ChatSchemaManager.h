@@ -4,6 +4,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Installs and migrates the chat service database schema.
+ */
 @interface ChatSchemaManager : NSObject
 
 + (instancetype)sharedManager;
@@ -12,6 +15,10 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)conversationMembersTableSchema;
 - (NSString *)messagesTableSchema;
 - (NSString *)messageReactionsTableSchema;
+/**
+ * @abstract Event log table schema.
+ * @return The requested string, or nil when unavailable.
+ */
 - (NSString *)eventLogTableSchema;
 - (NSString *)actorMetadataTableSchema;
 
