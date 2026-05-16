@@ -1,3 +1,30 @@
+/**
+ * @module scenarios/58_account_delete_cascade
+ *
+ * Scenario: 58 account delete cascade
+ *
+ * Behavior:
+ * - Executes the 58 account delete cascade scenario.
+ * - Validates core operations.
+ *
+ * Expectations:
+ * - Scenario completes successfully without errors.
+ */
+
+import { PDS1 } from "../../lib/deno/config.ts";
+import { ScenarioResult } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
+import { XrpcClient } from "../../lib/deno/client.ts";
+import { assert } from "../../lib/deno/assertions.ts";
+import { timedCall } from "../../lib/deno/runner.ts";
+
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
+
+
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 // Covers: hard-delete of an account; assert records gone, blobs inaccessible, sessions revoked.
@@ -6,9 +33,8 @@
 // Production paths: com.atproto.server.deleteAccount (body: {did, password}),
 //   com.atproto.repo.listRecords, com.atproto.sync.getRepo/getBlob,
 //   com.atproto.server.getSession.
-import { XrpcClient } from "../../lib/deno/client.ts";
-import { PDS1 } from "../../lib/deno/config.ts";
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+
+
 
 function now() {
   return new Date().toISOString();

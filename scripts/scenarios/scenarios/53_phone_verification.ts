@@ -1,7 +1,30 @@
-import { XrpcClient } from "../../lib/deno/client.ts";
+/**
+ * @module scenarios/53_phone_verification
+ *
+ * Scenario: 53 phone verification
+ *
+ * Behavior:
+ * - Executes the 53 phone verification scenario.
+ * - Validates core operations.
+ *
+ * Expectations:
+ * - Scenario completes successfully without errors.
+ */
+
 import { PDS1, getCharacter } from "../../lib/deno/config.ts";
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+import { ScenarioResult } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
+import { XrpcClient } from "../../lib/deno/client.ts";
+import { assert } from "../../lib/deno/assertions.ts";
 import { startMockTwilioServer, stopMockTwilioServer, MockTwilioServer } from "../../lib/deno/mock_twilio.ts";
+import { timedCall } from "../../lib/deno/runner.ts";
+
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
+
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Phone Verification (Twilio)");

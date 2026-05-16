@@ -1,7 +1,29 @@
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
-import { assert } from "../../lib/deno/assertions.ts";
-import { XrpcClient } from "../../lib/deno/client.ts";
+/**
+ * @module scenarios/33_tortoise_consumer
+ *
+ * Scenario: 33 tortoise consumer
+ *
+ * Behavior:
+ * - Executes the 33 tortoise consumer scenario.
+ * - Validates core operations.
+ *
+ * Expectations:
+ * - Scenario completes successfully without errors.
+ */
+
 import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { ScenarioResult } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
+import { XrpcClient } from "../../lib/deno/client.ts";
+import { assert } from "../../lib/deno/assertions.ts";
+import { timedCall } from "../../lib/deno/runner.ts";
+
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
+
 
 function now() {
   return new Date().toISOString();
@@ -11,10 +33,10 @@ async function connectRawWs(url: string) {
   const parsed = new URL(url);
   const host = parsed.hostname;
   const port = parseInt(parsed.port || "80");
-  
+
   const conn = await Deno.connect({ hostname: host, port });
   const encoder = new TextEncoder();
-  
+
   const key = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
   const request = `GET /xrpc/com.atproto.sync.subscribeRepos HTTP/1.1\r\n` +
     `Host: ${host}:${port}\r\n` +
@@ -22,19 +44,19 @@ async function connectRawWs(url: string) {
     `Connection: Upgrade\r\n` +
     `Sec-WebSocket-Key: ${key}\r\n` +
     `Sec-WebSocket-Version: 13\r\n\r\n`;
-    
+
   await conn.write(encoder.encode(request));
-  
+
   // Read upgrade response
   const buffer = new Uint8Array(4096);
   const n = await conn.read(buffer);
   const response = new TextDecoder().decode(buffer.subarray(0, n || 0));
-  
+
   if (!response.includes("101")) {
     conn.close();
     throw new Error(`Upgrade failed: ${response}`);
   }
-  
+
   return conn;
 }
 
@@ -74,7 +96,7 @@ export async function run(): Promise<ScenarioResult> {
   // Read a few initial bytes to confirm traffic
   const buf = new Uint8Array(1024);
   await conn.read(buf);
-  
+
   // Now stop reading and generate traffic
   const POST_COUNT = 600;
   console.log(`Generating ${POST_COUNT} posts...`);
@@ -90,7 +112,7 @@ export async function run(): Promise<ScenarioResult> {
   console.log("Waiting for PDS to drop connection...");
   let closed = false;
   const deadline = Date.now() + 90000;
-  
+
   while (Date.now() < deadline) {
     try {
       const n = await conn.read(buf);

@@ -1,9 +1,31 @@
+/**
+ * @module scenarios/59_web_client_browser_flow
+ *
+ * Scenario: 59 web client browser flow
+ *
+ * Behavior:
+ * - Executes the 59 web client browser flow scenario.
+ * - Validates core operations.
+ *
+ * Expectations:
+ * - Scenario completes successfully without errors.
+ */
+
+import { SERVICE_URLS, WEB_CLIENT_TOPOLOGY } from "../../lib/deno/config.ts";
+import { ScenarioResult } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { attachPublicNetworkLeakGuard } from "../../lib/deno/browser_flow.ts";
-import { SERVICE_URLS, WEB_CLIENT_TOPOLOGY } from "../../lib/deno/config.ts";
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 import { chromium } from "npm:playwright";
 import { join } from "@std/path";
+import { timedCall } from "../../lib/deno/runner.ts";
+
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
+
 
 export async function run(): Promise<ScenarioResult> {
   const flow = Deno.env.get("ATPROTO_CLIENT_FLOW") || "smoke";

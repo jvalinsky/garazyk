@@ -1,12 +1,38 @@
+/**
+ * @module scenarios/54_negative_auth_paths
+ *
+ * Scenario: 54 negative auth paths
+ *
+ * Behavior:
+ * - Executes the 54 negative auth paths scenario.
+ * - Validates core operations.
+ *
+ * Expectations:
+ * - Scenario completes successfully without errors.
+ */
+
+import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { ScenarioResult } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
+import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
+import { assert } from "../../lib/deno/assertions.ts";
+import { timedCall } from "../../lib/deno/runner.ts";
+
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
+
+
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 // Covers: revoked token reuse, expired JWT rejection, cross-account write denial,
 //   suspended account write, suspended account read.
 // Production paths: com.atproto.server.{deleteSession,createSession,deactivateAccount},
 //   com.atproto.repo.{createRecord,listRecords} (auth enforcement).
-import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
-import { PDS1, getCharacter } from "../../lib/deno/config.ts";
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+
+
 
 function now() {
   return new Date().toISOString();

@@ -1,9 +1,16 @@
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
-import { assert } from "../../lib/deno/assertions.ts";
-import { XrpcClient } from "../../lib/deno/client.ts";
-import { PDS1, SERVICE_URLS, APPVIEW_ADMIN_SECRET, getCharacter } from "../../lib/deno/config.ts";
-import { FirehoseClient } from "../../lib/deno/firehose.ts";
-import { createRunContext } from "../../lib/deno/diagnostics.ts";
+/**
+ * @module scenarios/26_appview_ingest_load
+ *
+ * Scenario: 26 appview ingest load
+ *
+ * Behavior:
+ * - Executes the 26 appview ingest load scenario.
+ * - Validates core operations.
+ *
+ * Expectations:
+ * - Scenario completes successfully without errors.
+ */
+
 import {
   OperationTimer,
   PhaseTimer,
@@ -11,7 +18,16 @@ import {
   StorageMonitor,
   InstrumentationReport,
 } from "../../lib/deno/instrumentation.ts";
+import { FirehoseClient } from "../../lib/deno/firehose.ts";
+import { PDS1, SERVICE_URLS, APPVIEW_ADMIN_SECRET, getCharacter } from "../../lib/deno/config.ts";
+import { ScenarioResult } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
+import { XrpcClient } from "../../lib/deno/client.ts";
+import { assert } from "../../lib/deno/assertions.ts";
+import { createRunContext } from "../../lib/deno/diagnostics.ts";
 import { join } from "@std/path";
+import { timedCall } from "../../lib/deno/runner.ts";
 
 function now() {
   return new Date().toISOString();
@@ -39,6 +55,10 @@ function summarizeIngestState(health: any, backfill: any, metrics: any, records:
   return { backpressureActive, queueDepth, ingestLag, indexedRecords };
 }
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("AppView Ingest Under Load");
   result.start();
@@ -105,7 +125,7 @@ export async function run(): Promise<ScenarioResult> {
   const fh = new FirehoseClient(SERVICE_URLS.relay);
   const fhStop = { stopped: false };
   const fhPromise = fh.subscribe((ev) => firehoseEvents.push(ev), 45).catch(() => {});
-  
+
   result.stepPassed("Firehose subscriber started");
   phaseTimer.endPhase();
 
