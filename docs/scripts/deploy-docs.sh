@@ -84,11 +84,11 @@ if [ "$DEPLOY_ENV" = "production" ]; then
     echo -e "${YELLOW}Step 5: Deploying to production...${NC}"
     
     # Check if we're on the production server
-    if [ -f "DEPLOY_DIR/objpds/docker/docs/docker-compose.yml" ]; then
-        echo "Deploying on production server (DEPLOY_HOST)"
+    if [ -f "$DEPLOY_DIR/objpds/docker/docs/docker-compose.yml" ]; then
+        echo "Deploying on production server ($DEPLOY_HOST)"
         
         # Stop existing container
-        cd DEPLOY_DIR/objpds/docker/docs
+        cd $DEPLOY_DIR/objpds/docker/docs
         docker compose down || true
         
         # Rebuild and start
@@ -97,7 +97,7 @@ if [ "$DEPLOY_ENV" = "production" ]; then
         echo -e "${GREEN}✓ Deployed to production${NC}"
     else
         echo -e "${YELLOW}⚠ Not on production server${NC}"
-        echo "To deploy to production, run this script on DEPLOY_HOST"
+        echo "To deploy to production, run this script on $DEPLOY_HOST"
         echo "Or manually copy $BUILD_DIR to the production server"
     fi
     
