@@ -23,7 +23,6 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString * const PLCRotationKeyManagerErrorDomain;
 
 /*!
- @enum PLCRotationKeyManagerError
 
  @abstract Error codes for rotation key manager operations.
 

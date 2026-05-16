@@ -22,7 +22,6 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString * const PLCPersistentStoreErrorDomain;
 
 /*!
- @enum PLCPersistentStoreError
 
  @abstract Error codes for PLC persistent store operations.
  */

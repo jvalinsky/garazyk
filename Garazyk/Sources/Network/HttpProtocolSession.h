@@ -17,7 +17,6 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /**
- * @typedef HttpSessionEvent
  * @abstract Events returned by the HttpProtocolSession state machine.
  */
 typedef NS_ENUM(NSInteger, HttpSessionEvent) {

@@ -23,7 +23,6 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @typedef HttpProtocolEvent
 
  @abstract Protocol-level events returned by the driver.
  */

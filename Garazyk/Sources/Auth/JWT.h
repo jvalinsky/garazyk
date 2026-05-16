@@ -23,7 +23,6 @@ extern NSString * const JWTErrorDomain;
 
 
 /*!
- @enum JWTError
  
  @abstract Error codes for JWT operations.
  
