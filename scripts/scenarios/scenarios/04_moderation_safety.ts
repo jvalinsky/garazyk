@@ -1,11 +1,36 @@
+/**
+ * @module scenarios/04_moderation_safety
+ *
+ * Scenario: Moderation and safety operations (reporting, event processing, takedowns)
+ *
+ * Behavior:
+ * - Create test users, an admin, and a moderator
+ * - Trollface posts spam and harasses Luna
+ * - Luna reports the spam and harassment
+ * - Mod queries reports and applies a takedown
+ * - Admin applies account status update and labels
+ * - Verify that taken-down content is inaccessible
+ *
+ * Expectations:
+ * - Reporting works and is accessible to moderators
+ * - Takedown events are emitted and applied successfully
+ * - Taken-down content is properly enforced and inaccessible to users
+ */
+
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { PDS1, getCharacter, PDS_ADMIN_PASSWORD } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 
 function now() {
   return new Date().toISOString();
 }
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Moderation & Safety");
   result.start();
@@ -255,7 +280,7 @@ export async function run(): Promise<ScenarioResult> {
       async () => {
         return await client.raw.get("com.atproto.label.queryLabels", {
           uriPatterns: trollHarass ? [trollHarass.uri] : []
-        }, adminToken); // Using queryLabels or getLabels? Usually queryLabels is the newer endpoint, let's try getLabels with array
+        }, adminToken);
       },
       (l) => `labels=${JSON.stringify(l)}`
     );

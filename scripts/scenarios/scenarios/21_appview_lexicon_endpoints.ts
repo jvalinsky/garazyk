@@ -1,4 +1,24 @@
+/**
+ * @module scenarios/21_appview_lexicon_endpoints
+ *
+ * Scenario: Verifies that the AppView correctly registers and serves lexicon-defined endpoints.
+ *
+ * Behavior:
+ * - Initializes PDS and AppView clients.
+ * - Creates two test accounts and populates profiles/posts.
+ * - Queries AppView admin APIs to confirm lexicon, collection, and handler registration.
+ * - Exercises third-party dynamic GET endpoints via /xrpc.
+ * - Validates negative auth/missing handler responses.
+ *
+ * Expectations:
+ * - Lexicons, collections, and custom handlers are successfully listed.
+ * - Registered third-party dynamic endpoints respond correctly.
+ * - Unregistered endpoints and unauthorized admin requests are rejected.
+ */
+
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { PDS1, SERVICE_URLS, APPVIEW_ADMIN_SECRET, getCharacter } from "../../lib/deno/config.ts";
@@ -13,6 +33,10 @@ const THIRD_PARTY_QUERY_NSIDS = [
   "social.grain.feed.getTimeline",
 ];
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("AppView Lexicon-Driven Endpoints");
   result.start();

@@ -1,7 +1,30 @@
-import { XrpcClient } from "../../lib/deno/client.ts";
-import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+/**
+ * @module scenarios/63_firehose_cursor_recovery
+ *
+ * Scenario: 63 firehose cursor recovery
+ *
+ * Behavior:
+ * - Executes the 63 firehose cursor recovery scenario.
+ * - Validates core operations.
+ *
+ * Expectations:
+ * - Scenario completes successfully without errors.
+ */
+
 import { FirehoseClient } from "../../lib/deno/firehose.ts";
+import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
+import { ScenarioResult } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
+import { XrpcClient } from "../../lib/deno/client.ts";
+import { assert } from "../../lib/deno/assertions.ts";
+import { timedCall } from "../../lib/deno/runner.ts";
+
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
+
 
 function now() {
   return new Date().toISOString();
