@@ -10,7 +10,24 @@
     config.httpPort = 2585; // Default port for chat
     config.adminSecret = @"";
     config.pdsUrl = @"http://localhost:2583";
+    config.serviceDomain = nil; // will be computed
     return config;
+}
+
+- (NSString *)serviceDID {
+    NSString *domain = self.serviceDomain ?: [NSString stringWithFormat:@"localhost:%lu", (unsigned long)self.httpPort];
+    NSString *didHost = domain;
+    NSArray<NSString *> *parts = [domain componentsSeparatedByString:@":"];
+    if (parts.count == 2) {
+        NSString *host = parts[0];
+        NSUInteger port = (NSUInteger)[parts[1] integerValue];
+        if (port != 0 && port != 80 && port != 443) {
+            didHost = [NSString stringWithFormat:@"%@%%3A%lu", host, (unsigned long)port];
+        } else {
+            didHost = host;
+        }
+    }
+    return [NSString stringWithFormat:@"did:web:%@", didHost];
 }
 
 - (BOOL)loadFromFile:(NSString *)path error:(NSError **)error {
@@ -24,6 +41,7 @@
     if (json[@"httpPort"]) self.httpPort = [json[@"httpPort"] unsignedIntegerValue];
     if (json[@"adminSecret"]) self.adminSecret = json[@"adminSecret"];
     if (json[@"pdsUrl"]) self.pdsUrl = json[@"pdsUrl"];
+    if (json[@"serviceDomain"]) self.serviceDomain = json[@"serviceDomain"];
     
     return YES;
 }
@@ -35,6 +53,7 @@
     if (env[@"CHAT_HTTP_PORT"]) self.httpPort = (NSUInteger)[env[@"CHAT_HTTP_PORT"] integerValue];
     if (env[@"CHAT_ADMIN_SECRET"]) self.adminSecret = env[@"CHAT_ADMIN_SECRET"];
     if (env[@"PDS_URL"]) self.pdsUrl = env[@"PDS_URL"];
+    if (env[@"CHAT_SERVICE_DOMAIN"]) self.serviceDomain = env[@"CHAT_SERVICE_DOMAIN"];
 }
 
 @end
