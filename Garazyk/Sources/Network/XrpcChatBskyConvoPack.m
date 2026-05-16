@@ -54,6 +54,22 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
                                           response:response];
 }
 
+static BOOL XrpcChatConversationIncludesActor(NSDictionary *convo, NSString *actorDID) {
+    if (actorDID.length == 0) return NO;
+
+    NSArray *members = [convo[@"members"] isKindOfClass:[NSArray class]] ? convo[@"members"] : @[];
+    for (id member in members) {
+        NSString *memberDID = nil;
+        if ([member isKindOfClass:[NSString class]]) {
+            memberDID = member;
+        } else if ([member isKindOfClass:[NSDictionary class]]) {
+            memberDID = ((NSDictionary *)member)[@"did"];
+        }
+        if ([memberDID isEqualToString:actorDID]) return YES;
+    }
+    return NO;
+}
+
 /*! Fetch the allowIncoming preference for a DID from the PDS repo.
     Returns "all" (default), "none", or "following".
     On any error, returns "all" (fail-open for availability). */
@@ -495,12 +511,7 @@ static NSString *XrpcChatAllowIncomingForDID(NSString *targetDid) {
             [XrpcErrorHelper setValidationError:response message:@"Conversation not found"];
             return;
         }
-        NSArray *memberDids = convo[@"members"];
-        BOOL isMember = NO;
-        for (NSString *m in memberDids) {
-            if ([m isEqualToString:actorDID]) { isMember = YES; break; }
-        }
-        if (!isMember) {
+        if (!XrpcChatConversationIncludesActor(convo, actorDID)) {
             response.statusCode = 403;
             [response setJsonBody:@{
                 @"error": @"Forbidden",
@@ -831,12 +842,7 @@ static NSString *XrpcChatAllowIncomingForDID(NSString *targetDid) {
             [XrpcErrorHelper setValidationError:response message:@"Conversation not found"];
             return;
         }
-        NSArray *memberDids = convo[@"members"];
-        BOOL isMember = NO;
-        for (NSString *m in memberDids) {
-            if ([m isEqualToString:actorDID]) { isMember = YES; break; }
-        }
-        if (!isMember) {
+        if (!XrpcChatConversationIncludesActor(convo, actorDID)) {
             response.statusCode = 403;
             [response setJsonBody:@{
                 @"error": @"Forbidden",
