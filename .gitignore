@@ -1,3 +1,15 @@
+# Secrets — never commit real credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+secrets/
+docker/local-network/secrets/
+
 # JupyterLite build output
 _output/
 
