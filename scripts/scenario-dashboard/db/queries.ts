@@ -5,11 +5,27 @@
 import { Database } from "sqlite3";
 import { Run, ScenarioStatus } from "../services/types.ts";
 
+export function normalizeEpochMs(value: number | null | undefined): number | undefined {
+  if (value === null || value === undefined) return undefined;
+  return value < 10_000_000_000 ? value * 1000 : value;
+}
+
+function normalizeRun(row: Run | undefined): Run | undefined {
+  if (!row) return undefined;
+  const run = {
+    ...row,
+    startedAt: normalizeEpochMs(row.startedAt) ?? row.startedAt,
+    finishedAt: normalizeEpochMs(row.finishedAt),
+    stoppedAt: normalizeEpochMs(row.stoppedAt),
+  };
+  return run;
+}
+
 /**
  * Fetch a single run by ID with all camelCase aliases applied.
  */
 export function fetchRun(db: Database, runId: string): Run | undefined {
-  return db.prepare(`
+  const row = db.prepare(`
     SELECT
       id,
       started_at as startedAt,
@@ -40,13 +56,14 @@ export function fetchRun(db: Database, runId: string): Run | undefined {
     FROM runs
     WHERE id = ?
   `).get(runId) as Run | undefined;
+  return normalizeRun(row);
 }
 
 /**
  * Fetch the last N runs with all camelCase aliases applied.
  */
 export function fetchRuns(db: Database, limit = 10): Run[] {
-  return db.prepare(`
+  const rows = db.prepare(`
     SELECT
       id,
       started_at as startedAt,
@@ -78,6 +95,7 @@ export function fetchRuns(db: Database, limit = 10): Run[] {
     ORDER BY started_at DESC
     LIMIT ?
   `).all(limit) as Run[];
+  return rows.map((row) => normalizeRun(row)!);
 }
 
 /**

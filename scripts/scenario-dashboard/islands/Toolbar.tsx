@@ -1,6 +1,5 @@
-import { useSignal } from "@preact/signals";
 import { useEffect } from "preact/hooks";
-import { useRuntime, getRuntime } from "../runtime.ts";
+import { useRuntime } from "../runtime.ts";
 
 const IS_BROWSER = typeof globalThis !== "undefined" && "document" in globalThis;
 
@@ -14,32 +13,27 @@ export default function Toolbar() {
   const params = s.ux.scenarioParams;
   const scenarios = s.scenarios.all;
 
-  const selectedTopology = useSignal("garazyk-default");
-
-  // Restore saved topology selection on mount, then sync changes to
-  // localStorage and Runtime.
   useEffect(() => {
     if (!IS_BROWSER) return;
     const saved = localStorage.getItem("garazyk-dashboard-topology");
-    if (saved) selectedTopology.value = saved;
-  }, []);
+    if (saved && saved !== state.peek().topology.selected) {
+      dispatch({ type: "topology/selected", name: saved });
+    }
+  }, [topologies.length]);
 
   useEffect(() => {
     if (!IS_BROWSER) return;
-    const unsub = selectedTopology.subscribe((name: string) => {
-      localStorage.setItem("garazyk-dashboard-topology", name);
-      const runtime = getRuntime();
-      if (runtime) runtime.dispatch({ type: "topology/selected", name });
-    });
-    return () => unsub();
-  }, []);
+    localStorage.setItem("garazyk-dashboard-topology", s.topology.selected);
+  }, [s.topology.selected]);
 
   const isStarting = run?.status === "starting";
   const isRunning = run?.status === "running";
   const isStopping = run?.status === "stopping";
   const isActive = isStarting || isRunning || isStopping;
 
-  const hasParameters = scenarios.some((sc) => sc.parameters && Object.keys(sc.parameters).length > 0);
+  const hasParameters = scenarios.some((sc) =>
+    sc.parameters && Object.keys(sc.parameters).length > 0
+  );
 
   function runAll() {
     const ids = scenarios.map((sc) => sc.id);
@@ -47,7 +41,12 @@ export default function Toolbar() {
     if (state.peek().ux.settingsOpen) {
       dispatch({ type: "ux/toggleSettings" });
     }
-    dispatch({ type: "runs/startRequested", scenarioIds: ids, pds2: ids.some((id) => id === "05" || id === "12") });
+    const byId = new Map(scenarios.map((sc) => [sc.id, sc]));
+    dispatch({
+      type: "runs/startRequested",
+      scenarioIds: ids,
+      pds2: ids.some((id) => byId.get(id)?.needsPds2),
+    });
   }
 
   function stopRun() {
@@ -71,9 +70,10 @@ export default function Toolbar() {
         <select
           id="topology-select"
           class="form-select"
-          value={selectedTopology.value}
+          value={s.topology.selected}
           disabled={isActive}
-          onChange={(e) => selectedTopology.value = (e.target as HTMLSelectElement).value}
+          onChange={(e) =>
+            dispatch({ type: "topology/selected", name: (e.target as HTMLSelectElement).value })}
         >
           {topologies.map((t) => (
             <option key={t.name} value={t.name}>
@@ -84,31 +84,41 @@ export default function Toolbar() {
       </div>
 
       <div class="toolbar-section">
-        {!isActive ? (
-          <div style="display: flex; gap: var(--space-sm);">
-            {hasParameters && (
-              <button class="btn btn-secondary" onClick={() => dispatch({ type: "ux/toggleSettings" })} disabled={busy}>
-                Settings
+        {!isActive
+          ? (
+            <div style="display: flex; gap: var(--space-sm);">
+              {hasParameters && (
+                <button
+                  class="btn btn-secondary"
+                  onClick={() => dispatch({ type: "ux/toggleSettings" })}
+                  disabled={busy}
+                >
+                  Settings
+                </button>
+              )}
+              <button class="btn btn-primary" onClick={runAll} disabled={busy}>
+                {busy ? "Starting..." : "Run All"}
               </button>
-            )}
-            <button class="btn btn-primary" onClick={runAll} disabled={busy}>
-              {busy ? "Starting..." : "Run All"}
-            </button>
-          </div>
-        ) : (
-          <div style="display: flex; gap: var(--space-sm);">
-            <div class="active-run-indicator">
-              <span class={`status-dot ${isStopping ? "stopping" : "running"}`} />
-              <span class="text-xs font-mono">{run.id}</span>
             </div>
-            <button class="btn btn-sm" onClick={restartRun} disabled={busy || isStopping}>
-              Restart
-            </button>
-            <button class="btn btn-destructive btn-sm" onClick={stopRun} disabled={busy || isStopping}>
-              {isStopping ? "Stopping..." : "Stop"}
-            </button>
-          </div>
-        )}
+          )
+          : (
+            <div style="display: flex; gap: var(--space-sm);">
+              <div class="active-run-indicator">
+                <span class={`status-dot ${isStopping ? "stopping" : "running"}`} />
+                <span class="text-xs font-mono">{run.id}</span>
+              </div>
+              <button class="btn btn-sm" onClick={restartRun} disabled={busy || isStopping}>
+                Restart
+              </button>
+              <button
+                class="btn btn-destructive btn-sm"
+                onClick={stopRun}
+                disabled={busy || isStopping}
+              >
+                {isStopping ? "Stopping..." : "Stop"}
+              </button>
+            </div>
+          )}
       </div>
 
       {showSettings && (
@@ -116,7 +126,9 @@ export default function Toolbar() {
           <div class="settings-modal">
             <div class="settings-modal-header">
               <h3>Scenario Settings</h3>
-              <button class="btn-close" onClick={() => dispatch({ type: "ux/toggleSettings" })}>×</button>
+              <button class="btn-close" onClick={() => dispatch({ type: "ux/toggleSettings" })}>
+                ×
+              </button>
             </div>
             <div class="settings-modal-body">
               {scenarios.map((sc) => {
@@ -133,27 +145,46 @@ export default function Toolbar() {
                             <div class="setting-desc">{meta.description}</div>
                           </div>
                           <div class="setting-input-wrapper">
-                            {meta.type === "number" ? (
-                              <input
-                                type="number"
-                                class="form-input"
-                                value={value as number}
-                                onChange={(e) => dispatch({ type: "ux/setScenarioParam", key, value: Number((e.target as HTMLInputElement).value) })}
-                              />
-                            ) : meta.type === "boolean" ? (
-                              <input
-                                type="checkbox"
-                                checked={value as boolean}
-                                onChange={(e) => dispatch({ type: "ux/setScenarioParam", key, value: (e.target as HTMLInputElement).checked })}
-                              />
-                            ) : (
-                              <input
-                                type="text"
-                                class="form-input"
-                                value={value as string}
-                                onChange={(e) => dispatch({ type: "ux/setScenarioParam", key, value: (e.target as HTMLInputElement).value })}
-                              />
-                            )}
+                            {meta.type === "number"
+                              ? (
+                                <input
+                                  type="number"
+                                  class="form-input"
+                                  value={value as number}
+                                  onChange={(e) =>
+                                    dispatch({
+                                      type: "ux/setScenarioParam",
+                                      key,
+                                      value: Number((e.target as HTMLInputElement).value),
+                                    })}
+                                />
+                              )
+                              : meta.type === "boolean"
+                              ? (
+                                <input
+                                  type="checkbox"
+                                  checked={value as boolean}
+                                  onChange={(e) =>
+                                    dispatch({
+                                      type: "ux/setScenarioParam",
+                                      key,
+                                      value: (e.target as HTMLInputElement).checked,
+                                    })}
+                                />
+                              )
+                              : (
+                                <input
+                                  type="text"
+                                  class="form-input"
+                                  value={value as string}
+                                  onChange={(e) =>
+                                    dispatch({
+                                      type: "ux/setScenarioParam",
+                                      key,
+                                      value: (e.target as HTMLInputElement).value,
+                                    })}
+                                />
+                              )}
                           </div>
                         </div>
                       );

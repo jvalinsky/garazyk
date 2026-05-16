@@ -1,18 +1,18 @@
 import { TransportLayer, XrpcError } from "./transport.ts";
 import {
   AccountsClient,
-  IdentityClient,
-  RecordsClient,
-  BlobsClient,
-  GraphClient,
-  FeedClient,
-  NotificationsClient,
-  DraftsClient,
-  SearchClient,
-  ContactClient,
-  AgeAssuranceClient,
   AdminClient,
+  AgeAssuranceClient,
+  BlobsClient,
+  ContactClient,
+  DraftsClient,
+  FeedClient,
+  GraphClient,
+  IdentityClient,
+  NotificationsClient,
   RawClient,
+  RecordsClient,
+  SearchClient,
 } from "./clients/index.ts";
 
 export class XrpcClient {
@@ -55,8 +55,12 @@ export class XrpcClient {
     return await this.admin.login(password);
   }
 
-  get lastResponse() { return this.rawTransport.lastResponse; }
-  get lastResponses() { return this.rawTransport.lastResponses; }
+  get lastResponse() {
+    return this.rawTransport.lastResponse;
+  }
+  get lastResponses() {
+    return this.rawTransport.lastResponses;
+  }
 
   #agentSession = new AgentSession();
 
@@ -78,7 +82,7 @@ export class XrpcClient {
     const start = Date.now();
     while (Date.now() - start < timeout * 1000) {
       if (await this.healthCheck()) return;
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 500));
     }
     throw new Error(`Service at ${this.baseUrl} not healthy after ${timeout}s`);
   }
@@ -122,13 +126,16 @@ export interface AgentProxy {
     password: string;
   }): Promise<{ data: { accessJwt: string; refreshJwt: string; did: string; handle: string } }>;
   /** Access nested XRPC methods. */
-  [namespace: string]: AgentProxy;
+  [namespace: string]: any;
   /** Invoke the accumulated method path. */
-  (params?: Record<string, any>, opts?: { headers?: Record<string, string> }): Promise<{ data: any }>;
+  (
+    params?: Record<string, any>,
+    opts?: { headers?: Record<string, string> },
+  ): Promise<{ data: any }>;
 }
 
 function createAgentProxy(path: string[], client: XrpcClient, session: AgentSession): AgentProxy {
-  return new Proxy(function () {}, {
+  return new Proxy(function () {} as unknown as AgentProxy, {
     get(_target, prop: string) {
       if (typeof prop !== "string") return undefined;
       // Prevent the proxy from becoming accidentally thenable.

@@ -1,22 +1,35 @@
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
-
-function now() {
-  return new Date().toISOString();
-}
+import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
+import {
+  chatGetConvoForMembers,
+  chatGetMessages,
+  chatListConvos,
+  chatSendMessage,
+  chatXrpcPost,
+  createChatServiceContext,
+} from "../../lib/deno/seed.ts";
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Chat Group Lifecycle");
   result.start();
 
   const pds = new XrpcClient(PDS1);
+  const chatUrl = Deno.env.get("CHAT_URL") || SERVICE_URLS.chat || "http://localhost:2585";
+  const chatContext = createChatServiceContext(
+    pds,
+    chatUrl,
+    Deno.env.get("CHAT_SERVICE_DID") || undefined,
+  );
   const luna = getCharacter("luna");
   const marcus = getCharacter("marcus");
   const rosa = getCharacter("rosa");
 
   await timedCall(result, "PDS health check", async () => {
     await pds.waitForHealthy(30);
+  });
+  await timedCall(result, "Chat service health check", async () => {
+    await chatContext.chatClient.waitForHealthy(30);
   });
 
   if (result.failed > 0) return result;
@@ -33,49 +46,44 @@ export async function run(): Promise<ScenarioResult> {
 
   // Create a group conversation
   const convo = await timedCall(result, "Create group conversation", async () => {
-    return await pds.raw.xrpcGet("chat.bsky.convo.getConvoForMembers", {
-      members: [luna.did, marcus.did, rosa.did],
-    }, luna.accessJwt);
+    return await chatGetConvoForMembers(chatContext, luna.accessJwt, [
+      luna.did,
+      marcus.did,
+      rosa.did,
+    ]);
   });
 
   if (convo?.convo?.id) {
     const convoId = convo.convo.id;
 
     await timedCall(result, "Luna sends message", async () => {
-      return await pds.raw.xrpcPost("chat.bsky.convo.sendMessage", {
-        convoId,
-        message: { $type: "chat.bsky.convo.message", text: "Hello group!", createdAt: now() },
-      }, luna.accessJwt);
+      return await chatSendMessage(chatContext, luna.accessJwt, convoId, "Hello group!");
     });
 
     await new Promise((r) => setTimeout(r, 1000));
 
     await timedCall(result, "Marcus retrieves conversations", async () => {
-      return await pds.raw.xrpcGet("chat.bsky.convo.listConvos", { limit: 10 }, marcus.accessJwt);
+      return await chatListConvos(chatContext, marcus.accessJwt, 10);
     });
 
     await timedCall(result, "Marcus reads messages", async () => {
-      return await pds.raw.xrpcGet(
-        "chat.bsky.convo.getMessages",
-        { convoId, limit: 20 },
-        marcus.accessJwt,
-      );
+      return await chatGetMessages(chatContext, marcus.accessJwt, convoId, 20);
     });
 
     await timedCall(result, "Marcus mutes group", async () => {
-      return await pds.raw.xrpcPost("chat.bsky.convo.muteConvo", { convoId }, marcus.accessJwt);
+      return await chatXrpcPost(chatContext, marcus.accessJwt, "chat.bsky.convo.muteConvo", {
+        convoId,
+      });
     });
 
     await timedCall(result, "Rosa leaves group", async () => {
-      return await pds.raw.xrpcPost("chat.bsky.convo.leaveConvo", { convoId }, rosa.accessJwt);
+      return await chatXrpcPost(chatContext, rosa.accessJwt, "chat.bsky.convo.leaveConvo", {
+        convoId,
+      });
     });
 
     await timedCall(result, "Verify state", async () => {
-      return await pds.raw.xrpcGet(
-        "chat.bsky.convo.getMessages",
-        { convoId, limit: 20 },
-        luna.accessJwt,
-      );
+      return await chatGetMessages(chatContext, luna.accessJwt, convoId, 20);
     });
   }
 

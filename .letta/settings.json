@@ -355,7 +355,13 @@
       "Bash(deciduous link 50 52 -r \"TEA variant: single runtime per island\" -t leads_to)",
       "Bash(deciduous add decision \"Dashboard state model: unified DashboardState with per-concern slices\" -d \"Instead of each island owning its own state, define a single DashboardState type with slices: { network: NetworkSlice, runs: RunsSlice, scenarios: ScenariosSlice, topology: TopologySlice }. The server renders the initial state. The client Runtime hydrates from server props and then only updates via Msg dispatch. Islands read from their slice. This makes it impossible for the sidebar and the main content to disagree about scenario status because they read from the same state.\" 2)",
       "Bash(deciduous add decision \"Effect system: Cmd = tagged union of declarative effects, not raw Promises\" -d \"Cmds are data, not functions. Example: { type: 'fetch', url: '/api/network/health', onSuccess: Msg.NetworkHealthReceived, onError: Msg.FetchFailed }. The Runtime interprets Cmds into actual I/O. This makes effects testable (you can assert the update function produces the right Cmds without doing I/O) and replayable (you can replay a sequence of Msgs to reproduce any state). The Runtime also handles deduplication — if a fetch is already in-flight for the same URL, it doesn't fire a duplicate.\" 2)",
-      "Bash(deciduous link 52 54 -r \"effect system is the Cmd interpreter\" -t leads_to)"
+      "Bash(deciduous link 52 54 -r \"effect system is the Cmd interpreter\" -t leads_to)",
+      "Bash(cmake --build build-linux --target syrena-chat 2)",
+      "Bash(cmake --build build-linux --target kaszlak 2)",
+      "Bash(cmake --build build-linux --target germ 2)",
+      "Bash(ssh DEPLOY_USER@DEPLOY_HOST \"ls -la DEPLOY_DIR/pds-data/web/pd/\" 2)",
+      "Bash(ssh DEPLOY_USER@DEPLOY_HOST \"sudo systemctl restart kaszlak && sleep 2 && DEPLOY_DIR/objpds/build-linux/bin/kaszlak account create --email test@garazyk.xyz --handle test.garazyk.xyz --password testpass123 --data-dir DEPLOY_DIR/pds-data\" 2)",
+      "Bash(ssh DEPLOY_USER@DEPLOY_HOST \"PDS_MASTER_SECRET=REDACTED_SECRET DEPLOY_DIR/objpds/build-linux/bin/kaszlak account create --email test@garazyk.xyz --handle test.garazyk.xyz --password testpass123 --data-dir DEPLOY_DIR/pds-data --config DEPLOY_DIR/objpds/config/production.json -v\" 2)"
     ]
   }
 }

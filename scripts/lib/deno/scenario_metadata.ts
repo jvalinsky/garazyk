@@ -72,6 +72,7 @@ export const SCENARIO_MANIFESTS: Record<string, ScenarioManifest> = {
       "appview:backfill",
     ],
   },
+  "06": { requires: ["chat:chat"] },
   "09": { requires: ["relay:subscribeRepos", "relay:requestCrawl", "appview:backfill"] },
   "10": { requires: ["appview:backfill", "relay:subscribeRepos"] },
   "11": { browserFlows: ["smoke", "login"] },
@@ -87,16 +88,17 @@ export const SCENARIO_MANIFESTS: Record<string, ScenarioManifest> = {
   "13": { browserFlows: ["login"] },
   "32": { requires: ["plc:didResolution", "plc:handleRotation", "plc:quotaEnforcement"] },
   "35": { needsPds2: true, requires: ["plc:didResolution"] },
+  "37": { requires: ["chat:chat"] },
   "42": { requires: ["plc:didResolution"] },
-  "59": { 
+  "47": { requires: ["chat:groupChat"] },
+  "59": {
     browserFlows: ["smoke", "login", "deep"],
     parameters: {
       "scale": { type: "number", default: 1, description: "Number of threads/posts to create" },
       "depth": { type: "number", default: 2, description: "Maximum reply depth" },
-    }
+    },
   },
 };
-
 
 /**
  * Check if a scenario requires PDS2.
@@ -176,7 +178,10 @@ export function formatRequirement(requirement: string | ScenarioRequirement): st
 /**
  * Check if a topology satisfies a requirement.
  */
-export function hasRequirement(topology: Topology, requirement: string | ScenarioRequirement): boolean {
+export function hasRequirement(
+  topology: Topology,
+  requirement: string | ScenarioRequirement,
+): boolean {
   const parsed = typeof requirement === "string"
     ? parseScenarioRequirement(requirement)
     : requirement;

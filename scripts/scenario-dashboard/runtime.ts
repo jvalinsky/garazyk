@@ -1,6 +1,6 @@
 import { signal } from "@preact/signals";
-import type { DashboardState, Msg, Cmd } from "./dashboard_state.ts";
-import { update, createInitialState, bootCmds } from "./dashboard_state.ts";
+import type { Cmd, DashboardState, Msg, RunProgress, TopologyPreview } from "./dashboard_state.ts";
+import { bootCmds, createInitialState, update } from "./dashboard_state.ts";
 
 const IS_BROWSER = typeof globalThis !== "undefined" && "document" in globalThis;
 
@@ -88,7 +88,10 @@ function createRuntime(initialState?: DashboardState): RuntimeHandle {
     }
   }
 
-  async function handleFetch(cmd: Extract<Cmd, { type: "fetch" }>, d: (msg: Msg) => void): Promise<void> {
+  async function handleFetch(
+    cmd: Extract<Cmd, { type: "fetch" }>,
+    d: (msg: Msg) => void,
+  ): Promise<void> {
     try {
       const opts: RequestInit = {};
       if (cmd.method) opts.method = cmd.method;
@@ -98,20 +101,25 @@ function createRuntime(initialState?: DashboardState): RuntimeHandle {
       const res = await fetch(cmd.url, opts);
       const text = await res.text();
       let data: unknown;
-      try { data = JSON.parse(text); } catch { data = text; }
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = text;
+      }
 
       if (!res.ok) {
-        const errMsg = (data && typeof data === "object" && "error" in (data as Record<string, unknown>))
-          ? String((data as Record<string, string>).error)
-          : `HTTP ${res.status}: ${res.statusText}`;
-        d(constructErrorMsg(cmd.onError, errMsg));
+        const errMsg =
+          (data && typeof data === "object" && "error" in (data as Record<string, unknown>))
+            ? String((data as Record<string, string>).error)
+            : `HTTP ${res.status}: ${res.statusText}`;
+        d(constructErrorMsg(cmd.onError, errMsg, cmd.meta));
         return;
       }
 
-      d(constructMsg(cmd.onSuccess, data));
+      d(constructMsg(cmd.onSuccess, data, cmd.meta));
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      d(constructErrorMsg(cmd.onError, msg));
+      d(constructErrorMsg(cmd.onError, msg, cmd.meta));
     }
   }
 
@@ -155,23 +163,64 @@ function createRuntime(initialState?: DashboardState): RuntimeHandle {
 
 // Maps API response shapes to Msg constructors.
 // Each endpoint's response shape was verified against route handler code.
-export function constructMsg(onSuccess: string, data: unknown): Msg {
+export function constructMsg(
+  onSuccess: string,
+  data: unknown,
+  meta: Record<string, unknown> = {},
+): Msg {
   const d = data as Record<string, unknown>;
+  const token = typeof meta.token === "number" ? meta.token : undefined;
+  const runId = typeof meta.runId === "string" ? meta.runId : undefined;
+  const name = typeof meta.name === "string" ? meta.name : undefined;
+  const tokenField = token === undefined ? {} : { token };
+  const runField = runId === undefined ? {} : { runId };
+  const nameField = name === undefined ? {} : { name };
   switch (onSuccess) {
     case "network/healthReceived":
-      return { type: "network/healthReceived", services: d.services as never };
+      if (!isRecord(data) || !Array.isArray(d.services)) {
+        return { type: "network/healthFailed", error: "Malformed health response", ...tokenField };
+      }
+      return { type: "network/healthReceived", services: d.services as never, ...tokenField };
     case "runs/activeReceived":
-      return { type: "runs/activeReceived", run: (d.activeRun ?? null) as never };
+      if (!isRecord(data)) {
+        return { type: "runs/activeFailed", error: "Malformed active run response", ...tokenField };
+      }
+      return { type: "runs/activeReceived", run: (d.activeRun ?? null) as never, ...tokenField };
     case "runs/startSucceeded":
+      if (!isRecord(data) || !("runId" in d)) {
+        return { type: "runs/startFailed", error: "Malformed start response" };
+      }
       return { type: "runs/startSucceeded", runId: String(d.runId) };
     case "runs/progressReceived":
-      return { type: "runs/progressReceived", progress: data as never };
+      if (!isRunProgress(data)) {
+        return {
+          type: "runs/progressFailed",
+          error: "Malformed progress response",
+          ...runField,
+          ...tokenField,
+        };
+      }
+      return { type: "runs/progressReceived", progress: data, ...runField, ...tokenField };
     case "scenarios/received":
+      if (!isRecord(data) || !Array.isArray(d.scenarios)) {
+        return { type: "scenarios/failed", error: "Malformed scenarios response" };
+      }
       return { type: "scenarios/received", scenarios: d.scenarios as never };
     case "topology/listReceived":
+      if (!isRecord(data) || !Array.isArray(d.topologies)) {
+        return { type: "topology/listFailed", error: "Malformed topologies response" };
+      }
       return { type: "topology/listReceived", topologies: d.topologies as never };
     case "topology/previewReceived":
-      return { type: "topology/previewReceived", preview: data as never };
+      if (!isTopologyPreview(data)) {
+        return {
+          type: "topology/previewFailed",
+          error: "Malformed topology response",
+          ...nameField,
+          ...tokenField,
+        };
+      }
+      return { type: "topology/previewReceived", preview: data, ...nameField, ...tokenField };
     case "network/startSucceeded":
       return { type: "network/startSucceeded" };
     case "network/stopSucceeded":
@@ -179,24 +228,68 @@ export function constructMsg(onSuccess: string, data: unknown): Msg {
     case "runs/stopSucceeded":
       return { type: "runs/stopSucceeded" };
     case "runs/restartSucceeded":
+      if (!isRecord(data) || !("newRunId" in d)) {
+        return { type: "runs/restartFailed", error: "Malformed restart response" };
+      }
       return { type: "runs/restartSucceeded", newRunId: String(d.newRunId) };
     case "logs/received":
-      return { type: "logs/received", text: typeof data === "string" ? data : String(data) };
+      return {
+        type: "logs/received",
+        text: typeof data === "string" ? data : String(data),
+        ...runField,
+        ...tokenField,
+      };
     case "metrics/received":
-      return { type: "metrics/received", stats: (d.stats ?? {}) as never };
+      if (!isRecord(data) || !isRecord(d.stats ?? {})) {
+        return { type: "metrics/failed", error: "Malformed metrics response", ...tokenField };
+      }
+      return { type: "metrics/received", stats: (d.stats ?? {}) as never, ...tokenField };
     default:
       throw new Error(`Unknown success msg type: ${onSuccess}`);
   }
 }
 
-export function constructErrorMsg(onError: string, error: string): Msg {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function isRunProgress(value: unknown): value is RunProgress {
+  if (!isRecord(value)) return false;
+  return typeof value.exists === "boolean" &&
+    typeof value.runId === "string" &&
+    typeof value.total === "number" &&
+    typeof value.completed === "number" &&
+    typeof value.elapsedMs === "number" &&
+    typeof value.updatedAt === "number" &&
+    typeof value.now === "number" &&
+    typeof value.running === "boolean";
+}
+
+function isTopologyPreview(value: unknown): value is TopologyPreview {
+  if (!isRecord(value)) return false;
+  return typeof value.name === "string" &&
+    Array.isArray(value.roles) &&
+    Array.isArray(value.capabilities);
+}
+
+export function constructErrorMsg(
+  onError: string,
+  error: string,
+  meta: Record<string, unknown> = {},
+): Msg {
+  const token = typeof meta.token === "number" ? meta.token : undefined;
+  const runId = typeof meta.runId === "string" ? meta.runId : undefined;
+  const name = typeof meta.name === "string" ? meta.name : undefined;
+  const tokenField = token === undefined ? {} : { token };
+  const runField = runId === undefined ? {} : { runId };
+  const nameField = name === undefined ? {} : { name };
   switch (onError) {
     case "network/healthFailed":
-      return { type: "network/healthFailed", error };
+      return { type: "network/healthFailed", error, ...tokenField };
     case "runs/activeFailed":
-      return { type: "runs/activeFailed", error };
+      return { type: "runs/activeFailed", error, ...tokenField };
     case "runs/progressFailed":
-      return { type: "runs/progressFailed", error };
+      return { type: "runs/progressFailed", error, ...runField, ...tokenField };
     case "runs/startFailed":
       return { type: "runs/startFailed", error };
     case "runs/stopFailed":
@@ -208,15 +301,15 @@ export function constructErrorMsg(onError: string, error: string): Msg {
     case "topology/listFailed":
       return { type: "topology/listFailed", error };
     case "topology/previewFailed":
-      return { type: "topology/previewFailed", error };
+      return { type: "topology/previewFailed", error, ...nameField, ...tokenField };
     case "network/startFailed":
       return { type: "network/startFailed", error };
     case "network/stopFailed":
       return { type: "network/stopFailed", error };
     case "logs/failed":
-      return { type: "logs/failed", error };
+      return { type: "logs/failed", error, ...runField, ...tokenField };
     case "metrics/failed":
-      return { type: "metrics/failed", error };
+      return { type: "metrics/failed", error, ...tokenField };
     default:
       throw new Error(`Unknown error msg type: ${onError}`);
   }

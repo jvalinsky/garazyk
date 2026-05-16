@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { useRuntime } from "../runtime.ts";
 
 interface LogViewerProps {
@@ -7,11 +7,15 @@ interface LogViewerProps {
 }
 
 export default function LogViewer({ runId, status }: LogViewerProps) {
-  const { state } = useRuntime();
+  const { state, dispatch } = useRuntime();
   const s = state.value;
-  const logs = s.logs.text;
+  const logs = s.logs.textByRunId[runId] ?? "";
   const scrollRef = useRef<HTMLPreElement>(null);
   const [ansiUpInstance, setAnsiUpInstance] = useState<any>(null);
+
+  useEffect(() => {
+    dispatch({ type: "runs/viewRun", runId });
+  }, [runId]);
 
   useEffect(() => {
     import("ansi_up").then(({ AnsiUp }) => {
@@ -44,7 +48,10 @@ export default function LogViewer({ runId, status }: LogViewerProps) {
 
   return (
     <div style="margin-top: var(--space-xl);">
-      <h2 class="section-heading" style="display: flex; align-items: center; justify-content: space-between;">
+      <h2
+        class="section-heading"
+        style="display: flex; align-items: center; justify-content: space-between;"
+      >
         System Logs
         {status === "running" && <span class="badge badge-warning">Live</span>}
       </h2>
@@ -52,7 +59,9 @@ export default function LogViewer({ runId, status }: LogViewerProps) {
         ref={scrollRef}
         class="log-viewer"
         style="height: 500px; max-height: none; background: #000; color: #eee; border: 1px solid #333; overflow-x: auto; padding: 1rem;"
-        dangerouslySetInnerHTML={{ __html: renderedLogs || (loading ? "Loading logs..." : "No logs available.") }}
+        dangerouslySetInnerHTML={{
+          __html: renderedLogs || (loading ? "Loading logs..." : "No logs available."),
+        }}
       />
       <div style="font-size: var(--font-size-xs); color: var(--color-text-tertiary); margin-top: var(--space-xs); text-align: right;">
         Captured from scenario runner & docker containers

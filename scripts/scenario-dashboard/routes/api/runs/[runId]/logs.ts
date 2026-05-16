@@ -1,15 +1,16 @@
 import { Handlers } from "$fresh/server.ts";
-import { join, fromFileUrl } from "$std/path/mod.ts";
+import { db } from "../../../../db/index.ts";
+import { fetchRun } from "../../../../db/queries.ts";
 
 export const handler: Handlers = {
   async GET(_req, ctx) {
     const { runId } = ctx.params;
-    // scripts/scenario-dashboard/routes/api/runs/[runId]/logs.ts
-    // 1: [runId]/, 2: runs/, 3: api/, 4: routes/, 5: scenario-dashboard/, 6: scripts/, 7: garazyk (root)
-    // Wait, URL(".") is the dir [runId]/, so URL("..") is runs/, etc.
-    // Let's use 6 levels: ../../../../../../
-    const repoRoot = fromFileUrl(new URL("../../../../../../", import.meta.url));
-    const logPath = join(repoRoot, "scenarios", "reports", "runs", runId, "run.log");
+    const run = fetchRun(db, runId);
+    const logPath = run?.logPath;
+
+    if (!run || !logPath) {
+      return new Response("Run logs are not available.", { status: 404 });
+    }
 
     try {
       const content = await Deno.readTextFile(logPath);

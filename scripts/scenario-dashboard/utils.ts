@@ -44,9 +44,19 @@ export function formatDurationSec(s: number): string {
   return `${m}m ${sec}s`;
 }
 
+export function toEpochMs(ts: number): number {
+  return ts < 10_000_000_000 ? ts * 1000 : ts;
+}
+
 /**
- * Format Unix timestamp as a localized date/time string.
+ * Format epoch milliseconds as a localized date/time string.
+ * Second-based legacy values are accepted and normalized at the edge.
  */
+export function formatDateMs(ts: number): string {
+  return new Date(toEpochMs(ts)).toLocaleString();
+}
+
+/** @deprecated Use formatDateMs for explicit epoch millisecond formatting. */
 export function formatDate(ts: number): string {
-  return new Date(ts * 1000).toLocaleString();
+  return formatDateMs(ts);
 }
