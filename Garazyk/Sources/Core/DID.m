@@ -325,7 +325,11 @@ static NSString *const kDIDAcceptHeader = @"application/did+ld+json,application/
 }
 
 - (nullable NSDictionary *)resolveAtprotoDataForDID:(NSString *)did error:(NSError **)error {
-    DIDDocument *doc = [self resolveDIDSync:did error:error];
+    return [self resolveAtprotoDataForDID:did forceRefresh:NO error:error];
+}
+
+- (nullable NSDictionary *)resolveAtprotoDataForDID:(NSString *)did forceRefresh:(BOOL)forceRefresh error:(NSError **)error {
+    DIDDocument *doc = [self resolveDIDSync:did forceRefresh:forceRefresh error:error];
     if (!doc) return nil;
 
     NSMutableDictionary *result = [NSMutableDictionary dictionary];
