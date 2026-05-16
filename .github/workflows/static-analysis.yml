@@ -135,3 +135,42 @@ jobs:
             fi
           done < <(find . -name "*.sh" -type f -not -path "./build/*" -not -path "./.git/*")
           exit $FAILED
+
+  deno-doc-lint:
+    name: Deno Documentation Linting
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Run Deno Doc Lint
+        run: |
+          deno task --config scripts/deno.json doc-lint
+
+  objc-doc-coverage:
+    name: Objective-C Documentation Coverage
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Run Objective-C Documentation Coverage
+        run: |
+          deno run -A scripts/docs/doc-coverage.ts Garazyk/Sources --min-overall 75 --by-subsystem \
+            --min-subsystem AdminUIServer=55 \
+            --min-subsystem Chat=60 \
+            --min-subsystem Database=70

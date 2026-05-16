@@ -1,5 +1,13 @@
 {
   "tasks": {
+    "doc-lint": "deno doc --lint lib/deno/mod.ts",
+    "doc": "deno doc --lint lib/deno/mod.ts",
+    "doc:serve": "deno doc --html --name='Garazyk Test Harness' lib/deno/mod.ts && open docs/index.html",
+    "doc:objc": "bash docs/generate-api-docs.sh",
+    "doc:objc:mcss": "bash docs/generate-api-docs.sh --mcss",
+    "doc:objc:serve": "bash docs/generate-api-docs.sh --serve",
+    "doc:objc:clean": "bash docs/generate-api-docs.sh --clean",
+    "doc:coverage": "deno run -A docs/doc-coverage.ts ../Garazyk/Sources --min-overall 75 --min-subsystem AdminUIServer=55 --min-subsystem Chat=60 --min-subsystem Database=70",
     "run-scenarios": "deno run -A run_scenarios.ts",
     "mock-twilio": "deno run -A mock-twilio-server.ts",
     "test": "deno test -A --doc",
