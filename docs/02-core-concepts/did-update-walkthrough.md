@@ -110,5 +110,4 @@ That sequence maps directly to the real implementation path.
 
 - [Documentation Map](../11-reference/documentation-map.md)
 - [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
 

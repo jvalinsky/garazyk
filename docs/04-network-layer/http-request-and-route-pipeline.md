@@ -100,5 +100,4 @@ This is why a firehose bug can look like "routing is broken" even when the route
 
 - [Documentation Map](../11-reference/documentation-map.md)
 - [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
 

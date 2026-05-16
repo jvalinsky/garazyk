@@ -148,5 +148,4 @@ That path matches the actual runtime shape of the process.
 
 - [Documentation Map](../11-reference/documentation-map.md)
 - [Contributor Guide](../index.md)
-- [Repository Documentation Index](../repo-index/index.md)
 
