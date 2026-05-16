@@ -129,7 +129,7 @@ Move these to clarify ownership. During moves, leave temporary compatibility wra
 |---|---|
 | `scripts/add-account.sh` | After moving, avoid password on CLI where possible, validate handles/subdomains, and create DNS JSON with `jq -n` or Python JSON. |
 | `scripts/cloudflare-dns.sh` | After moving, URL-encode query params, JSON-escape request bodies structurally, and support update/delete/dry-run modes. |
-| `scripts/setup-pds.sh` | After moving, remove hard-coded `DEPLOY_DIR/pds-data`, `garazyk.xyz`, and `build-linux/bin`; source config from environment or a profile file. |
+| `scripts/setup-pds.sh` | After moving, remove hard-coded `$DEPLOY_DIR/pds-data`, `garazyk.xyz`, and `build-linux/bin`; source config from environment or a profile file. |
 
 ### Developer And Demo Scripts
 

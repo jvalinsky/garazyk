@@ -12,7 +12,7 @@
 
 ### Pending Tasks (Require Production Server Access)
 
-🔄 **10.6 Deploy to production** - Requires SSH to DEPLOY_HOST
+🔄 **10.6 Deploy to production** - Requires SSH to $DEPLOY_HOST
 🔄 **10.7 Validate deployment** - Requires production deployment to be complete
 
 ## Build Verification
@@ -62,13 +62,13 @@ To complete Phase 8, execute these commands on the production server:
 ### Step 1: SSH to Production Server
 
 ```bash
-ssh DEPLOY_USER@DEPLOY_HOST
+ssh $DEPLOY_USER@$DEPLOY_HOST
 ```
 
 ### Step 2: Navigate to Repository
 
 ```bash
-cd DEPLOY_DIR/objpds
+cd $DEPLOY_DIR/objpds
 ```
 
 ### Step 3: Pull Latest Changes
@@ -149,7 +149,7 @@ curl -I https://pds.garazyk.xyz/docs/
    git push origin main
    ```
 
-2. **Deploy to production** (on DEPLOY_HOST):
+2. **Deploy to production** (on $DEPLOY_HOST):
    Follow the production deployment instructions above
 
 3. **Validate deployment**:
