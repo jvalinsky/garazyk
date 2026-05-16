@@ -1,60 +1,95 @@
 ---
-title: Chat Service (PDS2)
+title: Chat Service (syrena-chat)
 ---
 
-# Chat Service (PDS2)
+# Chat Service (syrena-chat)
 
-Garazyk supports a secondary PDS instance, referred to as **PDS2** or the **Chat Service**, primarily used for testing federation and multi-PDS interactions.
+**syrena-chat** is a standalone AT Protocol service providing direct messaging (DM) and group chat functionality, implemented as a separate binary from the PDS.
 
 ## Overview
 
-While a single Garazyk PDS is functional for local development, certain AT Protocol features require a multi-node environment to verify:
+The Chat service handles the `chat.bsky.*` XRPC method namespace. It can run as:
+- A **standalone binary** (`syrena-chat`) — serves chat.bsky.* methods directly on its own HTTP port
+- **Embedded in the PDS** — the PDS registers local handlers when no remote chat URL is configured
 
-- **Cross-PDS Synchronization**: Validating data propagation between independent authorities.
-- **Account Migration**: Testing the transfer of user repositories between servers.
-- **Multi-Tenant Federation**: Simulating interactions across the broader network.
+## XRPC Interface
 
-PDS2 is a standard instance of the Garazyk binary, configured with a distinct identity and isolated storage to act as a peer node.
+### Actor Methods
+- `chat.bsky.actor.declaration` — Manage a user's chat declaration (allow incoming messages)
+- `chat.bsky.actor.exportAccountData` — Export chat account data
+
+### Conversation Methods
+- `chat.bsky.convo.getConvo` — Get a specific conversation
+- `chat.bsky.confo.getConvoForMembers` — Find or create conversation for participants
+- `chat.bsky.confo.leaveConvo` — Leave a conversation
+- `chat.bsky.confo.listConvos` — List conversations for the user
+- `chat.bsky.confo.muteConvo` / `chat.bsky.confo.unmuteConvo`
+- `chat.bsky.confo.updateRead` — Mark conversation as read
+- `chat.bsky.confo.sendMessage` — Send a direct message
+- `chat.bsky.confo.getMessages` — Get conversation messages
+- `chat.bsky.confo.getLog` — Get conversation event log
+- `chat.bsky.confo.acceptConvo` — Accept an incoming conversation request
+
+### Group Methods
+- `chat.bsky.confo.addMember` — Add a member to a group
+- `chat.bsky.confo.removeMember` — Remove a member from a group
+- `chat.bsky.confo.listMembers` — List group members
+
+## Service Discovery and Routing
+
+Chat requests follow the AT Protocol proxy routing convention:
+
+```
+atproto-proxy: did:web:<chat-service-domain>#bsky_chat
+```
+
+### DID Document Discovery
+
+The Chat service serves its own `did:web` DID document at `GET /.well-known/did.json`:
+
+```json
+{
+  "@context": ["https://www.w3.org/ns/did/v1"],
+  "id": "did:web:<service-domain>",
+  "service": [{
+    "id": "#bsky_chat",
+    "type": "BskyChatService",
+    "serviceEndpoint": "https://<service-domain>"
+  }]
+}
+```
+
+The PDS also includes `#bsky_chat` in its own DID document when `PDS_CHAT_URL` is configured.
+
+### Routing Flow
+
+1. Client sends `atproto-proxy: did:web:<domain>#bsky_chat` + XRPC request to PDS
+2. PDS resolves `did:web:<domain>` → fetches `https://<domain>/.well-known/did.json`
+3. PDS finds the `#bsky_chat` service entry and extracts the `serviceEndpoint` URL
+4. PDS proxies the XRPC request to the Chat service with a service JWT
+5. Chat service verifies the JWT against the PDS's JWKS endpoint
 
 ## Configuration
 
-In the local developer environment (orchestrated by `scripts/reseed_local_network.sh`), PDS2 is configured with its own ports and data directories:
+Environment variables for the standalone Chat service:
 
-| Parameter | Primary PDS | PDS2 (Chat) |
-| --- | --- | --- |
-| **HTTP Port** | 2583 | 2585 |
-| **Master Secret** | `test-master-secret-123` | `test-master-secret-456` |
-| **Data Directory** | `./data/pds` | `./data/pds2` |
-| **PLC Keys** | `./data/pds/keys` | `./data/pds2/keys` |
+| Variable | Default | Description |
+|---|---|---|
+| `CHAT_HTTP_PORT` | 2585 | HTTP listen port |
+| `CHAT_DATA_DIR` | `./data/chat` | Data directory |
+| `CHAT_ADMIN_SECRET` | (empty) | Admin API secret |
+| `PDS_URL` | `http://localhost:2583` | Upstream PDS for JWT verification |
+| `CHAT_SERVICE_DOMAIN` | (computed) | Public domain for `did:web` (e.g., `chat.garazyk.xyz`) |
 
-## Role in Scenarios
+## Authentication
 
-PDS2 provides a second authority for end-to-end testing:
+The Chat service delegates JWT verification to the PDS. On startup, it fetches the PDS's JWKS at `{pdsUrl}/oauth/jwks` (or `/.well-known/jwks.json`) and uses those keys to verify incoming service JWTs.
 
-- **Federation (Scenario 05)**: Verifies that a record created on PDS1 is indexed by the Relay and AppView, and remains reachable by an agent authenticated against PDS2.
-- **Account Migration (Scenario 12)**: Exercises the migration of a user repository from PDS1 to PDS2, including PLC rotation key updates and MST synchronization.
-
-## Execution
-
-PDS2 is disabled by default to conserve resources. It can be started via the CLI or the scenario dashboard:
-
-### CLI (Deno)
-```bash
-./scripts/run_scenarios.ts --pds2 [scenario_ids]
-```
-
-### Scenario Dashboard
-Use the **"Start with PDS2"** toggle in the Network Status panel.
-
-## Implementation Details
-
-PDS2 runs the same code and XRPC method packs as the primary PDS. It is "Chat-focused" only in the sense that it serves as the destination for messaging tests in the narrative scenario suite.
+The chat service itself has no independent DID identity — its DID document is served at `/.well-known/did.json` using the configured `CHAT_SERVICE_DOMAIN` (or defaults to `did:web:localhost:<port>`).
 
 ## Related
-
 - [Services Overview](./services-overview)
 - [PDS Application Facade](./pds-application)
-- [Relay Server](./relay-server)
-- [AppView Server](./appview-server)
-- [Testing ATProto Federation](../07-repository-protocol/testing-atproto-federation)
-- [Scenario Testing Guide](../docs/tests/scenario-testing.md)
+- [Germ E2EE Mailbox Service](./germ-service)
+- [XRPC Dispatch](../04-network-layer/xrpc-dispatch)
+- [AT Protocol Proxy Headers](../04-network-layer/xrpc-dispatch.md#proxy-dispatch)
