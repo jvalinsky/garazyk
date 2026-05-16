@@ -1,23 +1,23 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file ConstellationXrpcRoutePack.h
+ @file MikrusXrpcRoutePack.h
 
- @abstract XRPC routes for Microcosm-compatible Constellation endpoints.
+ @abstract XRPC routes for Microcosm-compatible Mikrus endpoints.
  */
 
 #import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class ConstellationDatabase;
+@class MikrusDatabase;
 @class HttpRequest;
 @class HttpResponse;
 @class HttpServer;
 
-@interface ConstellationXrpcRoutePack : NSObject
+@interface MikrusXrpcRoutePack : NSObject
 
-- (instancetype)initWithDatabase:(ConstellationDatabase *)database NS_DESIGNATED_INITIALIZER;
+- (instancetype)initWithDatabase:(MikrusDatabase *)database NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;
 
 - (void)registerRoutesWithServer:(HttpServer *)server;

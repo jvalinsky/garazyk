@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file ConstellationConfiguration.h
+ @file MikrusConfiguration.h
 
- @abstract Runtime configuration for the Constellation link-index service.
+ @abstract Runtime configuration for the Mikrus link-index service.
  */
 
 #import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface ConstellationConfiguration : NSObject
+@interface MikrusConfiguration : NSObject
 
 @property (nonatomic, strong) NSArray<NSString *> *relayURLs;
 @property (nonatomic, copy) NSString *dataDirectory;

@@ -1,20 +1,20 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file ConstellationDatabase.h
+ @file MikrusDatabase.h
 
- @abstract SQLite-backed link index for Microcosm Constellation-style queries.
+ @abstract SQLite-backed link index for Microcosm Mikrus-style queries.
  */
 
 #import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
-@class ConstellationSourceSpec;
+@class MikrusSourceSpec;
 
-extern NSString * const ConstellationDatabaseErrorDomain;
+extern NSString * const MikrusDatabaseErrorDomain;
 
-@interface ConstellationDatabase : NSObject
+@interface MikrusDatabase : NSObject
 
 - (nullable instancetype)initWithPath:(NSString *)path error:(NSError **)error;
 - (BOOL)runMigrations:(NSError **)error;
@@ -34,7 +34,7 @@ extern NSString * const ConstellationDatabaseErrorDomain;
                      error:(NSError **)error;
 
 - (nullable NSArray<NSDictionary *> *)backlinkRecordsForSubject:(NSString *)subject
-                                                         source:(ConstellationSourceSpec *)source
+                                                         source:(MikrusSourceSpec *)source
                                                      didFilters:(NSArray<NSString *> *)didFilters
                                                           limit:(NSInteger)limit
                                                          cursor:(nullable NSString *)cursor
@@ -43,7 +43,7 @@ extern NSString * const ConstellationDatabaseErrorDomain;
                                                           error:(NSError **)error;
 
 - (nullable NSArray<NSString *> *)backlinkDIDsForSubject:(NSString *)subject
-                                                  source:(ConstellationSourceSpec *)source
+                                                  source:(MikrusSourceSpec *)source
                                                    limit:(NSInteger)limit
                                                   cursor:(nullable NSString *)cursor
                                               nextCursor:(NSString * _Nullable * _Nullable)nextCursor
@@ -51,11 +51,11 @@ extern NSString * const ConstellationDatabaseErrorDomain;
                                                    error:(NSError **)error;
 
 - (NSInteger)backlinksCountForSubject:(NSString *)subject
-                                source:(ConstellationSourceSpec *)source
+                                source:(MikrusSourceSpec *)source
                                  error:(NSError **)error;
 
 - (nullable NSArray<NSDictionary *> *)manyToManyItemsForSubject:(NSString *)subject
-                                                         source:(ConstellationSourceSpec *)source
+                                                         source:(MikrusSourceSpec *)source
                                                     pathToOther:(NSString *)pathToOther
                                                      linkDIDs:(NSArray<NSString *> *)linkDIDs
                                                   otherSubjects:(NSArray<NSString *> *)otherSubjects
@@ -65,7 +65,7 @@ extern NSString * const ConstellationDatabaseErrorDomain;
                                                           error:(NSError **)error;
 
 - (nullable NSArray<NSDictionary *> *)manyToManyCountsForSubject:(NSString *)subject
-                                                          source:(ConstellationSourceSpec *)source
+                                                          source:(MikrusSourceSpec *)source
                                                      pathToOther:(NSString *)pathToOther
                                                             dids:(NSArray<NSString *> *)dids
                                                    otherSubjects:(NSArray<NSString *> *)otherSubjects

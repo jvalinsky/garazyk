@@ -11,7 +11,7 @@
 | `zuk` | Relay | `Binaries/zuk/main.m` | Self-contained |
 | `syrena` | AppView | `Binaries/syrena/main.m` | Delegates to `AppViewRuntime` |
 | `syrena-chat` | Chat | `Binaries/syrena-chat/main.m` | Self-contained (+ PDSCrashReporter) |
-| `constellation` | Link Index | `Binaries/constellation/main.m` | Delegates to `ConstellationRuntime` |
+| `mikrus` | Link Index | `Binaries/mikrus/main.m` | Delegates to `MikrusRuntime` |
 | `garazyk-ui` | Admin UI | `Binaries/garazyk-ui/main.m` | Self-contained |
 | `jelcz` | Video | `Binaries/jelcz/main.m` | Self-contained (+ PDSCrashReporter) |
 | `germ` | E2EE Mailbox | `Binaries/germ/main.m` | Delegates to `GermRuntime` |
@@ -99,7 +99,7 @@ int main(int argc, const char **argv) {
 | 3 | Migrate `campagnola` (simplest binary) to new pattern | Revert campagnola/main.m |
 | 4 | Migrate `zuk` (relay) to new pattern | Revert zuk/main.m |
 | 5 | Migrate remaining self-contained binaries | Revert each |
-| 6 | Migrate runtime-based binaries (syrena, constellation, germ) | Revert each |
+| 6 | Migrate runtime-based binaries (syrena, mikrus, germ) | Revert each |
 | 7 | Remove raw signal handler copies | Revert cleanup |
 | 8 | Update `project.yml` and CMakeLists.txt for any path changes | Revert build changes |
 

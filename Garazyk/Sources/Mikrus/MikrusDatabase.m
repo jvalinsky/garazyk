@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 
-#import "Constellation/ConstellationDatabase.h"
-#import "Constellation/ConstellationLinkExtractor.h"
-#import "Constellation/ConstellationSourceSpec.h"
+#import "Mikrus/MikrusDatabase.h"
+#import "Mikrus/MikrusLinkExtractor.h"
+#import "Mikrus/MikrusSourceSpec.h"
 #import "Auth/Crypto/AuthCryptoBase64URL.h"
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Database/Connection/ATProtoConnectionManagerPooled.h"
@@ -13,25 +13,25 @@
 
 #import <sqlite3.h>
 
-NSString * const ConstellationDatabaseErrorDomain = @"blue.microcosm.constellation.database";
+NSString * const MikrusDatabaseErrorDomain = @"blue.microcosm.mikrus.database";
 
-static NSString *ConstellationNow(void) {
+static NSString *MikrusNow(void) {
     return [NSDateFormatter atproto_stringFromDate:[NSDate date]];
 }
 
-static int64_t ConstellationIndexValue(int64_t seq) {
+static int64_t MikrusIndexValue(int64_t seq) {
     if (seq > 0) return seq;
     return (int64_t)([[NSDate date] timeIntervalSince1970] * 1000.0);
 }
 
-static NSError *ConstellationDBError(sqlite3 *db, int code, NSString *fallback) {
+static NSError *MikrusDBError(sqlite3 *db, int code, NSString *fallback) {
     if (db) {
-        return ATProtoDBSQLError(ConstellationDatabaseErrorDomain, db, code);
+        return ATProtoDBSQLError(MikrusDatabaseErrorDomain, db, code);
     }
-    return ATProtoDBError(ConstellationDatabaseErrorDomain, fallback ?: @"SQLite error", code);
+    return ATProtoDBError(MikrusDatabaseErrorDomain, fallback ?: @"SQLite error", code);
 }
 
-static NSArray<NSString *> *ConstellationCleanFilters(NSArray<NSString *> *values) {
+static NSArray<NSString *> *MikrusCleanFilters(NSArray<NSString *> *values) {
     NSMutableArray<NSString *> *cleaned = [NSMutableArray array];
     NSMutableSet<NSString *> *seen = [NSMutableSet set];
     for (NSString *value in values ?: @[]) {
@@ -43,33 +43,33 @@ static NSArray<NSString *> *ConstellationCleanFilters(NSArray<NSString *> *value
     return [cleaned copy];
 }
 
-static void ConstellationAppendInClause(NSMutableString *sql,
+static void MikrusAppendInClause(NSMutableString *sql,
                                         NSMutableArray *params,
                                         NSString *column,
                                         NSArray<NSString *> *values) {
-    NSArray<NSString *> *cleaned = ConstellationCleanFilters(values);
+    NSArray<NSString *> *cleaned = MikrusCleanFilters(values);
     if (cleaned.count == 0) return;
     [sql appendFormat:@" AND %@ IN (%@)", column, ATProtoDBPlaceholders(cleaned.count)];
     [params addObjectsFromArray:cleaned];
 }
 
-static NSString *ConstellationCursorFromDictionary(NSDictionary *dictionary) {
+static NSString *MikrusCursorFromDictionary(NSDictionary *dictionary) {
     NSData *data = [NSJSONSerialization dataWithJSONObject:dictionary options:0 error:nil];
     return data ? [AuthCryptoBase64URL encode:data] : nil;
 }
 
-static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError **error) {
+static NSDictionary *MikrusDictionaryFromCursor(NSString *cursor, NSError **error) {
     if (cursor.length == 0) return nil;
     NSData *data = [AuthCryptoBase64URL decode:cursor];
     if (!data) {
-        if (error) *error = [NSError errorWithDomain:ConstellationDatabaseErrorDomain
+        if (error) *error = [NSError errorWithDomain:MikrusDatabaseErrorDomain
                                                 code:400
                                             userInfo:@{NSLocalizedDescriptionKey: @"Invalid cursor"}];
         return nil;
     }
     id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:error];
     if (![json isKindOfClass:[NSDictionary class]]) {
-        if (error) *error = [NSError errorWithDomain:ConstellationDatabaseErrorDomain
+        if (error) *error = [NSError errorWithDomain:MikrusDatabaseErrorDomain
                                                 code:400
                                             userInfo:@{NSLocalizedDescriptionKey: @"Invalid cursor"}];
         return nil;
@@ -77,18 +77,18 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
     return json;
 }
 
-@interface ConstellationDatabase ()
+@interface MikrusDatabase ()
 @property (nonatomic, strong) ATProtoConnectionPool *pool;
 @property (nonatomic, strong) ATProtoConnectionManagerPooled *connectionManager;
 @end
 
-@implementation ConstellationDatabase
+@implementation MikrusDatabase
 
 - (nullable instancetype)initWithPath:(NSString *)path error:(NSError **)error {
     self = [super init];
     if (!self) return nil;
     if (path.length == 0) {
-        if (error) *error = [NSError errorWithDomain:ConstellationDatabaseErrorDomain
+        if (error) *error = [NSError errorWithDomain:MikrusDatabaseErrorDomain
                                                 code:1
                                             userInfo:@{NSLocalizedDescriptionKey: @"Database path is required"}];
         return nil;
@@ -110,7 +110,7 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
 
     _pool = [[ATProtoConnectionPool alloc] initWithPath:path minConnections:1 maxConnections:8];
     if (!_pool) {
-        if (error) *error = [NSError errorWithDomain:ConstellationDatabaseErrorDomain
+        if (error) *error = [NSError errorWithDomain:MikrusDatabaseErrorDomain
                                                 code:2
                                             userInfo:@{NSLocalizedDescriptionKey: @"Failed to create connection pool"}];
         return nil;
@@ -129,7 +129,7 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
 
 - (BOOL)runMigrations:(NSError **)error {
     static NSString * const schema =
-        @"CREATE TABLE IF NOT EXISTS constellation_records ("
+        @"CREATE TABLE IF NOT EXISTS mikrus_records ("
         "  uri TEXT PRIMARY KEY,"
         "  did TEXT NOT NULL,"
         "  collection TEXT NOT NULL,"
@@ -140,9 +140,9 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
         "  updated_at TEXT NOT NULL,"
         "  UNIQUE(did, collection, rkey)"
         ");"
-        "CREATE INDEX IF NOT EXISTS idx_constellation_records_did_collection "
-        "ON constellation_records(did, collection, rkey);"
-        "CREATE TABLE IF NOT EXISTS constellation_links ("
+        "CREATE INDEX IF NOT EXISTS idx_mikrus_records_did_collection "
+        "ON mikrus_records(did, collection, rkey);"
+        "CREATE TABLE IF NOT EXISTS mikrus_links ("
         "  subject TEXT NOT NULL,"
         "  source_collection TEXT NOT NULL,"
         "  source_path TEXT NOT NULL,"
@@ -155,20 +155,20 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
         "  created_at TEXT NOT NULL,"
         "  PRIMARY KEY(subject, source_collection, source_path, link_did, link_collection, link_rkey)"
         ");"
-        "CREATE INDEX IF NOT EXISTS idx_constellation_links_subject_source_order "
-        "ON constellation_links(subject, source_collection, source_path, indexed_at DESC, link_did, link_collection, link_rkey);"
-        "CREATE INDEX IF NOT EXISTS idx_constellation_links_subject_source_did_order "
-        "ON constellation_links(subject, source_collection, source_path, link_did, indexed_at DESC, link_collection, link_rkey);"
-        "CREATE INDEX IF NOT EXISTS idx_constellation_links_record "
-        "ON constellation_links(link_did, link_collection, link_rkey);"
-        "CREATE INDEX IF NOT EXISTS idx_constellation_links_record_path "
-        "ON constellation_links(link_did, link_collection, link_rkey, source_collection, source_path, subject);"
-        "CREATE TABLE IF NOT EXISTS constellation_handles ("
+        "CREATE INDEX IF NOT EXISTS idx_mikrus_links_subject_source_order "
+        "ON mikrus_links(subject, source_collection, source_path, indexed_at DESC, link_did, link_collection, link_rkey);"
+        "CREATE INDEX IF NOT EXISTS idx_mikrus_links_subject_source_did_order "
+        "ON mikrus_links(subject, source_collection, source_path, link_did, indexed_at DESC, link_collection, link_rkey);"
+        "CREATE INDEX IF NOT EXISTS idx_mikrus_links_record "
+        "ON mikrus_links(link_did, link_collection, link_rkey);"
+        "CREATE INDEX IF NOT EXISTS idx_mikrus_links_record_path "
+        "ON mikrus_links(link_did, link_collection, link_rkey, source_collection, source_path, subject);"
+        "CREATE TABLE IF NOT EXISTS mikrus_handles ("
         "  handle TEXT PRIMARY KEY,"
         "  did TEXT NOT NULL,"
         "  updated_at TEXT NOT NULL"
         ");"
-        "CREATE INDEX IF NOT EXISTS idx_constellation_handles_did ON constellation_handles(did);";
+        "CREATE INDEX IF NOT EXISTS idx_mikrus_handles_did ON mikrus_handles(did);";
 
     __block BOOL migrated = NO;
     __block NSError *innerError = nil;
@@ -177,7 +177,7 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
         int rc = sqlite3_exec(db, schema.UTF8String, NULL, NULL, &errmsg);
         if (rc != SQLITE_OK) {
             NSString *message = errmsg ? [NSString stringWithUTF8String:errmsg] : @"Migration failed";
-            innerError = [NSError errorWithDomain:ConstellationDatabaseErrorDomain
+            innerError = [NSError errorWithDomain:MikrusDatabaseErrorDomain
                                              code:rc
                                          userInfo:@{NSLocalizedDescriptionKey: message}];
             if (errmsg) {
@@ -202,7 +202,7 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
               error:(NSError **)error {
     if (![record isKindOfClass:[NSDictionary class]] ||
         did.length == 0 || collection.length == 0 || rkey.length == 0) {
-        if (error) *error = [NSError errorWithDomain:ConstellationDatabaseErrorDomain
+        if (error) *error = [NSError errorWithDomain:MikrusDatabaseErrorDomain
                                                 code:400
                                             userInfo:@{NSLocalizedDescriptionKey: @"Missing record identity"}];
         return NO;
@@ -212,19 +212,19 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:record options:0 error:nil];
     NSString *json = jsonData ? [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding] : @"{}";
     NSMutableArray<NSDictionary<NSString *, NSString *> *> *linkEntries =
-        [[ConstellationLinkExtractor linkEntriesInRecord:record] mutableCopy];
-    if ([ConstellationLinkExtractor isLinkSubject:rkey]) {
+        [[MikrusLinkExtractor linkEntriesInRecord:record] mutableCopy];
+    if ([MikrusLinkExtractor isLinkSubject:rkey]) {
         [linkEntries addObject:@{@"path": @".", @"subject": rkey}];
     }
-    int64_t indexedAt = ConstellationIndexValue(seq);
-    NSString *now = ConstellationNow();
+    int64_t indexedAt = MikrusIndexValue(seq);
+    NSString *now = MikrusNow();
 
     return [self performWriteTransaction:^BOOL(sqlite3 *db, NSError **innerError) {
-        NSString *deleteLinks = @"DELETE FROM constellation_links WHERE link_did = ? AND link_collection = ? AND link_rkey = ?";
+        NSString *deleteLinks = @"DELETE FROM mikrus_links WHERE link_did = ? AND link_collection = ? AND link_rkey = ?";
         if (![self executeUpdate:deleteLinks params:@[did, collection, rkey] connection:db error:innerError]) return NO;
 
         NSString *upsertRecord =
-            @"INSERT INTO constellation_records(uri, did, collection, rkey, cid, value_json, indexed_at, updated_at) "
+            @"INSERT INTO mikrus_records(uri, did, collection, rkey, cid, value_json, indexed_at, updated_at) "
             "VALUES(?,?,?,?,?,?,?,?) "
             "ON CONFLICT(uri) DO UPDATE SET "
             "did=excluded.did, collection=excluded.collection, rkey=excluded.rkey, cid=excluded.cid, "
@@ -237,7 +237,7 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
         }
 
         NSString *insertLink =
-            @"INSERT OR IGNORE INTO constellation_links("
+            @"INSERT OR IGNORE INTO mikrus_links("
             "subject, source_collection, source_path, link_did, link_collection, link_rkey, link_uri, link_cid, indexed_at, created_at"
             ") VALUES(?,?,?,?,?,?,?,?,?,?)";
         for (NSDictionary *entry in linkEntries) {
@@ -256,7 +256,7 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
                       rkey:(NSString *)rkey
                      error:(NSError **)error {
     if (did.length == 0 || collection.length == 0 || rkey.length == 0) {
-        if (error) *error = [NSError errorWithDomain:ConstellationDatabaseErrorDomain
+        if (error) *error = [NSError errorWithDomain:MikrusDatabaseErrorDomain
                                                 code:400
                                             userInfo:@{NSLocalizedDescriptionKey: @"Missing record identity"}];
         return NO;
@@ -264,13 +264,13 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
 
     NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
     return [self performWriteTransaction:^BOOL(sqlite3 *db, NSError **innerError) {
-        if (![self executeUpdate:@"DELETE FROM constellation_links WHERE link_did = ? AND link_collection = ? AND link_rkey = ?"
+        if (![self executeUpdate:@"DELETE FROM mikrus_links WHERE link_did = ? AND link_collection = ? AND link_rkey = ?"
                           params:@[did, collection, rkey]
                       connection:db
                            error:innerError]) {
             return NO;
         }
-        return [self executeUpdate:@"DELETE FROM constellation_records WHERE uri = ?"
+        return [self executeUpdate:@"DELETE FROM mikrus_records WHERE uri = ?"
                             params:@[uri]
                         connection:db
                              error:innerError];
@@ -278,7 +278,7 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
 }
 
 - (nullable NSArray<NSDictionary *> *)backlinkRecordsForSubject:(NSString *)subject
-                                                         source:(ConstellationSourceSpec *)source
+                                                         source:(MikrusSourceSpec *)source
                                                      didFilters:(NSArray<NSString *> *)didFilters
                                                           limit:(NSInteger)limit
                                                          cursor:(nullable NSString *)cursor
@@ -287,24 +287,24 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
                                                           error:(NSError **)error {
     if (nextCursor) *nextCursor = nil;
     if (total) *total = 0;
-    NSDictionary *cursorDict = ConstellationDictionaryFromCursor(cursor, error);
+    NSDictionary *cursorDict = MikrusDictionaryFromCursor(cursor, error);
     if (cursor.length > 0 && !cursorDict) return nil;
 
     NSMutableString *countSQL = [NSMutableString stringWithString:
-        @"SELECT COUNT(*) AS total FROM constellation_links "
+        @"SELECT COUNT(*) AS total FROM mikrus_links "
         "WHERE subject = ? AND source_collection = ? AND source_path = ?"];
     NSMutableArray *countParams = [NSMutableArray arrayWithArray:@[subject, source.collection, source.path]];
-    ConstellationAppendInClause(countSQL, countParams, @"link_did", didFilters);
+    MikrusAppendInClause(countSQL, countParams, @"link_did", didFilters);
     NSArray *countRows = [self executeQuery:countSQL params:countParams error:error];
     if (!countRows) return nil;
     if (total && countRows.count > 0) *total = [countRows.firstObject[@"total"] integerValue];
 
     NSMutableString *sql = [NSMutableString stringWithString:
         @"SELECT link_did AS did, link_collection AS collection, link_rkey AS rkey, indexed_at "
-        "FROM constellation_links "
+        "FROM mikrus_links "
         "WHERE subject = ? AND source_collection = ? AND source_path = ?"];
     NSMutableArray *params = [NSMutableArray arrayWithArray:@[subject, source.collection, source.path]];
-    ConstellationAppendInClause(sql, params, @"link_did", didFilters);
+    MikrusAppendInClause(sql, params, @"link_did", didFilters);
 
     if (cursorDict) {
         [sql appendString:
@@ -336,7 +336,7 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
     }
     if (hasMore && nextCursor && pageRows.count > 0) {
         NSDictionary *row = pageRows.lastObject;
-        *nextCursor = ConstellationCursorFromDictionary(@{
+        *nextCursor = MikrusCursorFromDictionary(@{
             @"indexed_at": row[@"indexed_at"] ?: @0,
             @"did": row[@"did"] ?: @"",
             @"collection": row[@"collection"] ?: @"",
@@ -347,7 +347,7 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
 }
 
 - (nullable NSArray<NSString *> *)backlinkDIDsForSubject:(NSString *)subject
-                                                  source:(ConstellationSourceSpec *)source
+                                                  source:(MikrusSourceSpec *)source
                                                    limit:(NSInteger)limit
                                                   cursor:(nullable NSString *)cursor
                                               nextCursor:(NSString * _Nullable * _Nullable)nextCursor
@@ -355,12 +355,12 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
                                                    error:(NSError **)error {
     if (nextCursor) *nextCursor = nil;
     if (total) *total = 0;
-    NSDictionary *cursorDict = ConstellationDictionaryFromCursor(cursor, error);
+    NSDictionary *cursorDict = MikrusDictionaryFromCursor(cursor, error);
     if (cursor.length > 0 && !cursorDict) return nil;
 
     NSString *countSQL =
         @"SELECT COUNT(*) AS total FROM ("
-        "SELECT link_did FROM constellation_links "
+        "SELECT link_did FROM mikrus_links "
         "WHERE subject = ? AND source_collection = ? AND source_path = ? "
         "GROUP BY link_did)";
     NSArray *countRows = [self executeQuery:countSQL params:@[subject, source.collection, source.path] error:error];
@@ -369,7 +369,7 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
 
     NSMutableString *sql = [NSMutableString stringWithString:
         @"SELECT link_did AS did, MAX(indexed_at) AS indexed_at "
-        "FROM constellation_links "
+        "FROM mikrus_links "
         "WHERE subject = ? AND source_collection = ? AND source_path = ? "
         "GROUP BY link_did"];
     NSMutableArray *params = [NSMutableArray arrayWithArray:@[subject, source.collection, source.path]];
@@ -394,7 +394,7 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
     }
     if (hasMore && nextCursor && pageRows.count > 0) {
         NSDictionary *row = pageRows.lastObject;
-        *nextCursor = ConstellationCursorFromDictionary(@{
+        *nextCursor = MikrusCursorFromDictionary(@{
             @"indexed_at": row[@"indexed_at"] ?: @0,
             @"did": row[@"did"] ?: @""
         });
@@ -403,10 +403,10 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
 }
 
 - (NSInteger)backlinksCountForSubject:(NSString *)subject
-                                source:(ConstellationSourceSpec *)source
+                                source:(MikrusSourceSpec *)source
                                  error:(NSError **)error {
     NSString *sql =
-        @"SELECT COUNT(*) AS total FROM constellation_links "
+        @"SELECT COUNT(*) AS total FROM mikrus_links "
         "WHERE subject = ? AND source_collection = ? AND source_path = ?";
     NSArray *rows = [self executeQuery:sql params:@[subject, source.collection, source.path] error:error];
     if (!rows || rows.count == 0) return -1;
@@ -414,7 +414,7 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
 }
 
 - (nullable NSArray<NSDictionary *> *)manyToManyItemsForSubject:(NSString *)subject
-                                                         source:(ConstellationSourceSpec *)source
+                                                         source:(MikrusSourceSpec *)source
                                                     pathToOther:(NSString *)pathToOther
                                                        linkDIDs:(NSArray<NSString *> *)linkDIDs
                                                   otherSubjects:(NSArray<NSString *> *)otherSubjects
@@ -423,14 +423,14 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
                                                      nextCursor:(NSString * _Nullable * _Nullable)nextCursor
                                                           error:(NSError **)error {
     if (nextCursor) *nextCursor = nil;
-    NSDictionary *cursorDict = ConstellationDictionaryFromCursor(cursor, error);
+    NSDictionary *cursorDict = MikrusDictionaryFromCursor(cursor, error);
     if (cursor.length > 0 && !cursorDict) return nil;
 
     NSMutableString *sql = [NSMutableString stringWithString:
         @"SELECT l1.link_did AS did, l1.link_collection AS collection, l1.link_rkey AS rkey, "
         "l2.subject AS other_subject, l1.indexed_at AS indexed_at "
-        "FROM constellation_links l1 "
-        "JOIN constellation_links l2 "
+        "FROM mikrus_links l1 "
+        "JOIN mikrus_links l2 "
         "ON l2.link_did = l1.link_did "
         "AND l2.link_collection = l1.link_collection "
         "AND l2.link_rkey = l1.link_rkey "
@@ -438,8 +438,8 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
         "AND l2.source_path = ? "
         "WHERE l1.subject = ? AND l1.source_collection = ? AND l1.source_path = ?"];
     NSMutableArray *params = [NSMutableArray arrayWithArray:@[pathToOther, subject, source.collection, source.path]];
-    ConstellationAppendInClause(sql, params, @"l1.link_did", linkDIDs);
-    ConstellationAppendInClause(sql, params, @"l2.subject", otherSubjects);
+    MikrusAppendInClause(sql, params, @"l1.link_did", linkDIDs);
+    MikrusAppendInClause(sql, params, @"l2.subject", otherSubjects);
 
     if (cursorDict) {
         [sql appendString:
@@ -477,7 +477,7 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
     }
     if (hasMore && nextCursor && pageRows.count > 0) {
         NSDictionary *row = pageRows.lastObject;
-        *nextCursor = ConstellationCursorFromDictionary(@{
+        *nextCursor = MikrusCursorFromDictionary(@{
             @"indexed_at": row[@"indexed_at"] ?: @0,
             @"did": row[@"did"] ?: @"",
             @"collection": row[@"collection"] ?: @"",
@@ -489,7 +489,7 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
 }
 
 - (nullable NSArray<NSDictionary *> *)manyToManyCountsForSubject:(NSString *)subject
-                                                          source:(ConstellationSourceSpec *)source
+                                                          source:(MikrusSourceSpec *)source
                                                      pathToOther:(NSString *)pathToOther
                                                             dids:(NSArray<NSString *> *)dids
                                                    otherSubjects:(NSArray<NSString *> *)otherSubjects
@@ -498,13 +498,13 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
                                                       nextCursor:(NSString * _Nullable * _Nullable)nextCursor
                                                            error:(NSError **)error {
     if (nextCursor) *nextCursor = nil;
-    NSDictionary *cursorDict = ConstellationDictionaryFromCursor(cursor, error);
+    NSDictionary *cursorDict = MikrusDictionaryFromCursor(cursor, error);
     if (cursor.length > 0 && !cursorDict) return nil;
 
     NSMutableString *sql = [NSMutableString stringWithString:
         @"SELECT l2.subject AS subject, COUNT(*) AS total, COUNT(DISTINCT l1.link_did) AS distinct_count "
-        "FROM constellation_links l1 "
-        "JOIN constellation_links l2 "
+        "FROM mikrus_links l1 "
+        "JOIN mikrus_links l2 "
         "ON l2.link_did = l1.link_did "
         "AND l2.link_collection = l1.link_collection "
         "AND l2.link_rkey = l1.link_rkey "
@@ -512,8 +512,8 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
         "AND l2.source_path = ? "
         "WHERE l1.subject = ? AND l1.source_collection = ? AND l1.source_path = ?"];
     NSMutableArray *params = [NSMutableArray arrayWithArray:@[pathToOther, subject, source.collection, source.path]];
-    ConstellationAppendInClause(sql, params, @"l1.link_did", dids);
-    ConstellationAppendInClause(sql, params, @"l2.subject", otherSubjects);
+    MikrusAppendInClause(sql, params, @"l1.link_did", dids);
+    MikrusAppendInClause(sql, params, @"l2.subject", otherSubjects);
     [sql appendString:@" GROUP BY l2.subject"];
 
     if (cursorDict) {
@@ -541,7 +541,7 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
     }
     if (hasMore && nextCursor && pageRows.count > 0) {
         NSDictionary *row = pageRows.lastObject;
-        *nextCursor = ConstellationCursorFromDictionary(@{
+        *nextCursor = MikrusCursorFromDictionary(@{
             @"total": row[@"total"] ?: @0,
             @"subject": row[@"subject"] ?: @""
         });
@@ -552,10 +552,10 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
 - (nullable NSDictionary *)recordByURI:(NSString *)uri
                                    cid:(nullable NSString *)cid
                                  error:(NSError **)error {
-    NSString *sql = @"SELECT uri, cid, value_json FROM constellation_records WHERE uri = ? LIMIT 1";
+    NSString *sql = @"SELECT uri, cid, value_json FROM mikrus_records WHERE uri = ? LIMIT 1";
     NSArray *rows = [self executeQuery:sql params:@[uri ?: @""] error:error];
     if (!rows || rows.count == 0) {
-        if (error) *error = [NSError errorWithDomain:ConstellationDatabaseErrorDomain
+        if (error) *error = [NSError errorWithDomain:MikrusDatabaseErrorDomain
                                                 code:404
                                             userInfo:@{NSLocalizedDescriptionKey: @"Record not found"}];
         return nil;
@@ -564,7 +564,7 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
     NSDictionary *row = rows.firstObject;
     NSString *storedCID = row[@"cid"];
     if (cid.length > 0 && storedCID.length > 0 && ![storedCID isEqualToString:cid]) {
-        if (error) *error = [NSError errorWithDomain:ConstellationDatabaseErrorDomain
+        if (error) *error = [NSError errorWithDomain:MikrusDatabaseErrorDomain
                                                 code:404
                                             userInfo:@{NSLocalizedDescriptionKey: @"Record not found for requested CID"}];
         return nil;
@@ -588,21 +588,21 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
     if (handle.length == 0 || did.length == 0) return YES;
     NSString *normalized = [handle lowercaseString];
     return [self performWriteTransaction:^BOOL(sqlite3 *db, NSError **innerError) {
-        if (![self executeUpdate:@"DELETE FROM constellation_handles WHERE did = ?"
+        if (![self executeUpdate:@"DELETE FROM mikrus_handles WHERE did = ?"
                           params:@[did]
                       connection:db
                            error:innerError]) {
             return NO;
         }
-        return [self executeUpdate:@"INSERT OR REPLACE INTO constellation_handles(handle, did, updated_at) VALUES(?,?,?)"
-                            params:@[normalized, did, ConstellationNow()]
+        return [self executeUpdate:@"INSERT OR REPLACE INTO mikrus_handles(handle, did, updated_at) VALUES(?,?,?)"
+                            params:@[normalized, did, MikrusNow()]
                         connection:db
                              error:innerError];
     } error:error];
 }
 
 - (nullable NSString *)resolveHandleToDID:(NSString *)handle error:(NSError **)error {
-    NSArray *rows = [self executeQuery:@"SELECT did FROM constellation_handles WHERE handle = ? LIMIT 1"
+    NSArray *rows = [self executeQuery:@"SELECT did FROM mikrus_handles WHERE handle = ? LIMIT 1"
                                 params:@[[handle lowercaseString] ?: @""]
                                  error:error];
     if (!rows || rows.count == 0) return nil;
@@ -610,7 +610,7 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
 }
 
 - (nullable NSString *)resolveDIDToHandle:(NSString *)did error:(NSError **)error {
-    NSArray *rows = [self executeQuery:@"SELECT handle FROM constellation_handles WHERE did = ? LIMIT 1"
+    NSArray *rows = [self executeQuery:@"SELECT handle FROM mikrus_handles WHERE did = ? LIMIT 1"
                                 params:@[did ?: @""]
                                  error:error];
     if (!rows || rows.count == 0) return nil;
@@ -628,7 +628,7 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
         sqlite3_stmt *stmt = NULL;
         int rc = sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL);
         if (rc != SQLITE_OK) {
-            innerError = ConstellationDBError(db, rc, @"Failed to prepare query");
+            innerError = MikrusDBError(db, rc, @"Failed to prepare query");
             return;
         }
         ATProtoDBBindParams(stmt, params ?: @[]);
@@ -646,7 +646,7 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
         }
 
         if (rc != SQLITE_DONE) {
-            innerError = ConstellationDBError(db, rc, @"Failed to execute query");
+            innerError = MikrusDBError(db, rc, @"Failed to execute query");
             sqlite3_finalize(stmt);
             return;
         }
@@ -668,13 +668,13 @@ static NSDictionary *ConstellationDictionaryFromCursor(NSString *cursor, NSError
     sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
-        if (error) *error = ConstellationDBError(db, rc, @"Failed to prepare update");
+        if (error) *error = MikrusDBError(db, rc, @"Failed to prepare update");
         return NO;
     }
     ATProtoDBBindParams(stmt, params ?: @[]);
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE) {
-        if (error) *error = ConstellationDBError(db, rc, @"Failed to execute update");
+        if (error) *error = MikrusDBError(db, rc, @"Failed to execute update");
         sqlite3_finalize(stmt);
         return NO;
     }

@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 
-#import "Constellation/ConstellationXrpcRoutePack.h"
-#import "Constellation/ConstellationDatabase.h"
-#import "Constellation/ConstellationSourceSpec.h"
+#import "Mikrus/MikrusXrpcRoutePack.h"
+#import "Mikrus/MikrusDatabase.h"
+#import "Mikrus/MikrusSourceSpec.h"
 #import "Core/ATURI.h"
 #import "Core/DID.h"
 #import "Identity/HandleResolver.h"
@@ -11,11 +11,11 @@
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
 
-@implementation ConstellationXrpcRoutePack {
-    ConstellationDatabase *_database;
+@implementation MikrusXrpcRoutePack {
+    MikrusDatabase *_database;
 }
 
-- (instancetype)initWithDatabase:(ConstellationDatabase *)database {
+- (instancetype)initWithDatabase:(MikrusDatabase *)database {
     self = [super init];
     if (!self) return nil;
     _database = database;
@@ -48,7 +48,7 @@
 
 - (void)handleGetBacklinks:(HttpRequest *)request response:(HttpResponse *)response {
     NSString *subject = [self requiredParam:@"subject" request:request response:response];
-    ConstellationSourceSpec *source = [self sourceFromRequest:request response:response];
+    MikrusSourceSpec *source = [self sourceFromRequest:request response:response];
     if (!subject || !source) return;
 
     NSInteger limit = 16;
@@ -77,7 +77,7 @@
 
 - (void)handleGetBacklinkDids:(HttpRequest *)request response:(HttpResponse *)response {
     NSString *subject = [self requiredParam:@"subject" request:request response:response];
-    ConstellationSourceSpec *source = [self sourceFromRequest:request response:response];
+    MikrusSourceSpec *source = [self sourceFromRequest:request response:response];
     if (!subject || !source) return;
 
     NSInteger limit = 16;
@@ -105,7 +105,7 @@
 
 - (void)handleGetBacklinksCount:(HttpRequest *)request response:(HttpResponse *)response {
     NSString *subject = [self requiredParam:@"subject" request:request response:response];
-    ConstellationSourceSpec *source = [self sourceFromRequest:request response:response];
+    MikrusSourceSpec *source = [self sourceFromRequest:request response:response];
     if (!subject || !source) return;
 
     NSError *error = nil;
@@ -120,7 +120,7 @@
 
 - (void)handleGetManyToMany:(HttpRequest *)request response:(HttpResponse *)response {
     NSString *subject = [self requiredParam:@"subject" request:request response:response];
-    ConstellationSourceSpec *source = [self sourceFromRequest:request response:response];
+    MikrusSourceSpec *source = [self sourceFromRequest:request response:response];
     NSString *pathToOther = [self requiredParam:@"pathToOther" request:request response:response];
     if (!subject || !source || !pathToOther) return;
     if (![self validatePath:pathToOther response:response]) return;
@@ -152,7 +152,7 @@
 
 - (void)handleGetManyToManyCounts:(HttpRequest *)request response:(HttpResponse *)response {
     NSString *subject = [self requiredParam:@"subject" request:request response:response];
-    ConstellationSourceSpec *source = [self sourceFromRequest:request response:response];
+    MikrusSourceSpec *source = [self sourceFromRequest:request response:response];
     NSString *pathToOther = [self requiredParam:@"pathToOther" request:request response:response];
     if (!subject || !source || !pathToOther) return;
     if (![self validatePath:pathToOther response:response]) return;
@@ -265,11 +265,11 @@
     return value;
 }
 
-- (ConstellationSourceSpec *)sourceFromRequest:(HttpRequest *)request response:(HttpResponse *)response {
+- (MikrusSourceSpec *)sourceFromRequest:(HttpRequest *)request response:(HttpResponse *)response {
     NSString *sourceValue = [self requiredParam:@"source" request:request response:response];
     if (!sourceValue) return nil;
     NSError *error = nil;
-    ConstellationSourceSpec *source = [ConstellationSourceSpec sourceSpecWithString:sourceValue error:&error];
+    MikrusSourceSpec *source = [MikrusSourceSpec sourceSpecWithString:sourceValue error:&error];
     if (!source) {
         [self writeInvalidRequest:error.localizedDescription ?: @"Invalid source" response:response];
         return nil;
@@ -279,7 +279,7 @@
 
 - (BOOL)validatePath:(NSString *)path response:(HttpResponse *)response {
     NSError *error = nil;
-    if (![ConstellationSourceSpec validatePath:path error:&error]) {
+    if (![MikrusSourceSpec validatePath:path error:&error]) {
         [self writeInvalidRequest:error.localizedDescription ?: @"Invalid path" response:response];
         return NO;
     }
@@ -462,7 +462,7 @@
 }
 
 - (void)writeDatabaseError:(NSError *)error response:(HttpResponse *)response {
-    if ([error.domain isEqualToString:ConstellationDatabaseErrorDomain] && error.code == 400) {
+    if ([error.domain isEqualToString:MikrusDatabaseErrorDomain] && error.code == 400) {
         [self writeInvalidRequest:error.localizedDescription response:response];
         return;
     }

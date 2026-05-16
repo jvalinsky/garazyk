@@ -3,12 +3,12 @@
 /*!
  @file main.m
 
- @brief Entry point for the Constellation-style link index service.
+ @brief Entry point for the Mikrus-style link index service.
  */
 
 #import <Foundation/Foundation.h>
-#import "Constellation/ConstellationRuntime.h"
-#import "Constellation/ConstellationConfiguration.h"
+#import "Mikrus/MikrusRuntime.h"
+#import "Mikrus/MikrusConfiguration.h"
 #import "Compat/PlatformShims/CrashReporting/PDSCrashReporter.h"
 #import "Compat/PlatformShims/SignalHandling/PDSSignalManager.h"
 #import "Core/NSDateFormatter+ATProto.h"
@@ -17,14 +17,14 @@
 #import <curl/curl.h>
 #endif
 
-static const char *executable_name = "constellation";
-static ConstellationRuntime *gRuntime = nil;
+static const char *executable_name = "mikrus";
+static MikrusRuntime *gRuntime = nil;
 
 extern void NSDateFormatterLinkATProtoCategory(void);
 
 static void print_usage(void) {
     printf("Usage: %s <command> [options]\n\n", executable_name);
-    printf("Constellation - ATProto link index and blue.microcosm.* XRPC service\n\n");
+    printf("Mikrus - ATProto link index and blue.microcosm.* XRPC service\n\n");
     printf("Commands:\n");
     printf("  serve        Start the service\n");
     printf("  version      Show version info\n");
@@ -38,15 +38,15 @@ static void print_usage(void) {
     printf("  -v, --verbose         Enable debug logging\n");
     printf("  -h, --help            Show this help\n\n");
     printf("Environment variables:\n");
-    printf("  CONSTELLATION_RELAY_URLS             Comma-separated relay URLs\n");
-    printf("  CONSTELLATION_DATA_DIR               Data directory path\n");
-    printf("  CONSTELLATION_HTTP_PORT              HTTP API port\n");
-    printf("  CONSTELLATION_CURSOR_CHECKPOINT_MS   Cursor checkpoint interval\n");
-    printf("  CONSTELLATION_INGEST_ENABLED         true|false\n\n");
+    printf("  MIKRUS_RELAY_URLS             Comma-separated relay URLs\n");
+    printf("  MIKRUS_DATA_DIR               Data directory path\n");
+    printf("  MIKRUS_HTTP_PORT              HTTP API port\n");
+    printf("  MIKRUS_CURSOR_CHECKPOINT_MS   Cursor checkpoint interval\n");
+    printf("  MIKRUS_INGEST_ENABLED         true|false\n\n");
 }
 
 static void print_version(void) {
-    printf("constellation (Garazyk link index) 1.0.0\n");
+    printf("mikrus (Garazyk link index) 1.0.0\n");
 }
 
 static int fail_with_usage(NSString *message) {
@@ -111,7 +111,7 @@ static BOOL parse_options(NSArray<NSString *> *args,
 
 int main(int argc, const char *argv[]) {
     [[PDSSignalManager sharedManager] installIgnoredSignals];
-    [PDSCrashReporter installCrashHandlersWithExecutableName:"constellation"];
+    [PDSCrashReporter installCrashHandlersWithExecutableName:"mikrus"];
 #if defined(GNUSTEP)
     curl_global_init(CURL_GLOBAL_ALL);
 #endif
@@ -147,7 +147,7 @@ int main(int argc, const char *argv[]) {
             return fail_with_usage(parseError);
         }
 
-        ConstellationRuntime *runtime = [ConstellationRuntime sharedRuntime];
+        MikrusRuntime *runtime = [MikrusRuntime sharedRuntime];
         if (configPath.length > 0) {
             NSError *configError = nil;
             if (![runtime loadConfiguration:configPath error:&configError]) {
@@ -158,7 +158,7 @@ int main(int argc, const char *argv[]) {
             [runtime loadConfigurationFromEnvironment];
         }
 
-        ConstellationConfiguration *config = runtime.configuration;
+        MikrusConfiguration *config = runtime.configuration;
         if (port > 0) config.httpPort = port;
         if (relayURLs.count > 0) config.relayURLs = relayURLs;
         if (dataDir.length > 0) config.dataDirectory = dataDir;
@@ -166,11 +166,11 @@ int main(int argc, const char *argv[]) {
 
         NSError *startError = nil;
         if (![runtime startWithError:&startError]) {
-            fprintf(stderr, "Failed to start Constellation: %s\n", startError.localizedDescription.UTF8String ?: "unknown");
+            fprintf(stderr, "Failed to start Mikrus: %s\n", startError.localizedDescription.UTF8String ?: "unknown");
             return 1;
         }
 
-        printf("Constellation link index started\n");
+        printf("Mikrus link index started\n");
         printf("  Port:     %lu\n", (unsigned long)config.httpPort);
         printf("  Data dir: %s\n", config.dataDirectory.UTF8String);
         printf("  Ingest:   %s\n", config.ingestEnabled ? "enabled" : "disabled");

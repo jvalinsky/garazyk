@@ -1,18 +1,18 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file ConstellationSourceSpec.h
+ @file MikrusSourceSpec.h
 
- @abstract Parser for Microcosm Constellation link source strings.
+ @abstract Parser for Microcosm Mikrus link source strings.
  */
 
 #import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
-extern NSString * const ConstellationSourceSpecErrorDomain;
+extern NSString * const MikrusSourceSpecErrorDomain;
 
-@interface ConstellationSourceSpec : NSObject
+@interface MikrusSourceSpec : NSObject
 
 @property (nonatomic, copy, readonly) NSString *collection;
 @property (nonatomic, copy, readonly) NSString *path;

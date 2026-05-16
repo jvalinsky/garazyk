@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 
-#import "Constellation/ConstellationSourceSpec.h"
+#import "Mikrus/MikrusSourceSpec.h"
 
-NSString * const ConstellationSourceSpecErrorDomain = @"blue.microcosm.constellation.source";
+NSString * const MikrusSourceSpecErrorDomain = @"blue.microcosm.mikrus.source";
 
-@implementation ConstellationSourceSpec
+@implementation MikrusSourceSpec
 
 - (instancetype)initPrivateWithCollection:(NSString *)collection path:(NSString *)path {
     self = [super init];
@@ -102,7 +102,7 @@ NSString * const ConstellationSourceSpecErrorDomain = @"blue.microcosm.constella
 }
 
 + (NSError *)errorWithMessage:(NSString *)message {
-    return [NSError errorWithDomain:ConstellationSourceSpecErrorDomain
+    return [NSError errorWithDomain:MikrusSourceSpecErrorDomain
                                code:400
                            userInfo:@{NSLocalizedDescriptionKey: message ?: @"Invalid source"}];
 }
