@@ -10,6 +10,9 @@
     "@std/path": "jsr:@std/path@1",
     "zod": "npm:zod@3.25.76"
   },
+  "compilerOptions": {
+    "types": []
+  },
   "fmt": {
     "lineWidth": 100
   },
