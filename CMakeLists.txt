@@ -85,7 +85,7 @@ if(NOT APPLE)
     add_compile_definitions(GNUSTEP LINUX)
     
     # GNUstep Configuration - defaults to common locations
-    set(GNUSTEP_PREFIX "DEPLOY_DIR/GNUstep/install" CACHE PATH "GNUstep installation prefix")
+    set(GNUSTEP_PREFIX "$ENV{GNUSTEP_PREFIX}" CACHE PATH "GNUstep installation prefix")
     
     # Add common custom library search paths
     list(APPEND CMAKE_PREFIX_PATH "/usr/local" "${GNUSTEP_PREFIX}")

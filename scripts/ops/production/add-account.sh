@@ -88,20 +88,20 @@ if [[ -n "$DID" ]]; then
 fi
 
 # Create DNS record
-info "Creating CNAME: ${SUBDOMAIN}.garazyk.xyz → DEPLOY_HOST"
+info "Creating CNAME: ${SUBDOMAIN}.garazyk.xyz → ${DEPLOY_HOST:?DEPLOY_HOST not set}"
 "${SCRIPT_DIR}/cloudflare-dns.sh" \
     --token "$CF_TOKEN" \
     --zone-id "$CF_ZONE_ID" \
     --subdomain "${SUBDOMAIN}.garazyk.xyz" \
-    --target "DEPLOY_HOST"
+    --target "${DEPLOY_HOST}"
 
 # Backup keys
-KEYS_DIR="DEPLOY_DIR/pds-data/keys"
+KEYS_DIR="${DEPLOY_DIR:-$HOME/pds-data}/keys"
 SECRETS_DIR="${HOME}/.secrets"
 if [[ -d "$KEYS_DIR" ]] && ls "${KEYS_DIR}"/* > /dev/null 2>&1; then
     mkdir -p "$SECRETS_DIR" && chmod 0700 "$SECRETS_DIR"
     BACKUP="${SECRETS_DIR}/pds-keys-$(date +%Y%m%d-%H%M%S).tar.gz"
-    tar -czf "$BACKUP" -C DEPLOY_DIR/pds-data keys/
+    tar -czf "$BACKUP" -C $DEPLOY_DIR/pds-data keys/
     chmod 0600 "$BACKUP"
     info "Keys backed up to: ${BACKUP}"
 fi

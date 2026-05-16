@@ -4,9 +4,9 @@ After=network.target
 
 [Service]
 Type=simple
-User=DEPLOY_USER
-WorkingDirectory=DEPLOY_DIR/objpds
-ExecStart=DEPLOY_DIR/objpds/build-linux/bin/kaszlak serve --port 2583 --hostname 0.0.0.0 --config DEPLOY_DIR/objpds/config/production.json --foreground
+User=%i
+WorkingDirectory=${DEPLOY_DIR}
+ExecStart=${DEPLOY_DIR}/build-linux/bin/kaszlak serve --port 2583 --hostname 0.0.0.0 --config ${DEPLOY_DIR}/config/production.json --foreground
 Restart=on-failure
 RestartSec=3
 

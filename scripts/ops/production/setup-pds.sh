@@ -20,7 +20,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 BINARY="${PROJECT_DIR}/build-linux/bin/kaszlak"
 CONFIG="${PROJECT_DIR}/config/production.json"
-DATA_DIR="DEPLOY_DIR/pds-data"
+DATA_DIR="${DEPLOY_DIR:-$HOME/pds-data}"
 KEYS_DIR="${DATA_DIR}/keys"
 SECRETS_DIR="${HOME}/.secrets"
 
@@ -170,12 +170,12 @@ fi
 # ─────────────────────────────────────────────────────────────
 section "Creating Cloudflare DNS record"
 
-info "Creating CNAME: ${SUBDOMAIN}.garazyk.xyz → DEPLOY_HOST"
+info "Creating CNAME: ${SUBDOMAIN}.garazyk.xyz → ${DEPLOY_HOST:?DEPLOY_HOST not set}"
 "${SCRIPT_DIR}/cloudflare-dns.sh" \
     --token "$CF_TOKEN" \
     --zone-id "$CF_ZONE_ID" \
     --subdomain "${SUBDOMAIN}.garazyk.xyz" \
-    --target "DEPLOY_HOST"
+    --target "${DEPLOY_HOST}"
 
 # Also ensure pds.garazyk.xyz CNAME exists
 info "Ensuring pds.garazyk.xyz CNAME exists..."
@@ -183,7 +183,7 @@ info "Ensuring pds.garazyk.xyz CNAME exists..."
     --token "$CF_TOKEN" \
     --zone-id "$CF_ZONE_ID" \
     --subdomain "pds.garazyk.xyz" \
-    --target "DEPLOY_HOST"
+    --target "${DEPLOY_HOST}"
 
 # ─────────────────────────────────────────────────────────────
 section "Generating invite codes"
