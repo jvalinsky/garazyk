@@ -525,7 +525,7 @@
         NSString *rootType = rootResponse[@"headers"][@"content-type"];
         XCTAssertTrue([rootType containsString:@"text/plain"]);
         NSString *rootBody = [rootResponse[@"body"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-        XCTAssertEqualObjects(rootBody, @"kaszlak 1.0.0");
+        XCTAssertTrue([rootBody hasPrefix:@",--."]);
 
         [self.testServer stop];
         self.testServer = nil;

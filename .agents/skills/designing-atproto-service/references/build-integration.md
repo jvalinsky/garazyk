@@ -109,10 +109,10 @@ Source files are automatically picked up by glob patterns in CMakeLists.txt. The
 | `ATProtoStorage` | `Sources/Database/*.m`, `Sources/Repository/*.m`, `Sources/Core/Repositories/*.m` |
 | `ATProtoServices` | `Sources/Auth/*.m` (excl. Crypto/Verifier/PDS), `Sources/Blob/*.m`, `Sources/Email/*.m`, `Sources/Identity/*.m`, `Sources/Services/*.m`, `Sources/Admin/*.m`, `Sources/AppView/*.m` (excl. Server), `Sources/Chat/*.m`, `Sources/Ozone/*.m`, `Sources/Federation/*.m`, `Sources/Registration/*.m`, `Sources/PhoneVerification/*.m`, `Sources/Germ/*.m` |
 | `ATProtoTransport` | `Sources/Network/*.m` (excl. Xrpc*, RoutePacks, ServerBuilder) |
-| `ATProtoXRPC` | `Sources/Network/Xrpc*.m`, `Sources/Network/PDSHttpXrpcRoutePack.m`, `Sources/Network/RelayXrpcRoutePack.m`, `Sources/Network/AppViewXRpcRoutePack.m` |
+| `ATProtoXRPC` | `Sources/Network/Xrpc*.m`, `Sources/Network/ATProtoHttpXrpcRoutePack.m`, `Sources/Network/RelayXrpcRoutePack.m`, `Sources/Network/AppViewXRpcRoutePack.m` |
 | `ATProtoSync` | `Sources/Sync/Firehose/*.m`, `Sources/Sync/Relay/*.m`, `Sources/Sync/WebSocket/*.m` |
 | `ATProtoPLC` | `Sources/PLC/*.m` |
-| `ATProtoRuntime` | `Sources/App/*.m`, `Sources/CLI/*.m`, `Sources/Auth/PDS/*.m`, `Sources/Network/PDSHttpServerBuilder.m` |
+| `ATProtoRuntime` | `Sources/App/*.m`, `Sources/CLI/*.m`, `Sources/Auth/PDS/*.m`, `Sources/Network/ATProtoHttpServerBuilder.m` |
 | `ATProtoVideoService` | `Sources/Video/*.m` |
 | `ATProtoAppViewServer` | `Sources/AppView/Server/*.m` (excl. Binary/) |
 

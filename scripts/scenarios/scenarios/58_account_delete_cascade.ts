@@ -157,7 +157,7 @@ export async function run(): Promise<ScenarioResult> {
 
   // --- Hard-delete the account ---
   // com.atproto.server.deleteAccount requires {did, password} in the body.
-  // No Authorization header needed — the password is the credential (XrpcServerMethods.m:1291).
+  // No Authorization header needed — the password is the credential (XrpcServerPack.m:1291).
   await timedCall(
     result,
     "Hard-delete ghost account",

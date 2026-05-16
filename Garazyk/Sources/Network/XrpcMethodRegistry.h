@@ -24,14 +24,16 @@ NS_ASSUME_NONNULL_BEGIN
  Architecture:
  XrpcMethodRegistry is a thin orchestration layer that:
  1. Extracts services from PDSApplication or PDSController
- 2. Delegates endpoint registration to domain modules:
-    - XrpcServerMethods: com.atproto.server.* endpoints
-    - XrpcRepoMethods: com.atproto.repo.* endpoints
-    - XrpcSyncMethods: com.atproto.sync.* endpoints
-    - XrpcIdentityMethods: com.atproto.identity.* endpoints
-    - XrpcAdminMethods: com.atproto.admin.* endpoints
-    - XrpcLabelMethods: com.atproto.label.* and com.atproto.temp.* endpoints
-    - XrpcAppBskyMethods: app.bsky.* endpoints
+ 2. Delegates endpoint registration to namespace packs using the XrpcRoutePack protocol:
+    - XrpcServerPack: com.atproto.server.* endpoints
+    - XrpcRepoPack: com.atproto.repo.* endpoints
+    - XrpcSyncPack: com.atproto.sync.* endpoints
+    - XrpcIdentityPack: com.atproto.identity.* endpoints
+    - XrpcAdminPack: com.atproto.admin.* endpoints
+    - XrpcLabelPack: com.atproto.label.* and com.atproto.temp.* endpoints
+    - XrpcModerationPack: com.atproto.moderation.* endpoints
+    - XrpcVendorPack: tools.garazyk.* endpoints
+    - XrpcAppBskyPack: app.bsky.* endpoints
  3. Installs proxy interceptor for request forwarding
  
  Domain modules use helper modules for shared functionality:
@@ -87,29 +89,6 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (void)registerMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
                           application:(PDSApplication *)application;
-
-/**
- @brief Extract the authenticated DID from an Authorization header.
-
- @param authHeader The Authorization header value.
- @param jwtMinter The JWT minter used for token verification.
- @param adminController The admin controller for takedown checks.
- @param request The HTTP request (used for DPoP validation).
- @return The authenticated DID, or nil if authentication fails.
- */
-+ (nullable NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
-                                      jwtMinter:(JWTMinter *)jwtMinter
-                                adminController:(id<PDSAdminController>)adminController
-                                        request:(HttpRequest *)request;
-
-/**
- @brief Decode a DID `publicKeyMultibase` string into raw key bytes.
-
- @param multibase `publicKeyMultibase` value from a DID document.
- @param error Populated when decoding fails.
- @return Raw public key bytes or nil if the string is malformed.
- */
-+ (nullable NSData *)publicKeyBytesFromMultibase:(NSString *)multibase error:(NSError **)error;
 
 @end
 

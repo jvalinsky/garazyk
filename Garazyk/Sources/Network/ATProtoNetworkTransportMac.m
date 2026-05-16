@@ -1,43 +1,43 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSNetworkTransportMac.m
+ @file ATProtoNetworkTransportMac.m
 
  @abstract Implements macOS network transport integration for server connection handling.
 
  @discussion Provides platform-specific transport wiring for macOS using system networking facilities and forwards connection data into protocol/session layers. Keeps business and routing logic out of transport code.
  */
 
-#import "PDSNetworkTransportMac.h"
+#import "ATProtoNetworkTransportMac.h"
 #import "Debug/GZLogger.h"
 #import <Foundation/Foundation.h>
 
-static BOOL PDSNetworkTransportMacUsesPlainTCP(NSUInteger port) {
+static BOOL ATProtoNetworkTransportMacUsesPlainTCP(NSUInteger port) {
     return port == 0 || port == 80 || port == 2583 || port == 2584 ||
            port == 2582 || port == 3200 || port == 3210;
 }
 
-@implementation PDSNetworkTransportFactory
+@implementation ATProtoNetworkTransportFactory
 
-+ (id<PDSNetworkListener>)createListenerWithPort:(NSUInteger)port {
++ (id<ATProtoNetworkListener>)createListenerWithPort:(NSUInteger)port {
     NSString *bindHost = [[NSProcessInfo processInfo] environment][@"PDS_LISTEN_HOST"];
     return [self createListenerWithHost:bindHost port:port];
 }
 
-+ (id<PDSNetworkListener>)createListenerWithHost:(nullable NSString *)host port:(NSUInteger)port {
++ (id<ATProtoNetworkListener>)createListenerWithHost:(nullable NSString *)host port:(NSUInteger)port {
     if (host.length == 0) {
-        return [[PDSNetworkListenerMac alloc] initWithPort:port];
+        return [[ATProtoNetworkListenerMac alloc] initWithPort:port];
     }
-    return [[PDSNetworkListenerMac alloc] initWithHost:host port:port];
+    return [[ATProtoNetworkListenerMac alloc] initWithHost:host port:port];
 }
 
-+ (id<PDSNetworkConnection>)createConnectionWithHost:(NSString *)host port:(NSUInteger)port {
-    return [[PDSNetworkConnectionMac alloc] initWithHost:host port:port];
++ (id<ATProtoNetworkConnection>)createConnectionWithHost:(NSString *)host port:(NSUInteger)port {
+    return [[ATProtoNetworkConnectionMac alloc] initWithHost:host port:port];
 }
 
 @end
 
-@implementation PDSNetworkConnectionMac {
+@implementation ATProtoNetworkConnectionMac {
     nw_connection_t _connection;
 }
 
@@ -63,7 +63,7 @@ static BOOL PDSNetworkTransportMacUsesPlainTCP(NSUInteger port) {
                           [host isEqualToString:@"localhost"];
         
         // Use plain TCP for loopback or known plain ports
-        if (isLoopback || PDSNetworkTransportMacUsesPlainTCP(port)) {
+        if (isLoopback || ATProtoNetworkTransportMacUsesPlainTCP(port)) {
             parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
         } else {
             parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DEFAULT_CONFIGURATION, NW_PARAMETERS_DEFAULT_CONFIGURATION);
@@ -81,25 +81,25 @@ static BOOL PDSNetworkTransportMacUsesPlainTCP(NSUInteger port) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return;
         
-        void (^handler)(PDSNetworkConnectionState, NSError * _Nullable) = strongSelf.stateChangedHandler;
+        void (^handler)(ATProtoNetworkConnectionState, NSError * _Nullable) = strongSelf.stateChangedHandler;
         if (handler) {
-            PDSNetworkConnectionState pdsState;
+            ATProtoNetworkConnectionState pdsState;
             NSError *nsError = nil;
             if (error) {
                 nsError = (__bridge_transfer NSError *)nw_error_copy_cf_error(error);
             }
             switch (state) {
                 case nw_connection_state_waiting: 
-                    pdsState = PDSNetworkConnectionStateWaiting;
+                    pdsState = ATProtoNetworkConnectionStateWaiting;
                     if (nsError) {
                         GZ_LOG_WARN(@"[Network] Connection waiting: %@", nsError.localizedDescription);
                     }
                     break;
-                case nw_connection_state_preparing: pdsState = PDSNetworkConnectionStatePreparing; break;
-                case nw_connection_state_ready: pdsState = PDSNetworkConnectionStateReady; break;
-                case nw_connection_state_failed: pdsState = PDSNetworkConnectionStateFailed; break;
-                case nw_connection_state_cancelled: pdsState = PDSNetworkConnectionStateCancelled; break;
-                default: pdsState = PDSNetworkConnectionStateWaiting; break;
+                case nw_connection_state_preparing: pdsState = ATProtoNetworkConnectionStatePreparing; break;
+                case nw_connection_state_ready: pdsState = ATProtoNetworkConnectionStateReady; break;
+                case nw_connection_state_failed: pdsState = ATProtoNetworkConnectionStateFailed; break;
+                case nw_connection_state_cancelled: pdsState = ATProtoNetworkConnectionStateCancelled; break;
+                default: pdsState = ATProtoNetworkConnectionStateWaiting; break;
             }
             handler(pdsState, nsError);
         }
@@ -132,7 +132,7 @@ static BOOL PDSNetworkTransportMacUsesPlainTCP(NSUInteger port) {
 
 - (void)receiveWithMinimumLength:(NSUInteger)minLength maximumLength:(NSUInteger)maxLength completion:(void (^)(NSData * _Nullable data, BOOL isComplete, NSError * _Nullable error))completion {
     if (!_connection) {
-        if (completion) completion(nil, NO, [NSError errorWithDomain:@"PDSNetwork" code:-1 userInfo:nil]);
+        if (completion) completion(nil, NO, [NSError errorWithDomain:@"ATProtoNetwork" code:-1 userInfo:nil]);
         return;
     }
     nw_connection_receive(_connection, (uint32_t)minLength, (uint32_t)maxLength, ^(dispatch_data_t content, nw_content_context_t context, bool isComplete, nw_error_t receiveError) {
@@ -166,7 +166,7 @@ static BOOL PDSNetworkTransportMacUsesPlainTCP(NSUInteger port) {
 
 @end
 
-@implementation PDSNetworkListenerMac {
+@implementation ATProtoNetworkListenerMac {
     nw_listener_t _listener;
 }
 
@@ -183,7 +183,7 @@ static BOOL PDSNetworkTransportMacUsesPlainTCP(NSUInteger port) {
     if (self) {
         _port = port;
         nw_parameters_t parameters;
-        if (PDSNetworkTransportMacUsesPlainTCP(port)) {
+        if (ATProtoNetworkTransportMacUsesPlainTCP(port)) {
             parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
         } else {
             parameters = nw_parameters_create_secure_tcp(NW_PARAMETERS_DEFAULT_CONFIGURATION, NW_PARAMETERS_DEFAULT_CONFIGURATION);
@@ -206,18 +206,18 @@ static BOOL PDSNetworkTransportMacUsesPlainTCP(NSUInteger port) {
         nw_listener_set_state_changed_handler(_listener, ^(nw_listener_state_t state, nw_error_t error) {
             __strong typeof(weakSelf) strongSelf = weakSelf;
             if (!strongSelf) return;
-            void (^handler)(PDSNetworkListenerState, NSError * _Nullable) = strongSelf.stateChangedHandler;
+            void (^handler)(ATProtoNetworkListenerState, NSError * _Nullable) = strongSelf.stateChangedHandler;
             if (handler) {
-                PDSNetworkListenerState pdsState;
+                ATProtoNetworkListenerState pdsState;
                 switch (state) {
-                    case nw_listener_state_waiting: pdsState = PDSNetworkListenerStateWaiting; break;
+                    case nw_listener_state_waiting: pdsState = ATProtoNetworkListenerStateWaiting; break;
                     case nw_listener_state_ready: 
-                        pdsState = PDSNetworkListenerStateReady;
+                        pdsState = ATProtoNetworkListenerStateReady;
                         strongSelf->_port = nw_listener_get_port(strongSelf->_listener);
                         break;
-                    case nw_listener_state_failed: pdsState = PDSNetworkListenerStateFailed; break;
-                    case nw_listener_state_cancelled: pdsState = PDSNetworkListenerStateCancelled; break;
-                    default: pdsState = PDSNetworkListenerStateWaiting; break;
+                    case nw_listener_state_failed: pdsState = ATProtoNetworkListenerStateFailed; break;
+                    case nw_listener_state_cancelled: pdsState = ATProtoNetworkListenerStateCancelled; break;
+                    default: pdsState = ATProtoNetworkListenerStateWaiting; break;
                 }
                 NSError *nsError = nil;
                 if (error) {
@@ -231,9 +231,9 @@ static BOOL PDSNetworkTransportMacUsesPlainTCP(NSUInteger port) {
             if (!connection) return;
             __strong typeof(weakSelf) strongSelf = weakSelf;
             if (!strongSelf) return;
-            void (^handler)(id<PDSNetworkConnection>) = strongSelf.newConnectionHandler;
+            void (^handler)(id<ATProtoNetworkConnection>) = strongSelf.newConnectionHandler;
             if (handler) {
-                PDSNetworkConnectionMac *pdsConn = [[PDSNetworkConnectionMac alloc] initWithConnection:connection];
+                ATProtoNetworkConnectionMac *pdsConn = [[ATProtoNetworkConnectionMac alloc] initWithConnection:connection];
                 handler(pdsConn);
             }
         });

@@ -42,7 +42,7 @@ We handle runtime differences through the `PDSTypes.h` header. This includes mac
 When reviewing platform-specific changes, ensure they do not:
 - Introduce hard dependencies on macOS-only symbols in shared files.
 - Assume `SecKeyRef` behavior where the GNUstep path uses a raw key buffer.
-- Bypass the `PDSNetworkTransport` abstraction for raw socket access.
+- Bypass the `ATProtoNetworkTransport` abstraction for raw socket access.
 - Depend on threading behaviors that are unique to the Apple Mach kernel.
 
 ## Related

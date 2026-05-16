@@ -9,7 +9,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
-#import "Network/PDSNetworkTransport.h"
+#import "Network/ATProtoNetworkTransport.h"
 
 FOUNDATION_EXPORT double ATProtoTransportVersionNumber;
 FOUNDATION_EXPORT const unsigned char ATProtoTransportVersionString[];

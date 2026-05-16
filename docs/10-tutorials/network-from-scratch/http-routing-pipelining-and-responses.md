@@ -72,7 +72,7 @@ This split exists because the repository has two different route families:
 - exact or prefix handlers for coarse entrypoints such as `/xrpc`,
 - and structured route patterns such as `/xrpc/:method` or `/*`.
 
-`PDSHttpServerBuilder` installs those routes in startup order. That order
+`ATProtoHttpServerBuilder` installs those routes in startup order. That order
 matters because specific surfaces, such as OAuth routes or
 `/xrpc/com.atproto.sync.subscribeRepos`, must win before the catch-all UI
 handler.

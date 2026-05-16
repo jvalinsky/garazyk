@@ -348,7 +348,7 @@ Configure systems with secure settings by default, requiring explicit action to 
 **Secure configuration defaults:**
 
 ```objc
-// From Garazyk/Sources/App/PDSConfiguration.m
+// From Garazyk/Sources/App/ATProtoServiceConfiguration.m
 - (instancetype)initWithDefaults {
     self = [super init];
     if (self) {

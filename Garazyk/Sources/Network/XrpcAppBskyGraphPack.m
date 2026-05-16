@@ -5,6 +5,7 @@
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcErrorHelper.h"
+#import "Network/XrpcRoutePackServices.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "AppView/Services/GraphService.h"
@@ -20,22 +21,22 @@
 
 @implementation XrpcAppBskyGraphPack
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-               serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                  recordService:(nullable PDSRecordService *)recordService
-                 appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
-                      jwtMinter:(JWTMinter *)jwtMinter
-                adminController:(id<PDSAdminController>)adminController {
++ (NSString *)routePackIdentifier {
+  return @"app.bsky.graph";
+}
 
-    GraphService *graphService = [[GraphService alloc] initWithDatabase:appViewDatabase];
-    ActorService *actorService = [[ActorService alloc] initWithDatabase:appViewDatabase];
++ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+                      services:(id<XrpcRoutePackServices>)services {
+
+    GraphService *graphService = [[GraphService alloc] initWithDatabase:services.appViewDatabase];
+    ActorService *actorService = [[ActorService alloc] initWithDatabase:services.appViewDatabase];
 
     // app.bsky.graph.getMutes - Get muted actors
     [dispatcher registerAppBskyGraphGetMutes:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                            jwtMinter:jwtMinter
-                                                      adminController:adminController
+                                                              jwtMinter:services.jwtMinter
+                                                      adminController:services.adminController
                                                               request:request
                                                              response:response];
         if (!actorDID) {
@@ -58,8 +59,8 @@
     [dispatcher registerAppBskyGraphGetBlocks:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                            jwtMinter:jwtMinter
-                                                      adminController:adminController
+                                                              jwtMinter:services.jwtMinter
+                                                      adminController:services.adminController
                                                               request:request
                                                              response:response];
         if (!actorDID) {
@@ -82,8 +83,8 @@
     [dispatcher registerMethod:@"app.bsky.graph.getListMutes" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                            jwtMinter:jwtMinter
-                                                      adminController:adminController
+                                                              jwtMinter:services.jwtMinter
+                                                      adminController:services.adminController
                                                               request:request
                                                              response:response];
         if (!actorDID) {
@@ -114,7 +115,7 @@
         NSInteger count = 0;
         for (NSInteger i = offset; i < (NSInteger)mutedListURIs.count && count < limit; i++) {
             NSString *listURI = mutedListURIs[i];
-            NSDictionary *listView = XrpcLoadListViewForURI(appViewDatabase, actorService, listURI);
+            NSDictionary *listView = XrpcLoadListViewForURI(services.appViewDatabase, actorService, listURI);
             if (listView) {
                 [lists addObject:listView];
                 count++;
@@ -135,8 +136,8 @@
     [dispatcher registerMethod:@"app.bsky.graph.getListBlocks" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                            jwtMinter:jwtMinter
-                                                      adminController:adminController
+                                                              jwtMinter:services.jwtMinter
+                                                      adminController:services.adminController
                                                               request:request
                                                              response:response];
         if (!actorDID) {
@@ -163,7 +164,7 @@
         }
         [args addObject:@(limit)];
 
-        NSArray *rows = [appViewDatabase executeParameterizedQuery:query params:args error:&error];
+        NSArray *rows = [services.appViewDatabase executeParameterizedQuery:query params:args error:&error];
         if (error) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription];
             return;
@@ -177,7 +178,7 @@
             CID *cid = [CID cidFromString:cidStr];
             if (!cid) continue;
 
-            PDSDatabaseBlock *block = [appViewDatabase getBlockWithCid:cid.bytes repoDid:actorDID error:nil];
+            PDSDatabaseBlock *block = [services.appViewDatabase getBlockWithCid:cid.bytes repoDid:actorDID error:nil];
             if (!block.blockData) continue;
 
             NSDictionary *blockRecord = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:nil];
@@ -186,7 +187,7 @@
             NSString *listURI = blockRecord[@"list"];
             if (![listURI isKindOfClass:[NSString class]]) continue;
 
-            NSDictionary *listView = XrpcLoadListViewForURI(appViewDatabase, actorService, listURI);
+            NSDictionary *listView = XrpcLoadListViewForURI(services.appViewDatabase, actorService, listURI);
             if (listView) {
                 [lists addObject:listView];
             }
@@ -255,8 +256,8 @@
             return;
         }
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                            jwtMinter:jwtMinter
-                                                      adminController:adminController
+                                                              jwtMinter:services.jwtMinter
+                                                      adminController:services.adminController
                                                               request:request
                                                              response:response];
         if (!actorDID) return;
@@ -284,8 +285,8 @@
             return;
         }
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                            jwtMinter:jwtMinter
-                                                      adminController:adminController
+                                                              jwtMinter:services.jwtMinter
+                                                      adminController:services.adminController
                                                               request:request
                                                              response:response];
         if (!actorDID) return;
@@ -322,8 +323,8 @@
 
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *viewerDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                            jwtMinter:jwtMinter
-                                                      adminController:adminController
+                                                              jwtMinter:services.jwtMinter
+                                                      adminController:services.adminController
                                                               request:request
                                                              response:response];
 
@@ -358,12 +359,12 @@
         if (cursor) [args addObject:cursor];
         [args addObject:@(limit)];
         NSError *error = nil;
-        NSArray *rows = [appViewDatabase executeParameterizedQuery:query params:args error:&error];
+        NSArray *rows = [services.appViewDatabase executeParameterizedQuery:query params:args error:&error];
         NSMutableArray *lists = [NSMutableArray array];
         for (NSDictionary *row in rows) {
             NSString *rkey = row[@"rkey"];
             NSString *uri = [NSString stringWithFormat:@"at://%@/app.bsky.graph.list/%@", actor, rkey];
-            NSDictionary *listView = XrpcLoadListViewForURI(appViewDatabase, actorService, uri);
+            NSDictionary *listView = XrpcLoadListViewForURI(services.appViewDatabase, actorService, uri);
             if (listView) {
                 [lists addObject:listView];
             }
@@ -390,20 +391,20 @@
             return;
         }
         NSString *did = components[2];
-        NSDictionary *listView = XrpcLoadListViewForURI(appViewDatabase, actorService, list);
+        NSDictionary *listView = XrpcLoadListViewForURI(services.appViewDatabase, actorService, list);
         if (!listView) {
             response.statusCode = 404;
             [response setJsonBody:@{@"error": @"NotFound", @"message": @"List not found"}];
             return;
         }
         NSString *itemQuery = @"SELECT rkey, cid FROM records WHERE did = ? AND collection = ? ORDER BY rkey DESC LIMIT 100";
-        NSArray *itemRows = [appViewDatabase executeParameterizedQuery:itemQuery params:@[did, @"app.bsky.graph.listitem"] error:nil];
+        NSArray *itemRows = [services.appViewDatabase executeParameterizedQuery:itemQuery params:@[did, @"app.bsky.graph.listitem"] error:nil];
         NSMutableArray *items = [NSMutableArray array];
         for (NSDictionary *itemRow in itemRows) {
             NSString *itemCidStr = itemRow[@"cid"];
             CID *itemCid = [CID cidFromString:itemCidStr];
             if (!itemCid) continue;
-            PDSDatabaseBlock *itemBlock = [appViewDatabase getBlockWithCid:itemCid.bytes repoDid:did error:nil];
+            PDSDatabaseBlock *itemBlock = [services.appViewDatabase getBlockWithCid:itemCid.bytes repoDid:did error:nil];
             if (!itemBlock || !itemBlock.blockData) continue;
             NSDictionary *itemRecord = [ATProtoCBORSerialization JSONObjectWithData:itemBlock.blockData error:nil];
             if (!itemRecord) continue;
@@ -447,8 +448,8 @@
     [dispatcher registerMethod:@"app.bsky.graph.muteActorList" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                            jwtMinter:jwtMinter
-                                                      adminController:adminController
+                                                              jwtMinter:services.jwtMinter
+                                                      adminController:services.adminController
                                                               request:request
                                                              response:response];
         if (!actorDID) {
@@ -489,8 +490,8 @@
     [dispatcher registerMethod:@"app.bsky.graph.unmuteActorList" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                            jwtMinter:jwtMinter
-                                                      adminController:adminController
+                                                              jwtMinter:services.jwtMinter
+                                                      adminController:services.adminController
                                                               request:request
                                                              response:response];
         if (!actorDID) {
@@ -529,8 +530,8 @@
     [dispatcher registerMethod:@"app.bsky.graph.muteThread" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                            jwtMinter:jwtMinter
-                                                      adminController:adminController
+                                                              jwtMinter:services.jwtMinter
+                                                      adminController:services.adminController
                                                               request:request
                                                              response:response];
         if (!actorDID) {
@@ -571,8 +572,8 @@
     [dispatcher registerMethod:@"app.bsky.graph.unmuteThread" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                            jwtMinter:jwtMinter
-                                                      adminController:adminController
+                                                              jwtMinter:services.jwtMinter
+                                                      adminController:services.adminController
                                                               request:request
                                                              response:response];
         if (!actorDID) {
@@ -699,8 +700,8 @@
     [dispatcher registerMethod:@"app.bsky.graph.getStarterPacksWithMembership" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *viewerDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                              jwtMinter:jwtMinter
-                                                        adminController:adminController
+                                                                jwtMinter:services.jwtMinter
+                                                        adminController:services.adminController
                                                                 request:request
                                                                response:response];
         if (!viewerDid) {
@@ -720,7 +721,7 @@
         }
 
         NSError *dbError = nil;
-        NSArray *rows = [appViewDatabase executeParameterizedQuery:
+        NSArray *rows = [services.appViewDatabase executeParameterizedQuery:
                          @"SELECT uri, did, rkey FROM records "
                          @"WHERE collection = ? ORDER BY rkey DESC LIMIT ?"
                                                       params:@[@"app.bsky.graph.starterpack", @(limit)]
@@ -761,8 +762,8 @@
     [dispatcher registerMethod:@"app.bsky.graph.getListMutes" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                            jwtMinter:jwtMinter
-                                                      adminController:adminController
+                                                              jwtMinter:services.jwtMinter
+                                                      adminController:services.adminController
                                                               request:request
                                                              response:response];
         if (!actorDID) {
@@ -791,7 +792,7 @@
         NSMutableArray *paginatedMutes = [NSMutableArray array];
         for (NSInteger i = startIndex; i < endIndex; i++) {
             NSString *listURI = mutedLists[i];
-            NSDictionary *listView = XrpcLoadListViewForURI(appViewDatabase, actorService, listURI);
+            NSDictionary *listView = XrpcLoadListViewForURI(services.appViewDatabase, actorService, listURI);
             if (listView) {
                 [paginatedMutes addObject:listView];
             }
@@ -810,8 +811,8 @@
     [dispatcher registerMethod:@"app.bsky.graph.getListBlocks" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                            jwtMinter:jwtMinter
-                                                      adminController:adminController
+                                                              jwtMinter:services.jwtMinter
+                                                      adminController:services.adminController
                                                               request:request
                                                              response:response];
         if (!actorDID) {
@@ -829,7 +830,7 @@
         if (cursor) [args addObject:cursor];
         [args addObject:@(limit + 1)];
         NSError *error = nil;
-        NSArray *rows = [appViewDatabase executeParameterizedQuery:query params:args error:&error];
+        NSArray *rows = [services.appViewDatabase executeParameterizedQuery:query params:args error:&error];
         if (error) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to load list blocks"];
             return;
@@ -842,7 +843,7 @@
             CID *cid = [CID cidFromString:cidStr];
             if (!cid) continue;
 
-            PDSDatabaseBlock *block = [appViewDatabase getBlockWithCid:cid.bytes repoDid:actorDID error:nil];
+            PDSDatabaseBlock *block = [services.appViewDatabase getBlockWithCid:cid.bytes repoDid:actorDID error:nil];
             if (!block || !block.blockData) continue;
 
             NSDictionary *blockRecord = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:nil];
@@ -850,7 +851,7 @@
 
             NSString *listURI = blockRecord[@"subject"];
             if (listURI && [listURI isKindOfClass:[NSString class]]) {
-                NSDictionary *listView = XrpcLoadListViewForURI(appViewDatabase, actorService, listURI);
+                NSDictionary *listView = XrpcLoadListViewForURI(services.appViewDatabase, actorService, listURI);
                 if (listView) {
                     [blocks addObject:listView];
                 }
@@ -898,7 +899,7 @@
         [args addObject:@(limit + 1)];
 
         NSError *error = nil;
-        NSArray *rows = [appViewDatabase executeParameterizedQuery:query params:args error:&error];
+        NSArray *rows = [services.appViewDatabase executeParameterizedQuery:query params:args error:&error];
         if (error) {
             [XrpcErrorHelper setInternalServerError:response message:error.localizedDescription ?: @"Failed to load lists"];
             return;
@@ -918,7 +919,7 @@
             }
             [processedListURIs addObject:listURI];
 
-            NSDictionary *listView = XrpcLoadListViewForURI(appViewDatabase, actorService, listURI);
+            NSDictionary *listView = XrpcLoadListViewForURI(services.appViewDatabase, actorService, listURI);
             if (listView) {
                 [lists addObject:listView];
             }
@@ -940,8 +941,8 @@
     [dispatcher registerAppBskyGraphVerificationCreateVerification:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                            jwtMinter:jwtMinter
-                                                      adminController:adminController
+                                                              jwtMinter:services.jwtMinter
+                                                      adminController:services.adminController
                                                               request:request
                                                              response:response];
         if (!actorDID) {
@@ -965,7 +966,7 @@
         NSError *error = nil;
         // Use a TID as rkey for verification records
         NSString *rkey = [[TID tid] stringValue];
-        if (![recordService putRecord:@"app.bsky.graph.verification"
+        if (![services.recordService putRecord:@"app.bsky.graph.verification"
                                 rkey:rkey
                                value:record
                               forDid:actorDID
@@ -982,8 +983,8 @@
     [dispatcher registerAppBskyGraphVerificationDeleteVerification:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                            jwtMinter:jwtMinter
-                                                      adminController:adminController
+                                                              jwtMinter:services.jwtMinter
+                                                      adminController:services.adminController
                                                               request:request
                                                              response:response];
         if (!actorDID) {
@@ -1000,7 +1001,7 @@
 
         // We need to find the record key for the verification of this subject
         NSError *error = nil;
-        NSArray *records = [recordService listRecords:@"app.bsky.graph.verification"
+        NSArray *records = [services.recordService listRecords:@"app.bsky.graph.verification"
                                                forDid:actorDID
                                                 limit:100
                                                cursor:nil
@@ -1027,7 +1028,7 @@
             return;
         }
 
-        if (![recordService deleteRecord:@"app.bsky.graph.verification"
+        if (![services.recordService deleteRecord:@"app.bsky.graph.verification"
                                    rkey:foundRKey
                                  forDid:actorDID
                                   error:&error]) {

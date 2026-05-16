@@ -27,8 +27,8 @@ Include files under `Garazyk/Sources/Network` where basename does **not** contai
 - [ ] `Garazyk/Sources/Network/HttpParsing.h`
 - [ ] `Garazyk/Sources/Network/HttpParsing.m`
 - [ ] `Garazyk/Sources/Network/HttpRequest.m`
-- [ ] `Garazyk/Sources/Network/PDSNetworkTransportLinux.m`
-- [ ] `Garazyk/Sources/Network/PDSNetworkTransportMac.m`
+- [ ] `Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m`
+- [ ] `Garazyk/Sources/Network/ATProtoNetworkTransportMac.m`
 
 ### Chunk 1 validation
 - [ ] Build/tests pass for touched modules

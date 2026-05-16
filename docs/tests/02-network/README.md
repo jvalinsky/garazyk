@@ -27,11 +27,11 @@ Tests for HTTP server, XRPC protocol, WebSocket/firehose, and network transport 
 | HttpResponseTests | Tests/Network/HttpResponseTests.m | HTTP response handling |
 | HttpRouteTrieTests | Tests/Network/HttpRouteTrieTests.m | Route trie data structure |
 | HttpStreamingBodyTests | Tests/Network/HttpStreamingBodyTests.m | Streaming body handling |
-| PDSHttpServerBuilderTests | Tests/Network/PDSHttpServerBuilderTests.m | Server builder configuration |
+| ATProtoHttpServerBuilderTests | Tests/Network/ATProtoHttpServerBuilderTests.m | Server builder configuration |
 | RateLimiterTests | Tests/Network/RateLimiterTests.m | Token-bucket limiting |
 | RateLimitingTests | Tests/Network/RateLimitingTests.m | Rate limiting integration |
-| PDSNetworkTransportTests | Tests/Network/PDSNetworkTransportTests.m | Network transport layer |
-| PDSNetworkTransportLinuxTests | Tests/Network/PDSNetworkTransportLinuxTests.m | Linux sockets |
+| ATProtoNetworkTransportTests | Tests/Network/ATProtoNetworkTransportTests.m | Network transport layer |
+| ATProtoNetworkTransportLinuxTests | Tests/Network/ATProtoNetworkTransportLinuxTests.m | Linux sockets |
 | SSLPinningTests | Tests/Network/SSLPinningTests.m | Certificate pinning |
 | XrpcHandlerTests | Tests/XRPC/XrpcHandlerTests.m | XRPC dispatch |
 | XrpcInputValidationTests | Tests/XRPC/XrpcInputValidationTests.m | Input validation |

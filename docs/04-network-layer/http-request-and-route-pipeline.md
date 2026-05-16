@@ -15,7 +15,7 @@ flowchart TD
     Client["Client"]
     Server["HttpServer"]
     Parse["HTTP/1.1 parser, limits, and upgrade checks"]
-    Builder["PDSHttpServerBuilder route registration"]
+    Builder["ATProtoHttpServerBuilder route registration"]
     OAuth["OAuth and well-known routes"]
     XRPC["/xrpc/* catch-all"]
     Explore["/api/pds/* and /ui tooling routes"]
@@ -34,7 +34,7 @@ flowchart TD
 
 ## Why The Route Order Matters
 
-`HttpServer` owns request parsing, queueing, response serialization, and upgrade handoff. `PDSHttpServerBuilder` owns which route families exist and the order they are registered. Those are different responsibilities, and contributors lose time when they debug one while the bug lives in the other.
+`HttpServer` owns request parsing, queueing, response serialization, and upgrade handoff. `ATProtoHttpServerBuilder` owns which route families exist and the order they are registered. Those are different responsibilities, and contributors lose time when they debug one while the bug lives in the other.
 
 The builder currently registers route families in this order:
 
@@ -45,7 +45,7 @@ The builder currently registers route families in this order:
 5. MST viewer routes
 6. Node info routes
 
-That order comes from `Garazyk/Sources/Network/PDSHttpServerBuilder.m`. If a specific path is being shadowed, start there before looking at service logic.
+That order comes from `Garazyk/Sources/Network/ATProtoHttpServerBuilder.m`. If a specific path is being shadowed, start there before looking at service logic.
 
 ## Walkthrough: `describeServer`
 
@@ -53,7 +53,7 @@ GET `/xrpc/com.atproto.server.describeServer` illustrates the plain request path
 
 1. `HttpServer` accepts the connection and feeds bytes through the HTTP/1.1 parser.
 2. The parser enforces header and body limits before any XRPC code runs.
-3. The normalized path reaches the route table that `PDSHttpServerBuilder` created during startup.
+3. The normalized path reaches the route table that `ATProtoHttpServerBuilder` created during startup.
 4. Because the path starts with `/xrpc/`, the request goes to the XRPC route family rather than the Explorer or UI family.
 5. The XRPC layer resolves the NSID and calls the method block that was registered for `com.atproto.server.describeServer`.
 6. The handler writes the response body and headers back through `HttpServer`.
@@ -75,13 +75,13 @@ This is why a firehose bug can look like "routing is broken" even when the route
 ## Where To Debug When This Breaks
 
 - Start in `Garazyk/Sources/Network/HttpServer.m` when the request never reaches the expected route family.
-- Start in `Garazyk/Sources/Network/PDSHttpServerBuilder.m` when the wrong family answers the path or a route disappears after startup changes.
+- Start in `Garazyk/Sources/Network/ATProtoHttpServerBuilder.m` when the wrong family answers the path or a route disappears after startup changes.
 - Inspect host and proxy handling when OAuth or DPoP URLs look correct locally but wrong behind nginx.
 - Inspect the WebSocket handoff when only `subscribeRepos` fails and normal XRPC methods still work.
 
 ## Tests That Should Fail If This Changes
 
-- `Garazyk/Tests/Network/PDSHttpServerBuilderTests.m`
+- `Garazyk/Tests/Network/ATProtoHttpServerBuilderTests.m`
 - `Garazyk/Tests/Network/XrpcMethodRegistryTests.m`
 - `Garazyk/Tests/Sync/SubscribeReposHandlerTests.m`
 - `Garazyk/Tests/App/PDSApplicationTests.m`

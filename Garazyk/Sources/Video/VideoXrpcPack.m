@@ -8,16 +8,22 @@
 #import "Network/HttpResponse.h"
 #import "Network/XrpcErrorHelper.h"
 #import "Network/XrpcHandler.h"
+#import "Network/XrpcRoutePackServices.h"
 #import "Blob/PDSBlobProvider.h"
 #import "Core/CID.h"
 #import "Debug/GZLogger.h"
 
 @implementation ATProtoVideoXrpcPack
 
++ (NSString *)routePackIdentifier {
+  return @"app.bsky.video";
+}
+
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-                       jobStore:(id<VideoJobStore>)jobStore
-                   authProvider:(id<VideoAuthProvider>)authProvider
-                  blobProvider:(id<PDSBlobProvider>)blobProvider {
+                      services:(id<XrpcRoutePackServices>)services {
+  id<VideoJobStore> jobStore = services.videoJobStore;
+  id<VideoAuthProvider> authProvider = services.videoAuthProvider;
+  id<PDSBlobProvider> blobProvider = services.blobProvider;
 
   [dispatcher registerMethod:@"app.bsky.video.getJobStatus"
                       handler:^(HttpRequest *request, HttpResponse *response) {

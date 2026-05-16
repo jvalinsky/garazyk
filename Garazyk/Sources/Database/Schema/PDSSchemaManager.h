@@ -134,6 +134,13 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)serviceActorPreferencesTableSchema;
 
 /*!
+ @method serviceActorMutesTableSchema
+ @abstract Returns the CREATE TABLE SQL for actor mutes.
+ @return CREATE TABLE SQL for actor mutes.
+ */
+- (NSString *)serviceActorMutesTableSchema;
+
+/*!
  @method sequencerAnalyticsTableSchema
  @abstract Schema for sequencer_analytics table (time-series metrics).
  @return CREATE TABLE SQL for sequencer analytics.
@@ -177,6 +184,10 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma mark - BSky AppView Schemas
 
 - (NSString *)bskyAgeAssuranceTableSchema;
+
+- (NSString *)bskyDraftsTableSchema;
+
+- (NSString *)bskyBookmarksTableSchema;
 
 /*!
  @method serviceSchemaSQL

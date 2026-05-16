@@ -75,8 +75,17 @@ NS_ASSUME_NONNULL_BEGIN
                                 error:(NSError **)error;
 
 /**
- * Resolve DID document (PLC directory with local fallback).
+ * Decode a DID `publicKeyMultibase` string into raw key bytes.
  *
+ * @param multibase `publicKeyMultibase` value from a DID document.
+ * @param error Populated when decoding fails.
+ * @return Raw public key bytes or nil if the string is malformed.
+ */
++ (nullable NSData *)publicKeyBytesFromMultibase:(NSString *)multibase error:(NSError **)error;
+
+/**
+ * Resolve DID document (PLC directory with local fallback).
+...
  * This method:
  * 1. For did:plc: Queries PLC directory
  * 2. On PLC failure: Falls back to local account data
@@ -121,7 +130,6 @@ NS_ASSUME_NONNULL_BEGIN
                                            serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                                                   errorName:(NSString * _Nullable * _Nullable)errorName
                                                       error:(NSError **)error;
-
 /**
  * Update account handle in the database.
  *
@@ -135,6 +143,23 @@ NS_ASSUME_NONNULL_BEGIN
                         did:(NSString *)did
                      handle:(NSString *)handle
                       error:(NSError **)error;
+
+/**
+ * Store a PLC operation token for a given DID.
+ *
+ * @param token The token to store.
+ * @param did The DID associated with the token.
+ */
++ (void)storePlcOperationToken:(NSString *)token forDid:(NSString *)did;
+
+/**
+ * Validate and consume a PLC operation token for a given DID.
+ *
+ * @param token The token to validate.
+ * @param did The DID associated with the token.
+ * @return YES if the token is valid and was consumed, NO otherwise.
+ */
++ (BOOL)validatePlcOperationToken:(NSString *)token forDid:(NSString *)did;
 
 /**
  * Get current ISO8601 timestamp string.

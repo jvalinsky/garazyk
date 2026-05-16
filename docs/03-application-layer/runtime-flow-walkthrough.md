@@ -12,7 +12,7 @@ incoming request.
 
 The main point is that Garazyk has a composition root. The service graph is
 not accidental. `PDSApplication` builds it deliberately, then
-`PDSHttpServerBuilder` exposes it through HTTP, XRPC, and WebSocket routes.
+`ATProtoHttpServerBuilder` exposes it through HTTP, XRPC, and WebSocket routes.
 
 ## Startup Has A Real Dependency Order
 
@@ -20,11 +20,11 @@ not accidental. `PDSApplication` builds it deliberately, then
 
 ```mermaid
 flowchart TD
-  Config["PDSConfiguration"] --> Infra["Infrastructure setup"]
+  Config["ATProtoServiceConfiguration"] --> Infra["Infrastructure setup"]
   Infra --> Services["Application services"]
   Services --> Lexicons["Lexicon loading"]
   Lexicons --> Legacy["PDSController compatibility facade"]
-  Legacy --> Builder["PDSHttpServerBuilder"]
+  Legacy --> Builder["ATProtoHttpServerBuilder"]
   Builder --> Server["HttpServer routes"]
 ```
 
@@ -61,7 +61,7 @@ Why this matters:
 
 ## Route Registration Is A Separate Concern
 
-Once the services exist, `PDSHttpServerBuilder` wires the protocol surface.
+Once the services exist, `ATProtoHttpServerBuilder` wires the protocol surface.
 
 ```objc
 if (self.application) {
@@ -71,7 +71,7 @@ if (self.application) {
 
 [server addWebSocketRoute:@"/xrpc/com.atproto.sync.subscribeRepos"
                   handler:^(HttpRequest *request, HttpResponse *response,
-                            id<PDSNetworkConnection> connection) {
+                            id<ATProtoNetworkConnection> connection) {
                     [strongSubscribeReposHandler acceptUpgradedConnection:connection
                                                                    request:request];
                   }];
@@ -130,7 +130,7 @@ What changed is the architectural priority:
 When you need to change runtime behavior, trace in this order:
 
 1. `PDSApplication` for dependency construction
-2. `PDSHttpServerBuilder` for route exposure
+2. `ATProtoHttpServerBuilder` for route exposure
 3. the relevant XRPC or HTTP method registration
 4. the owning service
 5. the underlying repo, blob, or database code

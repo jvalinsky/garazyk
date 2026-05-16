@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSNetworkTransportMac.h
+ @file ATProtoNetworkTransportMac.h
 
- @abstract macOS Network framework implementation of PDS network transports.
+ @abstract macOS Network framework implementation of AT Protocol network transports.
 
- @discussion Provides concrete implementations of PDSNetworkConnection and
- PDSNetworkListener using the modern Network framework (nw_connection_t,
+ @discussion Provides concrete implementations of ATProtoNetworkConnection and
+ ATProtoNetworkListener using the modern Network framework (nw_connection_t,
  nw_listener_t) available on macOS 10.14+ and iOS 12+.
 
  This file is only compiled on Apple platforms.
@@ -14,23 +14,23 @@
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
-#import "PDSNetworkTransport.h"
+#import "ATProtoNetworkTransport.h"
 #import <Network/Network.h>
 #import <stdint.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @class PDSNetworkConnectionMac
+ @class ATProtoNetworkConnectionMac
 
  @abstract Network framework connection implementation for macOS.
 
  @discussion Wraps nw_connection_t for secure, efficient connections
  with automatic TLS support and proper cancellation handling.
 
- @see PDSNetworkConnection
+ @see ATProtoNetworkConnection
  */
-@interface PDSNetworkConnectionMac : NSObject <PDSNetworkConnection>
+@interface ATProtoNetworkConnectionMac : NSObject <ATProtoNetworkConnection>
 
 /*!
  @method initWithConnection:
@@ -59,16 +59,16 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 /*!
- @class PDSNetworkListenerMac
+ @class ATProtoNetworkListenerMac
 
  @abstract Network framework listener implementation for macOS.
 
  @discussion Wraps nw_listener_t for efficient, secure inbound connection
  acceptance with automatic TLS support.
 
- @see PDSNetworkListener
+ @see ATProtoNetworkListener
  */
-@interface PDSNetworkListenerMac : NSObject <PDSNetworkListener>
+@interface ATProtoNetworkListenerMac : NSObject <ATProtoNetworkListener>
 
 /*!
  @method initWithPort:

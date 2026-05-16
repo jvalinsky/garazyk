@@ -3,6 +3,7 @@
 #import "Database/PDSDatabase+Reports.h"
 #import "Database/PDSDatabase+Private.h"
 #import "Database/Utils/PDSSQLiteUtils.h"
+#import "Database/Utils/ATProtoDatabaseUtilities.h"
 #import "Core/NSDateFormatter+ATProto.h"
 
 #pragma clang diagnostic ignored "-Wblock-capture-autoreleasing"

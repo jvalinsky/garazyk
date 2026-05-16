@@ -61,11 +61,11 @@ flowchart TD
 
 This is the most important architectural fact in the current repository:
 
-- `PDSHttpServerBuilder` registers an exact WebSocket route for
+- `ATProtoHttpServerBuilder` registers an exact WebSocket route for
   `/xrpc/com.atproto.sync.subscribeRepos`
 - `HttpServer` detects that route and performs the upgrade handshake
 - `SubscribeReposHandler` receives the already upgraded
-  `id<PDSNetworkConnection>`
+  `id<ATProtoNetworkConnection>`
 - `WebSocketConnection` then starts on the existing transport
 
 The older `WebSocketServer` class still exists, but `SubscribeReposHandler.h`
@@ -107,7 +107,7 @@ response mode and WebSocket mode at the same time.
 
 ### 4. `WebSocketConnection` adapts the raw transport to frame events
 
-`WebSocketConnection` wraps `id<PDSNetworkConnection>` and owns:
+`WebSocketConnection` wraps `id<ATProtoNetworkConnection>` and owns:
 
 - socket lifecycle state,
 - query parsing for the upgraded request path,
@@ -249,7 +249,7 @@ is transport liveness logic. It is separate from replay or sequencing logic in
 
 If `subscribeRepos` fails in the current server, start in this order:
 
-1. `PDSHttpServerBuilder` route registration
+1. `ATProtoHttpServerBuilder` route registration
 2. `HttpServer` WebSocket handoff path
 3. `WebSocketUpgradeHandler`
 4. `WebSocketConnection` and `WebSocketCodec`

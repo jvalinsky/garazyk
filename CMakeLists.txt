@@ -408,10 +408,10 @@ list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/Services/.*")
 list(FILTER ATPROTO_RUNTIME_SOURCES EXCLUDE REGEX ".*/App/ATProtoServiceConfiguration\\.m$")
 
 # Handle platform-specific network transport implementations.
-list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/PDSNetworkTransport(Mac|Linux)\\.m$")
-list(APPEND ATPROTO_TRANSPORT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Network/PDSNetworkTransportLinux.m")
+list(FILTER ATPROTO_TRANSPORT_SOURCES EXCLUDE REGEX ".*/ATProtoNetworkTransport(Mac|Linux)\\.m$")
+list(APPEND ATPROTO_TRANSPORT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m")
 if(APPLE)
-  list(APPEND ATPROTO_TRANSPORT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Network/PDSNetworkTransportMac.m")
+  list(APPEND ATPROTO_TRANSPORT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources/Network/ATProtoNetworkTransportMac.m")
   if(NOT PDS_OPENSSL_SESSION_KEY_MANAGER_AVAILABLE)
     # OpenSSL-based manager is unavailable on this macOS host.
     list(FILTER ATPROTO_SERVICES_SOURCES EXCLUDE REGEX ".*/Auth/PDSOpenSSLSessionKeyManager\\.m$")

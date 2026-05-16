@@ -62,31 +62,31 @@
 
   <!-- Domain Modules -->
   <rect x="50" y="440" width="210" height="100" class="module" rx="5"/>
-  <text x="155" y="465" class="text" font-weight="bold">XrpcServerMethods</text>
+  <text x="155" y="465" class="text" font-weight="bold">XrpcServerPack</text>
   <text x="60" y="485" class="code">registerMethodsWithRegistry:</text>
   <text x="155" y="505" class="text">Registers:</text>
   <text x="60" y="520" class="code">com.atproto.server.*</text>
 
   <rect x="280" y="440" width="210" height="100" class="module" rx="5"/>
-  <text x="385" y="465" class="text" font-weight="bold">XrpcRepoMethods</text>
+  <text x="385" y="465" class="text" font-weight="bold">XrpcRepoPack</text>
   <text x="290" y="485" class="code">registerMethodsWithRegistry:</text>
   <text x="385" y="505" class="text">Registers:</text>
   <text x="290" y="520" class="code">com.atproto.repo.*</text>
 
   <rect x="510" y="440" width="210" height="100" class="module" rx="5"/>
-  <text x="615" y="465" class="text" font-weight="bold">XrpcSyncMethods</text>
+  <text x="615" y="465" class="text" font-weight="bold">XrpcSyncPack</text>
   <text x="520" y="485" class="code">registerMethodsWithRegistry:</text>
   <text x="615" y="505" class="text">Registers:</text>
   <text x="520" y="520" class="code">com.atproto.sync.*</text>
 
   <rect x="740" y="440" width="210" height="100" class="module" rx="5"/>
-  <text x="845" y="465" class="text" font-weight="bold">XrpcIdentityMethods</text>
+  <text x="845" y="465" class="text" font-weight="bold">XrpcIdentityPack</text>
   <text x="750" y="485" class="code">registerMethodsWithRegistry:</text>
   <text x="845" y="505" class="text">Registers:</text>
   <text x="750" y="520" class="code">com.atproto.identity.*</text>
 
   <rect x="970" y="440" width="210" height="100" class="module" rx="5"/>
-  <text x="1075" y="465" class="text" font-weight="bold">XrpcAdminMethods</text>
+  <text x="1075" y="465" class="text" font-weight="bold">XrpcAdminPack</text>
   <text x="980" y="485" class="code">registerMethodsWithRegistry:</text>
   <text x="1075" y="505" class="text">Registers:</text>
   <text x="980" y="520" class="code">com.atproto.admin.*</text>

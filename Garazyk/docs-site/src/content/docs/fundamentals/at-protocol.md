@@ -60,17 +60,17 @@ flowchart TD
     HttpServer -->|NSID String & Payload| XrpcDispatcher[XrpcDispatcher]
     XrpcDispatcher -->|O(1) Hash Lookup Method| XrpcMethodRegistry[XrpcMethodRegistry]
     
-    XrpcMethodRegistry --> XrpcServerMethods[XrpcServerMethods]
-    XrpcMethodRegistry --> XrpcRepoMethods[XrpcRepoMethods]
-    XrpcMethodRegistry --> XrpcIdentityMethods[XrpcIdentityMethods]
+    XrpcMethodRegistry --> XrpcServerPack[XrpcServerPack]
+    XrpcMethodRegistry --> XrpcRepoPack[XrpcRepoPack]
+    XrpcMethodRegistry --> XrpcIdentityPack[XrpcIdentityPack]
     
-    XrpcRepoMethods -->|Strictly Validate & Execute| PDSRecordService[PDSRecordService]
+    XrpcRepoPack -->|Strictly Validate & Execute| PDSRecordService[PDSRecordService]
     PDSRecordService -->|Yield Dictionary Result| XrpcDispatcher
     XrpcDispatcher -->|Serialize exactly to JSON/CBOR| HttpServer
     HttpServer -->|HTTP 200 OK Response| Client
 ```
 
-The registry intelligently delegates to specific modular domain logic (like `XrpcServerMethods` for authentication or `XrpcRepoMethods` for user data mutations). Here is a conceptual snippet representing exactly how a strongly-typed XRPC endpoint is wired into the Objective-C kernel:
+The registry intelligently delegates to specific modular domain logic (like `XrpcServerPack` for authentication or `XrpcRepoPack` for user data mutations). Here is a conceptual snippet representing exactly how a strongly-typed XRPC endpoint is wired into the Objective-C kernel:
 
 ```objc
 // Conceptually mapping an incoming XRPC NSID directly to a specific Objective-C handler block

@@ -39,7 +39,7 @@ If you strip the design down to the bare idea, it looks like this:
 @property (nonatomic, strong) Http1Parser *parser;
 @end
 
-- (void)onBytes:(NSData *)chunk connection:(id<PDSNetworkConnection>)conn {
+- (void)onBytes:(NSData *)chunk connection:(id<ATProtoNetworkConnection>)conn {
   ConnectionState *state = [self stateForConnection:conn];
   BOOL completeOrError = [state.parser feedData:chunk];
   if (!completeOrError) {
@@ -68,7 +68,7 @@ That toy sketch captures the shape that matters:
 
 ### 1. Platform transport stays below HTTP semantics
 
-`PDSNetworkTransport` defines the byte-stream contract that `HttpServer` uses:
+`ATProtoNetworkTransport` defines the byte-stream contract that `HttpServer` uses:
 
 - listeners announce accepted connections,
 - connections send and receive `NSData`,
@@ -79,10 +79,10 @@ On macOS, Garazyk uses the Network framework through
 [`nw_connection_receive`](https://developer.apple.com/documentation/network/nw_connection_receive),
 and
 [`nw_parameters_create_secure_tcp`](https://developer.apple.com/documentation/network/nw_parameters_create_secure_tcp).
-That code lives in `PDSNetworkTransportMac.m`.
+That code lives in `ATProtoNetworkTransportMac.m`.
 
 On Linux, Garazyk uses non-blocking BSD sockets plus dispatch sources. The
-implementation in `PDSNetworkTransportLinux.m` resolves addresses with
+implementation in `ATProtoNetworkTransportLinux.m` resolves addresses with
 [`getaddrinfo(3)`](https://man7.org/linux/man-pages/man3/getaddrinfo.3.html),
 creates sockets with [`socket(2)`](https://man7.org/linux/man-pages/man2/socket.2.html),
 marks them non-blocking with [`fcntl(2)`](https://man7.org/linux/man-pages/man2/fcntl.2.html),
@@ -256,8 +256,8 @@ in `Http1Parser` and `HttpChunkedBodyParser`.
 
 Start with these test classes:
 
-- `PDSNetworkTransportTests`
-- `PDSNetworkTransportLinuxTests`
+- `ATProtoNetworkTransportTests`
+- `ATProtoNetworkTransportLinuxTests`
 - `Http1ParserTests`
 - `HttpChunkedBodyParserTests`
 

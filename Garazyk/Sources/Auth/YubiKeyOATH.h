@@ -3,11 +3,12 @@
 /*!
  @file YubiKeyOATH.h
 
- @abstract YubiKey hardware OATH/TOTP support.
+ @abstract Software-only OATH/TOTP compatibility helper.
 
- @discussion Provides interface to YubiKey hardware tokens for TOTP generation.
- Supports YubiKey 5 series with OATH-TOTP credentials. Used for hardware-based
- two-factor authentication.
+ @discussion The PDS does not access a user's local YubiKey over USB/NFC.
+ YubiKey Authenticator can hold a TOTP secret client-side and submit a normal
+ six-digit code. Phishing-resistant YubiKey login is implemented through
+ WebAuthn/security-key assertions.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
@@ -100,18 +101,18 @@ typedef NS_ENUM(NSInteger, YubiKeyOATHError) {
 /*!
  @class YubiKeyOATHManager
 
- @abstract Manager for YubiKey OATH operations.
+ @abstract Manager for software-only OATH compatibility operations.
 
- @discussion Handles YubiKey detection, connection, and OATH credential management.
- Supports YubiKey 5 series over USB/NFC. Provides TOTP generation for hardware
- two-factor authentication.
+ @discussion Does not perform YubiKey detection or OATH credential management
+ in the server process. Provides software TOTP generation so existing callers
+ keep working while real YubiKey login uses WebAuthn.
 
  @warning Hardware YubiKey operations are **not implemented**. The manager
           runs in software-only mode: TOTP generation falls back to the
           software TOTPGenerator, and all hardware operations (setOATHSecret,
           listCredentials, deleteCredential, resetAllCredentials) fail with
-          YubiKeyOATHErrorNotImplemented. Install the YubiKit SDK and
-          implement the hardware backend to enable YubiKey support.
+          YubiKeyOATHErrorNotImplemented. Use WebAuthn for YubiKey security-key
+          authentication.
 
  Thread-safety: Methods are not thread-safe. Use from main thread only.
  */

@@ -27,9 +27,11 @@
 - (nullable NSDictionary *)createAccountForEmail:(nonnull NSString *)email password:(nonnull NSString *)password handle:(nonnull NSString *)handle did:(nullable NSString *)did error:(NSError *__autoreleasing  _Nullable * _Nullable)error { return nil; }
 - (BOOL)deleteAccount:(nonnull NSString *)did password:(nonnull NSString *)password error:(NSError *__autoreleasing  _Nullable * _Nullable)error { return YES; }
 - (nullable NSDictionary *)getAccountForDid:(nonnull NSString *)did error:(NSError *__autoreleasing  _Nullable * _Nullable)error { return nil; }
+- (nullable NSDictionary *)usageForDid:(nonnull NSString *)did error:(NSError *__autoreleasing  _Nullable * _Nullable)error { return nil; }
 - (nullable NSArray *)getAllAccountsWithError:(NSError *__autoreleasing  _Nullable * _Nullable)error { return @[]; }
 - (nullable NSDictionary *)loginWithHandle:(nonnull NSString *)handle password:(nonnull NSString *)password error:(NSError *__autoreleasing  _Nullable * _Nullable)error { return nil; }
 - (nullable NSDictionary *)loginWithIdentifier:(nonnull NSString *)identifier password:(nonnull NSString *)password error:(NSError *__autoreleasing  _Nullable * _Nullable)error { return nil; }
+- (nullable NSDictionary *)loginWithIdentifier:(nonnull NSString *)identifier password:(nonnull NSString *)password authFactorToken:(nullable NSString *)authFactorToken error:(NSError *__autoreleasing  _Nullable * _Nullable)error { return nil; }
 - (nullable NSDictionary *)refreshAccessToken:(nonnull NSString *)refreshToken error:(NSError *__autoreleasing  _Nullable * _Nullable)error { return nil; }
 @end
 

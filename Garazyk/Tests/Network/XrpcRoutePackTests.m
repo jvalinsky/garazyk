@@ -77,7 +77,9 @@
                                                 jwtMinter:nil
                                           adminController:nil
                                              configuration:nil
+                                               adminSecret:nil
                                          serviceDatabases:nil
+                                         userDatabasePool:nil
                                                rateLimiter:nil];
 
   [XrpcRoutePackRegistrar registerRoutePacks:@[ [XrpcChatBskyActorPack class] ]
@@ -105,7 +107,9 @@
                                                 jwtMinter:nil
                                           adminController:nil
                                              configuration:nil
+                                               adminSecret:nil
                                          serviceDatabases:nil
+                                         userDatabasePool:nil
                                                rateLimiter:nil];
   XrpcHandlerContext *context =
       [[XrpcHandlerContext alloc] initWithRequest:request

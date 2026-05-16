@@ -11,7 +11,7 @@
  @copyright Copyright (c) 2025-2026 Jack Valinsky
  */
 
-#import "Network/PDSNetworkTransport.h"
+#import "Network/ATProtoNetworkTransport.h"
 #import <Foundation/Foundation.h>
 #import <stdint.h>
 
@@ -156,7 +156,7 @@ typedef NS_ENUM(NSInteger, WebSocketConnectionState) {
 - (instancetype)initWithHost:(NSString *)host
                         port:(uint16_t)port
                         path:(NSString *)path;
-- (instancetype)initWithConnection:(id<PDSNetworkConnection>)connection;
+- (instancetype)initWithConnection:(id<ATProtoNetworkConnection>)connection;
 
 /*! Establishes the WebSocket connection. */
 - (BOOL)connect:(NSError **)error;

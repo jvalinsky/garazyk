@@ -25,7 +25,7 @@
 @class RepoCommit;
 @class CID;
 @class HttpRequest;
-@protocol PDSNetworkConnection;
+@protocol ATProtoNetworkConnection;
 @class PDSDatabasePool;
 @class RelayMetrics;
 
@@ -107,7 +107,7 @@ extern NSInteger const SubscribeReposHandlerErrorCodeConnectionFailed;
 - (BOOL)waitForIdleWithTimeout:(NSTimeInterval)timeout;
 
 /*! Accepts a WebSocket-upgraded connection from the main HTTP server. */
-- (void)acceptUpgradedConnection:(id<PDSNetworkConnection>)connection request:(HttpRequest *)request;
+- (void)acceptUpgradedConnection:(id<ATProtoNetworkConnection>)connection request:(HttpRequest *)request;
 
 /*! Broadcasts a repository commit event object. */
 - (void)broadcastCommitEvent:(FirehoseCommitEvent *)event;

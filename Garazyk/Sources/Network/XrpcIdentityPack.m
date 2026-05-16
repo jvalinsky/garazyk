@@ -1,17 +1,18 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 //
-//  XrpcIdentityMethods.m
+//  XrpcIdentityPack.m
 //  ATProtoPDS
 //
 //  Domain module for com.atproto.identity.* XRPC endpoints.
 //
 
-#import "Network/XrpcIdentityMethods.h"
+#import "Network/XrpcIdentityPack.h"
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcMethodRegistry.h"
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcIdentityHelper.h"
+#import "Network/XrpcRoutePackServices.h"
 #import "Email/PDSEmailProvider.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/Pool/DatabasePool.h"
@@ -34,12 +35,6 @@
 #import "Sync/Firehose/SubscribeReposHandler.h"
 #import "Network/RateLimiter.h"
 
-// Forward declarations for XrpcMethodRegistry PLC token methods
-@interface XrpcMethodRegistry (PLCTokens)
-+ (void)storePlcOperationToken:(NSString *)token forDid:(NSString *)did;
-+ (BOOL)validatePlcOperationToken:(NSString *)token forDid:(NSString *)did;
-@end
-
 static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) {
     NSString *plcUrl = configuration.plcURL;
     return [plcUrl isEqualToString:@"mock"] ||
@@ -47,16 +42,22 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
            plcUrl.length == 0;
 }
 
-@implementation XrpcIdentityMethods
+@implementation XrpcIdentityPack
+
++ (NSString *)routePackIdentifier {
+  return @"com.atproto.identity";
+}
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-                     jwtMinter:(JWTMinter *)jwtMinter
-               adminController:(id<PDSAdminController>)adminController
-              serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-              userDatabasePool:(PDSDatabasePool *)userDatabasePool
-                 configuration:(ATProtoServiceConfiguration *)configuration
-                 emailProvider:(nullable id<PDSEmailProvider>)emailProvider
-         subscribeReposHandler:(nullable SubscribeReposHandler *)subscribeReposHandler {
+                      services:(id<XrpcRoutePackServices>)services {
+    
+    JWTMinter *jwtMinter = services.jwtMinter;
+    id<PDSAdminController> adminController = services.adminController;
+    PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
+    PDSDatabasePool *userDatabasePool = services.userDatabasePool;
+    ATProtoServiceConfiguration *configuration = services.configuration;
+    id<PDSEmailProvider> emailProvider = services.emailProvider;
+    SubscribeReposHandler *subscribeReposHandler = services.subscribeReposHandler;
     
     // com.atproto.identity.refreshIdentity
     [dispatcher registerComAtprotoIdentityRefreshIdentity:^(HttpRequest *request, HttpResponse *response) {
@@ -272,7 +273,7 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
         for (int i = 0; i < 8; i++) {
             [token appendFormat:@"%C", [alphabet characterAtIndex:arc4random_uniform((uint32_t)alphabet.length)]];
         }
-        [XrpcMethodRegistry storePlcOperationToken:token forDid:did];
+        [XrpcIdentityHelper storePlcOperationToken:token forDid:did];
         GZ_LOG_INFO(@"Generated PLC operation token for DID %@", did);
 
         if (emailProvider && account.email.length > 0) {
@@ -314,7 +315,7 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
             [response setJsonBody:@{@"error": @"InvalidRequest", @"message": @"Missing token"}];
             return;
         }
-        if (![XrpcMethodRegistry validatePlcOperationToken:token forDid:did]) {
+        if (![XrpcIdentityHelper validatePlcOperationToken:token forDid:did]) {
             response.statusCode = HttpStatusBadRequest;
             [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"Invalid or expired token"}];
             return;

@@ -7,9 +7,26 @@
  */
 
 #import <Foundation/Foundation.h>
-#import "PDSBlock.h"
 
 NS_ASSUME_NONNULL_BEGIN
+
+@class PDSDatabaseBlock;
+
+/*!
+ @protocol PDSDatabaseModel
+ @abstract Protocol for database model objects that can initialize themselves from a dictionary row.
+ */
+@protocol PDSDatabaseModel <NSObject>
+
+/*!
+ @method initWithDatabaseRow:
+ @abstract Initializes a new model object from a dictionary representing a database row.
+ @param row A dictionary where keys are column names and values are column data.
+ @return An initialized model object, or nil if initialization failed.
+ */
+- (nullable instancetype)initWithDatabaseRow:(NSDictionary<NSString *, id> *)row;
+
+@end
 
 /*!
  @protocol PDSQueryDatabase

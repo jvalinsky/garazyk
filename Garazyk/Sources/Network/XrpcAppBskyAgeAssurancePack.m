@@ -29,7 +29,9 @@
                                                 jwtMinter:dispatcher.jwtMinter
                                           adminController:nil
                                              configuration:nil
+                                               adminSecret:nil
                                          serviceDatabases:nil
+                                         userDatabasePool:nil
                                                rateLimiter:nil];
   services.ageAssuranceService = ageAssuranceService;
   [self registerWithDispatcher:dispatcher services:services];
@@ -49,7 +51,9 @@
                                                   jwtMinter:dispatcher.jwtMinter
                                             adminController:nil
                                                configuration:nil
+                                                 adminSecret:nil
                                            serviceDatabases:nil
+                                           userDatabasePool:nil
                                                  rateLimiter:nil];
   }
 

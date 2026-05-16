@@ -21,8 +21,8 @@ Tests for business logic, controllers, CLI, admin operations, and blob storage.
 | Class | File Location | Purpose |
 |-------|---------------|---------|
 | PDSApplicationTests | Tests/App/PDSApplicationTests.m | Application lifecycle |
-| PDSConfigurationTests | Tests/App/PDSConfigurationTests.m | Configuration loading |
-| PDSServiceContainerTests | Tests/Core/PDSServiceContainerTests.m | Dependency injection |
+| ATProtoServiceConfigurationTests | Tests/App/ATProtoServiceConfigurationTests.m | Configuration loading |
+| ATProtoServiceContainerTests | Tests/Core/ATProtoServiceContainerTests.m | Dependency injection |
 | PDSAccountServiceTests | Tests/App/Services/PDSAccountServiceTests.m | Account CRUD |
 | PDSRecordServiceTests | Tests/App/Services/PDSRecordServiceTests.m | Record operations |
 | PDSRepositoryServiceTests | Tests/App/Services/PDSRepositoryServiceTests.m | CAR export/sync |

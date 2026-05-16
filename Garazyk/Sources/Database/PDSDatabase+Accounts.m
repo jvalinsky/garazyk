@@ -4,6 +4,7 @@
 #import "Database/PDSDatabase+Private.h"
 #import <sqlite3.h>
 #import "Database/Utils/PDSSQLiteUtils.h"
+#import "Database/Utils/ATProtoDatabaseUtilities.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "Debug/GZLogger.h"
 #import "Core/NSDateFormatter+ATProto.h"
@@ -17,7 +18,7 @@
 // when ALTER TABLE adds columns in different orders on migrated vs.
 // fresh databases).
 static NSString *const kAccountsColumns = @"did, handle, email, password_hash, "
-    @"password_salt, access_jwt, refresh_jwt, created_at, updated_at, "
+    @"password_salt, access_jwt, refresh_jwt, status, deactivated_at, created_at, updated_at, "
     @"tfa_enabled, tfa_secret, recovery_codes, invite_enabled, "
     @"age_assurance, age_verified_at, webauthn_enabled";
 
@@ -44,30 +45,21 @@ static NSString *const kAccountsColumns = @"did, handle, email, password_hash, "
         return;
     }
 
-    sqlite3_bind_text(stmt, 1, account.did.UTF8String, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 2, account.handle.UTF8String, -1, SQLITE_STATIC);
-    if (account.email) {
-        sqlite3_bind_text(stmt, 3, account.email.UTF8String, -1, SQLITE_STATIC);
-    } else {
-        sqlite3_bind_null(stmt, 3);
-    }
-    [self bindData:account.passwordHash toStatement:stmt index:4];
-    [self bindData:account.passwordSalt toStatement:stmt index:5];
-    [self bindData:account.accessJwt toStatement:stmt index:6];
-    [self bindData:account.refreshJwt toStatement:stmt index:7];
-    sqlite3_bind_text(stmt, 8, account.status.UTF8String ?: "active", -1, SQLITE_STATIC);
-    if (account.deactivatedAt > 0) {
-        sqlite3_bind_double(stmt, 9, account.deactivatedAt);
-    } else {
-        sqlite3_bind_null(stmt, 9);
-    }
-    sqlite3_bind_text(stmt, 10, [self iso8601StringFromDate:[NSDate dateWithTimeIntervalSince1970:account.createdAt]].UTF8String, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 11, [self iso8601StringFromDate:[NSDate date]].UTF8String, -1, SQLITE_STATIC);
-    // 2FA columns (defaults)
-    sqlite3_bind_int(stmt, 12, account.tfaEnabled ? 1 : 0);
-    [self bindData:account.tfaSecret toStatement:stmt index:13];
-    [self bindData:account.recoveryCodes toStatement:stmt index:14];
-    sqlite3_bind_int(stmt, 15, account.inviteEnabled ? 1 : 0);
+    ATProtoDBBindValue(stmt, 1, account.did);
+    ATProtoDBBindValue(stmt, 2, account.handle);
+    ATProtoDBBindValue(stmt, 3, account.email);
+    ATProtoDBBindValue(stmt, 4, account.passwordHash);
+    ATProtoDBBindValue(stmt, 5, account.passwordSalt);
+    ATProtoDBBindValue(stmt, 6, account.accessJwt);
+    ATProtoDBBindValue(stmt, 7, account.refreshJwt);
+    ATProtoDBBindValue(stmt, 8, account.status ?: @"active");
+    ATProtoDBBindValue(stmt, 9, account.deactivatedAt > 0 ? @(account.deactivatedAt) : nil);
+    ATProtoDBBindValue(stmt, 10, [NSDateFormatter atproto_stringFromDate:[NSDate dateWithTimeIntervalSince1970:account.createdAt]]);
+    ATProtoDBBindValue(stmt, 11, [NSDateFormatter atproto_stringFromDate:[NSDate date]]);
+    ATProtoDBBindValue(stmt, 12, @(account.tfaEnabled));
+    ATProtoDBBindValue(stmt, 13, account.tfaSecret);
+    ATProtoDBBindValue(stmt, 14, account.recoveryCodes);
+    ATProtoDBBindValue(stmt, 15, @(account.inviteEnabled));
 
     rc = sqlite3_step(stmt);
 
@@ -108,26 +100,22 @@ static NSString *const kAccountsColumns = @"did, handle, email, password_hash, "
         return;
     }
 
-    sqlite3_bind_text(stmt, 1, account.handle.UTF8String, -1, SQLITE_STATIC);
-    if (account.email) {
-        sqlite3_bind_text(stmt, 2, account.email.UTF8String, -1, SQLITE_STATIC);
-    } else {
-        sqlite3_bind_null(stmt, 2);
-    }
-    [self bindData:account.passwordHash toStatement:stmt index:3];
-    [self bindData:account.passwordSalt toStatement:stmt index:4];
-    [self bindData:account.accessJwt toStatement:stmt index:5];
-    [self bindData:account.refreshJwt toStatement:stmt index:6];
-    sqlite3_bind_text(stmt, 7, [self iso8601StringFromDate:[NSDate dateWithTimeIntervalSince1970:account.updatedAt]].UTF8String, -1, SQLITE_STATIC);
+    ATProtoDBBindValue(stmt, 1, account.handle);
+    ATProtoDBBindValue(stmt, 2, account.email);
+    ATProtoDBBindValue(stmt, 3, account.passwordHash);
+    ATProtoDBBindValue(stmt, 4, account.passwordSalt);
+    ATProtoDBBindValue(stmt, 5, account.accessJwt);
+    ATProtoDBBindValue(stmt, 6, account.refreshJwt);
+    ATProtoDBBindValue(stmt, 7, [NSDateFormatter atproto_stringFromDate:[NSDate dateWithTimeIntervalSince1970:account.updatedAt]]);
 
     // 2FA
-    sqlite3_bind_int(stmt, 8, account.tfaEnabled ? 1 : 0);
-    [self bindData:account.tfaSecret toStatement:stmt index:9];
-    [self bindData:account.recoveryCodes toStatement:stmt index:10];
-    sqlite3_bind_int(stmt, 11, account.inviteEnabled ? 1 : 0);
+    ATProtoDBBindValue(stmt, 8, @(account.tfaEnabled));
+    ATProtoDBBindValue(stmt, 9, account.tfaSecret);
+    ATProtoDBBindValue(stmt, 10, account.recoveryCodes);
+    ATProtoDBBindValue(stmt, 11, @(account.inviteEnabled));
 
     // WHERE did = ?
-    sqlite3_bind_text(stmt, 12, account.did.UTF8String, -1, SQLITE_STATIC);
+    ATProtoDBBindValue(stmt, 12, account.did);
 
     rc = sqlite3_step(stmt);
 
@@ -180,9 +168,9 @@ static NSString *const kAccountsColumns = @"did, handle, email, password_hash, "
         return;
     }
 
-    // Convert NSString refreshToken to NSData for BLOB comparison
+    // refresh_jwt is stored as BLOB in SQLite but passed as NSString.
     NSData *refreshTokenData = [refreshToken dataUsingEncoding:NSUTF8StringEncoding];
-    sqlite3_bind_blob(stmt, 1, refreshTokenData.bytes, (int)refreshTokenData.length, SQLITE_STATIC);
+    ATProtoDBBindValue(stmt, 1, refreshTokenData);
 
     PDSDatabaseAccount *account = nil;
     if (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -214,16 +202,18 @@ static NSString *const kAccountsColumns = @"did, handle, email, password_hash, "
     PDS_SQLITE_AUTORELEASE_STMT sqlite3_stmt *stmt = NULL;
     int rc = sqlite3_prepare_v2(self.db, sql.UTF8String, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
-        if (error) *error = [self errorWithMessage:sqlite3_errmsg(self.db) code:PDSDatabaseErrorQueryFailed];
+        const char *errmsg = sqlite3_errmsg(self.db);
+        GZ_LOG_DB_ERROR(@"getAccountsWithLimit: prepare failed: %s (SQL: %@)", errmsg, sql);
+        if (error) *error = [self errorWithMessage:errmsg code:PDSDatabaseErrorQueryFailed];
         result = @[];
         return;
     }
 
     int idx = 1;
     if (afterDid) {
-        sqlite3_bind_text(stmt, idx++, afterDid.UTF8String, -1, SQLITE_TRANSIENT);
+        ATProtoDBBindValue(stmt, idx++, afterDid);
     }
-    sqlite3_bind_int64(stmt, idx, (sqlite3_int64)limit);
+    ATProtoDBBindValue(stmt, idx, @(limit));
 
     NSMutableArray *accounts = [NSMutableArray array];
     while (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -254,7 +244,7 @@ static NSString *const kAccountsColumns = @"did, handle, email, password_hash, "
         return;
     }
 
-    sqlite3_bind_text(stmt, 1, did.UTF8String, -1, SQLITE_STATIC);
+    ATProtoDBBindValue(stmt, 1, did);
 
     rc = sqlite3_step(stmt);
 
@@ -273,82 +263,44 @@ static NSString *const kAccountsColumns = @"did, handle, email, password_hash, "
 
 - (PDSDatabaseAccount *)accountFromStatement:(sqlite3_stmt *)stmt {
     PDSDatabaseAccount *account = [[PDSDatabaseAccount alloc] init];
-    account.did = @((const char *)sqlite3_column_text(stmt, 0));
-    account.handle = @((const char *)sqlite3_column_text(stmt, 1));
-
-    const char *emailText = (const char *)sqlite3_column_text(stmt, 2);
-    if (emailText) {
-        account.email = @(emailText);
+    
+    account.did = [self valueFromStatement:stmt columnIndex:0];
+    account.handle = [self valueFromStatement:stmt columnIndex:1];
+    account.email = [self valueFromStatement:stmt columnIndex:2];
+    account.passwordHash = [self valueFromStatement:stmt columnIndex:3];
+    account.passwordSalt = [self valueFromStatement:stmt columnIndex:4];
+    account.accessJwt = [self valueFromStatement:stmt columnIndex:5];
+    account.refreshJwt = [self valueFromStatement:stmt columnIndex:6];
+    
+    id status = [self valueFromStatement:stmt columnIndex:7];
+    account.status = status ?: @"active";
+    
+    id deactivatedAt = [self valueFromStatement:stmt columnIndex:8];
+    if (deactivatedAt) {
+        account.deactivatedAt = [deactivatedAt doubleValue];
     }
 
-    int blobBytes = sqlite3_column_bytes(stmt, 3);
-    if (blobBytes > 0) {
-        account.passwordHash = [NSData dataWithBytes:sqlite3_column_blob(stmt, 3) length:blobBytes];
+    id createdAtStr = [self valueFromStatement:stmt columnIndex:9];
+    if (createdAtStr) {
+        account.createdAt = [NSDateFormatter atproto_dateFromString:createdAtStr].timeIntervalSince1970;
     }
 
-    blobBytes = sqlite3_column_bytes(stmt, 4);
-    if (blobBytes > 0) {
-        account.passwordSalt = [NSData dataWithBytes:sqlite3_column_blob(stmt, 4) length:blobBytes];
-    }
-
-    blobBytes = sqlite3_column_bytes(stmt, 5);
-    if (blobBytes > 0) {
-        account.accessJwt = [NSData dataWithBytes:sqlite3_column_blob(stmt, 5) length:blobBytes];
-    }
-
-    blobBytes = sqlite3_column_bytes(stmt, 6);
-    if (blobBytes > 0) {
-        account.refreshJwt = [NSData dataWithBytes:sqlite3_column_blob(stmt, 6) length:blobBytes];
-    }
-
-    const char *statusText = (const char *)sqlite3_column_text(stmt, 7);
-    if (statusText) {
-        account.status = @(statusText);
-    } else {
-        account.status = @"active";
-    }
-
-    if (sqlite3_column_type(stmt, 8) != SQLITE_NULL) {
-        account.deactivatedAt = sqlite3_column_double(stmt, 8);
-    }
-
-    const char *createdAtText = (const char *)sqlite3_column_text(stmt, 9);
-    if (createdAtText) {
-        account.createdAt = [NSDateFormatter atproto_dateFromString:@(createdAtText)].timeIntervalSince1970;
-    }
-
-    const char *updatedAtText = (const char *)sqlite3_column_text(stmt, 10);
-    if (updatedAtText) {
-        account.updatedAt = [NSDateFormatter atproto_dateFromString:@(updatedAtText)].timeIntervalSince1970;
+    id updatedAtStr = [self valueFromStatement:stmt columnIndex:10];
+    if (updatedAtStr) {
+        account.updatedAt = [NSDateFormatter atproto_dateFromString:updatedAtStr].timeIntervalSince1970;
     }
 
     // 2FA
-    account.tfaEnabled = (sqlite3_column_int(stmt, 11) != 0);
-
-    blobBytes = sqlite3_column_bytes(stmt, 12);
-    if (blobBytes > 0) {
-        account.tfaSecret = [NSData dataWithBytes:sqlite3_column_blob(stmt, 12) length:blobBytes];
-    }
-
-    blobBytes = sqlite3_column_bytes(stmt, 13);
-    if (blobBytes > 0) {
-        account.recoveryCodes = [NSData dataWithBytes:sqlite3_column_blob(stmt, 13) length:blobBytes];
-    }
-
-    account.inviteEnabled = (sqlite3_column_int(stmt, 14) != 0);
+    account.tfaEnabled = ([[self valueFromStatement:stmt columnIndex:11] intValue] != 0);
+    account.tfaSecret = [self valueFromStatement:stmt columnIndex:12];
+    account.recoveryCodes = [self valueFromStatement:stmt columnIndex:13];
+    account.inviteEnabled = ([[self valueFromStatement:stmt columnIndex:14] intValue] != 0);
 
     // Age assurance (columns 15, 16)
-    const char *ageAssuranceText = (const char *)sqlite3_column_text(stmt, 15);
-    if (ageAssuranceText) {
-        account.ageAssurance = @(ageAssuranceText);
-    }
+    account.ageAssurance = [self valueFromStatement:stmt columnIndex:15];
+    account.ageVerifiedAt = [self valueFromStatement:stmt columnIndex:16];
 
-    const char *ageVerifiedAtText = (const char *)sqlite3_column_text(stmt, 16);
-    if (ageVerifiedAtText) {
-        account.ageVerifiedAt = @(ageVerifiedAtText);
-    }
-
-    account.webauthnEnabled = (sqlite3_column_int(stmt, 17) != 0);
+    account.webauthnEnabled = ([[self valueFromStatement:stmt columnIndex:17] intValue] != 0);
 
     return account;
 }

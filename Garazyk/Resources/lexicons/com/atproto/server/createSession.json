@@ -20,6 +20,10 @@
                         },
                         "password": {
                             "type": "string"
+                        },
+                        "authFactorToken": {
+                            "type": "string",
+                            "description": "An optional proof of a completed second-factor challenge."
                         }
                     }
                 }
@@ -64,6 +68,9 @@
             "errors": [
                 {
                     "name": "AccountTakedown"
+                },
+                {
+                    "name": "AuthFactorTokenRequired"
                 }
             ]
         }

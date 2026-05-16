@@ -7,22 +7,11 @@
  */
 
 #import <Foundation/Foundation.h>
-
-@class XrpcDispatcher;
-@protocol PDSQueryDatabase;
-@class JWTMinter;
-@protocol PDSAdminController;
+#import "Network/XrpcRoutePack.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface XrpcChatBskyConvoPack : NSObject
-
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-                 appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
-               serviceDatabase:(nullable id<PDSQueryDatabase>)serviceDatabase
-                      jwtMinter:(nullable JWTMinter *)jwtMinter
-                adminController:(nullable id<PDSAdminController>)adminController
-                   adminSecret:(nullable NSString *)adminSecret;
+@interface XrpcChatBskyConvoPack : NSObject <XrpcRoutePack>
 
 @end
 

@@ -21,7 +21,7 @@ Use tags to categorize log messages:
 
 ## Configuration
 
-`PDSApplication` configures the shared logger during startup using `PDSConfiguration`.
+`PDSApplication` configures the shared logger during startup using `ATProtoServiceConfiguration`.
 
 ### Environment Variables
 

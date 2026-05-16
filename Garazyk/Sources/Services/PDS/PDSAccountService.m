@@ -9,6 +9,7 @@
 #import "App/ATProtoServiceConfiguration.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "Auth/JWT.h"
+#import "Auth/PDSSecondFactorService.h"
 #import "Debug/GZLogger.h"
 #import "PLC/PLCOperation.h"
 #import "PLC/PLCRotationKeyManager.h"
@@ -51,9 +52,15 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
 }
 
 @interface PDSAccountService ()
+@property (nonatomic, strong, nullable) PDSSecondFactorService *secondFactorService;
 - (nullable NSString *)mintAccessTokenForDID:(NSString *)did
                                        handle:(NSString *)handle
                                         error:(NSError **)error;
+- (nullable PDSDatabaseAccount *)accountForIdentifier:(NSString *)identifier
+                                                error:(NSError **)error;
+- (BOOL)verifyPassword:(NSString *)password
+            forAccount:(PDSDatabaseAccount *)account
+    appPasswordMatched:(BOOL *)appPasswordMatched;
 @end
 
 @implementation PDSAccountService
@@ -70,6 +77,9 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     if (serviceDatabases) {
         _accountRepository = [PDSRepositoryFactory accountRepositoryWithServiceDatabases:serviceDatabases];
         _sessionRepository = [PDSRepositoryFactory sessionRepositoryWithServiceDatabases:serviceDatabases];
+        NSString *origin = [ATProtoServiceConfiguration sharedConfiguration].issuer ?: @"";
+        _secondFactorService = [[PDSSecondFactorService alloc] initWithServiceDatabases:serviceDatabases
+                                                                                 origin:origin];
     }
 }
 
@@ -324,6 +334,16 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
 - (nullable NSDictionary *)loginWithIdentifier:(NSString *)identifier
                                       password:(NSString *)password
                                          error:(NSError **)error {
+    return [self loginWithIdentifier:identifier
+                            password:password
+                     authFactorToken:nil
+                               error:error];
+}
+
+- (nullable NSDictionary *)loginWithIdentifier:(NSString *)identifier
+                                      password:(NSString *)password
+                               authFactorToken:(NSString *)authFactorToken
+                                         error:(NSError **)error {
     if (!identifier) {
         if (error) {
             *error = [ATProtoError errorWithCode:ATProtoErrorCodeMissingParameter
@@ -332,49 +352,46 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
         return nil;
     }
 
-    NSError *dbError = nil;
-    PDSDatabaseAccount *account = nil;
-    if ([identifier containsString:@"@"]) {
-        account = [_accountRepository accountForEmail:identifier error:&dbError];
-    } else {
-        account = [_accountRepository accountForHandle:identifier error:&dbError];
-    }
-
-    if (dbError) {
-        if (error) *error = dbError;
-        return nil;
-    }
-
+    PDSDatabaseAccount *account = [self accountForIdentifier:identifier error:error];
     if (!account) {
-        if (error) {
-            *error = [ATProtoError errorWithCode:ATProtoErrorCodeNotFound
-                                       message:@"Account not found"];
-        }
         return nil;
     }
 
-    return [self loginWithAccount:account password:password error:error];
+    return [self loginWithAccount:account
+                         password:password
+                  authFactorToken:authFactorToken
+                            error:error];
 }
 
 - (nullable NSDictionary *)loginWithAccount:(PDSDatabaseAccount *)account
                                    password:(NSString *)password
                                       error:(NSError **)error {
-    // Verify password using the current PBKDF2 policy only.
-    NSData *passwordHash = [self hashPassword:password salt:account.passwordSalt];
-    BOOL isPasswordCorrect = PDSConstantTimeEqualData(passwordHash, account.passwordHash);
+    return [self loginWithAccount:account password:password authFactorToken:nil error:error];
+}
 
-    if (!isPasswordCorrect && self.serviceDatabases) {
-        NSError *appPasswordError = nil;
-        if ([self.serviceDatabases verifyAppPasswordForAccount:account.did password:password error:&appPasswordError]) {
-            isPasswordCorrect = YES;
-        }
-    }
+- (nullable NSDictionary *)loginWithAccount:(PDSDatabaseAccount *)account
+                                   password:(NSString *)password
+                            authFactorToken:(NSString *)authFactorToken
+                                      error:(NSError **)error {
+    BOOL appPasswordMatched = NO;
+    BOOL isPasswordCorrect = [self verifyPassword:password
+                                       forAccount:account
+                               appPasswordMatched:&appPasswordMatched];
 
     if (!isPasswordCorrect) {
         if (error) {
             *error = [ATProtoError errorWithCode:ATProtoErrorCodeInvalidCredentials
                                        message:@"Invalid password"];
         }
+        return nil;
+    }
+
+    if (!appPasswordMatched &&
+        self.secondFactorService &&
+        [self.secondFactorService accountRequiresSecondFactor:account] &&
+        ![self.secondFactorService verifyAuthFactorToken:authFactorToken
+                                              forAccount:account
+                                                   error:error]) {
         return nil;
     }
 
@@ -408,6 +425,55 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
         @"accessJwt": accessToken,
         @"refreshJwt": refreshToken
     };
+}
+
+- (nullable NSDictionary *)beginWebAuthnSecondFactorForIdentifier:(NSString *)identifier
+                                                         password:(NSString *)password
+                                                            error:(NSError **)error {
+    PDSDatabaseAccount *account = [self accountForIdentifier:identifier error:error];
+    if (!account) return nil;
+
+    BOOL appPasswordMatched = NO;
+    if (![self verifyPassword:password forAccount:account appPasswordMatched:&appPasswordMatched] || appPasswordMatched) {
+        if (error) {
+            *error = [ATProtoError errorWithCode:ATProtoErrorCodeInvalidCredentials
+                                         message:@"Invalid password"];
+        }
+        return nil;
+    }
+
+    if (!self.secondFactorService) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSSecondFactorErrorDomain
+                                         code:PDSSecondFactorErrorUnavailable
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Second-factor service is unavailable"}];
+        }
+        return nil;
+    }
+
+    return [self.secondFactorService beginWebAuthnLoginForAccount:account error:error];
+}
+
+- (nullable NSString *)completeWebAuthnSecondFactorForIdentifier:(NSString *)identifier
+                                                       sessionID:(NSString *)sessionID
+                                                       assertion:(NSDictionary *)assertion
+                                                          error:(NSError **)error {
+    PDSDatabaseAccount *account = [self accountForIdentifier:identifier error:error];
+    if (!account) return nil;
+
+    if (!self.secondFactorService) {
+        if (error) {
+            *error = [NSError errorWithDomain:PDSSecondFactorErrorDomain
+                                         code:PDSSecondFactorErrorUnavailable
+                                     userInfo:@{NSLocalizedDescriptionKey: @"Second-factor service is unavailable"}];
+        }
+        return nil;
+    }
+
+    return [self.secondFactorService completeWebAuthnLoginWithSessionID:sessionID
+                                                              assertion:assertion
+                                                             forAccount:account
+                                                                  error:error];
 }
 
 - (nullable NSDictionary *)getAccountForDid:(NSString *)did error:(NSError **)error {
@@ -552,6 +618,56 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
 }
 
 #pragma mark - Private Helpers
+
+- (nullable PDSDatabaseAccount *)accountForIdentifier:(NSString *)identifier
+                                                error:(NSError **)error {
+    NSError *dbError = nil;
+    PDSDatabaseAccount *account = nil;
+    if ([identifier containsString:@"@"]) {
+        account = [_accountRepository accountForEmail:identifier error:&dbError];
+    } else {
+        account = [_accountRepository accountForHandle:identifier error:&dbError];
+    }
+
+    if (dbError) {
+        if (error) *error = dbError;
+        return nil;
+    }
+
+    if (!account && error) {
+        *error = [ATProtoError errorWithCode:ATProtoErrorCodeNotFound
+                                     message:@"Account not found"];
+    }
+    return account;
+}
+
+- (BOOL)verifyPassword:(NSString *)password
+            forAccount:(PDSDatabaseAccount *)account
+    appPasswordMatched:(BOOL *)appPasswordMatched {
+    if (appPasswordMatched) {
+        *appPasswordMatched = NO;
+    }
+
+    NSData *passwordHash = [self hashPassword:password salt:account.passwordSalt];
+    if (PDSConstantTimeEqualData(passwordHash, account.passwordHash)) {
+        return YES;
+    }
+
+    if (self.serviceDatabases) {
+        NSError *appPasswordError = nil;
+        BOOL matched = [self.serviceDatabases verifyAppPasswordForAccount:account.did
+                                                                 password:password
+                                                                    error:&appPasswordError];
+        if (matched) {
+            if (appPasswordMatched) {
+                *appPasswordMatched = YES;
+            }
+            return YES;
+        }
+    }
+
+    return NO;
+}
 
 - (NSData *)generateSalt {
     NSMutableData *salt = [NSMutableData dataWithLength:32];

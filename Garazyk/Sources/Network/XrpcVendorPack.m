@@ -1,16 +1,17 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 //
-//  XrpcVendorMethods.m
+//  XrpcVendorPack.m
 //  ATProtoPDS
 //
 //  Domain module for tools.garazyk.* vendor XRPC endpoints.
 //
 
-#import "Network/XrpcVendorMethods.h"
+#import "Network/XrpcVendorPack.h"
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcErrorHelper.h"
+#import "Network/XrpcRoutePackServices.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Core/ATProtoValidator.h"
@@ -24,13 +25,19 @@
 #import "Metrics/PDSMetrics.h"
 #import "Debug/GZLogger.h"
 
-@implementation XrpcVendorMethods
+@implementation XrpcVendorPack
+
++ (NSString *)routePackIdentifier {
+  return @"tools.garazyk";
+}
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-              serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                     jwtMinter:(JWTMinter *)jwtMinter
-               adminController:(id<PDSAdminController>)adminController
-             repositoryService:(PDSRepositoryService *)repositoryService {
+                      services:(id<XrpcRoutePackServices>)services {
+    
+    JWTMinter *jwtMinter = services.jwtMinter;
+    id<PDSAdminController> adminController = services.adminController;
+    PDSRepositoryService *repositoryService = services.repositoryService;
+    PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
 
     // Register tools.garazyk.sync.getRepoFiltered
     [dispatcher registerMethod:@"tools.garazyk.sync.getRepoFiltered"

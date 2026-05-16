@@ -566,7 +566,7 @@ Start here when you change administrative or moderation behavior:
 - `Garazyk/Sources/Services/Core/PDSAdminService.m`
 - `Garazyk/Sources/Admin/PDSAdminController.m`
 - `Garazyk/Sources/Admin/PDSAdminHandler.m`
-- `Garazyk/Sources/Network/XrpcAdminMethods.m`
+- `Garazyk/Sources/Network/XrpcAdminPack.m`
 - `Garazyk/Sources/Admin/Diagnostics/PDSSystemDiagnosticsHandler.m`
 - `Garazyk/Sources/Admin/Diagnostics/PDSBlobAuditHandler.m`
 - `Garazyk/Sources/Admin/Diagnostics/BlobAudit/PDSBlobAuditManager.m`

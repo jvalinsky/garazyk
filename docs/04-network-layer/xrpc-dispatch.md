@@ -12,7 +12,7 @@ This layer delegates repository mutations, blob storage, and identity resolution
 
 ## Implementation Boundary
 
-`XrpcDispatcher` and its associated route packs (e.g., `PDSHttpXrpcRoutePack`) define the boundary between the network and the application.
+`XrpcDispatcher` and its associated route packs (e.g., `ATProtoHttpXrpcRoutePack`) define the boundary between the network and the application.
 
 If an endpoint returns a `404 Not Found` or `501 Not Implemented`, the method is likely missing from the `XrpcMethodRegistry`. If authentication fails before the service code executes, the issue typically lies in the `XrpcAuthHelper` or the dispatcher's middleware stack.
 

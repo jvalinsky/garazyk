@@ -3,7 +3,7 @@
 #import <XCTest/XCTest.h>
 #import "Sync/WebSocket/PDSWebSocketServer.h"
 #import "Sync/WebSocket/PDSWebSocketTransport.h"
-#import "Network/PDSNetworkTransport.h"
+#import "Network/ATProtoNetworkTransport.h"
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -34,8 +34,8 @@
 }
 @end
 
-@interface MockWebSocketServerNetworkConnection : NSObject <PDSNetworkConnection>
-@property (nonatomic, copy, nullable) void (^stateChangedHandler)(PDSNetworkConnectionState state, NSError *error);
+@interface MockWebSocketServerNetworkConnection : NSObject <ATProtoNetworkConnection>
+@property (nonatomic, copy, nullable) void (^stateChangedHandler)(ATProtoNetworkConnectionState state, NSError *error);
 @end
 
 @implementation MockWebSocketServerNetworkConnection
@@ -43,7 +43,7 @@
 - (void)cancel {}
 - (void)startWithQueue:(dispatch_queue_t)queue {
     if (self.stateChangedHandler) {
-        self.stateChangedHandler(PDSNetworkConnectionStateReady, nil);
+        self.stateChangedHandler(ATProtoNetworkConnectionStateReady, nil);
     }
 }
 - (void)sendData:(NSData *)data completion:(void (^)(NSError * _Nullable))completion {
@@ -56,9 +56,9 @@
 }
 @end
 
-@interface MockNetworkListener : NSObject <PDSNetworkListener>
-@property (nonatomic, copy, nullable) void (^stateChangedHandler)(PDSNetworkListenerState state, NSError *error);
-@property (nonatomic, copy, nullable) void (^newConnectionHandler)(id<PDSNetworkConnection> connection);
+@interface MockNetworkListener : NSObject <ATProtoNetworkListener>
+@property (nonatomic, copy, nullable) void (^stateChangedHandler)(ATProtoNetworkListenerState state, NSError *error);
+@property (nonatomic, copy, nullable) void (^newConnectionHandler)(id<ATProtoNetworkConnection> connection);
 @property (nonatomic, assign) NSUInteger port;
 @property (nonatomic, assign) BOOL cancelled;
 @end
@@ -74,14 +74,14 @@
 - (void)startWithQueue:(dispatch_queue_t)queue {
     dispatch_async(queue, ^{
         if (self.stateChangedHandler) {
-            self.stateChangedHandler(PDSNetworkListenerStateReady, nil);
+            self.stateChangedHandler(ATProtoNetworkListenerStateReady, nil);
         }
     });
 }
 - (void)cancel {
     self.cancelled = YES;
     if (self.stateChangedHandler) {
-        self.stateChangedHandler(PDSNetworkListenerStateCancelled, nil);
+        self.stateChangedHandler(ATProtoNetworkListenerStateCancelled, nil);
     }
 }
 - (void)simulateConnection {
@@ -97,7 +97,7 @@
     [super setUp];
     self.listener = [[MockNetworkListener alloc] init];
     __weak typeof(self) weakSelf = self;
-    self.server = [[PDSWebSocketServer alloc] initWithPort:0 listenerFactory:^id<PDSNetworkListener> _Nullable(NSUInteger port) {
+    self.server = [[PDSWebSocketServer alloc] initWithPort:0 listenerFactory:^id<ATProtoNetworkListener> _Nullable(NSUInteger port) {
         return weakSelf.listener;
     }];
 }
@@ -133,7 +133,7 @@
 
     NSError *error2 = nil;
     MockNetworkListener *listener2 = [[MockNetworkListener alloc] init];
-    PDSWebSocketServer *server2 = [[PDSWebSocketServer alloc] initWithPort:self.server.port listenerFactory:^id<PDSNetworkListener> _Nullable(NSUInteger port) {
+    PDSWebSocketServer *server2 = [[PDSWebSocketServer alloc] initWithPort:self.server.port listenerFactory:^id<ATProtoNetworkListener> _Nullable(NSUInteger port) {
         return listener2;
     }];
     BOOL success2 = [server2 startWithError:&error2];

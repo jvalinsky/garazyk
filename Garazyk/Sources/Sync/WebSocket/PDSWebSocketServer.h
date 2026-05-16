@@ -18,7 +18,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class PDSWebSocketServer;
-@protocol PDSNetworkListener;
+@protocol ATProtoNetworkListener;
 
 /*!
  @typedef PDSWebSocketConnectionHandler
@@ -37,7 +37,7 @@ typedef void (^PDSWebSocketConnectionHandler)(id<PDSWebSocketTransport> transpor
  @param error The error that occurred.
  */
 typedef void (^PDSWebSocketServerErrorHandler)(NSError *error);
-typedef id<PDSNetworkListener> _Nullable (^PDSWebSocketListenerFactory)(NSUInteger port);
+typedef id<ATProtoNetworkListener> _Nullable (^PDSWebSocketListenerFactory)(NSUInteger port);
 
 /*!
  @class PDSWebSocketServer
@@ -47,7 +47,7 @@ typedef id<PDSNetworkListener> _Nullable (^PDSWebSocketListenerFactory)(NSUInteg
  @discussion Provides a single server implementation that:
  - Accepts HTTP upgrade requests (from HttpServer)
  - Accepts raw WebSocket connections on a dedicated port
- - Uses PDSNetworkTransport for platform abstraction
+ - Uses ATProtoNetworkTransport for platform abstraction
  - Notifies via callbacks when connections are accepted
  */
 @interface PDSWebSocketServer : NSObject

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
-#import "Network/PDSNetworkTransportLinux.h"
+#import "Network/ATProtoNetworkTransportLinux.h"
 
 #if !defined(__APPLE__)
 #import <sys/socket.h>
@@ -10,20 +10,20 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface PDSNetworkTransportLinuxTests : XCTestCase
+@interface ATProtoNetworkTransportLinuxTests : XCTestCase
 @end
 
-@implementation PDSNetworkTransportLinuxTests
+@implementation ATProtoNetworkTransportLinuxTests
 
 #ifndef GNUSTEP
 - (void)testReceiveBufferedData {
     int fds[2];
     XCTAssertEqual(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
 
-    PDSNetworkConnectionLinux *conn = [[PDSNetworkConnectionLinux alloc] initWithSocket:fds[0] address:@"local"];
+    ATProtoNetworkConnectionLinux *conn = [[ATProtoNetworkConnectionLinux alloc] initWithSocket:fds[0] address:@"local"];
     XCTestExpectation *ready = [self expectationWithDescription:@"ready"];
-    conn.stateChangedHandler = ^(PDSNetworkConnectionState state, NSError * _Nullable error) {
-        if (state == PDSNetworkConnectionStateReady) {
+    conn.stateChangedHandler = ^(ATProtoNetworkConnectionState state, NSError * _Nullable error) {
+        if (state == ATProtoNetworkConnectionStateReady) {
             [ready fulfill];
         }
     };
@@ -52,7 +52,7 @@ NS_ASSUME_NONNULL_BEGIN
     int fds[2];
     XCTAssertEqual(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
 
-    PDSNetworkConnectionLinux *conn = [[PDSNetworkConnectionLinux alloc] initWithSocket:fds[0] address:@"local"];
+    ATProtoNetworkConnectionLinux *conn = [[ATProtoNetworkConnectionLinux alloc] initWithSocket:fds[0] address:@"local"];
     dispatch_queue_t queue = dispatch_queue_create("pds.linux.test.eof", DISPATCH_QUEUE_SERIAL);
     [conn startWithQueue:queue];
 
@@ -77,21 +77,21 @@ NS_ASSUME_NONNULL_BEGIN
     int fds[2];
     XCTAssertEqual(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
 
-    PDSNetworkConnectionLinux *clientConn = [[PDSNetworkConnectionLinux alloc] initWithSocket:fds[0] address:@"local"];
+    ATProtoNetworkConnectionLinux *clientConn = [[ATProtoNetworkConnectionLinux alloc] initWithSocket:fds[0] address:@"local"];
     dispatch_queue_t queue = dispatch_queue_create("pds.linux.test.outbound", DISPATCH_QUEUE_SERIAL);
     
     XCTestExpectation *ready = [self expectationWithDescription:@"ready"];
-    __block PDSNetworkConnectionState lastState = PDSNetworkConnectionStatePreparing;
-    clientConn.stateChangedHandler = ^(PDSNetworkConnectionState state, NSError * _Nullable error) {
+    __block ATProtoNetworkConnectionState lastState = ATProtoNetworkConnectionStatePreparing;
+    clientConn.stateChangedHandler = ^(ATProtoNetworkConnectionState state, NSError * _Nullable error) {
         lastState = state;
-        if (state == PDSNetworkConnectionStateReady) {
+        if (state == ATProtoNetworkConnectionStateReady) {
             [ready fulfill];
         }
     };
     
     [clientConn startWithQueue:queue];
     [self waitForExpectations:@[ready] timeout:1.0];
-    XCTAssertEqual(lastState, PDSNetworkConnectionStateReady);
+    XCTAssertEqual(lastState, ATProtoNetworkConnectionStateReady);
     
     XCTestExpectation *received = [self expectationWithDescription:@"received"];
     [clientConn receiveWithMinimumLength:1 maximumLength:10 completion:^(NSData * _Nullable data, BOOL isComplete, NSError * _Nullable error) {
@@ -111,14 +111,14 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testOutboundConnectionToLocalhostFails {
-    PDSNetworkConnectionLinux *conn = [[PDSNetworkConnectionLinux alloc] initWithHost:@"127.0.0.1" port:0];
+    ATProtoNetworkConnectionLinux *conn = [[ATProtoNetworkConnectionLinux alloc] initWithHost:@"127.0.0.1" port:0];
     dispatch_queue_t queue = dispatch_queue_create("pds.linux.test.localhost", DISPATCH_QUEUE_SERIAL);
     
-    __block PDSNetworkConnectionState finalState = PDSNetworkConnectionStatePreparing;
+    __block ATProtoNetworkConnectionState finalState = ATProtoNetworkConnectionStatePreparing;
     XCTestExpectation *failed = [self expectationWithDescription:@"failed"];
-    conn.stateChangedHandler = ^(PDSNetworkConnectionState state, NSError * _Nullable error) {
+    conn.stateChangedHandler = ^(ATProtoNetworkConnectionState state, NSError * _Nullable error) {
         finalState = state;
-        if (state == PDSNetworkConnectionStateFailed) {
+        if (state == ATProtoNetworkConnectionStateFailed) {
             XCTAssertNotNil(error);
             [failed fulfill];
         }
@@ -126,18 +126,18 @@ NS_ASSUME_NONNULL_BEGIN
     
     [conn startWithQueue:queue];
     [self waitForExpectations:@[failed] timeout:1.0];
-    XCTAssertEqual(finalState, PDSNetworkConnectionStateFailed);
+    XCTAssertEqual(finalState, ATProtoNetworkConnectionStateFailed);
 }
 
 - (void)testOutboundConnectionToInvalidHost {
-    PDSNetworkConnectionLinux *conn = [[PDSNetworkConnectionLinux alloc] initWithHost:@"invalid.host.that.does.not.exist" port:9999];
+    ATProtoNetworkConnectionLinux *conn = [[ATProtoNetworkConnectionLinux alloc] initWithHost:@"invalid.host.that.does.not.exist" port:9999];
     dispatch_queue_t queue = dispatch_queue_create("pds.linux.test.invalid", DISPATCH_QUEUE_SERIAL);
     
-    __block PDSNetworkConnectionState finalState = PDSNetworkConnectionStatePreparing;
+    __block ATProtoNetworkConnectionState finalState = ATProtoNetworkConnectionStatePreparing;
     XCTestExpectation *failed = [self expectationWithDescription:@"failed"];
-    conn.stateChangedHandler = ^(PDSNetworkConnectionState state, NSError * _Nullable error) {
+    conn.stateChangedHandler = ^(ATProtoNetworkConnectionState state, NSError * _Nullable error) {
         finalState = state;
-        if (state == PDSNetworkConnectionStateFailed) {
+        if (state == ATProtoNetworkConnectionStateFailed) {
             XCTAssertNotNil(error);
             [failed fulfill];
         }
@@ -145,19 +145,19 @@ NS_ASSUME_NONNULL_BEGIN
     
     [conn startWithQueue:queue];
     [self waitForExpectations:@[failed] timeout:2.0];
-    XCTAssertEqual(finalState, PDSNetworkConnectionStateFailed);
+    XCTAssertEqual(finalState, ATProtoNetworkConnectionStateFailed);
 }
 
 - (void)testSendDataOnConnectedSocket {
     int fds[2];
     XCTAssertEqual(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
 
-    PDSNetworkConnectionLinux *conn = [[PDSNetworkConnectionLinux alloc] initWithSocket:fds[0] address:@"local"];
+    ATProtoNetworkConnectionLinux *conn = [[ATProtoNetworkConnectionLinux alloc] initWithSocket:fds[0] address:@"local"];
     dispatch_queue_t queue = dispatch_queue_create("pds.linux.test.send", DISPATCH_QUEUE_SERIAL);
     
     XCTestExpectation *ready = [self expectationWithDescription:@"ready"];
-    conn.stateChangedHandler = ^(PDSNetworkConnectionState state, NSError * _Nullable error) {
-        if (state == PDSNetworkConnectionStateReady) {
+    conn.stateChangedHandler = ^(ATProtoNetworkConnectionState state, NSError * _Nullable error) {
+        if (state == ATProtoNetworkConnectionStateReady) {
             [ready fulfill];
         }
     };
@@ -185,7 +185,7 @@ NS_ASSUME_NONNULL_BEGIN
     int fds[2];
     XCTAssertEqual(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
 
-    PDSNetworkConnectionLinux *conn = [[PDSNetworkConnectionLinux alloc] initWithSocket:fds[0] address:@"local"];
+    ATProtoNetworkConnectionLinux *conn = [[ATProtoNetworkConnectionLinux alloc] initWithSocket:fds[0] address:@"local"];
     dispatch_queue_t queue = dispatch_queue_create("pds.linux.test.cancel.receive", DISPATCH_QUEUE_SERIAL);
     [conn startWithQueue:queue];
 
@@ -207,7 +207,7 @@ NS_ASSUME_NONNULL_BEGIN
     int fds[2];
     XCTAssertEqual(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
 
-    PDSNetworkConnectionLinux *conn = [[PDSNetworkConnectionLinux alloc] initWithSocket:fds[0] address:@"local"];
+    ATProtoNetworkConnectionLinux *conn = [[ATProtoNetworkConnectionLinux alloc] initWithSocket:fds[0] address:@"local"];
     dispatch_queue_t queue = dispatch_queue_create("pds.linux.test.cancel.send", DISPATCH_QUEUE_SERIAL);
     [conn startWithQueue:queue];
     [conn cancel];
@@ -224,14 +224,14 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)testListenerFailsForInvalidBindHost {
-    PDSNetworkListenerLinux *listener =
-        [[PDSNetworkListenerLinux alloc] initWithHost:@"invalid-bind-host" port:0];
+    ATProtoNetworkListenerLinux *listener =
+        [[ATProtoNetworkListenerLinux alloc] initWithHost:@"invalid-bind-host" port:0];
     dispatch_queue_t queue =
         dispatch_queue_create("pds.linux.test.invalid-bind", DISPATCH_QUEUE_SERIAL);
     XCTestExpectation *failed = [self expectationWithDescription:@"listener failed"];
-    listener.stateChangedHandler = ^(PDSNetworkListenerState state,
+    listener.stateChangedHandler = ^(ATProtoNetworkListenerState state,
                                      NSError *_Nullable error) {
-        if (state == PDSNetworkListenerStateFailed) {
+        if (state == ATProtoNetworkListenerStateFailed) {
             XCTAssertNotNil(error);
             XCTAssertEqual(error.code, EADDRNOTAVAIL);
             [failed fulfill];
@@ -248,10 +248,10 @@ NS_ASSUME_NONNULL_END
 
 #else
 
-@interface PDSNetworkTransportLinuxTests : XCTestCase
+@interface ATProtoNetworkTransportLinuxTests : XCTestCase
 @end
 
-@implementation PDSNetworkTransportLinuxTests
+@implementation ATProtoNetworkTransportLinuxTests
 
 - (void)testSkippedOnApple {
     XCTSkip(@"Linux-only transport tests.");

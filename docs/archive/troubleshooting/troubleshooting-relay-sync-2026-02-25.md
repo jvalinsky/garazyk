@@ -30,7 +30,7 @@ Entirely removed `NSTimer` calls for the WebSocket lifecycle, migrating instead 
 ## Issue 3: Leaked HTTP Connections and Overwritten Handlers 
 ### Discovery
 While auditing the WebSocket upgrade path in `HttpServer.m` and `WebSocketConnection.m`, it was evident that memory leakage would occur if a WebSocket unexpectedly terminated.
-`WebSocketConnection.m`'s `startOnExistingTransport` simply hijacked the underlying `PDSNetworkConnection` state block doing: `self.connection.stateChangedHandler = ^(...)`.
+`WebSocketConnection.m`'s `startOnExistingTransport` simply hijacked the underlying `ATProtoNetworkConnection` state block doing: `self.connection.stateChangedHandler = ^(...)`.
 This effectively orphaned the original cleanup handler block that `HttpServer` attached for managing the `activeConnections` array, leaking memory upon abrupt disconnection.
 
 ### Solution

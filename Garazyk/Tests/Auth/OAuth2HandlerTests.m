@@ -23,11 +23,16 @@
 - (nullable NSDictionary *)createAccountForEmail:(NSString *)email password:(NSString *)password handle:(NSString *)handle did:(nullable NSString *)did error:(NSError **)error { return nil; }
 - (BOOL)deleteAccount:(NSString *)did password:(NSString *)password error:(NSError **)error { return YES; }
 - (nullable NSDictionary *)getAccountForDid:(NSString *)did error:(NSError **)error { return nil; }
+- (nullable NSDictionary *)usageForDid:(NSString *)did error:(NSError **)error { return nil; }
 - (nullable NSArray *)getAllAccountsWithError:(NSError **)error { return @[]; }
 - (nullable NSDictionary *)loginWithHandle:(NSString *)handle password:(NSString *)password error:(NSError **)error {
     return [self loginWithIdentifier:handle password:password error:error];
 }
 - (nullable NSDictionary *)loginWithIdentifier:(NSString *)identifier password:(NSString *)password error:(NSError **)error {
+    return [self loginWithIdentifier:identifier password:password authFactorToken:nil error:error];
+}
+- (nullable NSDictionary *)loginWithIdentifier:(NSString *)identifier password:(NSString *)password authFactorToken:(nullable NSString *)authFactorToken error:(NSError **)error {
+    (void)authFactorToken;
     if ([password isEqualToString:@"test-password"]) {
         return self.mockUser ?: @{@"did": @"did:plc:test123", @"handle": identifier};
     }

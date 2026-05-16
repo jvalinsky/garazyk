@@ -5,9 +5,9 @@
 #import "Network/HttpProtocolDriver.h"
 #import "Network/HttpResponseSender.h"
 #import "Network/HttpRequest.h"
-#import "Network/PDSNetworkTransport.h"
+#import "Network/ATProtoNetworkTransport.h"
 
-@interface MockIOConnection : NSObject <PDSNetworkConnection>
+@interface MockIOConnection : NSObject <ATProtoNetworkConnection>
 @property (nonatomic, strong) NSMutableData *sentData;
 @property (nonatomic, copy) void (^receiveCompletion)(NSData *data, BOOL isComplete, NSError *error);
 @property (nonatomic, strong) NSMutableArray<NSData *> *pendingData;

@@ -12,17 +12,17 @@ title: Addressing Test and Feature Gaps Implementation Plan
 
 **Tech Stack:** Objective-C, CMake, XCTest, GNUstep (for Linux), secp256k1, SQLite
 
-## Task 1: Implement PDSNetworkTransport for Linux
+## Task 1: Implement ATProtoNetworkTransport for Linux
 
 **Files:**
-- Modify: `Garazyk/Sources/Network/PDSNetworkTransportLinux.m`
-- Test: `Garazyk/Tests/Network/PDSNetworkTransportTests.m` (create if not exists)
+- Modify: `Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m`
+- Test: `Garazyk/Tests/Network/ATProtoNetworkTransportTests.m` (create if not exists)
 
 **Step 1: Write the failing test for startWithQueue**
 
 ```objc
 - (void)testStartWithQueue {
-    PDSNetworkTransportLinux *transport = [[PDSNetworkTransportLinux alloc] init];
+    ATProtoNetworkTransportLinux *transport = [[ATProtoNetworkTransportLinux alloc] init];
     dispatch_queue_t queue = dispatch_get_main_queue();
     NSError *error;
     BOOL success = [transport startWithQueue:queue error:&error];
@@ -33,7 +33,7 @@ title: Addressing Test and Feature Gaps Implementation Plan
 
 **Step 2: Run test to verify it fails**
 
-Run: `xcodebuild -scheme AllTests build test -only-testing:Garazyk/Tests/Network/PDSNetworkTransportTests/testStartWithQueue`
+Run: `xcodebuild -scheme AllTests build test -only-testing:Garazyk/Tests/Network/ATProtoNetworkTransportTests/testStartWithQueue`
 Expected: FAIL
 
 **Step 3: Write minimal implementation using GNUstep/libdispatch**
@@ -47,7 +47,7 @@ Run same command, Expected: PASS
 **Step 5: Commit**
 
 ```bash
-git add Garazyk/Sources/Network/PDSNetworkTransportLinux.m Garazyk/Tests/Network/PDSNetworkTransportTests.m
+git add Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m Garazyk/Tests/Network/ATProtoNetworkTransportTests.m
 git commit -m "feat: implement startWithQueue for Linux transport"
 ```
 

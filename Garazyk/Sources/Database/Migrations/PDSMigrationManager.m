@@ -4,7 +4,7 @@
 #import "Database/Schema/PDSSchemaManager.h"
 #import "Database/ActorStore/ActorStore.h"
 #import "Database/PDSDatabase.h"
-#import "Database/PDSBlock.h"
+#import "Database/PDSDatabaseBlock.h"
 #import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 #import <sqlite3.h>
@@ -1456,6 +1456,66 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 @end
 
+#pragma mark - V10 Pending Factor Tokens
+
+@interface V10PendingFactorTokensSchema : NSObject <PDSMigration>
+@end
+
+@implementation V10PendingFactorTokensSchema
+
+- (NSInteger)version { return 10; }
+
+- (NSString *)name { return @"pending_factor_tokens"; }
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    const char *sql =
+        "CREATE TABLE IF NOT EXISTS pending_factor_tokens ("
+        "id TEXT PRIMARY KEY,"
+        "token_hash BLOB NOT NULL UNIQUE,"
+        "account_did TEXT NOT NULL,"
+        "method TEXT NOT NULL,"
+        "challenge BLOB,"
+        "expires_at REAL NOT NULL,"
+        "consumed_at REAL,"
+        "created_at REAL NOT NULL"
+        ");"
+        "CREATE INDEX IF NOT EXISTS idx_pending_factor_tokens_account "
+        "ON pending_factor_tokens(account_did, method, expires_at);";
+    char *errMsg = NULL;
+    int rc = sqlite3_exec(db, sql, NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+        if (errMsg) sqlite3_free(errMsg);
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: msg}];
+        }
+        return NO;
+    }
+    if (errMsg) sqlite3_free(errMsg);
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    char *errMsg = NULL;
+    int rc = sqlite3_exec(db, "DROP TABLE IF EXISTS pending_factor_tokens", NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"unknown error";
+        if (errMsg) sqlite3_free(errMsg);
+        if (error) {
+            *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                         code:PDSMigrationErrorMigrationFailed
+                                     userInfo:@{NSLocalizedDescriptionKey: msg}];
+        }
+        return NO;
+    }
+    if (errMsg) sqlite3_free(errMsg);
+    return YES;
+}
+
+@end
+
 #pragma mark - V10 Legacy Schema Version Bridge
 
 @interface V10LegacySchemaBridge : NSObject <PDSMigration>
@@ -1594,6 +1654,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     [manager registerMigration:[[V7SearchFTS5Schema alloc] init]];
     [manager registerMigration:[[V8OzoneSubjectsSchema alloc] init]];
     [manager registerMigration:[[BlobsMimeTypeRename alloc] initWithVersion:9]];
+    [manager registerMigration:[[V10PendingFactorTokensSchema alloc] init]];
     return manager;
 }
 

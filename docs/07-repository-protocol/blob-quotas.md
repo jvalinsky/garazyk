@@ -72,12 +72,12 @@ Environment overrides:
 ## Where These Limits Live
 
 - Request-size rejection happens in
-  `Garazyk/Sources/Network/XrpcRepoMethods.m`.
+  `Garazyk/Sources/Network/XrpcRepoPack.m`.
 - MIME validation and blob metadata writes live in
   `Garazyk/Sources/Blob/MimeTypeValidator.m` and
   `Garazyk/Sources/Blob/BlobStorage.m`.
 - Blob rate-limit configuration is loaded in
-  `Garazyk/Sources/App/PDSConfiguration.m` and enforced in
+  `Garazyk/Sources/App/ATProtoServiceConfiguration.m` and enforced in
   `Garazyk/Sources/Network/RateLimiter.m`.
 
 This split matters operationally. The transport layer protects the server from

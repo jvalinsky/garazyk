@@ -7,7 +7,7 @@
 
  @discussion
     Validates that a createAccount request includes a valid invite
-    code. Extracts the inline invite code logic from XrpcServerMethods
+    code. Extracts the inline invite code logic from XrpcServerPack
     into a reusable gate implementation.
 
  @copyright Copyright (c) 2025-2026 Jack Valinsky

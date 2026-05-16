@@ -5,6 +5,7 @@
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcErrorHelper.h"
 #import "Network/XrpcAppBskyGraphHelpers.h"
+#import "Network/XrpcRoutePackServices.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "AppView/Services/FeedService.h"
@@ -18,14 +19,16 @@
 
 @implementation XrpcAppBskyFeedPack
 
-+ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-                 appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
-                      jwtMinter:(JWTMinter *)jwtMinter
-                adminController:(id<PDSAdminController>)adminController {
++ (NSString *)routePackIdentifier {
+  return @"app.bsky.feed";
+}
 
-    FeedService *feedService = [[FeedService alloc] initWithDatabase:appViewDatabase];
-    ActorService *actorService = [[ActorService alloc] initWithDatabase:appViewDatabase];
-    GraphService *graphService = [[GraphService alloc] initWithDatabase:appViewDatabase];
++ (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
+                      services:(id<XrpcRoutePackServices>)services {
+
+    FeedService *feedService = [[FeedService alloc] initWithDatabase:services.appViewDatabase];
+    ActorService *actorService = [[ActorService alloc] initWithDatabase:services.appViewDatabase];
+    GraphService *graphService = [[GraphService alloc] initWithDatabase:services.appViewDatabase];
 
     // app.bsky.feed.getAuthorFeed
     [dispatcher registerAppBskyFeedGetAuthorFeed:^(HttpRequest *request, HttpResponse *response) {
@@ -63,8 +66,8 @@
             return;
         }
         NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                            jwtMinter:jwtMinter
-                                                      adminController:adminController
+                                                            jwtMinter:services.jwtMinter
+                                                      adminController:services.adminController
                                                               request:request
                                                              response:response];
         if (!actorDID) return;
@@ -243,14 +246,14 @@
         [args addObject:@(limit)];
 
         NSError *error = nil;
-        NSArray *rows = [appViewDatabase executeParameterizedQuery:query params:args error:&error];
+        NSArray *rows = [services.appViewDatabase executeParameterizedQuery:query params:args error:&error];
         NSMutableArray *feeds = [NSMutableArray array];
 
         for (NSDictionary *row in rows) {
             NSString *cidStr = row[@"cid"];
             CID *cid = [CID cidFromString:cidStr];
             if (!cid) continue;
-            PDSDatabaseBlock *block = [appViewDatabase getBlockWithCid:cid.bytes repoDid:actor error:nil];
+            PDSDatabaseBlock *block = [services.appViewDatabase getBlockWithCid:cid.bytes repoDid:actor error:nil];
             if (!block || !block.blockData) continue;
             NSDictionary *record = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:nil];
             if (!record) continue;
@@ -301,7 +304,7 @@
 
         NSString *query = @"SELECT cid FROM records WHERE did = ? AND collection = ? AND rkey = ? LIMIT 1";
         NSError *error = nil;
-        NSArray *rows = [appViewDatabase executeParameterizedQuery:query params:@[did, @"app.bsky.feed.generator", rkey] error:&error];
+        NSArray *rows = [services.appViewDatabase executeParameterizedQuery:query params:@[did, @"app.bsky.feed.generator", rkey] error:&error];
 
         if (rows.count == 0) {
             response.statusCode = 404;
@@ -313,7 +316,7 @@
         CID *cid = [CID cidFromString:cidStr];
         NSDictionary *record = nil;
         if (cid) {
-            PDSDatabaseBlock *block = [appViewDatabase getBlockWithCid:cid.bytes repoDid:did error:nil];
+            PDSDatabaseBlock *block = [services.appViewDatabase getBlockWithCid:cid.bytes repoDid:did error:nil];
             if (block && block.blockData) {
                 record = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:nil];
             }
@@ -349,7 +352,7 @@
 
         NSString *query = @"SELECT did, rkey, cid FROM records WHERE collection = ? ORDER BY rkey DESC LIMIT ?";
         NSError *error = nil;
-        NSArray *rows = [appViewDatabase executeParameterizedQuery:query params:@[@"app.bsky.feed.post", @(limit * 5)] error:&error];
+        NSArray *rows = [services.appViewDatabase executeParameterizedQuery:query params:@[@"app.bsky.feed.post", @(limit * 5)] error:&error];
 
         NSMutableArray *posts = [NSMutableArray array];
         for (NSDictionary *row in rows) {
@@ -359,7 +362,7 @@
             NSString *cidStr = row[@"cid"];
             CID *cid = [CID cidFromString:cidStr];
             if (!cid) continue;
-            PDSDatabaseBlock *block = [appViewDatabase getBlockWithCid:cid.bytes repoDid:postDID error:nil];
+            PDSDatabaseBlock *block = [services.appViewDatabase getBlockWithCid:cid.bytes repoDid:postDID error:nil];
             if (!block || !block.blockData) continue;
             NSDictionary *record = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:nil];
             if (!record) continue;
@@ -406,7 +409,7 @@
 
         NSString *query = @"SELECT did, rkey, cid FROM records WHERE collection = ? ORDER BY rkey DESC LIMIT ?";
         NSError *error = nil;
-        NSArray *rows = [appViewDatabase executeParameterizedQuery:query params:@[@"app.bsky.feed.post", @(limit * 5)] error:&error];
+        NSArray *rows = [services.appViewDatabase executeParameterizedQuery:query params:@[@"app.bsky.feed.post", @(limit * 5)] error:&error];
 
         NSMutableArray *posts = [NSMutableArray array];
         for (NSDictionary *row in rows) {
@@ -416,7 +419,7 @@
             NSString *cidStr = row[@"cid"];
             CID *cid = [CID cidFromString:cidStr];
             if (!cid) continue;
-            PDSDatabaseBlock *block = [appViewDatabase getBlockWithCid:cid.bytes repoDid:postDID error:nil];
+            PDSDatabaseBlock *block = [services.appViewDatabase getBlockWithCid:cid.bytes repoDid:postDID error:nil];
             if (!block || !block.blockData) continue;
             NSDictionary *record = [ATProtoCBORSerialization JSONObjectWithData:block.blockData error:nil];
             if (!record) continue;
@@ -517,7 +520,7 @@
         [args addObject:@(limit)];
 
         NSError *queryError = nil;
-        NSArray *rows = [appViewDatabase executeParameterizedQuery:query params:args error:&queryError];
+        NSArray *rows = [services.appViewDatabase executeParameterizedQuery:query params:args error:&queryError];
         if (!rows) {
             [XrpcErrorHelper setInternalServerError:response message:queryError.localizedDescription ?: @"Failed to query feed"];
             return;
@@ -562,7 +565,7 @@
         }
         NSString *cursor = [request queryParamForKey:@"cursor"];
 
-        FeedService *feedService = [[FeedService alloc] initWithDatabase:appViewDatabase];
+        FeedService *feedService = [[FeedService alloc] initWithDatabase:services.appViewDatabase];
         NSError *error = nil;
         NSDictionary *result = [feedService getListFeed:list limit:limit cursor:cursor error:&error];
         if (error && !result) {

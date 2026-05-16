@@ -3,6 +3,7 @@
 #import "AdminAuthXrpcTestBase.h"
 #import "Database/PDSDatabase.h"
 #import "Database/Service/ServiceDatabases.h"
+#import "Video/VideoJobStore.h"
 #import "Video/VideoXrpcPack.h"
 
 // Expose private class methods for testing

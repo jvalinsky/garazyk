@@ -4,7 +4,7 @@ title: Platform-Specific Network Transport
 
 # Platform-Specific Network Transport
 
-`PDSNetworkTransport` is the server-side abstraction that allows the `HttpServer` to accept and manage connections without depending on a specific platform's network stack. We avoid using heavy wrappers like `libcurl` or `CFNetwork` in favor of native drivers: `Network.framework` on macOS and BSD sockets on Linux.
+`ATProtoNetworkTransport` is the server-side abstraction that allows the `HttpServer` to accept and manage connections without depending on a specific platform's network stack. We avoid using heavy wrappers like `libcurl` or `CFNetwork` in favor of native drivers: `Network.framework` on macOS and BSD sockets on Linux.
 
 ## Architecture
 
@@ -13,7 +13,7 @@ The transport layer sits at the bottom of the network stack, providing raw byte 
 ```mermaid
 flowchart TD
     Server["HttpServer"]
-    Factory["PDSNetworkTransportFactory"]
+    Factory["ATProtoNetworkTransportFactory"]
     Listener["Listener (Accepts Connections)"]
     Conn["Connection (I/O)"]
     Meta["Metadata (Remote Address, Rate Limiting)"]
@@ -49,9 +49,9 @@ By abstracting the transport, the `HttpServer` remains focused on protocol logic
 
 ## Implementation Details
 
-- **macOS (`PDSNetworkTransportMac`)**: Wraps `nw_listener_t` and `nw_connection_t`. It benefits from system-level optimizations for power and throughput.
-- **Linux (`PDSNetworkTransportLinux`)**: Uses non-blocking BSD sockets integrated with `libdispatch` sources. This ensures the server remains performant on Linux without requiring Apple-specific frameworks.
-- **Factory (`PDSNetworkTransportFactory`)**: Automatically selects the correct implementation at compile time based on the target platform.
+- **macOS (`ATProtoNetworkTransportMac`)**: Wraps `nw_listener_t` and `nw_connection_t`. It benefits from system-level optimizations for power and throughput.
+- **Linux (`ATProtoNetworkTransportLinux`)**: Uses non-blocking BSD sockets integrated with `libdispatch` sources. This ensures the server remains performant on Linux without requiring Apple-specific frameworks.
+- **Factory (`ATProtoNetworkTransportFactory`)**: Automatically selects the correct implementation at compile time based on the target platform.
 
 ## Related
 

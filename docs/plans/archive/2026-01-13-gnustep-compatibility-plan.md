@@ -76,9 +76,9 @@ The following files use NSURLSession, which is experimental on GNUstep:
 | `ExploreHandler.m:943,1109` | `NSURLSession sharedSession` |
 | `SSLPinningManager.m:58-59` | `NSURLSession sessionWithConfiguration:` delegate pattern |
 
-### 2.4 PDSNetworkTransportLinux Issues
+### 2.4 ATProtoNetworkTransportLinux Issues
 
-File: `Garazyk/Sources/Network/PDSNetworkTransportLinux.m`
+File: `Garazyk/Sources/Network/ATProtoNetworkTransportLinux.m`
 
 | Line | Issue |
 |------|-------|
@@ -102,7 +102,7 @@ NSURLSession is experimental on GNUstep. Code should either:
 
 ### Issue Category 3: Linux Network Transport
 **Priority: High**
-`handleRead` in PDSNetworkTransportLinux.m is empty, breaking network functionality on Linux.
+`handleRead` in ATProtoNetworkTransportLinux.m is empty, breaking network functionality on Linux.
 
 ### Issue Category 4: Documentation Update
 **Priority: Low**
@@ -181,7 +181,7 @@ Accept GNUstep 1.31.1's experimental NSURLSession for development, with fallback
 
 ### Phase 3: Network Transport Completion
 
-Implement `handleRead` in `PDSNetworkTransportLinux.m`:
+Implement `handleRead` in `ATProtoNetworkTransportLinux.m`:
 
 ```objc
 - (void)handleRead {
@@ -237,7 +237,7 @@ Update `GNUSTEP_COMPATIBILITY.md` section "NSURLSession vs NSURLConnection":
 | `FederationClient.m` | Modify | Lines 3, 18-21 |
 | `ExploreHandler.m` | Modify | Lines 943, 1109 |
 | `SSLPinningManager.m` | Modify | Lines 4, 58-59 |
-| `PDSNetworkTransportLinux.m` | Modify | Lines 62-66, 87-118 |
+| `ATProtoNetworkTransportLinux.m` | Modify | Lines 62-66, 87-118 |
 | 15+ CommonCrypto import files | Modify | Single import line each |
 | `GNUSTEP_COMPATIBILITY.md` | Modify | Lines 172-182 |
 

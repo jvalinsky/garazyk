@@ -17,7 +17,7 @@ Tests for configuration, metrics, debugging tools, and exploration endpoints.
 
 | Class | File Location | Purpose |
 |-------|---------------|---------|
-| PDSConfigurationTests | Tests/App/PDSConfigurationTests.m | Config loading |
+| ATProtoServiceConfigurationTests | Tests/App/ATProtoServiceConfigurationTests.m | Config loading |
 | PDSMetricsTests | Tests/Metrics/PDSMetricsTests.m | Metrics collection |
 | NodeInfoTests | Tests/App/NodeInfo/NodeInfoTests.m | Server discovery |
 | PDSLoggerPerformanceTests | Tests/Debug/PDSLoggerPerformanceTests.m | Logger benchmarks |
@@ -29,7 +29,7 @@ Tests for configuration, metrics, debugging tools, and exploration endpoints.
 ## Running Tests
 
 ```bash
-./build/tests/AllTests -only-testing:AllTests/PDSConfigurationTests
+./build/tests/AllTests -only-testing:AllTests/ATProtoServiceConfigurationTests
 ./build/tests/AllTests -only-testing:AllTests/NodeInfoTests
 ./build/tests/AllTests -only-testing:AllTests/ExploreHandlerTests
 ```

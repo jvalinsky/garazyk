@@ -125,7 +125,7 @@ WAL mode set per-connection at open time:
 ## Concurrency Contracts
 
 - **Per-DID serial queue** — all access to a given actor's store is serialized.
-- **PDSConnectionPool semaphore** — bounds concurrent raw connections.
+- **ATProtoConnectionPool semaphore** — bounds concurrent raw connections.
 - **safeExecuteSync reentrancy** — same-thread calls execute directly without deadlock.
 - **SAVEPOINT nested transactions** — only outermost transaction writes to WAL.
 
@@ -134,10 +134,10 @@ WAL mode set per-connection at open time:
 | Operation | Location | Pattern |
 |---|---|---|
 | Open actor store | ActorStore.m | `sqlite3_open_v2` + WAL pragmas + migrate |
-| Open service DB | ServiceDatabases.m | `PDSConnectionPool` checkout |
+| Open service DB | ServiceDatabases.m | `ATProtoConnectionPool` checkout |
 | Transaction | ActorStore.m | `safeExecuteSync` + SAVEPOINT check |
 | Add column | ActorStore.m:1819 | validate -> PRAGMA -> ALTER TABLE |
-| Pool checkout | PDSConnectionPool.m | semaphore_wait -> pop idle -> open |
+| Pool checkout | ATProtoConnectionPool.m | semaphore_wait -> pop idle -> open |
 | Migrate | PDSMigrationManager.m | factory (V1-V8) -> applyPending |
 | LRU get | PDSRecordCache.m | array remove/insert + dict lookup |
 | SQLite cleanup | PDSSQLiteUtils.h | `__attribute__((cleanup))` macro |

@@ -85,15 +85,15 @@ The HTTP and WebSocket parsers being extracted in Phases 1 & 2 are medium-risk f
 
 | File | Lines | Responsibilities | Coupling |
 |------|-------|-----------------|----------|
-| `HttpServer.m` | 1431 | Connection state, HTTP/1.1 parsing, body framing, keep-alive, pipelining, concurrency limit, response streaming, route dispatch, WebSocket upgrade, query parsing | Transport via `PDSNetworkConnection` protocol |
-| `WebSocketConnection.m` | 679 | Frame parse/serialize, heartbeat timers, state machine, transport I/O, backpressure queue | Transport via `PDSNetworkConnection` protocol |
+| `HttpServer.m` | 1431 | Connection state, HTTP/1.1 parsing, body framing, keep-alive, pipelining, concurrency limit, response streaming, route dispatch, WebSocket upgrade, query parsing | Transport via `ATProtoNetworkConnection` protocol |
+| `WebSocketConnection.m` | 679 | Frame parse/serialize, heartbeat timers, state machine, transport I/O, backpressure queue | Transport via `ATProtoNetworkConnection` protocol |
 | `HttpRequest.m` | 482 | Request model, query parsing, method-to-enum, `parseFromData:` full-request parser, multipart parsing | None (value object with parsing) |
 | `HttpChunkedBodyParser.m` | 315 | Chunked transfer-encoding state machine | **Already Sans-I/O** — pure `appendData:` → state → `parsedData` |
 | `DIDPLCResolver.m` | 285 | DID resolution, retry/backoff (3 retries, 0.5s×2^n), caching, redirect rejection | `NSURLSession` |
 | `FederationClient.m` | 442 | XRPC forwarding, SSRF validation, DID→PDS resolution, lexicon-based method detection | `NSURLSession`, `CFHost` |
 | `HandleResolver.m` | 587 | Handle→DID resolution, HTTPS+DNS fallback, SSRF validation, caching, rate limiting | `NSURLSession`/`NSURLConnection`, `CFHost` |
 | `EventFormatter.m` | 408 | Firehose event encode/decode | **Already Sans-I/O** — pure data transform |
-| `PDSNetworkTransportLinux.m` | 800 | BSD socket transport for Linux/GNUstep | Pure transport (no protocol logic) |
+| `ATProtoNetworkTransportLinux.m` | 800 | BSD socket transport for Linux/GNUstep | Pure transport (no protocol logic) |
 
 ### Existing Sans-I/O-ready components (no extraction needed)
 

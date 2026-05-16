@@ -7,7 +7,7 @@
 
  @discussion Defines a unified abstraction for WebSocket frame transmission
  and reception, independent of whether the underlying connection uses the
- HTTP upgrade path (PDSNetworkConnection) or raw BSD sockets.
+ HTTP upgrade path (ATProtoNetworkConnection) or raw BSD sockets.
 
  Both message-oriented (for application frames) and frame-oriented (for
  heartbeat/control frames) operations are supported.
@@ -54,7 +54,7 @@ typedef void (^PDSWebSocketTransportErrorHandler)(NSError *error);
 
  @discussion Provides frame-level send/receive operations for WebSocket
  messages and control frames. Implementations wrap either HTTP upgrade
- connections (PDSNetworkConnection) or raw socket file descriptors.
+ connections (ATProtoNetworkConnection) or raw socket file descriptors.
  */
 @protocol PDSWebSocketTransport <NSObject>
 

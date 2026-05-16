@@ -59,8 +59,8 @@ XCTAssertTrue(started);
 
 ---
 
-### PDSConfigurationTests
-**File:** `Tests/App/PDSConfigurationTests.m`
+### ATProtoServiceConfigurationTests
+**File:** `Tests/App/ATProtoServiceConfigurationTests.m`
 
 **Purpose:** Configuration loading, environment overrides, rate limits.
 
@@ -70,7 +70,7 @@ XCTAssertTrue(started);
 
 ```objc
 // 1. Defaults
-PDSConfiguration *config = [[PDSConfiguration alloc] init];
+ATProtoServiceConfiguration *config = [[ATProtoServiceConfiguration alloc] init];
 XCTAssertEqual(config.rateLimitDID, 5000);
 
 // 2. Config file overrides defaults
@@ -95,15 +95,15 @@ XCTAssertEqualObjects(canonical, @"https://pds.example.com");
 
 ---
 
-### PDSServiceContainerTests
-**File:** `Tests/Core/PDSServiceContainerTests.m`
+### ATProtoServiceContainerTests
+**File:** `Tests/Core/ATProtoServiceContainerTests.m`
 
 **Purpose:** Dependency injection container registration/resolution.
 
 #### How It Works
 
 ```objc
-PDSServiceContainer *container = [[PDSServiceContainer alloc] init];
+ATProtoServiceContainer *container = [[ATProtoServiceContainer alloc] init];
 
 // Register instance
 PDSAccountService *accountService = [[PDSAccountService alloc] init];
@@ -155,8 +155,8 @@ NSArray *accounts = [manager listAccountsWithCursor:nil limit:10];
 
 ```bash
 ./build/tests/AllTests -only-testing:AllTests/PDSApplicationTests
-./build/tests/AllTests -only-testing:AllTests/PDSConfigurationTests
-./build/tests/AllTests -only-testing:AllTests/PDSServiceContainerTests
+./build/tests/AllTests -only-testing:AllTests/ATProtoServiceConfigurationTests
+./build/tests/AllTests -only-testing:AllTests/ATProtoServiceContainerTests
 ```
 
 ## Related Documentation

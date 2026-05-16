@@ -37,7 +37,7 @@ This document outlines the remaining work to reach production readiness for the 
 - [ ] **Verify**: Run existing tests
 
 #### 2. Linux Network Transport Completion
-- [ ] **Implement**: `PDSNetworkTransportLinux` read logic (structure exists)
+- [ ] **Implement**: `ATProtoNetworkTransportLinux` read logic (structure exists)
 - [ ] **Test**: Verify Linux build and basic network operations
 - [ ] **CI**: Update `linux.yml` to run tests in Docker
 

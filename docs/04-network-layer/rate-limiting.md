@@ -45,11 +45,11 @@ The live implementation is `Garazyk/Sources/Network/RateLimiter.{h,m}`. It store
 
 ### Dependency Injection
 
-In the current runtime, the `RateLimiter` is owned by `PDSApplication` and its compatibility facade `PDSController`. It is explicitly injected into XRPC method packs (like `XrpcRepoMethods`) during registration. This ensures that handlers use the correctly configured limiter instance and facilitates easier testing by allowing mock limiters.
+In the current runtime, the `RateLimiter` is owned by `PDSApplication` and its compatibility facade `PDSController`. It is explicitly injected into XRPC method packs (like `XrpcRepoPack`) during registration. This ensures that handlers use the correctly configured limiter instance and facilitates easier testing by allowing mock limiters.
 
 - `PDSApplication` initializes and configures the `rateLimiter`.
 - `XrpcMethodRegistry` orchestrates the injection into various XRPC handlers.
-- `XrpcRepoMethods` applies `checkBlobUploadRateLimitForDid:` for blob uploads.
+- `XrpcRepoPack` applies `checkBlobUploadRateLimitForDid:` for blob uploads.
 
 In the current runtime, those checks are not applied everywhere in one generic middleware layer. They are attached where the repo needs them:
 

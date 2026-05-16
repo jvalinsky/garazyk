@@ -136,10 +136,33 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 
 - (BOOL)createSchema:(NSError **)error {
     PDSMigrationManager *migrationManager;
+    NSString *schemaSQL;
+    NSString *schemaMarkerTable;
     if ([self.did isEqualToString:PDSServiceStoreDID]) {
         migrationManager = [PDSMigrationManager serviceDatabaseMigrationManager];
+        schemaSQL = [[PDSSchemaManager sharedManager] serviceSchemaSQL];
+        schemaMarkerTable = @"actor_preferences";
     } else {
         migrationManager = [PDSMigrationManager actorStoreMigrationManager];
+        schemaSQL = [[PDSSchemaManager sharedManager] actorStoreSchemaSQL];
+        schemaMarkerTable = @"ipld_blocks";
+    }
+
+    NSString *checkMarkerSQL = [NSString stringWithFormat:@"SELECT name FROM sqlite_master WHERE type='table' AND name='%@'", schemaMarkerTable];
+    NSArray *markerResults = [self.database executeParameterizedQuery:checkMarkerSQL params:@[] error:nil];
+    if (markerResults.count == 0) {
+        char *errMsg = NULL;
+        int rc = sqlite3_exec((sqlite3 *)self.database.internalSQLiteHandle, schemaSQL.UTF8String, NULL, NULL, &errMsg);
+        if (rc != SQLITE_OK) {
+            if (error) {
+                NSString *msg = errMsg ? [NSString stringWithUTF8String:errMsg] : @"Unknown schema bootstrap error";
+                *error = [NSError errorWithDomain:PDSActorStoreErrorDomain
+                                             code:rc
+                                         userInfo:@{NSLocalizedDescriptionKey: msg}];
+            }
+            if (errMsg) sqlite3_free(errMsg);
+            return NO;
+        }
     }
 
     NSString *checkMigrationsSQL = @"SELECT name FROM sqlite_master WHERE type='table' AND name='_migrations'";

@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 /*!
- @file PDSNetworkTransport.h
+ @file ATProtoNetworkTransport.h
 
- @abstract Platform-abstracted networking interfaces for PDS connections.
+ @abstract Platform-abstracted networking interfaces for AT Protocol connections.
 
  @discussion Defines the transport layer abstractions for network connections,
  allowing platform-specific implementations (macOS via Network framework,
@@ -23,49 +23,49 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @enum PDSNetworkConnectionState
+ @enum ATProtoNetworkConnectionState
 
  @abstract Connection lifecycle states.
 
- @constant PDSNetworkConnectionStateWaiting Initial state, not yet started.
- @constant PDSNetworkConnectionStatePreparing Connection in progress.
- @constant PDSNetworkConnectionStateReady Data transfer ready.
- @constant PDSNetworkConnectionStateFailed Error occurred.
- @constant PDSNetworkConnectionStateCancelled Connection closed.
+ @constant ATProtoNetworkConnectionStateWaiting Initial state, not yet started.
+ @constant ATProtoNetworkConnectionStatePreparing Connection in progress.
+ @constant ATProtoNetworkConnectionStateReady Data transfer ready.
+ @constant ATProtoNetworkConnectionStateFailed Error occurred.
+ @constant ATProtoNetworkConnectionStateCancelled Connection closed.
  */
-typedef NS_ENUM(NSInteger, PDSNetworkConnectionState) {
-    PDSNetworkConnectionStateWaiting = 0,
-    PDSNetworkConnectionStatePreparing,
-    PDSNetworkConnectionStateReady,
-    PDSNetworkConnectionStateFailed,
-    PDSNetworkConnectionStateCancelled
+typedef NS_ENUM(NSInteger, ATProtoNetworkConnectionState) {
+    ATProtoNetworkConnectionStateWaiting = 0,
+    ATProtoNetworkConnectionStatePreparing,
+    ATProtoNetworkConnectionStateReady,
+    ATProtoNetworkConnectionStateFailed,
+    ATProtoNetworkConnectionStateCancelled
 };
 
 /*!
- @enum PDSNetworkListenerState
+ @enum ATProtoNetworkListenerState
 
  @abstract Listener lifecycle states.
 
- @constant PDSNetworkListenerStateWaiting Not yet started.
- @constant PDSNetworkListenerStateReady Accepting connections.
- @constant PDSNetworkListenerStateFailed Error occurred.
- @constant PDSNetworkListenerStateCancelled Stopped.
+ @constant ATProtoNetworkListenerStateWaiting Not yet started.
+ @constant ATProtoNetworkListenerStateReady Accepting connections.
+ @constant ATProtoNetworkListenerStateFailed Error occurred.
+ @constant ATProtoNetworkListenerStateCancelled Stopped.
  */
-typedef NS_ENUM(NSInteger, PDSNetworkListenerState) {
-    PDSNetworkListenerStateWaiting = 0,
-    PDSNetworkListenerStateReady,
-    PDSNetworkListenerStateFailed,
-    PDSNetworkListenerStateCancelled
+typedef NS_ENUM(NSInteger, ATProtoNetworkListenerState) {
+    ATProtoNetworkListenerStateWaiting = 0,
+    ATProtoNetworkListenerStateReady,
+    ATProtoNetworkListenerStateFailed,
+    ATProtoNetworkListenerStateCancelled
 };
 
 /*!
- @protocol PDSNetworkTransport
+ @protocol ATProtoNetworkTransport
 
  @abstract Base protocol for network transport objects.
 
  @discussion Defines the common lifecycle methods shared by all transport types.
  */
-@protocol PDSNetworkTransport <NSObject>
+@protocol ATProtoNetworkTransport <NSObject>
 
 /*! Cancels the transport, releasing all resources. */
 - (void)cancel;
@@ -82,19 +82,19 @@ typedef NS_ENUM(NSInteger, PDSNetworkListenerState) {
 @end
 
 /*!
- @protocol PDSNetworkConnection
+ @protocol ATProtoNetworkConnection
 
  @abstract Bidirectional network connection for data transfer.
 
  @discussion Represents an established connection capable of sending and
  receiving data. Supports callbacks for state changes and data operations.
 
- @see PDSNetworkListener
+ @see ATProtoNetworkListener
  */
-@protocol PDSNetworkConnection <PDSNetworkTransport>
+@protocol ATProtoNetworkConnection <ATProtoNetworkTransport>
 
 /*! Callback invoked when connection state changes. */
-@property (nonatomic, copy, nullable) void (^stateChangedHandler)(PDSNetworkConnectionState state, NSError * _Nullable error);
+@property (nonatomic, copy, nullable) void (^stateChangedHandler)(ATProtoNetworkConnectionState state, NSError * _Nullable error);
 
 /*! The remote peer's IP address (for logging/rate limiting). */
 @property (nonatomic, readonly, nullable) NSString *remoteAddress;
@@ -133,22 +133,22 @@ typedef NS_ENUM(NSInteger, PDSNetworkListenerState) {
 @end
 
 /*!
- @protocol PDSNetworkListener
+ @protocol ATProtoNetworkListener
 
  @abstract Inbound connection acceptor.
 
  @discussion Listens on a port and notifies when new connections arrive.
  Each accepted connection is passed to the newConnectionHandler callback.
 
- @see PDSNetworkConnection
+ @see ATProtoNetworkConnection
  */
-@protocol PDSNetworkListener <PDSNetworkTransport>
+@protocol ATProtoNetworkListener <ATProtoNetworkTransport>
 
 /*! Callback invoked when listener state changes. */
-@property (nonatomic, copy, nullable) void (^stateChangedHandler)(PDSNetworkListenerState state, NSError * _Nullable error);
+@property (nonatomic, copy, nullable) void (^stateChangedHandler)(ATProtoNetworkListenerState state, NSError * _Nullable error);
 
 /*! Callback invoked when a new connection is accepted. */
-@property (nonatomic, copy, nullable) void (^newConnectionHandler)(id<PDSNetworkConnection> connection);
+@property (nonatomic, copy, nullable) void (^newConnectionHandler)(id<ATProtoNetworkConnection> connection);
 
 /*! The port the listener is bound to (valid after reaching Ready state). */
 @property (nonatomic, readonly) NSUInteger port;
@@ -156,14 +156,14 @@ typedef NS_ENUM(NSInteger, PDSNetworkListenerState) {
 @end
 
 /*!
- @class PDSNetworkTransportFactory
+ @class ATProtoNetworkTransportFactory
 
  @abstract Factory for creating platform-appropriate transport objects.
 
  @discussion Creates appropriate listener and connection implementations
  based on the current platform (macOS uses Network framework, Linux uses BSD sockets).
  */
-@interface PDSNetworkTransportFactory : NSObject
+@interface ATProtoNetworkTransportFactory : NSObject
 
 /*!
  @method createListenerWithPort:
@@ -174,9 +174,9 @@ typedef NS_ENUM(NSInteger, PDSNetworkListenerState) {
 
  @return A listener instance, or nil if creation failed.
 
- @see PDSNetworkListener
+ @see ATProtoNetworkListener
  */
-+ (id<PDSNetworkListener>)createListenerWithPort:(NSUInteger)port;
++ (id<ATProtoNetworkListener>)createListenerWithPort:(NSUInteger)port;
 
 /*!
  @method createListenerWithHost:port:
@@ -192,7 +192,7 @@ typedef NS_ENUM(NSInteger, PDSNetworkListenerState) {
 
  @return A listener instance, or nil if creation failed.
  */
-+ (id<PDSNetworkListener>)createListenerWithHost:(nullable NSString *)host port:(NSUInteger)port;
++ (id<ATProtoNetworkListener>)createListenerWithHost:(nullable NSString *)host port:(NSUInteger)port;
 
 /*!
  @method createConnectionWithHost:port:
@@ -205,9 +205,9 @@ typedef NS_ENUM(NSInteger, PDSNetworkListenerState) {
 
  @return A connection instance, or nil if creation failed.
 
- @see PDSNetworkConnection
+ @see ATProtoNetworkConnection
  */
-+ (id<PDSNetworkConnection>)createConnectionWithHost:(NSString *)host port:(NSUInteger)port;
++ (id<ATProtoNetworkConnection>)createConnectionWithHost:(NSString *)host port:(NSUInteger)port;
 
 @end
 

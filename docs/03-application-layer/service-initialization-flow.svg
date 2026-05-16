@@ -32,9 +32,9 @@
   <!-- Arrow down -->
   <path d="M 600 85 L 600 120" class="arrow"/>
 
-  <!-- PDSConfiguration Load -->
+  <!-- ATProtoServiceConfiguration Load -->
   <rect x="400" y="120" width="400" height="70" class="config-box" rx="5"/>
-  <text x="600" y="145" text-anchor="middle" class="title">1. Load PDSConfiguration</text>
+  <text x="600" y="145" text-anchor="middle" class="title">1. Load ATProtoServiceConfiguration</text>
   <text x="600" y="165" text-anchor="middle" class="label">Read config.json (host, port, database paths)</text>
 
   <!-- Arrow down -->
@@ -143,7 +143,7 @@
   <!-- XRPC Method Registry -->
   <rect x="350" y="970" width="500" height="80" class="box" rx="5"/>
   <text x="600" y="995" text-anchor="middle" class="title">7. Register XRPC Methods</text>
-  <text x="600" y="1015" text-anchor="middle" class="label">XrpcServerMethods, XrpcRepoMethods, etc.</text>
+  <text x="600" y="1015" text-anchor="middle" class="label">XrpcServerPack, XrpcRepoPack, etc.</text>
   <text x="600" y="1035" text-anchor="middle" class="label">Each domain registers its handlers</text>
 
   <!-- Arrow down -->

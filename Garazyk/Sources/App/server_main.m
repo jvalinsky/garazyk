@@ -56,7 +56,7 @@ int main(int argc, const char * argv[]) {
             [response setJsonBody:health];
         }];
 
-        // /xrpc/_health is handled by xrpcDispatcher via XrpcServerMethods
+        // /xrpc/_health is handled by xrpcDispatcher via XrpcServerPack
         // We can keep a direct handler for better performance or just let it fall through.
         // Let's make it consistent.
         [server addHandlerForPath:@"/xrpc/_health" handler:^(HttpRequest *request, HttpResponse *response) {

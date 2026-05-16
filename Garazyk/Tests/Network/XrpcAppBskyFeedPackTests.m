@@ -3,7 +3,7 @@
 #import "AdminAuthXrpcTestBase.h"
 #import "AppView/Services/GraphService.h"
 #import "Database/Service/ServiceDatabases.h"
-#import "Database/PDSBlock.h"
+#import "Database/PDSDatabaseBlock.h"
 #import "Core/CID.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Network/XrpcAppBskyFeedPack.h"
@@ -599,10 +599,11 @@
     NSString *listURI = [NSString stringWithFormat:@"at://%@/app.bsky.graph.list/%@", self.userDid, @"feed-list"];
     [self seedListItemForListURI:listURI subjectDid:self.userDid];
 
+    NSString *authHeader = [NSString stringWithFormat:@"Bearer %@", self.userJwt];
     HttpResponse *response = [self sendGetRequestWithPath:@"/xrpc/app.bsky.feed.getListFeed"
                                              queryString:[NSString stringWithFormat:@"list=%@&limit=10", listURI]
                                               queryParams:@{@"list" : listURI, @"limit" : @"10"}
-                                                  headers:@{}];
+                                                  headers:@{@"authorization" : authHeader}];
     XCTAssertEqual(response.statusCode, 200);
 
     NSArray *feed = response.jsonBody[@"feed"];

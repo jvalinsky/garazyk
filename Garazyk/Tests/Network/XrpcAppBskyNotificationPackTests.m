@@ -3,7 +3,7 @@
 #import "AdminAuthXrpcTestBase.h"
 #import "AppView/Services/NotificationService.h"
 #import "Database/Service/ServiceDatabases.h"
-#import "Database/PDSBlock.h"
+#import "Database/PDSDatabaseBlock.h"
 #import "Core/CID.h"
 #import "Core/ATProtoCBORSerialization.h"
 #import "Network/XrpcAppBskyNotificationPack.h"

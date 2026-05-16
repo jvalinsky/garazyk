@@ -32,7 +32,7 @@
 
   <!-- XRPC Handler -->
   <rect x="250" y="150" width="400" height="60" class="process" rx="5"/>
-  <text x="450" y="175" class="text">XrpcRepoMethods Handler</text>
+  <text x="450" y="175" class="text">XrpcRepoPack Handler</text>
   <text x="450" y="195" class="label">Extract auth, blob data, MIME type</text>
 
   <!-- Arrow -->

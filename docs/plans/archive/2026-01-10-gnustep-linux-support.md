@@ -72,27 +72,27 @@ Run `make`. It should fail on `Network/Network.h` but pass Crypto imports.
 ### Task 3: Networking Layer Abstraction
 
 **Files:**
-- Create: `Sources/Network/PDSNetworkTransport.h`
-- Create: `Sources/Network/PDSNetworkTransportMac.m`
-- Create: `Sources/Network/PDSNetworkTransportLinux.m`
+- Create: `Sources/Network/ATProtoNetworkTransport.h`
+- Create: `Sources/Network/ATProtoNetworkTransportMac.m`
+- Create: `Sources/Network/ATProtoNetworkTransportLinux.m`
 - Modify: `Sources/Network/HttpServer.m`
 - Modify: `Sources/Sync/WebSocketConnection.m`
 
 **Step 1: Define Transport Protocol**
-Create `PDSNetworkTransport` protocol defining:
+Create `ATProtoNetworkTransport` protocol defining:
 - `startListeningOnPort:`
 - `sendData:`
 - `stop`
 
 **Step 2: Implement Mac Transport**
-Move existing `Network.framework` code from `HttpServer.m` into `PDSNetworkTransportMac`.
+Move existing `Network.framework` code from `HttpServer.m` into `ATProtoNetworkTransportMac`.
 
 **Step 3: Implement Linux Transport**
-Implement `PDSNetworkTransportLinux` using GCD (`dispatch_io` or `dispatch_source`) and BSD sockets.
+Implement `ATProtoNetworkTransportLinux` using GCD (`dispatch_io` or `dispatch_source`) and BSD sockets.
 *Note: This is complex. For the first pass, a stub that returns error or a simple blocking socket on a background queue is acceptable to get it compiling.*
 
 **Step 4: Refactor HttpServer**
-Update `HttpServer` to use `id<PDSNetworkTransport>` factory based on platform.
+Update `HttpServer` to use `id<ATProtoNetworkTransport>` factory based on platform.
 
 **Step 5: Commit**
 ```bash

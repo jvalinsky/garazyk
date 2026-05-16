@@ -59,7 +59,7 @@
   <!-- XrpcMethodRegistry -->
   <rect x="450" y="380" width="500" height="70" class="network-box" rx="5"/>
   <text x="700" y="405" text-anchor="middle" class="title">3. XrpcMethodRegistry</text>
-  <text x="700" y="425" text-anchor="middle" class="label">Look up handler (e.g., XrpcRepoMethods)</text>
+  <text x="700" y="425" text-anchor="middle" class="label">Look up handler (e.g., XrpcRepoPack)</text>
 
   <!-- Arrow down -->
   <path d="M 700 450 L 700 490" class="arrow"/>
@@ -184,8 +184,8 @@
     <text x="700" y="25" class="label">1. Client: POST /xrpc/com.atproto.repo.createRecord</text>
     <text x="700" y="45" class="label">2. HttpServer routes to XrpcDispatcher</text>
     <text x="700" y="65" class="label">3. XrpcDispatcher verifies JWT token</text>
-    <text x="700" y="85" class="label">4. XrpcMethodRegistry finds XrpcRepoMethods handler</text>
-    <text x="700" y="105" class="label">5. XrpcRepoMethods calls PDSRecordService.createRecord</text>
+    <text x="700" y="85" class="label">4. XrpcMethodRegistry finds XrpcRepoPack handler</text>
+    <text x="700" y="105" class="label">5. XrpcRepoPack calls PDSRecordService.createRecord</text>
     <text x="700" y="125" class="label">6. PDSRecordService calls PDSRepositoryService to update MST</text>
     <text x="700" y="145" class="label">7. Both services access PDSDatabasePool for user's actor DB</text>
     <text x="700" y="165" class="label">8. PDSRelayService notifies relays asynchronously</text>

@@ -46,7 +46,7 @@ The core initialization happens in `Garazyk/Sources/App/PDSApplication.m`:
 2. **Initialize Infrastructure**: Prepares key managers and opens shared databases.
 3. **Production Identity Checks**: Ensures the issuer is a valid public HTTPS identity (if in production mode).
 4. **Service Composition**: Instantiates services like `PDSAccountService` and `PDSRepositoryService`.
-5. **HTTP Server Setup**: Configures the `HttpServer` via `PDSHttpServerBuilder`.
+5. **HTTP Server Setup**: Configures the `HttpServer` via `ATProtoHttpServerBuilder`.
 6. **Start Listener**: Begins listening for incoming connections.
 7. **Relay Activation**: Starts the relay service once the server is ready.
 
@@ -62,7 +62,7 @@ If the server fails to start, verify the following:
 ## Debugging Startup Failures
 
 - **Early Exit**: If the process dies before binding a port, check the configuration loading and infrastructure setup in `PDSApplication.m`.
-- **Missing Routes**: If the port binds but requests return 404, verify the route registration in `PDSHttpServerBuilder.m`.
+- **Missing Routes**: If the port binds but requests return 404, verify the route registration in `ATProtoHttpServerBuilder.m`.
 - **Inert Relay**: If the server answers requests but doesn't notify relays, check the relay service activation logic.
 
 ## Related Reading

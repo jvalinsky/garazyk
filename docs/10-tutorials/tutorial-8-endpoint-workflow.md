@@ -19,7 +19,7 @@ Determine where the endpoint belongs based on its purpose:
 | Surface | Location |
 | --- | --- |
 | XRPC | `XrpcMethodRegistry.m` |
-| Admin/Explorer | `PDSHttpServerBuilder.m` |
+| Admin/Explorer | `ATProtoHttpServerBuilder.m` |
 | UI | `CappuccinoUIHandler.m` or specific UI controllers |
 
 Registration defines the request shape and applies initial middleware.
@@ -83,7 +83,7 @@ If the endpoint is contributor-facing, ensure it appears in the generated docume
 
 | Symptom | Cause | Resolution |
 | --- | --- | --- |
-| 404 Not Found | Registration mismatch | Check `PDSHttpServerBuilder` or `XrpcMethodRegistry`. |
+| 404 Not Found | Registration mismatch | Check `ATProtoHttpServerBuilder` or `XrpcMethodRegistry`. |
 | Auth Failure | Incorrect auth helper | Verify the expected issuer and bearer token configuration. |
 | Stale UI | Explorer not updated | Check `ExploreHandler` or the relevant UI controller. |
 

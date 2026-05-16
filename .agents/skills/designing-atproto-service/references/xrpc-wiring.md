@@ -109,7 +109,7 @@ NS_ASSUME_NONNULL_END
     // WebSocket route (if needed)
     [server addWebSocketRoute:@"/xrpc/com.atproto.<domain>.subscribe"
                        handler:^(HttpRequest *request, HttpResponse *response,
-                                 id<PDSNetworkConnection> connection) {
+                                 id<ATProtoNetworkConnection> connection) {
         // Accept upgraded connection
     }];
 }
@@ -132,13 +132,13 @@ For PDS services that need the full method set, `XrpcMethodRegistry` delegates t
 
 ```
 XrpcMethodRegistry
-├── XrpcServerMethods     → com.atproto.server.*
-├── XrpcRepoMethods       → com.atproto.repo.*
-├── XrpcSyncMethods       → com.atproto.sync.*
-├── XrpcIdentityMethods   → com.atproto.identity.*
-├── XrpcAdminMethods      → com.atproto.admin.*
-├── XrpcLabelMethods      → com.atproto.label.*
-└── XrpcAppBskyMethods    → app.bsky.*
+├── XrpcServerPack        → com.atproto.server.*
+├── XrpcRepoPack          → com.atproto.repo.*
+├── XrpcSyncPack          → com.atproto.sync.*
+├── XrpcIdentityPack      → com.atproto.identity.*
+├── XrpcAdminPack         → com.atproto.admin.*
+├── XrpcLabelPack         → com.atproto.label.*
+└── XrpcAppBskyPack       → app.bsky.*
 ```
 
 Helper modules:

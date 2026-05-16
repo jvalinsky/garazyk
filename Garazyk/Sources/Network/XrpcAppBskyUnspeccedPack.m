@@ -3,6 +3,7 @@
 #import "Network/XrpcAppBskyUnspeccedPack.h"
 
 #import "Debug/GZLogger.h"
+#import "Network/XrpcRoutePackServices.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/XrpcHandler.h"
@@ -42,10 +43,16 @@ static void flattenThreadTree(NSDictionary *tree, NSInteger depth, NSMutableArra
 
 @implementation XrpcAppBskyUnspeccedPack
 
++ (NSString *)routePackIdentifier {
+  return @"app.bsky.unspecced";
+}
+
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-           ageAssuranceService:(nullable AgeAssuranceService *)ageAssuranceService
-              searchIndexService:(nullable SearchIndexService *)searchIndexService
-                    feedService:(nullable FeedService *)feedService {
+                      services:(id<XrpcRoutePackServices>)services {
+
+    AgeAssuranceService *ageAssuranceService = services.ageAssuranceService;
+    SearchIndexService *searchIndexService = services.searchIndexService;
+    FeedService *feedService = services.feedService;
 
 #pragma mark - Labeler
 

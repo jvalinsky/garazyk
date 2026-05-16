@@ -14,7 +14,7 @@
 
 #import <Foundation/Foundation.h>
 
-@protocol PDSNetworkConnection;
+@protocol ATProtoNetworkConnection;
 @class HttpProtocolDriver;
 @class HttpResponseSender;
 @class HttpRequest;
@@ -101,7 +101,7 @@ typedef void (^HttpIOErrorHandler)(NSError *error);
 
  @return An initialized coordinator.
  */
-- (instancetype)initWithConnection:(id<PDSNetworkConnection>)connection
+- (instancetype)initWithConnection:(id<ATProtoNetworkConnection>)connection
                            protocol:(HttpProtocolDriver *)driver
                        responseSender:(HttpResponseSender *)sender NS_DESIGNATED_INITIALIZER;
 

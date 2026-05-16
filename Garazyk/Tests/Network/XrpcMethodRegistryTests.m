@@ -12,6 +12,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/XrpcMethodRegistry.h"
+#import "Network/XrpcIdentityHelper.h"
 
 @interface XrpcMethodRegistryTests : XCTestCase
 @end
@@ -42,7 +43,7 @@ static HttpResponse *xrpcDispatchRequest(XrpcDispatcher *dispatcher,
 - (void)testPublicKeyBytesFromMultibaseDecodesBase58 {
     NSError *error = nil;
     NSString *key = @"zQ3shZc2QzApp2oymGvQbzP8eKheVshBHbU4ZYjeXqwSKEn6N";
-    NSData *bytes = [XrpcMethodRegistry publicKeyBytesFromMultibase:key error:&error];
+    NSData *bytes = [XrpcIdentityHelper publicKeyBytesFromMultibase:key error:&error];
 
     XCTAssertNotNil(bytes, @"Decoded bytes should exist for a valid base58 publicKeyMultibase");
     XCTAssertNil(error, @"No error should be produced for valid input");

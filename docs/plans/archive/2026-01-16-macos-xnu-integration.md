@@ -63,7 +63,7 @@ macOS integration for the ATProto PDS CLI tool: background service operation, se
 | `Garazyk/Sources/Security/PDSBiometricKeychain.h/m` | Touch ID keychain wrapper |
 | `Garazyk/Sources/System/PDSSpotlightIndexer.h/m` | Spotlight integration |
 | `Garazyk/Sources/System/PDSQuickLookGenerator.h/m` | Quick Look previews |
-| `Garazyk/Sources/Network/PDSNetworkMonitor.h/m` | Network monitoring |
+| `Garazyk/Sources/Network/ATProtoNetworkMonitor.h/m` | Network monitoring |
 | `Garazyk/Sources/Network/PDSBonjourPublisher.h/m` | Service discovery |
 | `Garazyk/Sources/Debug/PDSPerformanceTracer.h/m` | Performance instrumentation |
 | `Garazyk/Resources/LaunchDaemons/com.atproto.pds.plist` | LaunchDaemon config |

@@ -24,7 +24,7 @@ CAR is the transport and archive format for content-addressed blocks:
 - `ATProtoCBORSerialization`: JSON-compatible bridge for handlers and services.
 - `RepoCommit`, `MST`, and `CID`: Repository block identity.
 - `CARReader` and `CARWriter`: Portable block archive parsing and production.
-- `XrpcSyncMethods`: Sync responses (e.g., `getRecord`).
+- `XrpcSyncPack`: Sync responses (e.g., `getRecord`).
 
 ## Debugging Points
 - **Encoding**: Does the structured value encode to the expected bytes?

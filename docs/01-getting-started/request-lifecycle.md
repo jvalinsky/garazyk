@@ -14,7 +14,7 @@ sequenceDiagram
   participant T as Platform Transport
   participant H as HttpServer (Driver)
   participant P as HttpProtocolSession (Sans-I/O)
-  participant B as PDSHttpServerBuilder Routes
+  participant B as ATProtoHttpServerBuilder Routes
   participant X as XRPC or UI Handler
   participant S as Service Layer
 
@@ -38,7 +38,7 @@ sequenceDiagram
 
 The `HttpServer` handles raw byte streams and TLS. It uses a [Sans-I/O architecture](../04-network-layer/sans-io) where the protocol logic (`HttpProtocolSession`) is decoupled from the socket.
 
-- **Routing**: `PDSHttpServerBuilder` defines the order of route registration.
+- **Routing**: `ATProtoHttpServerBuilder` defines the order of route registration.
 - **Static Assets**: The Explorer and Admin UI assets are served directly via the builder.
 
 ### Primary Endpoints
@@ -95,7 +95,7 @@ Endpoints under `/api/pds/*` allow operators to inspect server state and review 
 
 | Symptom | Primary Check |
 | --- | --- |
-| 404 or wrong handler | `PDSHttpServerBuilder` registration order. |
+| 404 or wrong handler | `ATProtoHttpServerBuilder` registration order. |
 | Auth failure | `XrpcAuthHelper` and config settings. |
 | Logic error | Domain service implementation. |
 | State corruption | Repository or database layer logic. |

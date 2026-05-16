@@ -40,7 +40,7 @@ docker build -f docker/Dockerfile.gnustep .
 
 ## Linux Networking Notes
 
-- `PDSNetworkTransportLinux` now uses a bounded non-blocking connect timeout for outbound sockets.
+- `ATProtoNetworkTransportLinux` now uses a bounded non-blocking connect timeout for outbound sockets.
 - Default timeout is `5000ms`; override with environment variable `PDS_LINUX_CONNECT_TIMEOUT_MS`.
 - Timeout/failure handling iterates across `getaddrinfo()` candidates and reports a stable connect error after all candidates fail.
 - Cancellation now fails pending receive callbacks with `ECANCELED` instead of leaving them unresolved.
