@@ -54,17 +54,27 @@ export async function run(): Promise<ScenarioResult> {
 
   const eventsAfter: any[] = [];
   await timedCall(result, "Reconnect with cursor", async () => {
-    // In Deno FirehoseClient, we need to pass cursor.
-    // I'll add cursor support to FirehoseClient.ts if it's missing.
     const fh2 = new FirehoseClient(relayUrl);
-    // Assuming FirehoseClient.subscribe(cb, timeout, cursor)
-    // Checking lib/deno/firehose.ts again... it doesn't take cursor yet.
-    // I'll update it later or just pass it in URL manually if I was using raw ws.
-    // For now I'll just subscribe and check continuity if I can.
     await fh2.subscribe((ev) => {
       eventsAfter.push(ev);
-    }, 5);
+    }, 5, lastSeq);
   });
+
+  // Assert continuity: events after reconnect should have seq > lastSeq
+  if (eventsAfter.length > 0 && lastSeq > 0) {
+    const minSeqAfter = Math.min(...eventsAfter.map((e: any) => e.seq).filter((s: number) => s > 0));
+    if (minSeqAfter > lastSeq) {
+      result.stepPassed("Event continuity after reconnect",
+        `last_seq_before=${lastSeq}, first_seq_after=${minSeqAfter}, events=${eventsAfter.length}`);
+    } else {
+      result.stepFailed("Event continuity after reconnect",
+        `Expected seq > ${lastSeq} but got min_seq=${minSeqAfter}`);
+    }
+  } else if (lastSeq === 0) {
+    result.stepSkipped("Event continuity after reconnect", "No events with seq > 0 received before disconnect");
+  } else {
+    result.stepSkipped("Event continuity after reconnect", "No events received after reconnect");
+  }
 
   result.finish();
   return result;

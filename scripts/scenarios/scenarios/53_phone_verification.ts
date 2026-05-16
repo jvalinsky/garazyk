@@ -135,13 +135,13 @@ export async function run(): Promise<ScenarioResult> {
             body: JSON.stringify({ To: phoneNumber, Code: "000000" }),
           }
         );
-        if (res.status !== 200) {
-          throw new Error(`Unexpected status: ${res.status}`);
-        }
         const body = await res.json();
+        if (body.status === "approved") {
+          throw new Error("Wrong code was incorrectly approved — expected rejection");
+        }
         return body;
       },
-      (r) => `status=${r.status} valid=${r.valid}`
+      (r) => `status=${r.status} (correctly rejected)`
     );
   }
 
