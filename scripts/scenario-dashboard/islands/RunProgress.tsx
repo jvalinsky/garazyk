@@ -1,4 +1,4 @@
-import { useState, useEffect } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import { useRuntime } from "../runtime.ts";
 
 interface RunProgressProps {
@@ -22,23 +22,28 @@ function staleLevel(secondsSinceUpdate: number): "active" | "slow" | "stale" {
 }
 
 export default function RunProgress({ runId, startedAt, status }: RunProgressProps) {
-  const { state } = useRuntime();
-  const progress = state.value.runs.progress;
+  const { state, dispatch } = useRuntime();
+  const progress = state.value.runs.progressByRunId[runId];
+  const startedAtMs = startedAt < 10_000_000_000 ? startedAt * 1000 : startedAt;
 
-  const [elapsed, setElapsed] = useState(() => Date.now() - startedAt * 1000);
+  const [elapsed, setElapsed] = useState(() => Date.now() - startedAtMs);
   const [secondsSinceUpdate, setSecondsSinceUpdate] = useState(0);
+
+  useEffect(() => {
+    dispatch({ type: "runs/viewRun", runId });
+  }, [runId]);
 
   useEffect(() => {
     if (status !== "running") return;
     const tick = setInterval(() => {
       const now = Date.now();
-      setElapsed(now - startedAt * 1000);
+      setElapsed(now - startedAtMs);
       if (progress?.updatedAt) {
         setSecondsSinceUpdate(Math.floor((now - progress.updatedAt) / 1000));
       }
     }, 1000);
     return () => clearInterval(tick);
-  }, [startedAt, status, progress?.updatedAt]);
+  }, [startedAtMs, status, progress?.updatedAt]);
 
   if (status !== "running") return null;
 

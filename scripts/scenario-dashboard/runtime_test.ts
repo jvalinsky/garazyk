@@ -1,6 +1,6 @@
 import { assertEquals, assertThrows } from "jsr:@std/assert";
-import { constructMsg, constructErrorMsg } from "./runtime.ts";
-import type { ServiceStatus, Run } from "./services/types.ts";
+import { constructErrorMsg, constructMsg } from "./runtime.ts";
+import type { Run, ServiceStatus } from "./services/types.ts";
 
 // ---------------------------------------------------------------------------
 // constructMsg — API response to Msg mapping
@@ -8,8 +8,12 @@ import type { ServiceStatus, Run } from "./services/types.ts";
 
 Deno.test("constructMsg: network/healthReceived maps services array", () => {
   const services: ServiceStatus[] = [{
-    name: "pds", label: "PDS", url: "http://localhost:2583",
-    port: 2583, status: "running", healthy: true,
+    name: "pds",
+    label: "PDS",
+    url: "http://localhost:2583",
+    port: 2583,
+    status: "running",
+    healthy: true,
   }];
   const data = { services };
   const msg = constructMsg("network/healthReceived", data);
@@ -17,7 +21,15 @@ Deno.test("constructMsg: network/healthReceived maps services array", () => {
 });
 
 Deno.test("constructMsg: runs/activeReceived maps activeRun to run", () => {
-  const run: Run = { id: "r-1", status: "running", startedAt: 1000, totalScenarios: 5, passed: 0, failed: 0, skipped: 0 };
+  const run: Run = {
+    id: "r-1",
+    status: "running",
+    startedAt: 1000,
+    totalScenarios: 5,
+    passed: 0,
+    failed: 0,
+    skipped: 0,
+  };
   const data = { activeRun: run };
   const msg = constructMsg("runs/activeReceived", data);
   assertEquals(msg, { type: "runs/activeReceived", run });
@@ -45,7 +57,18 @@ Deno.test("constructMsg: runs/startSucceeded coerces runId to string", () => {
 });
 
 Deno.test("constructMsg: runs/progressReceived passes data through as progress", () => {
-  const progress = { exists: true, runId: "r-1", total: 10, completed: 3, currentScenario: "test", currentScenarioId: "01", elapsedMs: 5000, updatedAt: 1000, now: 6000, running: true };
+  const progress = {
+    exists: true,
+    runId: "r-1",
+    total: 10,
+    completed: 3,
+    currentScenario: "test",
+    currentScenarioId: "01",
+    elapsedMs: 5000,
+    updatedAt: 1000,
+    now: 6000,
+    running: true,
+  };
   const msg = constructMsg("runs/progressReceived", progress);
   assertEquals(msg, { type: "runs/progressReceived", progress });
 });
@@ -145,20 +168,17 @@ Deno.test("constructErrorMsg: throws on unknown error type", () => {
 // Edge cases
 // ---------------------------------------------------------------------------
 
-Deno.test("constructMsg: handles missing services field gracefully", () => {
+Deno.test("constructMsg: malformed health response becomes typed failure", () => {
   const msg = constructMsg("network/healthReceived", {});
-  assertEquals(msg.type, "network/healthReceived");
-  assertEquals((msg as { services: unknown }).services, undefined);
+  assertEquals(msg, { type: "network/healthFailed", error: "Malformed health response" });
 });
 
-Deno.test("constructMsg: handles non-object data for pass-through types", () => {
+Deno.test("constructMsg: malformed progress response becomes typed failure", () => {
   const msg = constructMsg("runs/progressReceived", "just a string");
-  assertEquals(msg.type, "runs/progressReceived");
-  assertEquals((msg as { progress: unknown }).progress, "just a string");
+  assertEquals(msg, { type: "runs/progressFailed", error: "Malformed progress response" });
 });
 
-Deno.test("constructMsg: handles services as non-array", () => {
+Deno.test("constructMsg: services as non-array becomes typed failure", () => {
   const msg = constructMsg("network/healthReceived", { services: "not-an-array" });
-  assertEquals(msg.type, "network/healthReceived");
-  assertEquals((msg as { services: unknown }).services, "not-an-array");
+  assertEquals(msg, { type: "network/healthFailed", error: "Malformed health response" });
 });
