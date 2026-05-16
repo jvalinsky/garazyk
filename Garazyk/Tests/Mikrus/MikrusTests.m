@@ -3,18 +3,18 @@
 
 #import <XCTest/XCTest.h>
 
-#import "Constellation/ConstellationConfiguration.h"
-#import "Constellation/ConstellationDatabase.h"
-#import "Constellation/ConstellationLinkExtractor.h"
-#import "Constellation/ConstellationRuntime.h"
-#import "Constellation/ConstellationSourceSpec.h"
-#import "Constellation/ConstellationXrpcRoutePack.h"
+#import "Mikrus/MikrusConfiguration.h"
+#import "Mikrus/MikrusDatabase.h"
+#import "Mikrus/MikrusLinkExtractor.h"
+#import "Mikrus/MikrusRuntime.h"
+#import "Mikrus/MikrusSourceSpec.h"
+#import "Mikrus/MikrusXrpcRoutePack.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 
-static NSString *ConstellationTestDBPath(NSString *name) {
+static NSString *MikrusTestDBPath(NSString *name) {
     NSString *dir = [NSTemporaryDirectory() stringByAppendingPathComponent:
-        [NSString stringWithFormat:@"garazyk-constellation-%@-%@", name, NSUUID.UUID.UUIDString]];
+        [NSString stringWithFormat:@"garazyk-mikrus-%@-%@", name, NSUUID.UUID.UUIDString]];
     [[NSFileManager defaultManager] createDirectoryAtPath:dir
                               withIntermediateDirectories:YES
                                                attributes:nil
@@ -22,16 +22,16 @@ static NSString *ConstellationTestDBPath(NSString *name) {
     return [dir stringByAppendingPathComponent:@"test.db"];
 }
 
-static ConstellationDatabase *ConstellationOpenTestDB(XCTestCase *testCase) {
+static MikrusDatabase *MikrusOpenTestDB(XCTestCase *testCase) {
     NSError *error = nil;
-    ConstellationDatabase *db = [[ConstellationDatabase alloc] initWithPath:ConstellationTestDBPath(testCase.name)
+    MikrusDatabase *db = [[MikrusDatabase alloc] initWithPath:MikrusTestDBPath(testCase.name)
                                                                       error:&error];
     XCTAssertNotNil(db, @"open db: %@", error);
     XCTAssertTrue([db runMigrations:&error], @"migrate db: %@", error);
     return db;
 }
 
-static HttpRequest *ConstellationRequest(NSDictionary *queryParams) {
+static HttpRequest *MikrusRequest(NSDictionary *queryParams) {
     return [[HttpRequest alloc] initWithMethod:HttpMethodGET
                                  methodString:@"GET"
                                          path:@"/xrpc/test"
@@ -43,21 +43,21 @@ static HttpRequest *ConstellationRequest(NSDictionary *queryParams) {
                                 remoteAddress:@"127.0.0.1"];
 }
 
-@interface ConstellationSourceSpecTests : XCTestCase
+@interface MikrusSourceSpecTests : XCTestCase
 @end
 
-@interface ConstellationRuntimeTests : XCTestCase
-@property (nonatomic, strong) ConstellationRuntime *runtime;
+@interface MikrusRuntimeTests : XCTestCase
+@property (nonatomic, strong) MikrusRuntime *runtime;
 @property (nonatomic, copy) NSString *tempDir;
 @end
 
-@implementation ConstellationRuntimeTests
+@implementation MikrusRuntimeTests
 
 - (void)setUp {
     [super setUp];
-    self.runtime = [[ConstellationRuntime alloc] init];
+    self.runtime = [[MikrusRuntime alloc] init];
     self.tempDir = [NSTemporaryDirectory() stringByAppendingPathComponent:
-        [NSString stringWithFormat:@"garazyk-constellation-runtime-%@", NSUUID.UUID.UUIDString]];
+        [NSString stringWithFormat:@"garazyk-mikrus-runtime-%@", NSUUID.UUID.UUIDString]];
     [[NSFileManager defaultManager] createDirectoryAtPath:self.tempDir
                               withIntermediateDirectories:YES
                                                attributes:nil
@@ -81,7 +81,7 @@ static HttpRequest *ConstellationRequest(NSDictionary *queryParams) {
         @"relay_urls": @[]
     };
     NSData *configData = [NSJSONSerialization dataWithJSONObject:config options:0 error:nil];
-    NSString *configPath = [self.tempDir stringByAppendingPathComponent:@"constellation.json"];
+    NSString *configPath = [self.tempDir stringByAppendingPathComponent:@"mikrus.json"];
     XCTAssertTrue([configData writeToFile:configPath atomically:YES]);
 
     NSError *error = nil;
@@ -94,7 +94,7 @@ static HttpRequest *ConstellationRequest(NSDictionary *queryParams) {
     NSURL *url = [NSURL URLWithString:
         [NSString stringWithFormat:@"http://127.0.0.1:%lu/_health",
                                    (unsigned long)self.runtime.configuration.httpPort]];
-    XCTestExpectation *expectation = [self expectationWithDescription:@"constellation health"];
+    XCTestExpectation *expectation = [self expectationWithDescription:@"mikrus health"];
     [[[NSURLSession sharedSession] dataTaskWithURL:url
                                  completionHandler:^(NSData *data, NSURLResponse *response, NSError *requestError) {
         XCTAssertNil(requestError);
@@ -115,25 +115,25 @@ static HttpRequest *ConstellationRequest(NSDictionary *queryParams) {
 
 @end
 
-@implementation ConstellationSourceSpecTests
+@implementation MikrusSourceSpecTests
 
 - (void)testSourceParserAcceptsCollectionAndPath {
     NSError *error = nil;
-    ConstellationSourceSpec *source =
-        [ConstellationSourceSpec sourceSpecWithString:@"app.bsky.feed.like:subject.uri"
+    MikrusSourceSpec *source =
+        [MikrusSourceSpec sourceSpecWithString:@"app.bsky.feed.like:subject.uri"
                                                 error:&error];
     XCTAssertNotNil(source, @"%@", error);
     XCTAssertEqualObjects(source.collection, @"app.bsky.feed.like");
     XCTAssertEqualObjects(source.path, @"subject.uri");
 
-    ConstellationSourceSpec *arraySource =
-        [ConstellationSourceSpec sourceSpecWithString:@"sh.tangled.label.op:add[].key"
+    MikrusSourceSpec *arraySource =
+        [MikrusSourceSpec sourceSpecWithString:@"sh.tangled.label.op:add[].key"
                                                 error:&error];
     XCTAssertNotNil(arraySource, @"%@", error);
     XCTAssertEqualObjects(arraySource.path, @"add[].key");
 
-    ConstellationSourceSpec *legacyLeadingDot =
-        [ConstellationSourceSpec sourceSpecWithString:@"app.bsky.feed.like:.subject.uri"
+    MikrusSourceSpec *legacyLeadingDot =
+        [MikrusSourceSpec sourceSpecWithString:@"app.bsky.feed.like:.subject.uri"
                                                 error:&error];
     XCTAssertNotNil(legacyLeadingDot, @"%@", error);
     XCTAssertEqualObjects(legacyLeadingDot.path, @"subject.uri");
@@ -141,8 +141,8 @@ static HttpRequest *ConstellationRequest(NSDictionary *queryParams) {
 
 - (void)testSourceParserRejectsMalformedSource {
     NSError *error = nil;
-    ConstellationSourceSpec *source =
-        [ConstellationSourceSpec sourceSpecWithString:@"app.bsky.feed.like.subject.uri"
+    MikrusSourceSpec *source =
+        [MikrusSourceSpec sourceSpecWithString:@"app.bsky.feed.like.subject.uri"
                                                 error:&error];
     XCTAssertNil(source);
     XCTAssertNotNil(error);
@@ -157,13 +157,13 @@ static HttpRequest *ConstellationRequest(NSDictionary *queryParams) {
         ]
     };
 
-    NSArray *subjectURIs = [ConstellationLinkExtractor subjectsInRecord:record path:@"subject.uri"];
+    NSArray *subjectURIs = [MikrusLinkExtractor subjectsInRecord:record path:@"subject.uri"];
     XCTAssertEqualObjects(subjectURIs, (@[@"at://did:plc:post/app.bsky.feed.post/1"]));
 
-    NSArray *featureURIs = [ConstellationLinkExtractor subjectsInRecord:record path:@"facets[].features[].uri"];
+    NSArray *featureURIs = [MikrusLinkExtractor subjectsInRecord:record path:@"facets[].features[].uri"];
     XCTAssertEqualObjects(featureURIs, (@[@"https://example.com/a"]));
 
-    NSArray *entries = [ConstellationLinkExtractor linkEntriesInRecord:record];
+    NSArray *entries = [MikrusLinkExtractor linkEntriesInRecord:record];
     NSPredicate *predicate = [NSPredicate predicateWithFormat:@"path == %@ AND subject == %@",
                               @"facets[].features[].did", @"did:plc:mentioned"];
     XCTAssertEqual([entries filteredArrayUsingPredicate:predicate].count, 1u);
@@ -171,15 +171,15 @@ static HttpRequest *ConstellationRequest(NSDictionary *queryParams) {
 
 @end
 
-@interface ConstellationDatabaseTests : XCTestCase
-@property (nonatomic, strong) ConstellationDatabase *db;
+@interface MikrusDatabaseTests : XCTestCase
+@property (nonatomic, strong) MikrusDatabase *db;
 @end
 
-@implementation ConstellationDatabaseTests
+@implementation MikrusDatabaseTests
 
 - (void)setUp {
     [super setUp];
-    self.db = ConstellationOpenTestDB(self);
+    self.db = MikrusOpenTestDB(self);
 }
 
 - (void)tearDown {
@@ -200,8 +200,8 @@ static HttpRequest *ConstellationRequest(NSDictionary *queryParams) {
                                    seq:10
                                  error:&error], @"%@", error);
 
-    ConstellationSourceSpec *source =
-        [ConstellationSourceSpec sourceSpecWithString:@"app.bsky.feed.like:subject.uri" error:&error];
+    MikrusSourceSpec *source =
+        [MikrusSourceSpec sourceSpecWithString:@"app.bsky.feed.like:subject.uri" error:&error];
     NSInteger total = 0;
     NSArray *records = [self.db backlinkRecordsForSubject:@"at://did:plc:target/app.bsky.feed.post/one"
                                                     source:source
@@ -237,8 +237,8 @@ static HttpRequest *ConstellationRequest(NSDictionary *queryParams) {
 
 - (void)testBacklinkDidsAndCursor {
     NSError *error = nil;
-    ConstellationSourceSpec *source =
-        [ConstellationSourceSpec sourceSpecWithString:@"app.bsky.graph.follow:subject" error:&error];
+    MikrusSourceSpec *source =
+        [MikrusSourceSpec sourceSpecWithString:@"app.bsky.graph.follow:subject" error:&error];
     for (NSInteger i = 0; i < 2; i++) {
         NSString *did = [NSString stringWithFormat:@"did:plc:user%ld", (long)i];
         NSString *rkey = [NSString stringWithFormat:@"follow%ld", (long)i];
@@ -287,8 +287,8 @@ static HttpRequest *ConstellationRequest(NSDictionary *queryParams) {
     XCTAssertTrue([self.db indexRecord:item1 did:@"did:plc:alice" collection:@"app.bsky.graph.listitem" rkey:@"one" cid:nil seq:30 error:&error], @"%@", error);
     XCTAssertTrue([self.db indexRecord:item2 did:@"did:plc:carol" collection:@"app.bsky.graph.listitem" rkey:@"two" cid:nil seq:31 error:&error], @"%@", error);
 
-    ConstellationSourceSpec *source =
-        [ConstellationSourceSpec sourceSpecWithString:@"app.bsky.graph.listitem:subject" error:&error];
+    MikrusSourceSpec *source =
+        [MikrusSourceSpec sourceSpecWithString:@"app.bsky.graph.listitem:subject" error:&error];
     NSArray *items = [self.db manyToManyItemsForSubject:@"did:plc:bob"
                                                  source:source
                                             pathToOther:@"list"
@@ -326,8 +326,8 @@ static HttpRequest *ConstellationRequest(NSDictionary *queryParams) {
                                    seq:40
                                  error:&error], @"%@", error);
 
-    ConstellationSourceSpec *source =
-        [ConstellationSourceSpec sourceSpecWithString:@"sh.tangled.graph.vouch:." error:&error];
+    MikrusSourceSpec *source =
+        [MikrusSourceSpec sourceSpecWithString:@"sh.tangled.graph.vouch:." error:&error];
     NSInteger total = [self.db backlinksCountForSubject:@"did:plc:bob"
                                                  source:source
                                                   error:&error];
@@ -354,17 +354,17 @@ static HttpRequest *ConstellationRequest(NSDictionary *queryParams) {
 
 @end
 
-@interface ConstellationXrpcRoutePackTests : XCTestCase
-@property (nonatomic, strong) ConstellationDatabase *db;
-@property (nonatomic, strong) ConstellationXrpcRoutePack *routes;
+@interface MikrusXrpcRoutePackTests : XCTestCase
+@property (nonatomic, strong) MikrusDatabase *db;
+@property (nonatomic, strong) MikrusXrpcRoutePack *routes;
 @end
 
-@implementation ConstellationXrpcRoutePackTests
+@implementation MikrusXrpcRoutePackTests
 
 - (void)setUp {
     [super setUp];
-    self.db = ConstellationOpenTestDB(self);
-    self.routes = [[ConstellationXrpcRoutePack alloc] initWithDatabase:self.db];
+    self.db = MikrusOpenTestDB(self);
+    self.routes = [[MikrusXrpcRoutePack alloc] initWithDatabase:self.db];
 
     NSError *error = nil;
     NSDictionary *like = @{@"$type": @"app.bsky.feed.like",
@@ -380,7 +380,7 @@ static HttpRequest *ConstellationRequest(NSDictionary *queryParams) {
 }
 
 - (void)testGetBacklinksResponseShape {
-    HttpRequest *request = ConstellationRequest(@{
+    HttpRequest *request = MikrusRequest(@{
         @"subject": @"at://did:plc:target/app.bsky.feed.post/one",
         @"source": @"app.bsky.feed.like:subject.uri"
     });
@@ -396,7 +396,7 @@ static HttpRequest *ConstellationRequest(NSDictionary *queryParams) {
 }
 
 - (void)testRejectsLimitAboveLexiconMaximum {
-    HttpRequest *request = ConstellationRequest(@{
+    HttpRequest *request = MikrusRequest(@{
         @"subject": @"at://did:plc:target/app.bsky.feed.post/one",
         @"source": @"app.bsky.feed.like:subject.uri",
         @"limit": @"101"
@@ -410,7 +410,7 @@ static HttpRequest *ConstellationRequest(NSDictionary *queryParams) {
 }
 
 - (void)testGetRecordByUriLocalRecord {
-    HttpRequest *request = ConstellationRequest(@{
+    HttpRequest *request = MikrusRequest(@{
         @"at_uri": @"at://did:plc:alice/app.bsky.feed.like/like1",
         @"cid": @"cid1"
     });
@@ -436,7 +436,7 @@ static HttpRequest *ConstellationRequest(NSDictionary *queryParams) {
                                    seq:20
                                  error:&error], @"%@", error);
 
-    HttpRequest *request = ConstellationRequest(@{
+    HttpRequest *request = MikrusRequest(@{
         @"subject": @"did:plc:bob",
         @"source": @"app.bsky.graph.listitem:subject",
         @"pathToOther": @"list",

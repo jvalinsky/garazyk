@@ -9,7 +9,7 @@
 | 1 | `Garazyk/Sources/Database/PDSDatabase.m` | 3804 | `sqlite3 *_db` | 1 handle + LRU stmt cache |
 | 2 | `Garazyk/Sources/AppView/Server/AppViewDatabase.m` | 1520 | `sqlite3 *_db` | 1 handle, manual |
 | 3 | `Garazyk/Sources/Video/JelczDatabase.m` | ~350 | `sqlite3 *_db` | 1 handle, no cache |
-| 4 | `Garazyk/Sources/Constellation/ConstellationDatabase.m` | ~200 | Via `PDSConnectionPool` | Acquire/release |
+| 4 | `Garazyk/Sources/Mikrus/MikrusDatabase.m` | ~200 | Via `PDSConnectionPool` | Acquire/release |
 | 5 | `Garazyk/Sources/Database/Pool/PDSConnectionPool.m` | ~350 | `NSMutableArray<NSNumber*>` | Semaphore pool |
 | 6 | `Garazyk/Sources/Database/ActorStore/PDSActorStore.m` | ~500 | Delegates to `PDSDatabase` | Wraps PDSDatabase |
 
@@ -17,9 +17,9 @@
 
 - `safeExecuteSync:` reentrancy guard — 3 copies (PDSDatabase.m:66, AppViewDatabase.m:411, ActorStore.m:186)
 - `dispatch_queue_set_specific` + static key — 4 different key declaration styles
-- `valueFromStatement:` / `_valueFromStatement:` / `ConstellationColumnValue` / `rowFromStatement:` — 4 implementations of the same column reader
-- Parameter binding — `bindData:toStatement:index:` (PDSDatabase), `_bindParams:toStatement:` (AppViewDatabase), `ConstellationBind` (ConstellationDatabase)
-- `errorWithMessage:code:` — PDSDatabase, JelczDatabase, ConstellationDatabase all define their own
+- `valueFromStatement:` / `_valueFromStatement:` / `MikrusColumnValue` / `rowFromStatement:` — 4 implementations of the same column reader
+- Parameter binding — `bindData:toStatement:index:` (PDSDatabase), `_bindParams:toStatement:` (AppViewDatabase), `MikrusBind` (MikrusDatabase)
+- `errorWithMessage:code:` — PDSDatabase, JelczDatabase, MikrusDatabase all define their own
 - `parameterPlaceholdersForCount:` — identical code in PDSDatabase.m:2587 and AppViewDatabase.m:1468
 - PRAGMA setup — each independently sets WAL, synchronous, busy timeout
 
@@ -88,7 +88,7 @@ extern const PDSDBConfig PDSDBConfigBulkRead;
 | 3 | Define `PDSConnectionManager` protocol | Revert protocol addition |
 | 4 | Implement `PDSConnectionManager_Serial` | Revert implementation |
 | 5 | Implement `PDSConnectionManager_Pooled` (wraps PDSConnectionPool) | Revert implementation |
-| 6 | Migrate ConstellationDatabase to use shared utilities + PDSConnectionManager | Revert single file |
+| 6 | Migrate MikrusDatabase to use shared utilities + PDSConnectionManager | Revert single file |
 | 7 | Migrate JelczDatabase to use shared utilities | Revert single file |
 | 8 | Migrate AppViewDatabase to use shared utilities | Revert single file |
 | 9 | Migrate PDSDatabase to delegate to shared utilities | Revert single file |

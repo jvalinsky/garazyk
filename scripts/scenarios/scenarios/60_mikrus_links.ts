@@ -3,9 +3,9 @@ import { XrpcClient } from "../../lib/deno/client.ts";
 import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 
-const CONSTELLATION_URL =
-  Deno.env.get("CONSTELLATION_URL") ||
-  SERVICE_URLS.constellation ||
+const MIKRUS_URL =
+  Deno.env.get("MIKRUS_URL") ||
+  SERVICE_URLS.mikrus ||
   "http://localhost:3210";
 
 function now() {
@@ -13,7 +13,7 @@ function now() {
 }
 
 async function waitForCount(
-  constellation: XrpcClient,
+  mikrus: XrpcClient,
   subject: string,
   source: string,
   minTotal: number,
@@ -22,7 +22,7 @@ async function waitForCount(
   const deadline = Date.now() + timeoutMs;
   let lastTotal = 0;
   while (Date.now() < deadline) {
-    const response = await constellation.raw.xrpcGet(
+    const response = await mikrus.raw.xrpcGet(
       "blue.microcosm.links.getBacklinksCount",
       { subject, source },
     );
@@ -34,19 +34,19 @@ async function waitForCount(
 }
 
 export async function run(): Promise<ScenarioResult> {
-  const result = new ScenarioResult("Constellation Links");
+  const result = new ScenarioResult("Mikrus Links");
   result.start();
 
   const pds = new XrpcClient(PDS1);
-  const constellation = new XrpcClient(CONSTELLATION_URL);
+  const mikrus = new XrpcClient(MIKRUS_URL);
   const luna = getCharacter("luna");
   const marcus = getCharacter("marcus");
 
   await timedCall(result, "PDS health check", async () => {
     await pds.waitForHealthy(30);
   });
-  await timedCall(result, "Constellation health check", async () => {
-    await constellation.waitForHealthy(30);
+  await timedCall(result, "Mikrus health check", async () => {
+    await mikrus.waitForHealthy(30);
   });
 
   if (result.failed > 0) {
@@ -80,11 +80,11 @@ export async function run(): Promise<ScenarioResult> {
       "app.bsky.feed.post",
       {
         $type: "app.bsky.feed.post",
-        text: "Constellation link index target",
+        text: "Mikrus link index target",
         createdAt: now(),
       },
       luna.accessJwt,
-      { rkey: `constellation-target-${Date.now()}` },
+      { rkey: `mikrus-target-${Date.now()}` },
     );
   }, (record) => record.uri);
 
@@ -101,12 +101,12 @@ export async function run(): Promise<ScenarioResult> {
       {
         $type: "app.bsky.graph.list",
         purpose: "app.bsky.graph.defs#curatelist",
-        name: "Constellation Targets",
-        description: "Records used by the Constellation scenario",
+        name: "Mikrus Targets",
+        description: "Records used by the Mikrus scenario",
         createdAt: now(),
       },
       luna.accessJwt,
-      { rkey: `constellation-list-${Date.now()}` },
+      { rkey: `mikrus-list-${Date.now()}` },
     );
   }, (record) => record.uri);
 
@@ -120,7 +120,7 @@ export async function run(): Promise<ScenarioResult> {
         createdAt: now(),
       },
       marcus.accessJwt,
-      { rkey: `constellation-follow-${Date.now()}` },
+      { rkey: `mikrus-follow-${Date.now()}` },
     );
   });
 
@@ -134,7 +134,7 @@ export async function run(): Promise<ScenarioResult> {
         createdAt: now(),
       },
       marcus.accessJwt,
-      { rkey: `constellation-like-${Date.now()}` },
+      { rkey: `mikrus-like-${Date.now()}` },
     );
   });
 
@@ -148,7 +148,7 @@ export async function run(): Promise<ScenarioResult> {
         createdAt: now(),
       },
       marcus.accessJwt,
-      { rkey: `constellation-repost-${Date.now()}` },
+      { rkey: `mikrus-repost-${Date.now()}` },
     );
   });
 
@@ -164,14 +164,14 @@ export async function run(): Promise<ScenarioResult> {
           createdAt: now(),
         },
         marcus.accessJwt,
-        { rkey: `constellation-listitem-${Date.now()}` },
+        { rkey: `mikrus-listitem-${Date.now()}` },
       );
     });
   }
 
   await timedCall(result, "Follow backlink count", async () => {
     const response = await waitForCount(
-      constellation,
+      mikrus,
       luna.did,
       "app.bsky.graph.follow:subject",
       1,
@@ -182,7 +182,7 @@ export async function run(): Promise<ScenarioResult> {
 
   await timedCall(result, "Post like backlink", async () => {
     const response = await waitForCount(
-      constellation,
+      mikrus,
       postUri,
       "app.bsky.feed.like:subject.uri",
       1,
@@ -192,7 +192,7 @@ export async function run(): Promise<ScenarioResult> {
   }, (response) => `total=${response.total}`);
 
   await timedCall(result, "Backlink DID lookup", async () => {
-    const response = await constellation.raw.xrpcGet(
+    const response = await mikrus.raw.xrpcGet(
       "blue.microcosm.links.getBacklinkDids",
       {
         subject: postUri,
@@ -205,7 +205,7 @@ export async function run(): Promise<ScenarioResult> {
 
   if (listRef) {
     await timedCall(result, "Many-to-many list count", async () => {
-      const response = await constellation.raw.xrpcGet(
+      const response = await mikrus.raw.xrpcGet(
         "blue.microcosm.links.getManyToManyCounts",
         {
           subject: luna.did,
@@ -224,7 +224,7 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   await timedCall(result, "Record lookup by URI", async () => {
-    const response = await constellation.raw.xrpcGet(
+    const response = await mikrus.raw.xrpcGet(
       "blue.microcosm.repo.getRecordByUri",
       { at_uri: postUri, cid: postRef.cid },
     );
@@ -233,8 +233,8 @@ export async function run(): Promise<ScenarioResult> {
     return response;
   }, (response) => `cid=${response.cid}`);
 
-  result.recordArtifact("constellation", {
-    url: CONSTELLATION_URL,
+  result.recordArtifact("mikrus", {
+    url: MIKRUS_URL,
     postUri,
     listUri: listRef?.uri,
     luna: luna.did,
