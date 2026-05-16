@@ -19,7 +19,6 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString * const AdminMiddlewareErrorDomain;
 
 /*!
- @enum AdminMiddlewareError
 
  @abstract Error codes for admin authentication.
 

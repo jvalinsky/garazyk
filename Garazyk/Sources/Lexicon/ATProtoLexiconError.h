@@ -23,7 +23,6 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString * const ATProtoLexiconErrorDomain;
 
 /*!
- @enum ATProtoLexiconErrorCode
 
  @abstract Error codes for lexicon validation failures.
 

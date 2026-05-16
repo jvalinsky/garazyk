@@ -19,7 +19,6 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSErrorDomain const PDSErrorDomain;
 
 /*!
- @enum PDSErrorCode
 
  @abstract Internal error codes for the PDS.
  */

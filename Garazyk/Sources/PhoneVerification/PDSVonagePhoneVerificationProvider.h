@@ -31,7 +31,6 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString *const PDSVonageProviderErrorDomain;
 
 /*!
- @enum PDSVonageProviderErrorCode
 
  @abstract Error codes for Vonage provider operations.
  */

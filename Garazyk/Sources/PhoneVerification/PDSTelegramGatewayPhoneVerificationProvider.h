@@ -34,7 +34,6 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString *const PDSTelegramGatewayProviderErrorDomain;
 
 /*!
- @enum PDSTelegramGatewayProviderErrorCode
 
  @abstract Error codes for Telegram Gateway provider operations.
  */
