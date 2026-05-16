@@ -73,7 +73,10 @@ void PDSActorStoreLinkAccountCategory(void) {}
     }
 
     NSString *sql = @"INSERT INTO accounts (did, handle, email, password_hash, password_salt, "
-                     @"access_jwt, refresh_jwt, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                     @"access_jwt, refresh_jwt, status, deactivated_at, created_at, updated_at, "
+                     @"tfa_enabled, tfa_secret, recovery_codes, invite_enabled, "
+                     @"age_assurance, age_verified_at, webauthn_enabled) "
+                     @"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     NSString *normalizedHandle = [ATProtoHandleValidator normalizeHandle:account.handle];
     NSArray *params = @[
@@ -84,8 +87,17 @@ void PDSActorStoreLinkAccountCategory(void) {}
         account.passwordSalt ?: [NSNull null],
         account.accessJwt ?: [NSNull null],
         account.refreshJwt ?: [NSNull null],
+        account.status ?: @"active",
+        account.deactivatedAt > 0 ? @(account.deactivatedAt) : [NSNull null],
         @(account.createdAt),
-        @(account.updatedAt)
+        @(account.updatedAt),
+        @(account.tfaEnabled),
+        account.tfaSecret ?: [NSNull null],
+        account.recoveryCodes ?: [NSNull null],
+        @(account.inviteEnabled),
+        account.ageAssurance ?: [NSNull null],
+        account.ageVerifiedAt ?: [NSNull null],
+        @(account.webauthnEnabled)
     ];
 
     if (![self.database executeParameterizedUpdate:sql params:params error:error]) {
@@ -104,7 +116,10 @@ void PDSActorStoreLinkAccountCategory(void) {}
 
 - (BOOL)updateAccount:(PDSDatabaseAccount *)account error:(NSError **)error {
     NSString *sql = @"UPDATE accounts SET handle = ?, email = ?, password_hash = ?, "
-                     @"password_salt = ?, access_jwt = ?, refresh_jwt = ?, updated_at = ? WHERE did = ?";
+                     @"password_salt = ?, access_jwt = ?, refresh_jwt = ?, status = ?, "
+                     @"deactivated_at = ?, updated_at = ?, tfa_enabled = ?, tfa_secret = ?, "
+                     @"recovery_codes = ?, invite_enabled = ?, age_assurance = ?, "
+                     @"age_verified_at = ?, webauthn_enabled = ? WHERE did = ?";
     
     NSString *normalizedHandle = [ATProtoHandleValidator normalizeHandle:account.handle];
     NSArray *params = @[
@@ -114,7 +129,16 @@ void PDSActorStoreLinkAccountCategory(void) {}
         account.passwordSalt ?: [NSNull null],
         account.accessJwt ?: [NSNull null],
         account.refreshJwt ?: [NSNull null],
+        account.status ?: @"active",
+        account.deactivatedAt > 0 ? @(account.deactivatedAt) : [NSNull null],
         @(account.updatedAt),
+        @(account.tfaEnabled),
+        account.tfaSecret ?: [NSNull null],
+        account.recoveryCodes ?: [NSNull null],
+        @(account.inviteEnabled),
+        account.ageAssurance ?: [NSNull null],
+        account.ageVerifiedAt ?: [NSNull null],
+        @(account.webauthnEnabled),
         account.did ?: @""
     ];
     

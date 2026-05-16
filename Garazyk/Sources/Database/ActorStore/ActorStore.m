@@ -429,7 +429,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 }
 
 - (NSArray<PDSDatabaseBlock *> *)listBlocksForDid:(NSString *)did limit:(NSUInteger)limit offset:(NSUInteger)offset error:(NSError **)error {
-    return [self.database executeParameterizedQuery:@"SELECT cid, block, size, rev FROM ipld_blocks LIMIT ? OFFSET ?" params:@[@(limit), @(offset)] modelClass:[PDSDatabaseBlock class] error:error] ?: @[];
+    return [self.database executeParameterizedQuery:@"SELECT cid, block AS block_data, size, rev FROM ipld_blocks LIMIT ? OFFSET ?" params:@[@(limit), @(offset)] modelClass:[PDSDatabaseBlock class] error:error] ?: @[];
 }
 
 - (BOOL)putBlock:(PDSDatabaseBlock *)block forDid:(NSString *)did error:(NSError **)error {
