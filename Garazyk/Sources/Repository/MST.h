@@ -1,5 +1,13 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
+/**
+ * @file MST.h
+ * @abstract Merkle Search Tree implementation for ATProto repositories.
+ * @discussion This header defines the Merkle Search Tree (MST) data structure used by
+ * ATProto for content-addressable record storage. The MST provides efficient
+ * key-value storage with cryptographic integrity guarantees through content addressing.
+ */
+
 #import <Foundation/Foundation.h>
 #import <stdint.h>
 
@@ -10,321 +18,274 @@ NS_ASSUME_NONNULL_BEGIN
 @class MSTEntry;
 @class MSTNodeEntry;
 
-/*!
- @header MST.h
-
- @abstract Merkle Search Tree implementation for ATProto repositories.
-
- @discussion This header defines the Merkle Search Tree (MST) data structure
- used by ATProto for content-addressable record storage. The MST provides
- efficient key-value storage with cryptographic integrity guarantees through
- content addressing.
-
- @copyright Copyright (c) 2025-2026 Jack Valinsky
- */
-
-/*!
-
- @abstract Specifies the type of an MST node.
-
- @constant MSTNodeKindLeaf A leaf node containing key-value entries.
- @constant MSTNodeKindNonLeaf An internal node containing subtree pointers.
+/**
+ * @abstract Specifies the type of an MST node.
  */
 typedef NS_ENUM(NSUInteger, MSTNodeKind) {
-  MSTNodeKindLeaf,
-  MSTNodeKindNonLeaf
+    /** Leaf node containing key-value entries. */
+    MSTNodeKindLeaf,
+    /** Internal node containing subtree pointers. */
+    MSTNodeKindNonLeaf
 };
 
-/*!
-
- @abstract Specifies the type of change in an MST diff operation.
-
- @constant MSTDiffOperationTypeAdd A new key-value pair was added.
- @constant MSTDiffOperationTypeUpdate An existing key's value was changed.
- @constant MSTDiffOperationTypeDelete A key-value pair was removed.
+/**
+ * @abstract Specifies the type of change in an MST diff operation.
  */
 typedef NS_ENUM(NSUInteger, MSTDiffOperationType) {
-  MSTDiffOperationTypeAdd,
-  MSTDiffOperationTypeUpdate,
-  MSTDiffOperationTypeDelete
+    /** A new key-value pair was added. */
+    MSTDiffOperationTypeAdd,
+    /** An existing key's value was changed. */
+    MSTDiffOperationTypeUpdate,
+    /** A key-value pair was removed. */
+    MSTDiffOperationTypeDelete
 };
 
 @class MSTDiffOperation;
 
-/*!
- @class MSTDiffOperation
-
- @abstract Represents a single change between two MST versions.
-
- @discussion Used for sync operations to describe what changed between commits.
- For adds, oldCID is nil. For deletes, newCID is nil. For updates, both are set.
+/**
+ * @abstract Represents a single change between two MST versions.
+ * @discussion Used for sync operations to describe changes between commits.
+ * For adds, previousCID is nil. For deletes, currentCID is nil. For updates, both are set.
  */
 @interface MSTDiffOperation : NSObject
 
+/** @abstract The key associated with the change. */
 @property(nonatomic, copy) NSString *key;
+/** @abstract The type of the operation. */
 @property(nonatomic, assign) MSTDiffOperationType type;
+/** @abstract The CID before the change. */
 @property(nonatomic, strong, nullable) CID *previousCID;
+/** @abstract The CID after the change. */
 @property(nonatomic, strong, nullable) CID *currentCID;
 
+/** @abstract Creates an add operation. */
 + (instancetype)addOperationWithKey:(NSString *)key
                          currentCID:(CID *)currentCID;
+/** @abstract Creates an update operation. */
 + (instancetype)updateOperationWithKey:(NSString *)key
                            previousCID:(CID *)previousCID
                             currentCID:(CID *)currentCID;
+/** @abstract Creates a delete operation. */
 + (instancetype)deleteOperationWithKey:(NSString *)key
                            previousCID:(CID *)previousCID;
 
 @end
 
-/*!
- @class MSTEntry
-
- @abstract Represents a key-value entry in the MST.
+/**
+ * @abstract Represents a key-value entry in the MST.
  */
 @interface MSTEntry : NSObject <NSCopying>
 
+/** @abstract The key of the entry. */
 @property(nonatomic, copy, readonly) NSString *key;
+/** @abstract The CID of the value. */
 @property(nonatomic, strong, readonly) CID *valueCID;
+/** @abstract Optional sub-key for nested entries. */
 @property(nonatomic, copy, readonly, nullable) NSString *subKey;
 
+/** @abstract Creates an entry. */
 + (instancetype)entryWithKey:(NSString *)key valueCID:(CID *)valueCID;
+/** @abstract Creates an entry with a sub-key. */
 + (instancetype)entryWithKey:(NSString *)key
                     valueCID:(CID *)valueCID
                       subKey:(nullable NSString *)subKey;
+/** @abstract Initializes an entry. */
 - (instancetype)initWithKey:(NSString *)key
                    valueCID:(CID *)valueCID
                      subKey:(nullable NSString *)subKey;
 
+/** @abstract Serialized key bytes. */
 - (NSData *)keyBytes;
+/** @abstract Length of the key. */
 - (NSUInteger)keyLength;
+/** @abstract Serialized entry data. */
 - (NSData *)serialize;
 
 @end
 
-/*!
- @class MSTNodeEntry
-
- @abstract An entry within an MST node.
+/**
+ * @abstract An entry within an MST node.
  */
 @interface MSTNodeEntry : NSObject
 
+/** @abstract Length of the key prefix. */
 @property(nonatomic, assign) NSUInteger prefixLen;
+/** @abstract The key suffix. */
 @property(nonatomic, copy) NSData *keySuffix;
+/** @abstract The CID value. */
 @property(nonatomic, strong) CID *value;
+/** @abstract Optional CID of the subtree. */
 @property(nonatomic, strong, nullable) CID *tree;
 
-/*! @abstract The full key reconstructed from prefix length and suffix. */
+/** @abstract The full key reconstructed from prefix length and suffix. */
 @property(nonatomic, copy, readonly) NSString *fullKey;
 
+/** @abstract Creates a node entry. */
 + (instancetype)entryWithPrefixLen:(NSUInteger)prefixLen
                          keySuffix:(NSData *)keySuffix
                              value:(CID *)value
                               tree:(nullable CID *)tree;
 
+/** @abstract Serializes the node entry. */
 - (NSData *)serialize;
 
 @end
 
+/** @abstract Block provider type for resolving CIDs. */
 typedef NSData * _Nullable (^MSTBlockProvider)(CID *cid);
 
-/*!
- @class MSTNode
-
- @abstract A node in the Merkle Search Tree.
+/**
+ * @abstract A node in the Merkle Search Tree.
  */
 @interface MSTNode : NSObject
 
+/** @abstract The node type (leaf or internal). */
 @property(nonatomic, assign, readonly) MSTNodeKind kind;
+/** @abstract The node hash CID. */
 @property(nonatomic, strong, readonly, nullable) CID *nodeHash;
+/** @abstract Entries contained in this node. */
 @property(nonatomic, copy, readonly) NSArray<MSTNodeEntry *> *entries;
+/** @abstract CID of the left subtree. */
 @property(nonatomic, strong, readonly, nullable) CID *left;
 
+/** @abstract Creates a leaf node. */
 + (instancetype)leafNodeWithEntries:(NSArray<MSTNodeEntry *> *)entries;
+/** @abstract Creates an internal (non-leaf) node. */
 + (instancetype)nonLeafNodeWithEntries:(NSArray<MSTNodeEntry *> *)entries
                                   left:(nullable CID *)left;
 
+/** @abstract Initializes a node. */
 - (instancetype)initWithKind:(MSTNodeKind)kind
                      entries:(NSArray<MSTNodeEntry *> *)entries
                         left:(nullable CID *)left;
 
+/** @abstract Serializes the node data. */
 - (NSData *)serialize;
+/** @abstract Serializes the node to CBOR, using a cache for CIDs. */
 - (NSData *)serializeToCBOR:(NSMapTable<MSTNode *, CID *> *)cache;
+/** @abstract Computes the CID of the node. */
 - (CID *)getCID:(NSMapTable<MSTNode *, CID *> *)cache;
+/** @abstract Computes the hash of the node. */
 - (NSData *)computeHash;
+/** @abstract Sets the node hash. */
 - (void)setNodeHash:(CID *)hash;
+/** @abstract Retrieves all entries in the tree rooted at this node. */
 - (NSArray<MSTEntry *> *)fullEntries;
 
 @end
 
-/*!
- @class MST
-
- @abstract The Merkle Search Tree data structure.
+/**
+ * @abstract The Merkle Search Tree data structure.
  */
 @interface MST : NSObject
 
+/** @abstract The root node of the tree. */
 @property(nonatomic, strong, readonly, nullable) MSTNode *root;
+/** @abstract The CID of the root node. */
 @property(nonatomic, strong, readonly, nullable) CID *rootCID;
+/** @abstract Hash of an empty tree. */
 @property(nonatomic, strong, readonly) NSData *emptyTreeHash;
 
+/** @abstract Initializes an MST with a root CID. */
 - (instancetype)initWithRootCID:(nullable CID *)rootCID;
+/** @abstract Initializes an MST with a root node. */
 - (instancetype)initWithRootNode:(nullable MSTNode *)rootNode;
+
+/** @abstract Gets a value CID for a given key. */
 - (nullable CID *)get:(NSString *)key;
+/** @abstract Gets a value CID for a given key and sub-key. */
 - (nullable CID *)get:(NSString *)key subKey:(nullable NSString *)subKey;
+/** @abstract Puts a key-value entry into the tree. */
 - (void)put:(NSString *)key valueCID:(CID *)valueCID;
+/** @abstract Puts a key-value entry with a sub-key into the tree. */
 - (void)put:(NSString *)key
     valueCID:(CID *)valueCID
       subKey:(nullable NSString *)subKey;
+/** @abstract Deletes an entry for a key. */
 - (void)delete:(NSString *)key;
+/** @abstract Deletes an entry for a key and sub-key. */
 - (void)delete:(NSString *)key subKey:(nullable NSString *)subKey;
+/** @abstract Retrieves all entries in the tree. */
 - (NSArray<MSTEntry *> *)allEntries;
+/** @abstract Retrieves entries matching the prefix. */
 - (NSArray<MSTEntry *> *)entriesWithPrefix:(NSString *)prefix;
+
+/** @abstract Exports the tree as a CAR file. */
 - (NSData *)exportCAR;
+/** @abstract Serializes the tree to CBOR. */
 - (NSData *)serializeToCBOR;
+/** @abstract Deserializes an MST from CBOR. */
 + (nullable instancetype)deserializeFromCBOR:(NSData *)data;
 
-/*!
- @method diffFrom:
-
- @abstract Computes the differences between this tree and an older version.
-
- @discussion Compares this MST with an older version and returns all changes
- (additions, updates, deletions). Used for sync operations to generate
- repository diffs for the firehose.
-
- @param oldTree The older MST to compare against (may be nil for initial state).
- @return Array of MSTDiffOperation objects describing all changes.
+/**
+ * @abstract Computes differences between this tree and an older version.
+ * @param oldTree The older MST to compare against.
+ * @return Array of MSTDiffOperation objects.
  */
 - (NSArray<MSTDiffOperation *> *)diffFrom:(nullable MST *)oldTree;
 
-/*!
- @method keyDepthString:
-
- @abstract Computes the depth of a key based on its SHA-256 hash.
-
- @param key The key string.
- @return The computed depth (number of leading zero bits).
+/**
+ * @abstract Computes the depth of a key based on its hash.
+ * @param key The key string.
+ * @return The computed depth (number of leading zero bits).
  */
 + (NSUInteger)keyDepthString:(NSString *)key;
 
-/*!
- @method keyDepthBytes:
-
- @abstract Computes the depth of a key based on its SHA-256 hash.
-
- @param keyBytes The key as raw bytes.
- @return The computed depth (number of leading zero bits).
+/**
+ * @abstract Computes the depth of a key based on its hash bytes.
+ * @param keyBytes The key as raw bytes.
+ * @return The computed depth (number of leading zero bits).
  */
 + (NSUInteger)keyDepthBytes:(NSData *)keyBytes;
 
-/*!
- @method keyDepth:
-
- @abstract Computes the depth of a key based on its SHA-256 hash.
-
- @param key The key string.
- @return The computed depth (number of leading zero bits divided by 2).
+/**
+ * @abstract Computes the depth of a key.
+ * @param key The key string.
+ * @return The computed depth (leading zero bits divided by 2).
  */
 + (uint32_t)keyDepth:(NSString *)key;
 
-/*!
- @method getProofNodesForKey:
-
- @abstract Gets the proof nodes from root to the given key.
-
- @param key The key to get proof nodes for.
- @return Array of MSTNode objects forming the proof path.
+/**
+ * @abstract Gets the proof nodes path to a given key.
+ * @param key The key to get proof nodes for.
+ * @return Array of nodes.
  */
 - (nullable NSArray<MSTNode *> *)getProofNodesForKey:(NSString *)key;
+/**
+ * @abstract Gets the proof nodes path using a block provider.
+ */
 - (nullable NSArray<MSTNode *> *)getProofNodesForKey:(NSString *)key
                                        blockProvider:(nullable MSTBlockProvider)blockProvider;
 
-/*!
- @method enumerateNodesDepthFirstUsingBlock:
-
- @abstract Enumerates all MST nodes in strict depth-first, key-ordered traversal.
-
- @discussion Traverses the MST depth-first, visiting each node before its
- subtrees. For each node, the callback receives the node, its depth in the
- tree (0 at root), and a stop flag. This ordering is required by the STAR
- (Streaming Tree ARchive) format, which interleaves MST nodes and records
- in depth-first order.
-
- @param block Callback invoked for each node. Set *stop to YES to abort.
-*/
+/**
+ * @abstract Enumerates all nodes in depth-first, key-ordered traversal.
+ */
 - (void)enumerateNodesDepthFirstUsingBlock:(void (^)(MSTNode *node, NSUInteger depth, BOOL *stop))block;
 
-/*!
- @method serializeNode:
-
- @abstract Serializes an MST node to CBOR data.
-
- @param node The node to serialize.
- @return CBOR-encoded data for the node.
+/**
+ * @abstract Serializes an MST node to CBOR data.
  */
 - (nullable NSData *)serializeNode:(MSTNode *)node;
 
-/*!
- @method enumerateNodeCARBlocksUsingBlock:error:
-
- @abstract Enumerates all MST node blocks in CAR-ready form.
-
- @discussion Traverses the tree and invokes the callback once per unique node
- CID with its serialized DAG-CBOR bytes.
-
- @param block Callback invoked for each node block. Return NO to stop.
- @param error Error pointer for traversal or callback failures.
- @return YES if traversal completed, NO if aborted due to error.
+/**
+ * @abstract Enumerates all node blocks in CAR-ready form.
  */
 - (BOOL)enumerateNodeCARBlocksUsingBlock:(BOOL (^)(CID *cid, NSData *data,
                                                    NSError **error))block
                                    error:(NSError **)error;
 
-/*!
- @method toJSON
-
- @abstract Exports the complete tree structure as a JSON dictionary.
-
- @discussion Returns a dictionary containing the tree's structure with:
- - rootCID: The root CID as a string
- - nodeCount: Total number of nodes
- - entryCount: Total number of entries
- - maxDepth: Maximum tree depth (level)
- - nodes: Array of node dictionaries with cid, level, kind, entries, left
-
- @return Dictionary suitable for JSON serialization, or nil if tree is empty.
+/**
+ * @abstract Exports the tree structure as a JSON dictionary for visualization.
  */
 - (nullable NSDictionary *)toJSON;
 
-/*!
- @method getStatistics
-
- @abstract Computes tree statistics for debugging and monitoring.
-
- @discussion Returns a dictionary with metrics including:
- - nodeCount: Total number of nodes
- - entryCount: Total number of key-value entries
- - leafNodeCount: Number of leaf nodes
- - internalNodeCount: Number of internal nodes
- - maxDepth: Maximum tree depth
- - avgDepth: Average depth across all nodes
- - rootCID: Root CID as a string
- - balanceFactor: Tree balance metric (0.0-1.0)
-
- @return Dictionary with tree statistics.
+/**
+ * @abstract Computes tree statistics for monitoring.
  */
 - (NSDictionary *)getStatistics;
 
-/*!
- @method toDOT
-
- @abstract Exports the tree structure in Graphviz DOT format.
-
- @discussion Generates a DOT language representation suitable for
- visualization with Graphviz tools. Nodes are color-coded by level
- and edges show parent-child relationships.
-
- @return DOT format string, or nil if tree is empty.
+/**
+ * @abstract Exports the tree as a Graphviz DOT representation.
  */
 - (nullable NSString *)toDOT;
 
