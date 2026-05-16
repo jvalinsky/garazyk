@@ -13,6 +13,14 @@
 
 @implementation VideoJWTAuthProvider
 
+static NSString *VideoServiceAuthDIDWithoutFragment(NSString *did) {
+    NSRange fragmentRange = [did rangeOfString:@"#"];
+    if (fragmentRange.location == NSNotFound) {
+        return did;
+    }
+    return [did substringToIndex:fragmentRange.location];
+}
+
 - (instancetype)initWithExpectedAudience:(NSString *)audience
                             signingKeyJWK:(nullable NSDictionary *)signingKeyJWK {
     self = [super init];
@@ -119,7 +127,10 @@
     // Verify audience (Service Auth tokens only; access tokens have PDS as audience)
     if (isServiceAuth) {
         NSString *aud = jwt.payload.aud;
-        if (aud && ![aud isEqualToString:self.audience]) {
+        NSString *audWithoutFragment = VideoServiceAuthDIDWithoutFragment(aud);
+        NSString *expectedWithoutFragment = VideoServiceAuthDIDWithoutFragment(self.audience);
+        if (aud && ![aud isEqualToString:self.audience] &&
+            ![audWithoutFragment isEqualToString:expectedWithoutFragment]) {
             GZ_LOG_WARN(@"Service Auth JWT audience mismatch: expected %@, got %@", self.audience, aud);
             response.statusCode = HttpStatusUnauthorized;
             [response setJsonBody:@{
@@ -169,7 +180,6 @@
     } else if (self.signingKeyJWK) {
         // Legacy path: verify with a pre-configured JWK
         JWTVerifier *verifier = [[JWTVerifier alloc] init];
-        verifier.expectedAudience = self.audience;
         if (![verifier verifyJWT:jwt error:&error]) {
             GZ_LOG_WARN(@"Service Auth JWT verification failed (JWK): %@", error);
             response.statusCode = HttpStatusUnauthorized;
