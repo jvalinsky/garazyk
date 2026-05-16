@@ -225,10 +225,12 @@
   // Configure chat service proxy before route registration.
   // When PDS_CHAT_URL is set, the XrpcAppBskyPack skips local chat
   // handler registration and the XrpcHandler proxies chat.bsky.* methods.
+  XrpcDispatcher *xrpcDispatcher = [XrpcDispatcher sharedDispatcher];
+  serverBuilder.xrpcDispatcher = xrpcDispatcher;
   ATProtoServiceConfiguration *chatConfig = [ATProtoServiceConfiguration sharedConfiguration];
   if (chatConfig.chatServiceURL.length > 0) {
-      serverBuilder.xrpcDispatcher.chatURL = [NSURL URLWithString:chatConfig.chatServiceURL];
-      serverBuilder.xrpcDispatcher.chatDID = chatConfig.chatServiceDID;
+      xrpcDispatcher.chatURL = [NSURL URLWithString:chatConfig.chatServiceURL];
+      xrpcDispatcher.chatDID = chatConfig.chatServiceDID;
       GZ_LOG_INFO_C(GZLogComponentCLI,
                      @"Configured Chat proxy to %@", chatConfig.chatServiceURL);
   }
