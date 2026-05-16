@@ -36,6 +36,9 @@ NS_ASSUME_NONNULL_BEGIN
  @see PDSActorStore
  @see PDSDatabaseAccount
  */
+/**
+ * @abstract Actor store operations for account records.
+ */
 @interface PDSActorStore (Account)
 
 - (nullable PDSDatabaseAccount *)getAccountForDid:(NSString *)did error:(NSError * _Nullable * _Nullable)error;
@@ -44,6 +47,12 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable NSArray<PDSDatabaseAccount *> *)getAllAccountsWithError:(NSError * _Nullable * _Nullable)error;
 - (nullable NSArray<PDSDatabaseAccount *> *)listAccountsWithLimit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError * _Nullable * _Nullable)error;
 
+/**
+ * @abstract Create account.
+ * @param account Account record to persist.
+ * @param error Receives details when the operation fails.
+ * @return YES when the operation succeeds; otherwise NO.
+ */
 - (BOOL)createAccount:(PDSDatabaseAccount *)account error:(NSError * _Nullable * _Nullable)error;
 - (BOOL)updateAccount:(PDSDatabaseAccount *)account error:(NSError * _Nullable * _Nullable)error;
 - (BOOL)deleteAccount:(NSString *)did error:(NSError * _Nullable * _Nullable)error;

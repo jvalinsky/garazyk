@@ -50,6 +50,9 @@ NS_ASSUME_NONNULL_BEGIN
 
  Thread-safety: All methods are thread-safe via dispatch_queue.
  */
+/**
+ * @abstract Manages pooled SQLite connections for AT Protocol storage.
+ */
 @interface ATProtoConnectionPool : NSObject
 
 #pragma mark - Initialization

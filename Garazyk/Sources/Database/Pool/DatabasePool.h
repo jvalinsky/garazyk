@@ -21,6 +21,9 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSDatabaseRepo;
 @class PDSDatabaseRecord;
 @class PDSDatabaseBlock;
+/**
+ * @abstract Reads actor-scoped repository data.
+ */
 @protocol PDSActorStoreReader;
 @protocol PDSActorStoreTransactor;
 
@@ -28,7 +31,6 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString * const PDSDatabasePoolErrorDomain;
 
 /*!
- @enum PDSDatabasePoolError
 
  @abstract Error codes for pool operations.
 

@@ -4,6 +4,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Database operations for moderation reports.
+ */
 @interface PDSDatabase (Reports)
 
 - (NSString *)createReport:(NSDictionary *)report error:(NSError **)error;

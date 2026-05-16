@@ -51,6 +51,9 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
  PDSDatabaseAccount *account = [dbs getAccountByDid:@"did:plc:..." error:nil];
  @endcode
  */
+/**
+ * @abstract Opens and coordinates service-specific database handles.
+ */
 @interface PDSServiceDatabases : NSObject <PDSAccountRepository, PDSSessionRepository>
 
 /*! Pool for service database (accounts, tokens, invite codes). */
@@ -98,6 +101,14 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
  @param sequencerMaxSize Maximum connections for sequencer pool.
  @return Initialized service databases instance.
  */
+/**
+ * @abstract Initializes the receiver with the supplied dependencies.
+ * @param directory Directory containing service databases.
+ * @param serviceMaxSize Maximum size for service databases.
+ * @param didCacheMaxSize Maximum size for the DID cache database.
+ * @param sequencerMaxSize Maximum size for the sequencer database.
+ * @return An initialized instance.
+ */
 - (instancetype)initWithDirectory:(NSString *)directory
                      serviceMaxSize:(NSUInteger)serviceMaxSize
                    didCacheMaxSize:(NSUInteger)didCacheMaxSize
@@ -116,16 +127,33 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
  */
 - (BOOL)saveAccount:(PDSDatabaseAccount *)account error:(NSError **)error;
 - (BOOL)createAccount:(PDSDatabaseAccount *)account error:(NSError **)error;
+/**
+ * @abstract Create accounts.
+ * @param accounts Account records to store.
+ * @param error Receives details when the operation fails.
+ * @return YES when the operation succeeds; otherwise NO.
+ */
 - (BOOL)createAccounts:(NSArray<PDSDatabaseAccount *> *)accounts error:(NSError **)error;
 - (BOOL)updateAccount:(PDSDatabaseAccount *)account error:(NSError **)error;
 - (nullable PDSDatabaseAccount *)accountForDid:(NSString *)did error:(NSError **)error;
 - (nullable PDSDatabaseAccount *)getAccountByDid:(NSString *)did error:(NSError **)error;
 - (nullable PDSDatabaseAccount *)accountForHandle:(NSString *)handle error:(NSError **)error;
+/**
+ * @abstract Get account by handle.
+ * @param handle Account handle.
+ * @param error Receives details when the operation fails.
+ * @return Result produced by the operation.
+ */
 - (nullable PDSDatabaseAccount *)getAccountByHandle:(NSString *)handle error:(NSError **)error;
 - (nullable PDSDatabaseAccount *)accountForEmail:(NSString *)email error:(NSError **)error;
 - (nullable PDSDatabaseAccount *)getAccountByEmail:(NSString *)email error:(NSError **)error;
 - (nullable PDSDatabaseAccount *)getAccountByRefreshToken:(NSString *)refreshToken error:(NSError **)error;
 - (BOOL)deleteAccount:(NSString *)did error:(NSError **)error;
+/**
+ * @abstract Get all accounts with error.
+ * @param error Receives details when the operation fails.
+ * @return The response array, or nil when the request fails.
+ */
 - (nullable NSArray<PDSDatabaseAccount *> *)getAllAccountsWithError:(NSError **)error;
 - (nullable NSArray<PDSDatabaseAccount *> *)listAccountsWithLimit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error;
 - (nullable NSArray<PDSDatabaseAccount *> *)getAccountsWithLimit:(NSInteger)limit cursor:(nullable NSString *)cursor error:(NSError **)error;
@@ -143,10 +171,23 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
  @return YES if stored successfully, NO on failure.
  */
 - (BOOL)storeRefreshToken:(NSString *)token forAccountDid:(NSString *)accountDid error:(NSError **)error;
+/**
+ * @abstract Store refresh token.
+ * @param token Session token.
+ * @param accountDid Actor DID for the request.
+ * @param error Receives details when the operation fails.
+ * @return YES when the operation succeeds; otherwise NO.
+ */
 - (BOOL)storeRefreshToken:(NSString *)token forAccount:(NSString *)accountDid error:(NSError **)error;
 - (nullable NSString *)accountDidForRefreshToken:(NSString *)refreshToken error:(NSError **)error;
 - (BOOL)revokeRefreshToken:(NSString *)token error:(NSError **)error;
 - (BOOL)deleteRefreshToken:(NSString *)token error:(NSError **)error;
+/**
+ * @abstract Revoke all refresh tokens for account did.
+ * @param accountDid Actor DID for the request.
+ * @param error Receives details when the operation fails.
+ * @return YES when the operation succeeds; otherwise NO.
+ */
 - (BOOL)revokeAllRefreshTokensForAccountDid:(NSString *)accountDid error:(NSError **)error;
 - (BOOL)deleteRefreshTokensForAccount:(NSString *)accountDid error:(NSError **)error;
 
@@ -189,6 +230,14 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
  @param error Error pointer for creation failures.
  @return YES if created successfully, NO on failure.
  */
+/**
+ * @abstract Create invite code.
+ * @param code Invite code.
+ * @param accountDid Actor DID for the request.
+ * @param maxUses Maximum number of invite uses.
+ * @param error Receives details when the operation fails.
+ * @return YES when the operation succeeds; otherwise NO.
+ */
 - (BOOL)createInviteCode:(NSString *)code
               forAccount:(NSString *)accountDid
               maxUses:(NSInteger)maxUses
@@ -216,6 +265,12 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
  @param code Invite code to consume.
  @param error Error pointer for validation failures.
  @return YES if code valid and use recorded, NO if invalid or exhausted.
+ */
+/**
+ * @abstract Use invite code.
+ * @param code Invite code.
+ * @param error Receives details when the operation fails.
+ * @return YES when the operation succeeds; otherwise NO.
  */
 - (BOOL)useInviteCode:(NSString *)code error:(NSError **)error;
 
@@ -255,6 +310,14 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
  @param privileged Whether the app password is privileged.
  @param error Error pointer for creation failures.
  @return Dictionary matching com.atproto.server.createAppPassword output (includes password).
+ */
+/**
+ * @abstract Create app password for account.
+ * @param accountDid Actor DID for the request.
+ * @param name Resource name.
+ * @param privileged Whether the account has privileged access.
+ * @param error Receives details when the operation fails.
+ * @return The response dictionary, or nil when the request fails.
  */
 - (nullable NSDictionary *)createAppPasswordForAccount:(NSString *)accountDid
                                                  name:(NSString *)name
@@ -342,6 +405,15 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
  @param error Error pointer.
  @return YES if logged successfully.
  */
+/**
+ * @abstract Log hosting event.
+ * @param did Actor DID for the request.
+ * @param type Event type.
+ * @param details Event detail payload.
+ * @param createdBy Actor that created the event.
+ * @param error Receives details when the operation fails.
+ * @return YES when the operation succeeds; otherwise NO.
+ */
 - (BOOL)logHostingEvent:(NSString *)did
                    type:(NSString *)type
                 details:(nullable NSDictionary *)details
@@ -359,6 +431,14 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
  @param error Error pointer.
  @return Array of dictionaries containing event data.
  */
+/**
+ * @abstract List hosting events for did.
+ * @param did Actor DID for the request.
+ * @param limit Maximum number of records to return.
+ * @param offset Zero-based result offset.
+ * @param error Receives details when the operation fails.
+ * @return The response array, or nil when the request fails.
+ */
 - (nullable NSArray<NSDictionary *> *)listHostingEventsForDID:(nullable NSString *)did
                                                         limit:(NSInteger)limit
                                                        offset:(NSInteger)offset
@@ -374,6 +454,14 @@ extern NSString * const PDSServiceDatabasesErrorDomain;
  @param data CBOR encoded event data.
  @param error Error pointer.
  @return YES if stored successfully.
+ */
+/**
+ * @abstract Persist event.
+ * @param seq Sequencer cursor.
+ * @param type Event type.
+ * @param data Serialized event data.
+ * @param error Receives details when the operation fails.
+ * @return YES when the operation succeeds; otherwise NO.
  */
 - (BOOL)persistEvent:(int64_t)seq
                 type:(NSString *)type
