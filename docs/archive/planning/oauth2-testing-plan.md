@@ -7,7 +7,7 @@ title: OAuth2 Testing Plan
 **Goal**: Debug and fix OAuth2 implementation to successfully log in with bsky clients
 
 **Context**:
-- Live PDS: `ssh DEPLOY_HOST` (behind exe.dev HTTP proxy)
+- Live PDS: `ssh $DEPLOY_HOST` (behind exe.dev HTTP proxy)
 - Issue: Login works on witchsky.app but posts/profiles don't render
 - Error: Console shows 400 errors for atproto and bsky endpoints
 - Available: Docker, git clone bsky/social-app
@@ -29,7 +29,7 @@ title: OAuth2 Testing Plan
 
 - [ ] Test `com.atproto.server.createSession` directly
   ```bash
-  curl -X POST https://DEPLOY_HOST/xrpc/com.atproto.server.createSession \
+  curl -X POST https://$DEPLOY_HOST/xrpc/com.atproto.server.createSession \
     -H "Content-Type: application/json" \
     -d '{"identifier":"test5.garazyk.xyz","password":"TestPassword123"}'
   ```text
@@ -135,7 +135,7 @@ title: OAuth2 Testing Plan
 
 ### Phase 9: Live PDS Testing
 
-- [ ] SSH into DEPLOY_HOST
+- [ ] SSH into $DEPLOY_HOST
 - [ ] Check server logs for 400 errors
 - [ ] Test endpoints directly against live PDS
 - [ ] Compare responses between local and live PDS

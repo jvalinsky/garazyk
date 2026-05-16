@@ -257,7 +257,7 @@ Added the missing `com.atproto.identity.resolveDid` XRPC endpoint in
 
 **PDS direct (localhost:2583):** ✅ CORS headers present on all responses
 ```bash
-ssh DEPLOY_HOST "curl -v -X POST http://localhost:2583/xrpc/com.atproto.server.createSession \
+ssh $DEPLOY_HOST "curl -v -X POST http://localhost:2583/xrpc/com.atproto.server.createSession \
   -H 'Origin: https://witchsky.app' -H 'Content-Type: application/json' \
   -d '{\"identifier\":\"test\", \"password\":\"test\"}'"
 # → Access-Control-Allow-Origin: https://witchsky.app ✅
@@ -265,7 +265,7 @@ ssh DEPLOY_HOST "curl -v -X POST http://localhost:2583/xrpc/com.atproto.server.c
 
 **Through nginx (localhost:3000):** ✅ Headers pass through
 ```bash
-ssh DEPLOY_HOST "curl -v -X POST http://localhost:3000/xrpc/com.atproto.server.createSession \
+ssh $DEPLOY_HOST "curl -v -X POST http://localhost:3000/xrpc/com.atproto.server.createSession \
   -H 'Host: pds.garazyk.xyz' -H 'Origin: https://witchsky.app' ..."
 # → Access-Control-Allow-Origin: https://witchsky.app ✅
 ```

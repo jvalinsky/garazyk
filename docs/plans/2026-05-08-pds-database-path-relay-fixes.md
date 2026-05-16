@@ -4,7 +4,7 @@
 
 **Goal:** Fix PDS database path resolution so sequencer/DID cache use the configured `data_dir`, enable relay crawling by restoring event persistence, and harden production operations.
 
-**Architecture:** `kaszlak` PDS has three database pools (service, did_cache, sequencer). The `data_dir` config (`DEPLOY_DIR/pds-data`) is correctly propagated to `PDSApplication` and its `ServiceDatabases` instance, but `PDSHealthCheck` and `PDSReadinessCheck` bypass it via `[PDSServiceDatabases sharedInstance]` which hardcodes `~/.local/share/ATProtoPDS`. The sequencer at the correct path has 16 orphaned events (seq 20-35) that relays never see because the health/readiness components (and anything else using `sharedInstance`) open separate connections to empty databases at the default path.
+**Architecture:** `kaszlak` PDS has three database pools (service, did_cache, sequencer). The `data_dir` config (`$DEPLOY_DIR/pds-data`) is correctly propagated to `PDSApplication` and its `ServiceDatabases` instance, but `PDSHealthCheck` and `PDSReadinessCheck` bypass it via `[PDSServiceDatabases sharedInstance]` which hardcodes `~/.local/share/ATProtoPDS`. The sequencer at the correct path has 16 orphaned events (seq 20-35) that relays never see because the health/readiness components (and anything else using `sharedInstance`) open separate connections to empty databases at the default path.
 
 **Tech Stack:** Objective-C, SQLite (WAL mode), GNUstep, systemd, Docker, AT Protocol (XRPC, firehose/SubscribeRepos)
 
@@ -87,7 +87,7 @@ Expected: Build succeeds
 Copy binary to server. Restart PDS. Call `GET /xrpc/_health`.
 
 Run: `curl -s 'http://localhost:2583/xrpc/_health' | python3 -m json.tool`
-Expected: `db_path` shows `DEPLOY_DIR/pds-data/service/service.db`
+Expected: `db_path` shows `$DEPLOY_DIR/pds-data/service/service.db`
 
 ---
 
@@ -184,10 +184,10 @@ docker image prune -af
 
 Run:
 ```bash
-rm -rf DEPLOY_DIR/objpds/build
-rm -rf DEPLOY_DIR/objpds/build-linux
+rm -rf $DEPLOY_DIR/objpds/build
+rm -rf $DEPLOY_DIR/objpds/build-linux
 # Then rebuild:
-cd DEPLOY_DIR/objpds
+cd $DEPLOY_DIR/objpds
 cmake --build build-linux --target kaszlak
 ```
 
@@ -223,12 +223,12 @@ After=network.target
 
 [Service]
 Type=simple
-User=DEPLOY_USER
-WorkingDirectory=DEPLOY_DIR/objpds
-ExecStart=DEPLOY_DIR/objpds/build-linux/bin/kaszlak serve \
+User=$DEPLOY_USER
+WorkingDirectory=$DEPLOY_DIR/objpds
+ExecStart=$DEPLOY_DIR/objpds/build-linux/bin/kaszlak serve \
     --port 2583 \
     --hostname 0.0.0.0 \
-    --config DEPLOY_DIR/objpds/config/production.json \
+    --config $DEPLOY_DIR/objpds/config/production.json \
     --foreground
 Restart=always
 RestartSec=10
@@ -260,18 +260,18 @@ Expected: active (running), recent journal entries visible
 - Investigate: `Garazyk/Sources/Services/PDS/PDSAccountService.m` — account creation flow
 - Investigate: `Garazyk/Sources/Database/ActorStore/` — per-actor storage
 
-**Diagnosis:** The `records`, `repos`, and `blocks` tables in the main service DB are empty (0 rows each) despite 8 accounts existing. However, `describeRepo` returns `collectionStats` with counts. There are 16 commit events in the orphaned sequencer DB (`DEPLOY_DIR/pds-data/sequencer/service.db`) that contain actual record data (posts and profiles from May 5). The current PDS process (binary built May 8) may be using a different storage strategy than the old process.
+**Diagnosis:** The `records`, `repos`, and `blocks` tables in the main service DB are empty (0 rows each) despite 8 accounts existing. However, `describeRepo` returns `collectionStats` with counts. There are 16 commit events in the orphaned sequencer DB (`$DEPLOY_DIR/pds-data/sequencer/service.db`) that contain actual record data (posts and profiles from May 5). The current PDS process (binary built May 8) may be using a different storage strategy than the old process.
 
 **Step 6.1: Determine where records are stored**
 
 On the server, check if actor store databases exist per-DID:
 ```bash
-find DEPLOY_DIR -name '*.db' | xargs -I{} sh -c 'echo "=== {} ===\n$(sqlite3 {} .tables 2>/dev/null | grep -c records)"'
+find $DEPLOY_DIR -name '*.db' | xargs -I{} sh -c 'echo "=== {} ===\n$(sqlite3 {} .tables 2>/dev/null | grep -c records)"'
 ```
 
 Also dump the actual record content from the sequencer events:
 ```bash
-sqlite3 DEPLOY_DIR/pds-data/sequencer/service.db \
+sqlite3 $DEPLOY_DIR/pds-data/sequencer/service.db \
   "SELECT seq, event_type, length(event_data) FROM events ORDER BY seq"
 ```
 
@@ -292,11 +292,11 @@ Look for methods like `createAccount`, `initializeActorStore`, `createRepo` in:
 Use the AdminUI or direct XRPC call to create a new account and a post, then verify:
 ```bash
 # After account creation:
-sqlite3 DEPLOY_DIR/pds-data/service/service.db 'SELECT COUNT(*) FROM accounts;'
+sqlite3 $DEPLOY_DIR/pds-data/service/service.db 'SELECT COUNT(*) FROM accounts;'
 
 # After post creation:  
-sqlite3 DEPLOY_DIR/pds-data/service/service.db 'SELECT COUNT(*) FROM records;'
-sqlite3 DEPLOY_DIR/pds-data/sequencer/service.db 'SELECT COUNT(*) FROM events;'
+sqlite3 $DEPLOY_DIR/pds-data/service/service.db 'SELECT COUNT(*) FROM records;'
+sqlite3 $DEPLOY_DIR/pds-data/sequencer/service.db 'SELECT COUNT(*) FROM events;'
 ```
 
 Expected: records > 0, events > 0
@@ -348,7 +348,7 @@ If sync resolution is confirmed as the bottleneck, refactor `describeRepo` to us
 **Step 8.1: Test describeRepo for all 8 accounts**
 
 ```bash
-for did in $(sqlite3 DEPLOY_DIR/pds-data/service/service.db 'SELECT did FROM accounts'); do
+for did in $(sqlite3 $DEPLOY_DIR/pds-data/service/service.db 'SELECT did FROM accounts'); do
     echo "=== $did ==="
     curl -s -o /dev/null -w 'HTTP %{http_code} - Time: %{time_total}s\n' \
       "http://localhost:2583/xrpc/com.atproto.repo.describeRepo?repo=$did"
@@ -396,8 +396,8 @@ Expected: Returns profile if relay has crawled the PDS
 **Step 9.1: Backup and remove**
 
 ```bash
-cp -a DEPLOY_DIR/.local/share/ATProtoPDS DEPLOY_DIR/.local/share/ATProtoPDS.backup
-rm -rf DEPLOY_DIR/.local/share/ATProtoPDS
+cp -a $DEPLOY_DIR/.local/share/ATProtoPDS $DEPLOY_DIR/.local/share/ATProtoPDS.backup
+rm -rf $DEPLOY_DIR/.local/share/ATProtoPDS
 ```
 
 **Step 9.2: Verify no impact**

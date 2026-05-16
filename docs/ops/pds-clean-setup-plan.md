@@ -2,8 +2,8 @@
 
 ## Current State
 
-- **VM**: DEPLOY_HOST (REDACTED_IP)
-- **DNS**: garazyk.xyz on Cloudflare; `pds.garazyk.xyz`, `bober.garazyk.xyz`, `admin.garazyk.xyz` all CNAME → DEPLOY_HOST
+- **VM**: $DEPLOY_HOST
+- **DNS**: garazyk.xyz on Cloudflare; `pds.garazyk.xyz`, `bober.garazyk.xyz`, `admin.garazyk.xyz` all CNAME → $DEPLOY_HOST
 - **TLS**: exe.dev auto-issues certs for CNAMEd subdomains, but **no wildcard support** — each subdomain needs an explicit CNAME
 - **Code**: git@github.com:jvalinsky/garazyk.git on `main`
 - **Existing accounts**: 2 accounts with DIDs never registered at plc.directory (useless)
@@ -12,7 +12,7 @@
 ## Problem with Wildcard Handles
 
 exe.dev cannot issue wildcard TLS certs. For `*.garazyk.xyz` handles to work via HTTPS verification (`https://handle.garazyk.xyz/.well-known/atproto-did`), each handle subdomain needs:
-1. An explicit CNAME record in Cloudflare DNS → DEPLOY_HOST
+1. An explicit CNAME record in Cloudflare DNS → $DEPLOY_HOST
 2. exe.dev then auto-issues a cert for that specific subdomain
 
 **Alternative**: DNS TXT verification (`_atproto.handle.garazyk.xyz` TXT record containing `did=did:plc:...`). This doesn't need TLS on the handle subdomain. But it requires a DNS record per handle too.
@@ -30,32 +30,32 @@ Either way, each new handle needs a DNS record. The CNAME approach is better bec
 
 1. Stop all services: `pds`, `garazyk-ui`, `plc`
 2. Remove old data:
-   - `DEPLOY_DIR/pds-data/`
-   - `DEPLOY_DIR/.local/share/ATProtoPDS/`
-   - `DEPLOY_DIR/plc-data/`
-   - `DEPLOY_DIR/garazyk/` (old clone)
-   - `DEPLOY_DIR/build_test/`, `gnustep-build/`, `gnustep-test/`, `tools-xctest/`
-   - `DEPLOY_DIR/source.tar.gz`, misc scripts, docker files
-   - `DEPLOY_DIR/keys/` (old keys from broken setup)
+   - `$DEPLOY_DIR/pds-data/`
+   - `$DEPLOY_DIR/.local/share/ATProtoPDS/`
+   - `$DEPLOY_DIR/plc-data/`
+   - `$DEPLOY_DIR/garazyk/` (old clone)
+   - `$DEPLOY_DIR/build_test/`, `gnustep-build/`, `gnustep-test/`, `tools-xctest/`
+   - `$DEPLOY_DIR/source.tar.gz`, misc scripts, docker files
+   - `$DEPLOY_DIR/keys/` (old keys from broken setup)
 3. Remove old systemd services: `plc.service`, `garazyk-ui.service`
 4. Keep: `nginx`, `certbot`, SSH keys, `.gitconfig`, `.bashrc`, shelley config
 
 ### Phase 2: Fresh Build
 
-1. `cd DEPLOY_DIR && git clone git@github.com:jvalinsky/garazyk.git objpds` (already there, just `git pull`)
+1. `cd $DEPLOY_DIR && git clone git@github.com:jvalinsky/garazyk.git objpds` (already there, just `git pull`)
 2. Install/verify build deps: `clang libblocksruntime-dev cmake libsqlite3-dev libssl-dev`
 3. Build: `cmake -S . -B build-linux -DCMAKE_BUILD_TYPE=Release && cmake --build build-linux -j`
 
 ### Phase 3: Configuration
 
-Create `DEPLOY_DIR/objpds/config.json`:
+Create `$DEPLOY_DIR/objpds/config.json`:
 
 ```json
 {
   "server": {
     "host": "pds.garazyk.xyz",
     "port": 2583,
-    "data_dir": "DEPLOY_DIR/pds-data",
+    "data_dir": "$DEPLOY_DIR/pds-data",
     "issuer": "https://pds.garazyk.xyz",
     "available_user_domains": ["garazyk.xyz"]
   },
@@ -79,8 +79,8 @@ Create `DEPLOY_DIR/objpds/config.json`:
 
 **PDS server rotation key**: Used to sign PLC operations on behalf of all accounts.
 - Generated once during first `kaszlak` run or via init command
-- Stored at `DEPLOY_DIR/pds-data/keys/server_rotation.key` (0600)
-- **Backup**: Copy to `DEPLOY_DIR/.secrets/server_rotation.key` (0700 dir, 0600 file)
+- Stored at `$DEPLOY_DIR/pds-data/keys/server_rotation.key` (0600)
+- **Backup**: Copy to `$DEPLOY_DIR/.secrets/server_rotation.key` (0700 dir, 0600 file)
 - This key is the master key — if lost, you can't update DID documents for accounts
 
 **Per-account keys**:
@@ -90,9 +90,9 @@ Create `DEPLOY_DIR/objpds/config.json`:
 
 **Directory permissions**:
 ```
-DEPLOY_DIR/pds-data/          0750
-DEPLOY_DIR/pds-data/keys/     0700
-DEPLOY_DIR/.secrets/           0700
+$DEPLOY_DIR/pds-data/          0750
+$DEPLOY_DIR/pds-data/keys/     0700
+$DEPLOY_DIR/.secrets/           0700
 ```
 
 ### Phase 5: Setup Script (`scripts/setup-pds.sh`)
@@ -164,9 +164,9 @@ server {
 ### Phase 8: DNS Records Needed
 
 In Cloudflare for garazyk.xyz:
-- `pds.garazyk.xyz` → CNAME → `DEPLOY_HOST` ✅ (exists)
-- `admin.garazyk.xyz` → CNAME → `DEPLOY_HOST` ✅ (exists)
-- For each new account `<handle>.garazyk.xyz` → CNAME → `DEPLOY_HOST`
+- `pds.garazyk.xyz` → CNAME → `$DEPLOY_HOST` ✅ (exists)
+- `admin.garazyk.xyz` → CNAME → `$DEPLOY_HOST` ✅ (exists)
+- For each new account `<handle>.garazyk.xyz` → CNAME → `$DEPLOY_HOST`
 
 **Important**: Cloudflare proxy must be **disabled** (grey cloud / DNS Only) for these records, otherwise exe.dev can't issue TLS certs.
 

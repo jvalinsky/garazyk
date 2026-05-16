@@ -10,7 +10,7 @@ This guide covers building and deploying the Garazyk VitePress documentation.
 
 - Node.js 20+
 - Docker and Docker Compose (for containerized deployment)
-- Production server access (`DEPLOY_HOST`)
+- Production server access (set `DEPLOY_HOST` in your environment)
 - Local dependencies: `cd docs && npm ci`
 
 ## Environments
@@ -33,11 +33,11 @@ Deploy to a local Docker container for verification:
 Site available at: `http://localhost:8080/docs`
 
 ### 3. Production (pds.garazyk.xyz)
-Production deployment occurs on the `DEPLOY_HOST` server.
+Production deployment occurs on the `$DEPLOY_HOST` server.
 
 ```bash
-ssh DEPLOY_USER@DEPLOY_HOST
-cd DEPLOY_DIR/objpds
+ssh $DEPLOY_USER@$DEPLOY_HOST
+cd $DEPLOY_DIR
 git pull origin main
 
 cd docs

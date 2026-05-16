@@ -95,13 +95,13 @@ Key Points:
 **Status**: Queued (requires manual execution on production server)
 
 **Prerequisites**:
-- SSH access to DEPLOY_HOST
+- SSH access to $DEPLOY_HOST
 - Latest changes pulled to production server
 - Documentation built successfully
 
 **Commands** (on production server):
 ```bash
-cd DEPLOY_DIR/objpds
+cd $DEPLOY_DIR/objpds
 git pull origin main
 cd docs
 npm ci
@@ -163,7 +163,7 @@ GitHub Repository
    ↓ (GitHub Actions)
 Build & Test
    ↓ (artifact)
-Production Server (DEPLOY_HOST)
+Production Server ($DEPLOY_HOST)
    ↓ (docker compose)
 Docker Container (nginx)
    ↓ (serve)
@@ -244,10 +244,10 @@ To complete Phase 8:
    - Test mobile view
    - Test redirects
 
-3. **Deploy to Production** (on DEPLOY_HOST):
+3. **Deploy to Production** (on $DEPLOY_HOST):
    ```bash
-   ssh DEPLOY_USER@DEPLOY_HOST
-   cd DEPLOY_DIR/objpds
+   ssh $DEPLOY_USER@$DEPLOY_HOST
+   cd $DEPLOY_DIR/objpds
    git pull origin main
    cd docs && npm ci && npm run docs:build
    cd ../docker/docs
