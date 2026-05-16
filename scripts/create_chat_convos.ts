@@ -1,12 +1,12 @@
 #!/usr/bin/env -S deno run -A
 
-const pdsUrl = (Deno.env.get("PDS_URL") || "https://pds.garazyk.xyz").replace(/\/$/, "");
-const chatUrl = (Deno.env.get("CHAT_URL") || "https://chat.garazyk.xyz").replace(/\/$/, "");
-const handle = Deno.env.get("TEST_HANDLE") || "test.garazyk.xyz";
+const pdsUrl = (Deno.env.get("PDS_URL") || "").replace(/\/$/, "");
+const chatUrl = (Deno.env.get("CHAT_URL") || "").replace(/\/$/, "");
+const handle = Deno.env.get("TEST_HANDLE") || "";
 const password = Deno.env.get("TEST_PASSWORD") || "";
-if (!password) {
-  console.error("TEST_PASSWORD environment variable is required.");
-  console.error("Usage: TEST_PASSWORD=<password> TEST_HANDLE=<handle> deno run -A create_chat_convos.ts");
+if (!pdsUrl || !chatUrl || !handle || !password) {
+  console.error("PDS_URL, CHAT_URL, TEST_HANDLE, and TEST_PASSWORD environment variables are required.");
+  console.error("Usage: PDS_URL=<url> CHAT_URL=<url> TEST_HANDLE=<handle> TEST_PASSWORD=<password> deno run -A create_chat_convos.ts");
   Deno.exit(1);
 }
 const altHandle = Deno.env.get("ALT_HANDLE") || "";
