@@ -5,24 +5,50 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract FFmpeg-based video transcoder implementation.
+ */
 @interface FFmpegTranscoder : NSObject <VideoTranscoderBackend>
 
-/// Path to the ffmpeg binary. Defaults to "ffmpeg" (looked up via PATH).
+/**
+ * @abstract Path to the ffmpeg binary.
+ * @discussion Defaults to "ffmpeg" (looked up via PATH).
+ */
 @property (nonatomic, copy) NSString *ffmpegPath;
 
-/// Path to the ffprobe binary. Defaults to "ffprobe" (looked up via PATH).
+/**
+ * @abstract Path to the ffprobe binary.
+ * @discussion Defaults to "ffprobe" (looked up via PATH).
+ */
 @property (nonatomic, copy) NSString *ffprobePath;
 
+/**
+ * @abstract Initializes the transcoder with custom binary paths.
+ * @param ffmpegPath Path to the ffmpeg binary.
+ * @param ffprobePath Path to the ffprobe binary.
+ */
 - (instancetype)initWithFFmpegPath:(nullable NSString *)ffmpegPath
                       ffprobePath:(nullable NSString *)ffprobePath;
 
-/// Probe the duration of a video file in seconds. Returns 0 on failure.
+/**
+ * @abstract Probes the duration of a video file.
+ * @param videoURL URL to the source video.
+ * @return Duration in seconds, or 0.0 on failure.
+ */
 - (float)probeDurationForVideoAtURL:(NSURL *)videoURL;
 
-/// Probe the dimensions of a video file. Returns CGSizeZero on failure.
+/**
+ * @abstract Probes the dimensions of a video file.
+ * @param videoURL URL to the source video.
+ * @return Dimensions as CGSize, or CGSizeZero on failure.
+ */
 - (CGSize)probeDimensionsForVideoAtURL:(NSURL *)videoURL;
 
-/// Probe the framerate of a video file. Returns 0 on failure.
+/**
+ * @abstract Probes the frame rate of a video file.
+ * @param videoURL URL to the source video.
+ * @return Frames per second, or 0.0 on failure.
+ */
 - (float)probeFramerateForVideoAtURL:(NSURL *)videoURL;
 
 @end
