@@ -1,6 +1,26 @@
+/**
+ * @module scenarios/02_social_graph
+ *
+ * Scenario: Social Graph management (follows, blocks, and counts)
+ *
+ * Behavior:
+ * - Create test accounts and profiles
+ * - Establish a follower graph between test users
+ * - Marcus follows/unfollows DJ Volt
+ * - Luna blocks Trollface
+ * - Verify follow/follower counts and lists
+ *
+ * Expectations:
+ * - Follow records are created and deleted correctly
+ * - Block records are created
+ * - Actor lists and counts reflect the social graph accurately
+ */
+
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { PDS1, getCharacter } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 
 function now() {
   return new Date().toISOString();
@@ -67,6 +87,10 @@ async function follow(client: XrpcClient, followerName: string, targetName: stri
   return rec;
 }
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Social Graph");
   result.start();

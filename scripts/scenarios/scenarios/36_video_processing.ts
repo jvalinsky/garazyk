@@ -1,6 +1,29 @@
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+/**
+ * @module scenarios/36_video_processing
+ *
+ * Scenario: 36 video processing
+ *
+ * Behavior:
+ * - Executes the 36 video processing scenario.
+ * - Validates core operations.
+ *
+ * Expectations:
+ * - Scenario completes successfully without errors.
+ */
+
+import { ScenarioResult } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
+import { assert } from "../../lib/deno/assertions.ts";
 import { getCharacter, PDS1, SERVICE_URLS, VIDEO_SERVICE_DID } from "../../lib/deno/config.ts";
+import { timedCall } from "../../lib/deno/runner.ts";
+
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
+
 
 const VIDEO_URL = "http://download.samplelib.com/mp4/sample-5s.mp4";
 const VIDEO_CACHE = "/tmp/garazyk-scenario-36-test-video.mp4";

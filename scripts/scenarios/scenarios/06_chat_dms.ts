@@ -1,10 +1,38 @@
+/**
+ * @module scenarios/06_chat_dms
+ *
+ * Scenario: Tests chat and Direct Messaging (DM) functionality including group chats.
+ *
+ * Behavior:
+ * - Luna, Marcus, Rosa, and Volt accounts are created.
+ * - Verify default incoming message declaration for Luna.
+ * - Perform DM exchange between Luna and Marcus.
+ * - Verify non-member cannot send messages into existing DM.
+ * - Marcus mutes, lists, and reads messages in conversation.
+ * - Marcus updates chat declaration to 'none' and verifies access rejection.
+ * - Marcus restores chat declaration.
+ * - Rosa creates a group chat and manages memberships.
+ * - Luna marks conversation as read, and Marcus unmutes and leaves the conversation.
+ *
+ * Expectations:
+ * - All chat service interactions succeed as expected.
+ * - Authentication and authorization rules for messaging are enforced.
+ * - Group and DM lifecycle management functions correctly.
+ */
+
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcError } from "../../lib/deno/transport.ts";
 import { chatXrpcGet, chatXrpcPost, createChatServiceContext } from "../../lib/deno/seed.ts";
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Chat & DMs");
   result.start();

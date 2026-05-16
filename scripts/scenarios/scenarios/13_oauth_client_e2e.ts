@@ -1,4 +1,24 @@
+/**
+ * @module scenarios/13_oauth_client_e2e
+ *
+ * Scenario: E2E OAuth2 Client Integration and Browser Flow
+ *
+ * Behavior:
+ * - Creates a user account and resolves handle/DID.
+ * - Inspects the DID document for PDS endpoint configuration.
+ * - Verifies OAuth protected resource and authorization server metadata.
+ * - Automates browser-based OAuth login flow including PAR, consent, and redirect.
+ * - Validates profile display post-login and checks for public network leaks.
+ *
+ * Expectations:
+ * - OAuth metadata is correctly configured and reachable.
+ * - Browser automation successfully completes the full OAuth login and consent process.
+ * - Post-login profile is correctly resolved and displayed.
+ */
+
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
@@ -8,6 +28,10 @@ import { chromium } from "npm:playwright";
 const PDS_URL = SERVICE_URLS.pds;
 const PLC_URL = SERVICE_URLS.plc;
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("E2E OAuth2 Client Integration");
   result.start();

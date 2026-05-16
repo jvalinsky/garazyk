@@ -1,27 +1,50 @@
+/**
+ * @module scenarios/07_blobs_uploads
+ *
+ * Scenario: Tests blob upload, storage, and retrieval functionality.
+ *
+ * Behavior:
+ * - Creates test accounts for Rosa, Volt, Luna, and Marcus.
+ * - Rosa uploads a blob and creates a post with an image embed.
+ * - Volt uploads multiple blobs and creates a post with a 4-image album.
+ * - Luna uploads a banner blob and updates her profile banner.
+ * - Verifies blob retrieval from the PDS.
+ * - Tests negative case: uploads an oversized blob and ensures it is rejected.
+ * - Confirms records correctly reference uploaded blobs.
+ *
+ * Expectations:
+ * - Blob uploads succeed for valid inputs.
+ * - Blobs are successfully attached to records (posts/profiles).
+ * - Blob retrieval via sync API functions.
+ * - Oversized blobs are rejected by the PDS.
+ */
+
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
 import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 
 function now() {
   return new Date().toISOString();
 }
 
 function makePng(width = 100, height = 100): Uint8Array {
-  // Simple 1x1 base64 transparent PNG, we can just use a dummy binary payload for tests
-  // since the PDS just checks mime type and magic bytes (sometimes).
-  // A tiny valid PNG:
   const b64 =
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
   const raw = atob(b64);
   const u8 = new Uint8Array(raw.length);
   for (let i = 0; i < raw.length; i++) u8[i] = raw.charCodeAt(i);
 
-  // Pad it out to be somewhat unique/larger if needed
   const out = new Uint8Array(u8.length + width * height);
   out.set(u8);
   return out;
 }
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Blobs & Uploads");
   result.start();

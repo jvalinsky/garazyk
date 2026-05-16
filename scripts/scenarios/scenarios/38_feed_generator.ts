@@ -1,7 +1,29 @@
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
-import { assert } from "../../lib/deno/assertions.ts";
-import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
+/**
+ * @module scenarios/38_feed_generator
+ *
+ * Scenario: 38 feed generator
+ *
+ * Behavior:
+ * - Executes the 38 feed generator scenario.
+ * - Validates core operations.
+ *
+ * Expectations:
+ * - Scenario completes successfully without errors.
+ */
+
 import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
+import { ScenarioResult } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
+import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
+import { assert } from "../../lib/deno/assertions.ts";
+import { timedCall } from "../../lib/deno/runner.ts";
+
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
+
 
 function now() {
   return new Date().toISOString();
@@ -19,7 +41,7 @@ export async function run(): Promise<ScenarioResult> {
 
   if (result.failed > 0) return result;
 
-  const session = await pds.accounts.createAccount(luna.handle, luna.email, luna.password).catch(() => 
+  const session = await pds.accounts.createAccount(luna.handle, luna.email, luna.password).catch(() =>
     pds.accounts.createSession(luna.handle, luna.password)
   );
 
@@ -49,7 +71,7 @@ export async function run(): Promise<ScenarioResult> {
     await new Promise(r => setTimeout(r, 2000));
 
     await timedCall(result, "Get feed generator from AppView", async () => {
-      // Note: XrpcClient.feed.getFeedGenerators handles join(",") 
+      // Note: XrpcClient.feed.getFeedGenerators handles join(",")
       return await appview.feed.getFeedGenerators([feedUri], luna.accessJwt);
     });
 

@@ -1,11 +1,38 @@
+/**
+ * @module scenarios/10_performance_resilience
+ *
+ * Scenario: Tests PDS performance, scalability, and resilience under burst load.
+ *
+ * Behavior:
+ * - Creates test accounts for multiple users.
+ * - Performs burst post creation to measure throughput.
+ * - Verifies that all records were correctly persisted across accounts.
+ * - Tests batch operations using `applyWrites`.
+ * - Verifies resilience by testing various negative cases (invalid record, duplicate rkey, missing auth, non-existent collection).
+ * - Checks AppView consistency and PDS/Relay health after load.
+ * - Confirms timeline retrieval works correctly after the load test.
+ *
+ * Expectations:
+ * - High-throughput write operations are handled within acceptable limits.
+ * - System remains consistent and records are correctly indexed after burst activity.
+ * - Negative inputs and unauthorized requests are rejected gracefully.
+ * - System services (PDS/Relay/AppView) remain healthy under stress.
+ */
+
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 
 function now() {
   return new Date().toISOString();
 }
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Performance & Resilience");
   result.start();

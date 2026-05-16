@@ -1,7 +1,29 @@
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
-import { assert } from "../../lib/deno/assertions.ts";
-import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
+/**
+ * @module scenarios/43_multi_device_sessions
+ *
+ * Scenario: 43 multi device sessions
+ *
+ * Behavior:
+ * - Executes the 43 multi device sessions scenario.
+ * - Validates core operations.
+ *
+ * Expectations:
+ * - Scenario completes successfully without errors.
+ */
+
 import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { ScenarioResult } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
+import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
+import { assert } from "../../lib/deno/assertions.ts";
+import { timedCall } from "../../lib/deno/runner.ts";
+
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
+
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Multi-Device Session Management");
@@ -14,7 +36,7 @@ export async function run(): Promise<ScenarioResult> {
 
   if (result.failed > 0) return result;
 
-  const session = await pds.accounts.createAccount(luna.handle, luna.email, luna.password).catch(() => 
+  const session = await pds.accounts.createAccount(luna.handle, luna.email, luna.password).catch(() =>
     pds.accounts.createSession(luna.handle, luna.password)
   );
 

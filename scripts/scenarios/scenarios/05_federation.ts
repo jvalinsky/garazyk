@@ -1,11 +1,34 @@
+/**
+ * @module scenarios/05_federation
+ *
+ * Scenario: Federation across multi-PDS and relay environment
+ *
+ * Behavior:
+ * - Create accounts on two separate PDS instances (PDS1 and PDS2)
+ * - Users perform cross-PDS actions: follows, replies, and content retrieval
+ * - Verify identity resolution via PLC
+ * - Verify relay and AppView connectivity/backfill status
+ *
+ * Expectations:
+ * - Accounts on PDS1 and PDS2 successfully interact
+ * - PLC handles identity resolution across PDSes
+ * - Relay and AppView successfully propagate cross-PDS data
+ */
+
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { PDS1, PDS2, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 
 function now() {
   return new Date().toISOString();
 }
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Federation & Multi-PDS");
   result.start();

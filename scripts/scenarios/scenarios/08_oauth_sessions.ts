@@ -1,11 +1,37 @@
+/**
+ * @module scenarios/08_oauth_sessions
+ *
+ * Scenario: Tests OAuth2 authorization flows, session lifecycle management, and authentication security.
+ *
+ * Behavior:
+ * - Creates test accounts for Luna and Marcus.
+ * - Registers an OAuth client using the `kaszlak` utility if available.
+ * - Verifies that the OAuth authorize endpoint enforces Pushed Authorization Requests (PAR).
+ * - Checks that the token and revocation endpoints correctly handle invalid inputs.
+ * - Tests standard session lifecycle: Create, Get, Refresh, and Delete (logout).
+ * - Verifies that refresh attempts after session deletion fail.
+ * - Confirms that invalid passwords and unauthorized requests are correctly rejected.
+ *
+ * Expectations:
+ * - Session management (create/refresh/delete) works according to spec.
+ * - OAuth flows enforce security protocols (PAR).
+ * - Invalid authentication attempts are appropriately denied.
+ */
+
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { PDS1, getCharacter } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 
 function now() {
   return new Date().toISOString();
 }
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("OAuth2 & Sessions");
   result.start();
@@ -68,7 +94,7 @@ export async function run(): Promise<ScenarioResult> {
       `${repoRoot}/build/bin/kaszlak`,
       `${repoRoot}/docker/local-network/staging/bin/kaszlak`,
     ];
-    
+
     let registered = false;
     for (const binPath of binPaths) {
       try {
@@ -104,7 +130,7 @@ export async function run(): Promise<ScenarioResult> {
     } catch {
       // ignore
     }
-    
+
     if (authResp.status === 400 && body.error === "invalid_request") {
       result.stepPassed("OAuth authorize enforces PAR", "direct params rejected with invalid_request");
     } else {

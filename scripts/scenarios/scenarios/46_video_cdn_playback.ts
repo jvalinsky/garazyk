@@ -1,5 +1,16 @@
-import { assert } from "../../lib/deno/assertions.ts";
-import { XrpcClient } from "../../lib/deno/client.ts";
+/**
+ * @module scenarios/46_video_cdn_playback
+ *
+ * Scenario: 46 video cdn playback
+ *
+ * Behavior:
+ * - Executes the 46 video cdn playback scenario.
+ * - Validates core operations.
+ *
+ * Expectations:
+ * - Scenario completes successfully without errors.
+ */
+
 import {
   APPVIEW_ADMIN_SECRET,
   getCharacter,
@@ -7,7 +18,18 @@ import {
   SERVICE_URLS,
   VIDEO_SERVICE_DID,
 } from "../../lib/deno/config.ts";
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+import { ScenarioResult } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
+import { XrpcClient } from "../../lib/deno/client.ts";
+import { assert } from "../../lib/deno/assertions.ts";
+import { timedCall } from "../../lib/deno/runner.ts";
+
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
+
 
 const VIDEO_URL = "http://download.samplelib.com/mp4/sample-5s.mp4";
 const VIDEO_CACHE = "/tmp/garazyk-scenario-46-test-video.mp4";

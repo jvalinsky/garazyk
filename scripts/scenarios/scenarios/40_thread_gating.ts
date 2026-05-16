@@ -1,7 +1,29 @@
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
-import { assert } from "../../lib/deno/assertions.ts";
-import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
+/**
+ * @module scenarios/40_thread_gating
+ *
+ * Scenario: 40 thread gating
+ *
+ * Behavior:
+ * - Executes the 40 thread gating scenario.
+ * - Validates core operations.
+ *
+ * Expectations:
+ * - Scenario completes successfully without errors.
+ */
+
 import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
+import { ScenarioResult } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
+import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
+import { assert } from "../../lib/deno/assertions.ts";
+import { timedCall } from "../../lib/deno/runner.ts";
+
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
+
 
 function now() {
   return new Date().toISOString();
@@ -21,7 +43,7 @@ export async function run(): Promise<ScenarioResult> {
   if (result.failed > 0) return result;
 
   for (const char of [luna, marcus]) {
-    const session = await pds.accounts.createAccount(char.handle, char.email, char.password).catch(() => 
+    const session = await pds.accounts.createAccount(char.handle, char.email, char.password).catch(() =>
       pds.accounts.createSession(char.handle, char.password)
     );
     if (session) {

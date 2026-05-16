@@ -1,4 +1,22 @@
+/**
+ * @module scenarios/17_actor_preferences_discovery
+ *
+ * Scenario: Actor Preferences & Discovery
+ *
+ * Behavior:
+ * - Create multiple test accounts.
+ * - Set and get actor preferences.
+ * - Create posts, perform likes and reposts.
+ * - Test typeahead actor search and get actor suggestions.
+ *
+ * Expectations:
+ * - Preferences are saved and retrieved correctly.
+ * - Discovery features (search, suggestions, feed lookups) return expected actor and feed data.
+ */
+
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
 import { PDS1, getCharacter } from "../../lib/deno/config.ts";
@@ -7,6 +25,10 @@ function now() {
   return new Date().toISOString();
 }
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Actor Preferences & Discovery");
   result.start();

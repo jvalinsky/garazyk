@@ -1,12 +1,39 @@
+/**
+ * @module scenarios/09_firehose_streaming
+ *
+ * Scenario: Tests AT Protocol Firehose streaming and event sequencing.
+ *
+ * Behavior:
+ * - Creates test accounts for Luna, Marcus, and Rosa.
+ * - Verifies PDS and Relay service health.
+ * - Establishes a Firehose WebSocket connection to the Relay.
+ * - Performs various actions (post, follow, like, profile update) which generate events.
+ * - Collects and validates that Firehose events are received in correct sequence.
+ * - Verifies Sync API functionality (getHead, getRepo) for repository synchronization.
+ * - Checks AppView backfill status and verify indexing for Luna's posts.
+ *
+ * Expectations:
+ * - Relay stream receives events corresponding to performed actions.
+ * - Firehose events maintain sequential integrity (seq order).
+ * - Repository synchronization (CAR files) is available and correctly formatted.
+ * - Actions are indexed by the AppView.
+ */
+
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { FirehoseClient, FirehoseEvent } from "../../lib/deno/firehose.ts";
 
 function now() {
   return new Date().toISOString();
 }
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Firehose & Event Streaming");
   result.start();
@@ -89,10 +116,10 @@ export async function run(): Promise<ScenarioResult> {
 
   const firehoseEvents: FirehoseEvent[] = [];
   const fhClient = new FirehoseClient(SERVICE_URLS.relay.replace(/^http/, "ws"));
-  
+
   // Start collecting in background (we don't await this directly)
   const collectionPromise = fhClient.collect(10.0);
-  
+
   await new Promise(r => setTimeout(r, 1000));
   result.stepPassed("Firehose WebSocket connection", "started collecting");
 
@@ -203,7 +230,7 @@ export async function run(): Promise<ScenarioResult> {
     },
     (r) => `car bytes=${r.body.length} content_type=${r.contentType}`
   );
-  
+
   if (repoResp) {
     if (!repoResp.contentType.includes("application/vnd.ipld.car")) {
       result.stepFailed("Sync getRepo", `unexpected content_type=${repoResp.contentType} status=${repoResp.status}`);

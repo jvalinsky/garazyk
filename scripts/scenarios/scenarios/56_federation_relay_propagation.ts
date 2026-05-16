@@ -1,3 +1,30 @@
+/**
+ * @module scenarios/56_federation_relay_propagation
+ *
+ * Scenario: 56 federation relay propagation
+ *
+ * Behavior:
+ * - Executes the 56 federation relay propagation scenario.
+ * - Validates core operations.
+ *
+ * Expectations:
+ * - Scenario completes successfully without errors.
+ */
+
+import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
+import { ScenarioResult } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
+import { XrpcClient } from "../../lib/deno/client.ts";
+import { assert } from "../../lib/deno/assertions.ts";
+import { timedCall } from "../../lib/deno/runner.ts";
+
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
+
+
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 // Covers: PDS1 write → Relay sequence (rev) advances → AppView indexes the record.
@@ -5,9 +32,8 @@
 // Also verifies handle rotation propagates to Relay's identity cache.
 // Production paths: com.atproto.sync.getLatestCommit (Relay), app.bsky.feed.getPosts (AppView),
 //   com.atproto.identity.{updateHandle,resolveHandle}.
-import { XrpcClient } from "../../lib/deno/client.ts";
-import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+
+
 
 function now() {
   return new Date().toISOString();

@@ -1,3 +1,30 @@
+/**
+ * @module scenarios/57_concurrent_record_conflict
+ *
+ * Scenario: 57 concurrent record conflict
+ *
+ * Behavior:
+ * - Executes the 57 concurrent record conflict scenario.
+ * - Validates core operations.
+ *
+ * Expectations:
+ * - Scenario completes successfully without errors.
+ */
+
+import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { ScenarioResult } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
+import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
+import { assert } from "../../lib/deno/assertions.ts";
+import { timedCall } from "../../lib/deno/runner.ts";
+
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
+
+
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 // Covers: two clients race to update the same record; winner is deterministic; loser gets 4xx not 5xx.
@@ -5,9 +32,8 @@
 // Extends 24_concurrent_write_throughput.ts (throughput) with semantic conflict assertions.
 // Production paths: com.atproto.repo.{putRecord,deleteRecord,createRecord,getRecord},
 //   com.atproto.sync.getBlob.
-import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
-import { PDS1, getCharacter } from "../../lib/deno/config.ts";
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+
+
 
 function now() {
   return new Date().toISOString();

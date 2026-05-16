@@ -1,4 +1,24 @@
+/**
+ * @module scenarios/24_concurrent_write_throughput
+ *
+ * Scenario: Stress-tests the PDS repository write throughput under concurrent load.
+ *
+ * Behavior:
+ * - Initializes 32 accounts and sets up baseline data via record creation.
+ * - Executes a concurrent "burst" phase of single-record creations.
+ * - Executes a "mixed" workload phase combining single creations, deletions, and `applyWrites` batches.
+ * - Monitors PDS database storage and Prometheus metrics during the execution.
+ * - Verifies state consistency after cooldown.
+ *
+ * Expectations:
+ * - The PDS maintains stability under concurrent write stress.
+ * - Performance metrics are generated, exported, and meet target latencies (p95 < 500ms for creations).
+ * - Repository state reflects all successful operations across accounts.
+ */
+
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
@@ -16,6 +36,16 @@ function now() {
   return new Date().toISOString();
 }
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
+export async function run(): Promise<ScenarioResult> {
+  const result = new ScenarioResult("Concurrent Write Throughput");
+  result.start();
+
+  const ctx = await createRunContext();
+  const client = new XrpcClient(PDS1);
 interface AccountPlan {
   slot: number;
   label: string;
@@ -70,14 +100,6 @@ function buildAccounts(): AccountPlan[] {
   return accounts;
 }
 
-export async function run(): Promise<ScenarioResult> {
-  const result = new ScenarioResult("Concurrent Write Throughput");
-  result.start();
-
-  const ctx = await createRunContext();
-  const client = new XrpcClient(PDS1);
-  const accounts = buildAccounts();
-  const phaseTimer = new PhaseTimer();
 
   const pdsMetricsUrl = `${SERVICE_URLS.pds}/metrics`;
   const pdsDataDir = Deno.env.get("PDS_DATA_DIR") || "/tmp/garazyk-atproto-e2e/pds-data";

@@ -1,4 +1,21 @@
+/**
+ * @module scenarios/20_unspecced_search
+ *
+ * Scenario: Unspecced Search & Discovery
+ *
+ * Behavior:
+ * - Initialize test accounts and create various posts.
+ * - Create a list and a starter pack as search targets.
+ * - Perform unspecced search operations (searchActorsSkeleton, searchPostsSkeleton, searchStarterPacksSkeleton).
+ *
+ * Expectations:
+ * - Search operations return successfully for valid and invalid queries.
+ * - Search results correctly include actors, posts, and starter packs created in the scenario.
+ */
+
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
 import { PDS1, getCharacter } from "../../lib/deno/config.ts";
@@ -7,6 +24,10 @@ function now() {
   return new Date().toISOString();
 }
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Unspecced Search & Discovery");
   result.start();

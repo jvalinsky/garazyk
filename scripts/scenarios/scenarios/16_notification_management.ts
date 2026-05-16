@@ -1,4 +1,22 @@
+/**
+ * @module scenarios/16_notification_management
+ *
+ * Scenario: Notification Management & Preferences
+ *
+ * Behavior:
+ * - Create multiple test accounts (Luna, Marcus, Rosa, Volt).
+ * - Have Marcus, Rosa, and Volt follow Luna.
+ * - Perform various notifications-related operations (list, count, seen, push registration/preferences, activity subscriptions).
+ *
+ * Expectations:
+ * - Accounts are created successfully.
+ * - Notifications and preferences operations return expected data.
+ * - Notification seen/unread status updates correctly.
+ */
+
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
 import { PDS1, getCharacter } from "../../lib/deno/config.ts";
@@ -7,6 +25,10 @@ function now() {
   return new Date().toISOString();
 }
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Notification Management & Preferences");
   result.start();

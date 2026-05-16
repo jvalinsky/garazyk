@@ -1,8 +1,29 @@
+/**
+ * @module scenarios/19_contact_age_assurance
+ *
+ * Scenario: Contact Management & Age Assurance
+ *
+ * Behavior:
+ * - Initialize test accounts.
+ * - Perform phone verification and contact import flow for one user.
+ * - Retrieve age assurance configuration and trigger age assurance flow for another user.
+ *
+ * Expectations:
+ * - Phone verification and contact management operations succeed.
+ * - Age assurance configuration and state endpoints return expected responses.
+ */
+
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
 import { PDS1, getCharacter } from "../../lib/deno/config.ts";
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Contact Management & Age Assurance");
   result.start();

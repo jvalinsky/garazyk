@@ -1,3 +1,30 @@
+/**
+ * @module scenarios/55_takedown_read_enforcement
+ *
+ * Scenario: 55 takedown read enforcement
+ *
+ * Behavior:
+ * - Executes the 55 takedown read enforcement scenario.
+ * - Validates core operations.
+ *
+ * Expectations:
+ * - Scenario completes successfully without errors.
+ */
+
+import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { ScenarioResult } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
+import { XrpcClient } from "../../lib/deno/client.ts";
+import { assert } from "../../lib/deno/assertions.ts";
+import { timedCall } from "../../lib/deno/runner.ts";
+
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
+
+
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 // Covers: public read returns hidden/404 after record takedown; admin read still returns content;
@@ -5,9 +32,8 @@
 // Extends 04_moderation_safety.ts which applies takedowns but does not assert read-time enforcement.
 // Production paths: com.atproto.admin.updateSubjectStatus, com.atproto.repo.getRecord/listRecords,
 //   com.atproto.admin.getRecord.
-import { XrpcClient } from "../../lib/deno/client.ts";
-import { PDS1, getCharacter } from "../../lib/deno/config.ts";
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+
+
 
 function now() {
   return new Date().toISOString();

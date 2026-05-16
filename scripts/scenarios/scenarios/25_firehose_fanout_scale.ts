@@ -1,4 +1,25 @@
+/**
+ * @module scenarios/25_firehose_fanout_scale
+ *
+ * Scenario: Firehose Fan-Out at Scale
+ *
+ * Behavior:
+ * - Setup PDS and Relay metrics scraping.
+ * - Create multiple test accounts.
+ * - Spin up a large number of concurrent firehose subscribers.
+ * - Produce a steady stream of posts to trigger event broadcasting.
+ * - Introduce a burst of activity to test relay backpressure handling.
+ * - Capture performance metrics and ensure p95 latency remains within thresholds.
+ *
+ * Expectations:
+ * - Firehose subscribers maintain connection during steady state.
+ * - Relay and PDS handle burst traffic without critical failure.
+ * - Post creation p95 latency remains under 2 seconds.
+ */
+
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
@@ -16,6 +37,10 @@ function now() {
   return new Date().toISOString();
 }
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Firehose Fan-Out at Scale");
   result.start();

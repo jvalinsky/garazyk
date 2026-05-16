@@ -1,8 +1,30 @@
+/**
+ * @module scenarios/12_account_migration
+ *
+ * Scenario: Account Migration and PLC Audit
+ *
+ * Behavior:
+ * - Checks PDS and PLC health.
+ * - Creates admin and user accounts.
+ * - Performs multiple handle rotations via direct PLC operations.
+ * - Audits the PLC operation log for integrity and handle propagation.
+ *
+ * Expectations:
+ * - Account creation and handle rotations succeed.
+ * - PLC operation log audit verifies chain integrity and handle updates.
+ */
+
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { PDS1, PDS2, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Account Migration & PLC Audit");
   result.start();

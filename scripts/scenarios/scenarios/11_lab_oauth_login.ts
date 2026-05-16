@@ -1,7 +1,32 @@
+/**
+ * @module scenarios/11_lab_oauth_login
+ *
+ * Scenario: Lab OAuth2 Login and Admin Auth flow
+ *
+ * Behavior:
+ * - Checks UI server health via the /lab endpoint.
+ * - Verifies the lab page loads and contains required HTML elements.
+ * - Validates the OAuth client metadata for required properties and configuration.
+ * - Confirms the lab callback handles OAuth parameters correctly.
+ * - Tests admin access boundary and authentication flows using credentials.
+ * - Validates authenticated HTMX partials access and logout behavior.
+ *
+ * Expectations:
+ * - OAuth configuration is valid and supports DPoP.
+ * - Admin authentication successfully sets cookies and provides authorized access.
+ * - Unauthorized access attempts are correctly rejected.
+ */
+
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { SERVICE_URLS } from "../../lib/deno/config.ts";
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Lab OAuth2 Login");
   result.start();

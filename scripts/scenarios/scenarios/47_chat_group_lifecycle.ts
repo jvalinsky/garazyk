@@ -1,6 +1,16 @@
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
-import { XrpcClient } from "../../lib/deno/client.ts";
-import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
+/**
+ * @module scenarios/47_chat_group_lifecycle
+ *
+ * Scenario: 47 chat group lifecycle
+ *
+ * Behavior:
+ * - Executes the 47 chat group lifecycle scenario.
+ * - Validates core operations.
+ *
+ * Expectations:
+ * - Scenario completes successfully without errors.
+ */
+
 import {
   chatGetConvoForMembers,
   chatGetMessages,
@@ -9,6 +19,19 @@ import {
   chatXrpcPost,
   createChatServiceContext,
 } from "../../lib/deno/seed.ts";
+import { ScenarioResult } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
+import { XrpcClient } from "../../lib/deno/client.ts";
+import { assert } from "../../lib/deno/assertions.ts";
+import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
+import { timedCall } from "../../lib/deno/runner.ts";
+
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
+
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Chat Group Lifecycle");

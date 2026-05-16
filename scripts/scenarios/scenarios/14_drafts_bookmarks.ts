@@ -1,4 +1,23 @@
+/**
+ * @module scenarios/14_drafts_bookmarks
+ *
+ * Scenario: Drafts and Bookmarks Management
+ *
+ * Behavior:
+ * - Creates multiple user accounts and profiles.
+ * - Tests draft creation, editing, and publishing flows for a user.
+ * - Tests bookmarking, listing, and deleting post bookmarks for another user.
+ * - Handles draft cleanup and edge cases like multiple drafts.
+ *
+ * Expectations:
+ * - Draft operations persist and update correctly.
+ * - Post publication works seamlessly from drafts.
+ * - Bookmarking operations correctly track and remove posts.
+ */
+
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
 import { PDS1, getCharacter } from "../../lib/deno/config.ts";
@@ -7,6 +26,10 @@ function now() {
   return new Date().toISOString();
 }
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Drafts & Bookmarks Workflow");
   result.start();
