@@ -16,6 +16,9 @@ NS_ASSUME_NONNULL_BEGIN
  * 
  * @see PDSDatabase (Repos)
  */
+/**
+ * @abstract Represents repository metadata stored in the PDS database.
+ */
 @interface PDSDatabaseRepo : NSObject <PDSDatabaseModel>
 
 /** The DID of the repository owner. */

@@ -53,6 +53,9 @@ NS_ASSUME_NONNULL_BEGIN
 
  Thread-safety: All methods are thread-safe via dispatch_queue.
  */
+/**
+ * @abstract Caches repository records for repeated database reads.
+ */
 @interface PDSRecordCache : NSObject
 
 #pragma mark - Initialization

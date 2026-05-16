@@ -16,6 +16,9 @@ NS_ASSUME_NONNULL_BEGIN
  * 
  * @see PDSDatabase (Accounts)
  */
+/**
+ * @abstract Represents an account row stored in the PDS database.
+ */
 @interface PDSDatabaseAccount : NSObject <PDSDatabaseModel>
 
 /** The decentralized identifier (DID) for this account. */
