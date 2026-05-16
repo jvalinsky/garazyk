@@ -11,6 +11,7 @@
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
 #import "Network/ATProtoHttpServerBuilder.h"
+#import "Network/XrpcHandler.h"
 #import "Database/Monitoring/PDSHealthCheck.h"
 #import "PDSCLIDefinitions.h"
 #import "Services/PDS/PDSRelayService.h"
@@ -221,6 +222,17 @@
   serverBuilder.serviceDatabases = controller.serviceDatabases;
   serverBuilder.subscribeReposHandler = subscribeReposHandler;
 
+  // Configure chat service proxy before route registration.
+  // When PDS_CHAT_URL is set, the XrpcAppBskyPack skips local chat
+  // handler registration and the XrpcHandler proxies chat.bsky.* methods.
+  ATProtoServiceConfiguration *chatConfig = [ATProtoServiceConfiguration sharedConfiguration];
+  if (chatConfig.chatServiceURL.length > 0) {
+      serverBuilder.xrpcDispatcher.chatURL = [NSURL URLWithString:chatConfig.chatServiceURL];
+      serverBuilder.xrpcDispatcher.chatDID = chatConfig.chatServiceDID;
+      GZ_LOG_INFO_C(GZLogComponentCLI,
+                     @"Configured Chat proxy to %@", chatConfig.chatServiceURL);
+  }
+
   // Set the Server header for all PDS responses
   [HttpResponse setDefaultServerHeader:@"kaszlak/1.0.0 (garazyk)"];
 
@@ -336,14 +348,24 @@
                [NSString stringWithFormat:@"b%@", [CID base32Encode:publicKey]];
          }
 
-         NSMutableDictionary *doc = [NSMutableDictionary dictionary];
-         doc[@"@context"] = @[ @"https://www.w3.org/ns/did/v1" ];
-         doc[@"id"] = did;
-         doc[@"service"] = @[ @{
-           @"id" : @"#atproto_pds",
-           @"type" : @"AtprotoPersonalDataServer",
-           @"serviceEndpoint" : serviceEndpoint
-         } ];
+          NSMutableDictionary *doc = [NSMutableDictionary dictionary];
+          doc[@"@context"] = @[ @"https://www.w3.org/ns/did/v1" ];
+          doc[@"id"] = did;
+          NSMutableArray *services = [NSMutableArray arrayWithObject:@{
+            @"id" : @"#atproto_pds",
+            @"type" : @"AtprotoPersonalDataServer",
+            @"serviceEndpoint" : serviceEndpoint
+          }];
+          ATProtoServiceConfiguration *svgConfig = [ATProtoServiceConfiguration sharedConfiguration];
+          if (svgConfig.chatServiceURL.length > 0) {
+            NSString *chatEndpoint = svgConfig.chatServiceURL;
+            [services addObject:@{
+              @"id" : @"#bsky_chat",
+              @"type" : @"BskyChatService",
+              @"serviceEndpoint" : chatEndpoint
+            }];
+          }
+          doc[@"service"] = services;
          if (publicKeyMultibase) {
            NSDictionary *verificationMethod = @{
              @"id" : [NSString stringWithFormat:@"%@#atproto", did],
