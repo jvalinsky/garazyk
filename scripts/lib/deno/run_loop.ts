@@ -6,7 +6,7 @@
  */
 
 import { bold, green, red, yellow } from "@std/fmt/colors";
-import { withSpan, isOtelEnabled } from "./otel.ts";
+import { isOtelEnabled, withSpan } from "./otel.ts";
 import { ContainerEventWatcher, type WatcherEvent } from "./docker_events.ts";
 import { ContainerStatsSampler } from "./container_stats.ts";
 import { createDockerClient } from "./docker_api.ts";
@@ -45,6 +45,31 @@ export async function runScenarioLoop(
   const durationCache = new DurationCache(repoRoot);
   const expectedDurations = selected.map((s) => durationCache.get(s.id));
   const progress = new ProgressBar(selected.length, expectedDurations);
+  const progressPath = `${runContext.runDir}/progress.json`;
+  const writeProgress = async (
+    completed: number,
+    currentScenario: ScenarioInfo | null,
+    running = true,
+  ) => {
+    await Deno.mkdir(runContext.runDir, { recursive: true });
+    const now = Date.now();
+    await Deno.writeTextFile(
+      progressPath,
+      JSON.stringify(
+        {
+          runId: runContext.runId,
+          total: selected.length,
+          completed,
+          currentScenario: currentScenario?.name ?? null,
+          currentScenarioId: currentScenario?.id ?? null,
+          updatedAt: now,
+          running,
+        },
+        null,
+        2,
+      ) + "\n",
+    );
+  };
 
   const crashWatcher = await ContainerEventWatcher.create();
   let crashedContainer: { serviceName: string; exitCode: number; oomKilled: boolean } | null = null;
@@ -71,7 +96,7 @@ export async function runScenarioLoop(
         onMemoryPressure: (alert) => {
           console.warn(yellow(
             `  Memory pressure: ${alert.serviceName} failcnt=${alert.failcnt} ` +
-            `(${formatBytes(alert.memoryUsageBytes)} / ${formatBytes(alert.memoryLimitBytes)})`,
+              `(${formatBytes(alert.memoryUsageBytes)} / ${formatBytes(alert.memoryLimitBytes)})`,
           ));
         },
       });
@@ -83,9 +108,11 @@ export async function runScenarioLoop(
     for (let i = 0; i < selected.length; i++) {
       const scenario = selected[i];
       progress.start(`${scenario.id} - ${scenario.name}`);
+      await writeProgress(i, scenario, true);
 
       if (crashedContainer !== null) {
-        const crash: { serviceName: string; exitCode: number; oomKilled: boolean } = crashedContainer;
+        const crash: { serviceName: string; exitCode: number; oomKilled: boolean } =
+          crashedContainer;
         const crashInfo = crash.oomKilled
           ? `Container "${crash.serviceName}" was OOM-killed (exit code ${crash.exitCode})`
           : `Container "${crash.serviceName}" exited unexpectedly (exit code ${crash.exitCode})`;
@@ -102,14 +129,15 @@ export async function runScenarioLoop(
 
       const result = await withSpan(
         `scenario.${scenario.id}`,
-        async () => await runScenario(
-          scenario,
-          scenario.timeout || args.timeout,
-          args,
-          topology,
-          repoRoot,
-          composeProject,
-        ),
+        async () =>
+          await runScenario(
+            scenario,
+            scenario.timeout || args.timeout,
+            args,
+            topology,
+            repoRoot,
+            composeProject,
+          ),
         {
           "scenario.id": scenario.id,
           "scenario.name": scenario.name,
@@ -128,7 +156,8 @@ export async function runScenarioLoop(
         allow_hybrid_network: args.allowHybridNetwork,
         scenario_id: scenario.id,
         binary_mode: args.binary,
-        pds2: topology.manifest?.env?.scenario?.ATPROTO_TOPOLOGY_CAPABILITIES?.includes("pds2") || false,
+        pds2: topology.manifest?.env?.scenario?.ATPROTO_TOPOLOGY_CAPABILITIES?.includes("pds2") ||
+          false,
         topology: topology.manifest?.name || null,
         runner: args.runner,
       };
@@ -148,8 +177,14 @@ export async function runScenarioLoop(
       }
 
       progress.update(i + 1);
+      await writeProgress(
+        i + 1,
+        i + 1 < selected.length ? selected[i + 1] : null,
+        i + 1 < selected.length,
+      );
     }
     progress.finish();
+    await writeProgress(selected.length, null, false);
   } finally {
     await crashWatcher?.close();
     await statsSampler?.stop();

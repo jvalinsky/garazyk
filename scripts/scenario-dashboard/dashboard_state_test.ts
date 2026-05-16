@@ -5,16 +5,16 @@
  * All effects are verified as Cmd values — no fetch, no timers.
  */
 
-import { assertEquals, assert } from "jsr:@std/assert";
+import { assert, assertEquals } from "jsr:@std/assert";
 import {
-  update,
-  createInitialState,
   bootCmds,
-  type DashboardState,
   type Cmd,
+  createInitialState,
+  type DashboardState,
   type Msg,
+  update,
 } from "./dashboard_state.ts";
-import type { ServiceStatus, Run } from "./services/types.ts";
+import type { Run, ServiceStatus } from "./services/types.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -74,7 +74,14 @@ Deno.test("createInitialState: returns valid default state", () => {
 Deno.test("network/healthReceived: updates services and schedules next check", () => {
   const state = initState();
   const services: ServiceStatus[] = [
-    { name: "pds", label: "PDS", url: "http://localhost:2583", port: 2583, status: "running", healthy: true },
+    {
+      name: "pds",
+      label: "PDS",
+      url: "http://localhost:2583",
+      port: 2583,
+      status: "running",
+      healthy: true,
+    },
   ];
   const [next, cmds] = step(state, { type: "network/healthReceived", services });
   assertEquals(next.network.services, services);
@@ -121,7 +128,16 @@ Deno.test("network/startRequested: sets busy and dispatches POST", () => {
 });
 
 Deno.test("network/startSucceeded: clears busy and re-fetches health", () => {
-  const state = initState({ ux: { busy: true, settingsOpen: false, scenarioParams: {}, collapsedCategories: new Set(), searchTerm: "" }, lastTickMs: 0 });
+  const state = initState({
+    ux: {
+      busy: true,
+      settingsOpen: false,
+      scenarioParams: {},
+      collapsedCategories: new Set(),
+      searchTerm: "",
+    },
+    lastTickMs: 0,
+  });
   const [next, cmds] = step(state, { type: "network/startSucceeded" });
   assertEquals(next.ux.busy, false);
   assertEquals(fetchCmds(cmds).length, 1);
@@ -129,7 +145,16 @@ Deno.test("network/startSucceeded: clears busy and re-fetches health", () => {
 });
 
 Deno.test("network/startFailed: clears busy", () => {
-  const state = initState({ ux: { busy: true, settingsOpen: false, scenarioParams: {}, collapsedCategories: new Set(), searchTerm: "" }, lastTickMs: 0 });
+  const state = initState({
+    ux: {
+      busy: true,
+      settingsOpen: false,
+      scenarioParams: {},
+      collapsedCategories: new Set(),
+      searchTerm: "",
+    },
+    lastTickMs: 0,
+  });
   const [next] = step(state, { type: "network/startFailed", error: "fail" });
   assertEquals(next.ux.busy, false);
 });
@@ -151,7 +176,7 @@ Deno.test("runs/activeReceived: stores run and schedules next poll", () => {
   };
   const [next, cmds] = step(state, { type: "runs/activeReceived", run });
   assertEquals(next.runs.active, run);
-  assertEquals(scheduleCmds(cmds).length, 1);
+  assertEquals(scheduleCmds(cmds).length, 4);
 });
 
 Deno.test("runs/activeReceived: uses longer delay when idle", () => {
@@ -178,13 +203,78 @@ Deno.test("runs/activeTimeout: deduplicates when in-flight", () => {
   assertEquals(cmds.length, 0);
 });
 
+Deno.test("runs polling: active and progress in-flight flags are independent", () => {
+  const run: Run = {
+    id: "run-1",
+    startedAt: Date.now(),
+    status: "running",
+    totalScenarios: 2,
+    passed: 0,
+    failed: 0,
+    skipped: 0,
+  };
+  const state = initState({ runs: { ...initState().runs, active: run, viewedRunId: run.id } });
+  const [activePolling] = step(state, { type: "runs/activeTimeout" });
+  assertEquals(activePolling.runs.activeInFlight, true);
+  assertEquals(activePolling.runs.progressInFlight, false);
+
+  const [progressPolling, cmds] = step(activePolling, {
+    type: "runs/progressTimeout",
+    runId: run.id,
+  });
+  assertEquals(progressPolling.runs.activeInFlight, true);
+  assertEquals(progressPolling.runs.progressInFlight, true);
+  assertEquals(fetchCmds(cmds)[0].url, "/api/runs/run-1/progress");
+});
+
+Deno.test("runs/progressReceived: ignores stale token response", () => {
+  const run: Run = {
+    id: "run-1",
+    startedAt: Date.now(),
+    status: "running",
+    totalScenarios: 2,
+    passed: 0,
+    failed: 0,
+    skipped: 0,
+  };
+  const [polling] = step(initState({ runs: { ...initState().runs, active: run } }), {
+    type: "runs/progressTimeout",
+    runId: run.id,
+  });
+  const stale = {
+    exists: true,
+    runId: run.id,
+    total: 2,
+    completed: 1,
+    currentScenario: "old",
+    currentScenarioId: "01",
+    elapsedMs: 1,
+    updatedAt: 1,
+    now: 1,
+    running: true,
+  };
+  const [next, cmds] = step(polling, {
+    type: "runs/progressReceived",
+    runId: run.id,
+    token: 999,
+    progress: stale,
+  });
+  assertEquals(next.runs.progressByRunId[run.id], undefined);
+  assertEquals(next.runs.progressInFlight, true);
+  assertEquals(cmds.length, 0);
+});
+
 // ---------------------------------------------------------------------------
 // Run control
 // ---------------------------------------------------------------------------
 
 Deno.test("runs/startRequested: dispatches POST with correct body", () => {
   const state = initState();
-  const [next, cmds] = step(state, { type: "runs/startRequested", scenarioIds: ["01", "05"], pds2: true });
+  const [next, cmds] = step(state, {
+    type: "runs/startRequested",
+    scenarioIds: ["01", "05"],
+    pds2: true,
+  });
   assertEquals(next.ux.busy, true);
   const cmd = fetchCmds(cmds)[0];
   assert(cmd);
@@ -192,8 +282,37 @@ Deno.test("runs/startRequested: dispatches POST with correct body", () => {
   assertEquals(cmd.method, "POST");
 });
 
+Deno.test("runs/startRequested: guarded while active run exists", () => {
+  const run: Run = {
+    id: "run-1",
+    startedAt: 0,
+    status: "running",
+    totalScenarios: 1,
+    passed: 0,
+    failed: 0,
+    skipped: 0,
+  };
+  const state = initState({ runs: { ...initState().runs, active: run } });
+  const [next, cmds] = step(state, {
+    type: "runs/startRequested",
+    scenarioIds: ["02"],
+    pds2: false,
+  });
+  assertEquals(next.ux.busy, false);
+  assertEquals(cmds.length, 0);
+});
+
 Deno.test("runs/startSucceeded: navigates to run page", () => {
-  const state = initState({ ux: { busy: true, settingsOpen: false, scenarioParams: {}, collapsedCategories: new Set(), searchTerm: "" }, lastTickMs: 0 });
+  const state = initState({
+    ux: {
+      busy: true,
+      settingsOpen: false,
+      scenarioParams: {},
+      collapsedCategories: new Set(),
+      searchTerm: "",
+    },
+    lastTickMs: 0,
+  });
   const [next, cmds] = step(state, { type: "runs/startSucceeded", runId: "run-42" });
   assertEquals(next.ux.busy, false);
   const nav = cmds.find((c) => c.type === "navigate");
@@ -202,13 +321,38 @@ Deno.test("runs/startSucceeded: navigates to run page", () => {
 });
 
 Deno.test("runs/stopRequested: dispatches POST to stop endpoint", () => {
-  const run: Run = { id: "run-1", startedAt: 0, status: "running", totalScenarios: 1, passed: 0, failed: 0, skipped: 0 };
-  const state = initState({ runs: { active: run, progress: null, lastProgressMs: 0, progressDelayMs: 2000, progressInFlight: false }, lastTickMs: 0 });
+  const run: Run = {
+    id: "run-1",
+    startedAt: 0,
+    status: "running",
+    totalScenarios: 1,
+    passed: 0,
+    failed: 0,
+    skipped: 0,
+  };
+  const base = initState();
+  const state = initState({ runs: { ...base.runs, active: run }, lastTickMs: 0 });
   const [next, cmds] = step(state, { type: "runs/stopRequested" });
   assertEquals(next.ux.busy, true);
   const cmd = fetchCmds(cmds)[0];
   assert(cmd);
   assertEquals(cmd.url, "/api/runs/run-1/stop");
+});
+
+Deno.test("network/stopRequested: guarded while run is active", () => {
+  const run: Run = {
+    id: "run-1",
+    startedAt: 0,
+    status: "running",
+    totalScenarios: 1,
+    passed: 0,
+    failed: 0,
+    skipped: 0,
+  };
+  const state = initState({ runs: { ...initState().runs, active: run } });
+  const [next, cmds] = step(state, { type: "network/stopRequested" });
+  assertEquals(next.ux.busy, false);
+  assertEquals(cmds.length, 0);
 });
 
 // ---------------------------------------------------------------------------
@@ -229,6 +373,36 @@ Deno.test("topology/selected: no-op when same topology", () => {
   const [next, cmds] = step(state, { type: "topology/selected", name: "garazyk-default" });
   assertEquals(cmds.length, 0);
   assertEquals(next.topology.previewInFlight, false);
+});
+
+Deno.test("topology/selected: guarded while active run exists", () => {
+  const run: Run = {
+    id: "run-1",
+    startedAt: 0,
+    status: "running",
+    totalScenarios: 1,
+    passed: 0,
+    failed: 0,
+    skipped: 0,
+  };
+  const state = initState({ runs: { ...initState().runs, active: run } });
+  const [next, cmds] = step(state, { type: "topology/selected", name: "minimal" });
+  assertEquals(next.topology.selected, "garazyk-default");
+  assertEquals(cmds.length, 0);
+});
+
+Deno.test("logs: stores text by viewed run id", () => {
+  const [polling] = step(initState({ runs: { ...initState().runs, viewedRunId: "old-run" } }), {
+    type: "logs/timeout",
+  });
+  const [next] = step(polling, {
+    type: "logs/received",
+    runId: "old-run",
+    token: polling.logs.token,
+    text: "old logs",
+  });
+  assertEquals(next.logs.textByRunId["old-run"], "old logs");
+  assertEquals(next.logs.textByRunId["other-run"], undefined);
 });
 
 // ---------------------------------------------------------------------------

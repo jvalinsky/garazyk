@@ -2,6 +2,7 @@ import { fromFileUrl, join } from "$std/path/mod.ts";
 import { db } from "../db/index.ts";
 import { Run, RunConfig } from "./types.ts";
 import { fetchRun } from "../db/queries.ts";
+import { importRunReports } from "./report_scanner.ts";
 
 const REPORTS_DIR = join(
   fromFileUrl(new URL("../../../scenarios/reports", import.meta.url)),
@@ -70,6 +71,18 @@ class RunManagerImpl implements RunManager {
   ): Promise<{ runId: string } | { conflict: string }> {
     if (this.activeRun) {
       return { conflict: `Run ${this.activeRun.id} is already active` };
+    }
+    const lock = await this.readLockFile();
+    if (lock) {
+      if (lock.childPid && this.isPidAlive(lock.childPid)) {
+        this.activeRun = lock;
+        return { conflict: `Run ${lock.id} is already active` };
+      }
+      lock.status = "error";
+      lock.stopReason = "stale_lock";
+      lock.finishedAt = Date.now();
+      this.updateRunInDb(lock);
+      await this.clearLockFile();
     }
 
     const runId = this.generateRunId();
@@ -273,6 +286,14 @@ class RunManagerImpl implements RunManager {
     await Deno.rename(tempPath, LOCK_FILE);
   }
 
+  private async readLockFile(): Promise<Run | undefined> {
+    try {
+      return JSON.parse(await Deno.readTextFile(LOCK_FILE)) as Run;
+    } catch {
+      return undefined;
+    }
+  }
+
   private async clearLockFile() {
     try {
       await Deno.remove(LOCK_FILE);
@@ -384,6 +405,22 @@ class RunManagerImpl implements RunManager {
       run.finishedAt = Date.now();
 
       this.updateRunInDb(run);
+      try {
+        const imported = await importRunReports(db, run);
+        if (imported > 0) {
+          const refreshed = fetchRun(db, run.id);
+          if (refreshed) {
+            run.passed = refreshed.passed;
+            run.failed = refreshed.failed;
+            run.skipped = refreshed.skipped;
+            run.totalScenarios = refreshed.totalScenarios;
+            run.durationS = refreshed.durationS;
+            run.finishedAt = refreshed.finishedAt;
+          }
+        }
+      } catch (e) {
+        console.error(`[run-manager] Failed to import reports for ${run.id}:`, e);
+      }
       await this.clearLockFile();
 
       if (this.activeRun?.id === run.id) {
@@ -398,9 +435,7 @@ class RunManagerImpl implements RunManager {
     console.log(`[run-manager] Restarting run ${runId}...`);
 
     // 1. Get configuration from existing run (active or historical)
-    const run = this.activeRun?.id === runId
-      ? this.activeRun
-      : fetchRun(db, runId);
+    const run = this.activeRun?.id === runId ? this.activeRun : fetchRun(db, runId);
 
     if (!run) return { error: "Run not found" };
 

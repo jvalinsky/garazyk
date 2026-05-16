@@ -1,14 +1,16 @@
 #!/usr/bin/env -S deno run -A
 import { XrpcClient } from "./lib/deno/client.ts";
 import {
-  getConvoForMembers,
-  getMessages,
-  listConvos,
-  sendMessage,
+  chatGetConvoForMembers,
+  chatGetMessages,
+  chatListConvos,
+  chatSendMessage,
+  createChatServiceContext,
   waitForServer,
 } from "./lib/deno/seed.ts";
 
 const baseUrl = (Deno.env.get("PDS_URL") || "http://localhost:2583").replace(/\/$/, "");
+const chatUrl = (Deno.env.get("CHAT_URL") || "http://localhost:2585").replace(/\/$/, "");
 const handles = (Deno.env.get("CHAT_ACCOUNTS") ||
   "alice.garazyk.xyz,bob.garazyk.xyz,carol.garazyk.xyz")
   .split(",")
@@ -39,8 +41,17 @@ async function main() {
   console.log(`Waiting for PDS at ${baseUrl} ...`);
   await waitForServer(baseUrl);
   console.log("PDS is up!");
+  console.log(`Waiting for Chat at ${chatUrl} ...`);
+  await waitForServer(chatUrl);
+  console.log("Chat is up!");
 
   const client = new XrpcClient(baseUrl);
+  const chatContext = createChatServiceContext(
+    client,
+    chatUrl,
+    Deno.env.get("CHAT_SERVICE_DID") || undefined,
+  );
+  console.log(`Chat DID: ${chatContext.serviceDid}`);
   const sessions: Record<string, Record<string, string>> = {};
 
   for (let i = 0; i < handles.length; i++) {
@@ -72,7 +83,7 @@ async function main() {
       const pairKey = `${h1}<->${h2}`;
       console.log(`\n=== DM: ${h1} <-> ${h2} ===`);
 
-      const convo = await getConvoForMembers(client, jwts[h1], [dids[h1], dids[h2]]);
+      const convo = await chatGetConvoForMembers(chatContext, jwts[h1], [dids[h1], dids[h2]]);
       const convoData = convo.convo ?? convo;
       const convoId = convoData.id ?? "";
       if (!convoId) {
@@ -95,7 +106,7 @@ async function main() {
 
       for (const [sender, text] of messages) {
         try {
-          const msg = await sendMessage(client, jwts[sender], convoId, text);
+          const msg = await chatSendMessage(chatContext, jwts[sender], convoId, text);
           dmMessages.get(pairKey)?.push([sender, text]);
           sentDmMessages++;
           console.log(`  [${sender}]: ${text}`);
@@ -115,7 +126,7 @@ async function main() {
   if (handles.length >= 3) {
     console.log(`\n=== Group Chat: ${handles.slice(0, 3).join(", ")} ===`);
     const groupDids = handles.slice(0, 3).map((handle) => dids[handle]);
-    const groupConvo = await getConvoForMembers(client, jwts[handles[0]], groupDids);
+    const groupConvo = await chatGetConvoForMembers(chatContext, jwts[handles[0]], groupDids);
     const groupData = groupConvo.convo ?? groupConvo;
     groupConvoId = groupData.id ?? "";
     if (!groupConvoId) {
@@ -133,7 +144,7 @@ async function main() {
 
       for (const [sender, text] of groupMessages) {
         try {
-          await sendMessage(client, jwts[sender], groupConvoId, text);
+          await chatSendMessage(chatContext, jwts[sender], groupConvoId, text);
           sentGroupMessages++;
           console.log(`  [${sender}]: ${text}`);
         } catch (exc) {
@@ -146,7 +157,7 @@ async function main() {
   }
 
   console.log("\n=== Verification ===");
-  const convos = await listConvos(client, jwts[handles[0]]);
+  const convos = await chatListConvos(chatContext, jwts[handles[0]]);
   const convoList = convos.convos ?? [];
   console.log(`  ${handles[0]} has ${convoList.length} conversation(s)`);
   for (const convo of convoList) {
@@ -160,7 +171,7 @@ async function main() {
   if (firstDm) {
     const [pairKey, convoId] = firstDm;
     const firstHandle = pairKey.split("<->")[0];
-    const messages = await getMessages(client, jwts[firstHandle], convoId);
+    const messages = await chatGetMessages(chatContext, jwts[firstHandle], convoId);
     const messageList = messages.messages ?? [];
     const expected = dmMessages.get(pairKey)?.length ?? 0;
     console.log(`\n  Messages in ${pairKey}: ${messageList.length}`);
@@ -172,7 +183,7 @@ async function main() {
   }
 
   if (groupConvoId) {
-    const messages = await getMessages(client, jwts[handles[0]], groupConvoId);
+    const messages = await chatGetMessages(chatContext, jwts[handles[0]], groupConvoId);
     const messageList = messages.messages ?? [];
     console.log(`\n  Messages in group chat: ${messageList.length}`);
     if (messageList.length < sentGroupMessages) {
