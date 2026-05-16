@@ -94,13 +94,15 @@ export function isOtelEnabled(): boolean {
 /**
  * Initialize OpenTelemetry tracing.
  *
- * Sets environment variables for Deno's built-in OTel pipeline and
- * configures the OTLP exporter endpoint. This should be called once
+ * Configures the OTLP exporter endpoint and service name for the
+ * `@opentelemetry/api` manual span path. This should be called once
  * at program startup, before any traced operations.
  *
- * If `OTEL_DENO` is already set, this function only updates the
- * endpoint and service name. If `OTEL_DENO` is not set and `config`
- * is provided, it sets `OTEL_DENO=true` automatically.
+ * **Important:** `OTEL_DENO` must be set before the Deno process
+ * starts (e.g. `OTEL_DENO=true deno run ...`). Setting it via
+ * `Deno.env.set()` after startup has no effect on Deno's built-in
+ * OTel pipeline — only the manual `@opentelemetry/api` import path
+ * will work.
  *
  * @param config - Tracing configuration
  * @returns true if OTel was successfully initialized
@@ -108,9 +110,13 @@ export function isOtelEnabled(): boolean {
 export function initTracing(config: TracingConfig): boolean {
   _config = config;
 
-  // Set OTEL_DENO if not already set
+  // Warn if OTEL_DENO is not set — Deno's built-in OTel won't activate
   if (!Deno.env.get("OTEL_DENO")) {
-    Deno.env.set("OTEL_DENO", "true");
+    console.warn(
+      "[otel] OTEL_DENO is not set. Deno's built-in OTel pipeline will not activate.",
+      "Set OTEL_DENO=true before process start for full instrumentation.",
+      "Only manual @opentelemetry/api spans will be created.",
+    );
   }
 
   // Set service name

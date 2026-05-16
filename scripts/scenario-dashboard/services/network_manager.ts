@@ -9,22 +9,19 @@
  * is unavailable.
  */
 
-import { join, fromFileUrl } from "$std/path/mod.ts";
+import { fromFileUrl, join } from "$std/path/mod.ts";
 import { ServiceStatus, ServiceStatusType } from "./types.ts";
 import { runManager } from "./run_manager.ts";
 import {
-  type ContainerSummary,
-  DockerApiClient,
   composeServiceName,
+  type ContainerSummary,
   cpuPercent,
   createDockerClient,
+  DockerApiClient,
   formatMemory,
   healthStatus,
 } from "../../lib/deno/docker_api.ts";
-import {
-  startLocalNetwork,
-  stopLocalNetwork,
-} from "../../lib/deno/docker.ts";
+import { startLocalNetwork, stopLocalNetwork } from "../../lib/deno/docker.ts";
 import {
   ContainerEventWatcher,
   type WatcherEvent,
@@ -118,17 +115,23 @@ class NetworkManager {
     return this.streamLogsViaCLI(service);
   }
 
-  async getContainerStats(): Promise<Record<string, { cpu: string; mem: string }>> {
+  async getContainerStats(): Promise<
+    Record<string, { cpu: string; mem: string }>
+  > {
     const stats: Record<string, { cpu: string; mem: string }> = {};
 
     // Try Docker API first
     if (this.dockerClient) {
       try {
-        const containers = await this.dockerClient.listContainers({ status: ["running"] });
+        const containers = await this.dockerClient.listContainers({
+          status: ["running"],
+        });
         for (const container of containers) {
           try {
             const serviceName = this.resolveServiceName(container);
-            const containerStats = await this.dockerClient.containerStats(container.Id);
+            const containerStats = await this.dockerClient.containerStats(
+              container.Id,
+            );
             stats[serviceName] = {
               cpu: `${cpuPercent(containerStats).toFixed(2)}%`,
               mem: formatMemory(containerStats),
@@ -150,13 +153,13 @@ class NetworkManager {
       });
       const { stdout } = await command.output();
       const output = new TextDecoder().decode(stdout);
-      
-      const lines = output.trim().split("\n").filter(l => l.trim());
+
+      const lines = output.trim().split("\n").filter((l) => l.trim());
       for (const line of lines) {
         try {
           const data = JSON.parse(line);
           const name = data.Name;
-          
+
           let serviceName = name;
           const match = name.match(/-(.+)-\d+$/);
           if (match) {
@@ -179,7 +182,6 @@ class NetworkManager {
 
     return stats;
   }
-
 
   /**
    * Proactively look for running docker containers matching our services.
@@ -205,7 +207,9 @@ class NetworkManager {
    * A single API call replaces multiple `docker compose ls` + `docker compose ps` calls.
    */
   private async discoverRunningServicesAPI(): Promise<void> {
-    const containers = await this.dockerClient!.listContainers({ status: ["running", "restarting"] });
+    const containers = await this.dockerClient!.listContainers({
+      status: ["running", "restarting"],
+    });
     const foundServices = new Set<string>();
 
     for (const container of containers) {
@@ -259,7 +263,7 @@ class NetworkManager {
         ConfigFiles: string;
       }>;
 
-      const relevantProjects = projects.filter((p) => 
+      const relevantProjects = projects.filter((p) =>
         p.Name.startsWith("garazyk-e2e-") ||
         p.ConfigFiles?.includes(composeFile)
       );
@@ -277,16 +281,21 @@ class NetworkManager {
         });
         const { stdout: psStdout } = await psCommand.output();
         const psOutput = new TextDecoder().decode(psStdout);
-        
-        const containers = psOutput.trim().split("\n").filter(l => l.trim()).map(line => {
-          try { return JSON.parse(line); } catch { return null; }
-        }).filter(c => c !== null);
+
+        const containers = psOutput.trim().split("\n").filter((l) => l.trim())
+          .map((line) => {
+            try {
+              return JSON.parse(line);
+            } catch {
+              return null;
+            }
+          }).filter((c) => c !== null);
 
         for (const container of containers) {
           const serviceName = container.Service;
           let mappedName = serviceName.replace("local-", "");
           foundServices.add(mappedName);
-          
+
           if (!this.services.has(mappedName)) {
             this.services.set(mappedName, {
               name: mappedName,
@@ -298,7 +307,10 @@ class NetworkManager {
           }
 
           if (container.State === "running" || container.State === "starting") {
-            this.updateStatus(mappedName, container.State === "running" ? "running" : "starting");
+            this.updateStatus(
+              mappedName,
+              container.State === "running" ? "running" : "starting",
+            );
           } else {
             this.updateStatus(mappedName, "stopped");
           }
@@ -326,7 +338,7 @@ class NetworkManager {
 
     const results: Record<string, ServiceStatus> = {};
     const activeRun = runManager.getActiveRun();
-    
+
     // If we have an active run, we should have a manifest with health probes
     // TODO: Load manifest from activeRun.manifestPath if available
 
@@ -353,7 +365,7 @@ class NetworkManager {
         if (healthy && (s.status === "error" || s.status === "starting")) {
           this.updateStatus(name, "running");
         }
-        
+
         const current = this.services.get(name) || s;
         const updated = { ...current, healthy };
         this.services.set(name, updated);
@@ -373,20 +385,31 @@ class NetworkManager {
     if (!baseUrl) {
       // Try to infer default local ports if url is missing
       const ports: Record<string, number> = {
-        pds: 2583, plc: 2582, relay: 2584, appview: 3200, 
-        chat: 2585, pds2: 2587, video: 2586, ui: 2590
+        pds: 2583,
+        plc: 2582,
+        relay: 2584,
+        appview: 3200,
+        chat: 2585,
+        pds2: 2587,
+        video: 2586,
+        ui: 2590,
       };
       if (ports[name]) baseUrl = `http://localhost:${ports[name]}`;
       else return null;
     }
 
     switch (name) {
-      case "relay": return `${baseUrl}/api/relay/health`;
+      case "relay":
+        return `${baseUrl}/api/relay/health`;
       case "pds":
-      case "pds2": return `${baseUrl}/xrpc/com.atproto.server.describeServer`;
-      case "appview": return `${baseUrl}/admin/backfill/status`;
-      case "plc": return `${baseUrl}/_health`;
-      default: return `${baseUrl}/_health`;
+      case "pds2":
+        return `${baseUrl}/xrpc/com.atproto.server.describeServer`;
+      case "appview":
+        return `${baseUrl}/admin/backfill/status`;
+      case "plc":
+        return `${baseUrl}/_health`;
+      default:
+        return `${baseUrl}/_health`;
     }
   }
 
@@ -397,7 +420,11 @@ class NetworkManager {
   private updateStatus(name: string, status: ServiceStatusType) {
     const s = this.services.get(name);
     if (s && s.status !== status) {
-      this.services.set(name, { ...s, status, healthy: status === "running" ? s.healthy : false });
+      this.services.set(name, {
+        ...s,
+        status,
+        healthy: status === "running" ? s.healthy : false,
+      });
     }
   }
 
@@ -432,26 +459,20 @@ class NetworkManager {
       if (clean.startsWith("local-")) return clean.replace("local-", "");
     }
 
-    return container.Names[0]?.replace(/^\//, "") || container.Id.substring(0, 12);
+    return container.Names[0]?.replace(/^\//, "") ||
+      container.Id.substring(0, 12);
   }
 
   /**
    * Stream container logs via the Docker Engine API.
    */
-  private async streamLogsViaAPI(containerId: string): Promise<AsyncIterable<string>> {
+  private async streamLogsViaAPI(
+    containerId: string,
+  ): Promise<AsyncIterable<string>> {
     const client = this.dockerClient!;
     const abort = new AbortController();
 
     async function* generate() {
-      try {
-        for await (const chunk of client.streamEvents(undefined, abort.signal)) {
-          // The events stream isn't what we want for logs — use the logs endpoint
-          break;
-        }
-      } catch {
-        // ignore
-      }
-
       // Use the logs API with follow mode
       try {
         const resp = await fetch(
@@ -485,13 +506,23 @@ class NetworkManager {
   /**
    * Stream container logs via the Docker CLI (fallback).
    */
-  private async streamLogsViaCLI(service: string): Promise<AsyncIterable<string>> {
+  private async streamLogsViaCLI(
+    service: string,
+  ): Promise<AsyncIterable<string>> {
     const projectDir = join(
       fromFileUrl(new URL("../../../docker/local-network", import.meta.url)),
     );
 
     const command = new Deno.Command("docker", {
-      args: ["compose", "-f", `${projectDir}/docker-compose.yml`, "logs", "-f", "--no-log-prefix", service],
+      args: [
+        "compose",
+        "-f",
+        `${projectDir}/docker-compose.yml`,
+        "logs",
+        "-f",
+        "--no-log-prefix",
+        service,
+      ],
       stdout: "piped",
       stderr: "piped",
     });

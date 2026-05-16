@@ -165,6 +165,8 @@ const BASE_TEMPLATES: Record<string, CharacterTemplate> = {
   },
 };
 
+let _registryCounter = 0;
+
 /**
  * Create a fresh character registry with unique handles/emails.
  *
@@ -178,7 +180,7 @@ export function createCharacterRegistry(
   pds1Url: string = PDS1,
   pds2Url: string = PDS2,
 ): CharacterRegistry {
-  const suffix = Math.floor(Date.now() % 0xFFFF).toString(16).padStart(4, "0");
+  const suffix = `${Deno.pid}-${(++_registryCounter).toString(16).padStart(4, "0")}`;
   const chars: Record<string, Character> = {};
 
   for (const [key, tpl] of Object.entries(BASE_TEMPLATES)) {

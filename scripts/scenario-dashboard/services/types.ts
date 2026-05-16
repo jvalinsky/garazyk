@@ -28,6 +28,7 @@ export interface DiscoveredScenario {
 }
 
 export type ScenarioStatus = "passed" | "failed" | "skipped" | "running";
+export type ScenarioParamValue = string | number | boolean;
 
 export interface Step {
   name: string;
@@ -44,7 +45,7 @@ export interface RunConfig {
   binaryMode: boolean;
   webClient?: string;
   clientFlow?: string;
-  scenarioParams?: Record<string, any>;
+  scenarioParams?: Record<string, ScenarioParamValue>;
 }
 
 export interface Run {
@@ -71,7 +72,7 @@ export interface Run {
   exitCode?: number;
   stoppedAt?: number;
   stopReason?: string;
-  scenarioParams?: Record<string, unknown>;
+  scenarioParams?: Record<string, ScenarioParamValue>;
 }
 
 export interface ScenarioResult {
