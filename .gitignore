@@ -184,8 +184,17 @@ objc-jupyter-wasm/objc_jupyter_wasm/labextension/
 objc-jupyter-wasm/kernel/*.wasm
 objc-jupyter-wasm/compiler/*.wasm
 
-# Generated docs index
-docs/repo-index/
+# Generated docs
+docs/api/
+scripts/docs/api/
+.cache/m.css/
+docs/*.html
+docs/*.css
+docs/*.js
+docs/*.ts/
+docs/*.test.ts/
+docs/clients/
+docs/jsr.json/
 
 # Fuzzing generated output
 fuzzing/results/
@@ -221,3 +230,4 @@ objc-jupyter-wasm/.letta/
 objc-jupyter-wasm/result
 result
 docker/local-network/sources_cache/
+build/

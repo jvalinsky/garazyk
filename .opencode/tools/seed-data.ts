@@ -1,3 +1,4 @@
+/** OpenCode tool: start/stop the full local ATProto service stack with optional seeding. */
 import { tool } from "@opencode-ai/plugin"
 
 export default tool({

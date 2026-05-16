@@ -21,7 +21,6 @@ NS_ASSUME_NONNULL_BEGIN
 @protocol ATProtoNetworkListener;
 
 /*!
- @typedef PDSWebSocketConnectionHandler
 
  @abstract Callback when a new WebSocket connection is established.
 
@@ -30,7 +29,6 @@ NS_ASSUME_NONNULL_BEGIN
 typedef void (^PDSWebSocketConnectionHandler)(id<PDSWebSocketTransport> transport);
 
 /*!
- @typedef PDSWebSocketErrorHandler
 
  @abstract Callback when the server encounters an error.
 

@@ -108,8 +108,8 @@ This document tracks the implementation status of the AT Protocol Admin UI migra
   - Handler file: `Handlers/AdminUIHandler.h/m`
 - ✅ Template Renderer
   - Variable substitution ({{key}})
-  - Conditional blocks ({{#if key}}...{{/if}})
-  - Loop blocks ({{#each array}}...{{/each}})
+  - Conditional blocks (`{{#if key}}...{{/if}}`)
+  - Loop blocks (`{{#each array}}...{{/each}}`)
   - HTML escaping for XSS prevention
   - Nesting support
   - Handler file: `Handlers/AdminUITemplateRenderer.h/m`

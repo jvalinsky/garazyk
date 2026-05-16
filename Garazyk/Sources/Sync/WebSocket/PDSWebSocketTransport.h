@@ -20,7 +20,6 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @typedef PDSWebSocketTransportMessageHandler
 
  @abstract Callback when a complete message is received.
 
@@ -29,7 +28,6 @@ NS_ASSUME_NONNULL_BEGIN
 typedef void (^PDSWebSocketTransportMessageHandler)(NSData *data);
 
 /*!
- @typedef PDSWebSocketTransportCloseHandler
 
  @abstract Callback when the connection closes.
 
@@ -39,7 +37,6 @@ typedef void (^PDSWebSocketTransportMessageHandler)(NSData *data);
 typedef void (^PDSWebSocketTransportCloseHandler)(NSInteger code, NSString *reason);
 
 /*!
- @typedef PDSWebSocketTransportErrorHandler
 
  @abstract Callback when an error occurs.
 
@@ -59,8 +56,6 @@ typedef void (^PDSWebSocketTransportErrorHandler)(NSError *error);
 @protocol PDSWebSocketTransport <NSObject>
 
 /*!
- @property messageHandler
-
  @abstract Callback invoked when a complete WebSocket message is received.
 
  Invoked on the transport's event queue (typically a background queue).
@@ -69,8 +64,6 @@ typedef void (^PDSWebSocketTransportErrorHandler)(NSError *error);
 @property (nonatomic, copy, nullable) PDSWebSocketTransportMessageHandler messageHandler;
 
 /*!
- @property closeHandler
-
  @abstract Callback invoked when the connection closes.
 
  Invoked once per connection, after all pending operations complete.
@@ -78,8 +71,6 @@ typedef void (^PDSWebSocketTransportErrorHandler)(NSError *error);
 @property (nonatomic, copy, nullable) PDSWebSocketTransportCloseHandler closeHandler;
 
 /*!
- @property errorHandler
-
  @abstract Callback invoked when a protocol or I/O error occurs.
 
  The connection may remain open after an error; the errorHandler does not
@@ -88,8 +79,6 @@ typedef void (^PDSWebSocketTransportErrorHandler)(NSError *error);
 @property (nonatomic, copy, nullable) PDSWebSocketTransportErrorHandler errorHandler;
 
 /*!
- @method sendMessage:completion:
-
  @abstract Sends a WebSocket message (application data).
 
  @param data The application payload (text or binary, unframed).
@@ -104,8 +93,6 @@ typedef void (^PDSWebSocketTransportErrorHandler)(NSError *error);
          completion:(void (^)(NSError * _Nullable error))completion;
 
 /*!
- @method closeWithCode:reason:completion:
-
  @abstract Closes the connection gracefully.
 
  @param code WebSocket close code (1000, 1001, 1006, etc.).
@@ -120,8 +107,6 @@ typedef void (^PDSWebSocketTransportErrorHandler)(NSError *error);
            completion:(void (^)(NSError * _Nullable error))completion;
 
 /*!
- @method start
-
  @abstract Begins listening for incoming frames and errors.
 
  @discussion After calling start, the transport will invoke messageHandler,

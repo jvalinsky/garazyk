@@ -1,12 +1,15 @@
+/** OpenCode tool: search for XCTest test classes by name, showing registration status and methods. */
 import { tool } from "@opencode-ai/plugin"
 
 const TEST_MAIN_PATH = "Garazyk/Tests/test_main.m"
 
+/** Parse registered test class names from test_main.m via ripgrep. */
 async function parseRegisteredClasses(worktree: string): Promise<string[]> {
   const text = await Bun.$`rg -o '(?<=@")[A-Za-z]+Tests(?=")' ${TEST_MAIN_PATH}`.cwd(worktree).text()
   return text.split("\n").map(s => s.trim()).filter(Boolean)
 }
 
+/** Find XCTest method names within a given test class implementation. */
 async function findTestMethods(worktree: string, className: string): Promise<string[]> {
   const file = await Bun.$`rg -l "\\b@implementation\\s+${className}\\b" Garazyk/Tests/`.cwd(worktree).text()
   if (!file.trim()) return []

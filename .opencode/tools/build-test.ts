@@ -1,3 +1,4 @@
+/** OpenCode tool: build and run XCTest tests (xcodegen -> xcodebuild -> test runner). */
 import { tool } from "@opencode-ai/plugin"
 
 export default tool({
