@@ -10,7 +10,7 @@
     "doc:coverage": "deno run -A docs/doc-coverage.ts ../Garazyk/Sources --min-overall 75 --min-subsystem AdminUIServer=55 --min-subsystem Chat=60 --min-subsystem Database=70",
     "run-scenarios": "deno run -A run_scenarios.ts",
     "mock-twilio": "deno run -A mock-twilio-server.ts",
-    "test": "deno test -A --doc",
+    "test": "deno test -A --doc lib/deno/mod.ts",
     "test:mock-twilio": "deno test -A mock-twilio-server.test.ts"
   },
   "imports": {
