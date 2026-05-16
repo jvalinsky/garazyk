@@ -159,7 +159,7 @@ RUN rm -rf build && mkdir build && cd build && \
     -DBUILD_SECP256K1=ON \
     -DGNUSTEP_PREFIX=/usr/GNUstep/Local \
     -DCMAKE_OBJC_FLAGS="-I/usr/GNUstep/Local/Library/Headers" && \
-    cmake --build . --target kaszlak --target campagnola --target zuk --target syrena --target constellation --target garazyk-ui --target jelcz --target syrena-chat --target germ --parallel $(nproc)
+    cmake --build . --target kaszlak --target campagnola --target zuk --target syrena --target mikrus --target garazyk-ui --target jelcz --target syrena-chat --target germ --parallel $(nproc)
 
 # ---------------------------------------------------------------------------
 # Stage 3: Minimal runtime image
@@ -199,7 +199,7 @@ COPY --from=builder /src/build/bin/kaszlak /usr/local/bin/kaszlak
 COPY --from=builder /src/build/bin/campagnola /usr/local/bin/campagnola
 COPY --from=builder /src/build/bin/zuk /usr/local/bin/zuk
 COPY --from=builder /src/build/bin/syrena /usr/local/bin/syrena
-COPY --from=builder /src/build/bin/constellation /usr/local/bin/constellation
+COPY --from=builder /src/build/bin/mikrus /usr/local/bin/mikrus
 COPY --from=builder /src/build/bin/garazyk-ui /usr/local/bin/garazyk-ui
 
 # Copy UI assets for garazyk-ui

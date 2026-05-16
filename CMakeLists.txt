@@ -707,21 +707,21 @@ target_link_libraries(ATProtoAppViewServer PRIVATE
   ${SECP256K1_LIBRARIES}
 )
 
-# Constellation-style link index service library
-file(GLOB_RECURSE ATPROTO_CONSTELLATION_SOURCES
-  "Garazyk/Sources/Constellation/*.m"
-  "Garazyk/Sources/Constellation/*.c"
+# Mikrus-style link index service library
+file(GLOB_RECURSE ATPROTO_MIKRUS_SOURCES
+  "Garazyk/Sources/Mikrus/*.m"
+  "Garazyk/Sources/Mikrus/*.c"
 )
 
-add_library(ATProtoConstellation STATIC ${ATPROTO_CONSTELLATION_SOURCES})
+add_library(ATProtoMikrus STATIC ${ATPROTO_MIKRUS_SOURCES})
 
-target_include_directories(ATProtoConstellation PRIVATE
+target_include_directories(ATProtoMikrus PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
   ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
   ${SECP256K1_INCLUDE_DIRS}
 )
 
-target_link_libraries(ATProtoConstellation PRIVATE
+target_link_libraries(ATProtoMikrus PRIVATE
   ATProtoAppViewServer
   ATProtoStorage
   ATProtoServices
@@ -785,20 +785,20 @@ set_target_properties(syrena PROPERTIES
   LINK_FLAGS "-ObjC"
 )
 
-# Constellation link index binary
-add_executable(constellation
-  Garazyk/Binaries/constellation/main.m
+# Mikrus link index binary
+add_executable(mikrus
+  Garazyk/Binaries/mikrus/main.m
 )
 
-target_include_directories(constellation PRIVATE
+target_include_directories(mikrus PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Sources
   ${CMAKE_CURRENT_SOURCE_DIR}/Garazyk/Frameworks
   ${SECP256K1_INCLUDE_DIRS}
 )
 
 if(APPLE)
-  target_link_libraries(constellation PRIVATE
-    ATProtoConstellation
+  target_link_libraries(mikrus PRIVATE
+    ATProtoMikrus
     ATProtoAppViewServer
     ATProtoRuntime
     ATProtoStorage
@@ -812,9 +812,9 @@ if(APPLE)
     ${READLINE_LIBRARY}
   )
 else()
-  target_link_libraries(constellation PRIVATE
+  target_link_libraries(mikrus PRIVATE
     -Wl,--whole-archive
-    ATProtoConstellation
+    ATProtoMikrus
     ATProtoAppViewServer
     ATProtoRuntime
     ATProtoStorage
@@ -830,11 +830,11 @@ else()
   )
 endif()
 
-target_compile_definitions(constellation PRIVATE
+target_compile_definitions(mikrus PRIVATE
   SQLITE_THREADSAFE=2
 )
 
-set_target_properties(constellation PROPERTIES
+set_target_properties(mikrus PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
   LINK_FLAGS "-ObjC"
 )
@@ -1472,7 +1472,7 @@ if(BUILD_TESTS)
     ATProtoStorage
     ATProtoCore
     ATProtoPLC
-    ATProtoConstellation
+    ATProtoMikrus
     ATProtoAppViewServer
     ${PLATFORM_LIBRARIES}
     ${SECP256K1_LIBRARIES}
@@ -1501,7 +1501,7 @@ if(BUILD_TESTS)
        ATProtoStorage
        ATProtoCore
        ATProtoPLC
-       ATProtoConstellation
+       ATProtoMikrus
        ATProtoAppViewServer
        -Wl,--no-whole-archive
        ${PLATFORM_LIBRARIES}
@@ -1694,7 +1694,7 @@ message(STATUS "  kaszlak           - PDS CLI tool")
 message(STATUS "  campagnola        - PLC directory server")
 message(STATUS "  zuk               - Relay server")
 message(STATUS "  syrena            - Standalone AppView server")
-message(STATUS "  constellation     - Standalone link index service")
+message(STATUS "  mikrus     - Standalone link index service")
 message(STATUS "  garazyk-ui        - Dedicated admin UI server")
 message(STATUS "  AllTests          - Unit tests")
 message(STATUS "  fuzz_xrpc         - XRPC fuzzer")

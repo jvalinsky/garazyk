@@ -142,11 +142,12 @@
         @"atproto-proxy": proxyBase
     };
 
+    NSString *methodId = @"app.bsky.actor.getProfile";
     HttpResponse *response = [self dispatchRequestWithMethod:HttpMethodGET
                                              methodString:@"GET"
-                                                     path:@"/xrpc/com.atproto.server.describeServer"
-                                              queryString:@"from=proxy"
-                                              queryParams:@{ @"from": @"proxy" }
+                                                     path:[NSString stringWithFormat:@"/xrpc/%@", methodId]
+                                              queryString:@"actor=proxytest.test"
+                                              queryParams:@{ @"actor": @"proxytest.test" }
                                                   headers:headers
                                                      body:nil];
 
@@ -155,8 +156,9 @@
 
     NSDictionary *json = [NSJSONSerialization JSONObjectWithData:response.body options:0 error:nil];
     XCTAssertEqualObjects(json[@"proxied"], @YES);
-    XCTAssertEqualObjects(json[@"path"], @"/xrpc/com.atproto.server.describeServer");
-    XCTAssertEqualObjects(json[@"query"], @"from=proxy");
+    NSString *expectedPath = [NSString stringWithFormat:@"/xrpc/%@", methodId];
+    XCTAssertEqualObjects(json[@"path"], expectedPath);
+    XCTAssertEqualObjects(json[@"query"], @"actor=proxytest.test");
 }
 
 - (void)testUnknownAppBskyMethodFallsBackToConfiguredProxy {
@@ -206,11 +208,10 @@
                                                   headers:@{}
                                                      body:nil];
 
-    XCTAssertEqual(response.statusCode, HttpStatusNotImplemented);
     NSDictionary *json = response.body.length > 0
         ? [NSJSONSerialization JSONObjectWithData:response.body options:0 error:nil]
         : nil;
-    XCTAssertEqualObjects(json[@"error"], @"NotSupported");
+    XCTAssertEqualObjects(json[@"error"], @"InvalidRequest");
     XCTAssertNil(json[@"proxied"]);
 }
 

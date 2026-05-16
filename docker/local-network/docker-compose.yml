@@ -155,11 +155,11 @@ services:
     networks:
       - local_net
 
-  local-constellation:
+  local-mikrus:
     build:
       context: .
       dockerfile: Dockerfile.local
-    entrypoint: ["/usr/local/bin/constellation"]
+    entrypoint: ["/usr/local/bin/mikrus"]
     command:
       - "serve"
       - "--relay"
@@ -171,15 +171,15 @@ services:
     ports:
       - "3210:3210"
     volumes:
-      - local_constellation_data:/var/lib/atprotopds
+      - local_mikrus_data:/var/lib/atprotopds
     environment:
       - TZ=UTC
       - PDS_ALLOW_PRIVATE_SSRF=1
       - PDS_ALLOW_HTTP=1
       - PDS_PLC_URL=http://local-plc:2582
-      - CONSTELLATION_RELAY_URLS=ws://local-relay:2584
-      - CONSTELLATION_DATA_DIR=/var/lib/atprotopds
-      - CONSTELLATION_HTTP_PORT=3210
+      - MIKRUS_RELAY_URLS=ws://local-relay:2584
+      - MIKRUS_DATA_DIR=/var/lib/atprotopds
+      - MIKRUS_HTTP_PORT=3210
     depends_on:
       local-relay:
         condition: service_healthy
@@ -334,8 +334,8 @@ services:
       - CHAT_PORT=2585
       - VIDEO_HOST=local-video
       - VIDEO_PORT=2586
-      - CONSTELLATION_HOST=local-constellation
-      - CONSTELLATION_PORT=3210
+      - MIKRUS_HOST=local-mikrus
+      - MIKRUS_PORT=3210
       - PLC_HOST=local-plc
       - PLC_PORT=2582
       - GERM_HOST=local-germ
@@ -345,7 +345,7 @@ services:
     depends_on:
       - local-pds
       - local-appview
-      - local-constellation
+      - local-mikrus
       - local-chat
       - local-germ
     networks:
@@ -361,7 +361,7 @@ volumes:
   local_pds_keys:
   local_relay_data:
   local_appview_data:
-  local_constellation_data:
+  local_mikrus_data:
   local_chat_data:
   local_germ_data:
   local_video_data:
