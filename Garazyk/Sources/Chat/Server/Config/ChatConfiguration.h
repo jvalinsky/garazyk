@@ -11,6 +11,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface ChatConfiguration : NSObject
 
+/**
+ * @abstract Filesystem directory used for chat service data.
+ */
 @property (nonatomic, copy) NSString *dataDirectory;
 @property (nonatomic, assign) NSUInteger httpPort;
 @property (nonatomic, copy) NSString *adminSecret;
@@ -19,6 +22,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy) NSString *serviceDomain;
 @property (nonatomic, readonly) NSString *serviceDID;
 
+/**
+ * @abstract Default configuration.
+ * @return An initialized instance.
+ */
 + (instancetype)defaultConfiguration;
 - (BOOL)loadFromFile:(NSString *)path error:(NSError **)error;
 - (void)loadFromEnvironment;

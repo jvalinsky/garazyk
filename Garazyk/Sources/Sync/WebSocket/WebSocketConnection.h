@@ -32,7 +32,6 @@ extern NSInteger const WebSocketConnectionErrorCodeInvalidFrame;
 extern NSInteger const WebSocketConnectionErrorCodeWriteFailed;
 
 /*!
- @enum WebSocketConnectionState
 
  @abstract Connection lifecycle states.
 
