@@ -102,6 +102,21 @@ static const uint16_t kGermDefaultPort = 8082;
         [response setBodyString:@"ok"];
     }];
 
+    // Root endpoint - display ASCII art
+    [self.httpServer addRoute:@"GET"
+                        path:@"/"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+        response.statusCode = 200;
+        response.contentType = @"text/plain; charset=utf-8";
+        [response setBodyString:@",--,   ,---.  ,---.            \n"
+                                 ".' .'    | .-'  | .-.\\  |\\    /| \n"
+                                 "|  |  __ | `-.  | `-'/  |(\\  / | \n"
+                                 "\\  \\ ( _)| .-'  |   (   (_)\\/  | \n"
+                                 " \\  `-) )|  `--.| |\\ \\  | \\  / | \n"
+                                 "  )\\____/ /( __.'|_| \\)\\ | |\\/| | \n"
+                                 " (__)    (__)        (__)'-'  '-' "];
+    }];
+
     // XRPC route
     __weak typeof(self) weakSelf = self;
     [self.httpServer addRoute:@"*"
