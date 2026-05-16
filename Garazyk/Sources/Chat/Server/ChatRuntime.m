@@ -112,6 +112,21 @@
                          [response setBodyString:@"ok"];
                      }];
 
+    // Root endpoint - display ASCII art
+    [self.httpServer addRoute:@"GET"
+                        path:@"/"
+                     handler:^(HttpRequest *request, HttpResponse *response) {
+                         response.statusCode = 200;
+                         response.contentType = @"text/plain; charset=utf-8";
+                         [response setBodyString:@".|'''.|                                            '         '||                .   \n"
+                                                  " ||..  '  .... ... ... ..    ....  .. ...    ....       ....   || ..    ....   .||.  \n"
+                                                  "  ''|||.   '|.  |   ||' '' .|...||  ||  ||  '' .||    .|   ''  ||' ||  '' .||   ||   \n"
+                                                  ".     '||   '|.|    ||     ||       ||  ||  .|' ||    ||       ||  ||  .|' ||   ||   \n"
+                                                  "|'....|'     '|    .||.     '|...' .||. ||. '|..'|'    '|...' .||. ||. '|..'|'  '|.' \n"
+                                                  "          .. |                                                                       \n"
+                                                  "           ''                                                                        "];
+                     }];
+
     // Add XRPC Route
     __weak typeof(self) weakSelf = self;
     [self.httpServer addRoute:@"*" path:@"/xrpc/*" handler:^(HttpRequest *request, HttpResponse *response) {
