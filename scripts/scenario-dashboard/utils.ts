@@ -44,6 +44,7 @@ export function formatDurationSec(s: number): string {
   return `${m}m ${sec}s`;
 }
 
+/** Convert second-based or ms-based epoch to ms. */
 export function toEpochMs(ts: number): number {
   return ts < 10_000_000_000 ? ts * 1000 : ts;
 }

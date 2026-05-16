@@ -5,6 +5,7 @@
 import { Database } from "sqlite3";
 import { Run, ScenarioStatus } from "../services/types.ts";
 
+/** Normalize epoch timestamps: second-based values are converted to ms. */
 export function normalizeEpochMs(value: number | null | undefined): number | undefined {
   if (value === null || value === undefined) return undefined;
   return value < 10_000_000_000 ? value * 1000 : value;

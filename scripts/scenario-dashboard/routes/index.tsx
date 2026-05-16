@@ -1,3 +1,4 @@
+/** Dashboard home page — shows network status, summary, scenario grid, and run history. @module routes/index */
 import { Handlers, PageProps } from "$fresh/server.ts";
 import { getScenarios } from "../services/scenario_discovery.ts";
 import { db } from "../db/index.ts";
@@ -13,6 +14,7 @@ import RunHistory from "../components/RunHistory.tsx";
 import { formatDate } from "../utils.ts";
 import type { DiscoveredScenario, Run, ScenarioStatus } from "../services/types.ts";
 
+/** Enriched scenario type with latest result data from the database. */
 interface ScenarioWithResults extends DiscoveredScenario {
   lastStatus?: ScenarioStatus | null;
   latestPassed?: number;
@@ -20,11 +22,13 @@ interface ScenarioWithResults extends DiscoveredScenario {
   latestSkipped?: number;
 }
 
+/** Page data shape for the dashboard index page. */
 interface PageData {
   scenarios: ScenarioWithResults[];
   runs: Run[];
 }
 
+/** Page handler — fetches scenarios, runs, and latest results. */
 export const handler: Handlers<PageData> = {
   async GET(_req, ctx) {
     const scenariosBase = await getScenarios();

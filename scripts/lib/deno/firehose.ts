@@ -1,5 +1,7 @@
+/** ATProto firehose (subscribeRepos) client for consuming relay events. @module firehose */
 import * as cbor from "@ipld/dag-cbor";
 
+/** An event received from the firehose subscription stream. */
 export class FirehoseEvent {
   constructor(
     public seq: number,
@@ -8,14 +10,17 @@ export class FirehoseEvent {
   ) {}
 }
 
+/** WebSocket client for the ATProto firehose (com.atproto.sync.subscribeRepos). */
 export class FirehoseClient {
   public wsUrl: string;
   public events: FirehoseEvent[] = [];
 
+  /** Create a firehose client connected to the given relay. */
   constructor(relayUrl = "ws://localhost:2584") {
     this.wsUrl = relayUrl.replace("http://", "ws://").replace("https://", "wss://").replace(/\/$/, "");
   }
 
+  /** Subscribe to the firehose for a fixed duration, invoking callback per event. */
   subscribe(
     callback?: (e: FirehoseEvent) => void,
     durationS = 10.0,
@@ -91,6 +96,7 @@ export class FirehoseClient {
     });
   }
 
+  /** Subscribe for the given duration and collect all received events into an array. */
   collect(durationS = 5.0, cursor?: number, signal?: AbortSignal): Promise<FirehoseEvent[]> {
     this.events = [];
     return this.subscribe((e) => this.events.push(e), durationS, cursor, signal)

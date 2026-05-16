@@ -2,12 +2,14 @@
  * API: /api/scenarios
  * GET — list all discoverable scenarios
  * POST — run selected scenarios
+ * @module api/scenarios
  */
 
 import { Handlers } from "$fresh/server.ts";
 import { getScenarios } from "../../services/scenario_discovery.ts";
 import { runManager } from "../../services/run_manager.ts";
 
+/** GET /api/scenarios — returns list of all discoverable scenarios. POST /api/scenarios — starts a run with selected scenario IDs. */
 export const handler: Handlers = {
   async GET(_req) {
     const scenarios = await getScenarios();
