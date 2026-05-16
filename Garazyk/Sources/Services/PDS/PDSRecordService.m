@@ -8,7 +8,7 @@
 #import "Debug/GZLogger.h"
 #import "Compat/PDSTypes.h"
 #import "Core/ATProtoBase32.h"
-#import "Core/ATProtoCBORSerialization.h"
+#import "Core/ATProtoDagCBOR.h"
 #import "Core/ATProtoValidator.h"
 #import "Core/CID.h"
 #import "Core/NSDictionary+CID.h"
@@ -538,7 +538,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
 
     NSError *cidError;
     // Use DAG-CBOR encoding for CID calculation to match spec
-    NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:value error:&cidError];
+    NSData *cborData = [ATProtoDagCBOR encodeJSONObject:value error:&cidError];
     if (!cborData) {
         if (error) *error = cidError;
         return NO;
@@ -991,7 +991,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
             // Build the database record
             NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
             NSError *cidError = nil;
-            NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:record error:&cidError];
+            NSData *cborData = [ATProtoDagCBOR encodeJSONObject:record error:&cidError];
             if (!cborData) {
                 if (error) *error = cidError;
                 return nil;
@@ -1134,7 +1134,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
             }
 
             NSError *cidError = nil;
-            NSData *cborData = [ATProtoCBORSerialization encodeDataWithJSONObject:record error:&cidError];
+            NSData *cborData = [ATProtoDagCBOR encodeJSONObject:record error:&cidError];
             if (!cborData) {
                 if (error) *error = cidError;
                 return nil;
@@ -1252,11 +1252,43 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
                     success = NO;
                     return;
                 }
+                NSData *recordCBOR = [op[@"recordCBOR"] isKindOfClass:[NSData class]] ? op[@"recordCBOR"] : nil;
+                CID *recordCID = dbRecord.cid.length > 0 ? [CID cidFromString:dbRecord.cid] : nil;
+                if (recordCBOR.length > 0 && recordCID) {
+                    PDSDatabaseBlock *recordBlock = [[PDSDatabaseBlock alloc] init];
+                    recordBlock.cid = recordCID.bytes;
+                    recordBlock.repoDid = did;
+                    recordBlock.blockData = recordCBOR;
+                    recordBlock.contentType = @"application/vnd.ipld.dag-cbor";
+                    recordBlock.size = (NSInteger)recordCBOR.length;
+                    recordBlock.createdAt = [NSDate date];
+                    recordBlock.rev = batchRev;
+                    if (![transactor putBlock:recordBlock forDid:did error:blockError]) {
+                        success = NO;
+                        return;
+                    }
+                }
             } else if ([action isEqualToString:@"update"]) {
                 PDSDatabaseRecord *dbRecord = op[@"record"];
                 if (![transactor updateRecord:dbRecord forDid:did error:blockError]) {
                     success = NO;
                     return;
+                }
+                NSData *recordCBOR = [op[@"recordCBOR"] isKindOfClass:[NSData class]] ? op[@"recordCBOR"] : nil;
+                CID *recordCID = dbRecord.cid.length > 0 ? [CID cidFromString:dbRecord.cid] : nil;
+                if (recordCBOR.length > 0 && recordCID) {
+                    PDSDatabaseBlock *recordBlock = [[PDSDatabaseBlock alloc] init];
+                    recordBlock.cid = recordCID.bytes;
+                    recordBlock.repoDid = did;
+                    recordBlock.blockData = recordCBOR;
+                    recordBlock.contentType = @"application/vnd.ipld.dag-cbor";
+                    recordBlock.size = (NSInteger)recordCBOR.length;
+                    recordBlock.createdAt = [NSDate date];
+                    recordBlock.rev = batchRev;
+                    if (![transactor putBlock:recordBlock forDid:did error:blockError]) {
+                        success = NO;
+                        return;
+                    }
                 }
             } else if ([action isEqualToString:@"delete"]) {
                 NSString *uri = op[@"uri"];
@@ -1365,7 +1397,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
             NSData *jsonData = [rec.value dataUsingEncoding:NSUTF8StringEncoding];
             NSDictionary *value = jsonData ? [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:nil] : nil;
             if (value) {
-                recordCBOR = [ATProtoCBORSerialization encodeDataWithJSONObject:value error:nil];
+                recordCBOR = [ATProtoDagCBOR encodeJSONObject:value error:nil];
             }
         }
 
