@@ -25,7 +25,6 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSErrorDomain const AppViewOAuth2MiddlewareErrorDomain;
 
 /*!
- @enum AppViewOAuth2MiddlewareErrorCode
  */
 typedef NS_ENUM(NSInteger, AppViewOAuth2MiddlewareErrorCode) {
     AppViewOAuth2ErrorInvalidToken = 1,

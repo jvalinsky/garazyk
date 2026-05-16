@@ -29,7 +29,6 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSErrorDomain const AppViewWriteProxyErrorDomain;
 
 /*!
- @enum AppViewWriteProxyErrorCode
  */
 typedef NS_ENUM(NSInteger, AppViewWriteProxyErrorCode) {
     AppViewWriteProxyErrorDIDResolutionFailed = 1,

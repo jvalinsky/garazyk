@@ -33,7 +33,6 @@ extern NSInteger const FirehoseErrorCodeEventEncodingFailed;
 extern NSInteger const FirehoseErrorCodeSubscriptionClosed;
 
 /*!
- @enum FirehoseEventKind
 
  @abstract Types of events streamed on the Firehose.
 

@@ -21,7 +21,6 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @typedef PDSSignalHandlerBlock
 
  @abstract Block invoked when a registered signal is received.
 

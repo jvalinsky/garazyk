@@ -1,3 +1,4 @@
+/** Injects project context into session compaction for Garazyk. */
 import type { Plugin } from "@opencode-ai/plugin"
 
 export const CompactionPlugin: Plugin = async ({ project, client }) => {

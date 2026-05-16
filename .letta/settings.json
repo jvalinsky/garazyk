@@ -361,7 +361,12 @@
       "Bash(cmake --build build-linux --target germ 2)",
       "Bash(ssh DEPLOY_USER@DEPLOY_HOST \"ls -la DEPLOY_DIR/pds-data/web/pd/\" 2)",
       "Bash(ssh DEPLOY_USER@DEPLOY_HOST \"sudo systemctl restart kaszlak && sleep 2 && DEPLOY_DIR/objpds/build-linux/bin/kaszlak account create --email test@garazyk.xyz --handle test.garazyk.xyz --password testpass123 --data-dir DEPLOY_DIR/pds-data\" 2)",
-      "Bash(ssh DEPLOY_USER@DEPLOY_HOST \"PDS_MASTER_SECRET=$PDS_MASTER_SECRET DEPLOY_DIR/objpds/build-linux/bin/kaszlak account create --email test@garazyk.xyz --handle test.garazyk.xyz --password $TEST_PASSWORD --data-dir DEPLOY_DIR/pds-data --config DEPLOY_DIR/objpds/config/production.json -v\" 2)"
+      "Bash(ssh DEPLOY_USER@DEPLOY_HOST \"PDS_MASTER_SECRET=$PDS_MASTER_SECRET DEPLOY_DIR/objpds/build-linux/bin/kaszlak account create --email test@garazyk.xyz --handle test.garazyk.xyz --password $TEST_PASSWORD --data-dir DEPLOY_DIR/pds-data --config DEPLOY_DIR/objpds/config/production.json -v\" 2)",
+      "Bash(deciduous status 188 completed)",
+      "Bash(deciduous status 189 in_progress)",
+      "Bash(deciduous status 190 completed)",
+      "Bash(deciduous status 189 completed)",
+      "Bash(deciduous status 193 completed)"
     ]
   }
 }

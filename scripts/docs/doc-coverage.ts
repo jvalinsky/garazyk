@@ -220,9 +220,14 @@ function subsystemForPath(path: string): Subsystem {
   if (normalized.includes("Garazyk/Sources/Chat/")) return "Chat";
   if (normalized.includes("Garazyk/Sources/AppView/")) return "AppView";
   if (normalized.includes("Garazyk/Sources/Services/")) return "Services";
-  if (normalized.includes("Garazyk/Sources/AdminUIServer/")) {
-    return "AdminUIServer";
-  }
+  if (normalized.includes("Garazyk/Sources/AdminUIServer/")) return "AdminUIServer";
+  if (normalized.includes("Garazyk/Sources/Mikrus/")) return "Services";
+  if (normalized.includes("Garazyk/Sources/Registration/")) return "Services";
+  if (normalized.includes("Garazyk/Sources/PLC/")) return "Core";
+  if (normalized.includes("Garazyk/Sources/Sync/")) return "Core";
+  if (normalized.includes("Garazyk/Sources/Security/")) return "Core";
+  if (normalized.includes("Garazyk/Sources/Repository/")) return "Core";
+  if (normalized.includes("Garazyk/Sources/Video/")) return "Services";
 
   return "Other";
 }

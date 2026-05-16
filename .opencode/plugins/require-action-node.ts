@@ -1,7 +1,4 @@
-// OpenCode Plugin: Require Action Node
-// Checks for recent action/goal nodes before file edits
-// This enforces the decision graph workflow: log BEFORE you code
-
+/** Enforces the decision-graph workflow by checking for recent action/goal nodes before file edits. */
 import type { Plugin } from "@opencode-ai/plugin"
 
 export const RequireActionNode: Plugin = async ({ $ }) => {

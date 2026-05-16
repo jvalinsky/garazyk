@@ -19,7 +19,6 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma mark - Repo Sync State
 
 /*!
- @enum AppViewRepoSyncStatus
 
  @abstract State machine for per-repo backfill lifecycle.
 
@@ -132,7 +131,6 @@ typedef NS_ENUM(NSInteger, AppViewRepoSyncStatus) {
 #pragma mark - Relevance Membership
 
 /*!
- @enum AppViewRelevanceReason
 
  @abstract Why a DID is in the relevance set R.
 

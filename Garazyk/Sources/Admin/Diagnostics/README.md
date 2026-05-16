@@ -220,7 +220,7 @@ Response:
 }
 ```
 
-**GET /admin/api/diagnostics/blobs/status?jobId=<uuid>**
+**GET `/admin/api/diagnostics/blobs/status?jobId=<uuid>`**
 Poll current job status.
 
 Response:

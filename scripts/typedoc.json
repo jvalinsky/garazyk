@@ -23,6 +23,7 @@
   "includeVersion": true,
   "excludePrivate": true,
   "excludeInternal": true,
+  "disableSources": true,
   "validation": {
     "notDocumented": true
   },

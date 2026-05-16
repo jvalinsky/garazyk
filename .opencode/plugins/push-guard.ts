@@ -1,3 +1,4 @@
+/** Warns before git push if the test binary is missing or stale. */
 import type { Plugin } from "@opencode-ai/plugin"
 
 export const PushGuardPlugin: Plugin = async ({ project, client, $, worktree }) => {
