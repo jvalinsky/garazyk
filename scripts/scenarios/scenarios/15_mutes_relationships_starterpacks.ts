@@ -1,4 +1,24 @@
+/**
+ * @module scenarios/15_mutes_relationships_starterpacks
+ *
+ * Scenario: Mutes, Relationships, and Starter Packs Management
+ *
+ * Behavior:
+ * - Creates multiple user accounts and profiles.
+ * - Establishes follow relationships between users.
+ * - Tests mute/unmute functionality for actors.
+ * - Verifies relationship lookups.
+ * - Tests creating and retrieving lists and starter packs.
+ *
+ * Expectations:
+ * - Relationships and mutes are tracked correctly.
+ * - Starter packs can be created and retrieved by URI.
+ * - User interactions adhere to the expected graph API behavior.
+ */
+
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
 import { PDS1, getCharacter } from "../../lib/deno/config.ts";
@@ -7,6 +27,10 @@ function now() {
   return new Date().toISOString();
 }
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Mutes, Relationships & Starter Packs");
   result.start();

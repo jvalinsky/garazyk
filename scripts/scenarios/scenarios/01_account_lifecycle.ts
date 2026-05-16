@@ -1,8 +1,30 @@
+/**
+ * @module scenarios/01_account_lifecycle
+ *
+ * Scenario: Account Lifecycle & Identity verification.
+ *
+ * Behavior:
+ * - Creates a new user account on the PDS.
+ * - Verifies session establishment, handle resolution, and PLC DID resolution.
+ * - Creates and retrieves a user profile.
+ * - Tests session refreshing and invalid login handling.
+ * - Logs the user out.
+ *
+ * Expectations:
+ * - All lifecycle operations complete successfully with valid responses.
+ */
+
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Account Lifecycle & Identity");
   result.start();

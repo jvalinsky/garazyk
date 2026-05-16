@@ -1,4 +1,21 @@
+/**
+ * @module scenarios/18_admin_operations
+ *
+ * Scenario: AppView Admin Operations
+ *
+ * Behavior:
+ * - Initialize test accounts and perform some initial activity.
+ * - Call various administrative endpoints (ingest health, backfill status/queue, metrics, lexicons, records, etc.) using admin token.
+ * - Verify that unauthenticated admin requests are rejected.
+ *
+ * Expectations:
+ * - Admin endpoints are accessible with valid credentials and return expected operational status/metrics.
+ * - Unauthorized requests receive error responses.
+ */
+
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
+export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { PDS1, SERVICE_URLS, APPVIEW_ADMIN_SECRET, getCharacter } from "../../lib/deno/config.ts";
@@ -7,6 +24,10 @@ function now() {
   return new Date().toISOString();
 }
 
+/**
+ * Executes the scenario logic.
+ * @returns A promise that resolves to the scenario result
+ */
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("AppView Admin Operations");
   result.start();
