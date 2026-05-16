@@ -23,6 +23,7 @@ export const SERVICE_PORTS: Record<string, number> = {
   ui: 2590,
 };
 
+/** Build the HTTP URL for a service from env vars or SERVICE_PORTS defaults. */
 export function serviceUrl(key: string): string {
   const port = Deno.env.get(`${key.toUpperCase()}_PORT`) ||
     String(SERVICE_PORTS[key] || 0);

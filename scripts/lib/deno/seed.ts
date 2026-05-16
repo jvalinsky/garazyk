@@ -1,3 +1,4 @@
+/** Seed data helpers for ATProto E2E tests — accounts, posts, chat interactions. @module seed */
 import { XrpcClient } from "./client.ts";
 import { XrpcError } from "./transport.ts";
 

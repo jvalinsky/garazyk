@@ -1,6 +1,8 @@
+/** List and summarize available topology presets. @module topology_list */
 import { fromFileUrl, join } from "@std/path";
 import { resolvePreset } from "./topology.ts";
 
+/** Summary info for a single topology preset. */
 export interface TopologyPresetSummary {
   name: string;
   description?: string;

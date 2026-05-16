@@ -1,12 +1,15 @@
+/** Run progress island — live progress bar, elapsed time, and activity indicator. @module RunProgress */
 import { useEffect, useState } from "preact/hooks";
 import { useRuntime } from "../runtime.ts";
 
+/** Props for the RunProgress component. */
 interface RunProgressProps {
   runId: string;
   startedAt: number;
   status: string;
 }
 
+/** Format ms as a short human-readable elapsed time. */
 function formatElapsedShort(ms: number): string {
   const totalSec = Math.floor(ms / 1000);
   if (totalSec < 60) return `${totalSec}s`;
@@ -15,6 +18,7 @@ function formatElapsedShort(ms: number): string {
   return `${m}m ${s}s`;
 }
 
+/** Categorize staleness of last activity update. */
 function staleLevel(secondsSinceUpdate: number): "active" | "slow" | "stale" {
   if (secondsSinceUpdate < 30) return "active";
   if (secondsSinceUpdate < 90) return "slow";

@@ -22,6 +22,7 @@ import type { Run, ScenarioResult, ServiceStatus } from "./services/types.ts";
 // State slices
 // ---------------------------------------------------------------------------
 
+/** Slice tracking network service health polling state. */
 export interface NetworkSlice {
   services: ServiceStatus[];
   /** Milliseconds since last successful health check response */
@@ -34,6 +35,7 @@ export interface NetworkSlice {
   healthToken: number;
 }
 
+/** Slice tracking active run, progress polling, and backoff state. */
 export interface RunsSlice {
   /** Currently active run, if any */
   active: Run | null;
@@ -59,6 +61,7 @@ export interface RunsSlice {
   progressToken: number;
 }
 
+/** Per-run progress snapshot used for polling display. */
 export interface RunProgress {
   exists: boolean;
   runId: string;
@@ -72,6 +75,7 @@ export interface RunProgress {
   running: boolean;
 }
 
+/** Slice tracking discovered scenarios and fetch state. */
 export interface ScenariosSlice {
   /** All known scenarios */
   all: ScenarioMeta[];
@@ -81,6 +85,7 @@ export interface ScenariosSlice {
   token: number;
 }
 
+/** Metadata for a single discoverable scenario. */
 export interface ScenarioMeta {
   id: string;
   name: string;
@@ -94,6 +99,7 @@ export interface ScenarioMeta {
   }>;
 }
 
+/** Slice tracking topology selection, preview, and fetch state. */
 export interface TopologySlice {
   /** Currently selected topology name */
   selected: string;
@@ -109,6 +115,7 @@ export interface TopologySlice {
   previewToken: number;
 }
 
+/** Preview data for a topology preset. */
 export interface TopologyPreview {
   name: string;
   description?: string;
@@ -116,6 +123,7 @@ export interface TopologyPreview {
   capabilities: string[];
 }
 
+/** Slice tracking log text by run ID and polling state. */
 export interface LogsSlice {
   /** Raw log text keyed by run id */
   textByRunId: Record<string, string>;
@@ -131,6 +139,7 @@ export interface LogsSlice {
   lastUpdateMs: number;
 }
 
+/** Slice tracking container CPU/memory stats and polling state. */
 export interface MetricsSlice {
   /** Per-role container stats */
   stats: Record<string, { cpu: string; mem: string }>;
@@ -144,6 +153,7 @@ export interface MetricsSlice {
   lastUpdateMs: number;
 }
 
+/** Slice tracking UI state: modals, search, categories, busy flag. */
 export interface UxSlice {
   /** Whether a network operation (start/stop) is in progress */
   busy: boolean;
@@ -161,6 +171,7 @@ export interface UxSlice {
 // DashboardState (the Model)
 // ---------------------------------------------------------------------------
 
+/** Root dashboard model — union of all state slices. */
 export interface DashboardState {
   network: NetworkSlice;
   runs: RunsSlice;
@@ -177,6 +188,7 @@ export interface DashboardState {
 // Msg (discriminated union of all state transitions)
 // ---------------------------------------------------------------------------
 
+/** Discriminated union of all state transitions in the TEA model. */
 export type Msg =
   // Network health
   | { type: "network/healthReceived"; services: ServiceStatus[]; token?: number }
@@ -242,6 +254,7 @@ export type Msg =
 // Cmd (declarative effects — data, not functions)
 // ---------------------------------------------------------------------------
 
+/** Declarative effect type — data, not functions. Runtime interprets these into I/O. */
 export type Cmd =
   | {
     type: "fetch";
@@ -288,6 +301,7 @@ function selectedProgressRunId(state: DashboardState, msgRunId?: string): string
   return msgRunId ?? state.runs.viewedRunId ?? state.runs.active?.id ?? null;
 }
 
+/** Pure state transition function. Takes current state and a Msg, returns next state and effects. */
 export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]] {
   switch (msg.type) {
     // ── Network health ──────────────────────────────────────────────────
@@ -964,6 +978,7 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
 // Initial state factory
 // ---------------------------------------------------------------------------
 
+/** Create initial dashboard state with defaults, optionally overriding slices. */
 export function createInitialState(overrides?: Partial<DashboardState>): DashboardState {
   return {
     network: {
@@ -1030,6 +1045,7 @@ export function createInitialState(overrides?: Partial<DashboardState>): Dashboa
 // Boot Cmds — the initial effects to run when the dashboard loads
 // ---------------------------------------------------------------------------
 
+/** Initial effects to run when the dashboard loads: health check, active run, scenarios, topologies. */
 export function bootCmds(): Cmd[] {
   return [
     {

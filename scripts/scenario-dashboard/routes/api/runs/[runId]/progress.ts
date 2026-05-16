@@ -1,8 +1,10 @@
+/** API: /api/runs/[runId]/progress — GET run progress. @module api/runs/[runId]/progress */
 import { Handlers } from "$fresh/server.ts";
 import { join } from "$std/path/mod.ts";
 import { db } from "../../../../db/index.ts";
 import { fetchRun } from "../../../../db/queries.ts";
 
+/** GET /api/runs/[runId]/progress — returns progress snapshot for a run. */
 export const handler: Handlers = {
   async GET(_req, ctx) {
     const { runId } = ctx.params;

@@ -1,3 +1,4 @@
+/** Database schema migrations for the scenario dashboard. @module migrations */
 import { Database } from "sqlite3";
 
 /**
