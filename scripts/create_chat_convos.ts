@@ -21,7 +21,7 @@ const backAndForth = Boolean(Deno.env.get("CHAT_BACK_AND_FORTH")) || (altHandle.
 const rounds = Number(Deno.env.get("CHAT_ROUNDS") || "3");
 const discoverMode = Boolean(Deno.env.get("CHAT_DISCOVER"));
 const sshHost = Deno.env.get("CHAT_SSH_HOST") || "";
-const sshDbPath = Deno.env.get("CHAT_SSH_DB") || "DEPLOY_DIR/pds-data/service/service.db";
+const sshDbPath = Deno.env.get("CHAT_SSH_DB") || "";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -203,7 +203,7 @@ async function firstExistingServiceDbPath(): Promise<string | undefined> {
   const candidates = [
     explicit,
     dataDir ? `${dataDir.replace(/\/$/, "")}/service/service.db` : undefined,
-    "DEPLOY_DIR/pds-data/service/service.db",
+    "/var/lib/atprotopds/service/service.db",
   ].filter((path): path is string => Boolean(path));
 
   for (const candidate of candidates) {
@@ -555,13 +555,21 @@ async function modeBackAndForth(sessionA: Session, sessionB: Session, serviceDid
 
   console.log(`\nSent ${sentCount} messages total.`);
 
-  console.log("\n=== Full Conversation Log ===");
-  const messageResponse = await getMessages(sessionA.accessJwt, serviceDid, convoId);
-  const messages = Array.isArray(asRecord(messageResponse).messages)
-    ? asRecord(messageResponse).messages as unknown[]
+  console.log("\n=== Messages Received by Account A ===");
+  const messagesA = await getMessages(sessionA.accessJwt, serviceDid, convoId);
+  const msgsA = Array.isArray(asRecord(messagesA).messages)
+    ? asRecord(messagesA).messages as unknown[]
     : [];
-  console.log(`Messages: ${messages.length}`);
-  printMessages(messages);
+  console.log(`Messages: ${msgsA.length}`);
+  printMessages(msgsA);
+
+  console.log("\n=== Messages Received by Account B ===");
+  const messagesB = await getMessages(sessionB.accessJwt, serviceDid, convoId);
+  const msgsB = Array.isArray(asRecord(messagesB).messages)
+    ? asRecord(messagesB).messages as unknown[]
+    : [];
+  console.log(`Messages: ${msgsB.length}`);
+  printMessages(msgsB);
 }
 
 // ── Main ────────────────────────────────────────────────────────────────
