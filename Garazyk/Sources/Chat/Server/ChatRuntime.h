@@ -11,6 +11,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class ChatConfiguration;
 
+/**
+ * @abstract Owns startup and shutdown for the chat service runtime.
+ */
 @interface ChatRuntime : NSObject
 
 @property (nonatomic, strong, readonly) ChatConfiguration *configuration;
@@ -19,6 +22,9 @@ NS_ASSUME_NONNULL_BEGIN
 + (instancetype)sharedRuntime;
 
 - (BOOL)loadConfiguration:(NSString *)path error:(NSError **)error;
+/**
+ * @abstract Load configuration from environment.
+ */
 - (void)loadConfigurationFromEnvironment;
 
 - (BOOL)startWithError:(NSError **)error;

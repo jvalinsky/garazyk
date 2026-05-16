@@ -30,7 +30,6 @@ extern NSString * const PDSServiceStoreDID;
 extern NSString * const PDSActorStoreErrorDomain;
 
 /*!
- @enum PDSActorStoreError
 
  @abstract Error codes for actor store operations.
 
@@ -71,6 +70,11 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 - (nullable PDSDatabaseRepo *)getRepoForDid:(NSString *)did error:(NSError **)error;
 - (nullable NSData *)getRepoRootForDid:(NSString *)did error:(NSError **)error;
 - (nullable NSString *)getRepoRevisionForDid:(NSString *)did error:(NSError **)error;
+/**
+ * @abstract Latest mutation revision with error.
+ * @param error Receives details when the operation fails.
+ * @return The requested string, or nil when unavailable.
+ */
 - (nullable NSString *)latestMutationRevisionWithError:(NSError **)error;
 - (BOOL)repoRevisionExists:(NSString *)rev error:(NSError **)error;
 - (BOOL)mutationRevisionExists:(NSString *)rev error:(NSError **)error;
@@ -79,33 +83,76 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 - (NSArray<NSDictionary<NSString *, id> *> *)listRecordTombstonesSinceRev:(nullable NSString *)rev
                                                                      limit:(NSUInteger)limit
                                                                      error:(NSError **)error;
+/**
+ * @abstract List records for did.
+ * @param did Actor DID for the request.
+ * @param collection Repository collection NSID.
+ * @param limit Maximum number of records to return.
+ * @param offset Zero-based result offset.
+ * @param error Receives details when the operation fails.
+ * @return The response array, or nil when the request fails.
+ */
 - (NSArray<PDSDatabaseRecord *> *)listRecordsForDid:(NSString *)did 
                                          collection:(nullable NSString *)collection 
                                                limit:(NSUInteger)limit
                                               offset:(NSUInteger)offset
                                                error:(NSError **)error;
+/**
+ * @abstract List block cids since rev.
+ * @param rev Repository revision.
+ * @param limit Maximum number of records to return.
+ * @param error Receives details when the operation fails.
+ * @return The response array, or nil when the request fails.
+ */
 - (NSArray<NSData *> *)listBlockCIDsSinceRev:(nullable NSString *)rev
                                         limit:(NSUInteger)limit
                                         error:(NSError **)error;
 - (NSArray<NSData *> *)listBlockCIDsForRevision:(NSString *)rev
                                            limit:(NSUInteger)limit
                                            error:(NSError **)error;
+/**
+ * @abstract Get block for cid.
+ * @param cid Content identifier for the blob or block.
+ * @param did Actor DID for the request.
+ * @param error Receives details when the operation fails.
+ * @return Data returned by the request, or nil when unavailable.
+ */
 - (nullable NSData *)getBlockForCID:(NSData *)cid forDid:(NSString *)did error:(NSError **)error;
 - (NSArray<PDSDatabaseBlock *> *)listBlocksForDid:(NSString *)did 
                                             limit:(NSUInteger)limit 
                                            offset:(NSUInteger)offset
                                             error:(NSError **)error;
+/**
+ * @abstract Get record count for did.
+ * @param did Actor DID for the request.
+ * @param collection Repository collection NSID.
+ * @param error Receives details when the operation fails.
+ * @return Result produced by the operation.
+ */
 - (NSInteger)getRecordCountForDid:(NSString *)did collection:(nullable NSString *)collection error:(NSError **)error;
 - (NSInteger)getBlockCountForDid:(NSString *)did error:(NSError **)error;
 
 #pragma mark - Blob Operations
 
+/**
+ * @abstract Save blob.
+ * @param blob Blob metadata to persist.
+ * @param error Receives details when the operation fails.
+ * @return YES when the operation succeeds; otherwise NO.
+ */
 - (BOOL)saveBlob:(PDSDatabaseBlob *)blob error:(NSError **)error;
 - (nullable PDSDatabaseBlob *)getBlobForCID:(NSData *)cid error:(NSError **)error;
 - (NSArray<PDSDatabaseBlob *> *)listBlobsForDid:(NSString *)did
                                           limit:(NSUInteger)limit
                                          cursor:(nullable NSString *)cursor
                                           error:(NSError **)error;
+/**
+ * @abstract Delete blob for cid.
+ * @param cid Content identifier for the blob or block.
+ * @param did Actor DID for the request.
+ * @param error Receives details when the operation fails.
+ * @return YES when the operation succeeds; otherwise NO.
+ */
 - (BOOL)deleteBlobForCID:(NSData *)cid forDid:(NSString *)did error:(NSError **)error;
 
 @end
@@ -121,25 +168,62 @@ typedef NS_ENUM(NSInteger, PDSActorStoreError) {
 - (BOOL)updateAccount:(PDSDatabaseAccount *)account error:(NSError **)error;
 - (BOOL)deleteAccount:(NSString *)did error:(NSError **)error;
 
+/**
+ * @abstract Create repo.
+ * @param repo Repository metadata to persist.
+ * @param error Receives details when the operation fails.
+ * @return YES when the operation succeeds; otherwise NO.
+ */
 - (BOOL)createRepo:(PDSDatabaseRepo *)repo error:(NSError **)error;
 - (BOOL)updateRepoRoot:(NSString *)did rootCid:(NSData *)rootCid error:(NSError **)error;
 - (BOOL)updateRepoRoot:(NSString *)did rootCid:(NSData *)rootCid rev:(nullable NSString *)rev error:(NSError **)error;
 - (BOOL)deleteRepo:(NSString *)did error:(NSError **)error;
 
+/**
+ * @abstract Put record.
+ * @param record Repository record to persist.
+ * @param did Actor DID for the request.
+ * @param error Receives details when the operation fails.
+ * @return YES when the operation succeeds; otherwise NO.
+ */
 - (BOOL)putRecord:(PDSDatabaseRecord *)record forDid:(NSString *)did error:(NSError **)error;
 - (BOOL)createRecord:(PDSDatabaseRecord *)record forDid:(NSString *)did error:(NSError **)error;
 - (BOOL)updateRecord:(PDSDatabaseRecord *)record forDid:(NSString *)did error:(NSError **)error;
 - (BOOL)deleteRecord:(NSString *)uri forDid:(NSString *)did error:(NSError **)error;
+/**
+ * @abstract Add record tombstone uri.
+ * @param uri AT URI identifying the record.
+ * @param did Actor DID for the request.
+ * @param collection Repository collection NSID.
+ * @param rkey Record key.
+ * @param rev Repository revision.
+ * @param error Receives details when the operation fails.
+ * @return YES when the operation succeeds; otherwise NO.
+ */
 - (BOOL)addRecordTombstoneURI:(NSString *)uri
                           did:(NSString *)did
                     collection:(NSString *)collection
                          rkey:(NSString *)rkey
                            rev:(NSString *)rev
                          error:(NSError **)error;
+/**
+ * @abstract Put records.
+ * @param records Repository records to persist.
+ * @param did Actor DID for the request.
+ * @param error Receives details when the operation fails.
+ * @return YES when the operation succeeds; otherwise NO.
+ */
 - (BOOL)putRecords:(NSArray<PDSDatabaseRecord *> *)records forDid:(NSString *)did error:(NSError **)error;
 
 - (BOOL)putBlock:(PDSDatabaseBlock *)block forDid:(NSString *)did error:(NSError **)error;
 - (BOOL)putBlocks:(NSArray<PDSDatabaseBlock *> *)blocks forDid:(NSString *)did error:(NSError **)error;
+/**
+ * @abstract Delete block.
+ * @param cid Content identifier for the blob or block.
+ * @param did Actor DID for the request.
+ * @param error Receives details when the operation fails.
+ * @return YES when the operation succeeds; otherwise NO.
+ */
 - (BOOL)deleteBlock:(NSData *)cid forDid:(NSString *)did error:(NSError **)error;
 
 @end

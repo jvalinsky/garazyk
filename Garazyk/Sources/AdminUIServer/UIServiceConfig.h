@@ -4,6 +4,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Stores endpoint and credential settings for the Admin UI service.
+ */
 @interface UIServiceConfig : NSObject
 
 @property(nonatomic, copy) NSString *host;
@@ -12,6 +15,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property(nonatomic, strong) NSURL *pdsBaseURL;
 @property(nonatomic, strong) NSURL *plcBaseURL;
+/**
+ * @abstract Base URL for the relay admin API.
+ */
 @property(nonatomic, strong) NSURL *relayBaseURL;
 @property(nonatomic, strong) NSURL *appViewBaseURL;
 @property(nonatomic, strong) NSURL *chatBaseURL;
@@ -20,6 +26,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, copy, nullable) NSString *pdsAdminToken;
 @property(nonatomic, copy, nullable) NSString *pdsAdminPassword;
 @property(nonatomic, copy, nullable) NSString *plcAdminToken;
+/**
+ * @abstract Admin token used for relay requests.
+ */
 @property(nonatomic, copy, nullable) NSString *relayAdminToken;
 @property(nonatomic, copy, nullable) NSString *appViewAdminToken;
 @property(nonatomic, copy, nullable) NSString *chatAdminToken;

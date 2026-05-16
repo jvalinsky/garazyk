@@ -101,6 +101,12 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
  @param error On return, contains an error if the operation failed.
  @return YES if the statement executed successfully, NO otherwise.
  */
+/**
+ * @abstract Execute unsafe raw sql.
+ * @param sql SQL statement to execute.
+ * @param error Receives details when the operation fails.
+ * @return YES when the operation succeeds; otherwise NO.
+ */
 - (BOOL)executeUnsafeRawSQL:(NSString *)sql error:(NSError **)error;
 
 /*!
@@ -114,6 +120,12 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
  @param sql The SQL query to execute.
  @param error On return, contains an error if the query failed.
  @return An array of dictionaries representing query results, or nil on failure.
+ */
+/**
+ * @abstract Execute unsafe raw query.
+ * @param sql SQL statement to execute.
+ * @param error Receives details when the operation fails.
+ * @return The response array, or nil when the request fails.
  */
 - (NSArray<NSDictionary *> *)executeUnsafeRawQuery:(NSString *)sql error:(NSError **)error;
 
@@ -129,6 +141,13 @@ typedef NS_ENUM(NSInteger, PDSDatabaseError) {
  @param params An array of parameter values to bind to the query.
  @param error On return, contains an error if the query failed.
  @return An array of dictionaries representing query results, or nil on failure.
+ */
+/**
+ * @abstract Execute parameterized query.
+ * @param sql SQL statement to execute.
+ * @param params Bound SQL parameter values.
+ * @param error Receives details when the operation fails.
+ * @return The response array, or nil when the request fails.
  */
 - (NSArray<NSDictionary *> *)executeParameterizedQuery:(NSString *)sql
                                                 params:(NSArray *)params
