@@ -1,3 +1,4 @@
+/** OpenCode tool: control local ATProto services (start, stop, restart, status, logs, etc.). */
 import { tool } from "@opencode-ai/plugin"
 
 export default tool({

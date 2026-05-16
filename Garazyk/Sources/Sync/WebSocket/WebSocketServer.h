@@ -31,7 +31,6 @@ extern NSInteger const WebSocketServerErrorCodeInvalidHandshake;
 extern NSInteger const WebSocketServerErrorCodeConnectionFailed;
 
 /*!
- @enum WebSocketServerState
 
  @abstract Server lifecycle states.
 

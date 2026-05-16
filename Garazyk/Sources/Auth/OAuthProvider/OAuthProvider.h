@@ -41,7 +41,6 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString * const OAuthProviderErrorDomain;
 
 /*!
- @enum OAuthProviderError
  
  @abstract Error codes for OAuthProvider operations.
  */
