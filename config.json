@@ -2,7 +2,7 @@
   "server": {
     "host": "pds.garazyk.xyz",
     "port": 2583,
-    "data_dir": "DEPLOY_DIR/pds-data",
+    "data_dir": "${PDS_DATA_DIR}",
     "issuer": "https://pds.garazyk.xyz",
     "available_user_domains": [
       "garazyk.xyz"

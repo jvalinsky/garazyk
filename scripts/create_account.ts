@@ -50,7 +50,7 @@ function takeValue(argv: string[], index: number, flag: string): string {
 function parseArgs(argv: string[]): Args {
   const args: Args = {
     pdsUrl: Deno.env.get("PDS_URL") || "https://pds.garazyk.xyz",
-    sshHost: Deno.env.get("SSH_HOST") || "DEPLOY_HOST",
+    sshHost: Deno.env.get("SSH_HOST") || "",
     dbPath: Deno.env.get("PDS_DB_PATH") || "~/pds-data/service/service.db",
     handle: "",
     posts: [],
