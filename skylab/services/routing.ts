@@ -24,13 +24,39 @@ export function routeMethod(method: string): string {
 }
 
 /**
+ * Known XRPC query methods (HTTP GET) — explicit lookup for deterministic
+ * routing. The heuristic below handles any methods not in this set.
+ */
+const KNOWN_QUERY_METHODS: Set<string> = new Set([
+  // com.atproto.identity
+  "com.atproto.identity.resolveHandle",
+  "com.atproto.identity.resolveDid",
+  // com.atproto.server
+  "com.atproto.server.describeServer",
+  "com.atproto.server.getServiceAuth",
+  // com.atproto.repo
+  "com.atproto.repo.describeRepo",
+  "com.atproto.repo.listRecords",
+  "com.atproto.repo.getRecord",
+  // com.atproto.admin
+  "com.atproto.admin.getRepo",
+  "com.atproto.admin.getSubjectStatus",
+  "com.atproto.admin.getRecord",
+  "com.atproto.admin.searchRepos",
+]);
+
+/**
  * True when the XRPC method is a lexicon query (HTTP GET + query params).
  *
- * Match on the final NSID segment: app.bsky.feed.getTimeline → getTimeline.
+ * Checks the known-methods set first for deterministic routing, then
+ * falls back to a heuristic on the final NSID segment:
+ * app.bsky.feed.getTimeline → getTimeline.
  * Full-NSID prefix checks are wrong because NSIDs start with the domain.
  */
 export function xrpcMethodUsesHttpGet(method: string): boolean {
   if (!method) return false;
+  if (KNOWN_QUERY_METHODS.has(method)) return true;
+
   const seg = method.slice(method.lastIndexOf(".") + 1).toLowerCase();
   if (
     seg.startsWith("get") ||
