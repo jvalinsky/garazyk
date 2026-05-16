@@ -1,38 +1,107 @@
+/** Test character definitions, registry, and service URL configuration. @module config */
 import { resolveTopology } from "./topology.ts";
+import type { Topology } from "./topology_types.ts";
 
-const topology = resolveTopology(
+/** Browser client topology exposed through scenario configuration. */
+export interface WebClientConfig {
+  /** Browser client preset name. */
+  name: string;
+  /** Source repository URL. */
+  source: string;
+  /** Git ref used by the browser client build. */
+  ref: string;
+  /** Build preset name used by the web client pipeline. */
+  buildPreset: "garazyk-ui" | "social-app" | "witchsky";
+  /** Command used to serve the browser client. */
+  serveCommand: string[];
+  /** Public browser URL. */
+  publicUrl: string;
+  /** Internal container-network URL. */
+  internalUrl: string;
+  /** Environment variables injected into the browser client. */
+  env: Record<string, string>;
+  /** Browser client health-check settings. */
+  healthCheck: {
+    url: string;
+    intervalSeconds: number;
+    timeoutSeconds: number;
+    retries: number;
+    startPeriodSeconds: number;
+  };
+  /** OAuth redirect URLs allowed for the client. */
+  oauthRedirects: string[];
+  /** Capability flags advertised by the browser client. */
+  capabilities: string[];
+  /** Scenario browser-flow entrypoints. */
+  browserFlow: {
+    smoke: string;
+    login: string;
+    deep: string;
+  };
+  /** Whether mixed host and container networking is allowed. */
+  allowHybridNetwork?: boolean;
+}
+
+const topology: Topology = resolveTopology(
   Deno.env.get("ATPROTO_WEB_CLIENT") || undefined,
   Deno.env.get("ATPROTO_TOPOLOGY") || undefined,
 );
 
-export const PDS1 = Deno.env.get("PDS_URL") || topology.serviceUrls.pds || "http://localhost:2583";
-export const PDS2 = Deno.env.get("PDS2_URL") || topology.serviceUrls.pds2 || "http://localhost:2587";
+/** Primary PDS URL used by scenarios. */
+export const PDS1: string = Deno.env.get("PDS_URL") || topology.serviceUrls.pds ||
+  "http://localhost:2583";
+/** Secondary PDS URL used by federation scenarios. */
+export const PDS2: string = Deno.env.get("PDS2_URL") || topology.serviceUrls.pds2 ||
+  "http://localhost:2587";
 // Admin credentials for local development PDS/AppView instances.
 // These are NOT production secrets — they are the default credentials
 // for locally-run test services. Set the env vars to override.
-export const APPVIEW_ADMIN_SECRET = Deno.env.get("APPVIEW_ADMIN_SECRET") || "localdevadmin";
-export const PDS_ADMIN_PASSWORD = Deno.env.get("PDS_ADMIN_PASSWORD") || "admin-localdev";
+/** Local AppView admin secret used by test services. */
+export const APPVIEW_ADMIN_SECRET: string = Deno.env.get("APPVIEW_ADMIN_SECRET") ||
+  "localdevadmin";
+/** Local PDS admin password used by test services. */
+export const PDS_ADMIN_PASSWORD: string = Deno.env.get("PDS_ADMIN_PASSWORD") ||
+  "admin-localdev";
 
+/** Public service URLs keyed by service role. */
 export const SERVICE_URLS: Record<string, string> = {
   ...topology.serviceUrls,
   pds: PDS1,
   pds2: PDS2,
 };
 
-export const TOPOLOGY_CAPABILITIES = topology.capabilities;
-export const TOPOLOGY_CAPABILITIES_BY_ROLE = topology.capabilitiesByRole;
+/** Capability set supported by the resolved topology. */
+export const TOPOLOGY_CAPABILITIES: Set<string> = topology.capabilities;
+/** Capability sets grouped by service role. */
+export const TOPOLOGY_CAPABILITIES_BY_ROLE: Record<string, Set<string>> = topology.capabilitiesByRole;
 
-export const WEB_CLIENT_TOPOLOGY = topology.webClient;
+/** Browser client topology attached to the resolved test network, when configured. */
+export const WEB_CLIENT_TOPOLOGY: WebClientConfig | undefined = topology.webClient;
 
-export const VIDEO_SERVICE_DID = Deno.env.get("VIDEO_SERVICE_DID") ||
+/** DID used by video-service scenarios. */
+export const VIDEO_SERVICE_DID: string = Deno.env.get("VIDEO_SERVICE_DID") ||
   Deno.env.get("JELCZ_DID") ||
   "did:web:localhost";
 
+/** A test character with PDS-issued credentials. */
 export class Character {
-  public did = "";
-  public accessJwt = "";
-  public refreshJwt = "";
+  /** DID assigned after account creation. */
+  public did: string = "";
+  /** Access JWT assigned after account creation or login. */
+  public accessJwt: string = "";
+  /** Refresh JWT assigned after account creation or login. */
+  public refreshJwt: string = "";
 
+  /**
+   * Create a test character template.
+   * @param name - Human-readable display name
+   * @param handle - ATProto handle
+   * @param email - Account email
+   * @param password - Account password
+   * @param persona - Scenario persona description
+   * @param role - Scenario role
+   * @param pdsUrl - PDS URL assigned to the character
+   */
   constructor(
     public name: string,
     public handle: string,
@@ -43,7 +112,8 @@ export class Character {
     public pdsUrl: string = PDS1,
   ) {}
 
-  get token() {
+  /** Current access token for authenticated calls. */
+  get token(): string {
     return this.accessJwt;
   }
 }
@@ -54,9 +124,25 @@ export class Character {
 
 /** A registry of test characters, scoped to specific PDS URLs. */
 export interface CharacterRegistry {
+  /**
+   * Look up a character by registry key.
+   * @param name - Character key
+   * @returns The matching character
+   */
   getCharacter(name: string): Character;
+  /**
+   * Get all characters assigned to a role.
+   * @param role - Role name
+   * @returns Matching characters
+   */
   getCharactersByRole(role: string): Character[];
+  /**
+   * Get all characters assigned to a PDS URL.
+   * @param pdsUrl - PDS URL
+   * @returns Matching characters
+   */
   getCharactersByPds(pdsUrl: string): Character[];
+  /** Return all characters keyed by registry name. */
   all(): Record<string, Character>;
 }
 
@@ -173,6 +259,13 @@ let _registryCounter = 0;
  * Each call produces a new set of characters with a unique suffix,
  * so multiple registries can coexist without handle collisions.
  *
+ * @example
+ * ```ts
+ * const registry = createCharacterRegistry();
+ * const luna = registry.getCharacter("luna");
+ * const admins = registry.getCharactersByRole("admin");
+ * ```
+ *
  * @param pds1Url - URL for the primary PDS (default: PDS1 from env/topology)
  * @param pds2Url - URL for the secondary PDS (default: PDS2 from env/topology)
  */
@@ -230,18 +323,22 @@ export function createCharacterRegistry(
 // A default registry for callers that haven't migrated to the factory API.
 let registry = createCharacterRegistry();
 
-export function resetCharacters() {
+/** Reset the default character registry (creates a fresh set with unique handles). */
+export function resetCharacters(): void {
   registry = createCharacterRegistry();
 }
 
+/** Look up a character by name from the default registry. */
 export function getCharacter(name: string): Character {
   return registry.getCharacter(name);
 }
 
+/** Get all characters matching the given role from the default registry. */
 export function getCharactersByRole(role: string): Character[] {
   return registry.getCharactersByRole(role);
 }
 
+/** Get all characters assigned to the given PDS URL from the default registry. */
 export function getCharactersByPds(pdsUrl: string): Character[] {
   return registry.getCharactersByPds(pdsUrl);
 }
