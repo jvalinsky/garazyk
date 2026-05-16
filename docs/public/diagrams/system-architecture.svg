@@ -46,8 +46,8 @@
   <rect x="150" y="400" width="700" height="100" class="box" rx="5"/>
   <text x="500" y="425" text-anchor="middle" class="title">XrpcMethodRegistry</text>
   <text x="500" y="450" text-anchor="middle" class="label">Domain Method Handlers:</text>
-  <text x="500" y="475" text-anchor="middle" class="label">XrpcServerMethods • XrpcRepoMethods • XrpcSyncMethods</text>
-  <text x="500" y="495" text-anchor="middle" class="label">XrpcIdentityMethods • XrpcAdminMethods • XrpcAppBskyMethods</text>
+  <text x="500" y="475" text-anchor="middle" class="label">XrpcServerPack • XrpcRepoPack • XrpcSyncPack</text>
+  <text x="500" y="495" text-anchor="middle" class="label">XrpcIdentityPack • XrpcAdminPack • XrpcAppBskyPack</text>
 
   <!-- Arrow down -->
   <path d="M 500 500 L 500 540" class="arrow"/>

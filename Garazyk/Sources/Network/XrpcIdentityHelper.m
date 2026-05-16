@@ -15,8 +15,11 @@
 #import "Core/ATProtoValidator.h"
 #import "Identity/ATProtoHandleValidator.h"
 #import "PLC/DIDPLCResolver.h"
+#import "Auth/JWT.h"
+#import "Core/CID.h"
 #import "Core/DID.h"
 #import "Core/NSDateFormatter+ATProto.h"
+#import "Security/PDSSecurityCompare.h"
 #import "Debug/GZLogger.h"
 
 // Helper function to extract normalized handle from alsoKnownAs array
@@ -136,11 +139,62 @@ static BOOL didDocumentContainsHandle(DIDDocument *doc, NSString *handle) {
         }
         return NO;
     }
-    
     if (outDid) {
         *outDid = account.did;
     }
     return YES;
+}
+
++ (nullable NSData *)publicKeyBytesFromMultibase:(NSString *)multibase
+                                           error:(NSError **)error {
+    if (multibase.length < 2) {
+        if (error) {
+            *error = [NSError errorWithDomain:DIDErrorDomain
+                                         code:DIDErrorInvalidDocument
+                                     userInfo:@{
+                                         NSLocalizedDescriptionKey :
+                                             @"Invalid publicKeyMultibase value"
+                                     }];
+        }
+        return nil;
+    }
+
+    unichar prefix = [multibase characterAtIndex:0];
+    NSString *payload = [multibase substringFromIndex:1];
+    NSData *data = nil;
+    switch (prefix) {
+        case 'z':
+        case 'Z':
+            data = [CID base58btcDecode:payload];
+            break;
+        case 'b':
+            data = [CID base32Decode:payload];
+            break;
+        case 'u':
+            data = [JWT base64URLDecode:payload error:error];
+            break;
+        default:
+            if (error) {
+                *error = [NSError
+                    errorWithDomain:DIDErrorDomain
+                               code:DIDErrorInvalidDocument
+                           userInfo:@{
+                               NSLocalizedDescriptionKey :
+                                   @"Unsupported multibase encoding for signing key"
+                           }];
+            }
+            return nil;
+    }
+
+    if (!data) {
+        return nil;
+    }
+
+    const uint8_t *bytes = data.bytes;
+    if (data.length > 2 && bytes[0] == 0xE7 && bytes[1] == 0x01) {
+        return [data subdataWithRange:NSMakeRange(2, data.length - 2)];
+    }
+    return data;
 }
 
 + (NSDictionary *)resolveDid:(NSString *)did
@@ -356,6 +410,64 @@ static BOOL didDocumentContainsHandle(DIDDocument *doc, NSString *handle) {
 
 + (NSString *)currentISO8601String {
     return [NSDateFormatter atproto_stringFromDate:[NSDate date]];
+}
+
+#pragma mark - PLC Operation Tokens
+
+static NSTimeInterval const kPlcOperationTokenTTLSeconds = 15.0 * 60.0;
+
+static NSCache<NSString *, NSDictionary *> *plcOperationTokenCache(void) {
+    static NSCache<NSString *, NSDictionary *> *cache = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        cache = [[NSCache alloc] init];
+        cache.countLimit = 1024;
+    });
+    return cache;
+}
+
++ (void)storePlcOperationToken:(NSString *)token forDid:(NSString *)did {
+    if (![token isKindOfClass:[NSString class]] || token.length == 0) {
+        return;
+    }
+    if (![did isKindOfClass:[NSString class]] || did.length == 0) {
+        return;
+    }
+
+    NSDate *expiresAt = [NSDate dateWithTimeIntervalSinceNow:kPlcOperationTokenTTLSeconds];
+    NSDictionary *entry = @{@"token": token, @"expiresAt": expiresAt};
+    [plcOperationTokenCache() setObject:entry forKey:did];
+}
+
++ (BOOL)validatePlcOperationToken:(NSString *)token forDid:(NSString *)did {
+    if (![token isKindOfClass:[NSString class]] || token.length == 0) {
+        return NO;
+    }
+    if (![did isKindOfClass:[NSString class]] || did.length == 0) {
+        return NO;
+    }
+
+    NSCache<NSString *, NSDictionary *> *cache = plcOperationTokenCache();
+    NSDictionary *entry = [cache objectForKey:did];
+    if (![entry isKindOfClass:[NSDictionary class]]) {
+        return NO;
+    }
+
+    NSString *expected = entry[@"token"];
+    NSDate *expiresAt = entry[@"expiresAt"];
+    if (![expected isKindOfClass:[NSString class]] || ![expiresAt isKindOfClass:[NSDate class]]) {
+        [cache removeObjectForKey:did];
+        return NO;
+    }
+    if ([expiresAt timeIntervalSinceNow] <= 0) {
+        [cache removeObjectForKey:did];
+        return NO;
+    }
+
+    BOOL equal = [PDSSecurityCompare constantTimeEqualString:expected string:token];
+
+    [cache removeObjectForKey:did];
+    return equal;
 }
 
 @end

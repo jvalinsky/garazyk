@@ -19,7 +19,7 @@ The firehose implementation manages:
 The firehose is integrated directly into the main PDS HTTP server rather than running as a sidecar.
 
 - `PDSApplication` initializes the `SubscribeReposHandler`.
-- `PDSHttpServerBuilder` registers the route at `/xrpc/com.atproto.sync.subscribeRepos`.
+- `ATProtoHttpServerBuilder` registers the route at `/xrpc/com.atproto.sync.subscribeRepos`.
 - Connections are handled by `SubscribeReposHandler` and managed on dedicated dispatch queues to ensure the main server remains responsive.
 
 ## Event Types

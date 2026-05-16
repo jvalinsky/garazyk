@@ -4,6 +4,9 @@
 #import "Services/PDS/PDSAccountService.h"
 #import "Auth/JWT.h"
 #import "Auth/PDSKeyManagerFactory.h"
+#import "Auth/Base32Utils.h"
+#import "Auth/PDSSecondFactorService.h"
+#import "Auth/TOTPGenerator.h"
 #import "Database/Pool/DatabasePool.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
@@ -113,6 +116,83 @@
                                                     error:&error];
     XCTAssertNil(session);
     XCTAssertNotNil(error);
+}
+
+- (void)testLoginRequiresAuthFactorTokenWhenTOTPEnabled {
+    NSError *error = nil;
+    [self.service createAccountForEmail:@"mfa-required@example.com"
+                               password:@"password123"
+                                 handle:@"mfa-required.example.com"
+                                    did:nil
+                                  error:&error];
+    XCTAssertNil(error);
+
+    PDSDatabaseAccount *account = [self.service.serviceDatabases getAccountByEmail:@"mfa-required@example.com" error:&error];
+    account.tfaEnabled = YES;
+    account.tfaSecret = [@"JBSWY3DPEHPK3PXP" dataUsingEncoding:NSUTF8StringEncoding];
+    XCTAssertTrue([self.service.serviceDatabases updateAccount:account error:&error]);
+
+    error = nil;
+    NSDictionary *session = [self.service loginWithIdentifier:@"mfa-required.example.com"
+                                                     password:@"password123"
+                                                        error:&error];
+    XCTAssertNil(session);
+    XCTAssertEqualObjects(error.domain, PDSSecondFactorErrorDomain);
+    XCTAssertEqual(error.code, PDSSecondFactorErrorRequired);
+}
+
+- (void)testLoginWithValidTOTPFallbackMintsSession {
+    NSError *error = nil;
+    [self.service createAccountForEmail:@"mfa-totp@example.com"
+                               password:@"password123"
+                                 handle:@"mfa-totp.example.com"
+                                    did:nil
+                                  error:&error];
+    XCTAssertNil(error);
+
+    NSString *base32Secret = @"JBSWY3DPEHPK3PXP";
+    PDSDatabaseAccount *account = [self.service.serviceDatabases getAccountByEmail:@"mfa-totp@example.com" error:&error];
+    account.tfaEnabled = YES;
+    account.tfaSecret = [base32Secret dataUsingEncoding:NSUTF8StringEncoding];
+    XCTAssertTrue([self.service.serviceDatabases updateAccount:account error:&error]);
+
+    TOTPGenerator *generator = [[TOTPGenerator alloc] initWithSecret:[Base32Utils dataFromBase32String:base32Secret]];
+    NSString *code = [generator generateOTP];
+
+    error = nil;
+    NSDictionary *session = [self.service loginWithIdentifier:@"mfa-totp.example.com"
+                                                     password:@"password123"
+                                              authFactorToken:code
+                                                        error:&error];
+    XCTAssertNotNil(session);
+    XCTAssertNil(error);
+    XCTAssertNotNil(session[@"accessJwt"]);
+    XCTAssertNotNil(session[@"refreshJwt"]);
+}
+
+- (void)testInvalidAuthFactorTokenDoesNotMintSession {
+    NSError *error = nil;
+    [self.service createAccountForEmail:@"mfa-invalid@example.com"
+                               password:@"password123"
+                                 handle:@"mfa-invalid.example.com"
+                                    did:nil
+                                  error:&error];
+    XCTAssertNil(error);
+
+    PDSDatabaseAccount *account = [self.service.serviceDatabases getAccountByEmail:@"mfa-invalid@example.com" error:&error];
+    account.tfaEnabled = YES;
+    account.tfaSecret = [@"JBSWY3DPEHPK3PXP" dataUsingEncoding:NSUTF8StringEncoding];
+    XCTAssertTrue([self.service.serviceDatabases updateAccount:account error:&error]);
+
+    error = nil;
+    NSDictionary *session = [self.service loginWithIdentifier:@"mfa-invalid.example.com"
+                                                     password:@"password123"
+                                              authFactorToken:@"000000"
+                                                        error:&error];
+    XCTAssertNil(session);
+    XCTAssertNotNil(error);
+    NSArray *sessions = [self.service.serviceDatabases listRefreshTokenSessionsForAccountDid:account.did error:nil];
+    XCTAssertEqual(sessions.count, 1U, @"Only the account-creation refresh token should exist");
 }
 
 - (void)testRefreshAccessToken_RotatesRefreshToken {

@@ -20,7 +20,7 @@
 - **Gate queue pattern**: A serial gate queue acquires the concurrency semaphore before dispatching to the concurrent worker pool. This prevents thread explosion on Linux/GNUstep where GCD lacks kernel workqueue integration.
 - **MST cache**: `mstCacheByDid` dictionary protected by serial `mstCacheQueue`. Per-DID MST loaded/cached on first write.
 - **MST operations**: The MST itself is **not thread-safe** — it's a single-threaded tree with `put`/`delete`/`get` operations. Each write: load MST → apply mutation → recompute hashes → persist blocks → update repo root. The MST already does path-copying (persistent data structure), so concurrent reads need atomic snapshot references (Phase 2).
-- **Database**: `PDSConnectionPool` — SQLite connection pool (default min 2, max 10). WAL mode, NORMAL sync. `busyTimeout` 5000ms.
+- **Database**: `ATProtoConnectionPool` — SQLite connection pool (default min 2, max 10). WAL mode, NORMAL sync. `busyTimeout` 5000ms.
 
 ### 1.3 Relay (zuk)
 
@@ -298,7 +298,7 @@ The AppView ingest engine currently uses a serial GCD queue. Replacing with a pe
 ### Phase 3: SQLite Write Batching
 
 **Files to modify**:
-- `Garazyk/Sources/Database/Pool/PDSConnectionPool.h/.m` — increase pool size, add WAL tuning
+- `Garazyk/Sources/Database/Pool/ATProtoConnectionPool.h/.m` — increase pool size, add WAL tuning
 - `Garazyk/Sources/Services/PDS/PDSRecordService.m` — batch writes per transaction
 - `Garazyk/Sources/Network/RateLimiter.m` — move to separate DB or in-memory
 

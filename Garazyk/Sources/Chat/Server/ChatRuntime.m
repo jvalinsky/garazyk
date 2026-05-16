@@ -13,6 +13,8 @@
 #import "Network/XrpcChatBskyActorPack.h"
 #import "Network/XrpcChatBskyConvoPack.h"
 #import "Network/XrpcChatBskyGroupPack.h"
+#import "Network/XrpcRoutePackServices.h"
+#import "App/ATProtoServiceConfiguration.h"
 #import "Debug/GZLogger.h"
 
 @interface ChatRuntime ()
@@ -77,22 +79,23 @@
     // 4. Initialize Networking
     self.dispatcher = [[XrpcDispatcher alloc] init];
     
+    // Create services bag for route packs
+    // NOTE: Standalone chat uses its own configuration and database
+    XrpcRoutePackServiceBag *bag =
+ [[XrpcRoutePackServiceBag alloc] initWithDispatcher:self.dispatcher
+                                                                             jwtMinter:nil
+                                                                       adminController:nil
+                                                                          configuration:nil
+                                                                            adminSecret:self.configuration.adminSecret
+                                                                      serviceDatabases:nil
+                                                                      userDatabasePool:nil
+                                                                            rateLimiter:nil];
+    bag.appViewDatabase = (id<PDSQueryDatabase>)self.db;
+
     // Register Handlers
-    // NOTE: Passing nil for dependencies that are PDS-specific for now.
-    // STANDALONE CHAT will need its own Auth validation logic in Phase 3.
-    [XrpcChatBskyActorPack registerWithDispatcher:self.dispatcher];
-
-    [XrpcChatBskyConvoPack registerWithDispatcher:self.dispatcher
-                                   appViewDatabase:(id<PDSQueryDatabase>)self.db
-                                 serviceDatabase:nil
-                                        jwtMinter:nil
-                                  adminController:nil
-                                     adminSecret:self.configuration.adminSecret];
-
-    [XrpcChatBskyGroupPack registerWithDispatcher:self.dispatcher
-                                   appViewDatabase:(id<PDSQueryDatabase>)self.db
-                                        jwtMinter:nil
-                                  adminController:nil];
+    [XrpcChatBskyActorPack registerWithDispatcher:self.dispatcher services:bag];
+    [XrpcChatBskyConvoPack registerWithDispatcher:self.dispatcher services:bag];
+    [XrpcChatBskyGroupPack registerWithDispatcher:self.dispatcher services:bag];
 
     self.httpServer = [HttpServer serverWithHost:@"0.0.0.0" port:self.configuration.httpPort]; // Bind to all interfaces for Docker support
 

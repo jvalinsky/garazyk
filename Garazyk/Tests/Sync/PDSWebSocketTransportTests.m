@@ -4,7 +4,7 @@
 #import "Sync/WebSocket/PDSWebSocketNetworkAdapter.h"
 #import "Sync/WebSocket/WebSocketCodec.h"
 
-@interface MockNetworkConnection : NSObject <PDSNetworkConnection>
+@interface MockNetworkConnection : NSObject <ATProtoNetworkConnection>
 @property (nonatomic, strong) NSMutableData *sentData;
 @property (nonatomic, copy) void (^receiveCompletion)(NSData *data, BOOL isComplete, NSError *error);
 @property (nonatomic, strong) NSMutableArray<NSData *> *pendingData;

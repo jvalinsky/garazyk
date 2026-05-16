@@ -287,7 +287,7 @@ static void *kSubscribeReposEventQueueKey = &kSubscribeReposEventQueueKey;
   return dispatch_group_wait(group, deadline) == 0;
 }
 
-- (void)acceptUpgradedConnection:(id<PDSNetworkConnection>)connection
+- (void)acceptUpgradedConnection:(id<ATProtoNetworkConnection>)connection
                          request:(HttpRequest *)request {
   GZ_LOG_SYNC_INFO(@"Accepting upgraded connection for subscribeRepos from %@", request.remoteAddress);
   [self ensureSequenceInitialized];

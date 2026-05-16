@@ -31,7 +31,9 @@
                                                 jwtMinter:jwtMinter
                                           adminController:adminController
                                              configuration:nil
+                                               adminSecret:nil
                                          serviceDatabases:nil
+                                         userDatabasePool:nil
                                                rateLimiter:nil];
   services.contactService = contactService;
   [self registerWithDispatcher:dispatcher services:services];

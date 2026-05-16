@@ -12,11 +12,11 @@
 #import "Network/HttpProtocolDriver.h"
 #import "Network/HttpResponseSender.h"
 #import "Network/HttpRequest.h"
-#import "Network/PDSNetworkTransport.h"
+#import "Network/ATProtoNetworkTransport.h"
 #import "Compat/PDSTypes.h"
 
 @interface HttpConnectionIOCoordinator ()
-@property (nonatomic, strong) id<PDSNetworkConnection> connection;
+@property (nonatomic, strong) id<ATProtoNetworkConnection> connection;
 @property (nonatomic, strong) HttpProtocolDriver *driver;
 @property (nonatomic, strong) HttpResponseSender *sender;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t coordinationQueue;
@@ -35,7 +35,7 @@ static const NSTimeInterval kHttpHeaderTimeout = 30.0;
     return nil;
 }
 
-- (instancetype)initWithConnection:(id<PDSNetworkConnection>)connection
+- (instancetype)initWithConnection:(id<ATProtoNetworkConnection>)connection
                            protocol:(HttpProtocolDriver *)driver
                        responseSender:(HttpResponseSender *)sender {
     self = [super init];
@@ -48,7 +48,7 @@ static const NSTimeInterval kHttpHeaderTimeout = 30.0;
         _isClosed = NO;
         _headerStartTime = [NSDate timeIntervalSinceReferenceDate];
 
-        NSString *queueName = [NSString stringWithFormat:@"com.pds.http.io-coordinator.%p", self];
+        NSString *queueName = [NSString stringWithFormat:@"com.atproto.http.io-coordinator.%p", self];
         _coordinationQueue = dispatch_queue_create([queueName UTF8String], DISPATCH_QUEUE_SERIAL);
     }
     return self;

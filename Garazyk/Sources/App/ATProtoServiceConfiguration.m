@@ -7,7 +7,7 @@
 
 NSString *const ATProtoServiceConfigErrorDomain = @"com.atproto.pds.config";
 
-static NSString *PDSConfigTrimmed(NSString *value) {
+static NSString *ATProtoServiceConfigTrimmed(NSString *value) {
   if (![value isKindOfClass:[NSString class]]) {
     return nil;
   }
@@ -16,21 +16,23 @@ static NSString *PDSConfigTrimmed(NSString *value) {
                                           whitespaceAndNewlineCharacterSet]];
 }
 
-static BOOL PDSConfigHostLooksLocal(NSString *host) {
-  NSString *normalized = [[PDSConfigTrimmed(host) lowercaseString] copy];
+static BOOL ATProtoServiceConfigHostLooksLocal(NSString *host) {
+  NSString *normalized =
+      [[ATProtoServiceConfigTrimmed(host) lowercaseString] copy];
   return normalized.length == 0 || [normalized isEqualToString:@"localhost"] ||
          [normalized isEqualToString:@"127.0.0.1"] ||
          [normalized isEqualToString:@"::1"] ||
          [normalized isEqualToString:@"0.0.0.0"];
 }
 
-static NSString *PDSConfigNormalizedHost(NSString *host) {
-  NSString *normalized = [[PDSConfigTrimmed(host) lowercaseString] copy];
+static NSString *ATProtoServiceConfigNormalizedHost(NSString *host) {
+  NSString *normalized =
+      [[ATProtoServiceConfigTrimmed(host) lowercaseString] copy];
   return normalized.length > 0 ? normalized : nil;
 }
 
-static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
-  NSString *trimmedIssuer = PDSConfigTrimmed(issuer);
+static NSString *ATProtoServiceConfigCanonicalizedIssuerString(NSString *issuer) {
+  NSString *trimmedIssuer = ATProtoServiceConfigTrimmed(issuer);
   if (trimmedIssuer.length == 0) {
     return nil;
   }
@@ -44,12 +46,12 @@ static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
   }
 
   NSString *scheme =
-      [[PDSConfigTrimmed(components.scheme) lowercaseString] copy];
+      [[ATProtoServiceConfigTrimmed(components.scheme) lowercaseString] copy];
   if (scheme.length == 0) {
     scheme = @"https";
   }
 
-  NSString *host = PDSConfigNormalizedHost(components.host);
+  NSString *host = ATProtoServiceConfigNormalizedHost(components.host);
   if (host.length == 0) {
     return trimmedIssuer;
   }
@@ -67,7 +69,7 @@ static NSString *PDSConfigCanonicalizedIssuerString(NSString *issuer) {
   return [NSString stringWithFormat:@"%@://%@", scheme, host];
 }
 
-static BOOL PDSConfigRunningUnderTests(void) {
+static BOOL ATProtoServiceConfigRunningUnderTests(void) {
   NSDictionary *env = [[NSProcessInfo processInfo] environment];
   if ([env[@"XCTestConfigurationFilePath"] length] > 0 ||
       [env[@"XCTestBundlePath"] length] > 0 ||
@@ -135,7 +137,7 @@ static BOOL PDSConfigRunningUnderTests(void) {
 - (instancetype)init {
   self = [super init];
   if (self) {
-    BOOL runningUnderTests = PDSConfigRunningUnderTests();
+    BOOL runningUnderTests = ATProtoServiceConfigRunningUnderTests();
     _config = @{};
 
     _serverHost = @"0.0.0.0";
@@ -1089,13 +1091,13 @@ static BOOL PDSConfigRunningUnderTests(void) {
 }
 
 - (NSString *)canonicalIssuerWithPortHint:(NSUInteger)portHint {
-  NSString *configuredIssuer = PDSConfigCanonicalizedIssuerString(self.issuer);
+  NSString *configuredIssuer = ATProtoServiceConfigCanonicalizedIssuerString(self.issuer);
   if (configuredIssuer.length > 0) {
     return configuredIssuer;
   }
 
-  NSString *host = PDSConfigNormalizedHost(self.serverHost);
-  if (PDSConfigHostLooksLocal(host)) {
+  NSString *host = ATProtoServiceConfigNormalizedHost(self.serverHost);
+  if (ATProtoServiceConfigHostLooksLocal(host)) {
     host = @"localhost";
   }
   if (host.length == 0) {
@@ -1105,7 +1107,7 @@ static BOOL PDSConfigRunningUnderTests(void) {
   // Check if host already contains a port
   BOOL hostHasPort = [host containsString:@":"];
 
-  BOOL localHost = PDSConfigHostLooksLocal(host);
+  BOOL localHost = ATProtoServiceConfigHostLooksLocal(host);
   NSString *scheme = localHost ? @"http" : @"https";
 
   if (hostHasPort) {
@@ -1127,7 +1129,7 @@ static BOOL PDSConfigRunningUnderTests(void) {
   NSString *canonicalIssuer = [self canonicalIssuerWithPortHint:0];
   NSURLComponents *components =
       [NSURLComponents componentsWithString:canonicalIssuer];
-  NSString *host = PDSConfigNormalizedHost(components.host);
+  NSString *host = ATProtoServiceConfigNormalizedHost(components.host);
 
   // If issuer had a port, components.host only returns the host portion.
   // If we want to return exactly what's needed for the domain part of the
@@ -1136,7 +1138,7 @@ static BOOL PDSConfigRunningUnderTests(void) {
     return host;
   }
 
-  NSString *fallbackHost = PDSConfigNormalizedHost(self.serverHost);
+  NSString *fallbackHost = ATProtoServiceConfigNormalizedHost(self.serverHost);
 
   // Strip port from fallbackHost if present
   if ([fallbackHost containsString:@":"]) {
@@ -1144,7 +1146,7 @@ static BOOL PDSConfigRunningUnderTests(void) {
         [[fallbackHost componentsSeparatedByString:@":"] firstObject];
   }
 
-  if (PDSConfigHostLooksLocal(fallbackHost)) {
+  if (ATProtoServiceConfigHostLooksLocal(fallbackHost)) {
     return @"localhost";
   }
   return fallbackHost.length > 0 ? fallbackHost : @"localhost";

@@ -42,8 +42,8 @@ New repositories start with an explicit, signed empty commit. The service also p
 - `Garazyk/Sources/Services/PDS/PDSRepositoryService.m`
 - `Garazyk/Sources/Repository/MST.m`
 - `Garazyk/Sources/Repository/CAR.m`
-- `Garazyk/Sources/Network/XrpcRepoMethods.m`
-- `Garazyk/Sources/Network/XrpcSyncMethods.m`
+- `Garazyk/Sources/Network/XrpcRepoPack.m`
+- `Garazyk/Sources/Network/XrpcSyncPack.m`
 
 ## Related
 

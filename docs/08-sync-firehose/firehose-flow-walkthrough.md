@@ -14,13 +14,13 @@ Garazyk's firehose is a sequence of transport, replay, persistence, and queueing
 
 ## Route Registration Starts On The Main HTTP Server
 
-The WebSocket route is registered by `PDSHttpServerBuilder`, not by a separate
+The WebSocket route is registered by `ATProtoHttpServerBuilder`, not by a separate
 network stack.
 
 ```objc
 [server addWebSocketRoute:@"/xrpc/com.atproto.sync.subscribeRepos"
                   handler:^(HttpRequest *request, HttpResponse *response,
-                            id<PDSNetworkConnection> connection) {
+                            id<ATProtoNetworkConnection> connection) {
                     [strongSubscribeReposHandler acceptUpgradedConnection:connection
                                                                    request:request];
                   }];

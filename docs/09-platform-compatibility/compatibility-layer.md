@@ -48,7 +48,7 @@ These require explicit platform-specific implementations rather than simple macr
 When adding cross-platform code:
 
 1. Use `Compat/` for narrow, mechanical API gaps (e.g., a missing constant or a simple method shim).
-2. Keep the platform split explicit in the source file (e.g., using `PDSNetworkTransportMac.m` vs `PDSNetworkTransportLinux.m`) for substantial behavior differences.
+2. Keep the platform split explicit in the source file (e.g., using `ATProtoNetworkTransportMac.m` vs `ATProtoNetworkTransportLinux.m`) for substantial behavior differences.
 3. Avoid deep `#if` branching within business logic.
 
 ## Related

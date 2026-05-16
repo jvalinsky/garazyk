@@ -1,17 +1,18 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 //
-//  XrpcAdminMethods.m
+//  XrpcAdminPack.m
 //  ATProtoPDS
 //
 //  Domain module for com.atproto.admin.* XRPC endpoints.
 //
 
-#import "Network/XrpcAdminMethods.h"
+#import "Network/XrpcAdminPack.h"
 #import "Network/XrpcHandler.h"
 #import "Network/XrpcAuthHelper.h"
 #import "Network/XrpcErrorHelper.h"
 #import "Network/XrpcIdentityHelper.h"
+#import "Network/XrpcRoutePackServices.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Auth/JWT.h"
@@ -76,14 +77,20 @@ static NSArray<NSString *> *validatedUniqueStringArrayFromJSONValue(id value,
                                                                      NSString *fieldName,
                                                                      NSError **error);
 
-@implementation XrpcAdminMethods
+@implementation XrpcAdminPack
+
++ (NSString *)routePackIdentifier {
+  return @"com.atproto.admin";
+}
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
-              serviceDatabases:(PDSServiceDatabases *)serviceDatabases
-                     jwtMinter:(JWTMinter *)jwtMinter
-               adminController:(id<PDSAdminController>)adminController
-             repositoryService:(PDSRepositoryService *)repositoryService
-                  auditManager:(PDSBlobAuditManager *)auditManager {
+                      services:(id<XrpcRoutePackServices>)services {
+    
+    PDSServiceDatabases *serviceDatabases = services.serviceDatabases;
+    JWTMinter *jwtMinter = services.jwtMinter;
+    id<PDSAdminController> adminController = services.adminController;
+    PDSRepositoryService *repositoryService = services.repositoryService;
+    PDSBlobAuditManager *auditManager = services.blobAuditManager;
     
     // Register com.atproto.admin.searchAccounts
     [dispatcher registerComAtprotoAdminSearchAccounts:^(HttpRequest *request, HttpResponse *response) {

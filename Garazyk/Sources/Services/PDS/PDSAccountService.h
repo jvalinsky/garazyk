@@ -45,6 +45,12 @@ NS_ASSUME_NONNULL_BEGIN
                                      password:(NSString *)password
                                         error:(NSError **)error;
 
+/*! Authenticates a user by handle or email, password, and optional second-factor proof. */
+- (nullable NSDictionary *)loginWithIdentifier:(NSString *)identifier
+                                      password:(NSString *)password
+                               authFactorToken:(nullable NSString *)authFactorToken
+                                         error:(NSError **)error;
+
 /*! Gets account info by DID. */
 - (nullable NSDictionary *)getAccountForDid:(NSString *)did error:(NSError **)error;
 
@@ -101,6 +107,17 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*! Gets storage usage for an account by DID. Returns dict with blobBytes, blobCount, repoBytes, recordCount. */
 - (nullable NSDictionary *)usageForDid:(NSString *)did error:(NSError **)error;
+
+/*! Begins WebAuthn second-factor login after password verification. */
+- (nullable NSDictionary *)beginWebAuthnSecondFactorForIdentifier:(NSString *)identifier
+                                                         password:(NSString *)password
+                                                            error:(NSError **)error;
+
+/*! Completes WebAuthn second-factor login and returns an authFactorToken for createSession. */
+- (nullable NSString *)completeWebAuthnSecondFactorForIdentifier:(NSString *)identifier
+                                                       sessionID:(NSString *)sessionID
+                                                       assertion:(NSDictionary *)assertion
+                                                          error:(NSError **)error;
 
 @end
 

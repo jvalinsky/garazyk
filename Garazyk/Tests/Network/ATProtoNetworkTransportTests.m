@@ -1,34 +1,34 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <XCTest/XCTest.h>
-#import "Network/PDSNetworkTransportLinux.h"
+#import "Network/ATProtoNetworkTransportLinux.h"
 
-@interface PDSNetworkTransportTests : XCTestCase
+@interface ATProtoNetworkTransportTests : XCTestCase
 @end
 
-@implementation PDSNetworkTransportTests
+@implementation ATProtoNetworkTransportTests
 
 - (void)testStartWithQueue {
 #if defined(__APPLE__)
-    XCTSkip(@"PDSNetworkListenerLinux requires Linux socket permissions on macOS.");
+    XCTSkip(@"ATProtoNetworkListenerLinux requires Linux socket permissions on macOS.");
 #endif
     // Note: This test is designed to fail initially according to the TDD plan
     // We explicitly use the Linux implementation even on Mac for testing purposes
-    PDSNetworkListenerLinux *listener = [[PDSNetworkListenerLinux alloc] initWithPort:8080];
+    ATProtoNetworkListenerLinux *listener = [[ATProtoNetworkListenerLinux alloc] initWithPort:8080];
     XCTAssertNotNil(listener, @"Listener should be created");
     
     dispatch_queue_t queue = dispatch_queue_create("com.atproto.network.test", DISPATCH_QUEUE_SERIAL);
     
     __block BOOL stateCalled = NO;
-    __block PDSNetworkListenerState finalState = PDSNetworkListenerStateWaiting;
+    __block ATProtoNetworkListenerState finalState = ATProtoNetworkListenerStateWaiting;
     __block NSError *stateError = nil;
     
-    listener.stateChangedHandler = ^(PDSNetworkListenerState state, NSError *error) {
+    listener.stateChangedHandler = ^(ATProtoNetworkListenerState state, NSError *error) {
         stateCalled = YES;
         finalState = state;
         stateError = error;
         if (error) {
-            NSLog(@"PDSNetworkListenerLinux state error: %@", error);
+            NSLog(@"ATProtoNetworkListenerLinux state error: %@", error);
         }
     };
     
@@ -36,7 +36,7 @@
     
     // In the new implementation, it should succeed
     XCTAssertTrue(stateCalled, @"State changed handler should be called");
-    XCTAssertEqual(finalState, PDSNetworkListenerStateReady, @"Should succeed after implementation");
+    XCTAssertEqual(finalState, ATProtoNetworkListenerStateReady, @"Should succeed after implementation");
     
     [listener cancel];
 }

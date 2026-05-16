@@ -5,7 +5,7 @@
 //  ATProtoPDS
 //
 //  Helper functions for app.bsky.graph.* XRPC endpoint implementations.
-//  Shared between XrpcAppBskyMethods and XrpcAppBskyGraphPack.
+//  Shared between XrpcAppBskyPack and XrpcAppBskyGraphPack.
 //
 
 #import <Foundation/Foundation.h>

@@ -52,7 +52,7 @@ The `main.m` is a thin wrapper that:
 
 | Service | Binary | Runtime Class | Route Pack | Database |
 |---------|--------|---------------|------------|----------|
-| PDS | `kaszlak` | `PDSApplication` | `PDSHttpXrpcRoutePack` | Service DB + Actor Stores |
+| PDS | `kaszlak` | `PDSApplication` | `ATProtoHttpXrpcRoutePack` | Service DB + Actor Stores |
 | AppView | `syrena` | `AppViewRuntime` | `AppViewXRpcRoutePack` | `AppViewDatabase` |
 | Relay | `zuk` | (inline in main.m) | `RelayXrpcRoutePack` | None (event buffer) |
 | PLC | `campagnola` | `PLCServer` | (direct HTTP routes) | `PLCPersistentStore` |

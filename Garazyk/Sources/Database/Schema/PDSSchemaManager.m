@@ -93,6 +93,19 @@
            @")";
 }
 
+- (NSString *)servicePendingFactorTokensTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS pending_factor_tokens ("
+           @"    id TEXT PRIMARY KEY,"
+           @"    token_hash BLOB NOT NULL UNIQUE,"
+           @"    account_did TEXT NOT NULL,"
+           @"    method TEXT NOT NULL,"
+           @"    challenge BLOB,"
+           @"    expires_at REAL NOT NULL,"
+           @"    consumed_at REAL,"
+           @"    created_at REAL NOT NULL"
+           @")";
+}
+
 - (NSString *)serviceJWTSigningKeysTableSchema {
     return @"CREATE TABLE IF NOT EXISTS jwt_signing_keys ("
            @"    key_id TEXT PRIMARY KEY,"
@@ -328,6 +341,24 @@
            @")";
 }
 
+- (NSString *)bskyDraftsTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS drafts ("
+           @"    id TEXT PRIMARY KEY,"
+           @"    did TEXT NOT NULL,"
+           @"    content TEXT,"
+           @"    created_at INTEGER,"
+           @"    updated_at INTEGER"
+           @")";
+}
+
+- (NSString *)bskyBookmarksTableSchema {
+    return @"CREATE TABLE IF NOT EXISTS bookmarks ("
+           @"    uri TEXT PRIMARY KEY,"
+           @"    did TEXT NOT NULL,"
+           @"    created_at TEXT NOT NULL"
+           @")";
+}
+
 - (NSString *)serviceSchemaSQL {
 
     NSMutableString *sql = [NSMutableString string];
@@ -342,6 +373,8 @@
     [sql appendString:[self serviceRefreshTokensTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:[self serviceWebAuthnCredentialsTableSchema]];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self servicePendingFactorTokensTableSchema]];
     [sql appendString:@";\n\n"];
     [sql appendString:[self serviceJWTSigningKeysTableSchema]];
     [sql appendString:@";\n\n"];
@@ -375,6 +408,10 @@
     [sql appendString:@";\n\n"];
     [sql appendString:[self bskyAgeAssuranceTableSchema]];
     [sql appendString:@";\n\n"];
+    [sql appendString:[self bskyDraftsTableSchema]];
+    [sql appendString:@";\n\n"];
+    [sql appendString:[self bskyBookmarksTableSchema]];
+    [sql appendString:@";\n\n"];
     
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_accounts_handle ON accounts(handle);"];
 
@@ -388,6 +425,8 @@
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_refresh_tokens_account ON refresh_tokens(account_did);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_webauthn_credentials_account ON webauthn_credentials(account_did);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_pending_factor_tokens_account ON pending_factor_tokens(account_did, method, expires_at);"];
     [sql appendString:@";\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_events_seq ON events(seq);"];
     [sql appendString:@";\n"];
@@ -412,6 +451,10 @@
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_mod_safelinks_url_pattern ON moderation_safelinks(url, pattern);"];
     [sql appendString:@";\n\n"];
     [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_age_assurance_did ON age_assurance_states(did);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_drafts_did ON drafts(did);"];
+    [sql appendString:@";\n"];
+    [sql appendString:@"CREATE INDEX IF NOT EXISTS idx_bookmarks_did ON bookmarks(did);"];
     [sql appendString:@";\n"];
 
     return sql;
