@@ -251,7 +251,15 @@ static NSString *ChatAuthURLByAppendingPath(NSString *baseURL, NSString *path) {
 
         NSError *verifyError = nil;
         if (![verifier verifyJWT:jwt error:&verifyError]) {
-            GZ_LOG_ERROR(@"ChatAuthManager: JWT signature verification failed: %@", verifyError.localizedDescription);
+            GZ_LOG_WARN(@"ChatAuthManager: local JWT verification failed (%@), falling back to PDS session check",
+                         verifyError.localizedDescription);
+            // Local verification failed (e.g. JWKS key type mismatch).
+            // Fall back to PDS-verified auth: call com.atproto.server.getSession
+            // with the same token and let the PDS validate it.
+            NSString *pdsDid = [self validateTokenViaPDS:token];
+            if (pdsDid) {
+                return pdsDid;
+            }
             if (response) {
                 response.statusCode = 401;
                 [response setJsonBody:@{@"error": @"InvalidToken", @"message": @"JWT signature verification failed"}];
@@ -259,8 +267,12 @@ static NSString *ChatAuthURLByAppendingPath(NSString *baseURL, NSString *path) {
             return nil;
         }
     } else if (self.pdsUrl.length > 0) {
-        // PDS URL is configured but we couldn't fetch the key — reject
-        GZ_LOG_ERROR(@"ChatAuthManager: PDS URL configured but failed to fetch public key");
+        // PDS URL is configured but we couldn't fetch the key — try PDS session check
+        GZ_LOG_WARN(@"ChatAuthManager: JWKS key unavailable, falling back to PDS session check");
+        NSString *pdsDid = [self validateTokenViaPDS:token];
+        if (pdsDid) {
+            return pdsDid;
+        }
         if (response) {
             response.statusCode = 503;
             [response setJsonBody:@{@"error": @"KeyUnavailable", @"message": @"Cannot verify token: PDS public key unavailable"}];
@@ -269,6 +281,60 @@ static NSString *ChatAuthURLByAppendingPath(NSString *baseURL, NSString *path) {
     }
     // If no pdsUrl is configured, we trust the PDS proxy (legacy behavior for proxied-only deployments)
 
+    return did;
+}
+
+#pragma mark - PDS Session Verification (Fallback)
+
+/*! Validate a token by calling the PDS's com.atproto.server.getSession.
+    Returns the DID on success, nil on failure. */
+- (nullable NSString *)validateTokenViaPDS:(NSString *)token {
+    NSString *pdsUrl = self.pdsUrl;
+    if (pdsUrl.length == 0) {
+        return nil;
+    }
+
+    NSString *sessionURL = ChatAuthURLByAppendingPath(pdsUrl, @"xrpc/com.atproto.server.getSession");
+    NSURL *url = [NSURL URLWithString:sessionURL];
+    if (!url) {
+        GZ_LOG_ERROR(@"ChatAuthManager: invalid PDS session URL: %@", sessionURL);
+        return nil;
+    }
+
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url
+                                                           cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
+                                                       timeoutInterval:5.0];
+    [request setHTTPMethod:@"GET"];
+    [request setValue:[NSString stringWithFormat:@"Bearer %@", token] forHTTPHeaderField:@"Authorization"];
+
+    ATProtoSafeHTTPClientOptions *options = [ATProtoSafeHTTPClientOptions defaultOptions];
+    options.allowHTTP = YES;
+    options.allowPrivateHosts = YES;
+
+    NSHTTPURLResponse *urlResponse = nil;
+    NSError *error = nil;
+    NSData *data = [[ATProtoSafeHTTPClient sharedClient] sendSynchronousRequest:request
+                                                                        options:options
+                                                                       response:&urlResponse
+                                                                          error:&error];
+
+    if (!data || urlResponse.statusCode < 200 || urlResponse.statusCode >= 300) {
+        GZ_LOG_ERROR(@"ChatAuthManager: PDS session check failed: status=%ld",
+                      (long)urlResponse.statusCode);
+        return nil;
+    }
+
+    id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+    if (![json isKindOfClass:[NSDictionary class]]) {
+        return nil;
+    }
+
+    NSString *did = ((NSDictionary *)json)[@"did"];
+    if (![did isKindOfClass:[NSString class]] || did.length == 0) {
+        return nil;
+    }
+
+    GZ_LOG_INFO(@"ChatAuthManager: PDS session check verified DID: %@", did);
     return did;
 }
 
