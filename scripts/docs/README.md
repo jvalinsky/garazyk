@@ -117,6 +117,24 @@ deno run -A scripts/docs/repo_docs.ts validate --internal-strict --orphans
 deno run -A scripts/docs/repo_docs.ts validate --external-report
 ```
 
+### Deno/TypeScript API Documentation
+
+The scenario harness API is documented from `scripts/lib/deno/mod.ts`.
+
+```bash
+# Lint exported TSDoc/JSDoc and public type references
+deno task --config scripts/deno.json doc-lint
+
+# Generate local Deno HTML docs under scripts/docs/
+deno task --config scripts/deno.json doc:serve
+```
+
+Objective-C HeaderDoc coverage remains separate:
+
+```bash
+deno task --config scripts/deno.json doc:coverage --by-subsystem
+```
+
 ## Development
 
 ### Linting
