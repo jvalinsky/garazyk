@@ -15,6 +15,7 @@
 #import "Network/XrpcRoutePackServices.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
+#import "Network/ATProtoSafeHTTPClient.h"
 #import "Chat/Server/ChatAuthManager.h"
 #import "Chat/Server/Services/ChatService.h"
 #import "Chat/Server/Config/ChatSchemaManager.h"
@@ -47,6 +48,76 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
                                    adminController:services.adminController
                                            request:request
                                           response:response];
+}
+
+/*! Fetch the allowIncoming preference for a DID from the PDS repo.
+    Returns "all" (default), "none", or "following".
+    On any error, returns "all" (fail-open for availability). */
+static NSString *XrpcChatAllowIncomingForDID(NSString *targetDid) {
+    NSString *pdsUrl = [ChatAuthManager sharedManager].pdsUrl;
+    if (pdsUrl.length == 0) {
+        pdsUrl = @"http://127.0.0.1:2583";
+    }
+
+    NSString *encodedDid =
+        [targetDid stringByAddingPercentEncodingWithAllowedCharacters:
+            [NSCharacterSet URLQueryAllowedCharacterSet]];
+    NSString *getUrl = [NSString stringWithFormat:
+        @"%@/xrpc/com.atproto.repo.getRecord?collection=chat.bsky.actor.declaration&rkey=self&repo=%@",
+        pdsUrl, encodedDid];
+
+    NSURL *url = [NSURL URLWithString:getUrl];
+    if (!url) {
+        GZ_LOG_ERROR(@"allowIncoming: invalid URL for DID %@", targetDid);
+        return @"all";
+    }
+
+    NSMutableURLRequest *request =
+        [NSMutableURLRequest requestWithURL:url
+                                cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
+                            timeoutInterval:5.0];
+    [request setHTTPMethod:@"GET"];
+
+    ATProtoSafeHTTPClientOptions *options = [ATProtoSafeHTTPClientOptions defaultOptions];
+    options.allowHTTP = YES;
+    options.allowPrivateHosts = YES;
+
+    NSHTTPURLResponse *urlResponse = nil;
+    NSError *error = nil;
+    NSData *data = [[ATProtoSafeHTTPClient sharedClient] sendSynchronousRequest:request
+                                                                        options:options
+                                                                       response:&urlResponse
+                                                                          error:&error];
+
+    if (!data || urlResponse.statusCode == 404) {
+        // No declaration record — default to "all"
+        return @"all";
+    }
+
+    if (urlResponse.statusCode < 200 || urlResponse.statusCode >= 300) {
+        GZ_LOG_ERROR(@"allowIncoming: PDS returned %ld for %@",
+                      (long)urlResponse.statusCode, targetDid);
+        return @"all";
+    }
+
+    id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+    if (![json isKindOfClass:[NSDictionary class]]) {
+        return @"all";
+    }
+
+    NSDictionary *value = ((NSDictionary *)json)[@"value"];
+    if (![value isKindOfClass:[NSDictionary class]]) {
+        return @"all";
+    }
+
+    NSString *allowIncoming = value[@"allowIncoming"];
+    if ([allowIncoming isEqualToString:@"none"] ||
+        [allowIncoming isEqualToString:@"following"] ||
+        [allowIncoming isEqualToString:@"all"]) {
+        return allowIncoming;
+    }
+
+    return @"all";
 }
 
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
@@ -93,6 +164,25 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
         if (!members || members.count < 2) {
             [XrpcErrorHelper setValidationError:response message:@"At least two members required"];
             return;
+        }
+
+        // Check allowIncoming for each non-self member
+        for (NSString *memberDid in members) {
+            if ([memberDid isEqualToString:actorDID]) continue;
+
+            NSString *allowIncoming = XrpcChatAllowIncomingForDID(memberDid);
+            if ([allowIncoming isEqualToString:@"none"]) {
+                response.statusCode = 403;
+                [response setJsonBody:@{
+                    @"error": @"Blocked",
+                    @"message": [NSString stringWithFormat:
+                        @"Recipient %@ does not allow incoming messages", memberDid]
+                }];
+                return;
+            }
+            // "following" check requires graph query — not yet implemented.
+            // For now, "following" is treated as "all" (fail-open).
+            // TODO: Query PDS graph to check if actorDID follows memberDid.
         }
 
         NSError *error = nil;
@@ -392,6 +482,26 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
         NSArray *messages = body[@"messages"];
         if (!convoId || !messages) {
             [XrpcErrorHelper setValidationError:response message:@"convoId and messages are required"];
+            return;
+        }
+
+        // Verify the conversation exists and the sender is a member
+        NSDictionary *convo = [chatService getConversationWithId:convoId error:nil];
+        if (!convo) {
+            [XrpcErrorHelper setValidationError:response message:@"Conversation not found"];
+            return;
+        }
+        NSArray *memberDids = convo[@"members"];
+        BOOL isMember = NO;
+        for (NSString *m in memberDids) {
+            if ([m isEqualToString:actorDID]) { isMember = YES; break; }
+        }
+        if (!isMember) {
+            response.statusCode = 403;
+            [response setJsonBody:@{
+                @"error": @"Forbidden",
+                @"message": @"Not a member of this conversation"
+            }];
             return;
         }
 
@@ -708,6 +818,26 @@ static NSString *XrpcChatActorDIDForRequest(HttpRequest *request,
         NSDictionary *message = body[@"message"];
         if (!convoId || !message) {
             [XrpcErrorHelper setValidationError:response message:@"convoId and message are required"];
+            return;
+        }
+
+        // Verify the conversation exists and the sender is a member
+        NSDictionary *convo = [chatService getConversationWithId:convoId error:nil];
+        if (!convo) {
+            [XrpcErrorHelper setValidationError:response message:@"Conversation not found"];
+            return;
+        }
+        NSArray *memberDids = convo[@"members"];
+        BOOL isMember = NO;
+        for (NSString *m in memberDids) {
+            if ([m isEqualToString:actorDID]) { isMember = YES; break; }
+        }
+        if (!isMember) {
+            response.statusCode = 403;
+            [response setJsonBody:@{
+                @"error": @"Forbidden",
+                @"message": @"Not a member of this conversation"
+            }];
             return;
         }
 
