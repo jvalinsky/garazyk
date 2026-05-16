@@ -29,7 +29,6 @@ extern NSString * const OAuth2ErrorDomain;
 @class PDSDatabase;
 
 /*!
- @enum OAuth2Error
  
  @abstract Error codes for OAuth 2.0 operations.
  
@@ -95,7 +94,6 @@ extern NSString * const OAuth2ScopeRepoRead;
 extern NSString * const OAuth2ScopeAtprotoProfile;
 
 /*!
- @typedef OAuth2AuthorizationCompletion
  
  @abstract Completion handler for authorization requests.
  
@@ -106,7 +104,6 @@ extern NSString * const OAuth2ScopeAtprotoProfile;
 typedef void (^OAuth2AuthorizationCompletion)(NSURL * _Nullable authorizationURL, NSString * _Nullable authorizationCode, NSError * _Nullable error);
 
 /*!
- @typedef OAuth2TokenCompletion
  
  @abstract Completion handler for token requests.
  
@@ -116,7 +113,6 @@ typedef void (^OAuth2AuthorizationCompletion)(NSURL * _Nullable authorizationURL
 typedef void (^OAuth2TokenCompletion)(Session * _Nullable session, NSError * _Nullable error);
 
 /*!
- @typedef OAuth2RefreshCompletion
  
  @abstract Completion handler for token refresh requests.
  

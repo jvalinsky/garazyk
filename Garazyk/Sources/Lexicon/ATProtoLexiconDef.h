@@ -16,7 +16,6 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @enum ATProtoLexiconDefType
 
  @abstract Types of lexicon definitions.
 

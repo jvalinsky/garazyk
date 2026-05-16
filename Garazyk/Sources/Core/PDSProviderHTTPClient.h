@@ -22,7 +22,6 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString *const PDSProviderHTTPClientErrorDomain;
 
 /*!
- @enum PDSProviderHTTPClientErrorCode
 
  @abstract Error codes for provider HTTP client operations.
  */

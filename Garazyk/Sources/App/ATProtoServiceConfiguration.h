@@ -25,7 +25,6 @@ typedef NS_ENUM(NSInteger, GZLogFormat);
 extern NSString *const ATProtoServiceConfigErrorDomain;
 
 /*!
- @enum ATProtoServiceConfigError
 
  @abstract Error codes for configuration operations.
 

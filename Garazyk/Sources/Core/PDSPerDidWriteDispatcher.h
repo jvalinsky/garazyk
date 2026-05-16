@@ -33,7 +33,6 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @typedef PDSWriteBlock
 
  @abstract A block that performs a write operation for a specific DID.
 
