@@ -1,6 +1,7 @@
-import { join, fromFileUrl } from "$std/path/mod.ts";
+import { fromFileUrl, join } from "$std/path/mod.ts";
 import { db } from "../db/index.ts";
 import { Run, RunConfig } from "./types.ts";
+import { fetchRun } from "../db/queries.ts";
 
 const REPORTS_DIR = join(
   fromFileUrl(new URL("../../../scenarios/reports", import.meta.url)),
@@ -37,7 +38,9 @@ class AsyncMutex {
 
 export interface RunManager {
   getActiveRun(): Run | undefined;
-  startRun(config: RunConfig): Promise<{ runId: string } | { conflict: string }>;
+  startRun(
+    config: RunConfig,
+  ): Promise<{ runId: string } | { conflict: string }>;
   stopRun(runId: string, graceful?: boolean): Promise<void>;
   recover(): Promise<void>;
 }
@@ -45,13 +48,15 @@ export interface RunManager {
 class RunManagerImpl implements RunManager {
   private activeRun: Run | undefined = undefined;
   private childProcess: Deno.ChildProcess | undefined = undefined;
-  private #mutex = new AsyncMutex();
+  #mutex = new AsyncMutex();
 
   getActiveRun(): Run | undefined {
     return this.activeRun;
   }
 
-  async startRun(config: RunConfig): Promise<{ runId: string } | { conflict: string }> {
+  async startRun(
+    config: RunConfig,
+  ): Promise<{ runId: string } | { conflict: string }> {
     const release = await this.#mutex.acquire();
     try {
       return await this.#startRunInner(config);
@@ -60,7 +65,9 @@ class RunManagerImpl implements RunManager {
     }
   }
 
-  async #startRunInner(config: RunConfig): Promise<{ runId: string } | { conflict: string }> {
+  async #startRunInner(
+    config: RunConfig,
+  ): Promise<{ runId: string } | { conflict: string }> {
     if (this.activeRun) {
       return { conflict: `Run ${this.activeRun.id} is already active` };
     }
@@ -132,17 +139,21 @@ class RunManagerImpl implements RunManager {
       return;
     }
 
-    console.log(`[run-manager] Stopping run ${runId} (graceful=${graceful})...`);
+    console.log(
+      `[run-manager] Stopping run ${runId} (graceful=${graceful})...`,
+    );
     this.activeRun.status = "stopping";
     this.updateRunInDb(this.activeRun);
 
     if (this.childProcess) {
       if (graceful) {
         this.childProcess.kill("SIGTERM");
-        
+
         // Wait for graceful exit or timeout
         const timeout = setTimeout(() => {
-          console.warn(`[run-manager] Graceful stop timed out for ${runId}, force killing...`);
+          console.warn(
+            `[run-manager] Graceful stop timed out for ${runId}, force killing...`,
+          );
           this.childProcess?.kill("SIGKILL");
         }, 30000);
 
@@ -161,7 +172,7 @@ class RunManagerImpl implements RunManager {
     this.activeRun.stopReason = "manual_stop";
     this.activeRun.stoppedAt = Date.now();
     this.activeRun.finishedAt = Date.now();
-    
+
     this.updateRunInDb(this.activeRun);
     await this.clearLockFile();
     this.activeRun = undefined;
@@ -172,16 +183,20 @@ class RunManagerImpl implements RunManager {
     try {
       const lockData = await Deno.readTextFile(LOCK_FILE);
       const lock = JSON.parse(lockData) as Run;
-      
+
       if (lock.childPid) {
         if (this.isPidAlive(lock.childPid)) {
-          console.log(`[run-manager] Recovered active run ${lock.id} (PID ${lock.childPid})`);
+          console.log(
+            `[run-manager] Recovered active run ${lock.id} (PID ${lock.childPid})`,
+          );
           this.activeRun = lock;
           // Note: we can't easily re-attach to the child process object,
           // but we can monitor it by PID if needed, or just let it finish.
           // For now, we'll mark it as running and trust the report scanner to find results.
         } else {
-          console.warn(`[run-manager] Found lock file for ${lock.id} but PID ${lock.childPid} is dead. marking as error.`);
+          console.warn(
+            `[run-manager] Found lock file for ${lock.id} but PID ${lock.childPid} is dead. marking as error.`,
+          );
           lock.status = "error";
           lock.stopReason = "process_died";
           lock.finishedAt = Date.now();
@@ -198,7 +213,10 @@ class RunManagerImpl implements RunManager {
     const now = new Date();
     // Use ISO string but replace separators to be filename-safe
     // Result: 2026-05-15T00-16-50-123 (includes ms for uniqueness)
-    return now.toISOString().replace(/[:.]/g, "-").replace("Z", "").slice(0, 23);
+    return now.toISOString().replace(/[:.]/g, "-").replace("Z", "").slice(
+      0,
+      23,
+    );
   }
 
   private saveRunToDb(run: Run) {
@@ -209,10 +227,21 @@ class RunManagerImpl implements RunManager {
         run_dir, reports_dir, log_path, scenario_params_json
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
-      run.id, run.startedAt, run.status, run.totalScenarios, run.pds2 ? 1 : 0, run.binaryMode ? 1 : 0,
-      run.topology, run.runner, run.webClient || null, run.clientFlow || null, JSON.stringify(run.scenarioIds),
-      run.runDir, run.reportsDir, run.logPath,
-      run.scenarioParams ? JSON.stringify(run.scenarioParams) : null
+      run.id,
+      run.startedAt,
+      run.status,
+      run.totalScenarios,
+      run.pds2 ? 1 : 0,
+      run.binaryMode ? 1 : 0,
+      run.topology,
+      run.runner,
+      run.webClient || null,
+      run.clientFlow || null,
+      JSON.stringify(run.scenarioIds),
+      run.runDir,
+      run.reportsDir,
+      run.logPath,
+      run.scenarioParams ? JSON.stringify(run.scenarioParams) : null,
     );
   }
 
@@ -223,9 +252,16 @@ class RunManagerImpl implements RunManager {
         child_pid = ?, exit_code = ?, stopped_at = ?, stop_reason = ?
       WHERE id = ?
     `).run(
-      run.status, run.finishedAt || null, run.passed, run.failed, run.skipped,
-      run.childPid || null, run.exitCode ?? null, run.stoppedAt || null, run.stopReason || null,
-      run.id
+      run.status,
+      run.finishedAt || null,
+      run.passed,
+      run.failed,
+      run.skipped,
+      run.childPid || null,
+      run.exitCode ?? null,
+      run.stoppedAt || null,
+      run.stopReason || null,
+      run.id,
     );
   }
 
@@ -260,12 +296,17 @@ class RunManagerImpl implements RunManager {
 
   private async spawnRunner(run: Run) {
     const args = [
-      "run", "-A",
+      "run",
+      "-A",
       join(fromFileUrl(new URL("../../run_scenarios.ts", import.meta.url))),
-      "--run-id", run.id,
-      "--topology", run.topology!,
-      "--runner", run.runner!,
-      "--reports-dir", run.reportsDir!,
+      "--run-id",
+      run.id,
+      "--topology",
+      run.topology!,
+      "--runner",
+      run.runner!,
+      "--reports-dir",
+      run.reportsDir!,
     ];
 
     if (run.pds2) args.push("--pds2");
@@ -279,7 +320,10 @@ class RunManagerImpl implements RunManager {
 
     console.log(`[run-manager] Spawning: deno ${args.join(" ")}`);
 
-    const logFile = await Deno.open(run.logPath!, { write: true, create: true });
+    const logFile = await Deno.open(run.logPath!, {
+      write: true,
+      create: true,
+    });
 
     // Build environment variables from parameters
     const env: Record<string, string> = {};
@@ -307,7 +351,9 @@ class RunManagerImpl implements RunManager {
     // logFile after both are done. This prevents the stdout pipe
     // from consuming logFile.writable before the stderr loop can
     // write to it, or vice versa.
-    const stdoutDone = this.childProcess.stdout.pipeTo(logFile.writable, { preventClose: true });
+    const stdoutDone = this.childProcess.stdout.pipeTo(logFile.writable, {
+      preventClose: true,
+    });
 
     const stderrDone = (async () => {
       try {
@@ -322,46 +368,52 @@ class RunManagerImpl implements RunManager {
     // Wait for both streams to finish, then close the log file.
     // This runs in the background — the caller doesn't await it.
     Promise.all([stdoutDone, stderrDone]).then(() => {
-      try { logFile.close(); } catch { /* already closed */ }
+      try {
+        logFile.close();
+      } catch { /* already closed */ }
     });
 
     // Monitor completion
     this.childProcess.status.then(async (status) => {
-      console.log(`[run-manager] Run ${run.id} finished with exit code ${status.code}`);
-      
+      console.log(
+        `[run-manager] Run ${run.id} finished with exit code ${status.code}`,
+      );
+
       run.status = status.success ? "completed" : "error";
       run.exitCode = status.code;
       run.finishedAt = Date.now();
-      
+
       this.updateRunInDb(run);
       await this.clearLockFile();
-      
+
       if (this.activeRun?.id === run.id) {
         this.activeRun = undefined;
         this.childProcess = undefined;
       }
     });
   }
-  async restartRun(runId: string): Promise<{ newRunId: string } | { error: string }> {
+  async restartRun(
+    runId: string,
+  ): Promise<{ newRunId: string } | { error: string }> {
     console.log(`[run-manager] Restarting run ${runId}...`);
-    
+
     // 1. Get configuration from existing run (active or historical)
-    const run = this.activeRun?.id === runId 
-      ? this.activeRun 
-      : db.prepare("SELECT * FROM runs WHERE id = ?").get(runId) as any;
+    const run = this.activeRun?.id === runId
+      ? this.activeRun
+      : fetchRun(db, runId);
 
     if (!run) return { error: "Run not found" };
 
     const config: RunConfig = {
-      topology: run.topology,
-      runner: run.runner || "host",
-      scenarioIds: typeof run.scenario_ids_json === "string" 
-        ? JSON.parse(run.scenario_ids_json) 
-        : run.scenarioIds,
-      pds2: run.pds2 === 1 || !!run.pds2,
-      binaryMode: run.binary_mode === 1 || !!run.binaryMode,
-      webClient: run.web_client || run.webClient,
-      clientFlow: run.client_flow || run.clientFlow,
+      topology: run.topology || "default",
+      runner: (run.runner as "host" | "docker") || "host",
+      scenarioIds: (run as any).scenarioIdsJson
+        ? JSON.parse((run as any).scenarioIdsJson)
+        : run.scenarioIds || [],
+      pds2: !!run.pds2,
+      binaryMode: !!run.binaryMode,
+      webClient: run.webClient,
+      clientFlow: run.clientFlow,
     };
 
     // 2. Stop active run if it matches
@@ -374,7 +426,7 @@ class RunManagerImpl implements RunManager {
     // 3. Start new run
     const result = await this.startRun(config);
     if ("conflict" in result) return { error: result.conflict };
-    
+
     return { newRunId: result.runId };
   }
 }
