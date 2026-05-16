@@ -65,7 +65,7 @@ title: Next Steps Plan
 
 ### 5. Live PDS Deployment
 
-**Server**: DEPLOY_HOST
+**Server**: $DEPLOY_HOST
 
 **Actions**:
 - [ ] SSH and check current deployment status

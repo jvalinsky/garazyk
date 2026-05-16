@@ -28,7 +28,7 @@ The crash offset is always `+0x3D700` from the libdispatch base address.
 
 ### 21:06 UTC — Problem identified
 
-CSS not loading on `https://DEPLOY_HOST:8000/` because the PDS crashes after serving the HTML, and CSS/JS requests hit during the restart window → 502.
+CSS not loading on `https://$DEPLOY_HOST:8000/` because the PDS crashes after serving the HTML, and CSS/JS requests hit during the restart window → 502.
 
 ### 21:08 UTC — Initial investigation
 

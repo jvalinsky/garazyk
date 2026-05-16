@@ -6,7 +6,7 @@ title: Troubleshooting Ghost Posts + `createRecord` Crash (GNUstep)
 **Date**: February 26, 2026  
 **Recorded**: 2026-02-26T18:44:41Z  
 **Systems**:
-- **PDS**: `https://pds.garazyk.xyz` (exe.dev VM: `DEPLOY_HOST`)
+- **PDS**: `https://pds.garazyk.xyz` (exe.dev VM: `$DEPLOY_HOST`)
 - **Reverse proxy**: `nginx` on `:3000` → PDS on `:2583`
 - **Actor**: `did:plc:5rpam44qoj2eeisejtxmke7e` (handle: `test5.garazyk.xyz`)
 
@@ -188,9 +188,9 @@ Production deployment reminder (to avoid serving wrong identity):
 
 On the VM:
 ```bash
-cd DEPLOY_DIR/objpds
+cd $DEPLOY_DIR/objpds
 git pull --rebase
-cd DEPLOY_DIR/objpds/docker/pds
+cd $DEPLOY_DIR/objpds/docker/pds
 docker compose build pds
 docker compose down
 docker compose up -d
