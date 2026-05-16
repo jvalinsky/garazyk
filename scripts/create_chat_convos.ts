@@ -3,7 +3,12 @@
 const pdsUrl = (Deno.env.get("PDS_URL") || "https://pds.garazyk.xyz").replace(/\/$/, "");
 const chatUrl = (Deno.env.get("CHAT_URL") || "https://chat.garazyk.xyz").replace(/\/$/, "");
 const handle = Deno.env.get("TEST_HANDLE") || "test.garazyk.xyz";
-const password = Deno.env.get("TEST_PASSWORD") || "testpass123";
+const password = Deno.env.get("TEST_PASSWORD") || "";
+if (!password) {
+  console.error("TEST_PASSWORD environment variable is required.");
+  console.error("Usage: TEST_PASSWORD=<password> TEST_HANDLE=<handle> deno run -A create_chat_convos.ts");
+  Deno.exit(1);
+}
 const altHandle = Deno.env.get("ALT_HANDLE") || "";
 const altPassword = Deno.env.get("ALT_PASSWORD") || "";
 const convoLimit = Number(Deno.env.get("CHAT_CONVO_LIMIT") || "50");
@@ -12,7 +17,7 @@ const targetLimit = Number(Deno.env.get("CHAT_TARGET_LIMIT") || "10");
 const defaultMessage = Deno.env.get("CHAT_MESSAGE") || "";
 const existingConvoId = Deno.env.get("CHAT_CONVO_ID") || "";
 const messageCount = Number(Deno.env.get("CHAT_MESSAGE_COUNT") || "1");
-const backAndForth = Boolean(Deno.env.get("CHAT_BACK_AND_FORTH") || (altHandle && altPassword));
+const backAndForth = Boolean(Deno.env.get("CHAT_BACK_AND_FORTH")) || (altHandle.length > 0 && altPassword.length > 0);
 const rounds = Number(Deno.env.get("CHAT_ROUNDS") || "3");
 const discoverMode = Boolean(Deno.env.get("CHAT_DISCOVER"));
 const sshHost = Deno.env.get("CHAT_SSH_HOST") || "";
@@ -288,7 +293,7 @@ async function discoverRemoteAccounts(accessJwt?: string): Promise<TargetIdentit
         .map((raw) => {
           const account = asRecord(raw);
           const did = String(account.did || "");
-          const accountHandle = String(account.handle?.handle || account.handle || "");
+          const accountHandle = String((account.handle as Record<string, unknown>)?.handle || account.handle || "");
           return { input: accountHandle || did, handle: accountHandle || undefined, did };
         })
         .filter((t) => t.did.startsWith("did:plc:"));
@@ -573,6 +578,7 @@ async function main() {
 
   // Mode 1: existing conversation
   if (existingConvoId) {
+    console.log(`Mode: send to existing conversation`);
     await modeExistingConvo(session, chatServiceDid);
     console.log("\nDone.");
     return;
@@ -580,6 +586,7 @@ async function main() {
 
   // Mode 3: back-and-forth (requires alt account)
   if (backAndForth && altHandle && altPassword) {
+    console.log(`Mode: back-and-forth`);
     const altSession = await createSession(altHandle, altPassword);
     console.log(`Alt Account: ${altSession.handle}`);
     console.log(`Alt DID: ${altSession.did}`);
