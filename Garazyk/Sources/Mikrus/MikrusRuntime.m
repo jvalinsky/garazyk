@@ -1,32 +1,32 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 
-#import "Constellation/ConstellationRuntime.h"
-#import "Constellation/ConstellationConfiguration.h"
-#import "Constellation/ConstellationDatabase.h"
-#import "Constellation/ConstellationXrpcRoutePack.h"
+#import "Mikrus/MikrusRuntime.h"
+#import "Mikrus/MikrusConfiguration.h"
+#import "Mikrus/MikrusDatabase.h"
+#import "Mikrus/MikrusXrpcRoutePack.h"
 #import "AppView/Server/AppViewDatabase.h"
 #import "AppView/Server/Ingest/AppViewIngestEngine.h"
 #import "Debug/GZLogger.h"
 #import "Network/HttpResponse.h"
 #import "Network/HttpServer.h"
 
-@interface ConstellationRuntime ()
-@property (nonatomic, strong, readwrite) ConstellationConfiguration *configuration;
-@property (nonatomic, strong, readwrite) ConstellationDatabase *database;
+@interface MikrusRuntime ()
+@property (nonatomic, strong, readwrite) MikrusConfiguration *configuration;
+@property (nonatomic, strong, readwrite) MikrusDatabase *database;
 @property (nonatomic, strong) AppViewDatabase *ingestStateDatabase;
 @property (nonatomic, strong) AppViewIngestEngine *ingestEngine;
 @property (nonatomic, strong) HttpServer *httpServer;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 @end
 
-@implementation ConstellationRuntime
+@implementation MikrusRuntime
 
 + (instancetype)sharedRuntime {
-    static ConstellationRuntime *runtime;
+    static MikrusRuntime *runtime;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        runtime = [[ConstellationRuntime alloc] init];
+        runtime = [[MikrusRuntime alloc] init];
     });
     return runtime;
 }
@@ -36,25 +36,25 @@
     if (!data) return NO;
     NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:error];
     if (![json isKindOfClass:[NSDictionary class]]) {
-        if (error) *error = [NSError errorWithDomain:@"ConstellationRuntime"
+        if (error) *error = [NSError errorWithDomain:@"MikrusRuntime"
                                                 code:1
                                             userInfo:@{NSLocalizedDescriptionKey: @"Invalid config file"}];
         return NO;
     }
-    ConstellationConfiguration *config = [ConstellationConfiguration defaultConfiguration];
-    [config loadFromDictionary:json[@"constellation"] ?: json];
+    MikrusConfiguration *config = [MikrusConfiguration defaultConfiguration];
+    [config loadFromDictionary:json[@"mikrus"] ?: json];
     if (![config validate:error]) return NO;
     self.configuration = config;
     return YES;
 }
 
 - (void)loadConfigurationFromEnvironment {
-    self.configuration = [ConstellationConfiguration configurationFromEnvironment];
+    self.configuration = [MikrusConfiguration configurationFromEnvironment];
 }
 
 - (BOOL)startWithError:(NSError **)error {
     if (self.isRunning) return YES;
-    ConstellationConfiguration *config = self.configuration ?: [ConstellationConfiguration defaultConfiguration];
+    MikrusConfiguration *config = self.configuration ?: [MikrusConfiguration defaultConfiguration];
     if (![config validate:error]) return NO;
     self.configuration = config;
 
@@ -67,17 +67,17 @@
         return NO;
     }
 
-    NSString *dbPath = [config.dataDirectory stringByAppendingPathComponent:@"constellation.db"];
-    self.database = [[ConstellationDatabase alloc] initWithPath:dbPath error:error];
+    NSString *dbPath = [config.dataDirectory stringByAppendingPathComponent:@"mikrus.db"];
+    self.database = [[MikrusDatabase alloc] initWithPath:dbPath error:error];
     if (!self.database) return NO;
     if (![self.database runMigrations:error]) return NO;
 
     self.httpServer = [HttpServer serverWithPort:config.httpPort];
-    [HttpResponse setDefaultServerHeader:@"garazyk-constellation/1.0.0"];
+    [HttpResponse setDefaultServerHeader:@"garazyk-mikrus/1.0.0"];
     [self.httpServer addRoute:@"GET" path:@"/" handler:^(HttpRequest *request, HttpResponse *response) {
         response.statusCode = HttpStatusOK;
         response.contentType = @"text/plain; charset=utf-8";
-        [response setBodyString:@"garazyk constellation\n"];
+        [response setBodyString:@"garazyk mikrus\n"];
     }];
     __weak typeof(self) weakSelf = self;
     [self.httpServer addRoute:@"GET" path:@"/_health" handler:^(HttpRequest *request, HttpResponse *response) {
@@ -89,7 +89,7 @@
         }];
     }];
 
-    ConstellationXrpcRoutePack *routes = [[ConstellationXrpcRoutePack alloc] initWithDatabase:self.database];
+    MikrusXrpcRoutePack *routes = [[MikrusXrpcRoutePack alloc] initWithDatabase:self.database];
     [routes registerRoutesWithServer:self.httpServer];
 
     NSError *listenError = nil;
@@ -113,7 +113,7 @@
     }
 
     self.isRunning = YES;
-    GZ_LOG_INFO(@"[Constellation] Started on port %lu", (unsigned long)config.httpPort);
+    GZ_LOG_INFO(@"[Mikrus] Started on port %lu", (unsigned long)config.httpPort);
     return YES;
 }
 
@@ -143,7 +143,7 @@
         NSError *error = nil;
         if ([action isEqualToString:@"delete"]) {
             if (![self.database deleteRecordForDID:event.did collection:collection rkey:rkey error:&error]) {
-                GZ_LOG_WARN(@"[Constellation] Failed to delete %@/%@ for %@: %@",
+                GZ_LOG_WARN(@"[Mikrus] Failed to delete %@/%@ for %@: %@",
                             collection, rkey, event.did, error.localizedDescription);
             }
             continue;
@@ -160,7 +160,7 @@
                                         cid:cid
                                         seq:event.seq
                                       error:&error]) {
-                GZ_LOG_WARN(@"[Constellation] Failed to index %@/%@ for %@: %@",
+                GZ_LOG_WARN(@"[Mikrus] Failed to index %@/%@ for %@: %@",
                             collection, rkey, event.did, error.localizedDescription);
             }
         }

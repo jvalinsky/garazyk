@@ -28,7 +28,7 @@ This file contains 11 required corrections to the original plans. Each one is a 
 - **Plan 03**: Auto-discovery via `NSClassFromString` is NOT broken on GNUstep — all mechanisms work. Use `+load` self-registration pattern.
 - **Plan 06**: Depends on Plan 01 completing first. Execution order must be adjusted.
 - **Plan 01**: 5 model classes (`PDSDatabaseAccount`, `PDSDatabaseRepo`, `PDSDatabaseRecord`, `PDSDatabaseBlob`, `PDSDatabaseBlock`) must also be extracted from `PDSDatabase.m`.
-- **Plan 04**: Exclude Constellation from initial migration (untracked, still stabilizing).
+- **Plan 04**: Exclude Mikrus from initial migration (untracked, still stabilizing).
 
 ### Decision Graph (query for context recovery)
 ```bash
@@ -107,4 +107,4 @@ deciduous status <plan_goal_id> completed
 
 5. **Existing tests must continue passing.** Run `Tests/test_main.m` after each change. The existing CharacterizationTests and Database tests are your safety net.
 
-6. **Constellation is out of scope.** Do not touch `Garazyk/Binaries/constellation/` or `Garazyk/Sources/Constellation/`. They are untracked and still stabilizing.
+6. **Mikrus is out of scope.** Do not touch `Garazyk/Binaries/mikrus/` or `Garazyk/Sources/Mikrus/`. They are untracked and still stabilizing.
