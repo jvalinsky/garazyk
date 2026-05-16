@@ -7,6 +7,7 @@ NS_ASSUME_NONNULL_BEGIN
 @class HttpRequest;
 @class HttpResponse;
 @class JWTMinter;
+@class PDSDatabasePool;
 @protocol XrpcMiddleware;
 
 /*!
@@ -92,6 +93,9 @@ typedef BOOL (^XrpcRequestInterceptor)(HttpRequest *request,
 
 /*! Upstream Chat service DID for service-to-service auth. */
 @property (nonatomic, copy, nullable) NSString *chatDID;
+
+/*! User database pool for resolving actor signing keys during service auth. */
+@property (nonatomic, strong, nullable) PDSDatabasePool *userDatabasePool;
 
 /*!
  @method sharedDispatcher

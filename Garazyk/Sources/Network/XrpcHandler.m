@@ -10,6 +10,8 @@
 #import "Core/DID.h"
 #import "Debug/GZLogger.h"
 #import "App/ATProtoServiceConfiguration.h"
+#import "Database/Pool/DatabasePool.h"
+#import "Database/ActorStore/ActorStore.h"
 
 @interface XrpcDispatcher ()
 
@@ -22,6 +24,7 @@
                               response:(HttpResponse *)response;
 - (NSSet<NSString *> *)queryMethodIds;
 - (NSSet<NSString *> *)procedureMethodIds;
+- (XrpcProxyHandler *)proxyHandlerWithMinter;
 
 @end
 
@@ -282,7 +285,7 @@ static XrpcDispatcher *_sharedInstance = nil;
 
         if ([self resolveProxyTarget:atprotoProxy outURL:&resolvedURL outDID:&resolvedDID error:&resolveError]) {
             GZ_LOG_INFO(@"Proxying XRPC method '%@' to resolved service %@ (%@)", methodId, resolvedDID, resolvedURL);
-            XrpcProxyHandler *proxy = [[XrpcProxyHandler alloc] initWithMinter:self.jwtMinter];
+            XrpcProxyHandler *proxy = [self proxyHandlerWithMinter];
             [proxy handleRequest:request response:response baseURL:resolvedURL upstreamDID:resolvedDID];
             return;
         } else {
@@ -303,10 +306,8 @@ static XrpcDispatcher *_sharedInstance = nil;
             [self executeHandler:handler methodId:methodId request:request response:response];
         } else if (self.proxyURL) {
             GZ_LOG_INFO(@"Proxying XRPC method '%@' to AppView (automatic) %@", methodId, self.proxyURL);
-            XrpcProxyHandler *proxy = [[XrpcProxyHandler alloc] initWithProxyURL:self.proxyURL
-                                                                     upstreamDID:self.upstreamDID
-                                                                          minter:self.jwtMinter];
-            [proxy handleRequest:request response:response];
+            XrpcProxyHandler *proxy = [self proxyHandlerWithMinter];
+            [proxy handleRequest:request response:response baseURL:self.proxyURL upstreamDID:self.upstreamDID];
         } else {
             [self sendMethodNotFound:methodId response:response];
         }
@@ -319,10 +320,8 @@ static XrpcDispatcher *_sharedInstance = nil;
             [self executeHandler:handler methodId:methodId request:request response:response];
         } else if (self.ozoneURL) {
             GZ_LOG_INFO(@"Proxying XRPC method '%@' to Ozone %@", methodId, self.ozoneURL);
-            XrpcProxyHandler *proxy = [[XrpcProxyHandler alloc] initWithProxyURL:self.ozoneURL
-                                                                     upstreamDID:self.ozoneDID
-                                                                          minter:self.jwtMinter];
-            [proxy handleRequest:request response:response];
+            XrpcProxyHandler *proxy = [self proxyHandlerWithMinter];
+            [proxy handleRequest:request response:response baseURL:self.ozoneURL upstreamDID:self.ozoneDID];
         } else {
             [self sendMethodNotFound:methodId response:response];
         }
@@ -335,10 +334,8 @@ static XrpcDispatcher *_sharedInstance = nil;
             [self executeHandler:handler methodId:methodId request:request response:response];
         } else if (self.chatURL) {
             GZ_LOG_INFO(@"Proxying XRPC method '%@' to Chat %@", methodId, self.chatURL);
-            XrpcProxyHandler *proxy = [[XrpcProxyHandler alloc] initWithProxyURL:self.chatURL
-                                                                     upstreamDID:self.chatDID
-                                                                          minter:self.jwtMinter];
-            [proxy handleRequest:request response:response];
+            XrpcProxyHandler *proxy = [self proxyHandlerWithMinter];
+            [proxy handleRequest:request response:response baseURL:self.chatURL upstreamDID:self.chatDID];
         } else {
             [self sendMethodNotFound:methodId response:response];
         }
@@ -480,6 +477,34 @@ static XrpcDispatcher *_sharedInstance = nil;
     return NO;
 }
 
+#pragma mark - Proxy Handler Construction
+
+- (XrpcProxyHandler *)proxyHandlerWithMinter {
+    XrpcProxyHandler *proxy = [[XrpcProxyHandler alloc] initWithMinter:self.jwtMinter];
+
+    // Wire up the signing key resolver if we have access to the user database pool.
+    // This allows the proxy handler to mint spec-compliant service auth JWTs
+    // signed with the user's repo signing key (ES256K).
+    if (self.userDatabasePool) {
+        __weak PDSDatabasePool *weakPool = self.userDatabasePool;
+        proxy.signingKeyResolver = ^id<PDSActorKeyManager>(NSString *userDID, NSError **error) {
+            PDSDatabasePool *pool = weakPool;
+            if (!pool) {
+                if (error) {
+                    *error = [NSError errorWithDomain:@"XrpcDispatcher"
+                                                 code:503
+                                             userInfo:@{NSLocalizedDescriptionKey: @"User database pool unavailable"}];
+                }
+                return nil;
+            }
+            PDSActorStore *store = [pool storeForDid:userDID error:error];
+            return store.keyManager;
+        };
+    }
+
+    return proxy;
+}
+
 #pragma mark - Proxy Resolution
 
 - (BOOL)resolveProxyTarget:(NSString *)proxyDescriptor 
@@ -560,7 +585,20 @@ static XrpcDispatcher *_sharedInstance = nil;
     }
 
     if (outURL) *outURL = [NSURL URLWithString:endpoint];
-    if (outDID) *outDID = did;
+
+    // Include the service fragment in the DID for the aud claim.
+    // Per AT Protocol spec, the audience must be the full DID with fragment
+    // (e.g., "did:web:chat.garazyk.xyz#bsky_chat") so the receiving service
+    // can validate that the token was intended for it.
+    if (outDID) {
+        NSString *serviceId = serviceEntry[@"id"];
+        if (serviceId.length > 0) {
+            // serviceId is typically "#bsky_chat" — prepend the DID
+            *outDID = [NSString stringWithFormat:@"%@%@", did, serviceId];
+        } else {
+            *outDID = did;
+        }
+    }
 
     return YES;
 }

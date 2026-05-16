@@ -12,6 +12,7 @@
 #import "Network/HttpServer.h"
 #import "Network/ATProtoHttpServerBuilder.h"
 #import "Network/XrpcHandler.h"
+#import "Database/Service/ServiceDatabases.h"
 #import "Database/Monitoring/PDSHealthCheck.h"
 #import "PDSCLIDefinitions.h"
 #import "Services/PDS/PDSRelayService.h"
@@ -227,12 +228,20 @@
   // handler registration and the XrpcHandler proxies chat.bsky.* methods.
   XrpcDispatcher *xrpcDispatcher = [XrpcDispatcher sharedDispatcher];
   serverBuilder.xrpcDispatcher = xrpcDispatcher;
+  xrpcDispatcher.userDatabasePool = controller.serviceDatabases.userDatabasePool;
   ATProtoServiceConfiguration *chatConfig = [ATProtoServiceConfiguration sharedConfiguration];
   if (chatConfig.chatServiceURL.length > 0) {
       xrpcDispatcher.chatURL = [NSURL URLWithString:chatConfig.chatServiceURL];
-      xrpcDispatcher.chatDID = chatConfig.chatServiceDID;
+      // Ensure the chat DID includes the #bsky_chat fragment for service auth.
+      // The aud claim in service auth JWTs must include the service fragment
+      // per the AT Protocol spec (e.g., "did:web:chat.garazyk.xyz#bsky_chat").
+      NSString *chatDID = chatConfig.chatServiceDID;
+      if (chatDID.length > 0 && ![chatDID containsString:@"#"]) {
+          chatDID = [chatDID stringByAppendingString:@"#bsky_chat"];
+      }
+      xrpcDispatcher.chatDID = chatDID;
       GZ_LOG_INFO_C(GZLogComponentCLI,
-                     @"Configured Chat proxy to %@", chatConfig.chatServiceURL);
+                     @"Configured Chat proxy to %@ (DID: %@)", chatConfig.chatServiceURL, chatDID);
   }
 
   // Set the Server header for all PDS responses
