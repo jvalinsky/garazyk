@@ -24,7 +24,6 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString * const SessionErrorDomain;
 
 /*!
- @enum SessionError
  
  @abstract Error codes for session operations.
  

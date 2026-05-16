@@ -17,7 +17,6 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @enum CBORType
 
  @abstract CBOR major type identifiers.
 

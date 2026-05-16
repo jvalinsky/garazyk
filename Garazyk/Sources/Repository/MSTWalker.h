@@ -12,7 +12,6 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma mark - Walker Status Types
 
 /*!
- @typedef MSTWalkerStatusDone
 
  @abstract Indicates the walker has finished traversing the tree.
  */
@@ -21,7 +20,6 @@ typedef struct MSTWalkerStatusDone {
 } MSTWalkerStatusDone;
 
 /*!
- @typedef MSTWalkerStatusProgress
 
  @abstract Indicates the walker is at a specific position in the tree.
 
@@ -40,7 +38,6 @@ typedef struct MSTWalkerStatusProgress {
 } MSTWalkerStatusProgress;
 
 /*!
- @enum MSTWalkerStatusTag
 
  @abstract Tag for discriminating walker status union.
  */

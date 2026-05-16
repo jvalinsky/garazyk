@@ -20,7 +20,6 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSErrorDomain const PDSValidationErrorDomain;
 
 /*!
- @enum PDSValidationError
 
  @abstract Error codes for validation failures.
 

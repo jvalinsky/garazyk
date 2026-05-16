@@ -31,7 +31,6 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString *const PDSTwilioProviderErrorDomain;
 
 /*!
- @enum PDSTwilioProviderErrorCode
 
  @abstract Error codes for Twilio provider operations.
  */

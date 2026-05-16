@@ -18,7 +18,6 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @enum YubiKeyConnectionState
 
  @abstract YubiKey connection state.
 
@@ -38,7 +37,6 @@ typedef NS_ENUM(NSInteger, YubiKeyConnectionState) {
 extern NSString * const YubiKeyOATHErrorDomain;
 
 /*!
- @enum YubiKeyOATHError
 
  @abstract YubiKey OATH error codes.
 

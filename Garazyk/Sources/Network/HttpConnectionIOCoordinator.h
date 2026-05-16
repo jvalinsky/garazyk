@@ -22,7 +22,6 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /*!
- @typedef HttpIORequestReadyHandler
 
  @abstract Callback when an HTTP request is ready for dispatch.
 
@@ -31,7 +30,6 @@ NS_ASSUME_NONNULL_BEGIN
 typedef void (^HttpIORequestReadyHandler)(HttpRequest *request);
 
 /*!
- @typedef HttpIOUpgradeHandler
 
  @abstract Callback when a protocol upgrade is requested.
 
@@ -40,7 +38,6 @@ typedef void (^HttpIORequestReadyHandler)(HttpRequest *request);
 typedef void (^HttpIOUpgradeHandler)(HttpRequest *request);
 
 /*!
- @typedef HttpIOErrorHandler
 
  @abstract Callback when a protocol or I/O error occurs.
 
