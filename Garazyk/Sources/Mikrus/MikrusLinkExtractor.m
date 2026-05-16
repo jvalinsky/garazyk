@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 
-#import "Constellation/ConstellationLinkExtractor.h"
+#import "Mikrus/MikrusLinkExtractor.h"
 
-@implementation ConstellationLinkExtractor
+@implementation MikrusLinkExtractor
 
 + (NSArray<NSDictionary<NSString *, NSString *> *> *)linkEntriesInRecord:(NSDictionary *)record {
     if (![record isKindOfClass:[NSDictionary class]]) return @[];
