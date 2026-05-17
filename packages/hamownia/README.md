@@ -6,7 +6,10 @@ automated assertions against its services.
 
 ## Why Hamownia?
 
-**Hamownia** is the Polish word for a **dynamometer** (or "dyno shop"), a place where engines are tested for power and performance under load. As a scenario runner and testing framework, this package acts as the testing rig for your protocol "engines," ensuring they perform correctly and meet assertions.
+**Hamownia** is the Polish word for a **dynamometer** (or "dyno shop"), a place
+where engines are tested for power and performance under load. As a scenario
+runner and testing framework, this package acts as the testing rig for your
+protocol "engines," ensuring they perform correctly and meet assertions.
 
 ## Installation
 
@@ -21,6 +24,10 @@ deno add jsr:@garazyk/hamownia
 - **Assertion Library**: Domain-specific assertions for ATProto behavior.
 - **Report Writing**: Generates HTML and JSON test reports with timing
   statistics.
+- **Account Discovery**: Helpers for finding and resolving DIDs via SSH,
+  admin APIs, or local databases.
+- **Mock Twilio**: Integrated mock SMS gateway for testing account verification
+  flows.
 - **OpenTelemetry Integration**: Built-in support for distributed tracing of
   test steps.
 
