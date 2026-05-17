@@ -22,12 +22,16 @@ if (!pdsUrl || !chatUrl || !handle || !password) {
 
 async function main() {
   const pdsClient = new XrpcClient(pdsUrl);
-  const context = createChatServiceContext(pdsClient, chatUrl, chatServiceDidForUrl(chatUrl));
+  const context = createChatServiceContext(
+    pdsClient,
+    chatUrl,
+    chatServiceDidForUrl(chatUrl),
+  );
 
   const session = await pdsClient.api.com.atproto.server.createSession({
     identifier: handle,
     password,
-  }) as any;
+  });
   const jwt = session.accessJwt;
 
   const convoResp = await chatListConvos(context, jwt, 100);

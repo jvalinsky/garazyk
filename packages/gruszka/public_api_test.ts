@@ -1,6 +1,7 @@
 import { assertEquals } from "@std/assert";
 import {
   type GeneratedClient,
+  generateInviteCode,
   type ProcedureInput,
   type ProcedureOutput,
   type QueryOutput,
@@ -19,6 +20,24 @@ Deno.test("gruszka root exposes generated and raw XRPC client primitives", () =>
   assertEquals(typeof client.procedure, "function");
   assertEquals(typeof TransportLayer, "function");
   assertEquals(typeof RawClient, "function");
+  assertEquals(typeof generateInviteCode, "function");
+});
+
+Deno.test("gruszka chat viewer APIs are exposed through the explicit subpath", async () => {
+  const chatViewer = await import("./chat_viewer.ts");
+  assertEquals(typeof chatViewer.ansiColor, "function");
+  assertEquals(typeof chatViewer.stripAnsi, "function");
+  assertEquals(typeof chatViewer.padRight, "function");
+  assertEquals(typeof chatViewer.padLeft, "function");
+  assertEquals(typeof chatViewer.renderBoxTop, "function");
+  assertEquals(typeof chatViewer.renderBoxMid, "function");
+  assertEquals(typeof chatViewer.renderBoxBottom, "function");
+  assertEquals(typeof chatViewer.renderBoxRow, "function");
+  assertEquals(typeof chatViewer.formatTimestamp, "function");
+  assertEquals(typeof chatViewer.formatSender, "function");
+  assertEquals(typeof chatViewer.wrapText, "function");
+  assertEquals(typeof chatViewer.printChatMessage, "function");
+  assertEquals(typeof chatViewer.printConversation, "function");
 });
 
 Deno.test("gruszka legacy clients are available only through the explicit subpath", () => {

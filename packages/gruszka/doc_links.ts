@@ -1,5 +1,5 @@
 /** Markdown link checker that validates internal file and anchor references. @module doc_links */
-import { join, relative, resolve } from "jsr:@std/path@1";
+import { join, relative, resolve } from "@std/path";
 
 /** Options for configuring a Markdown link check run. */
 export interface LinkCheckOptions {
@@ -26,7 +26,7 @@ export class MarkdownLinkTester {
   /** Collected warning messages. */
   warnings: string[] = [];
   /** Set of file paths that have been checked. */
-  checkedFiles = new Set<string>();
+  checkedFiles: Set<string> = new Set<string>();
 
   constructor(private options: LinkCheckOptions) {}
 
@@ -86,7 +86,9 @@ export class MarkdownLinkTester {
     const [pathPartRaw, anchor] = href.split("#", 2);
     const pathPart = decodeURIComponent(pathPartRaw || "");
     if (/^(https?:|mailto:|tel:|ftp:|data:)/i.test(pathPart)) return null;
-    const resolved = pathPart ? resolve(join(sourceFile, "..", pathPart)) : sourceFile;
+    const resolved = pathPart
+      ? resolve(join(sourceFile, "..", pathPart))
+      : sourceFile;
     return { path: resolved, anchor };
   }
 
@@ -187,7 +189,9 @@ export class MarkdownLinkTester {
     for (const file of files) {
       if (this.options.verbose) {
         console.log(
-          `  Checking ${relative(this.options.docsDir, file).replaceAll("\\", "/")}`,
+          `  Checking ${
+            relative(this.options.docsDir, file).replaceAll("\\", "/")
+          }`,
         );
       }
       await this.testFile(file);

@@ -5,15 +5,12 @@ import {
   chatGetMessages,
   chatListConvos,
   chatSendMessage,
+  type ChatServiceContext,
   chatServiceDidForUrl,
   createChatServiceContext,
   nowIso,
 } from "@garazyk/gruszka/seed";
-import {
-  discoverRemoteAccountsViaAdminApi,
-  discoverRemoteAccountsViaSsh,
-  resolveTargets,
-} from "@garazyk/hamownia/account-discovery";
+import { resolveTargets } from "@garazyk/hamownia/account-discovery";
 
 const pdsUrl = (Deno.env.get("PDS_URL") || "").replace(/\/$/, "");
 const chatUrl = (Deno.env.get("CHAT_URL") || "").replace(/\/$/, "");
@@ -39,15 +36,20 @@ const messageCount = Number(Deno.env.get("CHAT_MESSAGE_COUNT") || "1");
 const backAndForth = Boolean(Deno.env.get("CHAT_BACK_AND_FORTH")) ||
   (altHandle.length > 0 && altPassword.length > 0);
 const rounds = Number(Deno.env.get("CHAT_ROUNDS") || "3");
-const discoverMode = Boolean(Deno.env.get("CHAT_DISCOVER"));
 const sshHost = Deno.env.get("CHAT_SSH_HOST") || "";
-const sshDbPath = Deno.env.get("CHAT_SSH_DB") || "";
+const discoveryDbPath = Deno.env.get("CHAT_SSH_DB") || "";
 
 type Session = {
   accessJwt: string;
   did: string;
   handle: string;
 };
+
+type JsonRecord = Record<string, unknown>;
+
+function asRecord(value: unknown): JsonRecord {
+  return value && typeof value === "object" ? value as JsonRecord : {};
+}
 
 function short(value: string, length = 42): string {
   return value.length > length ? `${value.slice(0, length)}...` : value;
@@ -61,7 +63,7 @@ async function createSession(
   const session = await client.api.com.atproto.server.createSession({
     identifier,
     password: secret,
-  }) as any;
+  });
   return {
     accessJwt: session.accessJwt,
     did: session.did,
@@ -69,36 +71,50 @@ async function createSession(
   };
 }
 
-function printMessages(messages: any[]): void {
+function printMessages(messages: unknown[]): void {
   for (const message of messages.toReversed()) {
-    const text = String(message.text ?? "");
-    const id = String(message.id || "");
-    const sentAt = String(message.sentAt || message.createdAt || "");
-    const sender = message.sender?.handle || message.sender?.did || "?";
+    const record = asRecord(message);
+    const senderRecord = asRecord(record.sender);
+    const text = String(record.text ?? "");
+    const id = String(record.id || "");
+    const sentAt = String(record.sentAt || record.createdAt || "");
+    const sender = senderRecord.handle || senderRecord.did || "?";
     console.log(`[${sentAt}] ${sender}: ${text}`);
     if (id) console.log(`  id: ${id}`);
   }
 }
 
 async function printAllConvos(
-  context: any,
+  context: ChatServiceContext,
   session: Session,
   markedIds: string[] = [],
 ): Promise<void> {
   console.log("\n=== Conversation Count ===");
-  const convoResponse = await chatListConvos(context, session.accessJwt, convoLimit);
+  const convoResponse = await chatListConvos(
+    context,
+    session.accessJwt,
+    convoLimit,
+  );
   const convos = convoResponse.convos;
   console.log(`Conversations: ${convos.length}`);
 
   console.log("\n=== Messages Per Conversation ===");
   for (const convo of convos) {
     const convoId = convo.id;
-    const members = convo.members.map((m: any) => m.handle || m.did).join(", ");
+    const members = convo.members.map((member: unknown) => {
+      const record = asRecord(member);
+      return record.handle || record.did;
+    }).join(", ");
     const marker = markedIds.includes(convoId) ? " *" : "";
     console.log(`\n${convoId}${marker}`);
     console.log(`Members: ${members || "(none)"}`);
 
-    const messageResponse = await chatGetMessages(context, session.accessJwt, convoId, messageLimit);
+    const messageResponse = await chatGetMessages(
+      context,
+      session.accessJwt,
+      convoId,
+      messageLimit,
+    );
     const messages = messageResponse.messages;
     console.log(`Messages: ${messages.length}`);
     printMessages(messages);
@@ -107,7 +123,11 @@ async function printAllConvos(
 
 async function main() {
   const pdsClient = new XrpcClient(pdsUrl);
-  const chatContext = createChatServiceContext(pdsClient, chatUrl, chatServiceDidForUrl(chatUrl));
+  const chatContext = createChatServiceContext(
+    pdsClient,
+    chatUrl,
+    chatServiceDidForUrl(chatUrl),
+  );
 
   const session = await createSession(pdsClient, handle, password);
   console.log(`Account: ${session.handle} (${session.did})`);
@@ -115,8 +135,14 @@ async function main() {
   if (existingConvoId) {
     console.log(`Mode: send to existing conversation ${existingConvoId}`);
     for (let i = 0; i < messageCount; i++) {
-      const text = defaultMessage || `Message ${i + 1} from ${session.handle} at ${nowIso()}.`;
-      const sent = await chatSendMessage(chatContext, session.accessJwt, existingConvoId, text);
+      const text = defaultMessage ||
+        `Message ${i + 1} from ${session.handle} at ${nowIso()}.`;
+      const sent = await chatSendMessage(
+        chatContext,
+        session.accessJwt,
+        existingConvoId,
+        text,
+      );
       console.log(`  [${i + 1}] ${short(sent.id)} ${text}`);
     }
     return;
@@ -126,18 +152,25 @@ async function main() {
     const altSession = await createSession(pdsClient, altHandle, altPassword);
     console.log(`Alt Account: ${altSession.handle} (${altSession.did})`);
 
-    const convoResp = await chatGetConvoForMembers(chatContext, session.accessJwt, [
-      session.did,
-      altSession.did,
-    ]);
+    const convoResp = await chatGetConvoForMembers(
+      chatContext,
+      session.accessJwt,
+      [
+        session.did,
+        altSession.did,
+      ],
+    );
     const convoId = convoResp.convo.id;
 
     for (let round = 0; round < rounds; round++) {
-      const textA = defaultMessage || `Round ${round + 1} from ${session.handle} at ${nowIso()}.`;
+      const textA = defaultMessage ||
+        `Round ${round + 1} from ${session.handle} at ${nowIso()}.`;
       await chatSendMessage(chatContext, session.accessJwt, convoId, textA);
       console.log(`  Round ${round + 1} A -> B`);
 
-      const textB = defaultMessage ? `${defaultMessage} (reply)` : `Round ${round + 1} reply from ${altSession.handle} at ${nowIso()}.`;
+      const textB = defaultMessage
+        ? `${defaultMessage} (reply)`
+        : `Round ${round + 1} reply from ${altSession.handle} at ${nowIso()}.`;
       await chatSendMessage(chatContext, altSession.accessJwt, convoId, textB);
       console.log(`  Round ${round + 1} B -> A`);
     }
@@ -147,7 +180,7 @@ async function main() {
 
   const targets = await resolveTargets(pdsUrl, session.did, session.accessJwt, {
     sshHost,
-    dbPath: sshDbPath,
+    dbPath: discoveryDbPath,
     limit: targetLimit,
   });
 
@@ -155,18 +188,30 @@ async function main() {
   const createdIds: string[] = [];
   for (const target of targets) {
     try {
-      const convoResp = await chatGetConvoForMembers(chatContext, session.accessJwt, [
-        session.did,
-        target.did,
-      ]);
+      const convoResp = await chatGetConvoForMembers(
+        chatContext,
+        session.accessJwt,
+        [
+          session.did,
+          target.did,
+        ],
+      );
       const convoId = convoResp.convo.id;
       createdIds.push(convoId);
 
-      const text = defaultMessage || `Hello ${target.handle || target.did}. Chat smoke from ${session.handle} at ${nowIso()}.`;
+      const text = defaultMessage ||
+        `Hello ${
+          target.handle || target.did
+        }. Chat smoke from ${session.handle} at ${nowIso()}.`;
       await chatSendMessage(chatContext, session.accessJwt, convoId, text);
-      console.log(`  Sent to ${target.handle || target.did} (convo: ${convoId})`);
-    } catch (err: any) {
-      console.error(`  Failed for ${target.handle || target.did}: ${err.message}`);
+      console.log(
+        `  Sent to ${target.handle || target.did} (convo: ${convoId})`,
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(
+        `  Failed for ${target.handle || target.did}: ${message}`,
+      );
     }
   }
 

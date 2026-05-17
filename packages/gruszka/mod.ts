@@ -16,6 +16,7 @@ export type { RequestOptions } from "./transport.ts";
 export { FirehoseClient, FirehoseEvent } from "./firehose.ts";
 export { RawClient } from "./clients/raw.ts";
 export type {
+  DynamicXrpcResponse,
   GeneratedClient,
   LexiconIds,
   LexiconProcedureIds,
@@ -26,5 +27,8 @@ export type {
   QueryParams,
 } from "./generated_types.ts";
 
-export * from "./chat_viewer.ts";
-export * from "./account_ops.ts";
+export {
+  generateInviteCode,
+  generatePassword,
+  randomString,
+} from "./account_ops.ts";

@@ -73,6 +73,7 @@ function parseArgs(argv: string[]): Args {
       case "--help":
       case "-h":
         usage();
+        break;
       case "--pds-url":
         args.pdsUrl = takeValue(argv, i++, arg);
         break;
@@ -130,7 +131,8 @@ async function main() {
   const handlePrefix = args.handle.split(".")[0];
   const email = args.email || `${handlePrefix}@garazyk.xyz`;
   const password = args.password || generatePassword();
-  const displayName = args.displayName || `${handlePrefix.charAt(0).toUpperCase()}${handlePrefix.slice(1)}`;
+  const displayName = args.displayName ||
+    `${handlePrefix.charAt(0).toUpperCase()}${handlePrefix.slice(1)}`;
 
   const client = new XrpcClient(args.pdsUrl);
 
@@ -154,7 +156,12 @@ async function main() {
   }
   if (!inviteCode) {
     inviteCode = generateInviteCode();
-    await insertInviteCodeViaSsh(args.sshHost, args.dbPath, inviteCode, args.inviteCodeDid);
+    await insertInviteCodeViaSsh(
+      args.sshHost,
+      args.dbPath,
+      inviteCode,
+      args.inviteCodeDid,
+    );
     console.log(`  Generated invite code: ${inviteCode}`);
   }
 
@@ -164,7 +171,7 @@ async function main() {
     handle: args.handle,
     password,
     inviteCode,
-  }) as any;
+  });
   const did = result.did;
   let accessJwt = result.accessJwt;
 
@@ -176,7 +183,7 @@ async function main() {
     const session = await client.api.com.atproto.server.createSession({
       identifier: args.handle,
       password,
-    }) as any;
+    });
     accessJwt = session.accessJwt;
   }
 
