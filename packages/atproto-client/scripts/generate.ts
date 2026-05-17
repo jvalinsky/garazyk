@@ -1,5 +1,5 @@
 import { expandGlob } from "https://deno.land/std@0.224.0/fs/expand_glob.ts";
-import { join, dirname, basename, extname } from "https://deno.land/std@0.224.0/path/mod.ts";
+import { join, dirname } from "https://deno.land/std@0.224.0/path/mod.ts";
 
 const LEXICONS_DIR = join(Deno.cwd(), "../../lexicons");
 const OUT_FILE = join(Deno.cwd(), "lexicons.ts");
@@ -44,9 +44,10 @@ export interface LexiconProcedure<Input = any, Output = any> {
 export interface Lexicons {
 `;
 
-  for (const doc of docs) {
+  const validDocs = docs.filter(doc => doc.defs["main"] && (doc.defs["main"].type === "query" || doc.defs["main"].type === "procedure" || doc.defs["main"].type === "record"));
+
+  for (const doc of validDocs) {
     const mainDef = doc.defs["main"];
-    if (!mainDef) continue;
     
     if (mainDef.type === "query" || mainDef.type === "procedure") {
       out += `  "${doc.id}": {\n`;
@@ -102,11 +103,57 @@ export type QueryParams<K extends LexiconQueryIds> = Lexicons[K] extends { param
 export type QueryOutput<K extends LexiconQueryIds> = Lexicons[K] extends { output: infer O } ? O : never;
 export type ProcedureInput<K extends LexiconProcedureIds> = Lexicons[K] extends { input: infer I } ? I : never;
 export type ProcedureOutput<K extends LexiconProcedureIds> = Lexicons[K] extends { output: infer O } ? O : never;
+
+/** Strongly typed nested API client. */
+export interface GeneratedClient {
 `;
+
+  // Build the tree
+  const tree: any = {};
+  for (const doc of validDocs) {
+      if (doc.defs["main"].type === "record") continue;
+      const parts = doc.id.split(".");
+      let current = tree;
+      for (let i = 0; i < parts.length; i++) {
+          const part = parts[i];
+          if (i === parts.length - 1) {
+              current[part] = doc;
+          } else {
+              current[part] = current[part] || {};
+              current = current[part];
+          }
+      }
+  }
+
+  function generateInterface(node: any, indent: string): string {
+      let result = "";
+      const entries = Object.entries(node).sort(([a], [b]) => a.localeCompare(b));
+      for (const [key, value] of entries) {
+          if (value.id) {
+              // It's a leaf (method)
+              const doc = value as LexiconDoc;
+              const isQuery = doc.defs["main"].type === "query";
+              if (isQuery) {
+                  result += `${indent}"${key}"(params?: QueryParams<"${doc.id}">, token?: string): Promise<QueryOutput<"${doc.id}">>;\n`;
+              } else {
+                  result += `${indent}"${key}"(input?: ProcedureInput<"${doc.id}">, token?: string): Promise<ProcedureOutput<"${doc.id}">>;\n`;
+              }
+          } else {
+              // It's a namespace
+              result += `${indent}"${key}": {\n`;
+              result += generateInterface(value, indent + "  ");
+              result += `${indent}};\n`;
+          }
+      }
+      return result;
+  }
+
+  out += generateInterface(tree, "  ");
+  out += "}\n";
 
   await Deno.mkdir(dirname(OUT_FILE), { recursive: true });
   await Deno.writeTextFile(OUT_FILE, out);
-  console.log(`Wrote ${docs.length} lexicons to ${OUT_FILE}`);
+  console.log(`Wrote ${validDocs.length} lexicons to ${OUT_FILE}`);
 }
 
 function mapType(prop: any): string {

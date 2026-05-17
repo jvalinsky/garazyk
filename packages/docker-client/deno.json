@@ -1,6 +1,6 @@
 {
   "name": "@garazyk/docker-client",
-  "version": "0.1.0",
+  "version": "0.1.0-alpha.1",
   "description": "A generic Deno client for Docker Engine and Docker Compose.",
   "exports": {
     ".": "./mod.ts",

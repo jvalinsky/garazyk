@@ -67,9 +67,16 @@ export async function createAccountOrLogin(
   password: string,
 ): Promise<ProcedureOutput<"com.atproto.server.createSession">> {
   try {
-    return await client.accounts.createAccount(handle, email, password) as any;
+    return await client.api.com.atproto.server.createAccount({
+      email,
+      handle,
+      password,
+    }) as any;
   } catch {
-    return await client.accounts.createSession(handle, password);
+    return await client.api.com.atproto.server.createSession({
+      identifier: handle,
+      password,
+    });
   }
 }
 
@@ -93,7 +100,11 @@ export async function createRecordIdempotent(
   token: string,
 ): Promise<ProcedureOutput<"com.atproto.repo.createRecord"> | Record<string, never>> {
   try {
-    return await client.records.createRecord(repo, collection, record, token);
+    return await client.api.com.atproto.repo.createRecord({
+      repo,
+      collection,
+      record,
+    }, token);
   } catch (exc) {
     if (exc instanceof XrpcError && exc.status === 400) {
       const body = typeof exc.body === "string" ? exc.body : JSON.stringify(exc.body);
@@ -178,7 +189,7 @@ export async function chatServiceAuthForMethod(
   accessJwt: string,
   method: string,
 ): Promise<string> {
-  const response = await context.pdsClient.raw.xrpcGet("com.atproto.server.getServiceAuth", {
+  const response = await context.pdsClient.api.com.atproto.server.getServiceAuth({
     aud: context.serviceDid,
     lxm: method,
   }, accessJwt);
@@ -303,7 +314,7 @@ export async function getConvoForMembers(
   jwt: string,
   memberDids: string[],
 ): Promise<QueryOutput<"chat.bsky.convo.getConvoForMembers">> {
-  return await client.query("chat.bsky.convo.getConvoForMembers", {
+  return await client.api.chat.bsky.convo.getConvoForMembers({
     members: memberDids,
   }, jwt);
 }
@@ -315,7 +326,7 @@ export async function sendMessage(
   convoId: string,
   text: string,
 ): Promise<ProcedureOutput<"chat.bsky.convo.sendMessage">> {
-  return await client.procedure("chat.bsky.convo.sendMessage", {
+  return await client.api.chat.bsky.convo.sendMessage({
     convoId,
     message: { text },
   }, jwt);
@@ -327,7 +338,7 @@ export async function listConvos(
   jwt: string,
   limit = 20,
 ): Promise<QueryOutput<"chat.bsky.convo.listConvos">> {
-  return await client.query("chat.bsky.convo.listConvos", { limit }, jwt);
+  return await client.api.chat.bsky.convo.listConvos({ limit }, jwt);
 }
 
 /** Get messages in a chat conversation (direct XRPC, no service auth). */
@@ -337,5 +348,5 @@ export async function getMessages(
   convoId: string,
   limit = 50,
 ): Promise<QueryOutput<"chat.bsky.convo.getMessages">> {
-  return await client.query("chat.bsky.convo.getMessages", { convoId, limit }, jwt);
+  return await client.api.chat.bsky.convo.getMessages({ convoId, limit }, jwt);
 }

@@ -61,7 +61,10 @@ export function createProcessLifecycle(options: ProcessLifecycleOptions): Proces
   };
 
   const installSignalHandlers = () => {
+    let stopping = false;
     const handleSignal = async () => {
+      if (stopping) return;
+      stopping = true;
       console.log(yellow("\nInterrupt received. Stopping gracefully..."));
       try {
         await stopIfNeeded(true);
@@ -77,8 +80,13 @@ export function createProcessLifecycle(options: ProcessLifecycleOptions): Proces
 
   const waitForShutdownSignal = () => {
     return new Promise<void>((resolve) => {
-      Deno.addSignalListener("SIGINT", () => resolve());
-      Deno.addSignalListener("SIGTERM", () => resolve());
+      const onSignal = () => {
+        Deno.removeSignalListener("SIGINT", onSignal);
+        Deno.removeSignalListener("SIGTERM", onSignal);
+        resolve();
+      };
+      Deno.addSignalListener("SIGINT", onSignal);
+      Deno.addSignalListener("SIGTERM", onSignal);
     });
   };
 

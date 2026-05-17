@@ -25,11 +25,10 @@ const API_VERSION = "v1.43";
 
 /** Default Unix socket paths to probe (in order). */
 const DEFAULT_SOCKET_PATHS = [
+  `${Deno.env.get("HOME")}/.orbstack/run/docker.sock`, // OrbStack
+  `${Deno.env.get("HOME")}/.docker/run/docker.sock`, // Docker Desktop
   "/var/run/docker.sock",
   "/run/docker.sock",
-  `${Deno.env.get("HOME") || "~"}/.orbstack/run/docker.sock`, // OrbStack
-  `${Deno.env.get("HOME") || "~"}/.docker/run/docker.sock`, // Docker Desktop
-  `${Deno.env.get("XDG_RUNTIME_DIR") || "/run/user/" + Deno.uid()}/docker.sock`, // Rootless
 ];
 
 // ---------------------------------------------------------------------------
@@ -293,10 +292,21 @@ export class DockerApiClient {
   private _socketPath: string;
   private _available: boolean | null = null;
   private _baseUrl: string;
+  private _useUnix = true;
 
-  constructor(socketPath?: string) {
-    this._socketPath = socketPath || detectSocketPath();
-    this._baseUrl = `http://localhost/${API_VERSION}`;
+  constructor(endpoint?: string) {
+    const host = endpoint || Deno.env.get("DOCKER_HOST") || "";
+    if (host.startsWith("tcp://") || host.startsWith("http://") || host.startsWith("https://")) {
+      this._useUnix = false;
+      this._socketPath = "";
+      this._baseUrl = host.replace("tcp://", "http://");
+      if (!this._baseUrl.includes("/v")) {
+        this._baseUrl = this._baseUrl.replace(/\/$/, "") + `/${API_VERSION}`;
+      }
+    } else {
+      this._socketPath = endpoint || detectSocketPath();
+      this._baseUrl = `http://localhost/${API_VERSION}`;
+    }
   }
 
   /** Whether the Docker socket is available and the daemon is responding. */
@@ -312,12 +322,16 @@ export class DockerApiClient {
   /** Initialize the client and check daemon availability. */
   async init(): Promise<boolean> {
     try {
-      this.client = Deno.createHttpClient({
-        proxy: {
-          transport: "unix",
-          path: this._socketPath,
-        },
-      });
+      if (this._useUnix) {
+        this.client = Deno.createHttpClient({
+          proxy: {
+            transport: "unix",
+            path: this._socketPath,
+          },
+        });
+      } else {
+        this.client = Deno.createHttpClient({});
+      }
       const ok = await this.ping();
       this._available = ok;
       return ok;
@@ -645,7 +659,8 @@ function detectSocketPath(): string {
   for (const path of DEFAULT_SOCKET_PATHS) {
     try {
       const stat = Deno.statSync(path);
-      if (stat.isFile) return path;
+      // Sockets may report as isFile: false, so we check existence
+      if (stat) return path;
     } catch {
       // Path doesn't exist, try next
     }

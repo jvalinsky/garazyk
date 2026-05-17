@@ -1,12 +1,13 @@
 /** XRPC client wrapper for ATProto service communication. @module client */
 import { TransportLayer, XrpcError } from "./transport.ts";
 import type {
-  LexiconQueryIds,
+  GeneratedClient,
   LexiconProcedureIds,
-  QueryParams,
-  QueryOutput,
+  LexiconQueryIds,
   ProcedureInput,
   ProcedureOutput,
+  QueryParams,
+  QueryOutput,
 } from "./lexicons.ts";
 import {
   AccountsClient,
@@ -43,10 +44,8 @@ export interface TransportResponse {
  * ```ts
  * const client = new XrpcClient("http://localhost:2583");
  * await client.waitForHealthy();
- * const { data } = await client.agent.createAccount({
- *   handle: "alice.test",
- *   email: "alice@test.com",
- *   password: "password123",
+ * const { data } = await client.api.app.bsky.actor.getProfile({
+ *   actor: "alice.test",
  * });
  * ```
  */
@@ -80,6 +79,32 @@ export class XrpcClient {
   public admin: AdminClient;
   /** Raw HTTP and XRPC access for endpoints without a typed helper. */
   public raw: RawClient;
+  /** Strongly typed nested API client matching ATProto namespaces. */
+  public api: GeneratedClient;
+
+  /**
+   * Create an XrpcClient targeting the given PDS base URL.
+   * @param baseUrl - Base service URL
+   */
+  constructor(public baseUrl = "http://localhost:2583") {
+    const t = new TransportLayer(baseUrl);
+    this.rawTransport = t;
+
+    this.accounts = new AccountsClient(t);
+    this.identity = new IdentityClient(t);
+    this.records = new RecordsClient(t);
+    this.blobs = new BlobsClient(t);
+    this.graph = new GraphClient(t);
+    this.feed = new FeedClient(t);
+    this.notifications = new NotificationsClient(t);
+    this.drafts = new DraftsClient(t);
+    this.search = new SearchClient(t);
+    this.contact = new ContactClient(t);
+    this.ageAssurance = new AgeAssuranceClient(t);
+    this.admin = new AdminClient(t);
+    this.raw = new RawClient(t);
+    this.api = createGeneratedClient(t);
+  }
 
   /**
    * Invoke a typed XRPC query.
@@ -110,26 +135,12 @@ export class XrpcClient {
   }
 
   /**
-   * Create an XrpcClient targeting the given PDS base URL.
-   * @param baseUrl - Base service URL
+   * Returns a typed client instance that automatically includes the bearer token in every request.
+   * @param token - The authentication bearer token
+   * @returns A typed client instance
    */
-  constructor(public baseUrl = "http://localhost:2583") {
-    const t = new TransportLayer(baseUrl);
-    this.rawTransport = t;
-
-    this.accounts = new AccountsClient(t);
-    this.identity = new IdentityClient(t);
-    this.records = new RecordsClient(t);
-    this.blobs = new BlobsClient(t);
-    this.graph = new GraphClient(t);
-    this.feed = new FeedClient(t);
-    this.notifications = new NotificationsClient(t);
-    this.drafts = new DraftsClient(t);
-    this.search = new SearchClient(t);
-    this.contact = new ContactClient(t);
-    this.ageAssurance = new AgeAssuranceClient(t);
-    this.admin = new AdminClient(t);
-    this.raw = new RawClient(t);
+  auth(token: string): GeneratedClient {
+    return createGeneratedClient(this.rawTransport, [], token);
   }
 
   /**
@@ -210,14 +221,8 @@ function resolveToken(opts: any, session: AgentSession): string | undefined {
  *
  * The proxy builds method paths via property access and invokes them
  * via function call. Returns `{ data }` on success, throws on error.
- *
- * @remarks Method paths are built dynamically via property access, so the
- * index signature and call signature use `any`. Typed helpers exist on the
- * namespace clients (e.g. `client.accounts`, `client.graph`) for
- * discoverability and IDE support. Use the agent proxy when you need
- * ad-hoc authenticated calls to endpoints that lack a typed helper.
  */
-export interface AgentProxy {
+export interface AgentProxy extends GeneratedClient {
   /** Create a new account and store the session. */
   createAccount(params: {
     handle: string;
@@ -231,11 +236,6 @@ export interface AgentProxy {
   }): Promise<{ data: { accessJwt: string; refreshJwt: string; did: string; handle: string } }>;
   /** Access nested XRPC methods. */
   [namespace: string]: any;
-  /** Invoke the accumulated method path. */
-  (
-    params?: Record<string, any>,
-    opts?: { headers?: Record<string, string> },
-  ): Promise<{ data: any }>;
 }
 
 /** Create a dynamic proxy for authenticated XRPC method calls
@@ -249,9 +249,6 @@ function createAgentProxy(path: string[], client: XrpcClient, session: AgentSess
     get(_target, prop: string) {
       if (typeof prop !== "string") return undefined;
       // Prevent the proxy from becoming accidentally thenable.
-      // If code accesses .then on the proxy (e.g. await proxy or
-      // Promise.resolve(proxy)), returning undefined ensures the
-      // proxy is not treated as a Promise.
       if (prop === "then") return undefined;
       if (prop === "toJSON") return undefined;
 
@@ -308,6 +305,28 @@ function createAgentProxy(path: string[], client: XrpcClient, session: AgentSess
       return { data };
     },
   });
+}
+
+/** Create a nested proxy that dispatches to the transport layer. */
+function createGeneratedClient(transport: TransportLayer, path: string[] = [], token?: string): GeneratedClient {
+  return new Proxy(function () {} as any, {
+    get(_target, prop: string) {
+      if (typeof prop !== "string" || prop === "then" || prop === "toJSON") return undefined;
+      return createGeneratedClient(transport, [...path, prop], token);
+    },
+    async apply(_target, _thisArg, args: any[]) {
+      const method = path.join(".");
+      const [params, callToken] = args;
+      const finalToken = callToken || token;
+      // Heuristic for query vs procedure based on method name prefix
+      const isQuery = /^(get|list|resolve|describe)/i.test(path[path.length - 1] || "");
+      if (isQuery) {
+        return await transport.get(method, params, finalToken);
+      } else {
+        return await transport.post(method, params, finalToken);
+      }
+    },
+  }) as GeneratedClient;
 }
 
 export { XrpcError };

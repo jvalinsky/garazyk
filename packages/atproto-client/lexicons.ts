@@ -4855,3 +4855,544 @@ export type QueryParams<K extends LexiconQueryIds> = Lexicons[K] extends { param
 export type QueryOutput<K extends LexiconQueryIds> = Lexicons[K] extends { output: infer O } ? O : never;
 export type ProcedureInput<K extends LexiconProcedureIds> = Lexicons[K] extends { input: infer I } ? I : never;
 export type ProcedureOutput<K extends LexiconProcedureIds> = Lexicons[K] extends { output: infer O } ? O : never;
+
+/** Strongly typed nested API client. */
+export interface GeneratedClient {
+  "app": {
+    "bsky": {
+      "actor": {
+        "getPreferences"(params?: QueryParams<"app.bsky.actor.getPreferences">, token?: string): Promise<QueryOutput<"app.bsky.actor.getPreferences">>;
+        "getProfile"(params?: QueryParams<"app.bsky.actor.getProfile">, token?: string): Promise<QueryOutput<"app.bsky.actor.getProfile">>;
+        "getProfiles"(params?: QueryParams<"app.bsky.actor.getProfiles">, token?: string): Promise<QueryOutput<"app.bsky.actor.getProfiles">>;
+        "getSuggestions"(params?: QueryParams<"app.bsky.actor.getSuggestions">, token?: string): Promise<QueryOutput<"app.bsky.actor.getSuggestions">>;
+        "putPreferences"(input?: ProcedureInput<"app.bsky.actor.putPreferences">, token?: string): Promise<ProcedureOutput<"app.bsky.actor.putPreferences">>;
+        "searchActors"(params?: QueryParams<"app.bsky.actor.searchActors">, token?: string): Promise<QueryOutput<"app.bsky.actor.searchActors">>;
+        "searchActorsTypeahead"(params?: QueryParams<"app.bsky.actor.searchActorsTypeahead">, token?: string): Promise<QueryOutput<"app.bsky.actor.searchActorsTypeahead">>;
+      };
+      "ageassurance": {
+        "begin"(input?: ProcedureInput<"app.bsky.ageassurance.begin">, token?: string): Promise<ProcedureOutput<"app.bsky.ageassurance.begin">>;
+        "getConfig"(params?: QueryParams<"app.bsky.ageassurance.getConfig">, token?: string): Promise<QueryOutput<"app.bsky.ageassurance.getConfig">>;
+        "getState"(params?: QueryParams<"app.bsky.ageassurance.getState">, token?: string): Promise<QueryOutput<"app.bsky.ageassurance.getState">>;
+      };
+      "bookmark": {
+        "createBookmark"(input?: ProcedureInput<"app.bsky.bookmark.createBookmark">, token?: string): Promise<ProcedureOutput<"app.bsky.bookmark.createBookmark">>;
+        "deleteBookmark"(input?: ProcedureInput<"app.bsky.bookmark.deleteBookmark">, token?: string): Promise<ProcedureOutput<"app.bsky.bookmark.deleteBookmark">>;
+        "getBookmarks"(params?: QueryParams<"app.bsky.bookmark.getBookmarks">, token?: string): Promise<QueryOutput<"app.bsky.bookmark.getBookmarks">>;
+      };
+      "contact": {
+        "dismissMatch"(input?: ProcedureInput<"app.bsky.contact.dismissMatch">, token?: string): Promise<ProcedureOutput<"app.bsky.contact.dismissMatch">>;
+        "getMatches"(params?: QueryParams<"app.bsky.contact.getMatches">, token?: string): Promise<QueryOutput<"app.bsky.contact.getMatches">>;
+        "getSyncStatus"(params?: QueryParams<"app.bsky.contact.getSyncStatus">, token?: string): Promise<QueryOutput<"app.bsky.contact.getSyncStatus">>;
+        "importContacts"(input?: ProcedureInput<"app.bsky.contact.importContacts">, token?: string): Promise<ProcedureOutput<"app.bsky.contact.importContacts">>;
+        "removeData"(input?: ProcedureInput<"app.bsky.contact.removeData">, token?: string): Promise<ProcedureOutput<"app.bsky.contact.removeData">>;
+        "sendNotification"(input?: ProcedureInput<"app.bsky.contact.sendNotification">, token?: string): Promise<ProcedureOutput<"app.bsky.contact.sendNotification">>;
+        "startPhoneVerification"(input?: ProcedureInput<"app.bsky.contact.startPhoneVerification">, token?: string): Promise<ProcedureOutput<"app.bsky.contact.startPhoneVerification">>;
+        "verifyPhone"(input?: ProcedureInput<"app.bsky.contact.verifyPhone">, token?: string): Promise<ProcedureOutput<"app.bsky.contact.verifyPhone">>;
+      };
+      "draft": {
+        "createDraft"(input?: ProcedureInput<"app.bsky.draft.createDraft">, token?: string): Promise<ProcedureOutput<"app.bsky.draft.createDraft">>;
+        "deleteDraft"(input?: ProcedureInput<"app.bsky.draft.deleteDraft">, token?: string): Promise<ProcedureOutput<"app.bsky.draft.deleteDraft">>;
+        "getDrafts"(params?: QueryParams<"app.bsky.draft.getDrafts">, token?: string): Promise<QueryOutput<"app.bsky.draft.getDrafts">>;
+        "updateDraft"(input?: ProcedureInput<"app.bsky.draft.updateDraft">, token?: string): Promise<ProcedureOutput<"app.bsky.draft.updateDraft">>;
+      };
+      "feed": {
+        "describeFeedGenerator"(params?: QueryParams<"app.bsky.feed.describeFeedGenerator">, token?: string): Promise<QueryOutput<"app.bsky.feed.describeFeedGenerator">>;
+        "getActorFeeds"(params?: QueryParams<"app.bsky.feed.getActorFeeds">, token?: string): Promise<QueryOutput<"app.bsky.feed.getActorFeeds">>;
+        "getActorLikes"(params?: QueryParams<"app.bsky.feed.getActorLikes">, token?: string): Promise<QueryOutput<"app.bsky.feed.getActorLikes">>;
+        "getAuthorFeed"(params?: QueryParams<"app.bsky.feed.getAuthorFeed">, token?: string): Promise<QueryOutput<"app.bsky.feed.getAuthorFeed">>;
+        "getFeed"(params?: QueryParams<"app.bsky.feed.getFeed">, token?: string): Promise<QueryOutput<"app.bsky.feed.getFeed">>;
+        "getFeedGenerator"(params?: QueryParams<"app.bsky.feed.getFeedGenerator">, token?: string): Promise<QueryOutput<"app.bsky.feed.getFeedGenerator">>;
+        "getFeedGenerators"(params?: QueryParams<"app.bsky.feed.getFeedGenerators">, token?: string): Promise<QueryOutput<"app.bsky.feed.getFeedGenerators">>;
+        "getFeedSkeleton"(params?: QueryParams<"app.bsky.feed.getFeedSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.feed.getFeedSkeleton">>;
+        "getLikes"(params?: QueryParams<"app.bsky.feed.getLikes">, token?: string): Promise<QueryOutput<"app.bsky.feed.getLikes">>;
+        "getListFeed"(params?: QueryParams<"app.bsky.feed.getListFeed">, token?: string): Promise<QueryOutput<"app.bsky.feed.getListFeed">>;
+        "getPosts"(params?: QueryParams<"app.bsky.feed.getPosts">, token?: string): Promise<QueryOutput<"app.bsky.feed.getPosts">>;
+        "getPostThread"(params?: QueryParams<"app.bsky.feed.getPostThread">, token?: string): Promise<QueryOutput<"app.bsky.feed.getPostThread">>;
+        "getQuotes"(params?: QueryParams<"app.bsky.feed.getQuotes">, token?: string): Promise<QueryOutput<"app.bsky.feed.getQuotes">>;
+        "getRepostedBy"(params?: QueryParams<"app.bsky.feed.getRepostedBy">, token?: string): Promise<QueryOutput<"app.bsky.feed.getRepostedBy">>;
+        "getSuggestedFeeds"(params?: QueryParams<"app.bsky.feed.getSuggestedFeeds">, token?: string): Promise<QueryOutput<"app.bsky.feed.getSuggestedFeeds">>;
+        "getTimeline"(params?: QueryParams<"app.bsky.feed.getTimeline">, token?: string): Promise<QueryOutput<"app.bsky.feed.getTimeline">>;
+        "searchPosts"(params?: QueryParams<"app.bsky.feed.searchPosts">, token?: string): Promise<QueryOutput<"app.bsky.feed.searchPosts">>;
+        "sendInteractions"(input?: ProcedureInput<"app.bsky.feed.sendInteractions">, token?: string): Promise<ProcedureOutput<"app.bsky.feed.sendInteractions">>;
+      };
+      "graph": {
+        "getActorStarterPacks"(params?: QueryParams<"app.bsky.graph.getActorStarterPacks">, token?: string): Promise<QueryOutput<"app.bsky.graph.getActorStarterPacks">>;
+        "getBlocks"(params?: QueryParams<"app.bsky.graph.getBlocks">, token?: string): Promise<QueryOutput<"app.bsky.graph.getBlocks">>;
+        "getFollowers"(params?: QueryParams<"app.bsky.graph.getFollowers">, token?: string): Promise<QueryOutput<"app.bsky.graph.getFollowers">>;
+        "getFollows"(params?: QueryParams<"app.bsky.graph.getFollows">, token?: string): Promise<QueryOutput<"app.bsky.graph.getFollows">>;
+        "getKnownFollowers"(params?: QueryParams<"app.bsky.graph.getKnownFollowers">, token?: string): Promise<QueryOutput<"app.bsky.graph.getKnownFollowers">>;
+        "getList"(params?: QueryParams<"app.bsky.graph.getList">, token?: string): Promise<QueryOutput<"app.bsky.graph.getList">>;
+        "getListBlocks"(params?: QueryParams<"app.bsky.graph.getListBlocks">, token?: string): Promise<QueryOutput<"app.bsky.graph.getListBlocks">>;
+        "getListMutes"(params?: QueryParams<"app.bsky.graph.getListMutes">, token?: string): Promise<QueryOutput<"app.bsky.graph.getListMutes">>;
+        "getLists"(params?: QueryParams<"app.bsky.graph.getLists">, token?: string): Promise<QueryOutput<"app.bsky.graph.getLists">>;
+        "getListsWithMembership"(params?: QueryParams<"app.bsky.graph.getListsWithMembership">, token?: string): Promise<QueryOutput<"app.bsky.graph.getListsWithMembership">>;
+        "getMutes"(params?: QueryParams<"app.bsky.graph.getMutes">, token?: string): Promise<QueryOutput<"app.bsky.graph.getMutes">>;
+        "getRelationships"(params?: QueryParams<"app.bsky.graph.getRelationships">, token?: string): Promise<QueryOutput<"app.bsky.graph.getRelationships">>;
+        "getStarterPack"(params?: QueryParams<"app.bsky.graph.getStarterPack">, token?: string): Promise<QueryOutput<"app.bsky.graph.getStarterPack">>;
+        "getStarterPacks"(params?: QueryParams<"app.bsky.graph.getStarterPacks">, token?: string): Promise<QueryOutput<"app.bsky.graph.getStarterPacks">>;
+        "getStarterPacksWithMembership"(params?: QueryParams<"app.bsky.graph.getStarterPacksWithMembership">, token?: string): Promise<QueryOutput<"app.bsky.graph.getStarterPacksWithMembership">>;
+        "getSuggestedFollowsByActor"(params?: QueryParams<"app.bsky.graph.getSuggestedFollowsByActor">, token?: string): Promise<QueryOutput<"app.bsky.graph.getSuggestedFollowsByActor">>;
+        "muteActor"(input?: ProcedureInput<"app.bsky.graph.muteActor">, token?: string): Promise<ProcedureOutput<"app.bsky.graph.muteActor">>;
+        "muteActorList"(input?: ProcedureInput<"app.bsky.graph.muteActorList">, token?: string): Promise<ProcedureOutput<"app.bsky.graph.muteActorList">>;
+        "muteThread"(input?: ProcedureInput<"app.bsky.graph.muteThread">, token?: string): Promise<ProcedureOutput<"app.bsky.graph.muteThread">>;
+        "searchStarterPacks"(params?: QueryParams<"app.bsky.graph.searchStarterPacks">, token?: string): Promise<QueryOutput<"app.bsky.graph.searchStarterPacks">>;
+        "unmuteActor"(input?: ProcedureInput<"app.bsky.graph.unmuteActor">, token?: string): Promise<ProcedureOutput<"app.bsky.graph.unmuteActor">>;
+        "unmuteActorList"(input?: ProcedureInput<"app.bsky.graph.unmuteActorList">, token?: string): Promise<ProcedureOutput<"app.bsky.graph.unmuteActorList">>;
+        "unmuteThread"(input?: ProcedureInput<"app.bsky.graph.unmuteThread">, token?: string): Promise<ProcedureOutput<"app.bsky.graph.unmuteThread">>;
+        "verification": {
+          "createVerification"(input?: ProcedureInput<"app.bsky.graph.verification.createVerification">, token?: string): Promise<ProcedureOutput<"app.bsky.graph.verification.createVerification">>;
+          "deleteVerification"(input?: ProcedureInput<"app.bsky.graph.verification.deleteVerification">, token?: string): Promise<ProcedureOutput<"app.bsky.graph.verification.deleteVerification">>;
+        };
+      };
+      "labeler": {
+        "getServices"(params?: QueryParams<"app.bsky.labeler.getServices">, token?: string): Promise<QueryOutput<"app.bsky.labeler.getServices">>;
+      };
+      "notification": {
+        "getPreferences"(params?: QueryParams<"app.bsky.notification.getPreferences">, token?: string): Promise<QueryOutput<"app.bsky.notification.getPreferences">>;
+        "getUnreadCount"(params?: QueryParams<"app.bsky.notification.getUnreadCount">, token?: string): Promise<QueryOutput<"app.bsky.notification.getUnreadCount">>;
+        "listActivitySubscriptions"(params?: QueryParams<"app.bsky.notification.listActivitySubscriptions">, token?: string): Promise<QueryOutput<"app.bsky.notification.listActivitySubscriptions">>;
+        "listNotifications"(params?: QueryParams<"app.bsky.notification.listNotifications">, token?: string): Promise<QueryOutput<"app.bsky.notification.listNotifications">>;
+        "putActivitySubscription"(input?: ProcedureInput<"app.bsky.notification.putActivitySubscription">, token?: string): Promise<ProcedureOutput<"app.bsky.notification.putActivitySubscription">>;
+        "putNotificationPreferences"(input?: ProcedureInput<"app.bsky.notification.putNotificationPreferences">, token?: string): Promise<ProcedureOutput<"app.bsky.notification.putNotificationPreferences">>;
+        "putPreferences"(input?: ProcedureInput<"app.bsky.notification.putPreferences">, token?: string): Promise<ProcedureOutput<"app.bsky.notification.putPreferences">>;
+        "putPreferencesV2"(input?: ProcedureInput<"app.bsky.notification.putPreferencesV2">, token?: string): Promise<ProcedureOutput<"app.bsky.notification.putPreferencesV2">>;
+        "registerPush"(input?: ProcedureInput<"app.bsky.notification.registerPush">, token?: string): Promise<ProcedureOutput<"app.bsky.notification.registerPush">>;
+        "unregisterPush"(input?: ProcedureInput<"app.bsky.notification.unregisterPush">, token?: string): Promise<ProcedureOutput<"app.bsky.notification.unregisterPush">>;
+        "updateSeen"(input?: ProcedureInput<"app.bsky.notification.updateSeen">, token?: string): Promise<ProcedureOutput<"app.bsky.notification.updateSeen">>;
+      };
+      "unspecced": {
+        "confirmAgeAssurance"(input?: ProcedureInput<"app.bsky.unspecced.confirmAgeAssurance">, token?: string): Promise<ProcedureOutput<"app.bsky.unspecced.confirmAgeAssurance">>;
+        "getAgeAssuranceState"(params?: QueryParams<"app.bsky.unspecced.getAgeAssuranceState">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getAgeAssuranceState">>;
+        "getConfig"(params?: QueryParams<"app.bsky.unspecced.getConfig">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getConfig">>;
+        "getOnboardingSuggestedStarterPacks"(params?: QueryParams<"app.bsky.unspecced.getOnboardingSuggestedStarterPacks">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getOnboardingSuggestedStarterPacks">>;
+        "getOnboardingSuggestedStarterPacksSkeleton"(params?: QueryParams<"app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton">>;
+        "getOnboardingSuggestedUsersSkeleton"(params?: QueryParams<"app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton">>;
+        "getPopularFeedGenerators"(params?: QueryParams<"app.bsky.unspecced.getPopularFeedGenerators">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getPopularFeedGenerators">>;
+        "getPostThreadOtherV2"(params?: QueryParams<"app.bsky.unspecced.getPostThreadOtherV2">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getPostThreadOtherV2">>;
+        "getPostThreadV2"(params?: QueryParams<"app.bsky.unspecced.getPostThreadV2">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getPostThreadV2">>;
+        "getSuggestedFeeds"(params?: QueryParams<"app.bsky.unspecced.getSuggestedFeeds">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedFeeds">>;
+        "getSuggestedFeedsSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestedFeedsSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedFeedsSkeleton">>;
+        "getSuggestedOnboardingUsers"(params?: QueryParams<"app.bsky.unspecced.getSuggestedOnboardingUsers">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedOnboardingUsers">>;
+        "getSuggestedStarterPacks"(params?: QueryParams<"app.bsky.unspecced.getSuggestedStarterPacks">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedStarterPacks">>;
+        "getSuggestedStarterPacksSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestedStarterPacksSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedStarterPacksSkeleton">>;
+        "getSuggestedUsers"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsers">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsers">>;
+        "getSuggestedUsersForDiscover"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForDiscover">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForDiscover">>;
+        "getSuggestedUsersForDiscoverSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton">>;
+        "getSuggestedUsersForExplore"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForExplore">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForExplore">>;
+        "getSuggestedUsersForExploreSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForExploreSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForExploreSkeleton">>;
+        "getSuggestedUsersForSeeMore"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForSeeMore">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForSeeMore">>;
+        "getSuggestedUsersForSeeMoreSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton">>;
+        "getSuggestedUsersSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersSkeleton">>;
+        "getSuggestionsSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestionsSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestionsSkeleton">>;
+        "getTaggedSuggestions"(params?: QueryParams<"app.bsky.unspecced.getTaggedSuggestions">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getTaggedSuggestions">>;
+        "getTrendingTopics"(params?: QueryParams<"app.bsky.unspecced.getTrendingTopics">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getTrendingTopics">>;
+        "getTrends"(params?: QueryParams<"app.bsky.unspecced.getTrends">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getTrends">>;
+        "getTrendsSkeleton"(params?: QueryParams<"app.bsky.unspecced.getTrendsSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getTrendsSkeleton">>;
+        "initAgeAssurance"(input?: ProcedureInput<"app.bsky.unspecced.initAgeAssurance">, token?: string): Promise<ProcedureOutput<"app.bsky.unspecced.initAgeAssurance">>;
+        "searchActorsSkeleton"(params?: QueryParams<"app.bsky.unspecced.searchActorsSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.searchActorsSkeleton">>;
+        "searchPostsSkeleton"(params?: QueryParams<"app.bsky.unspecced.searchPostsSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.searchPostsSkeleton">>;
+        "searchStarterPacksSkeleton"(params?: QueryParams<"app.bsky.unspecced.searchStarterPacksSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.searchStarterPacksSkeleton">>;
+      };
+      "video": {
+        "getJobStatus"(params?: QueryParams<"app.bsky.video.getJobStatus">, token?: string): Promise<QueryOutput<"app.bsky.video.getJobStatus">>;
+        "getUploadLimits"(params?: QueryParams<"app.bsky.video.getUploadLimits">, token?: string): Promise<QueryOutput<"app.bsky.video.getUploadLimits">>;
+        "uploadVideo"(input?: ProcedureInput<"app.bsky.video.uploadVideo">, token?: string): Promise<ProcedureOutput<"app.bsky.video.uploadVideo">>;
+      };
+    };
+  };
+  "chat": {
+    "bsky": {
+      "actor": {
+        "deleteAccount"(input?: ProcedureInput<"chat.bsky.actor.deleteAccount">, token?: string): Promise<ProcedureOutput<"chat.bsky.actor.deleteAccount">>;
+        "exportAccountData"(params?: QueryParams<"chat.bsky.actor.exportAccountData">, token?: string): Promise<QueryOutput<"chat.bsky.actor.exportAccountData">>;
+      };
+      "convo": {
+        "acceptConvo"(input?: ProcedureInput<"chat.bsky.convo.acceptConvo">, token?: string): Promise<ProcedureOutput<"chat.bsky.convo.acceptConvo">>;
+        "addReaction"(input?: ProcedureInput<"chat.bsky.convo.addReaction">, token?: string): Promise<ProcedureOutput<"chat.bsky.convo.addReaction">>;
+        "deleteMessageForSelf"(input?: ProcedureInput<"chat.bsky.convo.deleteMessageForSelf">, token?: string): Promise<ProcedureOutput<"chat.bsky.convo.deleteMessageForSelf">>;
+        "getConvo"(params?: QueryParams<"chat.bsky.convo.getConvo">, token?: string): Promise<QueryOutput<"chat.bsky.convo.getConvo">>;
+        "getConvoAvailability"(params?: QueryParams<"chat.bsky.convo.getConvoAvailability">, token?: string): Promise<QueryOutput<"chat.bsky.convo.getConvoAvailability">>;
+        "getConvoForMembers"(params?: QueryParams<"chat.bsky.convo.getConvoForMembers">, token?: string): Promise<QueryOutput<"chat.bsky.convo.getConvoForMembers">>;
+        "getLog"(params?: QueryParams<"chat.bsky.convo.getLog">, token?: string): Promise<QueryOutput<"chat.bsky.convo.getLog">>;
+        "getMessages"(params?: QueryParams<"chat.bsky.convo.getMessages">, token?: string): Promise<QueryOutput<"chat.bsky.convo.getMessages">>;
+        "leaveConvo"(input?: ProcedureInput<"chat.bsky.convo.leaveConvo">, token?: string): Promise<ProcedureOutput<"chat.bsky.convo.leaveConvo">>;
+        "listConvoRequests"(params?: QueryParams<"chat.bsky.convo.listConvoRequests">, token?: string): Promise<QueryOutput<"chat.bsky.convo.listConvoRequests">>;
+        "listConvos"(params?: QueryParams<"chat.bsky.convo.listConvos">, token?: string): Promise<QueryOutput<"chat.bsky.convo.listConvos">>;
+        "lockConvo"(input?: ProcedureInput<"chat.bsky.convo.lockConvo">, token?: string): Promise<ProcedureOutput<"chat.bsky.convo.lockConvo">>;
+        "muteConvo"(input?: ProcedureInput<"chat.bsky.convo.muteConvo">, token?: string): Promise<ProcedureOutput<"chat.bsky.convo.muteConvo">>;
+        "removeReaction"(input?: ProcedureInput<"chat.bsky.convo.removeReaction">, token?: string): Promise<ProcedureOutput<"chat.bsky.convo.removeReaction">>;
+        "sendMessage"(input?: ProcedureInput<"chat.bsky.convo.sendMessage">, token?: string): Promise<ProcedureOutput<"chat.bsky.convo.sendMessage">>;
+        "sendMessageBatch"(input?: ProcedureInput<"chat.bsky.convo.sendMessageBatch">, token?: string): Promise<ProcedureOutput<"chat.bsky.convo.sendMessageBatch">>;
+        "unlockConvo"(input?: ProcedureInput<"chat.bsky.convo.unlockConvo">, token?: string): Promise<ProcedureOutput<"chat.bsky.convo.unlockConvo">>;
+        "unmuteConvo"(input?: ProcedureInput<"chat.bsky.convo.unmuteConvo">, token?: string): Promise<ProcedureOutput<"chat.bsky.convo.unmuteConvo">>;
+        "updateAllRead"(input?: ProcedureInput<"chat.bsky.convo.updateAllRead">, token?: string): Promise<ProcedureOutput<"chat.bsky.convo.updateAllRead">>;
+        "updateRead"(input?: ProcedureInput<"chat.bsky.convo.updateRead">, token?: string): Promise<ProcedureOutput<"chat.bsky.convo.updateRead">>;
+      };
+      "group": {
+        "addMembers"(input?: ProcedureInput<"chat.bsky.group.addMembers">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.addMembers">>;
+        "addReaction"(input?: ProcedureInput<"chat.bsky.group.addReaction">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.addReaction">>;
+        "approveJoinRequest"(input?: ProcedureInput<"chat.bsky.group.approveJoinRequest">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.approveJoinRequest">>;
+        "createGroup"(input?: ProcedureInput<"chat.bsky.group.createGroup">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.createGroup">>;
+        "createJoinLink"(input?: ProcedureInput<"chat.bsky.group.createJoinLink">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.createJoinLink">>;
+        "deleteGroup"(input?: ProcedureInput<"chat.bsky.group.deleteGroup">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.deleteGroup">>;
+        "deleteMessageForSelf"(input?: ProcedureInput<"chat.bsky.group.deleteMessageForSelf">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.deleteMessageForSelf">>;
+        "disableJoinLink"(input?: ProcedureInput<"chat.bsky.group.disableJoinLink">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.disableJoinLink">>;
+        "editGroup"(input?: ProcedureInput<"chat.bsky.group.editGroup">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.editGroup">>;
+        "editJoinLink"(input?: ProcedureInput<"chat.bsky.group.editJoinLink">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.editJoinLink">>;
+        "enableJoinLink"(input?: ProcedureInput<"chat.bsky.group.enableJoinLink">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.enableJoinLink">>;
+        "getGroupPublicInfo"(params?: QueryParams<"chat.bsky.group.getGroupPublicInfo">, token?: string): Promise<QueryOutput<"chat.bsky.group.getGroupPublicInfo">>;
+        "getMessages"(params?: QueryParams<"chat.bsky.group.getMessages">, token?: string): Promise<QueryOutput<"chat.bsky.group.getMessages">>;
+        "leaveGroup"(input?: ProcedureInput<"chat.bsky.group.leaveGroup">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.leaveGroup">>;
+        "listGroups"(params?: QueryParams<"chat.bsky.group.listGroups">, token?: string): Promise<QueryOutput<"chat.bsky.group.listGroups">>;
+        "listInviteLinks"(params?: QueryParams<"chat.bsky.group.listInviteLinks">, token?: string): Promise<QueryOutput<"chat.bsky.group.listInviteLinks">>;
+        "listJoinRequests"(params?: QueryParams<"chat.bsky.group.listJoinRequests">, token?: string): Promise<QueryOutput<"chat.bsky.group.listJoinRequests">>;
+        "listMembers"(params?: QueryParams<"chat.bsky.group.listMembers">, token?: string): Promise<QueryOutput<"chat.bsky.group.listMembers">>;
+        "rejectJoinRequest"(input?: ProcedureInput<"chat.bsky.group.rejectJoinRequest">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.rejectJoinRequest">>;
+        "removeMembers"(input?: ProcedureInput<"chat.bsky.group.removeMembers">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.removeMembers">>;
+        "removeReaction"(input?: ProcedureInput<"chat.bsky.group.removeReaction">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.removeReaction">>;
+        "requestJoin"(input?: ProcedureInput<"chat.bsky.group.requestJoin">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.requestJoin">>;
+        "sendMessage"(input?: ProcedureInput<"chat.bsky.group.sendMessage">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.sendMessage">>;
+      };
+      "moderation": {
+        "getActorMetadata"(params?: QueryParams<"chat.bsky.moderation.getActorMetadata">, token?: string): Promise<QueryOutput<"chat.bsky.moderation.getActorMetadata">>;
+        "getMessageContext"(params?: QueryParams<"chat.bsky.moderation.getMessageContext">, token?: string): Promise<QueryOutput<"chat.bsky.moderation.getMessageContext">>;
+        "updateActorAccess"(input?: ProcedureInput<"chat.bsky.moderation.updateActorAccess">, token?: string): Promise<ProcedureOutput<"chat.bsky.moderation.updateActorAccess">>;
+      };
+    };
+  };
+  "com": {
+    "atproto": {
+      "admin": {
+        "deleteAccount"(input?: ProcedureInput<"com.atproto.admin.deleteAccount">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.deleteAccount">>;
+        "disableAccountInvites"(input?: ProcedureInput<"com.atproto.admin.disableAccountInvites">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.disableAccountInvites">>;
+        "disableInviteCodes"(input?: ProcedureInput<"com.atproto.admin.disableInviteCodes">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.disableInviteCodes">>;
+        "enableAccountInvites"(input?: ProcedureInput<"com.atproto.admin.enableAccountInvites">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.enableAccountInvites">>;
+        "getAccountInfo"(params?: QueryParams<"com.atproto.admin.getAccountInfo">, token?: string): Promise<QueryOutput<"com.atproto.admin.getAccountInfo">>;
+        "getAccountInfos"(params?: QueryParams<"com.atproto.admin.getAccountInfos">, token?: string): Promise<QueryOutput<"com.atproto.admin.getAccountInfos">>;
+        "getAccountTakedown"(input?: ProcedureInput<"com.atproto.admin.getAccountTakedown">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.getAccountTakedown">>;
+        "getAccountUsage"(params?: QueryParams<"com.atproto.admin.getAccountUsage">, token?: string): Promise<QueryOutput<"com.atproto.admin.getAccountUsage">>;
+        "getBlobAuditStatus"(params?: QueryParams<"com.atproto.admin.getBlobAuditStatus">, token?: string): Promise<QueryOutput<"com.atproto.admin.getBlobAuditStatus">>;
+        "getInviteCodes"(params?: QueryParams<"com.atproto.admin.getInviteCodes">, token?: string): Promise<QueryOutput<"com.atproto.admin.getInviteCodes">>;
+        "getModerationReports"(params?: QueryParams<"com.atproto.admin.getModerationReports">, token?: string): Promise<QueryOutput<"com.atproto.admin.getModerationReports">>;
+        "getServerStats"(params?: QueryParams<"com.atproto.admin.getServerStats">, token?: string): Promise<QueryOutput<"com.atproto.admin.getServerStats">>;
+        "getSubjectStatus"(params?: QueryParams<"com.atproto.admin.getSubjectStatus">, token?: string): Promise<QueryOutput<"com.atproto.admin.getSubjectStatus">>;
+        "moderateAccount"(input?: ProcedureInput<"com.atproto.admin.moderateAccount">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.moderateAccount">>;
+        "moderateRecord"(input?: ProcedureInput<"com.atproto.admin.moderateRecord">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.moderateRecord">>;
+        "queryAuditLog"(params?: QueryParams<"com.atproto.admin.queryAuditLog">, token?: string): Promise<QueryOutput<"com.atproto.admin.queryAuditLog">>;
+        "repairRepo"(input?: ProcedureInput<"com.atproto.admin.repairRepo">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.repairRepo">>;
+        "resolveReport"(input?: ProcedureInput<"com.atproto.admin.resolveReport">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.resolveReport">>;
+        "runBlobAudit"(input?: ProcedureInput<"com.atproto.admin.runBlobAudit">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.runBlobAudit">>;
+        "searchAccounts"(params?: QueryParams<"com.atproto.admin.searchAccounts">, token?: string): Promise<QueryOutput<"com.atproto.admin.searchAccounts">>;
+        "sendEmail"(input?: ProcedureInput<"com.atproto.admin.sendEmail">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.sendEmail">>;
+        "takeDownAccount"(input?: ProcedureInput<"com.atproto.admin.takeDownAccount">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.takeDownAccount">>;
+        "updateAccountEmail"(input?: ProcedureInput<"com.atproto.admin.updateAccountEmail">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.updateAccountEmail">>;
+        "updateAccountHandle"(input?: ProcedureInput<"com.atproto.admin.updateAccountHandle">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.updateAccountHandle">>;
+        "updateAccountPassword"(input?: ProcedureInput<"com.atproto.admin.updateAccountPassword">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.updateAccountPassword">>;
+        "updateAccountSigningKey"(input?: ProcedureInput<"com.atproto.admin.updateAccountSigningKey">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.updateAccountSigningKey">>;
+        "updateSubjectStatus"(input?: ProcedureInput<"com.atproto.admin.updateSubjectStatus">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.updateSubjectStatus">>;
+      };
+      "identity": {
+        "getRecommendedDidCredentials"(params?: QueryParams<"com.atproto.identity.getRecommendedDidCredentials">, token?: string): Promise<QueryOutput<"com.atproto.identity.getRecommendedDidCredentials">>;
+        "refreshIdentity"(input?: ProcedureInput<"com.atproto.identity.refreshIdentity">, token?: string): Promise<ProcedureOutput<"com.atproto.identity.refreshIdentity">>;
+        "requestPlcOperationSignature"(input?: ProcedureInput<"com.atproto.identity.requestPlcOperationSignature">, token?: string): Promise<ProcedureOutput<"com.atproto.identity.requestPlcOperationSignature">>;
+        "resolveDid"(params?: QueryParams<"com.atproto.identity.resolveDid">, token?: string): Promise<QueryOutput<"com.atproto.identity.resolveDid">>;
+        "resolveHandle"(params?: QueryParams<"com.atproto.identity.resolveHandle">, token?: string): Promise<QueryOutput<"com.atproto.identity.resolveHandle">>;
+        "resolveIdentity"(params?: QueryParams<"com.atproto.identity.resolveIdentity">, token?: string): Promise<QueryOutput<"com.atproto.identity.resolveIdentity">>;
+        "signPlcOperation"(input?: ProcedureInput<"com.atproto.identity.signPlcOperation">, token?: string): Promise<ProcedureOutput<"com.atproto.identity.signPlcOperation">>;
+        "submitPlcOperation"(input?: ProcedureInput<"com.atproto.identity.submitPlcOperation">, token?: string): Promise<ProcedureOutput<"com.atproto.identity.submitPlcOperation">>;
+        "updateHandle"(input?: ProcedureInput<"com.atproto.identity.updateHandle">, token?: string): Promise<ProcedureOutput<"com.atproto.identity.updateHandle">>;
+      };
+      "label": {
+        "createLabel"(input?: ProcedureInput<"com.atproto.label.createLabel">, token?: string): Promise<ProcedureOutput<"com.atproto.label.createLabel">>;
+        "getLabels"(params?: QueryParams<"com.atproto.label.getLabels">, token?: string): Promise<QueryOutput<"com.atproto.label.getLabels">>;
+        "queryLabels"(params?: QueryParams<"com.atproto.label.queryLabels">, token?: string): Promise<QueryOutput<"com.atproto.label.queryLabels">>;
+      };
+      "lexicon": {
+        "resolveLexicon"(params?: QueryParams<"com.atproto.lexicon.resolveLexicon">, token?: string): Promise<QueryOutput<"com.atproto.lexicon.resolveLexicon">>;
+      };
+      "moderation": {
+        "createReport"(input?: ProcedureInput<"com.atproto.moderation.createReport">, token?: string): Promise<ProcedureOutput<"com.atproto.moderation.createReport">>;
+      };
+      "repo": {
+        "applyWrites"(input?: ProcedureInput<"com.atproto.repo.applyWrites">, token?: string): Promise<ProcedureOutput<"com.atproto.repo.applyWrites">>;
+        "createRecord"(input?: ProcedureInput<"com.atproto.repo.createRecord">, token?: string): Promise<ProcedureOutput<"com.atproto.repo.createRecord">>;
+        "deleteBlob"(input?: ProcedureInput<"com.atproto.repo.deleteBlob">, token?: string): Promise<ProcedureOutput<"com.atproto.repo.deleteBlob">>;
+        "deleteRecord"(input?: ProcedureInput<"com.atproto.repo.deleteRecord">, token?: string): Promise<ProcedureOutput<"com.atproto.repo.deleteRecord">>;
+        "describeRepo"(params?: QueryParams<"com.atproto.repo.describeRepo">, token?: string): Promise<QueryOutput<"com.atproto.repo.describeRepo">>;
+        "getBlob"(params?: QueryParams<"com.atproto.repo.getBlob">, token?: string): Promise<QueryOutput<"com.atproto.repo.getBlob">>;
+        "getRecord"(params?: QueryParams<"com.atproto.repo.getRecord">, token?: string): Promise<QueryOutput<"com.atproto.repo.getRecord">>;
+        "importRepo"(input?: ProcedureInput<"com.atproto.repo.importRepo">, token?: string): Promise<ProcedureOutput<"com.atproto.repo.importRepo">>;
+        "listMissingBlobs"(params?: QueryParams<"com.atproto.repo.listMissingBlobs">, token?: string): Promise<QueryOutput<"com.atproto.repo.listMissingBlobs">>;
+        "listRecords"(params?: QueryParams<"com.atproto.repo.listRecords">, token?: string): Promise<QueryOutput<"com.atproto.repo.listRecords">>;
+        "putRecord"(input?: ProcedureInput<"com.atproto.repo.putRecord">, token?: string): Promise<ProcedureOutput<"com.atproto.repo.putRecord">>;
+        "updateRecord"(input?: ProcedureInput<"com.atproto.repo.updateRecord">, token?: string): Promise<ProcedureOutput<"com.atproto.repo.updateRecord">>;
+        "uploadBlob"(input?: ProcedureInput<"com.atproto.repo.uploadBlob">, token?: string): Promise<ProcedureOutput<"com.atproto.repo.uploadBlob">>;
+      };
+      "server": {
+        "activateAccount"(input?: ProcedureInput<"com.atproto.server.activateAccount">, token?: string): Promise<ProcedureOutput<"com.atproto.server.activateAccount">>;
+        "checkAccountStatus"(params?: QueryParams<"com.atproto.server.checkAccountStatus">, token?: string): Promise<QueryOutput<"com.atproto.server.checkAccountStatus">>;
+        "confirmEmail"(input?: ProcedureInput<"com.atproto.server.confirmEmail">, token?: string): Promise<ProcedureOutput<"com.atproto.server.confirmEmail">>;
+        "createAccount"(input?: ProcedureInput<"com.atproto.server.createAccount">, token?: string): Promise<ProcedureOutput<"com.atproto.server.createAccount">>;
+        "createAppPassword"(input?: ProcedureInput<"com.atproto.server.createAppPassword">, token?: string): Promise<ProcedureOutput<"com.atproto.server.createAppPassword">>;
+        "createInviteCode"(input?: ProcedureInput<"com.atproto.server.createInviteCode">, token?: string): Promise<ProcedureOutput<"com.atproto.server.createInviteCode">>;
+        "createInviteCodes"(input?: ProcedureInput<"com.atproto.server.createInviteCodes">, token?: string): Promise<ProcedureOutput<"com.atproto.server.createInviteCodes">>;
+        "createSession"(input?: ProcedureInput<"com.atproto.server.createSession">, token?: string): Promise<ProcedureOutput<"com.atproto.server.createSession">>;
+        "deactivateAccount"(input?: ProcedureInput<"com.atproto.server.deactivateAccount">, token?: string): Promise<ProcedureOutput<"com.atproto.server.deactivateAccount">>;
+        "deleteAccount"(input?: ProcedureInput<"com.atproto.server.deleteAccount">, token?: string): Promise<ProcedureOutput<"com.atproto.server.deleteAccount">>;
+        "deleteSession"(input?: ProcedureInput<"com.atproto.server.deleteSession">, token?: string): Promise<ProcedureOutput<"com.atproto.server.deleteSession">>;
+        "describeServer"(params?: QueryParams<"com.atproto.server.describeServer">, token?: string): Promise<QueryOutput<"com.atproto.server.describeServer">>;
+        "getAccount"(params?: QueryParams<"com.atproto.server.getAccount">, token?: string): Promise<QueryOutput<"com.atproto.server.getAccount">>;
+        "getAccountInviteCodes"(params?: QueryParams<"com.atproto.server.getAccountInviteCodes">, token?: string): Promise<QueryOutput<"com.atproto.server.getAccountInviteCodes">>;
+        "getServiceAuth"(params?: QueryParams<"com.atproto.server.getServiceAuth">, token?: string): Promise<QueryOutput<"com.atproto.server.getServiceAuth">>;
+        "getSession"(params?: QueryParams<"com.atproto.server.getSession">, token?: string): Promise<QueryOutput<"com.atproto.server.getSession">>;
+        "listAppPasswords"(params?: QueryParams<"com.atproto.server.listAppPasswords">, token?: string): Promise<QueryOutput<"com.atproto.server.listAppPasswords">>;
+        "refreshSession"(input?: ProcedureInput<"com.atproto.server.refreshSession">, token?: string): Promise<ProcedureOutput<"com.atproto.server.refreshSession">>;
+        "requestAccountDelete"(input?: ProcedureInput<"com.atproto.server.requestAccountDelete">, token?: string): Promise<ProcedureOutput<"com.atproto.server.requestAccountDelete">>;
+        "requestEmailConfirmation"(input?: ProcedureInput<"com.atproto.server.requestEmailConfirmation">, token?: string): Promise<ProcedureOutput<"com.atproto.server.requestEmailConfirmation">>;
+        "requestEmailUpdate"(input?: ProcedureInput<"com.atproto.server.requestEmailUpdate">, token?: string): Promise<ProcedureOutput<"com.atproto.server.requestEmailUpdate">>;
+        "requestPasswordReset"(input?: ProcedureInput<"com.atproto.server.requestPasswordReset">, token?: string): Promise<ProcedureOutput<"com.atproto.server.requestPasswordReset">>;
+        "reserveSigningKey"(input?: ProcedureInput<"com.atproto.server.reserveSigningKey">, token?: string): Promise<ProcedureOutput<"com.atproto.server.reserveSigningKey">>;
+        "resetPassword"(input?: ProcedureInput<"com.atproto.server.resetPassword">, token?: string): Promise<ProcedureOutput<"com.atproto.server.resetPassword">>;
+        "revokeAppPassword"(input?: ProcedureInput<"com.atproto.server.revokeAppPassword">, token?: string): Promise<ProcedureOutput<"com.atproto.server.revokeAppPassword">>;
+        "updateEmail"(input?: ProcedureInput<"com.atproto.server.updateEmail">, token?: string): Promise<ProcedureOutput<"com.atproto.server.updateEmail">>;
+      };
+      "sync": {
+        "getBlob"(params?: QueryParams<"com.atproto.sync.getBlob">, token?: string): Promise<QueryOutput<"com.atproto.sync.getBlob">>;
+        "getBlocks"(params?: QueryParams<"com.atproto.sync.getBlocks">, token?: string): Promise<QueryOutput<"com.atproto.sync.getBlocks">>;
+        "getCheckout"(params?: QueryParams<"com.atproto.sync.getCheckout">, token?: string): Promise<QueryOutput<"com.atproto.sync.getCheckout">>;
+        "getHead"(params?: QueryParams<"com.atproto.sync.getHead">, token?: string): Promise<QueryOutput<"com.atproto.sync.getHead">>;
+        "getHostStatus"(params?: QueryParams<"com.atproto.sync.getHostStatus">, token?: string): Promise<QueryOutput<"com.atproto.sync.getHostStatus">>;
+        "getLatestCommit"(params?: QueryParams<"com.atproto.sync.getLatestCommit">, token?: string): Promise<QueryOutput<"com.atproto.sync.getLatestCommit">>;
+        "getRecord"(params?: QueryParams<"com.atproto.sync.getRecord">, token?: string): Promise<QueryOutput<"com.atproto.sync.getRecord">>;
+        "getRepo"(params?: QueryParams<"com.atproto.sync.getRepo">, token?: string): Promise<QueryOutput<"com.atproto.sync.getRepo">>;
+        "getRepoStatus"(params?: QueryParams<"com.atproto.sync.getRepoStatus">, token?: string): Promise<QueryOutput<"com.atproto.sync.getRepoStatus">>;
+        "listBlobs"(params?: QueryParams<"com.atproto.sync.listBlobs">, token?: string): Promise<QueryOutput<"com.atproto.sync.listBlobs">>;
+        "listHosts"(params?: QueryParams<"com.atproto.sync.listHosts">, token?: string): Promise<QueryOutput<"com.atproto.sync.listHosts">>;
+        "listRepos"(params?: QueryParams<"com.atproto.sync.listRepos">, token?: string): Promise<QueryOutput<"com.atproto.sync.listRepos">>;
+        "listReposByCollection"(params?: QueryParams<"com.atproto.sync.listReposByCollection">, token?: string): Promise<QueryOutput<"com.atproto.sync.listReposByCollection">>;
+        "notifyOfUpdate"(input?: ProcedureInput<"com.atproto.sync.notifyOfUpdate">, token?: string): Promise<ProcedureOutput<"com.atproto.sync.notifyOfUpdate">>;
+        "requestCrawl"(input?: ProcedureInput<"com.atproto.sync.requestCrawl">, token?: string): Promise<ProcedureOutput<"com.atproto.sync.requestCrawl">>;
+      };
+      "temp": {
+        "addReservedHandle"(input?: ProcedureInput<"com.atproto.temp.addReservedHandle">, token?: string): Promise<ProcedureOutput<"com.atproto.temp.addReservedHandle">>;
+        "checkHandleAvailability"(params?: QueryParams<"com.atproto.temp.checkHandleAvailability">, token?: string): Promise<QueryOutput<"com.atproto.temp.checkHandleAvailability">>;
+        "checkSignupQueue"(params?: QueryParams<"com.atproto.temp.checkSignupQueue">, token?: string): Promise<QueryOutput<"com.atproto.temp.checkSignupQueue">>;
+        "dereferenceScope"(params?: QueryParams<"com.atproto.temp.dereferenceScope">, token?: string): Promise<QueryOutput<"com.atproto.temp.dereferenceScope">>;
+        "fetchLabels"(params?: QueryParams<"com.atproto.temp.fetchLabels">, token?: string): Promise<QueryOutput<"com.atproto.temp.fetchLabels">>;
+        "requestPhoneVerification"(input?: ProcedureInput<"com.atproto.temp.requestPhoneVerification">, token?: string): Promise<ProcedureOutput<"com.atproto.temp.requestPhoneVerification">>;
+        "revokeAccountCredentials"(input?: ProcedureInput<"com.atproto.temp.revokeAccountCredentials">, token?: string): Promise<ProcedureOutput<"com.atproto.temp.revokeAccountCredentials">>;
+      };
+    };
+    "germnetwork": {
+      "identity": {
+        "getAnchorKey"(params?: QueryParams<"com.germnetwork.identity.getAnchorKey">, token?: string): Promise<QueryOutput<"com.germnetwork.identity.getAnchorKey">>;
+      };
+      "mailbox": {
+        "claimAddresses"(input?: ProcedureInput<"com.germnetwork.mailbox.claimAddresses">, token?: string): Promise<ProcedureOutput<"com.germnetwork.mailbox.claimAddresses">>;
+        "deliver"(input?: ProcedureInput<"com.germnetwork.mailbox.deliver">, token?: string): Promise<ProcedureOutput<"com.germnetwork.mailbox.deliver">>;
+        "poll"(params?: QueryParams<"com.germnetwork.mailbox.poll">, token?: string): Promise<QueryOutput<"com.germnetwork.mailbox.poll">>;
+      };
+      "rendezvous": {
+        "deliver"(input?: ProcedureInput<"com.germnetwork.rendezvous.deliver">, token?: string): Promise<ProcedureOutput<"com.germnetwork.rendezvous.deliver">>;
+        "register"(input?: ProcedureInput<"com.germnetwork.rendezvous.register">, token?: string): Promise<ProcedureOutput<"com.germnetwork.rendezvous.register">>;
+      };
+    };
+    "shinolabs": {
+      "pinksea": {
+        "getAuthorFeed"(params?: QueryParams<"com.shinolabs.pinksea.getAuthorFeed">, token?: string): Promise<QueryOutput<"com.shinolabs.pinksea.getAuthorFeed">>;
+        "getAuthorReplies"(params?: QueryParams<"com.shinolabs.pinksea.getAuthorReplies">, token?: string): Promise<QueryOutput<"com.shinolabs.pinksea.getAuthorReplies">>;
+        "getHandleFromDid"(params?: QueryParams<"com.shinolabs.pinksea.getHandleFromDid">, token?: string): Promise<QueryOutput<"com.shinolabs.pinksea.getHandleFromDid">>;
+        "getIdentity"(params?: QueryParams<"com.shinolabs.pinksea.getIdentity">, token?: string): Promise<QueryOutput<"com.shinolabs.pinksea.getIdentity">>;
+        "getOekaki"(params?: QueryParams<"com.shinolabs.pinksea.getOekaki">, token?: string): Promise<QueryOutput<"com.shinolabs.pinksea.getOekaki">>;
+        "getParentForReply"(params?: QueryParams<"com.shinolabs.pinksea.getParentForReply">, token?: string): Promise<QueryOutput<"com.shinolabs.pinksea.getParentForReply">>;
+        "getRecent"(params?: QueryParams<"com.shinolabs.pinksea.getRecent">, token?: string): Promise<QueryOutput<"com.shinolabs.pinksea.getRecent">>;
+        "getTagFeed"(params?: QueryParams<"com.shinolabs.pinksea.getTagFeed">, token?: string): Promise<QueryOutput<"com.shinolabs.pinksea.getTagFeed">>;
+      };
+    };
+    "whtwnd": {
+      "blog": {
+        "getAuthorPosts"(params?: QueryParams<"com.whtwnd.blog.getAuthorPosts">, token?: string): Promise<QueryOutput<"com.whtwnd.blog.getAuthorPosts">>;
+        "getEntryMetadataByName"(params?: QueryParams<"com.whtwnd.blog.getEntryMetadataByName">, token?: string): Promise<QueryOutput<"com.whtwnd.blog.getEntryMetadataByName">>;
+        "getMentionsByEntry"(params?: QueryParams<"com.whtwnd.blog.getMentionsByEntry">, token?: string): Promise<QueryOutput<"com.whtwnd.blog.getMentionsByEntry">>;
+        "notifyOfNewEntry"(input?: ProcedureInput<"com.whtwnd.blog.notifyOfNewEntry">, token?: string): Promise<ProcedureOutput<"com.whtwnd.blog.notifyOfNewEntry">>;
+      };
+    };
+  };
+  "place": {
+    "stream": {
+      "branding": {
+        "deleteBlob"(input?: ProcedureInput<"place.stream.branding.deleteBlob">, token?: string): Promise<ProcedureOutput<"place.stream.branding.deleteBlob">>;
+        "getBlob"(params?: QueryParams<"place.stream.branding.getBlob">, token?: string): Promise<QueryOutput<"place.stream.branding.getBlob">>;
+        "getBranding"(params?: QueryParams<"place.stream.branding.getBranding">, token?: string): Promise<QueryOutput<"place.stream.branding.getBranding">>;
+        "updateBlob"(input?: ProcedureInput<"place.stream.branding.updateBlob">, token?: string): Promise<ProcedureOutput<"place.stream.branding.updateBlob">>;
+      };
+      "broadcast": {
+        "getBroadcaster"(params?: QueryParams<"place.stream.broadcast.getBroadcaster">, token?: string): Promise<QueryOutput<"place.stream.broadcast.getBroadcaster">>;
+      };
+      "graph": {
+        "getFollowingUser"(params?: QueryParams<"place.stream.graph.getFollowingUser">, token?: string): Promise<QueryOutput<"place.stream.graph.getFollowingUser">>;
+      };
+      "live": {
+        "getLiveUsers"(params?: QueryParams<"place.stream.live.getLiveUsers">, token?: string): Promise<QueryOutput<"place.stream.live.getLiveUsers">>;
+        "getProfileCard"(params?: QueryParams<"place.stream.live.getProfileCard">, token?: string): Promise<QueryOutput<"place.stream.live.getProfileCard">>;
+        "getRecommendations"(params?: QueryParams<"place.stream.live.getRecommendations">, token?: string): Promise<QueryOutput<"place.stream.live.getRecommendations">>;
+        "getSegments"(params?: QueryParams<"place.stream.live.getSegments">, token?: string): Promise<QueryOutput<"place.stream.live.getSegments">>;
+        "searchActorsTypeahead"(params?: QueryParams<"place.stream.live.searchActorsTypeahead">, token?: string): Promise<QueryOutput<"place.stream.live.searchActorsTypeahead">>;
+      };
+      "moderation": {
+        "createBlock"(input?: ProcedureInput<"place.stream.moderation.createBlock">, token?: string): Promise<ProcedureOutput<"place.stream.moderation.createBlock">>;
+        "createGate"(input?: ProcedureInput<"place.stream.moderation.createGate">, token?: string): Promise<ProcedureOutput<"place.stream.moderation.createGate">>;
+        "deleteBlock"(input?: ProcedureInput<"place.stream.moderation.deleteBlock">, token?: string): Promise<ProcedureOutput<"place.stream.moderation.deleteBlock">>;
+        "deleteGate"(input?: ProcedureInput<"place.stream.moderation.deleteGate">, token?: string): Promise<ProcedureOutput<"place.stream.moderation.deleteGate">>;
+        "updateLivestream"(input?: ProcedureInput<"place.stream.moderation.updateLivestream">, token?: string): Promise<ProcedureOutput<"place.stream.moderation.updateLivestream">>;
+      };
+      "multistream": {
+        "createTarget"(input?: ProcedureInput<"place.stream.multistream.createTarget">, token?: string): Promise<ProcedureOutput<"place.stream.multistream.createTarget">>;
+        "deleteTarget"(input?: ProcedureInput<"place.stream.multistream.deleteTarget">, token?: string): Promise<ProcedureOutput<"place.stream.multistream.deleteTarget">>;
+        "listTargets"(params?: QueryParams<"place.stream.multistream.listTargets">, token?: string): Promise<QueryOutput<"place.stream.multistream.listTargets">>;
+        "putTarget"(input?: ProcedureInput<"place.stream.multistream.putTarget">, token?: string): Promise<ProcedureOutput<"place.stream.multistream.putTarget">>;
+      };
+      "server": {
+        "createWebhook"(input?: ProcedureInput<"place.stream.server.createWebhook">, token?: string): Promise<ProcedureOutput<"place.stream.server.createWebhook">>;
+        "deleteWebhook"(input?: ProcedureInput<"place.stream.server.deleteWebhook">, token?: string): Promise<ProcedureOutput<"place.stream.server.deleteWebhook">>;
+        "getServerTime"(params?: QueryParams<"place.stream.server.getServerTime">, token?: string): Promise<QueryOutput<"place.stream.server.getServerTime">>;
+        "getWebhook"(params?: QueryParams<"place.stream.server.getWebhook">, token?: string): Promise<QueryOutput<"place.stream.server.getWebhook">>;
+        "listWebhooks"(params?: QueryParams<"place.stream.server.listWebhooks">, token?: string): Promise<QueryOutput<"place.stream.server.listWebhooks">>;
+        "updateWebhook"(input?: ProcedureInput<"place.stream.server.updateWebhook">, token?: string): Promise<ProcedureOutput<"place.stream.server.updateWebhook">>;
+      };
+    };
+  };
+  "social": {
+    "grain": {
+      "actor": {
+        "getActorFavs"(params?: QueryParams<"social.grain.actor.getActorFavs">, token?: string): Promise<QueryOutput<"social.grain.actor.getActorFavs">>;
+        "getProfile"(params?: QueryParams<"social.grain.actor.getProfile">, token?: string): Promise<QueryOutput<"social.grain.actor.getProfile">>;
+        "searchActors"(params?: QueryParams<"social.grain.actor.searchActors">, token?: string): Promise<QueryOutput<"social.grain.actor.searchActors">>;
+        "updateAvatar"(input?: ProcedureInput<"social.grain.actor.updateAvatar">, token?: string): Promise<ProcedureOutput<"social.grain.actor.updateAvatar">>;
+        "updateProfile"(input?: ProcedureInput<"social.grain.actor.updateProfile">, token?: string): Promise<ProcedureOutput<"social.grain.actor.updateProfile">>;
+      };
+      "comment": {
+        "createComment"(input?: ProcedureInput<"social.grain.comment.createComment">, token?: string): Promise<ProcedureOutput<"social.grain.comment.createComment">>;
+        "deleteComment"(input?: ProcedureInput<"social.grain.comment.deleteComment">, token?: string): Promise<ProcedureOutput<"social.grain.comment.deleteComment">>;
+      };
+      "darkroom": {
+        "getGalleryComposite"(params?: QueryParams<"social.grain.darkroom.getGalleryComposite">, token?: string): Promise<QueryOutput<"social.grain.darkroom.getGalleryComposite">>;
+      };
+      "favorite": {
+        "createFavorite"(input?: ProcedureInput<"social.grain.favorite.createFavorite">, token?: string): Promise<ProcedureOutput<"social.grain.favorite.createFavorite">>;
+        "deleteFavorite"(input?: ProcedureInput<"social.grain.favorite.deleteFavorite">, token?: string): Promise<ProcedureOutput<"social.grain.favorite.deleteFavorite">>;
+      };
+      "feed": {
+        "getTimeline"(params?: QueryParams<"social.grain.feed.getTimeline">, token?: string): Promise<QueryOutput<"social.grain.feed.getTimeline">>;
+      };
+      "gallery": {
+        "applySort"(input?: ProcedureInput<"social.grain.gallery.applySort">, token?: string): Promise<ProcedureOutput<"social.grain.gallery.applySort">>;
+        "createGallery"(input?: ProcedureInput<"social.grain.gallery.createGallery">, token?: string): Promise<ProcedureOutput<"social.grain.gallery.createGallery">>;
+        "createItem"(input?: ProcedureInput<"social.grain.gallery.createItem">, token?: string): Promise<ProcedureOutput<"social.grain.gallery.createItem">>;
+        "deleteGallery"(input?: ProcedureInput<"social.grain.gallery.deleteGallery">, token?: string): Promise<ProcedureOutput<"social.grain.gallery.deleteGallery">>;
+        "deleteItem"(input?: ProcedureInput<"social.grain.gallery.deleteItem">, token?: string): Promise<ProcedureOutput<"social.grain.gallery.deleteItem">>;
+        "getActorGalleries"(params?: QueryParams<"social.grain.gallery.getActorGalleries">, token?: string): Promise<QueryOutput<"social.grain.gallery.getActorGalleries">>;
+        "getGallery"(params?: QueryParams<"social.grain.gallery.getGallery">, token?: string): Promise<QueryOutput<"social.grain.gallery.getGallery">>;
+        "getGalleryThread"(params?: QueryParams<"social.grain.gallery.getGalleryThread">, token?: string): Promise<QueryOutput<"social.grain.gallery.getGalleryThread">>;
+        "updateGallery"(input?: ProcedureInput<"social.grain.gallery.updateGallery">, token?: string): Promise<ProcedureOutput<"social.grain.gallery.updateGallery">>;
+      };
+      "graph": {
+        "createFollow"(input?: ProcedureInput<"social.grain.graph.createFollow">, token?: string): Promise<ProcedureOutput<"social.grain.graph.createFollow">>;
+        "deleteFollow"(input?: ProcedureInput<"social.grain.graph.deleteFollow">, token?: string): Promise<ProcedureOutput<"social.grain.graph.deleteFollow">>;
+        "getFollowers"(params?: QueryParams<"social.grain.graph.getFollowers">, token?: string): Promise<QueryOutput<"social.grain.graph.getFollowers">>;
+        "getFollows"(params?: QueryParams<"social.grain.graph.getFollows">, token?: string): Promise<QueryOutput<"social.grain.graph.getFollows">>;
+      };
+      "notification": {
+        "getNotifications"(params?: QueryParams<"social.grain.notification.getNotifications">, token?: string): Promise<QueryOutput<"social.grain.notification.getNotifications">>;
+        "updateSeen"(input?: ProcedureInput<"social.grain.notification.updateSeen">, token?: string): Promise<ProcedureOutput<"social.grain.notification.updateSeen">>;
+      };
+      "photo": {
+        "applyAlts"(input?: ProcedureInput<"social.grain.photo.applyAlts">, token?: string): Promise<ProcedureOutput<"social.grain.photo.applyAlts">>;
+        "createExif"(input?: ProcedureInput<"social.grain.photo.createExif">, token?: string): Promise<ProcedureOutput<"social.grain.photo.createExif">>;
+        "deletePhoto"(input?: ProcedureInput<"social.grain.photo.deletePhoto">, token?: string): Promise<ProcedureOutput<"social.grain.photo.deletePhoto">>;
+        "getActorPhotos"(params?: QueryParams<"social.grain.photo.getActorPhotos">, token?: string): Promise<QueryOutput<"social.grain.photo.getActorPhotos">>;
+        "uploadPhoto"(input?: ProcedureInput<"social.grain.photo.uploadPhoto">, token?: string): Promise<ProcedureOutput<"social.grain.photo.uploadPhoto">>;
+      };
+    };
+  };
+  "tools": {
+    "garazyk": {
+      "account": {
+        "getUsage"(params?: QueryParams<"tools.garazyk.account.getUsage">, token?: string): Promise<QueryOutput<"tools.garazyk.account.getUsage">>;
+      };
+      "sync": {
+        "getRepoFiltered"(params?: QueryParams<"tools.garazyk.sync.getRepoFiltered">, token?: string): Promise<QueryOutput<"tools.garazyk.sync.getRepoFiltered">>;
+      };
+    };
+    "ozone": {
+      "communication": {
+        "createTemplate"(input?: ProcedureInput<"tools.ozone.communication.createTemplate">, token?: string): Promise<ProcedureOutput<"tools.ozone.communication.createTemplate">>;
+        "deleteTemplate"(input?: ProcedureInput<"tools.ozone.communication.deleteTemplate">, token?: string): Promise<ProcedureOutput<"tools.ozone.communication.deleteTemplate">>;
+        "listTemplates"(params?: QueryParams<"tools.ozone.communication.listTemplates">, token?: string): Promise<QueryOutput<"tools.ozone.communication.listTemplates">>;
+        "updateTemplate"(input?: ProcedureInput<"tools.ozone.communication.updateTemplate">, token?: string): Promise<ProcedureOutput<"tools.ozone.communication.updateTemplate">>;
+      };
+      "hosting": {
+        "getAccountHistory"(params?: QueryParams<"tools.ozone.hosting.getAccountHistory">, token?: string): Promise<QueryOutput<"tools.ozone.hosting.getAccountHistory">>;
+      };
+      "moderation": {
+        "cancelScheduledAction"(input?: ProcedureInput<"tools.ozone.moderation.cancelScheduledAction">, token?: string): Promise<ProcedureOutput<"tools.ozone.moderation.cancelScheduledAction">>;
+        "cancelScheduledActions"(input?: ProcedureInput<"tools.ozone.moderation.cancelScheduledActions">, token?: string): Promise<ProcedureOutput<"tools.ozone.moderation.cancelScheduledActions">>;
+        "emitEvent"(input?: ProcedureInput<"tools.ozone.moderation.emitEvent">, token?: string): Promise<ProcedureOutput<"tools.ozone.moderation.emitEvent">>;
+        "getAccountTimeline"(params?: QueryParams<"tools.ozone.moderation.getAccountTimeline">, token?: string): Promise<QueryOutput<"tools.ozone.moderation.getAccountTimeline">>;
+        "getEvent"(params?: QueryParams<"tools.ozone.moderation.getEvent">, token?: string): Promise<QueryOutput<"tools.ozone.moderation.getEvent">>;
+        "getRecord"(params?: QueryParams<"tools.ozone.moderation.getRecord">, token?: string): Promise<QueryOutput<"tools.ozone.moderation.getRecord">>;
+        "getRecords"(params?: QueryParams<"tools.ozone.moderation.getRecords">, token?: string): Promise<QueryOutput<"tools.ozone.moderation.getRecords">>;
+        "getRepo"(params?: QueryParams<"tools.ozone.moderation.getRepo">, token?: string): Promise<QueryOutput<"tools.ozone.moderation.getRepo">>;
+        "getReporterStats"(params?: QueryParams<"tools.ozone.moderation.getReporterStats">, token?: string): Promise<QueryOutput<"tools.ozone.moderation.getReporterStats">>;
+        "getRepos"(params?: QueryParams<"tools.ozone.moderation.getRepos">, token?: string): Promise<QueryOutput<"tools.ozone.moderation.getRepos">>;
+        "getSubjects"(params?: QueryParams<"tools.ozone.moderation.getSubjects">, token?: string): Promise<QueryOutput<"tools.ozone.moderation.getSubjects">>;
+        "getSubjectStatus"(params?: QueryParams<"tools.ozone.moderation.getSubjectStatus">, token?: string): Promise<QueryOutput<"tools.ozone.moderation.getSubjectStatus">>;
+        "listScheduledActions"(input?: ProcedureInput<"tools.ozone.moderation.listScheduledActions">, token?: string): Promise<ProcedureOutput<"tools.ozone.moderation.listScheduledActions">>;
+        "queryEvents"(params?: QueryParams<"tools.ozone.moderation.queryEvents">, token?: string): Promise<QueryOutput<"tools.ozone.moderation.queryEvents">>;
+        "queryStatuses"(params?: QueryParams<"tools.ozone.moderation.queryStatuses">, token?: string): Promise<QueryOutput<"tools.ozone.moderation.queryStatuses">>;
+        "scheduleAction"(input?: ProcedureInput<"tools.ozone.moderation.scheduleAction">, token?: string): Promise<ProcedureOutput<"tools.ozone.moderation.scheduleAction">>;
+        "searchRepos"(params?: QueryParams<"tools.ozone.moderation.searchRepos">, token?: string): Promise<QueryOutput<"tools.ozone.moderation.searchRepos">>;
+      };
+      "safelink": {
+        "addRule"(input?: ProcedureInput<"tools.ozone.safelink.addRule">, token?: string): Promise<ProcedureOutput<"tools.ozone.safelink.addRule">>;
+        "queryEvents"(input?: ProcedureInput<"tools.ozone.safelink.queryEvents">, token?: string): Promise<ProcedureOutput<"tools.ozone.safelink.queryEvents">>;
+        "queryRules"(input?: ProcedureInput<"tools.ozone.safelink.queryRules">, token?: string): Promise<ProcedureOutput<"tools.ozone.safelink.queryRules">>;
+        "removeRule"(input?: ProcedureInput<"tools.ozone.safelink.removeRule">, token?: string): Promise<ProcedureOutput<"tools.ozone.safelink.removeRule">>;
+        "updateRule"(input?: ProcedureInput<"tools.ozone.safelink.updateRule">, token?: string): Promise<ProcedureOutput<"tools.ozone.safelink.updateRule">>;
+      };
+      "server": {
+        "getConfig"(params?: QueryParams<"tools.ozone.server.getConfig">, token?: string): Promise<QueryOutput<"tools.ozone.server.getConfig">>;
+        "updateConfig"(input?: ProcedureInput<"tools.ozone.server.updateConfig">, token?: string): Promise<ProcedureOutput<"tools.ozone.server.updateConfig">>;
+      };
+      "set": {
+        "addValues"(input?: ProcedureInput<"tools.ozone.set.addValues">, token?: string): Promise<ProcedureOutput<"tools.ozone.set.addValues">>;
+        "deleteSet"(input?: ProcedureInput<"tools.ozone.set.deleteSet">, token?: string): Promise<ProcedureOutput<"tools.ozone.set.deleteSet">>;
+        "deleteValues"(input?: ProcedureInput<"tools.ozone.set.deleteValues">, token?: string): Promise<ProcedureOutput<"tools.ozone.set.deleteValues">>;
+        "getValues"(params?: QueryParams<"tools.ozone.set.getValues">, token?: string): Promise<QueryOutput<"tools.ozone.set.getValues">>;
+        "querySets"(params?: QueryParams<"tools.ozone.set.querySets">, token?: string): Promise<QueryOutput<"tools.ozone.set.querySets">>;
+        "upsertSet"(input?: ProcedureInput<"tools.ozone.set.upsertSet">, token?: string): Promise<ProcedureOutput<"tools.ozone.set.upsertSet">>;
+      };
+      "setting": {
+        "listOptions"(params?: QueryParams<"tools.ozone.setting.listOptions">, token?: string): Promise<QueryOutput<"tools.ozone.setting.listOptions">>;
+        "removeOptions"(input?: ProcedureInput<"tools.ozone.setting.removeOptions">, token?: string): Promise<ProcedureOutput<"tools.ozone.setting.removeOptions">>;
+        "upsertOption"(input?: ProcedureInput<"tools.ozone.setting.upsertOption">, token?: string): Promise<ProcedureOutput<"tools.ozone.setting.upsertOption">>;
+      };
+      "signature": {
+        "findCorrelation"(params?: QueryParams<"tools.ozone.signature.findCorrelation">, token?: string): Promise<QueryOutput<"tools.ozone.signature.findCorrelation">>;
+        "findRelatedAccounts"(params?: QueryParams<"tools.ozone.signature.findRelatedAccounts">, token?: string): Promise<QueryOutput<"tools.ozone.signature.findRelatedAccounts">>;
+        "searchAccounts"(params?: QueryParams<"tools.ozone.signature.searchAccounts">, token?: string): Promise<QueryOutput<"tools.ozone.signature.searchAccounts">>;
+      };
+      "team": {
+        "addMember"(input?: ProcedureInput<"tools.ozone.team.addMember">, token?: string): Promise<ProcedureOutput<"tools.ozone.team.addMember">>;
+        "deleteMember"(input?: ProcedureInput<"tools.ozone.team.deleteMember">, token?: string): Promise<ProcedureOutput<"tools.ozone.team.deleteMember">>;
+        "listMembers"(params?: QueryParams<"tools.ozone.team.listMembers">, token?: string): Promise<QueryOutput<"tools.ozone.team.listMembers">>;
+        "updateMember"(input?: ProcedureInput<"tools.ozone.team.updateMember">, token?: string): Promise<ProcedureOutput<"tools.ozone.team.updateMember">>;
+      };
+      "verification": {
+        "grantVerifications"(input?: ProcedureInput<"tools.ozone.verification.grantVerifications">, token?: string): Promise<ProcedureOutput<"tools.ozone.verification.grantVerifications">>;
+        "listVerifications"(params?: QueryParams<"tools.ozone.verification.listVerifications">, token?: string): Promise<QueryOutput<"tools.ozone.verification.listVerifications">>;
+        "revokeVerifications"(input?: ProcedureInput<"tools.ozone.verification.revokeVerifications">, token?: string): Promise<ProcedureOutput<"tools.ozone.verification.revokeVerifications">>;
+      };
+    };
+  };
+}

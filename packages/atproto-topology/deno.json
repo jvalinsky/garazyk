@@ -1,6 +1,6 @@
 {
   "name": "@garazyk/atproto-topology",
-  "version": "0.1.0",
+  "version": "0.1.0-alpha.1",
   "description": "Deterministic Docker Compose topology definitions for AT Protocol networks.",
   "exports": {
     ".": "./mod.ts"
