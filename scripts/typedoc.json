@@ -1,5 +1,6 @@
 {
   "name": "Garazyk Deno Harness",
+  "readme": "API_README.md",
   "entryPoints": [
     "lib/deno/mod.ts",
     "lib/deno/client.ts",
