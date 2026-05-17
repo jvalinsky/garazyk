@@ -12,6 +12,7 @@
  */
 
 import { FirehoseClient } from "@garazyk/gruszka";
+import type { FirehoseEvent } from "@garazyk/gruszka";
 import { getCharacter } from "@garazyk/hamownia/config";
 import { SERVICE_URLS } from "@garazyk/hamownia/config";
 import { ScenarioResult } from "@garazyk/hamownia";
@@ -19,8 +20,12 @@ import { PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
-import { assert } from "@garazyk/hamownia";
 import { timedCall } from "@garazyk/hamownia";
+
+interface CreateRecordResponse {
+  uri: string;
+  cid: string;
+}
 
 /**
  * Executes the scenario logic.
@@ -51,11 +56,23 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Create account",
     async () => {
-      return await client.accounts.createAccount(
-        luna.handle,
-        luna.email,
-        luna.password,
-      );
+      let res: Awaited<ReturnType<typeof client.agent.createAccount>>;
+      try {
+        res = await client.agent.createAccount({
+          handle: luna.handle,
+          email: luna.email,
+          password: luna.password,
+        });
+      } catch (exc) {
+        if (!String(exc).toLowerCase().includes("already exists")) {
+          throw exc;
+        }
+        res = await client.agent.login({
+          identifier: luna.handle,
+          password: luna.password,
+        });
+      }
+      return res.data;
     },
     (s) => `did=${s.did}`,
   );
@@ -73,7 +90,7 @@ export async function run(): Promise<ScenarioResult> {
   // ── Phase 1: Subscribe and collect baseline events ───────────────────────
   const fh1 = new FirehoseClient(relayUrl);
   let lastSeq = 0;
-  const eventsBefore: any[] = [];
+  const eventsBefore: FirehoseEvent[] = [];
 
   await timedCall(result, "Subscribe to firehose (baseline)", async () => {
     await fh1.subscribe((ev) => {
@@ -87,6 +104,17 @@ export async function run(): Promise<ScenarioResult> {
     `count=${eventsBefore.length}, last_seq=${lastSeq}`,
   );
 
+  if (
+    eventsBefore.length > 0 &&
+    eventsBefore.every((ev) =>
+      Object.keys(ev.header).length > 0 && Object.keys(ev.body).length > 0
+    )
+  ) {
+    result.stepPassed("Baseline firehose decoding");
+  } else if (eventsBefore.length > 0) {
+    result.stepFailed("Baseline firehose decoding", "missing decoded frame");
+  }
+
   // ── Phase 2: Create posts during disconnect ──────────────────────────────
   const postUris: string[] = [];
   for (let i = 0; i < 3; i++) {
@@ -94,16 +122,19 @@ export async function run(): Promise<ScenarioResult> {
       result,
       `Create post ${i + 1} during disconnect`,
       async () => {
-        return await client.records.createRecord(
-          luna.did,
-          "app.bsky.feed.post",
+        return await client.raw.post(
+          "com.atproto.repo.createRecord",
           {
-            $type: "app.bsky.feed.post",
-            text: `Cursor recovery test post ${i + 1}`,
-            createdAt: now(),
+            repo: luna.did,
+            collection: "app.bsky.feed.post",
+            record: {
+              $type: "app.bsky.feed.post",
+              text: `Cursor recovery test post ${i + 1}`,
+              createdAt: now(),
+            },
           },
           luna.accessJwt,
-        );
+        ) as CreateRecordResponse;
       },
       (r) => `uri=${r.uri}`,
     );
@@ -115,7 +146,7 @@ export async function run(): Promise<ScenarioResult> {
 
   // ── Phase 3: Resubscribe with cursor ─────────────────────────────────────
   const fh2 = new FirehoseClient(relayUrl);
-  const eventsAfter: any[] = [];
+  const eventsAfter: FirehoseEvent[] = [];
 
   await timedCall(result, "Resubscribe with cursor", async () => {
     await fh2.subscribe(
@@ -129,10 +160,21 @@ export async function run(): Promise<ScenarioResult> {
 
   result.stepPassed("Events after resubscribe", `count=${eventsAfter.length}`);
 
+  if (
+    eventsAfter.length > 0 &&
+    eventsAfter.every((ev) =>
+      Object.keys(ev.header).length > 0 && Object.keys(ev.body).length > 0
+    )
+  ) {
+    result.stepPassed("Resubscribe firehose decoding");
+  } else if (eventsAfter.length > 0) {
+    result.stepFailed("Resubscribe firehose decoding", "missing decoded frame");
+  }
+
   // ── Phase 4: Verify cursor recovery ──────────────────────────────────────
   if (lastSeq > 0 && eventsAfter.length > 0) {
     // Check that we got events with seq > lastSeq (continuation)
-    const continuingEvents = eventsAfter.filter((e: any) => e.seq > lastSeq);
+    const continuingEvents = eventsAfter.filter((e) => e.seq > lastSeq);
     if (continuingEvents.length > 0) {
       result.stepPassed(
         "Cursor recovery works",
@@ -147,7 +189,7 @@ export async function run(): Promise<ScenarioResult> {
 
     // Check that we didn't get events with seq <= lastSeq that we already saw
     // (some overlap is OK for cursor semantics, but massive overlap is suspicious)
-    const overlapEvents = eventsAfter.filter((e: any) =>
+    const overlapEvents = eventsAfter.filter((e) =>
       e.seq <= lastSeq && e.seq > 0
     );
     if (overlapEvents.length > eventsAfter.length * 0.5) {
@@ -175,7 +217,7 @@ export async function run(): Promise<ScenarioResult> {
 
   // ── Phase 5: Resubscribe with cursor=0 (full replay) ──────────────────────
   const fh3 = new FirehoseClient(relayUrl);
-  const eventsFromZero: any[] = [];
+  const eventsFromZero: FirehoseEvent[] = [];
 
   await timedCall(
     result,

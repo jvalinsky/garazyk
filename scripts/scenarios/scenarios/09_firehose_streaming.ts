@@ -26,7 +26,24 @@ import { ScenarioResult, timedCall } from "@garazyk/hamownia";
 import { PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
-import { FirehoseClient, FirehoseEvent } from "@garazyk/gruszka";
+import { FirehoseClient } from "@garazyk/gruszka";
+
+interface CreateRecordResponse {
+  uri: string;
+  cid: string;
+}
+
+interface GetHeadResponse {
+  root: string;
+}
+
+interface AuthorFeedResponse {
+  feed?: unknown[];
+}
+
+function errorMessage(exc: unknown): string {
+  return exc instanceof Error ? exc.message : String(exc);
+}
 
 function now() {
   return new Date().toISOString();
@@ -63,8 +80,8 @@ export async function run(): Promise<ScenarioResult> {
     } else {
       result.stepSkipped("Relay health check", `status=${relayResp.status}`);
     }
-  } catch (exc: any) {
-    result.stepSkipped("Relay health check", String(exc));
+  } catch (exc) {
+    result.stepSkipped("Relay health check", errorMessage(exc));
   }
 
   try {
@@ -78,8 +95,8 @@ export async function run(): Promise<ScenarioResult> {
     } else {
       result.stepSkipped("Relay upstreams", `status=${upstreamsResp.status}`);
     }
-  } catch (exc: any) {
-    result.stepSkipped("Relay upstreams", String(exc));
+  } catch (exc) {
+    result.stepSkipped("Relay upstreams", errorMessage(exc));
   }
 
   const charNames = ["luna", "marcus", "rosa"];
@@ -96,8 +113,8 @@ export async function run(): Promise<ScenarioResult> {
             password: char.password,
           });
           return res.data;
-        } catch (e: any) {
-          if (e.message && e.message.includes("already exists")) {
+        } catch (e) {
+          if (errorMessage(e).includes("already exists")) {
             const res = await client.agent.login({
               identifier: char.handle,
               password: char.password,
@@ -127,7 +144,6 @@ export async function run(): Promise<ScenarioResult> {
 
   await new Promise((r) => setTimeout(r, 2000));
 
-  const firehoseEvents: FirehoseEvent[] = [];
   const fhClient = new FirehoseClient(
     SERVICE_URLS.relay.replace(/^http/, "ws"),
   );
@@ -151,7 +167,7 @@ export async function run(): Promise<ScenarioResult> {
             "Firehose test post! If you can see this on the relay, streaming works!",
           createdAt: now(),
         },
-      }, luna.accessJwt);
+      }, luna.accessJwt) as CreateRecordResponse;
     },
   );
 
@@ -213,6 +229,21 @@ export async function run(): Promise<ScenarioResult> {
     `events=${collectedEvents.length}`,
   );
 
+  const decodedEvents = collectedEvents.filter((e) =>
+    Object.keys(e.header).length > 0 && Object.keys(e.body).length > 0
+  );
+  if (decodedEvents.length === collectedEvents.length) {
+    result.stepPassed(
+      "Firehose frame decoding",
+      `decoded=${decodedEvents.length}`,
+    );
+  } else {
+    result.stepFailed(
+      "Firehose frame decoding",
+      `decoded=${decodedEvents.length}, total=${collectedEvents.length}`,
+    );
+  }
+
   const targetCount = 3;
   if (collectedEvents.length >= targetCount) {
     const seqs = collectedEvents.map((e) => e.seq).filter((s) => s > 0);
@@ -254,7 +285,7 @@ export async function run(): Promise<ScenarioResult> {
     async () => {
       return await client.raw.get("com.atproto.sync.getHead", {
         did: luna.did,
-      });
+      }) as GetHeadResponse;
     },
     (r) => `root=${r.root.substring(0, 20)}`,
   );
@@ -307,8 +338,8 @@ export async function run(): Promise<ScenarioResult> {
         `status=${appviewResp.status}`,
       );
     }
-  } catch (exc: any) {
-    result.stepFailed("AppView backfill status", String(exc));
+  } catch (exc) {
+    result.stepFailed("AppView backfill status", errorMessage(exc));
   }
 
   await timedCall(
@@ -319,7 +350,7 @@ export async function run(): Promise<ScenarioResult> {
         "app.bsky.feed.getAuthorFeed",
         { actor: luna.did },
         luna.accessJwt,
-      );
+      ) as AuthorFeedResponse;
     },
     (f) => `items=${f.feed?.length || 0}`,
   );
