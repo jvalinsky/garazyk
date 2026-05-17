@@ -33,6 +33,9 @@ extern NSInteger const EventFormatterErrorCodeEncodingFailed;
 extern NSInteger const EventFormatterErrorCodeDecodingFailed;
 
 /*! XRPC stream operation kinds. */
+/**
+ * @abstract Defines XRPCStreamOpKind values exposed by this API.
+ */
 typedef NS_ENUM(NSInteger, XRPCStreamOpKind) {
     XRPCStreamOpKindErrorFrame = -1,
     XRPCStreamOpKindMessage = 1
@@ -53,6 +56,9 @@ typedef NS_ENUM(NSInteger, XRPCStreamOpKind) {
  - "#identity": Identity update event
  - "#account": Account status event
  - "#info": Informational message
+ */
+/**
+ * @abstract Declares the EventFormatter public API.
  */
 @interface EventFormatter : NSObject
 

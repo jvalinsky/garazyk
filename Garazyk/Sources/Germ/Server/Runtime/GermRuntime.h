@@ -18,16 +18,31 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Declares the GermRuntime public API.
+ */
 @interface GermRuntime : NSObject
 
+/**
+ * @abstract Exposes the is running value.
+ */
 @property (nonatomic, readonly) BOOL isRunning;
 
+/**
+ * @abstract Returns the shared runtime result.
+ */
 + (instancetype)sharedRuntime;
 
+/**
+ * @abstract Performs the startWithDataDirectory operation.
+ */
 - (BOOL)startWithDataDirectory:(NSString *)dataDirectory
                       port:(uint16_t)port
                      error:(NSError **)error;
 
+/**
+ * @abstract Returns the stop result.
+ */
 - (void)stop;
 
 @end

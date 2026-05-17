@@ -16,24 +16,32 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Registers app.bsky.notification XRPC handlers.
+ */
 @interface XrpcAppBskyNotificationPack : NSObject <XrpcRoutePack>
 
+/** Registers PDS-level notification handlers using shared route-pack services. */
 + (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
                                      services:(id<XrpcRoutePackServices>)services;
 
+/** Registers AppView notification handlers using shared route-pack services. */
 + (void)registerAppViewMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
                                     services:(id<XrpcRoutePackServices>)services;
 
+/** Registers PDS-level notification handlers using explicit dependencies. */
 + (void)registerPDSLevelMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
                                appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
                                      jwtMinter:(nullable JWTMinter *)jwtMinter
                                adminController:(nullable id<PDSAdminController>)adminController;
 
+/** Registers AppView notification handlers using explicit dependencies. */
 + (void)registerAppViewMethodsWithDispatcher:(XrpcDispatcher *)dispatcher
                               appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
                                     jwtMinter:(nullable JWTMinter *)jwtMinter
                               adminController:(nullable id<PDSAdminController>)adminController;
 
+/** Registers all notification handlers supported by this pack. */
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
                      jwtMinter:(nullable JWTMinter *)jwtMinter

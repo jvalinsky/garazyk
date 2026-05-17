@@ -36,6 +36,9 @@ NS_ASSUME_NONNULL_BEGIN
  @constant ATProtoLexiconDefTypeUnknown Unknown/unvalidated data.
  @constant ATProtoLexiconDefTypeParams HTTP query parameters.
  */
+/**
+ * @abstract Defines ATProtoLexiconDefType values exposed by this API.
+ */
 typedef NS_ENUM(NSInteger, ATProtoLexiconDefType) {
     ATProtoLexiconDefTypeRecord,
     ATProtoLexiconDefTypeQuery,

@@ -8,9 +8,15 @@ NS_ASSUME_NONNULL_BEGIN
  * A utility client for making HTTP requests to email providers.
  * Handles authentication, retry logic, and error mapping.
  */
+/**
+ * @abstract Declares the PDSEmailHTTPClient public API.
+ */
 @interface PDSEmailHTTPClient : NSObject
 
 /// The base URL for the email provider API.
+/**
+ * @abstract Exposes the base url value.
+ */
 @property (nonatomic, strong, readonly) NSURL *baseURL;
 
 /// The API key for authentication.

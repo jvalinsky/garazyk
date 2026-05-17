@@ -11,6 +11,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface AppViewBookmarkIndexer : NSObject <AppViewIndexer>
 
+/**
+ * @abstract Performs the initWithDatabase operation.
+ */
 - (instancetype)initWithDatabase:(AppViewDatabase *)database
                bookmarkService:(BookmarkService *)bookmarkService;
 

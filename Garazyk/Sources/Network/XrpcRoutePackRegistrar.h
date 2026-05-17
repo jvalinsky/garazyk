@@ -16,6 +16,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface XrpcRoutePackRegistrar : NSObject
 
+/**
+ * @abstract Performs the registerRoutePacks operation.
+ */
 + (void)registerRoutePacks:(NSArray<Class> *)routePackClasses
                 dispatcher:(XrpcDispatcher *)dispatcher
                   services:(id<XrpcRoutePackServices>)services;

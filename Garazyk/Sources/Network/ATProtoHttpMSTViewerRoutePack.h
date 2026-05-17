@@ -17,6 +17,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface ATProtoHttpMSTViewerRoutePack : NSObject
 
+/**
+ * @abstract Performs the registerRoutesWithServer operation.
+ */
 + (void)registerRoutesWithServer:(HttpServer *)server
                       controller:(nullable PDSController *)controller;
 

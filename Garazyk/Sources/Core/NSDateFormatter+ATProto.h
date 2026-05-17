@@ -38,6 +38,9 @@ NS_ASSUME_NONNULL_BEGIN
  
  @return A shared date formatter instance.
  */
+/**
+ * @abstract Returns the atproto iso8601 formatter result.
+ */
 + (id)atproto_iso8601Formatter;
 
 /*!
@@ -69,6 +72,9 @@ NS_ASSUME_NONNULL_BEGIN
  
  @param string The string to parse.
  @return A date object, or nil if parsing failed.
+ */
+/**
+ * @abstract Performs the atproto_dateFromString operation.
  */
 + (nullable NSDate *)atproto_dateFromString:(NSString *)string;
 

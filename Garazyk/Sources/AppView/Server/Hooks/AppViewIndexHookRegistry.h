@@ -18,6 +18,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Defines the AppViewIndexHook protocol contract.
+ */
 @protocol AppViewIndexHook;
 
 /*!
@@ -66,6 +69,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param uri        The AT URI of the record.
  @param did        The DID of the repo.
  @param collection The collection NSID.
+ */
+/**
+ * @abstract Performs the fireDidIndexRecord operation.
  */
 - (void)fireDidIndexRecord:(NSDictionary *)record
                        uri:(NSString *)uri

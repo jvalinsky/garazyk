@@ -13,12 +13,18 @@
 @class BookmarkService;
 @class JWTMinter;
 @class XrpcDispatcher;
+/**
+ * @abstract Defines the PDSAdminController protocol contract.
+ */
 @protocol PDSAdminController;
 
 NS_ASSUME_NONNULL_BEGIN
 
 @interface XrpcAppBskyBookmarksPack : NSObject <XrpcRoutePack>
 
+/**
+ * @abstract Performs the registerWithDispatcher operation.
+ */
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                bookmarkService:(BookmarkService *)bookmarkService
                      jwtMinter:(JWTMinter *)jwtMinter

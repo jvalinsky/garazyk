@@ -58,11 +58,20 @@ typedef NS_ENUM(NSInteger, WebSocketConnectionState) {
           didReceiveMessage:(NSData *)message;
 - (void)webSocketConnection:(WebSocketConnection *)connection
              didReceiveText:(NSString *)text;
+/**
+ * @abstract Performs the webSocketConnection operation.
+ */
 - (void)webSocketConnection:(WebSocketConnection *)connection
            didCloseWithCode:(NSInteger)code
                      reason:(NSString *)reason;
+/**
+ * @abstract Performs the webSocketConnection operation.
+ */
 - (void)webSocketConnection:(WebSocketConnection *)connection
            didFailWithError:(NSError *)error;
+/**
+ * @abstract Performs the webSocketConnectionStateDidChange operation.
+ */
 - (void)webSocketConnectionStateDidChange:(WebSocketConnection *)connection;
 
 /*! Called when backpressure warning threshold is reached. */

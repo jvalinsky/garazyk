@@ -19,6 +19,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Extends NSDictionary with cidadditions behavior.
+ */
 @interface NSDictionary (CIDAdditions)
 
 /*!
@@ -33,6 +36,9 @@ NS_ASSUME_NONNULL_BEGIN
  @code
    NSString *cidStr = [op cidStringForKey:@"cid"];
  @endcode
+ */
+/**
+ * @abstract Performs the cidStringForKey operation.
  */
 - (nullable NSString *)cidStringForKey:(NSString *)key;
 

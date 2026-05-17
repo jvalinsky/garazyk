@@ -40,6 +40,9 @@ typedef void (^HttpRouteHandler)(HttpRequest *request, HttpResponse *response);
  */
 @interface HttpRoute : NSObject
 
+/**
+ * @abstract Exposes the method value.
+ */
 @property (nonatomic, readonly, copy) NSString *method;
 @property (nonatomic, readonly, copy) NSString *pattern;
 @property (nonatomic, readonly, copy) HttpRouteHandler handler;
@@ -56,6 +59,9 @@ typedef void (^HttpRouteHandler)(HttpRequest *request, HttpResponse *response);
  @param priority Route priority for resolution ordering (higher = more specific).
 
  @return An initialized HttpRoute instance.
+ */
+/**
+ * @abstract Performs the initWithMethod operation.
  */
 - (instancetype)initWithMethod:(NSString *)method
                        pattern:(NSString *)pattern
@@ -77,6 +83,9 @@ typedef void (^HttpRouteHandler)(HttpRequest *request, HttpResponse *response);
  */
 @interface HttpRouter : NSObject
 
+/**
+ * @abstract Exposes the base url value.
+ */
 @property (nonatomic, copy) NSString *baseURL;
 
 /*!

@@ -15,8 +15,17 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface HttpParsing : NSObject
 
+/**
+ * @abstract Performs the parseQueryString operation.
+ */
 + (NSDictionary<NSString *, id> *)parseQueryString:(NSString *)queryString;
+/**
+ * @abstract Performs the urlDecode operation.
+ */
 + (NSString *)urlDecode:(NSString *)string;
+/**
+ * @abstract Performs the methodFromString operation.
+ */
 + (HttpMethod)methodFromString:(NSString *)string;
 
 @end

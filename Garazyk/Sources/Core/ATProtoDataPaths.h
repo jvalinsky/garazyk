@@ -31,8 +31,14 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Declares the ATProtoDataPaths public API.
+ */
 @interface ATProtoDataPaths : NSObject
 
+/**
+ * @abstract Exposes the base directory value.
+ */
 @property (nonatomic, copy, readonly) NSString *baseDirectory;
 
 @property (nonatomic, copy, readonly) NSString *serviceDirectory;
@@ -44,9 +50,18 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy, readonly) NSString *keysDirectory;
 @property (nonatomic, copy, readonly) NSString *exploreCacheDirectory;
 
+/**
+ * @abstract Performs the pathsForBaseDirectory operation.
+ */
 + (instancetype)pathsForBaseDirectory:(NSString *)baseDirectory;
+/**
+ * @abstract Performs the initWithBaseDirectory operation.
+ */
 - (instancetype)initWithBaseDirectory:(NSString *)baseDirectory;
 
+/**
+ * @abstract Performs the createDirectoriesWithError operation.
+ */
 - (BOOL)createDirectoriesWithError:(NSError **)error;
 
 /*!

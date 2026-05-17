@@ -21,6 +21,9 @@
 
 #import <Foundation/Foundation.h>
 
+/**
+ * @abstract Defines the PDSQueryDatabase protocol contract.
+ */
 @protocol PDSQueryDatabase;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -55,6 +58,9 @@ extern const uint8_t kGermAlgorithmCurve25519Signing;
  server doesn't have the DID document to verify the bidirectional
  binding). The server stores the key for lookup.
  */
+/**
+ * @abstract Performs the verifyDeclaration operation.
+ */
 - (BOOL)verifyDeclaration:(NSData *)anchorKeyWireFormat
                       did:(NSString *)did
                     error:(NSError **)error;
@@ -80,6 +86,9 @@ extern const uint8_t kGermAlgorithmCurve25519Signing;
  must have signed over (discriminator, attestation, predecessor,
  successor). If any proof fails, the entire chain is rejected.
  */
+/**
+ * @abstract Performs the verifySuccessionProofs operation.
+ */
 - (nullable NSArray<NSData *> *)verifySuccessionProofs:(NSData *)proofsWireFormat
                                            currentKey:(NSData *)currentKeyWireFormat
                                           attestation:(NSData *)attestationWireFormat
@@ -101,6 +110,9 @@ extern const uint8_t kGermAlgorithmCurve25519Signing;
  @discussion Looks up the most recent com.germnetwork.declaration
  record in the DID's PDS repo.
  */
+/**
+ * @abstract Performs the getAnchorKeyForDid operation.
+ */
 - (nullable NSData *)getAnchorKeyForDid:(NSString *)did
                                   error:(NSError **)error;
 
@@ -116,6 +128,9 @@ extern const uint8_t kGermAlgorithmCurve25519Signing;
 
  @return Array of anchor key wire formats in chronological order
          (oldest first), or nil on error.
+ */
+/**
+ * @abstract Performs the getKeyHistoryForDid operation.
  */
 - (nullable NSArray<NSData *> *)getKeyHistoryForDid:(NSString *)did
                                               error:(NSError **)error;

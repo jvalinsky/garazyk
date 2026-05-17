@@ -26,6 +26,9 @@ NS_ASSUME_NONNULL_BEGIN
  */
 extern NSString * const ATProtoDagCBORErrorDomain;
 
+/**
+ * @abstract Defines ATProtoDagCBORErrorCode values exposed by this API.
+ */
 typedef NS_ENUM(NSInteger, ATProtoDagCBORErrorCode) {
     ATProtoDagCBORErrorCodeEncodingFailed = 1,
     ATProtoDagCBORErrorCodeDecodingFailed = 2,
@@ -43,6 +46,9 @@ typedef NS_ENUM(NSInteger, ATProtoDagCBORErrorCode) {
  - CID-link encoding/decoding (tag 42)
  - JSON wrapper conversion ($link, $bytes)
  - Canonical map ordering
+ */
+/**
+ * @abstract Declares the ATProtoDagCBOR public API.
  */
 @interface ATProtoDagCBOR : NSObject
 
@@ -66,6 +72,9 @@ typedef NS_ENUM(NSInteger, ATProtoDagCBORErrorCode) {
  Dictionaries with `$bytes` keys are converted to byte strings.
  
  Floats are rejected with ATProtoDagCBORErrorCodeFloatsNotAllowed.
+ */
+/**
+ * @abstract Performs the encodeObject operation.
  */
 + (nullable NSData *)encodeObject:(id)object error:(NSError **)error;
 

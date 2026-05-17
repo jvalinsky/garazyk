@@ -19,13 +19,22 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class PDSAppleActorKeyManager;
 
+/**
+ * @abstract Defines the PDSAppleActorKeyManagerDelegate protocol contract.
+ */
 @protocol PDSAppleActorKeyManagerDelegate <NSObject>
 @optional
+/**
+ * @abstract Performs the appleActorKeyManager operation.
+ */
 - (BOOL)appleActorKeyManager:(PDSAppleActorKeyManager *)manager
              storeSigningKey:(NSData *)privateKey
                    publicKey:(NSData *)publicKey
                        error:(NSError **)error;
 
+/**
+ * @abstract Performs the appleActorKeyManagerLoadSigningKey operation.
+ */
 - (nullable NSData *)appleActorKeyManagerLoadSigningKey:(PDSAppleActorKeyManager *)manager
                                                  error:(NSError **)error;
 @end
@@ -48,6 +57,9 @@ NS_ASSUME_NONNULL_BEGIN
 
     Thread Safety: This class is thread-safe. Keychain operations are
     serialized internally.
+ */
+/**
+ * @abstract Declares the PDSAppleActorKeyManager public API.
  */
 @interface PDSAppleActorKeyManager : NSObject <PDSActorKeyManager>
 

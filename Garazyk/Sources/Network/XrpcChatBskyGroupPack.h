@@ -11,6 +11,9 @@
 #import "Network/XrpcRoutePack.h"
 
 @class XrpcDispatcher;
+/**
+ * @abstract Defines the PDSQueryDatabase protocol contract.
+ */
 @protocol PDSQueryDatabase;
 @class JWTMinter;
 @protocol PDSAdminController;
@@ -19,6 +22,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface XrpcChatBskyGroupPack : NSObject <XrpcRoutePack>
 
+/**
+ * @abstract Performs the registerWithDispatcher operation.
+ */
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                appViewDatabase:(id<PDSQueryDatabase>)appViewDatabase
                     jwtMinter:(nullable JWTMinter *)jwtMinter

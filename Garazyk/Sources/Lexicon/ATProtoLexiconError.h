@@ -37,6 +37,9 @@ extern NSString * const ATProtoLexiconErrorDomain;
  @constant ATProtoLexiconErrorRecursionLimitExceeded Nested object depth exceeds limit.
  @constant ATProtoLexiconErrorCircularReference Circular reference detected in schema.
  */
+/**
+ * @abstract Defines ATProtoLexiconErrorCode values exposed by this API.
+ */
 typedef NS_ENUM(NSInteger, ATProtoLexiconErrorCode) {
     ATProtoLexiconErrorInvalidSchema = 1000,
     ATProtoLexiconErrorSchemaNotFound,
@@ -68,6 +71,9 @@ typedef NS_ENUM(NSInteger, ATProtoLexiconErrorCode) {
 
  @return NSError instance with ATProtoLexiconErrorDomain.
  */
+/**
+ * @abstract Performs the errorWithCode operation.
+ */
 + (NSError *)errorWithCode:(ATProtoLexiconErrorCode)code
                    message:(NSString *)message
                    context:(nullable NSString *)context;
@@ -83,6 +89,9 @@ typedef NS_ENUM(NSInteger, ATProtoLexiconErrorCode) {
  @param expected Expected constraint (e.g., "3000", "0-100", "post,reply,repost").
 
  @return NSError instance with ATProtoLexiconErrorCode.constraintViolation.
+ */
+/**
+ * @abstract Performs the constraintError operation.
  */
 + (NSError *)constraintError:(NSString *)constraint
                        field:(NSString *)field
@@ -113,6 +122,9 @@ typedef NS_ENUM(NSInteger, ATProtoLexiconErrorCode) {
  @param context Context path.
 
  @return NSError instance.
+ */
+/**
+ * @abstract Performs the typeMismatchError operation.
  */
 + (NSError *)typeMismatchError:(NSString *)field
                       expected:(NSString *)expected

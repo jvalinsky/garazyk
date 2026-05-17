@@ -9,10 +9,16 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSDatabasePool;
 @class PDSServiceDatabases;
 @class XrpcDispatcher;
+/**
+ * @abstract Defines the PDSAdminController protocol contract.
+ */
 @protocol PDSAdminController;
 
 @interface XrpcProxyInterceptor : NSObject
 
+/**
+ * @abstract Performs the installOnDispatcher operation.
+ */
 + (void)installOnDispatcher:(XrpcDispatcher *)dispatcher
               configuration:(ATProtoServiceConfiguration *)configuration
                   jwtMinter:(JWTMinter *)jwtMinter
