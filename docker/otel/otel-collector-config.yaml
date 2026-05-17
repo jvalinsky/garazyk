@@ -21,7 +21,7 @@ processors:
 exporters:
   clickhouse:
     datasource: tcp://clickhouse:9000
-    ttl: 168h  # 7 days for e2e test data
+    ttl: 168h # 7 days for e2e test data
     traces_table_name: signoz_traces
     metrics_table_name: signoz_metrics
     logs_table_name: signoz_logs
