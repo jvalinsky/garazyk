@@ -38,7 +38,9 @@ scripts_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_coverage_script="$root/scripts/docs/generate_xrpc_coverage_report.cjs"
 repo_next_steps_script="$root/scripts/docs/generate_xrpc_next_steps.cjs"
 
-if [[ -f "$repo_coverage_script" && -f "$repo_next_steps_script" ]]; then
+legacy_registry="$root/Garazyk/Sources/Network/XrpcMethodRegistry.m"
+
+if [[ -f "$repo_coverage_script" && -f "$repo_next_steps_script" && -f "$legacy_registry" ]]; then
   coverage_cmd=(node "$repo_coverage_script" --source-only)
   if [[ "$fail_on_duplicates" -eq 1 ]]; then
     coverage_cmd+=(--fail-on-duplicates)
@@ -47,16 +49,17 @@ if [[ -f "$repo_coverage_script" && -f "$repo_next_steps_script" ]]; then
     coverage_cmd+=(--scope-file "$scope_file")
   fi
 
-  (cd "$root" && "${coverage_cmd[@]}")
-  (cd "$root" && node "$repo_next_steps_script")
+  if (cd "$root" && "${coverage_cmd[@]}") && (cd "$root" && node "$repo_next_steps_script"); then
+    cp "$root/reports/xrpc_coverage.json" "$output_dir/xrpc_coverage.json"
+    cp "$root/reports/xrpc_coverage.md" "$output_dir/xrpc_coverage.md"
+    cp "$root/reports/xrpc_next_steps_plan.md" "$output_dir/xrpc_next_steps_plan.md"
+    cp "$root/reports/xrpc_issue_candidates.md" "$output_dir/xrpc_issue_candidates.md"
 
-  cp "$root/reports/xrpc_coverage.json" "$output_dir/xrpc_coverage.json"
-  cp "$root/reports/xrpc_coverage.md" "$output_dir/xrpc_coverage.md"
-  cp "$root/reports/xrpc_next_steps_plan.md" "$output_dir/xrpc_next_steps_plan.md"
-  cp "$root/reports/xrpc_issue_candidates.md" "$output_dir/xrpc_issue_candidates.md"
+    echo "Wrote $output_dir/xrpc_coverage.json, $output_dir/xrpc_coverage.md, $output_dir/xrpc_next_steps_plan.md, $output_dir/xrpc_issue_candidates.md"
+    exit 0
+  fi
 
-  echo "Wrote $output_dir/xrpc_coverage.json, $output_dir/xrpc_coverage.md, $output_dir/xrpc_next_steps_plan.md, $output_dir/xrpc_issue_candidates.md"
-  exit 0
+  echo "Repo-native XRPC coverage scripts failed; falling back to skill-local lexicon diff." >&2
 fi
 
 methods_tsv="$output_dir/methods.tsv"

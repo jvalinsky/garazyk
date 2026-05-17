@@ -26,6 +26,7 @@ PREFIX_MAP = {
 CAMEL_RE = re.compile(r"[A-Z][a-z0-9]*|[A-Z]+(?![a-z])")
 REGISTER_TYPED_RE = re.compile(r"\[\s*dispatcher\s+register([A-Za-z0-9]+):")
 REGISTER_STRING_RE = re.compile(r"\[\s*dispatcher\s+registerMethod:\s*@\"([^\"]+)\"")
+LEXICON_METHOD_TYPES_RE = re.compile(r'"([A-Za-z0-9_.]+)":\s*"(query|procedure|subscription)"')
 
 
 def _split_camel(value: str):
@@ -86,6 +87,22 @@ def parse_registry(path):
     return entries
 
 
+def parse_generated_lexicons(path):
+    entries = []
+    with open(path, "r", encoding="utf-8") as handle:
+        for lineno, line in enumerate(handle, start=1):
+            match = LEXICON_METHOD_TYPES_RE.search(line)
+            if not match:
+                continue
+            entries.append({
+                "method_id": match.group(1),
+                "symbol": "LEXICON_METHOD_TYPES",
+                "kind": match.group(2),
+                "location": f"{path}:{lineno}",
+            })
+    return entries
+
+
 def main():
     parser = argparse.ArgumentParser(description="List XRPC methods registered in the code.")
     parser.add_argument("repo_root", nargs="?", default=".", help="Repository root path")
@@ -93,18 +110,22 @@ def main():
     parser.add_argument("--json", action="store_true", help="Emit JSON output")
     args = parser.parse_args()
 
-    sources_root = os.path.join(args.repo_root, "Garazyk", "Sources")
-    if not os.path.isdir(sources_root):
-        # Fallback to current directory if Garazyk/Sources doesn't exist
-        sources_root = args.repo_root
-
     entries = []
-    for root, _, files in os.walk(sources_root):
-        for filename in files:
-            if not (filename.endswith(".m") or filename.endswith(".mm")):
-                continue
-            path = os.path.join(root, filename)
-            entries.extend(parse_registry(path))
+    generated_lexicons = os.path.join(args.repo_root, "packages", "atproto-client", "lexicons.ts")
+    if os.path.isfile(generated_lexicons):
+        entries.extend(parse_generated_lexicons(generated_lexicons))
+    else:
+        sources_root = os.path.join(args.repo_root, "Garazyk", "Sources")
+        if not os.path.isdir(sources_root):
+            # Fallback to current directory if Garazyk/Sources doesn't exist.
+            sources_root = args.repo_root
+
+        for root, _, files in os.walk(sources_root):
+            for filename in files:
+                if not (filename.endswith(".m") or filename.endswith(".mm")):
+                    continue
+                path = os.path.join(root, filename)
+                entries.extend(parse_registry(path))
 
     # Deduplicate entries by method_id
     seen = {}

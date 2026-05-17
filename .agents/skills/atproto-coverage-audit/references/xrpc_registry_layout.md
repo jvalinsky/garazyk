@@ -1,5 +1,11 @@
-# XRPC Registry Layout
+# XRPC Client Layout
 
-- Method registrations live in `Garazyk/Sources/Network/XrpcMethodRegistry.m`.
-- Each `register*` call maps an XRPC method to a handler block.
-- Use the registry list to find handler ownership and responses.
+Garazyk's current Deno workspace does not keep a native XRPC route registry in this repository. Coverage is evaluated from:
+
+- lexicon JSON under `lexicons/`,
+- generated client metadata in `packages/atproto-client/lexicons.ts`,
+- dynamic dispatch in `packages/atproto-client/client.ts`,
+- raw transport helpers in `packages/atproto-client/transport.ts`,
+- scenario endpoint usage under `scripts/scenarios/scenarios/`.
+
+When auditing a missing endpoint, determine whether the gap is in lexicon generation, typed client surface, raw scenario usage, or the external service being exercised by the topology.

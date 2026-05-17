@@ -34,9 +34,12 @@ def main():
     parser.add_argument("--json", action="store_true", help="Emit JSON output")
     args = parser.parse_args()
 
-    lexicon_root = args.lexicon_root or os.path.join(
-        args.repo_root, "Garazyk", "Resources", "lexicons"
-    )
+    if args.lexicon_root:
+        lexicon_root = args.lexicon_root
+    else:
+        current_root = os.path.join(args.repo_root, "lexicons")
+        legacy_root = os.path.join(args.repo_root, "Garazyk", "Resources", "lexicons")
+        lexicon_root = current_root if os.path.isdir(current_root) else legacy_root
 
     if not os.path.isdir(lexicon_root):
         print(f"Lexicon root not found: {lexicon_root}", file=sys.stderr)
