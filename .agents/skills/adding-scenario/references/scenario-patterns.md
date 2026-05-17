@@ -192,7 +192,7 @@ await timedCall(
 Requires PDS2. Add scenario number to `NEEDS_PDS2` in `run_scenarios.ts`.
 
 ```typescript
-import { PDS1, PDS2, getCharacter } from "../../lib/deno/config.ts";
+import { PDS1, PDS2, getCharacter } from "@garazyk/scenario-runner";
 
 const pds1 = new XrpcClient(PDS1);
 const pds2 = new XrpcClient(PDS2);
@@ -387,7 +387,7 @@ await timedCall(
 ## Load & Soak
 
 ```typescript
-import { OperationTimer, PhaseTimer, scrapePrometheus, sampleStorage } from "../../lib/deno/instrumentation.ts";
+import { OperationTimer, PhaseTimer, scrapePrometheus, sampleStorage } from "@garazyk/scenario-runner";
 
 const opTimer = new OperationTimer();
 const phaseTimer = new PhaseTimer();

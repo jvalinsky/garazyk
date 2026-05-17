@@ -56,7 +56,7 @@ Options:
   --web-client PRESET     Add a web-client service (${TopologyRegistry.listWebClients().join("|")})
   --client-flow FLOW      Run browser flow scenarios: smoke, login, deep (default: none)
   --allow-hybrid-network  Permit browser clients to call public ATProto hosts
-  --topology PRESET       Use a topology preset from scripts/scenarios/topologies/
+  --topology PRESET       Use a topology preset (${TopologyRegistry.listPresets().join("|")})
   --runner MODE           Scenario runner: host (default) or docker
   --keep-running          Leave services running after setup or execution
   --timeout SECONDS       Per-scenario timeout (default: 120)

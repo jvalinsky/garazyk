@@ -7,7 +7,7 @@ Full API for the scenario runner infrastructure.
 The central object for tracking scenario outcomes.
 
 ```typescript
-import { ScenarioResult } from "../../lib/deno/runner.ts";
+import { ScenarioResult } from "@garazyk/scenario-runner";
 
 const result = new ScenarioResult("Human-Readable Name");
 ```
@@ -53,7 +53,7 @@ const result = new ScenarioResult("Human-Readable Name");
 Wraps an async operation with step tracking, timing, and error handling.
 
 ```typescript
-import { timedCall } from "../../lib/deno/runner.ts";
+import { timedCall } from "@garazyk/scenario-runner";
 
 const value = await timedCall(
   result,           // ScenarioResult to record the step on
@@ -115,7 +115,7 @@ class StepResult {
 ## XrpcClient
 
 ```typescript
-import { XrpcClient } from "../../lib/deno/client.ts";
+import { XrpcClient } from "@garazyk/atproto-client";
 
 const client = new XrpcClient("http://localhost:2583");
 ```
@@ -154,7 +154,7 @@ const client = new XrpcClient("http://localhost:2583");
 ## TransportLayer
 
 ```typescript
-import { TransportLayer } from "../../lib/deno/transport.ts";
+import { TransportLayer } from "@garazyk/atproto-client";
 
 const transport = new TransportLayer("http://localhost:2583");
 ```
@@ -183,7 +183,7 @@ class XrpcError extends Error {
 ## Character
 
 ```typescript
-import { getCharacter, getCharactersByRole, getCharactersByPds } from "../../lib/deno/config.ts";
+import { getCharacter, getCharactersByRole, getCharactersByPds } from "@garazyk/scenario-runner";
 
 const luna = getCharacter("luna");
 ```
@@ -209,7 +209,7 @@ const luna = getCharacter("luna");
 For load/soak scenarios:
 
 ```typescript
-import { OperationTimer, PhaseTimer, scrapePrometheus, sampleStorage } from "../../lib/deno/instrumentation.ts";
+import { OperationTimer, PhaseTimer, scrapePrometheus, sampleStorage } from "@garazyk/scenario-runner";
 ```
 
 | Utility | Description |
@@ -222,7 +222,7 @@ import { OperationTimer, PhaseTimer, scrapePrometheus, sampleStorage } from "../
 ## Mock Services
 
 ```typescript
-import { MockTwilio } from "../../lib/deno/mock_twilio.ts";
+import { MockTwilio } from "@garazyk/scenario-runner";
 ```
 
 Used by phone verification scenarios. Starts a controllable mock Twilio server.

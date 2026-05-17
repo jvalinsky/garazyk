@@ -23,7 +23,7 @@ Each scenario file must start with a module header and a single JSDoc block for 
  * - <Describe successful outcome>
  */
 
-import { ScenarioResult } from "../../lib/deno/runner.ts";
+import { ScenarioResult } from "@garazyk/scenario-runner";
 
 /**
  * Executes the scenario logic.

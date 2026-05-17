@@ -252,9 +252,9 @@ scripts/
 ### Template
 
 ```ts
-import { XrpcClient } from "../../lib/deno/client.ts";
-import { PDS1 } from "../../lib/deno/config.ts";
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+import { XrpcClient } from "@garazyk/atproto-client";
+import { PDS1 } from "@garazyk/scenario-runner";
+import { ScenarioResult, timedCall } from "@garazyk/scenario-runner";
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Scenario Name");

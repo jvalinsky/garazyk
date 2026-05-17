@@ -79,9 +79,9 @@ Use the next number after the highest existing one.
 Use the scaffold script or create manually. The file structure:
 
 ```typescript
-import { XrpcClient } from "../../lib/deno/client.ts";
-import { PDS1, getCharacter } from "../../lib/deno/config.ts";
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
+import { XrpcClient } from "@garazyk/atproto-client";
+import { PDS1, getCharacter } from "@garazyk/scenario-runner";
+import { ScenarioResult, timedCall } from "@garazyk/scenario-runner";
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Human-Readable Name");
@@ -241,21 +241,21 @@ if (import.meta.main) {
 
 ```typescript
 // Core
-import { XrpcClient } from "../../lib/deno/client.ts";
-import { PDS1, PDS2, getCharacter, getCharactersByRole, getCharactersByPds } from "../../lib/deno/config.ts";
-import { ScenarioResult, timedCall, StepStatus } from "../../lib/deno/runner.ts";
+import { XrpcClient } from "@garazyk/atproto-client";
+import { PDS1, PDS2, getCharacter, getCharactersByRole, getCharactersByPds } from "@garazyk/scenario-runner";
+import { ScenarioResult, timedCall, StepStatus } from "@garazyk/scenario-runner";
 
 // Transport
-import { TransportLayer, XrpcError } from "../../lib/deno/transport.ts";
+import { TransportLayer, XrpcError } from "@garazyk/atproto-client";
 
 // Diagnostics
-import { createRunContext, collectDiagnostics } from "../../lib/deno/diagnostics.ts";
+import { createRunContext, collectDiagnostics } from "@garazyk/scenario-runner";
 
 // Instrumentation (load/soak scenarios)
-import { OperationTimer, PhaseTimer, scrapePrometheus, sampleStorage } from "../../lib/deno/instrumentation.ts";
+import { OperationTimer, PhaseTimer, scrapePrometheus, sampleStorage } from "@garazyk/scenario-runner";
 
 // Mock services
-import { MockTwilio } from "../../lib/deno/mock_twilio.ts";
+import { MockTwilio } from "@garazyk/scenario-runner";
 ```
 
 ### XrpcClient API
