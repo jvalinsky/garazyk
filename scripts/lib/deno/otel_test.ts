@@ -9,13 +9,13 @@
 
 import { assertEquals } from "jsr:@std/assert";
 import {
-  isOtelEnabled,
-  initTracing,
-  getTracingConfig,
-  withSpan,
   addSpanAttribute,
   addSpanEvent,
+  getTracingConfig,
+  initTracing,
+  isOtelEnabled,
   shutdownTracing,
+  withSpan,
 } from "./otel.ts";
 
 // ---------------------------------------------------------------------------

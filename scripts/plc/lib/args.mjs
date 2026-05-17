@@ -28,12 +28,12 @@
  */
 export function option(spec) {
   return {
-    type: 'string',
+    type: "string",
     parse: null,
     short: null,
     env: null,
     ...spec,
-  }
+  };
 }
 
 // ── Parser ────────────────────────────────────────────────────────
@@ -47,60 +47,60 @@ export function option(spec) {
  * Environment variables take lowest priority; CLI flags override them.
  */
 export function parseArgs(argv, options) {
-  const args = {}
+  const args = {};
   for (const opt of options) {
     // Start with default
-    let value = opt.default
+    let value = opt.default;
 
     // Apply env var override
     if (opt.env && process.env[opt.env] !== undefined) {
-      value = coerce(process.env[opt.env], opt)
+      value = coerce(process.env[opt.env], opt);
     }
 
-    args[opt.name] = value
+    args[opt.name] = value;
   }
 
   // Build flag lookup
-  const flagMap = new Map()
+  const flagMap = new Map();
   for (const opt of options) {
-    flagMap.set(opt.flag, opt)
-    if (opt.short) flagMap.set(opt.short, opt)
+    flagMap.set(opt.flag, opt);
+    if (opt.short) flagMap.set(opt.short, opt);
   }
 
-  const rest = []
+  const rest = [];
   for (let i = 2; i < argv.length; i++) {
-    const arg = argv[i]
-    const opt = flagMap.get(arg)
+    const arg = argv[i];
+    const opt = flagMap.get(arg);
 
     if (opt) {
-      if (opt.type === 'boolean' || (opt.parse && opt.parse === Boolean)) {
-        args[opt.name] = true
+      if (opt.type === "boolean" || (opt.parse && opt.parse === Boolean)) {
+        args[opt.name] = true;
       } else {
-        const val = argv[++i]
+        const val = argv[++i];
         if (val === undefined) {
-          console.error(`Error: ${arg} requires a value`)
-          process.exit(2)
+          console.error(`Error: ${arg} requires a value`);
+          process.exit(2);
         }
-        args[opt.name] = coerce(val, opt)
+        args[opt.name] = coerce(val, opt);
       }
-    } else if (arg === '-h' || arg === '--help') {
-      return { args, rest, helpRequested: true }
-    } else if (arg.startsWith('-')) {
-      console.error(`Error: unknown option ${arg}`)
-      process.exit(2)
+    } else if (arg === "-h" || arg === "--help") {
+      return { args, rest, helpRequested: true };
+    } else if (arg.startsWith("-")) {
+      console.error(`Error: unknown option ${arg}`);
+      process.exit(2);
     } else {
-      rest.push(arg)
+      rest.push(arg);
     }
   }
 
-  return { args, rest, helpRequested: false }
+  return { args, rest, helpRequested: false };
 }
 
 function coerce(val, opt) {
-  if (opt.parse) return opt.parse(val)
-  if (opt.type === 'int') return parseInt(val, 10)
-  if (opt.type === 'boolean') return val !== 'false' && val !== '0'
-  return val
+  if (opt.parse) return opt.parse(val);
+  if (opt.type === "int") return parseInt(val, 10);
+  if (opt.type === "boolean") return val !== "false" && val !== "0";
+  return val;
 }
 
 // ── Help generation ───────────────────────────────────────────────
@@ -115,42 +115,42 @@ function coerce(val, opt) {
  * @returns {string}
  */
 export function formatHelp(description, usage, options, examples) {
-  const flagWidth = Math.max(...options.map(o => {
-    let s = o.flag
-    if (o.short) s = `${o.short}, ${o.flag}`
-    if (o.type !== 'boolean') s += ` <${o.type === 'int' ? 'n' : o.type}>`
-    return s.length
-  }))
+  const flagWidth = Math.max(...options.map((o) => {
+    let s = o.flag;
+    if (o.short) s = `${o.short}, ${o.flag}`;
+    if (o.type !== "boolean") s += ` <${o.type === "int" ? "n" : o.type}>`;
+    return s.length;
+  }));
 
-  const lines = [description, '', 'Usage:', `  ${usage}`, '', 'Options:']
+  const lines = [description, "", "Usage:", `  ${usage}`, "", "Options:"];
 
   for (const opt of options) {
-    let flag = opt.flag
-    if (opt.short) flag = `${opt.short}, ${opt.flag}`
-    if (opt.type !== 'boolean') flag += ` <${opt.type === 'int' ? 'n' : opt.type}>`
+    let flag = opt.flag;
+    if (opt.short) flag = `${opt.short}, ${opt.flag}`;
+    if (opt.type !== "boolean") flag += ` <${opt.type === "int" ? "n" : opt.type}>`;
 
-    let desc = opt.description
-    const defaults = []
-    if (opt.env) defaults.push(`env: ${opt.env}`)
-    if (opt.type !== 'boolean' && opt.default !== undefined && opt.default !== null) {
-      defaults.push(`default: ${opt.default}`)
+    let desc = opt.description;
+    const defaults = [];
+    if (opt.env) defaults.push(`env: ${opt.env}`);
+    if (opt.type !== "boolean" && opt.default !== undefined && opt.default !== null) {
+      defaults.push(`default: ${opt.default}`);
     }
-    if (defaults.length > 0) desc += ` (${defaults.join(', ')})`
+    if (defaults.length > 0) desc += ` (${defaults.join(", ")})`;
 
-    lines.push(`  ${flag.padEnd(flagWidth + 2)} ${desc}`)
+    lines.push(`  ${flag.padEnd(flagWidth + 2)} ${desc}`);
   }
 
   if (examples) {
-    lines.push('', 'Examples:', examples)
+    lines.push("", "Examples:", examples);
   }
 
-  return lines.join('\n')
+  return lines.join("\n");
 }
 
 /**
  * Print help and exit.
  */
 export function printHelpAndExit(description, usage, options, examples) {
-  console.log(formatHelp(description, usage, options, examples))
-  process.exit(0)
+  console.log(formatHelp(description, usage, options, examples));
+  process.exit(0);
 }

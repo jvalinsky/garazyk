@@ -9,10 +9,10 @@
 
 import { assertEquals, assertRejects, assertThrows } from "jsr:@std/assert";
 import {
-  parseScenarioRequirement,
   normalizePorts,
-  renderPortSpec,
   normalizeVolumes,
+  parseScenarioRequirement,
+  renderPortSpec,
   renderVolumeSpec,
 } from "./topology_schema.ts";
 
@@ -104,7 +104,10 @@ Deno.test("renderPortSpec: renders container-only", () => {
 });
 
 Deno.test("renderPortSpec: appends /udp for UDP", () => {
-  assertEquals(renderPortSpec({ host: "2583", container: "2583", protocol: "udp" }), "2583:2583/udp");
+  assertEquals(
+    renderPortSpec({ host: "2583", container: "2583", protocol: "udp" }),
+    "2583:2583/udp",
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -159,13 +162,22 @@ Deno.test("normalizeVolumes: returns empty array for undefined", () => {
 // ---------------------------------------------------------------------------
 
 Deno.test("renderVolumeSpec: renders source:target", () => {
-  assertEquals(renderVolumeSpec({ kind: "bind", source: "./data", target: "/app/data" }), "./data:/app/data");
+  assertEquals(
+    renderVolumeSpec({ kind: "bind", source: "./data", target: "/app/data" }),
+    "./data:/app/data",
+  );
 });
 
 Deno.test("renderVolumeSpec: renders source:target:mode", () => {
-  assertEquals(renderVolumeSpec({ kind: "bind", source: "./data", target: "/app/data", mode: "ro" }), "./data:/app/data:ro");
+  assertEquals(
+    renderVolumeSpec({ kind: "bind", source: "./data", target: "/app/data", mode: "ro" }),
+    "./data:/app/data:ro",
+  );
 });
 
 Deno.test("renderVolumeSpec: renders source:target without mode", () => {
-  assertEquals(renderVolumeSpec({ kind: "named", source: "vol", target: "/app/data" }), "vol:/app/data");
+  assertEquals(
+    renderVolumeSpec({ kind: "named", source: "vol", target: "/app/data" }),
+    "vol:/app/data",
+  );
 });

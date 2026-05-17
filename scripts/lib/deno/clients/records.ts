@@ -24,7 +24,7 @@ export class RecordsClient {
     collection: string,
     record: Record<string, any>,
     token: string,
-    options: { rkey?: string; validate?: boolean } = {}
+    options: { rkey?: string; validate?: boolean } = {},
   ): Promise<any> {
     const body: Record<string, any> = {
       repo,
@@ -65,7 +65,7 @@ export class RecordsClient {
     return await this.transport.post(
       "com.atproto.repo.deleteRecord",
       { repo, collection, rkey },
-      token
+      token,
     );
   }
 
@@ -84,12 +84,12 @@ export class RecordsClient {
     collection: string,
     rkey: string,
     record: Record<string, any>,
-    token: string
+    token: string,
   ): Promise<any> {
     return await this.transport.post(
       "com.atproto.repo.putRecord",
       { repo, collection, rkey, record },
-      token
+      token,
     );
   }
 
@@ -104,12 +104,12 @@ export class RecordsClient {
   async listRecords(
     repo: string,
     collection: string,
-    options: { limit?: number; token?: string } = {}
+    options: { limit?: number; token?: string } = {},
   ): Promise<any> {
     return await this.transport.get(
       "com.atproto.repo.listRecords",
       { repo, collection, limit: options.limit ?? 50 },
-      options.token
+      options.token,
     );
   }
 
@@ -125,7 +125,7 @@ export class RecordsClient {
     return await this.transport.post(
       "com.atproto.repo.applyWrites",
       { repo, writes },
-      token
+      token,
     );
   }
 }

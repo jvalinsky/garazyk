@@ -13,12 +13,19 @@ const SECRET_PATTERNS = [
 
 /** Context for a single E2E run, holding paths for logs, reports, and diagnostics. */
 export interface E2ERunContext {
+  /** Run identifier for the current execution. */
   runId: string;
+  /** Directory that contains all run artifacts. */
   runDir: string;
+  /** Directory that contains service logs. */
   logsDir: string;
+  /** Directory that contains scenario reports. */
   reportsDir: string;
+  /** Directory that contains collected diagnostics. */
   diagnosticsDir: string;
+  /** Path to the PID file for tracked processes. */
   pidFile: string;
+  /** Docker Compose project name for the run. */
   composeProject: string;
 }
 
@@ -187,49 +194,47 @@ export async function collectDiagnostics(
 
   const authHeader = { "Authorization": `Bearer ${appviewSecret}` };
 
-  const probes = manifest?.diagnostics?.length
-    ? manifest.diagnostics
-    : [
-      { name: "plc-health", url: `${urls.plc}/_health`, headers: {} },
-      {
-        name: "pds-describe-server",
-        url: `${urls.pds}/xrpc/com.atproto.server.describeServer`,
-        headers: {},
-      },
-      { name: "relay-health", url: `${urls.relay}/api/relay/health`, headers: {} },
-      { name: "relay-upstreams", url: `${urls.relay}/api/relay/upstreams`, headers: {} },
-      {
-        name: "appview-backfill-status",
-        url: `${urls.appview}/admin/backfill/status`,
-        headers: authHeader,
-      },
-      {
-        name: "appview-backfill-queue",
-        url: `${urls.appview}/admin/backfill/queue?limit=10`,
-        headers: authHeader,
-      },
-      {
-        name: "appview-ingest-health",
-        url: `${urls.appview}/admin/ingest/health`,
-        headers: authHeader,
-      },
-      {
-        name: "appview-metrics-stats",
-        url: `${urls.appview}/admin/appview/metrics/stats`,
-        headers: authHeader,
-      },
-      { name: "appview-lexicons", url: `${urls.appview}/admin/lexicons`, headers: authHeader },
-      { name: "appview-hooks", url: `${urls.appview}/admin/hooks`, headers: authHeader },
-      { name: "appview-endpoints", url: `${urls.appview}/admin/endpoints`, headers: authHeader },
-      {
-        name: "pds2-describe-server",
-        url: `${urls.pds2}/xrpc/com.atproto.server.describeServer`,
-        headers: {},
-      },
-      { name: "chat-health", url: `${urls.chat}/_health`, headers: {} },
-      { name: "video-health", url: `${urls.video}/_health`, headers: {} },
-      { name: "ui-admin", url: `${urls.ui}/admin`, headers: {} },
-    ];
+  const probes = manifest?.diagnostics?.length ? manifest.diagnostics : [
+    { name: "plc-health", url: `${urls.plc}/_health`, headers: {} },
+    {
+      name: "pds-describe-server",
+      url: `${urls.pds}/xrpc/com.atproto.server.describeServer`,
+      headers: {},
+    },
+    { name: "relay-health", url: `${urls.relay}/api/relay/health`, headers: {} },
+    { name: "relay-upstreams", url: `${urls.relay}/api/relay/upstreams`, headers: {} },
+    {
+      name: "appview-backfill-status",
+      url: `${urls.appview}/admin/backfill/status`,
+      headers: authHeader,
+    },
+    {
+      name: "appview-backfill-queue",
+      url: `${urls.appview}/admin/backfill/queue?limit=10`,
+      headers: authHeader,
+    },
+    {
+      name: "appview-ingest-health",
+      url: `${urls.appview}/admin/ingest/health`,
+      headers: authHeader,
+    },
+    {
+      name: "appview-metrics-stats",
+      url: `${urls.appview}/admin/appview/metrics/stats`,
+      headers: authHeader,
+    },
+    { name: "appview-lexicons", url: `${urls.appview}/admin/lexicons`, headers: authHeader },
+    { name: "appview-hooks", url: `${urls.appview}/admin/hooks`, headers: authHeader },
+    { name: "appview-endpoints", url: `${urls.appview}/admin/endpoints`, headers: authHeader },
+    {
+      name: "pds2-describe-server",
+      url: `${urls.pds2}/xrpc/com.atproto.server.describeServer`,
+      headers: {},
+    },
+    { name: "chat-health", url: `${urls.chat}/_health`, headers: {} },
+    { name: "video-health", url: `${urls.video}/_health`, headers: {} },
+    { name: "ui-admin", url: `${urls.ui}/admin`, headers: {} },
+  ];
 
   await Promise.all(
     probes.map((probe) => collectHttpEndpoint(outputDir, probe.name, probe.url, probe.headers)),
