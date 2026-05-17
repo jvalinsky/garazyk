@@ -43,6 +43,7 @@ export async function withTimeout<T>(
  * @param repoRoot - The repository root path
  * @param composeProject - The Docker Compose project name
  * @returns The completed scenario result
+ * @throws {Error} If the scenario run() export is missing or execution fails fatally.
  */
 export async function runScenario(
   scenario: ScenarioInfo,

@@ -271,7 +271,12 @@ export function writeTopologyManifest(path: string, manifest: TopologyManifest):
   return Deno.writeTextFile(path, JSON.stringify(manifest, null, 2) + "\n");
 }
 
-/** Load a topology manifest from disk or the environment. @param path - Optional explicit manifest path. @returns The parsed topology manifest, or `undefined` when no path is configured. */
+/** 
+ * Load a topology manifest from disk or the environment. 
+ * @param path - Optional explicit manifest path. 
+ * @returns The parsed topology manifest, or `undefined` when no path is configured. 
+ * @throws {Error} If the manifest fails schema validation or is malformed.
+ */
 export function loadTopologyManifest(path?: string): TopologyManifest | undefined {
   const explicitPath = path || readEnv("ATPROTO_TOPOLOGY_MANIFEST");
   const manifestPath = explicitPath;

@@ -59,6 +59,7 @@ export async function waitForServer(baseUrl: string, timeout = 30): Promise<void
  * @param handle - Desired handle (e.g. `alice.test`)
  * @param email - Account email
  * @param password - Account password
+ * @throws {XrpcError} If both creation and login fail.
  */
 export async function createAccountOrLogin(
   client: XrpcClient,
@@ -90,7 +91,7 @@ export async function createAccountOrLogin(
  * @param collection - NSID collection name (e.g. `app.bsky.feed.post`)
  * @param record - Record body to create
  * @param token - Auth access JWT
- * @throws If the creation fails with an error other than "already exists"
+ * @throws {XrpcError} If the creation fails with an error other than "already exists"
  */
 export async function createRecordIdempotent(
   client: XrpcClient,

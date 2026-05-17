@@ -327,7 +327,13 @@ function resolveInheritedAdapter(
   return resolveInheritedAdapter(role, parentAdapter, [...seen, key]);
 }
 
-/** Resolve a preset and its inherited role adapters. @param presetName - Topology preset name. @param options - Resolution options. @returns A resolved topology preset. */
+/** 
+ * Resolve a preset and its inherited role adapters. 
+ * @param presetName - Topology preset name. 
+ * @param options - Resolution options. 
+ * @returns A resolved topology preset. 
+ * @throws {Error} If the preset is not found or is invalid.
+ */
 export function resolvePreset(
   presetName: string,
   options: { includePds2?: boolean } = {},

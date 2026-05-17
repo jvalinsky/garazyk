@@ -16,23 +16,25 @@ export const assert = {
   match: assertMatch,
   /** Assert that a string includes a substring */
   includes: assertStringIncludes,
-  /**
+  /** 
    * Assert that an expression is true
    * @param expr - The boolean expression to test
    * @param msg - Optional error message
+   * @throws {Error} If the expression is false.
    */
   isTrue: (expr: boolean, msg?: string): void => assertEquals(expr, true, msg),
   /**
    * Assert that an expression is false
    * @param expr - The boolean expression to test
    * @param msg - Optional error message
+   * @throws {Error} If the expression is true.
    */
   isFalse: (expr: boolean, msg?: string): void => assertEquals(expr, false, msg),
   /**
    * Assert that a value is not null or undefined
    * @param val - The value to check
    * @param msg - Optional error message
-   * @throws Error if value is null or undefined
+   * @throws {Error} If value is null or undefined.
    */
   isNotNull: (val: any, msg?: string): void => {
     if (val === null || val === undefined) {

@@ -455,6 +455,9 @@ export function renderComposeYaml(
 
 /**
  * Compile a topology: validate, render compose, write to disk.
+ * @param options - Compilation options
+ * @returns The compilation result
+ * @throws {Error} If the preset is invalid or writing files fails.
  */
 export async function compileTopology(options: CompilerOptions): Promise<CompilerResult> {
   // Resolve preset

@@ -319,7 +319,10 @@ export class DockerApiClient {
     return this._socketPath;
   }
 
-  /** Initialize the client and check daemon availability. */
+  /** 
+   * Initialize the client and check daemon availability. 
+   * @returns A promise that resolves to true if the daemon is responding.
+   */
   async init(): Promise<boolean> {
     try {
       if (this._useUnix) {
@@ -368,7 +371,10 @@ export class DockerApiClient {
     }
   }
 
-  /** Get Docker version information. */
+  /** 
+   * Get Docker version information. 
+   * @throws {DockerApiError} If the request fails.
+   */
   async version(): Promise<DockerVersion> {
     return await withSpan(
       "docker.version",
@@ -380,7 +386,11 @@ export class DockerApiClient {
   // Containers
   // -----------------------------------------------------------------------
 
-  /** List containers. */
+  /** 
+   * List containers. 
+   * @param filters - Optional filters
+   * @throws {DockerApiError} If the request fails.
+   */
   async listContainers(filters?: Record<string, string[]>): Promise<ContainerSummary[]> {
     const params = new URLSearchParams();
     if (filters) {
@@ -394,7 +404,11 @@ export class DockerApiClient {
     );
   }
 
-  /** Inspect a container. */
+  /** 
+   * Inspect a container. 
+   * @param id - Container ID or name
+   * @throws {DockerApiError} If the request fails.
+   */
   async inspectContainer(id: string): Promise<ContainerInspect> {
     return await withSpan(
       "docker.inspectContainer",
@@ -403,7 +417,12 @@ export class DockerApiClient {
     );
   }
 
-  /** Get container logs. */
+  /** 
+   * Get container logs. 
+   * @param id - Container ID or name
+   * @param opts - Log options
+   * @throws {DockerApiError} If the request fails.
+   */
   async containerLogs(id: string, opts: ContainerLogsOptions = {}): Promise<string> {
     const params = new URLSearchParams();
     if (opts.stdout !== false) params.set("stdout", "true");
@@ -417,7 +436,12 @@ export class DockerApiClient {
     }, { "docker.container_id": id.substring(0, 12) });
   }
 
-  /** Get container stats (single snapshot). */
+  /** 
+   * Get container stats (single snapshot). 
+   * @param id - Container ID or name
+   * @param opts - Snapshot options
+   * @throws {DockerApiError} If the request fails.
+   */
   async containerStats(id: string, opts?: { oneShot?: boolean }): Promise<ContainerStats> {
     const params = new URLSearchParams();
     params.set("stream", "false");
@@ -490,7 +514,11 @@ export class DockerApiClient {
     }
   }
 
-  /** Wait for a container to stop. Returns the exit code. */
+  /** 
+   * Wait for a container to stop. Returns the exit code. 
+   * @param id - Container ID or name
+   * @throws {DockerApiError} If the request fails.
+   */
   async waitContainer(id: string): Promise<{ StatusCode: number }> {
     return await withSpan(
       "docker.waitContainer",
@@ -572,6 +600,16 @@ export class DockerApiClient {
   // Internal
   // -----------------------------------------------------------------------
 
+  /**
+   * Send a raw HTTP request to the Docker Engine API.
+   * @param method - HTTP method
+   * @param path - API path
+   * @param body - Optional JSON body
+   * @param signal - Optional AbortSignal
+   * @returns The HTTP response
+   * @throws {Error} If the client is not initialized.
+   * @throws {DockerApiError} If the response is not OK.
+   */
   private async request(
     method: string,
     path: string,
@@ -900,6 +938,7 @@ export interface PortConflict {
  * @param client - Initialized Docker API client
  * @param ports - Array of port numbers to check
  * @param excludeProject - Optional compose project name to exclude (e.g. the current run)
+ * @throws {DockerApiError} If listing containers fails.
  */
 export async function findPortConflicts(
   client: DockerApiClient,

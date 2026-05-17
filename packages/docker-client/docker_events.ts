@@ -346,7 +346,10 @@ export class ContainerEventWatcher {
   // Lifecycle
   // -----------------------------------------------------------------------
 
-  /** Stop watching and release resources. */
+  /** 
+   * Stop watching and release resources. 
+   * @throws {Error} If closing the underlying client fails.
+   */
   async close(): Promise<void> {
     if (this._closed) return;
     this._closed = true;
@@ -434,7 +437,7 @@ export class ContainerEventWatcher {
           }
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       if (!this._closed && !(err && err.name === "AbortError")) {
         console.error("[docker_events] event stream error:", err);
       }
@@ -671,6 +674,7 @@ export class ContainerEventWatcher {
  * @param serviceName - Docker Compose service name (e.g. "local-pds")
  * @param timeoutMs - Maximum time to wait in milliseconds
  * @returns true if the service became healthy, false if timed out or crashed
+ * @throws {Error} If the watcher fails to start and CLI fallback fails.
  */
 export async function waitForServiceHealthy(
   serviceName: string,

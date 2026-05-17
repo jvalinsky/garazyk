@@ -288,6 +288,7 @@ export type TimedCallOutcome<T> =
  * it impossible to accidentally use a null value without checking.
  *
  * @typeParam T - The result type returned by fn on success.
+ * @throws {Error} If a fatal error occurs during execution.
  */
 export async function timedCallChecked<T>(
   result: ScenarioResult,
@@ -334,6 +335,7 @@ export function unwrapOutcome<T>(outcome: TimedCallOutcome<T>): T {
  * Prefer timedCallChecked for new code.
  *
  * @typeParam T - The value type returned by fn on success.
+ * @throws {Error} If a fatal error occurs during execution.
  */
 export async function timedCall<T>(
   result: ScenarioResult,

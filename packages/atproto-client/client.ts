@@ -111,6 +111,8 @@ export class XrpcClient {
    * @param method The XRPC query method id.
    * @param params Query parameters.
    * @param token Optional auth token.
+   * @throws {XrpcError} If the service returns an error status.
+   * @throws {TransportError} If a network or connection error occurs.
    */
   async query<K extends LexiconQueryIds>(
     method: K,
@@ -125,6 +127,8 @@ export class XrpcClient {
    * @param method The XRPC procedure method id.
    * @param input Procedure input payload.
    * @param token Optional auth token.
+   * @throws {XrpcError} If the service returns an error status.
+   * @throws {TransportError} If a network or connection error occurs.
    */
   async procedure<K extends LexiconProcedureIds>(
     method: K,
@@ -148,6 +152,7 @@ export class XrpcClient {
    * @param password - The admin password
    * @defaultValue "test-admin-password"
    * @returns The access JWT
+   * @throws {XrpcError} If the login fails.
    */
   async adminLogin(password = "test-admin-password"): Promise<string> {
     return await this.admin.login(password);
@@ -180,7 +185,10 @@ export class XrpcClient {
     }
   }
 
-  /** Poll health until the service responds or the timeout is reached. */
+  /** 
+   * Poll health until the service responds or the timeout is reached. 
+   * @throws {Error} If the timeout is reached without a healthy response.
+   */
   async waitForHealthy(timeout = 30): Promise<void> {
     const start = Date.now();
     while (Date.now() - start < timeout * 1000) {
