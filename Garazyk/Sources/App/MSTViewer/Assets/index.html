@@ -2,8 +2,7 @@
 <!-- SPDX-License-Identifier: Unlicense OR CC0-1.0 -->
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
+  <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MST Viewer - ATProto Repository Explorer</title>
@@ -12,86 +11,92 @@
     <!-- MST Viewer Specific Styles -->
     <link rel="stylesheet" href="/mst-viewer/css/mst-viewer.css">
     <script src="/mst-viewer/js/d3.js"></script>
-</head>
+  </head>
 
-<body>
+  <body>
     <header class="mst-header">
-        <div class="apple-logo">🌳</div>
-        <h1>Merkle Search Tree Viewer</h1>
+      <div class="apple-logo">🌳</div>
+      <h1>Merkle Search Tree Viewer</h1>
     </header>
 
     <div class="app-container">
-        <nav class="sidebar">
-            <div class="account-section">
-                <h3>Accounts</h3>
-                <div class="search-box">
-                    <span class="search-icon">🔍</span>
-                    <input type="text" id="account-search" placeholder="Filter by handle..." autocomplete="off">
-                </div>
-                <ul id="account-list">
-                    <li class="loading">Loading...</li>
-                </ul>
+      <nav class="sidebar">
+        <div class="account-section">
+          <h3>Accounts</h3>
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input
+              type="text"
+              id="account-search"
+              placeholder="Filter by handle..."
+              autocomplete="off"
+            >
+          </div>
+          <ul id="account-list">
+            <li class="loading">Loading...</li>
+          </ul>
+        </div>
+
+        <div class="view-controls">
+          <h3>View</h3>
+          <div class="control-group">
+            <label>
+              <input type="radio" name="view-mode" value="tree" checked>
+              Tree View
+            </label>
+            <label>
+              <input type="radio" name="view-mode" value="list">
+              List View
+            </label>
+          </div>
+        </div>
+
+        <div class="export-controls">
+          <h3>Export</h3>
+          <button id="export-json" class="btn btn-secondary" title="Export as JSON">JSON</button>
+          <button id="export-dot" class="btn btn-secondary" title="Export as DOT">DOT</button>
+          <button id="export-svg" class="btn btn-secondary" title="Export as SVG (via DOT)">
+            SVG
+          </button>
+        </div>
+
+        <div class="zoom-controls">
+          <h3>Zoom</h3>
+          <button id="zoom-in" class="btn btn-secondary" title="Zoom In">+</button>
+          <button id="zoom-out" class="btn btn-secondary" title="Zoom Out">−</button>
+          <button id="zoom-reset" class="btn btn-secondary" title="Reset Zoom">Reset</button>
+        </div>
+      </nav>
+
+      <main class="content">
+        <section class="tree-section">
+          <div class="tree-toolbar">
+            <span id="current-account" class="account-label">Select an account</span>
+            <span id="loading-indicator" class="loading-indicator hidden">Loading...</span>
+          </div>
+
+          <div id="tree-container" class="tree-container">
+            <p class="placeholder">Select an account from the list to view its MST.</p>
+          </div>
+
+          <div id="list-container" class="list-container hidden">
+            <div id="list-view">
+              <p class="placeholder">Select an account to view its node list.</p>
             </div>
+          </div>
+        </section>
+      </main>
 
-            <div class="view-controls">
-                <h3>View</h3>
-                <div class="control-group">
-                    <label>
-                        <input type="radio" name="view-mode" value="tree" checked>
-                        Tree View
-                    </label>
-                    <label>
-                        <input type="radio" name="view-mode" value="list">
-                        List View
-                    </label>
-                </div>
-            </div>
-
-            <div class="export-controls">
-                <h3>Export</h3>
-                <button id="export-json" class="btn btn-secondary" title="Export as JSON">JSON</button>
-                <button id="export-dot" class="btn btn-secondary" title="Export as DOT">DOT</button>
-                <button id="export-svg" class="btn btn-secondary" title="Export as SVG (via DOT)">SVG</button>
-            </div>
-
-            <div class="zoom-controls">
-                <h3>Zoom</h3>
-                <button id="zoom-in" class="btn btn-secondary" title="Zoom In">+</button>
-                <button id="zoom-out" class="btn btn-secondary" title="Zoom Out">−</button>
-                <button id="zoom-reset" class="btn btn-secondary" title="Reset Zoom">Reset</button>
-            </div>
-        </nav>
-
-        <main class="content">
-            <section class="tree-section">
-                <div class="tree-toolbar">
-                    <span id="current-account" class="account-label">Select an account</span>
-                    <span id="loading-indicator" class="loading-indicator hidden">Loading...</span>
-                </div>
-
-                <div id="tree-container" class="tree-container">
-                    <p class="placeholder">Select an account from the list to view its MST.</p>
-                </div>
-
-                <div id="list-container" class="list-container hidden">
-                    <div id="list-view">
-                        <p class="placeholder">Select an account to view its node list.</p>
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <aside class="stats-panel">
-            <div class="stats-header">
-                <h2>Statistics</h2>
-            </div>
-            <div id="stats-content" class="stats-content">
-                <p class="placeholder">Select an account to view statistics.</p>
-            </div>
-        </aside>
+      <aside class="stats-panel">
+        <div class="stats-header">
+          <h2>Statistics</h2>
+        </div>
+        <div id="stats-content" class="stats-content">
+          <p class="placeholder">Select an account to view statistics.</p>
+        </div>
+      </aside>
     </div>
 
     <script type="module" src="/mst-viewer/js/viewer.js"></script>
-</body>
-
+  </body>
 </html>

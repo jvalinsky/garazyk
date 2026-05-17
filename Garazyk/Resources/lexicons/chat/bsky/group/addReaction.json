@@ -11,8 +11,8 @@
           "type": "object",
           "required": ["messageId", "reaction"],
           "properties": {
-            "messageId": {"type": "string"},
-            "reaction": {"type": "string"}
+            "messageId": { "type": "string" },
+            "reaction": { "type": "string" }
           }
         }
       }

@@ -2,11 +2,14 @@
 
 ## Overview
 
-This document describes the new single-tenant SQLite database architecture based on the Bluesky PDS reference implementation. The architecture provides isolation, scalability, and performance for an ATProto Personal Data Server.
+This document describes the new single-tenant SQLite database architecture based on the Bluesky PDS
+reference implementation. The architecture provides isolation, scalability, and performance for an
+ATProto Personal Data Server.
 
 ## Architecture Changes
 
 ### Before (Monolithic)
+
 ```
 ┌─────────────────────────────────────┐
 │         Single SQLite File          │
@@ -17,6 +20,7 @@ This document describes the new single-tenant SQLite database architecture based
 ```
 
 ### After (Single-Tenant)
+
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         Service Databases                            │
@@ -72,6 +76,7 @@ Garazyk/Sources/Database/
 The `ActorStore` class manages a single user's SQLite database with:
 
 **Reader Interface** (`PDSActorStoreReader`):
+
 - `getAccountForDid:error:`
 - `getRepoForDid:error:`
 - `getRecord:forDid:error:`
@@ -79,6 +84,7 @@ The `ActorStore` class manages a single user's SQLite database with:
 - `getBlockForCID:forDid:error:`
 
 **Transactor Interface** (`PDSActorStoreTransactor`):
+
 - `createAccount:error:`
 - `updateAccount:error:`
 - `deleteAccount:error:`
@@ -86,6 +92,7 @@ The `ActorStore` class manages a single user's SQLite database with:
 - `putBlock:forDid:error:`
 
 **Transaction Support**:
+
 ```objc
 [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor) {
     [transactor createAccount:account error:nil];
@@ -106,11 +113,11 @@ Manages multiple ActorStore instances with LRU caching:
 
 Three separate SQLite databases for service state:
 
-| Database | Purpose | Contents |
-|----------|---------|----------|
-| `service.sqlite` | Account management | accounts, invite_codes, refresh_tokens |
-| `did_cache.sqlite` | DID resolution cache | did_cache (document, expires_at) |
-| `sequencer.sqlite` | Repo sequencing | repo_sequence (did, root_cid, sequence_num) |
+| Database           | Purpose              | Contents                                    |
+| ------------------ | -------------------- | ------------------------------------------- |
+| `service.sqlite`   | Account management   | accounts, invite_codes, refresh_tokens      |
+| `did_cache.sqlite` | DID resolution cache | did_cache (document, expires_at)            |
+| `sequencer.sqlite` | Repo sequencing      | repo_sequence (did, root_cid, sequence_num) |
 
 ### 4. Signing Key Management
 
@@ -195,14 +202,14 @@ NSLog(@"Errors: %@", health[@"errors"]);
 
 ## Performance Characteristics
 
-| Operation | Complexity | Notes |
-|-----------|------------|-------|
-| Account lookup by DID | O(1) | Primary key index |
-| Record lookup by URI | O(1) | Primary key index |
-| Collection query | O(log n) | B-tree index on collection+rkey |
-| Block lookup by CID | O(1) | Primary key index |
-| Concurrent reads | Unlimited | WAL mode enables parallel reads |
-| Writes | Serialized | Per-user transaction queue |
+| Operation             | Complexity | Notes                           |
+| --------------------- | ---------- | ------------------------------- |
+| Account lookup by DID | O(1)       | Primary key index               |
+| Record lookup by URI  | O(1)       | Primary key index               |
+| Collection query      | O(log n)   | B-tree index on collection+rkey |
+| Block lookup by CID   | O(1)       | Primary key index               |
+| Concurrent reads      | Unlimited  | WAL mode enables parallel reads |
+| Writes                | Serialized | Per-user transaction queue      |
 
 ## Next Steps
 
