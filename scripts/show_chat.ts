@@ -7,13 +7,13 @@ import {
   createChatServiceContext,
 } from "@garazyk/gruszka/seed";
 import {
-  boxBot,
-  boxMid,
-  boxRow,
-  boxTop,
-  c,
+  ansiColor,
   getTermWidth,
-  printConvo,
+  printConversation,
+  renderBoxBottom,
+  renderBoxMid,
+  renderBoxRow,
+  renderBoxTop,
 } from "@garazyk/gruszka/chat-viewer";
 
 const pdsUrl = (Deno.env.get("PDS_URL") || "").replace(/\/$/, "");
@@ -47,50 +47,74 @@ async function main() {
   const width = getTermWidth();
 
   console.log();
-  console.log(boxTop(c(" Garazyk Chat Viewer ", BOLD, WHITE)));
-  console.log(boxMid());
-  console.log(boxRow(c("PDS:  ", DIM) + c(pdsUrl, BLUE), width));
-  console.log(boxRow(c("Chat: ", DIM) + c(chatUrl, BLUE), width));
-  console.log(boxRow(c("DID:  ", DIM) + c(serviceDid, BLUE), width));
-  console.log(boxRow(c("Term: ", DIM) + c(`${width} cols`, DIM), width));
-  console.log(boxMid());
+  console.log(renderBoxTop(ansiColor(" Garazyk Chat Viewer ", BOLD, WHITE)));
+  console.log(renderBoxMid());
+  console.log(
+    renderBoxRow(ansiColor("PDS:  ", DIM) + ansiColor(pdsUrl, BLUE), width),
+  );
+  console.log(
+    renderBoxRow(ansiColor("Chat: ", DIM) + ansiColor(chatUrl, BLUE), width),
+  );
+  console.log(
+    renderBoxRow(ansiColor("DID:  ", DIM) + ansiColor(serviceDid, BLUE), width),
+  );
+  console.log(
+    renderBoxRow(
+      ansiColor("Term: ", DIM) + ansiColor(`${width} cols`, DIM),
+      width,
+    ),
+  );
+  console.log(renderBoxMid());
 
   // Login
   const session = await pdsClient.api.com.atproto.server.createSession({
     identifier: handle,
     password,
-  }) as any;
+  });
   const jwt = session.accessJwt;
   const selfDid = session.did;
   const sHandle = session.handle || handle;
 
   if (!jwt || !selfDid) {
-    throw new Error("Login succeeded but response did not include accessJwt and did");
+    throw new Error(
+      "Login succeeded but response did not include accessJwt and did",
+    );
   }
 
-  console.log(boxRow(c("Auth: ", DIM) + c(sHandle, GREEN, BOLD) + c(` (${selfDid})`, DIM), width));
-  console.log(boxBot());
+  console.log(
+    renderBoxRow(
+      ansiColor("Auth: ", DIM) + ansiColor(sHandle, GREEN, BOLD) +
+        ansiColor(` (${selfDid})`, DIM),
+      width,
+    ),
+  );
+  console.log(renderBoxBottom());
   console.log();
 
   // Fetch convos
-  console.log(c("  Fetching conversations…", DIM, ITALIC));
+  console.log(ansiColor("  Fetching conversations…", DIM, ITALIC));
   const convoResp = await chatListConvos(context, jwt, 100);
   const convos = convoResp.convos;
 
   if (convos.length === 0) {
     console.log();
-    console.log(c("  No conversations found.", YELLOW));
+    console.log(ansiColor("  No conversations found.", YELLOW));
     console.log();
     return;
   }
 
-  console.log(c(`  Found ${convos.length} conversation${convos.length === 1 ? "" : "s"}`, BOLD));
+  console.log(
+    ansiColor(
+      `  Found ${convos.length} conversation${convos.length === 1 ? "" : "s"}`,
+      BOLD,
+    ),
+  );
   console.log();
 
   for (let i = 0; i < convos.length; i++) {
     const convo = convos[i];
     const msgResp = await chatGetMessages(context, jwt, convo.id, messageLimit);
-    printConvo(convo, i, convos.length, selfDid, msgResp.messages);
+    printConversation(convo, i, convos.length, selfDid, msgResp.messages);
     console.log();
   }
 }
