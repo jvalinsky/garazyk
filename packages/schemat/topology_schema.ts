@@ -24,6 +24,24 @@ export const sourceBuildSchema = z.object({
   overlayDir: z.string().optional(),
 }).strict();
 
+/** Source build definition embedded in topology presets. */
+export interface SourceBuildSpec {
+  /** Source repository URL. */
+  repo: string;
+  /** Git ref to build. */
+  ref: string;
+  /** Directory containing the Dockerfile. */
+  dockerDir?: string;
+  /** Dockerfile name. */
+  dockerfile?: string;
+  /** Docker build arguments. */
+  buildArgs?: Record<string, string>;
+  /** Dockerfile fragment appended during rendering. */
+  dockerfileOverlay?: string;
+  /** Directory copied into the build context for overlay files. */
+  overlayDir?: string;
+}
+
 const legacyHealthSchema = z.object({
   path: z.string().nullable(),
   customTest: stringArraySchema.optional(),
@@ -37,8 +55,15 @@ export const portSpecSchema = z.object({
   protocol: z.enum(["tcp", "udp"]).default("tcp"),
 }).strict();
 
-/** Normalized port mapping for container specs */
-export type PortSpec = z.infer<typeof portSpecSchema>;
+/** Normalized port mapping for container specs. */
+export interface PortSpec {
+  /** Optional host port. */
+  host?: string;
+  /** Container port. */
+  container: string;
+  /** Transport protocol. */
+  protocol: "tcp" | "udp";
+}
 
 /** Zod schema for normalized volume mappings */
 export const volumeSpecSchema = z.object({
@@ -48,8 +73,17 @@ export const volumeSpecSchema = z.object({
   mode: z.string().optional(),
 }).strict();
 
-/** Normalized volume mapping for container specs */
-export type VolumeSpec = z.infer<typeof volumeSpecSchema>;
+/** Normalized volume mapping for container specs. */
+export interface VolumeSpec {
+  /** Volume kind. */
+  kind: "named" | "bind";
+  /** Host path or named volume. */
+  source: string;
+  /** Container mount path. */
+  target: string;
+  /** Optional mount mode. */
+  mode?: string;
+}
 
 /** Zod schema for resource hints */
 export const resourcesSchema = z.object({
@@ -58,8 +92,15 @@ export const resourcesSchema = z.object({
   localDisk: z.string().optional(),
 }).strict();
 
-/** Normalized resource requests for a service */
-export type ResourceHints = z.infer<typeof resourcesSchema>;
+/** Normalized resource requests for a service. */
+export interface ResourceHints {
+  /** CPU hint. */
+  cpu?: string;
+  /** Memory hint. */
+  memory?: string;
+  /** Local disk hint. */
+  localDisk?: string;
+}
 
 /** Zod schema for HTTP health probes */
 export const httpHealthProbeSchema = z.object({
@@ -91,8 +132,36 @@ export const healthProbeSchema = z.discriminatedUnion("type", [
   commandHealthProbeSchema,
 ]);
 
-/** Normalized health probe definition */
-export type HealthProbeSpec = z.infer<typeof healthProbeSchema>;
+/** Normalized health probe definition. */
+export type HealthProbeSpec =
+  | {
+    /** HTTP probe discriminator. */
+    type: "http";
+    /** Full probe URL. */
+    url?: string;
+    /** Path relative to the service URL. */
+    path?: string;
+    /** Optional request headers. */
+    headers?: Record<string, string>;
+    /** Probe timeout in seconds. */
+    timeoutSeconds: number;
+  }
+  | {
+    /** Docker health probe discriminator. */
+    type: "docker";
+    /** Docker Compose service name. */
+    serviceName: string;
+    /** Probe timeout in seconds. */
+    timeoutSeconds: number;
+  }
+  | {
+    /** Command health probe discriminator. */
+    type: "command";
+    /** Docker healthcheck command. */
+    customTest: string[];
+    /** Probe timeout in seconds. */
+    timeoutSeconds: number;
+  };
 
 /** Discriminated union of supported diagnostic probes */
 export const diagnosticProbeSchema = z.discriminatedUnion("type", [
@@ -115,8 +184,36 @@ export const diagnosticProbeSchema = z.discriminatedUnion("type", [
   }).strict(),
 ]);
 
-/** Normalized diagnostic probe definition */
-export type DiagnosticProbeSpec = z.infer<typeof diagnosticProbeSchema>;
+/** Normalized diagnostic probe definition. */
+export type DiagnosticProbeSpec =
+  | {
+    /** HTTP diagnostic probe discriminator. */
+    type: "http";
+    /** Diagnostic artifact name. */
+    name: string;
+    /** URL to collect. */
+    url: string;
+    /** Optional request headers. */
+    headers?: Record<string, string>;
+    /** Environment variable containing an auth secret. */
+    authSecret?: string;
+  }
+  | {
+    /** Docker logs diagnostic probe discriminator. */
+    type: "dockerLogs";
+    /** Diagnostic artifact name. */
+    name: string;
+    /** Docker Compose service name. */
+    serviceName: string;
+  }
+  | {
+    /** Docker inspect diagnostic probe discriminator. */
+    type: "dockerInspect";
+    /** Diagnostic artifact name. */
+    name: string;
+    /** Docker Compose service name. */
+    serviceName: string;
+  };
 
 /** Zod schema for scenario requirements */
 export const scenarioRequirementSchema = z.object({
@@ -124,15 +221,24 @@ export const scenarioRequirementSchema = z.object({
   capability: z.string().min(1),
 }).strict();
 
-/** Scenario requirement with optional role scoping */
-export type ScenarioRequirement = z.infer<typeof scenarioRequirementSchema>;
+/** Scenario requirement with optional role scoping. */
+export interface ScenarioRequirement {
+  /** Optional service role that must provide the capability. */
+  role?: string;
+  /** Capability required by the scenario. */
+  capability: string;
+}
 
 /** Parse a scenario requirement from string ("role:capability") or object form. */
-export function parseScenarioRequirement(value: string | ScenarioRequirement): ScenarioRequirement {
+export function parseScenarioRequirement(
+  value: string | ScenarioRequirement,
+): ScenarioRequirement {
   if (typeof value !== "string") return scenarioRequirementSchema.parse(value);
   const [role, capability, extra] = value.split(":");
   if (extra !== undefined) {
-    throw new Error(`Invalid scenario requirement "${value}": expected role:capability`);
+    throw new Error(
+      `Invalid scenario requirement "${value}": expected role:capability`,
+    );
   }
   return capability ? { role, capability } : { capability: role };
 }
@@ -187,7 +293,8 @@ export const rawServiceSpecSchema = containerPrimitiveSchema.extend({
 export type RawServiceSpec = z.infer<typeof rawServiceSpecSchema>;
 
 /** Zod schema for inherited service references */
-export const inheritedServiceSchema = z.object({ inherit: z.string().min(1) }).strict();
+export const inheritedServiceSchema = z.object({ inherit: z.string().min(1) })
+  .strict();
 /** Inheritance marker for raw topology presets */
 export type InheritedServiceSpec = z.infer<typeof inheritedServiceSchema>;
 
@@ -240,7 +347,7 @@ export interface ContainerSpec {
   /** Container image to run */
   image?: string;
   /** Source build used when the container is built locally */
-  source?: z.infer<typeof sourceBuildSchema>;
+  source?: SourceBuildSpec;
   /** Build context path for local builds */
   buildContext?: string;
   /** Dockerfile name for local builds */
@@ -300,7 +407,8 @@ export interface NormalizedServiceSpec extends ContainerSpec {
  * @remarks
  * This shape is derived from {@link NormalizedServiceSpec} and adds runtime-only URLs, env maps, and dependency resolution
  */
-export interface ResolvedTopologyService extends Omit<NormalizedServiceSpec, "env"> {
+export interface ResolvedTopologyService
+  extends Omit<NormalizedServiceSpec, "env"> {
   /** Host and docker URLs for the service */
   urls: {
     host: string;
@@ -352,9 +460,13 @@ export interface ResolvedTopology {
   /** Compose service names keyed by role */
   serviceNames: Record<string, string>;
   /** Health probes annotated with role metadata */
-  health: Array<HealthProbeSpec & { role: string; serviceName: string; label: string }>;
+  health: Array<
+    HealthProbeSpec & { role: string; serviceName: string; label: string }
+  >;
   /** Diagnostic probes annotated with role metadata */
-  diagnostics: Array<DiagnosticProbeSpec & { role: string; serviceName: string }>;
+  diagnostics: Array<
+    DiagnosticProbeSpec & { role: string; serviceName: string }
+  >;
   /** Source build summaries annotated with role metadata */
   sources: Array<{
     role: string;
@@ -371,18 +483,26 @@ export interface ResolvedTopology {
 }
 
 /** Parse and validate a raw topology preset JSON value */
-export function parseRawTopologyPresetV1(value: unknown, pathLabel: string): RawTopologyPresetV1 {
+export function parseRawTopologyPresetV1(
+  value: unknown,
+  pathLabel: string,
+): RawTopologyPresetV1 {
   const result = rawTopologyPresetV1Schema.safeParse(value);
   if (result.success) return result.data;
-  throw new Error(`Invalid topology preset ${pathLabel}:\n${formatZodError(result.error)}`);
+  throw new Error(
+    `Invalid topology preset ${pathLabel}:\n${formatZodError(result.error)}`,
+  );
 }
 
 /** Normalize raw topology preset data into a {@link NormalizedTopologyPreset} */
-export function normalizeTopologyPreset(raw: RawTopologyPresetV1): NormalizedTopologyPreset {
+export function normalizeTopologyPreset(
+  raw: RawTopologyPresetV1,
+): NormalizedTopologyPreset {
   const experimentalRoles = raw.experimentalRoles || {};
   validateRoleDeclarations(raw.roles, experimentalRoles, raw.name);
 
-  const roles: Record<string, NormalizedServiceSpec | InheritedServiceSpec> = {};
+  const roles: Record<string, NormalizedServiceSpec | InheritedServiceSpec> =
+    {};
   for (const [roleKey, value] of Object.entries(raw.roles)) {
     if (typeof value === "object" && value !== null && "inherit" in value) {
       roles[roleKey] = value as InheritedServiceSpec;
@@ -426,7 +546,11 @@ export function resolveNormalizedTopologyPreset(
     }
     const service = value;
     const hostUrl = hostUrlForService(role, service, preset.experimentalRoles);
-    const dockerUrl = dockerUrlForService(role, service, preset.experimentalRoles);
+    const dockerUrl = dockerUrlForService(
+      role,
+      service,
+      preset.experimentalRoles,
+    );
     const envKey = roleEnvKey(role, preset.experimentalRoles);
     const roleCapabilities = service.capabilities.slice();
 
@@ -462,7 +586,9 @@ export function resolveNormalizedTopologyPreset(
 
     if (service.source) sources.push(sourceInfo(role, service));
     for (const [sidecarName, sidecar] of Object.entries(service.sidecars)) {
-      if (sidecar.source) sources.push(sourceInfo(role, sidecar, sidecarName, sidecarName));
+      if (sidecar.source) {
+        sources.push(sourceInfo(role, sidecar, sidecarName, sidecarName));
+      }
     }
 
     if (service.health) {
@@ -508,9 +634,16 @@ export function resolveNormalizedTopologyPreset(
   };
 }
 
-function normalizeService(role: string, raw: RawServiceSpec): NormalizedServiceSpec {
+function normalizeService(
+  role: string,
+  raw: RawServiceSpec,
+): NormalizedServiceSpec {
   const container = raw.container || {};
-  const merged = { ...container, ...raw, container: undefined } as RawServiceSpec;
+  const merged = {
+    ...container,
+    ...raw,
+    container: undefined,
+  } as RawServiceSpec;
   const health = normalizeHealth(merged.healthCheck || merged.health);
   return {
     role: merged.role || role,
@@ -567,7 +700,9 @@ function normalizeSidecars(
 }
 
 /** Normalize port declarations from string or object form */
-export function normalizePorts(raw: string[] | PortSpec[] | undefined): PortSpec[] {
+export function normalizePorts(
+  raw: string[] | PortSpec[] | undefined,
+): PortSpec[] {
   return (raw || []).map((port) => {
     if (typeof port !== "string") return portSpecSchema.parse(port);
     const protocolSplit = port.split("/");
@@ -589,7 +724,9 @@ export function renderPortSpec(port: PortSpec): string {
 }
 
 /** Normalize volume declarations from string or object form */
-export function normalizeVolumes(raw: string[] | VolumeSpec[] | undefined): VolumeSpec[] {
+export function normalizeVolumes(
+  raw: string[] | VolumeSpec[] | undefined,
+): VolumeSpec[] {
   return (raw || []).map((volume) => {
     if (typeof volume !== "string") return volumeSpecSchema.parse(volume);
     const parts = volume.split(":");
@@ -619,7 +756,12 @@ function normalizeHealth(
     return { type: "command", customTest: raw.customTest, timeoutSeconds: 60 };
   }
   if (raw.path) {
-    return { type: "http", path: raw.path, headers: raw.headers, timeoutSeconds: 60 };
+    return {
+      type: "http",
+      path: raw.path,
+      headers: raw.headers,
+      timeoutSeconds: 60,
+    };
   }
   return undefined;
 }
@@ -659,13 +801,19 @@ function validateRoleDeclarations(
   }
 }
 
-function validateCapabilities(role: string, capabilities: string[], presetName: string) {
+function validateCapabilities(
+  role: string,
+  capabilities: string[],
+  presetName: string,
+) {
   const errors = capabilities
     .map((capability) => validateRoleCapability(role, capability))
     .filter((message): message is string => Boolean(message));
   if (errors.length > 0) {
     throw new Error(
-      `Invalid capabilities in topology preset "${presetName}":\n${formatList(errors)}`,
+      `Invalid capabilities in topology preset "${presetName}":\n${
+        formatList(errors)
+      }`,
     );
   }
 }
@@ -675,7 +823,8 @@ function hostUrlForService(
   service: NormalizedServiceSpec,
   experimentalRoles: Record<string, ExperimentalRoleMetadata>,
 ): string {
-  const port = service.ports[0]?.host || defaultRolePort(role, experimentalRoles);
+  const port = service.ports[0]?.host ||
+    defaultRolePort(role, experimentalRoles);
   return `http://localhost:${port}`;
 }
 
@@ -691,7 +840,11 @@ function dockerUrlForService(
 
 function sourceInfo(
   role: string,
-  item: { name?: string; source?: z.infer<typeof sourceBuildSchema>; serviceName?: string },
+  item: {
+    name?: string;
+    source?: z.infer<typeof sourceBuildSchema>;
+    serviceName?: string;
+  },
   name = item.name || role,
   serviceName = item.serviceName || defaultServiceName(role),
 ) {
@@ -711,7 +864,9 @@ function sourceInfo(
 }
 
 function inferSecrets(env: Record<string, string>): string[] {
-  return Object.keys(env).filter((key) => /(SECRET|TOKEN|PASSWORD|JWT|KEY)/i.test(key));
+  return Object.keys(env).filter((key) =>
+    /(SECRET|TOKEN|PASSWORD|JWT|KEY)/i.test(key)
+  );
 }
 
 function formatList(items: string[]): string {
@@ -812,7 +967,10 @@ const topologyManifestV2Schema = topologyManifestV1Schema.extend({
  * @remarks
  * Supports the version 1 and version 2 manifest layouts
  */
-export const topologyManifestSchema = z.union([topologyManifestV1Schema, topologyManifestV2Schema]);
+export const topologyManifestSchema = z.union([
+  topologyManifestV1Schema,
+  topologyManifestV2Schema,
+]);
 
 /** Validated topology manifest JSON */
 export type ParsedTopologyManifest = z.infer<typeof topologyManifestSchema>;
@@ -824,5 +982,7 @@ export function parseTopologyManifestJson(
 ): ParsedTopologyManifest {
   const result = topologyManifestSchema.safeParse(value);
   if (result.success) return result.data;
-  throw new Error(`Invalid topology manifest ${pathLabel}:\n${formatZodError(result.error)}`);
+  throw new Error(
+    `Invalid topology manifest ${pathLabel}:\n${formatZodError(result.error)}`,
+  );
 }
