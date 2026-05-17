@@ -5,8 +5,8 @@
  */
 
 import {
-  type ContainerSummary,
   composeServiceName,
+  type ContainerSummary,
   createDockerClient,
   findPortConflicts,
   findStaleProjectsOnPorts,
@@ -54,7 +54,15 @@ async function stopStaleDockerE2eCLI(
   for (const port of ports) {
     try {
       const proc = new Deno.Command("docker", {
-        args: ["ps", "--filter", `publish=${port}`, "--filter", "name=garazyk-e2e", "--format", "{{.ID}}"],
+        args: [
+          "ps",
+          "--filter",
+          `publish=${port}`,
+          "--filter",
+          "name=garazyk-e2e",
+          "--format",
+          "{{.ID}}",
+        ],
         stdout: "piped",
       });
       const { code, stdout } = await proc.output();
@@ -63,7 +71,12 @@ async function stopStaleDockerE2eCLI(
       const containerIds = new TextDecoder().decode(stdout).trim().split("\n").filter(Boolean);
       for (const cid of containerIds) {
         const inspectProc = new Deno.Command("docker", {
-          args: ["inspect", "--format", "{{index .Config.Labels \"com.docker.compose.project\"}}", cid],
+          args: [
+            "inspect",
+            "--format",
+            '{{index .Config.Labels "com.docker.compose.project"}}',
+            cid,
+          ],
           stdout: "piped",
         });
         const { code: ic, stdout: iout } = await inspectProc.output();
@@ -94,9 +107,19 @@ async function stopStaleDockerE2eCLI(
 // ---------------------------------------------------------------------------
 
 /** Kill host processes (local ATProto binaries) that are holding needed ports. */
-export async function stopStaleHostProcesses(opts: { withPds2?: boolean; otel?: boolean }): Promise<void> {
+export async function stopStaleHostProcesses(
+  opts: { withPds2?: boolean; otel?: boolean },
+): Promise<void> {
   const ports = neededPorts(opts);
-  const knownBinaries = new Set(["kaszlak", "garazyk-ui", "campagnola", "zuk", "syrena", "syrena-chat", "jelcz"]);
+  const knownBinaries = new Set([
+    "kaszlak",
+    "garazyk-ui",
+    "campagnola",
+    "zuk",
+    "syrena",
+    "syrena-chat",
+    "jelcz",
+  ]);
 
   for (const port of ports) {
     try {

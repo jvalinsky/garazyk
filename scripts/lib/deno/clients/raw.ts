@@ -132,7 +132,8 @@ export class RawClient {
    */
   async xrpcGetBinary(
     method: string,
-    options: { params?: Record<string, any>; token?: string; headers?: Record<string, string> } = {},
+    options: { params?: Record<string, any>; token?: string; headers?: Record<string, string> } =
+      {},
   ): Promise<[number, string, Uint8Array]> {
     return await this.transport.getBinary(method, options.params, options.token, options.headers);
   }

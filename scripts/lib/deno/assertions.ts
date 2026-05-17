@@ -1,11 +1,11 @@
-/** 
+/**
  * Test assertion helpers wrapping @std/assert.
  * @module assertions
  */
-import { assertEquals, assertRejects, assertMatch, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertMatch, assertRejects, assertStringIncludes } from "@std/assert";
 
-/** 
- * Assertion object providing common test checks. 
+/**
+ * Assertion object providing common test checks.
  */
 export const assert = {
   /** Assert that two values are equal */
@@ -16,19 +16,19 @@ export const assert = {
   match: assertMatch,
   /** Assert that a string includes a substring */
   includes: assertStringIncludes,
-  /** 
+  /**
    * Assert that an expression is true
    * @param expr - The boolean expression to test
    * @param msg - Optional error message
    */
   isTrue: (expr: boolean, msg?: string) => assertEquals(expr, true, msg),
-  /** 
+  /**
    * Assert that an expression is false
    * @param expr - The boolean expression to test
    * @param msg - Optional error message
    */
   isFalse: (expr: boolean, msg?: string) => assertEquals(expr, false, msg),
-  /** 
+  /**
    * Assert that a value is not null or undefined
    * @param val - The value to check
    * @param msg - Optional error message
@@ -38,5 +38,5 @@ export const assert = {
     if (val === null || val === undefined) {
       throw new Error(msg || `Expected value to not be null/undefined, got ${val}`);
     }
-  }
+  },
 };

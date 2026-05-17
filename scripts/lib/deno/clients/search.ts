@@ -16,11 +16,14 @@ export class SearchClient {
    * @returns A promise that resolves to the typeahead search results
    * @throws XrpcError if the request fails
    */
-  async searchActorsTypeahead(query: string, options: { token?: string; limit?: number } = {}): Promise<any> {
+  async searchActorsTypeahead(
+    query: string,
+    options: { token?: string; limit?: number } = {},
+  ): Promise<any> {
     return await this.transport.get(
       "app.bsky.actor.searchActorsTypeahead",
       { q: query, limit: options.limit ?? 10 },
-      options.token
+      options.token,
     );
   }
 
@@ -42,11 +45,14 @@ export class SearchClient {
    * @returns A promise that resolves to the actor search skeleton results
    * @throws XrpcError if the request fails
    */
-  async searchActorsSkeleton(query: string, options: { token?: string; limit?: number } = {}): Promise<any> {
+  async searchActorsSkeleton(
+    query: string,
+    options: { token?: string; limit?: number } = {},
+  ): Promise<any> {
     return await this.transport.get(
       "app.bsky.unspecced.searchActorsSkeleton",
       { q: query, limit: options.limit ?? 25 },
-      options.token
+      options.token,
     );
   }
 
@@ -57,11 +63,14 @@ export class SearchClient {
    * @returns A promise that resolves to the post search skeleton results
    * @throws XrpcError if the request fails
    */
-  async searchPostsSkeleton(query: string, options: { token?: string; limit?: number } = {}): Promise<any> {
+  async searchPostsSkeleton(
+    query: string,
+    options: { token?: string; limit?: number } = {},
+  ): Promise<any> {
     return await this.transport.get(
       "app.bsky.unspecced.searchPostsSkeleton",
       { q: query, limit: options.limit ?? 25 },
-      options.token
+      options.token,
     );
   }
 
@@ -72,11 +81,14 @@ export class SearchClient {
    * @returns A promise that resolves to the starter packs search skeleton results
    * @throws XrpcError if the request fails
    */
-  async searchStarterPacksSkeleton(query: string, options: { token?: string; limit?: number } = {}): Promise<any> {
+  async searchStarterPacksSkeleton(
+    query: string,
+    options: { token?: string; limit?: number } = {},
+  ): Promise<any> {
     return await this.transport.get(
       "app.bsky.unspecced.searchStarterPacksSkeleton",
       { q: query, limit: options.limit ?? 25 },
-      options.token
+      options.token,
     );
   }
 

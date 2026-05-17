@@ -8,9 +8,16 @@
  */
 
 import { join } from "@std/path";
-import { serviceUrl, repoRoot } from "./docker_config.ts";
+import { repoRoot, serviceUrl } from "./docker_config.ts";
 import type { RunContext } from "./docker_types.ts";
 
+/**
+ * Collect run metadata, HTTP endpoint snapshots, and optional Docker state.
+ *
+ * @param ctx - Run context containing the diagnostics directory.
+ * @param composeFiles - Optional compose files to inspect.
+ * @returns Resolves when diagnostics have been written.
+ */
 export async function collectDiagnostics(
   ctx: RunContext,
   composeFiles?: string[],
@@ -25,7 +32,9 @@ export async function collectDiagnostics(
     ["pds-describe-server", `${serviceUrl("pds")}/xrpc/com.atproto.server.describeServer`],
     ["relay-health", `${serviceUrl("relay")}/api/relay/health`],
     ["relay-upstreams", `${serviceUrl("relay")}/api/relay/upstreams`],
-    ["appview-backfill-status", `${serviceUrl("appview")}/admin/backfill/status`, { "Authorization": "Bearer localdevadmin" }],
+    ["appview-backfill-status", `${serviceUrl("appview")}/admin/backfill/status`, {
+      "Authorization": "Bearer localdevadmin",
+    }],
     ["pds2-describe-server", `${serviceUrl("pds2")}/xrpc/com.atproto.server.describeServer`],
     ["chat-health", `${serviceUrl("chat")}/_health`],
     ["video-health", `${serviceUrl("video")}/_health`],
@@ -78,7 +87,9 @@ async function collectHttpEndpoint(
   try {
     const resp = await fetch(url, { headers, signal: AbortSignal.timeout(8000) });
     const body = await resp.text();
-    const content = `url=${url}\nhttp_status=${resp.status}\ncontent_type=${resp.headers.get("content-type") || ""}\n\n${body}`;
+    const content = `url=${url}\nhttp_status=${resp.status}\ncontent_type=${
+      resp.headers.get("content-type") || ""
+    }\n\n${body}`;
     await Deno.writeTextFile(join(httpDir, `${name}.txt`), content);
   } catch (err) {
     await Deno.writeTextFile(join(httpDir, `${name}.txt`), `url=${url}\nerror=${err}\n`);

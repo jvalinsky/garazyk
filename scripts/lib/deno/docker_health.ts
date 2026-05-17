@@ -82,9 +82,12 @@ export async function waitForServiceCLI(
         const containerId = new TextDecoder().decode(stdout).trim();
         if (containerId) {
           const inspectProc = new Deno.Command("docker", {
-            args: ["inspect", "--format",
+            args: [
+              "inspect",
+              "--format",
               "{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}",
-              containerId],
+              containerId,
+            ],
             stdout: "piped",
           });
           const { code: ic, stdout: iout } = await inspectProc.output();

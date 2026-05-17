@@ -5,8 +5,8 @@
  * Mocks global fetch to avoid network I/O.
  */
 
-import { assertEquals, assertRejects, assertInstanceOf } from "jsr:@std/assert";
-import { TransportLayer, XrpcError, TransportError } from "./transport.ts";
+import { assertEquals, assertInstanceOf, assertRejects } from "jsr:@std/assert";
+import { TransportError, TransportLayer, XrpcError } from "./transport.ts";
 
 // ---------------------------------------------------------------------------
 // Mock fetch infrastructure
@@ -16,7 +16,9 @@ let mockFetch: ((input: RequestInfo | URL, init?: RequestInit) => Promise<Respon
 
 const originalFetch = globalThis.fetch;
 
-function installMockFetch(impl: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>) {
+function installMockFetch(
+  impl: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
+) {
   mockFetch = impl;
   globalThis.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
     if (mockFetch) return mockFetch(input, init);
@@ -276,7 +278,10 @@ Deno.test("get: encodes array params as repeated keys", async () => {
     const t = new TransportLayer("http://localhost:2583");
     await t.get("test.method", { collections: ["app.bsky.feed.post", "app.bsky.feed.like"] });
     const url = new URL(capturedUrl);
-    assertEquals(url.searchParams.getAll("collections"), ["app.bsky.feed.post", "app.bsky.feed.like"]);
+    assertEquals(url.searchParams.getAll("collections"), [
+      "app.bsky.feed.post",
+      "app.bsky.feed.like",
+    ]);
   } finally {
     restoreFetch();
   }
@@ -360,7 +365,9 @@ Deno.test("request: custom retryableStatuses overrides defaults", async () => {
   try {
     const t = new TransportLayer("http://localhost:2583");
     // 500 is not in default retryable statuses, but we add it
-    const res = await t.request("GET", "/xrpc/test", { method: "GET" }, { retryableStatuses: [500, 502, 503, 504] });
+    const res = await t.request("GET", "/xrpc/test", { method: "GET" }, {
+      retryableStatuses: [500, 502, 503, 504],
+    });
     assertEquals(res.status, 200);
     assertEquals(calls, 2);
   } finally {

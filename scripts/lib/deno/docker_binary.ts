@@ -8,9 +8,9 @@
  */
 
 import { join } from "@std/path";
-import { SERVICE_PORTS, serviceUrl, repoRoot } from "./docker_config.ts";
+import { repoRoot, SERVICE_PORTS, serviceUrl } from "./docker_config.ts";
 import { waitForHttp } from "./docker_health.ts";
-import type { RunContext, LocalNetworkOptions } from "./docker_types.ts";
+import type { LocalNetworkOptions, RunContext } from "./docker_types.ts";
 
 /** Start local ATProto services from build binaries (PLC, PDS, Relay, AppView). */
 export async function startBinaryServices(
@@ -46,7 +46,10 @@ export async function startBinaryServices(
   Deno.mkdirSync(relayData, { recursive: true });
   Deno.mkdirSync(appviewData, { recursive: true });
 
-  await Deno.writeTextFile(ctx.pidFile, `# ATProto scenario PIDs (started ${new Date().toISOString()})\n`);
+  await Deno.writeTextFile(
+    ctx.pidFile,
+    `# ATProto scenario PIDs (started ${new Date().toISOString()})\n`,
+  );
 
   const commonEnv: Record<string, string> = {
     PDS_RUNNING_TESTS: "true",
@@ -74,7 +77,16 @@ export async function startBinaryServices(
   // Start PDS
   console.log(`[INFO]  Starting PDS on port ${SERVICE_PORTS.pds}...`);
   const pdsProc = new Deno.Command(join(buildBin, "kaszlak"), {
-    args: ["serve", "--config", join(root, "scripts/scenarios/config/pds-config.json"), "--port", String(SERVICE_PORTS.pds), "--data-dir", pdsData, "--foreground"],
+    args: [
+      "serve",
+      "--config",
+      join(root, "scripts/scenarios/config/pds-config.json"),
+      "--port",
+      String(SERVICE_PORTS.pds),
+      "--data-dir",
+      pdsData,
+      "--foreground",
+    ],
     env: { ...commonEnv, PDS_ALLOW_HTTP: "1", PDS_PLC_KEYS_DIR: join(pdsData, "keys") },
     stdout: "piped",
     stderr: "piped",
@@ -82,14 +94,24 @@ export async function startBinaryServices(
   const pdsChild = pdsProc.spawn();
   await appendPid(ctx.pidFile, "PDS", pdsChild.pid);
   await new Promise((r) => setTimeout(r, 3000));
-  if (!await waitForHttp(`${serviceUrl("pds")}/xrpc/com.atproto.server.describeServer`, "PDS", 60)) {
+  if (
+    !await waitForHttp(`${serviceUrl("pds")}/xrpc/com.atproto.server.describeServer`, "PDS", 60)
+  ) {
     throw new Error("PDS failed to start");
   }
 
   // Start Relay
   console.log(`[INFO]  Starting Relay on port ${SERVICE_PORTS.relay}...`);
   const relayProc = new Deno.Command(join(buildBin, "zuk"), {
-    args: ["serve", "--port", String(SERVICE_PORTS.relay), "--upstream", `ws://127.0.0.1:${SERVICE_PORTS.pds}/xrpc/com.atproto.sync.subscribeRepos`, "--data-dir", relayData],
+    args: [
+      "serve",
+      "--port",
+      String(SERVICE_PORTS.relay),
+      "--upstream",
+      `ws://127.0.0.1:${SERVICE_PORTS.pds}/xrpc/com.atproto.sync.subscribeRepos`,
+      "--data-dir",
+      relayData,
+    ],
     env: commonEnv,
     stdout: "piped",
     stderr: "piped",
@@ -104,15 +126,32 @@ export async function startBinaryServices(
   // Start AppView
   console.log(`[INFO]  Starting AppView on port ${SERVICE_PORTS.appview}...`);
   const appviewProc = new Deno.Command(join(buildBin, "syrena"), {
-    args: ["serve", "--relay", `ws://127.0.0.1:${SERVICE_PORTS.pds}/xrpc/com.atproto.sync.subscribeRepos`, "--port", String(SERVICE_PORTS.appview), "--data-dir", appviewData],
-    env: { ...commonEnv, APPVIEW_ADMIN_SECRET: "localdevadmin", APPVIEW_PLC_URL: serviceUrl("plc"), APPVIEW_PDS_URL: serviceUrl("pds") },
+    args: [
+      "serve",
+      "--relay",
+      `ws://127.0.0.1:${SERVICE_PORTS.pds}/xrpc/com.atproto.sync.subscribeRepos`,
+      "--port",
+      String(SERVICE_PORTS.appview),
+      "--data-dir",
+      appviewData,
+    ],
+    env: {
+      ...commonEnv,
+      APPVIEW_ADMIN_SECRET: "localdevadmin",
+      APPVIEW_PLC_URL: serviceUrl("plc"),
+      APPVIEW_PDS_URL: serviceUrl("pds"),
+    },
     stdout: "piped",
     stderr: "piped",
   });
   const appviewChild = appviewProc.spawn();
   await appendPid(ctx.pidFile, "APPVIEW", appviewChild.pid);
   await new Promise((r) => setTimeout(r, 3000));
-  if (!await waitForHttp(`${serviceUrl("appview")}/admin/backfill/status`, "AppView", 60, { "Authorization": "Bearer localdevadmin" })) {
+  if (
+    !await waitForHttp(`${serviceUrl("appview")}/admin/backfill/status`, "AppView", 60, {
+      "Authorization": "Bearer localdevadmin",
+    })
+  ) {
     throw new Error("AppView failed to start");
   }
 

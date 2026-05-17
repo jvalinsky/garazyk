@@ -4,14 +4,19 @@ import type { RunnerArgs } from "./run_scenarios_types.ts";
 
 /** Context passed to process lifecycle handlers. */
 export interface ProcessLifecycleContext {
+  /** Run identifier for the current execution. */
   runId: string;
+  /** Directory where diagnostics are written. */
   diagnosticsDir: string;
 }
 
 /** Configuration for creating a process lifecycle manager. */
 export interface ProcessLifecycleOptions {
+  /** Runner arguments used to control lifecycle behavior. */
   args: Pick<RunnerArgs, "binary" | "keepRunning" | "teardown" | "noSetup">;
+  /** Process lifecycle context for the current run. */
   context: ProcessLifecycleContext;
+  /** Stops the local network and optionally collects diagnostics. */
   stopLocalNetwork: (options: {
     useBinary: boolean;
     runId: string;
@@ -95,7 +100,9 @@ export function createProcessLifecycle(options: ProcessLifecycleOptions): Proces
 
   const scheduleDrainTimeout = (timeoutMs = 5000) => {
     const drainTimeout = setTimeout(() => {
-      console.warn(`Event loop did not drain within ${timeoutMs / 1000}s after cleanup, forcing exit`);
+      console.warn(
+        `Event loop did not drain within ${timeoutMs / 1000}s after cleanup, forcing exit`,
+      );
       Deno.exit(0);
     }, timeoutMs);
     // In Deno, setTimeout returns a number. Use Deno.unrefTimer to prevent

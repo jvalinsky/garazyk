@@ -19,9 +19,13 @@ import type { RunContext } from "./docker_types.ts";
 import type { RunnerArgs } from "./run_scenarios_types.ts";
 import type { Topology } from "./topology_types.ts";
 
+/** Result returned by the scenario execution loop. */
 export interface ScenarioExecutionResult {
+  /** Scenario results in execution order. */
   results: Array<{ scenario: ScenarioInfo; result: ScenarioResult }>;
+  /** Paths to JSON reports written for completed scenarios. */
   reportPaths: string[];
+  /** Whether a container crash was detected before completion. */
   crashedContainer: boolean;
 }
 

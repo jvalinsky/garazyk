@@ -73,7 +73,8 @@ export const SERVICE_URLS: Record<string, string> = {
 /** Capability set supported by the resolved topology. */
 export const TOPOLOGY_CAPABILITIES: Set<string> = topology.capabilities;
 /** Capability sets grouped by service role. */
-export const TOPOLOGY_CAPABILITIES_BY_ROLE: Record<string, Set<string>> = topology.capabilitiesByRole;
+export const TOPOLOGY_CAPABILITIES_BY_ROLE: Record<string, Set<string>> =
+  topology.capabilitiesByRole;
 
 /** Browser client topology attached to the resolved test network, when configured. */
 export const WEB_CLIENT_TOPOLOGY: WebClientConfig | undefined = topology.webClient;

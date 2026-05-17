@@ -5,7 +5,11 @@
  * logic without requiring a running Docker daemon.
  */
 
-import { ContainerStatsSampler, type ContainerStatsSnapshot, type MemoryPressureAlert } from "./container_stats.ts";
+import {
+  ContainerStatsSampler,
+  type ContainerStatsSnapshot,
+  type MemoryPressureAlert,
+} from "./container_stats.ts";
 import type { ContainerStats, ContainerSummary, DockerApiClient } from "./docker_api.ts";
 import { assertEquals } from "@std/assert";
 
@@ -19,16 +23,34 @@ function makeMockClient(containers: ContainerSummary[], stats: ContainerStats): 
     _socketPath: "/mock",
     _available: true,
     _baseUrl: "http://localhost/v1.45",
-    get available() { return true; },
-    async init() { return true; },
+    get available() {
+      return true;
+    },
+    async init() {
+      return true;
+    },
     close() {},
-    async ping() { return true; },
-    async version() { return {} as any; },
-    async listContainers() { return containers; },
-    async inspectContainer() { return {} as any; },
-    async containerLogs() { return new ReadableStream(); },
-    async containerStats(_id: string, _opts?: { oneShot?: boolean }) { return stats; },
-    async waitContainer() { return { StatusCode: 0 }; },
+    async ping() {
+      return true;
+    },
+    async version() {
+      return {} as any;
+    },
+    async listContainers() {
+      return containers;
+    },
+    async inspectContainer() {
+      return {} as any;
+    },
+    async containerLogs() {
+      return new ReadableStream();
+    },
+    async containerStats(_id: string, _opts?: { oneShot?: boolean }) {
+      return stats;
+    },
+    async waitContainer() {
+      return { StatusCode: 0 };
+    },
     async *streamEvents() {},
     async *streamContainerStats() {},
   } as unknown as DockerApiClient;
@@ -144,12 +166,18 @@ Deno.test("buildSnapshot: filters by compose project", async () => {
   const container1 = makeContainerSummary({
     Id: "aaa",
     Names: ["/local-pds"],
-    Labels: { "com.docker.compose.project": "garazyk-e2e-test", "com.docker.compose.service": "local-pds" },
+    Labels: {
+      "com.docker.compose.project": "garazyk-e2e-test",
+      "com.docker.compose.service": "local-pds",
+    },
   });
   const container2 = makeContainerSummary({
     Id: "bbb",
     Names: ["/other-service"],
-    Labels: { "com.docker.compose.project": "other-project", "com.docker.compose.service": "other" },
+    Labels: {
+      "com.docker.compose.project": "other-project",
+      "com.docker.compose.service": "other",
+    },
   });
 
   const stats = makeContainerStats();
@@ -169,8 +197,26 @@ Deno.test("buildSnapshot: aggregates network stats across interfaces", async () 
   const container = makeContainerSummary();
   const stats = makeContainerStats({
     networks: {
-      eth0: { rx_bytes: 1000, rx_packets: 10, rx_errors: 0, rx_dropped: 0, tx_bytes: 2000, tx_packets: 20, tx_errors: 0, tx_dropped: 0 },
-      eth1: { rx_bytes: 3000, rx_packets: 30, rx_errors: 1, rx_dropped: 0, tx_bytes: 4000, tx_packets: 40, tx_errors: 2, tx_dropped: 0 },
+      eth0: {
+        rx_bytes: 1000,
+        rx_packets: 10,
+        rx_errors: 0,
+        rx_dropped: 0,
+        tx_bytes: 2000,
+        tx_packets: 20,
+        tx_errors: 0,
+        tx_dropped: 0,
+      },
+      eth1: {
+        rx_bytes: 3000,
+        rx_packets: 30,
+        rx_errors: 1,
+        rx_dropped: 0,
+        tx_bytes: 4000,
+        tx_packets: 40,
+        tx_errors: 2,
+        tx_dropped: 0,
+      },
     },
   });
   const client = makeMockClient([container], stats);
@@ -216,7 +262,18 @@ Deno.test("memory pressure: fires callback when failcnt increases", async () => 
   let alertFired = false;
   let receivedAlert: MemoryPressureAlert | null = null;
 
-  const client = makeMockClient([container], makeContainerStats({ memory_stats: { usage: 500000000, max_usage: 500000000, limit: 512000000, stats: { cache: 0, rss: 500000000 }, failcnt: 0 } }));
+  const client = makeMockClient(
+    [container],
+    makeContainerStats({
+      memory_stats: {
+        usage: 500000000,
+        max_usage: 500000000,
+        limit: 512000000,
+        stats: { cache: 0, rss: 500000000 },
+        failcnt: 0,
+      },
+    }),
+  );
 
   const sampler = new ContainerStatsSampler({
     client,
@@ -232,7 +289,18 @@ Deno.test("memory pressure: fires callback when failcnt increases", async () => 
   assertEquals(alertFired, false);
 
   // Second sample — failcnt increases to 3
-  const client2 = makeMockClient([container], makeContainerStats({ memory_stats: { usage: 510000000, max_usage: 510000000, limit: 512000000, stats: { cache: 0, rss: 510000000 }, failcnt: 3 } }));
+  const client2 = makeMockClient(
+    [container],
+    makeContainerStats({
+      memory_stats: {
+        usage: 510000000,
+        max_usage: 510000000,
+        limit: 512000000,
+        stats: { cache: 0, rss: 510000000 },
+        failcnt: 3,
+      },
+    }),
+  );
   // Replace the client's containerStats method
   (sampler as any).client = client2;
 
@@ -247,13 +315,23 @@ Deno.test("memory pressure: does not fire when failcnt stays at 0", async () => 
   const container = makeContainerSummary();
   let alertFired = false;
 
-  const stats = makeContainerStats({ memory_stats: { usage: 128000000, max_usage: 150000000, limit: 512000000, stats: { cache: 20000000, rss: 108000000 }, failcnt: 0 } });
+  const stats = makeContainerStats({
+    memory_stats: {
+      usage: 128000000,
+      max_usage: 150000000,
+      limit: 512000000,
+      stats: { cache: 20000000, rss: 108000000 },
+      failcnt: 0,
+    },
+  });
   const client = makeMockClient([container], stats);
 
   const sampler = new ContainerStatsSampler({
     client,
     composeProject: "garazyk-e2e-test",
-    onMemoryPressure: () => { alertFired = true; },
+    onMemoryPressure: () => {
+      alertFired = true;
+    },
   });
 
   await sampler.sample();

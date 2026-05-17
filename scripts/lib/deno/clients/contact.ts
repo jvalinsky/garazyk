@@ -20,7 +20,7 @@ export class ContactClient {
     return await this.transport.post(
       "app.bsky.contact.startPhoneVerification",
       { phoneNumber },
-      token
+      token,
     );
   }
 
@@ -36,7 +36,7 @@ export class ContactClient {
     return await this.transport.post(
       "app.bsky.contact.verifyPhone",
       { phoneNumber, code },
-      token
+      token,
     );
   }
 
@@ -52,7 +52,7 @@ export class ContactClient {
     return await this.transport.post(
       "app.bsky.contact.importContacts",
       { token: importToken, contacts },
-      token
+      token,
     );
   }
 

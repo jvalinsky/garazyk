@@ -22,7 +22,7 @@ export class AgeAssuranceClient {
     email: string,
     language: string,
     countryCode: string,
-    options: { regionCode?: string; token?: string } = {}
+    options: { regionCode?: string; token?: string } = {},
   ): Promise<any> {
     const body: Record<string, any> = {
       email,
@@ -52,7 +52,7 @@ export class AgeAssuranceClient {
    */
   async getAgeAssuranceState(
     countryCode: string,
-    options: { regionCode?: string; token?: string } = {}
+    options: { regionCode?: string; token?: string } = {},
   ): Promise<any> {
     const params: Record<string, any> = { countryCode };
     if (options.regionCode) params.regionCode = options.regionCode;

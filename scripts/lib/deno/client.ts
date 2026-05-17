@@ -174,6 +174,12 @@ function resolveToken(opts: any, session: AgentSession): string | undefined {
  *
  * The proxy builds method paths via property access and invokes them
  * via function call. Returns `{ data }` on success, throws on error.
+ *
+ * @remarks Method paths are built dynamically via property access, so the
+ * index signature and call signature use `any`. Typed helpers exist on the
+ * namespace clients (e.g. `client.accounts`, `client.graph`) for
+ * discoverability and IDE support. Use the agent proxy when you need
+ * ad-hoc authenticated calls to endpoints that lack a typed helper.
  */
 export interface AgentProxy {
   /** Create a new account and store the session. */

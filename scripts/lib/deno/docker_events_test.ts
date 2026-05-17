@@ -7,7 +7,7 @@
 
 import { assertEquals, assertExists, assertFalse } from "jsr:@std/assert";
 import { DockerEventParser } from "./docker_events.ts";
-import type { DockerEvent, ContainerSummary } from "./docker_api.ts";
+import type { ContainerSummary, DockerEvent } from "./docker_api.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers

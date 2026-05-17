@@ -8,7 +8,7 @@
  */
 
 import { join, resolve } from "@std/path";
-import { parseRawTopologyPresetV1, normalizeTopologyPreset } from "./topology_schema.ts";
+import { normalizeTopologyPreset, parseRawTopologyPresetV1 } from "./topology_schema.ts";
 
 // Re-export all types
 export type { BrowserFlow, ServiceRole } from "./topology_types.ts";
@@ -44,32 +44,32 @@ export type {
 
 // Re-export manifest helpers
 export {
-  sanitizeTopologyName,
-  serviceNameForRole,
+  createTopologyManifest,
   defaultPortForRole,
+  internalUrlForRole,
+  loadTopologyManifest,
   parsePortMapping,
   publicUrlForRole,
-  internalUrlForRole,
   roleToEnvKey,
-  createTopologyManifest,
+  sanitizeTopologyName,
+  serviceNameForRole,
   writeTopologyManifest,
-  loadTopologyManifest,
 } from "./topology_manifest.ts";
 
 // Re-export constants
-export { ROLE_TO_SERVICE, ROLE_TO_PORT, ROLE_TO_ENV } from "./topology_types.ts";
+export { ROLE_TO_ENV, ROLE_TO_PORT, ROLE_TO_SERVICE } from "./topology_types.ts";
 
 // ---------------------------------------------------------------------------
 // Internal imports
 // ---------------------------------------------------------------------------
 
 import {
+  internalUrlForRole,
+  loadTopologyManifest,
+  publicUrlForRole,
+  roleToEnvKey,
   sanitizeTopologyName,
   serviceNameForRole,
-  publicUrlForRole,
-  internalUrlForRole,
-  roleToEnvKey,
-  loadTopologyManifest,
 } from "./topology_manifest.ts";
 import type {
   InheritedAdapter,
@@ -81,8 +81,8 @@ import type {
   WebClientTopology,
 } from "./topology_types.ts";
 import {
-  defaultServiceName,
   defaultRolePort,
+  defaultServiceName,
   KnownServiceRole,
   roleEnvKey,
 } from "./topology_registry.ts";
@@ -113,6 +113,7 @@ function health(url: string) {
   };
 }
 
+/** Built-in web client topology presets. */
 export const WEB_CLIENT_PRESETS: Record<string, WebClientTopology> = {
   "garazyk-ui": {
     name: "garazyk-ui",
@@ -326,6 +327,7 @@ function resolveInheritedAdapter(
   return resolveInheritedAdapter(role, parentAdapter, [...seen, key]);
 }
 
+/** Resolve a preset and its inherited role adapters. @param presetName - Topology preset name. @param options - Resolution options. @returns A resolved topology preset. */
 export function resolvePreset(
   presetName: string,
   options: { includePds2?: boolean } = {},
@@ -399,6 +401,7 @@ function defaultInternalUrls(serviceUrls: Record<string, string>): Record<string
 // Topology resolution
 // ---------------------------------------------------------------------------
 
+/** Resolve a complete topology view from preset and manifest inputs. @param webClientName - Optional web client preset name. @param topologyName - Optional topology preset name. @param options - Resolution options. @returns The resolved topology configuration. */
 export function resolveTopology(
   webClientName?: string,
   topologyName?: string,

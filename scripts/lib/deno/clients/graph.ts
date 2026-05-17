@@ -20,7 +20,7 @@ export class GraphClient {
     return await this.transport.get(
       "app.bsky.graph.getFollows",
       { actor, limit: options.limit ?? 50 },
-      options.token
+      options.token,
     );
   }
 
@@ -31,11 +31,14 @@ export class GraphClient {
    * @returns A promise that resolves to the list of followers
    * @throws XrpcError if the request fails
    */
-  async getFollowers(actor: string, options: { token?: string; limit?: number } = {}): Promise<any> {
+  async getFollowers(
+    actor: string,
+    options: { token?: string; limit?: number } = {},
+  ): Promise<any> {
     return await this.transport.get(
       "app.bsky.graph.getFollowers",
       { actor, limit: options.limit ?? 50 },
-      options.token
+      options.token,
     );
   }
 
@@ -95,7 +98,7 @@ export class GraphClient {
     return await this.transport.get(
       "app.bsky.graph.getRelationships",
       { actor, others: targets },
-      token
+      token,
     );
   }
 
@@ -117,11 +120,14 @@ export class GraphClient {
    * @returns A promise that resolves to the list of starter packs
    * @throws XrpcError if the request fails
    */
-  async getActorStarterPacks(actor: string, options: { token?: string; limit?: number } = {}): Promise<any> {
+  async getActorStarterPacks(
+    actor: string,
+    options: { token?: string; limit?: number } = {},
+  ): Promise<any> {
     return await this.transport.get(
       "app.bsky.graph.getActorStarterPacks",
       { actor, limit: options.limit ?? 50 },
-      options.token
+      options.token,
     );
   }
 
@@ -136,7 +142,7 @@ export class GraphClient {
     return await this.transport.get(
       "app.bsky.graph.getStarterPacks",
       { uris: uris.join(",") },
-      token
+      token,
     );
   }
 }

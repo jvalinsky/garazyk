@@ -3,11 +3,17 @@ import { join, relative, resolve } from "jsr:@std/path@1";
 
 /** Options for configuring a Markdown link check run. */
 export interface LinkCheckOptions {
+  /** Absolute path to the docs directory to scan. */
   docsDir: string;
+  /** Absolute path to the repository root (used for relative error paths). */
   repoRoot: string;
+  /** Only check files in these subdirectories of docsDir. */
   includeDirs?: string[];
+  /** Root-level files (relative to docsDir) to include in addition to includeDirs. */
   includeRootFiles?: string[];
+  /** Log each file as it is checked. */
   verbose?: boolean;
+  /** Title printed above the results summary. */
   title?: string;
 }
 
@@ -15,8 +21,11 @@ const linkPattern = /\[([^\]]+)\]\(([^)]+)\)/g;
 
 /** Test all markdown links in a docs directory for broken references and anchors. */
 export class MarkdownLinkTester {
+  /** Collected error messages from broken links. */
   errors: string[] = [];
+  /** Collected warning messages. */
   warnings: string[] = [];
+  /** Set of file paths that have been checked. */
   checkedFiles = new Set<string>();
 
   constructor(private options: LinkCheckOptions) {}

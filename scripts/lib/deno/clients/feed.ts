@@ -40,11 +40,14 @@ export class FeedClient {
    * @returns A promise that resolves to the author feed
    * @throws XrpcError if the request fails
    */
-  async getAuthorFeed(actor: string, options: { token?: string; limit?: number } = {}): Promise<any> {
+  async getAuthorFeed(
+    actor: string,
+    options: { token?: string; limit?: number } = {},
+  ): Promise<any> {
     return await this.transport.get(
       "app.bsky.feed.getAuthorFeed",
       { actor, limit: options.limit ?? 50 },
-      options.token
+      options.token,
     );
   }
 
@@ -70,7 +73,7 @@ export class FeedClient {
     return await this.transport.get(
       "app.bsky.feed.getLikes",
       { uri, limit: options.limit ?? 50 },
-      options.token
+      options.token,
     );
   }
 
@@ -81,11 +84,14 @@ export class FeedClient {
    * @returns A promise that resolves to the list of matched actors
    * @throws XrpcError if the request fails
    */
-  async searchActors(query: string, options: { token?: string; limit?: number } = {}): Promise<any> {
+  async searchActors(
+    query: string,
+    options: { token?: string; limit?: number } = {},
+  ): Promise<any> {
     return await this.transport.get(
       "app.bsky.actor.searchActors",
       { q: query, limit: options.limit ?? 10 },
-      options.token
+      options.token,
     );
   }
 
@@ -96,11 +102,14 @@ export class FeedClient {
    * @returns A promise that resolves to the list of posts liked by the actor
    * @throws XrpcError if the request fails
    */
-  async getActorLikes(actor: string, options: { token?: string; limit?: number } = {}): Promise<any> {
+  async getActorLikes(
+    actor: string,
+    options: { token?: string; limit?: number } = {},
+  ): Promise<any> {
     return await this.transport.get(
       "app.bsky.feed.getActorLikes",
       { actor, limit: options.limit ?? 50 },
-      options.token
+      options.token,
     );
   }
 
@@ -115,7 +124,7 @@ export class FeedClient {
     return await this.transport.get(
       "app.bsky.feed.getPosts",
       { uris: uris.join(",") },
-      token
+      token,
     );
   }
 
@@ -130,7 +139,7 @@ export class FeedClient {
     return await this.transport.get(
       "app.bsky.feed.getRepostedBy",
       { uri, limit: options.limit ?? 50 },
-      options.token
+      options.token,
     );
   }
 
@@ -146,7 +155,7 @@ export class FeedClient {
     return await this.transport.get(
       "app.bsky.feed.getFeed",
       { feed: feedUri, limit },
-      token
+      token,
     );
   }
 
@@ -161,7 +170,7 @@ export class FeedClient {
     return await this.transport.get(
       "app.bsky.feed.getFeedGenerators",
       { uris: uris.join(",") },
-      token
+      token,
     );
   }
 }

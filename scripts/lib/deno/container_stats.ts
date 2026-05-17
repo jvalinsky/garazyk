@@ -15,11 +15,11 @@
  */
 
 import {
+  composeServiceName,
   type ContainerStats,
   type ContainerSummary,
-  type DockerApiClient,
-  composeServiceName,
   cpuPercent,
+  type DockerApiClient,
   memoryLimit,
   memoryUsage,
 } from "./docker_api.ts";
@@ -28,9 +28,9 @@ import {
   createCounter,
   createGauge,
   isOtelEnabled,
+  type MetricAttributes,
   recordCounter,
   recordGauge,
-  type MetricAttributes,
 } from "./otel.ts";
 import { formatBytes } from "./format.ts";
 
@@ -38,6 +38,7 @@ import { formatBytes } from "./format.ts";
 // Types
 // ---------------------------------------------------------------------------
 
+/** Options for `ContainerStatsSampler`. */
 export interface StatsSamplerOptions {
   /** Docker API client (must be initialized). */
   client: DockerApiClient;
@@ -49,35 +50,63 @@ export interface StatsSamplerOptions {
   onMemoryPressure?: (alert: MemoryPressureAlert) => void;
 }
 
+/** Memory pressure alert emitted when `failcnt` increases. */
 export interface MemoryPressureAlert {
+  /** Docker container name. */
   containerName: string;
+  /** Docker Compose service name. */
   serviceName: string;
+  /** Docker container ID. */
   containerId: string;
+  /** Current memory fail count. */
   failcnt: number;
+  /** Previous memory fail count. */
   previousFailcnt: number;
+  /** Current memory usage in bytes. */
   memoryUsageBytes: number;
+  /** Memory limit in bytes. */
   memoryLimitBytes: number;
+  /** Memory usage as a percentage of the limit. */
   memoryPercent: number;
 }
 
+/** Snapshot of container resource usage collected during a sample. */
 export interface ContainerStatsSnapshot {
+  /** Docker container name. */
   containerName: string;
+  /** Docker Compose service name. */
   serviceName: string;
+  /** Docker container ID. */
   containerId: string;
+  /** CPU usage percentage. */
   cpuPercent: number;
+  /** Current memory usage in bytes. */
   memoryUsageBytes: number;
+  /** Memory limit in bytes. */
   memoryLimitBytes: number;
+  /** Memory usage as a percentage of the limit. */
   memoryPercent: number;
+  /** Resident set size in bytes. */
   memoryRssBytes: number;
+  /** Memory cache in bytes. */
   memoryCacheBytes: number;
+  /** Memory fail count. */
   memoryFailcnt: number;
+  /** Network receive bytes. */
   networkRxBytes: number;
+  /** Network transmit bytes. */
   networkTxBytes: number;
+  /** Network receive errors. */
   networkRxErrors: number;
+  /** Network transmit errors. */
   networkTxErrors: number;
+  /** Block I/O read bytes. */
   blockioReadBytes: number;
+  /** Block I/O write bytes. */
   blockioWriteBytes: number;
+  /** Number of container processes. */
   pids: number;
+  /** Snapshot timestamp in milliseconds since epoch. */
   timestamp: number;
 }
 
@@ -85,6 +114,7 @@ export interface ContainerStatsSnapshot {
 // ContainerStatsSampler
 // ---------------------------------------------------------------------------
 
+/** Periodically samples container stats and records OTel metrics. */
 export class ContainerStatsSampler {
   private client: DockerApiClient;
   private intervalMs: number;
@@ -181,7 +211,8 @@ export class ContainerStatsSampler {
     container: ContainerSummary,
     stats: ContainerStats,
   ): ContainerStatsSnapshot {
-    const serviceName = composeServiceName(container) ?? container.Names?.[0]?.replace(/^\//, "") ?? "unknown";
+    const serviceName = composeServiceName(container) ?? container.Names?.[0]?.replace(/^\//, "") ??
+      "unknown";
     const containerName = container.Names?.[0]?.replace(/^\//, "") ?? container.Id.substring(0, 12);
     const memUsage = memoryUsage(stats);
     const memLimit = memoryLimit(stats);
@@ -299,7 +330,8 @@ export class ContainerStatsSampler {
 
     if (failcnt > prev && prev >= 0) {
       const serviceName = composeServiceName(container) ?? "unknown";
-      const containerName = container.Names?.[0]?.replace(/^\//, "") ?? container.Id.substring(0, 12);
+      const containerName = container.Names?.[0]?.replace(/^\//, "") ??
+        container.Id.substring(0, 12);
       const memUsage = memoryUsage(stats);
       const memLimit = memoryLimit(stats);
 
