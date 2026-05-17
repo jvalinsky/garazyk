@@ -16,12 +16,16 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/** Pull-based producer that returns the next repository export chunk. */
 typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
 
 @class PDSDatabasePool;
 
 @class MST;
 @class CID;
+/**
+ * @abstract Defines the PDSBlockRepository protocol contract.
+ */
 @protocol PDSBlockRepository;
 @protocol PDSRepoRepository;
 @protocol PDSRecordRepository;
@@ -44,6 +48,9 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
 
  Thread-safety: Methods are thread-safe through database pool serialization.
  */
+/**
+ * @abstract Declares the PDSRepositoryService public API.
+ */
 @interface PDSRepositoryService : NSObject
 
 /*! Block repository. */
@@ -63,6 +70,7 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  @param databasePool Pool managing per-user database connections.
  @return Initialized repository service.
  */
+/** Initializes the service with a database pool. */
 - (instancetype)initWithDatabasePool:(PDSDatabasePool *)databasePool;
 
 #pragma mark - Repo Operations
@@ -79,6 +87,7 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  @param error Error pointer for loading failures.
  @return MST instance or nil if repository doesn't exist or loading fails.
  */
+/** Loads the Merkle Search Tree for a repository DID. */
 - (nullable MST *)loadMSTForDid:(NSString *)did error:(NSError **)error;
 
 /*!
@@ -95,6 +104,7 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  @param error Error pointer for update failures.
  @return YES if update succeeded, NO on failure.
  */
+/** Updates or deletes a key in a repository MST. */
 - (BOOL)updateMSTForDid:(NSString *)did key:(NSString *)key cid:(nullable CID *)cid error:(NSError **)error;
 
 /*!
@@ -109,6 +119,7 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  @param error Error pointer for retrieval failures.
  @return CAR-encoded commit root data, or nil if not found.
  */
+/** Returns the repository root data for a DID. */
 - (nullable NSData *)getRepoRoot:(NSString *)did error:(NSError **)error;
 
 /*!
@@ -124,6 +135,7 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  @param error Error pointer for export failures.
  @return CAR-encoded repository blocks, or nil on failure.
  */
+/** Exports repository contents as CAR data. */
 - (nullable NSData *)getRepoContents:(NSString *)did since:(nullable NSString *)sinceRev error:(NSError **)error;
 
 /*!
@@ -140,6 +152,7 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  @param error Error pointer for export failures.
  @return YES on success, NO on failure.
  */
+/** Writes repository contents directly to a CAR file. */
 - (BOOL)writeRepoContents:(NSString *)did since:(nullable NSString *)sinceRev toPath:(NSString *)path error:(NSError **)error;
 
 /*!
@@ -155,6 +168,7 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  @param error Error pointer for export preparation failures.
  @return Chunk producer block or nil on failure.
  */
+/** Creates a chunk producer for CAR repository contents. */
 - (nullable PDSRepoChunkProducer)repoContentsChunkProducer:(NSString *)did
                                                     since:(nullable NSString *)sinceRev
                                                     error:(NSError **)error;
@@ -173,6 +187,7 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  @param error Error pointer for export failures.
  @return STAR-L0 encoded repository data, or nil on failure.
  */
+/** Exports repository contents as STAR-L0 data. */
 - (nullable NSData *)getRepoContentsSTARL0:(NSString *)did
                                      since:(nullable NSString *)sinceRev
                                      error:(NSError **)error;
@@ -191,6 +206,7 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  @param error Error pointer for export failures.
  @return STAR-lite encoded repository data, or nil on failure.
  */
+/** Exports repository contents as STAR-lite data. */
 - (nullable NSData *)getRepoContentsSTARLite:(NSString *)did
                                        since:(nullable NSString *)sinceRev
                                        error:(NSError **)error;
@@ -208,6 +224,7 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  @param error Error pointer for export preparation failures.
  @return Chunk producer block or nil on failure.
  */
+/** Creates a chunk producer for STAR-L0 repository contents. */
 - (nullable PDSRepoChunkProducer)repoContentsSTARL0ChunkProducer:(NSString *)did
                                                             since:(nullable NSString *)sinceRev
                                                             error:(NSError **)error;
@@ -225,6 +242,7 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  @param error Error pointer for export preparation failures.
  @return Chunk producer block or nil on failure.
  */
+/** Creates a chunk producer for STAR-lite repository contents. */
 - (nullable PDSRepoChunkProducer)repoContentsSTARLiteChunkProducer:(NSString *)did
                                                               since:(nullable NSString *)sinceRev
                                                               error:(NSError **)error;
@@ -244,6 +262,7 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  @param error Error pointer for export preparation failures.
  @return Chunk producer block or nil on failure.
  */
+/** Creates a chunk producer for collection-filtered CAR repository contents. */
 - (nullable PDSRepoChunkProducer)filteredRepoContentsChunkProducer:(NSString *)did
                                                               since:(nullable NSString *)sinceRev
                                                         collections:(NSArray<NSString *> *)collections
@@ -262,6 +281,7 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  @param error Error pointer for commit failures.
  @return YES if commit applied successfully, NO on validation or application failure.
  */
+/** Applies a repository commit for the supplied DID. */
 - (BOOL)updateRepo:(NSString *)did commit:(NSData *)commitData error:(NSError **)error;
 
 /*!
@@ -274,6 +294,7 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  @param error Error pointer.
  @return CAR data with requested blocks.
  */
+/** Returns CAR data containing the requested blocks. */
 - (nullable NSData *)getBlocksForDid:(NSString *)did cids:(NSArray<NSString *> *)cids error:(NSError **)error;
 
 /*!
@@ -285,6 +306,7 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  @param error Error pointer.
  @return Dictionary with @"cid" (string) and @"rev" (string).
  */
+/** Returns the latest commit CID and revision for a DID. */
 - (nullable NSDictionary *)getLatestCommitForDid:(NSString *)did error:(NSError **)error;
 
 /*!
@@ -299,6 +321,7 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  @param error Error pointer for initialization failures.
  @return YES if initialization succeeded, NO on failure.
  */
+/** Initializes an empty repository for a DID. */
 - (BOOL)initializeRepoForDid:(NSString *)did error:(NSError **)error;
 
 /*!
@@ -314,6 +337,7 @@ typedef NSData * _Nullable (^PDSRepoChunkProducer)(NSError **error);
  @param error Error pointer for initialization failures.
  @return YES if initialization succeeded, NO on failure.
  */
+/** Reinitializes a repository after clearing corrupted root state. */
 - (BOOL)forceReinitializeRepoForDid:(NSString *)did error:(NSError **)error;
 
 @end

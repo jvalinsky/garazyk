@@ -14,6 +14,9 @@
 
 #import <Foundation/Foundation.h>
 
+/**
+ * @abstract Defines the PDSQueryDatabase protocol contract.
+ */
 @protocol PDSQueryDatabase;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -132,6 +135,9 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)unindexListWithURI:(NSString *)uri error:(NSError **)error;
 
 - (BOOL)indexListitem:(NSDictionary *)record did:(NSString *)did uri:(NSString *)uri cid:(NSString *)cid error:(NSError **)error;
+/**
+ * @abstract Performs the unindexListitemWithURI operation.
+ */
 - (BOOL)unindexListitemWithURI:(NSString *)uri error:(NSError **)error;
 
 @end

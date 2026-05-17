@@ -25,6 +25,9 @@
 @class HttpResponse;
 @class JWTMinter;
 
+/**
+ * @abstract Defines the PDSAccountService protocol contract.
+ */
 @protocol PDSAccountService;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -53,6 +56,9 @@ NS_ASSUME_NONNULL_BEGIN
     Thread Safety: Each request is handled independently. The underlying
     OAuth2Server uses appropriate synchronization for shared state.
  */
+/**
+ * @abstract Declares the OAuth2Handler public API.
+ */
 @interface OAuth2Handler : NSObject
 
 /*! The underlying OAuth 2.0 server implementation. */
@@ -79,6 +85,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  @return An initialized OAuth2Handler instance.
  */
+/** Initializes the OAuth handler with persistent OAuth storage. */
 - (instancetype)initWithDatabase:(PDSDatabase *)database;
 
 - (instancetype)init NS_UNAVAILABLE;
@@ -91,6 +98,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param clientID The client_id to validate.
  @param completion Callback with the client dictionary or error.
  */
+/** Validates a dynamic OAuth client identifier. */
 - (void)validateClient:(NSString *)clientID
             completion:(void (^)(NSDictionary * _Nullable client, NSError * _Nullable error))completion;
 
@@ -112,6 +120,7 @@ NS_ASSUME_NONNULL_BEGIN
     - POST /oauth/par
     - POST /oauth/introspect
  */
+/** Registers OAuth routes on the supplied HTTP server. */
 - (void)registerRoutesWithServer:(HttpServer *)httpServer;
 
 /*!
@@ -127,6 +136,7 @@ NS_ASSUME_NONNULL_BEGIN
     - refresh_token
     - client_credentials
  */
+/** Handles OAuth token endpoint requests. */
 - (void)handleTokenRequest:(HttpRequest *)request response:(HttpResponse *)response;
 
 /*!
@@ -137,6 +147,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param request The HTTP request containing authorization parameters.
  @param response The HTTP response to populate with the authorization form.
  */
+/** Handles authorization form requests. */
 - (void)handleAuthorizeRequest:(HttpRequest *)request response:(HttpResponse *)response;
 
 /*!
@@ -149,9 +160,12 @@ NS_ASSUME_NONNULL_BEGIN
 
  @discussion Validates user credentials and advances the authorization flow.
  */
+/** Handles username and password sign-in during authorization. */
 - (void)handleAuthorizeSignIn:(HttpRequest *)request response:(HttpResponse *)response;
 
+/** Issues a WebAuthn passkey challenge during authorization. */
 - (void)handlePasskeyChallenge:(HttpRequest *)request response:(HttpResponse *)response;
+/** Verifies a WebAuthn passkey assertion during authorization. */
 - (void)handlePasskeySignIn:(HttpRequest *)request response:(HttpResponse *)response;
 
 /*!
@@ -164,6 +178,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  @discussion Processes user consent and issues authorization code.
  */
+/** Handles user consent confirmation and redirects with an authorization code. */
 - (void)handleAuthorizeConfirm:(HttpRequest *)request response:(HttpResponse *)response;
 
 /*!
@@ -174,6 +189,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param request The HTTP request containing the token to revoke.
  @param response The HTTP response to populate.
  */
+/** Handles OAuth token revocation requests. */
 - (void)handleRevokeRequest:(HttpRequest *)request response:(HttpResponse *)response;
 
 /*!
@@ -187,6 +203,7 @@ NS_ASSUME_NONNULL_BEGIN
  @discussion Stores authorization parameters and returns a request_uri
  for use in the authorization request.
  */
+/** Handles pushed authorization request storage. */
 - (void)handlePARRequest:(HttpRequest *)request response:(HttpResponse *)response;
 
 /*!
@@ -201,6 +218,7 @@ NS_ASSUME_NONNULL_BEGIN
  response with token metadata (subject, client, expiration, scope, DPoP binding).
  Invalid tokens return {"active": false} without error.
  */
+/** Handles OAuth token introspection requests. */
 - (void)handleIntrospectRequest:(HttpRequest *)request response:(HttpResponse *)response;
 
 @end

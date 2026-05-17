@@ -10,6 +10,9 @@ NS_ASSUME_NONNULL_BEGIN
   */
 
 
+/**
+ * @abstract Declares the PDSMetrics public API.
+ */
 @interface PDSMetrics : NSObject
 
 /**
@@ -125,6 +128,9 @@ NS_ASSUME_NONNULL_BEGIN
  * @param method The HTTP method (e.g., "GET", "POST").
  * @param endpoint The API endpoint path (e.g., "/xrpc/com.atproto.server.createSession").
  * @param status The HTTP response status code.
+ */
+/**
+ * @abstract Performs the observeRequestLatency operation.
  */
 - (void)observeRequestLatency:(NSTimeInterval)seconds
                         method:(NSString *)method

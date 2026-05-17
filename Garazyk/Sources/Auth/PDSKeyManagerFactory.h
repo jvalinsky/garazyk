@@ -36,6 +36,9 @@ NS_ASSUME_NONNULL_BEGIN
     id<PDSKeyPair> keyPair = [keyManager generateKeyPairWithAlgorithm:@"ES256" keySize:256 error:&error];
  @endcode
  */
+/**
+ * @abstract Declares the PDSKeyManagerFactory public API.
+ */
 @interface PDSKeyManagerFactory : NSObject
 
 /*!
@@ -55,6 +58,9 @@ NS_ASSUME_NONNULL_BEGIN
     The database is used for storing key metadata and, on Linux, the actual
     key material. On macOS/iOS, keys are stored in the Keychain with only
     metadata in the database.
+ */
+/**
+ * @abstract Performs the createKeyManagerWithDatabase operation.
  */
 + (id<PDSKeyManager>)createKeyManagerWithDatabase:(PDSDatabase *)database;
 

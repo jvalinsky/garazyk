@@ -34,6 +34,9 @@ extern NSErrorDomain const PDSValidationErrorDomain;
  @constant PDSValidationErrorInvalidURI Invalid URI format.
  @constant PDSValidationErrorNullByteInjection Null byte injection attempt.
  */
+/**
+ * @abstract Defines PDSValidationError values exposed by this API.
+ */
 typedef NS_ENUM(NSInteger, PDSValidationError) {
     PDSValidationErrorEmptyString = 1000,
     PDSValidationErrorInvalidLength = 1001,

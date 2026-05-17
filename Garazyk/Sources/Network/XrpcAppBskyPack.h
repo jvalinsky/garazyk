@@ -25,6 +25,9 @@ NS_ASSUME_NONNULL_BEGIN
  
  These endpoints integrate with AppView services and support optional authentication.
  */
+/**
+ * @abstract Declares the XrpcAppBskyPack public API.
+ */
 @interface XrpcAppBskyPack : NSObject <XrpcRoutePack>
 
 /**

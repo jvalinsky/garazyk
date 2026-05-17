@@ -94,6 +94,9 @@ extern NSString * const AuthCryptoDPoPErrorDomain;
     @param thumbprint On success, receives the JWK thumbprint.
     @param error Set on verification failure.
     @return YES if the proof is valid. */
+/**
+ * @abstract Performs the verifyProof operation.
+ */
 + (BOOL)verifyProof:(NSString *)dpopJwt
               method:(NSString *)method
                  url:(NSURL *)url

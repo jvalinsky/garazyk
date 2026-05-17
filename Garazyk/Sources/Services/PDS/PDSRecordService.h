@@ -20,17 +20,26 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSErrorDomain const PDSRecordServiceErrorDomain;
 
 /*! Error codes for PDSRecordService. */
+/**
+ * @abstract Defines PDSRecordServiceError values exposed by this API.
+ */
 typedef NS_ENUM(NSInteger, PDSRecordServiceError) {
     PDSRecordServiceErrorUnauthorized = 1,
 };
 
 @class MST;
 @class CID;
+/**
+ * @abstract Defines the PDSRecordRepository protocol contract.
+ */
 @protocol PDSRecordRepository;
 @class PDSDatabasePool;
 @class ATProtoLexiconValidator;
 
 /*! Validation mode for record operations. */
+/**
+ * @abstract Defines PDSValidationMode values exposed by this API.
+ */
 typedef NS_ENUM(NSInteger, PDSValidationMode) {
     PDSValidationModeRequired,   /*! Fail if lexicon unknown or validation fails. */
     PDSValidationModeOptimistic, /*! Validate if known, allow if unknown. */

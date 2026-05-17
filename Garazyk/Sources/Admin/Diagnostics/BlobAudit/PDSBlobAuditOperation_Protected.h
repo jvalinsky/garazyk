@@ -18,9 +18,15 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * Subclasses should import this header to access blobStorage and serviceDatabases.
  */
+/**
+ * @abstract Extends PDSBlobAuditOperation with protected behavior.
+ */
 @interface PDSBlobAuditOperation (Protected)
 
 /// Blob storage instance for accessing blobs
+/**
+ * @abstract Exposes the blob storage value.
+ */
 @property (nonatomic, strong, readonly) BlobStorage *blobStorage;
 
 /// Service databases for account lookups

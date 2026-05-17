@@ -41,6 +41,9 @@ NS_ASSUME_NONNULL_BEGIN
     }
  @endcode
  */
+/**
+ * @abstract Declares the PDSReplayCache public API.
+ */
 @interface PDSReplayCache : NSObject <AuthCryptoDPoPReplayChecker>
 
 /*!
@@ -65,6 +68,9 @@ NS_ASSUME_NONNULL_BEGIN
     If path is nil, the cache operates in-memory only and will not
     persist across server restarts. This is suitable for testing.
  */
+/**
+ * @abstract Performs the initWithDatabasePath operation.
+ */
 - (instancetype)initWithDatabasePath:(nullable NSString *)path;
 
 /*!
@@ -83,6 +89,9 @@ NS_ASSUME_NONNULL_BEGIN
     the cache, it is NOT added again and NO is returned.
 
     Entries are automatically removed after their expiration time.
+ */
+/**
+ * @abstract Performs the checkAndAddJTI operation.
  */
 - (BOOL)checkAndAddJTI:(NSString *)jti expiration:(NSDate *)expiration;
 

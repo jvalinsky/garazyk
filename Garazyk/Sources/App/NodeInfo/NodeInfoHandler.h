@@ -16,6 +16,9 @@
 @class HttpServer;
 @class HttpRequest;
 @class HttpResponse;
+/**
+ * @abstract Defines the PDSAccountService protocol contract.
+ */
 @protocol PDSAccountService;
 NS_ASSUME_NONNULL_BEGIN
 

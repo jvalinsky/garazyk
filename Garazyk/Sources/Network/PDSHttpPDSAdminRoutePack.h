@@ -17,6 +17,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface PDSHttpPDSAdminRoutePack : NSObject
 
+/**
+ * @abstract Performs the registerRoutesWithServer operation.
+ */
 + (void)registerRoutesWithServer:(HttpServer *)server
                 serviceDatabases:(nullable PDSServiceDatabases *)serviceDatabases;
 

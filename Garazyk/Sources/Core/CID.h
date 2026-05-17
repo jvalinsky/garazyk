@@ -86,6 +86,9 @@ NS_ASSUME_NONNULL_BEGIN
  @return A parsed CID, or nil if the buffer is malformed, truncated, or
  exceeds bounds.
  */
+/**
+ * @abstract Performs the cidFromBuffer operation.
+ */
 + (nullable instancetype)cidFromBuffer:(const uint8_t *)bytes
                                 length:(NSUInteger)length
                               consumed:(nullable NSUInteger *)consumed;

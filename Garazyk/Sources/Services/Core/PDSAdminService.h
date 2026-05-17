@@ -19,6 +19,9 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSDatabase;
 @class PDSDatabasePool;
 @class PDSServiceDatabases;
+/**
+ * @abstract Defines the PDSAccountService protocol contract.
+ */
 @protocol PDSAccountService;
 
 /*!
@@ -68,6 +71,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param reason The reason for deactivation.
  @param error On return, contains an error if the operation failed.
  @return YES if successful, NO otherwise.
+ */
+/**
+ * @abstract Performs the deactivateAccount operation.
  */
 - (BOOL)deactivateAccount:(NSString *)did reason:(NSString *)reason error:(NSError **)error;
 
@@ -187,6 +193,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param error On return, contains an error if the operation failed.
  @return YES if successful, NO otherwise.
  */
+/** Disables invite codes by code and/or account owner. */
 - (BOOL)disableInviteCodesWithCodes:(nullable NSArray<NSString *> *)codes
                            accounts:(nullable NSArray<NSString *> *)accounts
                               error:(NSError **)error;
@@ -237,6 +244,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param error On return, contains an error if the operation failed.
  @return Dictionary with labels array and cursor, or nil on failure.
  */
+/** Retrieves labels matching admin query parameters. */
 - (nullable NSDictionary *)getLabels:(NSDictionary *)params error:(NSError **)error;
 
 #pragma mark - Server Statistics
@@ -249,6 +257,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param error On return, contains an error if the operation failed.
  @return Dictionary with server statistics, or nil on failure.
  */
+/** Retrieves server statistics for administrative dashboards. */
 - (nullable NSDictionary *)getServerStatsWithError:(NSError **)error;
 
 #pragma mark - Audit Logging
@@ -267,6 +276,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param error On return, contains an error if the operation failed.
  @return YES if successful, NO otherwise.
  */
+/** Logs an administrative action to the audit log. */
 - (BOOL)logAdminAction:(NSString *)action
            subjectType:(nullable NSString *)subjectType
              subjectId:(nullable NSString *)subjectId
@@ -286,6 +296,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param error On return, contains an error if the operation failed.
  @return Dictionary with audit log entries and cursor, or nil on failure.
  */
+/** Queries administrative audit log entries. */
 - (nullable NSDictionary *)queryAuditLog:(NSDictionary *)filters
                                    limit:(NSInteger)limit
                                  cursor:(nullable NSString *)cursor
@@ -302,6 +313,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param error On return, contains an error if the operation failed.
  @return Dictionary with the created report, or nil on failure.
  */
+/** Creates a moderation report from admin parameters. */
 - (nullable NSDictionary *)createReport:(NSDictionary *)params error:(NSError **)error;
 
 /*!
@@ -315,6 +327,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param error On return, contains an error if the operation failed.
  @return Dictionary with reports array and cursor, or nil on failure.
  */
+/** Queries moderation reports with filters and pagination. */
 - (nullable NSDictionary *)queryReports:(NSDictionary *)filters
                                   limit:(NSInteger)limit
                                 cursor:(nullable NSString *)cursor
@@ -332,6 +345,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param error On return, contains an error if the operation failed.
  @return YES if successful, NO otherwise.
  */
+/** Resolves or dismisses a moderation report. */
 - (BOOL)resolveReport:(NSString *)reportId
                status:(NSString *)status
             resolvedBy:(nullable NSString *)resolvedBy
@@ -372,6 +386,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param databasePool The database pool for transactions.
  @return An initialized admin service.
  */
+/** Initializes the admin service with a primary database and optional pool. */
 - (instancetype)initWithDatabase:(PDSDatabase *)database
                     databasePool:(nullable PDSDatabasePool *)databasePool;
 
@@ -384,6 +399,7 @@ NS_ASSUME_NONNULL_BEGIN
  @param accountService The account service for lookups (may be nil).
  @return An initialized admin service.
  */
+/** Initializes the admin service with service databases and account lookup service. */
 - (instancetype)initWithServiceDatabases:(PDSServiceDatabases *)serviceDatabases
                           accountService:(nullable id<PDSAccountService>)accountService
     NS_DESIGNATED_INITIALIZER;

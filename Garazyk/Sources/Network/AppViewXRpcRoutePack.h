@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
 
+/**
+ * @abstract Defines the PDSQueryDatabase protocol contract.
+ */
 @protocol PDSQueryDatabase;
 @class FeedService;
 @class ActorService;
@@ -23,6 +26,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface AppViewXRpcRoutePack : NSObject
 
+/**
+ * @abstract Performs the initWithFeedService operation.
+ */
 - (instancetype)initWithFeedService:(FeedService *)feedService
                        actorService:(ActorService *)actorService
                        graphService:(nullable GraphService *)graphService
@@ -37,6 +43,9 @@ NS_ASSUME_NONNULL_BEGIN
                          jwtMinter:(nullable JWTMinter *)jwtMinter;
 
 
+/**
+ * @abstract Performs the registerRoutesWithServer operation.
+ */
 - (void)registerRoutesWithServer:(HttpServer *)server;
 
 @end

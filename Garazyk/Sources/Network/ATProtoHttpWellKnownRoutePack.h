@@ -20,6 +20,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface ATProtoHttpWellKnownRoutePack : NSObject
 
+/**
+ * @abstract Performs the registerRoutesWithServer operation.
+ */
 + (void)registerRoutesWithServer:(HttpServer *)server
                 serviceDatabases:(nullable PDSServiceDatabases *)serviceDatabases
                       controller:(nullable PDSController *)controller

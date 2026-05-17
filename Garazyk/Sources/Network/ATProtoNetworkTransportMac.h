@@ -54,6 +54,9 @@ NS_ASSUME_NONNULL_BEGIN
 
  @return An initialized connection (connection starts in Preparing state).
  */
+/**
+ * @abstract Performs the initWithHost operation.
+ */
 - (instancetype)initWithHost:(NSString *)host port:(NSUInteger)port;
 
 @end
@@ -91,6 +94,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param port The port number (0 for ephemeral port assignment).
 
  @return An initialized listener (starts in Waiting state).
+ */
+/**
+ * @abstract Performs the initWithHost operation.
  */
 - (instancetype)initWithHost:(nullable NSString *)host port:(NSUInteger)port;
 

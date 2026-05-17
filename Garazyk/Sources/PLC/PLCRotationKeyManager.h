@@ -57,6 +57,9 @@ typedef NS_ENUM(NSInteger, PLCRotationKeyManagerError) {
     NSString *didKey = manager.rotationKeyDidKey;
  @endcode
  */
+/**
+ * @abstract Declares the PLCRotationKeyManager public API.
+ */
 @interface PLCRotationKeyManager : NSObject
 
 /*! Path where the key pair is stored on disk (nil for in-memory only). */

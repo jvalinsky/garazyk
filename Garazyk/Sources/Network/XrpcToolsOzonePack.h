@@ -12,6 +12,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Declares the XrpcToolsOzonePack public API.
+ */
 @interface XrpcToolsOzonePack : NSObject <XrpcRoutePack>
 
 @end

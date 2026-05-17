@@ -21,6 +21,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Defines the TokenKeyResolver protocol contract.
+ */
 @protocol TokenKeyResolver;
 @protocol AccountPolicy;
 @protocol DPoPNonceStore;
@@ -31,6 +34,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 extern NSString * const AuthVerifierErrorDomain;
 
+/**
+ * @abstract Defines AuthVerifierError values exposed by this API.
+ */
 typedef NS_ENUM(NSInteger, AuthVerifierError) {
     AuthVerifierErrorInvalidRequest = -1,
     AuthVerifierErrorInvalidToken = -2,
@@ -97,6 +103,9 @@ typedef NS_ENUM(NSInteger, AuthVerifierError) {
  - DPoPNonceStore: For DPoP nonce validation (optional)
  
  For PDS, use PDSAccountPolicy which connects to PDSDatabase.
+ */
+/**
+ * @abstract Declares the AuthVerifier public API.
  */
 @interface AuthVerifier : NSObject
 

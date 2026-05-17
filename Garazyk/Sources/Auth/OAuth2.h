@@ -22,6 +22,9 @@ extern NSString * const OAuth2ErrorDomain;
 
 // Forward declarations
 @class JWTMinter;
+/**
+ * @abstract Defines the PDSKeyManager protocol contract.
+ */
 @protocol PDSKeyManager;
 @class DIDResolver;
 @class HandleResolver;
@@ -48,21 +51,39 @@ extern NSString * const OAuth2ErrorDomain;
  @constant OAuth2ErrorInteractionRequired Interaction is required.
  @constant OAuth2ErrorConsentRequired User consent is required.
  */
+/**
+ * @abstract Defines OAuth2Error values exposed by this API.
+ */
 typedef NS_ENUM(NSInteger, OAuth2Error) {
+    /** The request is missing required parameters. */
     OAuth2ErrorInvalidRequest = 1000,
+    /** The client is not authorized. */
     OAuth2ErrorUnauthorizedClient,
+    /** The response type is not supported. */
     OAuth2ErrorUnsupportedResponseType,
+    /** The requested scope is invalid. */
     OAuth2ErrorInvalidScope,
+    /** An internal server error occurred. */
     OAuth2ErrorServerError,
+    /** The server is temporarily unavailable. */
     OAuth2ErrorTemporarilyUnavailable,
+    /** The authorization grant is invalid. */
     OAuth2ErrorInvalidGrant,
+    /** The grant type is not supported. */
     OAuth2ErrorUnsupportedGrantType,
+    /** The client credentials are invalid. */
     OAuth2ErrorInvalidClient,
+    /** The DPoP proof is invalid. */
     OAuth2ErrorInvalidDPoPProof,
+    /** The token has expired. */
     OAuth2ErrorTokenExpired,
+    /** The redirect URI is invalid. */
     OAuth2ErrorInvalidRedirectURI,
+    /** The resource owner denied the request. */
     OAuth2ErrorAccessDenied,
+    /** User interaction is required before authorization can continue. */
     OAuth2ErrorInteractionRequired,
+    /** User consent is required before authorization can continue. */
     OAuth2ErrorConsentRequired
 };
 
@@ -363,6 +384,9 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
  @param error On return, contains an error if creation failed.
  @return The DPoP proof JWT string.
  */
+/**
+ * @abstract Performs the createProofForURL operation.
+ */
 + (nullable NSString *)createProofForURL:(NSURL *)url
                                  method:(NSString *)method
                                    key:(NSDictionary *)jwk
@@ -381,6 +405,9 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
  @param error On return, contains an error if verification failed.
  @return YES if the proof is valid, NO otherwise.
  */
+/**
+ * @abstract Performs the verifyProof operation.
+ */
 + (BOOL)verifyProof:(NSString *)dpopJwt
               method:(NSString *)method
                  url:(NSURL *)url
@@ -389,6 +416,22 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
        outThumbprint:(NSString * _Nullable * _Nullable)thumbprint
                error:(NSError **)error;
 
+/*!
+ @method verifyProof:method:url:nonce:outThumbprint:error:
+
+ @abstract Verifies a DPoP proof without requiring a server nonce.
+
+ @param dpopJwt The proof JWT from the DPoP header.
+ @param method The HTTP method the proof is for.
+ @param url The URL the proof is for.
+ @param nonce Optional server-provided nonce.
+ @param thumbprint On return, the RFC 7638 JWK thumbprint if verification succeeds.
+ @param error On return, contains an error if verification failed.
+ @return YES if the proof is valid, NO otherwise.
+ */
+/**
+ * @abstract Performs the verifyProof operation.
+ */
 + (BOOL)verifyProof:(NSString *)dpopJwt
               method:(NSString *)method
                  url:(NSURL *)url
@@ -417,6 +460,9 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
      // Redirect user to URL with code
  }];
  @endcode
+ */
+/**
+ * @abstract Declares the OAuth2Server public API.
  */
 @interface OAuth2Server : NSObject
 
@@ -520,11 +566,36 @@ typedef void (^OAuth2RefreshCompletion)(NSString * _Nullable accessToken, NSErro
 
 #pragma mark - Security Administration
 
+/*!
+ @method listSessionsForDid:error:
+
+ @abstract Lists active sessions for an account.
+ */
 - (nullable NSArray<NSDictionary *> *)listSessionsForDid:(NSString *)did error:(NSError **)error;
+/*!
+ @method revokeSession:error:
+
+ @abstract Revokes the session or token identified by the supplied token string.
+ */
 - (BOOL)revokeSession:(NSString *)token error:(NSError **)error;
+/*!
+ @method revokeAllSessionsForDid:error:
+
+ @abstract Revokes all active sessions for an account DID.
+ */
 - (BOOL)revokeAllSessionsForDid:(NSString *)did error:(NSError **)error;
 
+/*!
+ @method listAppPasswordsForDid:error:
+
+ @abstract Lists app passwords for an account DID.
+ */
 - (nullable NSArray<NSDictionary *> *)listAppPasswordsForDid:(NSString *)did error:(NSError **)error;
+/*!
+ @method revokeAppPassword:forDid:error:
+
+ @abstract Revokes one app password for an account DID.
+ */
 - (BOOL)revokeAppPassword:(NSString *)passwordId forDid:(NSString *)did error:(NSError **)error;
 
 @end

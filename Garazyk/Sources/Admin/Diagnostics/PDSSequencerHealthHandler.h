@@ -37,6 +37,9 @@ NS_ASSUME_NONNULL_BEGIN
  *   "period_hours": 24
  * }
  */
+/**
+ * @abstract Declares the PDSSequencerHealthHandler public API.
+ */
 @interface PDSSequencerHealthHandler : NSObject
 
 /**
@@ -60,6 +63,9 @@ NS_ASSUME_NONNULL_BEGIN
  * @param statusCode Output status code (200, 400, 500)
  * @param contentType Output content type (application/json)
  * @return JSON response body or error message
+ */
+/**
+ * @abstract Performs the handleRequestWithMethod operation.
  */
 - (nullable NSString *)handleRequestWithMethod:(NSInteger)method
                                          path:(NSString *)path

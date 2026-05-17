@@ -25,6 +25,9 @@
 @class RepoCommit;
 @class CID;
 @class HttpRequest;
+/**
+ * @abstract Defines the ATProtoNetworkConnection protocol contract.
+ */
 @protocol ATProtoNetworkConnection;
 @class PDSDatabasePool;
 @class RelayMetrics;

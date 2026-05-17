@@ -16,6 +16,9 @@
 @class PDSRecordService;
 @class PDSBlobAuditManager;
 @class HttpServer;
+/**
+ * @abstract Defines the PDSAccountService protocol contract.
+ */
 @protocol PDSAccountService;
 @protocol PDSEmailProvider;
 @protocol PDSAdminController;
@@ -25,6 +28,9 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * PDSApplication is the root object of the PDS server. It initializes and manages
  * the lifecycle of all services.
+ */
+/**
+ * @abstract Declares the PDSApplication public API.
  */
 @interface PDSApplication : NSObject
 
@@ -138,6 +144,9 @@ NS_ASSUME_NONNULL_BEGIN
  * application. Use this when interfacing with code that expects PDSController.
  *
  * @note Prefer using the services directly for new code.
+ */
+/**
+ * @abstract Exposes the legacy controller value.
  */
 @property (nonatomic, strong, readonly) PDSController *legacyController;
 

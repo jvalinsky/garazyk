@@ -104,6 +104,9 @@ typedef NS_ENUM(NSUInteger, MSTWalkerStatusTag) {
  * }
  * @endcode
  */
+/**
+ * @abstract Declares the MSTWalker public API.
+ */
 @interface MSTWalker : NSObject
 
 /** @abstract The tree root node. */

@@ -16,6 +16,9 @@
 #import <Foundation/Foundation.h>
 #import "Registration/PDSRegistrationGate.h"
 
+/**
+ * @abstract Defines the PDSPhoneVerificationProvider protocol contract.
+ */
 @protocol PDSPhoneVerificationProvider;
 
 NS_ASSUME_NONNULL_BEGIN

@@ -56,6 +56,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param maxAttempts Maximum attempts before aborting.
  @result Confirmed password, or nil when validation fails repeatedly.
  */
+/**
+ * @abstract Performs the promptForPasswordWithConfirmation operation.
+ */
 + (nullable NSString *)promptForPasswordWithConfirmation:(NSString *)prompt
                                             confirmPrompt:(NSString *)confirmPrompt
                                                 minLength:(NSUInteger)minLength

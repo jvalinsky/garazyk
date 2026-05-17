@@ -19,6 +19,9 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSServiceDatabases;
 @class PDSDatabasePool;
 @class JWTMinter;
+/**
+ * @abstract Defines the PDSAccountRepository protocol contract.
+ */
 @protocol PDSAccountRepository;
 @protocol PDSSessionRepository;
 
@@ -69,6 +72,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
+/**
+ * @abstract Defines the PDSEmailProvider protocol contract.
+ */
 @protocol PDSEmailProvider;
 
 /*!

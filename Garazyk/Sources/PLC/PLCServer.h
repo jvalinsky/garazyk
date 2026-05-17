@@ -37,6 +37,9 @@ NS_ASSUME_NONNULL_BEGIN
 
     Thread Safety: All public methods are thread-safe.
  */
+/**
+ * @abstract Declares the PLCServer public API.
+ */
 @interface PLCServer : NSObject
 
 /*! The underlying HTTP server instance. */
@@ -59,6 +62,9 @@ NS_ASSUME_NONNULL_BEGIN
 
  @return A new PLC server instance.
  */
+/**
+ * @abstract Performs the initWithStore operation.
+ */
 - (instancetype)initWithStore:(id<PLCStore>)store
                      auditor:(PLCAuditor *)auditor
                         port:(NSUInteger)port;
@@ -73,6 +79,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param adminSecret Secret for admin route authentication.
 
  @return A new PLC server instance.
+ */
+/**
+ * @abstract Performs the initWithStore operation.
  */
 - (instancetype)initWithStore:(id<PLCStore>)store
                      auditor:(PLCAuditor *)auditor
@@ -90,6 +99,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param port The TCP port to listen on.
 
  @return A new PLC server instance.
+ */
+/**
+ * @abstract Performs the initWithStore operation.
  */
 - (instancetype)initWithStore:(id<PLCStore>)store
                      auditor:(PLCAuditor *)auditor
@@ -125,6 +137,9 @@ NS_ASSUME_NONNULL_BEGIN
 
  @param response The HTTP response to add CORS headers to.
  @param request The incoming HTTP request (used to read the Origin header).
+ */
+/**
+ * @abstract Performs the setCorsHeaders operation.
  */
 - (void)setCorsHeaders:(HttpResponse *)response forRequest:(HttpRequest *)request;
 

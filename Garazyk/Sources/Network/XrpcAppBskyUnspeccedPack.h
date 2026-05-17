@@ -12,6 +12,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Declares the XrpcAppBskyUnspeccedPack public API.
+ */
 @interface XrpcAppBskyUnspeccedPack : NSObject <XrpcRoutePack>
 
 @end

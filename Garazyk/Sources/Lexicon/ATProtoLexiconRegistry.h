@@ -49,6 +49,9 @@ NS_ASSUME_NONNULL_BEGIN
  @discussion Continues loading even if some files fail to parse.
  Malformed schemas are logged but don't stop the loading process.
  */
+/**
+ * @abstract Performs the loadLexiconsFromDirectory operation.
+ */
 - (BOOL)loadLexiconsFromDirectory:(NSString *)path error:(NSError **)error;
 
 /*!
@@ -126,6 +129,9 @@ NS_ASSUME_NONNULL_BEGIN
  2. Bundle resources/lexicons
  3. Working directory variants (for development)
  4. Data directory/lexicons (if provided and exists)
+ */
+/**
+ * @abstract Performs the searchPathsForDirectory operation.
  */
 - (NSArray<NSString *> *)searchPathsForDirectory:(nullable NSString *)dataDirectory;
 

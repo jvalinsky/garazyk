@@ -9,6 +9,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Declares the ChatConfiguration public API.
+ */
 @interface ChatConfiguration : NSObject
 
 /**

@@ -68,6 +68,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param data The unsigned operation data dictionary.
  @return The DID string derived from the data.
  */
+/**
+ * @abstract Performs the calculateDIDForData operation.
+ */
 + (NSString *)calculateDIDForData:(NSDictionary *)data;
 
 /*!
@@ -86,6 +89,9 @@ NS_ASSUME_NONNULL_BEGIN
 
  @param signedOperation The complete signed operation dictionary (including `sig`).
  @return The DID string derived from the signed operation.
+ */
+/**
+ * @abstract Performs the calculateDIDForSignedOperation operation.
  */
 + (NSString *)calculateDIDForSignedOperation:(NSDictionary *)signedOperation;
 

@@ -13,44 +13,71 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Parse states for an incremental HTTP/1.x request parser.
+ */
 typedef NS_ENUM(NSInteger, Http1ParserState) {
+    /** Parser is reading the request line and header block. */
     Http1ParserStateReadingHeaders,
+    /** Parser is reading a fixed-length message body. */
     Http1ParserStateReadingBody,
+    /** Parser is reading a chunked transfer-encoded body. */
     Http1ParserStateReadingChunkedBody,
+    /** Parser has completed one request. */
     Http1ParserStateComplete,
+    /** Parser encountered a protocol or size-limit error. */
     Http1ParserStateError
 };
 
+/**
+ * @abstract Structured HTTP parser failure suitable for response generation.
+ */
 @interface Http1ParserError : NSObject
+/** HTTP status code to return to the client. */
 @property (nonatomic, readonly) NSUInteger statusCode;
+/** Stable application error code. */
 @property (nonatomic, readonly) NSString *errorCode;
+/** Human-readable error message. */
 @property (nonatomic, readonly) NSString *message;
 
+/**
+ * @abstract Initializes a parser error.
+ */
 - (instancetype)initWithStatusCode:(NSUInteger)statusCode
                          errorCode:(NSString *)errorCode
                            message:(NSString *)message;
 @end
 
+/**
+ * @abstract Incremental parser for one HTTP/1.x request.
+ */
 @interface Http1Parser : NSObject
 
+/** Current parser state. */
 @property (nonatomic, readonly) Http1ParserState state;
+/** Maximum accepted header block size in bytes. Defaults to 16 KB. */
 @property (nonatomic, assign) NSUInteger maxHeaderBytes;  // default 16KB
+/** Maximum accepted request body size in bytes. Defaults to 50 MB. */
 @property (nonatomic, assign) NSUInteger maxBodyBytes;    // default 50MB
 
-// Client IP/Address to populate in the resulting HttpRequest
+/** Client IP address copied into the completed HttpRequest. */
 @property (nonatomic, copy, nullable) NSString *remoteAddress;
 
-// Feed raw bytes. Returns YES if a complete request is available or an error occurred.
+/**
+ * @abstract Feeds raw bytes into the parser.
+ * @return YES when a complete request or parse error is available.
+ */
 - (BOOL)feedData:(NSData *)data;
 
-// After feedData: returns YES, exactly one of these is non-nil:
+/** Completed request after feedData: returns YES, or nil when parsing failed. */
 - (nullable HttpRequest *)completedRequest;
+/** Parser error after feedData: returns YES, or nil when a request completed successfully. */
 - (nullable Http1ParserError *)parseError;
 
-// Remaining bytes after the consumed request (for pipelining)
+/** Bytes not consumed by the completed request, used for HTTP pipelining. */
 - (NSData *)unconsumedData;
 
-// Reset for next request on same connection
+/** Resets parser state for the next request on the same connection. */
 - (void)reset;
 
 @end

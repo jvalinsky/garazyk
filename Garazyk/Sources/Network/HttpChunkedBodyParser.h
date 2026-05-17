@@ -50,6 +50,9 @@ NS_ASSUME_NONNULL_BEGIN
 
  @return The number of bytes consumed, or -1 if an error occurred.
  */
+/**
+ * @abstract Performs the appendData operation.
+ */
 - (NSInteger)appendData:(NSData *)data error:(NSError **)error;
 
 /*!
@@ -104,6 +107,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param size On return, contains the parsed chunk size.
 
  @return Offset of first byte after chunk size line, or NSNotFound on error.
+ */
+/**
+ * @abstract Performs the parseChunkSizeFromData operation.
  */
 + (NSUInteger)parseChunkSizeFromData:(NSData *)data
                                offset:(NSUInteger)offset

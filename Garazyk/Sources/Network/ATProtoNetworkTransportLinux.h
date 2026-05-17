@@ -41,6 +41,9 @@ NS_ASSUME_NONNULL_BEGIN
 
  @return An initialized connection (connection starts in Preparing state).
  */
+/**
+ * @abstract Performs the initWithHost operation.
+ */
 - (instancetype)initWithHost:(NSString *)host port:(NSUInteger)port;
 
 /*!
@@ -53,6 +56,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param address The peer's address string.
 
  @return An initialized connection (connection starts in Ready state).
+ */
+/**
+ * @abstract Performs the initWithSocket operation.
  */
 - (instancetype)initWithSocket:(int)sockfd address:(NSString *)address;
 
@@ -94,6 +100,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param port The port number (0 for ephemeral port assignment).
 
  @return An initialized listener (starts in Waiting state).
+ */
+/**
+ * @abstract Performs the initWithHost operation.
  */
 - (instancetype)initWithHost:(nullable NSString *)host port:(NSUInteger)port;
 

@@ -19,6 +19,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface ATProtoHttpXrpcRoutePack : NSObject
 
+/**
+ * @abstract Performs the registerRoutesWithServer operation.
+ */
 + (void)registerRoutesWithServer:(HttpServer *)server
                       dispatcher:(nullable XrpcDispatcher *)dispatcher
                      application:(nullable PDSApplication *)application

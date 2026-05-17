@@ -29,6 +29,9 @@ NS_ASSUME_NONNULL_BEGIN
  Pattern matches PDSPerDidWriteState which uses pthread_mutex for
  per-DID serialization.
  */
+/**
+ * @abstract Declares the MSTAtomicReference public API.
+ */
 @interface MSTAtomicReference : NSObject {
 @public
     pthread_mutex_t _mutex;
@@ -52,6 +55,9 @@ NS_ASSUME_NONNULL_BEGIN
  to publish a new version.
 
  @return The current MST, or nil if cleared.
+ */
+/**
+ * @abstract Returns the current snapshot result.
  */
 - (nullable MST *)currentSnapshot;
 

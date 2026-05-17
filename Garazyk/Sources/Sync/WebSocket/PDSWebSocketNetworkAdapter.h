@@ -14,6 +14,9 @@
 #import <Foundation/Foundation.h>
 #import "PDSWebSocketTransport.h"
 
+/**
+ * @abstract Defines the ATProtoNetworkConnection protocol contract.
+ */
 @protocol ATProtoNetworkConnection;
 
 NS_ASSUME_NONNULL_BEGIN

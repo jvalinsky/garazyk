@@ -8,6 +8,9 @@ NS_ASSUME_NONNULL_BEGIN
 @class HttpResponse;
 @class JWTMinter;
 @class PDSDatabasePool;
+/**
+ * @abstract Defines the XrpcMiddleware protocol contract.
+ */
 @protocol XrpcMiddleware;
 
 /*!
@@ -62,6 +65,9 @@ typedef BOOL (^XrpcRequestInterceptor)(HttpRequest *request,
  
  [dispatcher handleRequest:request response:response];
  @endcode
+ */
+/**
+ * @abstract Declares the XrpcDispatcher public API.
  */
 @interface XrpcDispatcher : NSObject
 
@@ -422,6 +428,9 @@ typedef BOOL (^XrpcRequestInterceptor)(HttpRequest *request,
  @param methodId The method NSID.
  @param middlewares Array of middleware to execute before handler (can be nil).
  @param handler The handler to invoke if all middleware pass.
+ */
+/**
+ * @abstract Performs the registerMethod operation.
  */
 - (void)registerMethod:(NSString *)methodId
            middlewares:(nullable NSArray<id<XrpcMiddleware>> *)middlewares

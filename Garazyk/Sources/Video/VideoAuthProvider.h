@@ -7,8 +7,14 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Defines the VideoAuthProvider protocol contract.
+ */
 @protocol VideoAuthProvider <NSObject>
 
+/**
+ * @abstract Performs the authenticateRequest operation.
+ */
 - (nullable NSString *)authenticateRequest:(HttpRequest *)request
                                    response:(HttpResponse *)response;
 

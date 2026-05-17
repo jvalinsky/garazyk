@@ -31,6 +31,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
+/**
+ * @abstract Declares the PDSRelayService public API.
+ */
 @interface PDSRelayService : NSObject
 
 /*! Transport for sending relay notifications. Defaults to NSURLSession. */

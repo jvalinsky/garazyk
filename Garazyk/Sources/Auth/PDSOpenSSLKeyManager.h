@@ -19,6 +19,9 @@ NS_ASSUME_NONNULL_BEGIN
  *  This class manages keys stored in a secure file-based keystore or 
  *  delegates to an OpenSSL-backed implementation.
  */
+/**
+ * @abstract Declares the PDSOpenSSLKeyManager public API.
+ */
 @interface PDSOpenSSLKeyManager : NSObject <PDSActorKeyManager>
 
 /**

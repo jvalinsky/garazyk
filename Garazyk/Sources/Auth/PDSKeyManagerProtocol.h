@@ -195,6 +195,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param error On failure, set to an error describing the failure.
  @return YES if the signature is valid, NO otherwise.
  */
+/**
+ * @abstract Performs the verifySignature operation.
+ */
 - (BOOL)verifySignature:(NSData *)signature
                 forData:(NSData *)data
               withKeyID:(NSString *)keyID

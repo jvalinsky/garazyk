@@ -22,6 +22,9 @@
 
 #import "Services/Core/PDSPhoneVerificationProvider.h"
 
+/**
+ * @abstract Defines the PDSSecretsProvider protocol contract.
+ */
 @protocol PDSSecretsProvider;
 
 NS_ASSUME_NONNULL_BEGIN

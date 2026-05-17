@@ -232,9 +232,21 @@ typedef NS_ENUM(NSInteger, FirehoseEventKind) {
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveIdentityEvent:(FirehoseIdentityEvent *)event;
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveAccountEvent:(FirehoseAccountEvent *)event;
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveSyncEvent:(FirehoseSyncEvent *)event;
+/**
+ * @abstract Performs the firehoseSubscription operation.
+ */
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveInfoEvent:(FirehoseInfoEvent *)event;
+/**
+ * @abstract Performs the firehoseSubscription operation.
+ */
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didReceiveErrorEvent:(FirehoseErrorEvent *)event;
+/**
+ * @abstract Performs the firehoseSubscription operation.
+ */
 - (void)firehoseSubscription:(FirehoseSubscription *)subscription didCloseWithError:(nullable NSError *)error;
+/**
+ * @abstract Performs the firehoseSubscriptionDidConnect operation.
+ */
 - (void)firehoseSubscriptionDidConnect:(FirehoseSubscription *)subscription;
 @end
 

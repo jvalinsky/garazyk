@@ -16,6 +16,9 @@
 #import <Foundation/Foundation.h>
 
 @class ATProtoServiceConfiguration;
+/**
+ * @abstract Defines the PDSSecretsProvider protocol contract.
+ */
 @protocol PDSSecretsProvider;
 
 NS_ASSUME_NONNULL_BEGIN

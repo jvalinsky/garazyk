@@ -51,6 +51,9 @@ NS_ASSUME_NONNULL_BEGIN
  * - Admin DID and reason logged for all clears
  * - Reason field is mandatory (cannot be empty)
  */
+/**
+ * @abstract Declares the PDSRateLimitAdminHandler public API.
+ */
 @interface PDSRateLimitAdminHandler : NSObject
 
 /**
@@ -70,6 +73,9 @@ NS_ASSUME_NONNULL_BEGIN
  * @param statusCode Output status code
  * @param contentType Output content type
  * @return JSON response body or error message
+ */
+/**
+ * @abstract Performs the handleRequestWithMethod operation.
  */
 - (nullable NSString *)handleRequestWithMethod:(NSInteger)method
                                          path:(NSString *)path

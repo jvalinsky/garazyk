@@ -27,6 +27,9 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSDatabasePool;
 @class PDSServiceDatabases;
 
+/**
+ * @abstract Defines PDSHealthStatus values exposed by this API.
+ */
 typedef NS_ENUM(NSInteger, PDSHealthStatus) {
     PDSHealthStatusHealthy = 0,
     PDSHealthStatusWarning,

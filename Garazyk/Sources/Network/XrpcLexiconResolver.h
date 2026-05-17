@@ -12,10 +12,16 @@ extern NSErrorDomain const XrpcLexiconResolverErrorDomain;
 
 @interface XrpcLexiconResolver : NSObject
 
+/**
+ * @abstract Performs the resolveLexiconResponseForNSID operation.
+ */
 + (nullable NSDictionary *)resolveLexiconResponseForNSID:(NSString *)nsid
                                            configuration:(ATProtoServiceConfiguration *)configuration
                                                    error:(NSError **)error;
 
+/**
+ * @abstract Performs the registerResolveLexiconMethodOnDispatcher operation.
+ */
 + (void)registerResolveLexiconMethodOnDispatcher:(XrpcDispatcher *)dispatcher
                                    configuration:(ATProtoServiceConfiguration *)configuration;
 

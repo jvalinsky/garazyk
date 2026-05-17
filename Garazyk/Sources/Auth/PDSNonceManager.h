@@ -37,6 +37,9 @@ NS_ASSUME_NONNULL_BEGIN
     }
  @endcode
  */
+/**
+ * @abstract Declares the PDSNonceManager public API.
+ */
 @interface PDSNonceManager : NSObject
 
 /*!
@@ -60,6 +63,9 @@ NS_ASSUME_NONNULL_BEGIN
     getrandom() on Linux. Nonces expire after a configurable TTL
     (default 5 minutes).
  */
+/**
+ * @abstract Returns the generate nonce result.
+ */
 - (NSString *)generateNonce;
 
 /*!
@@ -77,6 +83,9 @@ NS_ASSUME_NONNULL_BEGIN
     - It has not been used before (one-time use)
 
     After validation, the nonce is marked as used and cannot be reused.
+ */
+/**
+ * @abstract Performs the validateNonce operation.
  */
 - (BOOL)validateNonce:(NSString *)nonce;
 

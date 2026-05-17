@@ -18,7 +18,13 @@ NS_ASSUME_NONNULL_BEGIN
 @class ATProtoDataPaths;
 
 // Forward declarations for logging types
+/**
+ * @abstract Defines GZLogLevel values exposed by this API.
+ */
 typedef NS_ENUM(NSInteger, GZLogLevel);
+/**
+ * @abstract Defines GZLogFormat values exposed by this API.
+ */
 typedef NS_ENUM(NSInteger, GZLogFormat);
 
 /*! Error domain for configuration errors. */
@@ -145,6 +151,9 @@ typedef NS_ENUM(NSInteger, ATProtoServiceConfigError) {
     "email", "phone_verification", "captcha", etc.
     Values use the `env:VAR_NAME` convention for secrets.
     Takes precedence over legacy top-level config keys.
+ */
+/**
+ * @abstract Exposes the providers config value.
  */
 @property (nonatomic, readonly, nullable) NSDictionary<NSString *, NSDictionary *> *providersConfig;
 

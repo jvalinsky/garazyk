@@ -73,6 +73,9 @@ extern NSString * const XRPCErrorDomain;
 
  @return A new XRPCError instance.
  */
+/**
+ * @abstract Performs the initWithError operation.
+ */
 - (instancetype)initWithError:(NSString *)error
                       message:(NSString *)message
                    statusCode:(NSInteger)statusCode;

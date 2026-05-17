@@ -8,6 +8,9 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * XrpcSyncPack registers all com.atproto.sync.* endpoint handlers.
  */
+/**
+ * @abstract Declares the XrpcSyncPack public API.
+ */
 @interface XrpcSyncPack : NSObject <XrpcRoutePack>
 
 @end

@@ -35,6 +35,9 @@ NS_ASSUME_NONNULL_BEGIN
  * - InternalServerError: Server-side error (500)
  * - MethodNotAllowed: HTTP method not allowed (405)
  */
+/**
+ * @abstract Declares the XrpcErrorHelper public API.
+ */
 @interface XrpcErrorHelper : NSObject
 
 #pragma mark - Standard Error Responses

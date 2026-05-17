@@ -65,6 +65,9 @@ typedef NS_ENUM(NSInteger, HttpProtocolEvent) {
  pipelining policy, and returns events. Multiple events may be returned
  for a single feed() call (e.g., RequestReady + another RequestReady).
  */
+/**
+ * @abstract Performs the feedData operation.
+ */
 - (NSArray<NSNumber *> *)feedData:(NSData *)data;
 
 /*!
@@ -125,6 +128,9 @@ typedef NS_ENUM(NSInteger, HttpProtocolEvent) {
  - Whether response queue is backed up
  - Whether header parse has timed out
  */
+/**
+ * @abstract Performs the shouldContinueReading operation.
+ */
 - (BOOL)shouldContinueReading:(NSTimeInterval)headerStartTime
                 outputQueueSize:(NSUInteger)outputQueueSize
                    headerTimeout:(NSTimeInterval)headerTimeout
@@ -141,6 +147,9 @@ typedef NS_ENUM(NSInteger, HttpProtocolEvent) {
  */
 - (NSUInteger)pendingRequestCount;
 
+/**
+ * @abstract Returns the response did finish sending result.
+ */
 - (void)responseDidFinishSending;
 
 @end

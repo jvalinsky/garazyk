@@ -26,12 +26,21 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) id<XrpcRoutePackServices> services;
 @property (nonatomic, readonly, nullable) NSString *authenticatedDID;
 
+/**
+ * @abstract Performs the initWithRequest operation.
+ */
 - (instancetype)initWithRequest:(HttpRequest *)request
                        response:(HttpResponse *)response
                        services:(id<XrpcRoutePackServices>)services
     NS_DESIGNATED_INITIALIZER;
 
+/**
+ * @abstract Returns the operation result.
+ */
 - (instancetype)init NS_UNAVAILABLE;
+/**
+ * @abstract Returns the operation result.
+ */
 + (instancetype)new NS_UNAVAILABLE;
 
 /*!

@@ -116,6 +116,9 @@ typedef NS_ENUM(NSInteger, PDSProviderHTTPClientErrorCode) {
  @param error On failure, set to a client or HTTP error.
  @result The parsed JSON response as a dictionary, or nil on error.
  */
+/**
+ * @abstract Performs the postFormPath operation.
+ */
 - (nullable NSDictionary *)postFormPath:(NSString *)path
                                  params:(NSDictionary *)params
                                   error:(NSError **)error;

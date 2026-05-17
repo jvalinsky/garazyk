@@ -18,8 +18,11 @@ extern NSString * const PDSPhoneVerificationProviderErrorDomain;
  @abstract Error codes for provider configuration and request failures.
  */
 typedef NS_ENUM(NSInteger, PDSPhoneVerificationProviderErrorCode) {
+    /** The selected provider lacks required configuration or credentials. */
     PDSPhoneVerificationProviderErrorNotConfigured = 1,
+    /** The selected provider name is not supported or registered. */
     PDSPhoneVerificationProviderErrorUnsupportedProvider = 2,
+    /** The provider request failed. */
     PDSPhoneVerificationProviderErrorRequestFailed = 3,
 };
 
@@ -41,6 +44,7 @@ typedef NS_ENUM(NSInteger, PDSPhoneVerificationProviderErrorCode) {
          session_uuid), or nil on failure. For providers that do not use
          session IDs (e.g. Twilio Verify), returns an empty string (@"") on success.
  */
+/** Requests delivery of a verification code to a phone number. */
 - (nullable NSString *)requestVerificationForPhoneNumber:(NSString *)phoneNumber error:(NSError **)error;
 
 @optional
@@ -64,6 +68,7 @@ typedef NS_ENUM(NSInteger, PDSPhoneVerificationProviderErrorCode) {
  @param error On failure, set to a verification error.
  @result YES if the code is valid, NO otherwise.
  */
+/** Verifies a phone code with an optional provider session identifier. */
 - (BOOL)verifyCode:(NSString *)code
      forPhoneNumber:(NSString *)phoneNumber
           sessionID:(nullable NSString *)sessionID
@@ -84,6 +89,7 @@ typedef NS_ENUM(NSInteger, PDSPhoneVerificationProviderErrorCode) {
  @param error On failure, set to a verification error.
  @result YES if the code is valid, NO otherwise.
  */
+/** Verifies a phone code using the legacy provider contract. */
 - (BOOL)verifyCode:(NSString *)code forPhoneNumber:(NSString *)phoneNumber error:(NSError **)error;
 
 @end
@@ -111,6 +117,7 @@ typedef NS_ENUM(NSInteger, PDSPhoneVerificationProviderErrorCode) {
  @param error On failure, set to a configuration or resolution error.
  @result Provider instance, or nil when unavailable.
  */
+/** Returns a named provider using configuration and optional secret lookup. */
 + (nullable id<PDSPhoneVerificationProvider>)providerWithName:(NSString *)providerName
                                                  configuration:(NSDictionary *)configuration
                                                 secretsProvider:(nullable id)secretsProvider
@@ -131,6 +138,7 @@ typedef NS_ENUM(NSInteger, PDSPhoneVerificationProviderErrorCode) {
  @param error On failure, set to a configuration or resolution error.
  @result Provider instance, or nil when unavailable.
  */
+/** Returns a named provider using the legacy registry-only lookup path. */
 + (nullable id<PDSPhoneVerificationProvider>)providerWithName:(NSString *)providerName error:(NSError **)error;
 
 /*!
@@ -141,6 +149,7 @@ typedef NS_ENUM(NSInteger, PDSPhoneVerificationProviderErrorCode) {
  @param providerClass Class implementing PDSPhoneVerificationProvider.
  @param providerName Provider identifier used for later resolution.
  */
+/** Registers a custom provider class for later lookup by name. */
 + (void)registerProviderClass:(Class)providerClass forName:(NSString *)providerName;
 
 /*!
@@ -150,6 +159,7 @@ typedef NS_ENUM(NSInteger, PDSPhoneVerificationProviderErrorCode) {
 
  @param providerName Provider identifier to remove.
  */
+/** Removes a custom provider registration. */
 + (void)unregisterProviderWithName:(NSString *)providerName;
 
 /*!
@@ -157,6 +167,7 @@ typedef NS_ENUM(NSInteger, PDSPhoneVerificationProviderErrorCode) {
 
  @abstract Clears all registered custom providers.
  */
+/** Clears all custom provider registrations. */
 + (void)resetCustomProviders;
 
 @end

@@ -73,6 +73,9 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 @property (nonatomic, strong, nullable) CID *prev;
 @property (nonatomic, strong, nullable) NSData *sig;
 
+/**
+ * @abstract Performs the commitWithDid operation.
+ */
 + (instancetype)commitWithDid:(NSString *)did
                       version:(NSInteger)version
                         data:(nullable CID *)data
@@ -80,6 +83,9 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
                         prev:(nullable CID *)prev
                          sig:(nullable NSData *)sig;
 
+/**
+ * @abstract Performs the serializeToDagCBOR operation.
+ */
 - (nullable NSData *)serializeToDagCBOR:(NSError **)error;
 
 @end
@@ -98,6 +104,9 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
  */
 @interface STARMstEntry : NSObject
 
+/**
+ * @abstract Exposes the prefix len value.
+ */
 @property (nonatomic, assign) NSUInteger prefixLen;
 @property (nonatomic, copy) NSData *keySuffix;
 @property (nonatomic, strong, nullable) CID *value;
@@ -105,6 +114,9 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
 @property (nonatomic, strong, nullable) CID *tree;
 @property (nonatomic, assign) BOOL treeArchived;
 
+/**
+ * @abstract Performs the entryWithPrefixLen operation.
+ */
 + (instancetype)entryWithPrefixLen:(NSUInteger)prefixLen
                          keySuffix:(NSData *)keySuffix
                              value:(nullable CID *)value
@@ -129,14 +141,23 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
  */
 @interface STARMstNode : NSObject
 
+/**
+ * @abstract Exposes the left value.
+ */
 @property (nonatomic, strong, nullable) CID *left;
 @property (nonatomic, assign) BOOL leftArchived;
 @property (nonatomic, copy) NSArray<STARMstEntry *> *entries;
 
+/**
+ * @abstract Performs the nodeWithLeft operation.
+ */
 + (instancetype)nodeWithLeft:(nullable CID *)left
                 leftArchived:(BOOL)leftArchived
                     entries:(NSArray<STARMstEntry *> *)entries;
 
+/**
+ * @abstract Performs the serializeToDagCBOR operation.
+ */
 - (nullable NSData *)serializeToDagCBOR:(NSError **)error;
 
 @end
@@ -158,10 +179,19 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
      [writer writeFromMST:mst blockProvider:provider error:&err];
      NSData *starData = [writer serialize];
  */
+/**
+ * @abstract Declares the STARL0Writer public API.
+ */
 @interface STARL0Writer : NSObject
 
+/**
+ * @abstract Exposes the commit value.
+ */
 @property (nonatomic, strong, readonly) STARCommit *commit;
 
+/**
+ * @abstract Performs the initWithCommit operation.
+ */
 - (instancetype)initWithCommit:(STARCommit *)commit;
 
 /*!
@@ -227,10 +257,19 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
      [writer writeFromMST:mst blockProvider:provider error:&err];
      NSData *starData = [writer serialize];
  */
+/**
+ * @abstract Declares the STARLiteWriter public API.
+ */
 @interface STARLiteWriter : NSObject
 
+/**
+ * @abstract Exposes the commit value.
+ */
 @property (nonatomic, strong, readonly) STARCommit *commit;
 
+/**
+ * @abstract Performs the initWithCommit operation.
+ */
 - (instancetype)initWithCommit:(STARCommit *)commit;
 
 /*!
@@ -296,12 +335,21 @@ typedef NS_ENUM(NSUInteger, STARItemType) {
  */
 @interface STARReader : NSObject
 
+/**
+ * @abstract Exposes the root cid value.
+ */
 @property (nonatomic, strong, readonly, nullable) CID *rootCID;
 @property (nonatomic, strong, readonly) NSArray<CARBlock *> *blocks;
 @property (nonatomic, assign, readonly) STARVariant variant;
 @property (nonatomic, strong, readonly, nullable) STARCommit *commit;
 
+/**
+ * @abstract Performs the readFromData operation.
+ */
 + (nullable instancetype)readFromData:(NSData *)data error:(NSError **)error;
+/**
+ * @abstract Performs the readFromPath operation.
+ */
 + (nullable instancetype)readFromPath:(NSString *)path error:(NSError **)error;
 
 /*!

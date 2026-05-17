@@ -17,12 +17,19 @@
 
 #import <Foundation/Foundation.h>
 
+/**
+ * @abstract Defines the PDSQueryDatabase protocol contract.
+ */
 @protocol PDSQueryDatabase;
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Stores and retrieves opaque Germ mailbox ciphertexts.
+ */
 @interface GermMailboxService : NSObject
 
+/** Initializes the service with the Germ mailbox database. */
 - (instancetype)initWithDatabase:(id<PDSQueryDatabase>)database;
 
 #pragma mark - Ephemeral Addresses
@@ -42,6 +49,7 @@ NS_ASSUME_NONNULL_BEGIN
  link them to a DID or conversation. Addresses expire after a
  configurable TTL.
  */
+/** Claims ephemeral mailbox addresses for an opaque agent reference. */
 - (nullable NSArray<NSString *> *)claimAddressesForAgent:(NSString *)agentRef
                                                    count:(NSInteger)count
                                                    error:(NSError **)error;
@@ -63,6 +71,7 @@ NS_ASSUME_NONNULL_BEGIN
  or inspect message content. Delivery fails if the address does not
  exist or has expired.
  */
+/** Stores ciphertext for delivery to an ephemeral mailbox address. */
 - (BOOL)deliverCiphertext:(NSData *)ciphertext
                toAddress:(NSString *)address
                     error:(NSError **)error;
@@ -82,6 +91,7 @@ NS_ASSUME_NONNULL_BEGIN
  @discussion Messages are deleted after polling (single-read semantics).
  The server cannot decrypt the ciphertexts.
  */
+/** Retrieves and deletes pending ephemeral mailbox messages for an agent. */
 - (nullable NSArray<NSDictionary *> *)pollMessagesForAgent:(NSString *)agentRef
                                                      error:(NSError **)error;
 
@@ -102,6 +112,7 @@ NS_ASSUME_NONNULL_BEGIN
  @discussion Rendezvous addresses are stable within an MLS epoch
  for reconnection. They rotate with each epoch.
  */
+/** Registers a rendezvous address for an agent and MLS epoch. */
 - (BOOL)registerRendezvousAddress:(NSString *)address
                          forAgent:(NSString *)agentRef
                            epoch:(NSInteger)epoch
@@ -118,6 +129,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  @return YES if delivery succeeded, NO otherwise.
  */
+/** Stores ciphertext for delivery to a rendezvous address. */
 - (BOOL)deliverToRendezvous:(NSData *)ciphertext
                     address:(NSString *)address
                      error:(NSError **)error;
@@ -133,6 +145,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  @return Array of dictionaries with "ciphertext" and "address" keys.
  */
+/** Retrieves and deletes pending rendezvous messages for an agent. */
 - (nullable NSArray<NSDictionary *> *)pollRendezvousForAgent:(NSString *)agentRef
                                                        error:(NSError **)error;
 
@@ -146,6 +159,7 @@ NS_ASSUME_NONNULL_BEGIN
  @discussion Should be called periodically. Addresses past their
  expires_at are deleted along with any undelivered messages.
  */
+/** Removes expired mailbox addresses and undelivered messages. */
 - (void)expireStaleAddresses;
 
 @end

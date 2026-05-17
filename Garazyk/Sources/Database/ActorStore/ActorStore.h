@@ -45,6 +45,9 @@ extern NSString * const PDSActorStoreErrorDomain;
  @constant PDSActorStoreErrorAccessControlCreationFailed Failed to create access control.
  @constant PDSActorStoreErrorKeychainUpgradeRequired Keychain upgrade required.
  */
+/**
+ * @abstract Defines PDSActorStoreError values exposed by this API.
+ */
 typedef NS_ENUM(NSInteger, PDSActorStoreError) {
     PDSActorStoreErrorNotFound = 1000,
     PDSActorStoreErrorAlreadyExists,

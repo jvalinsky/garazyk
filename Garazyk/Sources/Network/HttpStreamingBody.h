@@ -65,6 +65,9 @@ NS_ASSUME_NONNULL_BEGIN
 
  @return YES if data was accepted, NO on error.
  */
+/**
+ * @abstract Performs the appendData operation.
+ */
 - (BOOL)appendData:(NSData *)data error:(NSError **)error;
 
 /*!

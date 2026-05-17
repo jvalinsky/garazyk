@@ -114,6 +114,9 @@ typedef NS_ENUM(NSInteger, YubiKeyOATHError) {
 
  Thread-safety: Methods are not thread-safe. Use from main thread only.
  */
+/**
+ * @abstract Declares the YubiKeyOATHManager public API.
+ */
 @interface YubiKeyOATHManager : NSObject <YubiKeyOATH>
 
 /*! Delegate for connection events. */

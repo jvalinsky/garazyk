@@ -13,12 +13,18 @@
 @class XrpcDispatcher;
 @class DraftService;
 @class JWTMinter;
+/**
+ * @abstract Defines the PDSAdminController protocol contract.
+ */
 @protocol PDSAdminController;
 
 NS_ASSUME_NONNULL_BEGIN
 
 @interface XrpcAppBskyDraftsPack : NSObject <XrpcRoutePack>
 
+/**
+ * @abstract Performs the registerWithDispatcher operation.
+ */
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                   draftService:(DraftService *)draftService
                      jwtMinter:(JWTMinter *)jwtMinter

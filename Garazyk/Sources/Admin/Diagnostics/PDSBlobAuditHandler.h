@@ -46,6 +46,9 @@ NS_ASSUME_NONNULL_BEGIN
  *   "error": null
  * }
  */
+/**
+ * @abstract Declares the PDSBlobAuditHandler public API.
+ */
 @interface PDSBlobAuditHandler : NSObject
 
 /*! Blob audit manager used to create and inspect audit jobs. */
@@ -71,6 +74,9 @@ NS_ASSUME_NONNULL_BEGIN
  * @param statusCode Output status code
  * @param contentType Output content type
  * @return JSON response body or error message
+ */
+/**
+ * @abstract Performs the handleRequestWithMethod operation.
  */
 - (nullable NSString *)handleRequestWithMethod:(NSInteger)method
                                          path:(NSString *)path

@@ -54,6 +54,9 @@ typedef NS_ENUM(NSInteger, ATProtoErrorCode) {
     ATProtoErrorCodeNetworkError = 6000,
 };
 
+/**
+ * @abstract Declares the ATProtoError public API.
+ */
 @interface ATProtoError : NSObject
 
 /*!

@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 #import <Foundation/Foundation.h>
 
+/**
+ * @abstract Defines the PDSActorKeyManager protocol contract.
+ */
 @protocol PDSActorKeyManager;
 
 NS_ASSUME_NONNULL_BEGIN

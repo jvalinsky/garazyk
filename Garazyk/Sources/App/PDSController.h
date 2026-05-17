@@ -36,6 +36,9 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSDatabaseRecord;
 @class PDSDatabaseBlob;
 @class PDSAccountService;
+/**
+ * @abstract Defines the PDSAccountService protocol contract.
+ */
 @protocol PDSAccountService;
 @class PDSBlobService;
 @class PDSRepositoryService;
@@ -59,6 +62,9 @@ NS_ASSUME_NONNULL_BEGIN
  - PDSBlobService for blob operations
  - PDSRepositoryService for repository operations
  - PDSAdminController for admin/moderation/labeling operations
+ */
+/**
+ * @abstract Declares the PDSController public API.
  */
 @interface PDSController : NSObject
 
@@ -138,6 +144,9 @@ NS_ASSUME_NONNULL_BEGIN
 
  @param application The PDSApplication to delegate to.
  @return An initialized PDSController instance.
+ */
+/**
+ * @abstract Performs the initWithApplication operation.
  */
 - (instancetype)initWithApplication:(PDSApplication *)application;
 

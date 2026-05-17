@@ -13,6 +13,9 @@ NS_ASSUME_NONNULL_BEGIN
  * dispatching them with arguments, and managing command execution context.
  */
 
+/**
+ * @abstract Defines PDSCLIExitCode values exposed by this API.
+ */
 typedef NS_ENUM(NSInteger, PDSCLIExitCode) {
     PDSCLIExitCodeSuccess = 0,
     PDSCLIExitCodeGeneralError = 1,

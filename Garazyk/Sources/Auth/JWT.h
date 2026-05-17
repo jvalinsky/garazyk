@@ -18,6 +18,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 extern NSString * const JWTErrorDomain;
 
+/**
+ * @abstract Defines the PDSKeyManager protocol contract.
+ */
 @protocol PDSKeyManager;
 @protocol PDSActorKeyManager;
 
@@ -43,22 +46,41 @@ extern NSString * const JWTErrorDomain;
  @constant JWTErrorNoPublicKey No public key configured for verification.
  @constant JWTErrorInvalidAlgorithm Signing algorithm not allowed.
  */
+/**
+ * @abstract Defines JWTError values exposed by this API.
+ */
 typedef NS_ENUM(NSInteger, JWTError) {
+    /** The token does not contain the expected compact JWT parts. */
     JWTErrorInvalidFormat = 1000,
+    /** The JWT header is malformed. */
     JWTErrorInvalidHeader,
+    /** The JWT payload is malformed. */
     JWTErrorInvalidPayload,
+    /** The JWT signature is invalid. */
     JWTErrorInvalidSignature,
+    /** The token has expired. */
     JWTErrorTokenExpired,
+    /** The token is not valid yet. */
     JWTErrorTokenNotYetValid,
+    /** The issuer claim is invalid. */
     JWTErrorInvalidIssuer,
+    /** The subject claim is invalid. */
     JWTErrorInvalidSubject,
+    /** The audience claim is invalid. */
     JWTErrorInvalidAudience,
+    /** The signing algorithm is not allowed. */
     JWTErrorInvalidAlgorithm,
+    /** A required claim is missing. */
     JWTErrorMissingRequiredClaim,
+    /** Base64URL encoding failed. */
     JWTErrorEncodingFailed,
+    /** Base64URL decoding failed. */
     JWTErrorDecodingFailed,
+    /** Signature verification failed. */
     JWTErrorVerificationFailed,
+    /** Token signing failed. */
     JWTErrorSigningFailed,
+    /** No public key is configured for verification. */
     JWTErrorNoPublicKey
 };
 
@@ -198,6 +220,9 @@ typedef NS_ENUM(NSInteger, JWTError) {
  NSString *encoded = [jwt encodedToken];
  @endcode
  */
+/**
+ * @abstract Declares the JWT public API.
+ */
 @interface JWT : NSObject
 
 /*! The decoded header. */
@@ -239,6 +264,9 @@ typedef NS_ENUM(NSInteger, JWTError) {
  @param signature The signature (base64URL encoded).
  @param error On return, contains an error if creation failed.
  @return A new JWT instance.
+ */
+/**
+ * @abstract Performs the jwtWithHeader operation.
  */
 + (nullable instancetype)jwtWithHeader:(JWTHeader *)header
                                payload:(JWTPayload *)payload
@@ -423,12 +451,20 @@ typedef NS_ENUM(NSInteger, JWTError) {
  @param error On return, contains an error if minting failed.
  @return A new access token JWT.
  */
+/**
+ * @abstract Performs the mintAccessTokenForDID operation.
+ */
 - (JWT *)mintAccessTokenForDID:(NSString *)did
                         handle:(NSString *)handle
                         scopes:(NSArray<NSString *> *)scopes
              dpopKeyThumbprint:(nullable NSString *)jkt
                            error:(NSError **)error;
 
+/*!
+ @method mintAccessTokenForDID:handle:scopes:error:
+
+ @abstract Mints an access token without a DPoP key thumbprint.
+ */
 - (JWT *)mintAccessTokenForDID:(NSString *)did
                         handle:(NSString *)handle
                         scopes:(NSArray<NSString *> *)scopes
@@ -444,6 +480,9 @@ typedef NS_ENUM(NSInteger, JWTError) {
  @param scopes The granted scopes.
  @param error On return, contains an error if minting failed.
  @return A new refresh token JWT.
+ */
+/**
+ * @abstract Performs the mintRefreshTokenForDID operation.
  */
 - (JWT *)mintRefreshTokenForDID:(NSString *)did
                          handle:(NSString *)handle
@@ -471,6 +510,9 @@ typedef NS_ENUM(NSInteger, JWTError) {
  @param actorKeyManager The user's signing key manager for ES256K signing.
  @param error On return, contains an error if minting failed.
  @return The signed JWT string, or nil on failure.
+ */
+/**
+ * @abstract Performs the mintServiceAuthJWTForDID operation.
  */
 - (nullable NSString *)mintServiceAuthJWTForDID:(NSString *)userDID
                                             aud:(NSString *)audienceDID

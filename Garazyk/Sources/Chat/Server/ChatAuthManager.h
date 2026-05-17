@@ -39,6 +39,9 @@ NS_ASSUME_NONNULL_BEGIN
  9. On signature failure, retry with fresh key (key rotation)
  10. Extract user DID from iss claim
  */
+/**
+ * @abstract Declares the ChatAuthManager public API.
+ */
 @interface ChatAuthManager : NSObject
 
 /*! The PDS URL for fallback session verification. */

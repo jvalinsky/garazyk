@@ -34,6 +34,9 @@ NS_ASSUME_NONNULL_BEGIN
  * @see PDSAccountService
  * @see Session
  */
+/**
+ * @abstract Defines the PDSSessionRepository protocol contract.
+ */
 @protocol PDSSessionRepository <NSObject>
 
 /**

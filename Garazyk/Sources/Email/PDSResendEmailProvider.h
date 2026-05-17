@@ -6,6 +6,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Declares the PDSResendEmailProvider public API.
+ */
 @interface PDSResendEmailProvider : NSObject <PDSEmailProvider>
 
 /**

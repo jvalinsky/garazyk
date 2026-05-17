@@ -14,6 +14,9 @@
 
 #import <Foundation/Foundation.h>
 
+/**
+ * @abstract Defines the ATProtoNetworkConnection protocol contract.
+ */
 @protocol ATProtoNetworkConnection;
 @class HttpProtocolDriver;
 @class HttpResponseSender;
@@ -98,10 +101,16 @@ typedef void (^HttpIOErrorHandler)(NSError *error);
 
  @return An initialized coordinator.
  */
+/**
+ * @abstract Performs the initWithConnection operation.
+ */
 - (instancetype)initWithConnection:(id<ATProtoNetworkConnection>)connection
                            protocol:(HttpProtocolDriver *)driver
                        responseSender:(HttpResponseSender *)sender NS_DESIGNATED_INITIALIZER;
 
+/**
+ * @abstract Returns the operation result.
+ */
 - (instancetype)init NS_UNAVAILABLE;
 
 /*!

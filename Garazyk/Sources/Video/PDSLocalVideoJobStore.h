@@ -9,8 +9,14 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface PDSLocalVideoJobStore : NSObject <VideoJobStore>
 
+/**
+ * @abstract Exposes the database value.
+ */
 @property (nonatomic, strong, readonly) PDSDatabase *database;
 
+/**
+ * @abstract Performs the initWithDatabase operation.
+ */
 - (instancetype)initWithDatabase:(PDSDatabase *)database;
 
 @end

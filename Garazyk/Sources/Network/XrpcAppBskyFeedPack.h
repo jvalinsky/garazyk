@@ -15,6 +15,9 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  @brief Namespace pack for app.bsky.feed.* endpoints.
  */
+/**
+ * @abstract Declares the XrpcAppBskyFeedPack public API.
+ */
 @interface XrpcAppBskyFeedPack : NSObject <XrpcRoutePack>
 
 @end

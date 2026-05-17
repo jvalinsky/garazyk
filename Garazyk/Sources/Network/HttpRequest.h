@@ -29,6 +29,9 @@ NS_ASSUME_NONNULL_BEGIN
  @constant HttpMethodHEAD HTTP HEAD method.
  @constant HttpMethodUnknown Unknown/unsupported method.
  */
+/**
+ * @abstract Defines HttpMethod values exposed by this API.
+ */
 typedef NS_ENUM(NSInteger, HttpMethod) {
     HttpMethodGET,
     HttpMethodPOST,
@@ -118,6 +121,9 @@ typedef NS_ENUM(NSInteger, HttpMethod) {
  *
  * Middleware chains can use this to pass data to downstream handlers.
  * For example, AuthMiddleware injects "authenticatedDid" here.
+ */
+/**
+ * @abstract Exposes the middleware context value.
  */
 @property (nonatomic, strong, nullable) NSMutableDictionary *middlewareContext;
 

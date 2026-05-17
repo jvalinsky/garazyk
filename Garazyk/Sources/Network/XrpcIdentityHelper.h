@@ -39,6 +39,9 @@ NS_ASSUME_NONNULL_BEGIN
  * 3. For did:web: Construct from issuer
  * 4. Return DID document or error
  */
+/**
+ * @abstract Declares the XrpcIdentityHelper public API.
+ */
 @interface XrpcIdentityHelper : NSObject
 
 /**
@@ -69,6 +72,9 @@ NS_ASSUME_NONNULL_BEGIN
  * @param error Error output parameter
  * @return YES if resolution succeeded, NO on failure
  */
+/**
+ * @abstract Performs the resolveAccountIdentifierToDid operation.
+ */
 + (BOOL)resolveAccountIdentifierToDid:(NSString *)identifier
                      serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                                outDid:(NSString * _Nullable * _Nullable)outDid
@@ -96,6 +102,9 @@ NS_ASSUME_NONNULL_BEGIN
  * @param configuration PDS configuration for PLC URL and service endpoint
  * @param error Error output parameter
  * @return DID document dictionary or nil on failure
+ */
+/**
+ * @abstract Performs the resolveDid operation.
  */
 + (nullable NSDictionary *)resolveDid:(NSString *)did
                      serviceDatabases:(PDSServiceDatabases *)serviceDatabases
@@ -125,6 +134,9 @@ NS_ASSUME_NONNULL_BEGIN
  * @param errorName Output parameter for error name
  * @param error Error output parameter
  * @return Identity info dictionary or nil on failure
+ */
+/**
+ * @abstract Performs the resolveIdentityInfoForIdentifier operation.
  */
 + (nullable NSDictionary *)resolveIdentityInfoForIdentifier:(NSString *)identifier
                                            serviceDatabases:(PDSServiceDatabases *)serviceDatabases

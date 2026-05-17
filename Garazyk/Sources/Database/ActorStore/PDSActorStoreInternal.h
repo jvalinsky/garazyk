@@ -14,6 +14,9 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSBiometricKeychain;
 @class PDSDatabase;
 
+/**
+ * @abstract Extends PDSActorStore with category behavior.
+ */
 @interface PDSActorStore ()
 
 /**

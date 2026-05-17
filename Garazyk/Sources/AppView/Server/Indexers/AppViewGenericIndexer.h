@@ -42,6 +42,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param domainIndexerCollections  Set of collections claimed by domain-specific indexers.
                                  The generic indexer will not claim these.
  */
+/**
+ * @abstract Performs the initWithRegistry operation.
+ */
 - (instancetype)initWithRegistry:(ATProtoLexiconRegistry *)registry
                          database:(AppViewDatabase *)database
                        validator:(ATProtoLexiconValidator *)validator

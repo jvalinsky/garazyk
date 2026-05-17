@@ -77,6 +77,9 @@ NS_ASSUME_NONNULL_BEGIN
               subscribeReposHandler:(SubscribeReposHandler *)handler
     NS_DESIGNATED_INITIALIZER;
 
+/**
+ * @abstract Returns the operation result.
+ */
 - (instancetype)init NS_UNAVAILABLE;
 
 #pragma mark - RelayUpstreamManagerDelegate

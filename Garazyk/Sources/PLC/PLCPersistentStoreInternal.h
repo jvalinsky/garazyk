@@ -14,6 +14,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface PLCPersistentStore ()
 
+/**
+ * @abstract Exposes the db path value.
+ */
 @property (nonatomic, copy, readwrite) NSString *dbPath;
 @property (nonatomic, assign, readwrite, nullable) sqlite3 *db;
 @property (nonatomic, assign, readwrite, getter=isOpen) BOOL open;
@@ -21,6 +24,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG, readonly) dispatch_queue_t transactionQueue;
 
+/**
+ * @abstract Performs the prepareStatement operation.
+ */
 - (sqlite3_stmt *)prepareStatement:(NSString *)sql error:(NSError **)error;
 
 @end
