@@ -13,25 +13,33 @@
 //   --verbose         Show passing cells and their NSLog output
 //   --json            Machine-readable JSON output to stdout
 
-import { readFile, readdir } from 'node:fs/promises';
-import { resolve, join, dirname, basename } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { WASI } from 'node:wasi';
-import { classifySnippet } from './objc-kernel-test-harness.mjs';
+import { readdir, readFile } from "node:fs/promises";
+import { basename, dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { WASI } from "node:wasi";
+import { classifySnippet } from "./objc-kernel-test-harness.mjs";
 
 // ── ANSI palette ───────────────────────────────────────────────────────────────
 
 const isTTY = process.stdout.isTTY;
 const C = isTTY
-  ? { reset: '\x1b[0m', bold: '\x1b[1m', dim: '\x1b[2m', green: '\x1b[32m', red: '\x1b[31m', yellow: '\x1b[33m', gray: '\x1b[90m' }
-  : { reset: '', bold: '', dim: '', green: '', red: '', yellow: '', gray: '' };
+  ? {
+    reset: "\x1b[0m",
+    bold: "\x1b[1m",
+    dim: "\x1b[2m",
+    green: "\x1b[32m",
+    red: "\x1b[31m",
+    yellow: "\x1b[33m",
+    gray: "\x1b[90m",
+  }
+  : { reset: "", bold: "", dim: "", green: "", red: "", yellow: "", gray: "" };
 
 // ── Argument parsing ───────────────────────────────────────────────────────────
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
 
-let kernelPath = resolve(__dirname, '../result/wasm/kernel.wasm');
+let kernelPath = resolve(__dirname, "../result/wasm/kernel.wasm");
 let dirPath = null;
 let bail = false;
 let verbose = false;
@@ -40,37 +48,47 @@ const notebookPaths = [];
 
 for (let i = 0; i < args.length; i++) {
   const a = args[i];
-  if (a === '--kernel')  { kernelPath = resolve(args[++i]); }
-  else if (a === '--dir')     { dirPath = resolve(args[++i]); }
-  else if (a === '--bail')    { bail = true; }
-  else if (a === '--verbose') { verbose = true; }
-  else if (a === '--json')    { jsonOutput = true; }
-  else if (a.endsWith('.ipynb')) { notebookPaths.push(resolve(a)); }
-  else { console.error(`Unknown argument: ${a}`); process.exit(2); }
+  if (a === "--kernel") kernelPath = resolve(args[++i]);
+  else if (a === "--dir") dirPath = resolve(args[++i]);
+  else if (a === "--bail") bail = true;
+  else if (a === "--verbose") verbose = true;
+  else if (a === "--json") jsonOutput = true;
+  else if (a.endsWith(".ipynb")) notebookPaths.push(resolve(a));
+  else {
+    console.error(`Unknown argument: ${a}`);
+    process.exit(2);
+  }
 }
 
 if (dirPath) {
   const entries = await readdir(dirPath);
-  for (const f of entries.filter(e => e.endsWith('.ipynb')).sort()) {
+  for (const f of entries.filter((e) => e.endsWith(".ipynb")).sort()) {
     notebookPaths.push(join(dirPath, f));
   }
 }
 
 if (notebookPaths.length === 0) {
   console.error([
-    'Usage: node tests/run-notebooks.mjs [--kernel path] [--dir dir] [--bail] [--verbose] [--json] [notebook.ipynb ...]',
-    '',
-    'Examples:',
-    '  node tests/run-notebooks.mjs demo/hello.ipynb demo/algorithms.ipynb',
-    '  node tests/run-notebooks.mjs --dir demo/',
-    '  node tests/run-notebooks.mjs --dir demo/',
-  ].join('\n'));
+    "Usage: node tests/run-notebooks.mjs [--kernel path] [--dir dir] [--bail] [--verbose] [--json] [notebook.ipynb ...]",
+    "",
+    "Examples:",
+    "  node tests/run-notebooks.mjs demo/hello.ipynb demo/algorithms.ipynb",
+    "  node tests/run-notebooks.mjs --dir demo/",
+    "  node tests/run-notebooks.mjs --dir demo/",
+  ].join("\n"));
   process.exit(2);
 }
 
 // ── WASM kernel factory ────────────────────────────────────────────────────────
 
-const TRANSPORT = { OK: 0, INVALID_ARGUMENT: 1, REQUEST_TOO_LARGE: 2, RESPONSE_TOO_LARGE: 3, OOM: 4, INTERNAL_ERROR: 5 };
+const TRANSPORT = {
+  OK: 0,
+  INVALID_ARGUMENT: 1,
+  REQUEST_TOO_LARGE: 2,
+  RESPONSE_TOO_LARGE: 3,
+  OOM: 4,
+  INTERNAL_ERROR: 5,
+};
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
@@ -86,36 +104,60 @@ async function createKernel() {
   let instance;
   const streamBuf = [];
 
-  const wasi = new WASI({ version: 'preview1' });
+  const wasi = new WASI({ version: "preview1" });
 
   ({ instance } = await WebAssembly.instantiate(wasmBytes, {
     wasi_snapshot_preview1: wasi.wasiImport,
     objc_kernel_host: {
       stream(kind, ptr, len) {
-        const name = kind === 2 ? 'stderr' : 'stdout';
+        const name = kind === 2 ? "stderr" : "stdout";
         const text = decoder.decode(new Uint8Array(instance.exports.memory.buffer, ptr, len));
         streamBuf.push({ name, text });
       },
-      should_interrupt() { return 0; },
-      json_parse() { return 0; },
-      json_stringify() { return 0; },
-      fetch() { return 0; },
+      should_interrupt() {
+        return 0;
+      },
+      json_parse() {
+        return 0;
+      },
+      json_stringify() {
+        return 0;
+      },
+      fetch() {
+        return 0;
+      },
       /* Crypto host stubs */
-      sha256(dataPtr, dataLen, outPtr, outCap) { return 0; },
+      sha256(dataPtr, dataLen, outPtr, outCap) {
+        return 0;
+      },
       random_bytes(outPtr, count) {
         const bytes = new Uint8Array(instance.exports.memory.buffer, outPtr, count);
         for (let i = 0; i < count; i++) bytes[i] = 0;
         return count;
       },
-      hmac_sha256(keyPtr, keyLen, dataPtr, dataLen, outPtr, outCap) { return 0; },
+      hmac_sha256(keyPtr, keyLen, dataPtr, dataLen, outPtr, outCap) {
+        return 0;
+      },
       /* Encoding host stubs */
-      base32_encode(dataPtr, dataLen, outPtr, outCap) { return 0; },
-      base32_decode(strPtr, strLen, outPtr, outCap) { return 0; },
-      base58btc_encode(dataPtr, dataLen, outPtr, outCap) { return 0; },
-      base58btc_decode(strPtr, strLen, outPtr, outCap) { return 0; },
+      base32_encode(dataPtr, dataLen, outPtr, outCap) {
+        return 0;
+      },
+      base32_decode(strPtr, strLen, outPtr, outCap) {
+        return 0;
+      },
+      base58btc_encode(dataPtr, dataLen, outPtr, outCap) {
+        return 0;
+      },
+      base58btc_decode(strPtr, strLen, outPtr, outCap) {
+        return 0;
+      },
       /* CBOR host stubs */
-      cbor_encode(jsonPtr, jsonLen, outPtr, outCap) { return 0; },
-      cbor_decode(dataPtr, dataLen, outPtr, outCap) { return 0; }
+      cbor_encode(jsonPtr, jsonLen, outPtr, outCap) {
+        return 0;
+      },
+      cbor_decode(dataPtr, dataLen, outPtr, outCap) {
+        return 0;
+      },
     },
   }));
 
@@ -124,20 +166,20 @@ async function createKernel() {
   const mem = exports.memory;
 
   if (exports.objc_kernel_init() !== TRANSPORT.OK) {
-    throw new Error('objc_kernel_init() failed');
+    throw new Error("objc_kernel_init() failed");
   }
 
   function allocBytes(value) {
-    const encoded = encoder.encode(typeof value === 'string' ? value : JSON.stringify(value));
+    const encoded = encoder.encode(typeof value === "string" ? value : JSON.stringify(value));
     const ptr = exports.objc_kernel_alloc(Math.max(encoded.length, 1));
-    if (ptr === 0) throw new Error('WASM allocator returned null');
+    if (ptr === 0) throw new Error("WASM allocator returned null");
     new Uint8Array(mem.buffer).set(encoded, ptr);
     return { ptr, len: encoded.length };
   }
 
   function allocU32() {
     const ptr = exports.objc_kernel_alloc(4);
-    if (ptr === 0) throw new Error('WASM allocator returned null');
+    if (ptr === 0) throw new Error("WASM allocator returned null");
     return ptr;
   }
 
@@ -153,7 +195,11 @@ async function createKernel() {
       const rc = exports[exportName](reqPtr, reqLen, outPtrPtr, outLenPtr);
       if (rc !== TRANSPORT.OK) {
         const names = Object.keys(TRANSPORT);
-        throw new Error(`Transport error ${rc} (${names.find(k => TRANSPORT[k] === rc) ?? 'UNKNOWN'}) from ${exportName}`);
+        throw new Error(
+          `Transport error ${rc} (${
+            names.find((k) => TRANSPORT[k] === rc) ?? "UNKNOWN"
+          }) from ${exportName}`,
+        );
       }
       const rPtr = readU32(outPtrPtr);
       const rLen = readU32(outLenPtr);
@@ -168,9 +214,9 @@ async function createKernel() {
   }
 
   return {
-    execute(code, cellId = 'cell') {
+    execute(code, cellId = "cell") {
       streamBuf.length = 0;
-      const reply = callJson('objc_kernel_execute_json', { code, cell_id: cellId });
+      const reply = callJson("objc_kernel_execute_json", { code, cell_id: cellId });
       return { ...reply, streams: streamBuf.splice(0) };
     },
   };
@@ -179,31 +225,35 @@ async function createKernel() {
 // ── Cell classification ────────────────────────────────────────────────────────
 
 function isPlaceholder(source) {
-  const lines = source.trim().split('\n').map(l => l.trim()).filter(Boolean);
+  const lines = source.trim().split("\n").map((l) => l.trim()).filter(Boolean);
   if (lines.length === 0) return true;
   // Skip cells where every non-blank line is a comment, including "// Your code here..."
-  if (lines.every(l => l.startsWith('//'))) {
+  if (lines.every((l) => l.startsWith("//"))) {
     return true;
   }
   return false;
 }
 
 function notebookCategory(notebookPath) {
-  const name = basename(notebookPath, '.ipynb');
-  if (name.startsWith('atproto-')) return name.slice('atproto-'.length);
-  if (name.startsWith('objc-')) return name.slice('objc-'.length);
+  const name = basename(notebookPath, ".ipynb");
+  if (name.startsWith("atproto-")) return name.slice("atproto-".length);
+  if (name.startsWith("objc-")) return name.slice("objc-".length);
   return name;
 }
 
 function failureMode(reply) {
-  if (!reply || reply.status !== 'error') return null;
-  if (reply.ename === 'HarnessError' && /memory access out of bounds/i.test(reply.evalue ?? '')) {
-    return 'wasm-trap';
+  if (!reply || reply.status !== "error") return null;
+  if (reply.ename === "HarnessError" && /memory access out of bounds/i.test(reply.evalue ?? "")) {
+    return "wasm-trap";
   }
-  if (/unsupported|does not respond|Unexpected token|parse/i.test(`${reply.ename ?? ''} ${reply.evalue ?? ''}`)) {
-    return 'unsupported-or-parse-error';
+  if (
+    /unsupported|does not respond|Unexpected token|parse/i.test(
+      `${reply.ename ?? ""} ${reply.evalue ?? ""}`,
+    )
+  ) {
+    return "unsupported-or-parse-error";
   }
-  return 'runtime-error';
+  return "runtime-error";
 }
 
 // ── Per-notebook runner ────────────────────────────────────────────────────────
@@ -211,32 +261,39 @@ function failureMode(reply) {
 async function runNotebook(notebookPath) {
   let nb;
   try {
-    nb = JSON.parse(await readFile(notebookPath, 'utf8'));
+    nb = JSON.parse(await readFile(notebookPath, "utf8"));
   } catch (err) {
-    return { notebookPath, error: `Failed to parse: ${err.message}`, cellResults: [], passed: 0, failed: 0, skipped: 0 };
+    return {
+      notebookPath,
+      error: `Failed to parse: ${err.message}`,
+      cellResults: [],
+      passed: 0,
+      failed: 0,
+      skipped: 0,
+    };
   }
 
-  const codeCells = nb.cells.filter(c => c.cell_type === 'code');
+  const codeCells = nb.cells.filter((c) => c.cell_type === "code");
   const kernel = await createKernel();
   const cellResults = [];
 
   for (let i = 0; i < codeCells.length; i++) {
     const cell = codeCells[i];
-    const source = Array.isArray(cell.source) ? cell.source.join('') : (cell.source ?? '');
+    const source = Array.isArray(cell.source) ? cell.source.join("") : (cell.source ?? "");
     const compatibility = classifySnippet(source, {
       tags: [notebookCategory(notebookPath)],
-      supportClass: notebookPath.includes('atproto-') ? 'direct' : undefined,
+      supportClass: notebookPath.includes("atproto-") ? "direct" : undefined,
     });
 
     if (isPlaceholder(source)) {
       cellResults.push({
         index: i,
-        status: 'skip',
+        status: "skip",
         source,
         streams: [],
         compatibility: {
           ...compatibility,
-          expectedStatus: 'skip',
+          expectedStatus: "skip",
           failureMode: null,
         },
       });
@@ -247,7 +304,13 @@ async function runNotebook(notebookPath) {
     try {
       reply = kernel.execute(source, `cell-${i}`);
     } catch (err) {
-      reply = { status: 'error', ename: 'HarnessError', evalue: err.message, traceback: [], streams: [] };
+      reply = {
+        status: "error",
+        ename: "HarnessError",
+        evalue: err.message,
+        traceback: [],
+        streams: [],
+      };
     }
 
     cellResults.push({
@@ -259,17 +322,17 @@ async function runNotebook(notebookPath) {
       reply,
       compatibility: {
         ...compatibility,
-        expectedStatus: 'ok',
+        expectedStatus: "ok",
         failureMode: failureMode(reply),
       },
     });
 
-    if (bail && reply.status === 'error') break;
+    if (bail && reply.status === "error") break;
   }
 
-  const passed  = cellResults.filter(r => r.status === 'ok').length;
-  const failed  = cellResults.filter(r => r.status === 'error').length;
-  const skipped = cellResults.filter(r => r.status === 'skip').length;
+  const passed = cellResults.filter((r) => r.status === "ok").length;
+  const failed = cellResults.filter((r) => r.status === "error").length;
+  const skipped = cellResults.filter((r) => r.status === "skip").length;
 
   return { notebookPath, cellResults, passed, failed, skipped };
 }
@@ -285,32 +348,36 @@ function printResult(result) {
   }
 
   const tag = result.failed > 0 ? `${C.red}FAIL${C.reset}` : `${C.green}PASS${C.reset}`;
-  console.log(`${C.bold}${name}${C.reset}  ${tag}  (${result.passed} ok, ${result.failed} failed, ${result.skipped} skipped)`);
+  console.log(
+    `${C.bold}${name}${C.reset}  ${tag}  (${result.passed} ok, ${result.failed} failed, ${result.skipped} skipped)`,
+  );
 
   for (const cell of result.cellResults) {
-    if (cell.status === 'skip') continue;
+    if (cell.status === "skip") continue;
 
-    const showCell = verbose || cell.status === 'error';
+    const showCell = verbose || cell.status === "error";
     if (!showCell) continue;
 
-    const icon = cell.status === 'ok' ? `${C.green}✓${C.reset}` : `${C.red}✗${C.reset}`;
+    const icon = cell.status === "ok" ? `${C.green}✓${C.reset}` : `${C.red}✗${C.reset}`;
     console.log(`  ${icon} Cell [${cell.index}]`);
 
     // Source preview (first 4 lines)
-    const preview = cell.source.trim().split('\n').slice(0, 4).join('\n');
-    console.log(`${C.gray}${preview.split('\n').map(l => `    ${l}`).join('\n')}${C.reset}`);
-    if (cell.source.trim().split('\n').length > 4) {
+    const preview = cell.source.trim().split("\n").slice(0, 4).join("\n");
+    console.log(`${C.gray}${preview.split("\n").map((l) => `    ${l}`).join("\n")}${C.reset}`);
+    if (cell.source.trim().split("\n").length > 4) {
       console.log(`${C.gray}    ...${C.reset}`);
     }
 
     // NSLog / stderr output
-    const output = cell.streams.map(s => s.text).join('');
+    const output = cell.streams.map((s) => s.text).join("");
     if (output.trim()) {
-      console.log(`${C.dim}${output.trimEnd().split('\n').map(l => `    ${l}`).join('\n')}${C.reset}`);
+      console.log(
+        `${C.dim}${output.trimEnd().split("\n").map((l) => `    ${l}`).join("\n")}${C.reset}`,
+      );
     }
 
     // Error details
-    if (cell.status === 'error') {
+    if (cell.status === "error") {
       console.log(`    ${C.red}${cell.reply.ename}: ${cell.reply.evalue}${C.reset}`);
       for (const line of cell.reply.traceback ?? []) {
         console.log(`    ${C.dim}${line}${C.reset}`);
@@ -334,18 +401,22 @@ for (const notebookPath of notebookPaths) {
 if (jsonOutput) {
   console.log(JSON.stringify(allResults, null, 2));
 } else {
-  const nb          = allResults.length;
-  const failedNb    = allResults.filter(r => r.failed > 0 || r.error).length;
-  const totalPassed = allResults.reduce((s, r) => s + r.passed,  0);
-  const totalFailed = allResults.reduce((s, r) => s + r.failed,  0);
-  const totalSkip   = allResults.reduce((s, r) => s + r.skipped, 0);
-  const totalCells  = totalPassed + totalFailed + totalSkip;
+  const nb = allResults.length;
+  const failedNb = allResults.filter((r) => r.failed > 0 || r.error).length;
+  const totalPassed = allResults.reduce((s, r) => s + r.passed, 0);
+  const totalFailed = allResults.reduce((s, r) => s + r.failed, 0);
+  const totalSkip = allResults.reduce((s, r) => s + r.skipped, 0);
+  const totalCells = totalPassed + totalFailed + totalSkip;
 
-  console.log('');
+  console.log("");
   if (failedNb === 0) {
-    console.log(`${C.green}${C.bold}All ${nb} notebooks passed${C.reset}  (${totalPassed}/${totalCells} cells, ${totalSkip} skipped)`);
+    console.log(
+      `${C.green}${C.bold}All ${nb} notebooks passed${C.reset}  (${totalPassed}/${totalCells} cells, ${totalSkip} skipped)`,
+    );
   } else {
-    console.log(`${C.red}${C.bold}${failedNb}/${nb} notebooks failed${C.reset}  (${totalFailed} cells failed, ${totalPassed} passed, ${totalSkip} skipped)`);
+    console.log(
+      `${C.red}${C.bold}${failedNb}/${nb} notebooks failed${C.reset}  (${totalFailed} cells failed, ${totalPassed} passed, ${totalSkip} skipped)`,
+    );
   }
 }
 

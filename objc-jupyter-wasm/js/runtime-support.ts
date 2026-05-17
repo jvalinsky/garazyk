@@ -6,7 +6,7 @@ export const TRANSPORT_CODE = {
   REQUEST_TOO_LARGE: 2,
   RESPONSE_TOO_LARGE: 3,
   OOM: 4,
-  INTERNAL_ERROR: 5
+  INTERNAL_ERROR: 5,
 } as const;
 
 export type RuntimeManifest = {
@@ -19,10 +19,10 @@ export type RuntimeManifest = {
   hardTimeoutMs: number;
 };
 
-export type CompileMode = 'default' | 'force-rebuild';
+export type CompileMode = "default" | "force-rebuild";
 
 export type CompileDiagnostic = {
-  severity: 'error' | 'warning' | 'note';
+  severity: "error" | "warning" | "note";
   message: string;
   line: number;
   column: number;
@@ -39,12 +39,12 @@ export type CompileRequest = {
   workingDirectory: string;
   contextHash: string;
   sdkVersion: string;
-  abiTarget: 'wasm32-unknown-emscripten';
+  abiTarget: "wasm32-unknown-emscripten";
   compileMode: CompileMode;
 };
 
 export type CompileSuccessResponse = {
-  status: 'ok';
+  status: "ok";
   cacheKey: string;
   artifactUrl: string;
   artifactSha256: string;
@@ -55,36 +55,36 @@ export type CompileSuccessResponse = {
 };
 
 export type CompileErrorResponse = {
-  status: 'error';
+  status: "error";
   diagnostics: CompileDiagnostic[];
 };
 
 export type CompileResponse = CompileSuccessResponse | CompileErrorResponse;
 
 function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
+  return typeof value === "object" && value !== null;
 }
 
 export function assertRuntimeManifest(value: unknown): asserts value is RuntimeManifest {
   if (!isObject(value)) {
-    throw new Error('Runtime manifest must be an object');
+    throw new Error("Runtime manifest must be an object");
   }
 
-  for (const key of ['kernelWasmUrl', 'runtimeVersion', 'sha256']) {
-    if (typeof value[key] !== 'string' || value[key] === '') {
+  for (const key of ["kernelWasmUrl", "runtimeVersion", "sha256"]) {
+    if (typeof value[key] !== "string" || value[key] === "") {
       throw new Error(`Runtime manifest field ${key} must be a non-empty string`);
     }
   }
 
-  for (const key of ['maxRequestBytes', 'maxResponseBytes', 'softTimeoutMs', 'hardTimeoutMs']) {
-    if (typeof value[key] !== 'number' || !Number.isFinite(value[key]) || value[key] <= 0) {
+  for (const key of ["maxRequestBytes", "maxResponseBytes", "softTimeoutMs", "hardTimeoutMs"]) {
+    if (typeof value[key] !== "number" || !Number.isFinite(value[key]) || value[key] <= 0) {
       throw new Error(`Runtime manifest field ${key} must be a positive number`);
     }
   }
 }
 
 export async function fetchRuntimeManifest(manifestUrl: string): Promise<RuntimeManifest> {
-  const response = await fetch(manifestUrl, { cache: 'no-store' });
+  const response = await fetch(manifestUrl, { cache: "no-store" });
   if (!response.ok) {
     throw new Error(`Failed to fetch runtime manifest ${manifestUrl}: ${response.status}`);
   }
@@ -94,7 +94,7 @@ export async function fetchRuntimeManifest(manifestUrl: string): Promise<Runtime
 
   return {
     ...manifest,
-    kernelWasmUrl: new URL(manifest.kernelWasmUrl, manifestUrl).toString()
+    kernelWasmUrl: new URL(manifest.kernelWasmUrl, manifestUrl).toString(),
   };
 }
 
@@ -105,12 +105,12 @@ export async function clearRuntimeCache(manifestUrl: string): Promise<number> {
   try {
     const manifest = await fetchRuntimeManifest(manifestUrl);
     urls.add(manifest.kernelWasmUrl);
-    urls.add(new URL('./kernel/kernel.wasm', manifestUrl).toString());
+    urls.add(new URL("./kernel/kernel.wasm", manifestUrl).toString());
   } catch {
-    urls.add(new URL('./kernel/kernel.wasm', manifestUrl).toString());
+    urls.add(new URL("./kernel/kernel.wasm", manifestUrl).toString());
   }
 
-  if (typeof caches === 'undefined') {
+  if (typeof caches === "undefined") {
     return 0;
   }
 
