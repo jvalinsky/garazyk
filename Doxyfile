@@ -1,0 +1,189 @@
+# Doxyfile — Garazyk PDS API Documentation
+#
+# Generate with: doxygen Doxyfile
+# View output:   open docs/api/html/index.html
+#
+# Comment format: HeaderDoc (/*! ... */) and Doxygen (/** ... */) are both
+# recognized. New code should use /** for broader tooling compatibility.
+
+#---------------------------------------------------------------------------
+# Project configuration
+#---------------------------------------------------------------------------
+
+PROJECT_NAME           = "Garazyk"
+PROJECT_NUMBER         =
+PROJECT_BRIEF          = "AT Protocol Personal Data Server"
+PROJECT_LOGO           =
+OUTPUT_DIRECTORY       = docs/api
+
+#---------------------------------------------------------------------------
+# Input sources
+#---------------------------------------------------------------------------
+
+INPUT                  = Garazyk/Sources \
+                         Garazyk/Frameworks
+RECURSIVE              = YES
+FILE_PATTERNS          = *.h *.m *.md
+EXCLUDE_PATTERNS       = */Tests/* \
+                         */vendor/* \
+                         */Compat/* \
+                         */.git/*
+
+# Exclude Objective-C class extensions (private categories in .m files)
+EXCLUDE_SYMBOLS        = *() \
+                         _*
+
+#---------------------------------------------------------------------------
+# Objective-C / C language optimization
+#---------------------------------------------------------------------------
+
+OPTIMIZE_OUTPUT_FOR_C  = NO
+# Objective-C: recognize @interface, @protocol, @category, @property
+# Doxygen handles these natively since 1.8+
+
+# HeaderDoc compatibility aliases
+# Map HeaderDoc tags to their Doxygen equivalents so existing /*! comments
+# with @abstract, @discussion, etc. are parsed without warnings.
+ALIASES += "abstract=\brief"
+ALIASES += "discussion=\details"
+ALIASES += "header=\file"
+ALIASES += "classdesign=\par Class Design"
+ALIASES += "coclass=\par Co-class"
+ALIASES += "dependency=\par Dependency"
+ALIASES += "helper=\par Helper"
+ALIASES += "helps=\par Helps"
+ALIASES += "availability=\par Availability"
+ALIASES += "updated=\par Updated"
+ALIASES += "result=\return"
+ALIASES += "constant=\par Constant"
+ALIASES += "methodgroup=\par Method Group"
+ALIASES += "functiongroup=\par Function Group"
+
+# Increase graph node limit for large headers
+DOT_GRAPH_MAX_NODES    = 100
+
+#---------------------------------------------------------------------------
+# Extraction settings
+#---------------------------------------------------------------------------
+
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_PRIV_VIRTUAL   = NO
+EXTRACT_STATIC         = NO
+EXTRACT_LOCAL_CLASSES  = YES
+EXTRACT_LOCAL_METHODS  = NO
+HIDE_UNDOC_MEMBERS     = NO
+HIDE_UNDOC_CLASSES     = NO
+HIDE_FRIEND_COMPOUNDS  = NO
+HIDE_IN_BODY_DOCS     = NO
+
+SORT_MEMBER_DOCS       = YES
+SORT_BRIEF_DOCS        = YES
+SORT_MEMBERS_CTORS_1ST = YES
+
+#---------------------------------------------------------------------------
+# Documentation quality warnings
+#---------------------------------------------------------------------------
+
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = YES
+WARN_FORMAT            = "$file:$line: $text"
+WARN_LOGFILE           = docs/api/doxygen-warnings.log
+
+#---------------------------------------------------------------------------
+# HTML output
+#---------------------------------------------------------------------------
+
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+HTML_FILE_EXTENSION    = .html
+HTML_COLORSTYLE_HUE    = 220
+HTML_COLORSTYLE_SAT    = 100
+HTML_COLORSTYLE_GAMMA  = 80
+HTML_DYNAMIC_SECTIONS  = YES
+HTML_INDEX_NUM_ENTRIES = 100
+
+GENERATE_TREEVIEW      = YES
+DISABLE_INDEX          = NO
+SERVER_BASED_SEARCH    = NO
+
+# Use M.CSS for modern rendering (see scripts/docs/generate-api-docs.sh)
+# When M.CSS is not available, Doxygen's built-in HTML is used.
+
+#---------------------------------------------------------------------------
+# LaTeX output (disabled)
+#---------------------------------------------------------------------------
+
+GENERATE_LATEX         = NO
+
+#---------------------------------------------------------------------------
+# XML output (for M.CSS and custom tooling)
+#---------------------------------------------------------------------------
+
+GENERATE_XML           = YES
+XML_OUTPUT             = xml
+XML_PROGRAMLISTING     = NO
+XML_NS_MEMB_FILE_SCOPE = YES
+
+#---------------------------------------------------------------------------
+# Graphviz / dot integration
+#---------------------------------------------------------------------------
+
+HAVE_DOT               = YES
+DOT_NUM_THREADS        = 4
+
+CALL_GRAPH             = NO
+CALLER_GRAPH           = NO
+COLLABORATION_GRAPH    = YES
+GROUP_GRAPHS           = YES
+UML_LOOK               = NO
+INCLUDE_GRAPH          = YES
+INCLUDED_BY_GRAPH      = YES
+GRAPHICAL_HIERARCHY    = YES
+DIRECTORY_GRAPH        = YES
+
+DOT_IMAGE_FORMAT       = svg
+INTERACTIVE_SVG        = YES
+
+MAX_DOT_GRAPH_DEPTH    = 3
+
+#---------------------------------------------------------------------------
+# Source browsing
+#---------------------------------------------------------------------------
+
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+STRIP_CODE_COMMENTS    = NO
+REFERENCED_BY_RELATION = YES
+REFERENCES_RELATION    = YES
+REFERENCES_LINK_SOURCE = YES
+SOURCE_TOOLTIPS        = YES
+
+#---------------------------------------------------------------------------
+# Alphabetical index
+#---------------------------------------------------------------------------
+
+ALPHABETICAL_INDEX     = YES
+IGNORE_PREFIX          =
+
+#---------------------------------------------------------------------------
+# Miscellaneous
+#---------------------------------------------------------------------------
+
+GENERATE_AUTOGEN_DEF   = NO
+GENERATE_MAN           = NO
+GENERATE_RTF           = NO
+GENERATE_DOCSET        = NO
+GENERATE_ECLIPSEHELP   = NO
+GENERATE_PERLMOD       = NO
+GENERATE_QHP           = NO
+
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = NO
+EXPAND_ONLY_PREDEF     = NO
+SEARCH_INCLUDES        = YES
+
+QUIET                  = NO
+WARNINGS               = YES
+WARN_AS_ERROR          = NO
