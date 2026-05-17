@@ -6,9 +6,9 @@
  * deletes from deepest to shallowest, and supports dry-run mode.
  */
 
-import fs from 'fs-extra';
-import path from 'path';
-import { findEmptyDirectories, isDirectoryEmpty } from './file-discovery.js';
+import fs from "fs-extra";
+import path from "path";
+import { findEmptyDirectories, isDirectoryEmpty } from "./file-discovery.js";
 
 /**
  * Removes empty directories within a directory tree.
@@ -24,16 +24,16 @@ import { findEmptyDirectories, isDirectoryEmpty } from './file-discovery.js';
  */
 export async function removeEmptyDirectories(rootDir, options = {}) {
   const {
-    excludePatterns = ['**/.git/**'],
+    excludePatterns = ["**/.git/**"],
     repoRoot = process.cwd(),
     dryRun = false,
     removeRoot = false,
-    onRemove
+    onRemove,
   } = options;
 
   const candidates = await findEmptyDirectories(rootDir, {
     excludePatterns,
-    repoRoot
+    repoRoot,
   });
 
   const removed = [];
@@ -42,19 +42,19 @@ export async function removeEmptyDirectories(rootDir, options = {}) {
   for (const dir of candidates) {
     const stillEmpty = await isDirectoryEmpty(dir, { excludePatterns, repoRoot });
     if (!stillEmpty) {
-      skipped.push({ dir, reason: 'not empty' });
+      skipped.push({ dir, reason: "not empty" });
       continue;
     }
 
     if (!dryRun) {
       const absDir = path.resolve(repoRoot, dir);
       if (!await fs.pathExists(absDir)) {
-        skipped.push({ dir, reason: 'missing' });
+        skipped.push({ dir, reason: "missing" });
         continue;
       }
       const entries = await fs.readdir(absDir);
       if (entries.length > 0) {
-        skipped.push({ dir, reason: 'not physically empty' });
+        skipped.push({ dir, reason: "not physically empty" });
         continue;
       }
       await fs.rmdir(absDir);
@@ -69,7 +69,7 @@ export async function removeEmptyDirectories(rootDir, options = {}) {
   if (removeRoot) {
     const absRoot = path.resolve(repoRoot, rootDir);
     if (!await fs.pathExists(absRoot)) {
-      skipped.push({ dir: rootDir, reason: 'missing' });
+      skipped.push({ dir: rootDir, reason: "missing" });
       return { candidates, removed, skipped };
     }
 
@@ -78,7 +78,7 @@ export async function removeEmptyDirectories(rootDir, options = {}) {
       if (!dryRun) {
         const entries = await fs.readdir(absRoot);
         if (entries.length > 0) {
-          skipped.push({ dir: rootDir, reason: 'not physically empty' });
+          skipped.push({ dir: rootDir, reason: "not physically empty" });
           return { candidates, removed, skipped };
         }
         await fs.rmdir(absRoot);

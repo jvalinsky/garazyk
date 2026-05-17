@@ -1,6 +1,8 @@
 # Documentation Tooling
 
-This directory contains documentation tooling for managing, validating, and maintaining the Garazyk documentation ecosystem. Legacy migration helpers still use Node.js; active repo-wide registry, link, and coverage checks use Deno/TypeScript.
+This directory contains documentation tooling for managing, validating, and maintaining the Garazyk
+documentation ecosystem. Legacy migration helpers still use Node.js; active repo-wide registry,
+link, and coverage checks use Deno/TypeScript.
 
 ## Setup
 
@@ -18,6 +20,7 @@ npm install
 Consolidates documentation from multiple source directories into the unified `docs/` structure.
 
 **Features:**
+
 - Preserves git history using `git mv`
 - Updates internal cross-references and links
 - Generates migration mapping file
@@ -25,6 +28,7 @@ Consolidates documentation from multiple source directories into the unified `do
 - Configuration-driven migrations
 
 **Usage:**
+
 ```bash
 # Run migration with a configuration file
 npm run migrate configs/plan-consolidation.json
@@ -38,9 +42,11 @@ npm run migrate configs/plan-consolidation.json -- --verbose
 
 **Configuration:**
 
-Migration configurations are JSON files that define source/destination mappings, file patterns, and options. See `configs/README.md` for detailed documentation.
+Migration configurations are JSON files that define source/destination mappings, file patterns, and
+options. See `configs/README.md` for detailed documentation.
 
 Example configuration:
+
 ```json
 {
   "version": "1.0.0",
@@ -60,11 +66,13 @@ Example configuration:
 Validates migration configuration files against the schema.
 
 **Usage:**
+
 ```bash
 npm run validate-config configs/plan-consolidation.json
 ```
 
 **Features:**
+
 - JSON schema validation
 - Semantic rule checking (no nested paths, no duplicates)
 - Detailed error reporting
@@ -75,6 +83,7 @@ npm run validate-config configs/plan-consolidation.json
 Validates documentation quality and correctness.
 
 **Features:**
+
 - Markdown linting
 - Link validation (internal and anchors)
 - Code block language tag verification
@@ -82,6 +91,7 @@ Validates documentation quality and correctness.
 - API documentation structure validation
 
 **Usage:**
+
 ```bash
 npm run validate
 ```
@@ -91,21 +101,25 @@ npm run validate
 Manages outdated documentation archival.
 
 **Features:**
+
 - Moves outdated docs to `docs/archive/` with timestamp
 - Generates archive metadata
 - Maintains archive index
 - Quarterly review scheduling
 
 **Usage:**
+
 ```bash
 npm run archive
 ```
 
 ### Repo-Wide Registry and Validation (`repo_docs.ts`)
 
-Generates canonical metadata and enforces strict internal link/discoverability checks across repository markdown.
+Generates canonical metadata and enforces strict internal link/discoverability checks across
+repository markdown.
 
 **Usage:**
+
 ```bash
 # Generate registry, link graph, orphan report, and index/backlink pages
 deno run -A scripts/docs/repo_docs.ts sync
@@ -170,4 +184,5 @@ npm test
 
 ## Documentation
 
-See the [Documentation Map](../../docs/11-reference/documentation-map.md) for current repository documentation conventions and ownership.
+See the [Documentation Map](../../docs/11-reference/documentation-map.md) for current repository
+documentation conventions and ownership.

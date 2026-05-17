@@ -6,9 +6,9 @@
  * files need to be moved.
  */
 
-import fs from 'fs-extra';
-import path from 'path';
-import { minimatch } from 'minimatch';
+import fs from "fs-extra";
+import path from "path";
+import { minimatch } from "minimatch";
 
 /**
  * Glob pattern matcher (minimatch)
@@ -21,12 +21,12 @@ import { minimatch } from 'minimatch';
 function matchGlob(filePath, pattern, options = {}) {
   const { dot = true, nocase = false } = options;
 
-  const normalizedPath = filePath.split(path.sep).join('/');
-  const normalizedPattern = pattern.split(path.sep).join('/');
+  const normalizedPath = filePath.split(path.sep).join("/");
+  const normalizedPattern = pattern.split(path.sep).join("/");
 
   return minimatch(normalizedPath, normalizedPattern, {
     dot,
-    nocase
+    nocase,
   });
 }
 
@@ -53,13 +53,13 @@ async function scanDirectory(dirPath, basePath) {
         files.push(...subFiles);
       } else if (entry.isFile()) {
         // Add file with forward slashes for consistent glob matching
-        files.push(relativePath.split(path.sep).join('/'));
+        files.push(relativePath.split(path.sep).join("/"));
       }
       // Skip symbolic links and other special files
     }
   } catch (error) {
     // If directory doesn't exist or can't be read, return empty array
-    if (error.code !== 'ENOENT' && error.code !== 'EACCES') {
+    if (error.code !== "ENOENT" && error.code !== "EACCES") {
       throw error;
     }
   }
@@ -96,14 +96,14 @@ function matchesAnyPattern(filePath, patterns) {
  */
 export async function discoverFiles(sourceDir, options = {}) {
   const {
-    filePatterns = ['**/*'],
+    filePatterns = ["**/*"],
     excludePatterns = [
-      '**/.git/**',
-      '**/node_modules/**',
-      '**/.DS_Store',
-      '**/Thumbs.db'
+      "**/.git/**",
+      "**/node_modules/**",
+      "**/.DS_Store",
+      "**/Thumbs.db",
     ],
-    repoRoot = process.cwd()
+    repoRoot = process.cwd(),
   } = options;
 
   // Convert source directory to absolute path
@@ -125,7 +125,7 @@ export async function discoverFiles(sourceDir, options = {}) {
     }
 
     // Check if file matches any include pattern
-    if (filePatterns.length === 0 || filePatterns.includes('**/*')) {
+    if (filePatterns.length === 0 || filePatterns.includes("**/*")) {
       // No specific patterns, include all non-excluded files
       return true;
     }
@@ -150,7 +150,7 @@ export async function discoverFilesForMigrations(migrations, repoRoot = process.
     const files = await discoverFiles(migration.source, {
       filePatterns: migration.filePatterns,
       excludePatterns: migration.excludePatterns,
-      repoRoot
+      repoRoot,
     });
 
     fileMap.set(migration.source, files);
@@ -170,14 +170,14 @@ export async function discoverFilesForMigrations(migrations, repoRoot = process.
  */
 export async function isDirectoryEmpty(dirPath, options = {}) {
   const {
-    excludePatterns = ['**/.git/**'],
-    repoRoot = process.cwd()
+    excludePatterns = ["**/.git/**"],
+    repoRoot = process.cwd(),
   } = options;
 
   const files = await discoverFiles(dirPath, {
-    filePatterns: ['**/*'],
+    filePatterns: ["**/*"],
     excludePatterns,
-    repoRoot
+    repoRoot,
   });
 
   return files.length === 0;
@@ -194,8 +194,8 @@ export async function isDirectoryEmpty(dirPath, options = {}) {
  */
 export async function findEmptyDirectories(rootDir, options = {}) {
   const {
-    excludePatterns = ['**/.git/**'],
-    repoRoot = process.cwd()
+    excludePatterns = ["**/.git/**"],
+    repoRoot = process.cwd(),
   } = options;
 
   const absoluteRootDir = path.resolve(repoRoot, rootDir);
@@ -219,11 +219,10 @@ export async function findEmptyDirectories(rootDir, options = {}) {
     for (const entry of entries) {
       const fullPath = path.join(dirPath, entry.name);
       const relativePath = path.relative(repoRoot, fullPath);
-      const normalizedRelativePath = relativePath.split(path.sep).join('/');
+      const normalizedRelativePath = relativePath.split(path.sep).join("/");
 
       // Check if this path should be excluded
-      const shouldExclude =
-        matchesAnyPattern(normalizedRelativePath, excludePatterns) ||
+      const shouldExclude = matchesAnyPattern(normalizedRelativePath, excludePatterns) ||
         (entry.isDirectory() &&
           matchesAnyPattern(`${normalizedRelativePath}/**`, excludePatterns));
 

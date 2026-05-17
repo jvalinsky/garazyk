@@ -33,9 +33,11 @@ function parseArgs(argv) {
     }
   }
 
-  args.coveragePath = args.coveragePath || path.join(args.repoRoot, "reports", "xrpc_coverage.json");
+  args.coveragePath = args.coveragePath ||
+    path.join(args.repoRoot, "reports", "xrpc_coverage.json");
   args.planPath = args.planPath || path.join(args.repoRoot, "reports", "xrpc_next_steps_plan.md");
-  args.issuesPath = args.issuesPath || path.join(args.repoRoot, "reports", "xrpc_issue_candidates.md");
+  args.issuesPath = args.issuesPath ||
+    path.join(args.repoRoot, "reports", "xrpc_issue_candidates.md");
   return args;
 }
 
@@ -77,10 +79,12 @@ function methodGroup(methodId) {
   if (methodId.startsWith("com.atproto.repo.") || methodId.startsWith("com.atproto.sync.")) {
     return "phase_2_repo_sync";
   }
-  if (methodId.startsWith("com.atproto.admin.")
-      || methodId.startsWith("com.atproto.label.")
-      || methodId.startsWith("com.atproto.temp.")
-      || methodId.startsWith("com.atproto.lexicon.")) {
+  if (
+    methodId.startsWith("com.atproto.admin.") ||
+    methodId.startsWith("com.atproto.label.") ||
+    methodId.startsWith("com.atproto.temp.") ||
+    methodId.startsWith("com.atproto.lexicon.")
+  ) {
     return "phase_3_admin_label_temp";
   }
   return "phase_4_non_core_namespaces";
@@ -89,11 +93,16 @@ function methodGroup(methodId) {
 function scoreMethod(methodId) {
   let score = 0;
 
-  if (methodId.startsWith("com.atproto.server.") || methodId.startsWith("com.atproto.repo.") || methodId.startsWith("com.atproto.sync.") || methodId.startsWith("com.atproto.identity.")) {
+  if (
+    methodId.startsWith("com.atproto.server.") || methodId.startsWith("com.atproto.repo.") ||
+    methodId.startsWith("com.atproto.sync.") || methodId.startsWith("com.atproto.identity.")
+  ) {
     score += 100;
-  } else if (methodId.startsWith("com.atproto.admin.")
-      || methodId.startsWith("com.atproto.label.")
-      || methodId.startsWith("com.atproto.lexicon.")) {
+  } else if (
+    methodId.startsWith("com.atproto.admin.") ||
+    methodId.startsWith("com.atproto.label.") ||
+    methodId.startsWith("com.atproto.lexicon.")
+  ) {
     score += 80;
   } else if (methodId.startsWith("com.atproto.temp.")) {
     score += 70;
@@ -182,20 +191,30 @@ function createPlanMarkdown(payload) {
   lines.push(`- Missing in code: ${payload.coverage.missing_in_code}`);
   lines.push(`- Coverage: ${payload.coverage.coverage_pct}%`);
   lines.push(`- Unknown registry entries: ${payload.coverage.unknown_registry_entries}`);
-  lines.push(`- Duplicate registry registrations: ${payload.coverage.duplicate_registry_registrations}`);
+  lines.push(
+    `- Duplicate registry registrations: ${payload.coverage.duplicate_registry_registrations}`,
+  );
   if (typeof payload.coverage.duplicate_registry_registrations_cross_scope === "number") {
-    lines.push(`- Duplicate registry registrations (cross-scope, actionable): ${payload.coverage.duplicate_registry_registrations_cross_scope}`);
+    lines.push(
+      `- Duplicate registry registrations (cross-scope, actionable): ${payload.coverage.duplicate_registry_registrations_cross_scope}`,
+    );
   }
   if (typeof payload.coverage.duplicate_registry_registrations_cross_scope_expected === "number") {
-    lines.push(`- Cross-scope overlap (expected controller/application dual-path): ${payload.coverage.duplicate_registry_registrations_cross_scope_expected}`);
+    lines.push(
+      `- Cross-scope overlap (expected controller/application dual-path): ${payload.coverage.duplicate_registry_registrations_cross_scope_expected}`,
+    );
   }
   if (typeof payload.coverage.duplicate_registry_registrations_cross_scope_raw === "number") {
-    lines.push(`- Cross-scope overlap (raw total): ${payload.coverage.duplicate_registry_registrations_cross_scope_raw}`);
+    lines.push(
+      `- Cross-scope overlap (raw total): ${payload.coverage.duplicate_registry_registrations_cross_scope_raw}`,
+    );
   }
   lines.push("");
   lines.push("## Priority Rubric");
   lines.push("");
-  lines.push("- P0: Critical PDS identity/account/repo/sync gaps with security or federation impact.");
+  lines.push(
+    "- P0: Critical PDS identity/account/repo/sync gaps with security or federation impact.",
+  );
   lines.push("- P1: High-value protocol completeness for core `com.atproto.*` flows.");
   lines.push("- P2: Admin/label/temp and useful adjacent functionality.");
   lines.push("- P3: Non-core namespaces for appview/chat/custom extensions.");
@@ -207,7 +226,9 @@ function createPlanMarkdown(payload) {
     lines.push(`### ${phaseTitle(phase.key)}`);
     lines.push("");
     lines.push(`- Endpoint count: ${phase.count}`);
-    lines.push(`- P0: ${phase.by_priority.P0}, P1: ${phase.by_priority.P1}, P2: ${phase.by_priority.P2}, P3: ${phase.by_priority.P3}`);
+    lines.push(
+      `- P0: ${phase.by_priority.P0}, P1: ${phase.by_priority.P1}, P2: ${phase.by_priority.P2}, P3: ${phase.by_priority.P3}`,
+    );
     lines.push("- Next batch:");
     if (phase.next_batch.length === 0) {
       lines.push("  - none");
@@ -223,7 +244,9 @@ function createPlanMarkdown(payload) {
   lines.push("");
   if (payload.coverage.missing_in_code === 0) {
     lines.push("1. No in-scope endpoint implementation backlog remains.");
-    lines.push("2. Keep `scripts/docs/generate_xrpc_coverage_report.cjs --source-only --fail-on-duplicates` in CI.");
+    lines.push(
+      "2. Keep `scripts/docs/generate_xrpc_coverage_report.cjs --source-only --fail-on-duplicates` in CI.",
+    );
     lines.push("3. Re-run coverage and next-steps generation after registry or lexicon changes.");
   } else {
     lines.push("1. Implement all Phase 1 P0/P1 endpoints.");
@@ -245,7 +268,9 @@ function createIssueMarkdown(payload, topN) {
     lines.push("No in-scope missing endpoints.");
     lines.push("");
     lines.push("- Coverage is currently 100% for configured scope.");
-    lines.push("- Track maintenance work separately (duplicate registration checks, schema drift, and test hardening).");
+    lines.push(
+      "- Track maintenance work separately (duplicate registration checks, schema drift, and test hardening).",
+    );
     lines.push("");
     return `${lines.join("\n")}\n`;
   }
@@ -326,9 +351,12 @@ function main() {
       coverage_pct: coverage.counts.coverage_pct,
       unknown_registry_entries: coverage.counts.unknown_registry_entries,
       duplicate_registry_registrations: coverage.counts.duplicate_registry_registrations,
-      duplicate_registry_registrations_cross_scope: coverage.counts.duplicate_registry_registrations_cross_scope,
-      duplicate_registry_registrations_cross_scope_expected: coverage.counts.duplicate_registry_registrations_cross_scope_expected,
-      duplicate_registry_registrations_cross_scope_raw: coverage.counts.duplicate_registry_registrations_cross_scope_raw,
+      duplicate_registry_registrations_cross_scope:
+        coverage.counts.duplicate_registry_registrations_cross_scope,
+      duplicate_registry_registrations_cross_scope_expected:
+        coverage.counts.duplicate_registry_registrations_cross_scope_expected,
+      duplicate_registry_registrations_cross_scope_raw:
+        coverage.counts.duplicate_registry_registrations_cross_scope_raw,
     },
     phases,
     top_candidates: scored,

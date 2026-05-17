@@ -1,16 +1,20 @@
 # Migration Mapping Generator
 
-The migration mapping generator creates a JSON file that documents all file moves during documentation consolidation. This provides an audit trail and reference for the migration, including file metadata such as size, last modified timestamp, and git commit hash.
+The migration mapping generator creates a JSON file that documents all file moves during
+documentation consolidation. This provides an audit trail and reference for the migration, including
+file metadata such as size, last modified timestamp, and git commit hash.
 
 ## Purpose
 
-When consolidating documentation from multiple directories (e.g., `plan/` and `plans/`) into a unified structure (`docs/`), it's important to maintain a record of:
+When consolidating documentation from multiple directories (e.g., `plan/` and `plans/`) into a
+unified structure (`docs/`), it's important to maintain a record of:
 
 - Which files were moved where
 - File metadata at the time of migration
 - Git history information for each file
 
 This mapping file serves as:
+
 - An audit trail for the migration
 - A reference for updating cross-references and links
 - Documentation for future maintainers
@@ -30,6 +34,7 @@ This mapping file serves as:
 Generates a migration mapping entry for a single file.
 
 **Parameters:**
+
 - `oldPath` (string): Original file path (relative to repo root)
 - `newPath` (string): New file path (relative to repo root)
 - `repoRoot` (string): Repository root directory (default: `process.cwd()`)
@@ -37,11 +42,12 @@ Generates a migration mapping entry for a single file.
 **Returns:** Promise<Object> - Mapping entry with metadata
 
 **Example:**
+
 ```javascript
 const entry = await generateMappingEntry(
-  'plan/oauth2.md',
-  'docs/plans/oauth2.md',
-  '/path/to/repo'
+  "plan/oauth2.md",
+  "docs/plans/oauth2.md",
+  "/path/to/repo",
 );
 
 console.log(entry);
@@ -59,19 +65,21 @@ console.log(entry);
 Generates a complete migration mapping from a file list.
 
 **Parameters:**
+
 - `fileList` (Array<Object>): Array of `{source, destination}` objects
 - `repoRoot` (string): Repository root directory (default: `process.cwd()`)
 
 **Returns:** Promise<Object> - Migration mapping object
 
 **Example:**
+
 ```javascript
 const fileList = [
-  { source: 'plan/oauth2.md', destination: 'docs/plans/oauth2.md' },
-  { source: 'plan/sync.md', destination: 'docs/plans/sync.md' }
+  { source: "plan/oauth2.md", destination: "docs/plans/oauth2.md" },
+  { source: "plan/sync.md", destination: "docs/plans/sync.md" },
 ];
 
-const mapping = await generateMigrationMapping(fileList, '/path/to/repo');
+const mapping = await generateMigrationMapping(fileList, "/path/to/repo");
 
 console.log(mapping);
 // {
@@ -90,14 +98,16 @@ console.log(mapping);
 Writes migration mapping to a JSON file.
 
 **Parameters:**
+
 - `mapping` (Object): Migration mapping object
 - `outputPath` (string): Output file path
 
 **Returns:** Promise<void>
 
 **Example:**
+
 ```javascript
-await writeMigrationMapping(mapping, 'migration-mapping.json');
+await writeMigrationMapping(mapping, "migration-mapping.json");
 ```
 
 ### `generateAndWriteMapping(fileList, outputPath, options)`
@@ -105,6 +115,7 @@ await writeMigrationMapping(mapping, 'migration-mapping.json');
 Generates and writes migration mapping in one operation.
 
 **Parameters:**
+
 - `fileList` (Array<Object>): Array of `{source, destination}` objects
 - `outputPath` (string): Output file path
 - `options` (Object): Options
@@ -113,11 +124,12 @@ Generates and writes migration mapping in one operation.
 **Returns:** Promise<Object> - Generated migration mapping
 
 **Example:**
+
 ```javascript
 const mapping = await generateAndWriteMapping(
   fileList,
-  'migration-mapping.json',
-  { repoRoot: '/path/to/repo' }
+  "migration-mapping.json",
+  { repoRoot: "/path/to/repo" },
 );
 ```
 
@@ -126,13 +138,15 @@ const mapping = await generateAndWriteMapping(
 Reads a migration mapping from a JSON file.
 
 **Parameters:**
+
 - `mappingPath` (string): Path to mapping file
 
 **Returns:** Promise<Object> - Migration mapping object
 
 **Example:**
+
 ```javascript
-const mapping = await readMigrationMapping('migration-mapping.json');
+const mapping = await readMigrationMapping("migration-mapping.json");
 ```
 
 ### `lookupNewPath(mapping, oldPath)`
@@ -140,14 +154,16 @@ const mapping = await readMigrationMapping('migration-mapping.json');
 Looks up the new path for an old path in a migration mapping.
 
 **Parameters:**
+
 - `mapping` (Object): Migration mapping object
 - `oldPath` (string): Old file path to look up
 
 **Returns:** string|null - New path or null if not found
 
 **Example:**
+
 ```javascript
-const newPath = lookupNewPath(mapping, 'plan/oauth2.md');
+const newPath = lookupNewPath(mapping, "plan/oauth2.md");
 console.log(newPath); // 'docs/plans/oauth2.md'
 ```
 
@@ -156,14 +172,16 @@ console.log(newPath); // 'docs/plans/oauth2.md'
 Looks up the old path for a new path in a migration mapping.
 
 **Parameters:**
+
 - `mapping` (Object): Migration mapping object
 - `newPath` (string): New file path to look up
 
 **Returns:** string|null - Old path or null if not found
 
 **Example:**
+
 ```javascript
-const oldPath = lookupOldPath(mapping, 'docs/plans/oauth2.md');
+const oldPath = lookupOldPath(mapping, "docs/plans/oauth2.md");
 console.log(oldPath); // 'plan/oauth2.md'
 ```
 
@@ -219,17 +237,17 @@ The migration mapping file is a JSON file with the following structure:
 ### Basic Usage
 
 ```javascript
-import { generateAndWriteMapping } from './lib/migration-mapping.js';
+import { generateAndWriteMapping } from "./lib/migration-mapping.js";
 
 const fileList = [
-  { source: 'plan/oauth2.md', destination: 'docs/plans/oauth2.md' },
-  { source: 'plan/sync.md', destination: 'docs/plans/sync.md' },
-  { source: 'plans/deploy.md', destination: 'docs/guides/deployment.md' }
+  { source: "plan/oauth2.md", destination: "docs/plans/oauth2.md" },
+  { source: "plan/sync.md", destination: "docs/plans/sync.md" },
+  { source: "plans/deploy.md", destination: "docs/guides/deployment.md" },
 ];
 
 const mapping = await generateAndWriteMapping(
   fileList,
-  'migration-mapping.json'
+  "migration-mapping.json",
 );
 
 console.log(`Mapped ${mapping.successfulMappings} files`);
@@ -238,12 +256,12 @@ console.log(`Mapped ${mapping.successfulMappings} files`);
 ### Reading and Using Mapping
 
 ```javascript
-import { readMigrationMapping, lookupNewPath } from './lib/migration-mapping.js';
+import { lookupNewPath, readMigrationMapping } from "./lib/migration-mapping.js";
 
-const mapping = await readMigrationMapping('migration-mapping.json');
+const mapping = await readMigrationMapping("migration-mapping.json");
 
 // Find new location for a file
-const newPath = lookupNewPath(mapping, 'plan/oauth2.md');
+const newPath = lookupNewPath(mapping, "plan/oauth2.md");
 console.log(`File moved to: ${newPath}`);
 
 // Iterate over all mappings
@@ -257,24 +275,24 @@ mapping.mappings.forEach((entry) => {
 ### Integration with Migration Tool
 
 ```javascript
-import { batchGitMv } from './lib/git-operations.js';
-import { generateAndWriteMapping } from './lib/migration-mapping.js';
+import { batchGitMv } from "./lib/git-operations.js";
+import { generateAndWriteMapping } from "./lib/migration-mapping.js";
 
 // Define files to migrate
 const fileList = [
-  { source: 'plan/oauth2.md', destination: 'docs/plans/oauth2.md' },
-  { source: 'plan/sync.md', destination: 'docs/plans/sync.md' }
+  { source: "plan/oauth2.md", destination: "docs/plans/oauth2.md" },
+  { source: "plan/sync.md", destination: "docs/plans/sync.md" },
 ];
 
 // Generate mapping BEFORE migration (to capture original metadata)
 const mapping = await generateAndWriteMapping(
   fileList,
-  'migration-mapping.json'
+  "migration-mapping.json",
 );
 
 // Perform migration
 const result = await batchGitMv(fileList, {
-  repoRoot: process.cwd()
+  repoRoot: process.cwd(),
 });
 
 console.log(`Migration complete: ${result.summary.success} files moved`);
@@ -350,6 +368,7 @@ The module includes comprehensive unit tests covering:
 - Error conditions
 
 Run tests:
+
 ```bash
 node scripts/docs/lib/migration-mapping.test.js
 ```

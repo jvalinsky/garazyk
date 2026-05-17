@@ -12,28 +12,28 @@
  * resolve to existing files.
  */
 
-import { describe, it } from 'node:test';
-import assert from 'node:assert';
-import { execSync } from 'child_process';
-import fs from 'fs-extra';
-import path from 'path';
-import os from 'os';
-import crypto from 'crypto';
-import { parseMarkdownLinks, filterInternalLinks } from '../../lib/link-parser.js';
-import { calculateNewPath } from '../../lib/path-resolver.js';
-import { updateFileLinks } from '../../lib/content-updater.js';
-import { batchGitMv } from '../../lib/git-operations.js';
+import { describe, it } from "node:test";
+import assert from "node:assert";
+import { execSync } from "child_process";
+import fs from "fs-extra";
+import path from "path";
+import os from "os";
+import crypto from "crypto";
+import { filterInternalLinks, parseMarkdownLinks } from "../../lib/link-parser.js";
+import { calculateNewPath } from "../../lib/path-resolver.js";
+import { updateFileLinks } from "../../lib/content-updater.js";
+import { batchGitMv } from "../../lib/git-operations.js";
 
 /**
  * Creates a temporary git repository for testing
  */
 async function createTestRepo() {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'link-resolution-test-'));
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "link-resolution-test-"));
 
   // Initialize git repo
-  execSync('git init', { cwd: tmpDir, stdio: 'pipe' });
-  execSync('git config user.email "test@example.com"', { cwd: tmpDir, stdio: 'pipe' });
-  execSync('git config user.name "Test User"', { cwd: tmpDir, stdio: 'pipe' });
+  execSync("git init", { cwd: tmpDir, stdio: "pipe" });
+  execSync('git config user.email "test@example.com"', { cwd: tmpDir, stdio: "pipe" });
+  execSync('git config user.name "Test User"', { cwd: tmpDir, stdio: "pipe" });
 
   return tmpDir;
 }
@@ -43,23 +43,23 @@ async function createTestRepo() {
  */
 function generateMarkdownContent(includeHeadings = true) {
   const lines = [];
-  
+
   if (includeHeadings) {
     const headingCount = Math.floor(Math.random() * 3) + 1;
     for (let i = 0; i < headingCount; i++) {
       lines.push(`## Section ${i + 1}`);
-      lines.push('');
+      lines.push("");
       lines.push(`This is content for section ${i + 1}.`);
-      lines.push('');
+      lines.push("");
     }
   } else {
-    lines.push('# Document');
-    lines.push('');
-    lines.push('This is a simple document.');
-    lines.push('');
+    lines.push("# Document");
+    lines.push("");
+    lines.push("This is a simple document.");
+    lines.push("");
   }
-  
-  return lines.join('\n');
+
+  return lines.join("\n");
 }
 
 /**
@@ -71,71 +71,71 @@ function generateMarkdownContent(includeHeadings = true) {
 function generateDocumentationWithLinks(fileCount, linkDensity = 0.5) {
   const files = [];
   const filePaths = [];
-  
+
   // Generate file paths first
   for (let i = 0; i < fileCount; i++) {
     const depth = Math.floor(Math.random() * 3);
     const pathParts = [];
-    
+
     for (let d = 0; d < depth; d++) {
       pathParts.push(`dir${Math.floor(Math.random() * 3)}`);
     }
-    
+
     pathParts.push(`file${i}.md`);
-    filePaths.push(pathParts.join('/'));
+    filePaths.push(pathParts.join("/"));
   }
-  
+
   // Generate files with links to other files
   for (let i = 0; i < fileCount; i++) {
     const currentPath = filePaths[i];
     const currentDir = path.posix.dirname(currentPath);
     const links = [];
-    
+
     // Add links to other files
     for (let j = 0; j < fileCount; j++) {
       if (i === j) continue;
-      
+
       // Randomly decide whether to add a link
       if (Math.random() < linkDensity) {
         const targetPath = filePaths[j];
-        
+
         // Calculate relative path from current file to target
         const relativePath = path.posix.relative(currentDir, targetPath);
-        const normalizedPath = relativePath.startsWith('../') ? relativePath : `./${relativePath}`;
-        
+        const normalizedPath = relativePath.startsWith("../") ? relativePath : `./${relativePath}`;
+
         links.push({
           target: targetPath,
           href: normalizedPath,
-          hasAnchor: Math.random() < 0.3 // 30% chance of anchor
+          hasAnchor: Math.random() < 0.3, // 30% chance of anchor
         });
       }
     }
-    
+
     // Generate content with links
     const contentLines = [
       `# Document ${i}`,
-      '',
-      'This is a test document.',
-      ''
+      "",
+      "This is a test document.",
+      "",
     ];
-    
+
     for (const link of links) {
-      const anchor = link.hasAnchor ? '#section-1' : '';
+      const anchor = link.hasAnchor ? "#section-1" : "";
       contentLines.push(`- Link to [file ${link.target}](${link.href}${anchor})`);
     }
-    
-    contentLines.push('');
-    contentLines.push('## Section 1');
-    contentLines.push('');
-    contentLines.push('Some content here.');
-    
+
+    contentLines.push("");
+    contentLines.push("## Section 1");
+    contentLines.push("");
+    contentLines.push("Some content here.");
+
     files.push({
       path: currentPath,
-      content: contentLines.join('\n'),
-      links
+      content: contentLines.join("\n"),
+      links,
     });
   }
-  
+
   return files;
 }
 
@@ -149,12 +149,12 @@ async function createFilesInRepo(repoDir, sourceDir, files) {
   for (const file of files) {
     const fullPath = path.join(sourcePath, file.path);
     await fs.ensureDir(path.dirname(fullPath));
-    await fs.writeFile(fullPath, file.content, 'utf8');
+    await fs.writeFile(fullPath, file.content, "utf8");
   }
 
   // Add and commit all files
-  execSync(`git add "${sourceDir}"`, { cwd: repoDir, stdio: 'pipe' });
-  execSync(`git commit -m "Add files to ${sourceDir}"`, { cwd: repoDir, stdio: 'pipe' });
+  execSync(`git add "${sourceDir}"`, { cwd: repoDir, stdio: "pipe" });
+  execSync(`git commit -m "Add files to ${sourceDir}"`, { cwd: repoDir, stdio: "pipe" });
 }
 
 /**
@@ -164,20 +164,20 @@ async function executeMigration(repoDir, sourceDir, destDir, files) {
   // Build file list for batch move
   const fileList = files.map((file) => ({
     source: path.join(sourceDir, file.path),
-    destination: path.join(destDir, file.path)
+    destination: path.join(destDir, file.path),
   }));
 
   // Execute batch git mv
   if (fileList.length > 0) {
     await batchGitMv(fileList, {
       repoRoot: repoDir,
-      continueOnError: false
+      continueOnError: false,
     });
 
     // Commit the moves
     execSync(`git commit -m "Move files from ${sourceDir} to ${destDir}"`, {
       cwd: repoDir,
-      stdio: 'pipe'
+      stdio: "pipe",
     });
   }
 
@@ -197,8 +197,8 @@ async function executeMigration(repoDir, sourceDir, destDir, files) {
     const absoluteNewPath = path.join(repoDir, newFilePath);
 
     // Read the moved file
-    const content = await fs.readFile(absoluteNewPath, 'utf8');
-    
+    const content = await fs.readFile(absoluteNewPath, "utf8");
+
     // Parse links
     const links = parseMarkdownLinks(content);
     const internalLinks = filterInternalLinks(links);
@@ -207,19 +207,19 @@ async function executeMigration(repoDir, sourceDir, destDir, files) {
     const pathMap = new Map();
     for (const link of internalLinks) {
       // Skip anchor-only links
-      if (link.href.startsWith('#')) {
+      if (link.href.startsWith("#")) {
         continue;
       }
 
       // Split href into path and anchor
-      const [linkPath, anchor] = link.href.split('#');
-      const anchorPart = anchor ? `#${anchor}` : '';
+      const [linkPath, anchor] = link.href.split("#");
+      const anchorPart = anchor ? `#${anchor}` : "";
 
       // Resolve the link target relative to the old file location
       const oldFileDir = path.posix.dirname(oldFilePath);
       let targetPath;
-      
-      if (linkPath.startsWith('/')) {
+
+      if (linkPath.startsWith("/")) {
         // Absolute path
         targetPath = linkPath;
       } else {
@@ -236,14 +236,14 @@ async function executeMigration(repoDir, sourceDir, destDir, files) {
       // Calculate the new relative path from the new file location to the new target location
       const newFileDir = path.posix.dirname(newFilePath);
       let newRelativePath = path.posix.relative(newFileDir, newTargetPath);
-      
+
       // Ensure relative paths start with ./ or ../
-      if (!newRelativePath.startsWith('../') && !newRelativePath.startsWith('./')) {
-        newRelativePath = './' + newRelativePath;
+      if (!newRelativePath.startsWith("../") && !newRelativePath.startsWith("./")) {
+        newRelativePath = "./" + newRelativePath;
       }
 
       const newHref = newRelativePath + anchorPart;
-      
+
       if (newHref !== link.href) {
         pathMap.set(link.href, newHref);
       }
@@ -257,10 +257,10 @@ async function executeMigration(repoDir, sourceDir, destDir, files) {
 
   // Commit link updates if there are changes
   try {
-    execSync(`git add "${destDir}"`, { cwd: repoDir, stdio: 'pipe' });
+    execSync(`git add "${destDir}"`, { cwd: repoDir, stdio: "pipe" });
     execSync(`git commit -m "Update links after migration"`, {
       cwd: repoDir,
-      stdio: 'pipe'
+      stdio: "pipe",
     });
   } catch (error) {
     // No changes to commit - that's okay
@@ -275,7 +275,7 @@ async function verifyLinkResolution(repoDir, destDir, files) {
     totalLinks: 0,
     resolvedLinks: 0,
     brokenLinks: [],
-    anchorLinks: []
+    anchorLinks: [],
   };
 
   for (const file of files) {
@@ -283,7 +283,7 @@ async function verifyLinkResolution(repoDir, destDir, files) {
     const fileDir = path.dirname(filePath);
 
     // Read the file content
-    const content = await fs.readFile(filePath, 'utf8');
+    const content = await fs.readFile(filePath, "utf8");
 
     // Parse links
     const links = parseMarkdownLinks(content);
@@ -293,21 +293,21 @@ async function verifyLinkResolution(repoDir, destDir, files) {
       results.totalLinks++;
 
       // Handle anchor-only links (always valid within the same file)
-      if (link.href.startsWith('#')) {
+      if (link.href.startsWith("#")) {
         results.resolvedLinks++;
         results.anchorLinks.push({
           file: path.join(destDir, file.path),
-          href: link.href
+          href: link.href,
         });
         continue;
       }
 
       // Split href into path and anchor
-      const [linkPath, anchor] = link.href.split('#');
+      const [linkPath, anchor] = link.href.split("#");
 
       // Resolve the link path
       let targetPath;
-      if (linkPath.startsWith('/')) {
+      if (linkPath.startsWith("/")) {
         // Absolute path
         targetPath = path.join(repoDir, linkPath);
       } else {
@@ -323,13 +323,13 @@ async function verifyLinkResolution(repoDir, destDir, files) {
 
         // If there's an anchor, verify it exists in the target file
         if (anchor) {
-          const targetContent = await fs.readFile(targetPath, 'utf8');
-          const anchorId = anchor.toLowerCase().replace(/\s+/g, '-');
-          
+          const targetContent = await fs.readFile(targetPath, "utf8");
+          const anchorId = anchor.toLowerCase().replace(/\s+/g, "-");
+
           // Check for heading with matching anchor
-          const headingRegex = new RegExp(`^#+\\s+.*${anchor}`, 'im');
-          const hasAnchor = headingRegex.test(targetContent) || 
-                           targetContent.includes(`id="${anchorId}"`);
+          const headingRegex = new RegExp(`^#+\\s+.*${anchor}`, "im");
+          const hasAnchor = headingRegex.test(targetContent) ||
+            targetContent.includes(`id="${anchorId}"`);
 
           if (!hasAnchor) {
             // Anchor not found, but we'll count the link as resolved
@@ -338,14 +338,14 @@ async function verifyLinkResolution(repoDir, destDir, files) {
               file: path.join(destDir, file.path),
               href: link.href,
               targetExists: true,
-              anchorFound: false
+              anchorFound: false,
             });
           } else {
             results.anchorLinks.push({
               file: path.join(destDir, file.path),
               href: link.href,
               targetExists: true,
-              anchorFound: true
+              anchorFound: true,
             });
           }
         }
@@ -353,8 +353,8 @@ async function verifyLinkResolution(repoDir, destDir, files) {
         results.brokenLinks.push({
           file: path.join(destDir, file.path),
           href: link.href,
-          targetPath: targetPath.replace(repoDir + '/', ''),
-          line: link.line
+          targetPath: targetPath.replace(repoDir + "/", ""),
+          line: link.line,
         });
       }
     }
@@ -363,8 +363,8 @@ async function verifyLinkResolution(repoDir, destDir, files) {
   return results;
 }
 
-describe('Property Test: Link Resolution After Migration', () => {
-  it('should resolve all internal links after migration (100 iterations)', async () => {
+describe("Property Test: Link Resolution After Migration", () => {
+  it("should resolve all internal links after migration (100 iterations)", async () => {
     const iterations = 100;
     let passedIterations = 0;
 
@@ -378,9 +378,9 @@ describe('Property Test: Link Resolution After Migration', () => {
         const files = generateDocumentationWithLinks(fileCount, linkDensity);
 
         // Choose random source directory
-        const sourceDirs = ['plan', 'plans'];
+        const sourceDirs = ["plan", "plans"];
         const sourceDir = sourceDirs[Math.floor(Math.random() * sourceDirs.length)];
-        const destDir = 'docs/plans';
+        const destDir = "docs/plans";
 
         // Create files in source directory
         await createFilesInRepo(repoDir, sourceDir, files);
@@ -395,13 +395,17 @@ describe('Property Test: Link Resolution After Migration', () => {
         assert.strictEqual(
           verification.brokenLinks.length,
           0,
-          `Iteration ${i + 1}: Found ${verification.brokenLinks.length} broken links: ${JSON.stringify(verification.brokenLinks, null, 2)}`
+          `Iteration ${i + 1}: Found ${verification.brokenLinks.length} broken links: ${
+            JSON.stringify(verification.brokenLinks, null, 2)
+          }`,
         );
 
         assert.strictEqual(
           verification.resolvedLinks,
           verification.totalLinks,
-          `Iteration ${i + 1}: Expected ${verification.totalLinks} links to resolve, but only ${verification.resolvedLinks} resolved`
+          `Iteration ${
+            i + 1
+          }: Expected ${verification.totalLinks} links to resolve, but only ${verification.resolvedLinks} resolved`,
         );
 
         passedIterations++;
@@ -415,22 +419,22 @@ describe('Property Test: Link Resolution After Migration', () => {
     assert.strictEqual(
       passedIterations,
       iterations,
-      `Expected all ${iterations} iterations to pass, but only ${passedIterations} passed`
+      `Expected all ${iterations} iterations to pass, but only ${passedIterations} passed`,
     );
   });
 
-  it('should handle files with no links', async () => {
+  it("should handle files with no links", async () => {
     const repoDir = await createTestRepo();
 
     try {
-      const sourceDir = 'plan';
-      const destDir = 'docs/plans';
+      const sourceDir = "plan";
+      const destDir = "docs/plans";
 
       // Create file with no links
       const files = [{
-        path: 'no-links.md',
-        content: '# Document\n\nThis document has no links.\n',
-        links: []
+        path: "no-links.md",
+        content: "# Document\n\nThis document has no links.\n",
+        links: [],
       }];
 
       await createFilesInRepo(repoDir, sourceDir, files);
@@ -438,33 +442,33 @@ describe('Property Test: Link Resolution After Migration', () => {
 
       const verification = await verifyLinkResolution(repoDir, destDir, files);
 
-      assert.strictEqual(verification.totalLinks, 0, 'Should have no links');
-      assert.strictEqual(verification.brokenLinks.length, 0, 'Should have no broken links');
+      assert.strictEqual(verification.totalLinks, 0, "Should have no links");
+      assert.strictEqual(verification.brokenLinks.length, 0, "Should have no broken links");
     } finally {
       await fs.remove(repoDir);
     }
   });
 
-  it('should handle anchor-only links within same file', async () => {
+  it("should handle anchor-only links within same file", async () => {
     const repoDir = await createTestRepo();
 
     try {
-      const sourceDir = 'plan';
-      const destDir = 'docs/plans';
+      const sourceDir = "plan";
+      const destDir = "docs/plans";
 
       // Create file with anchor-only links
       const files = [{
-        path: 'anchors.md',
+        path: "anchors.md",
         content: [
-          '# Document',
-          '',
-          'Jump to [Section 1](#section-1)',
-          '',
-          '## Section 1',
-          '',
-          'Content here.'
-        ].join('\n'),
-        links: []
+          "# Document",
+          "",
+          "Jump to [Section 1](#section-1)",
+          "",
+          "## Section 1",
+          "",
+          "Content here.",
+        ].join("\n"),
+        links: [],
       }];
 
       await createFilesInRepo(repoDir, sourceDir, files);
@@ -472,48 +476,48 @@ describe('Property Test: Link Resolution After Migration', () => {
 
       const verification = await verifyLinkResolution(repoDir, destDir, files);
 
-      assert.strictEqual(verification.brokenLinks.length, 0, 'Should have no broken links');
-      assert.ok(verification.totalLinks > 0, 'Should have at least one link');
+      assert.strictEqual(verification.brokenLinks.length, 0, "Should have no broken links");
+      assert.ok(verification.totalLinks > 0, "Should have at least one link");
       assert.strictEqual(
         verification.resolvedLinks,
         verification.totalLinks,
-        'All anchor links should resolve'
+        "All anchor links should resolve",
       );
     } finally {
       await fs.remove(repoDir);
     }
   });
 
-  it('should handle links with anchors to other files', async () => {
+  it("should handle links with anchors to other files", async () => {
     const repoDir = await createTestRepo();
 
     try {
-      const sourceDir = 'plan';
-      const destDir = 'docs/plans';
+      const sourceDir = "plan";
+      const destDir = "docs/plans";
 
       // Create files with cross-file anchor links
       const files = [
         {
-          path: 'file1.md',
+          path: "file1.md",
           content: [
-            '# File 1',
-            '',
-            'Link to [File 2 Section](./file2.md#section-1)',
-            ''
-          ].join('\n'),
-          links: []
+            "# File 1",
+            "",
+            "Link to [File 2 Section](./file2.md#section-1)",
+            "",
+          ].join("\n"),
+          links: [],
         },
         {
-          path: 'file2.md',
+          path: "file2.md",
           content: [
-            '# File 2',
-            '',
-            '## Section 1',
-            '',
-            'Content here.'
-          ].join('\n'),
-          links: []
-        }
+            "# File 2",
+            "",
+            "## Section 1",
+            "",
+            "Content here.",
+          ].join("\n"),
+          links: [],
+        },
       ];
 
       await createFilesInRepo(repoDir, sourceDir, files);
@@ -521,47 +525,47 @@ describe('Property Test: Link Resolution After Migration', () => {
 
       const verification = await verifyLinkResolution(repoDir, destDir, files);
 
-      assert.strictEqual(verification.brokenLinks.length, 0, 'Should have no broken links');
-      assert.ok(verification.totalLinks > 0, 'Should have at least one link');
+      assert.strictEqual(verification.brokenLinks.length, 0, "Should have no broken links");
+      assert.ok(verification.totalLinks > 0, "Should have at least one link");
       assert.strictEqual(
         verification.resolvedLinks,
         verification.totalLinks,
-        'All links with anchors should resolve'
+        "All links with anchors should resolve",
       );
     } finally {
       await fs.remove(repoDir);
     }
   });
 
-  it('should handle nested directory structures', async () => {
+  it("should handle nested directory structures", async () => {
     const repoDir = await createTestRepo();
 
     try {
-      const sourceDir = 'plan';
-      const destDir = 'docs/plans';
+      const sourceDir = "plan";
+      const destDir = "docs/plans";
 
       // Create files in nested directories with cross-links
       const files = [
         {
-          path: 'root.md',
+          path: "root.md",
           content: [
-            '# Root',
-            '',
-            'Link to [nested file](./subdir/nested.md)',
-            ''
-          ].join('\n'),
-          links: []
+            "# Root",
+            "",
+            "Link to [nested file](./subdir/nested.md)",
+            "",
+          ].join("\n"),
+          links: [],
         },
         {
-          path: 'subdir/nested.md',
+          path: "subdir/nested.md",
           content: [
-            '# Nested',
-            '',
-            'Link back to [root](../root.md)',
-            ''
-          ].join('\n'),
-          links: []
-        }
+            "# Nested",
+            "",
+            "Link back to [root](../root.md)",
+            "",
+          ].join("\n"),
+          links: [],
+        },
       ];
 
       await createFilesInRepo(repoDir, sourceDir, files);
@@ -572,47 +576,47 @@ describe('Property Test: Link Resolution After Migration', () => {
       assert.strictEqual(
         verification.brokenLinks.length,
         0,
-        `Should have no broken links, but found: ${JSON.stringify(verification.brokenLinks)}`
+        `Should have no broken links, but found: ${JSON.stringify(verification.brokenLinks)}`,
       );
       assert.strictEqual(
         verification.resolvedLinks,
         verification.totalLinks,
-        'All links in nested structure should resolve'
+        "All links in nested structure should resolve",
       );
     } finally {
       await fs.remove(repoDir);
     }
   });
 
-  it('should handle complex relative paths', async () => {
+  it("should handle complex relative paths", async () => {
     const repoDir = await createTestRepo();
 
     try {
-      const sourceDir = 'plan';
-      const destDir = 'docs/plans';
+      const sourceDir = "plan";
+      const destDir = "docs/plans";
 
       // Create files with complex relative paths
       const files = [
         {
-          path: 'dir1/dir2/file1.md',
+          path: "dir1/dir2/file1.md",
           content: [
-            '# File 1',
-            '',
-            'Link to [file 2](../../dir3/file2.md)',
-            ''
-          ].join('\n'),
-          links: []
+            "# File 1",
+            "",
+            "Link to [file 2](../../dir3/file2.md)",
+            "",
+          ].join("\n"),
+          links: [],
         },
         {
-          path: 'dir3/file2.md',
+          path: "dir3/file2.md",
           content: [
-            '# File 2',
-            '',
-            'Link to [file 1](../dir1/dir2/file1.md)',
-            ''
-          ].join('\n'),
-          links: []
-        }
+            "# File 2",
+            "",
+            "Link to [file 1](../dir1/dir2/file1.md)",
+            "",
+          ].join("\n"),
+          links: [],
+        },
       ];
 
       await createFilesInRepo(repoDir, sourceDir, files);
@@ -623,24 +627,24 @@ describe('Property Test: Link Resolution After Migration', () => {
       assert.strictEqual(
         verification.brokenLinks.length,
         0,
-        `Should have no broken links, but found: ${JSON.stringify(verification.brokenLinks)}`
+        `Should have no broken links, but found: ${JSON.stringify(verification.brokenLinks)}`,
       );
       assert.strictEqual(
         verification.resolvedLinks,
         verification.totalLinks,
-        'All complex relative paths should resolve'
+        "All complex relative paths should resolve",
       );
     } finally {
       await fs.remove(repoDir);
     }
   });
 
-  it('should handle files with many links', async () => {
+  it("should handle files with many links", async () => {
     const repoDir = await createTestRepo();
 
     try {
-      const sourceDir = 'plan';
-      const destDir = 'docs/plans';
+      const sourceDir = "plan";
+      const destDir = "docs/plans";
 
       // Create a file with many links to other files
       const targetFiles = [];
@@ -648,23 +652,21 @@ describe('Property Test: Link Resolution After Migration', () => {
         targetFiles.push({
           path: `target${i}.md`,
           content: `# Target ${i}\n\nContent here.\n`,
-          links: []
+          links: [],
         });
       }
 
-      const linkLines = targetFiles.map((f, i) => 
-        `- Link to [target ${i}](./target${i}.md)`
-      );
+      const linkLines = targetFiles.map((f, i) => `- Link to [target ${i}](./target${i}.md)`);
 
       const mainFile = {
-        path: 'main.md',
+        path: "main.md",
         content: [
-          '# Main Document',
-          '',
+          "# Main Document",
+          "",
           ...linkLines,
-          ''
-        ].join('\n'),
-        links: []
+          "",
+        ].join("\n"),
+        links: [],
       };
 
       const files = [mainFile, ...targetFiles];
@@ -677,13 +679,13 @@ describe('Property Test: Link Resolution After Migration', () => {
       assert.strictEqual(
         verification.brokenLinks.length,
         0,
-        `Should have no broken links, but found: ${JSON.stringify(verification.brokenLinks)}`
+        `Should have no broken links, but found: ${JSON.stringify(verification.brokenLinks)}`,
       );
-      assert.ok(verification.totalLinks >= 10, 'Should have at least 10 links');
+      assert.ok(verification.totalLinks >= 10, "Should have at least 10 links");
       assert.strictEqual(
         verification.resolvedLinks,
         verification.totalLinks,
-        'All links should resolve'
+        "All links should resolve",
       );
     } finally {
       await fs.remove(repoDir);

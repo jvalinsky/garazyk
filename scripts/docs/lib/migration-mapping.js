@@ -6,9 +6,9 @@
  * provide an audit trail and reference for the migration.
  */
 
-import fs from 'fs-extra';
-import path from 'path';
-import { execSync } from 'child_process';
+import fs from "fs-extra";
+import path from "path";
+import { execSync } from "child_process";
 
 /**
  * Gets the last git commit hash for a file
@@ -23,9 +23,9 @@ function getLastCommit(filePath, repoRoot) {
       `git log -1 --format=%H -- "${filePath}"`,
       {
         cwd: repoRoot,
-        encoding: 'utf8',
-        stdio: 'pipe'
-      }
+        encoding: "utf8",
+        stdio: "pipe",
+      },
     );
     return output.trim() || null;
   } catch (error) {
@@ -49,7 +49,7 @@ async function getFileMetadata(filePath, repoRoot) {
     return {
       size: stats.size,
       lastModified: stats.mtime.toISOString(),
-      gitCommit: getLastCommit(filePath, repoRoot)
+      gitCommit: getLastCommit(filePath, repoRoot),
     };
   } catch (error) {
     // File doesn't exist or can't be accessed
@@ -57,7 +57,7 @@ async function getFileMetadata(filePath, repoRoot) {
       size: null,
       lastModified: null,
       gitCommit: null,
-      error: error.message
+      error: error.message,
     };
   }
 }
@@ -77,7 +77,7 @@ export async function generateMappingEntry(oldPath, newPath, repoRoot = process.
   return {
     oldPath,
     newPath,
-    ...metadata
+    ...metadata,
   };
 }
 
@@ -90,17 +90,17 @@ export async function generateMappingEntry(oldPath, newPath, repoRoot = process.
  */
 export async function generateMigrationMapping(fileList, repoRoot = process.cwd()) {
   if (!Array.isArray(fileList)) {
-    throw new TypeError('fileList must be an array');
+    throw new TypeError("fileList must be an array");
   }
 
   const mappings = [];
   const errors = [];
 
   for (const file of fileList) {
-    if (!file || typeof file !== 'object') {
+    if (!file || typeof file !== "object") {
       errors.push({
         file,
-        error: 'Invalid file entry: must be an object'
+        error: "Invalid file entry: must be an object",
       });
       continue;
     }
@@ -108,7 +108,7 @@ export async function generateMigrationMapping(fileList, repoRoot = process.cwd(
     if (!file.source || !file.destination) {
       errors.push({
         file,
-        error: 'Invalid file entry: must have source and destination properties'
+        error: "Invalid file entry: must have source and destination properties",
       });
       continue;
     }
@@ -117,26 +117,26 @@ export async function generateMigrationMapping(fileList, repoRoot = process.cwd(
       const entry = await generateMappingEntry(
         file.source,
         file.destination,
-        repoRoot
+        repoRoot,
       );
       mappings.push(entry);
     } catch (error) {
       errors.push({
         file,
-        error: error.message
+        error: error.message,
       });
     }
   }
 
   return {
-    version: '1.0.0',
+    version: "1.0.0",
     generatedAt: new Date().toISOString(),
     repoRoot,
     totalFiles: fileList.length,
     successfulMappings: mappings.length,
     failedMappings: errors.length,
     mappings,
-    errors: errors.length > 0 ? errors : undefined
+    errors: errors.length > 0 ? errors : undefined,
   };
 }
 
@@ -148,12 +148,12 @@ export async function generateMigrationMapping(fileList, repoRoot = process.cwd(
  * @returns {Promise<void>}
  */
 export async function writeMigrationMapping(mapping, outputPath) {
-  if (!mapping || typeof mapping !== 'object') {
-    throw new TypeError('mapping must be an object');
+  if (!mapping || typeof mapping !== "object") {
+    throw new TypeError("mapping must be an object");
   }
 
-  if (!outputPath || typeof outputPath !== 'string') {
-    throw new TypeError('outputPath must be a string');
+  if (!outputPath || typeof outputPath !== "string") {
+    throw new TypeError("outputPath must be a string");
   }
 
   // Ensure output directory exists
@@ -164,7 +164,7 @@ export async function writeMigrationMapping(mapping, outputPath) {
   await fs.writeFile(
     outputPath,
     JSON.stringify(mapping, null, 2),
-    'utf8'
+    "utf8",
   );
 }
 
@@ -197,7 +197,7 @@ export async function readMigrationMapping(mappingPath) {
     throw new Error(`Migration mapping file not found: ${mappingPath}`);
   }
 
-  const content = await fs.readFile(mappingPath, 'utf8');
+  const content = await fs.readFile(mappingPath, "utf8");
   return JSON.parse(content);
 }
 

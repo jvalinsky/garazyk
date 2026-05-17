@@ -11,26 +11,26 @@
  * and verifies all files are present in the destination with equivalent content.
  */
 
-import { describe, it } from 'node:test';
-import assert from 'node:assert';
-import { execSync } from 'child_process';
-import fs from 'fs-extra';
-import path from 'path';
-import os from 'os';
-import crypto from 'crypto';
-import { discoverFiles } from '../../lib/file-discovery.js';
-import { batchGitMv } from '../../lib/git-operations.js';
+import { describe, it } from "node:test";
+import assert from "node:assert";
+import { execSync } from "child_process";
+import fs from "fs-extra";
+import path from "path";
+import os from "os";
+import crypto from "crypto";
+import { discoverFiles } from "../../lib/file-discovery.js";
+import { batchGitMv } from "../../lib/git-operations.js";
 
 /**
  * Creates a temporary git repository for testing
  */
 async function createTestRepo() {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'consolidation-test-'));
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "consolidation-test-"));
 
   // Initialize git repo
-  execSync('git init', { cwd: tmpDir, stdio: 'pipe' });
-  execSync('git config user.email "test@example.com"', { cwd: tmpDir, stdio: 'pipe' });
-  execSync('git config user.name "Test User"', { cwd: tmpDir, stdio: 'pipe' });
+  execSync("git init", { cwd: tmpDir, stdio: "pipe" });
+  execSync('git config user.email "test@example.com"', { cwd: tmpDir, stdio: "pipe" });
+  execSync('git config user.name "Test User"', { cwd: tmpDir, stdio: "pipe" });
 
   return tmpDir;
 }
@@ -40,7 +40,7 @@ async function createTestRepo() {
  */
 function generateRandomContent(minSize = 10, maxSize = 1000) {
   const size = Math.floor(Math.random() * (maxSize - minSize + 1)) + minSize;
-  return crypto.randomBytes(size).toString('hex');
+  return crypto.randomBytes(size).toString("hex");
 }
 
 /**
@@ -51,7 +51,7 @@ function generateRandomContent(minSize = 10, maxSize = 1000) {
  */
 function generateRandomFileStructure(fileCount, maxDepth = 3) {
   const files = [];
-  const extensions = ['.md', '.txt', '.json', '.yaml'];
+  const extensions = [".md", ".txt", ".json", ".yaml"];
 
   for (let i = 0; i < fileCount; i++) {
     // Generate random directory depth
@@ -68,8 +68,8 @@ function generateRandomFileStructure(fileCount, maxDepth = 3) {
     pathParts.push(filename);
 
     files.push({
-      path: pathParts.join('/'),
-      content: generateRandomContent()
+      path: pathParts.join("/"),
+      content: generateRandomContent(),
     });
   }
 
@@ -86,12 +86,12 @@ async function createFilesInRepo(repoDir, sourceDir, files) {
   for (const file of files) {
     const fullPath = path.join(sourcePath, file.path);
     await fs.ensureDir(path.dirname(fullPath));
-    await fs.writeFile(fullPath, file.content, 'utf8');
+    await fs.writeFile(fullPath, file.content, "utf8");
   }
 
   // Add and commit all files
-  execSync(`git add "${sourceDir}"`, { cwd: repoDir, stdio: 'pipe' });
-  execSync(`git commit -m "Add files to ${sourceDir}"`, { cwd: repoDir, stdio: 'pipe' });
+  execSync(`git add "${sourceDir}"`, { cwd: repoDir, stdio: "pipe" });
+  execSync(`git commit -m "Add files to ${sourceDir}"`, { cwd: repoDir, stdio: "pipe" });
 }
 
 /**
@@ -100,28 +100,28 @@ async function createFilesInRepo(repoDir, sourceDir, files) {
 async function executeConsolidation(repoDir, sourceDir, destDir) {
   // Discover files in source directory
   const files = await discoverFiles(sourceDir, {
-    filePatterns: ['**/*'],
-    excludePatterns: ['**/.git/**'],
-    repoRoot: repoDir
+    filePatterns: ["**/*"],
+    excludePatterns: ["**/.git/**"],
+    repoRoot: repoDir,
   });
 
   // Build file list for batch move
   const fileList = files.map((file) => ({
     source: path.join(sourceDir, file),
-    destination: path.join(destDir, file)
+    destination: path.join(destDir, file),
   }));
 
   // Execute batch git mv
   if (fileList.length > 0) {
     await batchGitMv(fileList, {
       repoRoot: repoDir,
-      continueOnError: false
+      continueOnError: false,
     });
 
     // Commit the moves
     execSync(`git commit -m "Consolidate ${sourceDir} to ${destDir}"`, {
       cwd: repoDir,
-      stdio: 'pipe'
+      stdio: "pipe",
     });
   }
 
@@ -136,7 +136,7 @@ async function verifyConsolidation(repoDir, sourceFiles, destDir) {
     total: sourceFiles.length,
     found: 0,
     missing: [],
-    contentMismatch: []
+    contentMismatch: [],
   };
 
   for (const file of sourceFiles) {
@@ -151,12 +151,12 @@ async function verifyConsolidation(repoDir, sourceFiles, destDir) {
     results.found++;
 
     // Verify content matches
-    const destContent = await fs.readFile(destPath, 'utf8');
+    const destContent = await fs.readFile(destPath, "utf8");
     if (destContent !== file.content) {
       results.contentMismatch.push({
         path: file.path,
         expected: file.content.substring(0, 100),
-        actual: destContent.substring(0, 100)
+        actual: destContent.substring(0, 100),
       });
     }
   }
@@ -164,8 +164,8 @@ async function verifyConsolidation(repoDir, sourceFiles, destDir) {
   return results;
 }
 
-describe('Property Test: File Consolidation Completeness', () => {
-  it('should consolidate all files from source to destination with equivalent content (100 iterations)', async () => {
+describe("Property Test: File Consolidation Completeness", () => {
+  it("should consolidate all files from source to destination with equivalent content (100 iterations)", async () => {
     const iterations = 100;
     let passedIterations = 0;
 
@@ -178,9 +178,9 @@ describe('Property Test: File Consolidation Completeness', () => {
         const files = generateRandomFileStructure(fileCount);
 
         // Choose random source directory
-        const sourceDirs = ['plan', 'plans'];
+        const sourceDirs = ["plan", "plans"];
         const sourceDir = sourceDirs[Math.floor(Math.random() * sourceDirs.length)];
-        const destDir = 'docs/plans';
+        const destDir = "docs/plans";
 
         // Create files in source directory
         await createFilesInRepo(repoDir, sourceDir, files);
@@ -195,19 +195,21 @@ describe('Property Test: File Consolidation Completeness', () => {
         assert.strictEqual(
           verification.missing.length,
           0,
-          `Iteration ${i + 1}: Missing files in destination: ${verification.missing.join(', ')}`
+          `Iteration ${i + 1}: Missing files in destination: ${verification.missing.join(", ")}`,
         );
 
         assert.strictEqual(
           verification.contentMismatch.length,
           0,
-          `Iteration ${i + 1}: Content mismatch in files: ${JSON.stringify(verification.contentMismatch)}`
+          `Iteration ${i + 1}: Content mismatch in files: ${
+            JSON.stringify(verification.contentMismatch)
+          }`,
         );
 
         assert.strictEqual(
           verification.found,
           verification.total,
-          `Iteration ${i + 1}: Expected ${verification.total} files, found ${verification.found}`
+          `Iteration ${i + 1}: Expected ${verification.total} files, found ${verification.found}`,
         );
 
         passedIterations++;
@@ -221,48 +223,52 @@ describe('Property Test: File Consolidation Completeness', () => {
     assert.strictEqual(
       passedIterations,
       iterations,
-      `Expected all ${iterations} iterations to pass, but only ${passedIterations} passed`
+      `Expected all ${iterations} iterations to pass, but only ${passedIterations} passed`,
     );
   });
 
-  it('should handle empty source directories', async () => {
+  it("should handle empty source directories", async () => {
     const repoDir = await createTestRepo();
 
     try {
-      const sourceDir = 'plan';
-      const destDir = 'docs/plans';
+      const sourceDir = "plan";
+      const destDir = "docs/plans";
 
       // Create empty source directory
       await fs.ensureDir(path.join(repoDir, sourceDir));
-      execSync(`git add "${sourceDir}"`, { cwd: repoDir, stdio: 'pipe' });
+      execSync(`git add "${sourceDir}"`, { cwd: repoDir, stdio: "pipe" });
       execSync(`git commit -m "Add empty ${sourceDir}" --allow-empty`, {
         cwd: repoDir,
-        stdio: 'pipe'
+        stdio: "pipe",
       });
 
       // Execute consolidation
       const movedFiles = await executeConsolidation(repoDir, sourceDir, destDir);
 
       // Verify no files were moved
-      assert.strictEqual(movedFiles.length, 0, 'Expected no files to be moved from empty directory');
+      assert.strictEqual(
+        movedFiles.length,
+        0,
+        "Expected no files to be moved from empty directory",
+      );
     } finally {
       await fs.remove(repoDir);
     }
   });
 
-  it('should preserve directory structure during consolidation', async () => {
+  it("should preserve directory structure during consolidation", async () => {
     const repoDir = await createTestRepo();
 
     try {
-      const sourceDir = 'plan';
-      const destDir = 'docs/plans';
+      const sourceDir = "plan";
+      const destDir = "docs/plans";
 
       // Create files with nested directory structure
       const files = [
-        { path: 'root.md', content: 'root content' },
-        { path: 'subdir1/file1.md', content: 'file1 content' },
-        { path: 'subdir1/subdir2/file2.md', content: 'file2 content' },
-        { path: 'subdir3/file3.md', content: 'file3 content' }
+        { path: "root.md", content: "root content" },
+        { path: "subdir1/file1.md", content: "file1 content" },
+        { path: "subdir1/subdir2/file2.md", content: "file2 content" },
+        { path: "subdir3/file3.md", content: "file3 content" },
       ];
 
       await createFilesInRepo(repoDir, sourceDir, files);
@@ -275,14 +281,14 @@ describe('Property Test: File Consolidation Completeness', () => {
         const destPath = path.join(repoDir, destDir, file.path);
         assert.ok(
           await fs.pathExists(destPath),
-          `Expected file to exist at ${destPath}`
+          `Expected file to exist at ${destPath}`,
         );
 
-        const content = await fs.readFile(destPath, 'utf8');
+        const content = await fs.readFile(destPath, "utf8");
         assert.strictEqual(
           content,
           file.content,
-          `Content mismatch for ${file.path}`
+          `Content mismatch for ${file.path}`,
         );
       }
     } finally {
@@ -290,19 +296,19 @@ describe('Property Test: File Consolidation Completeness', () => {
     }
   });
 
-  it('should handle files with special characters in names', async () => {
+  it("should handle files with special characters in names", async () => {
     const repoDir = await createTestRepo();
 
     try {
-      const sourceDir = 'plan';
-      const destDir = 'docs/plans';
+      const sourceDir = "plan";
+      const destDir = "docs/plans";
 
       // Create files with special characters (avoiding characters that are invalid in filenames)
       const files = [
-        { path: 'file-with-dashes.md', content: 'content1' },
-        { path: 'file_with_underscores.md', content: 'content2' },
-        { path: 'file.with.dots.md', content: 'content3' },
-        { path: 'file with spaces.md', content: 'content4' }
+        { path: "file-with-dashes.md", content: "content1" },
+        { path: "file_with_underscores.md", content: "content2" },
+        { path: "file.with.dots.md", content: "content3" },
+        { path: "file with spaces.md", content: "content4" },
       ];
 
       await createFilesInRepo(repoDir, sourceDir, files);
@@ -313,26 +319,26 @@ describe('Property Test: File Consolidation Completeness', () => {
       // Verify all files exist with correct content
       const verification = await verifyConsolidation(repoDir, files, destDir);
 
-      assert.strictEqual(verification.missing.length, 0, 'No files should be missing');
-      assert.strictEqual(verification.contentMismatch.length, 0, 'No content mismatches');
-      assert.strictEqual(verification.found, files.length, 'All files should be found');
+      assert.strictEqual(verification.missing.length, 0, "No files should be missing");
+      assert.strictEqual(verification.contentMismatch.length, 0, "No content mismatches");
+      assert.strictEqual(verification.found, files.length, "All files should be found");
     } finally {
       await fs.remove(repoDir);
     }
   });
 
-  it('should handle large files during consolidation', async () => {
+  it("should handle large files during consolidation", async () => {
     const repoDir = await createTestRepo();
 
     try {
-      const sourceDir = 'plan';
-      const destDir = 'docs/plans';
+      const sourceDir = "plan";
+      const destDir = "docs/plans";
 
       // Create large files (1MB each)
-      const largeContent = crypto.randomBytes(1024 * 1024).toString('hex');
+      const largeContent = crypto.randomBytes(1024 * 1024).toString("hex");
       const files = [
-        { path: 'large1.md', content: largeContent },
-        { path: 'large2.md', content: largeContent }
+        { path: "large1.md", content: largeContent },
+        { path: "large2.md", content: largeContent },
       ];
 
       await createFilesInRepo(repoDir, sourceDir, files);
@@ -343,9 +349,9 @@ describe('Property Test: File Consolidation Completeness', () => {
       // Verify files exist with correct content
       const verification = await verifyConsolidation(repoDir, files, destDir);
 
-      assert.strictEqual(verification.missing.length, 0, 'No files should be missing');
-      assert.strictEqual(verification.contentMismatch.length, 0, 'No content mismatches');
-      assert.strictEqual(verification.found, files.length, 'All files should be found');
+      assert.strictEqual(verification.missing.length, 0, "No files should be missing");
+      assert.strictEqual(verification.contentMismatch.length, 0, "No content mismatches");
+      assert.strictEqual(verification.found, files.length, "All files should be found");
     } finally {
       await fs.remove(repoDir);
     }

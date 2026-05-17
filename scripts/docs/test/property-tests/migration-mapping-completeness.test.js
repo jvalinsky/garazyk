@@ -11,29 +11,29 @@
  * and verifies all moved files appear in the mapping with correct old/new paths.
  */
 
-import { describe, it } from 'node:test';
-import assert from 'node:assert';
-import { execSync } from 'child_process';
-import fs from 'fs-extra';
-import path from 'path';
-import os from 'os';
-import crypto from 'crypto';
+import { describe, it } from "node:test";
+import assert from "node:assert";
+import { execSync } from "child_process";
+import fs from "fs-extra";
+import path from "path";
+import os from "os";
+import crypto from "crypto";
 import {
   generateMigrationMapping,
   lookupNewPath,
-  lookupOldPath
-} from '../../lib/migration-mapping.js';
+  lookupOldPath,
+} from "../../lib/migration-mapping.js";
 
 /**
  * Creates a temporary git repository for testing
  */
 async function createTestRepo() {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'mapping-completeness-test-'));
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "mapping-completeness-test-"));
 
   // Initialize git repo
-  execSync('git init', { cwd: tmpDir, stdio: 'pipe' });
-  execSync('git config user.email "test@example.com"', { cwd: tmpDir, stdio: 'pipe' });
-  execSync('git config user.name "Test User"', { cwd: tmpDir, stdio: 'pipe' });
+  execSync("git init", { cwd: tmpDir, stdio: "pipe" });
+  execSync('git config user.email "test@example.com"', { cwd: tmpDir, stdio: "pipe" });
+  execSync('git config user.name "Test User"', { cwd: tmpDir, stdio: "pipe" });
 
   return tmpDir;
 }
@@ -43,7 +43,7 @@ async function createTestRepo() {
  */
 function generateRandomContent(minSize = 10, maxSize = 1000) {
   const size = Math.floor(Math.random() * (maxSize - minSize + 1)) + minSize;
-  return crypto.randomBytes(size).toString('hex');
+  return crypto.randomBytes(size).toString("hex");
 }
 
 /**
@@ -54,9 +54,9 @@ function generateRandomContent(minSize = 10, maxSize = 1000) {
  */
 function generateRandomMigrationPlan(fileCount, maxDepth = 3) {
   const files = [];
-  const extensions = ['.md', '.txt', '.json', '.yaml'];
-  const sourceDirs = ['plan', 'plans', 'old-docs'];
-  const destDirs = ['docs/plans', 'docs/guides', 'docs/archive'];
+  const extensions = [".md", ".txt", ".json", ".yaml"];
+  const sourceDirs = ["plan", "plans", "old-docs"];
+  const destDirs = ["docs/plans", "docs/guides", "docs/archive"];
 
   for (let i = 0; i < fileCount; i++) {
     // Generate random source directory depth
@@ -82,7 +82,7 @@ function generateRandomMigrationPlan(fileCount, maxDepth = 3) {
     files.push({
       source: path.join(...sourcePathParts, filename),
       destination: path.join(...destPathParts, filename),
-      content: generateRandomContent()
+      content: generateRandomContent(),
     });
   }
 
@@ -96,12 +96,12 @@ async function createFilesInRepo(repoDir, files) {
   for (const file of files) {
     const fullPath = path.join(repoDir, file.source);
     await fs.ensureDir(path.dirname(fullPath));
-    await fs.writeFile(fullPath, file.content, 'utf8');
+    await fs.writeFile(fullPath, file.content, "utf8");
   }
 
   // Add and commit all files
-  execSync('git add .', { cwd: repoDir, stdio: 'pipe' });
-  execSync('git commit -m "Add test files"', { cwd: repoDir, stdio: 'pipe' });
+  execSync("git add .", { cwd: repoDir, stdio: "pipe" });
+  execSync('git commit -m "Add test files"', { cwd: repoDir, stdio: "pipe" });
 }
 
 /**
@@ -112,7 +112,7 @@ function verifyMappingCompleteness(mapping, expectedFiles) {
     total: expectedFiles.length,
     found: 0,
     missing: [],
-    incorrectMapping: []
+    incorrectMapping: [],
   };
 
   for (const file of expectedFiles) {
@@ -131,7 +131,7 @@ function verifyMappingCompleteness(mapping, expectedFiles) {
       results.incorrectMapping.push({
         source: file.source,
         expected: file.destination,
-        actual: mappedNewPath
+        actual: mappedNewPath,
       });
     }
 
@@ -141,7 +141,7 @@ function verifyMappingCompleteness(mapping, expectedFiles) {
       results.incorrectMapping.push({
         destination: file.destination,
         expectedSource: file.source,
-        actualSource: mappedOldPath
+        actualSource: mappedOldPath,
       });
     }
   }
@@ -149,8 +149,8 @@ function verifyMappingCompleteness(mapping, expectedFiles) {
   return results;
 }
 
-describe('Property Test: Migration Mapping Completeness', () => {
-  it('should include all moved files in migration mapping (100 iterations)', async () => {
+describe("Property Test: Migration Mapping Completeness", () => {
+  it("should include all moved files in migration mapping (100 iterations)", async () => {
     const iterations = 100;
     let passedIterations = 0;
 
@@ -168,7 +168,7 @@ describe('Property Test: Migration Mapping Completeness', () => {
         // Build file list for migration mapping
         const fileList = files.map((f) => ({
           source: f.source,
-          destination: f.destination
+          destination: f.destination,
         }));
 
         // Generate migration mapping
@@ -181,38 +181,42 @@ describe('Property Test: Migration Mapping Completeness', () => {
         assert.strictEqual(
           verification.missing.length,
           0,
-          `Iteration ${i + 1}: Missing files in mapping: ${verification.missing.join(', ')}`
+          `Iteration ${i + 1}: Missing files in mapping: ${verification.missing.join(", ")}`,
         );
 
         assert.strictEqual(
           verification.incorrectMapping.length,
           0,
-          `Iteration ${i + 1}: Incorrect mappings: ${JSON.stringify(verification.incorrectMapping)}`
+          `Iteration ${i + 1}: Incorrect mappings: ${
+            JSON.stringify(verification.incorrectMapping)
+          }`,
         );
 
         assert.strictEqual(
           verification.found,
           verification.total,
-          `Iteration ${i + 1}: Expected ${verification.total} files in mapping, found ${verification.found}`
+          `Iteration ${
+            i + 1
+          }: Expected ${verification.total} files in mapping, found ${verification.found}`,
         );
 
         // Verify mapping metadata
         assert.strictEqual(
           mapping.totalFiles,
           fileCount,
-          `Iteration ${i + 1}: Mapping totalFiles should match file count`
+          `Iteration ${i + 1}: Mapping totalFiles should match file count`,
         );
 
         assert.strictEqual(
           mapping.successfulMappings,
           fileCount,
-          `Iteration ${i + 1}: All mappings should be successful`
+          `Iteration ${i + 1}: All mappings should be successful`,
         );
 
         assert.strictEqual(
           mapping.mappings.length,
           fileCount,
-          `Iteration ${i + 1}: Mappings array length should match file count`
+          `Iteration ${i + 1}: Mappings array length should match file count`,
         );
 
         passedIterations++;
@@ -226,76 +230,92 @@ describe('Property Test: Migration Mapping Completeness', () => {
     assert.strictEqual(
       passedIterations,
       iterations,
-      `Expected all ${iterations} iterations to pass, but only ${passedIterations} passed`
+      `Expected all ${iterations} iterations to pass, but only ${passedIterations} passed`,
     );
   });
 
-  it('should handle empty file list', async () => {
+  it("should handle empty file list", async () => {
     const repoDir = await createTestRepo();
 
     try {
       const fileList = [];
       const mapping = await generateMigrationMapping(fileList, repoDir);
 
-      assert.strictEqual(mapping.totalFiles, 0, 'Total files should be 0');
-      assert.strictEqual(mapping.successfulMappings, 0, 'Successful mappings should be 0');
-      assert.strictEqual(mapping.mappings.length, 0, 'Mappings array should be empty');
+      assert.strictEqual(mapping.totalFiles, 0, "Total files should be 0");
+      assert.strictEqual(mapping.successfulMappings, 0, "Successful mappings should be 0");
+      assert.strictEqual(mapping.mappings.length, 0, "Mappings array should be empty");
     } finally {
       await fs.remove(repoDir);
     }
   });
 
-  it('should include metadata for all mapped files', async () => {
+  it("should include metadata for all mapped files", async () => {
     const repoDir = await createTestRepo();
 
     try {
       // Generate files with varying sizes
       const files = [
-        { source: 'plan/small.md', destination: 'docs/small.md', content: 'small' },
-        { source: 'plan/medium.md', destination: 'docs/medium.md', content: 'a'.repeat(1000) },
-        { source: 'plan/large.md', destination: 'docs/large.md', content: 'b'.repeat(10000) }
+        { source: "plan/small.md", destination: "docs/small.md", content: "small" },
+        { source: "plan/medium.md", destination: "docs/medium.md", content: "a".repeat(1000) },
+        { source: "plan/large.md", destination: "docs/large.md", content: "b".repeat(10000) },
       ];
 
       await createFilesInRepo(repoDir, files);
 
       const fileList = files.map((f) => ({
         source: f.source,
-        destination: f.destination
+        destination: f.destination,
       }));
 
       const mapping = await generateMigrationMapping(fileList, repoDir);
 
       // Verify each mapping has complete metadata
       for (const entry of mapping.mappings) {
-        assert.ok(entry.oldPath, 'Entry should have oldPath');
-        assert.ok(entry.newPath, 'Entry should have newPath');
-        assert.strictEqual(typeof entry.size, 'number', 'Entry should have numeric size');
-        assert.ok(entry.size > 0, 'Entry size should be positive');
-        assert.ok(entry.lastModified, 'Entry should have lastModified timestamp');
-        assert.ok(entry.gitCommit, 'Entry should have gitCommit hash');
-        assert.strictEqual(entry.gitCommit.length, 40, 'Git commit should be 40-character SHA-1');
+        assert.ok(entry.oldPath, "Entry should have oldPath");
+        assert.ok(entry.newPath, "Entry should have newPath");
+        assert.strictEqual(typeof entry.size, "number", "Entry should have numeric size");
+        assert.ok(entry.size > 0, "Entry size should be positive");
+        assert.ok(entry.lastModified, "Entry should have lastModified timestamp");
+        assert.ok(entry.gitCommit, "Entry should have gitCommit hash");
+        assert.strictEqual(entry.gitCommit.length, 40, "Git commit should be 40-character SHA-1");
       }
     } finally {
       await fs.remove(repoDir);
     }
   });
 
-  it('should handle files with special characters in paths', async () => {
+  it("should handle files with special characters in paths", async () => {
     const repoDir = await createTestRepo();
 
     try {
       const files = [
-        { source: 'plan/file-with-dashes.md', destination: 'docs/file-with-dashes.md', content: 'content1' },
-        { source: 'plan/file_with_underscores.md', destination: 'docs/file_with_underscores.md', content: 'content2' },
-        { source: 'plan/file.with.dots.md', destination: 'docs/file.with.dots.md', content: 'content3' },
-        { source: 'plan/file with spaces.md', destination: 'docs/file with spaces.md', content: 'content4' }
+        {
+          source: "plan/file-with-dashes.md",
+          destination: "docs/file-with-dashes.md",
+          content: "content1",
+        },
+        {
+          source: "plan/file_with_underscores.md",
+          destination: "docs/file_with_underscores.md",
+          content: "content2",
+        },
+        {
+          source: "plan/file.with.dots.md",
+          destination: "docs/file.with.dots.md",
+          content: "content3",
+        },
+        {
+          source: "plan/file with spaces.md",
+          destination: "docs/file with spaces.md",
+          content: "content4",
+        },
       ];
 
       await createFilesInRepo(repoDir, files);
 
       const fileList = files.map((f) => ({
         source: f.source,
-        destination: f.destination
+        destination: f.destination,
       }));
 
       const mapping = await generateMigrationMapping(fileList, repoDir);
@@ -303,36 +323,36 @@ describe('Property Test: Migration Mapping Completeness', () => {
       // Verify all files are in mapping
       const verification = verifyMappingCompleteness(mapping, files);
 
-      assert.strictEqual(verification.missing.length, 0, 'No files should be missing from mapping');
-      assert.strictEqual(verification.incorrectMapping.length, 0, 'No incorrect mappings');
-      assert.strictEqual(verification.found, files.length, 'All files should be found in mapping');
+      assert.strictEqual(verification.missing.length, 0, "No files should be missing from mapping");
+      assert.strictEqual(verification.incorrectMapping.length, 0, "No incorrect mappings");
+      assert.strictEqual(verification.found, files.length, "All files should be found in mapping");
     } finally {
       await fs.remove(repoDir);
     }
   });
 
-  it('should handle deeply nested directory structures', async () => {
+  it("should handle deeply nested directory structures", async () => {
     const repoDir = await createTestRepo();
 
     try {
       const files = [
         {
-          source: 'plan/a/b/c/d/e/deep.md',
-          destination: 'docs/x/y/z/deep.md',
-          content: 'deep content'
+          source: "plan/a/b/c/d/e/deep.md",
+          destination: "docs/x/y/z/deep.md",
+          content: "deep content",
         },
         {
-          source: 'plans/level1/level2/level3/nested.md',
-          destination: 'docs/guides/section/subsection/nested.md',
-          content: 'nested content'
-        }
+          source: "plans/level1/level2/level3/nested.md",
+          destination: "docs/guides/section/subsection/nested.md",
+          content: "nested content",
+        },
       ];
 
       await createFilesInRepo(repoDir, files);
 
       const fileList = files.map((f) => ({
         source: f.source,
-        destination: f.destination
+        destination: f.destination,
       }));
 
       const mapping = await generateMigrationMapping(fileList, repoDir);
@@ -340,15 +360,15 @@ describe('Property Test: Migration Mapping Completeness', () => {
       // Verify all files are in mapping with correct paths
       const verification = verifyMappingCompleteness(mapping, files);
 
-      assert.strictEqual(verification.missing.length, 0, 'No files should be missing');
-      assert.strictEqual(verification.incorrectMapping.length, 0, 'No incorrect mappings');
-      assert.strictEqual(verification.found, files.length, 'All files should be found');
+      assert.strictEqual(verification.missing.length, 0, "No files should be missing");
+      assert.strictEqual(verification.incorrectMapping.length, 0, "No incorrect mappings");
+      assert.strictEqual(verification.found, files.length, "All files should be found");
     } finally {
       await fs.remove(repoDir);
     }
   });
 
-  it('should maintain bidirectional lookup capability', async () => {
+  it("should maintain bidirectional lookup capability", async () => {
     const repoDir = await createTestRepo();
 
     try {
@@ -357,7 +377,7 @@ describe('Property Test: Migration Mapping Completeness', () => {
 
       const fileList = files.map((f) => ({
         source: f.source,
-        destination: f.destination
+        destination: f.destination,
       }));
 
       const mapping = await generateMigrationMapping(fileList, repoDir);
@@ -368,14 +388,14 @@ describe('Property Test: Migration Mapping Completeness', () => {
         assert.strictEqual(
           newPath,
           file.destination,
-          `Forward lookup failed for ${file.source}`
+          `Forward lookup failed for ${file.source}`,
         );
 
         const oldPath = lookupOldPath(mapping, file.destination);
         assert.strictEqual(
           oldPath,
           file.source,
-          `Reverse lookup failed for ${file.destination}`
+          `Reverse lookup failed for ${file.destination}`,
         );
       }
     } finally {
@@ -383,16 +403,16 @@ describe('Property Test: Migration Mapping Completeness', () => {
     }
   });
 
-  it('should include version and timestamp in mapping', async () => {
+  it("should include version and timestamp in mapping", async () => {
     const repoDir = await createTestRepo();
 
     try {
-      const files = [{ source: 'plan/test.md', destination: 'docs/test.md', content: 'test' }];
+      const files = [{ source: "plan/test.md", destination: "docs/test.md", content: "test" }];
       await createFilesInRepo(repoDir, files);
 
       const fileList = files.map((f) => ({
         source: f.source,
-        destination: f.destination
+        destination: f.destination,
       }));
 
       const before = new Date();
@@ -400,16 +420,16 @@ describe('Property Test: Migration Mapping Completeness', () => {
       const after = new Date();
 
       // Verify version
-      assert.strictEqual(mapping.version, '1.0.0', 'Mapping should have version 1.0.0');
+      assert.strictEqual(mapping.version, "1.0.0", "Mapping should have version 1.0.0");
 
       // Verify timestamp
-      assert.ok(mapping.generatedAt, 'Mapping should have generatedAt timestamp');
+      assert.ok(mapping.generatedAt, "Mapping should have generatedAt timestamp");
       const generatedAt = new Date(mapping.generatedAt);
-      assert.ok(generatedAt >= before, 'Timestamp should be after test start');
-      assert.ok(generatedAt <= after, 'Timestamp should be before test end');
+      assert.ok(generatedAt >= before, "Timestamp should be after test start");
+      assert.ok(generatedAt <= after, "Timestamp should be before test end");
 
       // Verify repoRoot
-      assert.ok(mapping.repoRoot, 'Mapping should have repoRoot');
+      assert.ok(mapping.repoRoot, "Mapping should have repoRoot");
     } finally {
       await fs.remove(repoDir);
     }
