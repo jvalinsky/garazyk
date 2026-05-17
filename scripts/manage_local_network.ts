@@ -15,9 +15,9 @@ import { parseArgs } from "@std/cli";
 import {
   collectDiagnostics,
   initRunDir,
+  type LocalNetworkOptions,
   startLocalNetwork,
   stopLocalNetwork,
-  type LocalNetworkOptions,
 } from "./lib/deno/docker.ts";
 
 const args = parseArgs(Deno.args, {
