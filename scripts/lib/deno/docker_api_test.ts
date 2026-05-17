@@ -8,14 +8,14 @@
  */
 
 import {
-  type ContainerInspect,
-  type ContainerSummary,
-  type DockerEvent,
-  DockerApiClient,
   composeProjectName,
   composeServiceName,
+  type ContainerInspect,
+  type ContainerSummary,
   cpuPercent,
   createDockerClient,
+  DockerApiClient,
+  type DockerEvent,
   findPortConflicts,
   formatMemory,
   healthStatus,
@@ -38,28 +38,34 @@ async function getClient(): Promise<DockerApiClient | null> {
 }
 
 // Final test that cleans up the shared client
-Deno.test({ name: "cleanup: close shared client", sanitizeResources: false, sanitizeOps: false }, () => {
-  if (_client) {
-    _client.close();
-    _client = null;
-  }
-});
+Deno.test(
+  { name: "cleanup: close shared client", sanitizeResources: false, sanitizeOps: false },
+  () => {
+    if (_client) {
+      _client.close();
+      _client = null;
+    }
+  },
+);
 
 // ---------------------------------------------------------------------------
 // Client initialization
 // ---------------------------------------------------------------------------
 
-Deno.test({ name: "DockerApiClient: init and ping", sanitizeResources: false, sanitizeOps: false }, async () => {
-  const client = await getClient();
-  if (!client) {
-    console.log("SKIP: Docker daemon not available");
-    return;
-  }
+Deno.test(
+  { name: "DockerApiClient: init and ping", sanitizeResources: false, sanitizeOps: false },
+  async () => {
+    const client = await getClient();
+    if (!client) {
+      console.log("SKIP: Docker daemon not available");
+      return;
+    }
 
-  assertEquals(client.available, true);
-  const ping = await client.ping();
-  assertEquals(ping, true);
-});
+    assertEquals(client.available, true);
+    const ping = await client.ping();
+    assertEquals(ping, true);
+  },
+);
 
 Deno.test("DockerApiClient: version", async () => {
   const client = await getClient();
@@ -314,13 +320,23 @@ Deno.test("healthStatus: falls back to State.Status when no health check", () =>
 Deno.test("cpuPercent: computes CPU percentage", () => {
   const stats = {
     cpu_stats: {
-      cpu_usage: { total_usage: 200_000_000, percpu_usage: [], usage_in_kernelmode: 0, usage_in_usermode: 0 },
+      cpu_usage: {
+        total_usage: 200_000_000,
+        percpu_usage: [],
+        usage_in_kernelmode: 0,
+        usage_in_usermode: 0,
+      },
       system_cpu_usage: 1_000_000_000,
       online_cpus: 2,
       throttling_data: { periods: 0, throttled_periods: 0, throttled_time: 0 },
     },
     precpu_stats: {
-      cpu_usage: { total_usage: 100_000_000, percpu_usage: [], usage_in_kernelmode: 0, usage_in_usermode: 0 },
+      cpu_usage: {
+        total_usage: 100_000_000,
+        percpu_usage: [],
+        usage_in_kernelmode: 0,
+        usage_in_usermode: 0,
+      },
       system_cpu_usage: 500_000_000,
       online_cpus: 2,
       throttling_data: { periods: 0, throttled_periods: 0, throttled_time: 0 },

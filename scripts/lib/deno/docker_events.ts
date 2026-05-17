@@ -19,11 +19,11 @@
  */
 
 import {
+  composeServiceName,
   type ContainerSummary,
+  createDockerClient,
   type DockerApiClient,
   type DockerEvent,
-  composeServiceName,
-  createDockerClient,
   healthStatus,
 } from "./docker_api.ts";
 import { addSpanEvent, withSpan } from "./otel.ts";
@@ -47,26 +47,45 @@ import { addSpanEvent, withSpan } from "./otel.ts";
 // Types
 // ---------------------------------------------------------------------------
 
+/** Event emitted when a container exits. */
 export interface ContainerCrashEvent {
+  /** Docker Compose service name. */
   serviceName: string;
+  /** Docker container ID. */
   containerId: string;
+  /** Container exit code. */
   exitCode: number;
+  /** Whether the container was killed by the OOM killer. */
   oomKilled: boolean;
+  /** Event timestamp in milliseconds since epoch. */
   timestamp: number;
 }
 
+/** Event emitted when a container health status changes. */
 export interface ContainerHealthEvent {
+  /** Docker Compose service name. */
   serviceName: string;
+  /** Docker container ID. */
   containerId: string;
+  /** Container health status. */
   status: string; // "healthy" | "unhealthy" | "starting"
+  /** Event timestamp in milliseconds since epoch. */
   timestamp: number;
 }
 
+/** Parsed container event emitted by the watcher. */
 export type WatcherEvent =
   | { kind: "started"; serviceName: string; containerId: string; timestamp: number }
   | { kind: "healthy"; serviceName: string; containerId: string; timestamp: number }
   | { kind: "unhealthy"; serviceName: string; containerId: string; timestamp: number }
-  | { kind: "died"; serviceName: string; containerId: string; exitCode: number; oomKilled: boolean; timestamp: number }
+  | {
+    kind: "died";
+    serviceName: string;
+    containerId: string;
+    exitCode: number;
+    oomKilled: boolean;
+    timestamp: number;
+  }
   | { kind: "oom"; serviceName: string; containerId: string; timestamp: number };
 
 /** Tracked state for a single container. */
@@ -122,7 +141,8 @@ export class DockerEventParser {
       this.idToServiceName.set(containerId, name);
     }
 
-    const serviceName = this.idToServiceName.get(containerId) || name || containerId.substring(0, 12);
+    const serviceName = this.idToServiceName.get(containerId) || name ||
+      containerId.substring(0, 12);
     const timestamp = event.timeNano ? event.timeNano / 1_000_000 : event.time * 1000;
 
     const action = event.action || event.status || "";
@@ -300,8 +320,9 @@ export class ContainerEventWatcher {
    * timeout expires.
    */
   waitForHealthy(serviceName: string, timeoutMs: number): Promise<boolean> {
-    return withSpan("docker.waitForHealthy", async () =>
-      await this.waitFor(serviceName, "healthy", timeoutMs),
+    return withSpan(
+      "docker.waitForHealthy",
+      async () => await this.waitFor(serviceName, "healthy", timeoutMs),
       { "docker.service_name": serviceName, "docker.timeout_ms": timeoutMs },
     );
   }
@@ -313,8 +334,9 @@ export class ContainerEventWatcher {
    * Resolves false if the container dies or the timeout expires.
    */
   waitForRunning(serviceName: string, timeoutMs: number): Promise<boolean> {
-    return withSpan("docker.waitForRunning", async () =>
-      await this.waitFor(serviceName, "running", timeoutMs),
+    return withSpan(
+      "docker.waitForRunning",
+      async () => await this.waitFor(serviceName, "running", timeoutMs),
       { "docker.service_name": serviceName, "docker.timeout_ms": timeoutMs },
     );
   }
@@ -462,7 +484,11 @@ export class ContainerEventWatcher {
     }
   }
 
-  private resolveWaitersFor(serviceName: string, waitFor: "healthy" | "running", result: boolean): void {
+  private resolveWaitersFor(
+    serviceName: string,
+    waitFor: "healthy" | "running",
+    result: boolean,
+  ): void {
     const matching = this.waiters.filter(
       (w) => w.serviceName === serviceName && w.waitFor === waitFor,
     );
@@ -550,7 +576,9 @@ export class ContainerEventWatcher {
               settle(true);
             } else if (waitFor === "running" && inspect.State.Running) {
               settle(true);
-            } else if (inspect.State.Dead || (!inspect.State.Running && inspect.State.ExitCode !== 0)) {
+            } else if (
+              inspect.State.Dead || (!inspect.State.Running && inspect.State.ExitCode !== 0)
+            ) {
               settle(false);
             }
           }
@@ -635,7 +663,9 @@ export class ContainerEventWatcher {
             settle(true);
           } else if (waitFor === "running" && inspect.State.Running) {
             settle(true);
-          } else if (inspect.State.Dead || (!inspect.State.Running && inspect.State.ExitCode !== 0)) {
+          } else if (
+            inspect.State.Dead || (!inspect.State.Running && inspect.State.ExitCode !== 0)
+          ) {
             settle(false);
           }
         } catch {
@@ -690,7 +720,9 @@ async function waitForServiceHealthyCLI(
   while (Date.now() < deadline) {
     try {
       const proc = new Deno.Command("docker", {
-        args: ["inspect", "--format",
+        args: [
+          "inspect",
+          "--format",
           "{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}",
           serviceName,
         ],

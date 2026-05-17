@@ -11,11 +11,23 @@ import type { ScenarioInfo } from "./scenario_metadata.ts";
 import type { RunnerArgs } from "./run_scenarios_types.ts";
 import type { Topology } from "./topology.ts";
 
+/**
+ * Normalize a scenario identifier to its zero-padded numeric form.
+ *
+ * @param value - Scenario identifier or filename prefix.
+ * @returns The normalized scenario identifier.
+ */
 export function normalizeScenarioId(value: string): string {
   const match = value.match(/^(\d+)/);
   return (match ? match[1] : value).padStart(2, "0");
 }
 
+/**
+ * Discover scenario files in a directory.
+ *
+ * @param scenarioDir - Directory to scan for scenario files.
+ * @returns The discovered scenarios sorted by id.
+ */
 export async function discoverScenarios(scenarioDir: string): Promise<ScenarioInfo[]> {
   const scenarios: ScenarioInfo[] = [];
   try {
@@ -58,6 +70,14 @@ export async function discoverScenarios(scenarioDir: string): Promise<ScenarioIn
   return scenarios;
 }
 
+/**
+ * Select the scenarios that should run for the current invocation.
+ *
+ * @param all - All discovered scenarios.
+ * @param args - Runner arguments that affect scenario selection.
+ * @param topology - Resolved topology used for capability matching.
+ * @returns The scenarios selected for execution.
+ */
 export function selectScenarios(
   all: ScenarioInfo[],
   args: Pick<RunnerArgs, "clientFlow" | "scenarioIds" | "pds2">,

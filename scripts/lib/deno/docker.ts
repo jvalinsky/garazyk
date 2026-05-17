@@ -16,15 +16,15 @@ import { waitForHttp, waitForService, waitForServiceCLI } from "./docker_health.
 import { collectDiagnostics } from "./docker_diagnostics.ts";
 import { startBinaryServices, stopBinaryServices } from "./docker_binary.ts";
 import { ContainerEventWatcher } from "./docker_events.ts";
-import { withSpan, isOtelEnabled } from "./otel.ts";
+import { isOtelEnabled, withSpan } from "./otel.ts";
 import { ContainerStatsSampler } from "./container_stats.ts";
 import { createDockerClient } from "./docker_api.ts";
 import type { LocalNetworkOptions, RunContext } from "./docker_types.ts";
 
 // Re-exports for backward compatibility
 export type { LocalNetworkOptions, RunContext } from "./docker_types.ts";
-export { SERVICE_PORTS, serviceUrl, neededPorts, initRunDir, repoRoot } from "./docker_config.ts";
-export { composeUp, composeDown } from "./docker_compose.ts";
+export { initRunDir, neededPorts, repoRoot, SERVICE_PORTS, serviceUrl } from "./docker_config.ts";
+export { composeDown, composeUp } from "./docker_compose.ts";
 export { stopStaleDockerE2e, stopStaleHostProcesses } from "./docker_cleanup.ts";
 export { waitForHttp, waitForService, waitForServiceCLI } from "./docker_health.ts";
 export { collectDiagnostics } from "./docker_diagnostics.ts";
@@ -117,7 +117,12 @@ export async function startLocalNetwork(options: LocalNetworkOptions = {}) {
           } else if (watcher) {
             ok = await watcher.waitForHealthy(probe.serviceName, probe.timeoutSeconds * 1000);
           } else {
-            ok = await waitForServiceCLI(probe.serviceName, ctx.composeProject, topologyComposeFile, probe.timeoutSeconds);
+            ok = await waitForServiceCLI(
+              probe.serviceName,
+              ctx.composeProject,
+              topologyComposeFile,
+              probe.timeoutSeconds,
+            );
           }
           if (!ok) {
             await watcher?.close();
@@ -133,12 +138,24 @@ export async function startLocalNetwork(options: LocalNetworkOptions = {}) {
         await waitForService("local-plc", ctx.composeProject, composeFiles[0], 60, sharedWatcher);
         await waitForService("local-pds", ctx.composeProject, composeFiles[0], 60, sharedWatcher);
         await waitForService("local-relay", ctx.composeProject, composeFiles[0], 60, sharedWatcher);
-        const appviewOk = await waitForService("local-appview", ctx.composeProject, composeFiles[0], 90, sharedWatcher);
+        const appviewOk = await waitForService(
+          "local-appview",
+          ctx.composeProject,
+          composeFiles[0],
+          90,
+          sharedWatcher,
+        );
         if (!appviewOk) {
           throw new Error("AppView failed to start within 90s");
         }
         if (options.withPds2) {
-          await waitForService("local-pds2", ctx.composeProject, composeFiles[0], 60, sharedWatcher);
+          await waitForService(
+            "local-pds2",
+            ctx.composeProject,
+            composeFiles[0],
+            60,
+            sharedWatcher,
+          );
         }
       } finally {
         await sharedWatcher?.close();
@@ -158,7 +175,7 @@ export async function startLocalNetwork(options: LocalNetworkOptions = {}) {
           onMemoryPressure: (alert) => {
             console.warn(
               `[WARN]  Memory pressure: ${alert.serviceName} failcnt=${alert.failcnt} ` +
-              `(${formatBytes(alert.memoryUsageBytes)} / ${formatBytes(alert.memoryLimitBytes)})`,
+                `(${formatBytes(alert.memoryUsageBytes)} / ${formatBytes(alert.memoryLimitBytes)})`,
             );
           },
         });

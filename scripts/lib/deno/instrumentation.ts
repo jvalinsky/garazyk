@@ -4,30 +4,64 @@ import { exists } from "@std/fs";
 
 const SAMPLE_INTERVAL = 2000; // ms
 
+/** A metrics sample captured at a specific point in time. */
 export interface MetricsSample {
+  /** Sample timestamp in seconds since the Unix epoch. */
   timestamp: number;
+  /** Metric values captured for the sample. */
   metrics: Record<string, number>;
 }
 
 /** Tracks operation counts and duration distribution (min, max, mean, percentiles). */
 export class OperationStats {
+  /** Number of recorded durations. */
   public count = 0;
   private durations: number[] = [];
 
-  constructor(public name: string) {}
+  /**
+   * @param name - Operation name.
+   */
+  constructor(
+    public name: string,
+  ) {}
 
+  /**
+   * Records a duration measurement in milliseconds.
+   * @param durationMs - Duration in milliseconds.
+   */
   record(durationMs: number) {
     this.count++;
     this.durations.push(durationMs);
   }
 
-  get min() { return Math.min(...this.durations, 0); }
-  get max() { return Math.max(...this.durations, 0); }
+  /**
+   * Minimum recorded duration in milliseconds.
+   * @returns The minimum recorded duration.
+   */
+  get min() {
+    return Math.min(...this.durations, 0);
+  }
+  /**
+   * Maximum recorded duration in milliseconds.
+   * @returns The maximum recorded duration.
+   */
+  get max() {
+    return Math.max(...this.durations, 0);
+  }
+  /**
+   * Mean recorded duration in milliseconds.
+   * @returns The mean recorded duration.
+   */
   get mean() {
     if (this.durations.length === 0) return 0;
     return this.durations.reduce((a, b) => a + b, 0) / this.durations.length;
   }
 
+  /**
+   * Returns the requested percentile duration in milliseconds.
+   * @param p - Percentile to calculate.
+   * @returns The requested percentile duration.
+   */
   percentile(p: number) {
     if (this.durations.length === 0) return 0;
     const sorted = [...this.durations].sort((a, b) => a - b);
@@ -35,12 +69,40 @@ export class OperationStats {
     return sorted[idx];
   }
 
-  get p50() { return this.percentile(50); }
-  get p95() { return this.percentile(95); }
-  get p99() { return this.percentile(99); }
+  /**
+   * 50th percentile duration in milliseconds.
+   * @returns The 50th percentile duration.
+   */
+  get p50() {
+    return this.percentile(50);
+  }
+  /**
+   * 95th percentile duration in milliseconds.
+   * @returns The 95th percentile duration.
+   */
+  get p95() {
+    return this.percentile(95);
+  }
+  /**
+   * 99th percentile duration in milliseconds.
+   * @returns The 99th percentile duration.
+   */
+  get p99() {
+    return this.percentile(99);
+  }
 
-  get totalMs() { return this.durations.reduce((a, b) => a + b, 0); }
+  /**
+   * Total recorded duration in milliseconds.
+   * @returns The total recorded duration.
+   */
+  get totalMs() {
+    return this.durations.reduce((a, b) => a + b, 0);
+  }
 
+  /**
+   * Returns a plain object summary of the operation statistics.
+   * @returns A serializable summary of the operation statistics.
+   */
   toDict() {
     return {
       name: this.name,
@@ -59,6 +121,13 @@ export class OperationStats {
 export class OperationTimer {
   private stats: Record<string, OperationStats> = {};
 
+  /**
+   * Measures an async operation and records its duration.
+   * @typeParam T - Result type returned by the measured function.
+   * @param name - Operation name.
+   * @param fn - Async function to execute.
+   * @returns The resolved value returned by the measured function.
+   */
   async measure<T>(name: string, fn: () => Promise<T>): Promise<T> {
     const start = performance.now();
     try {
@@ -70,14 +139,27 @@ export class OperationTimer {
     }
   }
 
+  /**
+   * Returns the recorded stats for a named operation.
+   * @param name - Operation name.
+   * @returns The recorded operation stats, or undefined if none exist.
+   */
   getStats(name: string) {
     return this.stats[name];
   }
 
+  /**
+   * Returns all recorded operation stats.
+   * @returns A map of operation names to stats objects.
+   */
   getAllStats() {
     return this.stats;
   }
 
+  /**
+   * Returns all operation stats as plain objects.
+   * @returns A map of operation names to serialized stats.
+   */
   toDict() {
     const res: Record<string, any> = {};
     for (const [k, v] of Object.entries(this.stats)) {
@@ -93,11 +175,16 @@ export class PhaseTimer {
   private currentPhase: string | null = null;
   private currentStart = 0;
 
+  /**
+   * Starts tracking a named phase.
+   * @param name - Phase name.
+   */
   startPhase(name: string) {
     this.currentPhase = name;
     this.currentStart = performance.now();
   }
 
+  /** Ends the current phase and records its duration in seconds. */
   endPhase() {
     if (this.currentPhase) {
       this.phases[this.currentPhase] = (performance.now() - this.currentStart) / 1000;
@@ -105,6 +192,10 @@ export class PhaseTimer {
     }
   }
 
+  /**
+   * Returns the recorded phase timings.
+   * @returns A map of phase names to durations in seconds.
+   */
   toDict() {
     return { ...this.phases };
   }
@@ -121,10 +212,15 @@ export class PrometheusScraper {
     }
   }
 
+  /** Starts periodic scraping for all configured endpoints. */
   start() {
     this.intervalId = setInterval(() => this.scrape(), SAMPLE_INTERVAL);
   }
 
+  /**
+   * Stops scraping, performs one final scrape, and returns the collected time series.
+   * @returns The aggregated metric time series.
+   */
   async stop() {
     if (this.intervalId) clearInterval(this.intervalId);
     await this.scrape(); // Final scrape
@@ -157,6 +253,10 @@ export class PrometheusScraper {
     return metrics;
   }
 
+  /**
+   * Returns the collected metric time series.
+   * @returns A map of metric names to timestamped samples.
+   */
   getTimeSeries() {
     const res: Record<string, any> = {};
     for (const samples of Object.values(this.samples)) {
@@ -182,10 +282,15 @@ export class StorageMonitor {
     }
   }
 
+  /** Starts periodic storage sampling for all configured paths. */
   start() {
     this.intervalId = setInterval(() => this.sample(), SAMPLE_INTERVAL);
   }
 
+  /**
+   * Stops sampling, performs one final sample, and returns the collected stats.
+   * @returns The collected storage statistics.
+   */
   async stop() {
     if (this.intervalId) clearInterval(this.intervalId);
     await this.sample();
@@ -215,14 +320,25 @@ export class StorageMonitor {
 
 /** Aggregate report combining operation stats, metrics, process stats, and storage data. */
 export class InstrumentationReport {
+  /**
+   * @param operationStats - Operation statistics keyed by name.
+   * @param metricsTimeSeries - Scraped metric time series keyed by metric name.
+   * @param processStats - Process statistics for the current runtime.
+   * @param storageStats - Storage statistics keyed by label.
+   * @param phaseTimings - Phase timings in seconds keyed by phase name.
+   */
   constructor(
     public operationStats: Record<string, any>,
     public metricsTimeSeries: Record<string, any>,
     public processStats: Record<string, any>,
     public storageStats: Record<string, any>,
-    public phaseTimings: Record<string, number>
+    public phaseTimings: Record<string, number>,
   ) {}
 
+  /**
+   * Returns the report as a plain object.
+   * @returns A serializable instrumentation report.
+   */
   toDict() {
     return {
       operations: this.operationStats,
@@ -233,6 +349,10 @@ export class InstrumentationReport {
     };
   }
 
+  /**
+   * Writes the report as formatted JSON.
+   * @param path - Output file path.
+   */
   async writeJson(path: string) {
     await Deno.mkdir(join(path, ".."), { recursive: true });
     await Deno.writeTextFile(path, JSON.stringify(this.toDict(), null, 2));

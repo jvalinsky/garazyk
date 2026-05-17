@@ -8,35 +8,61 @@ import type { Topology } from "./topology.ts";
 
 /** A single scenario result paired with its metadata. */
 export interface OverallResultItem {
+  /** Metadata for the scenario. */
   scenario: ScenarioInfo;
+  /** Scenario execution result. */
   result: ScenarioResult;
 }
 
+/** Context used to write the overall summary. */
 export interface OverallSummaryContext {
+  /** Run identifier. */
   runId: string;
+  /** Directory for the run output. */
   runDir: string;
+  /** Directory for diagnostics output. */
   diagnosticsDir: string;
 }
 
+/** Options for writing the overall summary report. */
 export interface WriteOverallSummaryOptions {
+  /** Summary write context. */
   context: OverallSummaryContext;
+  /** Topology details for the run, when available. */
   topology?: Topology;
+  /** Scenarios selected for the run. */
   selected: ScenarioInfo[];
+  /** Per-scenario results to summarize. */
   results: OverallResultItem[];
+  /** Runner arguments. */
   args: RunnerArgs;
+  /** Paths to per-scenario reports. */
   reportPaths: string[];
+  /** Directory where reports are written. */
   reportsDir: string;
+  /** Fatal error raised during the run, if any. */
   fatalError: unknown;
+  /** Whether PDS2 was included in the run. */
   withPds2: boolean;
 }
 
+/** Totals returned by the overall summary writer. */
 export interface OverallSummaryTotals {
+  /** Total passed checks. */
   totalPassed: number;
+  /** Total failed checks. */
   totalFailed: number;
+  /** Total skipped checks. */
   totalSkipped: number;
 }
 
-export async function writeOverallSummary(options: WriteOverallSummaryOptions): Promise<OverallSummaryTotals> {
+/** Writes the overall summary report and returns aggregated totals.
+ * @param options - Summary writing options.
+ * @returns Aggregated pass, fail, and skip totals.
+ */
+export async function writeOverallSummary(
+  options: WriteOverallSummaryOptions,
+): Promise<OverallSummaryTotals> {
   const totalPassed = options.results.reduce((sum, item) => sum + item.result.passed, 0);
   const totalFailed = options.results.reduce((sum, item) => sum + item.result.failed, 0);
   const totalSkipped = options.results.reduce((sum, item) => sum + item.result.skipped, 0);

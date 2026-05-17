@@ -12,6 +12,7 @@ import type { RunContext } from "./docker_types.ts";
 // Service configuration
 // ---------------------------------------------------------------------------
 
+/** Default host ports for local ATProto services. */
 export const SERVICE_PORTS: Record<string, number> = {
   plc: 2582,
   pds: 2583,
@@ -30,6 +31,12 @@ export function serviceUrl(key: string): string {
   return `http://127.0.0.1:${port}`;
 }
 
+/**
+ * List the host ports required by the local network.
+ *
+ * @param opts - Flags that enable additional required ports.
+ * @returns The host ports that must be available.
+ */
 export function neededPorts(opts: { withPds2?: boolean; otel?: boolean }): number[] {
   const ports = [
     SERVICE_PORTS.plc,
@@ -56,6 +63,12 @@ function defaultRunId(): string {
   return `${ts}-${Deno.pid}`;
 }
 
+/**
+ * Initialize the run directory tree and related environment variables.
+ *
+ * @param requestedId - Optional requested run identifier.
+ * @returns The initialized run context.
+ */
 export function initRunDir(requestedId?: string): RunContext {
   const runId = sanitizeRunId(requestedId || defaultRunId());
   const baseDir = Deno.env.get("ATPROTO_E2E_BASE_DIR") || "/tmp/garazyk-atproto-e2e";
@@ -86,6 +99,11 @@ export function initRunDir(requestedId?: string): RunContext {
 // Repo root
 // ---------------------------------------------------------------------------
 
+/**
+ * Resolve the repository root directory.
+ *
+ * @returns The git top-level directory, or the current working directory when git lookup fails.
+ */
 export async function repoRoot(): Promise<string> {
   const proc = new Deno.Command("git", { args: ["rev-parse", "--show-toplevel"] });
   const { code, stdout } = await proc.output();

@@ -32,7 +32,7 @@ export class DraftsClient {
     return await this.transport.post(
       "app.bsky.draft.updateDraft",
       { id: draftId, content },
-      token
+      token,
     );
   }
 
