@@ -4,10 +4,17 @@ import { resolvePreset } from "./topology.ts";
 
 /** Summary info for a single topology preset. */
 export interface TopologyPresetSummary {
+  /** Preset name. */
   name: string;
+  /** Preset description, when available. */
   description?: string;
 }
 
+/**
+ * List available topology presets from the scenarios directory.
+ *
+ * @returns The available topology presets sorted by name.
+ */
 export async function listTopologyPresets(): Promise<TopologyPresetSummary[]> {
   const topologiesDir = fromFileUrl(new URL("../../scenarios/topologies", import.meta.url));
   const presets: TopologyPresetSummary[] = [];

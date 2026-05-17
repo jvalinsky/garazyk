@@ -28,7 +28,7 @@ const DEFAULT_SOCKET_PATHS = [
   "/var/run/docker.sock",
   "/run/docker.sock",
   `${Deno.env.get("HOME") || "~"}/.orbstack/run/docker.sock`, // OrbStack
-  `${Deno.env.get("HOME") || "~"}/.docker/run/docker.sock`,   // Docker Desktop
+  `${Deno.env.get("HOME") || "~"}/.docker/run/docker.sock`, // Docker Desktop
   `${Deno.env.get("XDG_RUNTIME_DIR") || "/run/user/" + Deno.uid()}/docker.sock`, // Rootless
 ];
 
@@ -36,38 +36,64 @@ const DEFAULT_SOCKET_PATHS = [
 // Response types (subset of Docker Engine API)
 // ---------------------------------------------------------------------------
 
+/** Mirrors the Docker Engine API `/version` response. */
 export interface DockerVersion {
+  /** Docker API version reported by the daemon. */
   ApiVersion: string;
+  /** CPU architecture reported by the daemon. */
   Arch: string;
+  /** Daemon build time. */
   BuildTime: string;
+  /** Component versions included in the daemon build. */
   Components: Array<{ Name: string; Version: string; Details?: Record<string, string> }>;
+  /** Git commit used to build the daemon. */
   GitCommit: string;
+  /** Go toolchain version used to build the daemon. */
   GoVersion: string;
+  /** Minimum supported Docker API version. */
   MinAPIVersion: string;
+  /** Operating system reported by the daemon. */
   Os: string;
+  /** Platform metadata reported by the daemon. */
   Platform: { Name: string };
+  /** Docker Engine version string. */
   Version: string;
 }
 
+/** Mirrors a `/containers/json` entry from the Docker Engine API. */
 export interface ContainerSummary {
+  /** Container ID. */
   Id: string;
+  /** Container names, including the leading slash. */
   Names: string[];
+  /** Image name or ID used by the container. */
   Image: string;
+  /** Image ID used by the container. */
   ImageID: string;
+  /** Command associated with the container. */
   Command: string;
+  /** Creation timestamp in Unix seconds. */
   Created: number;
+  /** Container state string. */
   State: string;
+  /** Human-readable status string. */
   Status: string;
+  /** Published and exposed port mappings. */
   Ports: Array<{
     IP?: string;
     PrivatePort: number;
     PublicPort?: number;
     Type: string;
   }>;
+  /** Container labels. */
   Labels: Record<string, string>;
+  /** Writable layer size in bytes. */
   SizeRw?: number;
+  /** Root filesystem size in bytes. */
   SizeRootFs?: number;
+  /** Host configuration details included in the summary response. */
   HostConfig: { NetworkMode: string };
+  /** Network settings included in the summary response. */
   NetworkSettings: {
     Networks: Record<string, {
       NetworkID: string;
@@ -78,6 +104,7 @@ export interface ContainerSummary {
       MacAddress: string;
     }>;
   };
+  /** Container mounts. */
   Mounts: Array<{
     Name?: string;
     Source: string;
@@ -88,10 +115,15 @@ export interface ContainerSummary {
   }>;
 }
 
+/** Mirrors a `/containers/{id}/json` response from the Docker Engine API. */
 export interface ContainerInspect {
+  /** Container ID. */
   Id: string;
+  /** Creation timestamp. */
   Created: string;
+  /** Container name. */
   Name: string;
+  /** Container runtime state. */
   State: {
     Status: string;
     Running: boolean;
@@ -115,6 +147,7 @@ export interface ContainerInspect {
       }>;
     };
   };
+  /** Container configuration. */
   Config: {
     Image: string;
     Labels: Record<string, string>;
@@ -127,6 +160,7 @@ export interface ContainerInspect {
       StartPeriod: number;
     };
   };
+  /** Container network settings. */
   NetworkSettings: {
     Bridge: string;
     Ports: Record<string, Array<{ HostIp: string; HostPort: string }> | null>;
@@ -139,6 +173,7 @@ export interface ContainerInspect {
       MacAddress: string;
     }>;
   };
+  /** Container mounts. */
   Mounts: Array<{
     Type: string;
     Name?: string;
@@ -150,15 +185,22 @@ export interface ContainerInspect {
   }>;
 }
 
+/** Mirrors a Docker Engine API event object. */
 export interface DockerEvent {
+  /** Event object type. */
   type: string;
+  /** Event action. */
   action: string;
+  /** Actor that emitted the event. */
   actor: {
     ID: string;
     Attributes: Record<string, string>;
   };
+  /** Event scope. */
   scope: string;
+  /** Event timestamp in Unix seconds. */
   time: number;
+  /** Event timestamp in Unix nanoseconds. */
   timeNano: number;
   /** Legacy field present in some event types. */
   status?: string;
@@ -168,10 +210,15 @@ export interface DockerEvent {
   from?: string;
 }
 
+/** Mirrors a `/containers/{id}/stats` response from the Docker Engine API. */
 export interface ContainerStats {
+  /** Timestamp when the stats snapshot was read. */
   read: string;
+  /** Timestamp of the previous stats snapshot. */
   preread: string;
+  /** Number of processes in the container. */
   num_procs: number;
+  /** Current CPU usage statistics. */
   cpu_stats: {
     cpu_usage: {
       total_usage: number;
@@ -187,7 +234,9 @@ export interface ContainerStats {
       throttled_time: number;
     };
   };
+  /** Previous CPU usage statistics. */
   precpu_stats: ContainerStats["cpu_stats"];
+  /** Current memory usage statistics. */
   memory_stats: {
     usage: number;
     max_usage: number;
@@ -198,6 +247,7 @@ export interface ContainerStats {
     };
     failcnt: number;
   };
+  /** Block I/O statistics. */
   blkio_stats: {
     io_service_bytes_recursive: Array<{
       major: number;
@@ -206,6 +256,7 @@ export interface ContainerStats {
       value: number;
     }>;
   };
+  /** Per-network traffic statistics. */
   networks: Record<string, {
     rx_bytes: number;
     rx_packets: number;
@@ -218,11 +269,17 @@ export interface ContainerStats {
   }>;
 }
 
+/** Options for the Docker Engine API `/containers/{id}/logs` endpoint. */
 export interface ContainerLogsOptions {
+  /** Include stdout output. */
   stdout?: boolean;
+  /** Include stderr output. */
   stderr?: boolean;
+  /** Keep the log stream open. */
   follow?: boolean;
+  /** Number of trailing lines to return, or `all`. */
   tail?: string;
+  /** Include timestamps in log output. */
   timestamps?: boolean;
 }
 
@@ -230,6 +287,7 @@ export interface ContainerLogsOptions {
 // Docker API Client
 // ---------------------------------------------------------------------------
 
+/** Docker Engine API client over a Unix socket. */
 export class DockerApiClient {
   private client: Deno.HttpClient | null = null;
   private _socketPath: string;
@@ -298,8 +356,9 @@ export class DockerApiClient {
 
   /** Get Docker version information. */
   async version(): Promise<DockerVersion> {
-    return await withSpan("docker.version", () =>
-      this.requestJSON<DockerVersion>("GET", "/version")
+    return await withSpan(
+      "docker.version",
+      () => this.requestJSON<DockerVersion>("GET", "/version"),
     );
   }
 
@@ -314,16 +373,18 @@ export class DockerApiClient {
       params.set("filters", JSON.stringify(filters));
     }
     const path = `/containers/json${params.toString() ? "?" + params.toString() : ""}`;
-    return await withSpan("docker.listContainers", () =>
-      this.requestJSON<ContainerSummary[]>("GET", path),
+    return await withSpan(
+      "docker.listContainers",
+      () => this.requestJSON<ContainerSummary[]>("GET", path),
       { "docker.filter_count": String(filters ? Object.keys(filters).length : 0) },
     );
   }
 
   /** Inspect a container. */
   async inspectContainer(id: string): Promise<ContainerInspect> {
-    return await withSpan("docker.inspectContainer", () =>
-      this.requestJSON<ContainerInspect>("GET", `/containers/${id}/json`),
+    return await withSpan(
+      "docker.inspectContainer",
+      () => this.requestJSON<ContainerInspect>("GET", `/containers/${id}/json`),
       { "docker.container_id": id.substring(0, 12) },
     );
   }
@@ -352,9 +413,7 @@ export class DockerApiClient {
       this.requestJSON<ContainerStats>(
         "GET",
         `/containers/${id}/stats?${qs}`,
-      ),
-      { "docker.container_id": id.substring(0, 12) },
-    );
+      ), { "docker.container_id": id.substring(0, 12) });
   }
 
   /**
@@ -413,14 +472,17 @@ export class DockerApiClient {
       }
     } finally {
       reader.releaseLock();
-      try { resp.body?.cancel(); } catch { /* ignore */ }
+      try {
+        resp.body?.cancel();
+      } catch { /* ignore */ }
     }
   }
 
   /** Wait for a container to stop. Returns the exit code. */
   async waitContainer(id: string): Promise<{ StatusCode: number }> {
-    return await withSpan("docker.waitContainer", () =>
-      this.requestJSON<{ StatusCode: number }>("POST", `/containers/${id}/wait`),
+    return await withSpan(
+      "docker.waitContainer",
+      () => this.requestJSON<{ StatusCode: number }>("POST", `/containers/${id}/wait`),
       { "docker.container_id": id.substring(0, 12) },
     );
   }
@@ -490,7 +552,9 @@ export class DockerApiClient {
       }
     } finally {
       reader.releaseLock();
-      try { resp.body?.cancel(); } catch { /* ignore */ }
+      try {
+        resp.body?.cancel();
+      } catch { /* ignore */ }
     }
   }
 
@@ -541,10 +605,21 @@ export class DockerApiClient {
 // Error
 // ---------------------------------------------------------------------------
 
+/** Error thrown when a Docker Engine API request fails. */
 export class DockerApiError extends Error {
+  /**
+   * Create a Docker API error.
+   *
+   * @param status - HTTP status returned by the Docker Engine API.
+   * @param path - Request path that failed.
+   * @param body - Response body returned by the Docker Engine API.
+   */
   constructor(
+    /** HTTP status returned by the Docker Engine API. */
     public readonly status: number,
+    /** Request path that failed. */
     public readonly path: string,
+    /** Response body returned by the Docker Engine API. */
     public readonly body: string,
   ) {
     super(`Docker API ${status} on ${path}: ${body.substring(0, 200)}`);
@@ -664,7 +739,6 @@ export function formatMemory(stats: ContainerStats): string {
   const limit = memoryLimit(stats);
   return `${formatBytes(usage)} / ${formatBytes(limit)}`;
 }
-
 
 // ---------------------------------------------------------------------------
 // Log stream demultiplexing
@@ -792,11 +866,17 @@ async function parseMultiplexedBuffer(
 // Port conflict detection
 // ---------------------------------------------------------------------------
 
+/** Describes a container port conflict detected from Docker Engine API data. */
 export interface PortConflict {
+  /** Conflicting published port. */
   port: number;
+  /** ID of the container using the port. */
   containerId: string;
+  /** Name of the container using the port. */
   containerName: string;
+  /** Compose service name, if available. */
   serviceName: string | null;
+  /** Compose project name, if available. */
   projectName: string | null;
 }
 
@@ -827,7 +907,8 @@ export async function findPortConflicts(
     for (const portBinding of container.Ports) {
       if (portBinding.PublicPort && portSet.has(portBinding.PublicPort)) {
         const serviceName = composeServiceName(container);
-        const containerName = container.Names[0]?.replace(/^\//, "") || container.Id.substring(0, 12);
+        const containerName = container.Names[0]?.replace(/^\//, "") ||
+          container.Id.substring(0, 12);
         conflicts.push({
           port: portBinding.PublicPort,
           containerId: container.Id,

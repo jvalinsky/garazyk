@@ -1,5 +1,6 @@
 /** Service role registry — names, ports, capabilities, and env key mappings. @module topology_registry */
 
+/** Canonical built-in service roles supported by the topology registry. */
 export const KNOWN_SERVICE_ROLES = [
   "plc",
   "pds",
@@ -13,15 +14,22 @@ export const KNOWN_SERVICE_ROLES = [
   "backfill",
 ] as const;
 
+/** Built-in service role names. */
 export type KnownServiceRole = typeof KNOWN_SERVICE_ROLES[number];
+/** A service role name, including experimental `x-...` roles. */
 export type ServiceRoleKey = KnownServiceRole | `x-${string}`;
 
+/** Metadata for an experimental service role. */
 export interface ExperimentalRoleMetadata {
+  /** Environment variable name for the role URL. */
   envVar: string;
+  /** Default port assigned to the role. */
   defaultPort: string;
+  /** Which runner environments expose the role. */
   runnerExposure: "host" | "docker" | "both" | "none";
 }
 
+/** Default Docker Compose service names for built-in roles. */
 export const DEFAULT_SERVICE_NAMES: Record<KnownServiceRole, string> = {
   pds: "local-pds",
   pds2: "local-pds2",
@@ -35,6 +43,7 @@ export const DEFAULT_SERVICE_NAMES: Record<KnownServiceRole, string> = {
   backfill: "local-backfill",
 };
 
+/** Default host ports for built-in roles. */
 export const DEFAULT_PORTS: Record<KnownServiceRole, string> = {
   pds: "2583",
   pds2: "2587",
@@ -48,6 +57,7 @@ export const DEFAULT_PORTS: Record<KnownServiceRole, string> = {
   backfill: "2480",
 };
 
+/** Canonical environment variable names for built-in role URLs. */
 export const ROLE_ENV_REGISTRY: Record<KnownServiceRole, string> = {
   pds: "PDS_URL",
   pds2: "PDS2_URL",
@@ -61,6 +71,7 @@ export const ROLE_ENV_REGISTRY: Record<KnownServiceRole, string> = {
   backfill: "BACKFILL_URL",
 };
 
+/** Registered capabilities for each built-in role. */
 export const CAPABILITY_REGISTRY: Record<KnownServiceRole, readonly string[]> = {
   plc: [
     "createAccount",
@@ -242,6 +253,7 @@ export function defaultRolePort(
   return experimentalRoles[role]?.defaultPort || "8080";
 }
 
+/** Validate that a capability is allowed for a role. @param role - Service role name. @param capability - Capability name to validate. @returns An error message when the capability is invalid, otherwise `undefined`. */
 export function validateRoleCapability(role: string, capability: string): string | undefined {
   if (isExperimentalCapability(capability)) return undefined;
   if (!isKnownServiceRole(role)) {

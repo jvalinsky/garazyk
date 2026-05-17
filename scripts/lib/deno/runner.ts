@@ -150,7 +150,6 @@ export class ScenarioResult {
   /** Store an artifact for the scenario report
    * @param name - Artifact name
    * @param data - Artifact payload
-   * @returns Nothing
    */
   recordArtifact(name: string, data: unknown): void {
     this.artifacts[name] = data;
@@ -276,6 +275,8 @@ export class ScenarioResult {
  * Discriminated outcome from timedCallChecked.
  * - `{ ok: true, value: T }` — the call succeeded
  * - `{ ok: false, value: null }` — the call failed (or expected failure succeeded)
+ *
+ * @typeParam T - The successful result type.
  */
 export type TimedCallOutcome<T> =
   | { ok: true; value: T }
@@ -285,6 +286,8 @@ export type TimedCallOutcome<T> =
  * Like timedCall, but returns a discriminated union instead of T | null.
  * Prefer this over timedCall for new code — the ok/value split makes
  * it impossible to accidentally use a null value without checking.
+ *
+ * @typeParam T - The result type returned by fn on success.
  */
 export async function timedCallChecked<T>(
   result: ScenarioResult,
@@ -318,13 +321,20 @@ export async function timedCallChecked<T>(
 /**
  * Unwrap a timedCallChecked outcome, returning the value or throwing.
  * Useful when the caller knows the step must have succeeded.
+ *
+ * @typeParam T - The wrapped success value type.
  */
 export function unwrapOutcome<T>(outcome: TimedCallOutcome<T>): T {
   if (outcome.ok) return outcome.value;
   throw new Error("timedCall step failed — use outcome.ok to check first");
 }
 
-/** Simplified timed call that returns value or null on failure. Prefer timedCallChecked for new code. */
+/**
+ * Simplified timed call that returns value or null on failure.
+ * Prefer timedCallChecked for new code.
+ *
+ * @typeParam T - The value type returned by fn on success.
+ */
 export async function timedCall<T>(
   result: ScenarioResult,
   name: string,

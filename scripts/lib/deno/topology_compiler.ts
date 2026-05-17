@@ -1,5 +1,5 @@
 /** Topology compilation — validate presets, render Docker Compose YAML, and write manifests. @module topology_compiler */
-import { join, resolve, relative } from "@std/path";
+import { join, relative, resolve } from "@std/path";
 import {
   createTopologyManifest,
   defaultPortForRole,
@@ -22,6 +22,7 @@ import {
 
 export type { SourceBuildInfo } from "./topology.ts";
 
+/** Options used to compile a topology preset into Docker Compose files. */
 export interface CompilerOptions {
   /** Preset name (e.g. "garazyk-default") or loaded TopologyPreset */
   preset: string | TopologyPreset;
@@ -128,7 +129,7 @@ function renderSigNozServices(lines: string[], volumes: Set<string>): void {
   lines.push("    environment:");
   lines.push("      - CLICKHOUSE_DB=signoz");
   lines.push("    healthcheck:");
-  lines.push("      test: [\"CMD\", \"wget\", \"--spider\", \"-q\", \"localhost:8123/clickhouse\"]");
+  lines.push('      test: ["CMD", "wget", "--spider", "-q", "localhost:8123/clickhouse"]');
   lines.push("      interval: 10s");
   lines.push("      timeout: 5s");
   lines.push("      retries: 5");
@@ -146,7 +147,7 @@ function renderSigNozServices(lines: string[], volumes: Set<string>): void {
   lines.push("    volumes:");
   lines.push("      - signoz_zookeeper_data:/bitnami/zookeeper");
   lines.push("    healthcheck:");
-  lines.push("      test: [\"CMD\", \"bash\", \"-c\", \"echo ruok | nc localhost 2181 | grep imok\"]");
+  lines.push('      test: ["CMD", "bash", "-c", "echo ruok | nc localhost 2181 | grep imok"]');
   lines.push("      interval: 10s");
   lines.push("      timeout: 5s");
   lines.push("      retries: 5");
@@ -157,12 +158,14 @@ function renderSigNozServices(lines: string[], volumes: Set<string>): void {
   lines.push("  signoz-otel-collector:");
   lines.push("    image: signoz/signoz-otel-collector:v0.144.4");
   lines.push("    container_name: signoz-otel-collector");
-  lines.push("    entrypoint: [\"/bin/sh\"]");
+  lines.push('    entrypoint: ["/bin/sh"]');
   lines.push("    command:");
   lines.push("      - -c");
   lines.push("      - |");
   lines.push("        /signoz-otel-collector migrate sync check && \\");
-  lines.push("        /signoz-otel-collector --config=/etc/otel-collector-config.yaml --manager-config=/etc/manager-config.yaml --copy-path=/var/tmp/collector-config.yaml");
+  lines.push(
+    "        /signoz-otel-collector --config=/etc/otel-collector-config.yaml --manager-config=/etc/manager-config.yaml --copy-path=/var/tmp/collector-config.yaml",
+  );
   lines.push("    volumes:");
   lines.push("      - ../docker/otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml");
   lines.push("      - ../docker/otel/otel-collector-opamp-config.yaml:/etc/manager-config.yaml");
@@ -174,15 +177,15 @@ function renderSigNozServices(lines: string[], volumes: Set<string>): void {
   lines.push("      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_REPLICATION=false");
   lines.push("      - SIGNOZ_OTEL_COLLECTOR_TIMEOUT=10m");
   lines.push("    ports:");
-  lines.push("      - \"4317:4317\"");
-  lines.push("      - \"4318:4318\"");
+  lines.push('      - "4317:4317"');
+  lines.push('      - "4318:4318"');
   lines.push("    depends_on:");
   lines.push("      clickhouse:");
   lines.push("        condition: service_healthy");
   lines.push("      signoz-zookeeper:");
   lines.push("        condition: service_healthy");
   lines.push("    healthcheck:");
-  lines.push("      test: [\"CMD\", \"wget\", \"--spider\", \"-q\", \"localhost:13133/\"]");
+  lines.push('      test: ["CMD", "wget", "--spider", "-q", "localhost:13133/"]');
   lines.push("      interval: 10s");
   lines.push("      timeout: 5s");
   lines.push("      retries: 5");
@@ -195,7 +198,7 @@ function renderSigNozServices(lines: string[], volumes: Set<string>): void {
   lines.push("    image: signoz/signoz:v0.123.0");
   lines.push("    container_name: signoz");
   lines.push("    ports:");
-  lines.push("      - \"3301:8080\"");
+  lines.push('      - "3301:8080"');
   lines.push("    volumes:");
   lines.push("      - signoz_sqlite_data:/var/lib/signoz/");
   lines.push("    environment:");
@@ -209,7 +212,7 @@ function renderSigNozServices(lines: string[], volumes: Set<string>): void {
   lines.push("      signoz-otel-collector:");
   lines.push("        condition: service_healthy");
   lines.push("    healthcheck:");
-  lines.push("      test: [\"CMD\", \"wget\", \"--spider\", \"-q\", \"localhost:8080/api/v1/health\"]");
+  lines.push('      test: ["CMD", "wget", "--spider", "-q", "localhost:8080/api/v1/health"]');
   lines.push("      interval: 30s");
   lines.push("      timeout: 5s");
   lines.push("      retries: 3");

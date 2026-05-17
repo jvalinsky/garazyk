@@ -1,5 +1,5 @@
-import { assertEquals, assertNotEquals, assertExists } from "@std/assert";
-import { startMockTwilioServer, stopMockTwilioServer, MockTwilioServer } from "./mock_twilio.ts";
+import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
+import { MockTwilioServer, startMockTwilioServer, stopMockTwilioServer } from "./mock_twilio.ts";
 
 const PORT = 8098;
 

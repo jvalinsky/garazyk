@@ -3,21 +3,36 @@ import * as cbor from "@ipld/dag-cbor";
 
 /** An event received from the firehose subscription stream. */
 export class FirehoseEvent {
-  constructor(
-    public seq: number,
-    public type: string,
-    public payload: any | Uint8Array
-  ) {}
+  /** Sequence number reported by the firehose event. */
+  public seq: number;
+
+  /** Event type reported by the firehose event. */
+  public type: string;
+
+  /** Raw payload for the firehose event. */
+  public payload: any | Uint8Array;
+
+  constructor(seq: number, type: string, payload: any | Uint8Array) {
+    this.seq = seq;
+    this.type = type;
+    this.payload = payload;
+  }
 }
 
 /** WebSocket client for the ATProto firehose (com.atproto.sync.subscribeRepos). */
 export class FirehoseClient {
+  /** WebSocket URL used for the firehose subscription. */
   public wsUrl: string;
+
+  /** Events collected by the most recent subscription. */
   public events: FirehoseEvent[] = [];
 
   /** Create a firehose client connected to the given relay. */
   constructor(relayUrl = "ws://localhost:2584") {
-    this.wsUrl = relayUrl.replace("http://", "ws://").replace("https://", "wss://").replace(/\/$/, "");
+    this.wsUrl = relayUrl.replace("http://", "ws://").replace("https://", "wss://").replace(
+      /\/$/,
+      "",
+    );
   }
 
   /** Subscribe to the firehose for a fixed duration, invoking callback per event. */

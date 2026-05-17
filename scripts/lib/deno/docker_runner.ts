@@ -7,6 +7,7 @@
 
 import { join, relative, resolve } from "@std/path";
 
+/** Options for running a scenario inside a Docker container. */
 export interface DockerRunnerOptions {
   /** Absolute path to the repo root */
   repoRoot: string;
