@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   plc-replica:
@@ -131,7 +131,14 @@ services:
       relay:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "-H", "Authorization: Bearer e2e-secret", "http://localhost:3200/admin/backfill/status"]
+      test: [
+        "CMD",
+        "curl",
+        "-f",
+        "-H",
+        "Authorization: Bearer e2e-secret",
+        "http://localhost:3200/admin/backfill/status",
+      ]
       interval: 5s
       timeout: 3s
       retries: 10

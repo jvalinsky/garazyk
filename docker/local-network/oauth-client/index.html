@@ -1,24 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Garazyk OAuth Test</title>
-</head>
-<body>
+  </head>
+  <body>
     <div id="app">
-        <h1>Garazyk OAuth Test</h1>
-        <div id="status">Initializing...</div>
-        <div id="login-form" style="display: none;">
-            <input type="text" id="handle" placeholder="Enter handle (e.g. luna.test)" value="luna.test">
-            <button id="login-btn">Sign In</button>
-        </div>
-        <div id="profile" style="display: none;">
-            <h2>Welcome, <span id="display-name"></span>!</h2>
-            <p>Handle: <span id="user-handle"></span></p>
-            <button id="logout-btn">Sign Out</button>
-        </div>
+      <h1>Garazyk OAuth Test</h1>
+      <div id="status">Initializing...</div>
+      <div id="login-form" style="display: none">
+        <input
+          type="text"
+          id="handle"
+          placeholder="Enter handle (e.g. luna.test)"
+          value="luna.test"
+        >
+        <button id="login-btn">Sign In</button>
+      </div>
+      <div id="profile" style="display: none">
+        <h2>Welcome, <span id="display-name"></span>!</h2>
+        <p>Handle: <span id="user-handle"></span></p>
+        <button id="logout-btn">Sign Out</button>
+      </div>
     </div>
     <script type="module" src="/main.ts"></script>
-</body>
+  </body>
 </html>
