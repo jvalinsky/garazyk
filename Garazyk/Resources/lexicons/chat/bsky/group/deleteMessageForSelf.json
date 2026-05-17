@@ -11,7 +11,7 @@
           "type": "object",
           "required": ["messageId"],
           "properties": {
-            "messageId": {"type": "string"}
+            "messageId": { "type": "string" }
           }
         }
       }

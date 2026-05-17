@@ -16,10 +16,22 @@
           "required": ["did", "blobBytes", "blobCount", "repoBytes", "recordCount"],
           "properties": {
             "did": { "type": "string", "format": "did" },
-            "blobBytes": { "type": "integer", "description": "Total blob storage bytes for this account." },
-            "blobCount": { "type": "integer", "description": "Total number of blobs for this account." },
-            "repoBytes": { "type": "integer", "description": "Total repo block storage bytes for this account." },
-            "recordCount": { "type": "integer", "description": "Total number of records for this account." }
+            "blobBytes": {
+              "type": "integer",
+              "description": "Total blob storage bytes for this account."
+            },
+            "blobCount": {
+              "type": "integer",
+              "description": "Total number of blobs for this account."
+            },
+            "repoBytes": {
+              "type": "integer",
+              "description": "Total repo block storage bytes for this account."
+            },
+            "recordCount": {
+              "type": "integer",
+              "description": "Total number of records for this account."
+            }
           }
         }
       }
