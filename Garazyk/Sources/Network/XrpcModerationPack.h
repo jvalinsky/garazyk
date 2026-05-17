@@ -8,6 +8,9 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * XrpcModerationPack registers all com.atproto.moderation.* endpoint handlers.
  */
+/**
+ * @abstract Declares the XrpcModerationPack public API.
+ */
 @interface XrpcModerationPack : NSObject <XrpcRoutePack>
 
 @end

@@ -8,6 +8,9 @@ NS_ASSUME_NONNULL_BEGIN
 @class HttpRequest;
 @class HttpResponse;
 @class HttpServer;
+/**
+ * @abstract Defines the ATProtoNetworkConnection protocol contract.
+ */
 @protocol ATProtoNetworkConnection;
 
 /*!
@@ -51,6 +54,9 @@ typedef void (^WebSocketRequestHandler)(HttpRequest *request, HttpResponse *resp
  
  [server startWithError:nil];
  @endcode
+ */
+/**
+ * @abstract Declares the HttpServer public API.
  */
 @interface HttpServer : NSObject
 

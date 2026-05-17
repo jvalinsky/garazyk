@@ -15,6 +15,9 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  @brief Namespace pack for app.bsky.graph.* endpoints.
  */
+/**
+ * @abstract Declares the XrpcAppBskyGraphPack public API.
+ */
 @interface XrpcAppBskyGraphPack : NSObject <XrpcRoutePack>
 
 @end

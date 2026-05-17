@@ -137,10 +137,19 @@ typedef NS_ENUM(NSUInteger, DIDCacheStatus) {
       forceRefresh:(BOOL)forceRefresh
         completion:(void (^)(DIDDocument * _Nullable document, NSError * _Nullable error))completion;
 
+/**
+ * @abstract Performs the resolveAtprotoDataForDID operation.
+ */
 - (nullable NSDictionary *)resolveAtprotoDataForDID:(NSString *)did error:(NSError **)error;
 
+/**
+ * @abstract Performs the resolveAtprotoDataForDID operation.
+ */
 - (nullable NSDictionary *)resolveAtprotoDataForDID:(NSString *)did forceRefresh:(BOOL)forceRefresh error:(NSError **)error;
 
+/**
+ * @abstract Performs the seedCacheWithDID operation.
+ */
 - (void)seedCacheWithDID:(NSString *)did documentJSON:(NSDictionary *)json;
 
 /*!

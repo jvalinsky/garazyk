@@ -9,6 +9,9 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSErrorDomain const FederationErrorDomain;
 
 /// Federation operation error codes
+/**
+ * @abstract Defines FederationErrorCode values exposed by this API.
+ */
 typedef NS_ENUM(NSInteger, FederationErrorCode) {
     FederationErrorDIDResolutionFailed = 1,
     FederationErrorNetworkError = 2,
@@ -18,8 +21,14 @@ typedef NS_ENUM(NSInteger, FederationErrorCode) {
 };
 
 /// Client for forwarding requests to remote PDS instances
+/**
+ * @abstract Declares the FederationClient public API.
+ */
 @interface FederationClient : NSObject
 
+/**
+ * @abstract Exposes the did resolver value.
+ */
 @property (nonatomic, strong, nullable) id didResolver;
 
 /*! Preferred repository format for sync requests (getRepo, getCheckout).
@@ -33,6 +42,9 @@ typedef NS_ENUM(NSInteger, FederationErrorCode) {
 /// @param parameters Query parameters for GET requests or JSON body for POST requests
 /// @param did The DID to resolve for finding the target PDS
 /// @param completion Completion block with response data or error
+/**
+ * @abstract Performs the forwardXrpcRequest operation.
+ */
 - (void)forwardXrpcRequest:(NSString *)method
                 parameters:(nullable NSDictionary *)parameters
                        did:(NSString *)did
@@ -43,6 +55,9 @@ typedef NS_ENUM(NSInteger, FederationErrorCode) {
 /// @param parameters Query parameters for the request
 /// @param did The DID to resolve for finding the target PDS
 /// @param completion Completion block with binary response data or error
+/**
+ * @abstract Performs the forwardXrpcBinaryRequest operation.
+ */
 - (void)forwardXrpcBinaryRequest:(NSString *)method
                       parameters:(nullable NSDictionary *)parameters
                              did:(NSString *)did
@@ -54,6 +69,9 @@ typedef NS_ENUM(NSInteger, FederationErrorCode) {
 /// @param headers HTTP headers
 /// @param body Request body data
 /// @param completion Completion block with response data or error
+/**
+ * @abstract Performs the forwardHttpRequest operation.
+ */
 - (void)forwardHttpRequest:(NSURL *)url
                     method:(NSString *)method
                    headers:(nullable NSDictionary<NSString *, NSString *> *)headers

@@ -4,8 +4,14 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Defines the VideoBlobUploader protocol contract.
+ */
 @protocol VideoBlobUploader <NSObject>
 
+/**
+ * @abstract Performs the uploadBlob operation.
+ */
 - (nullable NSDictionary *)uploadBlob:(NSData *)blobData
                              mimeType:(NSString *)mimeType
                           serviceAuth:(nullable NSString *)token

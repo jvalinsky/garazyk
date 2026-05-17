@@ -22,9 +22,15 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface XrpcGermIdentityPack : NSObject
 
+/**
+ * @abstract Performs the initWithIdentityService operation.
+ */
 - (instancetype)initWithIdentityService:(GermIdentityService *)identityService
                             authManager:(ChatAuthManager *)authManager;
 
+/**
+ * @abstract Performs the registerHandlersWithDispatcher operation.
+ */
 - (void)registerHandlersWithDispatcher:(XrpcDispatcher *)dispatcher;
 
 @end

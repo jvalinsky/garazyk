@@ -46,6 +46,9 @@ NS_ASSUME_NONNULL_BEGIN
  * @param contentType Output content type
  * @return Response body as JSON string or error response
  */
+/**
+ * @abstract Performs the handleRequestWithMethod operation.
+ */
 - (nullable NSString *)handleRequestWithMethod:(NSInteger)method
                                          path:(NSString *)path
                                       headers:(NSDictionary<NSString *, NSString *> *)headers

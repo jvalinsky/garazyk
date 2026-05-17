@@ -26,6 +26,9 @@
 
 #import "Services/Core/PDSPhoneVerificationProvider.h"
 
+/**
+ * @abstract Defines the PDSSecretsProvider protocol contract.
+ */
 @protocol PDSSecretsProvider;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -62,6 +65,9 @@ typedef NS_ENUM(NSInteger, PDSTelegramGatewayProviderErrorCode) {
     messages, avoiding unnecessary charges for unreachable numbers.
     The request_id from checkSendAbility is passed to
     sendVerificationMessage for free delivery.
+ */
+/**
+ * @abstract Declares the PDSTelegramGatewayPhoneVerificationProvider public API.
  */
 @interface PDSTelegramGatewayPhoneVerificationProvider : NSObject <PDSPhoneVerificationProvider>
 

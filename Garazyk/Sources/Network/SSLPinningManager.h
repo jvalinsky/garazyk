@@ -6,6 +6,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 extern NSString *const SSLPinningErrorDomain;
 
+/**
+ * @abstract Defines SSLPinningError values exposed by this API.
+ */
 typedef NS_ENUM(NSInteger, SSLPinningError) {
     SSLPinningErrorCertificateValidationFailed = 1,
     SSLPinningErrorNoPinnedKeysForDomain = 2,

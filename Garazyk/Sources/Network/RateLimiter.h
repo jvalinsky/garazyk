@@ -115,6 +115,9 @@ typedef NS_ENUM(NSInteger, RateLimitType) {
  *
  * @note Thread-safe through SQLite connection serialization
  */
+/**
+ * @abstract Declares the RateLimiter public API.
+ */
 @interface RateLimiter : NSObject
 
 /*! Maximum API requests per hour per DID (default: 5000) */
@@ -232,6 +235,9 @@ typedef NS_ENUM(NSInteger, RateLimitType) {
  * @param response Response object to add headers to
  * @param did DID for authenticated requests (may be nil)
  * @param ip IP address for rate limiting (may be nil)
+ */
+/**
+ * @abstract Performs the applyRateLimitHeadersToResponse operation.
  */
 - (void)applyRateLimitHeadersToResponse:(HttpResponse *)response
                                   forDid:(nullable NSString *)did

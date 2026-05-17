@@ -8,6 +8,9 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * XrpcIdentityPack registers all com.atproto.identity.* endpoint handlers.
  */
+/**
+ * @abstract Declares the XrpcIdentityPack public API.
+ */
 @interface XrpcIdentityPack : NSObject <XrpcRoutePack>
 
 @end

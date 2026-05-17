@@ -38,6 +38,9 @@ typedef NS_ENUM(NSInteger, HttpSessionEvent) {
  */
 @interface HttpProtocolSession : NSObject
 
+/**
+ * @abstract Exposes the parser value.
+ */
 @property(nonatomic, readonly) Http1Parser *parser;
 @property(nonatomic, readonly) Http1PipelinePolicy *pipelinePolicy;
 @property(nonatomic, assign) BOOL upgradedToWebSocket;

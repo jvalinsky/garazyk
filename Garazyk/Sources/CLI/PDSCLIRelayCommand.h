@@ -13,6 +13,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface PDSCLIRelayCommand : PDSBaseCommand
 
+/**
+ * @abstract Exposes the configuration value.
+ */
 @property (nonatomic, strong, nullable) RelayConfiguration *configuration;
 @property (nonatomic, strong, nullable) RelayUpstreamManager *upstreamManager;
 @property (nonatomic, strong, nullable) RelayMetrics *metrics;

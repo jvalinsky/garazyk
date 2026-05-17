@@ -18,6 +18,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface XrpcAppBskyContactPack : NSObject <XrpcRoutePack>
 
+/**
+ * @abstract Performs the registerWithDispatcher operation.
+ */
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                  contactService:(ContactService *)contactService
                       jwtMinter:(JWTMinter *)jwtMinter

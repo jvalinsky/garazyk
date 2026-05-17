@@ -17,6 +17,9 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class PDSDatabasePool;
+/**
+ * @abstract Defines the PDSBlobRepository protocol contract.
+ */
 @protocol PDSBlobRepository;
 
 /*!

@@ -23,10 +23,19 @@ typedef HttpServerRequestHandler _Nullable (^HttpRouteLookupHandler)(
 
 @interface HttpRequestDispatcher : NSObject
 
+/**
+ * @abstract Exposes the request handler value.
+ */
 @property(nonatomic, copy, nullable) HttpServerRequestHandler requestHandler;
 @property(nonatomic, copy) HttpRouteLookupHandler routeLookupHandler;
 
+/**
+ * @abstract Performs the initWithRouteLookupHandler operation.
+ */
 - (instancetype)initWithRouteLookupHandler:(HttpRouteLookupHandler)routeLookupHandler;
+/**
+ * @abstract Performs the dispatchRequest operation.
+ */
 - (HttpResponse *)dispatchRequest:(HttpRequest *)request;
 
 @end

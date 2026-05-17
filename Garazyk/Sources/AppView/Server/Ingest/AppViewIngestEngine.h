@@ -29,6 +29,9 @@ NS_ASSUME_NONNULL_BEGIN
 @class AppViewDatabase;
 @class AppViewIngestEngine;
 @class AppViewIngestEvent;
+/**
+ * @abstract Defines the AppViewIndexer protocol contract.
+ */
 @protocol AppViewIndexer;
 
 /*!
@@ -168,8 +171,17 @@ didReceiveIdentityChange:(AppViewIngestEvent *)event;
 // Internal methods (for delegate callbacks)
 // ---------------------------------------------------------------------------
 
+/**
+ * @abstract Performs the _handleCommitEvent operation.
+ */
 - (void)_handleCommitEvent:(FirehoseCommitEvent *)event fromRelay:(NSString *)relayURL;
+/**
+ * @abstract Performs the _handleIdentityEvent operation.
+ */
 - (void)_handleIdentityEvent:(FirehoseIdentityEvent *)event fromRelay:(NSString *)relayURL;
+/**
+ * @abstract Performs the _relayConnection operation.
+ */
 - (void)_relayConnection:(id)connection didConnectAtSeq:(int64_t)seq;
 
 @end

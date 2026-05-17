@@ -16,12 +16,18 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface HttpConnectionDriver : NSObject
 
+/**
+ * @abstract Performs the shouldBeginReadForSession operation.
+ */
 - (BOOL)shouldBeginReadForSession:(HttpProtocolSession *)session
                   outputQueueSize:(NSUInteger)outputQueueSize
                      headerOpened:(NSTimeInterval)headerOpened
                               now:(NSTimeInterval)now
                     headerTimeout:(NSTimeInterval)headerTimeout;
 
+/**
+ * @abstract Performs the shouldResumeReadForSession operation.
+ */
 - (BOOL)shouldResumeReadForSession:(HttpProtocolSession *)session
                    outputQueueSize:(NSUInteger)outputQueueSize;
 

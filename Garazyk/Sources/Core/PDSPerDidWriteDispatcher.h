@@ -60,6 +60,9 @@ typedef void (^PDSWriteBlock)(void);
  }];
  @endcode
  */
+/**
+ * @abstract Declares the PDSPerDidWriteDispatcher public API.
+ */
 @interface PDSPerDidWriteDispatcher : NSObject
 
 /*!
@@ -90,6 +93,9 @@ typedef void (^PDSWriteBlock)(void);
 
  @param did The DID this write belongs to.
  @param block The write operation to perform.
+ */
+/**
+ * @abstract Performs the dispatchWriteForDid operation.
  */
 - (void)dispatchWriteForDid:(NSString *)did block:(PDSWriteBlock)block;
 

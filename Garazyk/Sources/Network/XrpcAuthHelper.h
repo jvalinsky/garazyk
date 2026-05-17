@@ -16,6 +16,9 @@
 @class JWTMinter;
 @class PDSController;
 @class PDSServiceDatabases;
+/**
+ * @abstract Defines the PDSAdminController protocol contract.
+ */
 @protocol PDSAdminController;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -47,6 +50,9 @@ NS_ASSUME_NONNULL_BEGIN
  * - WWW-Authenticate header with "use_dpop_nonce" error
  * - JSON error body
  */
+/**
+ * @abstract Declares the XrpcAuthHelper public API.
+ */
 @interface XrpcAuthHelper : NSObject
 
 /**
@@ -75,6 +81,9 @@ NS_ASSUME_NONNULL_BEGIN
  * @param response HTTP response for setting error details (optional)
  * @return Authenticated DID or nil on failure
  */
+/**
+ * @abstract Performs the extractDIDFromAuthHeader operation.
+ */
 + (nullable NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
                                       jwtMinter:(JWTMinter *)jwtMinter
                                 adminController:(nullable id<PDSAdminController>)adminController
@@ -91,6 +100,9 @@ NS_ASSUME_NONNULL_BEGIN
  * @param request HTTP request for DPoP URL construction
  * @param response HTTP response for setting error details (optional)
  * @return Authenticated DID or nil on failure
+ */
+/**
+ * @abstract Performs the extractDIDFromAuthHeader operation.
  */
 + (nullable NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
                                      controller:(PDSController *)controller
@@ -111,6 +123,9 @@ NS_ASSUME_NONNULL_BEGIN
  * @param jwtMinter JWT minter for signature verification
  * @param adminController Admin controller for takedown checks
  * @return YES if authorized, NO if authentication or authorization failed
+ */
+/**
+ * @abstract Performs the authorizeAdminRequest operation.
  */
 + (BOOL)authorizeAdminRequest:(HttpRequest *)request
                       response:(HttpResponse *)response

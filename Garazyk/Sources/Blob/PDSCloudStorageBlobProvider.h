@@ -29,6 +29,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param secretAccessKey AWS secret access key (or equivalent)
  @return Initialized provider instance, or nil if configuration is invalid
  */
+/**
+ * @abstract Performs the initWithBucket operation.
+ */
 - (nullable instancetype)initWithBucket:(NSString *)bucket
                                  region:(NSString *)region
                                endpoint:(nullable NSString *)endpoint
@@ -36,6 +39,9 @@ NS_ASSUME_NONNULL_BEGIN
                           accessKeyId:(NSString *)accessKeyId
                        secretAccessKey:(NSString *)secretAccessKey;
 
+/**
+ * @abstract Exposes the bucket value.
+ */
 @property (nonatomic, strong, readonly) NSString *bucket;
 @property (nonatomic, strong, readonly) NSString *region;
 @property (nonatomic, strong, readonly, nullable) NSString *endpoint;

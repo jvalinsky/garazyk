@@ -29,6 +29,9 @@ NS_ASSUME_NONNULL_BEGIN
  * @param error Receives failure details.
  * @return YES if successfully created.
  */
+/**
+ * @abstract Performs the createVideoJobWithId operation.
+ */
 - (BOOL)createVideoJobWithId:(NSString *)jobId
                          did:(NSString *)did
                       blobCid:(NSString *)blobCid

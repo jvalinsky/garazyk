@@ -50,6 +50,9 @@ typedef NS_ENUM(NSInteger, MimeTypeError) {
  @constant MimeCategoryApplication Application types (PDF, JSON).
  @constant MimeCategoryOther Uncategorized types.
  */
+/**
+ * @abstract Defines MimeCategory values exposed by this API.
+ */
 typedef NS_ENUM(NSInteger, MimeCategory) {
     MimeCategoryImage,
     MimeCategoryVideo,

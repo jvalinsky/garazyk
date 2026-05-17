@@ -20,6 +20,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 extern NSString * const PDSReadinessErrorDomain;
 
+/**
+ * @abstract Defines PDSReadinessError values exposed by this API.
+ */
 typedef NS_ENUM(NSInteger, PDSReadinessError) {
     PDSReadinessErrorDatabaseUnavailable = 1,
     PDSReadinessErrorPLCUnreachable = 2,
@@ -53,10 +56,16 @@ typedef NS_ENUM(NSInteger, PDSReadinessError) {
  @param error Error output parameter with failure details.
  @return YES if all checks pass, NO otherwise (server should not start).
  */
+/**
+ * @abstract Performs the performReadinessChecksWithConfig operation.
+ */
 + (BOOL)performReadinessChecksWithConfig:(ATProtoServiceConfiguration *)config
                            serviceDatabases:(PDSServiceDatabases *)serviceDatabases
                                        error:(NSError **)error;
 
+/**
+ * @abstract Performs the performReadinessChecksWithConfig operation.
+ */
 + (BOOL)performReadinessChecksWithConfig:(ATProtoServiceConfiguration *)config
                                    error:(NSError **)error;
 

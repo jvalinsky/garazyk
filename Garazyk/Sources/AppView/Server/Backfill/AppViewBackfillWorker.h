@@ -15,6 +15,9 @@ NS_ASSUME_NONNULL_BEGIN
 @class AppViewDatabase;
 @class AppViewBackfillWorker;
 @class AppViewPendingDelta;
+/**
+ * @abstract Defines the AppViewIndexer protocol contract.
+ */
 @protocol AppViewIndexer;
 
 /*!
@@ -28,6 +31,9 @@ NS_ASSUME_NONNULL_BEGIN
 didCompleteForDID:(NSString *)did
        lastRev:(NSString *)lastRev;
 
+/**
+ * @abstract Performs the worker operation.
+ */
 - (void)worker:(AppViewBackfillWorker *)worker
  didFailForDID:(NSString *)did
          error:(NSError *)error

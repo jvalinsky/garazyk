@@ -34,6 +34,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class AppViewDatabase;
 @class AppViewBackfillOrchestrator;
+/**
+ * @abstract Defines the AppViewIndexer protocol contract.
+ */
 @protocol AppViewIndexer;
 
 /*!

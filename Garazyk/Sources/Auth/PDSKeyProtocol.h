@@ -119,6 +119,9 @@ extern PDSKeyAlgorithm const PDSKeyAlgorithmRS256;  // RSA SHA-256
  * @param error On failure, contains error details.
  * @return YES if signature is valid, NO otherwise.
  */
+/**
+ * @abstract Performs the verifyDigestSignature operation.
+ */
 - (BOOL)verifyDigestSignature:(NSData *)signature
                       forHash:(NSData *)digest
                         error:(NSError **)error;

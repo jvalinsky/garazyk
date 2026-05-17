@@ -23,20 +23,30 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Handles WebAuthn registration and assertion HTTP endpoints.
+ */
 @interface WebAuthnRegistrationHandler : NSObject
 
+/** Database used to store and load WebAuthn credentials. */
 @property (nonatomic, strong) PDSDatabase *database;
+/** Origin used when validating WebAuthn client data. */
 @property (nonatomic, copy) NSString *serverOrigin;
 
+/** Initializes the handler with credential storage and expected origin. */
 - (instancetype)initWithDatabase:(PDSDatabase *)database serverOrigin:(NSString *)serverOrigin;
 
 - (instancetype)init NS_UNAVAILABLE;
 + (instancetype)new NS_UNAVAILABLE;
 
+/** Registers WebAuthn routes with the supplied HTTP server. */
 - (void)registerRoutesWithServer:(HttpServer *)httpServer;
 
+/** Starts credential registration and returns challenge parameters. */
 - (void)handleRegisterBegin:(HttpRequest *)request response:(HttpResponse *)response;
+/** Completes credential registration from an attestation response. */
 - (void)handleRegisterComplete:(HttpRequest *)request response:(HttpResponse *)response;
+/** Verifies an assertion response for login or second-factor authentication. */
 - (void)handleAssert:(HttpRequest *)request response:(HttpResponse *)response;
 
 @end

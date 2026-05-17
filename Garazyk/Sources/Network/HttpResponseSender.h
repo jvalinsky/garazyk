@@ -66,6 +66,9 @@ NS_ASSUME_NONNULL_BEGIN
 
  @discussion Used for read flow control: if true, pause reading.
  */
+/**
+ * @abstract Performs the shouldTrimQueueWithCurrentSize operation.
+ */
 - (BOOL)shouldTrimQueueWithCurrentSize:(NSUInteger)queueSize
                          highWaterMark:(NSUInteger)highWaterMark;
 
@@ -81,6 +84,9 @@ NS_ASSUME_NONNULL_BEGIN
 
  @discussion Safely subtracts item size from queue total.
  */
+/**
+ * @abstract Performs the clampedQueueSizeAfterDequeue operation.
+ */
 - (NSUInteger)clampedQueueSizeAfterDequeue:(NSUInteger)queueSize
                                  itemBytes:(NSUInteger)itemBytes;
 
@@ -94,6 +100,9 @@ NS_ASSUME_NONNULL_BEGIN
  @return YES if queue is at or above high water mark.
 
  @discussion Used by HTTP driver to decide whether to read more data.
+ */
+/**
+ * @abstract Performs the hasBackpressure operation.
  */
 - (BOOL)hasBackpressure:(NSUInteger)queueSize;
 

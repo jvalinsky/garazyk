@@ -7,6 +7,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 extern NSString * const ATProtoDBErrorDomain;
 
+/**
+ * @abstract Defines ATProtoDBErrorCode values exposed by this API.
+ */
 typedef NS_ENUM(NSInteger, ATProtoDBErrorCode) {
     ATProtoDBErrorNotOpen = 1000,
     ATProtoDBErrorQueryFailed = 1001,
@@ -15,6 +18,9 @@ typedef NS_ENUM(NSInteger, ATProtoDBErrorCode) {
 
 #pragma mark - ATProtoDBConfig
 
+/**
+ * @abstract Defines ATProtoDBConfigFlags values exposed by this API.
+ */
 typedef NS_OPTIONS(NSUInteger, ATProtoDBConfigFlags) {
     ATProtoDBConfigFlagWAL              = 1 << 0,
     ATProtoDBConfigFlagSynchronousNormal = 1 << 1,

@@ -15,6 +15,9 @@
 #import <Foundation/Foundation.h>
 #import "AppView/Server/Hooks/AppViewIndexHook.h"
 
+/**
+ * @abstract Defines the PDSQueryDatabase protocol contract.
+ */
 @protocol PDSQueryDatabase;
 
 NS_ASSUME_NONNULL_BEGIN

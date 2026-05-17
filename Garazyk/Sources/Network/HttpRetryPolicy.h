@@ -18,20 +18,38 @@ typedef NS_ENUM(NSInteger, HttpRetryDecision) {
     HttpRetryDecisionFail          // give up, return error
 };
 
+/**
+ * @abstract Declares the HttpRetryResult public API.
+ */
 @interface HttpRetryResult : NSObject
+/**
+ * @abstract Exposes the decision value.
+ */
 @property (nonatomic, readonly) HttpRetryDecision decision;
 @property (nonatomic, readonly) NSTimeInterval retryDelay;
 
+/**
+ * @abstract Performs the initWithDecision operation.
+ */
 - (instancetype)initWithDecision:(HttpRetryDecision)decision delay:(NSTimeInterval)delay;
 @end
 
+/**
+ * @abstract Declares the HttpRetryPolicy public API.
+ */
 @interface HttpRetryPolicy : NSObject
 
+/**
+ * @abstract Exposes the max retries value.
+ */
 @property (nonatomic, assign) NSInteger maxRetries;           // default 3
 @property (nonatomic, assign) NSTimeInterval initialDelay;    // default 0.5
 @property (nonatomic, assign) double backoffMultiplier;       // default 2.0
 
 // Evaluate an HTTP response or error
+/**
+ * @abstract Performs the evaluateStatusCode operation.
+ */
 - (HttpRetryResult *)evaluateStatusCode:(NSInteger)statusCode
                            networkError:(nullable NSError *)error
                           attemptNumber:(NSInteger)attempt;

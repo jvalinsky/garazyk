@@ -44,6 +44,9 @@ NS_ASSUME_NONNULL_BEGIN
  @end
  @endcode
  */
+/**
+ * @abstract Defines the PDSMigration protocol contract.
+ */
 @protocol PDSMigration <NSObject>
 
 @required
@@ -90,6 +93,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param db SQLite database connection.
  @param error Error output if rollback fails.
  @return YES if successful, NO on error.
+ */
+/**
+ * @abstract Performs the down operation.
  */
 - (BOOL)down:(sqlite3 *)db error:(NSError **)error;
 
