@@ -21,6 +21,7 @@ import {
   healthStatus,
   memoryLimit,
   memoryUsage,
+  parseDockerLogBuffer,
 } from "./docker_api.ts";
 import { assertEquals, assertExists } from "@std/assert";
 
@@ -37,9 +38,37 @@ async function getClient(): Promise<DockerApiClient | null> {
   return client;
 }
 
+function dockerLogFrame(streamType: 1 | 2, text: string): Uint8Array {
+  const payload = new TextEncoder().encode(text);
+  const frame = new Uint8Array(8 + payload.length);
+  frame[0] = streamType;
+  frame[4] = (payload.length >>> 24) & 0xff;
+  frame[5] = (payload.length >>> 16) & 0xff;
+  frame[6] = (payload.length >>> 8) & 0xff;
+  frame[7] = payload.length & 0xff;
+  frame.set(payload, 8);
+  return frame;
+}
+
+function concatBytes(...chunks: Uint8Array[]): Uint8Array {
+  const output = new Uint8Array(
+    chunks.reduce((total, chunk) => total + chunk.length, 0),
+  );
+  let offset = 0;
+  for (const chunk of chunks) {
+    output.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return output;
+}
+
 // Final test that cleans up the shared client
 Deno.test(
-  { name: "cleanup: close shared client", sanitizeResources: false, sanitizeOps: false },
+  {
+    name: "cleanup: close shared client",
+    sanitizeResources: false,
+    sanitizeOps: false,
+  },
   () => {
     if (_client) {
       _client.close();
@@ -53,7 +82,11 @@ Deno.test(
 // ---------------------------------------------------------------------------
 
 Deno.test(
-  { name: "DockerApiClient: init and ping", sanitizeResources: false, sanitizeOps: false },
+  {
+    name: "DockerApiClient: init and ping",
+    sanitizeResources: false,
+    sanitizeOps: false,
+  },
   async () => {
     const client = await getClient();
     if (!client) {
@@ -78,6 +111,26 @@ Deno.test("DockerApiClient: version", async () => {
   assertExists(version.Version);
   assertExists(version.ApiVersion);
   assertEquals(typeof version.Version, "string");
+});
+
+Deno.test("parseDockerLogBuffer: preserves multi-chunk raw TTY logs", () => {
+  const raw = concatBytes(
+    new TextEncoder().encode("first chunk\n"),
+    new TextEncoder().encode("second chunk\n"),
+  );
+
+  assertEquals(parseDockerLogBuffer(raw), "first chunk\nsecond chunk\n");
+});
+
+Deno.test("parseDockerLogBuffer: demuxes split multiplexed frames", () => {
+  const frame1 = dockerLogFrame(1, "stdout line\n");
+  const frame2 = dockerLogFrame(2, "stderr line\n");
+  const splitFrame2 = concatBytes(frame2.slice(0, 5), frame2.slice(5));
+
+  assertEquals(
+    parseDockerLogBuffer(concatBytes(frame1, splitFrame2)),
+    "stdout line\nstderr line\n",
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -176,7 +229,9 @@ Deno.test("DockerApiClient: streamEvents (basic)", async () => {
 
   // Start event stream in background
   const eventPromise = (async () => {
-    for await (const event of client.streamEvents({ type: ["container"] }, abort.signal)) {
+    for await (
+      const event of client.streamEvents({ type: ["container"] }, abort.signal)
+    ) {
       events.push(event);
       if (events.length >= 3) break; // Got some events, enough to verify
     }
@@ -341,7 +396,13 @@ Deno.test("cpuPercent: computes CPU percentage", () => {
       online_cpus: 2,
       throttling_data: { periods: 0, throttled_periods: 0, throttled_time: 0 },
     },
-    memory_stats: { usage: 0, max_usage: 0, limit: 0, stats: { cache: 0, rss: 0 }, failcnt: 0 },
+    memory_stats: {
+      usage: 0,
+      max_usage: 0,
+      limit: 0,
+      stats: { cache: 0, rss: 0 },
+      failcnt: 0,
+    },
   } as unknown as import("./docker_api.ts").ContainerStats;
 
   // cpuDelta = 100M, systemDelta = 500M, cpus = 2

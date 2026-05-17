@@ -27,14 +27,22 @@ export interface DockerRunnerOptions {
   timeoutSeconds: number;
   /** Additional env vars */
   env?: Record<string, string>;
+  /** Optional Docker container name, primarily for deterministic tests. */
+  containerName?: string;
 }
 
+/** Exit code convention used by GNU timeout when a command exceeds its limit. */
+export const DOCKER_RUNNER_TIMEOUT_EXIT_CODE = 124;
+
 /**
- * Run a single scenario inside a Docker container.
- * Returns the container exit code.
+ * Build the Docker CLI arguments for running a single scenario.
+ *
+ * @param options Docker runner options.
+ * @returns Arguments passed to `docker`.
  */
-export async function runScenarioInDocker(options: DockerRunnerOptions): Promise<number> {
-  const network = options.networkName || `${options.composeProject}_topology_net`;
+export function buildDockerRunnerArgs(options: DockerRunnerOptions): string[] {
+  const network = options.networkName ||
+    `${options.composeProject}_topology_net`;
 
   const envArgs: string[] = [];
   if (options.dockerRunnerEnv) {
@@ -46,7 +54,10 @@ export async function runScenarioInDocker(options: DockerRunnerOptions): Promise
       const envKey = roleToEnvKey(key);
       envArgs.push("-e", `${envKey}=${value}`);
     }
-    envArgs.push("-e", `ATPROTO_TOPOLOGY_CAPABILITIES=${[...options.capabilities].join(",")}`);
+    envArgs.push(
+      "-e",
+      `ATPROTO_TOPOLOGY_CAPABILITIES=${[...options.capabilities].join(",")}`,
+    );
   }
 
   if (options.env) {
@@ -58,39 +69,87 @@ export async function runScenarioInDocker(options: DockerRunnerOptions): Promise
   // Derive the relative path from repo root, and verify it doesn't escape.
   // This prevents a scenarioPath like "/repo/../etc/passwd" from reading
   // files outside the mounted workspace inside the container.
-  const scenarioRelPath = relative(options.repoRoot, resolve(options.scenarioPath));
+  const scenarioRelPath = relative(
+    options.repoRoot,
+    resolve(options.scenarioPath),
+  );
   if (scenarioRelPath.startsWith("..") || scenarioRelPath.startsWith("/")) {
     throw new Error(
       `Scenario path escapes repo root: "${options.scenarioPath}" (relative: ${scenarioRelPath}, repo: ${options.repoRoot})`,
     );
   }
 
-  const cmd = [
-    "docker",
+  return [
     "run",
     "--rm",
     "--network",
     network,
     "--name",
-    `scenario-runner-${Date.now()}`,
+    options.containerName || `scenario-runner-${Date.now()}`,
     ...envArgs,
     "-v",
     `${options.repoRoot}:/workspace:ro`,
     "denoland/deno:alpine",
     "run",
     "-A",
-    `--timeout=${options.timeoutSeconds * 1000}`,
     `/workspace/${scenarioRelPath}`,
   ];
+}
 
-  const proc = new Deno.Command(cmd[0], {
-    args: cmd.slice(1),
+/**
+ * Run a single scenario inside a Docker container.
+ * Returns the container exit code.
+ */
+export async function runScenarioInDocker(
+  options: DockerRunnerOptions,
+): Promise<number> {
+  const containerName = options.containerName ||
+    `scenario-runner-${Date.now()}`;
+  const proc = new Deno.Command("docker", {
+    args: buildDockerRunnerArgs({ ...options, containerName }),
     stdout: "inherit",
     stderr: "inherit",
+  }).spawn();
+
+  let timeoutId: number | undefined;
+  const timeout = new Promise<"timeout">((resolveTimeout) => {
+    timeoutId = setTimeout(
+      () => resolveTimeout("timeout"),
+      options.timeoutSeconds * 1000,
+    );
   });
 
-  const { code } = await proc.output();
-  return code;
+  const result = await Promise.race([proc.status, timeout]);
+  if (timeoutId !== undefined) clearTimeout(timeoutId);
+
+  if (result === "timeout") {
+    try {
+      proc.kill("SIGTERM");
+    } catch {
+      // Process may have exited between timeout and kill.
+    }
+    try {
+      await proc.status;
+    } catch {
+      // Ignore status errors after forced termination; timeout result is authoritative.
+    }
+    await forceRemoveContainer(containerName);
+    return DOCKER_RUNNER_TIMEOUT_EXIT_CODE;
+  }
+
+  return result.code;
+}
+
+async function forceRemoveContainer(containerName: string): Promise<void> {
+  try {
+    await new Deno.Command("docker", {
+      args: ["rm", "-f", containerName],
+      stdout: "null",
+      stderr: "null",
+    }).output();
+  } catch {
+    // Best-effort cleanup only; timeout exit code remains authoritative.
+  }
 }
 
 /** Map a role name to the env var that SERVICE_URLS reads. */

@@ -75,9 +75,24 @@ export interface ContainerHealthEvent {
 
 /** Parsed container event emitted by the watcher. */
 export type WatcherEvent =
-  | { kind: "started"; serviceName: string; containerId: string; timestamp: number }
-  | { kind: "healthy"; serviceName: string; containerId: string; timestamp: number }
-  | { kind: "unhealthy"; serviceName: string; containerId: string; timestamp: number }
+  | {
+    kind: "started";
+    serviceName: string;
+    containerId: string;
+    timestamp: number;
+  }
+  | {
+    kind: "healthy";
+    serviceName: string;
+    containerId: string;
+    timestamp: number;
+  }
+  | {
+    kind: "unhealthy";
+    serviceName: string;
+    containerId: string;
+    timestamp: number;
+  }
   | {
     kind: "died";
     serviceName: string;
@@ -86,7 +101,12 @@ export type WatcherEvent =
     oomKilled: boolean;
     timestamp: number;
   }
-  | { kind: "oom"; serviceName: string; containerId: string; timestamp: number };
+  | {
+    kind: "oom";
+    serviceName: string;
+    containerId: string;
+    timestamp: number;
+  };
 
 /** Tracked state for a single container. */
 interface ContainerState {
@@ -133,17 +153,26 @@ export class DockerEventParser {
     const containerId = event.actor?.ID || event.id || "";
     if (!containerId) return [];
 
-    // Update name mapping from actor attributes
-    const name = event.actor?.Attributes?.name ||
-      event.actor?.Attributes?.["com.docker.compose.service"] || "";
-    if (name) {
-      this.serviceNameToId.set(name, containerId);
-      this.idToServiceName.set(containerId, name);
+    const attrs = event.actor?.Attributes || {};
+    const composeName = attrs["com.docker.compose.service"] || "";
+    const containerName = attrs.name || "";
+    if (composeName) {
+      this.serviceNameToId.set(composeName, containerId);
+      this.idToServiceName.set(containerId, composeName);
+    }
+    if (containerName) {
+      this.serviceNameToId.set(containerName, containerId);
+      if (!composeName && !this.idToServiceName.has(containerId)) {
+        this.idToServiceName.set(containerId, containerName);
+      }
     }
 
-    const serviceName = this.idToServiceName.get(containerId) || name ||
+    const serviceName = this.idToServiceName.get(containerId) || composeName ||
+      containerName ||
       containerId.substring(0, 12);
-    const timestamp = event.timeNano ? event.timeNano / 1_000_000 : event.time * 1000;
+    const timestamp = event.timeNano
+      ? event.timeNano / 1_000_000
+      : event.time * 1000;
 
     const action = event.action || event.status || "";
     const results: WatcherEvent[] = [];
@@ -157,29 +186,59 @@ export class DockerEventParser {
       let status: string;
       if (action === "health_status: healthy" || healthAttr === "healthy") {
         status = "healthy";
-      } else if (action === "health_status: unhealthy" || healthAttr === "unhealthy") {
+      } else if (
+        action === "health_status: unhealthy" || healthAttr === "unhealthy"
+      ) {
         status = "unhealthy";
       } else {
         status = "unknown";
       }
 
-      this.containerStates.set(containerId, { status, exitCode: 0, oomKilled: false });
+      this.containerStates.set(containerId, {
+        status,
+        exitCode: 0,
+        oomKilled: false,
+      });
 
       if (status === "healthy") {
         results.push({ kind: "healthy", serviceName, containerId, timestamp });
       } else if (status === "unhealthy") {
-        results.push({ kind: "unhealthy", serviceName, containerId, timestamp });
+        results.push({
+          kind: "unhealthy",
+          serviceName,
+          containerId,
+          timestamp,
+        });
       }
     } else if (action === "start") {
-      this.containerStates.set(containerId, { status: "running", exitCode: 0, oomKilled: false });
+      this.containerStates.set(containerId, {
+        status: "running",
+        exitCode: 0,
+        oomKilled: false,
+      });
       results.push({ kind: "started", serviceName, containerId, timestamp });
     } else if (action === "die") {
       const exitCode = parseInt(event.actor?.Attributes?.exitCode || "0", 10);
       const oomKilled = event.actor?.Attributes?.oomKill === "true" || false;
-      this.containerStates.set(containerId, { status: "exited", exitCode, oomKilled });
-      results.push({ kind: "died", serviceName, containerId, exitCode, oomKilled, timestamp });
+      this.containerStates.set(containerId, {
+        status: "exited",
+        exitCode,
+        oomKilled,
+      });
+      results.push({
+        kind: "died",
+        serviceName,
+        containerId,
+        exitCode,
+        oomKilled,
+        timestamp,
+      });
     } else if (action === "oom") {
-      this.containerStates.set(containerId, { status: "oom", exitCode: 137, oomKilled: true });
+      this.containerStates.set(containerId, {
+        status: "oom",
+        exitCode: 137,
+        oomKilled: true,
+      });
       results.push({ kind: "oom", serviceName, containerId, timestamp });
     }
 
@@ -211,7 +270,9 @@ export class DockerEventParser {
     for (const n of container.Names) {
       const clean = n.replace(/^\//, "");
       this.serviceNameToId.set(clean, container.Id);
-      this.idToServiceName.set(container.Id, clean);
+      if (!name && !this.idToServiceName.has(container.Id)) {
+        this.idToServiceName.set(container.Id, clean);
+      }
     }
   }
 
@@ -245,7 +306,8 @@ export class DockerEventParser {
     if (!id) return false;
     const state = this.containerStates.get(id);
     if (!state) return false;
-    return state.status === "exited" || state.status === "oom" || state.oomKilled;
+    return state.status === "exited" || state.status === "oom" ||
+      state.oomKilled;
   }
 }
 
@@ -282,7 +344,9 @@ export class ContainerEventWatcher {
    *
    * Returns null if the Docker API is not available.
    */
-  static async create(socketPath?: string): Promise<ContainerEventWatcher | null> {
+  static async create(
+    socketPath?: string,
+  ): Promise<ContainerEventWatcher | null> {
     const client = await createDockerClient(socketPath);
     if (!client) return null;
 
@@ -346,8 +410,8 @@ export class ContainerEventWatcher {
   // Lifecycle
   // -----------------------------------------------------------------------
 
-  /** 
-   * Stop watching and release resources. 
+  /**
+   * Stop watching and release resources.
    * @throws {Error} If closing the underlying client fails.
    */
   async close(): Promise<void> {
@@ -500,9 +564,16 @@ export class ContainerEventWatcher {
     if (containerId) {
       const state = this.parser.getContainerState(containerId);
       if (state) {
-        if (waitFor === "healthy" && state.status === "healthy") return Promise.resolve(true);
-        if (waitFor === "running" && state.status === "running") return Promise.resolve(true);
-        if (state.status === "exited" || state.status === "dead" || state.oomKilled) {
+        if (waitFor === "healthy" && state.status === "healthy") {
+          return Promise.resolve(true);
+        }
+        if (waitFor === "running" && state.status === "running") {
+          return Promise.resolve(true);
+        }
+        if (
+          state.status === "exited" || state.status === "dead" ||
+          state.oomKilled
+        ) {
           return Promise.resolve(false);
         }
       }
@@ -511,7 +582,12 @@ export class ContainerEventWatcher {
     // Also check via inspect for current state (handles the case where
     // the container became healthy before we started watching)
     if (containerId) {
-      return this.waitForViaInspectOrEvents(serviceName, containerId, waitFor, timeoutMs);
+      return this.waitForViaInspectOrEvents(
+        serviceName,
+        containerId,
+        waitFor,
+        timeoutMs,
+      );
     }
 
     // No known container ID — wait for events, but also periodically
@@ -562,7 +638,8 @@ export class ContainerEventWatcher {
             } else if (waitFor === "running" && inspect.State.Running) {
               settle(true);
             } else if (
-              inspect.State.Dead || (!inspect.State.Running && inspect.State.ExitCode !== 0)
+              inspect.State.Dead ||
+              (!inspect.State.Running && inspect.State.ExitCode !== 0)
             ) {
               settle(false);
             }
@@ -597,7 +674,10 @@ export class ContainerEventWatcher {
       if (waitFor === "running" && inspect.State.Running) return true;
 
       // If the container is already dead, no point waiting
-      if (inspect.State.Dead || (!inspect.State.Running && inspect.State.ExitCode !== 0)) {
+      if (
+        inspect.State.Dead ||
+        (!inspect.State.Running && inspect.State.ExitCode !== 0)
+      ) {
         return false;
       }
     } catch {
@@ -649,7 +729,8 @@ export class ContainerEventWatcher {
           } else if (waitFor === "running" && inspect.State.Running) {
             settle(true);
           } else if (
-            inspect.State.Dead || (!inspect.State.Running && inspect.State.ExitCode !== 0)
+            inspect.State.Dead ||
+            (!inspect.State.Running && inspect.State.ExitCode !== 0)
           ) {
             settle(false);
           }
@@ -719,7 +800,9 @@ async function waitForServiceHealthyCLI(
       if (code === 0) {
         const status = new TextDecoder().decode(stdout).trim();
         if (status === "healthy" || status === "running") return true;
-        if (status === "unhealthy" || status === "exited" || status === "dead") return false;
+        if (
+          status === "unhealthy" || status === "exited" || status === "dead"
+        ) return false;
       }
     } catch {
       // Container may not exist yet

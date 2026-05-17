@@ -44,7 +44,9 @@ export interface DockerVersion {
   /** Daemon build time. */
   BuildTime: string;
   /** Component versions included in the daemon build. */
-  Components: Array<{ Name: string; Version: string; Details?: Record<string, string> }>;
+  Components: Array<
+    { Name: string; Version: string; Details?: Record<string, string> }
+  >;
   /** Git commit used to build the daemon. */
   GitCommit: string;
   /** Go toolchain version used to build the daemon. */
@@ -296,7 +298,10 @@ export class DockerApiClient {
 
   constructor(endpoint?: string) {
     const host = endpoint || Deno.env.get("DOCKER_HOST") || "";
-    if (host.startsWith("tcp://") || host.startsWith("http://") || host.startsWith("https://")) {
+    if (
+      host.startsWith("tcp://") || host.startsWith("http://") ||
+      host.startsWith("https://")
+    ) {
       this._useUnix = false;
       this._socketPath = "";
       this._baseUrl = host.replace("tcp://", "http://");
@@ -319,8 +324,8 @@ export class DockerApiClient {
     return this._socketPath;
   }
 
-  /** 
-   * Initialize the client and check daemon availability. 
+  /**
+   * Initialize the client and check daemon availability.
    * @returns A promise that resolves to true if the daemon is responding.
    */
   async init(): Promise<boolean> {
@@ -371,8 +376,8 @@ export class DockerApiClient {
     }
   }
 
-  /** 
-   * Get Docker version information. 
+  /**
+   * Get Docker version information.
    * @throws {DockerApiError} If the request fails.
    */
   async version(): Promise<DockerVersion> {
@@ -386,26 +391,34 @@ export class DockerApiClient {
   // Containers
   // -----------------------------------------------------------------------
 
-  /** 
-   * List containers. 
+  /**
+   * List containers.
    * @param filters - Optional filters
    * @throws {DockerApiError} If the request fails.
    */
-  async listContainers(filters?: Record<string, string[]>): Promise<ContainerSummary[]> {
+  async listContainers(
+    filters?: Record<string, string[]>,
+  ): Promise<ContainerSummary[]> {
     const params = new URLSearchParams();
     if (filters) {
       params.set("filters", JSON.stringify(filters));
     }
-    const path = `/containers/json${params.toString() ? "?" + params.toString() : ""}`;
+    const path = `/containers/json${
+      params.toString() ? "?" + params.toString() : ""
+    }`;
     return await withSpan(
       "docker.listContainers",
       () => this.requestJSON<ContainerSummary[]>("GET", path),
-      { "docker.filter_count": String(filters ? Object.keys(filters).length : 0) },
+      {
+        "docker.filter_count": String(
+          filters ? Object.keys(filters).length : 0,
+        ),
+      },
     );
   }
 
-  /** 
-   * Inspect a container. 
+  /**
+   * Inspect a container.
    * @param id - Container ID or name
    * @throws {DockerApiError} If the request fails.
    */
@@ -417,13 +430,16 @@ export class DockerApiClient {
     );
   }
 
-  /** 
-   * Get container logs. 
+  /**
+   * Get container logs.
    * @param id - Container ID or name
    * @param opts - Log options
    * @throws {DockerApiError} If the request fails.
    */
-  async containerLogs(id: string, opts: ContainerLogsOptions = {}): Promise<string> {
+  async containerLogs(
+    id: string,
+    opts: ContainerLogsOptions = {},
+  ): Promise<string> {
     const params = new URLSearchParams();
     if (opts.stdout !== false) params.set("stdout", "true");
     if (opts.stderr !== false) params.set("stderr", "true");
@@ -431,27 +447,37 @@ export class DockerApiClient {
     if (opts.tail) params.set("tail", opts.tail);
     if (opts.timestamps) params.set("timestamps", "true");
     return await withSpan("docker.containerLogs", async () => {
-      const resp = await this.request("GET", `/containers/${id}/logs?${params.toString()}`);
+      const resp = await this.request(
+        "GET",
+        `/containers/${id}/logs?${params.toString()}`,
+      );
       return await demuxLogStream(resp);
     }, { "docker.container_id": id.substring(0, 12) });
   }
 
-  /** 
-   * Get container stats (single snapshot). 
+  /**
+   * Get container stats (single snapshot).
    * @param id - Container ID or name
    * @param opts - Snapshot options
    * @throws {DockerApiError} If the request fails.
    */
-  async containerStats(id: string, opts?: { oneShot?: boolean }): Promise<ContainerStats> {
+  async containerStats(
+    id: string,
+    opts?: { oneShot?: boolean },
+  ): Promise<ContainerStats> {
     const params = new URLSearchParams();
     params.set("stream", "false");
     if (opts?.oneShot) params.set("one-shot", "true");
     const qs = params.toString();
-    return await withSpan("docker.containerStats", () =>
-      this.requestJSON<ContainerStats>(
-        "GET",
-        `/containers/${id}/stats?${qs}`,
-      ), { "docker.container_id": id.substring(0, 12) });
+    return await withSpan(
+      "docker.containerStats",
+      () =>
+        this.requestJSON<ContainerStats>(
+          "GET",
+          `/containers/${id}/stats?${qs}`,
+        ),
+      { "docker.container_id": id.substring(0, 12) },
+    );
   }
 
   /**
@@ -486,7 +512,10 @@ export class DockerApiClient {
         const { done, value } = await reader.read().catch((err: Error) => {
           // AbortError is expected when close() cancels the stream.
           if (err.name === "AbortError") {
-            return { done: true as const, value: undefined as unknown as Uint8Array };
+            return {
+              done: true as const,
+              value: undefined as unknown as Uint8Array,
+            };
           }
           throw err;
         });
@@ -514,15 +543,19 @@ export class DockerApiClient {
     }
   }
 
-  /** 
-   * Wait for a container to stop. Returns the exit code. 
+  /**
+   * Wait for a container to stop. Returns the exit code.
    * @param id - Container ID or name
    * @throws {DockerApiError} If the request fails.
    */
   async waitContainer(id: string): Promise<{ StatusCode: number }> {
     return await withSpan(
       "docker.waitContainer",
-      () => this.requestJSON<{ StatusCode: number }>("POST", `/containers/${id}/wait`),
+      () =>
+        this.requestJSON<{ StatusCode: number }>(
+          "POST",
+          `/containers/${id}/wait`,
+        ),
       { "docker.container_id": id.substring(0, 12) },
     );
   }
@@ -567,7 +600,10 @@ export class DockerApiClient {
         const { done, value } = await reader.read().catch((err: Error) => {
           // AbortError is expected when close() cancels the stream.
           if (err.name === "AbortError") {
-            return { done: true as const, value: undefined as unknown as Uint8Array };
+            return {
+              done: true as const,
+              value: undefined as unknown as Uint8Array,
+            };
           }
           throw err;
         });
@@ -709,7 +745,9 @@ function detectSocketPath(): string {
  *
  * Returns null if the Docker daemon is not available.
  */
-export async function createDockerClient(socketPath?: string): Promise<DockerApiClient | null> {
+export async function createDockerClient(
+  socketPath?: string,
+): Promise<DockerApiClient | null> {
   const client = new DockerApiClient(socketPath);
   const available = await client.init();
   if (!available) {
@@ -724,16 +762,24 @@ export async function createDockerClient(socketPath?: string): Promise<DockerApi
  *
  * Docker Compose sets `com.docker.compose.service` on each container.
  */
-export function composeServiceName(container: ContainerSummary | ContainerInspect): string | null {
-  const labels = "Config" in container ? container.Config.Labels : container.Labels;
+export function composeServiceName(
+  container: ContainerSummary | ContainerInspect,
+): string | null {
+  const labels = "Config" in container
+    ? container.Config.Labels
+    : container.Labels;
   return labels?.["com.docker.compose.service"] || null;
 }
 
 /**
  * Find a container's compose project name from its labels.
  */
-export function composeProjectName(container: ContainerSummary | ContainerInspect): string | null {
-  const labels = "Config" in container ? container.Config.Labels : container.Labels;
+export function composeProjectName(
+  container: ContainerSummary | ContainerInspect,
+): string | null {
+  const labels = "Config" in container
+    ? container.Config.Labels
+    : container.Labels;
   return labels?.["com.docker.compose.project"] || null;
 }
 
@@ -814,72 +860,65 @@ async function demuxLogStream(resp: Response): Promise<string> {
 
   const reader = resp.body.getReader();
   const chunks: Uint8Array[] = [];
-  let buffer = new Uint8Array(0);
-
   try {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-
-      // Append to buffer
-      const next = new Uint8Array(buffer.length + value.length);
-      next.set(buffer, 0);
-      next.set(value, buffer.length);
-      buffer = next;
-
-      // Try to detect if this is a multiplexed stream.
-      // A multiplexed stream starts with byte 1 or 2 (stdout/stderr),
-      // followed by 3 null bytes. A raw text stream won't have that pattern.
-      if (buffer.length >= 8) {
-        const firstByte = buffer[0];
-        const nullBytes = buffer[1] === 0 && buffer[2] === 0 && buffer[3] === 0;
-        if ((firstByte === 1 || firstByte === 2) && nullBytes) {
-          // Multiplexed stream — parse frames
-          return parseMultiplexedBuffer(buffer, reader);
-        } else {
-          // Raw text stream (TTY container) — return as-is
-          return new TextDecoder().decode(buffer);
-        }
-      }
+      chunks.push(value);
     }
-
-    // Less than 8 bytes — just return as text
-    return new TextDecoder().decode(buffer);
+    return parseDockerLogBuffer(concatChunks(chunks));
   } finally {
     reader.releaseLock();
   }
 }
 
 /**
- * Parse a multiplexed Docker log stream from a buffer + reader.
- * Handles partial frames by buffering incomplete data.
+ * Parse Docker log bytes as either raw TTY text or multiplexed stdout/stderr frames.
+ *
+ * @param buffer Complete Docker log response body.
+ * @returns Decoded log text.
  */
-async function parseMultiplexedBuffer(
-  initialBuffer: Uint8Array,
-  reader: ReadableStreamDefaultReader<Uint8Array>,
-): Promise<string> {
+export function parseDockerLogBuffer(buffer: Uint8Array): string {
+  if (!isMultiplexedLogBuffer(buffer)) {
+    return new TextDecoder().decode(buffer);
+  }
+  return parseMultiplexedBuffer(buffer);
+}
+
+function concatChunks(chunks: Uint8Array[]): Uint8Array {
+  const length = chunks.reduce((total, chunk) => total + chunk.length, 0);
+  const buffer = new Uint8Array(length);
+  let offset = 0;
+  for (const chunk of chunks) {
+    buffer.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return buffer;
+}
+
+function isMultiplexedLogBuffer(buffer: Uint8Array): boolean {
+  return buffer.length >= 8 &&
+    (buffer[0] === 1 || buffer[0] === 2) &&
+    buffer[1] === 0 &&
+    buffer[2] === 0 &&
+    buffer[3] === 0;
+}
+
+/**
+ * Parse a complete multiplexed Docker log stream.
+ * Handles split and partial frames by buffering incomplete data in memory.
+ */
+function parseMultiplexedBuffer(initialBuffer: Uint8Array): string {
   const decoder = new TextDecoder();
   const outputParts: string[] = [];
   let buffer = initialBuffer;
 
   while (true) {
-    // Need at least 8 bytes for the header
-    while (buffer.length < 8) {
-      const { done, value } = await reader.read();
-      if (done) {
-        // Return whatever we've parsed so far
-        return outputParts.join("");
-      }
-      const next = new Uint8Array(buffer.length + value.length);
-      next.set(buffer, 0);
-      next.set(value, buffer.length);
-      buffer = next;
-    }
+    if (buffer.length < 8) return outputParts.join("");
 
-    // Parse header
-    const streamType = buffer[0]; // 1=stdout, 2=stderr
-    // Bytes 1-3 are reserved
-    const payloadSize = (buffer[4] << 24) | (buffer[5] << 16) | (buffer[6] << 8) | buffer[7];
+    // Parse header. Byte 0 is stream type; bytes 1-3 are reserved.
+    const payloadSize = (buffer[4] << 24) | (buffer[5] << 16) |
+      (buffer[6] << 8) | buffer[7];
 
     if (payloadSize === 0) {
       // Empty frame — skip header
@@ -887,19 +926,10 @@ async function parseMultiplexedBuffer(
       continue;
     }
 
-    // Wait until we have the full payload
-    while (buffer.length < 8 + payloadSize) {
-      const { done, value } = await reader.read();
-      if (done) {
-        // Partial frame — decode what we have
-        const available = buffer.slice(8);
-        outputParts.push(decoder.decode(available, { stream: true }));
-        return outputParts.join("");
-      }
-      const next = new Uint8Array(buffer.length + value.length);
-      next.set(buffer, 0);
-      next.set(value, buffer.length);
-      buffer = next;
+    if (buffer.length < 8 + payloadSize) {
+      const available = buffer.slice(8);
+      outputParts.push(decoder.decode(available, { stream: true }));
+      return outputParts.join("");
     }
 
     // Extract payload

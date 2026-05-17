@@ -28,7 +28,9 @@ function makeDockerEvent(overrides: Partial<DockerEvent> = {}): DockerEvent {
   };
 }
 
-function makeContainerSummary(overrides: Partial<ContainerSummary> = {}): ContainerSummary {
+function makeContainerSummary(
+  overrides: Partial<ContainerSummary> = {},
+): ContainerSummary {
   return {
     Id: "abc123def456",
     Names: ["/local-pds"],
@@ -189,6 +191,28 @@ Deno.test("DockerEventParser.feed() - compose service name from attributes", () 
   if (events[0].kind === "started") {
     assertEquals(events[0].serviceName, "pds-db");
   }
+});
+
+Deno.test("DockerEventParser.feed() - compose service label wins over container name", () => {
+  const parser = new DockerEventParser();
+  const events = parser.feed(makeDockerEvent({
+    action: "start",
+    actor: {
+      ID: "abc123def456",
+      Attributes: {
+        name: "garazyk-local-pds-1",
+        "com.docker.compose.service": "local-pds",
+      },
+    },
+  }));
+
+  assertEquals(events.length, 1);
+  assertEquals(events[0].kind, "started");
+  if (events[0].kind === "started") {
+    assertEquals(events[0].serviceName, "local-pds");
+  }
+  assertEquals(parser.getContainerId("local-pds"), "abc123def456");
+  assertEquals(parser.getContainerId("garazyk-local-pds-1"), "abc123def456");
 });
 
 Deno.test("DockerEventParser.feed() - timestamp from timeNano", () => {
@@ -379,6 +403,35 @@ Deno.test("DockerEventParser.loadContainer() - indexes by container name", () =>
   // Both compose service name and container name should resolve
   assertEquals(parser.getContainerId("local-pds"), "abc123");
   assertEquals(parser.getContainerId("my-container-name"), "abc123");
+});
+
+Deno.test("DockerEventParser.loadContainer() - keeps compose service canonical", () => {
+  const parser = new DockerEventParser();
+  parser.loadContainer(makeContainerSummary({
+    Id: "abc123",
+    Names: ["/garazyk-local-pds-1"],
+    Labels: {
+      "com.docker.compose.service": "local-pds",
+      "com.docker.compose.project": "garazyk",
+    },
+  }));
+
+  assertEquals(parser.getContainerId("local-pds"), "abc123");
+  assertEquals(parser.getContainerId("garazyk-local-pds-1"), "abc123");
+
+  const events = parser.feed(makeDockerEvent({
+    action: "die",
+    actor: {
+      ID: "abc123",
+      Attributes: { name: "garazyk-local-pds-1", exitCode: "1" },
+    },
+  }));
+
+  assertEquals(events.length, 1);
+  assertEquals(events[0].kind, "died");
+  if (events[0].kind === "died") {
+    assertEquals(events[0].serviceName, "local-pds");
+  }
 });
 
 Deno.test("DockerEventParser.loadContainers() - no compose label", () => {
