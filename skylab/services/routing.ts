@@ -7,7 +7,7 @@
  * Mirrors the Python server.py routing functions.
  */
 
-import { METHOD_ROUTES, APPVIEW_READ_METHODS } from "./config.ts";
+import { APPVIEW_READ_METHODS, METHOD_ROUTES } from "./config.ts";
 
 /**
  * Determine which service handles a given XRPC method.

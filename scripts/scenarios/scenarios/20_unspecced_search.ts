@@ -18,7 +18,7 @@ export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
-import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
 
 function now() {
   return new Date().toISOString();
@@ -47,11 +47,12 @@ export async function run(): Promise<ScenarioResult> {
   for (const name of charNames) {
     const char = getCharacter(name);
     const session = await timedCall(
-      result, `Create account: ${char.name}`,
+      result,
+      `Create account: ${char.name}`,
       async () => {
         return await client.accounts.createAccount(char.handle, char.email, char.password);
       },
-      (s) => `did=${s.did}`
+      (s) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -59,14 +60,15 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const active = charNames.filter(n => getCharacter(n).did);
+  const active = charNames.filter((n) => getCharacter(n).did);
   for (const name of active) {
     const char = getCharacter(name);
     try {
       await client.records.createRecord(
-        char.did, "app.bsky.actor.profile",
+        char.did,
+        "app.bsky.actor.profile",
         { $type: "app.bsky.actor.profile", displayName: char.name, description: char.persona },
-        char.accessJwt
+        char.accessJwt,
       );
     } catch (e) {
       if (!(e instanceof XrpcError && e.status === 404)) throw e;
@@ -83,21 +85,21 @@ export async function run(): Promise<ScenarioResult> {
       texts: [
         "The Orion Nebula is absolutely stunning tonight! #astrophotography",
         "Just published my deep space photography guide #astronomy",
-      ]
+      ],
     },
     {
       name: "marcus",
       texts: [
         "ATProto is the future of decentralized social networking",
         "Building a firehose consumer in Go — streaming thousands of events per second",
-      ]
+      ],
     },
     {
       name: "rosa",
       texts: [
         "Homemade sourdough with roasted garlic and herbs #baking",
         "The best cacio e pepe recipe you will ever try #cooking",
-      ]
+      ],
     },
   ];
 
@@ -106,15 +108,17 @@ export async function run(): Promise<ScenarioResult> {
     if (char.did && char.accessJwt) {
       for (const text of group.texts) {
         await timedCall(
-          result, `${char.name} posts`,
+          result,
+          `${char.name} posts`,
           async () => {
             return await client.records.createRecord(
-              char.did, "app.bsky.feed.post",
+              char.did,
+              "app.bsky.feed.post",
               { $type: "app.bsky.feed.post", text, createdAt: now() },
-              char.accessJwt
+              char.accessJwt,
             );
           },
-          (r) => `uri=${r.uri}`
+          (r) => `uri=${r.uri}`,
         );
       }
     }
@@ -122,28 +126,32 @@ export async function run(): Promise<ScenarioResult> {
 
   if (rosa.did && luna.did && marcus.did) {
     const listRec = await timedCall(
-      result, "Rosa creates list for starter pack",
+      result,
+      "Rosa creates list for starter pack",
       async () => {
         return await client.records.createRecord(
-          rosa.did, "app.bsky.graph.list",
+          rosa.did,
+          "app.bsky.graph.list",
           {
             $type: "app.bsky.graph.list",
             name: "Space & Code Enthusiasts",
             purpose: "app.bsky.graph.defs#curatelist",
             createdAt: now(),
           },
-          rosa.accessJwt
+          rosa.accessJwt,
         );
       },
-      (r) => `uri=${r.uri}`
+      (r) => `uri=${r.uri}`,
     );
 
     if (listRec) {
       await timedCall(
-        result, "Rosa creates starter pack for search",
+        result,
+        "Rosa creates starter pack for search",
         async () => {
           return await client.records.createRecord(
-            rosa.did, "app.bsky.graph.starterpack",
+            rosa.did,
+            "app.bsky.graph.starterpack",
             {
               $type: "app.bsky.graph.starterpack",
               name: "Space & Code Enthusiasts",
@@ -151,44 +159,49 @@ export async function run(): Promise<ScenarioResult> {
               list: listRec.uri,
               createdAt: now(),
             },
-            rosa.accessJwt
+            rosa.accessJwt,
           );
         },
-        (r) => `uri=${r.uri}`
+        (r) => `uri=${r.uri}`,
       );
     }
   }
 
-  await new Promise(r => setTimeout(r, 2000));
+  await new Promise((r) => setTimeout(r, 2000));
 
   if (marcus.accessJwt) {
     try {
       for (const query of ["nebula", "Luna"]) {
         await timedCall(
-          result, `Search actors skeleton '${query}'`,
+          result,
+          `Search actors skeleton '${query}'`,
           async () => {
             return await client.search.searchActorsSkeleton(query, { token: marcus.accessJwt });
           },
-          (r) => `found=${r.actors?.length || 0}`
+          (r) => `found=${r.actors?.length || 0}`,
         );
       }
 
       for (const query of ["nebula", "sourdough", "zzz nonexistent content"]) {
         await timedCall(
-          result, `Search posts skeleton '${query}'`,
+          result,
+          `Search posts skeleton '${query}'`,
           async () => {
             return await client.search.searchPostsSkeleton(query, { token: marcus.accessJwt });
           },
-          (r) => `found=${r.posts?.length || 0}`
+          (r) => `found=${r.posts?.length || 0}`,
         );
       }
 
       await timedCall(
-        result, "Search starter packs skeleton 'Space'",
+        result,
+        "Search starter packs skeleton 'Space'",
         async () => {
-          return await client.search.searchStarterPacksSkeleton("Space", { token: marcus.accessJwt });
+          return await client.search.searchStarterPacksSkeleton("Space", {
+            token: marcus.accessJwt,
+          });
         },
-        (r) => `found=${r.starterPacks?.length || 0}`
+        (r) => `found=${r.starterPacks?.length || 0}`,
       );
     } catch (e) {
       if (!(e instanceof XrpcError && e.status === 404)) throw e;
@@ -200,7 +213,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

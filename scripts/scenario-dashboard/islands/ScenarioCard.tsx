@@ -18,7 +18,17 @@ interface ScenarioCardProps {
 
 /** Render a scenario card showing ID, name, last status, and compatibility warnings. */
 export default function ScenarioCard(
-  { id, name, status, passed = 0, failed = 0, skipped = 0, runId, requires = [], needsPds2 = false }: ScenarioCardProps,
+  {
+    id,
+    name,
+    status,
+    passed = 0,
+    failed = 0,
+    skipped = 0,
+    runId,
+    requires = [],
+    needsPds2 = false,
+  }: ScenarioCardProps,
 ) {
   const { state } = useRuntime();
   const preview = state.value.topology.preview;
@@ -40,10 +50,13 @@ export default function ScenarioCard(
 
   const isCompatible = missing.length === 0;
 
-  const badgeVariant = status === "passed" ? "success"
-                     : status === "failed" ? "destructive"
-                     : status === "running" ? "info"
-                     : "secondary";
+  const badgeVariant = status === "passed"
+    ? "success"
+    : status === "failed"
+    ? "destructive"
+    : status === "running"
+    ? "info"
+    : "secondary";
 
   return (
     <a href={href} class={`scenario-card ${!isCompatible ? "incompatible" : ""}`}>

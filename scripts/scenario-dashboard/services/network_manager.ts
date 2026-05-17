@@ -24,10 +24,7 @@ import {
   healthStatus,
 } from "../../lib/deno/docker_api.ts";
 import { startLocalNetwork, stopLocalNetwork } from "../../lib/deno/docker.ts";
-import {
-  ContainerEventWatcher,
-  type WatcherEvent,
-} from "../../lib/deno/docker_events.ts";
+import { ContainerEventWatcher, type WatcherEvent } from "../../lib/deno/docker_events.ts";
 
 const SCRIPTS_DIR = join(
   fromFileUrl(new URL("../../scenarios", import.meta.url)),

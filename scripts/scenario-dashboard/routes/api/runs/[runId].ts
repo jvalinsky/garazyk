@@ -18,20 +18,26 @@ export const handler: Handlers<RunStatusResponse> = {
       const run = fetchRun(db, runId);
 
       if (!run) {
-        return new Response(JSON.stringify({ status: "not_found", passed: 0, failed: 0, skipped: 0 }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ status: "not_found", passed: 0, failed: 0, skipped: 0 }),
+          {
+            status: 404,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
       }
 
-      return new Response(JSON.stringify({
-        status: run.status,
-        passed: run.passed,
-        failed: run.failed,
-        skipped: run.skipped,
-      }), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          status: run.status,
+          passed: run.passed,
+          failed: run.failed,
+          skipped: run.skipped,
+        }),
+        {
+          headers: { "Content-Type": "application/json" },
+        },
+      );
     } catch (e) {
       console.error("Error fetching run status:", e);
       return new Response(JSON.stringify({ status: "error", passed: 0, failed: 0, skipped: 0 }), {

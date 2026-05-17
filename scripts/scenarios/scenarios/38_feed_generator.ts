@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -23,7 +23,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-
 
 function now() {
   return new Date().toISOString();
@@ -37,12 +36,14 @@ export async function run(): Promise<ScenarioResult> {
   const appview = new XrpcClient(SERVICE_URLS.appview);
   const luna = getCharacter("luna");
 
-  await timedCall(result, "PDS health check", async () => { await pds.waitForHealthy(30); });
+  await timedCall(result, "PDS health check", async () => {
+    await pds.waitForHealthy(30);
+  });
 
   if (result.failed > 0) return result;
 
-  const session = await pds.accounts.createAccount(luna.handle, luna.email, luna.password).catch(() =>
-    pds.accounts.createSession(luna.handle, luna.password)
+  const session = await pds.accounts.createAccount(luna.handle, luna.email, luna.password).catch(
+    () => pds.accounts.createSession(luna.handle, luna.password),
   );
 
   if (!session) {
@@ -63,12 +64,18 @@ export async function run(): Promise<ScenarioResult> {
   };
 
   const feedRef = await timedCall(result, "Create feed generator", async () => {
-    return await pds.records.createRecord(luna.did, "app.bsky.feed.generator", feedRecord, luna.accessJwt, { rkey: feedRkey });
+    return await pds.records.createRecord(
+      luna.did,
+      "app.bsky.feed.generator",
+      feedRecord,
+      luna.accessJwt,
+      { rkey: feedRkey },
+    );
   });
 
   if (feedRef) {
     const feedUri = feedRef.uri;
-    await new Promise(r => setTimeout(r, 2000));
+    await new Promise((r) => setTimeout(r, 2000));
 
     await timedCall(result, "Get feed generator from AppView", async () => {
       // Note: XrpcClient.feed.getFeedGenerators handles join(",")
@@ -85,7 +92,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });
