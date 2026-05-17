@@ -7,7 +7,7 @@
     "doc:objc:mcss": "bash docs/generate-api-docs.sh --mcss",
     "doc:objc:serve": "bash docs/generate-api-docs.sh --serve",
     "doc:objc:clean": "bash docs/generate-api-docs.sh --clean",
-    "doc:coverage": "deno run -A docs/doc-coverage.ts ../Garazyk/Sources --min-overall 75 --min-subsystem AdminUIServer=55 --min-subsystem Chat=60 --min-subsystem Database=70",
+    "doc:coverage": "deno run -A docs/doc-coverage.ts ../Garazyk/Sources --min-overall 85 --min-subsystem Core=82 --min-subsystem Other=82 --min-subsystem AppView=85 --min-subsystem Services=85 --min-subsystem AdminUIServer=55 --min-subsystem Chat=60 --min-subsystem Database=70",
     "doc:ts-coverage": "deno run -A docs/tsdoc-coverage.ts lib/deno scenario-dashboard",
     "doc:ts-coverage:ci": "deno run -A docs/tsdoc-coverage.ts lib/deno --min-overall 65",
     "run-scenarios": "deno run -A run_scenarios.ts",
