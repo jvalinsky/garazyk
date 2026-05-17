@@ -174,12 +174,12 @@ jobs:
 
       - name: Run Objective-C Documentation Coverage
         run: |
-          deno run -A scripts/docs/doc-coverage.ts Garazyk/Sources --min-overall 85 --by-subsystem \
-            --min-subsystem Core=82 \
-            --min-subsystem Other=82 \
-            --min-subsystem AppView=85 \
-            --min-subsystem Services=85 \
-            --min-subsystem AdminUIServer=55 \
-            --min-subsystem Chat=60 \
-            --min-subsystem Database=70 \
-            --min-subsystem Blob=80
+          deno run -A scripts/docs/doc-coverage.ts Garazyk/Sources --min-overall 100 --by-subsystem \
+            --min-subsystem Core=100 \
+            --min-subsystem Other=100 \
+            --min-subsystem AppView=100 \
+            --min-subsystem Services=100 \
+            --min-subsystem AdminUIServer=100 \
+            --min-subsystem Chat=100 \
+            --min-subsystem Database=100 \
+            --min-subsystem Blob=100
