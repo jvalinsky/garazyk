@@ -1,6 +1,6 @@
 /** Toolbar island — topology selector, run/stop/restart controls, settings modal. @module Toolbar */
 import { useEffect } from "preact/hooks";
-import { useRuntime } from "../runtime.ts";
+import { IS_BROWSER, useRuntime } from "../runtime.ts";
 
 /** Toolbar island for topology selection and run controls. */
 export default function Toolbar() {

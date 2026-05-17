@@ -3,7 +3,8 @@
     "./packages/docker-client",
     "./packages/atproto-client",
     "./packages/atproto-topology",
-    "./packages/scenario-runner"
+    "./packages/scenario-runner",
+    "./scripts/scenario-dashboard"
   ],
   "imports": {
     "@std/path": "jsr:@std/path@0.224.0",
@@ -25,6 +26,7 @@
     "lint": "deno lint packages/ scripts/",
     "fmt": "deno fmt packages/ scripts/",
     "generate-client": "deno run -A packages/atproto-client/scripts/generate.ts",
-    "scenarios": "deno run -A scripts/run_scenarios.ts"
+    "scenarios": "deno run -A scripts/run_scenarios.ts",
+    "dashboard": "cd scripts/scenario-dashboard && deno task dev"
   }
 }

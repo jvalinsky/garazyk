@@ -3,7 +3,7 @@ import { signal } from "@preact/signals";
 import type { Cmd, DashboardState, Msg, RunProgress, TopologyPreview } from "./dashboard_state.ts";
 import { bootCmds, createInitialState, update } from "./dashboard_state.ts";
 
-const IS_BROWSER = typeof globalThis !== "undefined" && "document" in globalThis;
+export const IS_BROWSER = typeof globalThis !== "undefined" && "document" in globalThis;
 
 // Wraps a Preact Signal to present a non-nullable DashboardState type.
 // Preact Signal<T> resolves as value: T|undefined in the version served
