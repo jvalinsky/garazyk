@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -23,7 +23,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Identity Fatigue");
@@ -55,10 +54,14 @@ export async function run(): Promise<ScenarioResult> {
   let successCount = 0;
   for (let i = 0; i < rotations; i++) {
     try {
-      const tokenResp = await client.raw.xrpcPost("com.atproto.identity.requestPlcOperationSignature", {}, rosa.accessJwt);
+      const tokenResp = await client.raw.xrpcPost(
+        "com.atproto.identity.requestPlcOperationSignature",
+        {},
+        rosa.accessJwt,
+      );
       const signResp = await client.raw.xrpcPost("com.atproto.identity.signPlcOperation", {
         token: tokenResp.token,
-        alsoKnownAs: [`at://rev-${i}-${rosa.handle}`]
+        alsoKnownAs: [`at://rev-${i}-${rosa.handle}`],
       }, rosa.accessJwt);
 
       const op = { ...signResp.operation };
@@ -86,10 +89,14 @@ export async function run(): Promise<ScenarioResult> {
     result.stepPassed("Quota Exhaustion", `Successfully performed ${successCount} rotations`);
 
     // Final rotation should fail
-    const tokenResp = await client.raw.xrpcPost("com.atproto.identity.requestPlcOperationSignature", {}, rosa.accessJwt);
+    const tokenResp = await client.raw.xrpcPost(
+      "com.atproto.identity.requestPlcOperationSignature",
+      {},
+      rosa.accessJwt,
+    );
     const signResp = await client.raw.xrpcPost("com.atproto.identity.signPlcOperation", {
       token: tokenResp.token,
-      alsoKnownAs: [`at://final-${rosa.handle}`]
+      alsoKnownAs: [`at://final-${rosa.handle}`],
     }, rosa.accessJwt);
 
     const op = { ...signResp.operation };
@@ -105,7 +112,10 @@ export async function run(): Promise<ScenarioResult> {
     if (plcRes.status === 400 && body.includes("Too many operations")) {
       result.stepPassed("Verify Hourly Limit", "Rejected operation after limit reached");
     } else {
-      result.stepFailed("Verify Hourly Limit", `Expected 400 rejection, got ${plcRes.status}: ${body}`);
+      result.stepFailed(
+        "Verify Hourly Limit",
+        `Expected 400 rejection, got ${plcRes.status}: ${body}`,
+      );
     }
   }
 
@@ -114,7 +124,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

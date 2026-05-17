@@ -24,7 +24,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * @returns A promise that resolves to the scenario result
  */
 
-
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 // Covers: hard-delete of an account; assert records gone, blobs inaccessible, sessions revoked.
@@ -33,8 +32,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
 // Production paths: com.atproto.server.deleteAccount (body: {did, password}),
 //   com.atproto.repo.listRecords, com.atproto.sync.getRepo/getBlob,
 //   com.atproto.server.getSession.
-
-
 
 function now() {
   return new Date().toISOString();

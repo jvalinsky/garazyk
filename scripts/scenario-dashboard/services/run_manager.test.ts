@@ -70,7 +70,7 @@ Deno.test({
     }
 
     assertExists(r2.conflict);
-    
+
     // Cleanup
     if (!("conflict" in r1)) {
       await runManager.stopRun(r1.runId, false);

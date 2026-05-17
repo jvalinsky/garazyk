@@ -25,7 +25,10 @@
       "volumes": ["rsky_relay_data:/data"],
       "healthCheck": {
         "path": null,
-        "customTest": ["CMD-SHELL", "wget -qO- http://localhost:2584/xrpc/com.atproto.sync.subscribeRepos || exit 1"]
+        "customTest": [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:2584/xrpc/com.atproto.sync.subscribeRepos || exit 1"
+        ]
       },
       "capabilities": ["subscribeRepos", "requestCrawl", "healthCheck"],
       "dependsOn": ["local-pds"]
@@ -35,7 +38,16 @@
       "buildContext": "docker/local-network",
       "dockerfile": "Dockerfile.local",
       "entrypoint": ["/usr/local/bin/syrena"],
-      "command": ["serve", "--relay", "ws://local-relay:2584", "--port", "3200", "--data-dir", "/var/lib/atprotopds", "--no-backfill"],
+      "command": [
+        "serve",
+        "--relay",
+        "ws://local-relay:2584",
+        "--port",
+        "3200",
+        "--data-dir",
+        "/var/lib/atprotopds",
+        "--no-backfill"
+      ],
       "env": {
         "TZ": "UTC",
         "PDS_ALLOW_PRIVATE_SSRF": "1",

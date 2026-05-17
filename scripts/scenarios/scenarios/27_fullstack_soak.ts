@@ -12,13 +12,19 @@
  */
 
 import {
+  InstrumentationReport,
   OperationTimer,
   PhaseTimer,
   PrometheusScraper,
   StorageMonitor,
-  InstrumentationReport,
 } from "../../lib/deno/instrumentation.ts";
-import { PDS1, SERVICE_URLS, APPVIEW_ADMIN_SECRET, getCharacter, Character } from "../../lib/deno/config.ts";
+import {
+  APPVIEW_ADMIN_SECRET,
+  Character,
+  getCharacter,
+  PDS1,
+  SERVICE_URLS,
+} from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -32,7 +38,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-
 
 const WORKLOAD_SECONDS = 120;
 const WORKER_COUNT = 10;
@@ -48,7 +53,7 @@ function makeSoakCharacter(index: number): Character {
     `soak-${index}.test`,
     `soak-${index}@test.local`,
     `soak_pass_${index}`,
-    `High-volume soak test account ${index}`
+    `High-volume soak test account ${index}`,
   );
 }
 
@@ -97,24 +102,28 @@ export async function run(): Promise<ScenarioResult> {
     const activeAccounts: Character[] = [];
     for (const acc of accounts) {
       const session = await timedCall(
-        result, `Create account: ${acc.name}`,
+        result,
+        `Create account: ${acc.name}`,
         async () => {
-          return await timer.measure("create_account", () =>
-            client.accounts.createAccount(acc.handle, acc.email, acc.password)
+          return await timer.measure(
+            "create_account",
+            () => client.accounts.createAccount(acc.handle, acc.email, acc.password),
           );
-        }
+        },
       );
       if (session) {
         acc.did = session.did;
         acc.accessJwt = session.accessJwt;
         activeAccounts.push(acc);
 
-        await timer.measure("setup_profile", () =>
-          client.records.putRecord(acc.did, "app.bsky.actor.profile", "self", {
-            $type: "app.bsky.actor.profile",
-            displayName: acc.name,
-            description: acc.persona
-          }, acc.accessJwt)
+        await timer.measure(
+          "setup_profile",
+          () =>
+            client.records.putRecord(acc.did, "app.bsky.actor.profile", "self", {
+              $type: "app.bsky.actor.profile",
+              displayName: acc.name,
+              description: acc.persona,
+            }, acc.accessJwt),
         );
       }
     }
@@ -139,35 +148,41 @@ export async function run(): Promise<ScenarioResult> {
 
         try {
           if (op < 0.3) { // Post
-            const resp = await timer.measure("create_post", () =>
-              workerClient.records.createRecord(acc.did, "app.bsky.feed.post", {
-                $type: "app.bsky.feed.post",
-                text: `Soak post from worker ${id} at ${now()}`,
-                createdAt: now()
-              }, acc.accessJwt)
+            const resp = await timer.measure(
+              "create_post",
+              () =>
+                workerClient.records.createRecord(acc.did, "app.bsky.feed.post", {
+                  $type: "app.bsky.feed.post",
+                  text: `Soak post from worker ${id} at ${now()}`,
+                  createdAt: now(),
+                }, acc.accessJwt),
             );
             postPool.push({ uri: resp.uri, cid: resp.cid, author: acc.did });
           } else if (op < 0.5 && postPool.length > 0) { // Like
             const post = postPool[Math.floor(Math.random() * postPool.length)];
-            await timer.measure("create_like", () =>
-              workerClient.records.createRecord(acc.did, "app.bsky.feed.like", {
-                $type: "app.bsky.feed.like",
-                subject: { uri: post.uri, cid: post.cid },
-                createdAt: now()
-              }, acc.accessJwt)
+            await timer.measure(
+              "create_like",
+              () =>
+                workerClient.records.createRecord(acc.did, "app.bsky.feed.like", {
+                  $type: "app.bsky.feed.like",
+                  subject: { uri: post.uri, cid: post.cid },
+                  createdAt: now(),
+                }, acc.accessJwt),
             );
           } else if (op < 0.7) { // Timeline
-            await timer.measure("get_timeline", () =>
-              workerClient.feed.getTimeline(acc.accessJwt, 50)
+            await timer.measure(
+              "get_timeline",
+              () => workerClient.feed.getTimeline(acc.accessJwt, 50),
             );
           } else { // Notifications
-            await timer.measure("list_notifications", () =>
-              workerClient.notifications.listNotifications(acc.accessJwt, 50)
+            await timer.measure(
+              "list_notifications",
+              () => workerClient.notifications.listNotifications(acc.accessJwt, 50),
             );
           }
         } catch { /* ignore workload errors */ }
 
-        await new Promise(r => setTimeout(r, 100 + Math.random() * 200));
+        await new Promise((r) => setTimeout(r, 100 + Math.random() * 200));
       }
     };
 
@@ -177,7 +192,7 @@ export async function run(): Promise<ScenarioResult> {
 
     phaseTimer.startPhase("Consistency verification");
     // Wait for indexing
-    await new Promise(r => setTimeout(r, 5000));
+    await new Promise((r) => setTimeout(r, 5000));
 
     await timedCall(result, "PDS check", async () => {
       const resp = await client.accounts.describeServer();
@@ -188,7 +203,6 @@ export async function run(): Promise<ScenarioResult> {
       return await appview.raw.httpGet("/admin/backfill/status", undefined, adminToken);
     });
     phaseTimer.endPhase();
-
   } finally {
     const metricsTs = await promScraper.stop();
     const storageData = await storageMonitor.stop();
@@ -199,7 +213,7 @@ export async function run(): Promise<ScenarioResult> {
       metricsTs,
       {},
       storageData,
-      phaseTimer.toDict()
+      phaseTimer.toDict(),
     );
 
     result.recordArtifact("instrumentation", report.toDict());
@@ -212,7 +226,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

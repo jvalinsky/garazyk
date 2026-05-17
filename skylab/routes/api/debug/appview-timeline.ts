@@ -49,11 +49,10 @@ export const handler: Handlers = {
         payload = { raw: await resp.text() };
       }
 
-      const feedLen =
-        typeof payload === "object" && payload !== null &&
-        Array.isArray((payload as Record<string, unknown>).feed)
-          ? ((payload as Record<string, unknown>).feed as unknown[]).length
-          : 0;
+      const feedLen = typeof payload === "object" && payload !== null &&
+          Array.isArray((payload as Record<string, unknown>).feed)
+        ? ((payload as Record<string, unknown>).feed as unknown[]).length
+        : 0;
 
       return Response.json(
         {

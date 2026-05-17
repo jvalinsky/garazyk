@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -23,7 +23,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-
 
 function now() {
   return new Date().toISOString();
@@ -38,13 +37,15 @@ export async function run(): Promise<ScenarioResult> {
   const luna = getCharacter("luna");
   const marcus = getCharacter("marcus");
 
-  await timedCall(result, "PDS health check", async () => { await pds.waitForHealthy(30); });
+  await timedCall(result, "PDS health check", async () => {
+    await pds.waitForHealthy(30);
+  });
 
   if (result.failed > 0) return result;
 
   for (const char of [luna, marcus]) {
-    const session = await pds.accounts.createAccount(char.handle, char.email, char.password).catch(() =>
-      pds.accounts.createSession(char.handle, char.password)
+    const session = await pds.accounts.createAccount(char.handle, char.email, char.password).catch(
+      () => pds.accounts.createSession(char.handle, char.password),
     );
     if (session) {
       char.did = session.did;
@@ -61,7 +62,13 @@ export async function run(): Promise<ScenarioResult> {
   };
 
   const gatedRef = await timedCall(result, "Create post with no-reply gate", async () => {
-    return await pds.records.createRecord(luna.did, "app.bsky.feed.post", gatedPost, luna.accessJwt, { rkey: gatedRkey });
+    return await pds.records.createRecord(
+      luna.did,
+      "app.bsky.feed.post",
+      gatedPost,
+      luna.accessJwt,
+      { rkey: gatedRkey },
+    );
   });
 
   if (gatedRef) {
@@ -75,7 +82,13 @@ export async function run(): Promise<ScenarioResult> {
         allow: [],
         createdAt: now(),
       };
-      return await pds.records.createRecord(luna.did, "app.bsky.feed.threadgate", gateRecord, luna.accessJwt, { rkey: gatedRkey });
+      return await pds.records.createRecord(
+        luna.did,
+        "app.bsky.feed.threadgate",
+        gateRecord,
+        luna.accessJwt,
+        { rkey: gatedRkey },
+      );
     });
 
     const replyRecord = {
@@ -89,12 +102,18 @@ export async function run(): Promise<ScenarioResult> {
     };
 
     await timedCall(
-      result, "Verify Marcus's reply rejected (nobody gate)",
+      result,
+      "Verify Marcus's reply rejected (nobody gate)",
       async () => {
-        await pds.records.createRecord(marcus.did, "app.bsky.feed.post", replyRecord, marcus.accessJwt);
+        await pds.records.createRecord(
+          marcus.did,
+          "app.bsky.feed.post",
+          replyRecord,
+          marcus.accessJwt,
+        );
       },
       undefined,
-      true // Expect failure
+      true, // Expect failure
     );
   }
 
@@ -103,7 +122,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

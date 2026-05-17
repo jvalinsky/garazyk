@@ -15,7 +15,10 @@ export default function RunHistory({ runs }: RunHistoryProps) {
         <div class="card-header">
           <h2 class="card-title">Run History</h2>
         </div>
-        <div class="card-body" style="text-align: center; color: var(--color-text-secondary); padding: var(--space-2xl);">
+        <div
+          class="card-body"
+          style="text-align: center; color: var(--color-text-secondary); padding: var(--space-2xl);"
+        >
           No runs recorded yet.
         </div>
       </div>
@@ -42,13 +45,17 @@ export default function RunHistory({ runs }: RunHistoryProps) {
               <tr key={r.id}>
                 <td>{formatDate(r.startedAt)}</td>
                 <td>
-                  <a href={`/run/${r.id}`} style="color: var(--color-accent); text-decoration: none;">
+                  <a
+                    href={`/run/${r.id}`}
+                    style="color: var(--color-accent); text-decoration: none;"
+                  >
                     {r.id}
                   </a>
                 </td>
                 <td>
                   <span style="color: var(--color-success);">{r.passed}✓</span>{" "}
-                  {r.failed > 0 && <span style="color: var(--color-destructive);">{r.failed}✗</span>}{" "}
+                  {r.failed > 0 && <span style="color: var(--color-destructive);">{r.failed}✗
+                  </span>}{" "}
                   {r.skipped > 0 && <span style="color: var(--color-warning);">{r.skipped}⚠</span>}
                 </td>
                 <td>{r.durationS ? formatDurationSec(r.durationS) : "—"}</td>

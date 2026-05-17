@@ -24,6 +24,7 @@ interface RunPageData {
   }>;
 }
 
+/** Page handler for run detail data. */
 export const handler: Handlers<RunPageData> = {
   GET(_req, ctx) {
     const { runId } = ctx.params;
@@ -32,7 +33,7 @@ export const handler: Handlers<RunPageData> = {
       const run = fetchRun(db, runId);
 
       let scenarioResults: RunPageData["scenarioResults"] = [];
-      
+
       if (run) {
         scenarioResults = db.prepare(`
           SELECT scenario_id as scenarioId, scenario_name as scenarioName, status, passed, failed, skipped
@@ -50,6 +51,7 @@ export const handler: Handlers<RunPageData> = {
   },
 };
 
+/** Page component for run details. */
 export default function RunDetailPage({ data }: PageProps<RunPageData>) {
   const { runId, run, scenarioResults = [] } = data;
 
@@ -58,7 +60,10 @@ export default function RunDetailPage({ data }: PageProps<RunPageData>) {
       <Toolbar />
       <main class="main-content">
         <div style="margin-bottom: var(--space-lg);">
-          <a href="/" style="color: var(--color-accent); text-decoration: none; font-size: var(--font-size-sm);">
+          <a
+            href="/"
+            style="color: var(--color-accent); text-decoration: none; font-size: var(--font-size-sm);"
+          >
             ← Back to Dashboard
           </a>
         </div>
@@ -71,43 +76,58 @@ export default function RunDetailPage({ data }: PageProps<RunPageData>) {
             <div style="display: flex; gap: var(--space-xl); margin-bottom: var(--space-lg); font-size: var(--font-size-sm); color: var(--color-text-secondary); flex-wrap: wrap;">
               <span>Started: {formatDate(run.startedAt)}</span>
               {run.finishedAt && <span>Duration: {formatDurationSec(run.durationS ?? 0)}</span>}
-              <span class={`badge ${run.status === "completed" ? "badge-success" : run.status === "error" ? "badge-destructive" : "badge-warning"}`}>{run.status}</span>
+              <span
+                class={`badge ${
+                  run.status === "completed"
+                    ? "badge-success"
+                    : run.status === "error"
+                    ? "badge-destructive"
+                    : "badge-warning"
+                }`}
+              >
+                {run.status}
+              </span>
               {run.pds2 && <span class="badge badge-info">PDS2</span>}
               {run.binaryMode && <span class="badge badge-secondary">binary</span>}
             </div>
           </>
         )}
 
-        {run ? (
-          <>
-            <SummaryCards passed={run.passed} failed={run.failed} skipped={run.skipped} />
+        {run
+          ? (
+            <>
+              <SummaryCards passed={run.passed} failed={run.failed} skipped={run.skipped} />
 
-            {scenarioResults.length > 0 && (
-              <div class="scenario-grid">
-                {scenarioResults.map((sr) => (
-                  <ScenarioCard
-                    key={sr.scenarioId}
-                    id={sr.scenarioId}
-                    name={sr.scenarioName}
-                    status={sr.status as any}
-                    passed={sr.passed}
-                    failed={sr.failed}
-                    skipped={sr.skipped}
-                    runId={runId}
-                  />
-                ))}
+              {scenarioResults.length > 0 && (
+                <div class="scenario-grid">
+                  {scenarioResults.map((sr) => (
+                    <ScenarioCard
+                      key={sr.scenarioId}
+                      id={sr.scenarioId}
+                      name={sr.scenarioName}
+                      status={sr.status as any}
+                      passed={sr.passed}
+                      failed={sr.failed}
+                      skipped={sr.skipped}
+                      runId={runId}
+                    />
+                  ))}
+                </div>
+              )}
+
+              <LogViewer runId={runId} status={run.status} />
+            </>
+          )
+          : (
+            <div class="card">
+              <div
+                class="card-body"
+                style="text-align: center; color: var(--color-text-secondary); padding: var(--space-2xl);"
+              >
+                Run {runId} not found in database.
               </div>
-            )}
-
-            <LogViewer runId={runId} status={run.status} />
-          </>
-        ) : (
-          <div class="card">
-            <div class="card-body" style="text-align: center; color: var(--color-text-secondary); padding: var(--space-2xl);">
-              Run {runId} not found in database.
             </div>
-          </div>
-        )}
+          )}
       </main>
       <StatusBar />
     </Layout>

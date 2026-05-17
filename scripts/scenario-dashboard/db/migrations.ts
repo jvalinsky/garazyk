@@ -81,7 +81,9 @@ export function runMigrations(db: Database) {
 
 function getCurrentVersion(db: Database): number {
   try {
-    const row = db.prepare("SELECT MAX(version) as v FROM schema_migrations").get() as { v: number | null };
+    const row = db.prepare("SELECT MAX(version) as v FROM schema_migrations").get() as {
+      v: number | null;
+    };
     return row?.v || 0;
   } catch {
     return 0;

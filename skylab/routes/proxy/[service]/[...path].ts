@@ -10,7 +10,7 @@
  */
 
 import { Handlers } from "$fresh/server.ts";
-import { proxyRequest, proxyPassthrough } from "../../../services/proxy.ts";
+import { proxyPassthrough, proxyRequest } from "../../../services/proxy.ts";
 
 /**
  * Determine if a path should use binary passthrough instead of JSON proxy.

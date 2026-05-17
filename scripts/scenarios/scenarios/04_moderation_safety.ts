@@ -18,7 +18,7 @@
  */
 
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { PDS1, getCharacter, PDS_ADMIN_PASSWORD } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1, PDS_ADMIN_PASSWORD } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -38,11 +38,12 @@ export async function run(): Promise<ScenarioResult> {
   const client = new XrpcClient(PDS1);
 
   await timedCall(
-    result, "Server health check",
+    result,
+    "Server health check",
     async () => {
       const res = await fetch(`${PDS1}/xrpc/com.atproto.server.describeServer`);
       if (!res.ok) throw new Error("Server not healthy");
-    }
+    },
   );
 
   if (result.failed > 0) {
@@ -54,20 +55,28 @@ export async function run(): Promise<ScenarioResult> {
   for (const name of charNames) {
     const char = getCharacter(name);
     const session = await timedCall(
-      result, `Create account: ${char.name}`,
+      result,
+      `Create account: ${char.name}`,
       async () => {
         try {
-          const res = await client.agent.createAccount({ handle: char.handle, email: char.email, password: char.password });
+          const res = await client.agent.createAccount({
+            handle: char.handle,
+            email: char.email,
+            password: char.password,
+          });
           return res.data;
         } catch (e: any) {
           if (e.message && e.message.includes("already exists")) {
-            const res = await client.agent.login({ identifier: char.handle, password: char.password });
+            const res = await client.agent.login({
+              identifier: char.handle,
+              password: char.password,
+            });
             return res.data;
           }
           throw e;
         }
       },
-      (s) => `did=${s.did}`
+      (s) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -88,17 +97,19 @@ export async function run(): Promise<ScenarioResult> {
 
   const adminPassword = PDS_ADMIN_PASSWORD;
   const adminToken = await timedCall(
-    result, "Admin login",
+    result,
+    "Admin login",
     async () => {
       return await client.adminLogin(adminPassword);
     },
-    () => "obtained admin bearer"
+    () => "obtained admin bearer",
   );
 
   for (const name of charNames) {
     const char = getCharacter(name);
     await timedCall(
-      result, `Set profile: ${char.name}`,
+      result,
+      `Set profile: ${char.name}`,
       async () => {
         await client.raw.post("com.atproto.repo.createRecord", {
           repo: char.did,
@@ -107,14 +118,15 @@ export async function run(): Promise<ScenarioResult> {
             $type: "app.bsky.actor.profile",
             displayName: char.name,
             description: char.persona,
-          }
+          },
         }, char.accessJwt);
-      }
+      },
     );
   }
 
   const lunaPost = await timedCall(
-    result, "Luna posts stargazing content",
+    result,
+    "Luna posts stargazing content",
     async () => {
       const res = await client.raw.post("com.atproto.repo.createRecord", {
         repo: luna.did,
@@ -122,15 +134,16 @@ export async function run(): Promise<ScenarioResult> {
         record: {
           $type: "app.bsky.feed.post",
           text: "Beautiful night for stargazing! The Milky Way is visible tonight.",
-          createdAt: now()
-        }
+          createdAt: now(),
+        },
       }, luna.accessJwt);
       return res;
-    }
+    },
   );
 
   const trollSpam = await timedCall(
-    result, "Trollface posts spam",
+    result,
+    "Trollface posts spam",
     async () => {
       const res = await client.raw.post("com.atproto.repo.createRecord", {
         repo: troll.did,
@@ -138,17 +151,18 @@ export async function run(): Promise<ScenarioResult> {
         record: {
           $type: "app.bsky.feed.post",
           text: "BUY CRYPTO NOW!!! FREE MONEY!!! CLICK HERE!!!",
-          createdAt: now()
-        }
+          createdAt: now(),
+        },
       }, troll.accessJwt);
       return res;
-    }
+    },
   );
 
   let trollHarass = null;
   if (lunaPost) {
     trollHarass = await timedCall(
-      result, "Trollface harasses Luna",
+      result,
+      "Trollface harasses Luna",
       async () => {
         const res = await client.raw.post("com.atproto.repo.createRecord", {
           repo: troll.did,
@@ -159,31 +173,32 @@ export async function run(): Promise<ScenarioResult> {
             createdAt: now(),
             reply: {
               root: { uri: lunaPost.uri, cid: lunaPost.cid },
-              parent: { uri: lunaPost.uri, cid: lunaPost.cid }
-            }
-          }
+              parent: { uri: lunaPost.uri, cid: lunaPost.cid },
+            },
+          },
         }, troll.accessJwt);
         return res;
-      }
+      },
     );
   }
 
   if (trollHarass) {
     await timedCall(
-      result, "Luna reports harassment",
+      result,
+      "Luna reports harassment",
       async () => {
         const res = await client.raw.post("com.atproto.moderation.createReport", {
           reasonType: "com.atproto.moderation.defs#reasonRude",
           subject: {
             $type: "com.atproto.repo.strongRef",
             uri: trollHarass.uri,
-            cid: trollHarass.cid
+            cid: trollHarass.cid,
           },
-          reason: "Targeted harassment and personal attacks"
+          reason: "Targeted harassment and personal attacks",
         }, luna.accessJwt);
         return res;
       },
-      (r) => `report_id=${r.id}`
+      (r) => `report_id=${r.id}`,
     );
   } else {
     result.stepFailed("Luna reports harassment", "No harassment post to report");
@@ -191,30 +206,36 @@ export async function run(): Promise<ScenarioResult> {
 
   if (trollSpam) {
     await timedCall(
-      result, "Luna reports spam",
+      result,
+      "Luna reports spam",
       async () => {
         const res = await client.raw.post("com.atproto.moderation.createReport", {
           reasonType: "com.atproto.moderation.defs#reasonSpam",
           subject: {
             $type: "com.atproto.repo.strongRef",
             uri: trollSpam.uri,
-            cid: trollSpam.cid
+            cid: trollSpam.cid,
           },
-          reason: "Spam content — crypto scam"
+          reason: "Spam content — crypto scam",
         }, luna.accessJwt);
         return res;
       },
-      (r) => `report_id=${r.id}`
+      (r) => `report_id=${r.id}`,
     );
   }
 
   if (adminToken) {
     await timedCall(
-      result, "Admin checks Trollface status",
+      result,
+      "Admin checks Trollface status",
       async () => {
-        return await client.raw.get("com.atproto.admin.getSubjectStatus", { did: troll.did }, adminToken);
+        return await client.raw.get(
+          "com.atproto.admin.getSubjectStatus",
+          { did: troll.did },
+          adminToken,
+        );
       },
-      (s) => `status=${JSON.stringify(s)}`
+      (s) => `status=${JSON.stringify(s)}`,
     );
   } else {
     result.stepFailed("Admin checks Trollface status", "No admin token");
@@ -222,14 +243,15 @@ export async function run(): Promise<ScenarioResult> {
 
   if (adminToken) {
     await timedCall(
-      result, "Mod queries reports via Ozone",
+      result,
+      "Mod queries reports via Ozone",
       async () => {
         return await client.raw.get("tools.ozone.moderation.queryEvents", {
           types: "tools.ozone.moderation.defs#modEventReport",
-          subject: troll.did
+          subject: troll.did,
         }, adminToken);
       },
-      (e) => `count=${e.events?.length || 0}`
+      (e) => `count=${e.events?.length || 0}`,
     );
   } else {
     result.stepFailed("Mod queries reports via Ozone", "No admin token");
@@ -237,38 +259,40 @@ export async function run(): Promise<ScenarioResult> {
 
   if (trollHarass && adminToken) {
     await timedCall(
-      result, "Mod applies takedown via Ozone",
+      result,
+      "Mod applies takedown via Ozone",
       async () => {
         await client.raw.post("tools.ozone.moderation.emitEvent", {
           event: {
             $type: "tools.ozone.moderation.defs#modEventTakedown",
-            comment: "Harassment and spam — takedown applied by Mod Justice"
+            comment: "Harassment and spam — takedown applied by Mod Justice",
           },
           subject: {
             $type: "com.atproto.admin.defs#repoRef",
-            did: troll.did
+            did: troll.did,
           },
-          createdBy: mod.did
+          createdBy: mod.did,
         }, adminToken);
-      }
+      },
     );
   }
 
   if (adminToken) {
     await timedCall(
-      result, "Admin applies takedown on Trollface",
+      result,
+      "Admin applies takedown on Trollface",
       async () => {
         await client.raw.post("com.atproto.admin.updateSubjectStatus", {
           subject: {
             $type: "com.atproto.admin.defs#repoRef",
-            did: troll.did
+            did: troll.did,
           },
           takedown: {
             applied: true,
-            ref: "takedown-harassment-spam"
-          }
+            ref: "takedown-harassment-spam",
+          },
         }, adminToken);
-      }
+      },
     );
   } else {
     result.stepFailed("Admin applies takedown on Trollface", "No admin token");
@@ -276,13 +300,14 @@ export async function run(): Promise<ScenarioResult> {
 
   if (adminToken) {
     await timedCall(
-      result, "Labels query",
+      result,
+      "Labels query",
       async () => {
         return await client.raw.get("com.atproto.label.queryLabels", {
-          uriPatterns: trollHarass ? [trollHarass.uri] : []
+          uriPatterns: trollHarass ? [trollHarass.uri] : [],
         }, adminToken);
       },
-      (l) => `labels=${JSON.stringify(l)}`
+      (l) => `labels=${JSON.stringify(l)}`,
     );
   } else {
     result.stepFailed("Labels query", "No admin token");
@@ -290,24 +315,26 @@ export async function run(): Promise<ScenarioResult> {
 
   if (trollHarass) {
     await timedCall(
-      result, "Taken-down content is inaccessible",
+      result,
+      "Taken-down content is inaccessible",
       async () => {
         const rkey = trollHarass.uri.split("/").pop()!;
         await client.agent.com.atproto.repo.getRecord({
           repo: troll.did,
           collection: "app.bsky.feed.post",
-          rkey
+          rkey,
         });
       },
       undefined,
-      true
+      true,
     );
   } else {
     result.stepFailed("Taken-down content check", "No harassment post to verify");
   }
 
   await timedCall(
-    result, "Admin posts community notice",
+    result,
+    "Admin posts community notice",
     async () => {
       await client.raw.post("com.atproto.repo.createRecord", {
         repo: admin.did,
@@ -315,10 +342,10 @@ export async function run(): Promise<ScenarioResult> {
         record: {
           $type: "app.bsky.feed.post",
           text: "We've taken action against a spam/harassment account. Stay safe, everyone!",
-          createdAt: now()
-        }
+          createdAt: now(),
+        },
       }, admin.accessJwt);
-    }
+    },
   );
 
   result.finish();
@@ -326,7 +353,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

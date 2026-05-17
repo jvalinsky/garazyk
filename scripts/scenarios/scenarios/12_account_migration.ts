@@ -19,7 +19,7 @@ export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { PDS1, PDS2, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1, PDS2, SERVICE_URLS } from "../../lib/deno/config.ts";
 
 /**
  * Executes the scenario logic.
@@ -36,10 +36,11 @@ export async function run(): Promise<ScenarioResult> {
 
   for (const [name, client] of [["PDS1", pds1], ["PDS2", pds2]] as const) {
     await timedCall(
-      result, `${name} health check`,
+      result,
+      `${name} health check`,
       async () => {
         await client.waitForHealthy(30);
-      }
+      },
     );
   }
 
@@ -49,30 +50,33 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   await timedCall(
-    result, "PLC health check",
+    result,
+    "PLC health check",
     async () => {
       const res = await fetch(`${SERVICE_URLS.plc}/_health`);
       if (res.status !== 200) throw new Error(`PLC status=${res.status}`);
-    }
+    },
   );
 
   await timedCall(
-    result, "Create admin account on PDS1",
+    result,
+    "Create admin account on PDS1",
     async () => {
       const res = await pds1.accounts.createAccount(admin.handle, admin.email, admin.password);
       admin.did = res.did;
       return res;
     },
-    (s) => `did=${s.did}`
+    (s) => `did=${s.did}`,
   );
 
   const session = await timedCall(
-    result, "Create user account on PDS1",
+    result,
+    "Create user account on PDS1",
     async () => {
       const res = await pds1.accounts.createAccount(luna.handle, luna.email, luna.password);
       return res;
     },
-    (s) => `did=${s.did}`
+    (s) => `did=${s.did}`,
   );
 
   if (!session) {
@@ -92,22 +96,28 @@ export async function run(): Promise<ScenarioResult> {
 
   try {
     const tokenResp = await timedCall(
-      result, "Request PLC operation signature",
+      result,
+      "Request PLC operation signature",
       async () => {
-        return await pds1.raw.xrpcPost("com.atproto.identity.requestPlcOperationSignature", {}, luna.accessJwt);
-      }
+        return await pds1.raw.xrpcPost(
+          "com.atproto.identity.requestPlcOperationSignature",
+          {},
+          luna.accessJwt,
+        );
+      },
     );
     const token = tokenResp?.token;
 
     if (token) {
       const signResp1 = await timedCall(
-        result, `Sign handle rotation: ${newHandle1}`,
+        result,
+        `Sign handle rotation: ${newHandle1}`,
         async () => {
           return await pds1.raw.xrpcPost("com.atproto.identity.signPlcOperation", {
             token,
-            alsoKnownAs: [`at://${newHandle1}`]
+            alsoKnownAs: [`at://${newHandle1}`],
           }, luna.accessJwt);
-        }
+        },
       );
 
       if (signResp1) {
@@ -121,28 +131,37 @@ export async function run(): Promise<ScenarioResult> {
         if (plcRes.status === 200) {
           result.stepPassed("First handle rotation (Direct PLC)", `handle=${newHandle1}`);
         } else {
-          result.stepFailed("First handle rotation (Direct PLC)", `status=${plcRes.status} body=${await plcRes.text()}`);
+          result.stepFailed(
+            "First handle rotation (Direct PLC)",
+            `status=${plcRes.status} body=${await plcRes.text()}`,
+          );
         }
       }
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise((r) => setTimeout(r, 1000));
 
       const tokenResp2 = await timedCall(
-        result, "Request PLC signature (2nd)",
+        result,
+        "Request PLC signature (2nd)",
         async () => {
-          return await pds1.raw.xrpcPost("com.atproto.identity.requestPlcOperationSignature", {}, luna.accessJwt);
-        }
+          return await pds1.raw.xrpcPost(
+            "com.atproto.identity.requestPlcOperationSignature",
+            {},
+            luna.accessJwt,
+          );
+        },
       );
       const token2 = tokenResp2?.token;
 
       if (token2) {
         const signResp2 = await timedCall(
-          result, `Sign handle rotation: ${newHandle2}`,
+          result,
+          `Sign handle rotation: ${newHandle2}`,
           async () => {
             return await pds1.raw.xrpcPost("com.atproto.identity.signPlcOperation", {
               token: token2,
-              alsoKnownAs: [`at://${newHandle2}`]
+              alsoKnownAs: [`at://${newHandle2}`],
             }, luna.accessJwt);
-          }
+          },
         );
 
         if (signResp2) {
@@ -156,7 +175,10 @@ export async function run(): Promise<ScenarioResult> {
           if (plcRes2.status === 200) {
             result.stepPassed("Second handle rotation (Direct PLC)", `handle=${newHandle2}`);
           } else {
-            result.stepFailed("Second handle rotation (Direct PLC)", `status=${plcRes2.status} body=${await plcRes2.text()}`);
+            result.stepFailed(
+              "Second handle rotation (Direct PLC)",
+              `status=${plcRes2.status} body=${await plcRes2.text()}`,
+            );
           }
         }
       }
@@ -190,7 +212,8 @@ export async function run(): Promise<ScenarioResult> {
           const opData = op.operation || op;
           if (opData.prev !== lastCid) {
             isValid = false;
-            failureReason = `Chain broken at index ${i}: expected prev=${lastCid}, got ${opData.prev}`;
+            failureReason =
+              `Chain broken at index ${i}: expected prev=${lastCid}, got ${opData.prev}`;
             break;
           }
           lastCid = op.cid || opData.cid;
@@ -214,9 +237,15 @@ export async function run(): Promise<ScenarioResult> {
         }
 
         if (handlesSeen.has(newHandle1) && handlesSeen.has(newHandle2)) {
-          result.stepPassed("Verify handle updates in PLC", `Found handles: ${newHandle1}, ${newHandle2}`);
+          result.stepPassed(
+            "Verify handle updates in PLC",
+            `Found handles: ${newHandle1}, ${newHandle2}`,
+          );
         } else {
-          result.stepFailed("Verify handle updates in PLC", `Missing handle updates in log. Seen: ${Array.from(handlesSeen)}`);
+          result.stepFailed(
+            "Verify handle updates in PLC",
+            `Missing handle updates in log. Seen: ${Array.from(handlesSeen)}`,
+          );
         }
       }
     } else {
@@ -231,7 +260,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

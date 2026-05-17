@@ -1,6 +1,7 @@
 import { Handlers } from "$fresh/server.ts";
 import { networkManager } from "../../../services/network_manager.ts";
 
+/** API handler for stopping the network. */
 export const handler: Handlers = {
   async POST(_req) {
     try {
