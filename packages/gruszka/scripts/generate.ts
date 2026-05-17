@@ -1,28 +1,142 @@
-import { expandGlob } from "https://deno.land/std@0.224.0/fs/expand_glob.ts";
-import { dirname, join } from "https://deno.land/std@0.224.0/path/mod.ts";
+import { expandGlob } from "@std/fs/expand-glob";
+import { dirname, fromFileUrl, join, relative } from "@std/path";
 
-const LEXICONS_DIR = join(Deno.cwd(), "../../lexicons");
-const OUT_FILE = join(Deno.cwd(), "lexicons.ts");
+const SCRIPT_DIR = dirname(fromFileUrl(import.meta.url));
+const PACKAGE_DIR = dirname(SCRIPT_DIR);
+const REPO_ROOT = dirname(dirname(PACKAGE_DIR));
+const DEFAULT_LEXICONS_DIR = join(REPO_ROOT, "lexicons");
+const DEFAULT_OUT_FILE = join(PACKAGE_DIR, "lexicons.ts");
 
 interface LexiconDoc {
   lexicon: number;
   id: string;
-  defs: Record<string, any>;
+  defs: Record<string, LexiconDef>;
 }
 
-async function main() {
-  const docs: LexiconDoc[] = [];
-  for await (const file of expandGlob(join(LEXICONS_DIR, "**/*.json"))) {
+interface LexiconDef {
+  type?: string;
+  parameters?: LexiconParams;
+  input?: LexiconBody;
+  output?: LexiconBody;
+  record?: LexiconSchema;
+}
+
+interface LexiconParams {
+  properties?: Record<string, LexiconSchema>;
+  required?: string[];
+}
+
+interface LexiconBody {
+  schema?: LexiconSchema;
+}
+
+interface LexiconSchema {
+  type?: string;
+  properties?: Record<string, LexiconSchema>;
+  required?: string[];
+  items?: LexiconSchema;
+}
+
+interface LocatedLexiconDoc {
+  doc: LexiconDoc;
+  path: string;
+}
+
+export interface GenerateLexiconsOptions {
+  lexiconsDir?: string;
+  outFile?: string;
+}
+
+export interface GenerateLexiconsResult {
+  lexiconCount: number;
+  outFile: string;
+}
+
+export async function generateLexicons(
+  options: GenerateLexiconsOptions = {},
+): Promise<GenerateLexiconsResult> {
+  const lexiconsDir = options.lexiconsDir ?? DEFAULT_LEXICONS_DIR;
+  const outFile = options.outFile ?? DEFAULT_OUT_FILE;
+  const docs: LocatedLexiconDoc[] = [];
+  for await (const file of expandGlob(join(lexiconsDir, "**/*.json"))) {
     if (file.isFile) {
       const text = await Deno.readTextFile(file.path);
       try {
-        docs.push(JSON.parse(text));
+        docs.push({ doc: JSON.parse(text) as LexiconDoc, path: file.path });
       } catch (e) {
         console.error(`Error parsing ${file.path}:`, e);
       }
     }
   }
 
+  const selectedDocs = selectCanonicalDocs(docs, lexiconsDir);
+
+  const generated = renderLexicons(selectedDocs);
+
+  await Deno.mkdir(dirname(outFile), { recursive: true });
+  await Deno.writeTextFile(outFile, generated.source);
+  return { lexiconCount: generated.lexiconCount, outFile };
+}
+
+async function main() {
+  const result = await generateLexicons();
+  console.log(`Wrote ${result.lexiconCount} lexicons to ${result.outFile}`);
+}
+
+function selectCanonicalDocs(
+  docs: LocatedLexiconDoc[],
+  lexiconsDir: string,
+): LexiconDoc[] {
+  const byId = new Map<string, LocatedLexiconDoc[]>();
+  for (const doc of docs) {
+    const current = byId.get(doc.doc.id) ?? [];
+    current.push(doc);
+    byId.set(doc.doc.id, current);
+  }
+
+  const selected: LocatedLexiconDoc[] = [];
+  const duplicateErrors: string[] = [];
+
+  for (const [id, candidates] of byId) {
+    if (candidates.length === 1) {
+      selected.push(candidates[0]);
+      continue;
+    }
+
+    const canonicalPath = join(lexiconsDir, ...id.split(".")) + ".json";
+    const canonicalCandidates = candidates.filter((candidate) =>
+      candidate.path === canonicalPath
+    );
+    if (canonicalCandidates.length === 1) {
+      selected.push(canonicalCandidates[0]);
+      continue;
+    }
+
+    const paths = candidates
+      .map((candidate) => relative(lexiconsDir, candidate.path))
+      .sort();
+    duplicateErrors.push(
+      `${id}: ${paths.join(", ")} (expected canonical path ${
+        relative(lexiconsDir, canonicalPath)
+      })`,
+    );
+  }
+
+  if (duplicateErrors.length > 0) {
+    throw new Error(
+      `Duplicate lexicon ids without a unique canonical path:\n${
+        duplicateErrors.sort().join("\n")
+      }`,
+    );
+  }
+
+  return selected.map(({ doc }) => doc);
+}
+
+function renderLexicons(docs: LexiconDoc[]): {
+  source: string;
+  lexiconCount: number;
+} {
   docs.sort((a, b) => a.id.localeCompare(b.id));
 
   let out = `// GENERATED CODE - DO NOT EDIT
@@ -67,7 +181,7 @@ export interface Lexicons {
             const required = mainDef.parameters.required?.includes(key)
               ? ""
               : "?";
-            out += `      "${key}"${required}: ${mapType(prop as any)};\n`;
+            out += `      "${key}"${required}: ${mapType(prop)};\n`;
           }
           out += `    };\n`;
         } else {
@@ -127,7 +241,10 @@ export interface GeneratedClient {
 `;
 
   // Build the tree
-  const tree: any = {};
+  interface ClientTree {
+    [key: string]: LexiconDoc | ClientTree;
+  }
+  const tree: ClientTree = {};
   for (const doc of validDocs) {
     if (doc.defs["main"].type === "record") continue;
     const parts = doc.id.split(".");
@@ -138,18 +255,22 @@ export interface GeneratedClient {
         current[part] = doc;
       } else {
         current[part] = current[part] || {};
-        current = current[part];
+        current = current[part] as ClientTree;
       }
     }
   }
 
-  function generateInterface(node: any, indent: string): string {
+  function isLexiconDoc(value: LexiconDoc | ClientTree): value is LexiconDoc {
+    return "id" in value && typeof value.id === "string";
+  }
+
+  function generateInterface(node: ClientTree, indent: string): string {
     let result = "";
     const entries = Object.entries(node).sort(([a], [b]) => a.localeCompare(b));
     for (const [key, value] of entries) {
-      if (value.id) {
+      if (isLexiconDoc(value)) {
         // It's a leaf (method)
-        const doc = value as LexiconDoc;
+        const doc = value;
         const isQuery = doc.defs["main"].type === "query";
         if (isQuery) {
           result +=
@@ -171,12 +292,10 @@ export interface GeneratedClient {
   out += generateInterface(tree, "  ");
   out += "}\n";
 
-  await Deno.mkdir(dirname(OUT_FILE), { recursive: true });
-  await Deno.writeTextFile(OUT_FILE, out);
-  console.log(`Wrote ${validDocs.length} lexicons to ${OUT_FILE}`);
+  return { source: out, lexiconCount: validDocs.length };
 }
 
-function mapType(prop: any): string {
+function mapType(prop: LexiconSchema): string {
   if (prop.type === "string") return "string";
   if (prop.type === "integer" || prop.type === "number") return "number";
   if (prop.type === "boolean") return "boolean";
@@ -190,7 +309,7 @@ function mapType(prop: any): string {
   return "any";
 }
 
-function mapSchema(schema: any): string {
+function mapSchema(schema: LexiconSchema | undefined): string {
   if (!schema) return "any";
   if (schema.type === "object" && schema.properties) {
     let out = "{\n";

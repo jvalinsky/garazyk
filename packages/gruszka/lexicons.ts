@@ -68,18 +68,6 @@ export interface Lexicons {
       "joinedViaStarterPack"?: any /* ref */;
     };
   };
-  "app.bsky.actor.profile": {
-    type: "record";
-    record: {
-      "displayName"?: string;
-      "description"?: string;
-      "avatar"?: any /* blob */;
-      "banner"?: any /* blob */;
-      "labels"?: any /* union */;
-      "joinedViaStarterPack"?: any /* ref */;
-      "createdAt"?: string;
-    };
-  };
   "app.bsky.actor.putPreferences": {
     type: "procedure";
     input: {
@@ -521,27 +509,6 @@ export interface Lexicons {
       "via"?: any /* ref */;
     };
   };
-  "app.bsky.feed.like": {
-    type: "record";
-    record: {
-      "subject": any /* ref */;
-      "createdAt": string;
-    };
-  };
-  "app.bsky.feed.post": {
-    type: "record";
-    record: {
-      "text": string;
-      "entities"?: Array<any /* ref */>;
-      "facets"?: Array<any /* ref */>;
-      "reply"?: any /* ref */;
-      "embed"?: any /* union */;
-      "langs"?: Array<string>;
-      "labels"?: any /* union */;
-      "tags"?: Array<string>;
-      "createdAt": string;
-    };
-  };
   "app.bsky.feed.post": {
     type: "record";
     record: {
@@ -571,13 +538,6 @@ export interface Lexicons {
       "subject": any /* ref */;
       "createdAt": string;
       "via"?: any /* ref */;
-    };
-  };
-  "app.bsky.feed.repost": {
-    type: "record";
-    record: {
-      "subject": any /* ref */;
-      "createdAt": string;
     };
   };
   "app.bsky.feed.searchPosts": {
@@ -618,14 +578,6 @@ export interface Lexicons {
       "allow"?: Array<any /* union */>;
       "createdAt": string;
       "hiddenReplies"?: Array<string>;
-    };
-  };
-  "app.bsky.feed.threadgate": {
-    type: "record";
-    record: {
-      "post": string;
-      "allow"?: Array<any /* union */>;
-      "createdAt": string;
     };
   };
   "app.bsky.graph.block": {
@@ -1512,12 +1464,6 @@ export interface Lexicons {
     input: never;
     output: {
       "jobStatus": any /* ref */;
-    };
-  };
-  "blue.linkat.board": {
-    type: "record";
-    record: {
-      "cards": Array<any /* ref */>;
     };
   };
   "blue.linkat.board": {
