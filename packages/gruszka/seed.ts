@@ -1,6 +1,7 @@
 /** Seed data helpers for ATProto E2E tests — accounts, posts, chat interactions. @module seed */
 import { XrpcClient } from "./client.ts";
 import { XrpcError } from "./transport.ts";
+import type { GeneratedClient as ExactGeneratedClient } from "./lexicons.ts";
 import type { ProcedureOutput, QueryOutput } from "./lexicons.ts";
 
 /** Default test accounts used by seed data helpers. */
@@ -29,6 +30,10 @@ export function nowIso(): string {
   return new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
+function exactApi(client: XrpcClient): ExactGeneratedClient {
+  return client.api as unknown as ExactGeneratedClient;
+}
+
 /**
  * Wait for a PDS server to respond with HTTP 200 on its `/_health` endpoint.
  *
@@ -36,7 +41,10 @@ export function nowIso(): string {
  * @param timeout - Maximum seconds to wait. @defaultValue 30
  * @throws If the server does not become healthy within the timeout
  */
-export async function waitForServer(baseUrl: string, timeout = 30): Promise<void> {
+export async function waitForServer(
+  baseUrl: string,
+  timeout = 30,
+): Promise<void> {
   const deadline = Date.now() + timeout * 1000;
   let lastError = "not attempted";
   while (Date.now() < deadline) {
@@ -67,14 +75,15 @@ export async function createAccountOrLogin(
   email: string,
   password: string,
 ): Promise<ProcedureOutput<"com.atproto.server.createSession">> {
+  const api = exactApi(client);
   try {
-    return await client.api.com.atproto.server.createAccount({
+    return await api.com.atproto.server.createAccount({
       email,
       handle,
       password,
     }) as any;
   } catch {
-    return await client.api.com.atproto.server.createSession({
+    return await api.com.atproto.server.createSession({
       identifier: handle,
       password,
     });
@@ -99,16 +108,21 @@ export async function createRecordIdempotent(
   collection: string,
   record: Record<string, unknown>,
   token: string,
-): Promise<ProcedureOutput<"com.atproto.repo.createRecord"> | Record<string, never>> {
+): Promise<
+  ProcedureOutput<"com.atproto.repo.createRecord"> | Record<string, never>
+> {
+  const api = exactApi(client);
   try {
-    return await client.api.com.atproto.repo.createRecord({
+    return await api.com.atproto.repo.createRecord({
       repo,
       collection,
       record,
     }, token);
   } catch (exc) {
     if (exc instanceof XrpcError && exc.status === 400) {
-      const body = typeof exc.body === "string" ? exc.body : JSON.stringify(exc.body);
+      const body = typeof exc.body === "string"
+        ? exc.body
+        : JSON.stringify(exc.body);
       if (body.toLowerCase().includes("already exists")) return {};
     }
     throw exc;
@@ -136,7 +150,10 @@ export interface ChatServiceContext {
  * @param configured - Optional explicit DID override
  * @returns The chat service DID
  */
-export function chatServiceDidForUrl(baseUrl: string, configured?: string): string {
+export function chatServiceDidForUrl(
+  baseUrl: string,
+  configured?: string,
+): string {
   if (configured?.trim()) {
     const serviceDid = configured.trim();
     return serviceDid.includes("#") ? serviceDid : `${serviceDid}#bsky_chat`;
@@ -190,13 +207,16 @@ export async function chatServiceAuthForMethod(
   accessJwt: string,
   method: string,
 ): Promise<string> {
-  const response = await context.pdsClient.api.com.atproto.server.getServiceAuth({
-    aud: context.serviceDid,
-    lxm: method,
-  }, accessJwt);
+  const response = await context.pdsClient.api.com.atproto.server
+    .getServiceAuth({
+      aud: context.serviceDid,
+      lxm: method,
+    }, accessJwt);
   const token = String((response as any)?.token || "");
   if (!token) {
-    throw new Error(`com.atproto.server.getServiceAuth did not return a token for ${method}`);
+    throw new Error(
+      `com.atproto.server.getServiceAuth did not return a token for ${method}`,
+    );
   }
   return token;
 }
@@ -249,9 +269,14 @@ export async function chatGetConvoForMembers(
   accessJwt: string,
   memberDids: string[],
 ): Promise<QueryOutput<"chat.bsky.convo.getConvoForMembers">> {
-  return await chatXrpcGet(context, accessJwt, "chat.bsky.convo.getConvoForMembers", {
-    members: memberDids,
-  });
+  return await chatXrpcGet(
+    context,
+    accessJwt,
+    "chat.bsky.convo.getConvoForMembers",
+    {
+      members: memberDids,
+    },
+  );
 }
 
 /**
@@ -286,7 +311,9 @@ export async function chatListConvos(
   accessJwt: string,
   limit = 20,
 ): Promise<QueryOutput<"chat.bsky.convo.listConvos">> {
-  return await chatXrpcGet(context, accessJwt, "chat.bsky.convo.listConvos", { limit });
+  return await chatXrpcGet(context, accessJwt, "chat.bsky.convo.listConvos", {
+    limit,
+  });
 }
 
 /**
@@ -315,7 +342,7 @@ export async function getConvoForMembers(
   jwt: string,
   memberDids: string[],
 ): Promise<QueryOutput<"chat.bsky.convo.getConvoForMembers">> {
-  return await client.api.chat.bsky.convo.getConvoForMembers({
+  return await exactApi(client).chat.bsky.convo.getConvoForMembers({
     members: memberDids,
   }, jwt);
 }
@@ -327,7 +354,7 @@ export async function sendMessage(
   convoId: string,
   text: string,
 ): Promise<ProcedureOutput<"chat.bsky.convo.sendMessage">> {
-  return await client.api.chat.bsky.convo.sendMessage({
+  return await exactApi(client).chat.bsky.convo.sendMessage({
     convoId,
     message: { text },
   }, jwt);
@@ -339,7 +366,7 @@ export async function listConvos(
   jwt: string,
   limit = 20,
 ): Promise<QueryOutput<"chat.bsky.convo.listConvos">> {
-  return await client.api.chat.bsky.convo.listConvos({ limit }, jwt);
+  return await exactApi(client).chat.bsky.convo.listConvos({ limit }, jwt);
 }
 
 /** Get messages in a chat conversation (direct XRPC, no service auth). */
@@ -349,5 +376,8 @@ export async function getMessages(
   convoId: string,
   limit = 50,
 ): Promise<QueryOutput<"chat.bsky.convo.getMessages">> {
-  return await client.api.chat.bsky.convo.getMessages({ convoId, limit }, jwt);
+  return await exactApi(client).chat.bsky.convo.getMessages(
+    { convoId, limit },
+    jwt,
+  );
 }

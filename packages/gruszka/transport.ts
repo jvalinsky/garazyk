@@ -14,7 +14,11 @@ export class XrpcError extends Error {
    * @param status - The HTTP status code
    * @param body - The response body
    */
-  constructor(public method: string, public status: number, public body: any) {
+  constructor(
+    public method: string,
+    public status: number,
+    public body: unknown,
+  ) {
     super(
       `XRPC ${method} failed (${status}): ${
         typeof body === "object" ? JSON.stringify(body) : body
@@ -41,8 +45,12 @@ export class TransportError extends Error {
     originalCause: unknown,
     public readonly attempt: number,
   ) {
-    const causeMsg = originalCause instanceof Error ? originalCause.message : String(originalCause);
-    super(`Transport ${method} ${url} failed (attempt ${attempt}): ${causeMsg}`);
+    const causeMsg = originalCause instanceof Error
+      ? originalCause.message
+      : String(originalCause);
+    super(
+      `Transport ${method} ${url} failed (attempt ${attempt}): ${causeMsg}`,
+    );
     this.name = "TransportError";
     this.cause = originalCause;
   }
@@ -64,7 +72,7 @@ export interface RequestOptions {
  * @param url - The URL object to append params to
  * @param params - The query parameters object
  */
-function appendQueryParams(url: URL, params?: Record<string, any>) {
+function appendQueryParams(url: URL, params?: Record<string, unknown>) {
   if (!params) return;
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== null) {
@@ -88,7 +96,9 @@ function appendQueryParams(url: URL, params?: Record<string, any>) {
  */
 export class TransportLayer {
   private _baseUrl: string;
-  private _lastResponses: Array<{ method: string; status: number; body: any; time: number }> = [];
+  private _lastResponses: Array<
+    { method: string; status: number; body: unknown; time: number }
+  > = [];
   private _maxAttempts = 3;
   private _baseDelay = 1000;
 
@@ -106,12 +116,19 @@ export class TransportLayer {
   }
 
   /** History of the last 20 responses */
-  get lastResponses(): Array<{ method: string; status: number; body: any; time: number }> {
+  get lastResponses(): Array<
+    { method: string; status: number; body: unknown; time: number }
+  > {
     return [...this._lastResponses];
   }
 
   /** The most recent response */
-  get lastResponse(): { method: string; status: number; body: any; time: number } | null {
+  get lastResponse(): {
+    method: string;
+    status: number;
+    body: unknown;
+    time: number;
+  } | null {
     return this._lastResponses.length > 0
       ? this._lastResponses[this._lastResponses.length - 1]
       : null;
@@ -123,7 +140,7 @@ export class TransportLayer {
    * @param status - The HTTP status code
    * @param body - The response body
    */
-  private _record(method: string, status: number, body: any): void {
+  private _record(method: string, status: number, body: unknown): void {
     this._lastResponses.push({ method, status, body, time: Date.now() / 1000 });
     if (this._lastResponses.length > 20) {
       this._lastResponses.shift();
@@ -151,13 +168,15 @@ export class TransportLayer {
     // Mutations (POST, PUT, DELETE, PATCH) are not idempotent — don't retry by default.
     const httpMethod = (options.method || "GET").toUpperCase();
     const isIdempotent = /^(GET|HEAD|OPTIONS)$/.test(httpMethod);
-    const maxAttempts = transportOptions?.maxRetries ?? (isIdempotent ? this._maxAttempts : 1);
-    const retryableStatuses = transportOptions?.retryableStatuses ?? DEFAULT_RETRYABLE_STATUSES;
+    const maxAttempts = transportOptions?.maxRetries ??
+      (isIdempotent ? this._maxAttempts : 1);
+    const retryableStatuses = transportOptions?.retryableStatuses ??
+      DEFAULT_RETRYABLE_STATUSES;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         const response = await fetch(targetUrl.toString(), options);
-        let body: any;
+        let body: unknown;
         const text = await response.text();
         try {
           body = JSON.parse(text);
@@ -168,15 +187,22 @@ export class TransportLayer {
         this._record(method, response.status, body);
 
         // Retry on retryable HTTP statuses (e.g. 429, 502, 503, 504)
-        if (retryableStatuses.includes(response.status) && attempt < maxAttempts) {
+        if (
+          retryableStatuses.includes(response.status) && attempt < maxAttempts
+        ) {
           await new Promise((r) => setTimeout(r, this._baseDelay * attempt));
           continue;
         }
 
-        return { status: response.status, body };
+        return { status: response.status, body: body as T };
       } catch (error) {
         if (attempt === maxAttempts) {
-          throw new TransportError(method, targetUrl.toString(), error, attempt);
+          throw new TransportError(
+            method,
+            targetUrl.toString(),
+            error,
+            attempt,
+          );
         }
         await new Promise((r) => setTimeout(r, this._baseDelay * attempt));
       }
@@ -194,13 +220,20 @@ export class TransportLayer {
    * @returns The JSON response body
    * @throws XrpcError if the response status is >= 400
    */
-  async get<T = any>(method: string, params?: Record<string, any>, token?: string): Promise<T> {
+  async get<T = unknown>(
+    method: string,
+    params?: Record<string, unknown>,
+    token?: string,
+  ): Promise<T> {
     const url = new URL(`/xrpc/${method}`, this._baseUrl);
     appendQueryParams(url, params);
     const headers: Record<string, string> = {};
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
-    const res = await this.request<T>(method, url.toString(), { method: "GET", headers });
+    const res = await this.request<T>(method, url.toString(), {
+      method: "GET",
+      headers,
+    });
     if (res.status >= 400) {
       throw new XrpcError(method, res.status, res.body);
     }
@@ -216,9 +249,15 @@ export class TransportLayer {
    * @returns The JSON response body
    * @throws XrpcError if the response status is >= 400
    */
-  async post<T = any>(method: string, body?: any, token?: string): Promise<T> {
+  async post<T = unknown>(
+    method: string,
+    body?: unknown,
+    token?: string,
+  ): Promise<T> {
     const url = new URL(`/xrpc/${method}`, this._baseUrl);
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
     const res = await this.request<T>(method, url.toString(), {
@@ -242,7 +281,7 @@ export class TransportLayer {
    * @returns The JSON response body
    * @throws XrpcError if the response status is >= 400
    */
-  async postBinary<T = any>(
+  async postBinary<T = unknown>(
     method: string,
     data: Uint8Array,
     contentType: string,
@@ -272,13 +311,20 @@ export class TransportLayer {
    * @returns The response body
    * @throws XrpcError if the status is >= 400
    */
-  async httpGet<T = any>(path: string, params?: Record<string, any>, token?: string): Promise<T> {
+  async httpGet<T = unknown>(
+    path: string,
+    params?: Record<string, unknown>,
+    token?: string,
+  ): Promise<T> {
     const url = new URL(path, this._baseUrl);
     appendQueryParams(url, params);
     const headers: Record<string, string> = {};
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
-    const res = await this.request<T>(path, url.toString(), { method: "GET", headers });
+    const res = await this.request<T>(path, url.toString(), {
+      method: "GET",
+      headers,
+    });
     if (res.status >= 400) {
       throw new XrpcError(path, res.status, res.body);
     }
@@ -294,9 +340,15 @@ export class TransportLayer {
    * @returns The response body
    * @throws XrpcError if the status is >= 400
    */
-  async httpPost<T = any>(path: string, body?: any, token?: string): Promise<T> {
+  async httpPost<T = unknown>(
+    path: string,
+    body?: unknown,
+    token?: string,
+  ): Promise<T> {
     const url = new URL(path, this._baseUrl);
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
     const res = await this.request<T>(path, url.toString(), {
@@ -321,7 +373,7 @@ export class TransportLayer {
    */
   async getBinary(
     method: string,
-    params?: Record<string, any>,
+    params?: Record<string, unknown>,
     token?: string,
     headers?: Record<string, string>,
   ): Promise<[number, string, Uint8Array]> {
@@ -333,12 +385,22 @@ export class TransportLayer {
     const maxAttempts = this._maxAttempts; // GET is idempotent — safe to retry
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        const response = await fetch(url.toString(), { method: "GET", headers: mergedHeaders });
+        const response = await fetch(url.toString(), {
+          method: "GET",
+          headers: mergedHeaders,
+        });
         const data = await response.arrayBuffer();
-        this._record(method, response.status, `binary: ${data.byteLength} bytes`);
+        this._record(
+          method,
+          response.status,
+          `binary: ${data.byteLength} bytes`,
+        );
 
         // Retry on retryable HTTP statuses
-        if (DEFAULT_RETRYABLE_STATUSES.includes(response.status) && attempt < maxAttempts) {
+        if (
+          DEFAULT_RETRYABLE_STATUSES.includes(response.status) &&
+          attempt < maxAttempts
+        ) {
           await new Promise((r) => setTimeout(r, this._baseDelay * attempt));
           continue;
         }

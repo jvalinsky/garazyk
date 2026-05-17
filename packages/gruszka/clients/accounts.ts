@@ -19,7 +19,11 @@ export class AccountsClient {
    * @returns A promise that resolves to the account creation response or session object
    * @throws XrpcError if the request fails
    */
-  async createAccount(handle: string, email: string, password: string): Promise<any> {
+  async createAccount(
+    handle: string,
+    email: string,
+    password: string,
+  ): Promise<any> {
     try {
       return await this.transport.post("com.atproto.server.createAccount", {
         email,
@@ -29,7 +33,8 @@ export class AccountsClient {
     } catch (exc) {
       // If account already exists, just login to get a session
       if (exc instanceof XrpcError && exc.status === 400) {
-        const msg = String(exc.body?.message || "").toLowerCase();
+        const body = exc.body as { message?: unknown } | null;
+        const msg = String(body?.message || "").toLowerCase();
         if (msg.includes("already exists")) {
           return await this.createSession(handle, password);
         }
@@ -59,7 +64,11 @@ export class AccountsClient {
    * @throws XrpcError if the request fails
    */
   async getSession(token: string): Promise<any> {
-    return await this.transport.get("com.atproto.server.getSession", undefined, token);
+    return await this.transport.get(
+      "com.atproto.server.getSession",
+      undefined,
+      token,
+    );
   }
 
   /**
@@ -69,7 +78,11 @@ export class AccountsClient {
    * @throws XrpcError if the request fails
    */
   async refreshSession(refreshJwt: string): Promise<any> {
-    return await this.transport.post("com.atproto.server.refreshSession", undefined, refreshJwt);
+    return await this.transport.post(
+      "com.atproto.server.refreshSession",
+      undefined,
+      refreshJwt,
+    );
   }
 
   /**
@@ -79,7 +92,11 @@ export class AccountsClient {
    */
   async deleteSession(token: string): Promise<void> {
     try {
-      await this.transport.post("com.atproto.server.deleteSession", undefined, token);
+      await this.transport.post(
+        "com.atproto.server.deleteSession",
+        undefined,
+        token,
+      );
     } catch {
       // Best effort
     }
@@ -92,7 +109,11 @@ export class AccountsClient {
    * @throws XrpcError if the request fails
    */
   async deactivateAccount(token: string): Promise<any> {
-    return await this.transport.post("com.atproto.server.deactivateAccount", undefined, token);
+    return await this.transport.post(
+      "com.atproto.server.deactivateAccount",
+      undefined,
+      token,
+    );
   }
 
   /**

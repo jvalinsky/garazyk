@@ -12,6 +12,12 @@ export class FirehoseEvent {
   /** Raw payload for the firehose event. */
   public payload: any | Uint8Array;
 
+  /**
+   * Create a firehose event.
+   * @param seq - Sequence number reported by the firehose event.
+   * @param type - Event type reported by the firehose event.
+   * @param payload - Raw event payload.
+   */
   constructor(seq: number, type: string, payload: any | Uint8Array) {
     this.seq = seq;
     this.type = type;
@@ -29,7 +35,10 @@ export class FirehoseClient {
 
   /** Create a firehose client connected to the given relay. */
   constructor(relayUrl = "ws://localhost:2584") {
-    this.wsUrl = relayUrl.replace("http://", "ws://").replace("https://", "wss://").replace(
+    this.wsUrl = relayUrl.replace("http://", "ws://").replace(
+      "https://",
+      "wss://",
+    ).replace(
       /\/$/,
       "",
     );
@@ -112,7 +121,11 @@ export class FirehoseClient {
   }
 
   /** Subscribe for the given duration and collect all received events into an array. */
-  collect(durationS = 5.0, cursor?: number, signal?: AbortSignal): Promise<FirehoseEvent[]> {
+  collect(
+    durationS = 5.0,
+    cursor?: number,
+    signal?: AbortSignal,
+  ): Promise<FirehoseEvent[]> {
     this.events = [];
     return this.subscribe((e) => this.events.push(e), durationS, cursor, signal)
       .then(() => this.events);

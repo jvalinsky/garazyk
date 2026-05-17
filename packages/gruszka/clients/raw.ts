@@ -1,13 +1,13 @@
 /** Raw HTTP/XRPC access (get, post, binary) for advanced use cases. @module raw */
 import { TransportLayer } from "../transport.ts";
 import type {
-  LexiconQueryIds,
   LexiconProcedureIds,
-  QueryParams,
-  QueryOutput,
+  LexiconQueryIds,
   ProcedureInput,
   ProcedureOutput,
-} from "../lexicons.ts";
+  QueryOutput,
+  QueryParams,
+} from "../generated_types.ts";
 
 /** Client for raw HTTP and XRPC calls without a namespace-specific helper. */
 export class RawClient {
@@ -26,9 +26,13 @@ export class RawClient {
   async query<K extends LexiconQueryIds>(
     method: K,
     params?: QueryParams<K>,
-    token?: string
+    token?: string,
   ): Promise<QueryOutput<K>> {
-    return (await this.transport.get(method, params as Record<string, any> | undefined, token)) as QueryOutput<K>;
+    return (await this.transport.get(
+      method,
+      params as Record<string, unknown> | undefined,
+      token,
+    )) as QueryOutput<K>;
   }
 
   /**
@@ -40,9 +44,11 @@ export class RawClient {
   async procedure<K extends LexiconProcedureIds>(
     method: K,
     input?: ProcedureInput<K>,
-    token?: string
+    token?: string,
   ): Promise<ProcedureOutput<K>> {
-    return (await this.transport.post(method, input, token)) as ProcedureOutput<K>;
+    return (await this.transport.post(method, input, token)) as ProcedureOutput<
+      K
+    >;
   }
 
   /**
@@ -53,7 +59,11 @@ export class RawClient {
    * @returns The parsed response body
    * @throws Error if the request fails
    */
-  async httpGet(path: string, params?: Record<string, any>, token?: string): Promise<unknown> {
+  async httpGet(
+    path: string,
+    params?: Record<string, unknown>,
+    token?: string,
+  ): Promise<unknown> {
     return await this.transport.httpGet(path, params, token);
   }
 
@@ -65,7 +75,11 @@ export class RawClient {
    * @returns The parsed response body
    * @throws Error if the request fails
    */
-  async httpPost(path: string, body?: any, token?: string): Promise<unknown> {
+  async httpPost(
+    path: string,
+    body?: unknown,
+    token?: string,
+  ): Promise<unknown> {
     return await this.transport.httpPost(path, body, token);
   }
 
@@ -77,7 +91,11 @@ export class RawClient {
    * @returns The parsed response body
    * @throws Error if the request fails
    */
-  async xrpcGet(method: string, params?: Record<string, any>, token?: string): Promise<unknown> {
+  async xrpcGet(
+    method: string,
+    params?: Record<string, unknown>,
+    token?: string,
+  ): Promise<unknown> {
     return await this.transport.get(method, params, token);
   }
 
@@ -89,7 +107,11 @@ export class RawClient {
    * @returns The parsed response body
    * @throws Error if the request fails
    */
-  async xrpcPost(method: string, body?: any, token?: string): Promise<unknown> {
+  async xrpcPost(
+    method: string,
+    body?: unknown,
+    token?: string,
+  ): Promise<unknown> {
     return await this.transport.post(method, body, token);
   }
 
@@ -102,7 +124,11 @@ export class RawClient {
    * @returns The parsed response body
    * @throws Error if the request fails
    */
-  async get(method: string, params?: Record<string, any>, token?: string): Promise<unknown> {
+  async get(
+    method: string,
+    params?: Record<string, unknown>,
+    token?: string,
+  ): Promise<unknown> {
     return await this.xrpcGet(method, params, token);
   }
 
@@ -115,7 +141,7 @@ export class RawClient {
    * @returns The parsed response body
    * @throws Error if the request fails
    */
-  async post(method: string, body?: any, token?: string): Promise<unknown> {
+  async post(method: string, body?: unknown, token?: string): Promise<unknown> {
     return await this.xrpcPost(method, body, token);
   }
 
@@ -151,12 +177,19 @@ export class RawClient {
     method: string,
     data: Uint8Array,
     contentType: string,
-    options: { token?: string; params?: Record<string, any> } = {},
+    options: { token?: string; params?: Record<string, unknown> } = {},
   ): Promise<unknown> {
     if (options.params && Object.keys(options.params).length > 0) {
-      throw new Error("postRaw does not support params; use xrpcPost for parameterized requests");
+      throw new Error(
+        "postRaw does not support params; use xrpcPost for parameterized requests",
+      );
     }
-    return await this.transport.postBinary(method, data, contentType, options.token);
+    return await this.transport.postBinary(
+      method,
+      data,
+      contentType,
+      options.token,
+    );
   }
 
   /**
@@ -169,9 +202,17 @@ export class RawClient {
    */
   async xrpcGetBinary(
     method: string,
-    options: { params?: Record<string, any>; token?: string; headers?: Record<string, string> } =
-      {},
+    options: {
+      params?: Record<string, unknown>;
+      token?: string;
+      headers?: Record<string, string>;
+    } = {},
   ): Promise<[number, string, Uint8Array]> {
-    return await this.transport.getBinary(method, options.params, options.token, options.headers);
+    return await this.transport.getBinary(
+      method,
+      options.params,
+      options.token,
+      options.headers,
+    );
   }
 }

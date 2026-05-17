@@ -8,7 +8,7 @@ import type {
   ProcedureOutput,
   QueryOutput,
   QueryParams,
-} from "./lexicons.ts";
+} from "./generated_types.ts";
 import { LEXICON_METHOD_TYPES } from "./lexicons.ts";
 import {
   AccountsClient,
@@ -55,32 +55,32 @@ export class XrpcClient {
   public rawTransport: TransportLayer;
 
   /** Account creation, login, session, and service-description operations. */
-  public accounts: AccountsClient;
+  public accounts: unknown;
   /** Handle resolution and identity-management operations. */
-  public identity: IdentityClient;
+  public identity: unknown;
   /** Repository record CRUD and write-batch operations. */
-  public records: RecordsClient;
+  public records: unknown;
   /** Blob upload and retrieval operations. */
-  public blobs: BlobsClient;
+  public blobs: unknown;
   /** Social graph operations such as follows, blocks, mutes, and lists. */
-  public graph: GraphClient;
+  public graph: unknown;
   /** Feed, timeline, actor, and post-read operations. */
-  public feed: FeedClient;
+  public feed: unknown;
   /** Notification and push-preference operations. */
-  public notifications: NotificationsClient;
+  public notifications: unknown;
   /** Draft post operations. */
-  public drafts: DraftsClient;
+  public drafts: unknown;
   /** Search and suggestion operations. */
-  public search: SearchClient;
+  public search: unknown;
   /** Phone contact verification and import operations. */
-  public contact: ContactClient;
+  public contact: unknown;
   /** Age-assurance flow operations. */
-  public ageAssurance: AgeAssuranceClient;
+  public ageAssurance: unknown;
   /** Admin and moderation operations. */
-  public admin: AdminClient;
+  public admin: unknown;
   /** Raw HTTP and XRPC access for endpoints without a typed helper. */
   public raw: RawClient;
-  /** Strongly typed nested API client matching ATProto namespaces. */
+  /** Generated nested API client matching ATProto namespaces. */
   public api: GeneratedClient;
 
   /**
@@ -156,7 +156,7 @@ export class XrpcClient {
    * @throws {XrpcError} If the login fails.
    */
   async adminLogin(password = "test-admin-password"): Promise<string> {
-    return await this.admin.login(password);
+    return await (this.admin as AdminClient).login(password);
   }
 
   /** The most recent response */
@@ -213,7 +213,10 @@ class AgentSession {
  * @param session - Stored agent session credentials
  * @returns The bearer token or undefined
  */
-function resolveToken(opts: any, session: AgentSession): string | undefined {
+function resolveToken(
+  opts: { headers?: { Authorization?: string } } | undefined,
+  session: AgentSession,
+): string | undefined {
   if (opts?.headers?.Authorization) {
     return opts.headers.Authorization.replace(/^Bearer\s+/i, "");
   }
@@ -238,7 +241,7 @@ function isQueryMethod(method: string): boolean {
  * The proxy builds method paths via property access and invokes them
  * via function call. Returns `{ data }` on success, throws on error.
  */
-export interface AgentProxy extends GeneratedClient {
+export type AgentProxy = GeneratedClient & {
   /** Create a new account and store the session. */
   createAccount(params: {
     handle: string;
@@ -269,8 +272,7 @@ export interface AgentProxy extends GeneratedClient {
     }
   >;
   /** Access nested XRPC methods. */
-  [namespace: string]: any;
-}
+};
 
 /** Create a dynamic proxy for authenticated XRPC method calls
  * @param path - The accumulated XRPC namespace path
@@ -296,7 +298,7 @@ function createAgentProxy(
           email: string;
           password: string;
         }) => {
-          const data = await client.accounts.createAccount(
+          const data = await (client.accounts as AccountsClient).createAccount(
             params.handle,
             params.email,
             params.password,
@@ -314,7 +316,7 @@ function createAgentProxy(
           identifier: string;
           password: string;
         }) => {
-          const data = await client.accounts.createSession(
+          const data = await (client.accounts as AccountsClient).createSession(
             params.identifier,
             params.password,
           );
@@ -328,15 +330,22 @@ function createAgentProxy(
 
       return createAgentProxy([...path, prop], client, session);
     },
-    async apply(_target, _thisArg, args: any[]) {
+    async apply(_target, _thisArg, args: unknown[]) {
       const method = path.join(".");
       const [params, opts] = args;
-      const token = resolveToken(opts, session);
+      const token = resolveToken(
+        opts as { headers?: { Authorization?: string } } | undefined,
+        session,
+      );
 
       const isQuery = isQueryMethod(method);
 
       const data = isQuery
-        ? await client.rawTransport.get(method, params, token)
+        ? await client.rawTransport.get(
+          method,
+          params as Record<string, unknown> | undefined,
+          token,
+        )
         : await client.rawTransport.post(method, params, token);
       return { data };
     },
@@ -349,20 +358,24 @@ function createGeneratedClient(
   path: string[] = [],
   token?: string,
 ): GeneratedClient {
-  return new Proxy(function () {} as any, {
+  return new Proxy(function () {} as unknown as GeneratedClient, {
     get(_target, prop: string) {
       if (typeof prop !== "string" || prop === "then" || prop === "toJSON") {
         return undefined;
       }
       return createGeneratedClient(transport, [...path, prop], token);
     },
-    async apply(_target, _thisArg, args: any[]) {
+    async apply(_target, _thisArg, args: unknown[]) {
       const method = path.join(".");
       const [params, callToken] = args;
-      const finalToken = callToken || token;
+      const finalToken = typeof callToken === "string" ? callToken : token;
       const isQuery = isQueryMethod(method);
       if (isQuery) {
-        return await transport.get(method, params, finalToken);
+        return await transport.get(
+          method,
+          params as Record<string, unknown> | undefined,
+          finalToken,
+        );
       } else {
         return await transport.post(method, params, finalToken);
       }

@@ -14,6 +14,3871 @@ export interface LexiconProcedure<Input = any, Output = any> {
   output?: Output;
 }
 
+export interface LexiconDefs {
+  "app.bsky.actor.defs": {
+    "nux": {
+      "id": string;
+      "data"?: string;
+      "completed": boolean;
+      "expiresAt"?: string;
+    };
+    "mutedWord": {
+      "id"?: string;
+      "value": string;
+      "targets": Array<LexiconDefs["app.bsky.actor.defs"]["mutedWordTarget"]>;
+      "expiresAt"?: string;
+      "actorTarget"?: string;
+    };
+    "savedFeed": {
+      "id": string;
+      "type": string;
+      "value": string;
+      "pinned": boolean;
+    };
+    "preferences": Array<LexiconDefs["app.bsky.actor.defs"]["adultContentPref"] | LexiconDefs["app.bsky.actor.defs"]["contentLabelPref"] | LexiconDefs["app.bsky.actor.defs"]["savedFeedsPref"] | LexiconDefs["app.bsky.actor.defs"]["savedFeedsPrefV2"] | LexiconDefs["app.bsky.actor.defs"]["personalDetailsPref"] | LexiconDefs["app.bsky.actor.defs"]["feedViewPref"] | LexiconDefs["app.bsky.actor.defs"]["threadViewPref"] | LexiconDefs["app.bsky.actor.defs"]["interestsPref"] | LexiconDefs["app.bsky.actor.defs"]["mutedWordsPref"] | LexiconDefs["app.bsky.actor.defs"]["hiddenPostsPref"] | LexiconDefs["app.bsky.actor.defs"]["bskyAppStatePref"] | LexiconDefs["app.bsky.actor.defs"]["labelersPref"] | LexiconDefs["app.bsky.actor.defs"]["postInteractionSettingsPref"] | Record<string, any>>;
+    "profileView": {
+      "did": string;
+      "avatar"?: string;
+      "handle": string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "viewer"?: LexiconDefs["app.bsky.actor.defs"]["viewerState"];
+      "createdAt"?: string;
+      "indexedAt"?: string;
+      "associated"?: LexiconDefs["app.bsky.actor.defs"]["profileAssociated"];
+      "description"?: string;
+      "displayName"?: string;
+    };
+    "viewerState": {
+      "muted"?: boolean;
+      "blocking"?: string;
+      "blockedBy"?: boolean;
+      "following"?: string;
+      "followedBy"?: string;
+      "mutedByList"?: LexiconDefs["app.bsky.graph.defs"]["listViewBasic"];
+      "blockingByList"?: LexiconDefs["app.bsky.graph.defs"]["listViewBasic"];
+      "knownFollowers"?: LexiconDefs["app.bsky.actor.defs"]["knownFollowers"];
+    };
+    "feedViewPref": {
+      "feed": string;
+      "hideReplies"?: boolean;
+      "hideReposts"?: boolean;
+      "hideQuotePosts"?: boolean;
+      "hideRepliesByLikeCount"?: number;
+      "hideRepliesByUnfollowed"?: boolean;
+    };
+    "labelersPref": {
+      "labelers": Array<LexiconDefs["app.bsky.actor.defs"]["labelerPrefItem"]>;
+    };
+    "interestsPref": {
+      "tags": Array<string>;
+    };
+    "knownFollowers": {
+      "count": number;
+      "followers": Array<LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"]>;
+    };
+    "mutedWordsPref": {
+      "items": Array<LexiconDefs["app.bsky.actor.defs"]["mutedWord"]>;
+    };
+    "savedFeedsPref": {
+      "saved": Array<string>;
+      "pinned": Array<string>;
+      "timelineIndex"?: number;
+    };
+    "threadViewPref": {
+      "sort"?: string;
+      "prioritizeFollowedUsers"?: boolean;
+    };
+    "hiddenPostsPref": {
+      "items": Array<string>;
+    };
+    "labelerPrefItem": {
+      "did": string;
+    };
+    "mutedWordTarget": string;
+    "adultContentPref": {
+      "enabled": boolean;
+    };
+    "bskyAppStatePref": {
+      "nuxs"?: Array<LexiconDefs["app.bsky.actor.defs"]["nux"]>;
+      "queuedNudges"?: Array<string>;
+      "activeProgressGuide"?: LexiconDefs["app.bsky.actor.defs"]["bskyAppProgressGuide"];
+    };
+    "contentLabelPref": {
+      "label": string;
+      "labelerDid"?: string;
+      "visibility": string;
+    };
+    "profileViewBasic": {
+      "did": string;
+      "avatar"?: string;
+      "handle": string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "viewer"?: LexiconDefs["app.bsky.actor.defs"]["viewerState"];
+      "createdAt"?: string;
+      "associated"?: LexiconDefs["app.bsky.actor.defs"]["profileAssociated"];
+      "displayName"?: string;
+    };
+    "savedFeedsPrefV2": {
+      "items": Array<LexiconDefs["app.bsky.actor.defs"]["savedFeed"]>;
+    };
+    "profileAssociated": {
+      "chat"?: LexiconDefs["app.bsky.actor.defs"]["profileAssociatedChat"];
+      "lists"?: number;
+      "labeler"?: boolean;
+      "feedgens"?: number;
+      "starterPacks"?: number;
+    };
+    "personalDetailsPref": {
+      "birthDate"?: string;
+    };
+    "profileViewDetailed": {
+      "did": string;
+      "avatar"?: string;
+      "banner"?: string;
+      "handle": string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "viewer"?: LexiconDefs["app.bsky.actor.defs"]["viewerState"];
+      "createdAt"?: string;
+      "indexedAt"?: string;
+      "associated"?: LexiconDefs["app.bsky.actor.defs"]["profileAssociated"];
+      "pinnedPost"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "postsCount"?: number;
+      "description"?: string;
+      "displayName"?: string;
+      "followsCount"?: number;
+      "followersCount"?: number;
+      "joinedViaStarterPack"?: LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"];
+    };
+    "bskyAppProgressGuide": {
+      "guide": string;
+    };
+    "profileAssociatedChat": {
+      "allowIncoming": string;
+    };
+    "postInteractionSettingsPref": {
+      "threadgateAllowRules"?: Array<LexiconDefs["app.bsky.feed.threadgate"]["mentionRule"] | LexiconDefs["app.bsky.feed.threadgate"]["followerRule"] | LexiconDefs["app.bsky.feed.threadgate"]["followingRule"] | LexiconDefs["app.bsky.feed.threadgate"]["listRule"] | Record<string, any>>;
+      "postgateEmbeddingRules"?: Array<LexiconDefs["app.bsky.feed.postgate"]["disableRule"] | Record<string, any>>;
+    };
+  };
+  "app.bsky.actor.getPreferences": {
+    "main": never;
+  };
+  "app.bsky.actor.getProfile": {
+    "main": never;
+  };
+  "app.bsky.actor.getProfiles": {
+    "main": never;
+  };
+  "app.bsky.actor.getSuggestions": {
+    "main": never;
+  };
+  "app.bsky.actor.profile": {
+    "main": {
+      "avatar"?: any /* blob */;
+      "banner"?: any /* blob */;
+      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
+      "createdAt"?: string;
+      "pinnedPost"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "description"?: string;
+      "displayName"?: string;
+      "joinedViaStarterPack"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+  };
+  "app.bsky.actor.putPreferences": {
+    "main": never;
+  };
+  "app.bsky.actor.searchActors": {
+    "main": never;
+  };
+  "app.bsky.actor.searchActorsTypeahead": {
+    "main": never;
+  };
+  "app.bsky.actor.status": {
+    "main": {
+      "status": string;
+      "embed"?: LexiconDefs["app.bsky.embed.external"]["main"] | Record<string, any>;
+      "durationMinutes"?: number;
+      "createdAt": string;
+    };
+    "live": string;
+  };
+  "app.bsky.ageassurance.begin": {
+    "main": never;
+  };
+  "app.bsky.ageassurance.defs": {
+    "access": string;
+    "status": string;
+    "state": {
+      "lastInitiatedAt"?: string;
+      "status": LexiconDefs["app.bsky.ageassurance.defs"]["status"];
+      "access": LexiconDefs["app.bsky.ageassurance.defs"]["access"];
+    };
+    "stateMetadata": {
+      "accountCreatedAt"?: string;
+    };
+    "config": {
+      "regions": Array<LexiconDefs["app.bsky.ageassurance.defs"]["configRegion"]>;
+    };
+    "configRegion": {
+      "countryCode": string;
+      "regionCode"?: string;
+      "minAccessAge": number;
+      "rules": Array<LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleDefault"] | LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleIfDeclaredOverAge"] | LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleIfDeclaredUnderAge"] | LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleIfAssuredOverAge"] | LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleIfAssuredUnderAge"] | LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleIfAccountNewerThan"] | LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleIfAccountOlderThan"] | Record<string, any>>;
+    };
+    "configRegionRuleDefault": {
+      "access": LexiconDefs["app.bsky.ageassurance.defs"]["access"];
+    };
+    "configRegionRuleIfDeclaredOverAge": {
+      "age": number;
+      "access": LexiconDefs["app.bsky.ageassurance.defs"]["access"];
+    };
+    "configRegionRuleIfDeclaredUnderAge": {
+      "age": number;
+      "access": LexiconDefs["app.bsky.ageassurance.defs"]["access"];
+    };
+    "configRegionRuleIfAssuredOverAge": {
+      "age": number;
+      "access": LexiconDefs["app.bsky.ageassurance.defs"]["access"];
+    };
+    "configRegionRuleIfAssuredUnderAge": {
+      "age": number;
+      "access": LexiconDefs["app.bsky.ageassurance.defs"]["access"];
+    };
+    "configRegionRuleIfAccountNewerThan": {
+      "date": string;
+      "access": LexiconDefs["app.bsky.ageassurance.defs"]["access"];
+    };
+    "configRegionRuleIfAccountOlderThan": {
+      "date": string;
+      "access": LexiconDefs["app.bsky.ageassurance.defs"]["access"];
+    };
+    "event": {
+      "createdAt": string;
+      "attemptId": string;
+      "status": string;
+      "access": string;
+      "countryCode": string;
+      "regionCode"?: string;
+      "email"?: string;
+      "initIp"?: string;
+      "initUa"?: string;
+      "completeIp"?: string;
+      "completeUa"?: string;
+    };
+  };
+  "app.bsky.ageassurance.getConfig": {
+    "main": never;
+  };
+  "app.bsky.ageassurance.getState": {
+    "main": never;
+  };
+  "app.bsky.authCreatePosts": {
+    "main": any;
+  };
+  "app.bsky.authFullApp": {
+    "main": any;
+  };
+  "app.bsky.authManageFeedDeclarations": {
+    "main": any;
+  };
+  "app.bsky.authManageLabelerService": {
+    "main": any;
+  };
+  "app.bsky.authManageModeration": {
+    "main": any;
+  };
+  "app.bsky.authManageNotifications": {
+    "main": any;
+  };
+  "app.bsky.authManageProfile": {
+    "main": any;
+  };
+  "app.bsky.authViewAll": {
+    "main": any;
+  };
+  "app.bsky.bookmark.createBookmark": {
+    "main": never;
+  };
+  "app.bsky.bookmark.defs": {
+    "bookmark": {
+      "subject": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+    "bookmarkView": {
+      "subject": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "createdAt"?: string;
+      "item": LexiconDefs["app.bsky.feed.defs"]["blockedPost"] | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"] | LexiconDefs["app.bsky.feed.defs"]["postView"] | Record<string, any>;
+    };
+  };
+  "app.bsky.bookmark.deleteBookmark": {
+    "main": never;
+  };
+  "app.bsky.bookmark.getBookmarks": {
+    "main": never;
+  };
+  "app.bsky.contact.defs": {
+    "matchAndContactIndex": {
+      "match": LexiconDefs["app.bsky.actor.defs"]["profileView"];
+      "contactIndex": number;
+    };
+    "syncStatus": {
+      "syncedAt": string;
+      "matchesCount": number;
+    };
+    "notification": {
+      "from": string;
+      "to": string;
+    };
+  };
+  "app.bsky.contact.dismissMatch": {
+    "main": never;
+  };
+  "app.bsky.contact.getMatches": {
+    "main": never;
+  };
+  "app.bsky.contact.getSyncStatus": {
+    "main": never;
+  };
+  "app.bsky.contact.importContacts": {
+    "main": never;
+  };
+  "app.bsky.contact.removeData": {
+    "main": never;
+  };
+  "app.bsky.contact.sendNotification": {
+    "main": never;
+  };
+  "app.bsky.contact.startPhoneVerification": {
+    "main": never;
+  };
+  "app.bsky.contact.verifyPhone": {
+    "main": never;
+  };
+  "app.bsky.draft.createDraft": {
+    "main": never;
+  };
+  "app.bsky.draft.deleteDraft": {
+    "main": never;
+  };
+  "app.bsky.draft.getDrafts": {
+    "main": never;
+  };
+  "app.bsky.draft.updateDraft": {
+    "main": never;
+  };
+  "app.bsky.embed.defs": {
+    "aspectRatio": {
+      "width": number;
+      "height": number;
+    };
+  };
+  "app.bsky.embed.external": {
+    "main": {
+      "external": LexiconDefs["app.bsky.embed.external"]["external"];
+    };
+    "view": {
+      "external": LexiconDefs["app.bsky.embed.external"]["viewExternal"];
+    };
+    "external": {
+      "uri": string;
+      "thumb"?: any /* blob */;
+      "title": string;
+      "description": string;
+    };
+    "viewExternal": {
+      "uri": string;
+      "thumb"?: string;
+      "title": string;
+      "description": string;
+    };
+  };
+  "app.bsky.embed.images": {
+    "main": {
+      "images": Array<LexiconDefs["app.bsky.embed.images"]["image"]>;
+    };
+    "view": {
+      "images": Array<LexiconDefs["app.bsky.embed.images"]["viewImage"]>;
+    };
+    "image": {
+      "alt": string;
+      "image": any /* blob */;
+      "aspectRatio"?: LexiconDefs["app.bsky.embed.defs"]["aspectRatio"];
+    };
+    "viewImage": {
+      "alt": string;
+      "thumb": string;
+      "fullsize": string;
+      "aspectRatio"?: LexiconDefs["app.bsky.embed.defs"]["aspectRatio"];
+    };
+  };
+  "app.bsky.embed.record": {
+    "main": {
+      "record": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+    "view": {
+      "record": LexiconDefs["app.bsky.embed.record"]["viewRecord"] | LexiconDefs["app.bsky.embed.record"]["viewNotFound"] | LexiconDefs["app.bsky.embed.record"]["viewBlocked"] | LexiconDefs["app.bsky.embed.record"]["viewDetached"] | LexiconDefs["app.bsky.feed.defs"]["generatorView"] | LexiconDefs["app.bsky.graph.defs"]["listView"] | LexiconDefs["app.bsky.labeler.defs"]["labelerView"] | LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"] | Record<string, any>;
+    };
+    "viewRecord": {
+      "cid": string;
+      "uri": string;
+      "value": unknown;
+      "author": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
+      "embeds"?: Array<LexiconDefs["app.bsky.embed.images"]["view"] | LexiconDefs["app.bsky.embed.video"]["view"] | LexiconDefs["app.bsky.embed.external"]["view"] | LexiconDefs["app.bsky.embed.record"]["view"] | LexiconDefs["app.bsky.embed.recordWithMedia"]["view"] | Record<string, any>>;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "indexedAt": string;
+      "likeCount"?: number;
+      "quoteCount"?: number;
+      "replyCount"?: number;
+      "repostCount"?: number;
+    };
+    "viewBlocked": {
+      "uri": string;
+      "author": LexiconDefs["app.bsky.feed.defs"]["blockedAuthor"];
+      "blocked": boolean;
+    };
+    "viewDetached": {
+      "uri": string;
+      "detached": boolean;
+    };
+    "viewNotFound": {
+      "uri": string;
+      "notFound": boolean;
+    };
+  };
+  "app.bsky.embed.recordWithMedia": {
+    "main": {
+      "media": LexiconDefs["app.bsky.embed.images"]["main"] | LexiconDefs["app.bsky.embed.video"]["main"] | LexiconDefs["app.bsky.embed.external"]["main"] | Record<string, any>;
+      "record": LexiconDefs["app.bsky.embed.record"]["main"];
+    };
+    "view": {
+      "media": LexiconDefs["app.bsky.embed.images"]["view"] | LexiconDefs["app.bsky.embed.video"]["view"] | LexiconDefs["app.bsky.embed.external"]["view"] | Record<string, any>;
+      "record": LexiconDefs["app.bsky.embed.record"]["view"];
+    };
+  };
+  "app.bsky.embed.video": {
+    "main": {
+      "alt"?: string;
+      "video": any /* blob */;
+      "captions"?: Array<LexiconDefs["app.bsky.embed.video"]["caption"]>;
+      "aspectRatio"?: LexiconDefs["app.bsky.embed.defs"]["aspectRatio"];
+    };
+    "view": {
+      "alt"?: string;
+      "cid": string;
+      "playlist": string;
+      "thumbnail"?: string;
+      "aspectRatio"?: LexiconDefs["app.bsky.embed.defs"]["aspectRatio"];
+    };
+    "caption": {
+      "file": any /* blob */;
+      "lang": string;
+    };
+  };
+  "app.bsky.feed.defs": {
+    "postView": {
+      "cid": string;
+      "uri": string;
+      "embed"?: LexiconDefs["app.bsky.embed.images"]["view"] | LexiconDefs["app.bsky.embed.video"]["view"] | LexiconDefs["app.bsky.embed.external"]["view"] | LexiconDefs["app.bsky.embed.record"]["view"] | LexiconDefs["app.bsky.embed.recordWithMedia"]["view"] | Record<string, any>;
+      "author": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "record": unknown;
+      "viewer"?: LexiconDefs["app.bsky.feed.defs"]["viewerState"];
+      "indexedAt": string;
+      "likeCount"?: number;
+      "quoteCount"?: number;
+      "replyCount"?: number;
+      "threadgate"?: LexiconDefs["app.bsky.feed.defs"]["threadgateView"];
+      "repostCount"?: number;
+    };
+    "replyRef": {
+      "root": LexiconDefs["app.bsky.feed.defs"]["postView"] | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"] | LexiconDefs["app.bsky.feed.defs"]["blockedPost"] | Record<string, any>;
+      "parent": LexiconDefs["app.bsky.feed.defs"]["postView"] | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"] | LexiconDefs["app.bsky.feed.defs"]["blockedPost"] | Record<string, any>;
+      "grandparentAuthor"?: LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
+    };
+    "reasonPin": {
+    };
+    "blockedPost": {
+      "uri": string;
+      "author": LexiconDefs["app.bsky.feed.defs"]["blockedAuthor"];
+      "blocked": boolean;
+    };
+    "interaction": {
+      "item"?: string;
+      "event"?: string;
+      "feedContext"?: string;
+    };
+    "requestLess": string;
+    "requestMore": string;
+    "viewerState": {
+      "like"?: string;
+      "pinned"?: boolean;
+      "repost"?: string;
+      "threadMuted"?: boolean;
+      "replyDisabled"?: boolean;
+      "embeddingDisabled"?: boolean;
+    };
+    "feedViewPost": {
+      "post": LexiconDefs["app.bsky.feed.defs"]["postView"];
+      "reply"?: LexiconDefs["app.bsky.feed.defs"]["replyRef"];
+      "reason"?: LexiconDefs["app.bsky.feed.defs"]["reasonRepost"] | LexiconDefs["app.bsky.feed.defs"]["reasonPin"] | Record<string, any>;
+      "feedContext"?: string;
+    };
+    "notFoundPost": {
+      "uri": string;
+      "notFound": boolean;
+    };
+    "reasonRepost": {
+      "by": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
+      "indexedAt": string;
+    };
+    "blockedAuthor": {
+      "did": string;
+      "viewer"?: LexiconDefs["app.bsky.actor.defs"]["viewerState"];
+    };
+    "generatorView": {
+      "cid": string;
+      "did": string;
+      "uri": string;
+      "avatar"?: string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "viewer"?: LexiconDefs["app.bsky.feed.defs"]["generatorViewerState"];
+      "creator": LexiconDefs["app.bsky.actor.defs"]["profileView"];
+      "indexedAt": string;
+      "likeCount"?: number;
+      "contentMode"?: string;
+      "description"?: string;
+      "displayName": string;
+      "descriptionFacets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "acceptsInteractions"?: boolean;
+    };
+    "threadContext": {
+      "rootAuthorLike"?: string;
+    };
+    "threadViewPost": {
+      "post": LexiconDefs["app.bsky.feed.defs"]["postView"];
+      "parent"?: LexiconDefs["app.bsky.feed.defs"]["threadViewPost"] | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"] | LexiconDefs["app.bsky.feed.defs"]["blockedPost"] | Record<string, any>;
+      "replies"?: Array<LexiconDefs["app.bsky.feed.defs"]["threadViewPost"] | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"] | LexiconDefs["app.bsky.feed.defs"]["blockedPost"] | Record<string, any>>;
+      "threadContext"?: LexiconDefs["app.bsky.feed.defs"]["threadContext"];
+    };
+    "threadgateView": {
+      "cid"?: string;
+      "uri"?: string;
+      "lists"?: Array<LexiconDefs["app.bsky.graph.defs"]["listViewBasic"]>;
+      "record"?: unknown;
+    };
+    "interactionLike": string;
+    "interactionSeen": string;
+    "clickthroughItem": string;
+    "contentModeVideo": string;
+    "interactionQuote": string;
+    "interactionReply": string;
+    "interactionShare": string;
+    "skeletonFeedPost": {
+      "post": string;
+      "reason"?: LexiconDefs["app.bsky.feed.defs"]["skeletonReasonRepost"] | LexiconDefs["app.bsky.feed.defs"]["skeletonReasonPin"] | Record<string, any>;
+      "feedContext"?: string;
+    };
+    "clickthroughEmbed": string;
+    "interactionRepost": string;
+    "skeletonReasonPin": {
+    };
+    "clickthroughAuthor": string;
+    "clickthroughReposter": string;
+    "generatorViewerState": {
+      "like"?: string;
+    };
+    "skeletonReasonRepost": {
+      "repost": string;
+    };
+    "contentModeUnspecified": string;
+  };
+  "app.bsky.feed.describeFeedGenerator": {
+    "main": never;
+    "feed": {
+      "uri": string;
+    };
+    "links": {
+      "privacyPolicy"?: string;
+      "termsOfService"?: string;
+    };
+  };
+  "app.bsky.feed.generator": {
+    "main": {
+      "did": string;
+      "displayName": string;
+      "description"?: string;
+      "descriptionFacets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "avatar"?: any /* blob */;
+      "acceptsInteractions"?: boolean;
+      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
+      "contentMode"?: string;
+      "createdAt": string;
+    };
+  };
+  "app.bsky.feed.getActorFeeds": {
+    "main": never;
+  };
+  "app.bsky.feed.getActorLikes": {
+    "main": never;
+  };
+  "app.bsky.feed.getAuthorFeed": {
+    "main": never;
+  };
+  "app.bsky.feed.getFeed": {
+    "main": never;
+  };
+  "app.bsky.feed.getFeedGenerator": {
+    "main": never;
+  };
+  "app.bsky.feed.getFeedGenerators": {
+    "main": never;
+  };
+  "app.bsky.feed.getFeedSkeleton": {
+    "main": never;
+  };
+  "app.bsky.feed.getLikes": {
+    "main": never;
+    "like": {
+      "indexedAt": string;
+      "createdAt": string;
+      "actor": LexiconDefs["app.bsky.actor.defs"]["profileView"];
+    };
+  };
+  "app.bsky.feed.getListFeed": {
+    "main": never;
+  };
+  "app.bsky.feed.getPosts": {
+    "main": never;
+  };
+  "app.bsky.feed.getPostThread": {
+    "main": never;
+  };
+  "app.bsky.feed.getQuotes": {
+    "main": never;
+  };
+  "app.bsky.feed.getRepostedBy": {
+    "main": never;
+  };
+  "app.bsky.feed.getSuggestedFeeds": {
+    "main": never;
+  };
+  "app.bsky.feed.getTimeline": {
+    "main": never;
+  };
+  "app.bsky.feed.like": {
+    "main": {
+      "subject": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "createdAt": string;
+      "via"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+  };
+  "app.bsky.feed.post": {
+    "main": {
+      "text": string;
+      "entities"?: Array<LexiconDefs["app.bsky.feed.post"]["entity"]>;
+      "facets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "reply"?: LexiconDefs["app.bsky.feed.post"]["replyRef"];
+      "embed"?: LexiconDefs["app.bsky.embed.images"]["main"] | LexiconDefs["app.bsky.embed.video"]["main"] | LexiconDefs["app.bsky.embed.external"]["main"] | LexiconDefs["app.bsky.embed.record"]["main"] | LexiconDefs["app.bsky.embed.recordWithMedia"]["main"] | Record<string, any>;
+      "langs"?: Array<string>;
+      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
+      "tags"?: Array<string>;
+      "createdAt": string;
+    };
+    "replyRef": {
+      "root": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "parent": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+    "entity": {
+      "index": LexiconDefs["app.bsky.feed.post"]["textSlice"];
+      "type": string;
+      "value": string;
+    };
+    "textSlice": {
+      "start": number;
+      "end": number;
+    };
+  };
+  "app.bsky.feed.postgate": {
+    "main": {
+      "post": string;
+      "createdAt": string;
+      "embeddingRules"?: Array<LexiconDefs["app.bsky.feed.postgate"]["disableRule"] | Record<string, any>>;
+      "detachedEmbeddingUris"?: Array<string>;
+    };
+    "disableRule": {
+    };
+  };
+  "app.bsky.feed.repost": {
+    "main": {
+      "subject": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "createdAt": string;
+      "via"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+  };
+  "app.bsky.feed.searchPosts": {
+    "main": never;
+  };
+  "app.bsky.feed.sendInteractions": {
+    "main": never;
+  };
+  "app.bsky.feed.threadgate": {
+    "main": {
+      "post": string;
+      "allow"?: Array<LexiconDefs["app.bsky.feed.threadgate"]["mentionRule"] | LexiconDefs["app.bsky.feed.threadgate"]["followerRule"] | LexiconDefs["app.bsky.feed.threadgate"]["followingRule"] | LexiconDefs["app.bsky.feed.threadgate"]["listRule"] | Record<string, any>>;
+      "createdAt": string;
+      "hiddenReplies"?: Array<string>;
+    };
+    "listRule": {
+      "list": string;
+    };
+    "mentionRule": {
+    };
+    "followerRule": {
+    };
+    "followingRule": {
+    };
+  };
+  "app.bsky.graph.block": {
+    "main": {
+      "subject": string;
+      "createdAt": string;
+    };
+  };
+  "app.bsky.graph.defs": {
+    "modlist": string;
+    "listView": {
+      "cid": string;
+      "uri": string;
+      "name": string;
+      "avatar"?: string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "viewer"?: LexiconDefs["app.bsky.graph.defs"]["listViewerState"];
+      "creator": LexiconDefs["app.bsky.actor.defs"]["profileView"];
+      "purpose": LexiconDefs["app.bsky.graph.defs"]["listPurpose"];
+      "indexedAt": string;
+      "description"?: string;
+      "listItemCount"?: number;
+      "descriptionFacets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+    };
+    "curatelist": string;
+    "listPurpose": string;
+    "listItemView": {
+      "uri": string;
+      "subject": LexiconDefs["app.bsky.actor.defs"]["profileView"];
+    };
+    "relationship": {
+      "did": string;
+      "following"?: string;
+      "followedBy"?: string;
+    };
+    "listViewBasic": {
+      "cid": string;
+      "uri": string;
+      "name": string;
+      "avatar"?: string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "viewer"?: LexiconDefs["app.bsky.graph.defs"]["listViewerState"];
+      "purpose": LexiconDefs["app.bsky.graph.defs"]["listPurpose"];
+      "indexedAt"?: string;
+      "listItemCount"?: number;
+    };
+    "notFoundActor": {
+      "actor": string;
+      "notFound": boolean;
+    };
+    "referencelist": string;
+    "listViewerState": {
+      "muted"?: boolean;
+      "blocked"?: string;
+    };
+    "starterPackView": {
+      "cid": string;
+      "uri": string;
+      "list"?: LexiconDefs["app.bsky.graph.defs"]["listViewBasic"];
+      "feeds"?: Array<LexiconDefs["app.bsky.feed.defs"]["generatorView"]>;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "record": unknown;
+      "creator": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
+      "indexedAt": string;
+      "joinedWeekCount"?: number;
+      "listItemsSample"?: Array<LexiconDefs["app.bsky.graph.defs"]["listItemView"]>;
+      "joinedAllTimeCount"?: number;
+    };
+    "starterPackViewBasic": {
+      "cid": string;
+      "uri": string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "record": unknown;
+      "creator": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
+      "indexedAt": string;
+      "listItemCount"?: number;
+      "joinedWeekCount"?: number;
+      "joinedAllTimeCount"?: number;
+    };
+  };
+  "app.bsky.graph.follow": {
+    "main": {
+      "subject": string;
+      "createdAt": string;
+    };
+  };
+  "app.bsky.graph.getActorStarterPacks": {
+    "main": never;
+  };
+  "app.bsky.graph.getBlocks": {
+    "main": never;
+  };
+  "app.bsky.graph.getFollowers": {
+    "main": never;
+  };
+  "app.bsky.graph.getFollows": {
+    "main": never;
+  };
+  "app.bsky.graph.getKnownFollowers": {
+    "main": never;
+  };
+  "app.bsky.graph.getList": {
+    "main": never;
+  };
+  "app.bsky.graph.getListBlocks": {
+    "main": never;
+  };
+  "app.bsky.graph.getListMutes": {
+    "main": never;
+  };
+  "app.bsky.graph.getLists": {
+    "main": never;
+  };
+  "app.bsky.graph.getListsWithMembership": {
+    "main": never;
+    "listWithMembership": {
+      "list": LexiconDefs["app.bsky.graph.defs"]["listView"];
+      "listItem"?: LexiconDefs["app.bsky.graph.defs"]["listItemView"];
+    };
+  };
+  "app.bsky.graph.getMutes": {
+    "main": never;
+  };
+  "app.bsky.graph.getRelationships": {
+    "main": never;
+  };
+  "app.bsky.graph.getStarterPack": {
+    "main": never;
+  };
+  "app.bsky.graph.getStarterPacks": {
+    "main": never;
+  };
+  "app.bsky.graph.getStarterPacksWithMembership": {
+    "main": never;
+    "starterPackWithMembership": {
+      "starterPack": LexiconDefs["app.bsky.graph.defs"]["starterPackView"];
+      "listItem"?: LexiconDefs["app.bsky.graph.defs"]["listItemView"];
+    };
+  };
+  "app.bsky.graph.getSuggestedFollowsByActor": {
+    "main": never;
+  };
+  "app.bsky.graph.list": {
+    "main": {
+      "purpose": LexiconDefs["app.bsky.graph.defs"]["listPurpose"];
+      "name": string;
+      "description"?: string;
+      "descriptionFacets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "avatar"?: any /* blob */;
+      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
+      "createdAt": string;
+    };
+  };
+  "app.bsky.graph.listblock": {
+    "main": {
+      "subject": string;
+      "createdAt": string;
+    };
+  };
+  "app.bsky.graph.listitem": {
+    "main": {
+      "subject": string;
+      "list": string;
+      "createdAt": string;
+    };
+  };
+  "app.bsky.graph.muteActor": {
+    "main": never;
+  };
+  "app.bsky.graph.muteActorList": {
+    "main": never;
+  };
+  "app.bsky.graph.muteThread": {
+    "main": never;
+  };
+  "app.bsky.graph.searchStarterPacks": {
+    "main": never;
+  };
+  "app.bsky.graph.starterpack": {
+    "main": {
+      "name": string;
+      "description"?: string;
+      "descriptionFacets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "list": string;
+      "feeds"?: Array<LexiconDefs["app.bsky.graph.starterpack"]["feedItem"]>;
+      "createdAt": string;
+    };
+    "feedItem": {
+      "uri": string;
+    };
+  };
+  "app.bsky.graph.unmuteActor": {
+    "main": never;
+  };
+  "app.bsky.graph.unmuteActorList": {
+    "main": never;
+  };
+  "app.bsky.graph.unmuteThread": {
+    "main": never;
+  };
+  "app.bsky.graph.verification": {
+    "main": {
+      "subject": string;
+      "handle": string;
+      "displayName": string;
+      "createdAt": string;
+    };
+  };
+  "app.bsky.graph.verification.createVerification": {
+    "main": never;
+  };
+  "app.bsky.graph.verification.deleteVerification": {
+    "main": never;
+  };
+  "app.bsky.labeler.defs": {
+    "labelerView": {
+      "cid": string;
+      "uri": string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "viewer"?: LexiconDefs["app.bsky.labeler.defs"]["labelerViewerState"];
+      "creator": LexiconDefs["app.bsky.actor.defs"]["profileView"];
+      "indexedAt": string;
+      "likeCount"?: number;
+    };
+    "labelerPolicies": {
+      "labelValues": Array<any /* unresolved ref: com.atproto.label.defs#labelValue */>;
+      "labelValueDefinitions"?: Array<any /* unresolved ref: com.atproto.label.defs#labelValueDefinition */>;
+    };
+    "labelerViewerState": {
+      "like"?: string;
+    };
+    "labelerViewDetailed": {
+      "cid": string;
+      "uri": string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "viewer"?: LexiconDefs["app.bsky.labeler.defs"]["labelerViewerState"];
+      "creator": LexiconDefs["app.bsky.actor.defs"]["profileView"];
+      "policies": LexiconDefs["app.bsky.labeler.defs"]["labelerPolicies"];
+      "indexedAt": string;
+      "likeCount"?: number;
+    };
+  };
+  "app.bsky.labeler.getServices": {
+    "main": never;
+  };
+  "app.bsky.labeler.service": {
+    "main": {
+      "policies": LexiconDefs["app.bsky.labeler.defs"]["labelerPolicies"];
+      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
+      "createdAt": string;
+      "reasonTypes"?: Array<LexiconDefs["com.atproto.moderation.defs"]["reasonType"]>;
+      "subjectTypes"?: Array<LexiconDefs["com.atproto.moderation.defs"]["subjectType"]>;
+      "subjectCollections"?: Array<string>;
+    };
+  };
+  "app.bsky.notification.declaration": {
+    "main": {
+      "allowSubscriptions": string;
+    };
+  };
+  "app.bsky.notification.defs": {
+    "recordDeleted": {
+    };
+    "chatPreference": {
+      "include": string;
+      "push": boolean;
+    };
+    "filterablePreference": {
+      "include": string;
+      "list": boolean;
+      "push": boolean;
+    };
+    "preference": {
+      "list": boolean;
+      "push": boolean;
+    };
+    "preferences": {
+      "chat": LexiconDefs["app.bsky.notification.defs"]["chatPreference"];
+      "follow": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "like": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "likeViaRepost": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "mention": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "quote": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "reply": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "repost": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "repostViaRepost": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "starterpackJoined": LexiconDefs["app.bsky.notification.defs"]["preference"];
+      "subscribedPost": LexiconDefs["app.bsky.notification.defs"]["preference"];
+      "unverified": LexiconDefs["app.bsky.notification.defs"]["preference"];
+      "verified": LexiconDefs["app.bsky.notification.defs"]["preference"];
+    };
+    "activitySubscription": {
+      "post": boolean;
+      "reply": boolean;
+    };
+    "subjectActivitySubscription": {
+      "subject": string;
+      "activitySubscription": LexiconDefs["app.bsky.notification.defs"]["activitySubscription"];
+    };
+  };
+  "app.bsky.notification.getPreferences": {
+    "main": never;
+  };
+  "app.bsky.notification.getUnreadCount": {
+    "main": never;
+  };
+  "app.bsky.notification.listActivitySubscriptions": {
+    "main": never;
+  };
+  "app.bsky.notification.listNotifications": {
+    "main": never;
+    "notification": {
+      "uri": string;
+      "cid": string;
+      "author": LexiconDefs["app.bsky.actor.defs"]["profileView"];
+      "reason": string;
+      "reasonSubject"?: string;
+      "record": unknown;
+      "isRead": boolean;
+      "indexedAt": string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+    };
+  };
+  "app.bsky.notification.putActivitySubscription": {
+    "main": never;
+  };
+  "app.bsky.notification.putNotificationPreferences": {
+    "main": never;
+  };
+  "app.bsky.notification.putPreferences": {
+    "main": never;
+  };
+  "app.bsky.notification.putPreferencesV2": {
+    "main": never;
+  };
+  "app.bsky.notification.registerPush": {
+    "main": never;
+  };
+  "app.bsky.notification.unregisterPush": {
+    "main": never;
+  };
+  "app.bsky.notification.updateSeen": {
+    "main": never;
+  };
+  "app.bsky.richtext.facet": {
+    "main": {
+      "index": LexiconDefs["app.bsky.richtext.facet"]["byteSlice"];
+      "features": Array<LexiconDefs["app.bsky.richtext.facet"]["mention"] | LexiconDefs["app.bsky.richtext.facet"]["link"] | LexiconDefs["app.bsky.richtext.facet"]["tag"] | Record<string, any>>;
+    };
+    "mention": {
+      "did": string;
+    };
+    "link": {
+      "uri": string;
+    };
+    "tag": {
+      "tag": string;
+    };
+    "byteSlice": {
+      "byteStart": number;
+      "byteEnd": number;
+    };
+  };
+  "app.bsky.unspecced.confirmAgeAssurance": {
+    "main": never;
+  };
+  "app.bsky.unspecced.defs": {
+    "skeletonSearchPost": {
+      "uri": string;
+    };
+    "skeletonSearchActor": {
+      "did": string;
+    };
+    "skeletonSearchStarterPack": {
+      "uri": string;
+    };
+    "trendingTopic": {
+      "topic": string;
+      "displayName"?: string;
+      "description"?: string;
+      "link": string;
+    };
+    "skeletonTrend": {
+      "topic": string;
+      "displayName": string;
+      "link": string;
+      "startedAt": string;
+      "postCount": number;
+      "status"?: string;
+      "category"?: string;
+      "dids": Array<string>;
+    };
+    "trendView": {
+      "topic": string;
+      "displayName": string;
+      "link": string;
+      "startedAt": string;
+      "postCount": number;
+      "status"?: string;
+      "category"?: string;
+      "actors": Array<LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"]>;
+    };
+    "threadItemPost": {
+      "post": LexiconDefs["app.bsky.feed.defs"]["postView"];
+      "moreParents": boolean;
+      "moreReplies": number;
+      "opThread": boolean;
+      "hiddenByThreadgate": boolean;
+      "mutedByViewer": boolean;
+    };
+    "threadItemNoUnauthenticated": {
+    };
+    "threadItemNotFound": {
+    };
+    "threadItemBlocked": {
+      "author": LexiconDefs["app.bsky.feed.defs"]["blockedAuthor"];
+    };
+    "ageAssuranceState": {
+      "lastInitiatedAt"?: string;
+      "status": string;
+    };
+    "ageAssuranceEvent": {
+      "createdAt": string;
+      "status": string;
+      "attemptId": string;
+      "email"?: string;
+      "initIp"?: string;
+      "initUa"?: string;
+      "completeIp"?: string;
+      "completeUa"?: string;
+    };
+  };
+  "app.bsky.unspecced.getAgeAssuranceState": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getConfig": {
+    "main": never;
+    "liveNowConfig": {
+      "did": string;
+      "domains": Array<string>;
+    };
+  };
+  "app.bsky.unspecced.getOnboardingSuggestedStarterPacks": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getPopularFeedGenerators": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getPostThreadOtherV2": {
+    "main": never;
+    "threadItem": {
+      "uri": string;
+      "depth": number;
+      "value": LexiconDefs["app.bsky.unspecced.defs"]["threadItemPost"] | Record<string, any>;
+    };
+  };
+  "app.bsky.unspecced.getPostThreadV2": {
+    "main": never;
+    "threadItem": {
+      "uri": string;
+      "depth": number;
+      "value": LexiconDefs["app.bsky.unspecced.defs"]["threadItemPost"] | LexiconDefs["app.bsky.unspecced.defs"]["threadItemNoUnauthenticated"] | LexiconDefs["app.bsky.unspecced.defs"]["threadItemNotFound"] | LexiconDefs["app.bsky.unspecced.defs"]["threadItemBlocked"] | Record<string, any>;
+    };
+  };
+  "app.bsky.unspecced.getSuggestedFeeds": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getSuggestedFeedsSkeleton": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getSuggestedOnboardingUsers": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getSuggestedStarterPacks": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getSuggestedStarterPacksSkeleton": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getSuggestedUsers": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getSuggestedUsersForDiscover": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getSuggestedUsersForExplore": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getSuggestedUsersForExploreSkeleton": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getSuggestedUsersForSeeMore": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getSuggestedUsersSkeleton": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getSuggestionsSkeleton": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getTaggedSuggestions": {
+    "main": never;
+    "suggestion": {
+      "tag": string;
+      "subjectType": string;
+      "subject": string;
+    };
+  };
+  "app.bsky.unspecced.getTrendingTopics": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getTrends": {
+    "main": never;
+  };
+  "app.bsky.unspecced.getTrendsSkeleton": {
+    "main": never;
+  };
+  "app.bsky.unspecced.initAgeAssurance": {
+    "main": never;
+  };
+  "app.bsky.unspecced.searchActorsSkeleton": {
+    "main": never;
+  };
+  "app.bsky.unspecced.searchPostsSkeleton": {
+    "main": never;
+  };
+  "app.bsky.unspecced.searchStarterPacksSkeleton": {
+    "main": never;
+  };
+  "app.bsky.video.defs": {
+    "jobStatus": {
+      "jobId": string;
+      "did": string;
+      "state": string;
+      "progress"?: number;
+      "blob"?: any /* blob */;
+      "error"?: string;
+      "message"?: string;
+      "aspectRatio"?: {
+      "width"?: number;
+      "height"?: number;
+    };
+    };
+  };
+  "app.bsky.video.getJobStatus": {
+    "main": never;
+  };
+  "app.bsky.video.getUploadLimits": {
+    "main": never;
+  };
+  "app.bsky.video.uploadVideo": {
+    "main": never;
+  };
+  "blue.linkat.board": {
+    "main": {
+      "cards": Array<LexiconDefs["blue.linkat.board"]["card"]>;
+    };
+    "card": {
+      "url"?: string;
+      "text"?: string;
+    };
+  };
+  "chat.bsky.actor.declaration": {
+    "main": {
+      "allowIncoming": string;
+    };
+  };
+  "chat.bsky.actor.defs": {
+    "profileViewBasic": {
+      "did": string;
+      "handle": string;
+      "displayName"?: string;
+      "avatar"?: string;
+      "associated"?: LexiconDefs["app.bsky.actor.defs"]["profileAssociated"];
+      "viewer"?: LexiconDefs["app.bsky.actor.defs"]["viewerState"];
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "chatDisabled"?: boolean;
+      "verification"?: any /* unresolved ref: app.bsky.actor.defs#verificationState */;
+    };
+  };
+  "chat.bsky.actor.deleteAccount": {
+    "main": never;
+  };
+  "chat.bsky.actor.exportAccountData": {
+    "main": never;
+  };
+  "chat.bsky.authFullChatClient": {
+    "main": any;
+  };
+  "chat.bsky.convo.acceptConvo": {
+    "main": never;
+  };
+  "chat.bsky.convo.addReaction": {
+    "main": never;
+  };
+  "chat.bsky.convo.defs": {
+    "messageRef": {
+      "did": string;
+      "convoId": string;
+      "messageId": string;
+    };
+    "messageInput": {
+      "text": string;
+      "facets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "embed"?: LexiconDefs["app.bsky.embed.record"]["main"] | Record<string, any>;
+    };
+    "messageView": {
+      "id": string;
+      "rev": string;
+      "text": string;
+      "facets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "embed"?: LexiconDefs["app.bsky.embed.record"]["view"] | Record<string, any>;
+      "reactions"?: Array<LexiconDefs["chat.bsky.convo.defs"]["reactionView"]>;
+      "sender": LexiconDefs["chat.bsky.convo.defs"]["messageViewSender"];
+      "sentAt": string;
+    };
+    "deletedMessageView": {
+      "id": string;
+      "rev": string;
+      "sender": LexiconDefs["chat.bsky.convo.defs"]["messageViewSender"];
+      "sentAt": string;
+    };
+    "messageViewSender": {
+      "did": string;
+    };
+    "reactionView": {
+      "value": string;
+      "sender": LexiconDefs["chat.bsky.convo.defs"]["reactionViewSender"];
+      "createdAt": string;
+    };
+    "reactionViewSender": {
+      "did": string;
+    };
+    "messageAndReactionView": {
+      "message": LexiconDefs["chat.bsky.convo.defs"]["messageView"];
+      "reaction": LexiconDefs["chat.bsky.convo.defs"]["reactionView"];
+    };
+    "convoView": {
+      "id": string;
+      "rev": string;
+      "members": Array<LexiconDefs["chat.bsky.actor.defs"]["profileViewBasic"]>;
+      "lastMessage"?: LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>;
+      "lastReaction"?: LexiconDefs["chat.bsky.convo.defs"]["messageAndReactionView"] | Record<string, any>;
+      "muted": boolean;
+      "status"?: string;
+      "unreadCount": number;
+    };
+    "logBeginConvo": {
+      "rev": string;
+      "convoId": string;
+    };
+    "logAcceptConvo": {
+      "rev": string;
+      "convoId": string;
+    };
+    "logLeaveConvo": {
+      "rev": string;
+      "convoId": string;
+    };
+    "logMuteConvo": {
+      "rev": string;
+      "convoId": string;
+    };
+    "logUnmuteConvo": {
+      "rev": string;
+      "convoId": string;
+    };
+    "logCreateMessage": {
+      "rev": string;
+      "convoId": string;
+      "message": LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>;
+    };
+    "logDeleteMessage": {
+      "rev": string;
+      "convoId": string;
+      "message": LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>;
+    };
+    "logReadMessage": {
+      "rev": string;
+      "convoId": string;
+      "message": LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>;
+    };
+    "logAddReaction": {
+      "rev": string;
+      "convoId": string;
+      "message": LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>;
+      "reaction": LexiconDefs["chat.bsky.convo.defs"]["reactionView"];
+    };
+    "logRemoveReaction": {
+      "rev": string;
+      "convoId": string;
+      "message": LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>;
+      "reaction": LexiconDefs["chat.bsky.convo.defs"]["reactionView"];
+    };
+  };
+  "chat.bsky.convo.deleteMessageForSelf": {
+    "main": never;
+  };
+  "chat.bsky.convo.getConvo": {
+    "main": never;
+  };
+  "chat.bsky.convo.getConvoAvailability": {
+    "main": never;
+  };
+  "chat.bsky.convo.getConvoForMembers": {
+    "main": never;
+  };
+  "chat.bsky.convo.getLog": {
+    "main": never;
+  };
+  "chat.bsky.convo.getMessages": {
+    "main": never;
+  };
+  "chat.bsky.convo.leaveConvo": {
+    "main": never;
+  };
+  "chat.bsky.convo.listConvoRequests": {
+    "main": never;
+  };
+  "chat.bsky.convo.listConvos": {
+    "main": never;
+  };
+  "chat.bsky.convo.lockConvo": {
+    "main": never;
+  };
+  "chat.bsky.convo.muteConvo": {
+    "main": never;
+  };
+  "chat.bsky.convo.removeReaction": {
+    "main": never;
+  };
+  "chat.bsky.convo.sendMessage": {
+    "main": never;
+  };
+  "chat.bsky.convo.sendMessageBatch": {
+    "main": never;
+    "batchItem": {
+      "convoId": string;
+      "message": LexiconDefs["chat.bsky.convo.defs"]["messageInput"];
+    };
+  };
+  "chat.bsky.convo.unlockConvo": {
+    "main": never;
+  };
+  "chat.bsky.convo.unmuteConvo": {
+    "main": never;
+  };
+  "chat.bsky.convo.updateAllRead": {
+    "main": never;
+  };
+  "chat.bsky.convo.updateRead": {
+    "main": never;
+  };
+  "chat.bsky.group.addMembers": {
+    "main": never;
+  };
+  "chat.bsky.group.addReaction": {
+    "main": never;
+  };
+  "chat.bsky.group.approveJoinRequest": {
+    "main": never;
+  };
+  "chat.bsky.group.createGroup": {
+    "main": never;
+  };
+  "chat.bsky.group.createJoinLink": {
+    "main": never;
+  };
+  "chat.bsky.group.defs": {
+    "linkEnabledStatus": string;
+    "joinRule": string;
+    "joinLinkView": {
+      "code": string;
+      "enabledStatus": LexiconDefs["chat.bsky.group.defs"]["linkEnabledStatus"];
+      "requireApproval": boolean;
+      "joinRule": LexiconDefs["chat.bsky.group.defs"]["joinRule"];
+      "createdAt": string;
+    };
+    "groupPublicView": {
+      "name": string;
+      "owner": LexiconDefs["chat.bsky.actor.defs"]["profileViewBasic"];
+      "memberCount": number;
+      "requireApproval": boolean;
+    };
+    "joinRequestView": {
+      "convoId": string;
+      "requestedBy": LexiconDefs["chat.bsky.actor.defs"]["profileViewBasic"];
+      "requestedAt": string;
+    };
+  };
+  "chat.bsky.group.deleteGroup": {
+    "main": never;
+  };
+  "chat.bsky.group.deleteMessageForSelf": {
+    "main": never;
+  };
+  "chat.bsky.group.disableJoinLink": {
+    "main": never;
+  };
+  "chat.bsky.group.editGroup": {
+    "main": never;
+  };
+  "chat.bsky.group.editJoinLink": {
+    "main": never;
+  };
+  "chat.bsky.group.enableJoinLink": {
+    "main": never;
+  };
+  "chat.bsky.group.getGroupPublicInfo": {
+    "main": never;
+  };
+  "chat.bsky.group.getMessages": {
+    "main": never;
+  };
+  "chat.bsky.group.leaveGroup": {
+    "main": never;
+  };
+  "chat.bsky.group.listGroups": {
+    "main": never;
+  };
+  "chat.bsky.group.listInviteLinks": {
+    "main": never;
+  };
+  "chat.bsky.group.listJoinRequests": {
+    "main": never;
+  };
+  "chat.bsky.group.listMembers": {
+    "main": never;
+  };
+  "chat.bsky.group.rejectJoinRequest": {
+    "main": never;
+  };
+  "chat.bsky.group.removeMembers": {
+    "main": never;
+  };
+  "chat.bsky.group.removeReaction": {
+    "main": never;
+  };
+  "chat.bsky.group.requestJoin": {
+    "main": never;
+  };
+  "chat.bsky.group.sendMessage": {
+    "main": never;
+  };
+  "chat.bsky.moderation.getActorMetadata": {
+    "main": never;
+    "metadata": {
+      "messagesSent": number;
+      "messagesReceived": number;
+      "convos": number;
+      "convosStarted": number;
+    };
+  };
+  "chat.bsky.moderation.getMessageContext": {
+    "main": never;
+  };
+  "chat.bsky.moderation.updateActorAccess": {
+    "main": never;
+  };
+  "com.atproto.admin.defs": {
+    "statusAttr": {
+      "applied": boolean;
+      "ref"?: string;
+    };
+    "accountView": {
+      "did": string;
+      "handle": string;
+      "email"?: string;
+      "relatedRecords"?: Array<unknown>;
+      "indexedAt": string;
+      "invitedBy"?: LexiconDefs["com.atproto.server.defs"]["inviteCode"];
+      "invites"?: Array<LexiconDefs["com.atproto.server.defs"]["inviteCode"]>;
+      "invitesDisabled"?: boolean;
+      "emailConfirmedAt"?: string;
+      "inviteNote"?: string;
+      "deactivatedAt"?: string;
+      "threatSignatures"?: Array<LexiconDefs["com.atproto.admin.defs"]["threatSignature"]>;
+    };
+    "repoRef": {
+      "did": string;
+    };
+    "repoBlobRef": {
+      "did": string;
+      "cid": string;
+      "recordUri"?: string;
+    };
+    "threatSignature": {
+      "property": string;
+      "value": string;
+    };
+  };
+  "com.atproto.admin.deleteAccount": {
+    "main": never;
+  };
+  "com.atproto.admin.disableAccountInvites": {
+    "main": never;
+  };
+  "com.atproto.admin.disableInviteCodes": {
+    "main": never;
+  };
+  "com.atproto.admin.enableAccountInvites": {
+    "main": never;
+  };
+  "com.atproto.admin.getAccountInfo": {
+    "main": never;
+  };
+  "com.atproto.admin.getAccountInfos": {
+    "main": never;
+  };
+  "com.atproto.admin.getAccountTakedown": {
+    "main": never;
+  };
+  "com.atproto.admin.getAccountUsage": {
+    "main": never;
+  };
+  "com.atproto.admin.getBlobAuditStatus": {
+    "main": never;
+  };
+  "com.atproto.admin.getInviteCodes": {
+    "main": never;
+  };
+  "com.atproto.admin.getModerationReports": {
+    "main": never;
+  };
+  "com.atproto.admin.getServerStats": {
+    "main": never;
+  };
+  "com.atproto.admin.getSubjectStatus": {
+    "main": never;
+  };
+  "com.atproto.admin.moderateAccount": {
+    "main": never;
+  };
+  "com.atproto.admin.moderateRecord": {
+    "main": never;
+  };
+  "com.atproto.admin.queryAuditLog": {
+    "main": never;
+  };
+  "com.atproto.admin.repairRepo": {
+    "main": never;
+  };
+  "com.atproto.admin.resolveReport": {
+    "main": never;
+  };
+  "com.atproto.admin.runBlobAudit": {
+    "main": never;
+  };
+  "com.atproto.admin.searchAccounts": {
+    "main": never;
+  };
+  "com.atproto.admin.sendEmail": {
+    "main": never;
+  };
+  "com.atproto.admin.takeDownAccount": {
+    "main": never;
+  };
+  "com.atproto.admin.updateAccountEmail": {
+    "main": never;
+  };
+  "com.atproto.admin.updateAccountHandle": {
+    "main": never;
+  };
+  "com.atproto.admin.updateAccountPassword": {
+    "main": never;
+  };
+  "com.atproto.admin.updateAccountSigningKey": {
+    "main": never;
+  };
+  "com.atproto.admin.updateSubjectStatus": {
+    "main": never;
+  };
+  "com.atproto.identity.defs": {
+    "identityInfo": {
+      "did": string;
+      "handle": string;
+      "didDoc": unknown;
+    };
+  };
+  "com.atproto.identity.getRecommendedDidCredentials": {
+    "main": never;
+  };
+  "com.atproto.identity.refreshIdentity": {
+    "main": never;
+  };
+  "com.atproto.identity.requestPlcOperationSignature": {
+    "main": never;
+  };
+  "com.atproto.identity.resolveDid": {
+    "main": never;
+  };
+  "com.atproto.identity.resolveHandle": {
+    "main": never;
+  };
+  "com.atproto.identity.resolveIdentity": {
+    "main": never;
+  };
+  "com.atproto.identity.signPlcOperation": {
+    "main": never;
+  };
+  "com.atproto.identity.submitPlcOperation": {
+    "main": never;
+  };
+  "com.atproto.identity.updateHandle": {
+    "main": never;
+  };
+  "com.atproto.label.createLabel": {
+    "main": never;
+  };
+  "com.atproto.label.defs": {
+    "label": {
+      "src": string;
+      "uri": string;
+      "cid"?: string;
+      "val": string;
+      "neg"?: boolean;
+      "cts": string;
+    };
+    "selfLabels": {
+      "values": Array<LexiconDefs["com.atproto.label.defs"]["selfLabel"]>;
+    };
+    "selfLabel": {
+      "val": string;
+    };
+  };
+  "com.atproto.label.getLabels": {
+    "main": never;
+  };
+  "com.atproto.label.queryLabels": {
+    "main": never;
+  };
+  "com.atproto.label.subscribeLabels": {
+    "main": any;
+    "labels": {
+      "seq": number;
+      "labels": Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+    };
+    "info": {
+      "name": string;
+      "message"?: string;
+    };
+  };
+  "com.atproto.lexicon.resolveLexicon": {
+    "main": never;
+  };
+  "com.atproto.lexicon.schema": {
+    "main": {
+      "lexicon": number;
+    };
+  };
+  "com.atproto.moderation.createReport": {
+    "main": never;
+    "modTool": {
+      "name": string;
+      "meta"?: unknown;
+    };
+  };
+  "com.atproto.moderation.defs": {
+    "reasonRude": string;
+    "reasonSpam": string;
+    "reasonType": string;
+    "reasonOther": string;
+    "subjectType": string;
+    "reasonAppeal": string;
+    "reasonSexual": string;
+    "reasonViolation": string;
+    "reasonMisleading": string;
+  };
+  "com.atproto.repo.applyWrites": {
+    "main": never;
+    "create": {
+      "collection": string;
+      "rkey"?: string;
+      "value": unknown;
+    };
+    "update": {
+      "collection": string;
+      "rkey": string;
+      "value": unknown;
+    };
+    "delete": {
+      "collection": string;
+      "rkey": string;
+    };
+    "createResult": {
+      "uri": string;
+      "cid": string;
+      "validationStatus"?: string;
+    };
+    "updateResult": {
+      "uri": string;
+      "cid": string;
+      "validationStatus"?: string;
+    };
+    "deleteResult": {
+    };
+  };
+  "com.atproto.repo.createRecord": {
+    "main": never;
+  };
+  "com.atproto.repo.defs": {
+    "commitMeta": {
+      "cid": string;
+      "rev": string;
+    };
+  };
+  "com.atproto.repo.deleteBlob": {
+    "main": never;
+  };
+  "com.atproto.repo.deleteRecord": {
+    "main": never;
+  };
+  "com.atproto.repo.describeRepo": {
+    "main": never;
+  };
+  "com.atproto.repo.getBlob": {
+    "main": never;
+  };
+  "com.atproto.repo.getRecord": {
+    "main": never;
+  };
+  "com.atproto.repo.importRepo": {
+    "main": never;
+  };
+  "com.atproto.repo.listMissingBlobs": {
+    "main": never;
+    "recordBlob": {
+      "cid": string;
+      "recordUri": string;
+    };
+  };
+  "com.atproto.repo.listRecords": {
+    "main": never;
+    "record": {
+      "uri": string;
+      "cid": string;
+      "value": unknown;
+    };
+  };
+  "com.atproto.repo.putRecord": {
+    "main": never;
+  };
+  "com.atproto.repo.strongRef": {
+    "main": {
+      "uri": string;
+      "cid": string;
+    };
+  };
+  "com.atproto.repo.updateRecord": {
+    "main": never;
+  };
+  "com.atproto.repo.uploadBlob": {
+    "main": never;
+  };
+  "com.atproto.server.activateAccount": {
+    "main": never;
+  };
+  "com.atproto.server.checkAccountStatus": {
+    "main": never;
+  };
+  "com.atproto.server.confirmEmail": {
+    "main": never;
+  };
+  "com.atproto.server.createAccount": {
+    "main": never;
+  };
+  "com.atproto.server.createAppPassword": {
+    "main": never;
+    "appPassword": {
+      "name": string;
+      "password": string;
+      "createdAt": string;
+      "privileged"?: boolean;
+    };
+  };
+  "com.atproto.server.createInviteCode": {
+    "main": never;
+  };
+  "com.atproto.server.createInviteCodes": {
+    "main": never;
+    "accountCodes": {
+      "account": string;
+      "codes": Array<string>;
+    };
+  };
+  "com.atproto.server.createSession": {
+    "main": never;
+  };
+  "com.atproto.server.deactivateAccount": {
+    "main": never;
+  };
+  "com.atproto.server.defs": {
+    "inviteCode": {
+      "code": string;
+      "available": number;
+      "disabled": boolean;
+      "forAccount": string;
+      "createdBy": string;
+      "createdAt": string;
+      "uses": Array<LexiconDefs["com.atproto.server.defs"]["inviteCodeUse"]>;
+    };
+    "inviteCodeUse": {
+      "usedBy": string;
+      "usedAt": string;
+    };
+  };
+  "com.atproto.server.deleteAccount": {
+    "main": never;
+  };
+  "com.atproto.server.deleteSession": {
+    "main": never;
+  };
+  "com.atproto.server.describeServer": {
+    "main": never;
+    "links": {
+      "privacyPolicy"?: string;
+      "termsOfService"?: string;
+    };
+  };
+  "com.atproto.server.getAccount": {
+    "main": never;
+  };
+  "com.atproto.server.getAccountInviteCodes": {
+    "main": never;
+  };
+  "com.atproto.server.getServiceAuth": {
+    "main": never;
+  };
+  "com.atproto.server.getSession": {
+    "main": never;
+  };
+  "com.atproto.server.listAppPasswords": {
+    "main": never;
+    "appPassword": {
+      "name": string;
+      "createdAt": string;
+      "privileged"?: boolean;
+    };
+  };
+  "com.atproto.server.refreshSession": {
+    "main": never;
+  };
+  "com.atproto.server.requestAccountDelete": {
+    "main": never;
+  };
+  "com.atproto.server.requestEmailConfirmation": {
+    "main": never;
+  };
+  "com.atproto.server.requestEmailUpdate": {
+    "main": never;
+  };
+  "com.atproto.server.requestPasswordReset": {
+    "main": never;
+  };
+  "com.atproto.server.reserveSigningKey": {
+    "main": never;
+  };
+  "com.atproto.server.resetPassword": {
+    "main": never;
+  };
+  "com.atproto.server.revokeAppPassword": {
+    "main": never;
+  };
+  "com.atproto.server.updateEmail": {
+    "main": never;
+  };
+  "com.atproto.sync.defs": {
+    "hostStatus": string;
+  };
+  "com.atproto.sync.getBlob": {
+    "main": never;
+  };
+  "com.atproto.sync.getBlocks": {
+    "main": never;
+  };
+  "com.atproto.sync.getCheckout": {
+    "main": never;
+  };
+  "com.atproto.sync.getHead": {
+    "main": never;
+  };
+  "com.atproto.sync.getHostStatus": {
+    "main": never;
+  };
+  "com.atproto.sync.getLatestCommit": {
+    "main": never;
+  };
+  "com.atproto.sync.getRecord": {
+    "main": never;
+  };
+  "com.atproto.sync.getRepo": {
+    "main": never;
+  };
+  "com.atproto.sync.getRepoStatus": {
+    "main": never;
+  };
+  "com.atproto.sync.listBlobs": {
+    "main": never;
+  };
+  "com.atproto.sync.listHosts": {
+    "main": never;
+    "host": {
+      "hostname": string;
+      "seq"?: number;
+      "accountCount"?: number;
+      "status"?: LexiconDefs["com.atproto.sync.defs"]["hostStatus"];
+    };
+  };
+  "com.atproto.sync.listRepos": {
+    "main": never;
+    "repo": {
+      "did": string;
+      "head": string;
+      "rev": string;
+      "active"?: boolean;
+      "status"?: string;
+    };
+  };
+  "com.atproto.sync.listReposByCollection": {
+    "main": never;
+    "repo": {
+      "did": string;
+    };
+  };
+  "com.atproto.sync.notifyOfUpdate": {
+    "main": never;
+  };
+  "com.atproto.sync.requestCrawl": {
+    "main": never;
+  };
+  "com.atproto.sync.subscribeRepos": {
+    "main": any;
+    "commit": {
+      "seq": number;
+      "rebase": boolean;
+      "tooBig": boolean;
+      "repo": string;
+      "commit": unknown /* cid-link */;
+      "rev": string;
+      "since": string;
+      "blocks": { $bytes: string } | string;
+      "ops": Array<LexiconDefs["com.atproto.sync.subscribeRepos"]["repoOp"]>;
+      "blobs": Array<unknown /* cid-link */>;
+      "prevData"?: unknown /* cid-link */;
+      "time": string;
+    };
+    "sync": {
+      "seq": number;
+      "did": string;
+      "blocks": { $bytes: string } | string;
+      "rev": string;
+      "time": string;
+    };
+    "identity": {
+      "seq": number;
+      "did": string;
+      "time": string;
+      "handle"?: string;
+    };
+    "account": {
+      "seq": number;
+      "did": string;
+      "time": string;
+      "active": boolean;
+      "status"?: string;
+    };
+    "info": {
+      "name": string;
+      "message"?: string;
+    };
+    "repoOp": {
+      "action": string;
+      "path": string;
+      "cid": unknown /* cid-link */;
+      "prev"?: unknown /* cid-link */;
+    };
+  };
+  "com.atproto.temp.addReservedHandle": {
+    "main": never;
+  };
+  "com.atproto.temp.checkHandleAvailability": {
+    "main": never;
+    "resultAvailable": {
+    };
+    "resultUnavailable": {
+      "suggestions": Array<LexiconDefs["com.atproto.temp.checkHandleAvailability"]["suggestion"]>;
+    };
+    "suggestion": {
+      "handle": string;
+      "method": string;
+    };
+  };
+  "com.atproto.temp.checkSignupQueue": {
+    "main": never;
+  };
+  "com.atproto.temp.dereferenceScope": {
+    "main": never;
+  };
+  "com.atproto.temp.fetchLabels": {
+    "main": never;
+  };
+  "com.atproto.temp.requestPhoneVerification": {
+    "main": never;
+  };
+  "com.atproto.temp.revokeAccountCredentials": {
+    "main": never;
+  };
+  "com.germnetwork.authManageDeclaration": {
+    "main": any;
+  };
+  "com.germnetwork.declaration": {
+    "main": {
+      "version": string;
+      "currentKey": { $bytes: string } | string;
+      "messageMe"?: LexiconDefs["com.germnetwork.declaration"]["messageMe"];
+      "keyPackage"?: { $bytes: string } | string;
+      "continuityProofs"?: Array<{ $bytes: string } | string>;
+    };
+    "messageMe": {
+      "messageMeUrl": string;
+      "showButtonTo": string;
+    };
+  };
+  "com.germnetwork.identity.getAnchorKey": {
+    "main": never;
+  };
+  "com.germnetwork.keypackage": {
+    "main": {
+      "version": string;
+      "anchorHello": { $bytes: string } | string;
+      "anchorSignature"?: { $bytes: string } | string;
+    };
+  };
+  "com.germnetwork.mailbox.claimAddresses": {
+    "main": never;
+  };
+  "com.germnetwork.mailbox.deliver": {
+    "main": never;
+  };
+  "com.germnetwork.mailbox.poll": {
+    "main": never;
+    "message": {
+      "address": string;
+      "ciphertext": { $bytes: string } | string;
+    };
+  };
+  "com.germnetwork.rendezvous.deliver": {
+    "main": never;
+  };
+  "com.germnetwork.rendezvous.register": {
+    "main": never;
+  };
+  "com.shinolabs.pinksea.appViewDefs": {
+    "hydratedOekaki": {
+      "author": LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["author"];
+      "image": string;
+      "at": string;
+      "cid": string;
+      "creationTime": string;
+      "nsfw": boolean;
+      "tags"?: Array<string>;
+      "alt"?: string;
+    };
+    "author": {
+      "did": string;
+      "handle": string;
+    };
+    "oekakiTombstone": {
+      "formerAt": string;
+    };
+  };
+  "com.shinolabs.pinksea.getAuthorFeed": {
+    "main": never;
+  };
+  "com.shinolabs.pinksea.getAuthorReplies": {
+    "main": never;
+  };
+  "com.shinolabs.pinksea.getHandleFromDid": {
+    "main": never;
+  };
+  "com.shinolabs.pinksea.getIdentity": {
+    "main": never;
+  };
+  "com.shinolabs.pinksea.getOekaki": {
+    "main": never;
+  };
+  "com.shinolabs.pinksea.getParentForReply": {
+    "main": never;
+  };
+  "com.shinolabs.pinksea.getRecent": {
+    "main": never;
+  };
+  "com.shinolabs.pinksea.getTagFeed": {
+    "main": never;
+  };
+  "com.shinolabs.pinksea.oekaki": {
+    "main": {
+      "createdAt": string;
+      "image": LexiconDefs["com.shinolabs.pinksea.oekaki"]["image"];
+      "tags"?: Array<string>;
+      "inResponseTo"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "nsfw"?: boolean;
+    };
+    "image": {
+      "blob": any /* blob */;
+      "imageLink": LexiconDefs["com.shinolabs.pinksea.oekaki"]["imageLink"];
+    };
+    "imageLink": {
+      "alt"?: string;
+    };
+  };
+  "com.shinolabs.pinksea.profile": {
+    "main": {
+      "avatar"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "nickname"?: string;
+      "bio"?: string;
+      "links"?: Array<LexiconDefs["com.shinolabs.pinksea.profile"]["profileLink"]>;
+    };
+    "profileLink": {
+      "name": string;
+      "link": string;
+    };
+  };
+  "com.whtwnd.blog.defs": {
+    "blogEntry": {
+      "content": string;
+      "createdAt"?: string;
+    };
+    "comment": {
+      "content": string;
+      "entryUri": string;
+    };
+    "ogp": {
+      "url": string;
+      "width"?: number;
+      "height"?: number;
+    };
+    "blobMetadata": {
+      "blobref": any /* blob */;
+      "name"?: string;
+    };
+  };
+  "com.whtwnd.blog.entry": {
+    "main": {
+      "content": string;
+      "createdAt"?: string;
+      "title"?: string;
+      "subtitle"?: string;
+      "ogp"?: LexiconDefs["com.whtwnd.blog.defs"]["ogp"];
+      "theme"?: string;
+      "blobs"?: Array<LexiconDefs["com.whtwnd.blog.defs"]["blobMetadata"]>;
+      "isDraft"?: boolean;
+      "visibility"?: string;
+    };
+  };
+  "com.whtwnd.blog.getAuthorPosts": {
+    "main": never;
+  };
+  "com.whtwnd.blog.getEntryMetadataByName": {
+    "main": never;
+  };
+  "com.whtwnd.blog.getMentionsByEntry": {
+    "main": never;
+  };
+  "com.whtwnd.blog.notifyOfNewEntry": {
+    "main": never;
+  };
+  "fyi.frontpage.feed.comment": {
+    "main": {
+      "blocks": Array<LexiconDefs["fyi.frontpage.richtext.block"]["main"]>;
+      "createdAt": string;
+      "parent"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "post": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+  };
+  "fyi.frontpage.feed.post": {
+    "main": {
+      "title": string;
+      "subject": LexiconDefs["fyi.frontpage.feed.post"]["urlSubject"] | Record<string, any>;
+      "createdAt": string;
+    };
+    "urlSubject": {
+      "url": string;
+    };
+  };
+  "fyi.frontpage.feed.vote": {
+    "main": {
+      "subject": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "createdAt": string;
+    };
+  };
+  "fyi.frontpage.richtext.block": {
+    "main": {
+      "content": LexiconDefs["fyi.frontpage.richtext.block"]["plaintextParagraph"] | Record<string, any>;
+    };
+    "plaintextParagraph": {
+      "text": string;
+    };
+  };
+  "fyi.unravel.frontpage.comment": {
+    "main": {
+      "content": string;
+      "createdAt": string;
+      "parent"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "post": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+  };
+  "fyi.unravel.frontpage.post": {
+    "main": {
+      "title": string;
+      "url": string;
+      "createdAt": string;
+    };
+  };
+  "fyi.unravel.frontpage.vote": {
+    "main": {
+      "subject": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "createdAt": string;
+    };
+  };
+  "my.skylights.defs": {
+    "item": {
+      "ref": string;
+      "value": string;
+    };
+  };
+  "my.skylights.list": {
+    "main": {
+      "title": string;
+      "createdAt"?: string;
+      "description"?: string;
+      "sortBy"?: string;
+    };
+  };
+  "my.skylights.listItem": {
+    "main": {
+      "item"?: LexiconDefs["my.skylights.defs"]["item"];
+      "list": LexiconDefs["my.skylights.list"]["main"] | LexiconDefs["my.skylights.listItem"]["builtin"] | Record<string, any>;
+      "addedAt": string;
+      "position": string;
+      "note"?: string;
+    };
+    "builtin": {
+      "type"?: LexiconDefs["my.skylights.listItem"]["inProgress"] | LexiconDefs["my.skylights.listItem"]["queue"] | LexiconDefs["my.skylights.listItem"]["abandoned"] | LexiconDefs["my.skylights.listItem"]["owned"] | LexiconDefs["my.skylights.listItem"]["wishlist"] | Record<string, any>;
+    };
+    "inProgress": string;
+    "queue": string;
+    "abandoned": string;
+    "owned": string;
+    "wishlist": string;
+  };
+  "my.skylights.rel": {
+    "main": {
+      "item": LexiconDefs["my.skylights.defs"]["item"];
+      "rating"?: LexiconDefs["my.skylights.rel"]["rating"];
+      "note"?: LexiconDefs["my.skylights.rel"]["note"];
+      "finishedAt"?: Array<string>;
+    };
+    "rating": {
+      "value": number;
+      "createdAt": string;
+    };
+    "note": {
+      "value": string;
+      "createdAt": string;
+      "updatedAt": string;
+    };
+  };
+  "place.stream.branding.deleteBlob": {
+    "main": never;
+  };
+  "place.stream.branding.getBlob": {
+    "main": never;
+  };
+  "place.stream.branding.getBranding": {
+    "main": never;
+    "brandingAsset": {
+      "key": string;
+      "mimeType": string;
+      "url"?: string;
+      "data"?: string;
+      "width"?: number;
+      "height"?: number;
+    };
+  };
+  "place.stream.branding.updateBlob": {
+    "main": never;
+  };
+  "place.stream.broadcast.defs": {
+    "broadcastOriginView": {
+      "uri": string;
+      "cid": string;
+      "author": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
+      "record": unknown;
+    };
+  };
+  "place.stream.broadcast.getBroadcaster": {
+    "main": never;
+  };
+  "place.stream.broadcast.origin": {
+    "main": {
+      "streamer": string;
+      "server": string;
+      "broadcaster"?: string;
+      "updatedAt": string;
+      "irohTicket"?: string;
+      "websocketURL"?: string;
+    };
+  };
+  "place.stream.broadcast.syndication": {
+    "main": {
+      "broadcaster": string;
+      "streamer": string;
+      "createdAt": string;
+    };
+  };
+  "place.stream.chat.defs": {
+    "messageView": {
+      "uri": string;
+      "cid": string;
+      "author": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
+      "record": unknown;
+      "indexedAt": string;
+      "chatProfile"?: LexiconDefs["place.stream.chat.profile"]["main"];
+      "replyTo"?: LexiconDefs["place.stream.chat.defs"]["messageView"] | Record<string, any>;
+      "deleted"?: boolean;
+    };
+  };
+  "place.stream.chat.gate": {
+    "main": {
+      "hiddenMessage": string;
+    };
+  };
+  "place.stream.chat.message": {
+    "main": {
+      "text": string;
+      "createdAt": string;
+      "facets"?: Array<LexiconDefs["place.stream.richtext.facet"]["main"]>;
+      "streamer": string;
+      "reply"?: LexiconDefs["place.stream.chat.message"]["replyRef"];
+    };
+    "replyRef": {
+      "root": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "parent": LexiconDefs["com.atproto.repo.strongRef"]["main"];
+    };
+  };
+  "place.stream.chat.profile": {
+    "main": {
+      "color"?: LexiconDefs["place.stream.chat.profile"]["color"];
+    };
+    "color": {
+      "red": number;
+      "green": number;
+      "blue": number;
+    };
+  };
+  "place.stream.defs": {
+    "blockView": {
+      "uri": string;
+      "cid": string;
+      "blocker": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
+      "record": LexiconDefs["app.bsky.graph.block"]["main"];
+      "indexedAt": string;
+    };
+    "renditions": {
+      "renditions": Array<LexiconDefs["place.stream.defs"]["rendition"]>;
+    };
+    "rendition": {
+      "name": string;
+    };
+  };
+  "place.stream.graph.getFollowingUser": {
+    "main": never;
+  };
+  "place.stream.key": {
+    "main": {
+      "signingKey": string;
+      "createdAt": string;
+      "createdBy"?: string;
+    };
+  };
+  "place.stream.live.getLiveUsers": {
+    "main": never;
+  };
+  "place.stream.live.getProfileCard": {
+    "main": never;
+  };
+  "place.stream.live.getRecommendations": {
+    "main": never;
+    "livestreamRecommendation": {
+      "did": string;
+      "source": string;
+    };
+  };
+  "place.stream.live.getSegments": {
+    "main": never;
+  };
+  "place.stream.live.recommendations": {
+    "main": {
+      "streamers": Array<string>;
+      "createdAt": string;
+    };
+  };
+  "place.stream.live.searchActorsTypeahead": {
+    "main": never;
+    "actor": {
+      "did": string;
+      "handle": string;
+    };
+  };
+  "place.stream.live.subscribeSegments": {
+    "main": any;
+    "segment": { $bytes: string } | string;
+  };
+  "place.stream.livestream": {
+    "main": {
+      "title": string;
+      "url"?: string;
+      "createdAt": string;
+      "post"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "agent"?: string;
+      "canonicalUrl"?: string;
+      "thumb"?: any /* blob */;
+      "notificationSettings"?: LexiconDefs["place.stream.livestream"]["notificationSettings"];
+    };
+    "notificationSettings": {
+      "pushNotification"?: boolean;
+    };
+    "livestreamView": {
+      "uri": string;
+      "cid": string;
+      "author": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
+      "record": unknown;
+      "indexedAt": string;
+      "viewerCount"?: LexiconDefs["place.stream.livestream"]["viewerCount"];
+    };
+    "viewerCount": {
+      "count": number;
+    };
+    "streamplaceAnything": {
+      "livestream": LexiconDefs["place.stream.livestream"]["livestreamView"] | LexiconDefs["place.stream.livestream"]["viewerCount"] | LexiconDefs["place.stream.defs"]["blockView"] | LexiconDefs["place.stream.defs"]["renditions"] | LexiconDefs["place.stream.defs"]["rendition"] | LexiconDefs["place.stream.chat.defs"]["messageView"] | Record<string, any>;
+    };
+  };
+  "place.stream.metadata.configuration": {
+    "main": {
+      "contentWarnings"?: LexiconDefs["place.stream.metadata.contentWarnings"]["main"];
+      "contentRights"?: LexiconDefs["place.stream.metadata.contentRights"]["main"];
+      "distributionPolicy"?: LexiconDefs["place.stream.metadata.distributionPolicy"]["main"];
+    };
+  };
+  "place.stream.metadata.contentRights": {
+    "main": {
+      "creator"?: string;
+      "copyrightNotice"?: string;
+      "copyrightYear"?: number;
+      "license"?: string;
+      "creditLine"?: string;
+    };
+    "all-rights-reserved": string;
+    "cc0_1__0": string;
+    "cc-by_4__0": string;
+    "cc-by-sa_4__0": string;
+    "cc-by-nc_4__0": string;
+    "cc-by-nc-sa_4__0": string;
+    "cc-by-nd_4__0": string;
+    "cc-by-nc-nd_4__0": string;
+  };
+  "place.stream.metadata.contentWarnings": {
+    "main": {
+      "warnings"?: Array<string>;
+    };
+    "death": string;
+    "drugUse": string;
+    "fantasyViolence": string;
+    "flashingLights": string;
+    "language": string;
+    "nudity": string;
+    "PII": string;
+    "sexuality": string;
+    "suffering": string;
+    "violence": string;
+  };
+  "place.stream.metadata.distributionPolicy": {
+    "main": {
+      "deleteAfter"?: number;
+      "allowedBroadcasters"?: Array<string>;
+    };
+  };
+  "place.stream.moderation.createBlock": {
+    "main": never;
+  };
+  "place.stream.moderation.createGate": {
+    "main": never;
+  };
+  "place.stream.moderation.defs": {
+    "permissionView": {
+      "uri": string;
+      "cid": string;
+      "author": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
+      "record": unknown;
+    };
+  };
+  "place.stream.moderation.deleteBlock": {
+    "main": never;
+  };
+  "place.stream.moderation.deleteGate": {
+    "main": never;
+  };
+  "place.stream.moderation.permission": {
+    "main": {
+      "moderator": string;
+      "permissions": Array<string>;
+      "createdAt": string;
+      "expirationTime"?: string;
+    };
+  };
+  "place.stream.moderation.updateLivestream": {
+    "main": never;
+  };
+  "place.stream.multistream.createTarget": {
+    "main": never;
+  };
+  "place.stream.multistream.defs": {
+    "targetView": {
+      "uri": string;
+      "cid": string;
+      "record": unknown;
+      "latestEvent"?: LexiconDefs["place.stream.multistream.defs"]["event"];
+    };
+    "event": {
+      "message": string;
+      "status": string;
+      "createdAt": string;
+    };
+  };
+  "place.stream.multistream.deleteTarget": {
+    "main": never;
+  };
+  "place.stream.multistream.listTargets": {
+    "main": never;
+    "record": {
+      "uri": string;
+      "cid": string;
+      "value": unknown;
+    };
+  };
+  "place.stream.multistream.putTarget": {
+    "main": never;
+  };
+  "place.stream.multistream.target": {
+    "main": {
+      "url": string;
+      "active": boolean;
+      "createdAt": string;
+      "name"?: string;
+    };
+  };
+  "place.stream.richtext.facet": {
+    "main": {
+      "index": LexiconDefs["app.bsky.richtext.facet"]["byteSlice"];
+      "features": Array<LexiconDefs["app.bsky.richtext.facet"]["mention"] | LexiconDefs["app.bsky.richtext.facet"]["link"] | Record<string, any>>;
+    };
+  };
+  "place.stream.segment": {
+    "main": {
+      "id": string;
+      "signingKey": string;
+      "startTime": string;
+      "duration"?: number;
+      "creator": string;
+      "video"?: Array<LexiconDefs["place.stream.segment"]["video"]>;
+      "audio"?: Array<LexiconDefs["place.stream.segment"]["audio"]>;
+      "size"?: number;
+      "contentWarnings"?: LexiconDefs["place.stream.metadata.contentWarnings"]["main"];
+      "contentRights"?: LexiconDefs["place.stream.metadata.contentRights"]["main"];
+      "distributionPolicy"?: LexiconDefs["place.stream.metadata.distributionPolicy"]["main"];
+    };
+    "audio": {
+      "codec": string;
+      "rate": number;
+      "channels": number;
+    };
+    "video": {
+      "codec": string;
+      "width": number;
+      "height": number;
+      "framerate"?: LexiconDefs["place.stream.segment"]["framerate"];
+      "bframes"?: boolean;
+    };
+    "framerate": {
+      "num": number;
+      "den": number;
+    };
+    "segmentView": {
+      "cid": string;
+      "record": unknown;
+    };
+  };
+  "place.stream.server.createWebhook": {
+    "main": never;
+  };
+  "place.stream.server.defs": {
+    "webhook": {
+      "id": string;
+      "url": string;
+      "events": Array<string>;
+      "active": boolean;
+      "prefix"?: string;
+      "suffix"?: string;
+      "rewrite"?: Array<LexiconDefs["place.stream.server.defs"]["rewriteRule"]>;
+      "createdAt": string;
+      "updatedAt"?: string;
+      "name"?: string;
+      "description"?: string;
+      "lastTriggered"?: string;
+      "errorCount"?: number;
+      "muteWords"?: Array<string>;
+    };
+    "rewriteRule": {
+      "from": string;
+      "to": string;
+    };
+  };
+  "place.stream.server.deleteWebhook": {
+    "main": never;
+  };
+  "place.stream.server.getServerTime": {
+    "main": never;
+  };
+  "place.stream.server.getWebhook": {
+    "main": never;
+  };
+  "place.stream.server.listWebhooks": {
+    "main": never;
+  };
+  "place.stream.server.settings": {
+    "main": {
+      "debugRecording"?: boolean;
+    };
+  };
+  "place.stream.server.updateWebhook": {
+    "main": never;
+  };
+  "sh.tangled.actor.profile": {
+    "main": {
+      "description"?: string;
+      "links"?: Array<string>;
+      "stats"?: Array<string>;
+      "bluesky": boolean;
+      "location"?: string;
+      "pinnedRepositories"?: Array<string>;
+    };
+  };
+  "sh.tangled.graph.follow": {
+    "main": {
+      "subject": string;
+      "createdAt": string;
+    };
+  };
+  "social.grain.actor.defs": {
+    "profileView": {
+      "cid": string;
+      "did": string;
+      "handle": string;
+      "displayName"?: string;
+      "description"?: string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "avatar"?: string;
+      "createdAt"?: string;
+    };
+    "profileViewDetailed": {
+      "cid": string;
+      "did": string;
+      "handle": string;
+      "displayName"?: string;
+      "description"?: string;
+      "avatar"?: string;
+      "cameras"?: Array<string>;
+      "followersCount"?: number;
+      "followsCount"?: number;
+      "galleryCount"?: number;
+      "indexedAt"?: string;
+      "createdAt"?: string;
+      "viewer"?: LexiconDefs["social.grain.actor.defs"]["viewerState"];
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+    };
+    "viewerState": {
+      "following"?: string;
+      "followedBy"?: string;
+    };
+  };
+  "social.grain.actor.getActorFavs": {
+    "main": never;
+  };
+  "social.grain.actor.getProfile": {
+    "main": never;
+  };
+  "social.grain.actor.profile": {
+    "main": {
+      "displayName"?: string;
+      "description"?: string;
+      "avatar"?: any /* blob */;
+      "createdAt"?: string;
+    };
+  };
+  "social.grain.actor.searchActors": {
+    "main": never;
+  };
+  "social.grain.actor.updateAvatar": {
+    "main": never;
+  };
+  "social.grain.actor.updateProfile": {
+    "main": never;
+  };
+  "social.grain.comment": {
+    "main": {
+      "text": string;
+      "facets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "subject": string;
+      "focus"?: string;
+      "replyTo"?: string;
+      "createdAt": string;
+    };
+  };
+  "social.grain.comment.createComment": {
+    "main": never;
+  };
+  "social.grain.comment.defs": {
+    "commentView": {
+      "uri": string;
+      "cid": string;
+      "author": LexiconDefs["social.grain.actor.defs"]["profileView"];
+      "record"?: unknown;
+      "text": string;
+      "facets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "subject"?: LexiconDefs["social.grain.gallery.defs"]["galleryView"] | Record<string, any>;
+      "focus"?: LexiconDefs["social.grain.photo.defs"]["photoView"] | Record<string, any>;
+      "replyTo"?: string;
+      "createdAt": string;
+    };
+  };
+  "social.grain.comment.deleteComment": {
+    "main": never;
+  };
+  "social.grain.darkroom.getGalleryComposite": {
+    "main": never;
+  };
+  "social.grain.defs": {
+    "aspectRatio": {
+      "width": number;
+      "height": number;
+    };
+  };
+  "social.grain.favorite": {
+    "main": {
+      "createdAt": string;
+      "subject": string;
+    };
+  };
+  "social.grain.favorite.createFavorite": {
+    "main": never;
+  };
+  "social.grain.favorite.deleteFavorite": {
+    "main": never;
+  };
+  "social.grain.feed.getTimeline": {
+    "main": never;
+  };
+  "social.grain.gallery": {
+    "main": {
+      "title": string;
+      "description"?: string;
+      "facets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
+      "updatedAt"?: string;
+      "createdAt": string;
+    };
+  };
+  "social.grain.gallery.applySort": {
+    "main": never;
+    "update": {
+      "itemUri": string;
+      "position": number;
+    };
+  };
+  "social.grain.gallery.createGallery": {
+    "main": never;
+  };
+  "social.grain.gallery.createItem": {
+    "main": never;
+  };
+  "social.grain.gallery.defs": {
+    "galleryView": {
+      "uri": string;
+      "cid": string;
+      "title"?: string;
+      "description"?: string;
+      "cameras"?: Array<string>;
+      "facets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "creator": LexiconDefs["social.grain.actor.defs"]["profileView"];
+      "record": unknown;
+      "items"?: Array<LexiconDefs["social.grain.photo.defs"]["photoView"] | Record<string, any>>;
+      "favCount"?: number;
+      "commentCount"?: number;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "createdAt"?: string;
+      "indexedAt": string;
+      "viewer"?: LexiconDefs["social.grain.gallery.defs"]["viewerState"];
+    };
+    "viewerState": {
+      "fav"?: string;
+    };
+  };
+  "social.grain.gallery.deleteGallery": {
+    "main": never;
+  };
+  "social.grain.gallery.deleteItem": {
+    "main": never;
+  };
+  "social.grain.gallery.getActorGalleries": {
+    "main": never;
+  };
+  "social.grain.gallery.getGallery": {
+    "main": never;
+  };
+  "social.grain.gallery.getGalleryThread": {
+    "main": never;
+  };
+  "social.grain.gallery.item": {
+    "main": {
+      "createdAt": string;
+      "gallery": string;
+      "item": string;
+      "position"?: number;
+    };
+  };
+  "social.grain.gallery.updateGallery": {
+    "main": never;
+  };
+  "social.grain.graph.createFollow": {
+    "main": never;
+  };
+  "social.grain.graph.deleteFollow": {
+    "main": never;
+  };
+  "social.grain.graph.follow": {
+    "main": {
+      "subject": string;
+      "createdAt": string;
+    };
+  };
+  "social.grain.graph.getFollowers": {
+    "main": never;
+  };
+  "social.grain.graph.getFollows": {
+    "main": never;
+  };
+  "social.grain.labeler.defs": {
+    "labelerView": {
+      "uri": string;
+      "cid": string;
+      "creator": LexiconDefs["social.grain.actor.defs"]["profileView"];
+      "favoriteCount"?: number;
+      "viewer"?: LexiconDefs["social.grain.labeler.defs"]["labelerViewerState"];
+      "indexedAt": string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+    };
+    "labelerViewDetailed": {
+      "uri": string;
+      "cid": string;
+      "creator": LexiconDefs["app.bsky.actor.defs"]["profileView"];
+      "policies": any /* unresolved ref: social.grain.actor.defs#labelerPolicies */;
+      "favoriteCount"?: number;
+      "viewer"?: LexiconDefs["social.grain.labeler.defs"]["labelerViewerState"];
+      "indexedAt": string;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "reasonTypes"?: Array<LexiconDefs["com.atproto.moderation.defs"]["reasonType"]>;
+      "subjectTypes"?: Array<LexiconDefs["com.atproto.moderation.defs"]["subjectType"]>;
+      "subjectCollections"?: Array<string>;
+    };
+    "labelerViewerState": {
+      "like"?: string;
+    };
+    "labelerPolicies": {
+      "labelValues": Array<any /* unresolved ref: com.atproto.label.defs#labelValue */>;
+      "labelValueDefinitions"?: Array<any /* unresolved ref: com.atproto.label.defs#labelValueDefinition */>;
+    };
+  };
+  "social.grain.labeler.service": {
+    "main": {
+      "policies": LexiconDefs["app.bsky.labeler.defs"]["labelerPolicies"];
+      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
+      "createdAt": string;
+      "reasonTypes"?: Array<LexiconDefs["com.atproto.moderation.defs"]["reasonType"]>;
+      "subjectTypes"?: Array<LexiconDefs["com.atproto.moderation.defs"]["subjectType"]>;
+      "subjectCollections"?: Array<string>;
+    };
+  };
+  "social.grain.notification.defs": {
+    "notificationView": {
+      "uri": string;
+      "cid": string;
+      "author": LexiconDefs["social.grain.actor.defs"]["profileView"];
+      "reasonSubject"?: string;
+      "reason": string;
+      "record": unknown;
+      "isRead": boolean;
+      "indexedAt": string;
+    };
+    "notificationViewDetailed": {
+      "uri": string;
+      "cid": string;
+      "author": LexiconDefs["social.grain.actor.defs"]["profileView"];
+      "reason": string;
+      "reasonSubject"?: LexiconDefs["social.grain.actor.defs"]["profileView"] | LexiconDefs["social.grain.comment.defs"]["commentView"] | LexiconDefs["social.grain.gallery.defs"]["galleryView"] | Record<string, any>;
+      "record": unknown;
+      "isRead": boolean;
+      "indexedAt": string;
+    };
+  };
+  "social.grain.notification.getNotifications": {
+    "main": never;
+  };
+  "social.grain.notification.updateSeen": {
+    "main": never;
+  };
+  "social.grain.photo": {
+    "main": {
+      "photo": any /* blob */;
+      "alt"?: string;
+      "aspectRatio": LexiconDefs["social.grain.defs"]["aspectRatio"];
+      "createdAt": string;
+    };
+  };
+  "social.grain.photo.applyAlts": {
+    "main": never;
+    "update": {
+      "photoUri": string;
+      "alt": string;
+    };
+  };
+  "social.grain.photo.createExif": {
+    "main": never;
+  };
+  "social.grain.photo.defs": {
+    "photoView": {
+      "uri": string;
+      "cid": string;
+      "thumb": string;
+      "fullsize": string;
+      "alt"?: string;
+      "aspectRatio": LexiconDefs["social.grain.defs"]["aspectRatio"];
+      "exif"?: LexiconDefs["social.grain.photo.defs"]["exifView"];
+      "gallery"?: LexiconDefs["social.grain.photo.defs"]["galleryState"];
+    };
+    "exifView": {
+      "uri": string;
+      "cid": string;
+      "photo": string;
+      "record": unknown;
+      "createdAt": string;
+      "dateTimeOriginal"?: string;
+      "exposureTime"?: string;
+      "fNumber"?: string;
+      "flash"?: string;
+      "focalLengthIn35mmFormat"?: string;
+      "iSO"?: number;
+      "lensMake"?: string;
+      "lensModel"?: string;
+      "make"?: string;
+      "model"?: string;
+    };
+    "galleryState": {
+      "item": string;
+      "itemCreatedAt": string;
+      "itemPosition": number;
+    };
+  };
+  "social.grain.photo.deletePhoto": {
+    "main": never;
+  };
+  "social.grain.photo.exif": {
+    "main": {
+      "photo": string;
+      "createdAt": string;
+      "dateTimeOriginal"?: string;
+      "exposureTime"?: number;
+      "fNumber"?: number;
+      "flash"?: string;
+      "focalLengthIn35mmFormat"?: number;
+      "iSO"?: number;
+      "lensMake"?: string;
+      "lensModel"?: string;
+      "make"?: string;
+      "model"?: string;
+    };
+  };
+  "social.grain.photo.getActorPhotos": {
+    "main": never;
+  };
+  "social.grain.photo.uploadPhoto": {
+    "main": never;
+  };
+  "tools.garazyk.account.getUsage": {
+    "main": never;
+  };
+  "tools.garazyk.sync.getRepoFiltered": {
+    "main": never;
+  };
+  "tools.ozone.communication.createTemplate": {
+    "main": never;
+  };
+  "tools.ozone.communication.defs": {
+    "templateView": {
+      "id": string;
+      "name": string;
+      "subject"?: string;
+      "contentMarkdown": string;
+      "disabled": boolean;
+      "lang"?: string;
+      "lastUpdatedBy": string;
+      "createdAt": string;
+      "updatedAt": string;
+    };
+  };
+  "tools.ozone.communication.deleteTemplate": {
+    "main": never;
+  };
+  "tools.ozone.communication.listTemplates": {
+    "main": never;
+  };
+  "tools.ozone.communication.updateTemplate": {
+    "main": never;
+  };
+  "tools.ozone.hosting.getAccountHistory": {
+    "main": never;
+    "event": {
+      "details": LexiconDefs["tools.ozone.hosting.getAccountHistory"]["accountCreated"] | LexiconDefs["tools.ozone.hosting.getAccountHistory"]["emailUpdated"] | LexiconDefs["tools.ozone.hosting.getAccountHistory"]["emailConfirmed"] | LexiconDefs["tools.ozone.hosting.getAccountHistory"]["passwordUpdated"] | LexiconDefs["tools.ozone.hosting.getAccountHistory"]["handleUpdated"] | Record<string, any>;
+      "createdBy": string;
+      "createdAt": string;
+    };
+    "accountCreated": {
+      "email"?: string;
+      "handle"?: string;
+    };
+    "emailUpdated": {
+      "email": string;
+    };
+    "emailConfirmed": {
+      "email": string;
+    };
+    "passwordUpdated": {
+    };
+    "handleUpdated": {
+      "handle": string;
+    };
+  };
+  "tools.ozone.moderation.cancelScheduledAction": {
+    "main": never;
+  };
+  "tools.ozone.moderation.cancelScheduledActions": {
+    "main": never;
+    "cancellationResults": {
+      "succeeded": Array<string>;
+      "failed": Array<LexiconDefs["tools.ozone.moderation.cancelScheduledActions"]["failedCancellation"]>;
+    };
+    "failedCancellation": {
+      "did": string;
+      "error": string;
+      "errorCode"?: string;
+    };
+  };
+  "tools.ozone.moderation.defs": {
+    "modEventView": {
+      "id": number;
+      "event": LexiconDefs["tools.ozone.moderation.defs"]["modEventTakedown"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventReverseTakedown"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventComment"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventReport"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventLabel"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventAcknowledge"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventEscalate"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventMute"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmute"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventMuteReporter"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmuteReporter"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventEmail"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventResolveAppeal"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventDivert"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventTag"] | LexiconDefs["tools.ozone.moderation.defs"]["accountEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["identityEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["recordEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventPriorityScore"] | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceOverrideEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["revokeAccountCredentialsEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["scheduleTakedownEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["cancelScheduledTakedownEvent"] | Record<string, any>;
+      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | LexiconDefs["chat.bsky.convo.defs"]["messageRef"] | Record<string, any>;
+      "subjectBlobCids": Array<string>;
+      "createdBy": string;
+      "createdAt": string;
+      "creatorHandle"?: string;
+      "subjectHandle"?: string;
+      "modTool"?: LexiconDefs["tools.ozone.moderation.defs"]["modTool"];
+    };
+    "modEventViewDetail": {
+      "id": number;
+      "event": LexiconDefs["tools.ozone.moderation.defs"]["modEventTakedown"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventReverseTakedown"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventComment"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventReport"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventLabel"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventAcknowledge"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventEscalate"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventMute"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmute"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventMuteReporter"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmuteReporter"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventEmail"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventResolveAppeal"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventDivert"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventTag"] | LexiconDefs["tools.ozone.moderation.defs"]["accountEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["identityEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["recordEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventPriorityScore"] | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceOverrideEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["revokeAccountCredentialsEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["scheduleTakedownEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["cancelScheduledTakedownEvent"] | Record<string, any>;
+      "subject": LexiconDefs["tools.ozone.moderation.defs"]["repoView"] | LexiconDefs["tools.ozone.moderation.defs"]["repoViewNotFound"] | LexiconDefs["tools.ozone.moderation.defs"]["recordView"] | LexiconDefs["tools.ozone.moderation.defs"]["recordViewNotFound"] | Record<string, any>;
+      "subjectBlobs": Array<LexiconDefs["tools.ozone.moderation.defs"]["blobView"]>;
+      "createdBy": string;
+      "createdAt": string;
+      "modTool"?: LexiconDefs["tools.ozone.moderation.defs"]["modTool"];
+    };
+    "subjectStatusView": {
+      "id": number;
+      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | LexiconDefs["chat.bsky.convo.defs"]["messageRef"] | Record<string, any>;
+      "hosting"?: LexiconDefs["tools.ozone.moderation.defs"]["accountHosting"] | LexiconDefs["tools.ozone.moderation.defs"]["recordHosting"] | Record<string, any>;
+      "subjectBlobCids"?: Array<string>;
+      "subjectRepoHandle"?: string;
+      "updatedAt": string;
+      "createdAt": string;
+      "reviewState": LexiconDefs["tools.ozone.moderation.defs"]["subjectReviewState"];
+      "comment"?: string;
+      "priorityScore"?: number;
+      "muteUntil"?: string;
+      "muteReportingUntil"?: string;
+      "lastReviewedBy"?: string;
+      "lastReviewedAt"?: string;
+      "lastReportedAt"?: string;
+      "lastAppealedAt"?: string;
+      "takendown"?: boolean;
+      "appealed"?: boolean;
+      "suspendUntil"?: string;
+      "tags"?: Array<string>;
+      "accountStats"?: LexiconDefs["tools.ozone.moderation.defs"]["accountStats"];
+      "recordsStats"?: LexiconDefs["tools.ozone.moderation.defs"]["recordsStats"];
+      "accountStrike"?: LexiconDefs["tools.ozone.moderation.defs"]["accountStrike"];
+      "ageAssuranceState"?: string;
+      "ageAssuranceUpdatedBy"?: string;
+    };
+    "subjectView": {
+      "type": LexiconDefs["com.atproto.moderation.defs"]["subjectType"];
+      "subject": string;
+      "status"?: LexiconDefs["tools.ozone.moderation.defs"]["subjectStatusView"];
+      "repo"?: LexiconDefs["tools.ozone.moderation.defs"]["repoViewDetail"];
+      "profile"?: never | Record<string, any>;
+      "record"?: LexiconDefs["tools.ozone.moderation.defs"]["recordViewDetail"];
+    };
+    "accountStats": {
+      "reportCount"?: number;
+      "appealCount"?: number;
+      "suspendCount"?: number;
+      "escalateCount"?: number;
+      "takedownCount"?: number;
+    };
+    "recordsStats": {
+      "totalReports"?: number;
+      "reportedCount"?: number;
+      "escalatedCount"?: number;
+      "appealedCount"?: number;
+      "subjectCount"?: number;
+      "pendingCount"?: number;
+      "processedCount"?: number;
+      "takendownCount"?: number;
+    };
+    "accountStrike": {
+      "activeStrikeCount"?: number;
+      "totalStrikeCount"?: number;
+      "firstStrikeAt"?: string;
+      "lastStrikeAt"?: string;
+    };
+    "subjectReviewState": string;
+    "reviewOpen": string;
+    "reviewEscalated": string;
+    "reviewClosed": string;
+    "reviewNone": string;
+    "modEventTakedown": {
+      "comment"?: string;
+      "durationInHours"?: number;
+      "acknowledgeAccountSubjects"?: boolean;
+      "policies"?: Array<string>;
+      "severityLevel"?: string;
+      "targetServices"?: Array<string>;
+      "strikeCount"?: number;
+      "strikeExpiresAt"?: string;
+    };
+    "modEventReverseTakedown": {
+      "comment"?: string;
+      "policies"?: Array<string>;
+      "severityLevel"?: string;
+      "strikeCount"?: number;
+    };
+    "modEventResolveAppeal": {
+      "comment"?: string;
+    };
+    "modEventComment": {
+      "comment"?: string;
+      "sticky"?: boolean;
+    };
+    "modEventReport": {
+      "comment"?: string;
+      "isReporterMuted"?: boolean;
+      "reportType": LexiconDefs["com.atproto.moderation.defs"]["reasonType"];
+    };
+    "modEventLabel": {
+      "comment"?: string;
+      "createLabelVals": Array<string>;
+      "negateLabelVals": Array<string>;
+      "durationInHours"?: number;
+    };
+    "modEventPriorityScore": {
+      "comment"?: string;
+      "score": number;
+    };
+    "ageAssuranceEvent": {
+      "createdAt": string;
+      "attemptId": string;
+      "status": string;
+      "access"?: LexiconDefs["app.bsky.ageassurance.defs"]["access"];
+      "countryCode"?: string;
+      "regionCode"?: string;
+      "initIp"?: string;
+      "initUa"?: string;
+      "completeIp"?: string;
+      "completeUa"?: string;
+    };
+    "ageAssuranceOverrideEvent": {
+      "status": string;
+      "access"?: LexiconDefs["app.bsky.ageassurance.defs"]["access"];
+      "comment": string;
+    };
+    "revokeAccountCredentialsEvent": {
+      "comment": string;
+    };
+    "modEventAcknowledge": {
+      "comment"?: string;
+      "acknowledgeAccountSubjects"?: boolean;
+    };
+    "modEventEscalate": {
+      "comment"?: string;
+    };
+    "modEventMute": {
+      "comment"?: string;
+      "durationInHours": number;
+    };
+    "modEventUnmute": {
+      "comment"?: string;
+    };
+    "modEventMuteReporter": {
+      "comment"?: string;
+      "durationInHours"?: number;
+    };
+    "modEventUnmuteReporter": {
+      "comment"?: string;
+    };
+    "modEventEmail": {
+      "subjectLine": string;
+      "content"?: string;
+      "comment"?: string;
+      "policies"?: Array<string>;
+      "severityLevel"?: string;
+      "strikeCount"?: number;
+      "strikeExpiresAt"?: string;
+      "isDelivered"?: boolean;
+    };
+    "modEventDivert": {
+      "comment"?: string;
+    };
+    "modEventTag": {
+      "add": Array<string>;
+      "remove": Array<string>;
+      "comment"?: string;
+    };
+    "accountEvent": {
+      "comment"?: string;
+      "active": boolean;
+      "status"?: string;
+      "timestamp": string;
+    };
+    "identityEvent": {
+      "comment"?: string;
+      "handle"?: string;
+      "pdsHost"?: string;
+      "tombstone"?: boolean;
+      "timestamp": string;
+    };
+    "recordEvent": {
+      "comment"?: string;
+      "op": string;
+      "cid"?: string;
+      "timestamp": string;
+    };
+    "scheduleTakedownEvent": {
+      "comment"?: string;
+      "executeAt"?: string;
+      "executeAfter"?: string;
+      "executeUntil"?: string;
+    };
+    "cancelScheduledTakedownEvent": {
+      "comment"?: string;
+    };
+    "repoView": {
+      "did": string;
+      "handle": string;
+      "email"?: string;
+      "relatedRecords": Array<unknown>;
+      "indexedAt": string;
+      "moderation": LexiconDefs["tools.ozone.moderation.defs"]["moderation"];
+      "invitedBy"?: LexiconDefs["com.atproto.server.defs"]["inviteCode"];
+      "invitesDisabled"?: boolean;
+      "inviteNote"?: string;
+      "deactivatedAt"?: string;
+      "threatSignatures"?: Array<LexiconDefs["com.atproto.admin.defs"]["threatSignature"]>;
+    };
+    "repoViewDetail": {
+      "did": string;
+      "handle": string;
+      "email"?: string;
+      "relatedRecords": Array<unknown>;
+      "indexedAt": string;
+      "moderation": LexiconDefs["tools.ozone.moderation.defs"]["moderationDetail"];
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "invitedBy"?: LexiconDefs["com.atproto.server.defs"]["inviteCode"];
+      "invites"?: Array<LexiconDefs["com.atproto.server.defs"]["inviteCode"]>;
+      "invitesDisabled"?: boolean;
+      "inviteNote"?: string;
+      "emailConfirmedAt"?: string;
+      "deactivatedAt"?: string;
+      "threatSignatures"?: Array<LexiconDefs["com.atproto.admin.defs"]["threatSignature"]>;
+    };
+    "repoViewNotFound": {
+      "did": string;
+    };
+    "recordView": {
+      "uri": string;
+      "cid": string;
+      "value": unknown;
+      "blobCids": Array<string>;
+      "indexedAt": string;
+      "moderation": LexiconDefs["tools.ozone.moderation.defs"]["moderation"];
+      "repo": LexiconDefs["tools.ozone.moderation.defs"]["repoView"];
+    };
+    "recordViewDetail": {
+      "uri": string;
+      "cid": string;
+      "value": unknown;
+      "blobs": Array<LexiconDefs["tools.ozone.moderation.defs"]["blobView"]>;
+      "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
+      "indexedAt": string;
+      "moderation": LexiconDefs["tools.ozone.moderation.defs"]["moderationDetail"];
+      "repo": LexiconDefs["tools.ozone.moderation.defs"]["repoView"];
+    };
+    "recordViewNotFound": {
+      "uri": string;
+    };
+    "moderation": {
+      "subjectStatus"?: LexiconDefs["tools.ozone.moderation.defs"]["subjectStatusView"];
+    };
+    "moderationDetail": {
+      "subjectStatus"?: LexiconDefs["tools.ozone.moderation.defs"]["subjectStatusView"];
+    };
+    "blobView": {
+      "cid": string;
+      "mimeType": string;
+      "size": number;
+      "createdAt": string;
+      "details"?: LexiconDefs["tools.ozone.moderation.defs"]["imageDetails"] | LexiconDefs["tools.ozone.moderation.defs"]["videoDetails"] | Record<string, any>;
+      "moderation"?: LexiconDefs["tools.ozone.moderation.defs"]["moderation"];
+    };
+    "imageDetails": {
+      "width": number;
+      "height": number;
+    };
+    "videoDetails": {
+      "width": number;
+      "height": number;
+      "length": number;
+    };
+    "accountHosting": {
+      "status": string;
+      "updatedAt"?: string;
+      "createdAt"?: string;
+      "deletedAt"?: string;
+      "deactivatedAt"?: string;
+      "reactivatedAt"?: string;
+    };
+    "recordHosting": {
+      "status": string;
+      "updatedAt"?: string;
+      "createdAt"?: string;
+      "deletedAt"?: string;
+    };
+    "reporterStats": {
+      "did": string;
+      "accountReportCount": number;
+      "recordReportCount": number;
+      "reportedAccountCount": number;
+      "reportedRecordCount": number;
+      "takendownAccountCount": number;
+      "takendownRecordCount": number;
+      "labeledAccountCount": number;
+      "labeledRecordCount": number;
+    };
+    "modTool": {
+      "name": string;
+      "meta"?: unknown;
+    };
+    "timelineEventPlcCreate": string;
+    "timelineEventPlcOperation": string;
+    "timelineEventPlcTombstone": string;
+    "scheduledActionView": {
+      "id": number;
+      "action": string;
+      "eventData"?: unknown;
+      "did": string;
+      "executeAt"?: string;
+      "executeAfter"?: string;
+      "executeUntil"?: string;
+      "randomizeExecution"?: boolean;
+      "createdBy": string;
+      "createdAt": string;
+      "updatedAt"?: string;
+      "status": string;
+      "lastExecutedAt"?: string;
+      "lastFailureReason"?: string;
+      "executionEventId"?: number;
+    };
+  };
+  "tools.ozone.moderation.emitEvent": {
+    "main": never;
+  };
+  "tools.ozone.moderation.getAccountTimeline": {
+    "main": never;
+    "timelineItem": {
+      "day": string;
+      "summary": Array<LexiconDefs["tools.ozone.moderation.getAccountTimeline"]["timelineItemSummary"]>;
+    };
+    "timelineItemSummary": {
+      "eventSubjectType": string;
+      "eventType": string;
+      "count": number;
+    };
+  };
+  "tools.ozone.moderation.getEvent": {
+    "main": never;
+  };
+  "tools.ozone.moderation.getRecord": {
+    "main": never;
+  };
+  "tools.ozone.moderation.getRecords": {
+    "main": never;
+  };
+  "tools.ozone.moderation.getRepo": {
+    "main": never;
+  };
+  "tools.ozone.moderation.getReporterStats": {
+    "main": never;
+  };
+  "tools.ozone.moderation.getRepos": {
+    "main": never;
+  };
+  "tools.ozone.moderation.getSubjects": {
+    "main": never;
+  };
+  "tools.ozone.moderation.getSubjectStatus": {
+    "main": never;
+  };
+  "tools.ozone.moderation.listScheduledActions": {
+    "main": never;
+  };
+  "tools.ozone.moderation.queryEvents": {
+    "main": never;
+  };
+  "tools.ozone.moderation.queryStatuses": {
+    "main": never;
+  };
+  "tools.ozone.moderation.scheduleAction": {
+    "main": never;
+    "takedown": {
+      "comment"?: string;
+      "durationInHours"?: number;
+      "acknowledgeAccountSubjects"?: boolean;
+      "policies"?: Array<string>;
+      "severityLevel"?: string;
+      "strikeCount"?: number;
+      "strikeExpiresAt"?: string;
+      "emailContent"?: string;
+      "emailSubject"?: string;
+    };
+    "schedulingConfig": {
+      "executeAt"?: string;
+      "executeAfter"?: string;
+      "executeUntil"?: string;
+    };
+    "scheduledActionResults": {
+      "succeeded": Array<string>;
+      "failed": Array<LexiconDefs["tools.ozone.moderation.scheduleAction"]["failedScheduling"]>;
+    };
+    "failedScheduling": {
+      "subject": string;
+      "error": string;
+      "errorCode"?: string;
+    };
+  };
+  "tools.ozone.moderation.searchRepos": {
+    "main": never;
+  };
+  "tools.ozone.report.defs": {
+    "reasonType": string;
+    "reasonAppeal": string;
+    "reasonOther": string;
+    "reasonViolenceAnimal": string;
+    "reasonViolenceThreats": string;
+    "reasonViolenceGraphicContent": string;
+    "reasonViolenceGlorification": string;
+    "reasonViolenceExtremistContent": string;
+    "reasonViolenceTrafficking": string;
+    "reasonViolenceOther": string;
+    "reasonSexualAbuseContent": string;
+    "reasonSexualNCII": string;
+    "reasonSexualDeepfake": string;
+    "reasonSexualAnimal": string;
+    "reasonSexualUnlabeled": string;
+    "reasonSexualOther": string;
+    "reasonChildSafetyCSAM": string;
+    "reasonChildSafetyGroom": string;
+    "reasonChildSafetyPrivacy": string;
+    "reasonChildSafetyHarassment": string;
+    "reasonChildSafetyOther": string;
+    "reasonHarassmentTroll": string;
+    "reasonHarassmentTargeted": string;
+    "reasonHarassmentHateSpeech": string;
+    "reasonHarassmentDoxxing": string;
+    "reasonHarassmentOther": string;
+    "reasonMisleadingBot": string;
+    "reasonMisleadingImpersonation": string;
+    "reasonMisleadingSpam": string;
+    "reasonMisleadingScam": string;
+    "reasonMisleadingElections": string;
+    "reasonMisleadingOther": string;
+    "reasonRuleSiteSecurity": string;
+    "reasonRuleProhibitedSales": string;
+    "reasonRuleBanEvasion": string;
+    "reasonRuleOther": string;
+    "reasonSelfHarmContent": string;
+    "reasonSelfHarmED": string;
+    "reasonSelfHarmStunts": string;
+    "reasonSelfHarmSubstances": string;
+    "reasonSelfHarmOther": string;
+  };
+  "tools.ozone.safelink.addRule": {
+    "main": never;
+  };
+  "tools.ozone.safelink.defs": {
+    "event": {
+      "id": number;
+      "eventType": LexiconDefs["tools.ozone.safelink.defs"]["eventType"];
+      "url": string;
+      "pattern": LexiconDefs["tools.ozone.safelink.defs"]["patternType"];
+      "action": LexiconDefs["tools.ozone.safelink.defs"]["actionType"];
+      "reason": LexiconDefs["tools.ozone.safelink.defs"]["reasonType"];
+      "createdBy": string;
+      "createdAt": string;
+      "comment"?: string;
+    };
+    "eventType": string;
+    "patternType": string;
+    "actionType": string;
+    "reasonType": string;
+    "urlRule": {
+      "url": string;
+      "pattern": LexiconDefs["tools.ozone.safelink.defs"]["patternType"];
+      "action": LexiconDefs["tools.ozone.safelink.defs"]["actionType"];
+      "reason": LexiconDefs["tools.ozone.safelink.defs"]["reasonType"];
+      "comment"?: string;
+      "createdBy": string;
+      "createdAt": string;
+      "updatedAt": string;
+    };
+  };
+  "tools.ozone.safelink.queryEvents": {
+    "main": never;
+  };
+  "tools.ozone.safelink.queryRules": {
+    "main": never;
+  };
+  "tools.ozone.safelink.removeRule": {
+    "main": never;
+  };
+  "tools.ozone.safelink.updateRule": {
+    "main": never;
+  };
+  "tools.ozone.server.getConfig": {
+    "main": never;
+    "serviceConfig": {
+      "url"?: string;
+    };
+    "viewerConfig": {
+      "role"?: string;
+    };
+  };
+  "tools.ozone.server.updateConfig": {
+    "main": never;
+  };
+  "tools.ozone.set.addValues": {
+    "main": never;
+  };
+  "tools.ozone.set.defs": {
+    "set": {
+      "name": string;
+      "description"?: string;
+    };
+    "setView": {
+      "name": string;
+      "description"?: string;
+      "setSize": number;
+      "createdAt": string;
+      "updatedAt": string;
+    };
+  };
+  "tools.ozone.set.deleteSet": {
+    "main": never;
+  };
+  "tools.ozone.set.deleteValues": {
+    "main": never;
+  };
+  "tools.ozone.set.getValues": {
+    "main": never;
+  };
+  "tools.ozone.set.querySets": {
+    "main": never;
+  };
+  "tools.ozone.set.upsertSet": {
+    "main": never;
+  };
+  "tools.ozone.setting.defs": {
+    "option": {
+      "key": string;
+      "did": string;
+      "value": unknown;
+      "description"?: string;
+      "createdAt"?: string;
+      "updatedAt"?: string;
+      "managerRole"?: string;
+      "scope": string;
+      "createdBy": string;
+      "lastUpdatedBy": string;
+    };
+  };
+  "tools.ozone.setting.listOptions": {
+    "main": never;
+  };
+  "tools.ozone.setting.removeOptions": {
+    "main": never;
+  };
+  "tools.ozone.setting.upsertOption": {
+    "main": never;
+  };
+  "tools.ozone.signature.defs": {
+    "sigDetail": {
+      "property": string;
+      "value": string;
+    };
+  };
+  "tools.ozone.signature.findCorrelation": {
+    "main": never;
+  };
+  "tools.ozone.signature.findRelatedAccounts": {
+    "main": never;
+    "relatedAccount": {
+      "account": LexiconDefs["com.atproto.admin.defs"]["accountView"];
+      "similarities"?: Array<LexiconDefs["tools.ozone.signature.defs"]["sigDetail"]>;
+    };
+  };
+  "tools.ozone.signature.searchAccounts": {
+    "main": never;
+  };
+  "tools.ozone.team.addMember": {
+    "main": never;
+  };
+  "tools.ozone.team.defs": {
+    "member": {
+      "did": string;
+      "disabled"?: boolean;
+      "profile"?: LexiconDefs["app.bsky.actor.defs"]["profileViewDetailed"];
+      "createdAt"?: string;
+      "updatedAt"?: string;
+      "lastUpdatedBy"?: string;
+      "role": string;
+    };
+    "roleAdmin": string;
+    "roleModerator": string;
+    "roleTriage": string;
+    "roleVerifier": string;
+  };
+  "tools.ozone.team.deleteMember": {
+    "main": never;
+  };
+  "tools.ozone.team.listMembers": {
+    "main": never;
+  };
+  "tools.ozone.team.updateMember": {
+    "main": never;
+  };
+  "tools.ozone.verification.defs": {
+    "verificationView": {
+      "issuer": string;
+      "uri": string;
+      "subject": string;
+      "handle": string;
+      "displayName": string;
+      "createdAt": string;
+      "revokeReason"?: string;
+      "revokedAt"?: string;
+      "revokedBy"?: string;
+      "subjectProfile"?: never | Record<string, any>;
+      "issuerProfile"?: never | Record<string, any>;
+      "subjectRepo"?: LexiconDefs["tools.ozone.moderation.defs"]["repoViewDetail"] | LexiconDefs["tools.ozone.moderation.defs"]["repoViewNotFound"] | Record<string, any>;
+      "issuerRepo"?: LexiconDefs["tools.ozone.moderation.defs"]["repoViewDetail"] | LexiconDefs["tools.ozone.moderation.defs"]["repoViewNotFound"] | Record<string, any>;
+    };
+  };
+  "tools.ozone.verification.grantVerifications": {
+    "main": never;
+    "verificationInput": {
+      "subject": string;
+      "handle": string;
+      "displayName": string;
+      "createdAt"?: string;
+    };
+    "grantError": {
+      "error": string;
+      "subject": string;
+    };
+  };
+  "tools.ozone.verification.listVerifications": {
+    "main": never;
+  };
+  "tools.ozone.verification.revokeVerifications": {
+    "main": never;
+    "revokeError": {
+      "uri": string;
+      "error": string;
+    };
+  };
+  "xyz.statusphere.status": {
+    "main": {
+      "status": string;
+      "createdAt": string;
+    };
+  };
+}
+
 export interface Lexicons {
   "app.bsky.actor.getPreferences": {
     type: "query";
@@ -21,7 +3886,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "preferences": any /* ref */;
+      "preferences": LexiconDefs["app.bsky.actor.defs"]["preferences"];
     };
   };
   "app.bsky.actor.getProfile": {
@@ -30,7 +3895,7 @@ export interface Lexicons {
       "actor": string;
     };
     input: never;
-    output: any /* ref */;
+    output: LexiconDefs["app.bsky.actor.defs"]["profileViewDetailed"];
   };
   "app.bsky.actor.getProfiles": {
     type: "query";
@@ -39,7 +3904,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "profiles": Array<any /* ref */>;
+      "profiles": Array<LexiconDefs["app.bsky.actor.defs"]["profileViewDetailed"]>;
     };
   };
   "app.bsky.actor.getSuggestions": {
@@ -51,27 +3916,18 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "actors": Array<any /* ref */>;
+      "actors": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
       "recId"?: number;
     };
   };
   "app.bsky.actor.profile": {
     type: "record";
-    record: {
-      "avatar"?: any /* blob */;
-      "banner"?: any /* blob */;
-      "labels"?: any /* union */;
-      "createdAt"?: string;
-      "pinnedPost"?: any /* ref */;
-      "description"?: string;
-      "displayName"?: string;
-      "joinedViaStarterPack"?: any /* ref */;
-    };
+    record: LexiconDefs["app.bsky.actor.profile"]["main"];
   };
   "app.bsky.actor.putPreferences": {
     type: "procedure";
     input: {
-      "preferences": any /* ref */;
+      "preferences": LexiconDefs["app.bsky.actor.defs"]["preferences"];
     };
     output: never;
   };
@@ -86,7 +3942,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "actors": Array<any /* ref */>;
+      "actors": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
     };
   };
   "app.bsky.actor.searchActorsTypeahead": {
@@ -98,17 +3954,12 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "actors": Array<any /* ref */>;
+      "actors": Array<LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"]>;
     };
   };
   "app.bsky.actor.status": {
     type: "record";
-    record: {
-      "status": string;
-      "embed"?: any /* union */;
-      "durationMinutes"?: number;
-      "createdAt": string;
-    };
+    record: LexiconDefs["app.bsky.actor.status"]["main"];
   };
   "app.bsky.ageassurance.begin": {
     type: "procedure";
@@ -118,13 +3969,13 @@ export interface Lexicons {
       "countryCode": string;
       "regionCode"?: string;
     };
-    output: any /* ref */;
+    output: LexiconDefs["app.bsky.ageassurance.defs"]["state"];
   };
   "app.bsky.ageassurance.getConfig": {
     type: "query";
     params: Record<string, never>;
     input: never;
-    output: any /* ref */;
+    output: LexiconDefs["app.bsky.ageassurance.defs"]["config"];
   };
   "app.bsky.ageassurance.getState": {
     type: "query";
@@ -134,8 +3985,8 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "state": any /* ref */;
-      "metadata": any /* ref */;
+      "state": LexiconDefs["app.bsky.ageassurance.defs"]["state"];
+      "metadata": LexiconDefs["app.bsky.ageassurance.defs"]["stateMetadata"];
     };
   };
   "app.bsky.bookmark.createBookmark": {
@@ -162,7 +4013,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "bookmarks": Array<any /* ref */>;
+      "bookmarks": Array<LexiconDefs["app.bsky.bookmark.defs"]["bookmarkView"]>;
     };
   };
   "app.bsky.contact.dismissMatch": {
@@ -182,7 +4033,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "matches": Array<any /* ref */>;
+      "matches": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
     };
   };
   "app.bsky.contact.getSyncStatus": {
@@ -191,7 +4042,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "syncStatus"?: any /* ref */;
+      "syncStatus"?: LexiconDefs["app.bsky.contact.defs"]["syncStatus"];
     };
   };
   "app.bsky.contact.importContacts": {
@@ -201,7 +4052,7 @@ export interface Lexicons {
       "contacts": Array<string>;
     };
     output: {
-      "matchesAndContactIndexes": Array<any /* ref */>;
+      "matchesAndContactIndexes": Array<LexiconDefs["app.bsky.contact.defs"]["matchAndContactIndex"]>;
     };
   };
   "app.bsky.contact.removeData": {
@@ -265,7 +4116,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "drafts": Array<any>;
+      "drafts": Array<unknown>;
     };
   };
   "app.bsky.draft.updateDraft": {
@@ -284,23 +4135,13 @@ export interface Lexicons {
     input: never;
     output: {
       "did": string;
-      "feeds": Array<any /* ref */>;
-      "links"?: any /* ref */;
+      "feeds": Array<LexiconDefs["app.bsky.feed.describeFeedGenerator"]["feed"]>;
+      "links"?: LexiconDefs["app.bsky.feed.describeFeedGenerator"]["links"];
     };
   };
   "app.bsky.feed.generator": {
     type: "record";
-    record: {
-      "did": string;
-      "displayName": string;
-      "description"?: string;
-      "descriptionFacets"?: Array<any /* ref */>;
-      "avatar"?: any /* blob */;
-      "acceptsInteractions"?: boolean;
-      "labels"?: any /* union */;
-      "contentMode"?: string;
-      "createdAt": string;
-    };
+    record: LexiconDefs["app.bsky.feed.generator"]["main"];
   };
   "app.bsky.feed.getActorFeeds": {
     type: "query";
@@ -312,7 +4153,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "feeds": Array<any /* ref */>;
+      "feeds": Array<LexiconDefs["app.bsky.feed.defs"]["generatorView"]>;
     };
   };
   "app.bsky.feed.getActorLikes": {
@@ -325,7 +4166,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "feed": Array<any /* ref */>;
+      "feed": Array<LexiconDefs["app.bsky.feed.defs"]["feedViewPost"]>;
     };
   };
   "app.bsky.feed.getAuthorFeed": {
@@ -340,7 +4181,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "feed": Array<any /* ref */>;
+      "feed": Array<LexiconDefs["app.bsky.feed.defs"]["feedViewPost"]>;
     };
   };
   "app.bsky.feed.getFeed": {
@@ -353,7 +4194,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "feed": Array<any /* ref */>;
+      "feed": Array<LexiconDefs["app.bsky.feed.defs"]["feedViewPost"]>;
     };
   };
   "app.bsky.feed.getFeedGenerator": {
@@ -363,7 +4204,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "view": any /* ref */;
+      "view": LexiconDefs["app.bsky.feed.defs"]["generatorView"];
       "isOnline": boolean;
       "isValid": boolean;
     };
@@ -375,7 +4216,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "feeds": Array<any /* ref */>;
+      "feeds": Array<LexiconDefs["app.bsky.feed.defs"]["generatorView"]>;
     };
   };
   "app.bsky.feed.getFeedSkeleton": {
@@ -388,7 +4229,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "feed": Array<any /* ref */>;
+      "feed": Array<LexiconDefs["app.bsky.feed.defs"]["skeletonFeedPost"]>;
       "reqId"?: string;
     };
   };
@@ -405,7 +4246,7 @@ export interface Lexicons {
       "uri": string;
       "cid"?: string;
       "cursor"?: string;
-      "likes": Array<any /* ref */>;
+      "likes": Array<LexiconDefs["app.bsky.feed.getLikes"]["like"]>;
     };
   };
   "app.bsky.feed.getListFeed": {
@@ -418,7 +4259,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "feed": Array<any /* ref */>;
+      "feed": Array<LexiconDefs["app.bsky.feed.defs"]["feedViewPost"]>;
     };
   };
   "app.bsky.feed.getPosts": {
@@ -428,7 +4269,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "posts": Array<any /* ref */>;
+      "posts": Array<LexiconDefs["app.bsky.feed.defs"]["postView"]>;
     };
   };
   "app.bsky.feed.getPostThread": {
@@ -440,8 +4281,8 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "thread": any /* union */;
-      "threadgate"?: any /* ref */;
+      "thread": LexiconDefs["app.bsky.feed.defs"]["threadViewPost"] | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"] | LexiconDefs["app.bsky.feed.defs"]["blockedPost"] | Record<string, any>;
+      "threadgate"?: LexiconDefs["app.bsky.feed.defs"]["threadgateView"];
     };
   };
   "app.bsky.feed.getQuotes": {
@@ -457,7 +4298,7 @@ export interface Lexicons {
       "uri": string;
       "cid"?: string;
       "cursor"?: string;
-      "posts": Array<any /* ref */>;
+      "posts": Array<LexiconDefs["app.bsky.feed.defs"]["postView"]>;
     };
   };
   "app.bsky.feed.getRepostedBy": {
@@ -473,7 +4314,7 @@ export interface Lexicons {
       "uri": string;
       "cid"?: string;
       "cursor"?: string;
-      "repostedBy": Array<any /* ref */>;
+      "repostedBy": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
     };
   };
   "app.bsky.feed.getSuggestedFeeds": {
@@ -485,7 +4326,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "feeds": Array<any /* ref */>;
+      "feeds": Array<LexiconDefs["app.bsky.feed.defs"]["generatorView"]>;
     };
   };
   "app.bsky.feed.getTimeline": {
@@ -498,47 +4339,24 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "feed": Array<any /* ref */>;
+      "feed": Array<LexiconDefs["app.bsky.feed.defs"]["feedViewPost"]>;
     };
   };
   "app.bsky.feed.like": {
     type: "record";
-    record: {
-      "subject": any /* ref */;
-      "createdAt": string;
-      "via"?: any /* ref */;
-    };
+    record: LexiconDefs["app.bsky.feed.like"]["main"];
   };
   "app.bsky.feed.post": {
     type: "record";
-    record: {
-      "text": string;
-      "entities"?: Array<any /* ref */>;
-      "facets"?: Array<any /* ref */>;
-      "reply"?: any /* ref */;
-      "embed"?: any /* union */;
-      "langs"?: Array<string>;
-      "labels"?: any /* union */;
-      "tags"?: Array<string>;
-      "createdAt": string;
-    };
+    record: LexiconDefs["app.bsky.feed.post"]["main"];
   };
   "app.bsky.feed.postgate": {
     type: "record";
-    record: {
-      "post": string;
-      "createdAt": string;
-      "embeddingRules"?: Array<any /* union */>;
-      "detachedEmbeddingUris"?: Array<string>;
-    };
+    record: LexiconDefs["app.bsky.feed.postgate"]["main"];
   };
   "app.bsky.feed.repost": {
     type: "record";
-    record: {
-      "subject": any /* ref */;
-      "createdAt": string;
-      "via"?: any /* ref */;
-    };
+    record: LexiconDefs["app.bsky.feed.repost"]["main"];
   };
   "app.bsky.feed.searchPosts": {
     type: "query";
@@ -560,39 +4378,28 @@ export interface Lexicons {
     output: {
       "cursor"?: string;
       "hitsTotal"?: number;
-      "posts": Array<any /* ref */>;
+      "posts": Array<LexiconDefs["app.bsky.feed.defs"]["postView"]>;
     };
   };
   "app.bsky.feed.sendInteractions": {
     type: "procedure";
     input: {
-      "interactions": Array<any /* ref */>;
+      "interactions": Array<LexiconDefs["app.bsky.feed.defs"]["interaction"]>;
     };
     output: {
     };
   };
   "app.bsky.feed.threadgate": {
     type: "record";
-    record: {
-      "post": string;
-      "allow"?: Array<any /* union */>;
-      "createdAt": string;
-      "hiddenReplies"?: Array<string>;
-    };
+    record: LexiconDefs["app.bsky.feed.threadgate"]["main"];
   };
   "app.bsky.graph.block": {
     type: "record";
-    record: {
-      "subject": string;
-      "createdAt": string;
-    };
+    record: LexiconDefs["app.bsky.graph.block"]["main"];
   };
   "app.bsky.graph.follow": {
     type: "record";
-    record: {
-      "subject": string;
-      "createdAt": string;
-    };
+    record: LexiconDefs["app.bsky.graph.follow"]["main"];
   };
   "app.bsky.graph.getActorStarterPacks": {
     type: "query";
@@ -604,7 +4411,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "starterPacks": Array<any /* ref */>;
+      "starterPacks": Array<LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"]>;
     };
   };
   "app.bsky.graph.getBlocks": {
@@ -616,7 +4423,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "blocks": Array<any /* ref */>;
+      "blocks": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
     };
   };
   "app.bsky.graph.getFollowers": {
@@ -628,9 +4435,9 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "subject": any /* ref */;
+      "subject": LexiconDefs["app.bsky.actor.defs"]["profileView"];
       "cursor"?: string;
-      "followers": Array<any /* ref */>;
+      "followers": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
     };
   };
   "app.bsky.graph.getFollows": {
@@ -642,9 +4449,9 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "subject": any /* ref */;
+      "subject": LexiconDefs["app.bsky.actor.defs"]["profileView"];
       "cursor"?: string;
-      "follows": Array<any /* ref */>;
+      "follows": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
     };
   };
   "app.bsky.graph.getKnownFollowers": {
@@ -656,9 +4463,9 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "subject": any /* ref */;
+      "subject": LexiconDefs["app.bsky.actor.defs"]["profileView"];
       "cursor"?: string;
-      "followers": Array<any /* ref */>;
+      "followers": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
     };
   };
   "app.bsky.graph.getList": {
@@ -671,8 +4478,8 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "list": any /* ref */;
-      "items": Array<any /* ref */>;
+      "list": LexiconDefs["app.bsky.graph.defs"]["listView"];
+      "items": Array<LexiconDefs["app.bsky.graph.defs"]["listItemView"]>;
     };
   };
   "app.bsky.graph.getListBlocks": {
@@ -684,7 +4491,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "lists": Array<any /* ref */>;
+      "lists": Array<LexiconDefs["app.bsky.graph.defs"]["listView"]>;
     };
   };
   "app.bsky.graph.getListMutes": {
@@ -696,7 +4503,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "lists": Array<any /* ref */>;
+      "lists": Array<LexiconDefs["app.bsky.graph.defs"]["listView"]>;
     };
   };
   "app.bsky.graph.getLists": {
@@ -710,7 +4517,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "lists": Array<any /* ref */>;
+      "lists": Array<LexiconDefs["app.bsky.graph.defs"]["listView"]>;
     };
   };
   "app.bsky.graph.getListsWithMembership": {
@@ -724,7 +4531,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "listsWithMembership": Array<any /* ref */>;
+      "listsWithMembership": Array<LexiconDefs["app.bsky.graph.getListsWithMembership"]["listWithMembership"]>;
     };
   };
   "app.bsky.graph.getMutes": {
@@ -736,7 +4543,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "mutes": Array<any /* ref */>;
+      "mutes": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
     };
   };
   "app.bsky.graph.getRelationships": {
@@ -748,7 +4555,7 @@ export interface Lexicons {
     input: never;
     output: {
       "actor"?: string;
-      "relationships": Array<any /* union */>;
+      "relationships": Array<LexiconDefs["app.bsky.graph.defs"]["relationship"] | LexiconDefs["app.bsky.graph.defs"]["notFoundActor"] | Record<string, any>>;
     };
   };
   "app.bsky.graph.getStarterPack": {
@@ -758,7 +4565,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "starterPack": any /* ref */;
+      "starterPack": LexiconDefs["app.bsky.graph.defs"]["starterPackView"];
     };
   };
   "app.bsky.graph.getStarterPacks": {
@@ -768,7 +4575,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "starterPacks": Array<any /* ref */>;
+      "starterPacks": Array<LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"]>;
     };
   };
   "app.bsky.graph.getStarterPacksWithMembership": {
@@ -781,7 +4588,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "starterPacksWithMembership": Array<any /* ref */>;
+      "starterPacksWithMembership": Array<LexiconDefs["app.bsky.graph.getStarterPacksWithMembership"]["starterPackWithMembership"]>;
     };
   };
   "app.bsky.graph.getSuggestedFollowsByActor": {
@@ -791,37 +4598,22 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "suggestions": Array<any /* ref */>;
+      "suggestions": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
       "isFallback"?: boolean;
       "recId"?: number;
     };
   };
   "app.bsky.graph.list": {
     type: "record";
-    record: {
-      "purpose": any /* ref */;
-      "name": string;
-      "description"?: string;
-      "descriptionFacets"?: Array<any /* ref */>;
-      "avatar"?: any /* blob */;
-      "labels"?: any /* union */;
-      "createdAt": string;
-    };
+    record: LexiconDefs["app.bsky.graph.list"]["main"];
   };
   "app.bsky.graph.listblock": {
     type: "record";
-    record: {
-      "subject": string;
-      "createdAt": string;
-    };
+    record: LexiconDefs["app.bsky.graph.listblock"]["main"];
   };
   "app.bsky.graph.listitem": {
     type: "record";
-    record: {
-      "subject": string;
-      "list": string;
-      "createdAt": string;
-    };
+    record: LexiconDefs["app.bsky.graph.listitem"]["main"];
   };
   "app.bsky.graph.muteActor": {
     type: "procedure";
@@ -854,19 +4646,12 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "starterPacks": Array<any /* ref */>;
+      "starterPacks": Array<LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"]>;
     };
   };
   "app.bsky.graph.starterpack": {
     type: "record";
-    record: {
-      "name": string;
-      "description"?: string;
-      "descriptionFacets"?: Array<any /* ref */>;
-      "list": string;
-      "feeds"?: Array<any /* ref */>;
-      "createdAt": string;
-    };
+    record: LexiconDefs["app.bsky.graph.starterpack"]["main"];
   };
   "app.bsky.graph.unmuteActor": {
     type: "procedure";
@@ -891,12 +4676,7 @@ export interface Lexicons {
   };
   "app.bsky.graph.verification": {
     type: "record";
-    record: {
-      "subject": string;
-      "handle": string;
-      "displayName": string;
-      "createdAt": string;
-    };
+    record: LexiconDefs["app.bsky.graph.verification"]["main"];
   };
   "app.bsky.graph.verification.createVerification": {
     type: "procedure";
@@ -922,25 +4702,16 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "views": Array<any /* union */>;
+      "views": Array<LexiconDefs["app.bsky.labeler.defs"]["labelerView"] | LexiconDefs["app.bsky.labeler.defs"]["labelerViewDetailed"] | Record<string, any>>;
     };
   };
   "app.bsky.labeler.service": {
     type: "record";
-    record: {
-      "policies": any /* ref */;
-      "labels"?: any /* union */;
-      "createdAt": string;
-      "reasonTypes"?: Array<any /* ref */>;
-      "subjectTypes"?: Array<any /* ref */>;
-      "subjectCollections"?: Array<string>;
-    };
+    record: LexiconDefs["app.bsky.labeler.service"]["main"];
   };
   "app.bsky.notification.declaration": {
     type: "record";
-    record: {
-      "allowSubscriptions": string;
-    };
+    record: LexiconDefs["app.bsky.notification.declaration"]["main"];
   };
   "app.bsky.notification.getPreferences": {
     type: "query";
@@ -948,7 +4719,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "preferences": any /* ref */;
+      "preferences": LexiconDefs["app.bsky.notification.defs"]["preferences"];
     };
   };
   "app.bsky.notification.getUnreadCount": {
@@ -971,7 +4742,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "subscriptions": Array<any /* ref */>;
+      "subscriptions": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
     };
   };
   "app.bsky.notification.listNotifications": {
@@ -986,7 +4757,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "notifications": Array<any /* ref */>;
+      "notifications": Array<LexiconDefs["app.bsky.notification.listNotifications"]["notification"]>;
       "priority"?: boolean;
       "seenAt"?: string;
     };
@@ -995,11 +4766,11 @@ export interface Lexicons {
     type: "procedure";
     input: {
       "subject": string;
-      "activitySubscription": any /* ref */;
+      "activitySubscription": LexiconDefs["app.bsky.notification.defs"]["activitySubscription"];
     };
     output: {
       "subject": string;
-      "activitySubscription"?: any /* ref */;
+      "activitySubscription"?: LexiconDefs["app.bsky.notification.defs"]["activitySubscription"];
     };
   };
   "app.bsky.notification.putNotificationPreferences": {
@@ -1020,22 +4791,22 @@ export interface Lexicons {
   "app.bsky.notification.putPreferencesV2": {
     type: "procedure";
     input: {
-      "chat"?: any /* ref */;
-      "follow"?: any /* ref */;
-      "like"?: any /* ref */;
-      "likeViaRepost"?: any /* ref */;
-      "mention"?: any /* ref */;
-      "quote"?: any /* ref */;
-      "reply"?: any /* ref */;
-      "repost"?: any /* ref */;
-      "repostViaRepost"?: any /* ref */;
-      "starterpackJoined"?: any /* ref */;
-      "subscribedPost"?: any /* ref */;
-      "unverified"?: any /* ref */;
-      "verified"?: any /* ref */;
+      "chat"?: LexiconDefs["app.bsky.notification.defs"]["chatPreference"];
+      "follow"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "like"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "likeViaRepost"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "mention"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "quote"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "reply"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "repost"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "repostViaRepost"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "starterpackJoined"?: LexiconDefs["app.bsky.notification.defs"]["preference"];
+      "subscribedPost"?: LexiconDefs["app.bsky.notification.defs"]["preference"];
+      "unverified"?: LexiconDefs["app.bsky.notification.defs"]["preference"];
+      "verified"?: LexiconDefs["app.bsky.notification.defs"]["preference"];
     };
     output: {
-      "preferences": any /* ref */;
+      "preferences": LexiconDefs["app.bsky.notification.defs"]["preferences"];
     };
   };
   "app.bsky.notification.registerPush": {
@@ -1077,7 +4848,7 @@ export interface Lexicons {
     type: "query";
     params: Record<string, never>;
     input: never;
-    output: any /* ref */;
+    output: LexiconDefs["app.bsky.unspecced.defs"]["ageAssuranceState"];
   };
   "app.bsky.unspecced.getConfig": {
     type: "query";
@@ -1085,7 +4856,7 @@ export interface Lexicons {
     input: never;
     output: {
       "checkEmailConfirmed"?: boolean;
-      "liveNow"?: Array<any /* ref */>;
+      "liveNow"?: Array<LexiconDefs["app.bsky.unspecced.getConfig"]["liveNowConfig"]>;
     };
   };
   "app.bsky.unspecced.getOnboardingSuggestedStarterPacks": {
@@ -1095,7 +4866,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "starterPacks": Array<any /* ref */>;
+      "starterPacks": Array<LexiconDefs["app.bsky.graph.defs"]["starterPackView"]>;
     };
   };
   "app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton": {
@@ -1133,7 +4904,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "feeds": Array<any /* ref */>;
+      "feeds": Array<LexiconDefs["app.bsky.feed.defs"]["generatorView"]>;
     };
   };
   "app.bsky.unspecced.getPostThreadOtherV2": {
@@ -1143,7 +4914,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "thread": Array<any /* ref */>;
+      "thread": Array<LexiconDefs["app.bsky.unspecced.getPostThreadOtherV2"]["threadItem"]>;
     };
   };
   "app.bsky.unspecced.getPostThreadV2": {
@@ -1157,8 +4928,8 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "thread": Array<any /* ref */>;
-      "threadgate"?: any /* ref */;
+      "thread": Array<LexiconDefs["app.bsky.unspecced.getPostThreadV2"]["threadItem"]>;
+      "threadgate"?: LexiconDefs["app.bsky.feed.defs"]["threadgateView"];
       "hasOtherReplies": boolean;
     };
   };
@@ -1169,7 +4940,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "feeds": Array<any /* ref */>;
+      "feeds": Array<LexiconDefs["app.bsky.feed.defs"]["generatorView"]>;
     };
   };
   "app.bsky.unspecced.getSuggestedFeedsSkeleton": {
@@ -1191,7 +4962,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "actors": Array<any /* ref */>;
+      "actors": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
       "recId"?: string;
       "recIdStr"?: string;
     };
@@ -1203,7 +4974,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "starterPacks": Array<any /* ref */>;
+      "starterPacks": Array<LexiconDefs["app.bsky.graph.defs"]["starterPackView"]>;
     };
   };
   "app.bsky.unspecced.getSuggestedStarterPacksSkeleton": {
@@ -1225,7 +4996,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "actors": Array<any /* ref */>;
+      "actors": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
       "recId"?: number;
     };
   };
@@ -1236,7 +5007,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "actors": Array<any /* ref */>;
+      "actors": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
       "recIdStr"?: string;
     };
   };
@@ -1260,7 +5031,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "actors": Array<any /* ref */>;
+      "actors": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
       "recIdStr"?: string;
     };
   };
@@ -1285,7 +5056,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "actors": Array<any /* ref */>;
+      "actors": Array<LexiconDefs["app.bsky.actor.defs"]["profileView"]>;
       "recIdStr"?: string;
     };
   };
@@ -1326,7 +5097,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "actors": Array<any /* ref */>;
+      "actors": Array<LexiconDefs["app.bsky.unspecced.defs"]["skeletonSearchActor"]>;
       "relativeToDid"?: string;
       "recId"?: number;
     };
@@ -1337,7 +5108,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "suggestions": Array<any /* ref */>;
+      "suggestions": Array<LexiconDefs["app.bsky.unspecced.getTaggedSuggestions"]["suggestion"]>;
     };
   };
   "app.bsky.unspecced.getTrendingTopics": {
@@ -1348,8 +5119,8 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "topics": Array<any /* ref */>;
-      "suggested": Array<any /* ref */>;
+      "topics": Array<LexiconDefs["app.bsky.unspecced.defs"]["trendingTopic"]>;
+      "suggested": Array<LexiconDefs["app.bsky.unspecced.defs"]["trendingTopic"]>;
     };
   };
   "app.bsky.unspecced.getTrends": {
@@ -1359,7 +5130,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "trends": Array<any /* ref */>;
+      "trends": Array<LexiconDefs["app.bsky.unspecced.defs"]["trendView"]>;
     };
   };
   "app.bsky.unspecced.getTrendsSkeleton": {
@@ -1370,7 +5141,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "trends": Array<any /* ref */>;
+      "trends": Array<LexiconDefs["app.bsky.unspecced.defs"]["skeletonTrend"]>;
     };
   };
   "app.bsky.unspecced.initAgeAssurance": {
@@ -1380,7 +5151,7 @@ export interface Lexicons {
       "language": string;
       "countryCode": string;
     };
-    output: any /* ref */;
+    output: LexiconDefs["app.bsky.unspecced.defs"]["ageAssuranceState"];
   };
   "app.bsky.unspecced.searchActorsSkeleton": {
     type: "query";
@@ -1395,7 +5166,7 @@ export interface Lexicons {
     output: {
       "cursor"?: string;
       "hitsTotal"?: number;
-      "actors": Array<any /* ref */>;
+      "actors": Array<LexiconDefs["app.bsky.unspecced.defs"]["skeletonSearchActor"]>;
     };
   };
   "app.bsky.unspecced.searchPostsSkeleton": {
@@ -1419,7 +5190,7 @@ export interface Lexicons {
     output: {
       "cursor"?: string;
       "hitsTotal"?: number;
-      "posts": Array<any /* ref */>;
+      "posts": Array<LexiconDefs["app.bsky.unspecced.defs"]["skeletonSearchPost"]>;
     };
   };
   "app.bsky.unspecced.searchStarterPacksSkeleton": {
@@ -1434,7 +5205,7 @@ export interface Lexicons {
     output: {
       "cursor"?: string;
       "hitsTotal"?: number;
-      "starterPacks": Array<any /* ref */>;
+      "starterPacks": Array<LexiconDefs["app.bsky.unspecced.defs"]["skeletonSearchStarterPack"]>;
     };
   };
   "app.bsky.video.getJobStatus": {
@@ -1444,7 +5215,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "jobStatus": any /* ref */;
+      "jobStatus": LexiconDefs["app.bsky.video.defs"]["jobStatus"];
     };
   };
   "app.bsky.video.getUploadLimits": {
@@ -1463,20 +5234,16 @@ export interface Lexicons {
     type: "procedure";
     input: never;
     output: {
-      "jobStatus": any /* ref */;
+      "jobStatus": LexiconDefs["app.bsky.video.defs"]["jobStatus"];
     };
   };
   "blue.linkat.board": {
     type: "record";
-    record: {
-      "cards": Array<any /* ref */>;
-    };
+    record: LexiconDefs["blue.linkat.board"]["main"];
   };
   "chat.bsky.actor.declaration": {
     type: "record";
-    record: {
-      "allowIncoming": string;
-    };
+    record: LexiconDefs["chat.bsky.actor.declaration"]["main"];
   };
   "chat.bsky.actor.deleteAccount": {
     type: "procedure";
@@ -1507,7 +5274,7 @@ export interface Lexicons {
       "value": string;
     };
     output: {
-      "message": any /* ref */;
+      "message": LexiconDefs["chat.bsky.convo.defs"]["messageView"];
     };
   };
   "chat.bsky.convo.deleteMessageForSelf": {
@@ -1516,7 +5283,7 @@ export interface Lexicons {
       "convoId": string;
       "messageId": string;
     };
-    output: any /* ref */;
+    output: LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"];
   };
   "chat.bsky.convo.getConvo": {
     type: "query";
@@ -1525,7 +5292,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "convo": any /* ref */;
+      "convo": LexiconDefs["chat.bsky.convo.defs"]["convoView"];
     };
   };
   "chat.bsky.convo.getConvoAvailability": {
@@ -1536,7 +5303,7 @@ export interface Lexicons {
     input: never;
     output: {
       "canChat": boolean;
-      "convo"?: any /* ref */;
+      "convo"?: LexiconDefs["chat.bsky.convo.defs"]["convoView"];
     };
   };
   "chat.bsky.convo.getConvoForMembers": {
@@ -1546,7 +5313,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "convo": any /* ref */;
+      "convo": LexiconDefs["chat.bsky.convo.defs"]["convoView"];
     };
   };
   "chat.bsky.convo.getLog": {
@@ -1557,7 +5324,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "logs": Array<any /* union */>;
+      "logs": Array<LexiconDefs["chat.bsky.convo.defs"]["logBeginConvo"] | LexiconDefs["chat.bsky.convo.defs"]["logAcceptConvo"] | LexiconDefs["chat.bsky.convo.defs"]["logLeaveConvo"] | LexiconDefs["chat.bsky.convo.defs"]["logMuteConvo"] | LexiconDefs["chat.bsky.convo.defs"]["logUnmuteConvo"] | LexiconDefs["chat.bsky.convo.defs"]["logCreateMessage"] | LexiconDefs["chat.bsky.convo.defs"]["logDeleteMessage"] | LexiconDefs["chat.bsky.convo.defs"]["logReadMessage"] | LexiconDefs["chat.bsky.convo.defs"]["logAddReaction"] | LexiconDefs["chat.bsky.convo.defs"]["logRemoveReaction"] | Record<string, any>>;
     };
   };
   "chat.bsky.convo.getMessages": {
@@ -1570,7 +5337,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "messages": Array<any /* union */>;
+      "messages": Array<LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>>;
     };
   };
   "chat.bsky.convo.leaveConvo": {
@@ -1592,7 +5359,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "requests": Array<any /* union */>;
+      "requests": Array<LexiconDefs["chat.bsky.convo.defs"]["convoView"] | LexiconDefs["chat.bsky.group.defs"]["joinRequestView"] | Record<string, any>>;
     };
   };
   "chat.bsky.convo.listConvos": {
@@ -1606,7 +5373,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "convos": Array<any /* ref */>;
+      "convos": Array<LexiconDefs["chat.bsky.convo.defs"]["convoView"]>;
     };
   };
   "chat.bsky.convo.lockConvo": {
@@ -1615,7 +5382,7 @@ export interface Lexicons {
       "convoId": string;
     };
     output: {
-      "convo": any /* ref */;
+      "convo": LexiconDefs["chat.bsky.convo.defs"]["convoView"];
     };
   };
   "chat.bsky.convo.muteConvo": {
@@ -1624,7 +5391,7 @@ export interface Lexicons {
       "convoId": string;
     };
     output: {
-      "convo": any /* ref */;
+      "convo": LexiconDefs["chat.bsky.convo.defs"]["convoView"];
     };
   };
   "chat.bsky.convo.removeReaction": {
@@ -1635,24 +5402,24 @@ export interface Lexicons {
       "value": string;
     };
     output: {
-      "message": any /* ref */;
+      "message": LexiconDefs["chat.bsky.convo.defs"]["messageView"];
     };
   };
   "chat.bsky.convo.sendMessage": {
     type: "procedure";
     input: {
       "convoId": string;
-      "message": any /* ref */;
+      "message": LexiconDefs["chat.bsky.convo.defs"]["messageInput"];
     };
-    output: any /* ref */;
+    output: LexiconDefs["chat.bsky.convo.defs"]["messageView"];
   };
   "chat.bsky.convo.sendMessageBatch": {
     type: "procedure";
     input: {
-      "items": Array<any /* ref */>;
+      "items": Array<LexiconDefs["chat.bsky.convo.sendMessageBatch"]["batchItem"]>;
     };
     output: {
-      "items": Array<any /* ref */>;
+      "items": Array<LexiconDefs["chat.bsky.convo.defs"]["messageView"]>;
     };
   };
   "chat.bsky.convo.unlockConvo": {
@@ -1661,7 +5428,7 @@ export interface Lexicons {
       "convoId": string;
     };
     output: {
-      "convo": any /* ref */;
+      "convo": LexiconDefs["chat.bsky.convo.defs"]["convoView"];
     };
   };
   "chat.bsky.convo.unmuteConvo": {
@@ -1670,7 +5437,7 @@ export interface Lexicons {
       "convoId": string;
     };
     output: {
-      "convo": any /* ref */;
+      "convo": LexiconDefs["chat.bsky.convo.defs"]["convoView"];
     };
   };
   "chat.bsky.convo.updateAllRead": {
@@ -1689,7 +5456,7 @@ export interface Lexicons {
       "messageId"?: string;
     };
     output: {
-      "convo": any /* ref */;
+      "convo": LexiconDefs["chat.bsky.convo.defs"]["convoView"];
     };
   };
   "chat.bsky.group.addMembers": {
@@ -1699,7 +5466,7 @@ export interface Lexicons {
       "members": Array<string>;
     };
     output: {
-      "convo": any /* ref */;
+      "convo": LexiconDefs["chat.bsky.convo.defs"]["convoView"];
     };
   };
   "chat.bsky.group.addReaction": {
@@ -1717,7 +5484,7 @@ export interface Lexicons {
       "member": string;
     };
     output: {
-      "convo": any /* ref */;
+      "convo": LexiconDefs["chat.bsky.convo.defs"]["convoView"];
     };
   };
   "chat.bsky.group.createGroup": {
@@ -1727,7 +5494,7 @@ export interface Lexicons {
       "name": string;
     };
     output: {
-      "convo": any /* ref */;
+      "convo": LexiconDefs["chat.bsky.convo.defs"]["convoView"];
     };
   };
   "chat.bsky.group.createJoinLink": {
@@ -1735,10 +5502,10 @@ export interface Lexicons {
     input: {
       "convoId": string;
       "requireApproval"?: boolean;
-      "joinRule": any /* ref */;
+      "joinRule": LexiconDefs["chat.bsky.group.defs"]["joinRule"];
     };
     output: {
-      "joinLink": any /* ref */;
+      "joinLink": LexiconDefs["chat.bsky.group.defs"]["joinLinkView"];
     };
   };
   "chat.bsky.group.deleteGroup": {
@@ -1761,7 +5528,7 @@ export interface Lexicons {
       "convoId": string;
     };
     output: {
-      "joinLink": any /* ref */;
+      "joinLink": LexiconDefs["chat.bsky.group.defs"]["joinLinkView"];
     };
   };
   "chat.bsky.group.editGroup": {
@@ -1771,7 +5538,7 @@ export interface Lexicons {
       "name": string;
     };
     output: {
-      "convo": any /* ref */;
+      "convo": LexiconDefs["chat.bsky.convo.defs"]["convoView"];
     };
   };
   "chat.bsky.group.editJoinLink": {
@@ -1779,10 +5546,10 @@ export interface Lexicons {
     input: {
       "convoId": string;
       "requireApproval"?: boolean;
-      "joinRule"?: any /* ref */;
+      "joinRule"?: LexiconDefs["chat.bsky.group.defs"]["joinRule"];
     };
     output: {
-      "joinLink": any /* ref */;
+      "joinLink": LexiconDefs["chat.bsky.group.defs"]["joinLinkView"];
     };
   };
   "chat.bsky.group.enableJoinLink": {
@@ -1791,7 +5558,7 @@ export interface Lexicons {
       "convoId": string;
     };
     output: {
-      "joinLink": any /* ref */;
+      "joinLink": LexiconDefs["chat.bsky.group.defs"]["joinLinkView"];
     };
   };
   "chat.bsky.group.getGroupPublicInfo": {
@@ -1801,7 +5568,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "group": any /* ref */;
+      "group": LexiconDefs["chat.bsky.group.defs"]["groupPublicView"];
     };
   };
   "chat.bsky.group.getMessages": {
@@ -1813,7 +5580,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "messages"?: Array<Record<string, any>>;
+      "messages"?: Array<Record<string, never>>;
       "cursor"?: string;
     };
   };
@@ -1832,7 +5599,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "groups"?: Array<Record<string, any>>;
+      "groups"?: Array<Record<string, never>>;
       "cursor"?: string;
     };
   };
@@ -1843,7 +5610,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "links"?: Array<Record<string, any>>;
+      "links"?: Array<Record<string, never>>;
     };
   };
   "chat.bsky.group.listJoinRequests": {
@@ -1856,7 +5623,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "requests": Array<any /* ref */>;
+      "requests": Array<LexiconDefs["chat.bsky.group.defs"]["joinRequestView"]>;
     };
   };
   "chat.bsky.group.listMembers": {
@@ -1868,7 +5635,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "members"?: Array<Record<string, any>>;
+      "members"?: Array<Record<string, never>>;
       "cursor"?: string;
     };
   };
@@ -1888,7 +5655,7 @@ export interface Lexicons {
       "members": Array<string>;
     };
     output: {
-      "convo": any /* ref */;
+      "convo": LexiconDefs["chat.bsky.convo.defs"]["convoView"];
     };
   };
   "chat.bsky.group.removeReaction": {
@@ -1905,7 +5672,7 @@ export interface Lexicons {
     };
     output: {
       "status": string;
-      "convo"?: any /* ref */;
+      "convo"?: LexiconDefs["chat.bsky.convo.defs"]["convoView"];
     };
   };
   "chat.bsky.group.sendMessage": {
@@ -1923,9 +5690,9 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "day": any /* ref */;
-      "month": any /* ref */;
-      "all": any /* ref */;
+      "day": LexiconDefs["chat.bsky.moderation.getActorMetadata"]["metadata"];
+      "month": LexiconDefs["chat.bsky.moderation.getActorMetadata"]["metadata"];
+      "all": LexiconDefs["chat.bsky.moderation.getActorMetadata"]["metadata"];
     };
   };
   "chat.bsky.moderation.getMessageContext": {
@@ -1938,7 +5705,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "messages": Array<any /* union */>;
+      "messages": Array<LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>>;
     };
   };
   "chat.bsky.moderation.updateActorAccess": {
@@ -1987,7 +5754,7 @@ export interface Lexicons {
       "did": string;
     };
     input: never;
-    output: any /* ref */;
+    output: LexiconDefs["com.atproto.admin.defs"]["accountView"];
   };
   "com.atproto.admin.getAccountInfos": {
     type: "query";
@@ -1996,7 +5763,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "infos": Array<any /* ref */>;
+      "infos": Array<LexiconDefs["com.atproto.admin.defs"]["accountView"]>;
     };
   };
   "com.atproto.admin.getAccountTakedown": {
@@ -2048,7 +5815,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "codes": Array<any /* ref */>;
+      "codes": Array<LexiconDefs["com.atproto.server.defs"]["inviteCode"]>;
     };
   };
   "com.atproto.admin.getModerationReports": {
@@ -2060,7 +5827,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "reports": Array<any>;
+      "reports": Array<unknown>;
     };
   };
   "com.atproto.admin.getServerStats": {
@@ -2083,9 +5850,9 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "subject": any /* union */;
-      "takedown"?: any /* ref */;
-      "deactivated"?: any /* ref */;
+      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | LexiconDefs["com.atproto.admin.defs"]["repoBlobRef"] | Record<string, any>;
+      "takedown"?: LexiconDefs["com.atproto.admin.defs"]["statusAttr"];
+      "deactivated"?: LexiconDefs["com.atproto.admin.defs"]["statusAttr"];
     };
   };
   "com.atproto.admin.moderateAccount": {
@@ -2128,7 +5895,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "events": Array<any /* ref */>;
+      "events": Array<any /* unresolved ref: com.atproto.admin.defs#auditLogEvent */>;
     };
   };
   "com.atproto.admin.repairRepo": {
@@ -2173,7 +5940,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "accounts": Array<any /* ref */>;
+      "accounts": Array<LexiconDefs["com.atproto.admin.defs"]["accountView"]>;
     };
   };
   "com.atproto.admin.sendEmail": {
@@ -2235,13 +6002,13 @@ export interface Lexicons {
   "com.atproto.admin.updateSubjectStatus": {
     type: "procedure";
     input: {
-      "subject": any /* union */;
-      "takedown"?: any /* ref */;
-      "deactivated"?: any /* ref */;
+      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | LexiconDefs["com.atproto.admin.defs"]["repoBlobRef"] | Record<string, any>;
+      "takedown"?: LexiconDefs["com.atproto.admin.defs"]["statusAttr"];
+      "deactivated"?: LexiconDefs["com.atproto.admin.defs"]["statusAttr"];
     };
     output: {
-      "subject": any /* union */;
-      "takedown"?: any /* ref */;
+      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | LexiconDefs["com.atproto.admin.defs"]["repoBlobRef"] | Record<string, any>;
+      "takedown"?: LexiconDefs["com.atproto.admin.defs"]["statusAttr"];
     };
   };
   "com.atproto.identity.getRecommendedDidCredentials": {
@@ -2251,8 +6018,8 @@ export interface Lexicons {
     output: {
       "rotationKeys"?: Array<string>;
       "alsoKnownAs"?: Array<string>;
-      "verificationMethods"?: any;
-      "services"?: any;
+      "verificationMethods"?: unknown;
+      "services"?: unknown;
     };
   };
   "com.atproto.identity.refreshIdentity": {
@@ -2260,7 +6027,7 @@ export interface Lexicons {
     input: {
       "identifier": string;
     };
-    output: any /* ref */;
+    output: LexiconDefs["com.atproto.identity.defs"]["identityInfo"];
   };
   "com.atproto.identity.requestPlcOperationSignature": {
     type: "procedure";
@@ -2274,7 +6041,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "didDoc": any;
+      "didDoc": unknown;
     };
   };
   "com.atproto.identity.resolveHandle": {
@@ -2293,7 +6060,7 @@ export interface Lexicons {
       "identifier": string;
     };
     input: never;
-    output: any /* ref */;
+    output: LexiconDefs["com.atproto.identity.defs"]["identityInfo"];
   };
   "com.atproto.identity.signPlcOperation": {
     type: "procedure";
@@ -2301,17 +6068,17 @@ export interface Lexicons {
       "token"?: string;
       "rotationKeys"?: Array<string>;
       "alsoKnownAs"?: Array<string>;
-      "verificationMethods"?: any;
-      "services"?: any;
+      "verificationMethods"?: unknown;
+      "services"?: unknown;
     };
     output: {
-      "operation": any;
+      "operation": unknown;
     };
   };
   "com.atproto.identity.submitPlcOperation": {
     type: "procedure";
     input: {
-      "operation": any;
+      "operation": unknown;
     };
     output: never;
   };
@@ -2332,7 +6099,7 @@ export interface Lexicons {
       "neg"?: boolean;
       "cts"?: string;
     };
-    output: any /* ref */;
+    output: LexiconDefs["com.atproto.label.defs"]["label"];
   };
   "com.atproto.label.getLabels": {
     type: "query";
@@ -2347,7 +6114,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "labels": Array<any /* ref */>;
+      "labels": Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
     };
   };
   "com.atproto.label.queryLabels": {
@@ -2361,7 +6128,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "labels": Array<any /* ref */>;
+      "labels": Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
     };
   };
   "com.atproto.lexicon.resolveLexicon": {
@@ -2372,29 +6139,27 @@ export interface Lexicons {
     input: never;
     output: {
       "cid": string;
-      "schema": any /* ref */;
+      "schema": LexiconDefs["com.atproto.lexicon.schema"]["main"];
       "uri": string;
     };
   };
   "com.atproto.lexicon.schema": {
     type: "record";
-    record: {
-      "lexicon": number;
-    };
+    record: LexiconDefs["com.atproto.lexicon.schema"]["main"];
   };
   "com.atproto.moderation.createReport": {
     type: "procedure";
     input: {
-      "reasonType": any /* ref */;
+      "reasonType": LexiconDefs["com.atproto.moderation.defs"]["reasonType"];
       "reason"?: string;
-      "subject": any /* union */;
-      "modTool"?: any /* ref */;
+      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | Record<string, any>;
+      "modTool"?: LexiconDefs["com.atproto.moderation.createReport"]["modTool"];
     };
     output: {
       "id": number;
-      "reasonType": any /* ref */;
+      "reasonType": LexiconDefs["com.atproto.moderation.defs"]["reasonType"];
       "reason"?: string;
-      "subject": any /* union */;
+      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | Record<string, any>;
       "reportedBy": string;
       "createdAt": string;
     };
@@ -2404,12 +6169,12 @@ export interface Lexicons {
     input: {
       "repo": string;
       "validate"?: boolean;
-      "writes": Array<any /* union */>;
+      "writes": Array<LexiconDefs["com.atproto.repo.applyWrites"]["create"] | LexiconDefs["com.atproto.repo.applyWrites"]["update"] | LexiconDefs["com.atproto.repo.applyWrites"]["delete"]>;
       "swapCommit"?: string;
     };
     output: {
-      "commit"?: any /* ref */;
-      "results"?: Array<any /* union */>;
+      "commit"?: LexiconDefs["com.atproto.repo.defs"]["commitMeta"];
+      "results"?: Array<LexiconDefs["com.atproto.repo.applyWrites"]["createResult"] | LexiconDefs["com.atproto.repo.applyWrites"]["updateResult"] | LexiconDefs["com.atproto.repo.applyWrites"]["deleteResult"]>;
     };
   };
   "com.atproto.repo.createRecord": {
@@ -2419,13 +6184,13 @@ export interface Lexicons {
       "collection": string;
       "rkey"?: string;
       "validate"?: boolean;
-      "record": any;
+      "record": unknown;
       "swapCommit"?: string;
     };
     output: {
       "uri": string;
       "cid": string;
-      "commit"?: any /* ref */;
+      "commit"?: LexiconDefs["com.atproto.repo.defs"]["commitMeta"];
       "validationStatus"?: string;
     };
   };
@@ -2450,7 +6215,7 @@ export interface Lexicons {
       "swapCommit"?: string;
     };
     output: {
-      "commit"?: any /* ref */;
+      "commit"?: LexiconDefs["com.atproto.repo.defs"]["commitMeta"];
     };
   };
   "com.atproto.repo.describeRepo": {
@@ -2462,9 +6227,12 @@ export interface Lexicons {
     output: {
       "handle": string;
       "did": string;
-      "didDoc": any;
+      "didDoc": unknown;
       "collections": Array<string>;
-      "collectionStats"?: Array<Record<string, any>>;
+      "collectionStats"?: Array<{
+      "name": string;
+      "count": number;
+    }>;
       "handleIsCorrect": boolean;
     };
   };
@@ -2475,7 +6243,7 @@ export interface Lexicons {
       "did"?: string;
     };
     input: never;
-    output: any;
+    output: unknown;
   };
   "com.atproto.repo.getRecord": {
     type: "query";
@@ -2489,7 +6257,7 @@ export interface Lexicons {
     output: {
       "uri": string;
       "cid"?: string;
-      "value": any;
+      "value": unknown;
     };
   };
   "com.atproto.repo.importRepo": {
@@ -2506,7 +6274,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "blobs": Array<any /* ref */>;
+      "blobs": Array<LexiconDefs["com.atproto.repo.listMissingBlobs"]["recordBlob"]>;
     };
   };
   "com.atproto.repo.listRecords": {
@@ -2523,7 +6291,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "records": Array<any /* ref */>;
+      "records": Array<LexiconDefs["com.atproto.repo.listRecords"]["record"]>;
     };
   };
   "com.atproto.repo.putRecord": {
@@ -2533,14 +6301,14 @@ export interface Lexicons {
       "collection": string;
       "rkey": string;
       "validate"?: boolean;
-      "record": any;
+      "record": unknown;
       "swapRecord"?: string;
       "swapCommit"?: string;
     };
     output: {
       "uri": string;
       "cid": string;
-      "commit"?: any /* ref */;
+      "commit"?: LexiconDefs["com.atproto.repo.defs"]["commitMeta"];
       "validationStatus"?: string;
     };
   };
@@ -2549,10 +6317,10 @@ export interface Lexicons {
     input: {
       "collection": string;
       "rkey": string;
-      "record": any;
+      "record": unknown;
       "validate"?: boolean;
     };
-    output: any;
+    output: unknown;
   };
   "com.atproto.repo.uploadBlob": {
     type: "procedure";
@@ -2601,14 +6369,14 @@ export interface Lexicons {
       "verificationPhone"?: string;
       "password"?: string;
       "recoveryKey"?: string;
-      "plcOp"?: any;
+      "plcOp"?: unknown;
     };
     output: {
       "accessJwt": string;
       "refreshJwt": string;
       "handle": string;
       "did": string;
-      "didDoc"?: any;
+      "didDoc"?: unknown;
     };
   };
   "com.atproto.server.createAppPassword": {
@@ -2617,7 +6385,7 @@ export interface Lexicons {
       "name": string;
       "privileged"?: boolean;
     };
-    output: any /* ref */;
+    output: LexiconDefs["com.atproto.server.createAppPassword"]["appPassword"];
   };
   "com.atproto.server.createInviteCode": {
     type: "procedure";
@@ -2637,7 +6405,7 @@ export interface Lexicons {
       "forAccounts"?: Array<string>;
     };
     output: {
-      "codes": Array<any /* ref */>;
+      "codes": Array<LexiconDefs["com.atproto.server.createInviteCodes"]["accountCodes"]>;
     };
   };
   "com.atproto.server.createSession": {
@@ -2652,7 +6420,7 @@ export interface Lexicons {
       "refreshJwt": string;
       "handle": string;
       "did": string;
-      "didDoc"?: any;
+      "didDoc"?: unknown;
       "email"?: string;
       "emailConfirmed"?: boolean;
     };
@@ -2686,7 +6454,7 @@ export interface Lexicons {
       "inviteCodeRequired"?: boolean;
       "phoneVerificationRequired"?: boolean;
       "availableUserDomains": Array<string>;
-      "links"?: any /* ref */;
+      "links"?: LexiconDefs["com.atproto.server.describeServer"]["links"];
       "did": string;
     };
   };
@@ -2709,7 +6477,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "codes": Array<any /* ref */>;
+      "codes": Array<LexiconDefs["com.atproto.server.defs"]["inviteCode"]>;
     };
   };
   "com.atproto.server.getServiceAuth": {
@@ -2731,7 +6499,7 @@ export interface Lexicons {
     output: {
       "handle": string;
       "did": string;
-      "didDoc"?: any;
+      "didDoc"?: unknown;
       "email"?: string;
       "emailConfirmed"?: boolean;
       "emailAuthFactor"?: boolean;
@@ -2744,7 +6512,7 @@ export interface Lexicons {
     params: Record<string, never>;
     input: never;
     output: {
-      "passwords": Array<any /* ref */>;
+      "passwords": Array<LexiconDefs["com.atproto.server.listAppPasswords"]["appPassword"]>;
     };
   };
   "com.atproto.server.refreshSession": {
@@ -2755,7 +6523,7 @@ export interface Lexicons {
       "refreshJwt": string;
       "handle": string;
       "did": string;
-      "didDoc"?: any;
+      "didDoc"?: unknown;
     };
   };
   "com.atproto.server.requestAccountDelete": {
@@ -2861,7 +6629,7 @@ export interface Lexicons {
       "hostname": string;
       "seq"?: number;
       "accountCount"?: number;
-      "status"?: any /* ref */;
+      "status"?: LexiconDefs["com.atproto.sync.defs"]["hostStatus"];
     };
   };
   "com.atproto.sync.getLatestCommit": {
@@ -2930,7 +6698,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "hosts": Array<any /* ref */>;
+      "hosts": Array<LexiconDefs["com.atproto.sync.listHosts"]["host"]>;
     };
   };
   "com.atproto.sync.listRepos": {
@@ -2942,7 +6710,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "repos": Array<any /* ref */>;
+      "repos": Array<LexiconDefs["com.atproto.sync.listRepos"]["repo"]>;
     };
   };
   "com.atproto.sync.listReposByCollection": {
@@ -2955,7 +6723,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "repos": Array<any /* ref */>;
+      "repos": Array<LexiconDefs["com.atproto.sync.listReposByCollection"]["repo"]>;
     };
   };
   "com.atproto.sync.notifyOfUpdate": {
@@ -2990,7 +6758,7 @@ export interface Lexicons {
     input: never;
     output: {
       "handle": string;
-      "result": any /* union */;
+      "result": LexiconDefs["com.atproto.temp.checkHandleAvailability"]["resultAvailable"] | LexiconDefs["com.atproto.temp.checkHandleAvailability"]["resultUnavailable"] | Record<string, any>;
     };
   };
   "com.atproto.temp.checkSignupQueue": {
@@ -3021,7 +6789,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "labels": Array<any /* ref */>;
+      "labels": Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
     };
   };
   "com.atproto.temp.requestPhoneVerification": {
@@ -3040,13 +6808,7 @@ export interface Lexicons {
   };
   "com.germnetwork.declaration": {
     type: "record";
-    record: {
-      "version": string;
-      "currentKey": any;
-      "messageMe"?: any /* ref */;
-      "keyPackage"?: any;
-      "continuityProofs"?: Array<any>;
-    };
+    record: LexiconDefs["com.germnetwork.declaration"]["main"];
   };
   "com.germnetwork.identity.getAnchorKey": {
     type: "query";
@@ -3055,18 +6817,14 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "anchorKey": any;
+      "anchorKey": { $bytes: string } | string;
       "algorithm"?: string;
-      "keyHistory"?: Array<any>;
+      "keyHistory"?: Array<{ $bytes: string } | string>;
     };
   };
   "com.germnetwork.keypackage": {
     type: "record";
-    record: {
-      "version": string;
-      "anchorHello": any;
-      "anchorSignature"?: any;
-    };
+    record: LexiconDefs["com.germnetwork.keypackage"]["main"];
   };
   "com.germnetwork.mailbox.claimAddresses": {
     type: "procedure";
@@ -3082,7 +6840,7 @@ export interface Lexicons {
     type: "procedure";
     input: {
       "address": string;
-      "ciphertext": any;
+      "ciphertext": { $bytes: string } | string;
     };
     output: {
       "delivered": boolean;
@@ -3095,14 +6853,14 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "messages": Array<any /* ref */>;
+      "messages": Array<LexiconDefs["com.germnetwork.mailbox.poll"]["message"]>;
     };
   };
   "com.germnetwork.rendezvous.deliver": {
     type: "procedure";
     input: {
       "address": string;
-      "ciphertext": any;
+      "ciphertext": { $bytes: string } | string;
     };
     output: {
       "delivered": boolean;
@@ -3128,7 +6886,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "oekaki": Array<any /* ref */>;
+      "oekaki": Array<LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]>;
     };
   };
   "com.shinolabs.pinksea.getAuthorReplies": {
@@ -3140,7 +6898,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "oekaki": Array<any /* ref */>;
+      "oekaki": Array<LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]>;
     };
   };
   "com.shinolabs.pinksea.getHandleFromDid": {
@@ -3171,8 +6929,8 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "parent": any /* union */;
-      "children": Array<any /* ref */>;
+      "parent": LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"] | LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["oekakiTombstone"] | Record<string, any>;
+      "children": Array<LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]>;
     };
   };
   "com.shinolabs.pinksea.getParentForReply": {
@@ -3195,7 +6953,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "oekaki": Array<any /* ref */>;
+      "oekaki": Array<LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]>;
     };
   };
   "com.shinolabs.pinksea.getTagFeed": {
@@ -3207,41 +6965,20 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "oekaki": Array<any /* ref */>;
+      "oekaki": Array<LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]>;
     };
   };
   "com.shinolabs.pinksea.oekaki": {
     type: "record";
-    record: {
-      "createdAt": string;
-      "image": any /* ref */;
-      "tags"?: Array<string>;
-      "inResponseTo"?: any /* ref */;
-      "nsfw"?: boolean;
-    };
+    record: LexiconDefs["com.shinolabs.pinksea.oekaki"]["main"];
   };
   "com.shinolabs.pinksea.profile": {
     type: "record";
-    record: {
-      "avatar"?: any /* ref */;
-      "nickname"?: string;
-      "bio"?: string;
-      "links"?: Array<any /* ref */>;
-    };
+    record: LexiconDefs["com.shinolabs.pinksea.profile"]["main"];
   };
   "com.whtwnd.blog.entry": {
     type: "record";
-    record: {
-      "content": string;
-      "createdAt"?: string;
-      "title"?: string;
-      "subtitle"?: string;
-      "ogp"?: any /* ref */;
-      "theme"?: string;
-      "blobs"?: Array<any /* ref */>;
-      "isDraft"?: boolean;
-      "visibility"?: string;
-    };
+    record: LexiconDefs["com.whtwnd.blog.entry"]["main"];
   };
   "com.whtwnd.blog.getAuthorPosts": {
     type: "query";
@@ -3250,7 +6987,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "post": Array<any /* ref */>;
+      "post": Array<LexiconDefs["com.whtwnd.blog.defs"]["blogEntry"]>;
     };
   };
   "com.whtwnd.blog.getEntryMetadataByName": {
@@ -3286,60 +7023,31 @@ export interface Lexicons {
   };
   "fyi.frontpage.feed.comment": {
     type: "record";
-    record: {
-      "blocks": Array<any /* ref */>;
-      "createdAt": string;
-      "parent"?: any /* ref */;
-      "post": any /* ref */;
-    };
+    record: LexiconDefs["fyi.frontpage.feed.comment"]["main"];
   };
   "fyi.frontpage.feed.post": {
     type: "record";
-    record: {
-      "title": string;
-      "subject": any /* union */;
-      "createdAt": string;
-    };
+    record: LexiconDefs["fyi.frontpage.feed.post"]["main"];
   };
   "fyi.frontpage.feed.vote": {
     type: "record";
-    record: {
-      "subject": any /* ref */;
-      "createdAt": string;
-    };
+    record: LexiconDefs["fyi.frontpage.feed.vote"]["main"];
   };
   "fyi.unravel.frontpage.comment": {
     type: "record";
-    record: {
-      "content": string;
-      "createdAt": string;
-      "parent"?: any /* ref */;
-      "post": any /* ref */;
-    };
+    record: LexiconDefs["fyi.unravel.frontpage.comment"]["main"];
   };
   "fyi.unravel.frontpage.post": {
     type: "record";
-    record: {
-      "title": string;
-      "url": string;
-      "createdAt": string;
-    };
+    record: LexiconDefs["fyi.unravel.frontpage.post"]["main"];
   };
   "fyi.unravel.frontpage.vote": {
     type: "record";
-    record: {
-      "subject": any /* ref */;
-      "createdAt": string;
-    };
+    record: LexiconDefs["fyi.unravel.frontpage.vote"]["main"];
   };
   "my.skylights.rel": {
     type: "record";
-    record: {
-      "item": any /* ref */;
-      "rating"?: any /* ref */;
-      "note"?: any /* ref */;
-      "finishedAt"?: Array<string>;
-    };
+    record: LexiconDefs["my.skylights.rel"]["main"];
   };
   "place.stream.branding.deleteBlob": {
     type: "procedure";
@@ -3367,7 +7075,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "assets": Array<any /* ref */>;
+      "assets": Array<LexiconDefs["place.stream.branding.getBranding"]["brandingAsset"]>;
     };
   };
   "place.stream.branding.updateBlob": {
@@ -3397,44 +7105,23 @@ export interface Lexicons {
   };
   "place.stream.broadcast.origin": {
     type: "record";
-    record: {
-      "streamer": string;
-      "server": string;
-      "broadcaster"?: string;
-      "updatedAt": string;
-      "irohTicket"?: string;
-      "websocketURL"?: string;
-    };
+    record: LexiconDefs["place.stream.broadcast.origin"]["main"];
   };
   "place.stream.broadcast.syndication": {
     type: "record";
-    record: {
-      "broadcaster": string;
-      "streamer": string;
-      "createdAt": string;
-    };
+    record: LexiconDefs["place.stream.broadcast.syndication"]["main"];
   };
   "place.stream.chat.gate": {
     type: "record";
-    record: {
-      "hiddenMessage": string;
-    };
+    record: LexiconDefs["place.stream.chat.gate"]["main"];
   };
   "place.stream.chat.message": {
     type: "record";
-    record: {
-      "text": string;
-      "createdAt": string;
-      "facets"?: Array<any /* ref */>;
-      "streamer": string;
-      "reply"?: any /* ref */;
-    };
+    record: LexiconDefs["place.stream.chat.message"]["main"];
   };
   "place.stream.chat.profile": {
     type: "record";
-    record: {
-      "color"?: any /* ref */;
-    };
+    record: LexiconDefs["place.stream.chat.profile"]["main"];
   };
   "place.stream.graph.getFollowingUser": {
     type: "query";
@@ -3444,16 +7131,12 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "follow"?: any /* ref */;
+      "follow"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
     };
   };
   "place.stream.key": {
     type: "record";
-    record: {
-      "signingKey": string;
-      "createdAt": string;
-      "createdBy"?: string;
-    };
+    record: LexiconDefs["place.stream.key"]["main"];
   };
   "place.stream.live.getLiveUsers": {
     type: "query";
@@ -3463,7 +7146,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "streams"?: Array<any /* ref */>;
+      "streams"?: Array<LexiconDefs["place.stream.livestream"]["livestreamView"]>;
     };
   };
   "place.stream.live.getProfileCard": {
@@ -3481,7 +7164,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "recommendations": Array<any /* union */>;
+      "recommendations": Array<LexiconDefs["place.stream.live.getRecommendations"]["livestreamRecommendation"] | Record<string, any>>;
       "userDID"?: string;
     };
   };
@@ -3494,15 +7177,12 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "segments"?: Array<any /* ref */>;
+      "segments"?: Array<LexiconDefs["place.stream.segment"]["segmentView"]>;
     };
   };
   "place.stream.live.recommendations": {
     type: "record";
-    record: {
-      "streamers": Array<string>;
-      "createdAt": string;
-    };
+    record: LexiconDefs["place.stream.live.recommendations"]["main"];
   };
   "place.stream.live.searchActorsTypeahead": {
     type: "query";
@@ -3512,29 +7192,16 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "actors": Array<any /* ref */>;
+      "actors": Array<LexiconDefs["place.stream.live.searchActorsTypeahead"]["actor"]>;
     };
   };
   "place.stream.livestream": {
     type: "record";
-    record: {
-      "title": string;
-      "url"?: string;
-      "createdAt": string;
-      "post"?: any /* ref */;
-      "agent"?: string;
-      "canonicalUrl"?: string;
-      "thumb"?: any /* blob */;
-      "notificationSettings"?: any /* ref */;
-    };
+    record: LexiconDefs["place.stream.livestream"]["main"];
   };
   "place.stream.metadata.configuration": {
     type: "record";
-    record: {
-      "contentWarnings"?: any /* ref */;
-      "contentRights"?: any /* ref */;
-      "distributionPolicy"?: any /* ref */;
-    };
+    record: LexiconDefs["place.stream.metadata.configuration"]["main"];
   };
   "place.stream.moderation.createBlock": {
     type: "procedure";
@@ -3579,12 +7246,7 @@ export interface Lexicons {
   };
   "place.stream.moderation.permission": {
     type: "record";
-    record: {
-      "moderator": string;
-      "permissions": Array<string>;
-      "createdAt": string;
-      "expirationTime"?: string;
-    };
+    record: LexiconDefs["place.stream.moderation.permission"]["main"];
   };
   "place.stream.moderation.updateLivestream": {
     type: "procedure";
@@ -3601,9 +7263,9 @@ export interface Lexicons {
   "place.stream.multistream.createTarget": {
     type: "procedure";
     input: {
-      "multistreamTarget": any /* ref */;
+      "multistreamTarget": LexiconDefs["place.stream.multistream.target"]["main"];
     };
-    output: any /* ref */;
+    output: LexiconDefs["place.stream.multistream.defs"]["targetView"];
   };
   "place.stream.multistream.deleteTarget": {
     type: "procedure";
@@ -3621,42 +7283,25 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "targets": Array<any /* ref */>;
+      "targets": Array<LexiconDefs["place.stream.multistream.defs"]["targetView"]>;
       "cursor"?: string;
     };
   };
   "place.stream.multistream.putTarget": {
     type: "procedure";
     input: {
-      "multistreamTarget": any /* ref */;
+      "multistreamTarget": LexiconDefs["place.stream.multistream.target"]["main"];
       "rkey"?: string;
     };
-    output: any /* ref */;
+    output: LexiconDefs["place.stream.multistream.defs"]["targetView"];
   };
   "place.stream.multistream.target": {
     type: "record";
-    record: {
-      "url": string;
-      "active": boolean;
-      "createdAt": string;
-      "name"?: string;
-    };
+    record: LexiconDefs["place.stream.multistream.target"]["main"];
   };
   "place.stream.segment": {
     type: "record";
-    record: {
-      "id": string;
-      "signingKey": string;
-      "startTime": string;
-      "duration"?: number;
-      "creator": string;
-      "video"?: Array<any /* ref */>;
-      "audio"?: Array<any /* ref */>;
-      "size"?: number;
-      "contentWarnings"?: any /* ref */;
-      "contentRights"?: any /* ref */;
-      "distributionPolicy"?: any /* ref */;
-    };
+    record: LexiconDefs["place.stream.segment"]["main"];
   };
   "place.stream.server.createWebhook": {
     type: "procedure";
@@ -3666,13 +7311,13 @@ export interface Lexicons {
       "active"?: boolean;
       "prefix"?: string;
       "suffix"?: string;
-      "rewrite"?: Array<any /* ref */>;
+      "rewrite"?: Array<LexiconDefs["place.stream.server.defs"]["rewriteRule"]>;
       "name"?: string;
       "description"?: string;
       "muteWords"?: Array<string>;
     };
     output: {
-      "webhook": any /* ref */;
+      "webhook": LexiconDefs["place.stream.server.defs"]["webhook"];
     };
   };
   "place.stream.server.deleteWebhook": {
@@ -3700,7 +7345,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "webhook": any /* ref */;
+      "webhook": LexiconDefs["place.stream.server.defs"]["webhook"];
     };
   };
   "place.stream.server.listWebhooks": {
@@ -3713,15 +7358,13 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "webhooks": Array<any /* ref */>;
+      "webhooks": Array<LexiconDefs["place.stream.server.defs"]["webhook"]>;
       "cursor"?: string;
     };
   };
   "place.stream.server.settings": {
     type: "record";
-    record: {
-      "debugRecording"?: boolean;
-    };
+    record: LexiconDefs["place.stream.server.settings"]["main"];
   };
   "place.stream.server.updateWebhook": {
     type: "procedure";
@@ -3732,32 +7375,22 @@ export interface Lexicons {
       "active"?: boolean;
       "prefix"?: string;
       "suffix"?: string;
-      "rewrite"?: Array<any /* ref */>;
+      "rewrite"?: Array<LexiconDefs["place.stream.server.defs"]["rewriteRule"]>;
       "name"?: string;
       "description"?: string;
       "muteWords"?: Array<string>;
     };
     output: {
-      "webhook": any /* ref */;
+      "webhook": LexiconDefs["place.stream.server.defs"]["webhook"];
     };
   };
   "sh.tangled.actor.profile": {
     type: "record";
-    record: {
-      "description"?: string;
-      "links"?: Array<string>;
-      "stats"?: Array<string>;
-      "bluesky": boolean;
-      "location"?: string;
-      "pinnedRepositories"?: Array<string>;
-    };
+    record: LexiconDefs["sh.tangled.actor.profile"]["main"];
   };
   "sh.tangled.graph.follow": {
     type: "record";
-    record: {
-      "subject": string;
-      "createdAt": string;
-    };
+    record: LexiconDefs["sh.tangled.graph.follow"]["main"];
   };
   "social.grain.actor.getActorFavs": {
     type: "query";
@@ -3769,7 +7402,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "items": Array<any /* ref */>;
+      "items": Array<LexiconDefs["social.grain.gallery.defs"]["galleryView"]>;
     };
   };
   "social.grain.actor.getProfile": {
@@ -3778,16 +7411,11 @@ export interface Lexicons {
       "actor": string;
     };
     input: never;
-    output: any /* ref */;
+    output: LexiconDefs["social.grain.actor.defs"]["profileViewDetailed"];
   };
   "social.grain.actor.profile": {
     type: "record";
-    record: {
-      "displayName"?: string;
-      "description"?: string;
-      "avatar"?: any /* blob */;
-      "createdAt"?: string;
-    };
+    record: LexiconDefs["social.grain.actor.profile"]["main"];
   };
   "social.grain.actor.searchActors": {
     type: "query";
@@ -3799,7 +7427,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "actors": Array<any /* ref */>;
+      "actors": Array<LexiconDefs["social.grain.actor.defs"]["profileView"]>;
     };
   };
   "social.grain.actor.updateAvatar": {
@@ -3821,14 +7449,7 @@ export interface Lexicons {
   };
   "social.grain.comment": {
     type: "record";
-    record: {
-      "text": string;
-      "facets"?: Array<any /* ref */>;
-      "subject": string;
-      "focus"?: string;
-      "replyTo"?: string;
-      "createdAt": string;
-    };
+    record: LexiconDefs["social.grain.comment"]["main"];
   };
   "social.grain.comment.createComment": {
     type: "procedure";
@@ -3861,10 +7482,7 @@ export interface Lexicons {
   };
   "social.grain.favorite": {
     type: "record";
-    record: {
-      "createdAt": string;
-      "subject": string;
-    };
+    record: LexiconDefs["social.grain.favorite"]["main"];
   };
   "social.grain.favorite.createFavorite": {
     type: "procedure";
@@ -3894,24 +7512,17 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "feed": Array<any /* ref */>;
+      "feed": Array<LexiconDefs["social.grain.gallery.defs"]["galleryView"]>;
     };
   };
   "social.grain.gallery": {
     type: "record";
-    record: {
-      "title": string;
-      "description"?: string;
-      "facets"?: Array<any /* ref */>;
-      "labels"?: any /* union */;
-      "updatedAt"?: string;
-      "createdAt": string;
-    };
+    record: LexiconDefs["social.grain.gallery"]["main"];
   };
   "social.grain.gallery.applySort": {
     type: "procedure";
     input: {
-      "writes": Array<any /* ref */>;
+      "writes": Array<LexiconDefs["social.grain.gallery.applySort"]["update"]>;
     };
     output: {
       "success"?: boolean;
@@ -3967,7 +7578,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "items": Array<any /* ref */>;
+      "items": Array<LexiconDefs["social.grain.gallery.defs"]["galleryView"]>;
     };
   };
   "social.grain.gallery.getGallery": {
@@ -3976,7 +7587,7 @@ export interface Lexicons {
       "uri": string;
     };
     input: never;
-    output: any /* ref */;
+    output: LexiconDefs["social.grain.gallery.defs"]["galleryView"];
   };
   "social.grain.gallery.getGalleryThread": {
     type: "query";
@@ -3985,18 +7596,13 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "gallery": any /* ref */;
-      "comments": Array<any /* ref */>;
+      "gallery": LexiconDefs["social.grain.gallery.defs"]["galleryView"];
+      "comments": Array<LexiconDefs["social.grain.comment.defs"]["commentView"]>;
     };
   };
   "social.grain.gallery.item": {
     type: "record";
-    record: {
-      "createdAt": string;
-      "gallery": string;
-      "item": string;
-      "position"?: number;
-    };
+    record: LexiconDefs["social.grain.gallery.item"]["main"];
   };
   "social.grain.gallery.updateGallery": {
     type: "procedure";
@@ -4029,10 +7635,7 @@ export interface Lexicons {
   };
   "social.grain.graph.follow": {
     type: "record";
-    record: {
-      "subject": string;
-      "createdAt": string;
-    };
+    record: LexiconDefs["social.grain.graph.follow"]["main"];
   };
   "social.grain.graph.getFollowers": {
     type: "query";
@@ -4043,9 +7646,9 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "subject": any /* ref */;
+      "subject": LexiconDefs["social.grain.actor.defs"]["profileView"];
       "cursor"?: string;
-      "followers": Array<any /* ref */>;
+      "followers": Array<LexiconDefs["social.grain.actor.defs"]["profileView"]>;
     };
   };
   "social.grain.graph.getFollows": {
@@ -4057,21 +7660,14 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "subject": any /* ref */;
+      "subject": LexiconDefs["social.grain.actor.defs"]["profileView"];
       "cursor"?: string;
-      "follows": Array<any /* ref */>;
+      "follows": Array<LexiconDefs["social.grain.actor.defs"]["profileView"]>;
     };
   };
   "social.grain.labeler.service": {
     type: "record";
-    record: {
-      "policies": any /* ref */;
-      "labels"?: any /* union */;
-      "createdAt": string;
-      "reasonTypes"?: Array<any /* ref */>;
-      "subjectTypes"?: Array<any /* ref */>;
-      "subjectCollections"?: Array<string>;
-    };
+    record: LexiconDefs["social.grain.labeler.service"]["main"];
   };
   "social.grain.notification.getNotifications": {
     type: "query";
@@ -4082,7 +7678,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "notifications": Array<any /* ref */>;
+      "notifications": Array<LexiconDefs["social.grain.notification.defs"]["notificationViewDetailed"]>;
       "seenAt"?: string;
     };
   };
@@ -4095,17 +7691,12 @@ export interface Lexicons {
   };
   "social.grain.photo": {
     type: "record";
-    record: {
-      "photo": any /* blob */;
-      "alt"?: string;
-      "aspectRatio": any /* ref */;
-      "createdAt": string;
-    };
+    record: LexiconDefs["social.grain.photo"]["main"];
   };
   "social.grain.photo.applyAlts": {
     type: "procedure";
     input: {
-      "writes": Array<any /* ref */>;
+      "writes": Array<LexiconDefs["social.grain.photo.applyAlts"]["update"]>;
     };
     output: {
       "success"?: boolean;
@@ -4142,20 +7733,7 @@ export interface Lexicons {
   };
   "social.grain.photo.exif": {
     type: "record";
-    record: {
-      "photo": string;
-      "createdAt": string;
-      "dateTimeOriginal"?: string;
-      "exposureTime"?: number;
-      "fNumber"?: number;
-      "flash"?: string;
-      "focalLengthIn35mmFormat"?: number;
-      "iSO"?: number;
-      "lensMake"?: string;
-      "lensModel"?: string;
-      "make"?: string;
-      "model"?: string;
-    };
+    record: LexiconDefs["social.grain.photo.exif"]["main"];
   };
   "social.grain.photo.getActorPhotos": {
     type: "query";
@@ -4167,7 +7745,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "items": Array<any /* ref */>;
+      "items": Array<LexiconDefs["social.grain.photo.defs"]["photoView"]>;
     };
   };
   "social.grain.photo.uploadPhoto": {
@@ -4209,7 +7787,7 @@ export interface Lexicons {
       "lang"?: string;
       "createdBy"?: string;
     };
-    output: any /* ref */;
+    output: LexiconDefs["tools.ozone.communication.defs"]["templateView"];
   };
   "tools.ozone.communication.deleteTemplate": {
     type: "procedure";
@@ -4223,7 +7801,7 @@ export interface Lexicons {
     params: Record<string, never>;
     input: never;
     output: {
-      "communicationTemplates": Array<any /* ref */>;
+      "communicationTemplates": Array<LexiconDefs["tools.ozone.communication.defs"]["templateView"]>;
     };
   };
   "tools.ozone.communication.updateTemplate": {
@@ -4237,7 +7815,7 @@ export interface Lexicons {
       "updatedBy"?: string;
       "disabled"?: boolean;
     };
-    output: any /* ref */;
+    output: LexiconDefs["tools.ozone.communication.defs"]["templateView"];
   };
   "tools.ozone.hosting.getAccountHistory": {
     type: "query";
@@ -4250,7 +7828,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "events": Array<any /* ref */>;
+      "events": Array<LexiconDefs["tools.ozone.hosting.getAccountHistory"]["event"]>;
     };
   };
   "tools.ozone.moderation.cancelScheduledAction": {
@@ -4268,19 +7846,19 @@ export interface Lexicons {
       "subjects": Array<string>;
       "comment"?: string;
     };
-    output: any /* ref */;
+    output: LexiconDefs["tools.ozone.moderation.cancelScheduledActions"]["cancellationResults"];
   };
   "tools.ozone.moderation.emitEvent": {
     type: "procedure";
     input: {
-      "event": any /* union */;
-      "subject": any /* union */;
+      "event": LexiconDefs["tools.ozone.moderation.defs"]["modEventTakedown"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventAcknowledge"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventEscalate"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventComment"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventLabel"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventReport"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventMute"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmute"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventMuteReporter"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmuteReporter"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventReverseTakedown"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventResolveAppeal"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventEmail"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventDivert"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventTag"] | LexiconDefs["tools.ozone.moderation.defs"]["accountEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["identityEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["recordEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventPriorityScore"] | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceOverrideEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["revokeAccountCredentialsEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["scheduleTakedownEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["cancelScheduledTakedownEvent"] | Record<string, any>;
+      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | Record<string, any>;
       "subjectBlobCids"?: Array<string>;
       "createdBy": string;
-      "modTool"?: any /* ref */;
+      "modTool"?: LexiconDefs["tools.ozone.moderation.defs"]["modTool"];
       "externalId"?: string;
     };
-    output: any /* ref */;
+    output: LexiconDefs["tools.ozone.moderation.defs"]["modEventView"];
   };
   "tools.ozone.moderation.getAccountTimeline": {
     type: "query";
@@ -4289,7 +7867,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "timeline": Array<any /* ref */>;
+      "timeline": Array<LexiconDefs["tools.ozone.moderation.getAccountTimeline"]["timelineItem"]>;
     };
   };
   "tools.ozone.moderation.getEvent": {
@@ -4298,7 +7876,7 @@ export interface Lexicons {
       "id": number;
     };
     input: never;
-    output: any /* ref */;
+    output: LexiconDefs["tools.ozone.moderation.defs"]["modEventViewDetail"];
   };
   "tools.ozone.moderation.getRecord": {
     type: "query";
@@ -4307,7 +7885,7 @@ export interface Lexicons {
       "cid"?: string;
     };
     input: never;
-    output: any /* ref */;
+    output: LexiconDefs["tools.ozone.moderation.defs"]["recordViewDetail"];
   };
   "tools.ozone.moderation.getRecords": {
     type: "query";
@@ -4316,7 +7894,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "records": Array<any /* union */>;
+      "records": Array<LexiconDefs["tools.ozone.moderation.defs"]["recordViewDetail"] | LexiconDefs["tools.ozone.moderation.defs"]["recordViewNotFound"] | Record<string, any>>;
     };
   };
   "tools.ozone.moderation.getRepo": {
@@ -4325,7 +7903,7 @@ export interface Lexicons {
       "did": string;
     };
     input: never;
-    output: any /* ref */;
+    output: LexiconDefs["tools.ozone.moderation.defs"]["repoViewDetail"];
   };
   "tools.ozone.moderation.getReporterStats": {
     type: "query";
@@ -4334,7 +7912,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "stats": Array<any /* ref */>;
+      "stats": Array<LexiconDefs["tools.ozone.moderation.defs"]["reporterStats"]>;
     };
   };
   "tools.ozone.moderation.getRepos": {
@@ -4344,7 +7922,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "repos": Array<any /* union */>;
+      "repos": Array<LexiconDefs["tools.ozone.moderation.defs"]["repoViewDetail"] | LexiconDefs["tools.ozone.moderation.defs"]["repoViewNotFound"] | Record<string, any>>;
     };
   };
   "tools.ozone.moderation.getSubjects": {
@@ -4354,7 +7932,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "subjects": Array<any /* ref */>;
+      "subjects": Array<LexiconDefs["tools.ozone.moderation.defs"]["subjectView"]>;
     };
   };
   "tools.ozone.moderation.getSubjectStatus": {
@@ -4365,7 +7943,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "status": any /* ref */;
+      "status": LexiconDefs["tools.ozone.moderation.defs"]["subjectStatusView"];
     };
   };
   "tools.ozone.moderation.listScheduledActions": {
@@ -4379,7 +7957,7 @@ export interface Lexicons {
       "cursor"?: string;
     };
     output: {
-      "actions": Array<any /* ref */>;
+      "actions": Array<LexiconDefs["tools.ozone.moderation.defs"]["scheduledActionView"]>;
       "cursor"?: string;
     };
   };
@@ -4413,7 +7991,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "events": Array<any /* ref */>;
+      "events": Array<LexiconDefs["tools.ozone.moderation.defs"]["modEventView"]>;
     };
   };
   "tools.ozone.moderation.queryStatuses": {
@@ -4459,19 +8037,19 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "subjectStatuses": Array<any /* ref */>;
+      "subjectStatuses": Array<LexiconDefs["tools.ozone.moderation.defs"]["subjectStatusView"]>;
     };
   };
   "tools.ozone.moderation.scheduleAction": {
     type: "procedure";
     input: {
-      "action": any /* union */;
+      "action": LexiconDefs["tools.ozone.moderation.scheduleAction"]["takedown"] | Record<string, any>;
       "subjects": Array<string>;
       "createdBy": string;
-      "scheduling": any /* ref */;
-      "modTool"?: any /* ref */;
+      "scheduling": LexiconDefs["tools.ozone.moderation.scheduleAction"]["schedulingConfig"];
+      "modTool"?: LexiconDefs["tools.ozone.moderation.defs"]["modTool"];
     };
-    output: any /* ref */;
+    output: LexiconDefs["tools.ozone.moderation.scheduleAction"]["scheduledActionResults"];
   };
   "tools.ozone.moderation.searchRepos": {
     type: "query";
@@ -4484,20 +8062,20 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "repos": Array<any /* ref */>;
+      "repos": Array<LexiconDefs["tools.ozone.moderation.defs"]["repoView"]>;
     };
   };
   "tools.ozone.safelink.addRule": {
     type: "procedure";
     input: {
       "url": string;
-      "pattern": any /* ref */;
-      "action": any /* ref */;
-      "reason": any /* ref */;
+      "pattern": LexiconDefs["tools.ozone.safelink.defs"]["patternType"];
+      "action": LexiconDefs["tools.ozone.safelink.defs"]["actionType"];
+      "reason": LexiconDefs["tools.ozone.safelink.defs"]["reasonType"];
       "comment"?: string;
       "createdBy"?: string;
     };
-    output: any /* ref */;
+    output: LexiconDefs["tools.ozone.safelink.defs"]["event"];
   };
   "tools.ozone.safelink.queryEvents": {
     type: "procedure";
@@ -4510,7 +8088,7 @@ export interface Lexicons {
     };
     output: {
       "cursor"?: string;
-      "events": Array<any /* ref */>;
+      "events": Array<LexiconDefs["tools.ozone.safelink.defs"]["event"]>;
     };
   };
   "tools.ozone.safelink.queryRules": {
@@ -4527,48 +8105,48 @@ export interface Lexicons {
     };
     output: {
       "cursor"?: string;
-      "rules": Array<any /* ref */>;
+      "rules": Array<LexiconDefs["tools.ozone.safelink.defs"]["urlRule"]>;
     };
   };
   "tools.ozone.safelink.removeRule": {
     type: "procedure";
     input: {
       "url": string;
-      "pattern": any /* ref */;
+      "pattern": LexiconDefs["tools.ozone.safelink.defs"]["patternType"];
       "comment"?: string;
       "createdBy"?: string;
     };
-    output: any /* ref */;
+    output: LexiconDefs["tools.ozone.safelink.defs"]["event"];
   };
   "tools.ozone.safelink.updateRule": {
     type: "procedure";
     input: {
       "url": string;
-      "pattern": any /* ref */;
-      "action": any /* ref */;
-      "reason": any /* ref */;
+      "pattern": LexiconDefs["tools.ozone.safelink.defs"]["patternType"];
+      "action": LexiconDefs["tools.ozone.safelink.defs"]["actionType"];
+      "reason": LexiconDefs["tools.ozone.safelink.defs"]["reasonType"];
       "comment"?: string;
       "createdBy"?: string;
     };
-    output: any /* ref */;
+    output: LexiconDefs["tools.ozone.safelink.defs"]["event"];
   };
   "tools.ozone.server.getConfig": {
     type: "query";
     params: Record<string, never>;
     input: never;
     output: {
-      "appview"?: any /* ref */;
-      "pds"?: any /* ref */;
-      "blobDivert"?: any /* ref */;
-      "chat"?: any /* ref */;
-      "viewer"?: any /* ref */;
+      "appview"?: LexiconDefs["tools.ozone.server.getConfig"]["serviceConfig"];
+      "pds"?: LexiconDefs["tools.ozone.server.getConfig"]["serviceConfig"];
+      "blobDivert"?: LexiconDefs["tools.ozone.server.getConfig"]["serviceConfig"];
+      "chat"?: LexiconDefs["tools.ozone.server.getConfig"]["serviceConfig"];
+      "viewer"?: LexiconDefs["tools.ozone.server.getConfig"]["viewerConfig"];
       "verifierDid"?: string;
     };
   };
   "tools.ozone.server.updateConfig": {
     type: "procedure";
     input: {
-      "settings"?: Record<string, any>;
+      "settings"?: Record<string, never>;
     };
     output: {
       "success": boolean;
@@ -4607,7 +8185,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "set": any /* ref */;
+      "set": LexiconDefs["tools.ozone.set.defs"]["setView"];
       "values": Array<string>;
       "cursor"?: string;
     };
@@ -4623,14 +8201,14 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "sets": Array<any /* ref */>;
+      "sets": Array<LexiconDefs["tools.ozone.set.defs"]["setView"]>;
       "cursor"?: string;
     };
   };
   "tools.ozone.set.upsertSet": {
     type: "procedure";
-    input: any /* ref */;
-    output: any /* ref */;
+    input: LexiconDefs["tools.ozone.set.defs"]["set"];
+    output: LexiconDefs["tools.ozone.set.defs"]["setView"];
   };
   "tools.ozone.setting.listOptions": {
     type: "query";
@@ -4644,7 +8222,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "options": Array<any /* ref */>;
+      "options": Array<LexiconDefs["tools.ozone.setting.defs"]["option"]>;
     };
   };
   "tools.ozone.setting.removeOptions": {
@@ -4661,12 +8239,12 @@ export interface Lexicons {
     input: {
       "key": string;
       "scope": string;
-      "value": any;
+      "value": unknown;
       "description"?: string;
       "managerRole"?: string;
     };
     output: {
-      "option": any /* ref */;
+      "option": LexiconDefs["tools.ozone.setting.defs"]["option"];
     };
   };
   "tools.ozone.signature.findCorrelation": {
@@ -4676,7 +8254,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "details": Array<any /* ref */>;
+      "details": Array<LexiconDefs["tools.ozone.signature.defs"]["sigDetail"]>;
     };
   };
   "tools.ozone.signature.findRelatedAccounts": {
@@ -4689,7 +8267,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "accounts": Array<any /* ref */>;
+      "accounts": Array<LexiconDefs["tools.ozone.signature.findRelatedAccounts"]["relatedAccount"]>;
     };
   };
   "tools.ozone.signature.searchAccounts": {
@@ -4702,7 +8280,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "accounts": Array<any /* ref */>;
+      "accounts": Array<LexiconDefs["com.atproto.admin.defs"]["accountView"]>;
     };
   };
   "tools.ozone.team.addMember": {
@@ -4711,7 +8289,7 @@ export interface Lexicons {
       "did": string;
       "role": string;
     };
-    output: any /* ref */;
+    output: LexiconDefs["tools.ozone.team.defs"]["member"];
   };
   "tools.ozone.team.deleteMember": {
     type: "procedure";
@@ -4732,7 +8310,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "members": Array<any /* ref */>;
+      "members": Array<LexiconDefs["tools.ozone.team.defs"]["member"]>;
     };
   };
   "tools.ozone.team.updateMember": {
@@ -4742,16 +8320,16 @@ export interface Lexicons {
       "disabled"?: boolean;
       "role"?: string;
     };
-    output: any /* ref */;
+    output: LexiconDefs["tools.ozone.team.defs"]["member"];
   };
   "tools.ozone.verification.grantVerifications": {
     type: "procedure";
     input: {
-      "verifications": Array<any /* ref */>;
+      "verifications": Array<LexiconDefs["tools.ozone.verification.grantVerifications"]["verificationInput"]>;
     };
     output: {
-      "verifications": Array<any /* ref */>;
-      "failedVerifications": Array<any /* ref */>;
+      "verifications": Array<LexiconDefs["tools.ozone.verification.defs"]["verificationView"]>;
+      "failedVerifications": Array<LexiconDefs["tools.ozone.verification.grantVerifications"]["grantError"]>;
     };
   };
   "tools.ozone.verification.listVerifications": {
@@ -4769,7 +8347,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "verifications": Array<any /* ref */>;
+      "verifications": Array<LexiconDefs["tools.ozone.verification.defs"]["verificationView"]>;
     };
   };
   "tools.ozone.verification.revokeVerifications": {
@@ -4780,15 +8358,12 @@ export interface Lexicons {
     };
     output: {
       "revokedVerifications": Array<string>;
-      "failedRevocations": Array<any /* ref */>;
+      "failedRevocations": Array<LexiconDefs["tools.ozone.verification.revokeVerifications"]["revokeError"]>;
     };
   };
   "xyz.statusphere.status": {
     type: "record";
-    record: {
-      "status": string;
-      "createdAt": string;
-    };
+    record: LexiconDefs["xyz.statusphere.status"]["main"];
   };
 }
 
