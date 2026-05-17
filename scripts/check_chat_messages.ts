@@ -6,7 +6,9 @@ const handle = Deno.env.get("TEST_HANDLE") || "test.garazyk.xyz";
 const password = Deno.env.get("TEST_PASSWORD") || "";
 if (!password) {
   console.error("TEST_PASSWORD environment variable is required.");
-  console.error("Usage: TEST_PASSWORD=<password> TEST_HANDLE=<handle> deno run -A check_chat_messages.ts");
+  console.error(
+    "Usage: TEST_PASSWORD=<password> TEST_HANDLE=<handle> deno run -A check_chat_messages.ts",
+  );
   Deno.exit(1);
 }
 const convoLimit = Number(Deno.env.get("CHAT_CONVO_LIMIT") || "20");
