@@ -4,9 +4,18 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Declares the GZLogRedactor public API.
+ */
 @interface GZLogRedactor : NSObject
 
+/**
+ * @abstract Performs the redactString operation.
+ */
 + (NSString *)redactString:(nullable NSString *)message;
+/**
+ * @abstract Performs the redactURLString operation.
+ */
 + (NSString *)redactURLString:(nullable NSString *)urlString;
 
 /*!

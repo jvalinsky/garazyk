@@ -30,6 +30,9 @@ extern NSErrorDomain const AppViewWriteProxyErrorDomain;
 
 /*!
  */
+/**
+ * @abstract Defines AppViewWriteProxyErrorCode values exposed by this API.
+ */
 typedef NS_ENUM(NSInteger, AppViewWriteProxyErrorCode) {
     AppViewWriteProxyErrorDIDResolutionFailed = 1,
     AppViewWriteProxyErrorPDSEndpointNotFound,

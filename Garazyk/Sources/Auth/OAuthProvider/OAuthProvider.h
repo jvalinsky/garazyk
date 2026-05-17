@@ -169,7 +169,13 @@ typedef NS_ENUM(NSInteger, OAuthProviderError) {
 @property (nonatomic, copy, nullable) NSString *softwareID;
 @property (nonatomic, copy, nullable) NSString *softwareVersion;
 
+/**
+ * @abstract Performs the metadataFromDictionary operation.
+ */
 + (nullable instancetype)metadataFromDictionary:(NSDictionary *)dict error:(NSError **)error;
+/**
+ * @abstract Returns the to dictionary result.
+ */
 - (NSDictionary *)toDictionary;
 
 @end
@@ -196,6 +202,9 @@ typedef void (^OAuthProviderTokenCompletion)(OAuthProviderTokenResponse * _Nulla
  */
 @interface OAuthProviderServer : NSObject
 
+/**
+ * @abstract Returns the operation result.
+ */
 - (instancetype)init NS_UNAVAILABLE;
 
 /*!

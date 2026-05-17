@@ -16,6 +16,9 @@
 #import <Foundation/Foundation.h>
 #import "Core/PDSProviderRegistry.h"
 
+/**
+ * @abstract Defines the PDSEmailProvider protocol contract.
+ */
 @protocol PDSEmailProvider;
 @protocol PDSSecretsProvider;
 

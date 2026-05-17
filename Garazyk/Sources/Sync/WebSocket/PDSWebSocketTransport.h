@@ -89,6 +89,9 @@ typedef void (^PDSWebSocketTransportErrorHandler)(NSError *error);
  The completion handler is called after the frame is transmitted to the
  network, not when received by the peer.
  */
+/**
+ * @abstract Performs the sendMessage operation.
+ */
 - (void)sendMessage:(NSData *)data
          completion:(void (^)(NSError * _Nullable error))completion;
 

@@ -31,6 +31,9 @@ NS_ASSUME_NONNULL_BEGIN
  * @see PDSAccountService
  * @see PDSDatabaseAccount
  */
+/**
+ * @abstract Defines the PDSAccountRepository protocol contract.
+ */
 @protocol PDSAccountRepository <NSObject>
 
 /**

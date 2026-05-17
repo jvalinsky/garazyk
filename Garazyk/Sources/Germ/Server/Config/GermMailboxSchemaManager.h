@@ -17,15 +17,24 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Provides SQL schema strings for the Germ mailbox store.
+ */
 @interface GermMailboxSchemaManager : NSObject
 
+/** Returns the shared schema manager instance. */
 + (instancetype)sharedManager;
 
+/** Returns SQL for the ephemeral mailbox address table. */
 - (NSString *)mailboxesTableSchema;
+/** Returns SQL for the ephemeral mailbox message table. */
 - (NSString *)mailboxMessagesTableSchema;
+/** Returns SQL for the rendezvous address table. */
 - (NSString *)rendezvousTableSchema;
+/** Returns SQL for the rendezvous message table. */
 - (NSString *)rendezvousMessagesTableSchema;
 
+/** Returns the complete mailbox schema SQL batch. */
 - (NSString *)mailboxSchemaSQL;
 
 @end

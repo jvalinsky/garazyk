@@ -18,6 +18,9 @@ NS_ASSUME_NONNULL_BEGIN
 @class CID;
 @class HttpRequest;
 @class HttpResponse;
+/**
+ * @abstract Defines the PDSBlobProvider protocol contract.
+ */
 @protocol PDSBlobProvider;
 
 /**

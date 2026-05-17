@@ -22,6 +22,9 @@ NS_ASSUME_NONNULL_BEGIN
  * Jobs are executed serially (maxConcurrentOperations = 1) to prevent
  * resource exhaustion during expensive file I/O and hashing operations.
  */
+/**
+ * @abstract Exposes the audit queue value.
+ */
 @property (nonatomic, strong, readonly) NSOperationQueue *auditQueue;
 
 /**

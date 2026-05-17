@@ -42,6 +42,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param error Error pointer for validation failures.
  @return Dictionary with credentialId, publicKey, signCount, or nil on failure.
  */
+/**
+ * @abstract Performs the verifyRegistrationResponse operation.
+ */
 + (nullable NSDictionary *)verifyRegistrationResponse:(NSDictionary *)response
                                            challenge:(NSData *)expectedChallenge
                                               origin:(NSString *)expectedOrigin
@@ -64,6 +67,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param outSignCount Pointer to receive new sign count.
  @param error Error pointer for validation failures.
  @return YES if valid, NO on validation failure.
+ */
+/**
+ * @abstract Performs the verifyAssertionResponse operation.
  */
 + (BOOL)verifyAssertionResponse:(NSDictionary *)response
                       challenge:(NSData *)expectedChallenge

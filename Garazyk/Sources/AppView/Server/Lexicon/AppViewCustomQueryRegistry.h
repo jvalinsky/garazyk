@@ -50,6 +50,9 @@ extern NSErrorDomain const AppViewCustomQueryRegistryErrorDomain;
 
  @return YES if the handler produced a result, NO on error.
  */
+/**
+ * @abstract Performs the handleQueryWithParams operation.
+ */
 - (BOOL)handleQueryWithParams:(NSDictionary<NSString *, NSString *> *)params
                         input:(nullable NSDictionary *)input
                      database:(AppViewDatabase *)database

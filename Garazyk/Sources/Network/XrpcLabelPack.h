@@ -8,6 +8,9 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * XrpcLabelPack registers all com.atproto.label.* and com.atproto.temp.* endpoint handlers.
  */
+/**
+ * @abstract Declares the XrpcLabelPack public API.
+ */
 @interface XrpcLabelPack : NSObject <XrpcRoutePack>
 
 @end

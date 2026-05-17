@@ -14,13 +14,28 @@ NS_ASSUME_NONNULL_BEGIN
  * redundant full rebuilds. The cache is invalidated on error or when
  * the process restarts.
  */
+/**
+ * @abstract Declares the MSTCacheManager public API.
+ */
 @interface MSTCacheManager : NSObject
 
 + (instancetype)sharedManager;
 
+/**
+ * @abstract Performs the mstForDid operation.
+ */
 - (nullable MST *)mstForDid:(NSString *)did;
+/**
+ * @abstract Performs the setMST operation.
+ */
 - (void)setMST:(MST *)mst forDid:(NSString *)did;
+/**
+ * @abstract Performs the removeMSTForDid operation.
+ */
 - (void)removeMSTForDid:(NSString *)did;
+/**
+ * @abstract Returns the remove all msts result.
+ */
 - (void)removeAllMSTs;
 
 /**

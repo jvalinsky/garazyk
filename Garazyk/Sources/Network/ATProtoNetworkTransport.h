@@ -124,6 +124,9 @@ typedef NS_ENUM(NSInteger, ATProtoNetworkListenerState) {
  - data has minLength bytes: Partial data available
  - error is non-nil: Receive operation failed
  */
+/**
+ * @abstract Performs the receiveWithMinimumLength operation.
+ */
 - (void)receiveWithMinimumLength:(NSUInteger)minLength
                   maximumLength:(NSUInteger)maxLength
                      completion:(void (^)(NSData * _Nullable data, BOOL isComplete, NSError * _Nullable error))completion;
@@ -174,6 +177,9 @@ typedef NS_ENUM(NSInteger, ATProtoNetworkListenerState) {
 
  @see ATProtoNetworkListener
  */
+/**
+ * @abstract Performs the createListenerWithPort operation.
+ */
 + (id<ATProtoNetworkListener>)createListenerWithPort:(NSUInteger)port;
 
 /*!
@@ -190,6 +196,7 @@ typedef NS_ENUM(NSInteger, ATProtoNetworkListenerState) {
 
  @return A listener instance, or nil if creation failed.
  */
+/** Creates a listener bound to a host and port. */
 + (id<ATProtoNetworkListener>)createListenerWithHost:(nullable NSString *)host port:(NSUInteger)port;
 
 /*!
@@ -205,6 +212,7 @@ typedef NS_ENUM(NSInteger, ATProtoNetworkListenerState) {
 
  @see ATProtoNetworkConnection
  */
+/** Creates an outbound connection to a remote host and port. */
 + (id<ATProtoNetworkConnection>)createConnectionWithHost:(NSString *)host port:(NSUInteger)port;
 
 @end

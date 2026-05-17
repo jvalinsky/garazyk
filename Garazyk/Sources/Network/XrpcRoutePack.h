@@ -24,6 +24,9 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @protocol XrpcRoutePack <NSObject>
 
+/**
+ * @abstract Performs the registerWithDispatcher operation.
+ */
 + (void)registerWithDispatcher:(XrpcDispatcher *)dispatcher
                       services:(id<XrpcRoutePackServices>)services;
 

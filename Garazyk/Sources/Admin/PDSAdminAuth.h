@@ -13,6 +13,9 @@ NS_ASSUME_NONNULL_BEGIN
  * functionality for administrative operations.
  */
 
+/**
+ * @abstract Declares the PDSAdminAuth public API.
+ */
 @interface PDSAdminAuth : NSObject
 
 /**
@@ -44,6 +47,9 @@ NS_ASSUME_NONNULL_BEGIN
  * @param error On return, contains an error describing why authorization failed.
  * @return YES if authorized for admin operations, NO otherwise.
  */
+/**
+ * @abstract Performs the authenticateHeaders operation.
+ */
 - (BOOL)authenticateHeaders:(NSDictionary<NSString *, NSString *> *)headers error:(NSError **)error;
 
 /**
@@ -72,6 +78,9 @@ NS_ASSUME_NONNULL_BEGIN
  * This property stores the active session token after successful authentication.
  * It is set to nil after logout.
  */
+/**
+ * @abstract Exposes the admin token value.
+ */
 @property (nonatomic, copy, nullable) NSString *adminToken;
 
 /**
@@ -79,6 +88,9 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * Set this at startup so that logout survives process restarts. When set,
  * the minimumTokenIssuedAt timestamp is written to a file in this directory.
+ */
+/**
+ * @abstract Exposes the data directory value.
  */
 @property (nonatomic, copy, nullable) NSString *dataDirectory;
 /**

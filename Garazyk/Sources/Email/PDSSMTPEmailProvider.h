@@ -21,6 +21,9 @@ typedef NS_ENUM(NSInteger, PDSSMTPEmailProviderError) {
     PDSSMTPEmailProviderErrorNotImplemented = 1,
 };
 
+/**
+ * @abstract Declares the PDSSMTPEmailProvider public API.
+ */
 @interface PDSSMTPEmailProvider : NSObject <PDSEmailProvider>
 
 /** The SMTP server hostname. */
