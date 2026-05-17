@@ -1,18 +1,18 @@
-import { JupyterFrontEnd, JupyterFrontEndPlugin } from '@jupyterlab/application';
-import { IKernel, IKernelSpecs } from '@jupyterlite/kernel';
+import { JupyterFrontEnd, JupyterFrontEndPlugin } from "@jupyterlab/application";
+import { IKernel, IKernelSpecs } from "@jupyterlite/kernel";
 
-import { ObjcKernel } from '../js/objc-kernel';
-import { clearRuntimeCache, fetchRuntimeManifest } from '../js/runtime-support';
-import type { RuntimeManifest } from '../js/runtime-support';
+import { ObjcKernel } from "../js/objc-kernel";
+import { clearRuntimeCache, fetchRuntimeManifest } from "../js/runtime-support";
+import type { RuntimeManifest } from "../js/runtime-support";
 
-import atprotoUploadPlugin from './atproto-upload';
+import atprotoUploadPlugin from "./atproto-upload";
 
 type RuntimeState = {
   runtimeManifest: RuntimeManifest;
   runtimeManifestUrl: string;
 };
 
-const CLEAR_RUNTIME_CACHE_COMMAND = 'objc-jupyter-wasm:clear-runtime-cache';
+const CLEAR_RUNTIME_CACHE_COMMAND = "objc-jupyter-wasm:clear-runtime-cache";
 
 let runtimeStatePromise: Promise<RuntimeState> | null = null;
 
@@ -34,15 +34,17 @@ function getExtensionStaticUrl(): string {
   const scripts = document.querySelectorAll<HTMLScriptElement>('script[src*="remoteEntry"]');
   for (const script of scripts) {
     const src = script.src;
-    if (src && src.includes('objc-jupyter-wasm')) {
-      return src.substring(0, src.lastIndexOf('/') + 1);
+    if (src && src.includes("objc-jupyter-wasm")) {
+      return src.substring(0, src.lastIndexOf("/") + 1);
     }
   }
-  throw new Error('objc-jupyter-wasm: cannot determine extension static URL — remoteEntry script not found');
+  throw new Error(
+    "objc-jupyter-wasm: cannot determine extension static URL — remoteEntry script not found",
+  );
 }
 
 function runtimeManifestUrlFromStaticUrl(staticUrl: string): string {
-  return staticUrl + 'runtime-manifest.json';
+  return staticUrl + "runtime-manifest.json";
 }
 
 async function getRuntimeState(): Promise<RuntimeState> {
@@ -50,11 +52,11 @@ async function getRuntimeState(): Promise<RuntimeState> {
     const staticUrl = getExtensionStaticUrl();
     const runtimeManifestUrl = runtimeManifestUrlFromStaticUrl(staticUrl);
     runtimeStatePromise = fetchRuntimeManifest(runtimeManifestUrl)
-      .then(runtimeManifest => ({
+      .then((runtimeManifest) => ({
         runtimeManifest,
-        runtimeManifestUrl
+        runtimeManifestUrl,
       }))
-      .catch(error => {
+      .catch((error) => {
         runtimeStatePromise = null;
         throw error;
       });
@@ -64,7 +66,7 @@ async function getRuntimeState(): Promise<RuntimeState> {
 }
 
 const plugin: JupyterFrontEndPlugin<void> = {
-  id: 'objc-jupyter-wasm:kernel',
+  id: "objc-jupyter-wasm:kernel",
   autoStart: true,
   requires: [IKernelSpecs],
   activate: (app: JupyterFrontEnd, kernelspecs: IKernelSpecs) => {
@@ -74,49 +76,49 @@ const plugin: JupyterFrontEndPlugin<void> = {
     console.log("==========================================");
     if (!app.commands.hasCommand(CLEAR_RUNTIME_CACHE_COMMAND)) {
       app.commands.addCommand(CLEAR_RUNTIME_CACHE_COMMAND, {
-        label: 'Clear Objective-C WASM Runtime Cache',
+        label: "Clear Objective-C WASM Runtime Cache",
         execute: async () => {
           const staticUrl = getExtensionStaticUrl();
           const runtimeManifestUrl = runtimeManifestUrlFromStaticUrl(staticUrl);
           const removed = await clearRuntimeCache(runtimeManifestUrl);
           runtimeStatePromise = null;
           console.info(
-            `objc-jupyter-wasm cleared ${removed} cached runtime asset${removed === 1 ? '' : 's'}`
+            `objc-jupyter-wasm cleared ${removed} cached runtime asset${removed === 1 ? "" : "s"}`,
           );
           return removed;
-        }
+        },
       });
     }
 
-          kernelspecs.register({
-            spec: {
-              name: 'objective-c',
-              display_name: 'Objective-C',
-              language: 'objective-c',
-              argv: [],
-              resources: {}
-            },
-            create: async (options: IKernel.IOptions): Promise<IKernel> => {
-              console.log(">>>>>>>>>>> OBJECTIVE-C KERNEL CREATE CALLED!!! <<<<<<<<<<<");
-              const { runtimeManifest, runtimeManifestUrl } = await getRuntimeState();
-              console.log(">>>>>>>>>>> RUNTIME STATE FETCHED", runtimeManifestUrl, "<<<<<<<<<<<");
-              try {
-                const kernel = new ObjcKernel(options, {
-                  runtimeManifest,
-                  runtimeManifestUrl
-                }) as unknown as IKernel;
-                console.log(">>>>>>>>>>> ObjcKernel INSTANTIATED SUCCESS <<<<<<<<<<<");
-                return kernel;
-              } catch (err) {
-                console.error(">>>>>>>>>>> ObjcKernel INSTANTIATION ERROR", err, "<<<<<<<<<<<");
-                throw err;
-              }
-            }
-          });
-          console.log("==========================================");
-          console.log("kernelspecs.register COMPLETED!");
-          console.log("==========================================");
-  }
+    kernelspecs.register({
+      spec: {
+        name: "objective-c",
+        display_name: "Objective-C",
+        language: "objective-c",
+        argv: [],
+        resources: {},
+      },
+      create: async (options: IKernel.IOptions): Promise<IKernel> => {
+        console.log(">>>>>>>>>>> OBJECTIVE-C KERNEL CREATE CALLED!!! <<<<<<<<<<<");
+        const { runtimeManifest, runtimeManifestUrl } = await getRuntimeState();
+        console.log(">>>>>>>>>>> RUNTIME STATE FETCHED", runtimeManifestUrl, "<<<<<<<<<<<");
+        try {
+          const kernel = new ObjcKernel(options, {
+            runtimeManifest,
+            runtimeManifestUrl,
+          }) as unknown as IKernel;
+          console.log(">>>>>>>>>>> ObjcKernel INSTANTIATED SUCCESS <<<<<<<<<<<");
+          return kernel;
+        } catch (err) {
+          console.error(">>>>>>>>>>> ObjcKernel INSTANTIATION ERROR", err, "<<<<<<<<<<<");
+          throw err;
+        }
+      },
+    });
+    console.log("==========================================");
+    console.log("kernelspecs.register COMPLETED!");
+    console.log("==========================================");
+  },
 };
 
 export default [plugin, atprotoUploadPlugin];
