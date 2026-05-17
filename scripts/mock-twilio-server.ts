@@ -18,8 +18,10 @@ function parseFlags(): typeof defaults {
   const args = parseArgs(Deno.args, { string: ["always-approve"] });
   return {
     port: args.port ?? parseInt(Deno.env.get("PORT") ?? "8081", 10),
-    accountSid: args["account-sid"] ?? Deno.env.get("TWILIO_ACCOUNT_SID") ?? "AC00000000000000000000000000000000",
-    authToken: args["auth-token"] ?? Deno.env.get("TWILIO_AUTH_TOKEN") ?? "SK00000000000000000000000000000000",
+    accountSid: args["account-sid"] ?? Deno.env.get("TWILIO_ACCOUNT_SID") ??
+      "AC00000000000000000000000000000000",
+    authToken: args["auth-token"] ?? Deno.env.get("TWILIO_AUTH_TOKEN") ??
+      "SK00000000000000000000000000000000",
     alwaysApprove: args["always-approve"] ?? Deno.env.get("ALWAYS_APPROVE_CODES") ?? "000000",
     latency: args.latency ?? parseInt(Deno.env.get("LATENCY_MS") ?? "0", 10),
     failRate: args["fail-rate"] ?? parseFloat(Deno.env.get("FAIL_RATE") ?? "0"),
@@ -180,7 +182,11 @@ async function handleRequest(req: Request, cfg: ReturnType<typeof parseFlags>): 
       state.verified = true;
     }
 
-    console.error(`[mock-twilio] VerificationCheck: +${phone} code=${code} -> ${isApproved ? "approved" : "pending"}`);
+    console.error(
+      `[mock-twilio] VerificationCheck: +${phone} code=${code} -> ${
+        isApproved ? "approved" : "pending"
+      }`,
+    );
 
     const sid = randomSid();
     return jsonResponse({
