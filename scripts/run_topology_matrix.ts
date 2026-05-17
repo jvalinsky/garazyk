@@ -61,19 +61,20 @@ async function main() {
     for await (const entry of Deno.readDir(topologyDir)) {
       if (entry.isFile && entry.name.endsWith(".json")) {
         const name = entry.name.replace(".json", "");
-        if (isAll || name.includes(topologyFilter)) {
+        if (isAll || (topologyFilter && name.includes(topologyFilter))) {
           topologies.push(name);
         }
       }
     }
   } catch (err) {
-    console.error(red(`Failed to discover topologies in ${topologyDir}: ${err.message}`));
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(red(`Failed to discover topologies in ${topologyDir}: ${msg}`));
     Deno.exit(1);
   }
   topologies.sort();
 
   if (topologies.length === 0) {
-    console.log(red(`No topologies found matching filter: ${topologyFilter}`));
+    console.log(red(`No topologies found matching filter: ${topologyFilter || "all"}`));
     Deno.exit(1);
   }
 
@@ -140,7 +141,8 @@ async function main() {
         );
         summary = JSON.parse(summaryText).summary;
       } catch (err) {
-        if (!parallel) console.error(red(`Failed to read summary for ${topology}: ${err.message}`));
+        const msg = err instanceof Error ? err.message : String(err);
+        if (!parallel) console.error(red(`Failed to read summary for ${topology}: ${msg}`));
       }
 
       return {
@@ -152,7 +154,8 @@ async function main() {
         exitCode: code,
       };
     } catch (err) {
-      console.error(red(`Unexpected error running topology ${topology}: ${err.message}`));
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(red(`Unexpected error running topology ${topology}: ${msg}`));
       return {
         topology,
         passed: 0,

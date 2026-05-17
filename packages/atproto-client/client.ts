@@ -1,5 +1,13 @@
 /** XRPC client wrapper for ATProto service communication. @module client */
 import { TransportLayer, XrpcError } from "./transport.ts";
+import type {
+  LexiconQueryIds,
+  LexiconProcedureIds,
+  QueryParams,
+  QueryOutput,
+  ProcedureInput,
+  ProcedureOutput,
+} from "./lexicons.ts";
 import {
   AccountsClient,
   AdminClient,
@@ -72,6 +80,34 @@ export class XrpcClient {
   public admin: AdminClient;
   /** Raw HTTP and XRPC access for endpoints without a typed helper. */
   public raw: RawClient;
+
+  /**
+   * Invoke a typed XRPC query.
+   * @param method The XRPC query method id.
+   * @param params Query parameters.
+   * @param token Optional auth token.
+   */
+  async query<K extends LexiconQueryIds>(
+    method: K,
+    params?: QueryParams<K>,
+    token?: string
+  ): Promise<QueryOutput<K>> {
+    return await this.raw.query(method, params, token);
+  }
+
+  /**
+   * Invoke a typed XRPC procedure.
+   * @param method The XRPC procedure method id.
+   * @param input Procedure input payload.
+   * @param token Optional auth token.
+   */
+  async procedure<K extends LexiconProcedureIds>(
+    method: K,
+    input?: ProcedureInput<K>,
+    token?: string
+  ): Promise<ProcedureOutput<K>> {
+    return await this.raw.procedure(method, input, token);
+  }
 
   /**
    * Create an XrpcClient targeting the given PDS base URL.

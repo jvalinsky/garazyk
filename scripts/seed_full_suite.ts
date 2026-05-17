@@ -66,7 +66,7 @@ async function main() {
   );
   console.log(`  [SETUP] Chat DID: ${chatContext.serviceDid}`);
   const now = nowIso();
-  const sessions: Record<string, Record<string, string>> = {};
+  const sessions: Record<string, any> = {};
   const dids: Record<string, string> = {};
   const seedErrors: string[] = [];
 
