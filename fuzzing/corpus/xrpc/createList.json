@@ -1,6 +1,0 @@
-{
-  "repo": "did:plc:abc123",
-  "collection": "app.bsky.graph.list",
-  "rkey": "3k5c2l242v2c2",
-  "record": { "$type": "app.bsky.graph.list", "name": "test-list" }
-}

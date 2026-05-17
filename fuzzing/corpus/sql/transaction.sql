@@ -1,1 +1,0 @@
-BEGIN; INSERT INTO accounts VALUES (1); COMMIT;

@@ -1,1 +1,0 @@
-SELECT id, name, email FROM accounts WHERE id = 1

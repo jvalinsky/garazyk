@@ -1,3 +1,0 @@
-GET /xrpc/com.atproto.repo.getRecord?did=did:key:test&collection=app.bsky.feed.post&rkey=abc123 HTTP/1.1
-Host: localhost
-

@@ -1,7 +1,0 @@
-GET /api?key=value&foo=bar&test=1234567890 HTTP/1.1
-Host: example.com
-User-Agent: Mozilla/5.0
-Accept: application/json
-Accept-Encoding: gzip, deflate
-Connection: keep-alive
-

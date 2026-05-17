@@ -1,5 +1,0 @@
-{
-  "packageManager": "python",
-  "packageName": "objc-jupyter-wasm",
-  "uninstallInstructions": "pip uninstall objc-jupyter-wasm"
-}

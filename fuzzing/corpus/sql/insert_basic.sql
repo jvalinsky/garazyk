@@ -1,1 +1,0 @@
-INSERT INTO accounts (id, name) VALUES (1, 'test')

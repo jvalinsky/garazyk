@@ -1,1 +1,0 @@
-SELECT * FROM accounts ORDER BY id LIMIT 10 OFFSET 5
