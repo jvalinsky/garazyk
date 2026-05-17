@@ -4,7 +4,8 @@ This document explains how to integrate the new AdminUI with the existing PDSAdm
 
 ## Overview
 
-The AdminUI is a modern, HTMX-based web interface for the PDS admin panel. It serves static assets (HTML, CSS, JS) and renders partial HTML responses for dynamic content loading.
+The AdminUI is a modern, HTMX-based web interface for the PDS admin panel. It serves static assets
+(HTML, CSS, JS) and renders partial HTML responses for dynamic content loading.
 
 ## Integration Steps
 
@@ -115,11 +116,13 @@ Add these helper methods to `PDSAdminHandler`:
 The AdminUI handles the following routes:
 
 ### Static Assets
+
 - `/admin/assets/css/*` → CSS files
 - `/admin/assets/js/*` → JavaScript files
 - `/admin/assets/index.html` → Main UI entry point
 
 ### Partials (HTMX Responses)
+
 - `/admin/partials/users` → Users section
 - `/admin/partials/users/search` → User search results
 - `/admin/partials/invites` → Invites section
@@ -128,6 +131,7 @@ The AdminUI handles the following routes:
 - `/admin/partials/health/status` → Health stats
 
 ### Entry Points
+
 - `/admin/ui` → Full AdminUI application
 - `/admin/ui/` → Full AdminUI application (with trailing slash)
 
@@ -161,6 +165,7 @@ Garazyk/Sources/Admin/AdminUI/
 ## Content-Type Mapping
 
 AdminUIHandler automatically maps file extensions to content types:
+
 - `.html` → `text/html; charset=utf-8`
 - `.css` → `text/css`
 - `.js` → `application/javascript`
@@ -174,10 +179,12 @@ AdminUIHandler automatically maps file extensions to content types:
 ## Authentication
 
 - **Static assets** (/admin/assets/*): No authentication required
-- **UI entry point** (/admin/ui): No authentication required (HTMX requests are authenticated separately)
+- **UI entry point** (/admin/ui): No authentication required (HTMX requests are authenticated
+  separately)
 - **Partials** (/admin/partials/*): Authentication required via PDSAdminAuth
 
-The AdminUI entry point serves the full HTML shell with HTMX script. HTMX requests to `/admin/partials/*` automatically include authentication headers and are validated by PDSAdminAuth.
+The AdminUI entry point serves the full HTML shell with HTMX script. HTMX requests to
+`/admin/partials/*` automatically include authentication headers and are validated by PDSAdminAuth.
 
 ## Testing
 
@@ -192,6 +199,7 @@ To test the integration:
 ## Backward Compatibility
 
 The existing JSON API endpoints remain unchanged:
+
 - `/admin/users` (JSON)
 - `/admin/invites` (JSON)
 - `/admin/blobs` (JSON)

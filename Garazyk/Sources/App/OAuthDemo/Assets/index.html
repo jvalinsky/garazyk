@@ -2,71 +2,86 @@
 <!-- SPDX-License-Identifier: Unlicense OR CC0-1.0 -->
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
+  <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ATProto OAuth Demo</title>
     <!-- Shared Design System -->
     <link rel="stylesheet" href="/oauth-demo/css/shared/system.css">
     <link rel="stylesheet" href="/oauth-demo/css/oauth-demo.css">
-</head>
+  </head>
 
-<body>
+  <body>
     <main class="oauth-demo-main">
-        <div class="card mb-lg">
-            <h1 class="mb-md">ATProto OAuth Demo</h1>
-            <p class="text-secondary mb-md">Test OAuth flow (PKCE + DPoP) with your local PDS.</p>
-            <div id="storage-warning" class="alert alert-warning hidden"></div>
+      <div class="card mb-lg">
+        <h1 class="mb-md">ATProto OAuth Demo</h1>
+        <p class="text-secondary mb-md">Test OAuth flow (PKCE + DPoP) with your local PDS.</p>
+        <div id="storage-warning" class="alert alert-warning hidden"></div>
 
-            <div id="login-section" class="form">
-                <div class="form-group">
-                    <label class="form-label required" for="handle">PDS Handle (e.g., alice.test)</label>
-                    <input class="form-input" type="text" id="handle" placeholder="alice.test" value="alice.test">
-                </div>
-                <button id="btn-login" class="btn btn-primary">Login with OAuth</button>
-            </div>
-
-            <div id="callback-section" class="hidden">
-                <p class="text-success font-semibold">Authorization successful! Exchanging code for tokens...</p>
-                <div id="token-status"></div>
-            </div>
-
-            <div id="session-section" class="hidden">
-                <h2 class="mb-md">Authorized Session</h2>
-                <p><strong>Session DID:</strong> <span id="did-display">unknown</span></p>
-                <p><strong>Tokens received via DPoP:</strong></p>
-                <pre id="token-display"></pre>
-
-                <button id="btn-test-session" class="btn btn-primary">Test Authenticated Call (getSession)</button>
-                <pre id="api-result" class="hidden"></pre>
-
-                <h3 class="mt-lg mb-md">Create Post</h3>
-                <div class="form-group mb-md">
-                    <label class="form-label" for="post-text">Post text</label>
-                    <textarea class="form-input" id="post-text" rows="3" placeholder="Hello from the OAuth demo..."></textarea>
-                </div>
-                <button id="btn-create-post" class="btn btn-primary">Create app.bsky.feed.post</button>
-                <pre id="post-result" class="hidden"></pre>
-
-                <button id="btn-logout" class="btn btn-secondary mt-lg">Logout</button>
-            </div>
+        <div id="login-section" class="form">
+          <div class="form-group">
+            <label class="form-label required" for="handle">PDS Handle (e.g., alice.test)</label>
+            <input
+              class="form-input"
+              type="text"
+              id="handle"
+              placeholder="alice.test"
+              value="alice.test"
+            >
+          </div>
+          <button id="btn-login" class="btn btn-primary">Login with OAuth</button>
         </div>
 
-        <div class="card mb-lg">
-            <h3 class="mb-md">Public Records</h3>
-            <p class="text-secondary mb-md">List public records for DID: <span id="public-did-display">unknown</span></p>
-            <button id="btn-list-records" class="btn btn-secondary">List Records (public)</button>
-            <pre id="records-result" class="hidden"></pre>
+        <div id="callback-section" class="hidden">
+          <p class="text-success font-semibold">
+            Authorization successful! Exchanging code for tokens...
+          </p>
+          <div id="token-status"></div>
         </div>
 
-        <div class="card">
-            <h3 class="mb-md">Debug Log</h3>
-            <pre id="debug-log" class="text-xs"></pre>
+        <div id="session-section" class="hidden">
+          <h2 class="mb-md">Authorized Session</h2>
+          <p><strong>Session DID:</strong> <span id="did-display">unknown</span></p>
+          <p><strong>Tokens received via DPoP:</strong></p>
+          <pre id="token-display"></pre>
+
+          <button id="btn-test-session" class="btn btn-primary">
+            Test Authenticated Call (getSession)
+          </button>
+          <pre id="api-result" class="hidden"></pre>
+
+          <h3 class="mt-lg mb-md">Create Post</h3>
+          <div class="form-group mb-md">
+            <label class="form-label" for="post-text">Post text</label>
+            <textarea
+              class="form-input"
+              id="post-text"
+              rows="3"
+              placeholder="Hello from the OAuth demo..."
+            ></textarea>
+          </div>
+          <button id="btn-create-post" class="btn btn-primary">Create app.bsky.feed.post</button>
+          <pre id="post-result" class="hidden"></pre>
+
+          <button id="btn-logout" class="btn btn-secondary mt-lg">Logout</button>
         </div>
+      </div>
+
+      <div class="card mb-lg">
+        <h3 class="mb-md">Public Records</h3>
+        <p class="text-secondary mb-md">
+          List public records for DID: <span id="public-did-display">unknown</span>
+        </p>
+        <button id="btn-list-records" class="btn btn-secondary">List Records (public)</button>
+        <pre id="records-result" class="hidden"></pre>
+      </div>
+
+      <div class="card">
+        <h3 class="mb-md">Debug Log</h3>
+        <pre id="debug-log" class="text-xs"></pre>
+      </div>
     </main>
 
     <script src="/oauth-demo/client.js"></script>
-</body>
-
+  </body>
 </html>

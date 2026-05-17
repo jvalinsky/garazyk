@@ -10,8 +10,7 @@ Dependency direction (high-level):
 4. `ATProtoXRPC`
 5. `ATProtoRuntime`
 
-These APIs are marked experimental (`v0`) and may evolve while module extraction
-continues.
+These APIs are marked experimental (`v0`) and may evolve while module extraction continues.
 
 Umbrella ownership rules:
 

@@ -1,10 +1,13 @@
 # PLC Directory E2E Tests
 
-This directory contains end-to-end tests for simulating writes to the PLC (Public Ledger of Credentials) directory when creating new accounts with `did:plc`.
+This directory contains end-to-end tests for simulating writes to the PLC (Public Ledger of
+Credentials) directory when creating new accounts with `did:plc`.
 
 ## Overview
 
-The PLC directory is a critical component of the ATProto identity system. When a new account is created, the PDS needs to:
+The PLC directory is a critical component of the ATProto identity system. When a new account is
+created, the PDS needs to:
+
 1. Generate a DID using the PLC method
 2. Create a genesis operation that defines the identity
 3. Submit the operation to the PLC directory
@@ -74,32 +77,33 @@ curl http://localhost:2582/xrpc/_health
 
 ### Integration Tests
 
-- **PDS Account Creation with PLC**: Full flow of creating an account on PDS and verifying PLC registration
+- **PDS Account Creation with PLC**: Full flow of creating an account on PDS and verifying PLC
+  registration
 
 ## Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PLC_URL` | `http://localhost:2582` | PLC server URL |
-| `PDS_URL` | `http://localhost:2583` | PDS server URL |
-| `DB_HOST` | `localhost` | PostgreSQL host |
-| `DB_PORT` | `5432` | PostgreSQL port |
-| `DB_USER` | `plc` | PostgreSQL user |
-| `DB_PASSWORD` | `plc_secret` | PostgreSQL password |
-| `DB_NAME` | `plc` | PostgreSQL database name |
+| Variable      | Default                 | Description              |
+| ------------- | ----------------------- | ------------------------ |
+| `PLC_URL`     | `http://localhost:2582` | PLC server URL           |
+| `PDS_URL`     | `http://localhost:2583` | PDS server URL           |
+| `DB_HOST`     | `localhost`             | PostgreSQL host          |
+| `DB_PORT`     | `5432`                  | PostgreSQL port          |
+| `DB_USER`     | `plc`                   | PostgreSQL user          |
+| `DB_PASSWORD` | `plc_secret`            | PostgreSQL password      |
+| `DB_NAME`     | `plc`                   | PostgreSQL database name |
 
 ## PLC Directory API
 
 ### Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/xrpc/_health` | Health check |
-| POST | `/xrpc/plc.createAccount` | Create new DID |
-| POST | `/xrpc/plc.updateAccount` | Update existing DID |
-| GET | `/xrpc/plc.getAccount` | Get DID account |
-| GET | `/xrpc/plc.getOperationLog` | Get operation history |
-| GET | `/xrpc/com.atproto.identity.resolveDid` | Resolve DID to document |
+| Method | Endpoint                                | Description             |
+| ------ | --------------------------------------- | ----------------------- |
+| GET    | `/xrpc/_health`                         | Health check            |
+| POST   | `/xrpc/plc.createAccount`               | Create new DID          |
+| POST   | `/xrpc/plc.updateAccount`               | Update existing DID     |
+| GET    | `/xrpc/plc.getAccount`                  | Get DID account         |
+| GET    | `/xrpc/plc.getOperationLog`             | Get operation history   |
+| GET    | `/xrpc/com.atproto.identity.resolveDid` | Resolve DID to document |
 
 ### Example: Create Account
 

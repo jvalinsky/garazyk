@@ -9,9 +9,9 @@
         "type": "params",
         "required": ["groupUri"],
         "properties": {
-          "groupUri": {"type": "string"},
-          "limit": {"type": "integer"},
-          "cursor": {"type": "string"}
+          "groupUri": { "type": "string" },
+          "limit": { "type": "integer" },
+          "cursor": { "type": "string" }
         }
       },
       "output": {
@@ -19,8 +19,8 @@
         "schema": {
           "type": "object",
           "properties": {
-            "members": {"type": "array", "items": {"type": "object"}},
-            "cursor": {"type": "string"}
+            "members": { "type": "array", "items": { "type": "object" } },
+            "cursor": { "type": "string" }
           }
         }
       }

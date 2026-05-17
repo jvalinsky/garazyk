@@ -11,8 +11,8 @@
           "type": "object",
           "required": ["groupUri", "message"],
           "properties": {
-            "groupUri": {"type": "string"},
-            "message": {"type": "string"}
+            "groupUri": { "type": "string" },
+            "message": { "type": "string" }
           }
         }
       }

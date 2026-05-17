@@ -1,18 +1,21 @@
 # Garazyk Admin UI — Design System Guide
 
-**Version**: 2.0  
-**Updated**: May 2026  
+**Version**: 2.0\
+**Updated**: May 2026\
 **Theme**: AppKit-native aesthetic for AT Protocol server operators
 
 ---
 
 ## Overview
 
-The Garazyk Admin UI is designed for **technical server operators** managing AT Protocol infrastructure. The interface should feel like a native macOS application—professional, clear, and approachable—not a generic web admin panel.
+The Garazyk Admin UI is designed for **technical server operators** managing AT Protocol
+infrastructure. The interface should feel like a native macOS application—professional, clear, and
+approachable—not a generic web admin panel.
 
 ### Design Philosophy
 
-1. **AppKit Fidelity** — Use macOS visual patterns: toolbars, source-list sidebars, inspector panes, status bars
+1. **AppKit Fidelity** — Use macOS visual patterns: toolbars, source-list sidebars, inspector panes,
+   status bars
 2. **Clarity First** — Complex information presented simply, never overwhelming
 3. **Progressive Disclosure** — Start simple; reveal complexity on demand
 4. **System Aware** — Respect user's OS theme preference (light/dark)
@@ -24,40 +27,43 @@ The Garazyk Admin UI is designed for **technical server operators** managing AT 
 
 ### OKLCH Foundation
 
-Colors are defined in **OKLCH color space** for perceptual uniformity. Equal steps in lightness *look* equal, unlike HSL.
+Colors are defined in **OKLCH color space** for perceptual uniformity. Equal steps in lightness
+_look_ equal, unlike HSL.
 
 ```
 oklch(lightness% chroma hue)
 ```
 
-**Key advantage**: As you move toward white/black, chroma naturally reduces to prevent garish highlights.
+**Key advantage**: As you move toward white/black, chroma naturally reduces to prevent garish
+highlights.
 
 ### Semantic Palette
 
-| Token | Light | Dark | Purpose |
-|-------|-------|------|---------|
-| `--color-bg-primary` | oklch(96% 0.003 200) | oklch(15% 0.006 15) | Main background |
-| `--color-bg-secondary` | oklch(99% 0.003 200) | oklch(22% 0.01 15) | Secondary surfaces (cards, panels) |
-| `--color-bg-tertiary` | oklch(93% 0.005 200) | oklch(28% 0.012 15) | Hover states, subtle contrast |
-| `--color-text-primary` | oklch(13% 0.005 200) | oklch(96% 0.003 200) | Main text |
-| `--color-text-secondary` | oklch(45% 0.005 200) | oklch(70% 0.005 200) | Secondary labels, captions |
-| `--color-accent` | oklch(52% 0.18 255) | oklch(52% 0.18 255) | Primary actions, focus states |
+| Token                    | Light                | Dark                 | Purpose                            |
+| ------------------------ | -------------------- | -------------------- | ---------------------------------- |
+| `--color-bg-primary`     | oklch(96% 0.003 200) | oklch(15% 0.006 15)  | Main background                    |
+| `--color-bg-secondary`   | oklch(99% 0.003 200) | oklch(22% 0.01 15)   | Secondary surfaces (cards, panels) |
+| `--color-bg-tertiary`    | oklch(93% 0.005 200) | oklch(28% 0.012 15)  | Hover states, subtle contrast      |
+| `--color-text-primary`   | oklch(13% 0.005 200) | oklch(96% 0.003 200) | Main text                          |
+| `--color-text-secondary` | oklch(45% 0.005 200) | oklch(70% 0.005 200) | Secondary labels, captions         |
+| `--color-accent`         | oklch(52% 0.18 255)  | oklch(52% 0.18 255)  | Primary actions, focus states      |
 
 ### Brand Tinting
 
-**Strawberry red** (hue: 15°) subtly tints backgrounds for cohesion. Dark mode uses *stronger* tinting (chroma 0.01–0.012) for visibility.
+**Strawberry red** (hue: 15°) subtly tints backgrounds for cohesion. Dark mode uses _stronger_
+tinting (chroma 0.01–0.012) for visibility.
 
 - Light mode: Very subtle (chroma 0.003–0.005)
 - Dark mode: Noticeable warmth (chroma 0.006–0.012)
 
 ### Action Colors
 
-| Semantic | OKLCH | Use Case |
-|----------|-------|----------|
-| Success | oklch(60% 0.18 145) | Positive outcomes, confirmations |
-| Warning | oklch(75% 0.18 70) | Caution, requires attention |
-| Destructive | oklch(58% 0.22 25) | Deletion, irreversible actions |
-| Info | oklch(60% 0.15 210) | Informational messages |
+| Semantic    | OKLCH               | Use Case                         |
+| ----------- | ------------------- | -------------------------------- |
+| Success     | oklch(60% 0.18 145) | Positive outcomes, confirmations |
+| Warning     | oklch(75% 0.18 70)  | Caution, requires attention      |
+| Destructive | oklch(58% 0.22 25)  | Deletion, irreversible actions   |
+| Info        | oklch(60% 0.15 210) | Informational messages           |
 
 ---
 
@@ -66,22 +72,23 @@ oklch(lightness% chroma hue)
 ### Font Stack
 
 ```css
---font-system: -apple-system, BlinkMacSystemFont, "SF Pro Text",
-               "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+--font-system:
+  -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial,
+  sans-serif;
 ```
 
 Uses native system fonts: **SF Pro** on macOS/iOS, **Segoe UI** on Windows.
 
 ### Type Scale (5-step, 1.25× ratio)
 
-| Level | Size | Use Case |
-|-------|------|----------|
-| `xs` | 11px | Labels, helper text, captions |
-| `sm` | 12px | Form labels, small UI text |
-| `md` | 15px | Body text, standard content |
-| `lg` | 19px | Headings, section titles |
-| `xl` | 24px | Page titles |
-| `2xl` | 30px | Hero titles |
+| Level | Size | Use Case                      |
+| ----- | ---- | ----------------------------- |
+| `xs`  | 11px | Labels, helper text, captions |
+| `sm`  | 12px | Form labels, small UI text    |
+| `md`  | 15px | Body text, standard content   |
+| `lg`  | 19px | Headings, section titles      |
+| `xl`  | 24px | Page titles                   |
+| `2xl` | 30px | Hero titles                   |
 
 ### Line Height Scale
 
@@ -95,11 +102,11 @@ Uses native system fonts: **SF Pro** on macOS/iOS, **Segoe UI** on Windows.
 
 ### Weight Distribution
 
-| Weight | Usage |
-|--------|-------|
-| 500 | Labels, button text, small UI |
-| 600 | Card headers, section titles |
-| 700 | Page titles, emphasized text |
+| Weight | Usage                         |
+| ------ | ----------------------------- |
+| 500    | Labels, button text, small UI |
+| 600    | Card headers, section titles  |
+| 700    | Page titles, emphasized text  |
 
 ---
 
@@ -110,14 +117,8 @@ Uses native system fonts: **SF Pro** on macOS/iOS, **Segoe UI** on Windows.
 All spacing follows a **4pt baseline grid** with semantic naming:
 
 ```css
---space-xs: 4px
---space-sm: 8px
---space-md: 12px
---space-lg: 16px
---space-xl: 24px
---space-2xl: 32px
---space-3xl: 48px
---space-4xl: 64px
+--space-xs: 4px --space-sm: 8px --space-md: 12px --space-lg: 16px --space-xl: 24px --space-2xl: 32px
+  --space-3xl: 48px --space-4xl: 64px;
 ```
 
 ### Spacing Patterns
@@ -139,17 +140,20 @@ All spacing follows a **4pt baseline grid** with semantic naming:
 ### Buttons
 
 **Hierarchy**:
+
 1. **Primary** — High-intent, promoted action (save, create, submit)
 2. **Secondary** — Standard, safe action (cancel, reset, view)
 3. **Destructive** — Irreversible, dangerous action (delete, remove)
 4. **Ghost** — Minimal, de-emphasized action (inline links, hints)
 
 **Sizes**:
+
 - `btn-sm`: 24px height (tight contexts)
 - `btn` (default): 28px height (standard)
 - `btn-lg`: 36px height (prominent actions)
 
 **Interactive States**:
+
 - **Hover**: Darker shade + enhanced shadow
 - **Active**: Scale(0.98) for tactile feedback
 - **Focus**: 2px outline, 2px offset
@@ -158,16 +162,19 @@ All spacing follows a **4pt baseline grid** with semantic naming:
 ### Forms
 
 **Input Focus**:
+
 - Border → `--color-accent`
 - Shadow → `0 0 0 3px rgba(0, 113, 227, 0.1)` (subtle glow)
 
 **Labels**:
+
 - Font size: `var(--font-size-sm)` (12px)
 - Font weight: 500
 - Color: `--color-text-primary`
 - Required indicator: red asterisk
 
 **Form Group Spacing**:
+
 ```
 Form Group
 ├─ Label (space-sm)
@@ -179,16 +186,19 @@ Form Group
 ### Tables
 
 **Hierarchy**:
+
 - Header background: `--color-bg-tertiary` (slightly raised)
 - Header text: Font weight 600
 - Body rows: Hover → `--color-bg-tertiary`
 - Borders: 1px `--separator-color` (subtle)
 
-**Dense Tables**: For data-heavy dashboards, use `table-dense` class (smaller padding, smaller font).
+**Dense Tables**: For data-heavy dashboards, use `table-dense` class (smaller padding, smaller
+font).
 
 ### Cards
 
 **Anatomy**:
+
 ```
 Card
 ├─ Header (optional, border-bottom)
@@ -199,6 +209,7 @@ Card
 ```
 
 **Spacing**:
+
 - Outer padding: `space-lg` (16px)
 - Header/footer borders: `separator-color-secondary`
 
@@ -213,6 +224,7 @@ color: var(--color-warning);
 ```
 
 **Types**:
+
 - **Info**: Blue border + blue text
 - **Success**: Green border + green text
 - **Warning**: Orange border + orange text
@@ -223,6 +235,7 @@ color: var(--color-warning);
 **Usage**: Status labels, tag pills, category indicators
 
 **Types**:
+
 - Filled: `badge-success`, `badge-warning`, `badge-destructive`
 - Outline: `badge-outline` + variant class
 - Secondary: `badge-secondary` (neutral)
@@ -230,6 +243,7 @@ color: var(--color-warning);
 ### Metrics
 
 **Dashboard stat cards**:
+
 ```
 Metric Block
 ├─ Label (uppercase, small)
@@ -321,12 +335,12 @@ Use `@media (prefers-color-scheme: dark)` to apply dark-specific tokens:
 
 ### Key Differences
 
-| Aspect | Light | Dark |
-|--------|-------|------|
+| Aspect     | Light                      | Dark                      |
+| ---------- | -------------------------- | ------------------------- |
 | Background | Very light (96% lightness) | Very dark (15% lightness) |
-| Brand tint | Subtle (chroma 0.003) | Visible (chroma 0.01) |
-| Shadows | Transparent black | Darker opacity |
-| Separation | Thin lines | More visible lines |
+| Brand tint | Subtle (chroma 0.003)      | Visible (chroma 0.01)     |
+| Shadows    | Transparent black          | Darker opacity            |
+| Separation | Thin lines                 | More visible lines        |
 
 ### Text on Dark
 
@@ -366,6 +380,7 @@ Use `@media (prefers-color-scheme: dark)` to apply dark-specific tokens:
 ### Color Contrast
 
 All text meets **7:1 minimum ratio**:
+
 - Primary text on primary background: Enforced
 - Secondary text on secondary background: Enforced
 - Action colors: Large text (18pt+) meets 4.5:1 minimum
@@ -423,6 +438,7 @@ All text meets **7:1 minimum ratio**:
 ## Component Showcase
 
 See `/admin/demo` for an interactive showcase of:
+
 - All button variants and sizes
 - Form patterns (inputs, selects, checkboxes)
 - Tables (standard and dense)

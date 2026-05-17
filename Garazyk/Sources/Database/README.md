@@ -2,11 +2,13 @@
 
 ## Overview
 
-This document describes the single-tenant SQLite database architecture for the ATProto Personal Data Server (PDS), based on the Bluesky PDS reference implementation.
+This document describes the single-tenant SQLite database architecture for the ATProto Personal Data
+Server (PDS), based on the Bluesky PDS reference implementation.
 
 ## Architecture
 
 ### Before (Monolithic - Legacy)
+
 ```
 ┌─────────────────────────────────────┐
 │         Single SQLite File          │
@@ -15,6 +17,7 @@ This document describes the single-tenant SQLite database architecture for the A
 ```
 
 ### After (Single-Tenant - New)
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                      Service Databases                           │
@@ -70,6 +73,7 @@ Garazyk/Sources/Database/
 The `ActorStore` class manages a single user's SQLite database:
 
 **Reader Interface** (`PDSActorStoreReader`):
+
 - `getAccountForDid:error:` - Get account by DID
 - `getRepoForDid:error:` - Get repository info
 - `getRecord:forDid:error:` - Get record by URI
@@ -77,12 +81,14 @@ The `ActorStore` class manages a single user's SQLite database:
 - `getBlockForCID:forDid:error:` - Get block by CID
 
 **Transactor Interface** (`PDSActorStoreTransactor`):
+
 - `createAccount:error:` / `updateAccount:error:` / `deleteAccount:error:`
 - `createRepo:error:` / `updateRepoRoot:error:` / `deleteRepo:error:`
 - `putRecord:forDid:error:` / `deleteRecord:error:` / `putRecords:forDid:error:`
 - `putBlock:forDid:error:` / `deleteBlock:error:` / `putBlocks:forDid:error:`
 
 **Transaction Usage**:
+
 ```objc
 [store transactWithBlock:^(id<PDSActorStoreTransactor> transactor) {
     [transactor createAccount:account error:nil];
@@ -100,6 +106,7 @@ Manages multiple ActorStore instances with LRU caching:
 - **Hierarchical storage**: `${dbDirectory}/${didPrefix}/${did}`
 
 **Usage**:
+
 ```objc
 PDSDatabasePool *pool = [[PDSDatabasePool alloc] initWithDbDirectory:dir maxSize:30000];
 
@@ -113,13 +120,14 @@ PDSActorStore *store = [pool storeForDid:did error:&error];
 
 Three separate SQLite databases for service state:
 
-| Database | Purpose | Contents |
-|----------|---------|----------|
-| `service.sqlite` | Account management | accounts, invite_codes, refresh_tokens |
-| `did_cache.sqlite` | DID resolution cache | did_cache (document, expires_at) |
-| `sequencer.sqlite` | Repo sequencing | repo_sequence (did, root_cid, sequence_num) |
+| Database           | Purpose              | Contents                                    |
+| ------------------ | -------------------- | ------------------------------------------- |
+| `service.sqlite`   | Account management   | accounts, invite_codes, refresh_tokens      |
+| `did_cache.sqlite` | DID resolution cache | did_cache (document, expires_at)            |
+| `sequencer.sqlite` | Repo sequencing      | repo_sequence (did, root_cid, sequence_num) |
 
 **Usage**:
+
 ```objc
 PDSServiceDatabases *serviceDb = [[PDSServiceDatabases alloc] initWithDirectory:@"/var/lib/pds" serviceMaxSize:10 didCacheMaxSize:5 sequencerMaxSize:5];
 [serviceDb createAccount:account error:&error];
@@ -210,14 +218,14 @@ NSLog(@"Errors: %@", health[@"errors"]);
 
 ## Performance Characteristics
 
-| Operation | Complexity | Notes |
-|-----------|------------|-------|
-| Account lookup by DID | O(1) | Primary key index |
-| Record lookup by URI | O(1) | Primary key index |
-| Collection query | O(log n) | B-tree index on collection+rkey |
-| Block lookup by CID | O(1) | Primary key index |
-| Concurrent reads | Unlimited | WAL mode enables parallel reads |
-| Writes | Serialized | Per-user transaction queue |
+| Operation             | Complexity | Notes                           |
+| --------------------- | ---------- | ------------------------------- |
+| Account lookup by DID | O(1)       | Primary key index               |
+| Record lookup by URI  | O(1)       | Primary key index               |
+| Collection query      | O(log n)   | B-tree index on collection+rkey |
+| Block lookup by CID   | O(1)       | Primary key index               |
+| Concurrent reads      | Unlimited  | WAL mode enables parallel reads |
+| Writes                | Serialized | Per-user transaction queue      |
 
 ## Model Classes
 

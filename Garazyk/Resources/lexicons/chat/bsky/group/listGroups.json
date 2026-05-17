@@ -8,8 +8,8 @@
       "parameters": {
         "type": "params",
         "properties": {
-          "limit": {"type": "integer"},
-          "cursor": {"type": "string"}
+          "limit": { "type": "integer" },
+          "cursor": { "type": "string" }
         }
       },
       "output": {
@@ -17,8 +17,8 @@
         "schema": {
           "type": "object",
           "properties": {
-            "groups": {"type": "array", "items": {"type": "object"}},
-            "cursor": {"type": "string"}
+            "groups": { "type": "array", "items": { "type": "object" } },
+            "cursor": { "type": "string" }
           }
         }
       }
