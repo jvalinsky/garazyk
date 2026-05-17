@@ -2,10 +2,9 @@
 # Override for ATProto scenario testing — adds a second PDS for federation scenarios.
 # Usage: docker compose -f docker-compose.yml -f docker-compose.scenarios.yml up -d
 
-version: '3.8'
+version: "3.8"
 
 services:
-
   local-pds2:
     build:
       context: .

@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 # Full local ATProto network: PLC (campagnola) -> PDS (kaszlak) -> Relay (zuk) -> AppView (syrena)
 #
@@ -21,7 +21,6 @@ version: '3.8'
 # The local relay provides real-time ingest regardless of backfill status.
 
 services:
-
   local-plc:
     build:
       context: ../..
