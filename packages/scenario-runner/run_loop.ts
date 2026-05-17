@@ -7,7 +7,10 @@
 
 import { bold, green, red, yellow } from "@std/fmt/colors";
 import { isOtelEnabled, withSpan } from "./otel.ts";
-import { ContainerEventWatcher, type WatcherEvent } from "@garazyk/docker-client";
+import {
+  ContainerEventWatcher,
+  type WatcherEvent,
+} from "@garazyk/docker-client";
 import { ContainerStatsSampler } from "@garazyk/docker-client";
 import { createDockerClient } from "@garazyk/docker-client";
 import { formatBytes } from "./format.ts";
@@ -76,7 +79,11 @@ export async function runScenarioLoop(
   };
 
   const crashWatcher = await ContainerEventWatcher.create();
-  let crashedContainer: { serviceName: string; exitCode: number; oomKilled: boolean } | null = null;
+  let crashedContainer: {
+    serviceName: string;
+    exitCode: number;
+    oomKilled: boolean;
+  } | null = null;
   if (crashWatcher) {
     crashWatcher.subscribe((event: WatcherEvent) => {
       if (event.kind === "died" || event.kind === "oom") {
@@ -100,7 +107,9 @@ export async function runScenarioLoop(
         onMemoryPressure: (alert) => {
           console.warn(yellow(
             `  Memory pressure: ${alert.serviceName} failcnt=${alert.failcnt} ` +
-              `(${formatBytes(alert.memoryUsageBytes)} / ${formatBytes(alert.memoryLimitBytes)})`,
+              `(${formatBytes(alert.memoryUsageBytes)} / ${
+                formatBytes(alert.memoryLimitBytes)
+              })`,
           ));
         },
       });
@@ -109,14 +118,18 @@ export async function runScenarioLoop(
   }
 
   try {
+    let abortedForCrash = false;
     for (let i = 0; i < selected.length; i++) {
       const scenario = selected[i];
       progress.start(`${scenario.id} - ${scenario.name}`);
       await writeProgress(i, scenario, true);
 
       if (crashedContainer !== null) {
-        const crash: { serviceName: string; exitCode: number; oomKilled: boolean } =
-          crashedContainer;
+        const crash: {
+          serviceName: string;
+          exitCode: number;
+          oomKilled: boolean;
+        } = crashedContainer;
         const crashInfo = crash.oomKilled
           ? `Container "${crash.serviceName}" was OOM-killed (exit code ${crash.exitCode})`
           : `Container "${crash.serviceName}" exited unexpectedly (exit code ${crash.exitCode})`;
@@ -128,6 +141,17 @@ export async function runScenarioLoop(
         crashResult.stepFailed("Pre-scenario container check", crashInfo);
         crashResult.finish();
         results.push({ scenario, result: crashResult });
+        if (!args.noJson) {
+          const reportPath = await crashResult.writeReport(
+            reportsDir,
+            `${scenario.id}_${scenario.name}`,
+          );
+          reportPaths.push(reportPath);
+          console.log(`  Report: ${reportPath}`);
+        }
+        progress.update(results.length);
+        await writeProgress(results.length, null, false);
+        abortedForCrash = true;
         break;
       }
 
@@ -160,13 +184,16 @@ export async function runScenarioLoop(
         allow_hybrid_network: args.allowHybridNetwork,
         scenario_id: scenario.id,
         binary_mode: args.binary,
-        pds2: topology.manifest?.env?.scenario?.ATPROTO_TOPOLOGY_CAPABILITIES?.includes("pds2") ||
+        pds2: topology.manifest?.env?.scenario?.ATPROTO_TOPOLOGY_CAPABILITIES
+          ?.includes("pds2") ||
           false,
         topology: topology.manifest?.name || null,
         runner: args.runner,
       };
 
-      Deno.stdout.writeSync(new TextEncoder().encode("\r" + " ".repeat(120) + "\r"));
+      Deno.stdout.writeSync(
+        new TextEncoder().encode("\r" + " ".repeat(120) + "\r"),
+      );
       result.printSummary();
       results.push({ scenario, result });
 
@@ -175,7 +202,10 @@ export async function runScenarioLoop(
       }
 
       if (!args.noJson) {
-        const reportPath = await result.writeReport(reportsDir, `${scenario.id}_${scenario.name}`);
+        const reportPath = await result.writeReport(
+          reportsDir,
+          `${scenario.id}_${scenario.name}`,
+        );
         reportPaths.push(reportPath);
         console.log(`  Report: ${reportPath}`);
       }
@@ -187,8 +217,12 @@ export async function runScenarioLoop(
         i + 1 < selected.length,
       );
     }
-    progress.finish();
-    await writeProgress(selected.length, null, false);
+    if (abortedForCrash) {
+      console.log("");
+    } else {
+      progress.finish();
+      await writeProgress(results.length, null, false);
+    }
   } finally {
     await crashWatcher?.close();
     await statsSampler?.stop();
