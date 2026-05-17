@@ -7,8 +7,12 @@ const password = Deno.env.get("TEST_PASSWORD") || "";
 const messageLimit = Number(Deno.env.get("CHAT_MESSAGE_LIMIT") || "100");
 
 if (!pdsUrl || !chatUrl || !handle || !password) {
-  console.error("PDS_URL, CHAT_URL, TEST_HANDLE, and TEST_PASSWORD environment variables are required.");
-  console.error("Usage: PDS_URL=<url> CHAT_URL=<url> TEST_HANDLE=<handle> TEST_PASSWORD=<password> deno run -A show_chat.ts");
+  console.error(
+    "PDS_URL, CHAT_URL, TEST_HANDLE, and TEST_PASSWORD environment variables are required.",
+  );
+  console.error(
+    "Usage: PDS_URL=<url> CHAT_URL=<url> TEST_HANDLE=<handle> TEST_PASSWORD=<password> deno run -A show_chat.ts",
+  );
   Deno.exit(1);
 }
 
@@ -79,7 +83,9 @@ function boxTop(title: string): void {
   const tLen = vis(title);
   const left = Math.floor((inner - tLen) / 2);
   const right = inner - tLen - left;
-  console.log(c("╔", B, blu) + c("═".repeat(left), blu) + title + c("═".repeat(right), blu) + c("╗", B, blu));
+  console.log(
+    c("╔", B, blu) + c("═".repeat(left), blu) + title + c("═".repeat(right), blu) + c("╗", B, blu),
+  );
 }
 
 function boxBot(): void {
@@ -109,15 +115,24 @@ function chatDid(): string {
   if (cfg) return cfg.includes("#") ? cfg : `${cfg}#bsky_chat`;
   const u = new URL(chatUrl);
   const h = u.hostname === "127.0.0.1" || u.hostname === "::1" ? "localhost" : u.hostname;
-  const defPort = !u.port || (u.protocol === "https:" && u.port === "443") || (u.protocol === "http:" && u.port === "80");
+  const defPort = !u.port || (u.protocol === "https:" && u.port === "443") ||
+    (u.protocol === "http:" && u.port === "80");
   return `did:web:${defPort ? h : `${h}%3A${u.port}`}#bsky_chat`;
 }
 
-async function xrpcGet(baseUrl: string, method: string, params: JR = {}, token?: string): Promise<JR> {
+async function xrpcGet(
+  baseUrl: string,
+  method: string,
+  params: JR = {},
+  token?: string,
+): Promise<JR> {
   const url = new URL(`/xrpc/${method}`, baseUrl);
   for (const [k, v] of Object.entries(params)) {
     if (v == null) continue;
-    if (Array.isArray(v)) { for (const item of v) { if (item != null) url.searchParams.append(k, String(item)); } continue; }
+    if (Array.isArray(v)) {
+      for (const item of v) if (item != null) url.searchParams.append(k, String(item));
+      continue;
+    }
     url.searchParams.set(k, String(v));
   }
   const headers: Record<string, string> = {};
@@ -128,7 +143,12 @@ async function xrpcGet(baseUrl: string, method: string, params: JR = {}, token?:
   return body as JR;
 }
 
-async function xrpcPost(baseUrl: string, method: string, postBody: JR, token?: string): Promise<JR> {
+async function xrpcPost(
+  baseUrl: string,
+  method: string,
+  postBody: JR,
+  token?: string,
+): Promise<JR> {
   const url = new URL(`/xrpc/${method}`, baseUrl);
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -139,7 +159,12 @@ async function xrpcPost(baseUrl: string, method: string, postBody: JR, token?: s
 }
 
 async function srvAuth(method: string, jwt: string, did: string): Promise<string> {
-  const r = await xrpcGet(pdsUrl, "com.atproto.server.getServiceAuth", { aud: did, lxm: method }, jwt);
+  const r = await xrpcGet(
+    pdsUrl,
+    "com.atproto.server.getServiceAuth",
+    { aud: did, lxm: method },
+    jwt,
+  );
   const t = String(asR(r).token || "");
   if (!t) throw new Error(`getServiceAuth returned no token for ${method}`);
   return t;
@@ -163,10 +188,16 @@ function fmtTs(ts: string): string {
     const d = new Date(ts.includes("T") ? ts : Number(ts) * 1000);
     if (isNaN(d.getTime())) return c(ts, D);
     const now = new Date();
-    const time = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+    const time = d.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
     if (d.toDateString() === now.toDateString()) return c(time, D);
     return c(`${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })} ${time}`, D);
-  } catch { return c(ts, D); }
+  } catch {
+    return c(ts, D);
+  }
 }
 
 function fmtSender(sender: unknown, selfDid: string): { label: string; isSelf: boolean } {
@@ -182,8 +213,10 @@ function wrap(text: string, max: number): string[] {
   const lines: string[] = [];
   let cur = "";
   for (const w of words) {
-    if (cur.length + w.length + 1 > max) { if (cur) lines.push(cur); cur = w; }
-    else cur = cur ? `${cur} ${w}` : w;
+    if (cur.length + w.length + 1 > max) {
+      if (cur) lines.push(cur);
+      cur = w;
+    } else cur = cur ? `${cur} ${w}` : w;
   }
   if (cur) lines.push(cur);
   return lines.length > 0 ? lines : [text];
@@ -280,11 +313,16 @@ async function main() {
   boxMid();
 
   // Login
-  const session = await xrpcPost(pdsUrl, "com.atproto.server.createSession", { identifier: handle, password });
+  const session = await xrpcPost(pdsUrl, "com.atproto.server.createSession", {
+    identifier: handle,
+    password,
+  });
   const jwt = String(asR(session).accessJwt || "");
   const selfDid = String(asR(session).did || "");
   const sHandle = String(asR(session).handle || handle);
-  if (!jwt || !selfDid) throw new Error("Login succeeded but response did not include accessJwt and did");
+  if (!jwt || !selfDid) {
+    throw new Error("Login succeeded but response did not include accessJwt and did");
+  }
 
   boxRow(c("Auth: ", D) + c(sHandle, grn, B) + c(` (${selfDid})`, D));
   boxBot();

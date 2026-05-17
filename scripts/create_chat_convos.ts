@@ -5,8 +5,12 @@ const chatUrl = (Deno.env.get("CHAT_URL") || "").replace(/\/$/, "");
 const handle = Deno.env.get("TEST_HANDLE") || "";
 const password = Deno.env.get("TEST_PASSWORD") || "";
 if (!pdsUrl || !chatUrl || !handle || !password) {
-  console.error("PDS_URL, CHAT_URL, TEST_HANDLE, and TEST_PASSWORD environment variables are required.");
-  console.error("Usage: PDS_URL=<url> CHAT_URL=<url> TEST_HANDLE=<handle> TEST_PASSWORD=<password> deno run -A create_chat_convos.ts");
+  console.error(
+    "PDS_URL, CHAT_URL, TEST_HANDLE, and TEST_PASSWORD environment variables are required.",
+  );
+  console.error(
+    "Usage: PDS_URL=<url> CHAT_URL=<url> TEST_HANDLE=<handle> TEST_PASSWORD=<password> deno run -A create_chat_convos.ts",
+  );
   Deno.exit(1);
 }
 const altHandle = Deno.env.get("ALT_HANDLE") || "";
@@ -17,7 +21,8 @@ const targetLimit = Number(Deno.env.get("CHAT_TARGET_LIMIT") || "10");
 const defaultMessage = Deno.env.get("CHAT_MESSAGE") || "";
 const existingConvoId = Deno.env.get("CHAT_CONVO_ID") || "";
 const messageCount = Number(Deno.env.get("CHAT_MESSAGE_COUNT") || "1");
-const backAndForth = Boolean(Deno.env.get("CHAT_BACK_AND_FORTH")) || (altHandle.length > 0 && altPassword.length > 0);
+const backAndForth = Boolean(Deno.env.get("CHAT_BACK_AND_FORTH")) ||
+  (altHandle.length > 0 && altPassword.length > 0);
 const rounds = Number(Deno.env.get("CHAT_ROUNDS") || "3");
 const discoverMode = Boolean(Deno.env.get("CHAT_DISCOVER"));
 const sshHost = Deno.env.get("CHAT_SSH_HOST") || "";
@@ -172,7 +177,9 @@ async function createSession(
   const did = String(record.did || "");
   const sessionHandle = String(record.handle || identifier);
   if (!accessJwt || !did) {
-    throw new Error(`Login for ${identifier} succeeded but response did not include accessJwt and did`);
+    throw new Error(
+      `Login for ${identifier} succeeded but response did not include accessJwt and did`,
+    );
   }
   return { accessJwt, did, handle: sessionHandle };
 }
@@ -293,7 +300,9 @@ async function discoverRemoteAccounts(accessJwt?: string): Promise<TargetIdentit
         .map((raw) => {
           const account = asRecord(raw);
           const did = String(account.did || "");
-          const accountHandle = String((account.handle as Record<string, unknown>)?.handle || account.handle || "");
+          const accountHandle = String(
+            (account.handle as Record<string, unknown>)?.handle || account.handle || "",
+          );
           return { input: accountHandle || did, handle: accountHandle || undefined, did };
         })
         .filter((t) => t.did.startsWith("did:plc:"));
@@ -414,7 +423,11 @@ function printMessages(messages: unknown[]): void {
   }
 }
 
-async function printAllConvos(session: Session, serviceDid: string, markedIds: string[] = []): Promise<void> {
+async function printAllConvos(
+  session: Session,
+  serviceDid: string,
+  markedIds: string[] = [],
+): Promise<void> {
   console.log("\n=== Conversation Count ===");
   const convoResponse = await listConvos(session.accessJwt, serviceDid);
   const convos = Array.isArray(asRecord(convoResponse).convos)
@@ -502,7 +515,9 @@ async function modeDiscoverAndCreate(session: Session, serviceDid: string): Prom
     createdConvoIds.push(convoId);
     for (let i = 0; i < messageCount; i++) {
       const text = defaultMessage ||
-        `Hello ${label}. Chat smoke from ${session.handle} at ${nowIso()}${messageCount > 1 ? ` (${i + 1}/${messageCount})` : ""}.`;
+        `Hello ${label}. Chat smoke from ${session.handle} at ${nowIso()}${
+          messageCount > 1 ? ` (${i + 1}/${messageCount})` : ""
+        }.`;
       const sent = await sendMessage(session.accessJwt, serviceDid, convoId, text);
       console.log(`\n${label}`);
       console.log(`  Convo: ${convoId}`);
@@ -518,7 +533,11 @@ async function modeDiscoverAndCreate(session: Session, serviceDid: string): Prom
 
 // ── Mode 3: Back-and-forth between two accounts ────────────────────────
 
-async function modeBackAndForth(sessionA: Session, sessionB: Session, serviceDid: string): Promise<void> {
+async function modeBackAndForth(
+  sessionA: Session,
+  sessionB: Session,
+  serviceDid: string,
+): Promise<void> {
   console.log(`\n=== Back-and-Forth Conversation ===`);
   console.log(`Account A: ${sessionA.handle} (${sessionA.did})`);
   console.log(`Account B: ${sessionB.handle} (${sessionB.did})`);

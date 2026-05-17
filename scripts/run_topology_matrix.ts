@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run -A
-import { join, fromFileUrl } from "@std/path";
-import { bold, green, red, yellow, brightBlue } from "@std/fmt/colors";
+import { fromFileUrl, join } from "@std/path";
+import { bold, brightBlue, green, red, yellow } from "@std/fmt/colors";
 
 interface TopologySummary {
   topology: string;
@@ -77,7 +77,9 @@ async function main() {
     Deno.exit(1);
   }
 
-  console.log(bold(`\nStarting Topology Matrix Run: ${topologies.length} configurations selected\n`));
+  console.log(
+    bold(`\nStarting Topology Matrix Run: ${topologies.length} configurations selected\n`),
+  );
 
   const summaries: TopologySummary[] = [];
 
@@ -85,10 +87,10 @@ async function main() {
     try {
       console.log(bold(brightBlue(`\n>>> Testing Topology: ${topology}`)));
       const topologyReportsDir = join(reportsDir, topology);
-      
+
       const runId = `matrix-${topology}-${Date.now()}`;
       const basePort = DEFAULT_BASE_PORT + (index * PORTS_PER_RUN);
-      
+
       const env = {
         ...Deno.env.toObject(),
         "PLC_PORT": String(basePort),
@@ -111,13 +113,17 @@ async function main() {
 
       const command = new Deno.Command(Deno.execPath(), {
         args: [
-          "run", "-A",
+          "run",
+          "-A",
           join(scriptDir, "run_scenarios.ts"),
-          "--topology", topology,
-          "--reports-dir", topologyReportsDir,
+          "--topology",
+          topology,
+          "--reports-dir",
+          topologyReportsDir,
           "--teardown",
-          "--run-id", runId,
-          ...passThroughArgs
+          "--run-id",
+          runId,
+          ...passThroughArgs,
         ],
         stdout: "inherit",
         stderr: "inherit",
@@ -125,11 +131,13 @@ async function main() {
       });
 
       const { code } = await command.output();
-      
+
       // 3. Collect Summary
       let summary: any = {};
       try {
-        const summaryText = await Deno.readTextFile(join(topologyReportsDir, "overall-summary.json"));
+        const summaryText = await Deno.readTextFile(
+          join(topologyReportsDir, "overall-summary.json"),
+        );
         summary = JSON.parse(summaryText).summary;
       } catch (err) {
         if (!parallel) console.error(red(`Failed to read summary for ${topology}: ${err.message}`));
@@ -178,7 +186,7 @@ async function main() {
     const resultText = s.ok ? green("PASS") : red("FAIL");
     if (s.ok) totalPassedTopologies++;
     console.log(
-      `  ${s.topology.padEnd(25)} ${resultText.padEnd(19)} ${s.passed}/${s.failed}/${s.skipped}`
+      `  ${s.topology.padEnd(25)} ${resultText.padEnd(19)} ${s.passed}/${s.failed}/${s.skipped}`,
     );
   }
 
@@ -186,7 +194,7 @@ async function main() {
   const total = summaries.length;
   const color = totalPassedTopologies === total ? green : red;
   console.log(
-    bold(`Overall: ${color(`${totalPassedTopologies}/${total} topologies passed`)}\n`)
+    bold(`Overall: ${color(`${totalPassedTopologies}/${total} topologies passed`)}\n`),
   );
 
   if (totalPassedTopologies < total) {

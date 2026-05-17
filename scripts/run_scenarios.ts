@@ -2,15 +2,15 @@
 
 /**
  * @module run_scenarios
- * 
+ *
  * Scenario Runner: Orchestrates E2E ATProto service testing.
- * 
+ *
  * Behavior:
  * - Parses CLI arguments for runner configuration.
  * - Manages the lifecycle of the local Docker-based test network.
  * - Discovers and executes scenarios based on user selection and network topology.
  * - Collects and reports scenario results, diagnostics, and performance data.
- * 
+ *
  * Expectations:
  * - Local services are correctly initialized or connected.
  * - Selected scenarios run within their specified timeouts.
@@ -276,7 +276,11 @@ async function main() {
 
       if (args.otel) {
         initE2eTracing("garazyk-e2e-runner");
-        console.log(`OTel tracing enabled → ${Deno.env.get("OTEL_EXPORTER_OTLP_ENDPOINT") || "http://localhost:4318"}`);
+        console.log(
+          `OTel tracing enabled → ${
+            Deno.env.get("OTEL_EXPORTER_OTLP_ENDPOINT") || "http://localhost:4318"
+          }`,
+        );
       }
 
       if (args.collectDiagnostics) {

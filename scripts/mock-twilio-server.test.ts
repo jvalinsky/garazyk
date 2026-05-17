@@ -1,4 +1,4 @@
-import { assertEquals, assertNotEquals, assertExists } from "@std/assert";
+import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
 
 const PORT = 8099;
 const SID = "AC00000000000000000000000000000000";
@@ -24,8 +24,10 @@ Deno.test("Mock Twilio server integration", async (t) => {
   await t.step("start mock server", async () => {
     const cmd = new Deno.Command("deno", {
       args: [
-        "run", "-A",
-        "--config", "scripts/deno.json",
+        "run",
+        "-A",
+        "--config",
+        "scripts/deno.json",
         "scripts/mock-twilio-server.ts",
         `--port=${PORT}`,
         "--always-approve=000000",
@@ -33,7 +35,6 @@ Deno.test("Mock Twilio server integration", async (t) => {
       cwd: Deno.cwd(),
       stdout: "null",
       stderr: "inherit",
-
     });
     proc = cmd.spawn();
     for (let i = 0; i < 30; i++) {
@@ -303,7 +304,9 @@ Deno.test("Mock Twilio server integration", async (t) => {
   // ── Teardown ───────────────────────────────────────────────────────────────
   await t.step("stop mock server", async () => {
     if (proc) {
-      try { proc.kill("SIGTERM"); } catch { /* ignore */ }
+      try {
+        proc.kill("SIGTERM");
+      } catch { /* ignore */ }
       proc = null;
     }
     await new Promise((r) => setTimeout(r, 300));
