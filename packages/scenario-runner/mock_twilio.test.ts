@@ -1,18 +1,25 @@
-import { assertEquals, assertExists, assertNotEquals } from "@std/assert";
-import { MockTwilioServer, startMockTwilioServer, stopMockTwilioServer } from "./mock_twilio.ts";
+import { assertEquals, assertExists } from "@std/assert";
+import {
+  type MockTwilioServer,
+  startMockTwilioServer,
+  stopMockTwilioServer,
+} from "./mock_twilio.ts";
 
 const PORT = 8098;
 
 Deno.test("MockTwilioServer end-to-end", async (t) => {
   let server: MockTwilioServer;
 
-  await t.step("startMockTwilioServer spawns process and waits for health", async () => {
-    server = await startMockTwilioServer(PORT);
-    assertExists(server);
-    assertEquals(server.url, `http://127.0.0.1:${PORT}`);
-    const healthy = await server.getHealth();
-    assertEquals(healthy, true);
-  });
+  await t.step(
+    "startMockTwilioServer spawns process and waits for health",
+    async () => {
+      server = await startMockTwilioServer(PORT);
+      assertExists(server);
+      assertEquals(server.url, `http://127.0.0.1:${PORT}`);
+      const healthy = await server.getHealth();
+      assertEquals(healthy, true);
+    },
+  );
 
   await t.step("getHealth returns true when server is running", async () => {
     const healthy = await server!.getHealth();

@@ -7,7 +7,7 @@
  * configuration logic.
  */
 
-import { assertEquals } from "jsr:@std/assert";
+import { assertEquals } from "@std/assert";
 import {
   addSpanAttribute,
   addSpanEvent,
@@ -82,7 +82,10 @@ Deno.test("initTracing: sets OTLP endpoint", () => {
     serviceName: "test",
     endpoint: "http://collector:4318",
   });
-  assertEquals(Deno.env.get("OTEL_EXPORTER_OTLP_ENDPOINT"), "http://collector:4318");
+  assertEquals(
+    Deno.env.get("OTEL_EXPORTER_OTLP_ENDPOINT"),
+    "http://collector:4318",
+  );
 
   // Cleanup
   Deno.env.delete("OTEL_DENO");
@@ -156,9 +159,9 @@ Deno.test("withSpan: calls fn directly when OTel is disabled", async () => {
   Deno.env.delete("OTEL_DENO");
 
   let called = false;
-  const result = await withSpan("test-span", async () => {
+  const result = await withSpan("test-span", () => {
     called = true;
-    return 42;
+    return Promise.resolve(42);
   });
   assertEquals(called, true);
   assertEquals(result, 42);
@@ -171,7 +174,7 @@ Deno.test("withSpan: propagates errors when OTel is disabled", async () => {
   Deno.env.delete("OTEL_DENO");
 
   try {
-    await withSpan("test-span", async () => {
+    await withSpan("test-span", () => {
       throw new Error("test error");
     });
     throw new Error("Should have thrown");

@@ -82,6 +82,23 @@ export class ScenarioResult {
    */
   constructor(public scenarioName: string) {}
 
+  /**
+   * Reconstruct a scenario result from a serialized report.
+   * @param report - JSON report emitted by a scenario process.
+   * @returns A ScenarioResult with steps, timing, artifacts, and metadata restored.
+   */
+  static fromReport(report: ScenarioReport): ScenarioResult {
+    const result = new ScenarioResult(report.scenario);
+    result.startedAt = report.started_at * 1000;
+    result.finishedAt = report.finished_at * 1000;
+    result.steps = report.steps.map((step) =>
+      new StepResult(step.name, step.status, step.detail, step.duration_ms)
+    );
+    result.artifacts = report.artifacts;
+    result.metadata = report.metadata;
+    return result;
+  }
+
   /** Start scenario timing */
   start(): void {
     this.startedAt = Date.now();
@@ -102,7 +119,12 @@ export class ScenarioResult {
    * @defaultValue 0
    * @returns The recorded step result
    */
-  step(name: string, status: StepStatus, detail = "", durationMs = 0): StepResult {
+  step(
+    name: string,
+    status: StepStatus,
+    detail = "",
+    durationMs = 0,
+  ): StepResult {
     const step = new StepResult(name, status, detail, durationMs);
     this.steps.push(step);
     return step;
@@ -212,7 +234,9 @@ export class ScenarioResult {
 
     lines.push(`  ${pStr}${fStr}${sStr}`);
     if (this.startedAt && this.finishedAt) {
-      lines.push(`  Time: ${((this.finishedAt - this.startedAt) / 1000).toFixed(2)}s`);
+      lines.push(
+        `  Time: ${((this.finishedAt - this.startedAt) / 1000).toFixed(2)}s`,
+      );
     }
     lines.push(`${"=".repeat(60)}\n`);
     return lines.join("\n");
@@ -266,7 +290,10 @@ export class ScenarioResult {
       .replace(/[^A-Za-z0-9_.-]+/g, "_")
       .replace(/^_+|_+$/g, "");
     const reportPath = join(reportsDir, `${safeName || "scenario"}.json`);
-    await Deno.writeTextFile(reportPath, JSON.stringify(this.toReport(), null, 2) + "\n");
+    await Deno.writeTextFile(
+      reportPath,
+      JSON.stringify(this.toReport(), null, 2) + "\n",
+    );
     return reportPath;
   }
 }
@@ -308,13 +335,17 @@ export async function timedCallChecked<T>(
     const detail = detailFn ? detailFn(val) : "";
     result.stepPassed(name, detail, duration);
     return { ok: true, value: val };
-  } catch (e: any) {
+  } catch (e: unknown) {
     const duration = Math.round(performance.now() - start);
     if (expectFailure) {
       result.stepPassed(name, "Failed as expected", duration);
       return { ok: false, value: null };
     }
-    result.stepFailed(name, e.message || String(e), duration);
+    result.stepFailed(
+      name,
+      e instanceof Error ? e.message : String(e),
+      duration,
+    );
     return { ok: false, value: null };
   }
 }
@@ -344,6 +375,12 @@ export async function timedCall<T>(
   detailFn?: (res: T) => string,
   expectFailure = false,
 ): Promise<T | null> {
-  const outcome = await timedCallChecked(result, name, fn, detailFn, expectFailure);
+  const outcome = await timedCallChecked(
+    result,
+    name,
+    fn,
+    detailFn,
+    expectFailure,
+  );
   return outcome.ok ? outcome.value : null;
 }

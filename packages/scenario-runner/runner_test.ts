@@ -2,8 +2,12 @@
  * Unit tests for ScenarioResult, timedCall, timedCallChecked, and unwrapOutcome.
  */
 
-import { assertEquals, assertInstanceOf, assertRejects } from "jsr:@std/assert";
 import {
+  assertEquals,
+  assertInstanceOf,
+} from "@std/assert";
+import {
+  type ScenarioReport,
   ScenarioResult,
   StepResult,
   StepStatus,
@@ -118,13 +122,57 @@ Deno.test("ScenarioResult: toReport produces correct structure", () => {
   assertEquals(report.artifacts.log, "data");
 });
 
+Deno.test("ScenarioResult: fromReport restores report fields", () => {
+  const report: ScenarioReport = {
+    scenario: "roundtrip",
+    started_at: 1_700_000_000,
+    finished_at: 1_700_000_003,
+    duration_s: 3,
+    steps: [
+      {
+        name: "pass",
+        status: StepStatus.PASSED,
+        detail: "ok",
+        duration_ms: 10,
+      },
+      {
+        name: "fail",
+        status: StepStatus.FAILED,
+        detail: "bad",
+        duration_ms: 20,
+      },
+      {
+        name: "skip",
+        status: StepStatus.SKIPPED,
+        detail: "later",
+        duration_ms: 0,
+      },
+    ],
+    summary: { passed: 1, failed: 1, skipped: 1, total: 3 },
+    ok: false,
+    artifacts: { log: "artifact" },
+    metadata: { run_id: "run-1" },
+  };
+
+  const result = ScenarioResult.fromReport(report);
+  assertEquals(result.scenarioName, "roundtrip");
+  assertEquals(result.startedAt, 1_700_000_000_000);
+  assertEquals(result.finishedAt, 1_700_000_003_000);
+  assertEquals(result.passed, 1);
+  assertEquals(result.failed, 1);
+  assertEquals(result.skipped, 1);
+  assertEquals(result.ok, false);
+  assertEquals(result.artifacts, { log: "artifact" });
+  assertEquals(result.metadata, { run_id: "run-1" });
+});
+
 // ---------------------------------------------------------------------------
 // timedCallChecked
 // ---------------------------------------------------------------------------
 
 Deno.test("timedCallChecked: returns { ok: true, value } on success", async () => {
   const r = new ScenarioResult("test");
-  const outcome = await timedCallChecked(r, "step", async () => 42);
+  const outcome = await timedCallChecked(r, "step", () => Promise.resolve(42));
   assertEquals(outcome.ok, true);
   if (outcome.ok) assertEquals(outcome.value, 42);
   assertEquals(r.passed, 1);
@@ -133,8 +181,8 @@ Deno.test("timedCallChecked: returns { ok: true, value } on success", async () =
 
 Deno.test("timedCallChecked: returns { ok: false, value: null } on failure", async () => {
   const r = new ScenarioResult("test");
-  const outcome = await timedCallChecked(r, "step", async () => {
-    throw new Error("boom");
+  const outcome = await timedCallChecked(r, "step", () => {
+    throw new Error("fail");
   });
   assertEquals(outcome.ok, false);
   assertEquals(outcome.value, null);
@@ -147,7 +195,7 @@ Deno.test("timedCallChecked: expectFailure=true marks passed when call throws", 
   const outcome = await timedCallChecked(
     r,
     "should fail",
-    async () => {
+    () => {
       throw new Error("expected");
     },
     undefined,
@@ -164,7 +212,7 @@ Deno.test("timedCallChecked: expectFailure=true marks failed when call succeeds"
   const outcome = await timedCallChecked(
     r,
     "should fail",
-    async () => "surprise",
+    () => Promise.resolve("surprise"),
     undefined,
     true,
   );
@@ -179,7 +227,7 @@ Deno.test("timedCallChecked: detailFn produces step detail", async () => {
   const outcome = await timedCallChecked(
     r,
     "step",
-    async () => ({ name: "alice" }),
+    () => Promise.resolve({ name: "alice" }),
     (res) => `created ${res.name}`,
   );
   assertEquals(outcome.ok, true);
@@ -193,14 +241,14 @@ Deno.test("timedCallChecked: detailFn produces step detail", async () => {
 
 Deno.test("timedCall: returns value on success", async () => {
   const r = new ScenarioResult("test");
-  const val = await timedCall(r, "step", async () => "hello");
+  const val = await timedCall(r, "step", () => Promise.resolve("hello"));
   assertEquals(val, "hello");
   assertEquals(r.passed, 1);
 });
 
 Deno.test("timedCall: returns null on failure", async () => {
   const r = new ScenarioResult("test");
-  const val = await timedCall(r, "step", async () => {
+  const val = await timedCall(r, "step", () => {
     throw new Error("fail");
   });
   assertEquals(val, null);

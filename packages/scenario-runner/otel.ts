@@ -37,7 +37,9 @@ export interface TracingConfig {
 // Lazy-loaded OpenTelemetry API
 // ---------------------------------------------------------------------------
 
+// deno-lint-ignore no-explicit-any
 let _tracer: any = null;
+// deno-lint-ignore no-explicit-any
 let _meter: any = null;
 let _initialized = false;
 let _config: TracingConfig | null = null;
@@ -47,11 +49,12 @@ let _config: TracingConfig | null = null;
  *
  * Returns a no-op tracer when OTel is not enabled.
  */
+// deno-lint-ignore no-explicit-any
 async function getTracer(): Promise<any> {
   if (_tracer) return _tracer;
   if (!isOtelEnabled()) return noopTracer;
   try {
-    const api = await import("npm:@opentelemetry/api@1");
+    const api = await import("@opentelemetry/api");
     _tracer = api.trace.getTracer("garazyk-e2e", "0.1.0");
     return _tracer;
   } catch {
@@ -64,11 +67,12 @@ async function getTracer(): Promise<any> {
  *
  * Returns a no-op meter when OTel is not enabled.
  */
+// deno-lint-ignore no-explicit-any
 async function getMeter(): Promise<any> {
   if (_meter) return _meter;
   if (!isOtelEnabled()) return noopMeter;
   try {
-    const api = await import("npm:@opentelemetry/api@1");
+    const api = await import("@opentelemetry/api");
     _meter = api.metrics.getMeter("garazyk-e2e", "0.1.0");
     return _meter;
   } catch {
@@ -159,7 +163,8 @@ export function initTracing(config: TracingConfig): boolean {
 export function initE2eTracing(serviceName: string): boolean {
   return initTracing({
     serviceName,
-    endpoint: Deno.env.get("OTEL_EXPORTER_OTLP_ENDPOINT") || "http://localhost:4318",
+    endpoint: Deno.env.get("OTEL_EXPORTER_OTLP_ENDPOINT") ||
+      "http://localhost:4318",
     protocol: "http/protobuf",
     resourceAttributes: {
       "service.version": "dev",
@@ -191,22 +196,27 @@ export async function withSpan<T>(
   }
 
   const tracer = await getTracer();
-  return await tracer.startActiveSpan(name, { attributes }, async (span: any) => {
-    try {
-      const result = await fn();
-      span.setStatus({ code: 0 }); // OK
-      return result;
-    } catch (err) {
-      span.setStatus({
-        code: 2, // ERROR
-        message: err instanceof Error ? err.message : String(err),
-      });
-      span.recordException(err);
-      throw err;
-    } finally {
-      span.end();
-    }
-  });
+  return await tracer.startActiveSpan(
+    name,
+    { attributes },
+    // deno-lint-ignore no-explicit-any
+    async (span: any) => {
+      try {
+        const result = await fn();
+        span.setStatus({ code: 0 }); // OK
+        return result;
+      } catch (err) {
+        span.setStatus({
+          code: 2, // ERROR
+          message: err instanceof Error ? err.message : String(err),
+        });
+        span.recordException(err);
+        throw err;
+      } finally {
+        span.end();
+      }
+    },
+  );
 }
 
 /**
@@ -220,7 +230,7 @@ export async function addSpanAttribute(
 ): Promise<void> {
   if (!isOtelEnabled()) return;
   try {
-    const api = await import("npm:@opentelemetry/api@1");
+    const api = await import("@opentelemetry/api");
     const span = api.trace.getActiveSpan();
     if (span) {
       span.setAttribute(key, value);
@@ -241,7 +251,7 @@ export async function addSpanEvent(
 ): Promise<void> {
   if (!isOtelEnabled()) return;
   try {
-    const api = await import("npm:@opentelemetry/api@1");
+    const api = await import("@opentelemetry/api");
     const span = api.trace.getActiveSpan();
     if (span) {
       span.addEvent(name, attributes);
@@ -265,17 +275,21 @@ export async function shutdownTracing(): Promise<void> {
   // OTEL_DENO is set, but explicit shutdown gives us control
   // over timing and error reporting.
   try {
-    const api = await import("npm:@opentelemetry/api@1");
+    const api = await import("@opentelemetry/api");
     const provider = api.trace.getTracerProvider();
     // The SDK's TracerProvider has a forceFlush() method, but
     // the API type doesn't expose it. Try to call it if present.
+    // deno-lint-ignore no-explicit-any
     if (typeof (provider as any).forceFlush === "function") {
       await Promise.race([
+        // deno-lint-ignore no-explicit-any
         (provider as any).forceFlush(),
         new Promise<void>((resolve) => setTimeout(resolve, 2000)),
       ]);
+      // deno-lint-ignore no-explicit-any
     } else if (typeof (provider as any).shutdown === "function") {
       await Promise.race([
+        // deno-lint-ignore no-explicit-any
         (provider as any).shutdown(),
         new Promise<void>((resolve) => setTimeout(resolve, 2000)),
       ]);
@@ -363,6 +377,7 @@ export async function recordCounter(
 export async function createGauge(
   name: string,
   description?: string,
+  // deno-lint-ignore no-explicit-any
 ): Promise<any> {
   if (!isOtelEnabled()) return noopInstrument;
   try {
@@ -379,11 +394,12 @@ export async function createGauge(
  * Returns the instrument directly so callers can call `.add()`
  * without re-creating the instrument each time.
  *
- * No-op when OTel is not enabled.
+ * No-op when Otel is not enabled.
  */
 export async function createCounter(
   name: string,
   description?: string,
+  // deno-lint-ignore no-explicit-any
 ): Promise<any> {
   if (!isOtelEnabled()) return noopInstrument;
   try {
@@ -399,6 +415,7 @@ export async function createCounter(
 // ---------------------------------------------------------------------------
 
 const noopTracer = {
+  // deno-lint-ignore no-explicit-any
   startActiveSpan(_name: string, _opts: any, fn: (span: any) => any): any {
     const noopSpan = {
       setStatus() {},
@@ -415,21 +432,27 @@ const noopTracer = {
 };
 
 const noopMeter = {
+  // deno-lint-ignore no-explicit-any
   createGauge(_name: string, _opts?: any): any {
     return noopInstrument;
   },
+  // deno-lint-ignore no-explicit-any
   createCounter(_name: string, _opts?: any): any {
     return noopInstrument;
   },
+  // deno-lint-ignore no-explicit-any
   createHistogram(_name: string, _opts?: any): any {
     return noopInstrument;
   },
+  // deno-lint-ignore no-explicit-any
   createUpDownCounter(_name: string, _opts?: any): any {
     return noopInstrument;
   },
 };
 
 const noopInstrument = {
+  // deno-lint-ignore no-explicit-any
   record(_value: number, _attrs?: any) {},
+  // deno-lint-ignore no-explicit-any
   add(_value: number, _attrs?: any) {},
 };

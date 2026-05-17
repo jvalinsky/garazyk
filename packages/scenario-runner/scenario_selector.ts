@@ -28,7 +28,9 @@ export function normalizeScenarioId(value: string): string {
  * @param scenarioDir - Directory to scan for scenario files.
  * @returns The discovered scenarios sorted by id.
  */
-export async function discoverScenarios(scenarioDir: string): Promise<ScenarioInfo[]> {
+export async function discoverScenarios(
+  scenarioDir: string,
+): Promise<ScenarioInfo[]> {
   const scenarios: ScenarioInfo[] = [];
   try {
     for await (const entry of Deno.readDir(scenarioDir)) {
@@ -36,8 +38,14 @@ export async function discoverScenarios(scenarioDir: string): Promise<ScenarioIn
       if (!match) continue;
       const id = match[1];
       const manifest = SCENARIO_MANIFESTS[id] || {};
-      const requires = normalizeScenarioRequirements(manifest.requires || [], `${id}.requires`);
-      const optional = normalizeScenarioRequirements(manifest.optional || [], `${id}.optional`);
+      const requires = normalizeScenarioRequirements(
+        manifest.requires || [],
+        `${id}.requires`,
+      );
+      const optional = normalizeScenarioRequirements(
+        manifest.optional || [],
+        `${id}.optional`,
+      );
       scenarios.push({
         id,
         name: match[2].replace(/_/g, " "),
@@ -52,7 +60,9 @@ export async function discoverScenarios(scenarioDir: string): Promise<ScenarioIn
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error(red(`Failed to discover scenarios in ${scenarioDir}: ${message}`));
+    console.error(
+      red(`Failed to discover scenarios in ${scenarioDir}: ${message}`),
+    );
     Deno.exit(1);
   }
 
@@ -84,14 +94,18 @@ export function selectScenarios(
   topology: Topology,
 ): ScenarioInfo[] {
   if (args.clientFlow !== "none" && args.scenarioIds.length === 0) {
-    return all.filter((scenario) => scenario.browserFlows.includes(args.clientFlow));
+    return all.filter((scenario) =>
+      scenario.browserFlows.includes(args.clientFlow)
+    );
   }
 
   if (args.scenarioIds.length === 0) {
     return all.filter((scenario) => {
       if (scenario.needsPds2 && !args.pds2) return false;
       if (scenario.requires.length > 0 && topology.capabilities.size > 0) {
-        const missing = scenario.requires.filter((cap) => !hasRequirement(topology, cap));
+        const missing = scenario.requires.filter((cap) =>
+          !hasRequirement(topology, cap)
+        );
         if (missing.length > 0) return false;
       }
       return true;
@@ -108,7 +122,9 @@ export function selectScenarios(
   }
 
   for (const scenario of selected) {
-    const missing = scenario.requires.filter((cap) => !hasRequirement(topology, cap));
+    const missing = scenario.requires.filter((cap) =>
+      !hasRequirement(topology, cap)
+    );
     if (missing.length > 0) {
       console.warn(
         yellow(

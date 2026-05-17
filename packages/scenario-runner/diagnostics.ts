@@ -1,5 +1,5 @@
 /** E2E run diagnostics collection — metadata, HTTP probes, log bundling. @module diagnostics */
-import { join, resolve } from "@std/path";
+import { join } from "@std/path";
 import { copy, exists } from "@std/fs";
 import { loadTopologyManifest } from "@garazyk/atproto-topology";
 
@@ -30,13 +30,17 @@ export interface E2ERunContext {
 }
 
 function sanitizeRunId(value: string): string {
-  const cleaned = value.trim().replace(/[^A-Za-z0-9_.-]+/g, "-").replace(/^-+|-+$/g, "")
+  const cleaned = value.trim().replace(/[^A-Za-z0-9_.-]+/g, "-").replace(
+    /^-+|-+$/g,
+    "",
+  )
     .toLowerCase();
   return cleaned || defaultRunId();
 }
 
 function defaultRunId(): string {
-  const now = new Date().toISOString().replace(/[:.]/g, "").substring(0, 15) + "Z";
+  const now = new Date().toISOString().replace(/[:.]/g, "").substring(0, 15) +
+    "Z";
   return `${now}-${Deno.pid}`;
 }
 
@@ -52,18 +56,28 @@ export async function createRunContext(
   const baseDir = Deno.env.get("ATPROTO_E2E_BASE_DIR") || BASE_DIR;
   const resolvedRunDir = runDir || Deno.env.get("ATPROTO_E2E_RUN_DIR") ||
     join(baseDir, resolvedRunId);
-  const resolvedLogsDir = Deno.env.get("ATPROTO_E2E_LOG_DIR") || join(resolvedRunDir, "logs");
+  const resolvedLogsDir = Deno.env.get("ATPROTO_E2E_LOG_DIR") ||
+    join(resolvedRunDir, "logs");
   const resolvedReportsDir = Deno.env.get("ATPROTO_E2E_REPORTS_DIR") ||
     join(resolvedRunDir, "reports");
-  const resolvedDiagDir = diagnosticsDir || Deno.env.get("ATPROTO_E2E_DIAGNOSTICS_DIR") ||
+  const resolvedDiagDir = diagnosticsDir ||
+    Deno.env.get("ATPROTO_E2E_DIAGNOSTICS_DIR") ||
     join(resolvedRunDir, "diagnostics");
-  const resolvedPidFile = Deno.env.get("ATPROTO_E2E_PID_FILE") || join(resolvedRunDir, "pids.txt");
+  const resolvedPidFile = Deno.env.get("ATPROTO_E2E_PID_FILE") ||
+    join(resolvedRunDir, "pids.txt");
 
   const composeRunId = resolvedRunId.replace(/[^a-z0-9-]+/g, "-");
   const composeProject = Deno.env.get("ATPROTO_E2E_COMPOSE_PROJECT") ||
     `garazyk-e2e-${composeRunId}`;
 
-  for (const path of [resolvedRunDir, resolvedLogsDir, resolvedReportsDir, resolvedDiagDir]) {
+  for (
+    const path of [
+      resolvedRunDir,
+      resolvedLogsDir,
+      resolvedReportsDir,
+      resolvedDiagDir,
+    ]
+  ) {
     await Deno.mkdir(path, { recursive: true });
   }
 
@@ -86,11 +100,12 @@ export async function createRunContext(
   };
 }
 
-function redact(value: string): string {
+/** Redact sensitive diagnostic text while preserving JSON string delimiters. */
+export function redactDiagnosticText(value: string): string {
   let redacted = value;
   for (const pattern of SECRET_PATTERNS) {
     redacted = redacted.replace(pattern, (match, p1) => {
-      if (match.toLowerCase().includes("accessjwt")) {
+      if (match.startsWith('"')) {
         return `${p1}[REDACTED]"`;
       }
       return `${p1}[REDACTED]`;
@@ -101,7 +116,7 @@ function redact(value: string): string {
 
 async function writeText(path: string, text: string) {
   await Deno.mkdir(join(path, ".."), { recursive: true });
-  await Deno.writeTextFile(path, redact(text));
+  await Deno.writeTextFile(path, redactDiagnosticText(text));
 }
 
 async function collectHttpEndpoint(
@@ -150,12 +165,17 @@ export async function collectDiagnostics(
     video: Deno.env.get("VIDEO_URL") || "http://localhost:2586",
     ui: Deno.env.get("GARAZYK_UI_URL") || "http://localhost:2590",
   };
-  const urls = { ...defaultUrls, ...(manifest?.serviceUrls || {}), ...options.serviceUrls };
-  const appviewSecret = options.appviewAdminSecret || Deno.env.get("APPVIEW_ADMIN_SECRET") ||
+  const urls = {
+    ...defaultUrls,
+    ...(manifest?.serviceUrls || {}),
+    ...options.serviceUrls,
+  };
+  const appviewSecret = options.appviewAdminSecret ||
+    Deno.env.get("APPVIEW_ADMIN_SECRET") ||
     "localdevadmin";
   const label = options.label || "atproto-e2e";
 
-  const metadata: Record<string, any> = {
+  const metadata: Record<string, unknown> = {
     label,
     run_id: context.runId,
     run_dir: context.runDir,
@@ -166,18 +186,26 @@ export async function collectDiagnostics(
   };
 
   try {
-    const gitHead = new Deno.Command("git", { args: ["rev-parse", "HEAD"] }).outputSync();
+    const gitHead = new Deno.Command("git", { args: ["rev-parse", "HEAD"] })
+      .outputSync();
     metadata.git_commit = new TextDecoder().decode(gitHead.stdout).trim();
-    const gitStatus = new Deno.Command("git", { args: ["status", "--short"] }).outputSync();
-    metadata.git_status = new TextDecoder().decode(gitStatus.stdout).trim().split("\n");
+    const gitStatus = new Deno.Command("git", { args: ["status", "--short"] })
+      .outputSync();
+    metadata.git_status = new TextDecoder().decode(gitStatus.stdout).trim()
+      .split("\n");
   } catch (e) {
     metadata.git_error = String(e);
   }
 
-  await writeText(join(outputDir, "run-metadata.json"), JSON.stringify(metadata, null, 2));
+  await writeText(
+    join(outputDir, "run-metadata.json"),
+    JSON.stringify(metadata, null, 2),
+  );
 
   if (await exists(context.pidFile)) {
-    await copy(context.pidFile, join(outputDir, "pids.txt"), { overwrite: true });
+    await copy(context.pidFile, join(outputDir, "pids.txt"), {
+      overwrite: true,
+    });
   }
 
   if (await exists(context.logsDir)) {
@@ -185,9 +213,13 @@ export async function collectDiagnostics(
     await Deno.mkdir(logsOut, { recursive: true });
     for await (const entry of Deno.readDir(context.logsDir)) {
       if (entry.isFile && entry.name.endsWith(".log")) {
-        await copy(join(context.logsDir, entry.name), join(logsOut, entry.name), {
-          overwrite: true,
-        });
+        await copy(
+          join(context.logsDir, entry.name),
+          join(logsOut, entry.name),
+          {
+            overwrite: true,
+          },
+        );
       }
     }
   }
@@ -201,8 +233,16 @@ export async function collectDiagnostics(
       url: `${urls.pds}/xrpc/com.atproto.server.describeServer`,
       headers: {},
     },
-    { name: "relay-health", url: `${urls.relay}/api/relay/health`, headers: {} },
-    { name: "relay-upstreams", url: `${urls.relay}/api/relay/upstreams`, headers: {} },
+    {
+      name: "relay-health",
+      url: `${urls.relay}/api/relay/health`,
+      headers: {},
+    },
+    {
+      name: "relay-upstreams",
+      url: `${urls.relay}/api/relay/upstreams`,
+      headers: {},
+    },
     {
       name: "appview-backfill-status",
       url: `${urls.appview}/admin/backfill/status`,
@@ -223,9 +263,21 @@ export async function collectDiagnostics(
       url: `${urls.appview}/admin/appview/metrics/stats`,
       headers: authHeader,
     },
-    { name: "appview-lexicons", url: `${urls.appview}/admin/lexicons`, headers: authHeader },
-    { name: "appview-hooks", url: `${urls.appview}/admin/hooks`, headers: authHeader },
-    { name: "appview-endpoints", url: `${urls.appview}/admin/endpoints`, headers: authHeader },
+    {
+      name: "appview-lexicons",
+      url: `${urls.appview}/admin/lexicons`,
+      headers: authHeader,
+    },
+    {
+      name: "appview-hooks",
+      url: `${urls.appview}/admin/hooks`,
+      headers: authHeader,
+    },
+    {
+      name: "appview-endpoints",
+      url: `${urls.appview}/admin/endpoints`,
+      headers: authHeader,
+    },
     {
       name: "pds2-describe-server",
       url: `${urls.pds2}/xrpc/com.atproto.server.describeServer`,
@@ -237,7 +289,9 @@ export async function collectDiagnostics(
   ];
 
   await Promise.all(
-    probes.map((probe) => collectHttpEndpoint(outputDir, probe.name, probe.url, probe.headers)),
+    probes.map((probe) =>
+      collectHttpEndpoint(outputDir, probe.name, probe.url, probe.headers)
+    ),
   );
 
   return outputDir;

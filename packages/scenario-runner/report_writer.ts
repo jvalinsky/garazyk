@@ -63,9 +63,18 @@ export interface OverallSummaryTotals {
 export async function writeOverallSummary(
   options: WriteOverallSummaryOptions,
 ): Promise<OverallSummaryTotals> {
-  const totalPassed = options.results.reduce((sum, item) => sum + item.result.passed, 0);
-  const totalFailed = options.results.reduce((sum, item) => sum + item.result.failed, 0);
-  const totalSkipped = options.results.reduce((sum, item) => sum + item.result.skipped, 0);
+  const totalPassed = options.results.reduce(
+    (sum, item) => sum + item.result.passed,
+    0,
+  );
+  const totalFailed = options.results.reduce(
+    (sum, item) => sum + item.result.failed,
+    0,
+  );
+  const totalSkipped = options.results.reduce(
+    (sum, item) => sum + item.result.skipped,
+    0,
+  );
 
   if (options.results.length > 0) {
     console.log(bold("\nOverall Results"));
@@ -106,7 +115,9 @@ export async function writeOverallSummary(
               skipped: totalSkipped,
             },
             ok: !options.fatalError && totalFailed === 0,
-            error: options.fatalError instanceof Error ? options.fatalError.message : undefined,
+            error: options.fatalError instanceof Error
+              ? options.fatalError.message
+              : undefined,
           },
           null,
           2,

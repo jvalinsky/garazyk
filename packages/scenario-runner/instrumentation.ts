@@ -1,6 +1,6 @@
 /** Operation timing, metrics scraping, storage monitoring, and instrumentation reports. @module instrumentation */
 import { join } from "@std/path";
-import { exists } from "@std/fs";
+
 
 const SAMPLE_INTERVAL = 2000; // ms
 
@@ -39,7 +39,8 @@ export class OperationStats {
    * @returns The minimum recorded duration.
    */
   get min(): number {
-    return Math.min(...this.durations, 0);
+    if (this.durations.length === 0) return 0;
+    return Math.min(...this.durations);
   }
   /**
    * Maximum recorded duration in milliseconds.
@@ -65,7 +66,10 @@ export class OperationStats {
   percentile(p: number): number {
     if (this.durations.length === 0) return 0;
     const sorted = [...this.durations].sort((a, b) => a - b);
-    const idx = Math.min(Math.floor(sorted.length * p / 100), sorted.length - 1);
+    const idx = Math.min(
+      Math.floor(sorted.length * p / 100),
+      sorted.length - 1,
+    );
     return sorted[idx];
   }
 
@@ -103,7 +107,7 @@ export class OperationStats {
    * Returns a plain object summary of the operation statistics.
    * @returns A serializable summary of the operation statistics.
    */
-  toDict(): Record<string, any> {
+  toDict(): Record<string, unknown> {
     return {
       name: this.name,
       count: this.count,
@@ -160,8 +164,8 @@ export class OperationTimer {
    * Returns all operation stats as plain objects.
    * @returns A map of operation names to serialized stats.
    */
-  toDict(): Record<string, any> {
-    const res: Record<string, any> = {};
+  toDict(): Record<string, unknown> {
+    const res: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(this.stats)) {
       res[k] = v.toDict();
     }
@@ -187,7 +191,8 @@ export class PhaseTimer {
   /** Ends the current phase and records its duration in seconds. */
   endPhase() {
     if (this.currentPhase) {
-      this.phases[this.currentPhase] = (performance.now() - this.currentStart) / 1000;
+      this.phases[this.currentPhase] = (performance.now() - this.currentStart) /
+        1000;
       this.currentPhase = null;
     }
   }
@@ -196,7 +201,7 @@ export class PhaseTimer {
    * Returns the recorded phase timings.
    * @returns A map of phase names to durations in seconds.
    */
-  toDict(): Record<string, any> {
+  toDict(): Record<string, unknown> {
     return { ...this.phases };
   }
 }
@@ -221,7 +226,7 @@ export class PrometheusScraper {
    * Stops scraping, performs one final scrape, and returns the collected time series.
    * @returns The aggregated metric time series.
    */
-  async stop(): Promise<Record<string, any>> {
+  async stop(): Promise<Record<string, unknown>> {
     if (this.intervalId) clearInterval(this.intervalId);
     await this.scrape(); // Final scrape
     return this.getTimeSeries();
@@ -244,7 +249,9 @@ export class PrometheusScraper {
     const metrics: Record<string, number> = {};
     for (const line of text.split("\n")) {
       if (!line || line.startsWith("#")) continue;
-      const match = line.match(/^([a-zA-Z_:][a-zA-Z0-9_:]*)(\{[^}]*\})?\s+([0-9eE.+-]+)$/);
+      const match = line.match(
+        /^([a-zA-Z_:][a-zA-Z0-9_:]*)(\{[^}]*\})?\s+([0-9eE.+-]+)$/,
+      );
       if (match) {
         const key = match[1] + (match[2] || "");
         metrics[key] = parseFloat(match[3]);
@@ -257,7 +264,8 @@ export class PrometheusScraper {
    * Returns the collected metric time series.
    * @returns A map of metric names to timestamped samples.
    */
-  getTimeSeries(): Record<string, any> {
+  getTimeSeries(): Record<string, unknown> {
+    // deno-lint-ignore no-explicit-any
     const res: Record<string, any> = {};
     for (const samples of Object.values(this.samples)) {
       for (const sample of samples) {
@@ -273,7 +281,7 @@ export class PrometheusScraper {
 
 /** Periodically samples database and WAL file sizes at configured paths. */
 export class StorageMonitor {
-  private stats: Record<string, any[]> = {};
+  private stats: Record<string, unknown[]> = {};
   private intervalId?: number;
 
   constructor(private paths: Record<string, string[]>) {
@@ -291,7 +299,7 @@ export class StorageMonitor {
    * Stops sampling, performs one final sample, and returns the collected stats.
    * @returns The collected storage statistics.
    */
-  async stop(): Promise<Record<string, any[]>> {
+  async stop(): Promise<Record<string, unknown[]>> {
     if (this.intervalId) clearInterval(this.intervalId);
     await this.sample();
     return this.stats;
@@ -328,10 +336,10 @@ export class InstrumentationReport {
    * @param phaseTimings - Phase timings in seconds keyed by phase name.
    */
   constructor(
-    public operationStats: Record<string, any>,
-    public metricsTimeSeries: Record<string, any>,
-    public processStats: Record<string, any>,
-    public storageStats: Record<string, any>,
+    public operationStats: Record<string, unknown>,
+    public metricsTimeSeries: Record<string, unknown>,
+    public processStats: Record<string, unknown>,
+    public storageStats: Record<string, unknown>,
     public phaseTimings: Record<string, number>,
   ) {}
 
@@ -339,7 +347,7 @@ export class InstrumentationReport {
    * Returns the report as a plain object.
    * @returns A serializable instrumentation report.
    */
-  toDict(): Record<string, any> {
+  toDict(): Record<string, unknown> {
     return {
       operations: this.operationStats,
       metrics: this.metricsTimeSeries,

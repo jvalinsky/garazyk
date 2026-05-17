@@ -4,7 +4,11 @@
  * Centralizes scenario requirements, PDS2 needs, and browser flow declarations.
  */
 
-import type { BrowserFlow, ScenarioRequirement, Topology } from "@garazyk/atproto-topology";
+import type {
+  BrowserFlow,
+  ScenarioRequirement,
+  Topology,
+} from "@garazyk/atproto-topology";
 import { parseScenarioRequirement } from "@garazyk/atproto-topology";
 import { validateRoleCapability } from "@garazyk/atproto-topology";
 
@@ -74,7 +78,13 @@ export const SCENARIO_MANIFESTS: Record<string, ScenarioManifest> = {
     ],
   },
   "06": { requires: ["chat:chat"] },
-  "09": { requires: ["relay:subscribeRepos", "relay:requestCrawl", "appview:backfill"] },
+  "09": {
+    requires: [
+      "relay:subscribeRepos",
+      "relay:requestCrawl",
+      "appview:backfill",
+    ],
+  },
   "10": { requires: ["appview:backfill", "relay:subscribeRepos"] },
   "11": { browserFlows: ["smoke", "login"] },
   "12": {
@@ -87,7 +97,13 @@ export const SCENARIO_MANIFESTS: Record<string, ScenarioManifest> = {
     ],
   },
   "13": { browserFlows: ["login"] },
-  "32": { requires: ["plc:didResolution", "plc:handleRotation", "plc:quotaEnforcement"] },
+  "32": {
+    requires: [
+      "plc:didResolution",
+      "plc:handleRotation",
+      "plc:quotaEnforcement",
+    ],
+  },
   "35": { needsPds2: true, requires: ["plc:didResolution"] },
   "37": { requires: ["chat:chat"] },
   "42": { requires: ["plc:didResolution"] },
@@ -95,8 +111,16 @@ export const SCENARIO_MANIFESTS: Record<string, ScenarioManifest> = {
   "59": {
     browserFlows: ["smoke", "login", "deep"],
     parameters: {
-      "scale": { type: "number", default: 1, description: "Number of threads/posts to create" },
-      "depth": { type: "number", default: 2, description: "Maximum reply depth" },
+      "scale": {
+        type: "number",
+        default: 1,
+        description: "Number of threads/posts to create",
+      },
+      "depth": {
+        type: "number",
+        default: 2,
+        description: "Maximum reply depth",
+      },
     },
   },
 };
@@ -111,7 +135,7 @@ export function needsPds2(scenarioId: string): boolean {
 /**
  * Get parameters for a scenario.
  */
-export function getParameters(scenarioId: string): Record<string, any> {
+export function getParameters(scenarioId: string): Record<string, unknown> {
   return SCENARIO_MANIFESTS[scenarioId]?.parameters || {};
 }
 
@@ -128,7 +152,10 @@ export function browserFlows(scenarioId: string): BrowserFlow[] {
 export function getRequires(scenarioId: string): ScenarioRequirement[] {
   const manifest = SCENARIO_MANIFESTS[scenarioId];
   if (!manifest?.requires) return [];
-  return normalizeScenarioRequirements(manifest.requires, `${scenarioId}.requires`);
+  return normalizeScenarioRequirements(
+    manifest.requires,
+    `${scenarioId}.requires`,
+  );
 }
 
 /**
@@ -137,7 +164,10 @@ export function getRequires(scenarioId: string): ScenarioRequirement[] {
 export function getOptional(scenarioId: string): ScenarioRequirement[] {
   const manifest = SCENARIO_MANIFESTS[scenarioId];
   if (!manifest?.optional) return [];
-  return normalizeScenarioRequirements(manifest.optional, `${scenarioId}.optional`);
+  return normalizeScenarioRequirements(
+    manifest.optional,
+    `${scenarioId}.optional`,
+  );
 }
 
 /**
@@ -157,7 +187,10 @@ export function normalizeScenarioRequirements(
   return values.map((value) => {
     const requirement = parseScenarioRequirement(value);
     if (requirement.role) {
-      const error = validateRoleCapability(requirement.role, requirement.capability);
+      const error = validateRoleCapability(
+        requirement.role,
+        requirement.capability,
+      );
       if (error) {
         throw new Error(`Invalid scenario requirement ${label}: ${error}`);
       }
@@ -169,11 +202,15 @@ export function normalizeScenarioRequirements(
 /**
  * Format a requirement for display.
  */
-export function formatRequirement(requirement: string | ScenarioRequirement): string {
+export function formatRequirement(
+  requirement: string | ScenarioRequirement,
+): string {
   const parsed = typeof requirement === "string"
     ? parseScenarioRequirement(requirement)
     : requirement;
-  return parsed.role ? `${parsed.role}:${parsed.capability}` : parsed.capability;
+  return parsed.role
+    ? `${parsed.role}:${parsed.capability}`
+    : parsed.capability;
 }
 
 /**
@@ -187,7 +224,8 @@ export function hasRequirement(
     ? parseScenarioRequirement(requirement)
     : requirement;
   if (parsed.role) {
-    return topology.capabilitiesByRole[parsed.role]?.has(parsed.capability) || false;
+    return topology.capabilitiesByRole[parsed.role]?.has(parsed.capability) ||
+      false;
   }
   return topology.capabilities.has(parsed.capability);
 }
@@ -216,7 +254,10 @@ export function missingRequirementsDescription(
 /**
  * Check if a scenario is compatible with a topology.
  */
-export function isScenarioCompatible(scenario: ScenarioInfo, topology: Topology): boolean {
+export function isScenarioCompatible(
+  scenario: ScenarioInfo,
+  topology: Topology,
+): boolean {
   // Check PDS2 requirement
   if (scenario.needsPds2 && !topology.capabilitiesByRole.pds2) {
     return false;

@@ -29,13 +29,23 @@ export async function collectDiagnostics(
 
   const endpoints: Array<[string, string, Record<string, string>?]> = [
     ["plc-health", `${serviceUrl("plc")}/_health`],
-    ["pds-describe-server", `${serviceUrl("pds")}/xrpc/com.atproto.server.describeServer`],
+    [
+      "pds-describe-server",
+      `${serviceUrl("pds")}/xrpc/com.atproto.server.describeServer`,
+    ],
     ["relay-health", `${serviceUrl("relay")}/api/relay/health`],
     ["relay-upstreams", `${serviceUrl("relay")}/api/relay/upstreams`],
-    ["appview-backfill-status", `${serviceUrl("appview")}/admin/backfill/status`, {
-      "Authorization": "Bearer localdevadmin",
-    }],
-    ["pds2-describe-server", `${serviceUrl("pds2")}/xrpc/com.atproto.server.describeServer`],
+    [
+      "appview-backfill-status",
+      `${serviceUrl("appview")}/admin/backfill/status`,
+      {
+        "Authorization": "Bearer localdevadmin",
+      },
+    ],
+    [
+      "pds2-describe-server",
+      `${serviceUrl("pds2")}/xrpc/com.atproto.server.describeServer`,
+    ],
     ["chat-health", `${serviceUrl("chat")}/_health`],
     ["video-health", `${serviceUrl("video")}/_health`],
   ];
@@ -56,7 +66,9 @@ async function writeRunMetadata(dir: string): Promise<void> {
   const lines: string[] = [
     `run_id=${Deno.env.get("ATPROTO_E2E_RUN_ID") || "unknown"}`,
     `run_dir=${Deno.env.get("ATPROTO_E2E_RUN_DIR") || "unknown"}`,
-    `diagnostics_dir=${Deno.env.get("ATPROTO_E2E_DIAGNOSTICS_DIR") || "unknown"}`,
+    `diagnostics_dir=${
+      Deno.env.get("ATPROTO_E2E_DIAGNOSTICS_DIR") || "unknown"
+    }`,
     `compose_project=${Deno.env.get("ATPROTO_E2E_COMPOSE_PROJECT") || ""}`,
     `repo_root=${root}`,
     `created_at_utc=${new Date().toISOString()}`,
@@ -72,7 +84,10 @@ async function writeRunMetadata(dir: string): Promise<void> {
     /* ignore */
   }
 
-  await Deno.writeTextFile(join(dir, "run-metadata.txt"), lines.join("\n") + "\n");
+  await Deno.writeTextFile(
+    join(dir, "run-metadata.txt"),
+    lines.join("\n") + "\n",
+  );
 }
 
 async function collectHttpEndpoint(
@@ -85,14 +100,20 @@ async function collectHttpEndpoint(
   Deno.mkdirSync(httpDir, { recursive: true });
 
   try {
-    const resp = await fetch(url, { headers, signal: AbortSignal.timeout(8000) });
+    const resp = await fetch(url, {
+      headers,
+      signal: AbortSignal.timeout(8000),
+    });
     const body = await resp.text();
     const content = `url=${url}\nhttp_status=${resp.status}\ncontent_type=${
       resp.headers.get("content-type") || ""
     }\n\n${body}`;
     await Deno.writeTextFile(join(httpDir, `${name}.txt`), content);
   } catch (err) {
-    await Deno.writeTextFile(join(httpDir, `${name}.txt`), `url=${url}\nerror=${err}\n`);
+    await Deno.writeTextFile(
+      join(httpDir, `${name}.txt`),
+      `url=${url}\nerror=${err}\n`,
+    );
   }
 }
 
@@ -115,7 +136,10 @@ async function collectDockerDiagnostics(
       stdout: "piped",
       stderr: "piped",
     }).output();
-    await Deno.writeTextFile(join(dockerDir, "ps.txt"), new TextDecoder().decode(stdout));
+    await Deno.writeTextFile(
+      join(dockerDir, "ps.txt"),
+      new TextDecoder().decode(stdout),
+    );
   } catch {
     /* cleanup */
   }
@@ -126,18 +150,30 @@ async function collectDockerDiagnostics(
       stdout: "piped",
       stderr: "piped",
     }).output();
-    await Deno.writeTextFile(join(dockerDir, "config.txt"), new TextDecoder().decode(stdout));
+    await Deno.writeTextFile(
+      join(dockerDir, "config.txt"),
+      new TextDecoder().decode(stdout),
+    );
   } catch {
     /* cleanup */
   }
 
   try {
     const { stdout } = await new Deno.Command("docker", {
-      args: [...composeBase, "logs", "--no-color", "--timestamps", "--tail=3000"],
+      args: [
+        ...composeBase,
+        "logs",
+        "--no-color",
+        "--timestamps",
+        "--tail=3000",
+      ],
       stdout: "piped",
       stderr: "piped",
     }).output();
-    await Deno.writeTextFile(join(dockerDir, "logs.txt"), new TextDecoder().decode(stdout));
+    await Deno.writeTextFile(
+      join(dockerDir, "logs.txt"),
+      new TextDecoder().decode(stdout),
+    );
   } catch {
     /* cleanup */
   }

@@ -89,7 +89,9 @@ export class MockTwilioServer {
 
   /** Resets the mock server state. @returns A promise that resolves when the state has been cleared. @throws If the control endpoint returns a non-OK response. */
   async reset(): Promise<void> {
-    const res = await fetch(`${this.baseUrl}/__control/reset`, { method: "POST" });
+    const res = await fetch(`${this.baseUrl}/__control/reset`, {
+      method: "POST",
+    });
     const body = await res.text();
     if (!res.ok) {
       throw new Error(`Failed to reset: ${res.status} ${body}`);
@@ -118,7 +120,8 @@ export class MockTwilioServer {
         "-A",
         "--config",
         `${root}deno.json`,
-        new URL("../../scripts/mock-twilio-server.ts", import.meta.url).pathname,
+        new URL("../../scripts/mock-twilio-server.ts", import.meta.url)
+          .pathname,
         `--port=${this.port}`,
       ],
       stdout: "null",
@@ -139,7 +142,9 @@ export class MockTwilioServer {
 }
 
 /** Start a mock Twilio server process and wait for it to become healthy. */
-export async function startMockTwilioServer(port = 8081): Promise<MockTwilioServer> {
+export async function startMockTwilioServer(
+  port = 8081,
+): Promise<MockTwilioServer> {
   const server = new MockTwilioServer(`http://127.0.0.1:${port}`);
   server.startProcess();
   await server.waitForHealth();

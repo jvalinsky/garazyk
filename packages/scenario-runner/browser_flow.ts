@@ -1,5 +1,5 @@
 /** Public network leak detection for browser-based E2E tests. @module browser_flow */
-import type { Page } from "npm:playwright@^1.40.0";
+import type { Page } from "playwright";
 
 const DEFAULT_BLOCKED_PUBLIC_HOSTS = [
   "bsky.app",
@@ -14,7 +14,9 @@ export function blockedPublicHosts(): string[] {
   if (configured !== undefined) {
     return configured.split(",").map((host) => host.trim()).filter(Boolean);
   }
-  return Deno.env.get("ATPROTO_ALLOW_HYBRID_NETWORK") === "1" ? [] : DEFAULT_BLOCKED_PUBLIC_HOSTS;
+  return Deno.env.get("ATPROTO_ALLOW_HYBRID_NETWORK") === "1"
+    ? []
+    : DEFAULT_BLOCKED_PUBLIC_HOSTS;
 }
 
 /** Attach a request interceptor to detect unwanted outbound calls to public hosts. */
@@ -30,7 +32,11 @@ export function attachPublicNetworkLeakGuard(page: Page): string[] {
     } catch {
       return;
     }
-    if (blockedHosts.some((blocked) => host === blocked || host.endsWith(`.${blocked}`))) {
+    if (
+      blockedHosts.some((blocked) =>
+        host === blocked || host.endsWith(`.${blocked}`)
+      )
+    ) {
       leaks.push(request.url());
     }
   });

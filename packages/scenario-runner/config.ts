@@ -42,45 +42,52 @@ export interface WebClientConfig {
   allowHybridNetwork?: boolean;
 }
 
-const topology: Topology = resolveTopology(
-  Deno.env.get("ATPROTO_WEB_CLIENT") || undefined,
-  Deno.env.get("ATPROTO_TOPOLOGY") || undefined,
-);
+function resolveScenarioTopology(): Topology {
+  return resolveTopology(
+    Deno.env.get("ATPROTO_WEB_CLIENT") || undefined,
+    Deno.env.get("ATPROTO_TOPOLOGY") || undefined,
+  );
+}
+
+let topology: Topology = resolveScenarioTopology();
 
 /** Primary PDS URL used by scenarios. */
-export const PDS1: string = Deno.env.get("PDS_URL") || topology.serviceUrls.pds ||
+export let PDS1: string = Deno.env.get("PDS_URL") || topology.serviceUrls.pds ||
   "http://localhost:2583";
 /** Secondary PDS URL used by federation scenarios. */
-export const PDS2: string = Deno.env.get("PDS2_URL") || topology.serviceUrls.pds2 ||
+export let PDS2: string = Deno.env.get("PDS2_URL") ||
+  topology.serviceUrls.pds2 ||
   "http://localhost:2587";
 // Admin credentials for local development PDS/AppView instances.
 // These are NOT production secrets — they are the default credentials
 // for locally-run test services. Set the env vars to override.
 /** Local AppView admin secret used by test services. */
-export const APPVIEW_ADMIN_SECRET: string = Deno.env.get("APPVIEW_ADMIN_SECRET") ||
+export let APPVIEW_ADMIN_SECRET: string =
+  Deno.env.get("APPVIEW_ADMIN_SECRET") ||
   "localdevadmin";
 /** Local PDS admin password used by test services. */
-export const PDS_ADMIN_PASSWORD: string = Deno.env.get("PDS_ADMIN_PASSWORD") ||
+export let PDS_ADMIN_PASSWORD: string = Deno.env.get("PDS_ADMIN_PASSWORD") ||
   "admin-localdev";
 
 /** Public service URLs keyed by service role. */
-export const SERVICE_URLS: Record<string, string> = {
+export let SERVICE_URLS: Record<string, string> = {
   ...topology.serviceUrls,
   pds: PDS1,
   pds2: PDS2,
 };
 
 /** Capability set supported by the resolved topology. */
-export const TOPOLOGY_CAPABILITIES: Set<string> = topology.capabilities;
+export let TOPOLOGY_CAPABILITIES: Set<string> = topology.capabilities;
 /** Capability sets grouped by service role. */
-export const TOPOLOGY_CAPABILITIES_BY_ROLE: Record<string, Set<string>> =
+export let TOPOLOGY_CAPABILITIES_BY_ROLE: Record<string, Set<string>> =
   topology.capabilitiesByRole;
 
 /** Browser client topology attached to the resolved test network, when configured. */
-export const WEB_CLIENT_TOPOLOGY: WebClientConfig | undefined = topology.webClient;
+export let WEB_CLIENT_TOPOLOGY: WebClientConfig | undefined =
+  topology.webClient;
 
 /** DID used by video-service scenarios. */
-export const VIDEO_SERVICE_DID: string = Deno.env.get("VIDEO_SERVICE_DID") ||
+export let VIDEO_SERVICE_DID: string = Deno.env.get("VIDEO_SERVICE_DID") ||
   Deno.env.get("JELCZ_DID") ||
   "did:web:localhost";
 
@@ -165,7 +172,8 @@ const BASE_TEMPLATES: Record<string, CharacterTemplate> = {
     handle: "luna.test",
     email: "luna@test.com",
     password: "luna_pass_123",
-    persona: "Astronomy enthusiast, posts about space, follows science accounts, friendly",
+    persona:
+      "Astronomy enthusiast, posts about space, follows science accounts, friendly",
     role: "user",
     pds: "pds1",
   },
@@ -183,7 +191,8 @@ const BASE_TEMPLATES: Record<string, CharacterTemplate> = {
     handle: "rosa.test",
     email: "rosa@test.com",
     password: "rosa_pass_123",
-    persona: "Food blogger, posts recipes, uploads food photos, social butterfly",
+    persona:
+      "Food blogger, posts recipes, uploads food photos, social butterfly",
     role: "user",
     pds: "pds1",
   },
@@ -219,7 +228,8 @@ const BASE_TEMPLATES: Record<string, CharacterTemplate> = {
     handle: "admin.test",
     email: "admin@test.com",
     password: "admin_pass_123",
-    persona: "Server administrator, handles reports and takedowns, posts announcements",
+    persona:
+      "Server administrator, handles reports and takedowns, posts announcements",
     role: "admin",
     pds: "pds1",
   },
@@ -228,7 +238,8 @@ const BASE_TEMPLATES: Record<string, CharacterTemplate> = {
     handle: "mod.test",
     email: "mod@test.com",
     password: "mod_pass_123",
-    persona: "Ozone moderator, reviews reports, applies labels, uses tools.ozone",
+    persona:
+      "Ozone moderator, reviews reports, applies labels, uses tools.ozone",
     role: "mod",
     pds: "pds1",
   },
@@ -274,7 +285,9 @@ export function createCharacterRegistry(
   pds1Url: string = PDS1,
   pds2Url: string = PDS2,
 ): CharacterRegistry {
-  const suffix = `${Deno.pid}-${(++_registryCounter).toString(16).padStart(4, "0")}`;
+  const suffix = `${Deno.pid}-${
+    (++_registryCounter).toString(16).padStart(4, "0")
+  }`;
   const chars: Record<string, Character> = {};
 
   for (const [key, tpl] of Object.entries(BASE_TEMPLATES)) {
@@ -323,6 +336,30 @@ export function createCharacterRegistry(
 
 // A default registry for callers that haven't migrated to the factory API.
 let registry = createCharacterRegistry();
+
+/** Refresh scenario configuration from the current process environment. */
+export function refreshScenarioConfigFromEnv(): void {
+  topology = resolveScenarioTopology();
+  PDS1 = Deno.env.get("PDS_URL") || topology.serviceUrls.pds ||
+    "http://localhost:2583";
+  PDS2 = Deno.env.get("PDS2_URL") || topology.serviceUrls.pds2 ||
+    "http://localhost:2587";
+  APPVIEW_ADMIN_SECRET = Deno.env.get("APPVIEW_ADMIN_SECRET") ||
+    "localdevadmin";
+  PDS_ADMIN_PASSWORD = Deno.env.get("PDS_ADMIN_PASSWORD") || "admin-localdev";
+  SERVICE_URLS = {
+    ...topology.serviceUrls,
+    pds: PDS1,
+    pds2: PDS2,
+  };
+  TOPOLOGY_CAPABILITIES = topology.capabilities;
+  TOPOLOGY_CAPABILITIES_BY_ROLE = topology.capabilitiesByRole;
+  WEB_CLIENT_TOPOLOGY = topology.webClient;
+  VIDEO_SERVICE_DID = Deno.env.get("VIDEO_SERVICE_DID") ||
+    Deno.env.get("JELCZ_DID") ||
+    "did:web:localhost";
+  registry = createCharacterRegistry();
+}
 
 /** Reset the default character registry (creates a fresh set with unique handles). */
 export function resetCharacters(): void {

@@ -1,10 +1,12 @@
 /** Scenario execution — host runner and Docker runner modes with timeout support. @module scenario_runner */
+import { dirname, fromFileUrl } from "@std/path";
 import type { ScenarioInfo } from "./scenario_metadata.ts";
 import type { RunnerArgs } from "./run_scenarios_types.ts";
 import type { Topology } from "@garazyk/atproto-topology";
-import { ScenarioResult } from "./runner.ts";
+import { type ScenarioReport, ScenarioResult } from "./runner.ts";
 import { runScenarioInDocker } from "@garazyk/docker-client";
-import { withSpan } from "./otel.ts";
+
+const HOST_CHILD_GRACE_MS = 2_000;
 
 /**
  * Race a promise against a timeout
@@ -79,9 +81,15 @@ export async function runScenario(
       const result = new ScenarioResult(scenario.name);
       result.start();
       if (exitCode === 0) {
-        result.stepPassed(`Scenario ${scenario.id} (docker)`, `exit=${exitCode}`);
+        result.stepPassed(
+          `Scenario ${scenario.id} (docker)`,
+          `exit=${exitCode}`,
+        );
       } else {
-        result.stepFailed(`Scenario ${scenario.id} (docker)`, `exit=${exitCode}`);
+        result.stepFailed(
+          `Scenario ${scenario.id} (docker)`,
+          `exit=${exitCode}`,
+        );
       }
       result.finish();
       return result;
@@ -97,49 +105,117 @@ export async function runScenario(
     }
   }
 
-  // Host runner mode (default)
-  try {
-    Deno.env.set("ATPROTO_CLIENT_FLOW", args.clientFlow);
-    Deno.env.set("ATPROTO_ALLOW_HYBRID_NETWORK", args.allowHybridNetwork ? "1" : "0");
-    Deno.env.set(
-      "ATPROTO_BLOCKED_PUBLIC_HOSTS",
-      args.allowHybridNetwork ? "" : "bsky.app,api.bsky.app,bsky.network,plc.directory",
-    );
-    if (args.webClient) Deno.env.set("ATPROTO_WEB_CLIENT", args.webClient);
-    if (args.topology) Deno.env.set("ATPROTO_TOPOLOGY", args.topology);
-    if (topology.manifest) {
-      const runnerEnv = topology.manifest.env?.hostRunner || topology.manifest.scenarioEnv;
-      const scenarioEnv = topology.manifest.env?.scenario || {};
-      for (const [key, value] of Object.entries({ ...runnerEnv, ...scenarioEnv })) {
-        Deno.env.set(key, String(value));
-      }
+  return await runHostScenarioInChild(scenario, timeoutSeconds, args, topology);
+}
+
+function buildHostScenarioEnv(
+  args: RunnerArgs,
+  topology: Topology,
+): Record<string, string> {
+  const env: Record<string, string> = {
+    ATPROTO_CLIENT_FLOW: args.clientFlow,
+    ATPROTO_ALLOW_HYBRID_NETWORK: args.allowHybridNetwork ? "1" : "0",
+    ATPROTO_BLOCKED_PUBLIC_HOSTS: args.allowHybridNetwork
+      ? ""
+      : "bsky.app,api.bsky.app,bsky.network,plc.directory",
+  };
+  if (args.webClient) env.ATPROTO_WEB_CLIENT = args.webClient;
+  if (args.topology) env.ATPROTO_TOPOLOGY = args.topology;
+  if (topology.manifest) {
+    const runnerEnv = topology.manifest.env?.hostRunner ||
+      topology.manifest.scenarioEnv;
+    const scenarioEnv = topology.manifest.env?.scenario || {};
+    for (
+      const [key, value] of Object.entries({ ...runnerEnv, ...scenarioEnv })
+    ) {
+      env[key] = String(value);
     }
-    const { resetCharacters } = await import("./config.ts");
-    resetCharacters();
-    const module = await import(`file://${scenario.path}?run=${Date.now()}`);
-    if (typeof module.run !== "function") {
-      const result = new ScenarioResult(scenario.name);
-      result.start();
-      result.stepFailed(`Scenario ${scenario.id} entry point`, "No run() export defined");
-      result.finish();
-      return result;
-    }
-    const result = await withTimeout<ScenarioResult>(
-      module.run(),
-      timeoutSeconds,
-      `Scenario ${scenario.id}`,
+  }
+  return env;
+}
+
+async function runHostScenarioInChild(
+  scenario: ScenarioInfo,
+  timeoutSeconds: number,
+  args: RunnerArgs,
+  topology: Topology,
+): Promise<ScenarioResult> {
+  const tempDir = await Deno.makeTempDir({ prefix: "garazyk-host-scenario-" });
+  const outputPath = `${tempDir}/report.json`;
+  const childRunnerPath = fromFileUrl(
+    new URL("./host_child_runner.ts", import.meta.url),
+  );
+  const command = new Deno.Command(Deno.execPath(), {
+    args: [
+      "run",
+      "-A",
+      childRunnerPath,
+      "--scenario",
+      scenario.path,
+      "--output",
+      outputPath,
+      "--scenario-id",
+      scenario.id,
+      "--scenario-name",
+      scenario.name,
+    ],
+    env: buildHostScenarioEnv(args, topology),
+    stdout: "inherit",
+    stderr: "inherit",
+  });
+  const child = command.spawn();
+  const statusPromise = child.status;
+  let timeoutId: number | undefined;
+  const timeoutPromise = new Promise<"timeout">((resolve) =>
+    timeoutId = setTimeout(() => resolve("timeout"), timeoutSeconds * 1000)
+  );
+  const status = await Promise.race([statusPromise, timeoutPromise]);
+  if (timeoutId !== undefined) clearTimeout(timeoutId);
+  if (status === "timeout") {
+    child.kill("SIGTERM");
+    let graceTimeoutId: number | undefined;
+    const grace = new Promise<"grace-timeout">((resolve) =>
+      graceTimeoutId = setTimeout(
+        () => resolve("grace-timeout"),
+        HOST_CHILD_GRACE_MS,
+      )
     );
-    if (!result.startedAt) result.startedAt = Date.now();
-    if (!result.finishedAt) result.finishedAt = Date.now();
+    const terminated = await Promise.race([statusPromise, grace]);
+    if (graceTimeoutId !== undefined) clearTimeout(graceTimeoutId);
+    if (terminated === "grace-timeout") {
+      child.kill("SIGKILL");
+      await statusPromise.catch(() => undefined);
+    }
+    const result = new ScenarioResult(scenario.name);
+    result.start();
+    result.stepFailed(
+      `Scenario ${scenario.id} timeout`,
+      `Timed out after ${timeoutSeconds}s; host child process was terminated`,
+    );
+    result.finish();
+    await Deno.remove(tempDir, { recursive: true }).catch(() => undefined);
     return result;
+  }
+
+  try {
+    const report = JSON.parse(
+      await Deno.readTextFile(outputPath),
+    ) as ScenarioReport;
+    return ScenarioResult.fromReport(report);
   } catch (exc) {
     const result = new ScenarioResult(scenario.name);
     result.start();
     result.stepFailed(
-      `Scenario ${scenario.id} execution`,
-      exc instanceof Error ? exc.message : String(exc),
+      `Scenario ${scenario.id} report`,
+      `Host child exited but did not emit a parseable report: ${
+        exc instanceof Error ? exc.message : String(exc)
+      }`,
     );
     result.finish();
     return result;
+  } finally {
+    await Deno.remove(dirname(outputPath), { recursive: true }).catch(() =>
+      undefined
+    );
   }
 }

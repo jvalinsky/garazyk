@@ -5,7 +5,7 @@
  * @module run_loop
  */
 
-import { bold, green, red, yellow } from "@std/fmt/colors";
+import { bold, red, yellow } from "@std/fmt/colors";
 import { isOtelEnabled, withSpan } from "./otel.ts";
 import {
   ContainerEventWatcher,
@@ -18,7 +18,6 @@ import { DurationCache, ProgressBar } from "./progress.ts";
 import { runScenario } from "./scenario_runner.ts";
 import type { ScenarioInfo } from "./scenario_metadata.ts";
 import { ScenarioResult } from "./runner.ts";
-import type { RunContext } from "@garazyk/docker-client";
 import type { RunnerArgs } from "./run_scenarios_types.ts";
 import type { Topology } from "@garazyk/atproto-topology";
 
@@ -78,7 +77,8 @@ export async function runScenarioLoop(
     );
   };
 
-  const crashWatcher = await ContainerEventWatcher.create();
+  const crashWatcher = await ContainerEventWatcher.create({ composeProject });
+  const monitoredServices = new Set(Object.values(topology.serviceNames));
   let crashedContainer: {
     serviceName: string;
     exitCode: number;
@@ -87,6 +87,7 @@ export async function runScenarioLoop(
   if (crashWatcher) {
     crashWatcher.subscribe((event: WatcherEvent) => {
       if (event.kind === "died" || event.kind === "oom") {
+        if (!monitoredServices.has(event.serviceName)) return;
         crashedContainer = {
           serviceName: event.serviceName,
           exitCode: event.kind === "died" ? event.exitCode : 137,

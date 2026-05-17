@@ -40,7 +40,9 @@ export interface ProcessLifecycle {
 }
 
 /** Create a process lifecycle object with signal handling, graceful teardown, and drain timeout. */
-export function createProcessLifecycle(options: ProcessLifecycleOptions): ProcessLifecycle {
+export function createProcessLifecycle(
+  options: ProcessLifecycleOptions,
+): ProcessLifecycle {
   let networkStarted = false;
 
   const stopIfNeeded = async (collect = false) => {
@@ -95,13 +97,17 @@ export function createProcessLifecycle(options: ProcessLifecycleOptions): Proces
     fatalError: unknown;
     collectDiagnostics: () => Promise<void>;
   }) => {
-    const shouldCollect = finalizeOptions.results.some(({ result }) => result.failed > 0) ||
+    const shouldCollect =
+      finalizeOptions.results.some(({ result }) => result.failed > 0) ||
       finalizeOptions.fatalError;
     if (shouldCollect) {
       await finalizeOptions.collectDiagnostics();
       console.log(`Diagnostics: ${options.context.diagnosticsDir}`);
     }
-    if (options.args.teardown || (!options.args.noSetup && !options.args.keepRunning)) {
+    if (
+      options.args.teardown ||
+      (!options.args.noSetup && !options.args.keepRunning)
+    ) {
       await stopIfNeeded(false);
     }
   };
@@ -109,7 +115,9 @@ export function createProcessLifecycle(options: ProcessLifecycleOptions): Proces
   const scheduleDrainTimeout = (timeoutMs = 5000) => {
     const drainTimeout = setTimeout(() => {
       console.warn(
-        `Event loop did not drain within ${timeoutMs / 1000}s after cleanup, forcing exit`,
+        `Event loop did not drain within ${
+          timeoutMs / 1000
+        }s after cleanup, forcing exit`,
       );
       Deno.exit(0);
     }, timeoutMs);

@@ -1,6 +1,11 @@
 /** Progress bar and historical duration cache for scenario execution tracking. @module progress */
 import { join } from "@std/path";
-import { bold, brightBlue, cyan, gray, green, yellow } from "@std/fmt/colors";
+import {
+  bold,
+  cyan,
+  gray,
+  green,
+} from "@std/fmt/colors";
 
 /**
  * Historical duration cache for accurate time estimation.
@@ -10,7 +15,13 @@ export class DurationCache {
   private path: string;
 
   constructor(repoRoot: string) {
-    this.path = join(repoRoot, "scripts", "scenarios", "reports", "durations.json");
+    this.path = join(
+      repoRoot,
+      "scripts",
+      "scenarios",
+      "reports",
+      "durations.json",
+    );
     try {
       const data = Deno.readTextFileSync(this.path);
       this.cache = JSON.parse(data);
@@ -48,7 +59,7 @@ export class DurationCache {
     try {
       Deno.mkdirSync(join(this.path, ".."), { recursive: true });
       Deno.writeTextFileSync(this.path, JSON.stringify(this.cache, null, 2));
-    } catch (e) {
+    } catch (_e) {
       // Ignore save errors
     }
   }
@@ -139,9 +150,10 @@ export class ProgressBar {
         } else {
           // If we have some historical but maybe not for all,
           // fill in the gaps with avgPerTask
-          const missingCount = this.expectedDurations.slice(remainingStart).filter((d) =>
-            d === null
-          ).length;
+          const missingCount =
+            this.expectedDurations.slice(remainingStart).filter((d) =>
+              d === null
+            ).length;
           estRemaining += missingCount * avgPerTask;
         }
       } else if (!hasHistorical) {
