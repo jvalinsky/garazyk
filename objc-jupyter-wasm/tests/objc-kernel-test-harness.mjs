@@ -1,6 +1,6 @@
-import { readFile } from 'node:fs/promises';
-import { WASI } from 'node:wasi';
-import crypto from 'node:crypto';
+import { readFile } from "node:fs/promises";
+import { WASI } from "node:wasi";
+import crypto from "node:crypto";
 
 export const TRANSPORT = {
   OK: 0,
@@ -13,11 +13,11 @@ export const TRANSPORT = {
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
-const base32Alphabet = 'abcdefghijklmnopqrstuvwxyz234567';
-const base58Alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+const base32Alphabet = "abcdefghijklmnopqrstuvwxyz234567";
+const base58Alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 function readCString(memory, ptr) {
-  if (!ptr) return '';
+  if (!ptr) return "";
   const bytes = new Uint8Array(memory.buffer);
   let end = ptr;
   while (end < bytes.length && bytes[end] !== 0) end++;
@@ -42,7 +42,7 @@ function hexToBytes(hex) {
 function base32Encode(bytes) {
   let bits = 0;
   let value = 0;
-  let output = '';
+  let output = "";
   for (const byte of bytes) {
     value = (value << 8) | byte;
     bits += 8;
@@ -73,7 +73,7 @@ function base32Decode(input) {
 }
 
 function base58Encode(bytes) {
-  if (bytes.length === 0) return '';
+  if (bytes.length === 0) return "";
   const digits = [0];
   for (const byte of bytes) {
     let carry = byte;
@@ -87,7 +87,7 @@ function base58Encode(bytes) {
       carry = (carry / 58) | 0;
     }
   }
-  let output = '';
+  let output = "";
   for (const byte of bytes) {
     if (byte === 0) output += base58Alphabet[0];
     else break;
@@ -121,21 +121,21 @@ function base58Decode(input) {
 }
 
 export function runHostBridgeSelfTest(name) {
-  if (name === 'base58') {
-    const input = encoder.encode('hello');
+  if (name === "base58") {
+    const input = encoder.encode("hello");
     const encoded = base58Encode(input);
     const decoded = decoder.decode(base58Decode(encoded));
     return {
       name,
       output: `base58=${encoded} decoded=${decoded}`,
-      passed: encoded === 'Cn8eVZg' && decoded === 'hello',
+      passed: encoded === "Cn8eVZg" && decoded === "hello",
     };
   }
 
-  if (name === 'cbor') {
+  if (name === "cbor") {
     const json = '{"type":"commit","seq":1}';
     const encoded = encoder.encode(`fixture-cbor:${json}`);
-    const decoded = decoder.decode(encoded).slice('fixture-cbor:'.length);
+    const decoded = decoder.decode(encoded).slice("fixture-cbor:".length);
     return {
       name,
       output: `cbor=${encoded.length} decoded=${decoded}`,
@@ -152,15 +152,53 @@ export function runHostBridgeSelfTest(name) {
 
 export function diagnoseUnsupportedApis(source) {
   const rules = [
-    { pattern: /\bsqlite3_\w+\b|\bsqlite3\b/, api: 'sqlite3', supportClass: 'unsupported-production', message: 'SQLite APIs require a browser-safe repository shim for tutorials.' },
-    { pattern: /\bdispatch_(?:queue|async|sync|after|once|semaphore|source|time|get_|main|global)\w*\b|\bdispatch_queue_t\b/, api: 'dispatch', supportClass: 'unsupported-production', message: 'GCD and libdispatch are production concurrency APIs; tutorial snippets should use synchronous in-memory models.' },
-    { pattern: /\bNSFileManager\b|\bNSFileHandle\b|\bdataWithContentsOfFile:|\bwriteToFile:/, api: 'filesystem', supportClass: 'unsupported-production', message: 'Filesystem APIs are outside the browser kernel; use an in-memory blob/file shim.' },
-    { pattern: /\bSec(?:Key|Item|Random|AccessControl)\w*\b|\bCommonCrypto\b|\bCC_(?:SHA|HMAC|Cryptor|KeyDerivation)\w*\b|\bEVP_\w+\b|\bOpenSSL\b/, api: 'security-crypto', supportClass: 'unsupported-production', message: 'Keychain, Security, CommonCrypto, and OpenSSL APIs require host bridges or deterministic tutorial fixtures.' },
-    { pattern: /\bAVFoundation\b|\bAVAsset\b|\bAVAssetWriter\b|\bCGImage\b|\bCoreGraphics\b|\bCoreMedia\b|\bCVPixelBuffer\b/, api: 'media', supportClass: 'unsupported-production', message: 'Media frameworks are not browser-kernel tutorial APIs; use fixture metadata or generated sample bytes.' },
-    { pattern: /\bNSOperationQueue\b|\bNSThread\b|\bNSLock\b/, api: 'threading', supportClass: 'unsupported-production', message: 'Threading primitives are not modeled in the tutorial kernel.' },
+    {
+      pattern: /\bsqlite3_\w+\b|\bsqlite3\b/,
+      api: "sqlite3",
+      supportClass: "unsupported-production",
+      message: "SQLite APIs require a browser-safe repository shim for tutorials.",
+    },
+    {
+      pattern:
+        /\bdispatch_(?:queue|async|sync|after|once|semaphore|source|time|get_|main|global)\w*\b|\bdispatch_queue_t\b/,
+      api: "dispatch",
+      supportClass: "unsupported-production",
+      message:
+        "GCD and libdispatch are production concurrency APIs; tutorial snippets should use synchronous in-memory models.",
+    },
+    {
+      pattern: /\bNSFileManager\b|\bNSFileHandle\b|\bdataWithContentsOfFile:|\bwriteToFile:/,
+      api: "filesystem",
+      supportClass: "unsupported-production",
+      message: "Filesystem APIs are outside the browser kernel; use an in-memory blob/file shim.",
+    },
+    {
+      pattern:
+        /\bSec(?:Key|Item|Random|AccessControl)\w*\b|\bCommonCrypto\b|\bCC_(?:SHA|HMAC|Cryptor|KeyDerivation)\w*\b|\bEVP_\w+\b|\bOpenSSL\b/,
+      api: "security-crypto",
+      supportClass: "unsupported-production",
+      message:
+        "Keychain, Security, CommonCrypto, and OpenSSL APIs require host bridges or deterministic tutorial fixtures.",
+    },
+    {
+      pattern:
+        /\bAVFoundation\b|\bAVAsset\b|\bAVAssetWriter\b|\bCGImage\b|\bCoreGraphics\b|\bCoreMedia\b|\bCVPixelBuffer\b/,
+      api: "media",
+      supportClass: "unsupported-production",
+      message:
+        "Media frameworks are not browser-kernel tutorial APIs; use fixture metadata or generated sample bytes.",
+    },
+    {
+      pattern: /\bNSOperationQueue\b|\bNSThread\b|\bNSLock\b/,
+      api: "threading",
+      supportClass: "unsupported-production",
+      message: "Threading primitives are not modeled in the tutorial kernel.",
+    },
   ];
 
-  return rules.filter(rule => rule.pattern.test(source)).map(({ api, supportClass, message }) => ({
+  return rules.filter((rule) => rule.pattern.test(source)).map((
+    { api, supportClass, message },
+  ) => ({
     api,
     supportClass,
     message,
@@ -171,27 +209,31 @@ export function classifySnippet(source, fallback = {}) {
   const unsupported = diagnoseUnsupportedApis(source);
   if (unsupported.length > 0) {
     return {
-      tags: ['unsupported-api', ...unsupported.map(item => item.api)],
-      supportClass: 'unsupported-production',
+      tags: ["unsupported-api", ...unsupported.map((item) => item.api)],
+      supportClass: "unsupported-production",
       diagnostics: unsupported,
     };
   }
 
   const tags = new Set(fallback.tags ?? []);
-  if (/@interface|@implementation/.test(source)) tags.add('classes');
-  if (/@protocol/.test(source)) tags.add('protocols');
-  if (/\^|__block|enumerateObjectsUsingBlock/.test(source)) tags.add('blocks');
-  if (/@try|@catch|@throw/.test(source)) tags.add('exceptions');
-  if (/NSDictionary|NSArray|NSMutableDictionary|NSMutableArray|NSSet/.test(source)) tags.add('collections');
-  if (/NSData/.test(source)) tags.add('data');
-  if (/NSURLSession|NSURLRequest|NSURL /.test(source)) tags.add('network-bridge');
-  if (/NSJSONSerialization/.test(source)) tags.add('json-bridge');
-  if (/sha256|base32|base58|CBOR/i.test(source)) tags.add('host-bridge');
-  if (/ATURI|DID|handle|CID|Xrpc|Firehose|Repo|Record|Migration/.test(source)) tags.add('atproto-domain');
+  if (/@interface|@implementation/.test(source)) tags.add("classes");
+  if (/@protocol/.test(source)) tags.add("protocols");
+  if (/\^|__block|enumerateObjectsUsingBlock/.test(source)) tags.add("blocks");
+  if (/@try|@catch|@throw/.test(source)) tags.add("exceptions");
+  if (/NSDictionary|NSArray|NSMutableDictionary|NSMutableArray|NSSet/.test(source)) {
+    tags.add("collections");
+  }
+  if (/NSData/.test(source)) tags.add("data");
+  if (/NSURLSession|NSURLRequest|NSURL /.test(source)) tags.add("network-bridge");
+  if (/NSJSONSerialization/.test(source)) tags.add("json-bridge");
+  if (/sha256|base32|base58|CBOR/i.test(source)) tags.add("host-bridge");
+  if (/ATURI|DID|handle|CID|Xrpc|Firehose|Repo|Record|Migration/.test(source)) {
+    tags.add("atproto-domain");
+  }
 
   return {
     tags: [...tags],
-    supportClass: fallback.supportClass ?? 'direct',
+    supportClass: fallback.supportClass ?? "direct",
     diagnostics: [],
   };
 }
@@ -202,10 +244,13 @@ export async function createObjcKernel(wasmPath, options = {}) {
   let exports;
   const streamBuf = [];
   const fetchFixtures = options.fetchFixtures ?? {
-    'https://api.example.com/users/alice': { status: 200, body: JSON.stringify({ name: 'Alice', age: 30 }) },
+    "https://api.example.com/users/alice": {
+      status: 200,
+      body: JSON.stringify({ name: "Alice", age: 30 }),
+    },
   };
 
-  const wasi = new WASI({ version: 'preview1' });
+  const wasi = new WASI({ version: "preview1" });
   const memoryBytes = () => new Uint8Array(instance.exports.memory.buffer);
 
   function withCString(str, fn) {
@@ -221,17 +266,17 @@ export async function createObjcKernel(wasmPath, options = {}) {
   }
 
   function addValueToColl(collId, key, val) {
-    withCString(key, keyPtr => {
+    withCString(key, (keyPtr) => {
       if (val === null) {
-        withCString('null', valPtr => exports.coll_add_string_val(collId, keyPtr, valPtr));
-      } else if (typeof val === 'string') {
-        withCString(val, valPtr => exports.coll_add_string_val(collId, keyPtr, valPtr));
-      } else if (typeof val === 'number') {
+        withCString("null", (valPtr) => exports.coll_add_string_val(collId, keyPtr, valPtr));
+      } else if (typeof val === "string") {
+        withCString(val, (valPtr) => exports.coll_add_string_val(collId, keyPtr, valPtr));
+      } else if (typeof val === "number") {
         if (Number.isInteger(val)) exports.coll_add_int_val(collId, keyPtr, val);
         else exports.coll_add_double_val(collId, keyPtr, val);
-      } else if (typeof val === 'boolean') {
+      } else if (typeof val === "boolean") {
         exports.coll_add_bool_val(collId, keyPtr, val ? 1 : 0);
-      } else if (typeof val === 'object') {
+      } else if (typeof val === "object") {
         const childMarker = buildObjcValue(val);
         if (childMarker) exports.coll_add_marker_val(collId, keyPtr, childMarker);
       }
@@ -242,28 +287,34 @@ export async function createObjcKernel(wasmPath, options = {}) {
     if (!exports) return 0;
     if (val === null) {
       let ptr = 0;
-      withCString('NSNull:', p => { ptr = exports.coll_make_marker(p, 0); });
+      withCString("NSNull:", (p) => {
+        ptr = exports.coll_make_marker(p, 0);
+      });
       return ptr;
     }
-    if (typeof val === 'string') {
+    if (typeof val === "string") {
       const encoded = encoder.encode(`${val}\0`);
       const strPtr = exports.string_pool_alloc(encoded.length);
       if (strPtr) memoryBytes().set(encoded, strPtr);
       return strPtr || 0;
     }
-    if (typeof val === 'number' || typeof val === 'boolean') return 0;
+    if (typeof val === "number" || typeof val === "boolean") return 0;
 
     const collId = exports.coll_create_new();
     if (Array.isArray(val)) {
       for (const item of val) addValueToColl(collId, null, item);
       let ptr = 0;
-      withCString('NSArr:', p => { ptr = exports.coll_make_marker(p, collId); });
+      withCString("NSArr:", (p) => {
+        ptr = exports.coll_make_marker(p, collId);
+      });
       return ptr;
     }
 
     for (const key of Object.keys(val)) addValueToColl(collId, key, val[key]);
     let ptr = 0;
-    withCString('NSDict:', p => { ptr = exports.coll_make_marker(p, collId); });
+    withCString("NSDict:", (p) => {
+      ptr = exports.coll_make_marker(p, collId);
+    });
     return ptr;
   }
 
@@ -271,11 +322,13 @@ export async function createObjcKernel(wasmPath, options = {}) {
     wasi_snapshot_preview1: wasi.wasiImport,
     objc_kernel_host: {
       stream(kind, ptr, len) {
-        const name = kind === 2 ? 'stderr' : 'stdout';
+        const name = kind === 2 ? "stderr" : "stdout";
         const text = decoder.decode(new Uint8Array(instance.exports.memory.buffer, ptr, len));
         streamBuf.push({ name, text });
       },
-      should_interrupt() { return 0; },
+      should_interrupt() {
+        return 0;
+      },
       json_parse(ptr, len) {
         try {
           const json = decoder.decode(memoryBytes().subarray(ptr, ptr + len));
@@ -284,24 +337,33 @@ export async function createObjcKernel(wasmPath, options = {}) {
           return 0;
         }
       },
-      json_stringify() { return 0; },
+      json_stringify() {
+        return 0;
+      },
       fetch(taskId, urlPtr, methodPtr, headersJsonPtr, bodyPtr, bodyLen) {
         const url = readCString(instance.exports.memory, urlPtr);
-        const fixture = fetchFixtures[url] ?? { status: 404, body: 'Not found' };
-        const responseData = encoder.encode(fixture.body ?? '');
-        const dataPtr = responseData.length > 0 ? exports.objc_kernel_alloc(responseData.length) : 0;
+        const fixture = fetchFixtures[url] ?? { status: 404, body: "Not found" };
+        const responseData = encoder.encode(fixture.body ?? "");
+        const dataPtr = responseData.length > 0
+          ? exports.objc_kernel_alloc(responseData.length)
+          : 0;
         if (dataPtr) memoryBytes().set(responseData, dataPtr);
-        exports.objc_kernel_on_fetch_complete(taskId, fixture.status ?? 200, dataPtr, responseData.length);
+        exports.objc_kernel_on_fetch_complete(
+          taskId,
+          fixture.status ?? 200,
+          dataPtr,
+          responseData.length,
+        );
         if (dataPtr) exports.objc_kernel_free(dataPtr);
         return 0;
       },
       sha256(dataPtr, dataLen, outPtr, outCap) {
         const data = memoryBytes().slice(dataPtr, dataPtr + dataLen);
-        const hash = crypto.createHash('sha256').update(data).digest();
+        const hash = crypto.createHash("sha256").update(data).digest();
         return writeBytes(instance.exports.memory, outPtr, outCap, hash);
       },
       random_bytes(outPtr, count) {
-        const bytes = crypto.createHash('sha256').update('garazyk-deterministic-random').digest();
+        const bytes = crypto.createHash("sha256").update("garazyk-deterministic-random").digest();
         const out = new Uint8Array(instance.exports.memory.buffer, outPtr, count);
         for (let i = 0; i < count; i++) out[i] = bytes[i % bytes.length];
         return count;
@@ -309,23 +371,31 @@ export async function createObjcKernel(wasmPath, options = {}) {
       hmac_sha256(keyPtr, keyLen, dataPtr, dataLen, outPtr, outCap) {
         const key = memoryBytes().slice(keyPtr, keyPtr + keyLen);
         const data = memoryBytes().slice(dataPtr, dataPtr + dataLen);
-        const mac = crypto.createHmac('sha256', key).update(data).digest();
+        const mac = crypto.createHmac("sha256", key).update(data).digest();
         return writeBytes(instance.exports.memory, outPtr, outCap, mac);
       },
       base32_encode(dataPtr, dataLen, outPtr, outCap) {
-        const encoded = encoder.encode(base32Encode(memoryBytes().slice(dataPtr, dataPtr + dataLen)));
+        const encoded = encoder.encode(
+          base32Encode(memoryBytes().slice(dataPtr, dataPtr + dataLen)),
+        );
         return writeBytes(instance.exports.memory, outPtr, outCap, encoded);
       },
       base32_decode(strPtr, strLen, outPtr, outCap) {
-        const decoded = base32Decode(decoder.decode(memoryBytes().subarray(strPtr, strPtr + strLen)));
+        const decoded = base32Decode(
+          decoder.decode(memoryBytes().subarray(strPtr, strPtr + strLen)),
+        );
         return writeBytes(instance.exports.memory, outPtr, outCap, decoded);
       },
       base58btc_encode(dataPtr, dataLen, outPtr, outCap) {
-        const encoded = encoder.encode(base58Encode(memoryBytes().slice(dataPtr, dataPtr + dataLen)));
+        const encoded = encoder.encode(
+          base58Encode(memoryBytes().slice(dataPtr, dataPtr + dataLen)),
+        );
         return writeBytes(instance.exports.memory, outPtr, outCap, encoded);
       },
       base58btc_decode(strPtr, strLen, outPtr, outCap) {
-        const decoded = base58Decode(decoder.decode(memoryBytes().subarray(strPtr, strPtr + strLen)));
+        const decoded = base58Decode(
+          decoder.decode(memoryBytes().subarray(strPtr, strPtr + strLen)),
+        );
         return writeBytes(instance.exports.memory, outPtr, outCap, decoded);
       },
       cbor_encode(jsonPtr, jsonLen, outPtr, outCap) {
@@ -335,7 +405,7 @@ export async function createObjcKernel(wasmPath, options = {}) {
       },
       cbor_decode(dataPtr, dataLen, outPtr, outCap) {
         const data = decoder.decode(memoryBytes().subarray(dataPtr, dataPtr + dataLen));
-        const json = data.startsWith('fixture-cbor:') ? data.slice('fixture-cbor:'.length) : '{}';
+        const json = data.startsWith("fixture-cbor:") ? data.slice("fixture-cbor:".length) : "{}";
         return writeBytes(instance.exports.memory, outPtr, outCap, encoder.encode(json));
       },
     },
@@ -344,20 +414,20 @@ export async function createObjcKernel(wasmPath, options = {}) {
   wasi.initialize(instance);
   exports = instance.exports;
   if (exports.objc_kernel_init() !== TRANSPORT.OK) {
-    throw new Error('objc_kernel_init() failed');
+    throw new Error("objc_kernel_init() failed");
   }
 
   function allocBytes(value) {
-    const encoded = encoder.encode(typeof value === 'string' ? value : JSON.stringify(value));
+    const encoded = encoder.encode(typeof value === "string" ? value : JSON.stringify(value));
     const ptr = exports.objc_kernel_alloc(Math.max(encoded.length, 1));
-    if (!ptr) throw new Error('WASM allocator returned null');
+    if (!ptr) throw new Error("WASM allocator returned null");
     new Uint8Array(exports.memory.buffer).set(encoded, ptr);
     return { ptr, len: encoded.length };
   }
 
   function allocU32() {
     const ptr = exports.objc_kernel_alloc(4);
-    if (!ptr) throw new Error('WASM allocator returned null');
+    if (!ptr) throw new Error("WASM allocator returned null");
     return ptr;
   }
 
@@ -372,12 +442,14 @@ export async function createObjcKernel(wasmPath, options = {}) {
     try {
       const rc = exports[exportName](reqPtr, reqLen, outPtrPtr, outLenPtr);
       if (rc !== TRANSPORT.OK) {
-        const name = Object.keys(TRANSPORT).find(key => TRANSPORT[key] === rc) ?? 'UNKNOWN';
+        const name = Object.keys(TRANSPORT).find((key) => TRANSPORT[key] === rc) ?? "UNKNOWN";
         throw new Error(`Transport error ${rc} (${name}) from ${exportName}`);
       }
       const responsePtr = readU32(outPtrPtr);
       const responseLen = readU32(outLenPtr);
-      const response = JSON.parse(decoder.decode(new Uint8Array(exports.memory.buffer, responsePtr, responseLen)));
+      const response = JSON.parse(
+        decoder.decode(new Uint8Array(exports.memory.buffer, responsePtr, responseLen)),
+      );
       exports.objc_kernel_free(responsePtr);
       return response;
     } finally {
@@ -390,20 +462,20 @@ export async function createObjcKernel(wasmPath, options = {}) {
   async function drainPendingTasks() {
     if (!exports.objc_kernel_has_pending_tasks) return;
     for (let i = 0; i < 100 && exports.objc_kernel_has_pending_tasks() > 0; i++) {
-      await new Promise(resolve => setTimeout(resolve, 5));
+      await new Promise((resolve) => setTimeout(resolve, 5));
     }
   }
 
   return {
     exports,
-    execute(code, cellId = 'cell') {
+    execute(code, cellId = "cell") {
       streamBuf.length = 0;
-      const reply = callJson('objc_kernel_execute_json', { code, cell_id: cellId });
+      const reply = callJson("objc_kernel_execute_json", { code, cell_id: cellId });
       return { ...reply, streams: streamBuf.splice(0) };
     },
-    async executeAsync(code, cellId = 'cell') {
+    async executeAsync(code, cellId = "cell") {
       streamBuf.length = 0;
-      const reply = callJson('objc_kernel_execute_json', { code, cell_id: cellId });
+      const reply = callJson("objc_kernel_execute_json", { code, cell_id: cellId });
       await drainPendingTasks();
       return { ...reply, streams: streamBuf.splice(0) };
     },
@@ -411,5 +483,5 @@ export async function createObjcKernel(wasmPath, options = {}) {
 }
 
 export function streamText(result) {
-  return (result.streams ?? []).map(stream => stream.text).join('');
+  return (result.streams ?? []).map((stream) => stream.text).join("");
 }

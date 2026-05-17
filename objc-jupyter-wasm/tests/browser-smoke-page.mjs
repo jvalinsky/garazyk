@@ -1,7 +1,7 @@
 const submittedCode = 'NSLog(@"hello browser smoke");';
-const runtimeManifestUrl = new URL('./runtime-manifest.json', import.meta.url).toString();
-const worker = new Worker(new URL('./js/objc-worker.js', import.meta.url), {
-  type: 'module'
+const runtimeManifestUrl = new URL("./runtime-manifest.json", import.meta.url).toString();
+const worker = new Worker(new URL("./js/objc-worker.js", import.meta.url), {
+  type: "module",
 });
 
 const pending = new Map();
@@ -10,7 +10,7 @@ const streams = [];
 let runtimeManifest = null;
 
 async function loadRuntimeManifest() {
-  const response = await fetch(runtimeManifestUrl, { cache: 'no-store' });
+  const response = await fetch(runtimeManifestUrl, { cache: "no-store" });
   if (!response.ok) {
     throw new Error(`Failed to fetch runtime manifest: ${response.status}`);
   }
@@ -18,7 +18,7 @@ async function loadRuntimeManifest() {
   const manifest = await response.json();
   return {
     ...manifest,
-    kernelWasmUrl: new URL(manifest.kernelWasmUrl, runtimeManifestUrl).toString()
+    kernelWasmUrl: new URL(manifest.kernelWasmUrl, runtimeManifestUrl).toString(),
   };
 }
 
@@ -32,23 +32,23 @@ function request(type, payload, expectedType) {
     pending.set(id, {
       expectedType,
       resolve,
-      reject
+      reject,
     });
     worker.postMessage({
       id,
       type,
       runtimeManifest,
-      ...payload
+      ...payload,
     });
   });
 }
 
-worker.onmessage = event => {
+worker.onmessage = (event) => {
   const { id, type, content } = event.data || {};
 
-  if (type === 'stream') {
+  if (type === "stream") {
     streams.push(content);
-    setText('stream-output', streams.map(stream => stream.text).join(''));
+    setText("stream-output", streams.map((stream) => stream.text).join(""));
     return;
   }
 
@@ -57,9 +57,9 @@ worker.onmessage = event => {
     return;
   }
 
-  if (type === 'error') {
+  if (type === "error") {
     pending.delete(id);
-    waiter.reject(new Error(content?.evalue || 'Objective-C worker error'));
+    waiter.reject(new Error(content?.evalue || "Objective-C worker error"));
     return;
   }
 
@@ -76,25 +76,25 @@ worker.onmessage = event => {
 try {
   runtimeManifest = await loadRuntimeManifest();
   const kernelSpec = {
-    name: 'objective-c',
-    display_name: 'Objective-C',
-    language: 'objective-c'
+    name: "objective-c",
+    display_name: "Objective-C",
+    language: "objective-c",
   };
-  setText('kernel-spec', kernelSpec.display_name);
+  setText("kernel-spec", kernelSpec.display_name);
 
-  const info = await request('kernel_info_request', {}, 'kernel_info_reply');
-  setText('kernel-info-status', info.language_info?.name === 'objective-c' ? 'ok' : 'error');
+  const info = await request("kernel_info_request", {}, "kernel_info_reply");
+  setText("kernel-info-status", info.language_info?.name === "objective-c" ? "ok" : "error");
 
   const execute = await request(
-    'execute_request',
+    "execute_request",
     {
       code: submittedCode,
-      cellId: 'browser-smoke-cell'
+      cellId: "browser-smoke-cell",
     },
-    'execute_reply'
+    "execute_reply",
   );
-  setText('execute-status', execute.status);
-  setText('result-output', execute.data?.['text/plain'] || '');
+  setText("execute-status", execute.status);
+  setText("result-output", execute.data?.["text/plain"] || "");
 
   window.__objcSmokeResult = {
     kernelSpec,
@@ -103,14 +103,14 @@ try {
     info,
     execute,
     streams,
-    submittedCode
+    submittedCode,
   };
-  document.body.dataset.smokeStatus = 'passed';
-  window.dispatchEvent(new CustomEvent('objc-smoke-complete'));
+  document.body.dataset.smokeStatus = "passed";
+  window.dispatchEvent(new CustomEvent("objc-smoke-complete"));
 } catch (error) {
-  document.body.dataset.smokeStatus = 'failed';
+  document.body.dataset.smokeStatus = "failed";
   window.__objcSmokeError = String(error?.stack || error);
-  setText('execute-status', 'error');
-  setText('result-output', window.__objcSmokeError);
-  window.dispatchEvent(new CustomEvent('objc-smoke-complete'));
+  setText("execute-status", "error");
+  setText("result-output", window.__objcSmokeError);
+  window.dispatchEvent(new CustomEvent("objc-smoke-complete"));
 }

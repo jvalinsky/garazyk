@@ -2,14 +2,18 @@
 
 ## Context
 
-The wasm kernel is a **custom ObjC interpreter** that parses source into AST and evaluates it. It uses string-pool markers (`FDObj:...`) to represent objects, not real ObjC runtime objects. There is no real reference counting — `retain`/`release`/`autorelease` are currently unimplemented.
+The wasm kernel is a **custom ObjC interpreter** that parses source into AST and evaluates it. It
+uses string-pool markers (`FDObj:...`) to represent objects, not real ObjC runtime objects. There is
+no real reference counting — `retain`/`release`/`autorelease` are currently unimplemented.
 
 Real `@autoreleasepool` semantics:
+
 1. Pushes a new autorelease pool onto a per-thread stack
 2. All `[obj autorelease]` calls add obj to the **current** pool
 3. On scope exit, the pool is **drained** — sends `release` to all objects, then pops
 
-For the interpreter: we implement the **structural/scaffolding** correctly; the actual retain/release cycle is a no-op (objects are just string-pool markers).
+For the interpreter: we implement the **structural/scaffolding** correctly; the actual
+retain/release cycle is a no-op (objects are just string-pool markers).
 
 ---
 
@@ -20,6 +24,7 @@ For the interpreter: we implement the **structural/scaffolding** correctly; the 
 **File:** `kernel/objc_interp_types.h`
 
 Add to `TokenType` enum (after `TOK_SUPER`):
+
 ```c
 TOK_AUTORELEASEPOOL,  /* @autoreleasepool keyword */
 ```
@@ -29,6 +34,7 @@ TOK_AUTORELEASEPOOL,  /* @autoreleasepool keyword */
 **File:** `kernel/objc_interp_context.h`
 
 Add to `InterpContext` struct (after the try-catch state, before string pool):
+
 ```c
 /* ── Autorelease pool stack ─────────────────────────── */
 #define MAX_AUTORELEASE_POOL_DEPTH 16
@@ -43,18 +49,21 @@ AutoreleasePool pools[MAX_AUTORELEASE_POOL_DEPTH];
 unsigned int pool_depth;
 ```
 
-Also add `MAX_AUTORELEASE_POOL_DEPTH` and `MAX_AUTORELEASE_OBJECTS` as `#define` constants near the top of `objc_interp_types.h` (alongside other MAX_* constants).
+Also add `MAX_AUTORELEASE_POOL_DEPTH` and `MAX_AUTORELEASE_OBJECTS` as `#define` constants near the
+top of `objc_interp_types.h` (alongside other MAX_* constants).
 
 ### 1.3 Add AST node type
 
 **File:** `kernel/objc_interp_types.h`
 
 Add `AST_AUTORELEASEPOOL` to `AstNodeType` enum (after `AST_THROW`):
+
 ```c
 AST_AUTORELEASEPOOL  /* @autoreleasepool { ... } */
 ```
 
 Add union member to `AstNode` struct:
+
 ```c
 struct { /* AST_AUTORELEASEPOOL */
     AstNode *body;
@@ -67,9 +76,11 @@ struct { /* AST_AUTORELEASEPOOL */
 
 **File:** `kernel/objc_interp_lexer.c`
 
-In `lexer_next_token()`, there is already a block handling `@` keywords (look for `TOK_AT_KEYWORD` handling). Extend it:
+In `lexer_next_token()`, there is already a block handling `@` keywords (look for `TOK_AT_KEYWORD`
+handling). Extend it:
 
-Find the section that checks `@` followed by identifier. After existing checks for `@try`, `@catch`, `@finally`, `@throw`, `@interface`, etc., add:
+Find the section that checks `@` followed by identifier. After existing checks for `@try`, `@catch`,
+`@finally`, `@throw`, `@interface`, etc., add:
 
 ```c
 if (cstr_eq(word, "autoreleasepool")) {
@@ -78,7 +89,8 @@ if (cstr_eq(word, "autoreleasepool")) {
 }
 ```
 
-The existing `@`-keyword handling likely builds a string `word` from the identifier after `@`, then switches on it. Follow the exact same pattern.
+The existing `@`-keyword handling likely builds a string `word` from the identifier after `@`, then
+switches on it. Follow the exact same pattern.
 
 ---
 
@@ -89,6 +101,7 @@ The existing `@`-keyword handling likely builds a string `word` from the identif
 ### 3.1 Add AST constructor
 
 Add after the `ast_make_try_catch()` function:
+
 ```c
 AstNode *ast_make_autoreleasepool(void) {
     AstNode *n = ast_alloc();
@@ -101,7 +114,8 @@ AstNode *ast_make_autoreleasepool(void) {
 
 ### 3.2 Parse in `parse_statement_ast()`
 
-In `parse_statement_ast()`, add a new branch for `TOK_AUTORELEASEPOOL`. Follow the pattern used for `TOK_AT_KEYWORD` / `@try`:
+In `parse_statement_ast()`, add a new branch for `TOK_AUTORELEASEPOOL`. Follow the pattern used for
+`TOK_AT_KEYWORD` / `@try`:
 
 ```c
 /* @autoreleasepool { ... } */
@@ -170,6 +184,7 @@ case AST_AUTORELEASEPOOL: {
 **File:** `kernel/objc_interpreter.c`
 
 In `objc_interp_init()`, after the try-catch init, add:
+
 ```c
 g_ctx.pool_depth = 0;
 ```
@@ -180,7 +195,9 @@ g_ctx.pool_depth = 0;
 
 **File:** `kernel/objc_interp_messages.c`
 
-In the message dispatch (the big function that handles `[target selector:args]`), add handling for the `autorelease` selector. Find where `retain`, `release`, `description`, etc. are handled (search for `"retain"` or `"description"` in the file).
+In the message dispatch (the big function that handles `[target selector:args]`), add handling for
+the `autorelease` selector. Find where `retain`, `release`, `description`, etc. are handled (search
+for `"retain"` or `"description"` in the file).
 
 Add a case for `autorelease`:
 
@@ -199,7 +216,8 @@ if (cstr_eq(sel_name, "autorelease")) {
 }
 ```
 
-Place this near other no-op message handlers (like `retain`, `release` if they exist, or near `description`).
+Place this near other no-op message handlers (like `retain`, `release` if they exist, or near
+`description`).
 
 ---
 
@@ -208,13 +226,15 @@ Place this near other no-op message handlers (like `retain`, `release` if they e
 **File:** `kernel/objc_interpreter.h`
 
 Add to the "It does NOT support" list, remove or update:
+
 ```
- *   - @autoreleasepool (scaffolding only; retain/release are no-ops)
+*   - @autoreleasepool (scaffolding only; retain/release are no-ops)
 ```
 
 Change to indicate it IS supported (with caveat):
+
 ```
- *   - @autoreleasepool (structural support; no real retain/release)
+*   - @autoreleasepool (structural support; no real retain/release)
 ```
 
 ---
@@ -260,7 +280,9 @@ assert(result3.status === "ok");
 
 **File:** `kernel/objc_runtime_bridge.c`
 
-In the kernel info JSON (the response from `objc_kernel_info_json`), the `language_info` blob may list supported features. Add `"@autoreleasepool"` to the supported features list if there is one, or add a `features` field:
+In the kernel info JSON (the response from `objc_kernel_info_json`), the `language_info` blob may
+list supported features. Add `"@autoreleasepool"` to the supported features list if there is one, or
+add a `features` field:
 
 ```c
 builder_append(builder, "\"features\":[\"@interface\",\"@implementation\",\"@property\",\"@autoreleasepool\",\"@try\",\"blocks\",\"for-in\"]");
@@ -270,16 +292,16 @@ builder_append(builder, "\"features\":[\"@interface\",\"@implementation\",\"@pro
 
 ## Summary of Files to Modify
 
-| File | Change |
-|------|--------|
-| `kernel/objc_interp_types.h` | Add `TOK_AUTORELEASEPOOL`, `AST_AUTORELEASEPOOL`, pool structs, max constants |
-| `kernel/objc_interp_context.h` | Add `pools[]`, `pool_depth` to `InterpContext` |
-| `kernel/objc_interp_lexer.c` | Recognize `@autoreleasepool` keyword |
-| `kernel/objc_interp_ast.c` | `ast_make_autoreleasepool()`, parse + eval cases |
-| `kernel/objc_interp_messages.c` | Handle `autorelease` selector |
-| `kernel/objc_interpreter.c` | Initialize `pool_depth = 0` in `objc_interp_init()` |
-| `kernel/objc_interpreter.h` | Update "NOT support" comments |
-| `kernel/objc_runtime_bridge.c` | (Optional) Add to kernel info features |
+| File                            | Change                                                                        |
+| ------------------------------- | ----------------------------------------------------------------------------- |
+| `kernel/objc_interp_types.h`    | Add `TOK_AUTORELEASEPOOL`, `AST_AUTORELEASEPOOL`, pool structs, max constants |
+| `kernel/objc_interp_context.h`  | Add `pools[]`, `pool_depth` to `InterpContext`                                |
+| `kernel/objc_interp_lexer.c`    | Recognize `@autoreleasepool` keyword                                          |
+| `kernel/objc_interp_ast.c`      | `ast_make_autoreleasepool()`, parse + eval cases                              |
+| `kernel/objc_interp_messages.c` | Handle `autorelease` selector                                                 |
+| `kernel/objc_interpreter.c`     | Initialize `pool_depth = 0` in `objc_interp_init()`                           |
+| `kernel/objc_interpreter.h`     | Update "NOT support" comments                                                 |
+| `kernel/objc_runtime_bridge.c`  | (Optional) Add to kernel info features                                        |
 
 ---
 

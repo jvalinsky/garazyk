@@ -5,6 +5,6 @@
  * The default export is an IRenderMime.IExtension (or array thereof)
  * that registers the CID decoder renderer.
  */
-import { cidViewerExtension } from './cid-viewer';
+import { cidViewerExtension } from "./cid-viewer";
 
 export default cidViewerExtension;
