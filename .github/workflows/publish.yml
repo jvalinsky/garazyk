@@ -28,10 +28,10 @@ jobs:
 
       - name: Publish Packages
         run: |
-          for pkg in docker-client atproto-client atproto-topology scenario-runner; do
+          for pkg in laweta gruszka schemat hamownia; do
             echo "--- Publishing @garazyk/$pkg ---"
             cd packages/$pkg
-            if [ "$pkg" = "atproto-topology" ]; then
+            if [ "$pkg" = "schemat" ]; then
               deno publish --allow-slow-types
             else
               deno publish

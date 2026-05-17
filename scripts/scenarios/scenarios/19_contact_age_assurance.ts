@@ -13,12 +13,12 @@
  * - Age assurance configuration and state endpoints return expected responses.
  */
 
-import { ScenarioResult, timedCall } from "@garazyk/scenario-runner";
-export { ScenarioResult, StepResult, StepStatus } from "@garazyk/scenario-runner";
-export type { ScenarioReport } from "@garazyk/scenario-runner";
-import { assert } from "@garazyk/scenario-runner";
-import { XrpcClient, XrpcError } from "@garazyk/atproto-client";
-import { getCharacter, PDS1 } from "@garazyk/scenario-runner";
+import { ScenarioResult, timedCall } from "@garazyk/hamownia";
+export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
+export type { ScenarioReport } from "@garazyk/hamownia";
+import { assert } from "@garazyk/hamownia";
+import { XrpcClient, XrpcError } from "@garazyk/gruszka";
+import { getCharacter, PDS1 } from "@garazyk/hamownia";
 
 /**
  * Executes the scenario logic.

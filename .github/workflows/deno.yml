@@ -27,10 +27,10 @@ jobs:
 
       - name: Type Check
         run: |
-          deno check packages/docker-client/mod.ts
-          deno check packages/atproto-client/mod.ts
-          deno check packages/atproto-topology/mod.ts
-          deno check packages/scenario-runner/mod.ts
+          deno check packages/laweta/mod.ts
+          deno check packages/gruszka/mod.ts
+          deno check packages/schemat/mod.ts
+          deno check packages/hamownia/mod.ts
           deno check scripts/run_scenarios.ts
 
       - name: Run Tests
@@ -38,10 +38,10 @@ jobs:
 
       - name: Publish Dry Run
         run: |
-          for pkg in docker-client atproto-client atproto-topology scenario-runner; do
+          for pkg in laweta gruszka schemat hamownia; do
             echo "--- $pkg ---"
             cd packages/$pkg
-            if [ "$pkg" = "atproto-topology" ]; then
+            if [ "$pkg" = "schemat" ]; then
               deno publish --dry-run --allow-slow-types
             else
               deno publish --dry-run

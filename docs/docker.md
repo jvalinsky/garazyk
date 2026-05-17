@@ -1,4 +1,4 @@
-# Docker Client (`@garazyk/docker-client`)
+# Docker Client (`@garazyk/laweta`)
 
 This package provides an abstracted interface for programmatically invoking Docker CLI and Docker Compose commands via Deno. It is heavily utilized by the Scenario Runner to manage the ATProto environment lifecycle.
 

@@ -1,0 +1,10 @@
+{
+  "name": "@garazyk/gruszka",
+  "version": "0.1.0-alpha.1",
+  "description": "Strongly typed AT Protocol XRPC client with generated lexicon methods.",
+  "exports": {
+    ".": "./mod.ts",
+    "./seed": "./seed.ts"
+  },
+  "license": "Unlicense OR CC0-1.0"
+}

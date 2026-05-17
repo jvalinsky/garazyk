@@ -18,7 +18,7 @@ import {
   type LocalNetworkOptions,
   startLocalNetwork,
   stopLocalNetwork,
-} from "@garazyk/docker-client";
+} from "@garazyk/laweta";
 
 const args = parseArgs(Deno.args, {
   boolean: [

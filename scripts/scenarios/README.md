@@ -252,9 +252,9 @@ scripts/
 ### Template
 
 ```ts
-import { XrpcClient } from "@garazyk/atproto-client";
-import { PDS1 } from "@garazyk/scenario-runner";
-import { ScenarioResult, timedCall } from "@garazyk/scenario-runner";
+import { XrpcClient } from "@garazyk/gruszka";
+import { PDS1 } from "@garazyk/hamownia";
+import { ScenarioResult, timedCall } from "@garazyk/hamownia";
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Scenario Name");

@@ -79,9 +79,9 @@ Use the next number after the highest existing one.
 Use the scaffold script or create manually. The file structure:
 
 ```typescript
-import { XrpcClient } from "@garazyk/atproto-client";
-import { PDS1, getCharacter } from "@garazyk/scenario-runner";
-import { ScenarioResult, timedCall } from "@garazyk/scenario-runner";
+import { XrpcClient } from "@garazyk/gruszka";
+import { PDS1, getCharacter } from "@garazyk/hamownia";
+import { ScenarioResult, timedCall } from "@garazyk/hamownia";
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Human-Readable Name");
@@ -241,21 +241,21 @@ if (import.meta.main) {
 
 ```typescript
 // Core
-import { XrpcClient } from "@garazyk/atproto-client";
-import { PDS1, PDS2, getCharacter, getCharactersByRole, getCharactersByPds } from "@garazyk/scenario-runner";
-import { ScenarioResult, timedCall, StepStatus } from "@garazyk/scenario-runner";
+import { XrpcClient } from "@garazyk/gruszka";
+import { PDS1, PDS2, getCharacter, getCharactersByRole, getCharactersByPds } from "@garazyk/hamownia";
+import { ScenarioResult, timedCall, StepStatus } from "@garazyk/hamownia";
 
 // Transport
-import { TransportLayer, XrpcError } from "@garazyk/atproto-client";
+import { TransportLayer, XrpcError } from "@garazyk/gruszka";
 
 // Diagnostics
-import { createRunContext, collectDiagnostics } from "@garazyk/scenario-runner";
+import { createRunContext, collectDiagnostics } from "@garazyk/hamownia";
 
 // Instrumentation (load/soak scenarios)
-import { OperationTimer, PhaseTimer, scrapePrometheus, sampleStorage } from "@garazyk/scenario-runner";
+import { OperationTimer, PhaseTimer, scrapePrometheus, sampleStorage } from "@garazyk/hamownia";
 
 // Mock services
-import { MockTwilio } from "@garazyk/scenario-runner";
+import { MockTwilio } from "@garazyk/hamownia";
 ```
 
 ### XrpcClient API

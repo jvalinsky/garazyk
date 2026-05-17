@@ -19,24 +19,24 @@
 
 import { bold, brightBlue } from "@std/fmt/colors";
 import { fromFileUrl, join } from "@std/path";
-import { startLocalNetwork, stopLocalNetwork } from "@garazyk/docker-client";
-import { collectDiagnostics, createRunContext } from "@garazyk/scenario-runner";
-import { resolveTopology, TopologyRegistry } from "@garazyk/atproto-topology";
-import type { BrowserFlow, Topology } from "@garazyk/atproto-topology";
-import { formatRequirement } from "@garazyk/scenario-runner";
-import type { ScenarioInfo } from "@garazyk/scenario-runner";
-import { discoverScenarios, selectScenarios } from "@garazyk/scenario-runner";
-import { runScenarioLoop } from "@garazyk/scenario-runner";
-import type { ScenarioExecutionResult } from "@garazyk/scenario-runner";
-import { createProcessLifecycle } from "@garazyk/scenario-runner";
-import { writeOverallSummary } from "@garazyk/scenario-runner";
+import { startLocalNetwork, stopLocalNetwork } from "@garazyk/laweta";
+import { collectDiagnostics, createRunContext } from "@garazyk/hamownia";
+import { resolveTopology, TopologyRegistry } from "@garazyk/schemat";
+import type { BrowserFlow, Topology } from "@garazyk/schemat";
+import { formatRequirement } from "@garazyk/hamownia";
+import type { ScenarioInfo } from "@garazyk/hamownia";
+import { discoverScenarios, selectScenarios } from "@garazyk/hamownia";
+import { runScenarioLoop } from "@garazyk/hamownia";
+import type { ScenarioExecutionResult } from "@garazyk/hamownia";
+import { createProcessLifecycle } from "@garazyk/hamownia";
+import { writeOverallSummary } from "@garazyk/hamownia";
 import {
   initE2eTracing,
   isOtelEnabled,
   shutdownTracing,
-} from "@garazyk/scenario-runner";
-import { ScenarioResult } from "@garazyk/scenario-runner";
-import type { RunnerArgs } from "@garazyk/scenario-runner";
+} from "@garazyk/hamownia";
+import { ScenarioResult } from "@garazyk/hamownia";
+import type { RunnerArgs } from "@garazyk/hamownia";
 
 const OTEL_REEXEC_GUARD = "GARAZYK_OTEL_REEXEC";
 

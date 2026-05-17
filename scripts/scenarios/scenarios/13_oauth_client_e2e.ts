@@ -16,13 +16,13 @@
  * - Post-login profile is correctly resolved and displayed.
  */
 
-import { ScenarioResult, timedCall } from "@garazyk/scenario-runner";
-export { ScenarioResult, StepResult, StepStatus } from "@garazyk/scenario-runner";
-export type { ScenarioReport } from "@garazyk/scenario-runner";
-import { assert } from "@garazyk/scenario-runner";
-import { XrpcClient } from "@garazyk/atproto-client";
-import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/scenario-runner";
-import { attachPublicNetworkLeakGuard } from "@garazyk/scenario-runner";
+import { ScenarioResult, timedCall } from "@garazyk/hamownia";
+export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
+export type { ScenarioReport } from "@garazyk/hamownia";
+import { assert } from "@garazyk/hamownia";
+import { XrpcClient } from "@garazyk/gruszka";
+import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { attachPublicNetworkLeakGuard } from "@garazyk/hamownia";
 import { chromium } from "npm:playwright";
 
 const PDS_URL = SERVICE_URLS.pds;

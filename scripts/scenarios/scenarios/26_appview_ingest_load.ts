@@ -17,17 +17,17 @@ import {
   PhaseTimer,
   PrometheusScraper,
   StorageMonitor,
-} from "@garazyk/scenario-runner";
-import { FirehoseClient } from "@garazyk/atproto-client";
-import { APPVIEW_ADMIN_SECRET, getCharacter, PDS1, SERVICE_URLS } from "@garazyk/scenario-runner";
-import { ScenarioResult } from "@garazyk/scenario-runner";
-export { ScenarioResult, StepResult, StepStatus } from "@garazyk/scenario-runner";
-export type { ScenarioReport } from "@garazyk/scenario-runner";
-import { XrpcClient } from "@garazyk/atproto-client";
-import { assert } from "@garazyk/scenario-runner";
-import { createRunContext } from "@garazyk/scenario-runner";
+} from "@garazyk/hamownia";
+import { FirehoseClient } from "@garazyk/gruszka";
+import { APPVIEW_ADMIN_SECRET, getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { ScenarioResult } from "@garazyk/hamownia";
+export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
+export type { ScenarioReport } from "@garazyk/hamownia";
+import { XrpcClient } from "@garazyk/gruszka";
+import { assert } from "@garazyk/hamownia";
+import { createRunContext } from "@garazyk/hamownia";
 import { join } from "@std/path";
-import { timedCall } from "@garazyk/scenario-runner";
+import { timedCall } from "@garazyk/hamownia";
 
 function now() {
   return new Date().toISOString();

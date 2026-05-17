@@ -17,7 +17,7 @@
 
           nativeBuildInputs = [
             pkgs.deno
-            pkgs.docker-client
+            pkgs.laweta
             pkgs.docker-compose
             pkgs.jq
           ];

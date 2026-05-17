@@ -1,6 +1,6 @@
-# Garazyk
+# Garażyk
 
-Garazyk is a suite of Deno tools and JSR packages designed for orchestrating local AT Protocol networks and executing end-to-end (E2E) protocol simulation scenarios.
+Garażyk is a suite of Deno tools and JSR packages designed for orchestrating local AT Protocol networks and executing end-to-end (E2E) protocol simulation scenarios.
 
 It provides a programmable, strongly typed interface for spinning up Bluesky topologies (PDS, BGS, AppView, PLC, etc.) via Docker, interacting with those services via generated Lexicon clients, and asserting complex social behaviors.
 
@@ -8,14 +8,14 @@ It provides a programmable, strongly typed interface for spinning up Bluesky top
 
 The project is split into four modular Deno JSR packages:
 
-- **`@garazyk/docker-client`**: A generic Deno wrapper for Docker Engine and Docker Compose. Provides utilities for streaming logs, checking container health, and parsing Docker events.
-- **`@garazyk/atproto-client`**: A strongly typed XRPC client featuring dynamically generated methods for all Bluesky and ATProto lexicons. Also includes helpers for Firehose ingestion and protocol seeding.
-- **`@garazyk/atproto-topology`**: Defines, validates, and renders Docker Compose layouts for various ATProto service topologies using Zod schemas.
-- **`@garazyk/scenario-runner`**: An orchestration and testing harness that integrates the topology definition and docker clients to run automated assertions against a live local network. Includes an HTML test report writer and OpenTelemetry instrumentation.
+- **`@garazyk/laweta`**: A generic Deno wrapper for Docker Engine and Docker Compose. Provides utilities for streaming logs, checking container health, and parsing Docker events.
+- **`@garazyk/gruszka`**: A strongly typed XRPC client featuring dynamically generated methods for all Bluesky and ATProto lexicons. Also includes helpers for Firehose ingestion and protocol seeding.
+- **`@garazyk/schemat`**: Defines, validates, and renders Docker Compose layouts for various ATProto service topologies using Zod schemas.
+- **`@garazyk/hamownia`**: An orchestration and testing harness that integrates the topology definition and docker clients to run automated assertions against a live local network. Includes an HTML test report writer and OpenTelemetry instrumentation.
 
 ## Getting Started
 
-Garazyk requires [Deno v2.2+](https://deno.com/) and [Docker](https://www.docker.com/).
+Garażyk requires [Deno v2.2+](https://deno.com/) and [Docker](https://www.docker.com/).
 
 ### Running the E2E Scenario Suite
 
@@ -34,11 +34,11 @@ deno run -A scripts/run_scenarios.ts --topology garazyk-default --run 01_account
 
 ### Writing Scenarios
 
-Scenarios are written using the `@garazyk/scenario-runner` package. Here is an example of a simple assertion:
+Scenarios are written using the `@garazyk/hamownia` package. Here is an example of a simple assertion:
 
 ```typescript
-import { ScenarioResult, timedCall, assert } from "@garazyk/scenario-runner";
-import { createAccountOrLogin } from "@garazyk/atproto-client/seed";
+import { ScenarioResult, timedCall, assert } from "@garazyk/hamownia";
+import { createAccountOrLogin } from "@garazyk/gruszka/seed";
 
 export async function run(args) {
   const result = new ScenarioResult("Account Creation");
@@ -60,4 +60,4 @@ The project includes legacy deployment documentation which is currently being up
 
 ## License
 
-Garazyk is dual-licensed under MIT and Unlicense.
+Garażyk is dual-licensed under the Unlicense and CC0 1.0 Universal.

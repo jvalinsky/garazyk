@@ -111,7 +111,7 @@ def main():
     args = parser.parse_args()
 
     entries = []
-    generated_lexicons = os.path.join(args.repo_root, "packages", "atproto-client", "lexicons.ts")
+    generated_lexicons = os.path.join(args.repo_root, "packages", "gruszka", "lexicons.ts")
     if os.path.isfile(generated_lexicons):
         entries.extend(parse_generated_lexicons(generated_lexicons))
     else:

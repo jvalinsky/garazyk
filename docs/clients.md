@@ -1,4 +1,4 @@
-# ATProto Clients (`@garazyk/atproto-client`)
+# ATProto Clients (`@garazyk/gruszka`)
 
 This package provides a strongly-typed `XrpcClient` that enables easy interaction with any AT Protocol lexicon endpoint.
 
@@ -7,7 +7,7 @@ This package provides a strongly-typed `XrpcClient` that enables easy interactio
 Instantiate the client with a base URL, and then use the generated namespace objects to make calls:
 
 ```typescript
-import { XrpcClient } from "@garazyk/atproto-client";
+import { XrpcClient } from "@garazyk/gruszka";
 
 const client = new XrpcClient("http://localhost:2583");
 
@@ -29,6 +29,6 @@ console.log(profile.handle);
 The typed lexicons are generated dynamically. If the schemas in `/lexicons/` change, regenerate them via:
 
 ```bash
-cd packages/atproto-client
+cd packages/gruszka
 deno run -A scripts/generate.ts
 ```

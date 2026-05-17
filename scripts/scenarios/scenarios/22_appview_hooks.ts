@@ -17,12 +17,12 @@
  * - Admin record browsing correctly enforces collection filtering and returns results.
  */
 
-import { ScenarioResult, timedCall } from "@garazyk/scenario-runner";
-export { ScenarioResult, StepResult, StepStatus } from "@garazyk/scenario-runner";
-export type { ScenarioReport } from "@garazyk/scenario-runner";
-import { assert } from "@garazyk/scenario-runner";
-import { XrpcClient } from "@garazyk/atproto-client";
-import { APPVIEW_ADMIN_SECRET, getCharacter, PDS1, SERVICE_URLS } from "@garazyk/scenario-runner";
+import { ScenarioResult, timedCall } from "@garazyk/hamownia";
+export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
+export type { ScenarioReport } from "@garazyk/hamownia";
+import { assert } from "@garazyk/hamownia";
+import { XrpcClient } from "@garazyk/gruszka";
+import { APPVIEW_ADMIN_SECRET, getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
 
 function now() {
   return new Date().toISOString();

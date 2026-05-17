@@ -23,7 +23,7 @@ Each scenario file must start with a module header and a single JSDoc block for 
  * - <Describe successful outcome>
  */
 
-import { ScenarioResult } from "@garazyk/scenario-runner";
+import { ScenarioResult } from "@garazyk/hamownia";
 
 /**
  * Executes the scenario logic.

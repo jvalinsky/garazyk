@@ -19,11 +19,11 @@
  * - Oversized blobs are rejected by the PDS.
  */
 
-import { XrpcClient, XrpcError } from "@garazyk/atproto-client";
-import { getCharacter, PDS1 } from "@garazyk/scenario-runner";
-import { ScenarioResult, timedCall } from "@garazyk/scenario-runner";
-export { ScenarioResult, StepResult, StepStatus } from "@garazyk/scenario-runner";
-export type { ScenarioReport } from "@garazyk/scenario-runner";
+import { XrpcClient, XrpcError } from "@garazyk/gruszka";
+import { getCharacter, PDS1 } from "@garazyk/hamownia";
+import { ScenarioResult, timedCall } from "@garazyk/hamownia";
+export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
+export type { ScenarioReport } from "@garazyk/hamownia";
 
 function now() {
   return new Date().toISOString();

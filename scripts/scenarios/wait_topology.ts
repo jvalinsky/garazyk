@@ -1,7 +1,7 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli";
-import { loadTopologyManifest, TopologyHealthProbe } from "@garazyk/atproto-topology";
-import { ContainerEventWatcher } from "@garazyk/docker-client";
+import { loadTopologyManifest, TopologyHealthProbe } from "@garazyk/schemat";
+import { ContainerEventWatcher } from "@garazyk/laweta";
 
 const args = parseArgs(Deno.args, {
   string: ["manifest", "compose-project", "compose-file"],

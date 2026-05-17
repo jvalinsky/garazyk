@@ -17,11 +17,11 @@
  * - Unauthorized access attempts are correctly rejected.
  */
 
-import { ScenarioResult, timedCall } from "@garazyk/scenario-runner";
-export { ScenarioResult, StepResult, StepStatus } from "@garazyk/scenario-runner";
-export type { ScenarioReport } from "@garazyk/scenario-runner";
-import { assert } from "@garazyk/scenario-runner";
-import { SERVICE_URLS } from "@garazyk/scenario-runner";
+import { ScenarioResult, timedCall } from "@garazyk/hamownia";
+export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
+export type { ScenarioReport } from "@garazyk/hamownia";
+import { assert } from "@garazyk/hamownia";
+import { SERVICE_URLS } from "@garazyk/hamownia";
 
 /**
  * Executes the scenario logic.

@@ -1,0 +1,10 @@
+{
+  "name": "@garazyk/laweta",
+  "version": "0.1.0-alpha.1",
+  "description": "A generic Deno client for Docker Engine and Docker Compose.",
+  "exports": {
+    ".": "./mod.ts",
+    "./compose": "./compose.ts"
+  },
+  "license": "Unlicense OR CC0-1.0"
+}

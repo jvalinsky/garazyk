@@ -3,11 +3,11 @@ import {
   appendScenarioLoopResult,
   buildOtelReexecEnv,
 } from "./run_scenarios.ts";
-import { ScenarioResult } from "@garazyk/scenario-runner";
+import { ScenarioResult } from "@garazyk/hamownia";
 import type {
   ScenarioExecutionResult,
   ScenarioInfo,
-} from "@garazyk/scenario-runner";
+} from "@garazyk/hamownia";
 
 Deno.test("appendScenarioLoopResult preserves failed loop results for final summary", () => {
   const failed = new ScenarioResult("failed scenario");

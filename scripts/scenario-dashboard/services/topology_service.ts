@@ -1,6 +1,6 @@
 /** Topology service — lists available presets and fetches previews. @module topology_service */
-import { listTopologyPresets, TopologyPresetSummary } from "@garazyk/atproto-topology";
-import { resolvePreset } from "@garazyk/atproto-topology";
+import { listTopologyPresets, TopologyPresetSummary } from "@garazyk/schemat";
+import { resolvePreset } from "@garazyk/schemat";
 
 /** List all available topology presets. */
 export async function listTopologies(): Promise<TopologyPresetSummary[]> {

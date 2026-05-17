@@ -16,13 +16,13 @@
  * - Repository state reflects all successful operations across accounts.
  */
 
-import { ScenarioResult, timedCall } from "@garazyk/scenario-runner";
-export { ScenarioResult, StepResult, StepStatus } from "@garazyk/scenario-runner";
-export type { ScenarioReport } from "@garazyk/scenario-runner";
-import { assert } from "@garazyk/scenario-runner";
-import { XrpcClient } from "@garazyk/atproto-client";
-import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/scenario-runner";
-import { createRunContext } from "@garazyk/scenario-runner";
+import { ScenarioResult, timedCall } from "@garazyk/hamownia";
+export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
+export type { ScenarioReport } from "@garazyk/hamownia";
+import { assert } from "@garazyk/hamownia";
+import { XrpcClient } from "@garazyk/gruszka";
+import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { createRunContext } from "@garazyk/hamownia";
 import { join } from "@std/path";
 import {
   InstrumentationReport,
@@ -30,7 +30,7 @@ import {
   PhaseTimer,
   PrometheusScraper,
   StorageMonitor,
-} from "@garazyk/scenario-runner";
+} from "@garazyk/hamownia";
 
 function now() {
   return new Date().toISOString();

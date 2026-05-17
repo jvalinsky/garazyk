@@ -20,14 +20,14 @@
  * - Group and DM lifecycle management functions correctly.
  */
 
-import { XrpcClient } from "@garazyk/atproto-client";
-import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/scenario-runner";
-import { ScenarioResult, timedCall } from "@garazyk/scenario-runner";
-export { ScenarioResult, StepResult, StepStatus } from "@garazyk/scenario-runner";
-export type { ScenarioReport } from "@garazyk/scenario-runner";
-import { assert } from "@garazyk/scenario-runner";
-import { XrpcError } from "@garazyk/atproto-client";
-import { chatXrpcGet, chatXrpcPost, createChatServiceContext } from "@garazyk/atproto-client/seed";
+import { XrpcClient } from "@garazyk/gruszka";
+import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { ScenarioResult, timedCall } from "@garazyk/hamownia";
+export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
+export type { ScenarioReport } from "@garazyk/hamownia";
+import { assert } from "@garazyk/hamownia";
+import { XrpcError } from "@garazyk/gruszka";
+import { chatXrpcGet, chatXrpcPost, createChatServiceContext } from "@garazyk/gruszka/seed";
 
 /**
  * Executes the scenario logic.

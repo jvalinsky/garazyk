@@ -32,17 +32,17 @@ deno task fmt -- --check
 Package tests use Deno's native `*_test.ts` convention. Keep tests close to the module they cover:
 
 ```text
-packages/docker-client/docker_api.ts
-packages/docker-client/docker_api_test.ts
-packages/scenario-runner/runner.ts
-packages/scenario-runner/runner_test.ts
+packages/laweta/docker_api.ts
+packages/laweta/docker_api_test.ts
+packages/hamownia/runner.ts
+packages/hamownia/runner_test.ts
 ```
 
 Use `@std/assert` assertions and import package APIs through workspace aliases when crossing package boundaries:
 
 ```ts
 import { assertEquals } from "@std/assert";
-import { runScenario } from "@garazyk/scenario-runner";
+import { runScenario } from "@garazyk/hamownia";
 ```
 
 Do not use direct `../` imports between packages. The workspace aliases in the root `deno.json` are the package boundary.
@@ -62,13 +62,13 @@ For scenario authoring details, use the `adding-scenario` skill. For running and
 Run a single package test file during iteration:
 
 ```bash
-deno test -A packages/scenario-runner/runner_test.ts
+deno test -A packages/hamownia/runner_test.ts
 ```
 
 Run a specific Deno test by name:
 
 ```bash
-deno test -A packages/scenario-runner/runner_test.ts --filter "selects scenarios"
+deno test -A packages/hamownia/runner_test.ts --filter "selects scenarios"
 ```
 
 Run a specific scenario by passing the scenario selector supported by `scripts/run_scenarios.ts`.
@@ -76,21 +76,21 @@ Run a specific scenario by passing the scenario selector supported by `scripts/r
 ## Test Data And Side Effects
 
 - Prefer temporary directories from `Deno.makeTempDir()` for filesystem tests.
-- Clean up Docker containers, networks, and volumes through the helper APIs in `@garazyk/docker-client`.
+- Clean up Docker containers, networks, and volumes through the helper APIs in `@garazyk/laweta`.
 - Keep network-dependent tests explicit. Local ATProto stack tests should be scenarios rather than hidden package-test side effects.
-- Avoid sleeps in assertions. Prefer polling helpers, health checks, or scenario-runner timing utilities.
+- Avoid sleeps in assertions. Prefer polling helpers, health checks, or hamownia timing utilities.
 
 ## Public API Checks
 
 When changing exports under `packages/`, verify:
 
 - `deno check packages/*/mod.ts` passes.
-- Exported functions, methods, and classes have explicit return types, except exported Zod schemas in `packages/atproto-topology`.
+- Exported functions, methods, and classes have explicit return types, except exported Zod schemas in `packages/schemat`.
 - Cross-package imports use `@garazyk/*` aliases.
 - Generated XRPC client files are regenerated after lexicon changes:
 
 ```bash
-deno run -A packages/atproto-client/scripts/generate.ts
+deno run -A packages/gruszka/scripts/generate.ts
 ```
 
 ## Review Checklist

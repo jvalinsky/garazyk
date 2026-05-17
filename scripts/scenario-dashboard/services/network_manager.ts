@@ -22,9 +22,9 @@ import {
   DockerApiClient,
   formatMemory,
   healthStatus,
-} from "@garazyk/docker-client";
-import { startLocalNetwork, stopLocalNetwork } from "@garazyk/docker-client";
-import { ContainerEventWatcher, type WatcherEvent } from "@garazyk/docker-client";
+} from "@garazyk/laweta";
+import { startLocalNetwork, stopLocalNetwork } from "@garazyk/laweta";
+import { ContainerEventWatcher, type WatcherEvent } from "@garazyk/laweta";
 
 const SCRIPTS_DIR = join(
   fromFileUrl(new URL("../../scenarios", import.meta.url)),

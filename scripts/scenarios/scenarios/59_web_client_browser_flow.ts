@@ -11,15 +11,15 @@
  * - Scenario completes successfully without errors.
  */
 
-import { SERVICE_URLS, WEB_CLIENT_TOPOLOGY } from "@garazyk/scenario-runner";
-import { ScenarioResult } from "@garazyk/scenario-runner";
-export { ScenarioResult, StepResult, StepStatus } from "@garazyk/scenario-runner";
-export type { ScenarioReport } from "@garazyk/scenario-runner";
-import { assert } from "@garazyk/scenario-runner";
-import { attachPublicNetworkLeakGuard } from "@garazyk/scenario-runner";
+import { SERVICE_URLS, WEB_CLIENT_TOPOLOGY } from "@garazyk/hamownia";
+import { ScenarioResult } from "@garazyk/hamownia";
+export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
+export type { ScenarioReport } from "@garazyk/hamownia";
+import { assert } from "@garazyk/hamownia";
+import { attachPublicNetworkLeakGuard } from "@garazyk/hamownia";
 import { chromium } from "npm:playwright";
 import { join } from "@std/path";
-import { timedCall } from "@garazyk/scenario-runner";
+import { timedCall } from "@garazyk/hamownia";
 
 /**
  * Executes the scenario logic.

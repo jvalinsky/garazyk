@@ -6,10 +6,10 @@ Garazyk has transitioned from a monolithic PDS implementation into a suite of mo
 
 The core logic previously located in `scripts/lib/deno/` has been split into four JSR packages:
 
-1.  **`@garazyk/docker-client`**: Low-level Docker and Compose wrappers.
-2.  **`@garazyk/atproto-client`**: Strongly-typed XRPC client and protocol seed helpers.
-3.  **`@garazyk/atproto-topology`**: Zod-validated network blueprints.
-4.  **`@garazyk/scenario-runner`**: The E2E test orchestration framework.
+1.  **`@garazyk/laweta`**: Low-level Docker and Compose wrappers.
+2.  **`@garazyk/gruszka`**: Strongly-typed XRPC client and protocol seed helpers.
+3.  **`@garazyk/schemat`**: Zod-validated network blueprints.
+4.  **`@garazyk/hamownia`**: The E2E test orchestration framework.
 
 ## 1. Updating Scenario Imports
 
@@ -24,9 +24,9 @@ import { createAccountOrLogin } from "../../lib/deno/seed.ts";
 
 **New Import (Monorepo):**
 ```typescript
-import { ScenarioResult, timedCall } from "@garazyk/scenario-runner";
-import { XrpcClient } from "@garazyk/atproto-client";
-import { createAccountOrLogin } from "@garazyk/atproto-client/seed";
+import { ScenarioResult, timedCall } from "@garazyk/hamownia";
+import { XrpcClient } from "@garazyk/gruszka";
+import { createAccountOrLogin } from "@garazyk/gruszka/seed";
 ```
 
 ## 2. Using Root Tasks
@@ -42,7 +42,7 @@ We have introduced a set of `deno task` commands to simplify monorepo management
 
 ## 3. Topology Registry
 
-The `@garazyk/atproto-topology` package now includes all standard topologies as embedded code. You no longer need to point the runner at local JSON files in most cases.
+The `@garazyk/schemat` package now includes all standard topologies as embedded code. You no longer need to point the runner at local JSON files in most cases.
 
 **Old Command:**
 ```bash
@@ -59,10 +59,10 @@ deno task scenarios --topology garazyk-default
 You can now use Garazyk components in standalone Deno projects without cloning the full repository:
 
 ```bash
-deno add jsr:@garazyk/atproto-client
+deno add jsr:@garazyk/gruszka
 ```
 
 ```typescript
-import { XrpcClient } from "@garazyk/atproto-client";
+import { XrpcClient } from "@garazyk/gruszka";
 // ... use the strongly typed API
 ```

@@ -1,9 +1,9 @@
 {
   "workspace": [
-    "./packages/docker-client",
-    "./packages/atproto-client",
-    "./packages/atproto-topology",
-    "./packages/scenario-runner",
+    "./packages/laweta",
+    "./packages/gruszka",
+    "./packages/schemat",
+    "./packages/hamownia",
     "./scripts/scenario-dashboard"
   ],
   "imports": {
@@ -17,17 +17,17 @@
     "playwright": "npm:playwright@^1.40.0",
     "@ipld/dag-cbor": "npm:@ipld/dag-cbor@^9.0.0",
     "zod": "npm:zod@^3.22.0",
-    "@garazyk/docker-client": "./packages/docker-client/mod.ts",
-    "@garazyk/atproto-client": "./packages/atproto-client/mod.ts",
-    "@garazyk/atproto-topology": "./packages/atproto-topology/mod.ts",
-    "@garazyk/scenario-runner": "./packages/scenario-runner/mod.ts"
+    "@garazyk/laweta": "./packages/laweta/mod.ts",
+    "@garazyk/gruszka": "./packages/gruszka/mod.ts",
+    "@garazyk/schemat": "./packages/schemat/mod.ts",
+    "@garazyk/hamownia": "./packages/hamownia/mod.ts"
   },
   "tasks": {
     "test": "deno test -A packages/",
     "check": "deno check packages/*/mod.ts scripts/*.ts",
     "lint": "deno lint packages/ scripts/",
     "fmt": "deno fmt packages/ scripts/",
-    "generate-client": "deno run -A packages/atproto-client/scripts/generate.ts",
+    "generate-client": "deno run -A packages/gruszka/scripts/generate.ts",
     "scenarios": "deno run -A scripts/run_scenarios.ts",
     "dashboard": "cd scripts/scenario-dashboard && deno task dev"
   }

@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run -A
 import { join } from "@std/path";
-import { MarkdownLinkTester } from "@garazyk/atproto-client";
+import { MarkdownLinkTester } from "@garazyk/gruszka";
 
 async function repoRoot(): Promise<string> {
   const output = await new Deno.Command("git", {

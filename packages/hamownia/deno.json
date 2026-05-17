@@ -1,0 +1,9 @@
+{
+  "name": "@garazyk/hamownia",
+  "version": "0.1.0-alpha.1",
+  "description": "Assertion-based E2E testing framework for AT Protocol simulations.",
+  "exports": {
+    ".": "./mod.ts"
+  },
+  "license": "Unlicense OR CC0-1.0"
+}

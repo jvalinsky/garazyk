@@ -16,14 +16,14 @@ import {
   chatGetMessages,
   chatSendMessage,
   createChatServiceContext,
-} from "@garazyk/atproto-client/seed";
-import { ScenarioResult } from "@garazyk/scenario-runner";
-export { ScenarioResult, StepResult, StepStatus } from "@garazyk/scenario-runner";
-export type { ScenarioReport } from "@garazyk/scenario-runner";
-import { XrpcClient, XrpcError } from "@garazyk/atproto-client";
-import { assert } from "@garazyk/scenario-runner";
-import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/scenario-runner";
-import { timedCall } from "@garazyk/scenario-runner";
+} from "@garazyk/gruszka/seed";
+import { ScenarioResult } from "@garazyk/hamownia";
+export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
+export type { ScenarioReport } from "@garazyk/hamownia";
+import { XrpcClient, XrpcError } from "@garazyk/gruszka";
+import { assert } from "@garazyk/hamownia";
+import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { timedCall } from "@garazyk/hamownia";
 
 /**
  * Executes the scenario logic.

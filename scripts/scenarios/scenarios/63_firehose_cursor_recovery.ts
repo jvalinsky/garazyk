@@ -11,14 +11,14 @@
  * - Scenario completes successfully without errors.
  */
 
-import { FirehoseClient } from "@garazyk/atproto-client";
-import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/scenario-runner";
-import { ScenarioResult } from "@garazyk/scenario-runner";
-export { ScenarioResult, StepResult, StepStatus } from "@garazyk/scenario-runner";
-export type { ScenarioReport } from "@garazyk/scenario-runner";
-import { XrpcClient } from "@garazyk/atproto-client";
-import { assert } from "@garazyk/scenario-runner";
-import { timedCall } from "@garazyk/scenario-runner";
+import { FirehoseClient } from "@garazyk/gruszka";
+import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { ScenarioResult } from "@garazyk/hamownia";
+export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
+export type { ScenarioReport } from "@garazyk/hamownia";
+import { XrpcClient } from "@garazyk/gruszka";
+import { assert } from "@garazyk/hamownia";
+import { timedCall } from "@garazyk/hamownia";
 
 /**
  * Executes the scenario logic.
