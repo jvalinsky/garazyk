@@ -17,6 +17,7 @@
     "@opentelemetry/api": "npm:@opentelemetry/api@^1.7.0",
     "playwright": "npm:playwright@^1.40.0",
     "@ipld/dag-cbor": "npm:@ipld/dag-cbor@^9.0.0",
+    "cborg": "npm:cborg@5.1.1",
     "zod": "npm:zod@^3.22.0",
     "@garazyk/laweta": "./packages/laweta/mod.ts",
     "@garazyk/gruszka": "./packages/gruszka/mod.ts",

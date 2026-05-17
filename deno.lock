@@ -31,6 +31,7 @@
     "npm:@opentelemetry/api@1": "1.9.1",
     "npm:@opentelemetry/api@^1.7.0": "1.9.1",
     "npm:@preact/signals-core@1.5.1": "1.5.1",
+    "npm:cborg@5.1.1": "5.1.1",
     "npm:playwright@*": "1.60.0",
     "npm:playwright@^1.40.0": "1.60.0",
     "npm:tailwindcss@3.4.7": "3.4.7_postcss@8.5.14",
@@ -932,6 +933,7 @@
       "jsr:@std/path@0.224.0",
       "npm:@ipld/dag-cbor@9",
       "npm:@opentelemetry/api@^1.7.0",
+      "npm:cborg@5.1.1",
       "npm:playwright@^1.40.0",
       "npm:zod@^3.22.0"
     ],
