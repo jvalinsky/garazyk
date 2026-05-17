@@ -1,5 +1,9 @@
 import { assertEquals, assertThrows } from "@std/assert";
-import { compileTopology, renderComposeYaml, validatePreset } from "./topology_compiler.ts";
+import {
+  compileTopology,
+  renderComposeYaml,
+  validatePreset,
+} from "./topology_compiler.ts";
 import {
   createTopologyManifest,
   loadTopologyManifest,
@@ -8,7 +12,10 @@ import {
   Topology,
   TopologyPreset,
 } from "./topology.ts";
-import { normalizeTopologyPreset, parseRawTopologyPresetV1 } from "./topology_schema.ts";
+import {
+  normalizeTopologyPreset,
+  parseRawTopologyPresetV1,
+} from "./topology_schema.ts";
 import { ScenarioInfo } from "@garazyk/scenario-runner";
 import { selectScenarios } from "@garazyk/scenario-runner";
 import { parseScenarioRequirement } from "./topology_schema.ts";
@@ -54,7 +61,10 @@ Deno.test("validatePreset: no roles", () => {
 });
 
 Deno.test("validatePreset: adapter missing name", () => {
-  const preset = { ...VALID_PRESET, roles: { pds: { ...VALID_ADAPTER, name: "" } } };
+  const preset = {
+    ...VALID_PRESET,
+    roles: { pds: { ...VALID_ADAPTER, name: "" } },
+  };
   const errors = validatePreset(preset);
   assertEquals(errors.length, 1);
   assertEquals(errors[0], 'Role "pds": missing adapter name');
@@ -85,7 +95,10 @@ Deno.test("validatePreset: duplicate host ports", () => {
   };
   const errors = validatePreset(preset);
   assertEquals(errors.length, 1);
-  assertEquals(errors[0], 'Duplicate host port: 2583 (used by role "pds2" and another)');
+  assertEquals(
+    errors[0],
+    'Duplicate host port: 2583 (used by role "pds2" and another)',
+  );
 });
 
 Deno.test("renderComposeYaml: produces valid YAML structure", () => {
@@ -118,7 +131,10 @@ Deno.test("renderComposeYaml: image-based adapter", () => {
     composeProject: "test",
   });
 
-  assertEquals(yaml.includes("image: ghcr.io/bluesky-social/atproto/pds:latest"), true);
+  assertEquals(
+    yaml.includes("image: ghcr.io/bluesky-social/atproto/pds:latest"),
+    true,
+  );
   assertEquals(yaml.includes("build:"), false);
 });
 
@@ -198,7 +214,10 @@ Deno.test("compileTopology: invalid preset throws", async () => {
     } catch (e) {
       threw = true;
       assertEquals(e instanceof Error, true);
-      assertEquals((e as Error).message.includes("Invalid topology preset"), true);
+      assertEquals(
+        (e as Error).message.includes("Invalid topology preset"),
+        true,
+      );
     }
     assertEquals(threw, true);
   } finally {
@@ -217,9 +236,16 @@ Deno.test("renderComposeYaml: sidecars rendered as separate services", () => {
     sidecars: {
       "local-plc-db": {
         image: "postgres:16-alpine",
-        env: { POSTGRES_USER: "plc", POSTGRES_PASSWORD: "plc", POSTGRES_DB: "plc" },
+        env: {
+          POSTGRES_USER: "plc",
+          POSTGRES_PASSWORD: "plc",
+          POSTGRES_DB: "plc",
+        },
         volumes: ["ref_plc_pg_data:/var/lib/postgresql/data"],
-        healthCheck: { path: null, customTest: ["CMD-SHELL", "pg_isready -U plc"] },
+        healthCheck: {
+          path: null,
+          customTest: ["CMD-SHELL", "pg_isready -U plc"],
+        },
       },
     },
   };
@@ -412,7 +438,10 @@ Deno.test("renderComposeYaml: source build renders build.context and dockerfile"
   });
 
   assertEquals(yaml.includes("build:"), true);
-  assertEquals(yaml.includes("context: /tmp/topology-test/sources/test-pds/packages/pds"), true);
+  assertEquals(
+    yaml.includes("context: /tmp/topology-test/sources/test-pds/packages/pds"),
+    true,
+  );
   assertEquals(yaml.includes("dockerfile: Dockerfile.prod"), true);
   assertEquals(yaml.includes("args:"), true);
   assertEquals(yaml.includes("VERSION:"), true);
@@ -459,7 +488,10 @@ Deno.test("compileTopology: happyview source build with buildArgs", async () => 
 
     const hvSource = result.sources.find((s) => s.name === "happyview");
     assertEquals(hvSource !== undefined, true);
-    assertEquals(hvSource!.repo, "https://github.com/gamesgamesgamesgamesgames/happyview.git");
+    assertEquals(
+      hvSource!.repo,
+      "https://github.com/gamesgamesgamesgamesgames/happyview.git",
+    );
     assertEquals(hvSource!.ref, "v2.7.0");
     assertEquals(hvSource!.buildArgs["HAPPYVIEW_VERSION"], "2.7.0");
 
@@ -530,6 +562,62 @@ Deno.test("createTopologyManifest: public and internal URLs use host and contain
   assertEquals(manifest.serviceUrls.appview, "http://localhost:3200");
   assertEquals(manifest.internalUrls.appview, "http://local-appview:3000");
   assertEquals(manifest.diagnostics[0].url, "http://localhost:3200/");
+});
+
+Deno.test("compileTopology: object-form ports and volumes survive preset normalization", async () => {
+  const presetDir = await Deno.makeTempDir({ prefix: "topology-preset-" });
+  const runDir = await Deno.makeTempDir({ prefix: "topology-test-" });
+  try {
+    await Deno.writeTextFile(
+      `${presetDir}/object-form.json`,
+      JSON.stringify({
+        name: "object-form",
+        description: "Object port and volume forms",
+        roles: {
+          appview: {
+            name: "object-appview",
+            image: "example/appview:latest",
+            ports: [{ host: "3300", container: "3000" }],
+            volumes: [
+              { kind: "named", source: "object_appview_data", target: "/data" },
+              {
+                kind: "bind",
+                source: "./fixtures",
+                target: "/fixtures",
+                mode: "ro",
+              },
+            ],
+            healthCheck: { path: "/health" },
+            capabilities: ["getTimeline"],
+          },
+        },
+      }),
+    );
+
+    const result = await compileTopology({
+      preset: "object-form",
+      presetDir,
+      runDir,
+      repoRoot: "/repo",
+      composeProject: "test",
+    });
+
+    const yaml = await Deno.readTextFile(result.composeFile);
+    assertEquals(yaml.includes('- "3300:3000"'), true);
+    assertEquals(yaml.includes("object_appview_data:/data"), true);
+    assertEquals(yaml.includes("/repo/fixtures:/fixtures:ro"), true);
+    assertEquals(yaml.includes("object_appview_data:"), true);
+    assertEquals(result.serviceUrls.appview, "http://localhost:3300");
+    assertEquals(result.internalUrls.appview, "http://local-appview:3000");
+    assertEquals(result.manifest.serviceUrls.appview, "http://localhost:3300");
+    assertEquals(
+      result.manifest.internalUrls.appview,
+      "http://local-appview:3000",
+    );
+  } finally {
+    await Deno.remove(presetDir, { recursive: true });
+    await Deno.remove(runDir, { recursive: true });
+  }
 });
 
 Deno.test("selectScenarios: role-scoped requirements filter default runs", () => {
@@ -636,15 +724,23 @@ Deno.test("selectScenarios: PDS2 scenarios are filtered by default and auto-enab
     clientFlow: "none",
     pds2: false,
   }, topology);
-  assertEquals(defaultSelected.map((scenario: ScenarioInfo) => scenario.id), []);
+  assertEquals(
+    defaultSelected.map((scenario: ScenarioInfo) => scenario.id),
+    [],
+  );
 
   const explicitSelected = selectScenarios(scenarios, {
     scenarioIds: ["35"],
     clientFlow: "none",
     pds2: false,
   }, topology);
-  assertEquals(explicitSelected.map((scenario: ScenarioInfo) => scenario.id), ["35"]);
-  assertEquals(explicitSelected.some((scenario: ScenarioInfo) => scenario.needsPds2), true);
+  assertEquals(explicitSelected.map((scenario: ScenarioInfo) => scenario.id), [
+    "35",
+  ]);
+  assertEquals(
+    explicitSelected.some((scenario: ScenarioInfo) => scenario.needsPds2),
+    true,
+  );
 });
 
 Deno.test("selectScenarios: explicit scenario IDs bypass missing requirements", () => {
@@ -782,10 +878,19 @@ Deno.test("compileTopology: manifest v2 separates host and docker runner env", a
     });
 
     assertEquals(result.manifest.version, 2);
-    assertEquals(result.manifest.env?.hostRunner.BACKFILL_URL, "http://localhost:3000");
-    assertEquals(result.manifest.env?.dockerRunner.BACKFILL_URL, "http://local-backfill:3000");
+    assertEquals(
+      result.manifest.env?.hostRunner.BACKFILL_URL,
+      "http://localhost:3000",
+    );
+    assertEquals(
+      result.manifest.env?.dockerRunner.BACKFILL_URL,
+      "http://local-backfill:3000",
+    );
     assertEquals(result.manifest.urls?.host.backfill, "http://localhost:3000");
-    assertEquals(result.manifest.urls?.docker.backfill, "http://local-backfill:3000");
+    assertEquals(
+      result.manifest.urls?.docker.backfill,
+      "http://local-backfill:3000",
+    );
   } finally {
     await Deno.remove(runDir, { recursive: true });
   }

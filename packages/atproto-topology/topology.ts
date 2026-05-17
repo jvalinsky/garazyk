@@ -8,7 +8,12 @@
  */
 
 import { join, resolve } from "@std/path";
-import { normalizeTopologyPreset, parseRawTopologyPresetV1 } from "./topology_schema.ts";
+import {
+  normalizeTopologyPreset,
+  parseRawTopologyPresetV1,
+  renderPortSpec,
+  renderVolumeSpec,
+} from "./topology_schema.ts";
 import { TopologyRegistry } from "./topology_presets.ts";
 
 export { TopologyRegistry };
@@ -60,7 +65,11 @@ export {
 } from "./topology_manifest.ts";
 
 // Re-export constants
-export { ROLE_TO_ENV, ROLE_TO_PORT, ROLE_TO_SERVICE } from "./topology_types.ts";
+export {
+  ROLE_TO_ENV,
+  ROLE_TO_PORT,
+  ROLE_TO_SERVICE,
+} from "./topology_types.ts";
 
 // ---------------------------------------------------------------------------
 // Internal imports
@@ -76,8 +85,11 @@ import {
 } from "./topology_manifest.ts";
 import type {
   InheritedAdapter,
+  NormalizedServiceSpec,
   ServiceAdapter,
   ServiceRole,
+  SidecarAdapter,
+  SidecarSpec,
   Topology,
   TopologyPreset,
   TopologyResolveOptions,
@@ -103,7 +115,8 @@ function readEnv(name: string): string | undefined {
 }
 
 const publicWebUrl = readEnv("WEB_CLIENT_URL") || "http://localhost:2591";
-const internalWebUrl = readEnv("WEB_CLIENT_INTERNAL_URL") || "http://web-client:2590";
+const internalWebUrl = readEnv("WEB_CLIENT_INTERNAL_URL") ||
+  "http://web-client:2590";
 const oauthClientUrl = readEnv("OAUTH_CLIENT_URL");
 
 function health(url: string) {
@@ -134,6 +147,107 @@ function clonePreset(preset: TopologyPreset): TopologyPreset {
   return JSON.parse(JSON.stringify(preset)) as TopologyPreset;
 }
 
+function denormalizeService(service: NormalizedServiceSpec): ServiceAdapter {
+  return {
+    role: service.role as ServiceRole,
+    name: service.name,
+    serviceName: service.serviceName,
+    image: service.image,
+    source: service.source,
+    buildContext: service.buildContext,
+    dockerfile: service.dockerfile,
+    entrypoint: service.entrypoint,
+    command: service.command,
+    env: emptyObjectToUndefined(service.env),
+    ports: service.ports.map(renderPortSpec),
+    volumes: service.volumes.map(renderVolumeSpec),
+    healthCheck: denormalizeHealth(service.health),
+    capabilities: service.capabilities,
+    dependsOn: emptyArrayToUndefined(service.dependsOn),
+    sidecars: denormalizeSidecars(service.sidecars),
+    diagnostics: denormalizeDiagnostics(service.diagnostics),
+    scenarioEnv: emptyObjectToUndefined(service.scenarioEnv),
+  };
+}
+
+function denormalizeSidecars(
+  sidecars: Record<string, SidecarSpec>,
+): Record<string, SidecarAdapter> | undefined {
+  const entries = Object.entries(sidecars);
+  if (entries.length === 0) return undefined;
+  return Object.fromEntries(
+    entries.map(([name, sidecar]) => [
+      name,
+      {
+        image: sidecar.image,
+        source: sidecar.source,
+        command: sidecar.command,
+        env: emptyObjectToUndefined(sidecar.env),
+        ports: sidecar.ports.map(renderPortSpec),
+        volumes: sidecar.volumes.map(renderVolumeSpec),
+        configFiles: sidecar.configFiles,
+        healthCheck: denormalizeHealth(sidecar.health),
+        dependsOn: emptyArrayToUndefined(sidecar.dependsOn),
+        diagnostics: denormalizeDiagnostics(sidecar.diagnostics),
+      },
+    ]),
+  );
+}
+
+function denormalizeHealth(
+  health: NormalizedServiceSpec["health"],
+): ServiceAdapter["healthCheck"] {
+  if (!health) return { path: null };
+  if (health.type === "command") {
+    return { path: null, customTest: health.customTest };
+  }
+  if (health.type === "http") {
+    return { path: health.path || null, headers: health.headers };
+  }
+  return { path: null };
+}
+
+function denormalizeDiagnostics(
+  diagnostics: NormalizedServiceSpec["diagnostics"],
+): ServiceAdapter["diagnostics"] {
+  if (diagnostics.length === 0) return undefined;
+  return diagnostics
+    .filter((probe) => probe.type === "http")
+    .map((probe) => ({
+      name: probe.name,
+      url: probe.url,
+      headers: probe.headers,
+    }));
+}
+
+function denormalizePreset(
+  rawPreset: ReturnType<typeof normalizeTopologyPreset>,
+): TopologyPreset {
+  const roles: TopologyPreset["roles"] = {};
+  for (const [role, value] of Object.entries(rawPreset.roles)) {
+    roles[role as ServiceRole] = "inherit" in value
+      ? value
+      : denormalizeService(value);
+  }
+  return {
+    name: rawPreset.name,
+    description: rawPreset.description,
+    roles,
+    webClient: rawPreset.webClient as WebClientTopology | undefined,
+    networkAliases: rawPreset.networkAliases,
+  };
+}
+
+function emptyObjectToUndefined(
+  value: Record<string, string>,
+): Record<string, string> | undefined {
+  return Object.keys(value).length > 0 ? value : undefined;
+}
+
+function emptyArrayToUndefined<T>(value: T[]): T[] | undefined {
+  return value.length > 0 ? value : undefined;
+}
+
 /**
  * Load a topology preset from the registry or an optional filesystem directory.
  * @param name - Preset name
@@ -141,13 +255,15 @@ function clonePreset(preset: TopologyPreset): TopologyPreset {
  * @returns The loaded topology preset
  * @throws {Error} If the preset is not found or is invalid.
  */
-export function loadTopologyPreset(name: string, presetDir?: string): TopologyPreset {
+export function loadTopologyPreset(
+  name: string,
+  presetDir?: string,
+): TopologyPreset {
   // 1. Check registry for embedded presets
   const embedded = TopologyRegistry.getPreset(name);
   if (embedded) {
     const rawPreset = parseRawTopologyPresetV1(embedded, `registry:${name}`);
-    normalizeTopologyPreset(rawPreset);
-    const preset = rawPreset as unknown as TopologyPreset;
+    const preset = denormalizePreset(normalizeTopologyPreset(rawPreset));
     for (const [role, adapter] of Object.entries(preset.roles)) {
       preset.roles[role as ServiceRole] = normalizeAdapter(adapter);
     }
@@ -156,7 +272,9 @@ export function loadTopologyPreset(name: string, presetDir?: string): TopologyPr
 
   // 2. Check filesystem (legacy/override)
   if (!presetDir) {
-    throw new Error(`Unknown topology preset: ${name}. No presetDir provided for filesystem lookup.`);
+    throw new Error(
+      `Unknown topology preset: ${name}. No presetDir provided for filesystem lookup.`,
+    );
   }
 
   if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
@@ -169,7 +287,9 @@ export function loadTopologyPreset(name: string, presetDir?: string): TopologyPr
 
   const resolvedPath = resolve(presetPath);
   const resolvedDir = resolve(presetDir);
-  if (!resolvedPath.startsWith(resolvedDir + "/") && resolvedPath !== resolvedDir) {
+  if (
+    !resolvedPath.startsWith(resolvedDir + "/") && resolvedPath !== resolvedDir
+  ) {
     throw new Error(
       `Preset path escapes topologies directory: ${presetPath} (resolved: ${resolvedPath})`,
     );
@@ -188,16 +308,19 @@ export function loadTopologyPreset(name: string, presetDir?: string): TopologyPr
   try {
     rawJson = JSON.parse(rawText);
   } catch (exc) {
-    throw new Error(`Invalid topology preset ${presetPath}: malformed JSON (${exc})`);
+    throw new Error(
+      `Invalid topology preset ${presetPath}: malformed JSON (${exc})`,
+    );
   }
 
   const rawPreset = parseRawTopologyPresetV1(rawJson, presetPath);
-  normalizeTopologyPreset(rawPreset);
-  const preset = rawPreset as unknown as TopologyPreset;
+  const preset = denormalizePreset(normalizeTopologyPreset(rawPreset));
 
   for (const [role, adapter] of Object.entries(preset.roles)) {
     preset.roles[role as ServiceRole] = normalizeAdapter(adapter);
-    if ("inherit" in adapter && typeof (adapter as any).inherit === "string") continue;
+    if ("inherit" in adapter && typeof (adapter as any).inherit === "string") {
+      continue;
+    }
     const concrete = preset.roles[role as ServiceRole] as ServiceAdapter;
     if (!concrete.name || !concrete.healthCheck || !concrete.capabilities) {
       throw new Error(
@@ -226,7 +349,9 @@ function resolveInheritedAdapter(
   const key = `${parentName}:${role}`;
   if (seen.includes(key)) {
     throw new Error(
-      `Topology inheritance cycle for role "${role}": ${[...seen, key].join(" -> ")}`,
+      `Topology inheritance cycle for role "${role}": ${
+        [...seen, key].join(" -> ")
+      }`,
     );
   }
 
@@ -237,14 +362,19 @@ function resolveInheritedAdapter(
       `Inheritance failed: role "${role}" not found in parent preset "${parentName}"`,
     );
   }
-  return resolveInheritedAdapter(role, parentAdapter, [...seen, key], presetDir);
+  return resolveInheritedAdapter(
+    role,
+    parentAdapter,
+    [...seen, key],
+    presetDir,
+  );
 }
 
-/** 
- * Resolve a preset and its inherited role adapters. 
- * @param presetName - Topology preset name. 
- * @param options - Resolution options. 
- * @returns A resolved topology preset. 
+/**
+ * Resolve a preset and its inherited role adapters.
+ * @param presetName - Topology preset name.
+ * @param options - Resolution options.
+ * @returns A resolved topology preset.
  * @throws {Error} If the preset is not found or is invalid.
  */
 export function resolvePreset(
@@ -266,10 +396,15 @@ export function resolvePreset(
   }
 
   if (includePds2 && !resolvedRoles.pds2) {
-    const defaultPreset = loadTopologyPreset("garazyk-default", options.presetDir);
+    const defaultPreset = loadTopologyPreset(
+      "garazyk-default",
+      options.presetDir,
+    );
     const defaultPds2 = defaultPreset.roles.pds2;
     if (defaultPds2) {
-      resolvedRoles.pds2 = resolveInheritedAdapter("pds2", defaultPds2, ["garazyk-default:pds2"], options.presetDir);
+      resolvedRoles.pds2 = resolveInheritedAdapter("pds2", defaultPds2, [
+        "garazyk-default:pds2",
+      ], options.presetDir);
     }
   }
 
@@ -287,11 +422,15 @@ function capabilitiesByRoleToSets(
   capabilitiesByRole: Record<string, string[]>,
 ): Record<string, Set<string>> {
   return Object.fromEntries(
-    Object.entries(capabilitiesByRole).map(([role, caps]) => [role, new Set(caps)]),
+    Object.entries(capabilitiesByRole).map((
+      [role, caps],
+    ) => [role, new Set(caps)]),
   );
 }
 
-function defaultServiceUrls(webClient?: WebClientTopology): Record<string, string> {
+function defaultServiceUrls(
+  webClient?: WebClientTopology,
+): Record<string, string> {
   const urls: Record<string, string> = {
     pds: readEnv("PDS_URL") || "http://localhost:2583",
     pds2: readEnv("PDS2_URL") || "http://localhost:2587",
@@ -302,13 +441,16 @@ function defaultServiceUrls(webClient?: WebClientTopology): Record<string, strin
     video: readEnv("VIDEO_URL") || "http://localhost:2586",
     ui: readEnv("GARAZYK_UI_URL") || "http://localhost:2590",
     backfill: readEnv("BACKFILL_URL") || "http://localhost:2480",
-    oauthClient: oauthClientUrl || webClient?.publicUrl || "http://localhost:8080",
+    oauthClient: oauthClientUrl || webClient?.publicUrl ||
+      "http://localhost:8080",
   };
   if (webClient) urls.webClient = webClient.publicUrl;
   return urls;
 }
 
-function defaultInternalUrls(serviceUrls: Record<string, string>): Record<string, string> {
+function defaultInternalUrls(
+  serviceUrls: Record<string, string>,
+): Record<string, string> {
   return Object.fromEntries(
     Object.entries(serviceUrls).map(([role, url]) => {
       const serviceName = defaultServiceName(role);
@@ -347,7 +489,10 @@ export function resolveTopology(
     if (webClient) serviceUrls.webClient = webClient.publicUrl;
     return {
       preset: topologyName
-        ? resolvePreset(topologyName, { includePds2: options.includePds2, presetDir: options.presetDir })
+        ? resolvePreset(topologyName, {
+          includePds2: options.includePds2,
+          presetDir: options.presetDir,
+        })
         : undefined,
       webClient,
       serviceUrls,
@@ -356,7 +501,9 @@ export function resolveTopology(
         ...(manifest.urls?.docker || manifest.internalUrls),
       },
       serviceNames: manifest.serviceNames,
-      capabilities: new Set(manifest.capabilitiesV2?.all || manifest.capabilities),
+      capabilities: new Set(
+        manifest.capabilitiesV2?.all || manifest.capabilities,
+      ),
       capabilitiesByRole: capabilitiesByRoleToSets(
         manifest.capabilitiesV2?.byRole || manifest.capabilitiesByRole,
       ),
@@ -371,7 +518,10 @@ export function resolveTopology(
   let internalUrls: Record<string, string> = {};
 
   if (topologyName) {
-    preset = resolvePreset(topologyName, { includePds2: options.includePds2, presetDir: options.presetDir });
+    preset = resolvePreset(topologyName, {
+      includePds2: options.includePds2,
+      presetDir: options.presetDir,
+    });
     for (const [role, adapter] of Object.entries(preset.roles)) {
       if ("inherit" in adapter) continue;
       capabilitiesByRole[role] = new Set(adapter.capabilities);
