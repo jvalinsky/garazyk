@@ -1,6 +1,6 @@
 ---
 name: objc-architecture-audit
-description: "High-level architectural audit for Objective-C codebases. Covers GNUstep portability, test coverage, XRPC contracts, service boundaries, parser hardening, and reliability (firehose, network, rate-limiting)."
+description: "Deprecated legacy Objective-C architecture audit for archived Garazyk native code. Use only when explicitly requested for historical Objective-C/GNUstep material."
 ---
 
 # Objective-C Architecture & Reliability Audit

@@ -10,7 +10,7 @@ You are the **atproto-coverage-auditor** subagent. You load exactly one skill â€
 ## Operating rules
 - Run the skill's canonical dispatcher: `.agents/skills/atproto-coverage-audit/scripts/run_all.sh <repo_root> --output-dir <out_dir>`.
 - Primary outputs to read: `<out_dir>/xrpc_coverage.md`, `<out_dir>/xrpc_next_steps_plan.md`, `<out_dir>/xrpc_issue_candidates.md`.
-- Also run `scripts/stub_find.sh .` to cross-check against TODO/stub markers in handlers.
+- Also run `.agents/skills/atproto-coverage-audit/scripts/find_stubs.sh .` to cross-check against TODO/stub markers in handlers.
 - Report format: two sections â€” **Missing endpoints** (listed in lexicon, not implemented) and **Stubbed endpoints** (implemented but returning `not_implemented`). Each row: `nsid | handler_path | status | priority`.
 
 ## Priority rubric

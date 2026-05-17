@@ -1,6 +1,6 @@
 ---
 name: debugging-objc-crashes
-description: Systematic macOS Objective-C crash diagnosis using crash logs, lldb, signal patterns, memory debugging, and common ARC/concurrency crash fixes.
+description: "Deprecated legacy Garazyk Objective-C crash workflow. Use only when explicitly asked to inspect historical macOS Objective-C crash logs or archived native-service code."
 ---
 
 # Debugging Objective-C Crashes on macOS

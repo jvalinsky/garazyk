@@ -30,7 +30,7 @@ import {
   OperationTimer,
   PhaseTimer,
   PrometheusScraper,
-} from "../../lib/deno/instrumentation.ts";
+} from "@garazyk/scenario-runner";
 import { join } from "@std/path";
 
 function now() {

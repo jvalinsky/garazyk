@@ -1,6 +1,6 @@
 ---
 name: gnustep-compat
-description: GNUstep/Linux cross-platform compatibility patterns, platform shims, build system, and Docker workflow for the Garazyk PDS codebase.
+description: "Deprecated legacy GNUstep compatibility notes for the former Garazyk Objective-C PDS. Use only for archaeology or explicitly scoped historical native-code work."
 ---
 
 # GNUstep/Cross-Platform Compatibility

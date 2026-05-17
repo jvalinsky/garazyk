@@ -17,7 +17,7 @@ import {
   PhaseTimer,
   PrometheusScraper,
   StorageMonitor,
-} from "../../lib/deno/instrumentation.ts";
+} from "@garazyk/scenario-runner";
 import {
   APPVIEW_ADMIN_SECRET,
   Character,

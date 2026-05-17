@@ -30,7 +30,7 @@ import {
   PhaseTimer,
   PrometheusScraper,
   StorageMonitor,
-} from "../../lib/deno/instrumentation.ts";
+} from "@garazyk/scenario-runner";
 
 function now() {
   return new Date().toISOString();
@@ -107,6 +107,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const prometheus = new PrometheusScraper({ pds: pdsMetricsUrl });
   const storageMonitor = new StorageMonitor({ pds: [pdsDbPath, pdsWalPath] });
+  const phaseTimer = new PhaseTimer();
 
   const globalTimer = new OperationTimer();
   let workloadCompleted = false;

@@ -21,7 +21,7 @@ import { bold, brightBlue } from "@std/fmt/colors";
 import { fromFileUrl, join } from "@std/path";
 import { startLocalNetwork, stopLocalNetwork } from "@garazyk/docker-client";
 import { collectDiagnostics, createRunContext } from "@garazyk/scenario-runner";
-import { resolveTopology, WEB_CLIENT_PRESETS } from "@garazyk/atproto-topology";
+import { resolveTopology, TopologyRegistry } from "@garazyk/atproto-topology";
 import type { BrowserFlow, Topology } from "@garazyk/atproto-topology";
 import { formatRequirement } from "@garazyk/scenario-runner";
 import type { ScenarioInfo } from "@garazyk/scenario-runner";
@@ -53,7 +53,7 @@ Options:
   --diagnostics-dir DIR   Write diagnostics to DIR
   --reports-dir DIR       Write scenario JSON reports to DIR
   --collect-diagnostics   Capture diagnostics for the current run and exit
-  --web-client PRESET     Add a web-client service (${Object.keys(WEB_CLIENT_PRESETS).join("|")})
+  --web-client PRESET     Add a web-client service (${TopologyRegistry.listWebClients().join("|")})
   --client-flow FLOW      Run browser flow scenarios: smoke, login, deep (default: none)
   --allow-hybrid-network  Permit browser clients to call public ATProto hosts
   --topology PRESET       Use a topology preset from scripts/scenarios/topologies/
@@ -169,9 +169,9 @@ function parseRunnerArgs(argv: string[]): RunnerArgs {
         }
         if (arg === "--web-client") {
           args.webClient = value;
-          if (!WEB_CLIENT_PRESETS[value]) {
+          if (!TopologyRegistry.getWebClient(value)) {
             console.error(`Unknown web client preset: ${value}`);
-            console.error(`Available: ${Object.keys(WEB_CLIENT_PRESETS).join(", ")}`);
+            console.error(`Available: ${TopologyRegistry.listWebClients().join(", ")}`);
             Deno.exit(2);
           }
         }

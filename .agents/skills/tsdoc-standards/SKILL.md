@@ -1,3 +1,8 @@
+---
+name: tsdoc-standards
+description: "TSDoc standards for Garazyk TypeScript packages and scripts. Use when writing or reviewing public TypeScript documentation, exported APIs, or documentation coverage."
+---
+
 # TSDoc House Standards
 
 This project uses [TSDoc](https://tsdoc.org/) for code documentation. All public-facing TypeScript code must be documented according to these rules.

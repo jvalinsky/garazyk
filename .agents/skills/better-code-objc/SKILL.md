@@ -1,6 +1,6 @@
 ---
 name: better-code-objc
-description: "Modern Objective-C implementation standards (2024-2026): ARC invariants, Static Safety, and Concurrency-safe Primitives."
+description: "Deprecated legacy Garazyk Objective-C standards. Use only when explicitly asked to inspect historical Objective-C code or archived native-service material; do not use for current Deno/TypeScript package work."
 ---
 
 # Better Code: Objective-C Excellence

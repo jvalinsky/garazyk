@@ -12,12 +12,13 @@ Use this skill to find and rank refactor opportunities without immediately chang
 1. Create a dated scratchpad directory for the investigation.
 2. Record a deciduous goal with the exact user prompt and attach the methodology scratchpad.
 3. Write metaplans before deep reading:
-   - core implementation,
-   - tests,
-   - UI/frontend,
+   - Deno packages,
+   - scenario runner and scenarios,
+   - topology and Docker orchestration,
+   - generated ATProto clients and lexicons,
+   - dashboard/frontend,
    - scripts/tooling,
-   - docs/reports,
-   - any embedded runtimes or side projects.
+   - docs/reports.
 4. Inventory every major surface before ranking.
 5. Score candidates consistently:
    - boundary risk,
@@ -36,16 +37,21 @@ Prefer repo truth over guesses:
 ```bash
 rg --files
 rg -n "TODO|FIXME|not implemented|not_implemented|placeholder|stub|HACK|temporary"
-rg -n "componentsSeparatedByString:|substringFromIndex:|sqlite3_exec|sqlite3_prepare|dispatch_sync|@synchronized|innerHTML|onclick=|rm -rf|Authorization|Bearer"
+rg -n "\\bany\\b|as unknown|as any|innerHTML|onclick=|rm -rf|Authorization|Bearer|Deno\\.run|new Command|fetch\\("
 ```
 
-Use project-specific audit skills when available:
+Use project-specific checks when available:
 
 ```bash
-./.agents/skills/objc-architecture-audit/scripts/run_architecture_audit.sh . /tmp/refactor-architecture-audit
-./.agents/skills/objc-concurrency-audit/scripts/run_concurrency_audit.sh . /tmp/refactor-concurrency-audit
-./.agents/skills/objc-security-audit/scripts/run_all_security_scans.sh . /tmp/refactor-security-audit
+deno check packages/*/mod.ts scripts/*.ts
+deno test -A packages/
+deno lint packages/ scripts/
+scripts/dev/check_module_boundaries.sh
 ```
+
+For endpoint or lexicon work, also use `atproto-coverage-audit`.
+For scenario coverage, use `atproto-scenario-testing` and `adding-scenario`.
+For dashboard work, use `web-ui-audit`.
 
 ## Output Template
 

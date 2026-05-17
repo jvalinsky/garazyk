@@ -17,7 +17,7 @@ import {
   PhaseTimer,
   PrometheusScraper,
   StorageMonitor,
-} from "../../lib/deno/instrumentation.ts";
+} from "@garazyk/scenario-runner";
 import { FirehoseClient } from "@garazyk/atproto-client";
 import { APPVIEW_ADMIN_SECRET, getCharacter, PDS1, SERVICE_URLS } from "@garazyk/scenario-runner";
 import { ScenarioResult } from "@garazyk/scenario-runner";

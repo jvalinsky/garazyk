@@ -1,6 +1,6 @@
 ---
 name: objc-concurrency-audit
-description: "Audit Objective-C/C++ for concurrency bugs, deadlocks, re-entrancy issues, and queue contract violations. Use when reviewing thread-safety, intermittent crashes, or lock discipline."
+description: "Deprecated legacy Objective-C/C++ concurrency audit. Use only when explicitly requested for historical native code; do not use for current Deno/TypeScript work."
 ---
 
 # Objective-C Concurrency Audit

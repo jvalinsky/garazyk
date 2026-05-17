@@ -21,7 +21,7 @@ import {
   MockTwilioServer,
   startMockTwilioServer,
   stopMockTwilioServer,
-} from "../../lib/deno/mock_twilio.ts";
+} from "@garazyk/scenario-runner";
 import { timedCall } from "@garazyk/scenario-runner";
 
 /**

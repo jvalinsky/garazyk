@@ -1,6 +1,6 @@
 ---
 name: rewriting-code-comments
-description: Use when rewriting code comments and documentation to eliminate LLM-isms, marketing speech, emojis, and conversational patterns while maintaining Doxygen-compatible HeaderDoc conventions for Objective-C.
+description: "Deprecated legacy Objective-C documentation cleanup workflow. Use only when explicitly asked to edit historical Objective-C comments; use tsdoc-standards for current TypeScript APIs."
 ---
 
 # Rewriting Code Comments and Documentation

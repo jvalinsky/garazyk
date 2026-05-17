@@ -1,6 +1,6 @@
 ---
 name: objc-security-audit
-description: "Comprehensive Objective-C security review covering SQL injection, cryptographic operations, hardcoded secrets, and log redaction. Use when performing deep security audits, hardening authentication/data layers, or reviewing code for sensitive data exposure."
+description: "Deprecated legacy Objective-C security audit for archived native code. Use only when explicitly requested for historical Objective-C material; use current TypeScript/security review patterns for Deno code."
 ---
 
 # Objective-C Security Audit

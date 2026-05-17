@@ -1,0 +1,40 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.2.x
+
+      - name: Verify
+        run: |
+          deno task check
+          deno task test
+
+      - name: Publish Packages
+        run: |
+          for pkg in docker-client atproto-client atproto-topology scenario-runner; do
+            echo "--- Publishing @garazyk/$pkg ---"
+            cd packages/$pkg
+            if [ "$pkg" = "atproto-topology" ]; then
+              deno publish --allow-slow-types
+            else
+              deno publish
+            fi
+            cd ../..
+          done
