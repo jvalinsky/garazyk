@@ -6,9 +6,10 @@ import type {
   LexiconQueryIds,
   ProcedureInput,
   ProcedureOutput,
-  QueryParams,
   QueryOutput,
+  QueryParams,
 } from "./lexicons.ts";
+import { LEXICON_METHOD_TYPES } from "./lexicons.ts";
 import {
   AccountsClient,
   AdminClient,
@@ -117,7 +118,7 @@ export class XrpcClient {
   async query<K extends LexiconQueryIds>(
     method: K,
     params?: QueryParams<K>,
-    token?: string
+    token?: string,
   ): Promise<QueryOutput<K>> {
     return await this.raw.query(method, params, token);
   }
@@ -133,7 +134,7 @@ export class XrpcClient {
   async procedure<K extends LexiconProcedureIds>(
     method: K,
     input?: ProcedureInput<K>,
-    token?: string
+    token?: string,
   ): Promise<ProcedureOutput<K>> {
     return await this.raw.procedure(method, input, token);
   }
@@ -185,8 +186,8 @@ export class XrpcClient {
     }
   }
 
-  /** 
-   * Poll health until the service responds or the timeout is reached. 
+  /**
+   * Poll health until the service responds or the timeout is reached.
    * @throws {Error} If the timeout is reached without a healthy response.
    */
   async waitForHealthy(timeout = 30): Promise<void> {
@@ -219,6 +220,13 @@ function resolveToken(opts: any, session: AgentSession): string | undefined {
   return session.accessJwt;
 }
 
+function isQueryMethod(method: string): boolean {
+  const methodType =
+    LEXICON_METHOD_TYPES[method as keyof typeof LEXICON_METHOD_TYPES];
+  if (methodType) return methodType === "query";
+  return /^(get|list|resolve|describe)/i.test(method.split(".").pop() || "");
+}
+
 /**
  * A dynamic proxy for XRPC method calls on an authenticated agent.
  *
@@ -236,12 +244,30 @@ export interface AgentProxy extends GeneratedClient {
     handle: string;
     email: string;
     password: string;
-  }): Promise<{ data: { accessJwt: string; refreshJwt: string; did: string; handle: string } }>;
+  }): Promise<
+    {
+      data: {
+        accessJwt: string;
+        refreshJwt: string;
+        did: string;
+        handle: string;
+      };
+    }
+  >;
   /** Log in with existing credentials and store the session. */
   login(params: {
     identifier: string;
     password: string;
-  }): Promise<{ data: { accessJwt: string; refreshJwt: string; did: string; handle: string } }>;
+  }): Promise<
+    {
+      data: {
+        accessJwt: string;
+        refreshJwt: string;
+        did: string;
+        handle: string;
+      };
+    }
+  >;
   /** Access nested XRPC methods. */
   [namespace: string]: any;
 }
@@ -252,7 +278,11 @@ export interface AgentProxy extends GeneratedClient {
  * @param session - Stored agent session credentials
  * @returns A proxy that dispatches authenticated XRPC calls
  */
-function createAgentProxy(path: string[], client: XrpcClient, session: AgentSession): AgentProxy {
+function createAgentProxy(
+  path: string[],
+  client: XrpcClient,
+  session: AgentSession,
+): AgentProxy {
   return new Proxy(function () {} as unknown as AgentProxy, {
     get(_target, prop: string) {
       if (typeof prop !== "string") return undefined;
@@ -303,9 +333,7 @@ function createAgentProxy(path: string[], client: XrpcClient, session: AgentSess
       const [params, opts] = args;
       const token = resolveToken(opts, session);
 
-      const isQuery = /^(get|list|resolve|describe)/i.test(
-        method.split(".").pop() || "",
-      );
+      const isQuery = isQueryMethod(method);
 
       const data = isQuery
         ? await client.rawTransport.get(method, params, token)
@@ -316,18 +344,23 @@ function createAgentProxy(path: string[], client: XrpcClient, session: AgentSess
 }
 
 /** Create a nested proxy that dispatches to the transport layer. */
-function createGeneratedClient(transport: TransportLayer, path: string[] = [], token?: string): GeneratedClient {
+function createGeneratedClient(
+  transport: TransportLayer,
+  path: string[] = [],
+  token?: string,
+): GeneratedClient {
   return new Proxy(function () {} as any, {
     get(_target, prop: string) {
-      if (typeof prop !== "string" || prop === "then" || prop === "toJSON") return undefined;
+      if (typeof prop !== "string" || prop === "then" || prop === "toJSON") {
+        return undefined;
+      }
       return createGeneratedClient(transport, [...path, prop], token);
     },
     async apply(_target, _thisArg, args: any[]) {
       const method = path.join(".");
       const [params, callToken] = args;
       const finalToken = callToken || token;
-      // Heuristic for query vs procedure based on method name prefix
-      const isQuery = /^(get|list|resolve|describe)/i.test(path[path.length - 1] || "");
+      const isQuery = isQueryMethod(method);
       if (isQuery) {
         return await transport.get(method, params, finalToken);
       } else {

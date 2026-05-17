@@ -1,5 +1,5 @@
 import { expandGlob } from "https://deno.land/std@0.224.0/fs/expand_glob.ts";
-import { join, dirname } from "https://deno.land/std@0.224.0/path/mod.ts";
+import { dirname, join } from "https://deno.land/std@0.224.0/path/mod.ts";
 
 const LEXICONS_DIR = join(Deno.cwd(), "../../lexicons");
 const OUT_FILE = join(Deno.cwd(), "lexicons.ts");
@@ -44,11 +44,16 @@ export interface LexiconProcedure<Input = any, Output = any> {
 export interface Lexicons {
 `;
 
-  const validDocs = docs.filter(doc => doc.defs["main"] && (doc.defs["main"].type === "query" || doc.defs["main"].type === "procedure" || doc.defs["main"].type === "record"));
+  const validDocs = docs.filter((doc) =>
+    doc.defs["main"] &&
+    (doc.defs["main"].type === "query" ||
+      doc.defs["main"].type === "procedure" ||
+      doc.defs["main"].type === "record")
+  );
 
   for (const doc of validDocs) {
     const mainDef = doc.defs["main"];
-    
+
     if (mainDef.type === "query" || mainDef.type === "procedure") {
       out += `  "${doc.id}": {\n`;
       if (mainDef.type === "query") {
@@ -56,8 +61,12 @@ export interface Lexicons {
         // parameters
         if (mainDef.parameters && mainDef.parameters.properties) {
           out += `    params: {\n`;
-          for (const [key, prop] of Object.entries(mainDef.parameters.properties)) {
-            const required = mainDef.parameters.required?.includes(key) ? "" : "?";
+          for (
+            const [key, prop] of Object.entries(mainDef.parameters.properties)
+          ) {
+            const required = mainDef.parameters.required?.includes(key)
+              ? ""
+              : "?";
             out += `      "${key}"${required}: ${mapType(prop as any)};\n`;
           }
           out += `    };\n`;
@@ -81,7 +90,7 @@ export interface Lexicons {
       } else {
         out += `    output: never;\n`;
       }
-      
+
       out += `  };\n`;
     } else if (mainDef.type === "record") {
       out += `  "${doc.id}": {\n`;
@@ -92,6 +101,15 @@ export interface Lexicons {
   }
 
   out += "}\n\n";
+
+  out += "export const LEXICON_METHOD_TYPES = {\n";
+  for (const doc of validDocs) {
+    const mainDef = doc.defs["main"];
+    if (mainDef.type === "query" || mainDef.type === "procedure") {
+      out += `  "${doc.id}": "${mainDef.type}",\n`;
+    }
+  }
+  out += "} as const;\n\n";
 
   // Create client escape hatch types
   out += `
@@ -111,41 +129,43 @@ export interface GeneratedClient {
   // Build the tree
   const tree: any = {};
   for (const doc of validDocs) {
-      if (doc.defs["main"].type === "record") continue;
-      const parts = doc.id.split(".");
-      let current = tree;
-      for (let i = 0; i < parts.length; i++) {
-          const part = parts[i];
-          if (i === parts.length - 1) {
-              current[part] = doc;
-          } else {
-              current[part] = current[part] || {};
-              current = current[part];
-          }
+    if (doc.defs["main"].type === "record") continue;
+    const parts = doc.id.split(".");
+    let current = tree;
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      if (i === parts.length - 1) {
+        current[part] = doc;
+      } else {
+        current[part] = current[part] || {};
+        current = current[part];
       }
+    }
   }
 
   function generateInterface(node: any, indent: string): string {
-      let result = "";
-      const entries = Object.entries(node).sort(([a], [b]) => a.localeCompare(b));
-      for (const [key, value] of entries) {
-          if (value.id) {
-              // It's a leaf (method)
-              const doc = value as LexiconDoc;
-              const isQuery = doc.defs["main"].type === "query";
-              if (isQuery) {
-                  result += `${indent}"${key}"(params?: QueryParams<"${doc.id}">, token?: string): Promise<QueryOutput<"${doc.id}">>;\n`;
-              } else {
-                  result += `${indent}"${key}"(input?: ProcedureInput<"${doc.id}">, token?: string): Promise<ProcedureOutput<"${doc.id}">>;\n`;
-              }
-          } else {
-              // It's a namespace
-              result += `${indent}"${key}": {\n`;
-              result += generateInterface(value, indent + "  ");
-              result += `${indent}};\n`;
-          }
+    let result = "";
+    const entries = Object.entries(node).sort(([a], [b]) => a.localeCompare(b));
+    for (const [key, value] of entries) {
+      if (value.id) {
+        // It's a leaf (method)
+        const doc = value as LexiconDoc;
+        const isQuery = doc.defs["main"].type === "query";
+        if (isQuery) {
+          result +=
+            `${indent}"${key}"(params?: QueryParams<"${doc.id}">, token?: string): Promise<QueryOutput<"${doc.id}">>;\n`;
+        } else {
+          result +=
+            `${indent}"${key}"(input?: ProcedureInput<"${doc.id}">, token?: string): Promise<ProcedureOutput<"${doc.id}">>;\n`;
+        }
+      } else {
+        // It's a namespace
+        result += `${indent}"${key}": {\n`;
+        result += generateInterface(value, indent + "  ");
+        result += `${indent}};\n`;
       }
-      return result;
+    }
+    return result;
   }
 
   out += generateInterface(tree, "  ");
@@ -160,7 +180,9 @@ function mapType(prop: any): string {
   if (prop.type === "string") return "string";
   if (prop.type === "integer" || prop.type === "number") return "number";
   if (prop.type === "boolean") return "boolean";
-  if (prop.type === "array") return `Array<${mapType(prop.items || {type: "unknown"})}>`;
+  if (prop.type === "array") {
+    return `Array<${mapType(prop.items || { type: "unknown" })}>`;
+  }
   if (prop.type === "object") return "Record<string, any>";
   if (prop.type === "blob") return "any /* blob */";
   if (prop.type === "ref") return "any /* ref */";
