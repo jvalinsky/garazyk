@@ -179,6 +179,7 @@ export function initE2eTracing(serviceName: string): boolean {
  * @param fn - Async function to trace
  * @param attributes - Optional span attributes
  * @returns The return value of fn
+ * @typeParam T - The async function result type.
  */
 export async function withSpan<T>(
   name: string,
@@ -213,7 +214,10 @@ export async function withSpan<T>(
  *
  * No-op when OTel is not enabled.
  */
-export async function addSpanAttribute(key: string, value: string | number | boolean): Promise<void> {
+export async function addSpanAttribute(
+  key: string,
+  value: string | number | boolean,
+): Promise<void> {
   if (!isOtelEnabled()) return;
   try {
     const api = await import("npm:@opentelemetry/api@1");
@@ -231,7 +235,10 @@ export async function addSpanAttribute(key: string, value: string | number | boo
  *
  * No-op when OTel is not enabled.
  */
-export async function addSpanEvent(name: string, attributes?: Record<string, string | number | boolean>): Promise<void> {
+export async function addSpanEvent(
+  name: string,
+  attributes?: Record<string, string | number | boolean>,
+): Promise<void> {
   if (!isOtelEnabled()) return;
   try {
     const api = await import("npm:@opentelemetry/api@1");
@@ -290,6 +297,7 @@ export function getTracingConfig(): TracingConfig | null {
 // Metrics API
 // ---------------------------------------------------------------------------
 
+/** Key-value attributes attached to metric observations. */
 export interface MetricAttributes {
   [key: string]: string | number | boolean;
 }

@@ -2,15 +2,15 @@
  * Unit tests for ScenarioResult, timedCall, timedCallChecked, and unwrapOutcome.
  */
 
-import { assertEquals, assertRejects, assertInstanceOf } from "jsr:@std/assert";
+import { assertEquals, assertInstanceOf, assertRejects } from "jsr:@std/assert";
 import {
   ScenarioResult,
   StepResult,
   StepStatus,
   timedCall,
   timedCallChecked,
-  unwrapOutcome,
   type TimedCallOutcome,
+  unwrapOutcome,
 } from "./runner.ts";
 
 // ---------------------------------------------------------------------------

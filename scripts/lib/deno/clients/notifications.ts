@@ -46,12 +46,12 @@ export class NotificationsClient {
     token: string,
     platform: string,
     appId: string,
-    authToken: string
+    authToken: string,
   ): Promise<any> {
     return await this.transport.post(
       "app.bsky.notification.registerPush",
       { serviceDid, token, platform, appId },
-      authToken
+      authToken,
     );
   }
 
@@ -70,12 +70,12 @@ export class NotificationsClient {
     token: string,
     platform: string,
     appId: string,
-    authToken: string
+    authToken: string,
   ): Promise<any> {
     return await this.transport.post(
       "app.bsky.notification.unregisterPush",
       { serviceDid, token, platform, appId },
-      authToken
+      authToken,
     );
   }
 
@@ -100,7 +100,7 @@ export class NotificationsClient {
     return await this.transport.post(
       "app.bsky.notification.putPreferences",
       { priority: preferences.priority ?? false },
-      token
+      token,
     );
   }
 
@@ -115,7 +115,7 @@ export class NotificationsClient {
     return await this.transport.get(
       "app.bsky.notification.listActivitySubscriptions",
       { limit },
-      token
+      token,
     );
   }
 
@@ -132,12 +132,12 @@ export class NotificationsClient {
     subject: string,
     postEnabled: boolean,
     replyEnabled: boolean,
-    token: string
+    token: string,
   ): Promise<any> {
     return await this.transport.post(
       "app.bsky.notification.putActivitySubscription",
       { subject, postEnabled, replyEnabled },
-      token
+      token,
     );
   }
 }
