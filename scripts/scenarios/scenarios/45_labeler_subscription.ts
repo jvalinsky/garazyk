@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -23,7 +23,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-
 
 function now() {
   return new Date().toISOString();
@@ -38,13 +37,15 @@ export async function run(): Promise<ScenarioResult> {
   const luna = getCharacter("luna");
   const marcus = getCharacter("marcus");
 
-  await timedCall(result, "PDS health check", async () => { await pds.waitForHealthy(30); });
+  await timedCall(result, "PDS health check", async () => {
+    await pds.waitForHealthy(30);
+  });
 
   if (result.failed > 0) return result;
 
   for (const char of [luna, marcus]) {
-    const session = await pds.accounts.createAccount(char.handle, char.email, char.password).catch(() =>
-      pds.accounts.createSession(char.handle, char.password)
+    const session = await pds.accounts.createAccount(char.handle, char.email, char.password).catch(
+      () => pds.accounts.createSession(char.handle, char.password),
     );
     if (session) {
       char.did = session.did;
@@ -59,7 +60,13 @@ export async function run(): Promise<ScenarioResult> {
   };
 
   await timedCall(result, "Marcus creates labeler service", async () => {
-    return await pds.records.createRecord(marcus.did, "app.bsky.labeler.service", labelerRecord, marcus.accessJwt, { rkey: "self" });
+    return await pds.records.createRecord(
+      marcus.did,
+      "app.bsky.labeler.service",
+      labelerRecord,
+      marcus.accessJwt,
+      { rkey: "self" },
+    );
   });
 
   await timedCall(result, "Luna subscribes to Marcus's labeler", async () => {
@@ -68,16 +75,20 @@ export async function run(): Promise<ScenarioResult> {
         $type: "app.bsky.actor.defs#contentLabelPref",
         labelerDid: marcus.did,
         label: "test-label",
-        visibility: "show"
-      }
+        visibility: "show",
+      },
     ];
     return await pds.search.putPreferences(prefs, luna.accessJwt);
   });
 
-  await new Promise(r => setTimeout(r, 2000));
+  await new Promise((r) => setTimeout(r, 2000));
 
   await timedCall(result, "Get labeler services", async () => {
-    return await appview.raw.xrpcGet("app.bsky.labeler.getServices", { dids: [marcus.did] }, luna.accessJwt);
+    return await appview.raw.xrpcGet(
+      "app.bsky.labeler.getServices",
+      { dids: [marcus.did] },
+      luna.accessJwt,
+    );
   });
 
   result.finish();
@@ -85,7 +96,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

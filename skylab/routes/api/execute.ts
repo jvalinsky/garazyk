@@ -15,14 +15,8 @@
 import { Handlers } from "$fresh/server.ts";
 import { SERVICE_URLS } from "../../services/config.ts";
 import { routeMethod, xrpcMethodUsesHttpGet } from "../../services/routing.ts";
-import {
-  dispatchCommand,
-  getBrowserClientCount,
-} from "../../services/control_bridge.ts";
-import {
-  parseProxyResponse,
-  proxyUpstreamHeaders,
-} from "../../services/proxy.ts";
+import { dispatchCommand, getBrowserClientCount } from "../../services/control_bridge.ts";
+import { parseProxyResponse, proxyUpstreamHeaders } from "../../services/proxy.ts";
 
 export const handler: Handlers = {
   async POST(req: Request) {

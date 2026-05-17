@@ -12,7 +12,7 @@
  */
 
 import { FirehoseClient } from "../../lib/deno/firehose.ts";
-import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -24,7 +24,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-
 
 function now() {
   return new Date().toISOString();
@@ -77,7 +76,10 @@ export async function run(): Promise<ScenarioResult> {
     }, 5);
   });
 
-  result.stepPassed("Baseline events collected", `count=${eventsBefore.length}, last_seq=${lastSeq}`);
+  result.stepPassed(
+    "Baseline events collected",
+    `count=${eventsBefore.length}, last_seq=${lastSeq}`,
+  );
 
   // ── Phase 2: Create posts during disconnect ──────────────────────────────
   const postUris: string[] = [];
@@ -110,9 +112,13 @@ export async function run(): Promise<ScenarioResult> {
   const eventsAfter: any[] = [];
 
   await timedCall(result, "Resubscribe with cursor", async () => {
-    await fh2.subscribe((ev) => {
-      eventsAfter.push(ev);
-    }, 8, lastSeq);
+    await fh2.subscribe(
+      (ev) => {
+        eventsAfter.push(ev);
+      },
+      8,
+      lastSeq,
+    );
   });
 
   result.stepPassed("Events after resubscribe", `count=${eventsAfter.length}`);
@@ -122,22 +128,30 @@ export async function run(): Promise<ScenarioResult> {
     // Check that we got events with seq > lastSeq (continuation)
     const continuingEvents = eventsAfter.filter((e: any) => e.seq > lastSeq);
     if (continuingEvents.length > 0) {
-      result.stepPassed("Cursor recovery works",
-        `last_seq_before=${lastSeq}, events_after=${eventsAfter.length}, continuing=${continuingEvents.length}`);
+      result.stepPassed(
+        "Cursor recovery works",
+        `last_seq_before=${lastSeq}, events_after=${eventsAfter.length}, continuing=${continuingEvents.length}`,
+      );
     } else {
-      result.stepFailed("Cursor recovery works",
-        `No events with seq > ${lastSeq} found after resubscribe`);
+      result.stepFailed(
+        "Cursor recovery works",
+        `No events with seq > ${lastSeq} found after resubscribe`,
+      );
     }
 
     // Check that we didn't get events with seq <= lastSeq that we already saw
     // (some overlap is OK for cursor semantics, but massive overlap is suspicious)
     const overlapEvents = eventsAfter.filter((e: any) => e.seq <= lastSeq && e.seq > 0);
     if (overlapEvents.length > eventsAfter.length * 0.5) {
-      result.stepFailed("Cursor overlap check",
-        `Too much overlap: ${overlapEvents.length} of ${eventsAfter.length} events are from before cursor`);
+      result.stepFailed(
+        "Cursor overlap check",
+        `Too much overlap: ${overlapEvents.length} of ${eventsAfter.length} events are from before cursor`,
+      );
     } else {
-      result.stepPassed("Cursor overlap check",
-        `overlap=${overlapEvents.length}, total=${eventsAfter.length}`);
+      result.stepPassed(
+        "Cursor overlap check",
+        `overlap=${overlapEvents.length}, total=${eventsAfter.length}`,
+      );
     }
   } else if (lastSeq === 0) {
     result.stepSkipped("Cursor recovery", "No events with seq > 0 received in baseline");
@@ -150,9 +164,13 @@ export async function run(): Promise<ScenarioResult> {
   const eventsFromZero: any[] = [];
 
   await timedCall(result, "Resubscribe with cursor=0 (full replay)", async () => {
-    await fh3.subscribe((ev) => {
-      eventsFromZero.push(ev);
-    }, 5, 0);
+    await fh3.subscribe(
+      (ev) => {
+        eventsFromZero.push(ev);
+      },
+      5,
+      0,
+    );
   });
 
   if (eventsFromZero.length > 0) {

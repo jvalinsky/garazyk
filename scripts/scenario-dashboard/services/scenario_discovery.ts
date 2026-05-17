@@ -3,7 +3,7 @@
  * Reuses the same filename pattern as run_scenarios.ts: NN_name.ts
  */
 
-import { join, fromFileUrl } from "$std/path/mod.ts";
+import { fromFileUrl, join } from "$std/path/mod.ts";
 import { DiscoveredScenario } from "./types.ts";
 import { categorize } from "../utils.ts";
 import { getParameters, getRequires, needsPds2 } from "../../lib/deno/scenario_metadata.ts";
@@ -22,7 +22,7 @@ export async function discoverScenarios(): Promise<DiscoveredScenario[]> {
         const match = entry.name.match(/^(\d+)_(.+)\.ts$/);
         if (match) {
           const id = match[1];
-          const requires = getRequires(id).map(r => 
+          const requires = getRequires(id).map((r) =>
             r.role ? `${r.role}:${r.capability}` : r.capability
           );
 

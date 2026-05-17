@@ -30,7 +30,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * @returns A promise that resolves to the scenario result
  */
 
-
 const VIDEO_URL = "http://download.samplelib.com/mp4/sample-5s.mp4";
 const VIDEO_CACHE = "/tmp/garazyk-scenario-46-test-video.mp4";
 

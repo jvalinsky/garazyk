@@ -6,10 +6,7 @@
  */
 
 import { Handlers } from "$fresh/server.ts";
-import {
-  getState,
-  updateState,
-} from "../../services/control_bridge.ts";
+import { getState, updateState } from "../../services/control_bridge.ts";
 
 export const handler: Handlers = {
   GET() {

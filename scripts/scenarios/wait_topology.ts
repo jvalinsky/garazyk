@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli";
-import { TopologyHealthProbe, loadTopologyManifest } from "../lib/deno/topology.ts";
+import { loadTopologyManifest, TopologyHealthProbe } from "../lib/deno/topology.ts";
 import { ContainerEventWatcher } from "../lib/deno/docker_events.ts";
 
 const args = parseArgs(Deno.args, {

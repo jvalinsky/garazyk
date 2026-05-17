@@ -2,6 +2,7 @@
 import { useEffect } from "preact/hooks";
 import { useRuntime } from "../runtime.ts";
 
+/** Toolbar island for topology selection and run controls. */
 export default function Toolbar() {
   const { state, dispatch } = useRuntime();
   const s = state.value;

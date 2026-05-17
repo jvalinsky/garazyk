@@ -19,7 +19,7 @@ export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
-import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
 
 function now() {
   return new Date().toISOString();
@@ -48,11 +48,12 @@ export async function run(): Promise<ScenarioResult> {
   for (const name of charNames) {
     const char = getCharacter(name);
     const session = await timedCall(
-      result, `Create account: ${char.name}`,
+      result,
+      `Create account: ${char.name}`,
       async () => {
         return await client.accounts.createAccount(char.handle, char.email, char.password);
       },
-      (s) => `did=${s.did}`
+      (s) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -60,14 +61,15 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const active = charNames.filter(n => getCharacter(n).did);
+  const active = charNames.filter((n) => getCharacter(n).did);
   for (const name of active) {
     const char = getCharacter(name);
     try {
       await client.records.createRecord(
-        char.did, "app.bsky.actor.profile",
+        char.did,
+        "app.bsky.actor.profile",
         { $type: "app.bsky.actor.profile", displayName: char.name, description: char.persona },
-        char.accessJwt
+        char.accessJwt,
       );
     } catch (e) {
       if (!(e instanceof XrpcError && e.status === 404)) throw e;
@@ -79,21 +81,23 @@ export async function run(): Promise<ScenarioResult> {
 
   if (marcus.accessJwt) {
     await timedCall(
-      result, "Marcus sets preferences",
+      result,
+      "Marcus sets preferences",
       async () => {
         return await client.search.putPreferences(
           [{ $type: "app.bsky.actor.defs#contentLabelPref", label: "nsfw", visibility: "show" }],
-          marcus.accessJwt
+          marcus.accessJwt,
         );
-      }
+      },
     );
 
     await timedCall(
-      result, "Marcus gets preferences",
+      result,
+      "Marcus gets preferences",
       async () => {
         return await client.search.getPreferences(marcus.accessJwt);
       },
-      (r) => `count=${r.preferences?.length || 0}`
+      (r) => `count=${r.preferences?.length || 0}`,
     );
   }
 
@@ -106,15 +110,17 @@ export async function run(): Promise<ScenarioResult> {
   for (const text of lunaTexts) {
     if (luna.did && luna.accessJwt) {
       const rec = await timedCall(
-        result, "Luna posts",
+        result,
+        "Luna posts",
         async () => {
           return await client.records.createRecord(
-            luna.did, "app.bsky.feed.post",
+            luna.did,
+            "app.bsky.feed.post",
             { $type: "app.bsky.feed.post", text, createdAt: now() },
-            luna.accessJwt
+            luna.accessJwt,
           );
         },
-        (r) => `uri=${r.uri}`
+        (r) => `uri=${r.uri}`,
       );
       if (rec) lunaPosts.push(rec);
     }
@@ -128,15 +134,17 @@ export async function run(): Promise<ScenarioResult> {
   for (const text of marcusTexts) {
     if (marcus.did && marcus.accessJwt) {
       const rec = await timedCall(
-        result, "Marcus posts",
+        result,
+        "Marcus posts",
         async () => {
           return await client.records.createRecord(
-            marcus.did, "app.bsky.feed.post",
+            marcus.did,
+            "app.bsky.feed.post",
             { $type: "app.bsky.feed.post", text, createdAt: now() },
-            marcus.accessJwt
+            marcus.accessJwt,
           );
         },
-        (r) => `uri=${r.uri}`
+        (r) => `uri=${r.uri}`,
       );
       if (rec) marcusPosts.push(rec);
     }
@@ -145,14 +153,20 @@ export async function run(): Promise<ScenarioResult> {
   if (luna.accessJwt) {
     for (const postRec of marcusPosts) {
       await timedCall(
-        result, "Luna likes Marcus's post",
+        result,
+        "Luna likes Marcus's post",
         async () => {
           return await client.records.createRecord(
-            luna.did, "app.bsky.feed.like",
-            { $type: "app.bsky.feed.like", subject: { uri: postRec.uri, cid: postRec.cid }, createdAt: now() },
-            luna.accessJwt
+            luna.did,
+            "app.bsky.feed.like",
+            {
+              $type: "app.bsky.feed.like",
+              subject: { uri: postRec.uri, cid: postRec.cid },
+              createdAt: now(),
+            },
+            luna.accessJwt,
           );
-        }
+        },
       );
     }
   }
@@ -160,72 +174,88 @@ export async function run(): Promise<ScenarioResult> {
   if (marcus.accessJwt) {
     for (const postRec of lunaPosts) {
       await timedCall(
-        result, "Marcus likes Luna's post",
+        result,
+        "Marcus likes Luna's post",
         async () => {
           return await client.records.createRecord(
-            marcus.did, "app.bsky.feed.like",
-            { $type: "app.bsky.feed.like", subject: { uri: postRec.uri, cid: postRec.cid }, createdAt: now() },
-            marcus.accessJwt
+            marcus.did,
+            "app.bsky.feed.like",
+            {
+              $type: "app.bsky.feed.like",
+              subject: { uri: postRec.uri, cid: postRec.cid },
+              createdAt: now(),
+            },
+            marcus.accessJwt,
           );
-        }
+        },
       );
     }
   }
 
-  await new Promise(r => setTimeout(r, 2000));
+  await new Promise((r) => setTimeout(r, 2000));
 
   if (marcus.accessJwt) {
     for (const query of ["Lun", "Ro", "zzz nonexistent"]) {
       await timedCall(
-        result, `Typeahead search '${query}'`,
+        result,
+        `Typeahead search '${query}'`,
         async () => {
           return await client.search.searchActorsTypeahead(query, { token: marcus.accessJwt });
         },
-        (r) => `found=${r.actors?.length || 0}`
+        (r) => `found=${r.actors?.length || 0}`,
       );
     }
   }
 
   if (luna.did && marcus.accessJwt) {
     await timedCall(
-      result, "Luna's liked posts",
+      result,
+      "Luna's liked posts",
       async () => {
         return await client.feed.getActorLikes(luna.did, { token: marcus.accessJwt });
       },
-      (r) => `count=${(r.likes || r.feed)?.length || 0}`
+      (r) => `count=${(r.likes || r.feed)?.length || 0}`,
     );
   }
 
   if (marcus.accessJwt && lunaPosts.length > 0) {
     await timedCall(
-      result, "Marcus reposts Luna's post",
+      result,
+      "Marcus reposts Luna's post",
       async () => {
         return await client.records.createRecord(
-          marcus.did, "app.bsky.feed.repost",
-          { $type: "app.bsky.feed.repost", subject: { uri: lunaPosts[0].uri, cid: lunaPosts[0].cid }, createdAt: now() },
-          marcus.accessJwt
+          marcus.did,
+          "app.bsky.feed.repost",
+          {
+            $type: "app.bsky.feed.repost",
+            subject: { uri: lunaPosts[0].uri, cid: lunaPosts[0].cid },
+            createdAt: now(),
+          },
+          marcus.accessJwt,
         );
-      }
+      },
     );
 
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise((r) => setTimeout(r, 1000));
 
     await timedCall(
-      result, "Get reposted by",
+      result,
+      "Get reposted by",
       async () => {
         return await client.feed.getRepostedBy(lunaPosts[0].uri, { token: marcus.accessJwt });
       },
-      (r) => `count=${r.repostedBy?.length || 0}`
+      (r) => `count=${r.repostedBy?.length || 0}`,
     );
   }
 
   if (marcus.accessJwt) {
     await timedCall(
-      result, "Get actor suggestions",
+      result,
+      "Get actor suggestions",
       async () => {
         return await client.search.getSuggestions(marcus.accessJwt);
       },
-      (r) => `count=${r.actors?.length || 0}`
+      (r) => `count=${r.actors?.length || 0}`,
     );
   }
 
@@ -234,7 +264,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

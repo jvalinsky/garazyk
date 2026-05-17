@@ -5,11 +5,11 @@
     "issuer": "http://localhost:2583",
     "available_user_domains": ["test"]
   },
-     "appview": {
-       "url": "http://127.0.0.1:3200",
-       "did": "did:web:localhost",
-       "local_enabled": false
-     },
+  "appview": {
+    "url": "http://127.0.0.1:3200",
+    "did": "did:web:localhost",
+    "local_enabled": false
+  },
   "database": {
     "service_pool_max_size": 10,
     "user_pool_max_size": 50

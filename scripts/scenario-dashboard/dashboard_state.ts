@@ -24,6 +24,7 @@ import type { Run, ScenarioResult, ServiceStatus } from "./services/types.ts";
 
 /** Slice tracking network service health polling state. */
 export interface NetworkSlice {
+  /** Current network service statuses. */
   services: ServiceStatus[];
   /** Milliseconds since last successful health check response */
   lastHealthCheckMs: number;
@@ -63,15 +64,25 @@ export interface RunsSlice {
 
 /** Per-run progress snapshot used for polling display. */
 export interface RunProgress {
+  /** Whether the run progress snapshot exists. */
   exists: boolean;
+  /** Run ID for this snapshot. */
   runId: string;
+  /** Total number of scenarios in the run. */
   total: number;
+  /** Number of scenarios completed so far. */
   completed: number;
+  /** Name of the current scenario, if any. */
   currentScenario: string | null;
+  /** ID of the current scenario, if any. */
   currentScenarioId: string | null;
+  /** Elapsed time since run start, in milliseconds. */
   elapsedMs: number;
+  /** Timestamp of the latest progress update. */
   updatedAt: number;
+  /** Timestamp of the current poll tick. */
   now: number;
+  /** Whether the run is currently running. */
   running: boolean;
 }
 
@@ -87,11 +98,17 @@ export interface ScenariosSlice {
 
 /** Metadata for a single discoverable scenario. */
 export interface ScenarioMeta {
+  /** Scenario identifier. */
   id: string;
+  /** Scenario display name. */
   name: string;
+  /** Scenario category. */
   category: string;
+  /** Whether the scenario requires PDS2. */
   needsPds2: boolean;
+  /** Most recent recorded status for the scenario. */
   lastStatus?: "passed" | "failed" | "skipped" | null;
+  /** Scenario parameter definitions. */
   parameters?: Record<string, {
     type: "number" | "string" | "boolean";
     default: string | number | boolean;
@@ -117,9 +134,13 @@ export interface TopologySlice {
 
 /** Preview data for a topology preset. */
 export interface TopologyPreview {
+  /** Topology name. */
   name: string;
+  /** Topology description, if provided. */
   description?: string;
+  /** Roles included in the topology. */
   roles: string[];
+  /** Capabilities exposed by the topology. */
   capabilities: string[];
 }
 
@@ -173,12 +194,19 @@ export interface UxSlice {
 
 /** Root dashboard model — union of all state slices. */
 export interface DashboardState {
+  /** Network state slice. */
   network: NetworkSlice;
+  /** Run state slice. */
   runs: RunsSlice;
+  /** Scenario discovery state slice. */
   scenarios: ScenariosSlice;
+  /** Topology state slice. */
   topology: TopologySlice;
+  /** Log polling state slice. */
   logs: LogsSlice;
+  /** Metrics polling state slice. */
   metrics: MetricsSlice;
+  /** UI state slice. */
   ux: UxSlice;
   /** Monotonic tick counter for elapsed time calculations */
   lastTickMs: number;

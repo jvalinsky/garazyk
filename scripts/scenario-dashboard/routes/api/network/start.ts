@@ -1,6 +1,7 @@
 import { Handlers } from "$fresh/server.ts";
 import { networkManager } from "../../../services/network_manager.ts";
 
+/** API handler for starting the network. */
 export const handler: Handlers = {
   async POST(req) {
     const body = await req.json().catch(() => ({}));

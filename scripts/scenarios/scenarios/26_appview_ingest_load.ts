@@ -12,14 +12,14 @@
  */
 
 import {
+  InstrumentationReport,
   OperationTimer,
   PhaseTimer,
   PrometheusScraper,
   StorageMonitor,
-  InstrumentationReport,
 } from "../../lib/deno/instrumentation.ts";
 import { FirehoseClient } from "../../lib/deno/firehose.ts";
-import { PDS1, SERVICE_URLS, APPVIEW_ADMIN_SECRET, getCharacter } from "../../lib/deno/config.ts";
+import { APPVIEW_ADMIN_SECRET, getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -41,13 +41,14 @@ async function appviewAdminGet(path: string, params?: Record<string, any>): Prom
     }
   }
   const res = await fetch(url.toString(), {
-    headers: { "Authorization": `Bearer ${APPVIEW_ADMIN_SECRET}` }
+    headers: { "Authorization": `Bearer ${APPVIEW_ADMIN_SECRET}` },
   });
   return await res.json();
 }
 
 function summarizeIngestState(health: any, backfill: any, metrics: any, records: any) {
-  const backpressureActive = !!(health?.running === false || backfill?.enabled === false || metrics?.backpressure);
+  const backpressureActive =
+    !!(health?.running === false || backfill?.enabled === false || metrics?.backpressure);
   const queueDepth = metrics?.queue_depth || health?.queue_depth || 0;
   const ingestLag = metrics?.ingest_lag || 0;
   const indexedRecords = records?.records?.length || records?.total || 0;
@@ -91,13 +92,15 @@ export async function run(): Promise<ScenarioResult> {
   for (const name of charNames) {
     const char = getCharacter(name);
     const session = await timedCall(
-      result, `Create account: ${char.name}`,
+      result,
+      `Create account: ${char.name}`,
       async () => {
-        return await timer.measure("create_account", () =>
-          client.accounts.createAccount(char.handle, char.email, char.password)
+        return await timer.measure(
+          "create_account",
+          () => client.accounts.createAccount(char.handle, char.email, char.password),
         );
       },
-      (s) => `did=${s.did}`
+      (s) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -109,12 +112,14 @@ export async function run(): Promise<ScenarioResult> {
   for (let i = 1; i <= 4; i++) {
     const handle = `ingest-${i}.test`;
     const session = await timedCall(
-      result, `Create account: Ingest ${i}`,
+      result,
+      `Create account: Ingest ${i}`,
       async () => {
-        return await timer.measure("create_account", () =>
-          client.accounts.createAccount(handle, `ingest-${i}@test.com`, `pass-${i}`)
+        return await timer.measure(
+          "create_account",
+          () => client.accounts.createAccount(handle, `ingest-${i}@test.com`, `pass-${i}`),
         );
-      }
+      },
     );
     if (session) {
       activeAccounts.push({ did: session.did, accessJwt: session.accessJwt, name: `Ingest ${i}` });
@@ -138,14 +143,14 @@ export async function run(): Promise<ScenarioResult> {
     try {
       await timer.measure("create_post", () =>
         client.records.createRecord(
-          acc.did, "app.bsky.feed.post",
+          acc.did,
+          "app.bsky.feed.post",
           { $type: "app.bsky.feed.post", text: `Sustained post ${i + 1}`, createdAt: now() },
-          acc.accessJwt
-        )
-      );
+          acc.accessJwt,
+        ));
       sustainedCreated++;
     } catch { /* ignore */ }
-    if (i % 10 === 0) await new Promise(r => setTimeout(r, 60));
+    if (i % 10 === 0) await new Promise((r) => setTimeout(r, 60));
   }
   result.stepPassed("Sustained production", `created=${sustainedCreated}`);
   phaseTimer.endPhase();
@@ -159,11 +164,11 @@ export async function run(): Promise<ScenarioResult> {
     try {
       await timer.measure("create_post_burst", () =>
         client.records.createRecord(
-          acc.did, "app.bsky.feed.post",
+          acc.did,
+          "app.bsky.feed.post",
           { $type: "app.bsky.feed.post", text: `Burst post ${i + 1}`, createdAt: now() },
-          acc.accessJwt
-        )
-      );
+          acc.accessJwt,
+        ));
       burstCreated++;
     } catch { /* ignore */ }
   }
@@ -172,7 +177,10 @@ export async function run(): Promise<ScenarioResult> {
   const backfill = await appviewAdminGet("/admin/backfill/status");
   const metrics = await appviewAdminGet("/admin/appview/metrics/stats");
   const burstSummary = summarizeIngestState(health, backfill, metrics, null);
-  result.stepPassed("Backpressure trigger", `created=${burstCreated}, backpressure=${burstSummary.backpressureActive}`);
+  result.stepPassed(
+    "Backpressure trigger",
+    `created=${burstCreated}, backpressure=${burstSummary.backpressureActive}`,
+  );
   phaseTimer.endPhase();
 
   // Verification
@@ -183,21 +191,27 @@ export async function run(): Promise<ScenarioResult> {
     const h = await appviewAdminGet("/admin/ingest/health");
     const b = await appviewAdminGet("/admin/backfill/status");
     const m = await appviewAdminGet("/admin/appview/metrics/stats");
-    const r = await appviewAdminGet("/admin/records", { collection: "app.bsky.feed.post", limit: 1 });
+    const r = await appviewAdminGet("/admin/records", {
+      collection: "app.bsky.feed.post",
+      limit: 1,
+    });
     const s = summarizeIngestState(h, b, m, r);
     if (s.indexedRecords >= expectedTotal && !s.backpressureActive && s.ingestLag <= 5) {
       cleared = true;
       result.stepPassed("Resume verification", `indexed=${s.indexedRecords}, lag=${s.ingestLag}`);
       break;
     }
-    await new Promise(r => setTimeout(r, 2000));
+    await new Promise((r) => setTimeout(r, 2000));
   }
   if (!cleared) result.stepFailed("Resume verification", "Ingest did not clear in time");
   phaseTimer.endPhase();
 
   // Consistency
   phaseTimer.startPhase("AppView consistency");
-  const appviewRecords = await appviewAdminGet("/admin/records", { collection: "app.bsky.feed.post", limit: 1000 });
+  const appviewRecords = await appviewAdminGet("/admin/records", {
+    collection: "app.bsky.feed.post",
+    limit: 1000,
+  });
   const appviewTotal = appviewRecords.total || appviewRecords.records?.length || 0;
   result.stepPassed("AppView consistency", `appview_posts=${appviewTotal}`);
   phaseTimer.endPhase();
@@ -208,7 +222,7 @@ export async function run(): Promise<ScenarioResult> {
     metricsTs,
     {},
     {},
-    phaseTimer.toDict()
+    phaseTimer.toDict(),
   );
   await report.writeJson(join(ctx.reportsDir, "instrumentation-26.json"));
 
@@ -217,7 +231,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

@@ -53,7 +53,16 @@
       "buildContext": "docker/local-network",
       "dockerfile": "Dockerfile.local",
       "entrypoint": ["/usr/local/bin/syrena"],
-      "command": ["serve", "--relay", "ws://local-relay:2584", "--port", "3200", "--data-dir", "/var/lib/atprotopds", "--no-backfill"],
+      "command": [
+        "serve",
+        "--relay",
+        "ws://local-relay:2584",
+        "--port",
+        "3200",
+        "--data-dir",
+        "/var/lib/atprotopds",
+        "--no-backfill"
+      ],
       "env": {
         "TZ": "UTC",
         "PDS_ALLOW_PRIVATE_SSRF": "1",
