@@ -4,7 +4,8 @@ This directory contains migration configuration files for the documentation cons
 
 ## Configuration Format
 
-Migration configurations are JSON files that define how to move documentation files from source directories to destination directories while preserving git history and updating cross-references.
+Migration configurations are JSON files that define how to move documentation files from source
+directories to destination directories while preserving git history and updating cross-references.
 
 ### Schema
 
@@ -237,6 +238,7 @@ If you see validation errors:
 For the complete JSON schema definition, see `lib/migration-schema.js`.
 
 The schema is validated using a custom validator that checks:
+
 - Type correctness (string, boolean, array, object)
 - Required properties
 - String patterns (e.g., semantic version format)
