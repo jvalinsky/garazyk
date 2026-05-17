@@ -2,13 +2,17 @@
 
 ## Defensive SQLite Programming
 
-When working with SQLite in Objective-C (or C), manual resource management is a common source of bugs. Forgetting to call `sqlite3_finalize()` on a prepared statement can lead to memory leaks, while calling it too early or twice can cause crashes.
+When working with SQLite in Objective-C (or C), manual resource management is a common source of
+bugs. Forgetting to call `sqlite3_finalize()` on a prepared statement can lead to memory leaks,
+while calling it too early or twice can cause crashes.
 
-To mitigate these risks, we use a RAII (Resource Acquisition Is Initialization) pattern leveraging Clang's `__attribute__((cleanup))` feature.
+To mitigate these risks, we use a RAII (Resource Acquisition Is Initialization) pattern leveraging
+Clang's `__attribute__((cleanup))` feature.
 
 ### Automatic Statement Finalization
 
-We have defined a macro `PDS_SQLITE_AUTORELEASE_STMT` in `Database/Utils/PDSSQLiteUtils.h`. Use this macro when declaring a `sqlite3_stmt *` variable.
+We have defined a macro `PDS_SQLITE_AUTORELEASE_STMT` in `Database/Utils/PDSSQLiteUtils.h`. Use this
+macro when declaring a `sqlite3_stmt *` variable.
 
 **Example Usage:**
 
@@ -33,6 +37,10 @@ We have defined a macro `PDS_SQLITE_AUTORELEASE_STMT` in `Database/Utils/PDSSQLi
 ```
 
 ### Important rules:
-1. **Do NOT call `sqlite3_finalize(stmt)` manually** if you use the macro. Doing so will cause a double-free when the scope ends.
-2. This is best used for **local, transient statements**. For long-lived or cached statements (stored in ivars), you must still manage their lifecycle manually or use a different wrapper.
-3. Ensure `sqlite3_stmt *` is initialized to `NULL` if not immediately assigned, though `sqlite3_prepare_v2` typically handles this.
+
+1. **Do NOT call `sqlite3_finalize(stmt)` manually** if you use the macro. Doing so will cause a
+   double-free when the scope ends.
+2. This is best used for **local, transient statements**. For long-lived or cached statements
+   (stored in ivars), you must still manage their lifecycle manually or use a different wrapper.
+3. Ensure `sqlite3_stmt *` is initialized to `NULL` if not immediately assigned, though
+   `sqlite3_prepare_v2` typically handles this.
