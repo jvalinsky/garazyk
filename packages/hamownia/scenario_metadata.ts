@@ -4,12 +4,9 @@
  * Centralizes scenario requirements, PDS2 needs, and browser flow declarations.
  */
 
-import type {
-  BrowserFlow,
-  ScenarioRequirement,
-  Topology,
-} from "@garazyk/schemat";
-import { parseScenarioRequirement } from "@garazyk/schemat";
+import type { BrowserFlow, Topology } from "@garazyk/schemat";
+import type { ScenarioRequirement } from "@garazyk/schemat/topology-schema";
+import { parseScenarioRequirement } from "@garazyk/schemat/topology-schema";
 import { validateRoleCapability } from "@garazyk/schemat";
 
 /**

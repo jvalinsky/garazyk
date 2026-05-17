@@ -42,6 +42,48 @@ export interface WebClientConfig {
   allowHybridNetwork?: boolean;
 }
 
+/** Explicit scenario configuration for authoring isolated tests. */
+export interface ScenarioConfig {
+  /** Resolved topology backing this configuration. */
+  topology: Topology;
+  /** Primary PDS URL used by scenarios. */
+  pds1: string;
+  /** Secondary PDS URL used by federation scenarios. */
+  pds2: string;
+  /** Local AppView admin secret used by test services. */
+  appviewAdminSecret: string;
+  /** Local PDS admin password used by test services. */
+  pdsAdminPassword: string;
+  /** Public service URLs keyed by service role. */
+  serviceUrls: Record<string, string>;
+  /** Capability set supported by the resolved topology. */
+  topologyCapabilities: Set<string>;
+  /** Capability sets grouped by service role. */
+  topologyCapabilitiesByRole: Record<string, Set<string>>;
+  /** Browser client topology attached to the resolved test network, when configured. */
+  webClientTopology?: WebClientConfig;
+  /** DID used by video-service scenarios. */
+  videoServiceDid: string;
+}
+
+/** Overrides accepted by {@link createScenarioConfig}. */
+export interface ScenarioConfigOptions {
+  /** Resolved topology to use instead of reading topology-related env vars. */
+  topology?: Topology;
+  /** Primary PDS URL override. */
+  pds1?: string;
+  /** Secondary PDS URL override. */
+  pds2?: string;
+  /** AppView admin secret override. */
+  appviewAdminSecret?: string;
+  /** PDS admin password override. */
+  pdsAdminPassword?: string;
+  /** Additional service URL overrides. */
+  serviceUrls?: Record<string, string>;
+  /** Video service DID override. */
+  videoServiceDid?: string;
+}
+
 function resolveScenarioTopology(): Topology {
   return resolveTopology(
     Deno.env.get("ATPROTO_WEB_CLIENT") || undefined,
@@ -49,47 +91,76 @@ function resolveScenarioTopology(): Topology {
   );
 }
 
-let topology: Topology = resolveScenarioTopology();
+/** Create a scenario configuration from explicit overrides and environment defaults. */
+export function createScenarioConfig(
+  options: ScenarioConfigOptions = {},
+): ScenarioConfig {
+  const resolvedTopology = options.topology ?? resolveScenarioTopology();
+  const pds1 = options.pds1 ?? Deno.env.get("PDS_URL") ??
+    resolvedTopology.serviceUrls.pds ??
+    "http://localhost:2583";
+  const pds2 = options.pds2 ?? Deno.env.get("PDS2_URL") ??
+    resolvedTopology.serviceUrls.pds2 ??
+    "http://localhost:2587";
+  return {
+    topology: resolvedTopology,
+    pds1,
+    pds2,
+    appviewAdminSecret: options.appviewAdminSecret ??
+      Deno.env.get("APPVIEW_ADMIN_SECRET") ??
+      "localdevadmin",
+    pdsAdminPassword: options.pdsAdminPassword ??
+      Deno.env.get("PDS_ADMIN_PASSWORD") ??
+      "admin-localdev",
+    serviceUrls: {
+      ...resolvedTopology.serviceUrls,
+      ...options.serviceUrls,
+      pds: pds1,
+      pds2,
+    },
+    topologyCapabilities: resolvedTopology.capabilities,
+    topologyCapabilitiesByRole: resolvedTopology.capabilitiesByRole,
+    webClientTopology: resolvedTopology.webClient,
+    videoServiceDid: options.videoServiceDid ??
+      Deno.env.get("VIDEO_SERVICE_DID") ??
+      Deno.env.get("JELCZ_DID") ??
+      "did:web:localhost",
+  };
+}
+
+let defaultScenarioConfig = createScenarioConfig();
+let topology: Topology = defaultScenarioConfig.topology;
 
 /** Primary PDS URL used by scenarios. */
-export let PDS1: string = Deno.env.get("PDS_URL") || topology.serviceUrls.pds ||
-  "http://localhost:2583";
+export let PDS1: string = defaultScenarioConfig.pds1;
 /** Secondary PDS URL used by federation scenarios. */
-export let PDS2: string = Deno.env.get("PDS2_URL") ||
-  topology.serviceUrls.pds2 ||
-  "http://localhost:2587";
+export let PDS2: string = defaultScenarioConfig.pds2;
 // Admin credentials for local development PDS/AppView instances.
 // These are NOT production secrets — they are the default credentials
 // for locally-run test services. Set the env vars to override.
 /** Local AppView admin secret used by test services. */
 export let APPVIEW_ADMIN_SECRET: string =
-  Deno.env.get("APPVIEW_ADMIN_SECRET") ||
-  "localdevadmin";
+  defaultScenarioConfig.appviewAdminSecret;
 /** Local PDS admin password used by test services. */
-export let PDS_ADMIN_PASSWORD: string = Deno.env.get("PDS_ADMIN_PASSWORD") ||
-  "admin-localdev";
+export let PDS_ADMIN_PASSWORD: string = defaultScenarioConfig.pdsAdminPassword;
 
 /** Public service URLs keyed by service role. */
-export let SERVICE_URLS: Record<string, string> = {
-  ...topology.serviceUrls,
-  pds: PDS1,
-  pds2: PDS2,
-};
+export let SERVICE_URLS: Record<string, string> =
+  defaultScenarioConfig.serviceUrls;
 
 /** Capability set supported by the resolved topology. */
-export let TOPOLOGY_CAPABILITIES: Set<string> = topology.capabilities;
+export let TOPOLOGY_CAPABILITIES: Set<string> =
+  defaultScenarioConfig.topologyCapabilities;
 /** Capability sets grouped by service role. */
 export let TOPOLOGY_CAPABILITIES_BY_ROLE: Record<string, Set<string>> =
-  topology.capabilitiesByRole;
+  defaultScenarioConfig.topologyCapabilitiesByRole;
 
 /** Browser client topology attached to the resolved test network, when configured. */
 export let WEB_CLIENT_TOPOLOGY: WebClientConfig | undefined =
-  topology.webClient;
+  defaultScenarioConfig.webClientTopology;
 
 /** DID used by video-service scenarios. */
-export let VIDEO_SERVICE_DID: string = Deno.env.get("VIDEO_SERVICE_DID") ||
-  Deno.env.get("JELCZ_DID") ||
-  "did:web:localhost";
+export let VIDEO_SERVICE_DID: string = defaultScenarioConfig.videoServiceDid;
 
 /** A test character with PDS-issued credentials. */
 export class Character {
@@ -278,13 +349,19 @@ let _registryCounter = 0;
  * const admins = registry.getCharactersByRole("admin");
  * ```
  *
- * @param pds1Url - URL for the primary PDS (default: PDS1 from env/topology)
- * @param pds2Url - URL for the secondary PDS (default: PDS2 from env/topology)
+ * @param configOrPds1Url - Explicit scenario config or primary PDS URL
+ * @param pds2Url - URL for the secondary PDS when the first argument is a string
  */
 export function createCharacterRegistry(
-  pds1Url: string = PDS1,
+  configOrPds1Url: ScenarioConfig | string = PDS1,
   pds2Url: string = PDS2,
 ): CharacterRegistry {
+  const pds1Url = typeof configOrPds1Url === "string"
+    ? configOrPds1Url
+    : configOrPds1Url.pds1;
+  const resolvedPds2Url = typeof configOrPds1Url === "string"
+    ? pds2Url
+    : configOrPds1Url.pds2;
   const suffix = `${Deno.pid}-${
     (++_registryCounter).toString(16).padStart(4, "0")
   }`;
@@ -299,7 +376,7 @@ export function createCharacterRegistry(
     const emailParts = tpl.email.split("@");
     const email = `${emailParts[0]}-${suffix}@${emailParts[1]}`;
 
-    const pdsUrl = tpl.pds === "pds2" ? pds2Url : pds1Url;
+    const pdsUrl = tpl.pds === "pds2" ? resolvedPds2Url : pds1Url;
 
     chars[key] = new Character(
       tpl.name,
@@ -339,25 +416,18 @@ let registry = createCharacterRegistry();
 
 /** Refresh scenario configuration from the current process environment. */
 export function refreshScenarioConfigFromEnv(): void {
-  topology = resolveScenarioTopology();
-  PDS1 = Deno.env.get("PDS_URL") || topology.serviceUrls.pds ||
-    "http://localhost:2583";
-  PDS2 = Deno.env.get("PDS2_URL") || topology.serviceUrls.pds2 ||
-    "http://localhost:2587";
-  APPVIEW_ADMIN_SECRET = Deno.env.get("APPVIEW_ADMIN_SECRET") ||
-    "localdevadmin";
-  PDS_ADMIN_PASSWORD = Deno.env.get("PDS_ADMIN_PASSWORD") || "admin-localdev";
-  SERVICE_URLS = {
-    ...topology.serviceUrls,
-    pds: PDS1,
-    pds2: PDS2,
-  };
-  TOPOLOGY_CAPABILITIES = topology.capabilities;
-  TOPOLOGY_CAPABILITIES_BY_ROLE = topology.capabilitiesByRole;
-  WEB_CLIENT_TOPOLOGY = topology.webClient;
-  VIDEO_SERVICE_DID = Deno.env.get("VIDEO_SERVICE_DID") ||
-    Deno.env.get("JELCZ_DID") ||
-    "did:web:localhost";
+  defaultScenarioConfig = createScenarioConfig();
+  topology = defaultScenarioConfig.topology;
+  PDS1 = defaultScenarioConfig.pds1;
+  PDS2 = defaultScenarioConfig.pds2;
+  APPVIEW_ADMIN_SECRET = defaultScenarioConfig.appviewAdminSecret;
+  PDS_ADMIN_PASSWORD = defaultScenarioConfig.pdsAdminPassword;
+  SERVICE_URLS = defaultScenarioConfig.serviceUrls;
+  TOPOLOGY_CAPABILITIES = defaultScenarioConfig.topologyCapabilities;
+  TOPOLOGY_CAPABILITIES_BY_ROLE =
+    defaultScenarioConfig.topologyCapabilitiesByRole;
+  WEB_CLIENT_TOPOLOGY = defaultScenarioConfig.webClientTopology;
+  VIDEO_SERVICE_DID = defaultScenarioConfig.videoServiceDid;
   registry = createCharacterRegistry();
 }
 

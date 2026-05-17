@@ -1,4 +1,5 @@
 /** Mock Twilio SMS verification server for E2E testing. @module mock_twilio */
+import { parseArgs } from "@std/cli/parse-args";
 
 /** State for a single verification code tracked by the mock server. */
 export interface MockVerificationState {
@@ -16,6 +17,290 @@ export interface MockState {
   store: Record<string, MockVerificationState>;
   /** Codes that should be approved without verification. */
   alwaysApproveCodes: string[];
+}
+
+/** Configuration for the mock Twilio server process. */
+export interface MockTwilioServerConfig {
+  port: number;
+  accountSid: string;
+  authToken: string;
+  alwaysApprove: string[];
+  latency?: number;
+  failRate?: number;
+}
+
+const store: Record<string, MockVerificationState> = {};
+let alwaysApproveCodes: string[] = ["000000"];
+let startTime = Date.now();
+
+function normalizeAlwaysApprove(value: string): string[] {
+  return value.split(",").map((s) => s.trim());
+}
+
+/** Parse CLI flags and environment variables into a mock Twilio config. */
+export function parseMockTwilioConfig(args: string[]): MockTwilioServerConfig {
+  const parsed = parseArgs(args, {
+    string: [
+      "port",
+      "account-sid",
+      "auth-token",
+      "always-approve",
+      "latency",
+      "fail-rate",
+    ],
+  }) as Record<string, string | boolean | undefined>;
+
+  return {
+    port: Number(parsed.port ?? Deno.env.get("PORT") ?? "8081"),
+    accountSid: String(
+      parsed["account-sid"] ?? Deno.env.get("TWILIO_ACCOUNT_SID") ??
+        "AC00000000000000000000000000000000",
+    ),
+    authToken: String(
+      parsed["auth-token"] ?? Deno.env.get("TWILIO_AUTH_TOKEN") ??
+        "SK00000000000000000000000000000000",
+    ),
+    alwaysApprove: normalizeAlwaysApprove(
+      String(
+        parsed["always-approve"] ?? Deno.env.get("ALWAYS_APPROVE_CODES") ??
+          "000000",
+      ),
+    ),
+    latency: Number(parsed.latency ?? Deno.env.get("LATENCY_MS") ?? "0"),
+    failRate: Number(parsed["fail-rate"] ?? Deno.env.get("FAIL_RATE") ?? "0"),
+  };
+}
+
+function generateCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function randomSid(): string {
+  const chars = "abcdef0123456789";
+  let sid = "VE";
+  for (let i = 0; i < 32; i++) {
+    sid += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return sid;
+}
+
+function parseBasicAuth(
+  authHeader: string | null,
+): { user: string; pass: string } | null {
+  if (!authHeader || !authHeader.startsWith("Basic ")) return null;
+  try {
+    const decoded = atob(authHeader.slice(6));
+    const colon = decoded.indexOf(":");
+    if (colon === -1) return null;
+    return { user: decoded.slice(0, colon), pass: decoded.slice(colon + 1) };
+  } catch {
+    return null;
+  }
+}
+
+async function maybeLatency(ms: number) {
+  if (ms > 0) await new Promise((r) => setTimeout(r, ms));
+}
+
+async function maybeFail(failRate: number): Promise<boolean> {
+  if (failRate > 0 && Math.random() < failRate) return true;
+  return false;
+}
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json" },
+  });
+}
+
+/** Handle a single mock Twilio HTTP request. */
+export async function handleMockTwilioRequest(
+  req: Request,
+  config: MockTwilioServerConfig,
+): Promise<Response> {
+  const url = new URL(req.url);
+  const path = url.pathname;
+
+  // ── Control API ──────────────────────────────────────────────────────────
+
+  if (path === "/__control/health") {
+    return jsonResponse({ status: "ok", uptime: Date.now() - startTime });
+  }
+
+  if (path === "/__control/state") {
+    return jsonResponse({ store, alwaysApproveCodes });
+  }
+
+  if (path === "/__control/reset" && req.method === "POST") {
+    for (const key of Object.keys(store)) delete store[key];
+    alwaysApproveCodes = ["000000"];
+    return jsonResponse({ status: "ok" });
+  }
+
+  if (path === "/__control/setCode" && req.method === "POST") {
+    const body = await req.json();
+    if (!body.phone || !body.code) {
+      return jsonResponse({ error: "phone and code required" }, 400);
+    }
+    store[body.phone] = {
+      code: body.code,
+      createdAt: Date.now(),
+      verified: false,
+    };
+    return jsonResponse({ status: "ok" });
+  }
+
+  if (path === "/__control/setAlwaysApprove" && req.method === "POST") {
+    const body = await req.json();
+    if (!Array.isArray(body.codes)) {
+      return jsonResponse({ error: "codes array required" }, 400);
+    }
+    alwaysApproveCodes = body.codes;
+    return jsonResponse({ status: "ok" });
+  }
+
+  // ── Twilio Verify API ────────────────────────────────────────────────────
+
+  // Match: /v2/Service/{serviceSID}/Verifications
+  const verificationsMatch = path.match(
+    /^\/v2\/Service\/([^/]+)\/Verifications$/,
+  );
+  if (verificationsMatch && req.method === "POST") {
+    await maybeLatency(config.latency ?? 0);
+    if (await maybeFail(config.failRate ?? 0)) {
+      return jsonResponse({
+        status: 500,
+        message: "Simulated server error",
+        code: 20001,
+      }, 500);
+    }
+
+    const creds = parseBasicAuth(req.headers.get("authorization"));
+    if (
+      !creds || creds.user !== config.accountSid ||
+      creds.pass !== config.authToken
+    ) {
+      return jsonResponse({
+        status: 401,
+        message: "Invalid credentials",
+        code: 20003,
+      }, 401);
+    }
+
+    const body = await req.json();
+    const phone: string = body.To || "";
+    if (!phone) {
+      return jsonResponse({
+        status: 400,
+        message: "Missing 'To' parameter",
+        code: 20005,
+      }, 400);
+    }
+
+    const code = generateCode();
+    store[phone] = { code, createdAt: Date.now(), verified: false };
+
+    console.error(`[mock-twilio] Verifications: +${phone} -> code=${code}`);
+
+    return jsonResponse({
+      status: "pending",
+      sid: randomSid(),
+      to: phone,
+      channel: body.Channel || "sms",
+      valid: false,
+      date_created: new Date().toUTCString(),
+      service_sid: verificationsMatch[1],
+      url: `${url.origin}${path}/${randomSid()}`,
+    });
+  }
+
+  // Match: /v2/Service/{serviceSID}/VerificationCheck
+  const checkMatch = path.match(/^\/v2\/Service\/([^/]+)\/VerificationCheck$/);
+  if (checkMatch && req.method === "POST") {
+    await maybeLatency(config.latency ?? 0);
+    if (await maybeFail(config.failRate ?? 0)) {
+      return jsonResponse({
+        status: 500,
+        message: "Simulated server error",
+        code: 20001,
+      }, 500);
+    }
+
+    const creds = parseBasicAuth(req.headers.get("authorization"));
+    if (
+      !creds || creds.user !== config.accountSid ||
+      creds.pass !== config.authToken
+    ) {
+      return jsonResponse({
+        status: 401,
+        message: "Invalid credentials",
+        code: 20003,
+      }, 401);
+    }
+
+    const body = await req.json();
+    const phone: string = body.To || "";
+    const code: string = body.Code || "";
+
+    if (!phone || !code) {
+      return jsonResponse({
+        status: 400,
+        message: "Missing 'To' or 'Code'",
+        code: 20005,
+      }, 400);
+    }
+
+    const state = store[phone];
+    const isApproved = (state && state.code === code) ||
+      alwaysApproveCodes.includes(code);
+
+    if (isApproved && state) {
+      state.verified = true;
+    }
+
+    console.error(
+      `[mock-twilio] VerificationCheck: +${phone} code=${code} -> ${
+        isApproved ? "approved" : "pending"
+      }`,
+    );
+
+    const sid = randomSid();
+    return jsonResponse({
+      status: isApproved ? "approved" : "pending",
+      sid,
+      to: phone,
+      valid: isApproved,
+      date_created: new Date().toUTCString(),
+      service_sid: checkMatch[1],
+    });
+  }
+
+  // ── 404 ──────────────────────────────────────────────────────────────────
+  return jsonResponse({ error: "Not found", path }, 404);
+}
+
+/** Start a mock Twilio server with the provided configuration. */
+export function serveMockTwilio(config: MockTwilioServerConfig): void {
+  startTime = Date.now();
+  alwaysApproveCodes = [...config.alwaysApprove];
+
+  console.error(`[mock-twilio] Starting on port ${config.port}`);
+  console.error(
+    `[mock-twilio] Always-approve codes: ${alwaysApproveCodes.join(", ")}`,
+  );
+  console.error(`[mock-twilio] Account SID: ${config.accountSid}`);
+  if ((config.latency ?? 0) > 0) {
+    console.error(`[mock-twilio] Simulated latency: ${config.latency}ms`);
+  }
+  if ((config.failRate ?? 0) > 0) {
+    console.error(`[mock-twilio] Simulated fail rate: ${config.failRate}`);
+  }
+
+  void Deno.serve(
+    { port: config.port, hostname: "127.0.0.1" },
+    (req) => handleMockTwilioRequest(req, config),
+  );
 }
 
 /** Client for controlling a mock Twilio server via its __control HTTP API. */
@@ -154,4 +439,8 @@ export async function startMockTwilioServer(
 /** Stop a mock Twilio server process. */
 export function stopMockTwilioServer(server: MockTwilioServer): void {
   server.stopProcess();
+}
+
+if (import.meta.main) {
+  serveMockTwilio(parseMockTwilioConfig(Deno.args));
 }

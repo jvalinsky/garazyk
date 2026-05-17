@@ -8,8 +8,8 @@
  */
 
 import { join } from "@std/path";
-import { repoRoot, serviceUrl } from "@garazyk/schemat";
-import type { RunContext } from "@garazyk/laweta";
+import { repoRoot, serviceUrl } from "@garazyk/schemat/runtime";
+import type { RunContext } from "@garazyk/laweta/atproto-runtime";
 
 /**
  * Collect run metadata, HTTP endpoint snapshots, and optional Docker state.
