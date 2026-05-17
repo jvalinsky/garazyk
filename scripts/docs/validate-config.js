@@ -8,13 +8,13 @@
  * Usage: node validate-config.js <config-file>
  */
 
-import { loadMigrationConfig, MigrationConfigError } from './lib/migration-schema.js';
-import { version } from './index.js';
+import { loadMigrationConfig, MigrationConfigError } from "./lib/migration-schema.js";
+import { version } from "./index.js";
 
 const configPath = process.argv[2];
 
 if (!configPath) {
-  console.error('Usage: node validate-config.js <config-file>');
+  console.error("Usage: node validate-config.js <config-file>");
   process.exit(1);
 }
 
@@ -24,8 +24,8 @@ console.log(`Validating: ${configPath}\n`);
 try {
   const config = await loadMigrationConfig(configPath);
 
-  console.log('✓ Configuration is valid\n');
-  console.log('Summary:');
+  console.log("✓ Configuration is valid\n");
+  console.log("Summary:");
   console.log(`  Version: ${config.version}`);
   if (config.description) {
     console.log(`  Description: ${config.description}`);
@@ -43,7 +43,7 @@ try {
     console.log(`    Remove empty dirs: ${migration.removeEmptyDirs}`);
   });
 
-  console.log('\n  Options:');
+  console.log("\n  Options:");
   console.log(`    Dry run: ${config.options.dryRun}`);
   console.log(`    Verbose: ${config.options.verbose}`);
   console.log(`    Generate report: ${config.options.generateReport}`);
@@ -54,17 +54,17 @@ try {
   process.exit(0);
 } catch (error) {
   if (error instanceof MigrationConfigError) {
-    console.error('✗ Configuration validation failed\n');
+    console.error("✗ Configuration validation failed\n");
     console.error(`Error: ${error.message}`);
 
     if (error.errors && error.errors.length > 0) {
-      console.error('\nValidation errors:');
+      console.error("\nValidation errors:");
       error.errors.forEach((err) => {
         console.error(`  - ${err}`);
       });
     }
   } else {
-    console.error('✗ Unexpected error\n');
+    console.error("✗ Unexpected error\n");
     console.error(error);
   }
 

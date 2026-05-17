@@ -1,6 +1,7 @@
 # Link Parser Module
 
-This module documents `link-parser.js`, which parses markdown links for validation and migration tasks.
+This module documents `link-parser.js`, which parses markdown links for validation and migration
+tasks.
 
 ## Responsibilities
 
