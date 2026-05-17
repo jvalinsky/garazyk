@@ -58,8 +58,8 @@ services:
     command:
       - -c
       - |
-        /signoz-otel-collector migrate sync check && \
-        /signoz-otel-collector --config=/etc/otel-collector-config.yaml --manager-config=/etc/manager-config.yaml --copy-path=/var/tmp/collector-config.yaml
+          /signoz-otel-collector migrate sync check && \
+          /signoz-otel-collector --config=/etc/otel-collector-config.yaml --manager-config=/etc/manager-config.yaml --copy-path=/var/tmp/collector-config.yaml
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
       - ./otel-collector-opamp-config.yaml:/etc/manager-config.yaml
@@ -71,8 +71,8 @@ services:
       - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_REPLICATION=false
       - SIGNOZ_OTEL_COLLECTOR_TIMEOUT=10m
     ports:
-      - "4317:4317"  # OTLP gRPC
-      - "4318:4318"  # OTLP HTTP
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
     depends_on:
       clickhouse:
         condition: service_healthy
@@ -91,7 +91,7 @@ services:
     image: signoz/signoz:v0.123.0
     container_name: signoz
     ports:
-      - "3301:8080"  # UI on 3301 to avoid 8080 conflict
+      - "3301:8080" # UI on 3301 to avoid 8080 conflict
     volumes:
       - signoz_sqlite_data:/var/lib/signoz/
     environment:
