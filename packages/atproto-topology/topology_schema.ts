@@ -384,11 +384,11 @@ export function normalizeTopologyPreset(raw: RawTopologyPresetV1): NormalizedTop
 
   const roles: Record<string, NormalizedServiceSpec | InheritedServiceSpec> = {};
   for (const [roleKey, value] of Object.entries(raw.roles)) {
-    if ("inherit" in value) {
-      roles[roleKey] = value;
+    if (typeof value === "object" && value !== null && "inherit" in value) {
+      roles[roleKey] = value as InheritedServiceSpec;
       continue;
     }
-    roles[roleKey] = normalizeService(roleKey, value);
+    roles[roleKey] = normalizeService(roleKey, value as RawServiceSpec);
   }
 
   return {

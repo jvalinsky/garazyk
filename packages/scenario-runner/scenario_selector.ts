@@ -9,7 +9,7 @@ import {
 } from "./scenario_metadata.ts";
 import type { ScenarioInfo } from "./scenario_metadata.ts";
 import type { RunnerArgs } from "./run_scenarios_types.ts";
-import type { Topology } from "./topology.ts";
+import type { Topology } from "@garazyk/atproto-topology";
 
 /**
  * Normalize a scenario identifier to its zero-padded numeric form.

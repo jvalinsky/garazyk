@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run -A
 import { dirname, join } from "@std/path";
-import { WEB_CLIENT_PRESETS, WebClientTopology } from "../lib/deno/topology.ts";
+import { WEB_CLIENT_PRESETS, WebClientTopology } from "@garazyk/atproto-topology";
 
 interface Args {
   preset: string;

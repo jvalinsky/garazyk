@@ -1,0 +1,8 @@
+{
+  "name": "@garazyk/docker-client",
+  "version": "0.1.0",
+  "exports": {
+    ".": "./mod.ts",
+    "./compose": "./compose.ts"
+  }
+}

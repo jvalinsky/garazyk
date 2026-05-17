@@ -1,5 +1,5 @@
 #!/usr/bin/env -S deno run -A
-import { XrpcClient } from "./lib/deno/client.ts";
+import { XrpcClient } from "@garazyk/atproto-client";
 import {
   chatGetConvoForMembers,
   chatGetMessages,
@@ -7,7 +7,7 @@ import {
   chatSendMessage,
   createChatServiceContext,
   waitForServer,
-} from "./lib/deno/seed.ts";
+} from "@garazyk/atproto-client/seed";
 
 const baseUrl = (Deno.env.get("PDS_URL") || "http://localhost:2583").replace(/\/$/, "");
 const chatUrl = (Deno.env.get("CHAT_URL") || "http://localhost:2585").replace(/\/$/, "");

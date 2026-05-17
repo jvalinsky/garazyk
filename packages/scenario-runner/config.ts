@@ -1,6 +1,6 @@
 /** Test character definitions, registry, and service URL configuration. @module config */
-import { resolveTopology } from "./topology.ts";
-import type { Topology } from "./topology_types.ts";
+import { resolveTopology } from "@garazyk/atproto-topology";
+import type { Topology } from "@garazyk/atproto-topology";
 
 /** Browser client topology exposed through scenario configuration. */
 export interface WebClientConfig {

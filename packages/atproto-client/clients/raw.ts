@@ -1,5 +1,14 @@
 /** Raw HTTP/XRPC access (get, post, binary) for advanced use cases. @module raw */
 import { TransportLayer } from "../transport.ts";
+import type {
+  LexiconQueryIds,
+  LexiconProcedureIds,
+  QueryParams,
+  QueryOutput,
+  ProcedureInput,
+  ProcedureOutput,
+} from "../lexicons.ts";
+
 /** Client for raw HTTP and XRPC calls without a namespace-specific helper. */
 export class RawClient {
   /**
@@ -7,6 +16,34 @@ export class RawClient {
    * @param transport - The transport layer for XRPC calls
    */
   constructor(private transport: TransportLayer) {}
+
+  /**
+   * Invoke a typed XRPC query.
+   * @param method The XRPC query method id.
+   * @param params Query parameters.
+   * @param token Optional auth token.
+   */
+  async query<K extends LexiconQueryIds>(
+    method: K,
+    params?: QueryParams<K>,
+    token?: string
+  ): Promise<QueryOutput<K>> {
+    return (await this.transport.get(method, params as Record<string, any> | undefined, token)) as QueryOutput<K>;
+  }
+
+  /**
+   * Invoke a typed XRPC procedure.
+   * @param method The XRPC procedure method id.
+   * @param input Procedure input payload.
+   * @param token Optional auth token.
+   */
+  async procedure<K extends LexiconProcedureIds>(
+    method: K,
+    input?: ProcedureInput<K>,
+    token?: string
+  ): Promise<ProcedureOutput<K>> {
+    return (await this.transport.post(method, input, token)) as ProcedureOutput<K>;
+  }
 
   /**
    * Send a raw HTTP GET request

@@ -9,8 +9,8 @@ import {
   TopologyPreset,
 } from "./topology.ts";
 import { normalizeTopologyPreset, parseRawTopologyPresetV1 } from "./topology_schema.ts";
-import { ScenarioInfo } from "./scenario_metadata.ts";
-import { selectScenarios } from "./scenario_selector.ts";
+import { ScenarioInfo } from "@garazyk/scenario-runner";
+import { selectScenarios } from "@garazyk/scenario-runner";
 import { parseScenarioRequirement } from "./topology_schema.ts";
 import type { ScenarioRequirement } from "./topology_schema.ts";
 

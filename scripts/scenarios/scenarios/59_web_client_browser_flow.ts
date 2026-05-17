@@ -11,15 +11,15 @@
  * - Scenario completes successfully without errors.
  */
 
-import { SERVICE_URLS, WEB_CLIENT_TOPOLOGY } from "../../lib/deno/config.ts";
-import { ScenarioResult } from "../../lib/deno/runner.ts";
-export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
-export type { ScenarioReport } from "../../lib/deno/runner.ts";
-import { assert } from "../../lib/deno/assertions.ts";
-import { attachPublicNetworkLeakGuard } from "../../lib/deno/browser_flow.ts";
+import { SERVICE_URLS, WEB_CLIENT_TOPOLOGY } from "@garazyk/scenario-runner";
+import { ScenarioResult } from "@garazyk/scenario-runner";
+export { ScenarioResult, StepResult, StepStatus } from "@garazyk/scenario-runner";
+export type { ScenarioReport } from "@garazyk/scenario-runner";
+import { assert } from "@garazyk/scenario-runner";
+import { attachPublicNetworkLeakGuard } from "@garazyk/scenario-runner";
 import { chromium } from "npm:playwright";
 import { join } from "@std/path";
-import { timedCall } from "../../lib/deno/runner.ts";
+import { timedCall } from "@garazyk/scenario-runner";
 
 /**
  * Executes the scenario logic.

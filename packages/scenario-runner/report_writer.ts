@@ -4,7 +4,7 @@ import { join } from "@std/path";
 import type { ScenarioInfo } from "./scenario_metadata.ts";
 import type { RunnerArgs } from "./run_scenarios_types.ts";
 import type { ScenarioResult } from "./runner.ts";
-import type { Topology } from "./topology.ts";
+import type { Topology } from "@garazyk/atproto-topology";
 
 /** A single scenario result paired with its metadata. */
 export interface OverallResultItem {

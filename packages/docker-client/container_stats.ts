@@ -31,8 +31,8 @@ import {
   type MetricAttributes,
   recordCounter,
   recordGauge,
-} from "./otel.ts";
-import { formatBytes } from "./format.ts";
+} from "@garazyk/scenario-runner";
+import { formatBytes } from "@garazyk/scenario-runner";
 
 // ---------------------------------------------------------------------------
 // Types

@@ -8,7 +8,7 @@
  */
 
 import { join } from "@std/path";
-import { repoRoot, SERVICE_PORTS, serviceUrl } from "./docker_config.ts";
+import { repoRoot, SERVICE_PORTS, serviceUrl } from "@garazyk/atproto-topology";
 import { waitForHttp } from "./docker_health.ts";
 import type { LocalNetworkOptions, RunContext } from "./docker_types.ts";
 

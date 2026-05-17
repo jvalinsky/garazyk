@@ -19,19 +19,19 @@
 
 import { bold, brightBlue } from "@std/fmt/colors";
 import { fromFileUrl, join } from "@std/path";
-import { startLocalNetwork, stopLocalNetwork } from "./lib/deno/docker.ts";
-import { collectDiagnostics, createRunContext } from "./lib/deno/diagnostics.ts";
-import { resolveTopology, WEB_CLIENT_PRESETS } from "./lib/deno/topology.ts";
-import type { BrowserFlow, Topology } from "./lib/deno/topology.ts";
-import { formatRequirement } from "./lib/deno/scenario_metadata.ts";
-import type { ScenarioInfo } from "./lib/deno/scenario_metadata.ts";
-import { discoverScenarios, selectScenarios } from "./lib/deno/scenario_selector.ts";
-import { runScenarioLoop } from "./lib/deno/run_loop.ts";
-import { createProcessLifecycle } from "./lib/deno/process_lifecycle.ts";
-import { writeOverallSummary } from "./lib/deno/report_writer.ts";
-import { initE2eTracing, isOtelEnabled, shutdownTracing } from "./lib/deno/otel.ts";
-import { ScenarioResult } from "./lib/deno/runner.ts";
-import type { RunnerArgs } from "./lib/deno/run_scenarios_types.ts";
+import { startLocalNetwork, stopLocalNetwork } from "@garazyk/docker-client";
+import { collectDiagnostics, createRunContext } from "@garazyk/scenario-runner";
+import { resolveTopology, WEB_CLIENT_PRESETS } from "@garazyk/atproto-topology";
+import type { BrowserFlow, Topology } from "@garazyk/atproto-topology";
+import { formatRequirement } from "@garazyk/scenario-runner";
+import type { ScenarioInfo } from "@garazyk/scenario-runner";
+import { discoverScenarios, selectScenarios } from "@garazyk/scenario-runner";
+import { runScenarioLoop } from "@garazyk/scenario-runner";
+import { createProcessLifecycle } from "@garazyk/scenario-runner";
+import { writeOverallSummary } from "@garazyk/scenario-runner";
+import { initE2eTracing, isOtelEnabled, shutdownTracing } from "@garazyk/scenario-runner";
+import { ScenarioResult } from "@garazyk/scenario-runner";
+import type { RunnerArgs } from "@garazyk/scenario-runner";
 
 /**
  * Displays usage information for the test runner.

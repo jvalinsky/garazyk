@@ -16,7 +16,7 @@
  */
 
 import { parseArgs } from "@std/cli";
-import { CompilerOptions, compileTopology } from "../lib/deno/topology_compiler.ts";
+import { CompilerOptions, compileTopology } from "@garazyk/atproto-topology";
 
 const args = parseArgs(Deno.args, {
   string: ["preset", "output", "run-dir", "repo-root", "sources-json", "manifest-json"],

@@ -8,8 +8,8 @@
  */
 
 import { join } from "@std/path";
-import { repoRoot, serviceUrl } from "./docker_config.ts";
-import type { RunContext } from "./docker_types.ts";
+import { repoRoot, serviceUrl } from "@garazyk/atproto-topology";
+import type { RunContext } from "@garazyk/docker-client";
 
 /**
  * Collect run metadata, HTTP endpoint snapshots, and optional Docker state.

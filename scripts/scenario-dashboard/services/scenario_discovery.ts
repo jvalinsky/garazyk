@@ -6,7 +6,7 @@
 import { fromFileUrl, join } from "$std/path/mod.ts";
 import { DiscoveredScenario } from "./types.ts";
 import { categorize } from "../utils.ts";
-import { getParameters, getRequires, needsPds2 } from "../../lib/deno/scenario_metadata.ts";
+import { getParameters, getRequires, needsPds2 } from "@garazyk/scenario-runner";
 
 const SCENARIOS_DIR = join(
   fromFileUrl(new URL("../../scenarios/scenarios", import.meta.url)),

@@ -13,8 +13,8 @@
  * @module docker_api
  */
 
-import { formatBytes } from "./format.ts";
-import { withSpan } from "./otel.ts";
+import { formatBytes } from "@garazyk/scenario-runner";
+import { withSpan } from "@garazyk/scenario-runner";
 
 // ---------------------------------------------------------------------------
 // Types

@@ -1,7 +1,7 @@
 /** E2E run diagnostics collection — metadata, HTTP probes, log bundling. @module diagnostics */
 import { join, resolve } from "@std/path";
 import { copy, exists } from "@std/fs";
-import { loadTopologyManifest } from "./topology.ts";
+import { loadTopologyManifest } from "@garazyk/atproto-topology";
 
 const BASE_DIR = "/tmp/garazyk-atproto-e2e";
 

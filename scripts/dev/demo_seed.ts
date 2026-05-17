@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run -A
-import { XrpcClient } from "../lib/deno/client.ts";
-import { createAccountOrLogin, nowIso, waitForServer } from "../lib/deno/seed.ts";
+import { XrpcClient } from "@garazyk/atproto-client";
+import { createAccountOrLogin, nowIso, waitForServer } from "@garazyk/atproto-client/seed";
 
 const baseUrl = (Deno.env.get("PDS_URL") || "http://localhost:2583").replace(/\/$/, "");
 

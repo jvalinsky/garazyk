@@ -14,12 +14,12 @@
  * - PLC operation log audit verifies chain integrity and handle updates.
  */
 
-import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
-export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
-export type { ScenarioReport } from "../../lib/deno/runner.ts";
-import { assert } from "../../lib/deno/assertions.ts";
-import { XrpcClient } from "../../lib/deno/client.ts";
-import { getCharacter, PDS1, PDS2, SERVICE_URLS } from "../../lib/deno/config.ts";
+import { ScenarioResult, timedCall } from "@garazyk/scenario-runner";
+export { ScenarioResult, StepResult, StepStatus } from "@garazyk/scenario-runner";
+export type { ScenarioReport } from "@garazyk/scenario-runner";
+import { assert } from "@garazyk/scenario-runner";
+import { XrpcClient } from "@garazyk/atproto-client";
+import { getCharacter, PDS1, PDS2, SERVICE_URLS } from "@garazyk/scenario-runner";
 
 /**
  * Executes the scenario logic.

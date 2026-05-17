@@ -7,17 +7,17 @@
 
 import { bold, green, red, yellow } from "@std/fmt/colors";
 import { isOtelEnabled, withSpan } from "./otel.ts";
-import { ContainerEventWatcher, type WatcherEvent } from "./docker_events.ts";
-import { ContainerStatsSampler } from "./container_stats.ts";
-import { createDockerClient } from "./docker_api.ts";
+import { ContainerEventWatcher, type WatcherEvent } from "@garazyk/docker-client";
+import { ContainerStatsSampler } from "@garazyk/docker-client";
+import { createDockerClient } from "@garazyk/docker-client";
 import { formatBytes } from "./format.ts";
 import { DurationCache, ProgressBar } from "./progress.ts";
 import { runScenario } from "./scenario_runner.ts";
 import type { ScenarioInfo } from "./scenario_metadata.ts";
 import { ScenarioResult } from "./runner.ts";
-import type { RunContext } from "./docker_types.ts";
+import type { RunContext } from "@garazyk/docker-client";
 import type { RunnerArgs } from "./run_scenarios_types.ts";
-import type { Topology } from "./topology_types.ts";
+import type { Topology } from "@garazyk/atproto-topology";
 
 /** Result returned by the scenario execution loop. */
 export interface ScenarioExecutionResult {

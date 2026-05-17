@@ -4,9 +4,9 @@
  * Centralizes scenario requirements, PDS2 needs, and browser flow declarations.
  */
 
-import type { BrowserFlow, ScenarioRequirement, Topology } from "./topology.ts";
-import { parseScenarioRequirement } from "./topology_schema.ts";
-import { validateRoleCapability } from "./topology_registry.ts";
+import type { BrowserFlow, ScenarioRequirement, Topology } from "@garazyk/atproto-topology";
+import { parseScenarioRequirement } from "@garazyk/atproto-topology";
+import { validateRoleCapability } from "@garazyk/atproto-topology";
 
 /**
  * Metadata describing a scenario's requirements and capabilities.

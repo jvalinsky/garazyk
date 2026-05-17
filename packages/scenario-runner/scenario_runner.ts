@@ -1,9 +1,9 @@
 /** Scenario execution — host runner and Docker runner modes with timeout support. @module scenario_runner */
 import type { ScenarioInfo } from "./scenario_metadata.ts";
 import type { RunnerArgs } from "./run_scenarios_types.ts";
-import type { Topology } from "./topology.ts";
+import type { Topology } from "@garazyk/atproto-topology";
 import { ScenarioResult } from "./runner.ts";
-import { runScenarioInDocker } from "./docker_runner.ts";
+import { runScenarioInDocker } from "@garazyk/docker-client";
 import { withSpan } from "./otel.ts";
 
 /**
@@ -110,7 +110,7 @@ export async function runScenario(
       const runnerEnv = topology.manifest.env?.hostRunner || topology.manifest.scenarioEnv;
       const scenarioEnv = topology.manifest.env?.scenario || {};
       for (const [key, value] of Object.entries({ ...runnerEnv, ...scenarioEnv })) {
-        Deno.env.set(key, value);
+        Deno.env.set(key, String(value));
       }
     }
     const { resetCharacters } = await import("./config.ts");

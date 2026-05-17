@@ -5,7 +5,7 @@
  *
  * @module run_scenarios_types
  */
-import type { BrowserFlow } from "./topology.ts";
+import type { BrowserFlow } from "@garazyk/atproto-topology";
 
 /** CLI arguments parsed for the scenario runner
  *

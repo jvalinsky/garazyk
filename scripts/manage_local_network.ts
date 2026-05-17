@@ -18,7 +18,7 @@ import {
   type LocalNetworkOptions,
   startLocalNetwork,
   stopLocalNetwork,
-} from "./lib/deno/docker.ts";
+} from "@garazyk/docker-client";
 
 const args = parseArgs(Deno.args, {
   boolean: [

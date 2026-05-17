@@ -6,7 +6,7 @@
  */
 
 import { join } from "@std/path";
-import type { RunContext } from "./docker_types.ts";
+import type { RunContext } from "@garazyk/docker-client";
 
 // ---------------------------------------------------------------------------
 // Service configuration

@@ -11,7 +11,7 @@ import {
   findPortConflicts,
   findStaleProjectsOnPorts,
 } from "./docker_api.ts";
-import { neededPorts, serviceUrl } from "./docker_config.ts";
+import { neededPorts, serviceUrl } from "@garazyk/atproto-topology";
 import { composeDown } from "./docker_compose.ts";
 
 // ---------------------------------------------------------------------------

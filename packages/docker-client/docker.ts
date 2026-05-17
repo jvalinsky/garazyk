@@ -8,26 +8,26 @@
  */
 
 import { join } from "@std/path";
-import { formatBytes } from "./format.ts";
-import { initRunDir, repoRoot } from "./docker_config.ts";
+import { formatBytes } from "@garazyk/scenario-runner";
+import { initRunDir, repoRoot } from "@garazyk/atproto-topology";
 import { composeDown, composeUp } from "./docker_compose.ts";
 import { stopStaleDockerE2e, stopStaleHostProcesses } from "./docker_cleanup.ts";
 import { waitForHttp, waitForService, waitForServiceCLI } from "./docker_health.ts";
-import { collectDiagnostics } from "./docker_diagnostics.ts";
+import { collectDockerDiagnostics as collectDiagnostics } from "@garazyk/scenario-runner";
 import { startBinaryServices, stopBinaryServices } from "./docker_binary.ts";
 import { ContainerEventWatcher } from "./docker_events.ts";
-import { isOtelEnabled, withSpan } from "./otel.ts";
+import { isOtelEnabled, withSpan } from "@garazyk/scenario-runner";
 import { ContainerStatsSampler } from "./container_stats.ts";
 import { createDockerClient } from "./docker_api.ts";
 import type { LocalNetworkOptions, RunContext } from "./docker_types.ts";
 
 // Re-exports for backward compatibility
 export type { LocalNetworkOptions, RunContext } from "./docker_types.ts";
-export { initRunDir, neededPorts, repoRoot, SERVICE_PORTS, serviceUrl } from "./docker_config.ts";
+export { initRunDir, neededPorts, repoRoot, SERVICE_PORTS, serviceUrl } from "@garazyk/atproto-topology";
 export { composeDown, composeUp } from "./docker_compose.ts";
 export { stopStaleDockerE2e, stopStaleHostProcesses } from "./docker_cleanup.ts";
 export { waitForHttp, waitForService, waitForServiceCLI } from "./docker_health.ts";
-export { collectDiagnostics } from "./docker_diagnostics.ts";
+export { collectDockerDiagnostics as collectDiagnostics } from "@garazyk/scenario-runner";
 export { startBinaryServices, stopBinaryServices } from "./docker_binary.ts";
 
 // ---------------------------------------------------------------------------

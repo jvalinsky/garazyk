@@ -26,7 +26,7 @@ import {
   type DockerEvent,
   healthStatus,
 } from "./docker_api.ts";
-import { addSpanEvent, withSpan } from "./otel.ts";
+import { addSpanEvent, withSpan } from "@garazyk/scenario-runner";
 
 // ---------------------------------------------------------------------------
 // Scoped AbortError suppression

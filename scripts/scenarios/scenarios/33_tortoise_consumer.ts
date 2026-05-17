@@ -11,13 +11,13 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
-import { ScenarioResult } from "../../lib/deno/runner.ts";
-export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
-export type { ScenarioReport } from "../../lib/deno/runner.ts";
-import { XrpcClient } from "../../lib/deno/client.ts";
-import { assert } from "../../lib/deno/assertions.ts";
-import { timedCall } from "../../lib/deno/runner.ts";
+import { getCharacter, PDS1 } from "@garazyk/scenario-runner";
+import { ScenarioResult } from "@garazyk/scenario-runner";
+export { ScenarioResult, StepResult, StepStatus } from "@garazyk/scenario-runner";
+export type { ScenarioReport } from "@garazyk/scenario-runner";
+import { XrpcClient } from "@garazyk/atproto-client";
+import { assert } from "@garazyk/scenario-runner";
+import { timedCall } from "@garazyk/scenario-runner";
 
 /**
  * Executes the scenario logic.
