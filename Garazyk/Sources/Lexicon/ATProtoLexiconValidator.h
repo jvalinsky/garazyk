@@ -69,6 +69,9 @@ typedef NS_ENUM(NSInteger, ATProtoValidationMode) {
  In required mode, returns NO if lexicon is unknown.
  In off mode, always returns YES without validation.
  */
+/**
+ * @abstract Performs the validateRecord operation.
+ */
 - (BOOL)validateRecord:(NSDictionary *)record
             collection:(NSString *)collection
                   mode:(ATProtoValidationMode)mode

@@ -52,6 +52,9 @@ extern NSString * const MikrusDatabaseErrorDomain;
  * @param error Receives failure details.
  * @return YES if successful.
  */
+/**
+ * @abstract Performs the indexRecord operation.
+ */
 - (BOOL)indexRecord:(NSDictionary *)record
                 did:(NSString *)did
          collection:(NSString *)collection
@@ -85,6 +88,9 @@ extern NSString * const MikrusDatabaseErrorDomain;
  * @param error Receives failure details.
  * @return Array of backlink records.
  */
+/**
+ * @abstract Performs the backlinkRecordsForSubject operation.
+ */
 - (nullable NSArray<NSDictionary *> *)backlinkRecordsForSubject:(NSString *)subject
                                                          source:(MikrusSourceSpec *)source
                                                      didFilters:(NSArray<NSString *> *)didFilters
@@ -104,6 +110,9 @@ extern NSString * const MikrusDatabaseErrorDomain;
  * @param total Output parameter for result count.
  * @param error Receives failure details.
  * @return Array of DIDs.
+ */
+/**
+ * @abstract Performs the backlinkDIDsForSubject operation.
  */
 - (nullable NSArray<NSString *> *)backlinkDIDsForSubject:(NSString *)subject
                                                   source:(MikrusSourceSpec *)source
@@ -137,6 +146,9 @@ extern NSString * const MikrusDatabaseErrorDomain;
  * @param error Receives failure details.
  * @return Array of relationship results.
  */
+/**
+ * @abstract Performs the manyToManyItemsForSubject operation.
+ */
 - (nullable NSArray<NSDictionary *> *)manyToManyItemsForSubject:(NSString *)subject
                                                          source:(MikrusSourceSpec *)source
                                                     pathToOther:(NSString *)pathToOther
@@ -159,6 +171,9 @@ extern NSString * const MikrusDatabaseErrorDomain;
  * @param nextCursor Output parameter for the next cursor.
  * @param error Receives failure details.
  * @return Array of relationship count results.
+ */
+/**
+ * @abstract Performs the manyToManyCountsForSubject operation.
  */
 - (nullable NSArray<NSDictionary *> *)manyToManyCountsForSubject:(NSString *)subject
                                                           source:(MikrusSourceSpec *)source

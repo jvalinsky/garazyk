@@ -24,6 +24,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface AppViewGraphQueryHandler : NSObject <AppViewLexiconQueryHandler>
 
+/**
+ * @abstract Performs the initWithGraphService operation.
+ */
 - (instancetype)initWithGraphService:(GraphService *)graphService;
 
 @end

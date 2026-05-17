@@ -29,6 +29,9 @@ NS_ASSUME_NONNULL_BEGIN
 @class PDSDatabasePool;
 @class RateLimiter;
 @class XrpcDispatcher;
+/**
+ * @abstract Defines the PDSAdminController protocol contract.
+ */
 @protocol PDSAdminController;
 @protocol PDSQueryDatabase;
 @protocol VideoJobStore;
@@ -113,6 +116,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, nullable) id<VideoAuthProvider> videoAuthProvider;
 @property (nonatomic, strong, nullable) id<PDSBlobProvider> blobProvider;
 
+/**
+ * @abstract Performs the initWithDispatcher operation.
+ */
 - (instancetype)initWithDispatcher:(nullable XrpcDispatcher *)dispatcher
                          jwtMinter:(nullable JWTMinter *)jwtMinter
                    adminController:(nullable id<PDSAdminController>)adminController
@@ -123,7 +129,13 @@ NS_ASSUME_NONNULL_BEGIN
                         rateLimiter:(nullable RateLimiter *)rateLimiter
     NS_DESIGNATED_INITIALIZER;
 
+/**
+ * @abstract Returns the operation result.
+ */
 - (instancetype)init NS_UNAVAILABLE;
+/**
+ * @abstract Returns the operation result.
+ */
 + (instancetype)new NS_UNAVAILABLE;
 
 @end

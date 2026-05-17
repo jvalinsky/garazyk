@@ -5,8 +5,14 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Declares the PDSCLIReplCommand public API.
+ */
 @interface PDSCLIReplCommand : PDSBaseCommand
 
+/**
+ * @abstract Returns the command result.
+ */
 + (instancetype)command;
 
 @end

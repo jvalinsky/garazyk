@@ -96,6 +96,9 @@ NS_ASSUME_NONNULL_BEGIN
 
  @discussion On GNUstep, this always returns nil. Use AuthCryptoDPoP instead.
  */
+/**
+ * @abstract Performs the createDPoPForMethod operation.
+ */
 + (nullable DPoPToken *)createDPoPForMethod:(NSString *)htm
                                          uri:(NSString *)htu
                                        nonce:(nullable NSString *)nonce
@@ -114,6 +117,9 @@ NS_ASSUME_NONNULL_BEGIN
  @return YES if valid
 
  @discussion On GNUstep, this always returns NO. Use AuthCryptoDPoP instead.
+ */
+/**
+ * @abstract Performs the verifyDPoP operation.
  */
 + (BOOL)verifyDPoP:(NSString *)dpopJwt
       withPublicKey:(nullable SecKeyRef)publicKey

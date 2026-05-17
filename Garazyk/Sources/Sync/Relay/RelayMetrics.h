@@ -99,6 +99,9 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (NSDictionary *)snapshotDictionary;
 
+/**
+ * @abstract Exposes the upstream connections value.
+ */
 @property (nonatomic, readonly) int64_t upstreamConnections;
 /** Number of connected downstream subscribers. */
 @property (nonatomic, readonly) int64_t downstreamConnections;

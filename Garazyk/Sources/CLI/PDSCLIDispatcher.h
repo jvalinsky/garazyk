@@ -8,6 +8,9 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @brief Provides testing hooks for the CLI dispatcher.
  */
+/**
+ * @abstract Extends PDSCLIDispatcher with testing behavior.
+ */
 @interface PDSCLIDispatcher (Testing)
 
 /**
@@ -30,6 +33,9 @@ typedef NSDictionary<NSString *, id> *_Nullable (^PDSCLIServicePayloadProvider)(
 
 @interface PDSCLIServiceStub : NSObject
 
+/**
+ * @abstract Exposes the service did value.
+ */
 @property (nonatomic, copy) NSString *serviceDid;
 @property (nonatomic, copy) NSString *serviceHost;
 @property (nonatomic, copy, nullable) PDSCLIServicePayloadProvider payloadProvider;

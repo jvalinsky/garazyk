@@ -15,6 +15,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 extern NSErrorDomain const SSRFValidatorErrorDomain;
 
+/**
+ * @abstract Defines SSRFValidatorErrorCode values exposed by this API.
+ */
 typedef NS_ENUM(NSInteger, SSRFValidatorErrorCode) {
     SSRFValidatorErrorInvalidHost = 1,
     SSRFValidatorErrorResolutionFailed = 2,
@@ -22,10 +25,22 @@ typedef NS_ENUM(NSInteger, SSRFValidatorErrorCode) {
     SSRFValidatorErrorPrivateAddress = 4,
 };
 
+/**
+ * @abstract Declares the SSRFValidator public API.
+ */
 @interface SSRFValidator : NSObject
 
+/**
+ * @abstract Performs the isPrivateIPv4Address operation.
+ */
 + (BOOL)isPrivateIPv4Address:(uint32_t)ip;
+/**
+ * @abstract Performs the isPrivateIPv6Address operation.
+ */
 + (BOOL)isPrivateIPv6Address:(struct in6_addr)ip6;
+/**
+ * @abstract Performs the validateHostResolvesToPublicIP operation.
+ */
 + (BOOL)validateHostResolvesToPublicIP:(NSString *)hostname error:(NSError **)error;
 
 @end

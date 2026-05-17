@@ -29,6 +29,9 @@ NS_ASSUME_NONNULL_BEGIN
  @return YES if the upgrade is valid and should proceed, NO if an error
          response was set on the response object.
  */
+/**
+ * @abstract Performs the handleUpgradeRequest operation.
+ */
 - (BOOL)handleUpgradeRequest:(HttpRequest *)request response:(HttpResponse *)response;
 
 /*!

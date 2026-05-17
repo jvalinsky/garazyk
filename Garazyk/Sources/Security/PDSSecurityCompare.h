@@ -4,11 +4,20 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Declares the PDSSecurityCompare public API.
+ */
 @interface PDSSecurityCompare : NSObject
 
+/**
+ * @abstract Performs the constantTimeEqualData operation.
+ */
 + (BOOL)constantTimeEqualData:(nullable NSData *)a
                          data:(nullable NSData *)b;
 
+/**
+ * @abstract Performs the constantTimeEqualString operation.
+ */
 + (BOOL)constantTimeEqualString:(nullable NSString *)a
                          string:(nullable NSString *)b;
 

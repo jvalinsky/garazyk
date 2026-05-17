@@ -23,9 +23,15 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface XrpcGermMailboxPack : NSObject
 
+/**
+ * @abstract Performs the initWithMailboxService operation.
+ */
 - (instancetype)initWithMailboxService:(GermMailboxService *)mailboxService
                           authManager:(ChatAuthManager *)authManager;
 
+/**
+ * @abstract Performs the registerHandlersWithDispatcher operation.
+ */
 - (void)registerHandlersWithDispatcher:(XrpcDispatcher *)dispatcher;
 
 @end

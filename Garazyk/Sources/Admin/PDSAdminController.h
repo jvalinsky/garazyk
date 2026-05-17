@@ -18,6 +18,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class PDSServiceDatabases;
 @class PDSAdminService;
+/**
+ * @abstract Defines the PDSAccountService protocol contract.
+ */
 @protocol PDSAccountService;
 @protocol PDSAdminService;
 
@@ -68,6 +71,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param reason The reason for deactivation.
  @param error On return, contains an error if the operation failed.
  @return YES if successful, NO otherwise.
+ */
+/**
+ * @abstract Performs the deactivateAccount operation.
  */
 - (BOOL)deactivateAccount:(NSString *)did reason:(NSString *)reason error:(NSError **)error;
 
@@ -183,6 +189,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param error On return, contains an error if the operation failed.
  @return YES if successful, NO otherwise.
  */
+/**
+ * @abstract Performs the logAdminAction operation.
+ */
 - (BOOL)logAdminAction:(NSString *)action
            subjectType:(nullable NSString *)subjectType
              subjectId:(nullable NSString *)subjectId
@@ -201,6 +210,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param cursor Pagination cursor.
  @param error On return, contains an error if the operation failed.
  @return Dictionary with audit log entries, or nil on failure.
+ */
+/**
+ * @abstract Performs the queryAuditLog operation.
  */
 - (nullable NSDictionary *)queryAuditLog:(NSDictionary *)filters
                                    limit:(NSInteger)limit
@@ -231,6 +243,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param error On return, contains an error if the operation failed.
  @return Dictionary with reports, or nil on failure.
  */
+/**
+ * @abstract Performs the queryReports operation.
+ */
 - (nullable NSDictionary *)queryReports:(NSDictionary *)filters
                                   limit:(NSInteger)limit
                                 cursor:(nullable NSString *)cursor
@@ -247,6 +262,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param notes Resolution notes.
  @param error On return, contains an error if the operation failed.
  @return YES if successful, NO otherwise.
+ */
+/**
+ * @abstract Performs the resolveReport operation.
  */
 - (BOOL)resolveReport:(NSString *)reportId
                status:(NSString *)status
@@ -275,6 +293,9 @@ NS_ASSUME_NONNULL_BEGIN
  // Create a label
  NSDictionary *label = [admin createLabel:@{@"uri": @"at://...", @"val": @"spam"} error:&error];
  @endcode
+ */
+/**
+ * @abstract Declares the PDSAdminController public API.
  */
 @interface PDSAdminController : NSObject <PDSAdminController>
 

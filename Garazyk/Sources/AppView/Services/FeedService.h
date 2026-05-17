@@ -97,7 +97,13 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)indexPostgate:(NSDictionary *)record did:(NSString *)did uri:(NSString *)uri cid:(NSString *)cid error:(NSError **)error;
 - (BOOL)unindexPostgateWithURI:(NSString *)uri error:(NSError **)error;
 
+/**
+ * @abstract Performs the indexGenerator operation.
+ */
 - (BOOL)indexGenerator:(NSDictionary *)record did:(NSString *)did uri:(NSString *)uri cid:(NSString *)cid error:(NSError **)error;
+/**
+ * @abstract Performs the unindexGeneratorWithURI operation.
+ */
 - (BOOL)unindexGeneratorWithURI:(NSString *)uri error:(NSError **)error;
 
 @end

@@ -48,6 +48,9 @@ NS_ASSUME_NONNULL_BEGIN
  }
  @endcode
  */
+/**
+ * @abstract Declares the ATProtoHttpServerBuilder public API.
+ */
 @interface ATProtoHttpServerBuilder : NSObject
 
 #pragma mark - Configuration Properties
@@ -131,6 +134,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param error On return, contains an error if building failed.
  @return A configured HttpServer instance, or nil on failure.
  */
+/**
+ * @abstract Performs the buildWithError operation.
+ */
 - (nullable HttpServer *)buildWithError:(NSError **)error;
 
 /*!
@@ -144,6 +150,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param server The HTTP server to configure.
  @param error On return, contains an error if configuration failed.
  @return YES if configuration succeeded, NO otherwise.
+ */
+/**
+ * @abstract Performs the configureServer operation.
  */
 - (BOOL)configureServer:(HttpServer *)server error:(NSError **)error;
 

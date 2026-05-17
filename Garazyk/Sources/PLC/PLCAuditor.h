@@ -52,6 +52,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param error On failure, set to the verification error.
  @result YES when the operation is valid for insertion, otherwise NO.
  */
+/**
+ * @abstract Performs the verifyOperation operation.
+ */
 - (BOOL)verifyOperation:(PLCOperation *)op
 	           proposedDate:(NSDate *)proposedDate
 	          nullifiedCIDs:(NSArray<NSString *> * _Nullable __autoreleasing * _Nullable)nullified

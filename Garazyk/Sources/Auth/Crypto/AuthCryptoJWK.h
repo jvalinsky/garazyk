@@ -65,6 +65,9 @@ NS_ASSUME_NONNULL_END
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Extends AuthCryptoJWK with deprecated behavior.
+ */
 @interface AuthCryptoJWK (Deprecated)
 
 /*! Creates a SecKeyRef public key from an EC P-256 JWK. Caller must CFRelease. */

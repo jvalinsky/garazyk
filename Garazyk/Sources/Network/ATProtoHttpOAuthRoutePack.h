@@ -20,6 +20,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface ATProtoHttpOAuthRoutePack : NSObject
 
+/**
+ * @abstract Performs the registerRoutesWithServer operation.
+ */
 + (void)registerRoutesWithServer:(HttpServer *)server
                 serviceDatabases:(nullable PDSServiceDatabases *)serviceDatabases
                        jwtMinter:(nullable JWTMinter *)jwtMinter

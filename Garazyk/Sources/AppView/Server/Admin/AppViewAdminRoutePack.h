@@ -15,11 +15,17 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface AppViewAdminRoutePack : NSObject
 
+/**
+ * @abstract Performs the initWithOrchestrator operation.
+ */
 - (instancetype)initWithOrchestrator:(nullable AppViewBackfillOrchestrator *)orchestrator
                         ingestEngine:(AppViewIngestEngine *)ingestEngine
                             database:(AppViewDatabase *)database
                          adminSecret:(nullable NSString *)adminSecret;
 
+/**
+ * @abstract Performs the registerRoutesWithServer operation.
+ */
 - (void)registerRoutesWithServer:(HttpServer *)server;
 
 /*!

@@ -77,6 +77,9 @@ NS_ASSUME_NONNULL_BEGIN
  @param request The HTTP request.
  @param response The HTTP response to populate.
  */
+/**
+ * @abstract Performs the handleRequest operation.
+ */
 - (void)handleRequest:(HttpRequest *)request response:(HttpResponse *)response;
 
 @end

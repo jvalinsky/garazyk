@@ -4,6 +4,9 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Declares the PDSKeyEnvelope public API.
+ */
 @interface PDSKeyEnvelope : NSObject
 
 /**

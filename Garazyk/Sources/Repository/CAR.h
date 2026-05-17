@@ -82,6 +82,9 @@ NS_ASSUME_NONNULL_BEGIN
  NSArray *blocks = reader.blocks;
  @endcode
  */
+/**
+ * @abstract Declares the CARReader public API.
+ */
 @interface CARReader : NSObject
 
 /*! The root CID of the CAR archive (the first block). */
@@ -147,6 +150,9 @@ NS_ASSUME_NONNULL_BEGIN
  // Or write to file
  [writer writeToPath:@"/path/to/output.car" error:nil];
  @endcode
+ */
+/**
+ * @abstract Declares the CARWriter public API.
  */
 @interface CARWriter : NSObject
 

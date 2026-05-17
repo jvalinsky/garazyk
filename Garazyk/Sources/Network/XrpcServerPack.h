@@ -8,6 +8,9 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * XrpcServerPack registers all com.atproto.server.* endpoint handlers.
  */
+/**
+ * @abstract Declares the XrpcServerPack public API.
+ */
 @interface XrpcServerPack : NSObject <XrpcRoutePack>
 
 @end
