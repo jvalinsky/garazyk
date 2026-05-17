@@ -22,16 +22,9 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma mark - Middleware Protocol
 
 /**
- * Protocol for XRPC middleware handlers.
- *
- * Middleware can:
- * - Validate and reject requests (return NO, set error on response)
- * - Modify request headers or body
- * - Inject context into the request (e.g., authenticated DID)
- * - Perform side effects (logging, rate limiting)
- *
- * Middleware chains are executed in order. If any middleware returns NO,
- * the chain stops and the response is sent.
+ * @abstract Handles one step in an XRPC request middleware chain.
+ * @discussion Middleware may validate, reject, enrich, or record request state before
+ * the endpoint handler runs. Returning NO stops chain execution.
  */
 @protocol XrpcMiddleware <NSObject>
 
@@ -49,7 +42,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @optional
 
-/// Human-readable name for debugging
+/** Human-readable name for diagnostics and debugging. */
 @property (nonatomic, copy, readonly) NSString *middlewareName;
 
 @end
@@ -57,20 +50,17 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma mark - Middleware Chain
 
 /**
- * Executes a sequence of middleware in order.
- *
- * If any middleware returns NO, the chain stops and the response is returned.
- * The chain passes the request through all middleware before reaching the final handler.
+ * @abstract Executes a sequence of middleware in insertion order.
  */
 @interface XrpcMiddlewareChain : NSObject <XrpcMiddleware>
 
-/// Add middleware to the chain (executed in order added)
+/** Adds middleware to the end of the chain. */
 - (void)addMiddleware:(id<XrpcMiddleware>)middleware;
 
-/// Add multiple middleware at once
+/** Adds multiple middleware objects in array order. */
 - (void)addMiddlewares:(NSArray<id<XrpcMiddleware>> *)middlewares;
 
-/// Number of middleware in chain
+/** Number of middleware objects in the chain. */
 @property (nonatomic, readonly) NSUInteger count;
 
 @end
@@ -78,13 +68,11 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma mark - Auth Middleware
 
 /**
- * Authentication middleware for XRPC endpoints.
- *
- * Provides both user authentication (JWT/DPoP) and admin authentication.
+ * @abstract Authenticates user and admin requests before endpoint dispatch.
  */
 @interface AuthMiddleware : NSObject <XrpcMiddleware>
 
-/// Middleware name
+/** Human-readable middleware name. */
 @property (nonatomic, copy, readonly) NSString *middlewareName;
 
 /**
@@ -124,13 +112,11 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma mark - Rate Limit Middleware
 
 /**
- * Rate limiting middleware for XRPC endpoints.
- *
- * Tracks request counts per user (DID) or per IP address.
+ * @abstract Applies request rate limits per authenticated user or source IP.
  */
 @interface RateLimitMiddleware : NSObject <XrpcMiddleware>
 
-/// Middleware name
+/** Human-readable middleware name. */
 @property (nonatomic, copy, readonly) NSString *middlewareName;
 
 /**
@@ -158,13 +144,11 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma mark - Resource Ownership Middleware
 
 /**
- * Resource ownership validation middleware.
- *
- * Validates that the authenticated user owns the resource they're trying to access.
+ * @abstract Validates that the authenticated actor owns a requested repository or record.
  */
 @interface ResourceOwnershipMiddleware : NSObject <XrpcMiddleware>
 
-/// Middleware name
+/** Human-readable middleware name. */
 @property (nonatomic, copy, readonly) NSString *middlewareName;
 
 /**
@@ -193,25 +177,31 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - Error Domain
 
-/// Error domain for middleware errors
+/** Error domain for middleware errors. */
 extern NSString * const XrpcMiddlewareErrorDomain;
 
-/// Error codes for middleware failures
+/**
+ * @abstract Error codes returned by XRPC middleware failures.
+ */
 typedef NS_ENUM(NSInteger, XrpcMiddlewareError) {
-    XrpcMiddlewareErrorAuthRequired = 1000,      // Authentication required
-    XrpcMiddlewareErrorAuthInvalid = 1001,       // Invalid authentication
-    XrpcMiddlewareErrorAdminRequired = 1002,     // Admin privileges required
-    XrpcMiddlewareErrorRateLimited = 1003,      // Rate limit exceeded
-    XrpcMiddlewareErrorNotOwner = 1004,          // User doesn't own resource
-    XrpcMiddlewareErrorInternal = 1005,          // Internal error
+    /** The endpoint requires authentication. */
+    XrpcMiddlewareErrorAuthRequired = 1000,
+    /** The supplied authentication token or proof is invalid. */
+    XrpcMiddlewareErrorAuthInvalid = 1001,
+    /** The endpoint requires administrative privileges. */
+    XrpcMiddlewareErrorAdminRequired = 1002,
+    /** The request exceeded its configured rate limit. */
+    XrpcMiddlewareErrorRateLimited = 1003,
+    /** The authenticated actor does not own the target resource. */
+    XrpcMiddlewareErrorNotOwner = 1004,
+    /** Middleware failed because of an internal error. */
+    XrpcMiddlewareErrorInternal = 1005,
 };
 
 #pragma mark - Middleware Presets
 
 /**
- * Factory for common middleware chain presets.
- *
- * Provides pre-configured middleware chains for typical endpoint patterns.
+ * @abstract Builds common XRPC middleware chains for endpoint registration.
  */
 @interface XrpcMiddlewarePresets : NSObject
 
