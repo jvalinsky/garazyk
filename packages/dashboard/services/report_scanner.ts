@@ -5,30 +5,41 @@
 
 import { join } from "@std/path";
 import type { Database } from "sqlite3";
+import { z } from "zod";
 import type { Run } from "./types.ts";
 import { getDashboardPaths } from "../paths.ts";
 
+const nonNegativeInteger = z.number().int().nonnegative().finite();
+const nonNegativeNumber = z.number().nonnegative().finite();
+
+const reportFileSchema = z.object({
+  scenario: z.string().min(1),
+  started_at: nonNegativeNumber,
+  finished_at: nonNegativeNumber,
+  duration_s: nonNegativeNumber,
+  steps: z.array(z.object({
+    name: z.string(),
+    status: z.string(),
+    detail: z.string().optional(),
+    duration_ms: nonNegativeNumber.optional(),
+  })),
+  summary: z.object({
+    passed: nonNegativeInteger,
+    failed: nonNegativeInteger,
+    skipped: nonNegativeInteger,
+    total: nonNegativeInteger,
+  }),
+  ok: z.boolean(),
+  artifacts: z.record(z.unknown()).optional(),
+  metadata: z.record(z.unknown()).optional(),
+});
+
 /** Internal report file structure parsed from JSON. */
-interface ReportFile {
-  scenario: string;
-  started_at: number;
-  finished_at: number;
-  duration_s: number;
-  steps: Array<{
-    name: string;
-    status: string;
-    detail: string;
-    duration_ms: number;
-  }>;
-  summary: {
-    passed: number;
-    failed: number;
-    skipped: number;
-    total: number;
-  };
-  ok: boolean;
-  artifacts?: Record<string, unknown>;
-  metadata?: Record<string, unknown>;
+type ReportFile = z.infer<typeof reportFileSchema>;
+
+interface ReadReportFileResult {
+  filename: string;
+  report: ReportFile;
 }
 
 function scenarioIdFromFilename(filename: string): string {
@@ -38,21 +49,51 @@ function scenarioIdFromFilename(filename: string): string {
 
 async function readRunReportFiles(
   reportsDir: string,
-): Promise<Array<{ filename: string; report: ReportFile }>> {
-  const reports: Array<{ filename: string; report: ReportFile }> = [];
+): Promise<ReadReportFileResult[]> {
+  const reports: ReadReportFileResult[] = [];
   for await (const entry of Deno.readDir(reportsDir)) {
     if (!entry.isFile || !entry.name.endsWith(".json")) continue;
     if (
       entry.name === "overall-summary.json" ||
       entry.name.endsWith("-progress.json")
     ) continue;
-    const content = await Deno.readTextFile(join(reportsDir, entry.name));
-    reports.push({
-      filename: entry.name,
-      report: JSON.parse(content) as ReportFile,
-    });
+
+    const report = await readRunReportFile(reportsDir, entry.name);
+    if (report) reports.push(report);
   }
   return reports;
+}
+
+async function readRunReportFile(
+  reportsDir: string,
+  filename: string,
+): Promise<ReadReportFileResult | undefined> {
+  const filePath = join(reportsDir, filename);
+  let parsedJson: unknown;
+  try {
+    parsedJson = JSON.parse(await Deno.readTextFile(filePath));
+  } catch (e) {
+    console.error(
+      `[report_scanner] Skipping invalid report ${filename}: ${
+        e instanceof Error ? e.message : String(e)
+      }`,
+    );
+    return undefined;
+  }
+
+  const parsedReport = reportFileSchema.safeParse(parsedJson);
+  if (!parsedReport.success) {
+    const diagnostics = parsedReport.error.issues.map((issue) => {
+      const path = issue.path.length === 0 ? "<root>" : issue.path.join(".");
+      return `${path}: ${issue.message}`;
+    }).join("; ");
+    console.error(
+      `[report_scanner] Skipping invalid report ${filename}: ${diagnostics}`,
+    );
+    return undefined;
+  }
+
+  return { filename, report: parsedReport.data };
 }
 
 /** Import report files from a run's reports directory into the database. Returns count of imported reports. */
@@ -154,21 +195,26 @@ export async function scanReports(db: Database): Promise<number> {
   const reportsDir = getDashboardPaths().reportsDir;
 
   try {
+    const reports = await readRunReportFiles(reportsDir);
+
     // Group reports by run timestamp
     const runGroups: Map<
       string,
-      Array<{ filename: string; parsed: ReturnType<typeof parseFilename> }>
+      Array<
+        ReadReportFileResult & {
+          parsed: NonNullable<ReturnType<typeof parseFilename>>;
+        }
+      >
     > = new Map();
 
-    for await (const entry of Deno.readDir(reportsDir)) {
-      if (!entry.isFile || !entry.name.endsWith(".json")) continue;
-      const parsed = parseFilename(entry.name);
+    for (const reportFile of reports) {
+      const parsed = parseFilename(reportFile.filename);
       if (!parsed) continue;
 
       if (!runGroups.has(parsed.timestamp)) {
         runGroups.set(parsed.timestamp, []);
       }
-      runGroups.get(parsed.timestamp)!.push({ filename: entry.name, parsed });
+      runGroups.get(parsed.timestamp)!.push({ ...reportFile, parsed });
     }
 
     for (const [timestamp, files] of runGroups) {
@@ -220,12 +266,10 @@ export async function scanReports(db: Database): Promise<number> {
         );
 
         for (const file of files) {
-          const filePath = join(reportsDir, file.filename);
-          const content = await Deno.readTextFile(filePath);
-          const report: ReportFile = JSON.parse(content);
+          const report = file.report;
 
           // Extract numeric ID from the scenario name (format: 01_account_lifecycle)
-          const idMatch = file.parsed!.scenarioName.match(/^(\d+)/);
+          const idMatch = file.parsed.scenarioName.match(/^(\d+)/);
           const scenarioId = idMatch ? idMatch[1] : "00";
 
           totalPassed += report.summary.passed;
