@@ -9,6 +9,9 @@
 
 import { join, resolve } from "@std/path";
 import { normalizeTopologyPreset, parseRawTopologyPresetV1 } from "./topology_schema.ts";
+import { TopologyRegistry } from "./topology_presets.ts";
+
+export { TopologyRegistry };
 
 // Re-export all types
 export type { BrowserFlow, ServiceRole } from "./topology_types.ts";
@@ -113,116 +116,6 @@ function health(url: string) {
   };
 }
 
-/** Built-in web client topology presets. */
-export const WEB_CLIENT_PRESETS: Record<string, WebClientTopology> = {
-  "garazyk-ui": {
-    name: "garazyk-ui",
-    source: "local://garazyk-ui",
-    ref: readEnv("GARAZYK_WEB_CLIENT_REF") || "workspace",
-    buildPreset: "garazyk-ui",
-    serveCommand: ["garazyk-ui", "serve", "--port", "2590"],
-    publicUrl: publicWebUrl,
-    internalUrl: internalWebUrl,
-    env: {
-      GARAZYK_UI_PDS_URL: "http://local-pds:2583",
-      GARAZYK_UI_PLC_URL: "http://local-plc:2582",
-      GARAZYK_UI_RELAY_URL: "http://local-relay:2584",
-      GARAZYK_UI_APPVIEW_URL: "http://local-appview:3200",
-      GARAZYK_UI_ADMIN_PASSWORD: "changeme",
-    },
-    healthCheck: health(`${internalWebUrl}/lab`),
-    oauthRedirects: [`${publicWebUrl}/lab/callback`],
-    capabilities: ["smoke", "login", "oauth", "admin"],
-    browserFlow: {
-      smoke: "scripts/scenarios/browser/garazyk-ui_smoke.ts",
-      login: "scripts/scenarios/browser/garazyk-ui_login.ts",
-      deep: "scripts/scenarios/browser/garazyk-ui_deep.ts",
-    },
-  },
-  skylab: {
-    name: "skylab",
-    source: "https://github.com/bluesky-social/social-app.git",
-    ref: readEnv("SKYLAB_WEB_CLIENT_REF") || "main",
-    buildPreset: "social-app",
-    serveCommand: ["yarn", "web", "--host", "0.0.0.0", "--port", "2590"],
-    publicUrl: publicWebUrl,
-    internalUrl: internalWebUrl,
-    env: {
-      EXPO_PUBLIC_ENV: "test",
-      EXPO_PUBLIC_BSKY_SERVICE: "http://local-appview:3200",
-      EXPO_PUBLIC_PDS_SERVICE_URL: "http://local-pds:2583",
-      EXPO_PUBLIC_PLC_URL: "http://local-plc:2582",
-      ATPROTO_SERVICE_HOST: "local-appview:3200",
-    },
-    healthCheck: health(internalWebUrl),
-    oauthRedirects: [`${publicWebUrl}/oauth/callback`, `${publicWebUrl}/`],
-    capabilities: ["smoke", "login", "deep", "compose", "timeline", "profiles"],
-    browserFlow: {
-      smoke: "scripts/scenarios/browser/social-app_smoke.ts",
-      login: "scripts/scenarios/browser/social-app_login.ts",
-      deep: "scripts/scenarios/browser/social-app_deep.ts",
-    },
-  },
-  "bluesky-social/social-app": {
-    name: "bluesky-social/social-app",
-    source: "https://github.com/bluesky-social/social-app.git",
-    ref: readEnv("SOCIAL_APP_WEB_CLIENT_REF") || "main",
-    buildPreset: "social-app",
-    serveCommand: ["yarn", "web", "--host", "0.0.0.0", "--port", "2590"],
-    publicUrl: publicWebUrl,
-    internalUrl: internalWebUrl,
-    env: {
-      EXPO_PUBLIC_ENV: "test",
-      EXPO_PUBLIC_BSKY_SERVICE: "http://local-appview:3200",
-      EXPO_PUBLIC_PDS_SERVICE_URL: "http://local-pds:2583",
-      EXPO_PUBLIC_PLC_URL: "http://local-plc:2582",
-      ATPROTO_SERVICE_HOST: "local-appview:3200",
-    },
-    healthCheck: health(internalWebUrl),
-    oauthRedirects: [`${publicWebUrl}/oauth/callback`, `${publicWebUrl}/`],
-    capabilities: ["smoke", "login", "deep", "compose", "timeline", "profiles"],
-    browserFlow: {
-      smoke: "scripts/scenarios/browser/social-app_smoke.ts",
-      login: "scripts/scenarios/browser/social-app_login.ts",
-      deep: "scripts/scenarios/browser/social-app_deep.ts",
-    },
-  },
-  "jollywhoppers.com/witchsky.app": {
-    name: "jollywhoppers.com/witchsky.app",
-    source: "https://tangled.org/jollywhoppers.com/witchsky.app",
-    ref: readEnv("WITCHSKY_WEB_CLIENT_REF") || "main",
-    buildPreset: "witchsky",
-    serveCommand: ["yarn", "web", "--host", "0.0.0.0", "--port", "2590"],
-    publicUrl: publicWebUrl,
-    internalUrl: internalWebUrl,
-    env: {
-      EXPO_PUBLIC_ENV: "test",
-      EXPO_PUBLIC_BSKY_SERVICE: "http://local-appview:3200",
-      EXPO_PUBLIC_PDS_SERVICE_URL: "http://local-pds:2583",
-      EXPO_PUBLIC_PLC_URL: "http://local-plc:2582",
-      ATPROTO_SERVICE_HOST: "local-appview:3200",
-      WITCHSKY_E2E_MODE: "1",
-    },
-    healthCheck: health(internalWebUrl),
-    oauthRedirects: [`${publicWebUrl}/oauth/callback`, `${publicWebUrl}/`],
-    capabilities: ["smoke", "login", "deep", "compose", "timeline", "profiles"],
-    browserFlow: {
-      smoke: "scripts/scenarios/browser/social-app_smoke.ts",
-      login: "scripts/scenarios/browser/social-app_login.ts",
-      deep: "scripts/scenarios/browser/witchsky_deep.ts",
-    },
-  },
-};
-
-// ---------------------------------------------------------------------------
-// Repo root
-// ---------------------------------------------------------------------------
-
-function repoRootFromModule(): string {
-  const scriptDir = new URL(".", import.meta.url).pathname;
-  return scriptDir.replace(/\/packages\/atproto-topology\/$/, "");
-}
-
 // ---------------------------------------------------------------------------
 // Preset loading
 // ---------------------------------------------------------------------------
@@ -242,21 +135,40 @@ function clonePreset(preset: TopologyPreset): TopologyPreset {
 }
 
 /**
- * Load a topology preset from scripts/scenarios/topologies/<name>.json.
+ * Load a topology preset from the registry or an optional filesystem directory.
+ * @param name - Preset name
+ * @param presetDir - Optional directory to search for preset JSON files.
+ * @returns The loaded topology preset
+ * @throws {Error} If the preset is not found or is invalid.
  */
-export function loadTopologyPreset(name: string): TopologyPreset {
+export function loadTopologyPreset(name: string, presetDir?: string): TopologyPreset {
+  // 1. Check registry for embedded presets
+  const embedded = TopologyRegistry.getPreset(name);
+  if (embedded) {
+    const rawPreset = parseRawTopologyPresetV1(embedded, `registry:${name}`);
+    normalizeTopologyPreset(rawPreset);
+    const preset = rawPreset as unknown as TopologyPreset;
+    for (const [role, adapter] of Object.entries(preset.roles)) {
+      preset.roles[role as ServiceRole] = normalizeAdapter(adapter);
+    }
+    return preset;
+  }
+
+  // 2. Check filesystem (legacy/override)
+  if (!presetDir) {
+    throw new Error(`Unknown topology preset: ${name}. No presetDir provided for filesystem lookup.`);
+  }
+
   if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
     throw new Error(
       `Invalid topology preset name: "${name}". Only alphanumeric characters, hyphens, and underscores are allowed.`,
     );
   }
 
-  const repoRoot = repoRootFromModule();
-  const topologiesDir = join(repoRoot, "scripts/scenarios/topologies");
-  const presetPath = join(topologiesDir, `${name}.json`);
+  const presetPath = join(presetDir, `${name}.json`);
 
   const resolvedPath = resolve(presetPath);
-  const resolvedDir = resolve(topologiesDir);
+  const resolvedDir = resolve(presetDir);
   if (!resolvedPath.startsWith(resolvedDir + "/") && resolvedPath !== resolvedDir) {
     throw new Error(
       `Preset path escapes topologies directory: ${presetPath} (resolved: ${resolvedPath})`,
@@ -305,6 +217,7 @@ function resolveInheritedAdapter(
   role: ServiceRole,
   adapter: ServiceAdapter | InheritedAdapter,
   seen: string[],
+  presetDir?: string,
 ): ServiceAdapter {
   const normalized = normalizeAdapter(adapter);
   if (!("inherit" in normalized)) return normalized;
@@ -317,14 +230,14 @@ function resolveInheritedAdapter(
     );
   }
 
-  const parentPreset = loadTopologyPreset(parentName);
+  const parentPreset = loadTopologyPreset(parentName, presetDir);
   const parentAdapter = parentPreset.roles[role];
   if (!parentAdapter) {
     throw new Error(
       `Inheritance failed: role "${role}" not found in parent preset "${parentName}"`,
     );
   }
-  return resolveInheritedAdapter(role, parentAdapter, [...seen, key]);
+  return resolveInheritedAdapter(role, parentAdapter, [...seen, key], presetDir);
 }
 
 /** 
@@ -336,9 +249,9 @@ function resolveInheritedAdapter(
  */
 export function resolvePreset(
   presetName: string,
-  options: { includePds2?: boolean } = {},
+  options: { includePds2?: boolean; presetDir?: string } = {},
 ): TopologyPreset {
-  const preset = clonePreset(loadTopologyPreset(presetName));
+  const preset = clonePreset(loadTopologyPreset(presetName, options.presetDir));
   const resolvedRoles: Partial<Record<ServiceRole, ServiceAdapter>> = {};
   const includePds2 = options.includePds2 === true;
 
@@ -348,14 +261,15 @@ export function resolvePreset(
       role as ServiceRole,
       adapter,
       [`${presetName}:${role}`],
+      options.presetDir,
     );
   }
 
   if (includePds2 && !resolvedRoles.pds2) {
-    const defaultPreset = loadTopologyPreset("garazyk-default");
+    const defaultPreset = loadTopologyPreset("garazyk-default", options.presetDir);
     const defaultPds2 = defaultPreset.roles.pds2;
     if (defaultPds2) {
-      resolvedRoles.pds2 = resolveInheritedAdapter("pds2", defaultPds2, ["garazyk-default:pds2"]);
+      resolvedRoles.pds2 = resolveInheritedAdapter("pds2", defaultPds2, ["garazyk-default:pds2"], options.presetDir);
     }
   }
 
@@ -413,11 +327,13 @@ export function resolveTopology(
   topologyName?: string,
   options: TopologyResolveOptions = {},
 ): Topology {
-  const webClient = webClientName ? WEB_CLIENT_PRESETS[webClientName] : undefined;
+  const webClient = webClientName
+    ? TopologyRegistry.getWebClient(webClientName)
+    : undefined;
   if (webClientName && !webClient) {
     throw new Error(
       `Unknown web client preset: ${webClientName}. Available: ${
-        Object.keys(WEB_CLIENT_PRESETS).join(", ")
+        TopologyRegistry.listWebClients().join(", ")
       }`,
     );
   }
@@ -431,7 +347,7 @@ export function resolveTopology(
     if (webClient) serviceUrls.webClient = webClient.publicUrl;
     return {
       preset: topologyName
-        ? resolvePreset(topologyName, { includePds2: options.includePds2 })
+        ? resolvePreset(topologyName, { includePds2: options.includePds2, presetDir: options.presetDir })
         : undefined,
       webClient,
       serviceUrls,
@@ -455,7 +371,7 @@ export function resolveTopology(
   let internalUrls: Record<string, string> = {};
 
   if (topologyName) {
-    preset = resolvePreset(topologyName, { includePds2: options.includePds2 });
+    preset = resolvePreset(topologyName, { includePds2: options.includePds2, presetDir: options.presetDir });
     for (const [role, adapter] of Object.entries(preset.roles)) {
       if ("inherit" in adapter) continue;
       capabilitiesByRole[role] = new Set(adapter.capabilities);

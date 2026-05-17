@@ -413,6 +413,8 @@ export interface TopologyManifest {
 export interface TopologyResolveOptions {
   /** Repository root used to resolve relative paths */
   repoRoot?: string;
+  /** Directory containing topology preset JSON files */
+  presetDir?: string;
   /** Run directory used for derived outputs */
   runDir?: string;
   /** Compose file path to load */
