@@ -1,5 +1,5 @@
 /**
- * Pure topology schemas, presets, registry, manifests, and compose compilation.
+ * Topology models, registry resolution, manifests, and compose compilation.
  *
  * Runtime helpers that touch the filesystem, process environment, or git live
  * under `@garazyk/schemat/runtime`.
@@ -7,12 +7,15 @@
  * @module schemat
  */
 
+// Topology model and schema
 export {
   loadTopologyPreset,
   resolvePreset,
   resolveTopology,
   TopologyRegistry,
 } from "./topology.ts";
+
+// Compose and manifest I/O
 export {
   createTopologyManifest,
   defaultPortForRole,
@@ -30,6 +33,8 @@ export {
   renderComposeYaml,
   validatePreset,
 } from "./topology_compiler.ts";
+
+// Registry and resolution
 export {
   CAPABILITY_REGISTRY,
   DEFAULT_PORTS,
@@ -51,6 +56,7 @@ export {
   ROLE_TO_SERVICE,
 } from "./topology_types.ts";
 
+// Types
 export type {
   BrowserFlow,
   ContainerSpec,
@@ -88,11 +94,3 @@ export type {
   ServiceRoleKey,
 } from "./topology_registry.ts";
 export type { TopologyPresetSummary } from "./topology_list.ts";
-
-export {
-  main as renderWebClientComposeMain,
-  prepareSourceBuildContext,
-  renderWebClientCompose,
-  writeSourceDockerfile,
-} from "./web_client_compose.ts";
-export type { WebClientComposeOptions } from "./web_client_compose.ts";

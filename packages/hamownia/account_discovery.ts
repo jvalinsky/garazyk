@@ -190,13 +190,13 @@ export async function resolveTargets(
   const targets: TargetIdentity[] = [];
 
   if (options.sshHost) {
-    const remoteDbPath = options.dbPath ||
+    const discoveryDbPath = options.dbPath ||
       "/var/lib/atprotopds/service/service.db";
     try {
       targets.push(
         ...await discoverRemoteAccountsViaSsh(
           options.sshHost,
-          remoteDbPath,
+          discoveryDbPath,
           normalizedLimit,
         ),
       );

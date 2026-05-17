@@ -117,14 +117,6 @@ function stringField(
   return typeof fieldValue === "string" ? fieldValue : undefined;
 }
 
-function numberField(
-  value: JsonObject | undefined,
-  field: string,
-): number | undefined {
-  const fieldValue = value?.[field];
-  return typeof fieldValue === "number" ? fieldValue : undefined;
-}
-
 function jsDocFrom(value: JsonObject | undefined): JsDoc | undefined {
   return asObject(value?.jsDoc) as JsDoc | undefined;
 }
@@ -356,7 +348,7 @@ function addTypeParams(
   }
 }
 
-export function addTopLevelNode(
+function addTopLevelNode(
   items: Map<string, CoverageItem>,
   node: JsonObject,
 ): void {
@@ -419,7 +411,7 @@ export function addTopLevelNode(
   }
 }
 
-export function addClassMembers(
+function addClassMembers(
   items: Map<string, CoverageItem>,
   node: JsonObject,
   className: string,
@@ -493,7 +485,7 @@ export function addClassMembers(
   }
 }
 
-export function addInterfaceMembers(
+function addInterfaceMembers(
   items: Map<string, CoverageItem>,
   node: JsonObject,
   interfaceName: string,
@@ -515,7 +507,7 @@ export function addInterfaceMembers(
   }
 }
 
-export function bucketFor(items: CoverageItem[]): CoverageBucket {
+function bucketFor(items: CoverageItem[]): CoverageBucket {
   const total = items.length;
   const documented = items.filter((item) => item.documented).length;
   return {

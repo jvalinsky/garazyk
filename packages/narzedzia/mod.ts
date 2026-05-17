@@ -1,9 +1,5 @@
 export * from "./doc_coverage.ts";
 export {
-  addClassMembers,
-  addInterfaceMembers,
-  addTopLevelNode,
-  bucketFor,
   buildReport as buildTsdocCoverageReport,
   collectSourceFiles,
   loadDocJson,
