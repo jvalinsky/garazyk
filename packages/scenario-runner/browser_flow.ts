@@ -1,5 +1,5 @@
 /** Public network leak detection for browser-based E2E tests. @module browser_flow */
-import type { Page } from "npm:playwright";
+import type { Page } from "npm:playwright@^1.40.0";
 
 const DEFAULT_BLOCKED_PUBLIC_HOSTS = [
   "bsky.app",

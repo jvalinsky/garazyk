@@ -111,7 +111,7 @@ export function needsPds2(scenarioId: string): boolean {
 /**
  * Get parameters for a scenario.
  */
-export function getParameters(scenarioId: string) {
+export function getParameters(scenarioId: string): Record<string, any> {
   return SCENARIO_MANIFESTS[scenarioId]?.parameters || {};
 }
 

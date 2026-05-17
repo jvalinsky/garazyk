@@ -43,7 +43,7 @@ export { startBinaryServices, stopBinaryServices } from "./docker_binary.ts";
  *
  * In binary mode: starts local binaries and waits for HTTP health.
  */
-export async function startLocalNetwork(options: LocalNetworkOptions = {}) {
+export async function startLocalNetwork(options: LocalNetworkOptions = {}): Promise<void> {
   return await withSpan("localNetwork.start", async () => {
     const ctx = initRunDir(options.runId);
 
@@ -193,7 +193,7 @@ export async function startLocalNetwork(options: LocalNetworkOptions = {}) {
  */
 export async function stopLocalNetwork(
   options: LocalNetworkOptions & { collectDiagnostics?: boolean } = {},
-) {
+): Promise<void> {
   return await withSpan("localNetwork.stop", async () => {
     const ctx = initRunDir(options.runId);
 

@@ -2,7 +2,7 @@
   "name": "@garazyk/atproto-topology",
   "version": "0.1.0",
   "exports": {
-    ".": "./mod.ts",
-    "./sources": "./sources.ts"
-  }
+    ".": "./mod.ts"
+  },
+  "license": "MIT"
 }

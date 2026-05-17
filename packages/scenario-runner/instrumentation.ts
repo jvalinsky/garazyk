@@ -38,21 +38,21 @@ export class OperationStats {
    * Minimum recorded duration in milliseconds.
    * @returns The minimum recorded duration.
    */
-  get min() {
+  get min(): number {
     return Math.min(...this.durations, 0);
   }
   /**
    * Maximum recorded duration in milliseconds.
    * @returns The maximum recorded duration.
    */
-  get max() {
+  get max(): number {
     return Math.max(...this.durations, 0);
   }
   /**
    * Mean recorded duration in milliseconds.
    * @returns The mean recorded duration.
    */
-  get mean() {
+  get mean(): number {
     if (this.durations.length === 0) return 0;
     return this.durations.reduce((a, b) => a + b, 0) / this.durations.length;
   }
@@ -62,7 +62,7 @@ export class OperationStats {
    * @param p - Percentile to calculate.
    * @returns The requested percentile duration.
    */
-  percentile(p: number) {
+  percentile(p: number): number {
     if (this.durations.length === 0) return 0;
     const sorted = [...this.durations].sort((a, b) => a - b);
     const idx = Math.min(Math.floor(sorted.length * p / 100), sorted.length - 1);
@@ -73,21 +73,21 @@ export class OperationStats {
    * 50th percentile duration in milliseconds.
    * @returns The 50th percentile duration.
    */
-  get p50() {
+  get p50(): number {
     return this.percentile(50);
   }
   /**
    * 95th percentile duration in milliseconds.
    * @returns The 95th percentile duration.
    */
-  get p95() {
+  get p95(): number {
     return this.percentile(95);
   }
   /**
    * 99th percentile duration in milliseconds.
    * @returns The 99th percentile duration.
    */
-  get p99() {
+  get p99(): number {
     return this.percentile(99);
   }
 
@@ -95,7 +95,7 @@ export class OperationStats {
    * Total recorded duration in milliseconds.
    * @returns The total recorded duration.
    */
-  get totalMs() {
+  get totalMs(): number {
     return this.durations.reduce((a, b) => a + b, 0);
   }
 
@@ -103,7 +103,7 @@ export class OperationStats {
    * Returns a plain object summary of the operation statistics.
    * @returns A serializable summary of the operation statistics.
    */
-  toDict() {
+  toDict(): Record<string, any> {
     return {
       name: this.name,
       count: this.count,
@@ -144,7 +144,7 @@ export class OperationTimer {
    * @param name - Operation name.
    * @returns The recorded operation stats, or undefined if none exist.
    */
-  getStats(name: string) {
+  getStats(name: string): OperationStats {
     return this.stats[name];
   }
 
@@ -152,7 +152,7 @@ export class OperationTimer {
    * Returns all recorded operation stats.
    * @returns A map of operation names to stats objects.
    */
-  getAllStats() {
+  getAllStats(): Record<string, OperationStats> {
     return this.stats;
   }
 
@@ -160,7 +160,7 @@ export class OperationTimer {
    * Returns all operation stats as plain objects.
    * @returns A map of operation names to serialized stats.
    */
-  toDict() {
+  toDict(): Record<string, any> {
     const res: Record<string, any> = {};
     for (const [k, v] of Object.entries(this.stats)) {
       res[k] = v.toDict();
@@ -196,7 +196,7 @@ export class PhaseTimer {
    * Returns the recorded phase timings.
    * @returns A map of phase names to durations in seconds.
    */
-  toDict() {
+  toDict(): Record<string, any> {
     return { ...this.phases };
   }
 }
@@ -221,7 +221,7 @@ export class PrometheusScraper {
    * Stops scraping, performs one final scrape, and returns the collected time series.
    * @returns The aggregated metric time series.
    */
-  async stop() {
+  async stop(): Promise<Record<string, any>> {
     if (this.intervalId) clearInterval(this.intervalId);
     await this.scrape(); // Final scrape
     return this.getTimeSeries();
@@ -257,7 +257,7 @@ export class PrometheusScraper {
    * Returns the collected metric time series.
    * @returns A map of metric names to timestamped samples.
    */
-  getTimeSeries() {
+  getTimeSeries(): Record<string, any> {
     const res: Record<string, any> = {};
     for (const samples of Object.values(this.samples)) {
       for (const sample of samples) {
@@ -291,7 +291,7 @@ export class StorageMonitor {
    * Stops sampling, performs one final sample, and returns the collected stats.
    * @returns The collected storage statistics.
    */
-  async stop() {
+  async stop(): Promise<Record<string, any[]>> {
     if (this.intervalId) clearInterval(this.intervalId);
     await this.sample();
     return this.stats;
@@ -339,7 +339,7 @@ export class InstrumentationReport {
    * Returns the report as a plain object.
    * @returns A serializable instrumentation report.
    */
-  toDict() {
+  toDict(): Record<string, any> {
     return {
       operations: this.operationStats,
       metrics: this.metricsTimeSeries,

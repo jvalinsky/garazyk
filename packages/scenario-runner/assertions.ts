@@ -21,20 +21,20 @@ export const assert = {
    * @param expr - The boolean expression to test
    * @param msg - Optional error message
    */
-  isTrue: (expr: boolean, msg?: string) => assertEquals(expr, true, msg),
+  isTrue: (expr: boolean, msg?: string): void => assertEquals(expr, true, msg),
   /**
    * Assert that an expression is false
    * @param expr - The boolean expression to test
    * @param msg - Optional error message
    */
-  isFalse: (expr: boolean, msg?: string) => assertEquals(expr, false, msg),
+  isFalse: (expr: boolean, msg?: string): void => assertEquals(expr, false, msg),
   /**
    * Assert that a value is not null or undefined
    * @param val - The value to check
    * @param msg - Optional error message
    * @throws Error if value is null or undefined
    */
-  isNotNull: (val: any, msg?: string) => {
+  isNotNull: (val: any, msg?: string): void => {
     if (val === null || val === undefined) {
       throw new Error(msg || `Expected value to not be null/undefined, got ${val}`);
     }
