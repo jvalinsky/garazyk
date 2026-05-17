@@ -27,11 +27,28 @@ import { formatRequirement } from "@garazyk/scenario-runner";
 import type { ScenarioInfo } from "@garazyk/scenario-runner";
 import { discoverScenarios, selectScenarios } from "@garazyk/scenario-runner";
 import { runScenarioLoop } from "@garazyk/scenario-runner";
+import type { ScenarioExecutionResult } from "@garazyk/scenario-runner";
 import { createProcessLifecycle } from "@garazyk/scenario-runner";
 import { writeOverallSummary } from "@garazyk/scenario-runner";
-import { initE2eTracing, isOtelEnabled, shutdownTracing } from "@garazyk/scenario-runner";
+import {
+  initE2eTracing,
+  isOtelEnabled,
+  shutdownTracing,
+} from "@garazyk/scenario-runner";
 import { ScenarioResult } from "@garazyk/scenario-runner";
 import type { RunnerArgs } from "@garazyk/scenario-runner";
+
+const OTEL_REEXEC_GUARD = "GARAZYK_OTEL_REEXEC";
+
+/** Append loop execution output into the CLI-level accumulators. */
+export function appendScenarioLoopResult(
+  loopResult: ScenarioExecutionResult,
+  results: Array<{ scenario: ScenarioInfo; result: ScenarioResult }>,
+  reportPaths: string[],
+): void {
+  results.push(...loopResult.results);
+  reportPaths.push(...loopResult.reportPaths);
+}
 
 /**
  * Displays usage information for the test runner.
@@ -53,10 +70,14 @@ Options:
   --diagnostics-dir DIR   Write diagnostics to DIR
   --reports-dir DIR       Write scenario JSON reports to DIR
   --collect-diagnostics   Capture diagnostics for the current run and exit
-  --web-client PRESET     Add a web-client service (${TopologyRegistry.listWebClients().join("|")})
+  --web-client PRESET     Add a web-client service (${
+    TopologyRegistry.listWebClients().join("|")
+  })
   --client-flow FLOW      Run browser flow scenarios: smoke, login, deep (default: none)
   --allow-hybrid-network  Permit browser clients to call public ATProto hosts
-  --topology PRESET       Use a topology preset (${TopologyRegistry.listPresets().join("|")})
+  --topology PRESET       Use a topology preset (${
+    TopologyRegistry.listPresets().join("|")
+  })
   --runner MODE           Scenario runner: host (default) or docker
   --keep-running          Leave services running after setup or execution
   --timeout SECONDS       Per-scenario timeout (default: 120)
@@ -99,6 +120,7 @@ function parseRunnerArgs(argv: string[]): RunnerArgs {
       case "--help":
       case "-h":
         usage();
+        break;
       case "--list":
         args.list = true;
         break;
@@ -171,13 +193,17 @@ function parseRunnerArgs(argv: string[]): RunnerArgs {
           args.webClient = value;
           if (!TopologyRegistry.getWebClient(value)) {
             console.error(`Unknown web client preset: ${value}`);
-            console.error(`Available: ${TopologyRegistry.listWebClients().join(", ")}`);
+            console.error(
+              `Available: ${TopologyRegistry.listWebClients().join(", ")}`,
+            );
             Deno.exit(2);
           }
         }
         if (arg === "--client-flow") {
           if (!["none", "smoke", "login", "deep"].includes(value)) {
-            console.error("--client-flow must be one of: none, smoke, login, deep");
+            console.error(
+              "--client-flow must be one of: none, smoke, login, deep",
+            );
             Deno.exit(2);
           }
           args.clientFlow = value as BrowserFlow;
@@ -209,6 +235,11 @@ function parseRunnerArgs(argv: string[]): RunnerArgs {
  */
 async function main() {
   const args = parseRunnerArgs(Deno.args);
+  if (args.otel && shouldReexecForOtel()) {
+    const status = await reexecWithOtel();
+    Deno.exit(status.code);
+  }
+
   const scriptDir = fromFileUrl(new URL(".", import.meta.url));
   const repoRoot = join(scriptDir, "..");
   const scenarioDir = join(scriptDir, "scenarios", "scenarios");
@@ -216,16 +247,22 @@ async function main() {
 
   if (args.list) {
     console.log(bold("\nAvailable Scenarios:\n"));
-    console.log(`  ${"ID".padEnd(4)} ${"PDS2".padEnd(5)} ${"Caps".padEnd(12)} Description`);
-    console.log(`  ${"----"} ${"-----"} ${"------------".padEnd(12)} ${"-----------"}`);
+    console.log(
+      `  ${"ID".padEnd(4)} ${"PDS2".padEnd(5)} ${
+        "Caps".padEnd(12)
+      } Description`,
+    );
+    console.log(
+      `  ${"----"} ${"-----"} ${"------------".padEnd(12)} ${"-----------"}`,
+    );
     for (const scenario of scenarios) {
       const caps = scenario.requires.length > 0
         ? scenario.requires.map(formatRequirement).join(",")
         : "";
       console.log(
-        `  ${brightBlue(scenario.id).padEnd(13)} ${(scenario.needsPds2 ? "yes" : "").padEnd(5)} ${
-          caps.padEnd(12)
-        } ${scenario.name}`,
+        `  ${brightBlue(scenario.id).padEnd(13)} ${
+          (scenario.needsPds2 ? "yes" : "").padEnd(5)
+        } ${caps.padEnd(12)} ${scenario.name}`,
       );
     }
     console.log("");
@@ -237,7 +274,8 @@ async function main() {
   const topologyManifestPath = args.topology
     ? join(context.runDir, "topology-manifest.json")
     : undefined;
-  const existingTopologyManifest = topologyManifestPath && await pathExists(topologyManifestPath);
+  const existingTopologyManifest = topologyManifestPath &&
+    await pathExists(topologyManifestPath);
   if (existingTopologyManifest) {
     Deno.env.set("ATPROTO_TOPOLOGY_MANIFEST", topologyManifestPath);
   }
@@ -265,108 +303,113 @@ async function main() {
   let withPds2 = false;
 
   try {
-    try {
-      topology = resolveTopology(args.webClient, args.topology, {
-        manifestPath: existingTopologyManifest ? topologyManifestPath : undefined,
-      });
+    topology = resolveTopology(args.webClient, args.topology, {
+      manifestPath: existingTopologyManifest ? topologyManifestPath : undefined,
+    });
 
-      if (args.topology) {
-        Deno.env.set("ATPROTO_TOPOLOGY", args.topology);
-      }
+    if (args.topology) {
+      Deno.env.set("ATPROTO_TOPOLOGY", args.topology);
+    }
 
-      if (args.otel) {
-        initE2eTracing("garazyk-e2e-runner");
-        console.log(
-          `OTel tracing enabled → ${
-            Deno.env.get("OTEL_EXPORTER_OTLP_ENDPOINT") || "http://localhost:4318"
-          }`,
-        );
-      }
-
-      if (args.collectDiagnostics) {
-        await collectDiagnostics(context);
-        console.log(`Diagnostics: ${context.diagnosticsDir}`);
-        return;
-      }
-
-      if (args.teardownOnly) {
-        await stopLocalNetwork({
-          useBinary: args.binary,
-          runId: context.runId,
-          diagnosticsDir: context.diagnosticsDir,
-        });
-        return;
-      }
-
-      selected = selectScenarios(scenarios, args, topology);
-      withPds2 = args.pds2 || selected.some((scenario) => scenario.needsPds2);
-
-      if (args.setupOnly) {
-        await startLocalNetwork({
-          withPds2,
-          useBinary: args.binary,
-          keepRunning: args.keepRunning,
-          runId: context.runId,
-          diagnosticsDir: context.diagnosticsDir,
-          webClient: args.webClient,
-          clientFlow: args.clientFlow,
-          allowHybridNetwork: args.allowHybridNetwork,
-          topology: args.topology,
-        });
-        lifecycle.markNetworkStarted();
-        console.log(`Run directory: ${context.runDir}`);
-        if (args.keepRunning) return;
-
-        console.log("Network is running. Press Ctrl+C to stop.");
-        await lifecycle.waitForShutdownSignal();
-        await lifecycle.stopIfNeeded(true);
-        return;
-      }
-
-      if (!args.noSetup || args.setup) {
-        await startLocalNetwork({
-          withPds2,
-          useBinary: args.binary,
-          runId: context.runId,
-          diagnosticsDir: context.diagnosticsDir,
-          webClient: args.webClient,
-          clientFlow: args.clientFlow,
-          allowHybridNetwork: args.allowHybridNetwork,
-          topology: args.topology,
-        });
-        lifecycle.markNetworkStarted();
-        if (topologyManifestPath) Deno.env.set("ATPROTO_TOPOLOGY_MANIFEST", topologyManifestPath);
-        topology = resolveTopology(args.webClient, args.topology, {
-          manifestPath: topologyManifestPath,
-          includePds2: withPds2,
-        });
-      }
-
-      const loopResult = await runScenarioLoop(
-        selected,
-        args,
-        topology,
-        repoRoot,
-        context.composeProject,
-        reportsDir,
-        { runId: context.runId, runDir: context.runDir, diagnosticsDir: context.diagnosticsDir },
+    if (args.otel) {
+      initE2eTracing("garazyk-e2e-runner");
+      console.log(
+        `OTel tracing enabled → ${
+          Deno.env.get("OTEL_EXPORTER_OTLP_ENDPOINT") || "http://localhost:4318"
+        }`,
       );
-    } finally {
-      await lifecycle.finalizeRun({
-        results,
-        fatalError,
-        collectDiagnostics: async () => {
-          await collectDiagnostics(context);
-        },
+    }
+
+    if (args.collectDiagnostics) {
+      await collectDiagnostics(context);
+      console.log(`Diagnostics: ${context.diagnosticsDir}`);
+      return;
+    }
+
+    if (args.teardownOnly) {
+      await stopLocalNetwork({
+        useBinary: args.binary,
+        runId: context.runId,
+        diagnosticsDir: context.diagnosticsDir,
+      });
+      return;
+    }
+
+    selected = selectScenarios(scenarios, args, topology);
+    withPds2 = args.pds2 || selected.some((scenario) => scenario.needsPds2);
+
+    if (args.setupOnly) {
+      await startLocalNetwork({
+        withPds2,
+        useBinary: args.binary,
+        keepRunning: args.keepRunning,
+        runId: context.runId,
+        diagnosticsDir: context.diagnosticsDir,
+        webClient: args.webClient,
+        clientFlow: args.clientFlow,
+        allowHybridNetwork: args.allowHybridNetwork,
+        topology: args.topology,
+      });
+      lifecycle.markNetworkStarted();
+      console.log(`Run directory: ${context.runDir}`);
+      if (args.keepRunning) return;
+
+      console.log("Network is running. Press Ctrl+C to stop.");
+      await lifecycle.waitForShutdownSignal();
+      await lifecycle.stopIfNeeded(true);
+      return;
+    }
+
+    if (!args.noSetup || args.setup) {
+      await startLocalNetwork({
+        withPds2,
+        useBinary: args.binary,
+        runId: context.runId,
+        diagnosticsDir: context.diagnosticsDir,
+        webClient: args.webClient,
+        clientFlow: args.clientFlow,
+        allowHybridNetwork: args.allowHybridNetwork,
+        topology: args.topology,
+      });
+      lifecycle.markNetworkStarted();
+      if (topologyManifestPath) {
+        Deno.env.set("ATPROTO_TOPOLOGY_MANIFEST", topologyManifestPath);
+      }
+      topology = resolveTopology(args.webClient, args.topology, {
+        manifestPath: topologyManifestPath,
+        includePds2: withPds2,
       });
     }
+
+    const loopResult = await runScenarioLoop(
+      selected,
+      args,
+      topology,
+      repoRoot,
+      context.composeProject,
+      reportsDir,
+      {
+        runId: context.runId,
+        runDir: context.runDir,
+        diagnosticsDir: context.diagnosticsDir,
+      },
+    );
+    appendScenarioLoopResult(loopResult, results, reportPaths);
   } catch (err) {
     fatalError = err;
     const message = err instanceof Error ? err.message : String(err);
     console.error(`\nFatal error: ${message}`);
+  } finally {
+    await lifecycle.finalizeRun({
+      results,
+      fatalError,
+      collectDiagnostics: async () => {
+        await collectDiagnostics(context);
+      },
+    });
   }
 
-  const { totalPassed, totalFailed, totalSkipped } = await writeOverallSummary({
+  const { totalFailed } = await writeOverallSummary({
     context: {
       runId: context.runId,
       runDir: context.runDir,
@@ -403,6 +446,39 @@ async function pathExists(path: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+function shouldReexecForOtel(): boolean {
+  return !isOtelEnabled() && Deno.env.get(OTEL_REEXEC_GUARD) !== "1";
+}
+
+async function reexecWithOtel(): Promise<Deno.CommandStatus> {
+  const scriptPath = fromFileUrl(import.meta.url);
+  const command = new Deno.Command(Deno.execPath(), {
+    args: ["run", "-A", scriptPath, ...Deno.args],
+    env: buildOtelReexecEnv(Deno.env),
+    stdin: "inherit",
+    stdout: "inherit",
+    stderr: "inherit",
+  });
+  const child = command.spawn();
+  return await child.status;
+}
+
+export function buildOtelReexecEnv(
+  source: Pick<typeof Deno.env, "get">,
+): Record<string, string> {
+  return {
+    OTEL_DENO: "true",
+    OTEL_EXPORTER_OTLP_ENDPOINT: source.get("OTEL_EXPORTER_OTLP_ENDPOINT") ||
+      "http://localhost:4318",
+    OTEL_EXPORTER_OTLP_PROTOCOL: source.get("OTEL_EXPORTER_OTLP_PROTOCOL") ||
+      "http/protobuf",
+    OTEL_SERVICE_NAME: source.get("OTEL_SERVICE_NAME") || "garazyk-e2e-runner",
+    OTEL_RESOURCE_ATTRIBUTES: source.get("OTEL_RESOURCE_ATTRIBUTES") ||
+      "service.version=dev,deployment.environment=e2e",
+    [OTEL_REEXEC_GUARD]: "1",
+  };
 }
 
 if (import.meta.main) {
