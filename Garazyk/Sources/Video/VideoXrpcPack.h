@@ -5,9 +5,14 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+/**
+ * @abstract Registers video service XRPC routes.
+ */
 @interface ATProtoVideoXrpcPack : NSObject <XrpcRoutePack>
 
-/// Validates that the data appears to be a valid video container (MP4 ftyp or Matroska header).
+/**
+ * @abstract Validates that bytes match a supported video container signature.
+ */
 + (BOOL)validateVideoContentType:(NSData *)data declaredMimeType:(NSString *)mimeType;
 
 @end

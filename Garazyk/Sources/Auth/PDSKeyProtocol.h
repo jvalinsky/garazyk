@@ -19,13 +19,23 @@ NS_ASSUME_NONNULL_BEGIN
 
 extern NSString * const PDSKeyErrorDomain;
 
+/**
+ * @abstract Error codes returned by cross-platform key operations.
+ */
 typedef NS_ENUM(NSInteger, PDSKeyErrorCode) {
+    /** Key bytes or parameters are malformed. */
     PDSKeyErrorCodeInvalidKeyData = 1,
+    /** Signature bytes are malformed or fail format validation. */
     PDSKeyErrorCodeInvalidSignature = 2,
+    /** Signing failed for the selected key or algorithm. */
     PDSKeyErrorCodeSigningFailed = 3,
+    /** Signature verification failed for the selected key or algorithm. */
     PDSKeyErrorCodeVerificationFailed = 4,
+    /** Key generation failed. */
     PDSKeyErrorCodeKeyGenerationFailed = 5,
+    /** The requested algorithm is not supported by the implementation. */
     PDSKeyErrorCodeUnsupportedAlgorithm = 6,
+    /** A JWK document is missing required fields or contains invalid values. */
     PDSKeyErrorCodeInvalidJWK = 7,
 };
 
@@ -45,28 +55,30 @@ extern PDSKeyAlgorithm const PDSKeyAlgorithmRS256;  // RSA SHA-256
 #pragma mark - Base Protocol
 
 /**
- * Base protocol for all cryptographic keys.
+ * @abstract Base protocol implemented by public and private cryptographic keys.
  */
 @protocol PDSKeyProtocol <NSObject, NSCopying>
 
-/// Unique identifier for this key.
+/** Unique identifier for this key. */
 @property (nonatomic, copy, readonly) NSString *keyID;
 
-/// Algorithm identifier (e.g., "ES256", "RS256").
+/** Algorithm identifier such as ES256 or RS256. */
 @property (nonatomic, copy, readonly) PDSKeyAlgorithm algorithm;
 
-/// Indicates if this is a private key (can sign).
+/** YES when the key contains private material and can sign. */
 @property (nonatomic, assign, readonly) BOOL isPrivateKey;
 
-/// The raw public key data.
-/// For ES256: Uncompressed point (0x04 || x || y), 65 bytes.
-/// For RS256: DER-encoded SubjectPublicKeyInfo.
+/**
+ * @abstract Returns the raw public key bytes.
+ * @discussion ES256 keys return an uncompressed 65-byte point. RS256 keys return
+ * DER-encoded SubjectPublicKeyInfo.
+ */
 - (nullable NSData *)publicKeyData;
 
-/// JWK representation of the public key.
+/** Returns the public JWK representation of the key. */
 - (nullable NSDictionary *)publicKeyJWK;
 
-/// RFC 7638 JWK thumbprint (SHA-256, base64url).
+/** Returns the RFC 7638 SHA-256 JWK thumbprint. */
 - (nullable NSString *)thumbprint;
 
 @end
@@ -74,7 +86,7 @@ extern PDSKeyAlgorithm const PDSKeyAlgorithmRS256;  // RSA SHA-256
 #pragma mark - Public Key Protocol
 
 /**
- * Protocol for public key operations (verification only).
+ * @abstract Public-key verification operations.
  */
 @protocol PDSPublicKeyProtocol <PDSKeyProtocol>
 
@@ -116,7 +128,7 @@ extern PDSKeyAlgorithm const PDSKeyAlgorithmRS256;  // RSA SHA-256
 #pragma mark - Private Key Protocol
 
 /**
- * Protocol for private key operations (signing).
+ * @abstract Private-key signing operations.
  */
 @protocol PDSPrivateKeyProtocol <PDSKeyProtocol>
 
@@ -132,10 +144,10 @@ extern PDSKeyAlgorithm const PDSKeyAlgorithmRS256;  // RSA SHA-256
 - (nullable NSData *)signData:(NSData *)data
                         error:(NSError **)error;
 
-/// The corresponding public key.
+/** Returns the corresponding public key. */
 - (nullable id<PDSPublicKeyProtocol>)publicKey;
 
-/// Full JWK representation including private key material (if exportable).
+/** Returns a private JWK representation when the key is exportable. */
 - (nullable NSDictionary *)privateKeyJWK;
 
 @end
@@ -143,7 +155,7 @@ extern PDSKeyAlgorithm const PDSKeyAlgorithmRS256;  // RSA SHA-256
 #pragma mark - Key Factory Protocol
 
 /**
- * Protocol for key generation.
+ * @abstract Factory contract for generating and importing supported key types.
  */
 @protocol PDSKeyFactoryProtocol <NSObject>
 

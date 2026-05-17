@@ -19,81 +19,82 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString * const PDSOpenSSLES256KeyErrorDomain;
 
 /**
- * OpenSSL-based ES256 key pair implementation.
- * Uses EC_KEY internally for P-256 operations.
+ * @abstract OpenSSL-backed ES256 private key implementation.
  */
 @interface PDSOpenSSLES256PrivateKey : NSObject <PDSPrivateKeyProtocol>
 
-/// The algorithm (always "ES256").
+/** The algorithm, always ES256. */
 @property (nonatomic, copy, readonly) PDSKeyAlgorithm algorithm;
 
-/// Unique key identifier.
+/** Unique key identifier. */
 @property (nonatomic, copy, readonly) NSString *keyID;
 
-/// Always YES.
+/** Always YES for private keys. */
 @property (nonatomic, assign, readonly) BOOL isPrivateKey;
 
-/// Creates from raw EC key (takes ownership).
+/**
+ * @abstract Creates a private key from an OpenSSL EC_KEY pointer.
+ * @discussion The instance takes ownership of the supplied pointer.
+ */
 - (nullable instancetype)initWithECKey:(nullable void *)ecKey
                                   keyID:(NSString *)keyID
                                   error:(NSError **)error;
 
-/// Creates from JWK dictionary.
+/** Creates a private key from a JWK dictionary. */
 - (nullable instancetype)initWithJWK:(NSDictionary *)jwk
                               keyID:(NSString *)keyID
                               error:(NSError **)error;
 
-/// Creates from raw private key data (32-byte scalar or 65-byte uncompressed point + 32-byte scalar).
+/** Creates a private key from raw scalar key data. */
 - (nullable instancetype)initWithPrivateKeyData:(NSData *)data
                                             keyID:(NSString *)keyID
                                             error:(NSError **)error;
 
-/// Generates a new random key pair.
+/** Generates a new random ES256 key pair. */
 + (nullable instancetype)generateKeyWithKeyID:(NSString *)keyID
                                          error:(NSError **)error;
 
-/// Returns the raw EC_KEY pointer (for internal use). Do not free.
+/** Returns the raw EC_KEY pointer owned by the instance. */
 - (void *)ecKey;
 
 @end
 
 /**
- * OpenSSL-based ES256 public key implementation.
+ * @abstract OpenSSL-backed ES256 public key implementation.
  */
 @interface PDSOpenSSLES256PublicKey : NSObject <PDSPublicKeyProtocol>
 
-/// The algorithm (always "ES256").
+/** The algorithm, always ES256. */
 @property (nonatomic, copy, readonly) PDSKeyAlgorithm algorithm;
 
-/// Unique key identifier.
+/** Unique key identifier. */
 @property (nonatomic, copy, readonly) NSString *keyID;
 
-/// Always NO.
+/** Always NO for public keys. */
 @property (nonatomic, assign, readonly) BOOL isPrivateKey;
 
-/// Creates from JWK dictionary.
+/** Creates a public key from a JWK dictionary. */
 - (nullable instancetype)initWithJWK:(NSDictionary *)jwk
                                keyID:(NSString *)keyID
                                error:(NSError **)error;
 
-/// Creates from raw public key data (65-byte uncompressed point starting with 0x04).
+/** Creates a public key from a 65-byte uncompressed public point. */
 - (nullable instancetype)initWithPublicKeyData:(NSData *)data
                                           keyID:(NSString *)keyID
                                           error:(NSError **)error;
 
-/// Creates from compressed public key data (33-byte starting with 0x02 or 0x03).
+/** Creates a public key from a 33-byte compressed public point. */
 - (nullable instancetype)initWithCompressedPublicKeyData:(NSData *)data
                                                     keyID:(NSString *)keyID
                                                     error:(NSError **)error;
 
-/// Returns the raw EC_KEY pointer (for internal use). Do not free.
+/** Returns the raw EC_KEY pointer owned by the instance. */
 - (void *)ecKey;
 
 @end
 
 /**
- * Factory for creating OpenSSL ES256 keys.
- * Implements PDSKeyFactoryProtocol for ES256 only.
+ * @abstract Factory for generating and importing OpenSSL ES256 keys.
  */
 @interface PDSOpenSSLES256KeyFactory : NSObject <PDSKeyFactoryProtocol>
 
