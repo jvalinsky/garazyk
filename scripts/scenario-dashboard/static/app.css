@@ -63,7 +63,6 @@ html, body {
   border-radius: var(--radius-sm);
 }
 
-
 .toolbar-section {
   display: flex;
   align-items: center;
@@ -313,15 +312,16 @@ html, body {
 }
 
 @keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.5; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
 }
-
-
-
-
-
 
 .sidebar-section {
   margin-bottom: var(--space-lg);
@@ -456,9 +456,15 @@ html, body {
   line-height: var(--line-height-tight);
 }
 
-.summary-card.passed .value { color: var(--color-success); }
-.summary-card.failed .value { color: var(--color-destructive); }
-.summary-card.skipped .value { color: var(--color-warning); }
+.summary-card.passed .value {
+  color: var(--color-success);
+}
+.summary-card.failed .value {
+  color: var(--color-destructive);
+}
+.summary-card.skipped .value {
+  color: var(--color-warning);
+}
 
 /* Scenario Grid */
 .scenario-grid {
@@ -636,9 +642,15 @@ html, body {
   font-size: var(--font-size-sm);
 }
 
-.step-icon.passed { color: var(--color-success); }
-.step-icon.failed { color: var(--color-destructive); }
-.step-icon.skipped { color: var(--color-warning); }
+.step-icon.passed {
+  color: var(--color-success);
+}
+.step-icon.failed {
+  color: var(--color-destructive);
+}
+.step-icon.skipped {
+  color: var(--color-warning);
+}
 
 .step-name {
   color: var(--color-text-primary);
@@ -697,14 +709,27 @@ html, body {
   margin-right: var(--space-xs);
 }
 
-.health-dot.healthy { background: var(--color-success); }
-.health-dot.unhealthy { background: var(--color-destructive); }
-.health-dot.starting { background: var(--color-warning); animation: pulse 1.5s infinite; }
-.health-dot.stopped { background: var(--color-text-tertiary); }
+.health-dot.healthy {
+  background: var(--color-success);
+}
+.health-dot.unhealthy {
+  background: var(--color-destructive);
+}
+.health-dot.starting {
+  background: var(--color-warning);
+  animation: pulse 1.5s infinite;
+}
+.health-dot.stopped {
+  background: var(--color-text-tertiary);
+}
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 
 /* Run History Table */
@@ -758,8 +783,12 @@ html, body {
   border-radius: 2px;
 }
 
-.progress-bar .fill.success { background: var(--color-success); }
-.progress-bar .fill.failed { background: var(--color-destructive); }
+.progress-bar .fill.success {
+  background: var(--color-success);
+}
+.progress-bar .fill.failed {
+  background: var(--color-destructive);
+}
 
 /* Log viewer */
 .log-viewer {
@@ -869,8 +898,12 @@ html, body {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .run-progress-elapsed {

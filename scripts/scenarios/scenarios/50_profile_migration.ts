@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -24,7 +24,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * @returns A promise that resolves to the scenario result
  */
 
-
 function now() {
   return new Date().toISOString();
 }
@@ -32,11 +31,76 @@ function now() {
 function makePng(width: number, height: number): Uint8Array {
   // Simple 1x1 PNG-like or just enough for a blob
   return new Uint8Array([
-    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
-    0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53,
-    0xde, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x44, 0x41, 0x54, 0x08, 0xd7, 0x63, 0xfc, 0xff, 0x9f, 0xa1,
-    0x1e, 0x00, 0x07, 0x82, 0x02, 0x3c, 0x3f, 0xc8, 0x48, 0xef, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45,
-    0x4e, 0x44, 0xae, 0x42, 0x60, 0x82
+    0x89,
+    0x50,
+    0x4e,
+    0x47,
+    0x0d,
+    0x0a,
+    0x1a,
+    0x0a,
+    0x00,
+    0x00,
+    0x00,
+    0x0d,
+    0x49,
+    0x48,
+    0x44,
+    0x52,
+    0x00,
+    0x00,
+    0x00,
+    0x01,
+    0x00,
+    0x00,
+    0x00,
+    0x01,
+    0x08,
+    0x02,
+    0x00,
+    0x00,
+    0x00,
+    0x90,
+    0x77,
+    0x53,
+    0xde,
+    0x00,
+    0x00,
+    0x00,
+    0x0d,
+    0x49,
+    0x44,
+    0x41,
+    0x54,
+    0x08,
+    0xd7,
+    0x63,
+    0xfc,
+    0xff,
+    0x9f,
+    0xa1,
+    0x1e,
+    0x00,
+    0x07,
+    0x82,
+    0x02,
+    0x3c,
+    0x3f,
+    0xc8,
+    0x48,
+    0xef,
+    0x00,
+    0x00,
+    0x00,
+    0x00,
+    0x49,
+    0x45,
+    0x4e,
+    0x44,
+    0xae,
+    0x42,
+    0x60,
+    0x82,
   ]);
 }
 
@@ -49,13 +113,15 @@ export async function run(): Promise<ScenarioResult> {
   const luna = getCharacter("luna");
   const marcus = getCharacter("marcus");
 
-  await timedCall(result, "PDS health check", async () => { await pds.waitForHealthy(30); });
+  await timedCall(result, "PDS health check", async () => {
+    await pds.waitForHealthy(30);
+  });
 
   if (result.failed > 0) return result;
 
   for (const char of [luna, marcus]) {
-    const session = await pds.accounts.createAccount(char.handle, char.email, char.password).catch(() =>
-      pds.accounts.createSession(char.handle, char.password)
+    const session = await pds.accounts.createAccount(char.handle, char.email, char.password).catch(
+      () => pds.accounts.createSession(char.handle, char.password),
     );
     if (session) {
       char.did = session.did;
@@ -81,13 +147,20 @@ export async function run(): Promise<ScenarioResult> {
     };
 
     await timedCall(result, "Luna writes opening profile", async () => {
-      return await pds.records.createRecord(luna.did, "app.bsky.actor.profile", initialProfile, luna.accessJwt, { rkey: "self" });
+      return await pds.records.createRecord(
+        luna.did,
+        "app.bsky.actor.profile",
+        initialProfile,
+        luna.accessJwt,
+        { rkey: "self" },
+      );
     });
 
     const newName = "Luna Reframed";
     await timedCall(result, "Luna sharpens display name", async () => {
       return await pds.records.putRecord(luna.did, "app.bsky.actor.profile", "self", {
-        ...initialProfile, displayName: newName
+        ...initialProfile,
+        displayName: newName,
       }, luna.accessJwt);
     });
 
@@ -98,12 +171,14 @@ export async function run(): Promise<ScenarioResult> {
     if (avatarV2?.blob) {
       await timedCall(result, "Luna swaps portrait", async () => {
         return await pds.records.putRecord(luna.did, "app.bsky.actor.profile", "self", {
-          ...initialProfile, displayName: newName, avatar: avatarV2.blob
+          ...initialProfile,
+          displayName: newName,
+          avatar: avatarV2.blob,
         }, luna.accessJwt);
       });
     }
 
-    await new Promise(r => setTimeout(r, 2000));
+    await new Promise((r) => setTimeout(r, 2000));
 
     await timedCall(result, "AppView catches final profile", async () => {
       const profile = await appview.feed.getProfile(luna.did, luna.accessJwt);
@@ -116,7 +191,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

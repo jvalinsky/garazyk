@@ -22,7 +22,7 @@ export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { PDS1, SERVICE_URLS, APPVIEW_ADMIN_SECRET, getCharacter } from "../../lib/deno/config.ts";
+import { APPVIEW_ADMIN_SECRET, getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 
 function now() {
   return new Date().toISOString();
@@ -52,22 +52,24 @@ export async function run(): Promise<ScenarioResult> {
   const av = new XrpcClient(avUrl);
 
   await timedCall(
-    result, "AppView health check",
+    result,
+    "AppView health check",
     async () => {
       return await av.raw.httpGet("/admin/backfill/status", undefined, adminToken);
     },
-    (r) => `enabled=${r.enabled ?? false}`
+    (r) => `enabled=${r.enabled ?? false}`,
   );
 
   const charNames = ["luna", "marcus"];
   for (const name of charNames) {
     const char = getCharacter(name);
     const session = await timedCall(
-      result, `Create account: ${char.name}`,
+      result,
+      `Create account: ${char.name}`,
       async () => {
         return await client.accounts.createAccount(char.handle, char.email, char.password);
       },
-      (s) => `did=${s.did}`
+      (s) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -75,7 +77,7 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const active = charNames.filter(n => getCharacter(n).did);
+  const active = charNames.filter((n) => getCharacter(n).did);
   if (active.length < 2) {
     result.stepFailed("Account creation", "Not enough accounts created");
     result.finish();
@@ -86,41 +88,45 @@ export async function run(): Promise<ScenarioResult> {
     const char = getCharacter(name);
     await timedCall(result, `Set profile: ${char.name}`, async () => {
       return await client.records.createRecord(
-        char.did, "app.bsky.actor.profile",
+        char.did,
+        "app.bsky.actor.profile",
         { $type: "app.bsky.actor.profile", displayName: char.name },
-        char.accessJwt
+        char.accessJwt,
       );
     });
 
     for (let i = 0; i < 3; i++) {
       await timedCall(
-        result, `${char.name} posts test ${i + 1}`,
+        result,
+        `${char.name} posts test ${i + 1}`,
         async () => {
           return await client.records.createRecord(
-            char.did, "app.bsky.feed.post",
+            char.did,
+            "app.bsky.feed.post",
             {
               $type: "app.bsky.feed.post",
               text: `Hook test post ${i} from ${char.name}`,
               createdAt: now(),
             },
-            char.accessJwt
+            char.accessJwt,
           );
         },
-        (r) => `uri=${r.uri}`
+        (r) => `uri=${r.uri}`,
       );
     }
   }
 
-  await new Promise(r => setTimeout(r, 3000));
+  await new Promise((r) => setTimeout(r, 3000));
 
   const luna = getCharacter("luna");
 
   const hookData = await timedCall(
-    result, "Hook registry status",
+    result,
+    "Hook registry status",
     async () => {
       return await av.raw.httpGet("/admin/hooks", undefined, adminToken);
     },
-    (r) => `count=${r.count ?? 0}`
+    (r) => `count=${r.count ?? 0}`,
   );
 
   const hookCount = hookData?.count || 0;
@@ -131,19 +137,25 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   await timedCall(
-    result, "Search index: actor search",
+    result,
+    "Search index: actor search",
     async () => {
-      return await av.raw.httpGet("/xrpc/app.bsky.actor.searchActors", { q: "Luna", limit: 5 }, adminToken);
+      return await av.raw.httpGet(
+        "/xrpc/app.bsky.actor.searchActors",
+        { q: "Luna", limit: 5 },
+        adminToken,
+      );
     },
-    (r) => `actors=${r.actors?.length || 0}`
+    (r) => `actors=${r.actors?.length || 0}`,
   );
 
   const dlData = await timedCall(
-    result, "Dead letter table: empty",
+    result,
+    "Dead letter table: empty",
     async () => {
       return await av.raw.httpGet("/admin/hooks/dead-letter", { limit: 10 }, adminToken);
     },
-    (r) => `entries=${r.entries?.length || 0}`
+    (r) => `entries=${r.entries?.length || 0}`,
   );
 
   const dlEntries = dlData?.entries || [];
@@ -154,54 +166,75 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   await timedCall(
-    result, "Dead letter with limit=1",
+    result,
+    "Dead letter with limit=1",
     async () => {
       return await av.raw.httpGet("/admin/hooks/dead-letter", { limit: 1 }, adminToken);
-    }
+    },
   );
 
   const recData = await timedCall(
-    result, "Browse records: collection filter",
+    result,
+    "Browse records: collection filter",
     async () => {
-      return await av.raw.httpGet("/admin/records", { collection: "app.bsky.feed.post", limit: 5 }, adminToken);
+      return await av.raw.httpGet(
+        "/admin/records",
+        { collection: "app.bsky.feed.post", limit: 5 },
+        adminToken,
+      );
     },
-    (r) => `records=${r.records?.length || 0}`
+    (r) => `records=${r.records?.length || 0}`,
   );
 
   if (luna.did) {
     await timedCall(
-      result, "Browse records: DID filter",
+      result,
+      "Browse records: DID filter",
       async () => {
-        return await av.raw.httpGet("/admin/records", { collection: "app.bsky.feed.post", did: luna.did, limit: 10 }, adminToken);
+        return await av.raw.httpGet("/admin/records", {
+          collection: "app.bsky.feed.post",
+          did: luna.did,
+          limit: 10,
+        }, adminToken);
       },
-      (r) => `records=${r.records?.length || 0}`
+      (r) => `records=${r.records?.length || 0}`,
     );
   }
 
   if (recData?.cursor) {
     await timedCall(
-      result, "Browse records: pagination (page 2)",
+      result,
+      "Browse records: pagination (page 2)",
       async () => {
-        return await av.raw.httpGet("/admin/records", { collection: "app.bsky.feed.post", limit: 2, cursor: recData.cursor }, adminToken);
+        return await av.raw.httpGet("/admin/records", {
+          collection: "app.bsky.feed.post",
+          limit: 2,
+          cursor: recData.cursor,
+        }, adminToken);
       },
-      (r) => `records=${r.records?.length || 0}`
+      (r) => `records=${r.records?.length || 0}`,
     );
   }
 
   await timedCall(
-    result, "Browse records: invalid collection",
+    result,
+    "Browse records: invalid collection",
     async () => {
-      return await av.raw.httpGet("/admin/records", { collection: "nonexistent.collection.type", limit: 5 }, adminToken);
-    }
+      return await av.raw.httpGet("/admin/records", {
+        collection: "nonexistent.collection.type",
+        limit: 5,
+      }, adminToken);
+    },
   );
 
   await timedCall(
-    result, "Browse records: missing collection rejected",
+    result,
+    "Browse records: missing collection rejected",
     async () => {
       return await av.raw.httpGet("/admin/records", undefined, adminToken);
     },
     undefined,
-    true
+    true,
   );
 
   result.finish();
@@ -209,7 +242,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

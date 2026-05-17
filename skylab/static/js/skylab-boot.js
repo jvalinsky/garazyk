@@ -47,10 +47,14 @@
       var panel = btn.dataset.panel;
       document
         .querySelectorAll(".skylab-nav-item")
-        .forEach(function (b) { b.classList.remove("active"); });
+        .forEach(function (b) {
+          b.classList.remove("active");
+        });
       document
         .querySelectorAll(".skylab-panel")
-        .forEach(function (p) { p.classList.remove("active"); });
+        .forEach(function (p) {
+          p.classList.remove("active");
+        });
       btn.classList.add("active");
       var panelEl = document.getElementById("panel-" + panel);
       if (panelEl) panelEl.classList.add("active");
@@ -69,8 +73,7 @@
       authLoggedOut.style.display = "none";
       authLoggedIn.style.display = "block";
       authHandle.textContent = auth.handle || "\u2014";
-      authDid.textContent =
-        auth.did ? auth.did.substring(0, 20) + "..." : "\u2014";
+      authDid.textContent = auth.did ? auth.did.substring(0, 20) + "..." : "\u2014";
     } else {
       authLoggedOut.style.display = "block";
       authLoggedIn.style.display = "none";

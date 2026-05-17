@@ -46,60 +46,59 @@ export async function run(): Promise<ScenarioResult> {
 
   const ctx = await createRunContext();
   const client = new XrpcClient(PDS1);
-interface AccountPlan {
-  slot: number;
-  label: string;
-  name: string;
-  handle: string;
-  email: string;
-  password: string;
-  did?: string;
-  accessJwt?: string;
-  warmupRkeys: string[];
-  burstRkeys: string[];
-  mixedRkeys: string[];
-  deletedRkeys: Set<string>;
-}
-
-function buildAccounts(): AccountPlan[] {
-  const accounts: AccountPlan[] = [];
-  const seedNames = ["luna", "marcus", "rosa", "volt", "quiet"];
-
-  for (let i = 0; i < seedNames.length; i++) {
-    const char = getCharacter(seedNames[i]);
-    accounts.push({
-      slot: i + 1,
-      label: seedNames[i],
-      name: char.name,
-      handle: char.handle,
-      email: char.email,
-      password: char.password,
-      warmupRkeys: [],
-      burstRkeys: [],
-      mixedRkeys: [],
-      deletedRkeys: new Set(),
-    });
+  interface AccountPlan {
+    slot: number;
+    label: string;
+    name: string;
+    handle: string;
+    email: string;
+    password: string;
+    did?: string;
+    accessJwt?: string;
+    warmupRkeys: string[];
+    burstRkeys: string[];
+    mixedRkeys: string[];
+    deletedRkeys: Set<string>;
   }
 
-  for (let slot = 6; slot <= 32; slot++) {
-    const label = `load-${slot}`;
-    accounts.push({
-      slot,
-      label,
-      name: `Load Account ${slot}`,
-      handle: `${label}.test`,
-      email: `${label}@test.local`,
-      password: `load-pass-${slot.toString().padStart(2, "0")}`,
-      warmupRkeys: [],
-      burstRkeys: [],
-      mixedRkeys: [],
-      deletedRkeys: new Set(),
-    });
+  function buildAccounts(): AccountPlan[] {
+    const accounts: AccountPlan[] = [];
+    const seedNames = ["luna", "marcus", "rosa", "volt", "quiet"];
+
+    for (let i = 0; i < seedNames.length; i++) {
+      const char = getCharacter(seedNames[i]);
+      accounts.push({
+        slot: i + 1,
+        label: seedNames[i],
+        name: char.name,
+        handle: char.handle,
+        email: char.email,
+        password: char.password,
+        warmupRkeys: [],
+        burstRkeys: [],
+        mixedRkeys: [],
+        deletedRkeys: new Set(),
+      });
+    }
+
+    for (let slot = 6; slot <= 32; slot++) {
+      const label = `load-${slot}`;
+      accounts.push({
+        slot,
+        label,
+        name: `Load Account ${slot}`,
+        handle: `${label}.test`,
+        email: `${label}@test.local`,
+        password: `load-pass-${slot.toString().padStart(2, "0")}`,
+        warmupRkeys: [],
+        burstRkeys: [],
+        mixedRkeys: [],
+        deletedRkeys: new Set(),
+      });
+    }
+
+    return accounts;
   }
-
-  return accounts;
-}
-
 
   const pdsMetricsUrl = `${SERVICE_URLS.pds}/metrics`;
   const pdsDataDir = Deno.env.get("PDS_DATA_DIR") || "/tmp/garazyk-atproto-e2e/pds-data";

@@ -29,8 +29,9 @@
   --separator-color-secondary: oklch(91% 0.002 200);
 
   /* System font stack */
-  --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Text",
-                 "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-system:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
 
   /* Font sizes - 5-step scale with ~1.25 ratio */
   --font-size-xs: 11px;

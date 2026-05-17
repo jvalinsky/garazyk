@@ -2,6 +2,7 @@ import { Handlers } from "$fresh/server.ts";
 import { db } from "../../../../db/index.ts";
 import { fetchRun } from "../../../../db/queries.ts";
 
+/** API handler for run logs. */
 export const handler: Handlers = {
   async GET(_req, ctx) {
     const { runId } = ctx.params;

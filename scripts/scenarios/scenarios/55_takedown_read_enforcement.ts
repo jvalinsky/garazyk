@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -24,7 +24,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * @returns A promise that resolves to the scenario result
  */
 
-
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 // Covers: public read returns hidden/404 after record takedown; admin read still returns content;
@@ -32,8 +31,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
 // Extends 04_moderation_safety.ts which applies takedowns but does not assert read-time enforcement.
 // Production paths: com.atproto.admin.updateSubjectStatus, com.atproto.repo.getRecord/listRecords,
 //   com.atproto.admin.getRecord.
-
-
 
 function now() {
   return new Date().toISOString();
@@ -56,7 +53,8 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   const session = await timedCall(
-    result, "Create troll account",
+    result,
+    "Create troll account",
     async () => {
       try {
         return await pds.accounts.createAccount(troll.handle, troll.email, troll.password);
@@ -64,7 +62,7 @@ export async function run(): Promise<ScenarioResult> {
         return await pds.accounts.createSession(troll.handle, troll.password);
       }
     },
-    (s) => `did=${s.did}`
+    (s) => `did=${s.did}`,
   );
 
   if (session) {
@@ -76,7 +74,8 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   const post = await timedCall(
-    result, "Troll creates post",
+    result,
+    "Troll creates post",
     async () => {
       return await pds.raw.post("com.atproto.repo.createRecord", {
         repo: troll.did,
@@ -88,19 +87,21 @@ export async function run(): Promise<ScenarioResult> {
         },
       }, troll.accessJwt);
     },
-    (r) => `uri=${r.uri}`
+    (r) => `uri=${r.uri}`,
   );
 
   const adminPassword = Deno.env.get("PDS_ADMIN_PASSWORD") || "test-admin-password";
   const adminToken = await timedCall(
-    result, "Admin login",
+    result,
+    "Admin login",
     async () => pds.adminLogin(adminPassword),
-    () => "obtained admin bearer"
+    () => "obtained admin bearer",
   );
 
   if (post && adminToken) {
     await timedCall(
-      result, "Admin applies record takedown",
+      result,
+      "Admin applies record takedown",
       async () => {
         await pds.raw.post("com.atproto.admin.updateSubjectStatus", {
           subject: {
@@ -110,7 +111,7 @@ export async function run(): Promise<ScenarioResult> {
           },
           takedown: { applied: true, ref: "takedown-e2e-test" },
         }, adminToken);
-      }
+      },
     );
   } else {
     result.stepSkipped("Admin applies record takedown", "post or admin token missing");
@@ -122,7 +123,8 @@ export async function run(): Promise<ScenarioResult> {
     const postRkey = post.uri.split("/").pop()!;
 
     await timedCall(
-      result, "Public read of taken-down record is hidden",
+      result,
+      "Public read of taken-down record is hidden",
       async () => {
         // No auth token — public read must fail
         await pds.raw.get("com.atproto.repo.getRecord", {
@@ -132,19 +134,20 @@ export async function run(): Promise<ScenarioResult> {
         });
       },
       undefined,
-      true  // must throw (404 or 410)
+      true, // must throw (404 or 410)
     );
 
     // --- Admin read after record takedown ---
     // An admin-authenticated read of the same record must still succeed (200).
     const adminRecord = await timedCall(
-      result, "Admin read of taken-down record succeeds",
+      result,
+      "Admin read of taken-down record succeeds",
       async () => {
         return await pds.raw.get("com.atproto.admin.getRecord", {
           uri: post.uri,
         }, adminToken);
       },
-      (r) => `cid=${r?.cid ?? "present"}`
+      (r) => `cid=${r?.cid ?? "present"}`,
     );
 
     // Verify the returned record contains the original content.
@@ -153,14 +156,17 @@ export async function run(): Promise<ScenarioResult> {
       if (text === "Bad content that will be taken down.") {
         result.stepPassed("Admin record content matches original", `text="${text}"`);
       } else {
-        result.stepFailed("Admin record content matches original",
-          `expected original text, got: ${JSON.stringify(text)}`);
+        result.stepFailed(
+          "Admin record content matches original",
+          `expected original text, got: ${JSON.stringify(text)}`,
+        );
       }
     }
 
     // --- Account-level takedown: all public repo reads hidden ---
     await timedCall(
-      result, "Admin applies account-level takedown",
+      result,
+      "Admin applies account-level takedown",
       async () => {
         await pds.raw.post("com.atproto.admin.updateSubjectStatus", {
           subject: {
@@ -169,11 +175,12 @@ export async function run(): Promise<ScenarioResult> {
           },
           takedown: { applied: true, ref: "account-takedown-e2e" },
         }, adminToken);
-      }
+      },
     );
 
     await timedCall(
-      result, "Account takedown hides all public repo reads",
+      result,
+      "Account takedown hides all public repo reads",
       async () => {
         await pds.raw.get("com.atproto.repo.listRecords", {
           repo: troll.did,
@@ -181,13 +188,16 @@ export async function run(): Promise<ScenarioResult> {
         });
       },
       undefined,
-      true  // must throw (400/AccountTakedown or 403)
+      true, // must throw (400/AccountTakedown or 403)
     );
   } else {
     result.stepSkipped("Public read of taken-down record is hidden", "post or admin token missing");
     result.stepSkipped("Admin read of taken-down record succeeds", "post or admin token missing");
     result.stepSkipped("Admin applies account-level takedown", "post or admin token missing");
-    result.stepSkipped("Account takedown hides all public repo reads", "post or admin token missing");
+    result.stepSkipped(
+      "Account takedown hides all public repo reads",
+      "post or admin token missing",
+    );
   }
 
   result.finish();
@@ -195,7 +205,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

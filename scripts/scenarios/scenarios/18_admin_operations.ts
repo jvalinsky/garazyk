@@ -18,7 +18,7 @@ export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { PDS1, SERVICE_URLS, APPVIEW_ADMIN_SECRET, getCharacter } from "../../lib/deno/config.ts";
+import { APPVIEW_ADMIN_SECRET, getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 
 function now() {
   return new Date().toISOString();
@@ -51,11 +51,12 @@ export async function run(): Promise<ScenarioResult> {
   for (const name of charNames) {
     const char = getCharacter(name);
     const session = await timedCall(
-      result, `Create account: ${char.name}`,
+      result,
+      `Create account: ${char.name}`,
       async () => {
         return await client.accounts.createAccount(char.handle, char.email, char.password);
       },
-      (s) => `did=${s.did}`
+      (s) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -63,15 +64,16 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const active = charNames.filter(n => getCharacter(n).did);
+  const active = charNames.filter((n) => getCharacter(n).did);
   if (active.length > 0) {
     for (const name of active) {
       const char = getCharacter(name);
       await timedCall(result, `Set profile: ${char.name}`, async () => {
         return await client.records.createRecord(
-          char.did, "app.bsky.actor.profile",
+          char.did,
+          "app.bsky.actor.profile",
           { $type: "app.bsky.actor.profile", displayName: char.name },
-          char.accessJwt
+          char.accessJwt,
         );
       });
     }
@@ -80,133 +82,157 @@ export async function run(): Promise<ScenarioResult> {
       for (const name of active) {
         const char = getCharacter(name);
         await timedCall(
-          result, `${char.name} posts test ${i + 1}`,
+          result,
+          `${char.name} posts test ${i + 1}`,
           async () => {
             return await client.records.createRecord(
-              char.did, "app.bsky.feed.post",
-              { $type: "app.bsky.feed.post", text: `Test post ${i} from ${name}`, createdAt: now() },
-              char.accessJwt
+              char.did,
+              "app.bsky.feed.post",
+              {
+                $type: "app.bsky.feed.post",
+                text: `Test post ${i} from ${name}`,
+                createdAt: now(),
+              },
+              char.accessJwt,
             );
           },
-          (r) => `uri=${r.uri}`
+          (r) => `uri=${r.uri}`,
         );
       }
     }
-    await new Promise(r => setTimeout(r, 2000));
+    await new Promise((r) => setTimeout(r, 2000));
   }
 
   await timedCall(
-    result, "Ingest engine health",
+    result,
+    "Ingest engine health",
     async () => {
       return await av.raw.httpGet("/admin/ingest/health", undefined, adminToken);
     },
-    (r) => `running=${r.running ?? false}`
+    (r) => `running=${r.running ?? false}`,
   );
 
   await timedCall(
-    result, "Backfill status",
+    result,
+    "Backfill status",
     async () => {
       return await av.raw.httpGet("/admin/backfill/status", undefined, adminToken);
     },
-    (r) => `enabled=${r.enabled ?? false}`
+    (r) => `enabled=${r.enabled ?? false}`,
   );
 
   await timedCall(
-    result, "Backfill queue",
+    result,
+    "Backfill queue",
     async () => {
       return await av.raw.httpGet("/admin/backfill/queue", { limit: 10 }, adminToken);
     },
-    (r) => `entries=${r.entries?.length || 0}, total=${r.total ?? 0}`
+    (r) => `entries=${r.entries?.length || 0}, total=${r.total ?? 0}`,
   );
 
   await timedCall(
-    result, "Metrics stats",
+    result,
+    "Metrics stats",
     async () => {
       return await av.raw.httpGet("/admin/appview/metrics/stats", undefined, adminToken);
     },
-    (r) => `repos_total=${r.repos?.total || 0}, queue_depth=${r.queue_depth || 0}`
+    (r) => `repos_total=${r.repos?.total || 0}, queue_depth=${r.queue_depth || 0}`,
   );
 
   await timedCall(
-    result, "List lexicons",
+    result,
+    "List lexicons",
     async () => {
       return await av.raw.httpGet("/admin/lexicons", undefined, adminToken);
     },
-    (r) => `count=${r.count ?? 0}`
+    (r) => `count=${r.count ?? 0}`,
   );
 
   await timedCall(
-    result, "List collections",
+    result,
+    "List collections",
     async () => {
       return await av.raw.httpGet("/admin/lexicons/collections", undefined, adminToken);
     },
-    (r) => `count=${r.collections?.length || 0}`
+    (r) => `count=${r.collections?.length || 0}`,
   );
 
   await timedCall(
-    result, "Browse records",
+    result,
+    "Browse records",
     async () => {
-      return await av.raw.httpGet("/admin/records", { collection: "app.bsky.feed.post", limit: 10 }, adminToken);
+      return await av.raw.httpGet(
+        "/admin/records",
+        { collection: "app.bsky.feed.post", limit: 10 },
+        adminToken,
+      );
     },
-    (r) => `records=${r.records?.length || 0}`
+    (r) => `records=${r.records?.length || 0}`,
   );
 
   await timedCall(
-    result, "Browse records without collection rejected",
+    result,
+    "Browse records without collection rejected",
     async () => {
       return await av.raw.httpGet("/admin/records", undefined, adminToken);
     },
     undefined,
-    true
+    true,
   );
 
   await timedCall(
-    result, "List endpoints",
+    result,
+    "List endpoints",
     async () => {
       return await av.raw.httpGet("/admin/endpoints", undefined, adminToken);
     },
-    (r) => `dynamic=${r.dynamic_endpoint_count ?? 0}, custom=${r.custom_handler_count ?? 0}`
+    (r) => `dynamic=${r.dynamic_endpoint_count ?? 0}, custom=${r.custom_handler_count ?? 0}`,
   );
 
   await timedCall(
-    result, "List hooks",
+    result,
+    "List hooks",
     async () => {
       return await av.raw.httpGet("/admin/hooks", undefined, adminToken);
     },
-    (r) => `count=${r.count ?? 0}`
+    (r) => `count=${r.count ?? 0}`,
   );
 
   await timedCall(
-    result, "Dead letter hooks",
+    result,
+    "Dead letter hooks",
     async () => {
       return await av.raw.httpGet("/admin/hooks/dead-letter", { limit: 10 }, adminToken);
     },
-    (r) => `entries=${r.entries?.length || 0}`
+    (r) => `entries=${r.entries?.length || 0}`,
   );
 
   await timedCall(
-    result, "List handlers",
+    result,
+    "List handlers",
     async () => {
       return await av.raw.httpGet("/admin/handlers", undefined, adminToken);
     },
-    (r) => `count=${r.count ?? 0}`
+    (r) => `count=${r.count ?? 0}`,
   );
 
   await timedCall(
-    result, "Backfill scope rebuild",
+    result,
+    "Backfill scope rebuild",
     async () => {
       return await av.raw.httpPost("/admin/backfill/scope/rebuild", undefined, adminToken);
     },
-    (r) => `success=${r.success ?? false}`
+    (r) => `success=${r.success ?? false}`,
   );
 
   await timedCall(
-    result, "Admin access without token",
+    result,
+    "Admin access without token",
     async () => {
       return await av.raw.httpGet("/admin/backfill/status");
     },
     undefined,
-    true
+    true,
   );
 
   result.finish();
@@ -214,7 +240,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

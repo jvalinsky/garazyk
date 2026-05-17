@@ -15,10 +15,10 @@
 
 import { Handlers } from "$fresh/server.ts";
 import {
-  registerClient,
-  unregisterClient,
-  resolveCommand,
   recordEvent,
+  registerClient,
+  resolveCommand,
+  unregisterClient,
   updateState,
 } from "../../services/control_bridge.ts";
 
