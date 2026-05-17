@@ -71,6 +71,57 @@ Deno.test("generateLexicons writes to the requested package output path", async 
       '"getProfile"(params?: QueryParams<"app.bsky.actor.getProfile">',
     ),
   );
+  assert(source.includes('outputEncoding: "application/json";'));
+  assert(source.includes("export const LEXICON_METHOD_OUTPUT_ENCODINGS"));
+});
+
+Deno.test("generateLexicons preserves binary input and output encodings", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const lexiconsDir = join(tempDir, "lexicons");
+  const outFile = join(tempDir, "lexicons.ts");
+
+  await writeJson(
+    join(lexiconsDir, "com", "example", "getBlob.json"),
+    defsDoc("com.example.getBlob", {
+      main: {
+        type: "query",
+        output: {
+          encoding: "application/vnd.ipld.car",
+        },
+      },
+    }),
+  );
+  await writeJson(
+    join(lexiconsDir, "com", "example", "uploadBlob.json"),
+    defsDoc("com.example.uploadBlob", {
+      main: {
+        type: "procedure",
+        input: {
+          encoding: "*/*",
+        },
+        output: {
+          encoding: "application/json",
+          schema: {
+            type: "object",
+            required: ["ok"],
+            properties: {
+              ok: { type: "boolean" },
+            },
+          },
+        },
+      },
+    }),
+  );
+
+  await generateLexicons({ lexiconsDir, outFile });
+  const source = await Deno.readTextFile(outFile);
+
+  assert(source.includes('outputEncoding: "application/vnd.ipld.car";'));
+  assert(source.includes("output: BinaryXrpcResponse;"));
+  assert(source.includes('inputEncoding: "*/*";'));
+  assert(source.includes("input: Uint8Array;"));
+  assert(source.includes('"com.example.getBlob": "application/vnd.ipld.car"'));
+  assert(source.includes('"com.example.uploadBlob": "*/*"'));
 });
 
 Deno.test("generateLexicons selects the canonical path when duplicate ids exist", async () => {

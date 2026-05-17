@@ -4,15 +4,25 @@
 // @ts-nocheck
 
 export interface LexiconQuery<Params = any, Input = any, Output = any> {
+  inputEncoding?: string;
+  outputEncoding?: string;
   params?: Params;
   input?: Input;
   output?: Output;
 }
 
 export interface LexiconProcedure<Input = any, Output = any> {
+  inputEncoding?: string;
+  outputEncoding?: string;
   input?: Input;
   output?: Output;
 }
+
+export type BinaryXrpcResponse = [
+  status: number,
+  contentType: string,
+  data: Uint8Array,
+];
 
 export interface LexiconDefs {
   "app.bsky.actor.defs": {
@@ -35,7 +45,22 @@ export interface LexiconDefs {
       "value": string;
       "pinned": boolean;
     };
-    "preferences": Array<LexiconDefs["app.bsky.actor.defs"]["adultContentPref"] | LexiconDefs["app.bsky.actor.defs"]["contentLabelPref"] | LexiconDefs["app.bsky.actor.defs"]["savedFeedsPref"] | LexiconDefs["app.bsky.actor.defs"]["savedFeedsPrefV2"] | LexiconDefs["app.bsky.actor.defs"]["personalDetailsPref"] | LexiconDefs["app.bsky.actor.defs"]["feedViewPref"] | LexiconDefs["app.bsky.actor.defs"]["threadViewPref"] | LexiconDefs["app.bsky.actor.defs"]["interestsPref"] | LexiconDefs["app.bsky.actor.defs"]["mutedWordsPref"] | LexiconDefs["app.bsky.actor.defs"]["hiddenPostsPref"] | LexiconDefs["app.bsky.actor.defs"]["bskyAppStatePref"] | LexiconDefs["app.bsky.actor.defs"]["labelersPref"] | LexiconDefs["app.bsky.actor.defs"]["postInteractionSettingsPref"] | Record<string, any>>;
+    "preferences": Array<
+      | LexiconDefs["app.bsky.actor.defs"]["adultContentPref"]
+      | LexiconDefs["app.bsky.actor.defs"]["contentLabelPref"]
+      | LexiconDefs["app.bsky.actor.defs"]["savedFeedsPref"]
+      | LexiconDefs["app.bsky.actor.defs"]["savedFeedsPrefV2"]
+      | LexiconDefs["app.bsky.actor.defs"]["personalDetailsPref"]
+      | LexiconDefs["app.bsky.actor.defs"]["feedViewPref"]
+      | LexiconDefs["app.bsky.actor.defs"]["threadViewPref"]
+      | LexiconDefs["app.bsky.actor.defs"]["interestsPref"]
+      | LexiconDefs["app.bsky.actor.defs"]["mutedWordsPref"]
+      | LexiconDefs["app.bsky.actor.defs"]["hiddenPostsPref"]
+      | LexiconDefs["app.bsky.actor.defs"]["bskyAppStatePref"]
+      | LexiconDefs["app.bsky.actor.defs"]["labelersPref"]
+      | LexiconDefs["app.bsky.actor.defs"]["postInteractionSettingsPref"]
+      | Record<string, any>
+    >;
     "profileView": {
       "did": string;
       "avatar"?: string;
@@ -74,7 +99,9 @@ export interface LexiconDefs {
     };
     "knownFollowers": {
       "count": number;
-      "followers": Array<LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"]>;
+      "followers": Array<
+        LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"]
+      >;
     };
     "mutedWordsPref": {
       "items": Array<LexiconDefs["app.bsky.actor.defs"]["mutedWord"]>;
@@ -101,7 +128,8 @@ export interface LexiconDefs {
     "bskyAppStatePref": {
       "nuxs"?: Array<LexiconDefs["app.bsky.actor.defs"]["nux"]>;
       "queuedNudges"?: Array<string>;
-      "activeProgressGuide"?: LexiconDefs["app.bsky.actor.defs"]["bskyAppProgressGuide"];
+      "activeProgressGuide"?:
+        LexiconDefs["app.bsky.actor.defs"]["bskyAppProgressGuide"];
     };
     "contentLabelPref": {
       "label": string;
@@ -147,7 +175,8 @@ export interface LexiconDefs {
       "displayName"?: string;
       "followsCount"?: number;
       "followersCount"?: number;
-      "joinedViaStarterPack"?: LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"];
+      "joinedViaStarterPack"?:
+        LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"];
     };
     "bskyAppProgressGuide": {
       "guide": string;
@@ -156,8 +185,17 @@ export interface LexiconDefs {
       "allowIncoming": string;
     };
     "postInteractionSettingsPref": {
-      "threadgateAllowRules"?: Array<LexiconDefs["app.bsky.feed.threadgate"]["mentionRule"] | LexiconDefs["app.bsky.feed.threadgate"]["followerRule"] | LexiconDefs["app.bsky.feed.threadgate"]["followingRule"] | LexiconDefs["app.bsky.feed.threadgate"]["listRule"] | Record<string, any>>;
-      "postgateEmbeddingRules"?: Array<LexiconDefs["app.bsky.feed.postgate"]["disableRule"] | Record<string, any>>;
+      "threadgateAllowRules"?: Array<
+        | LexiconDefs["app.bsky.feed.threadgate"]["mentionRule"]
+        | LexiconDefs["app.bsky.feed.threadgate"]["followerRule"]
+        | LexiconDefs["app.bsky.feed.threadgate"]["followingRule"]
+        | LexiconDefs["app.bsky.feed.threadgate"]["listRule"]
+        | Record<string, any>
+      >;
+      "postgateEmbeddingRules"?: Array<
+        | LexiconDefs["app.bsky.feed.postgate"]["disableRule"]
+        | Record<string, any>
+      >;
     };
   };
   "app.bsky.actor.getPreferences": {
@@ -176,12 +214,15 @@ export interface LexiconDefs {
     "main": {
       "avatar"?: any /* blob */;
       "banner"?: any /* blob */;
-      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
+      "labels"?:
+        | LexiconDefs["com.atproto.label.defs"]["selfLabels"]
+        | Record<string, any>;
       "createdAt"?: string;
       "pinnedPost"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
       "description"?: string;
       "displayName"?: string;
-      "joinedViaStarterPack"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "joinedViaStarterPack"?:
+        LexiconDefs["com.atproto.repo.strongRef"]["main"];
     };
   };
   "app.bsky.actor.putPreferences": {
@@ -196,7 +237,9 @@ export interface LexiconDefs {
   "app.bsky.actor.status": {
     "main": {
       "status": string;
-      "embed"?: LexiconDefs["app.bsky.embed.external"]["main"] | Record<string, any>;
+      "embed"?:
+        | LexiconDefs["app.bsky.embed.external"]["main"]
+        | Record<string, any>;
       "durationMinutes"?: number;
       "createdAt": string;
     };
@@ -217,13 +260,36 @@ export interface LexiconDefs {
       "accountCreatedAt"?: string;
     };
     "config": {
-      "regions": Array<LexiconDefs["app.bsky.ageassurance.defs"]["configRegion"]>;
+      "regions": Array<
+        LexiconDefs["app.bsky.ageassurance.defs"]["configRegion"]
+      >;
     };
     "configRegion": {
       "countryCode": string;
       "regionCode"?: string;
       "minAccessAge": number;
-      "rules": Array<LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleDefault"] | LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleIfDeclaredOverAge"] | LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleIfDeclaredUnderAge"] | LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleIfAssuredOverAge"] | LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleIfAssuredUnderAge"] | LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleIfAccountNewerThan"] | LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleIfAccountOlderThan"] | Record<string, any>>;
+      "rules": Array<
+        | LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleDefault"]
+        | LexiconDefs["app.bsky.ageassurance.defs"][
+          "configRegionRuleIfDeclaredOverAge"
+        ]
+        | LexiconDefs["app.bsky.ageassurance.defs"][
+          "configRegionRuleIfDeclaredUnderAge"
+        ]
+        | LexiconDefs["app.bsky.ageassurance.defs"][
+          "configRegionRuleIfAssuredOverAge"
+        ]
+        | LexiconDefs["app.bsky.ageassurance.defs"][
+          "configRegionRuleIfAssuredUnderAge"
+        ]
+        | LexiconDefs["app.bsky.ageassurance.defs"][
+          "configRegionRuleIfAccountNewerThan"
+        ]
+        | LexiconDefs["app.bsky.ageassurance.defs"][
+          "configRegionRuleIfAccountOlderThan"
+        ]
+        | Record<string, any>
+      >;
     };
     "configRegionRuleDefault": {
       "access": LexiconDefs["app.bsky.ageassurance.defs"]["access"];
@@ -306,7 +372,11 @@ export interface LexiconDefs {
     "bookmarkView": {
       "subject": LexiconDefs["com.atproto.repo.strongRef"]["main"];
       "createdAt"?: string;
-      "item": LexiconDefs["app.bsky.feed.defs"]["blockedPost"] | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"] | LexiconDefs["app.bsky.feed.defs"]["postView"] | Record<string, any>;
+      "item":
+        | LexiconDefs["app.bsky.feed.defs"]["blockedPost"]
+        | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"]
+        | LexiconDefs["app.bsky.feed.defs"]["postView"]
+        | Record<string, any>;
     };
   };
   "app.bsky.bookmark.deleteBookmark": {
@@ -415,14 +485,30 @@ export interface LexiconDefs {
       "record": LexiconDefs["com.atproto.repo.strongRef"]["main"];
     };
     "view": {
-      "record": LexiconDefs["app.bsky.embed.record"]["viewRecord"] | LexiconDefs["app.bsky.embed.record"]["viewNotFound"] | LexiconDefs["app.bsky.embed.record"]["viewBlocked"] | LexiconDefs["app.bsky.embed.record"]["viewDetached"] | LexiconDefs["app.bsky.feed.defs"]["generatorView"] | LexiconDefs["app.bsky.graph.defs"]["listView"] | LexiconDefs["app.bsky.labeler.defs"]["labelerView"] | LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"] | Record<string, any>;
+      "record":
+        | LexiconDefs["app.bsky.embed.record"]["viewRecord"]
+        | LexiconDefs["app.bsky.embed.record"]["viewNotFound"]
+        | LexiconDefs["app.bsky.embed.record"]["viewBlocked"]
+        | LexiconDefs["app.bsky.embed.record"]["viewDetached"]
+        | LexiconDefs["app.bsky.feed.defs"]["generatorView"]
+        | LexiconDefs["app.bsky.graph.defs"]["listView"]
+        | LexiconDefs["app.bsky.labeler.defs"]["labelerView"]
+        | LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"]
+        | Record<string, any>;
     };
     "viewRecord": {
       "cid": string;
       "uri": string;
       "value": unknown;
       "author": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
-      "embeds"?: Array<LexiconDefs["app.bsky.embed.images"]["view"] | LexiconDefs["app.bsky.embed.video"]["view"] | LexiconDefs["app.bsky.embed.external"]["view"] | LexiconDefs["app.bsky.embed.record"]["view"] | LexiconDefs["app.bsky.embed.recordWithMedia"]["view"] | Record<string, any>>;
+      "embeds"?: Array<
+        | LexiconDefs["app.bsky.embed.images"]["view"]
+        | LexiconDefs["app.bsky.embed.video"]["view"]
+        | LexiconDefs["app.bsky.embed.external"]["view"]
+        | LexiconDefs["app.bsky.embed.record"]["view"]
+        | LexiconDefs["app.bsky.embed.recordWithMedia"]["view"]
+        | Record<string, any>
+      >;
       "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
       "indexedAt": string;
       "likeCount"?: number;
@@ -446,11 +532,19 @@ export interface LexiconDefs {
   };
   "app.bsky.embed.recordWithMedia": {
     "main": {
-      "media": LexiconDefs["app.bsky.embed.images"]["main"] | LexiconDefs["app.bsky.embed.video"]["main"] | LexiconDefs["app.bsky.embed.external"]["main"] | Record<string, any>;
+      "media":
+        | LexiconDefs["app.bsky.embed.images"]["main"]
+        | LexiconDefs["app.bsky.embed.video"]["main"]
+        | LexiconDefs["app.bsky.embed.external"]["main"]
+        | Record<string, any>;
       "record": LexiconDefs["app.bsky.embed.record"]["main"];
     };
     "view": {
-      "media": LexiconDefs["app.bsky.embed.images"]["view"] | LexiconDefs["app.bsky.embed.video"]["view"] | LexiconDefs["app.bsky.embed.external"]["view"] | Record<string, any>;
+      "media":
+        | LexiconDefs["app.bsky.embed.images"]["view"]
+        | LexiconDefs["app.bsky.embed.video"]["view"]
+        | LexiconDefs["app.bsky.embed.external"]["view"]
+        | Record<string, any>;
       "record": LexiconDefs["app.bsky.embed.record"]["view"];
     };
   };
@@ -477,7 +571,13 @@ export interface LexiconDefs {
     "postView": {
       "cid": string;
       "uri": string;
-      "embed"?: LexiconDefs["app.bsky.embed.images"]["view"] | LexiconDefs["app.bsky.embed.video"]["view"] | LexiconDefs["app.bsky.embed.external"]["view"] | LexiconDefs["app.bsky.embed.record"]["view"] | LexiconDefs["app.bsky.embed.recordWithMedia"]["view"] | Record<string, any>;
+      "embed"?:
+        | LexiconDefs["app.bsky.embed.images"]["view"]
+        | LexiconDefs["app.bsky.embed.video"]["view"]
+        | LexiconDefs["app.bsky.embed.external"]["view"]
+        | LexiconDefs["app.bsky.embed.record"]["view"]
+        | LexiconDefs["app.bsky.embed.recordWithMedia"]["view"]
+        | Record<string, any>;
       "author": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
       "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
       "record": unknown;
@@ -490,12 +590,20 @@ export interface LexiconDefs {
       "repostCount"?: number;
     };
     "replyRef": {
-      "root": LexiconDefs["app.bsky.feed.defs"]["postView"] | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"] | LexiconDefs["app.bsky.feed.defs"]["blockedPost"] | Record<string, any>;
-      "parent": LexiconDefs["app.bsky.feed.defs"]["postView"] | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"] | LexiconDefs["app.bsky.feed.defs"]["blockedPost"] | Record<string, any>;
-      "grandparentAuthor"?: LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
+      "root":
+        | LexiconDefs["app.bsky.feed.defs"]["postView"]
+        | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"]
+        | LexiconDefs["app.bsky.feed.defs"]["blockedPost"]
+        | Record<string, any>;
+      "parent":
+        | LexiconDefs["app.bsky.feed.defs"]["postView"]
+        | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"]
+        | LexiconDefs["app.bsky.feed.defs"]["blockedPost"]
+        | Record<string, any>;
+      "grandparentAuthor"?:
+        LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
     };
-    "reasonPin": {
-    };
+    "reasonPin": {};
     "blockedPost": {
       "uri": string;
       "author": LexiconDefs["app.bsky.feed.defs"]["blockedAuthor"];
@@ -519,7 +627,10 @@ export interface LexiconDefs {
     "feedViewPost": {
       "post": LexiconDefs["app.bsky.feed.defs"]["postView"];
       "reply"?: LexiconDefs["app.bsky.feed.defs"]["replyRef"];
-      "reason"?: LexiconDefs["app.bsky.feed.defs"]["reasonRepost"] | LexiconDefs["app.bsky.feed.defs"]["reasonPin"] | Record<string, any>;
+      "reason"?:
+        | LexiconDefs["app.bsky.feed.defs"]["reasonRepost"]
+        | LexiconDefs["app.bsky.feed.defs"]["reasonPin"]
+        | Record<string, any>;
       "feedContext"?: string;
     };
     "notFoundPost": {
@@ -547,7 +658,9 @@ export interface LexiconDefs {
       "contentMode"?: string;
       "description"?: string;
       "displayName": string;
-      "descriptionFacets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "descriptionFacets"?: Array<
+        LexiconDefs["app.bsky.richtext.facet"]["main"]
+      >;
       "acceptsInteractions"?: boolean;
     };
     "threadContext": {
@@ -555,8 +668,17 @@ export interface LexiconDefs {
     };
     "threadViewPost": {
       "post": LexiconDefs["app.bsky.feed.defs"]["postView"];
-      "parent"?: LexiconDefs["app.bsky.feed.defs"]["threadViewPost"] | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"] | LexiconDefs["app.bsky.feed.defs"]["blockedPost"] | Record<string, any>;
-      "replies"?: Array<LexiconDefs["app.bsky.feed.defs"]["threadViewPost"] | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"] | LexiconDefs["app.bsky.feed.defs"]["blockedPost"] | Record<string, any>>;
+      "parent"?:
+        | LexiconDefs["app.bsky.feed.defs"]["threadViewPost"]
+        | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"]
+        | LexiconDefs["app.bsky.feed.defs"]["blockedPost"]
+        | Record<string, any>;
+      "replies"?: Array<
+        | LexiconDefs["app.bsky.feed.defs"]["threadViewPost"]
+        | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"]
+        | LexiconDefs["app.bsky.feed.defs"]["blockedPost"]
+        | Record<string, any>
+      >;
       "threadContext"?: LexiconDefs["app.bsky.feed.defs"]["threadContext"];
     };
     "threadgateView": {
@@ -574,13 +696,15 @@ export interface LexiconDefs {
     "interactionShare": string;
     "skeletonFeedPost": {
       "post": string;
-      "reason"?: LexiconDefs["app.bsky.feed.defs"]["skeletonReasonRepost"] | LexiconDefs["app.bsky.feed.defs"]["skeletonReasonPin"] | Record<string, any>;
+      "reason"?:
+        | LexiconDefs["app.bsky.feed.defs"]["skeletonReasonRepost"]
+        | LexiconDefs["app.bsky.feed.defs"]["skeletonReasonPin"]
+        | Record<string, any>;
       "feedContext"?: string;
     };
     "clickthroughEmbed": string;
     "interactionRepost": string;
-    "skeletonReasonPin": {
-    };
+    "skeletonReasonPin": {};
     "clickthroughAuthor": string;
     "clickthroughReposter": string;
     "generatorViewerState": {
@@ -606,10 +730,14 @@ export interface LexiconDefs {
       "did": string;
       "displayName": string;
       "description"?: string;
-      "descriptionFacets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "descriptionFacets"?: Array<
+        LexiconDefs["app.bsky.richtext.facet"]["main"]
+      >;
       "avatar"?: any /* blob */;
       "acceptsInteractions"?: boolean;
-      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
+      "labels"?:
+        | LexiconDefs["com.atproto.label.defs"]["selfLabels"]
+        | Record<string, any>;
       "contentMode"?: string;
       "createdAt": string;
     };
@@ -677,9 +805,17 @@ export interface LexiconDefs {
       "entities"?: Array<LexiconDefs["app.bsky.feed.post"]["entity"]>;
       "facets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
       "reply"?: LexiconDefs["app.bsky.feed.post"]["replyRef"];
-      "embed"?: LexiconDefs["app.bsky.embed.images"]["main"] | LexiconDefs["app.bsky.embed.video"]["main"] | LexiconDefs["app.bsky.embed.external"]["main"] | LexiconDefs["app.bsky.embed.record"]["main"] | LexiconDefs["app.bsky.embed.recordWithMedia"]["main"] | Record<string, any>;
+      "embed"?:
+        | LexiconDefs["app.bsky.embed.images"]["main"]
+        | LexiconDefs["app.bsky.embed.video"]["main"]
+        | LexiconDefs["app.bsky.embed.external"]["main"]
+        | LexiconDefs["app.bsky.embed.record"]["main"]
+        | LexiconDefs["app.bsky.embed.recordWithMedia"]["main"]
+        | Record<string, any>;
       "langs"?: Array<string>;
-      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
+      "labels"?:
+        | LexiconDefs["com.atproto.label.defs"]["selfLabels"]
+        | Record<string, any>;
       "tags"?: Array<string>;
       "createdAt": string;
     };
@@ -701,11 +837,13 @@ export interface LexiconDefs {
     "main": {
       "post": string;
       "createdAt": string;
-      "embeddingRules"?: Array<LexiconDefs["app.bsky.feed.postgate"]["disableRule"] | Record<string, any>>;
+      "embeddingRules"?: Array<
+        | LexiconDefs["app.bsky.feed.postgate"]["disableRule"]
+        | Record<string, any>
+      >;
       "detachedEmbeddingUris"?: Array<string>;
     };
-    "disableRule": {
-    };
+    "disableRule": {};
   };
   "app.bsky.feed.repost": {
     "main": {
@@ -723,19 +861,22 @@ export interface LexiconDefs {
   "app.bsky.feed.threadgate": {
     "main": {
       "post": string;
-      "allow"?: Array<LexiconDefs["app.bsky.feed.threadgate"]["mentionRule"] | LexiconDefs["app.bsky.feed.threadgate"]["followerRule"] | LexiconDefs["app.bsky.feed.threadgate"]["followingRule"] | LexiconDefs["app.bsky.feed.threadgate"]["listRule"] | Record<string, any>>;
+      "allow"?: Array<
+        | LexiconDefs["app.bsky.feed.threadgate"]["mentionRule"]
+        | LexiconDefs["app.bsky.feed.threadgate"]["followerRule"]
+        | LexiconDefs["app.bsky.feed.threadgate"]["followingRule"]
+        | LexiconDefs["app.bsky.feed.threadgate"]["listRule"]
+        | Record<string, any>
+      >;
       "createdAt": string;
       "hiddenReplies"?: Array<string>;
     };
     "listRule": {
       "list": string;
     };
-    "mentionRule": {
-    };
-    "followerRule": {
-    };
-    "followingRule": {
-    };
+    "mentionRule": {};
+    "followerRule": {};
+    "followingRule": {};
   };
   "app.bsky.graph.block": {
     "main": {
@@ -757,7 +898,9 @@ export interface LexiconDefs {
       "indexedAt": string;
       "description"?: string;
       "listItemCount"?: number;
-      "descriptionFacets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "descriptionFacets"?: Array<
+        LexiconDefs["app.bsky.richtext.facet"]["main"]
+      >;
     };
     "curatelist": string;
     "listPurpose": string;
@@ -800,7 +943,9 @@ export interface LexiconDefs {
       "creator": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
       "indexedAt": string;
       "joinedWeekCount"?: number;
-      "listItemsSample"?: Array<LexiconDefs["app.bsky.graph.defs"]["listItemView"]>;
+      "listItemsSample"?: Array<
+        LexiconDefs["app.bsky.graph.defs"]["listItemView"]
+      >;
       "joinedAllTimeCount"?: number;
     };
     "starterPackViewBasic": {
@@ -882,9 +1027,13 @@ export interface LexiconDefs {
       "purpose": LexiconDefs["app.bsky.graph.defs"]["listPurpose"];
       "name": string;
       "description"?: string;
-      "descriptionFacets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "descriptionFacets"?: Array<
+        LexiconDefs["app.bsky.richtext.facet"]["main"]
+      >;
       "avatar"?: any /* blob */;
-      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
+      "labels"?:
+        | LexiconDefs["com.atproto.label.defs"]["selfLabels"]
+        | Record<string, any>;
       "createdAt": string;
     };
   };
@@ -917,7 +1066,9 @@ export interface LexiconDefs {
     "main": {
       "name": string;
       "description"?: string;
-      "descriptionFacets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
+      "descriptionFacets"?: Array<
+        LexiconDefs["app.bsky.richtext.facet"]["main"]
+      >;
       "list": string;
       "feeds"?: Array<LexiconDefs["app.bsky.graph.starterpack"]["feedItem"]>;
       "createdAt": string;
@@ -960,8 +1111,12 @@ export interface LexiconDefs {
       "likeCount"?: number;
     };
     "labelerPolicies": {
-      "labelValues": Array<any /* unresolved ref: com.atproto.label.defs#labelValue */>;
-      "labelValueDefinitions"?: Array<any /* unresolved ref: com.atproto.label.defs#labelValueDefinition */>;
+      "labelValues": Array<
+        any /* unresolved ref: com.atproto.label.defs#labelValue */
+      >;
+      "labelValueDefinitions"?: Array<
+        any /* unresolved ref: com.atproto.label.defs#labelValueDefinition */
+      >;
     };
     "labelerViewerState": {
       "like"?: string;
@@ -983,10 +1138,16 @@ export interface LexiconDefs {
   "app.bsky.labeler.service": {
     "main": {
       "policies": LexiconDefs["app.bsky.labeler.defs"]["labelerPolicies"];
-      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
+      "labels"?:
+        | LexiconDefs["com.atproto.label.defs"]["selfLabels"]
+        | Record<string, any>;
       "createdAt": string;
-      "reasonTypes"?: Array<LexiconDefs["com.atproto.moderation.defs"]["reasonType"]>;
-      "subjectTypes"?: Array<LexiconDefs["com.atproto.moderation.defs"]["subjectType"]>;
+      "reasonTypes"?: Array<
+        LexiconDefs["com.atproto.moderation.defs"]["reasonType"]
+      >;
+      "subjectTypes"?: Array<
+        LexiconDefs["com.atproto.moderation.defs"]["subjectType"]
+      >;
       "subjectCollections"?: Array<string>;
     };
   };
@@ -996,8 +1157,7 @@ export interface LexiconDefs {
     };
   };
   "app.bsky.notification.defs": {
-    "recordDeleted": {
-    };
+    "recordDeleted": {};
     "chatPreference": {
       "include": string;
       "push": boolean;
@@ -1013,15 +1173,23 @@ export interface LexiconDefs {
     };
     "preferences": {
       "chat": LexiconDefs["app.bsky.notification.defs"]["chatPreference"];
-      "follow": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "follow":
+        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
       "like": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "likeViaRepost": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "mention": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "quote": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "reply": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "repost": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "repostViaRepost": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "starterpackJoined": LexiconDefs["app.bsky.notification.defs"]["preference"];
+      "likeViaRepost":
+        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "mention":
+        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "quote":
+        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "reply":
+        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "repost":
+        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "repostViaRepost":
+        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "starterpackJoined":
+        LexiconDefs["app.bsky.notification.defs"]["preference"];
       "subscribedPost": LexiconDefs["app.bsky.notification.defs"]["preference"];
       "unverified": LexiconDefs["app.bsky.notification.defs"]["preference"];
       "verified": LexiconDefs["app.bsky.notification.defs"]["preference"];
@@ -1032,7 +1200,8 @@ export interface LexiconDefs {
     };
     "subjectActivitySubscription": {
       "subject": string;
-      "activitySubscription": LexiconDefs["app.bsky.notification.defs"]["activitySubscription"];
+      "activitySubscription":
+        LexiconDefs["app.bsky.notification.defs"]["activitySubscription"];
     };
   };
   "app.bsky.notification.getPreferences": {
@@ -1082,7 +1251,12 @@ export interface LexiconDefs {
   "app.bsky.richtext.facet": {
     "main": {
       "index": LexiconDefs["app.bsky.richtext.facet"]["byteSlice"];
-      "features": Array<LexiconDefs["app.bsky.richtext.facet"]["mention"] | LexiconDefs["app.bsky.richtext.facet"]["link"] | LexiconDefs["app.bsky.richtext.facet"]["tag"] | Record<string, any>>;
+      "features": Array<
+        | LexiconDefs["app.bsky.richtext.facet"]["mention"]
+        | LexiconDefs["app.bsky.richtext.facet"]["link"]
+        | LexiconDefs["app.bsky.richtext.facet"]["tag"]
+        | Record<string, any>
+      >;
     };
     "mention": {
       "did": string;
@@ -1145,10 +1319,8 @@ export interface LexiconDefs {
       "hiddenByThreadgate": boolean;
       "mutedByViewer": boolean;
     };
-    "threadItemNoUnauthenticated": {
-    };
-    "threadItemNotFound": {
-    };
+    "threadItemNoUnauthenticated": {};
+    "threadItemNotFound": {};
     "threadItemBlocked": {
       "author": LexiconDefs["app.bsky.feed.defs"]["blockedAuthor"];
     };
@@ -1194,7 +1366,9 @@ export interface LexiconDefs {
     "threadItem": {
       "uri": string;
       "depth": number;
-      "value": LexiconDefs["app.bsky.unspecced.defs"]["threadItemPost"] | Record<string, any>;
+      "value":
+        | LexiconDefs["app.bsky.unspecced.defs"]["threadItemPost"]
+        | Record<string, any>;
     };
   };
   "app.bsky.unspecced.getPostThreadV2": {
@@ -1202,7 +1376,12 @@ export interface LexiconDefs {
     "threadItem": {
       "uri": string;
       "depth": number;
-      "value": LexiconDefs["app.bsky.unspecced.defs"]["threadItemPost"] | LexiconDefs["app.bsky.unspecced.defs"]["threadItemNoUnauthenticated"] | LexiconDefs["app.bsky.unspecced.defs"]["threadItemNotFound"] | LexiconDefs["app.bsky.unspecced.defs"]["threadItemBlocked"] | Record<string, any>;
+      "value":
+        | LexiconDefs["app.bsky.unspecced.defs"]["threadItemPost"]
+        | LexiconDefs["app.bsky.unspecced.defs"]["threadItemNoUnauthenticated"]
+        | LexiconDefs["app.bsky.unspecced.defs"]["threadItemNotFound"]
+        | LexiconDefs["app.bsky.unspecced.defs"]["threadItemBlocked"]
+        | Record<string, any>;
     };
   };
   "app.bsky.unspecced.getSuggestedFeeds": {
@@ -1286,9 +1465,9 @@ export interface LexiconDefs {
       "error"?: string;
       "message"?: string;
       "aspectRatio"?: {
-      "width"?: number;
-      "height"?: number;
-    };
+        "width"?: number;
+        "height"?: number;
+      };
     };
   };
   "app.bsky.video.getJobStatus": {
@@ -1324,7 +1503,8 @@ export interface LexiconDefs {
       "viewer"?: LexiconDefs["app.bsky.actor.defs"]["viewerState"];
       "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
       "chatDisabled"?: boolean;
-      "verification"?: any /* unresolved ref: app.bsky.actor.defs#verificationState */;
+      "verification"?:
+        any /* unresolved ref: app.bsky.actor.defs#verificationState */;
     };
   };
   "chat.bsky.actor.deleteAccount": {
@@ -1351,14 +1531,18 @@ export interface LexiconDefs {
     "messageInput": {
       "text": string;
       "facets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
-      "embed"?: LexiconDefs["app.bsky.embed.record"]["main"] | Record<string, any>;
+      "embed"?:
+        | LexiconDefs["app.bsky.embed.record"]["main"]
+        | Record<string, any>;
     };
     "messageView": {
       "id": string;
       "rev": string;
       "text": string;
       "facets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
-      "embed"?: LexiconDefs["app.bsky.embed.record"]["view"] | Record<string, any>;
+      "embed"?:
+        | LexiconDefs["app.bsky.embed.record"]["view"]
+        | Record<string, any>;
       "reactions"?: Array<LexiconDefs["chat.bsky.convo.defs"]["reactionView"]>;
       "sender": LexiconDefs["chat.bsky.convo.defs"]["messageViewSender"];
       "sentAt": string;
@@ -1388,8 +1572,13 @@ export interface LexiconDefs {
       "id": string;
       "rev": string;
       "members": Array<LexiconDefs["chat.bsky.actor.defs"]["profileViewBasic"]>;
-      "lastMessage"?: LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>;
-      "lastReaction"?: LexiconDefs["chat.bsky.convo.defs"]["messageAndReactionView"] | Record<string, any>;
+      "lastMessage"?:
+        | LexiconDefs["chat.bsky.convo.defs"]["messageView"]
+        | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"]
+        | Record<string, any>;
+      "lastReaction"?:
+        | LexiconDefs["chat.bsky.convo.defs"]["messageAndReactionView"]
+        | Record<string, any>;
       "muted": boolean;
       "status"?: string;
       "unreadCount": number;
@@ -1417,28 +1606,43 @@ export interface LexiconDefs {
     "logCreateMessage": {
       "rev": string;
       "convoId": string;
-      "message": LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>;
+      "message":
+        | LexiconDefs["chat.bsky.convo.defs"]["messageView"]
+        | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"]
+        | Record<string, any>;
     };
     "logDeleteMessage": {
       "rev": string;
       "convoId": string;
-      "message": LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>;
+      "message":
+        | LexiconDefs["chat.bsky.convo.defs"]["messageView"]
+        | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"]
+        | Record<string, any>;
     };
     "logReadMessage": {
       "rev": string;
       "convoId": string;
-      "message": LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>;
+      "message":
+        | LexiconDefs["chat.bsky.convo.defs"]["messageView"]
+        | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"]
+        | Record<string, any>;
     };
     "logAddReaction": {
       "rev": string;
       "convoId": string;
-      "message": LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>;
+      "message":
+        | LexiconDefs["chat.bsky.convo.defs"]["messageView"]
+        | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"]
+        | Record<string, any>;
       "reaction": LexiconDefs["chat.bsky.convo.defs"]["reactionView"];
     };
     "logRemoveReaction": {
       "rev": string;
       "convoId": string;
-      "message": LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>;
+      "message":
+        | LexiconDefs["chat.bsky.convo.defs"]["messageView"]
+        | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"]
+        | Record<string, any>;
       "reaction": LexiconDefs["chat.bsky.convo.defs"]["reactionView"];
     };
   };
@@ -1623,7 +1827,9 @@ export interface LexiconDefs {
       "emailConfirmedAt"?: string;
       "inviteNote"?: string;
       "deactivatedAt"?: string;
-      "threatSignatures"?: Array<LexiconDefs["com.atproto.admin.defs"]["threatSignature"]>;
+      "threatSignatures"?: Array<
+        LexiconDefs["com.atproto.admin.defs"]["threatSignature"]
+      >;
     };
     "repoRef": {
       "did": string;
@@ -1841,8 +2047,7 @@ export interface LexiconDefs {
       "cid": string;
       "validationStatus"?: string;
     };
-    "deleteResult": {
-    };
+    "deleteResult": {};
   };
   "com.atproto.repo.createRecord": {
     "main": never;
@@ -2129,10 +2334,11 @@ export interface LexiconDefs {
   };
   "com.atproto.temp.checkHandleAvailability": {
     "main": never;
-    "resultAvailable": {
-    };
+    "resultAvailable": {};
     "resultUnavailable": {
-      "suggestions": Array<LexiconDefs["com.atproto.temp.checkHandleAvailability"]["suggestion"]>;
+      "suggestions": Array<
+        LexiconDefs["com.atproto.temp.checkHandleAvailability"]["suggestion"]
+      >;
     };
     "suggestion": {
       "handle": string;
@@ -2263,7 +2469,9 @@ export interface LexiconDefs {
       "avatar"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
       "nickname"?: string;
       "bio"?: string;
-      "links"?: Array<LexiconDefs["com.shinolabs.pinksea.profile"]["profileLink"]>;
+      "links"?: Array<
+        LexiconDefs["com.shinolabs.pinksea.profile"]["profileLink"]
+      >;
     };
     "profileLink": {
       "name": string;
@@ -2325,7 +2533,9 @@ export interface LexiconDefs {
   "fyi.frontpage.feed.post": {
     "main": {
       "title": string;
-      "subject": LexiconDefs["fyi.frontpage.feed.post"]["urlSubject"] | Record<string, any>;
+      "subject":
+        | LexiconDefs["fyi.frontpage.feed.post"]["urlSubject"]
+        | Record<string, any>;
       "createdAt": string;
     };
     "urlSubject": {
@@ -2340,7 +2550,9 @@ export interface LexiconDefs {
   };
   "fyi.frontpage.richtext.block": {
     "main": {
-      "content": LexiconDefs["fyi.frontpage.richtext.block"]["plaintextParagraph"] | Record<string, any>;
+      "content":
+        | LexiconDefs["fyi.frontpage.richtext.block"]["plaintextParagraph"]
+        | Record<string, any>;
     };
     "plaintextParagraph": {
       "text": string;
@@ -2384,13 +2596,22 @@ export interface LexiconDefs {
   "my.skylights.listItem": {
     "main": {
       "item"?: LexiconDefs["my.skylights.defs"]["item"];
-      "list": LexiconDefs["my.skylights.list"]["main"] | LexiconDefs["my.skylights.listItem"]["builtin"] | Record<string, any>;
+      "list":
+        | LexiconDefs["my.skylights.list"]["main"]
+        | LexiconDefs["my.skylights.listItem"]["builtin"]
+        | Record<string, any>;
       "addedAt": string;
       "position": string;
       "note"?: string;
     };
     "builtin": {
-      "type"?: LexiconDefs["my.skylights.listItem"]["inProgress"] | LexiconDefs["my.skylights.listItem"]["queue"] | LexiconDefs["my.skylights.listItem"]["abandoned"] | LexiconDefs["my.skylights.listItem"]["owned"] | LexiconDefs["my.skylights.listItem"]["wishlist"] | Record<string, any>;
+      "type"?:
+        | LexiconDefs["my.skylights.listItem"]["inProgress"]
+        | LexiconDefs["my.skylights.listItem"]["queue"]
+        | LexiconDefs["my.skylights.listItem"]["abandoned"]
+        | LexiconDefs["my.skylights.listItem"]["owned"]
+        | LexiconDefs["my.skylights.listItem"]["wishlist"]
+        | Record<string, any>;
     };
     "inProgress": string;
     "queue": string;
@@ -2471,7 +2692,9 @@ export interface LexiconDefs {
       "record": unknown;
       "indexedAt": string;
       "chatProfile"?: LexiconDefs["place.stream.chat.profile"]["main"];
-      "replyTo"?: LexiconDefs["place.stream.chat.defs"]["messageView"] | Record<string, any>;
+      "replyTo"?:
+        | LexiconDefs["place.stream.chat.defs"]["messageView"]
+        | Record<string, any>;
       "deleted"?: boolean;
     };
   };
@@ -2570,7 +2793,8 @@ export interface LexiconDefs {
       "agent"?: string;
       "canonicalUrl"?: string;
       "thumb"?: any /* blob */;
-      "notificationSettings"?: LexiconDefs["place.stream.livestream"]["notificationSettings"];
+      "notificationSettings"?:
+        LexiconDefs["place.stream.livestream"]["notificationSettings"];
     };
     "notificationSettings": {
       "pushNotification"?: boolean;
@@ -2587,14 +2811,24 @@ export interface LexiconDefs {
       "count": number;
     };
     "streamplaceAnything": {
-      "livestream": LexiconDefs["place.stream.livestream"]["livestreamView"] | LexiconDefs["place.stream.livestream"]["viewerCount"] | LexiconDefs["place.stream.defs"]["blockView"] | LexiconDefs["place.stream.defs"]["renditions"] | LexiconDefs["place.stream.defs"]["rendition"] | LexiconDefs["place.stream.chat.defs"]["messageView"] | Record<string, any>;
+      "livestream":
+        | LexiconDefs["place.stream.livestream"]["livestreamView"]
+        | LexiconDefs["place.stream.livestream"]["viewerCount"]
+        | LexiconDefs["place.stream.defs"]["blockView"]
+        | LexiconDefs["place.stream.defs"]["renditions"]
+        | LexiconDefs["place.stream.defs"]["rendition"]
+        | LexiconDefs["place.stream.chat.defs"]["messageView"]
+        | Record<string, any>;
     };
   };
   "place.stream.metadata.configuration": {
     "main": {
-      "contentWarnings"?: LexiconDefs["place.stream.metadata.contentWarnings"]["main"];
-      "contentRights"?: LexiconDefs["place.stream.metadata.contentRights"]["main"];
-      "distributionPolicy"?: LexiconDefs["place.stream.metadata.distributionPolicy"]["main"];
+      "contentWarnings"?:
+        LexiconDefs["place.stream.metadata.contentWarnings"]["main"];
+      "contentRights"?:
+        LexiconDefs["place.stream.metadata.contentRights"]["main"];
+      "distributionPolicy"?:
+        LexiconDefs["place.stream.metadata.distributionPolicy"]["main"];
     };
   };
   "place.stream.metadata.contentRights": {
@@ -2707,7 +2941,11 @@ export interface LexiconDefs {
   "place.stream.richtext.facet": {
     "main": {
       "index": LexiconDefs["app.bsky.richtext.facet"]["byteSlice"];
-      "features": Array<LexiconDefs["app.bsky.richtext.facet"]["mention"] | LexiconDefs["app.bsky.richtext.facet"]["link"] | Record<string, any>>;
+      "features": Array<
+        | LexiconDefs["app.bsky.richtext.facet"]["mention"]
+        | LexiconDefs["app.bsky.richtext.facet"]["link"]
+        | Record<string, any>
+      >;
     };
   };
   "place.stream.segment": {
@@ -2720,9 +2958,12 @@ export interface LexiconDefs {
       "video"?: Array<LexiconDefs["place.stream.segment"]["video"]>;
       "audio"?: Array<LexiconDefs["place.stream.segment"]["audio"]>;
       "size"?: number;
-      "contentWarnings"?: LexiconDefs["place.stream.metadata.contentWarnings"]["main"];
-      "contentRights"?: LexiconDefs["place.stream.metadata.contentRights"]["main"];
-      "distributionPolicy"?: LexiconDefs["place.stream.metadata.distributionPolicy"]["main"];
+      "contentWarnings"?:
+        LexiconDefs["place.stream.metadata.contentWarnings"]["main"];
+      "contentRights"?:
+        LexiconDefs["place.stream.metadata.contentRights"]["main"];
+      "distributionPolicy"?:
+        LexiconDefs["place.stream.metadata.distributionPolicy"]["main"];
     };
     "audio": {
       "codec": string;
@@ -2882,8 +3123,12 @@ export interface LexiconDefs {
       "record"?: unknown;
       "text": string;
       "facets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
-      "subject"?: LexiconDefs["social.grain.gallery.defs"]["galleryView"] | Record<string, any>;
-      "focus"?: LexiconDefs["social.grain.photo.defs"]["photoView"] | Record<string, any>;
+      "subject"?:
+        | LexiconDefs["social.grain.gallery.defs"]["galleryView"]
+        | Record<string, any>;
+      "focus"?:
+        | LexiconDefs["social.grain.photo.defs"]["photoView"]
+        | Record<string, any>;
       "replyTo"?: string;
       "createdAt": string;
     };
@@ -2920,7 +3165,9 @@ export interface LexiconDefs {
       "title": string;
       "description"?: string;
       "facets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
-      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
+      "labels"?:
+        | LexiconDefs["com.atproto.label.defs"]["selfLabels"]
+        | Record<string, any>;
       "updatedAt"?: string;
       "createdAt": string;
     };
@@ -2948,7 +3195,10 @@ export interface LexiconDefs {
       "facets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
       "creator": LexiconDefs["social.grain.actor.defs"]["profileView"];
       "record": unknown;
-      "items"?: Array<LexiconDefs["social.grain.photo.defs"]["photoView"] | Record<string, any>>;
+      "items"?: Array<
+        | LexiconDefs["social.grain.photo.defs"]["photoView"]
+        | Record<string, any>
+      >;
       "favCount"?: number;
       "commentCount"?: number;
       "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
@@ -3018,30 +3268,45 @@ export interface LexiconDefs {
       "uri": string;
       "cid": string;
       "creator": LexiconDefs["app.bsky.actor.defs"]["profileView"];
-      "policies": any /* unresolved ref: social.grain.actor.defs#labelerPolicies */;
+      "policies":
+        any /* unresolved ref: social.grain.actor.defs#labelerPolicies */;
       "favoriteCount"?: number;
       "viewer"?: LexiconDefs["social.grain.labeler.defs"]["labelerViewerState"];
       "indexedAt": string;
       "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
-      "reasonTypes"?: Array<LexiconDefs["com.atproto.moderation.defs"]["reasonType"]>;
-      "subjectTypes"?: Array<LexiconDefs["com.atproto.moderation.defs"]["subjectType"]>;
+      "reasonTypes"?: Array<
+        LexiconDefs["com.atproto.moderation.defs"]["reasonType"]
+      >;
+      "subjectTypes"?: Array<
+        LexiconDefs["com.atproto.moderation.defs"]["subjectType"]
+      >;
       "subjectCollections"?: Array<string>;
     };
     "labelerViewerState": {
       "like"?: string;
     };
     "labelerPolicies": {
-      "labelValues": Array<any /* unresolved ref: com.atproto.label.defs#labelValue */>;
-      "labelValueDefinitions"?: Array<any /* unresolved ref: com.atproto.label.defs#labelValueDefinition */>;
+      "labelValues": Array<
+        any /* unresolved ref: com.atproto.label.defs#labelValue */
+      >;
+      "labelValueDefinitions"?: Array<
+        any /* unresolved ref: com.atproto.label.defs#labelValueDefinition */
+      >;
     };
   };
   "social.grain.labeler.service": {
     "main": {
       "policies": LexiconDefs["app.bsky.labeler.defs"]["labelerPolicies"];
-      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
+      "labels"?:
+        | LexiconDefs["com.atproto.label.defs"]["selfLabels"]
+        | Record<string, any>;
       "createdAt": string;
-      "reasonTypes"?: Array<LexiconDefs["com.atproto.moderation.defs"]["reasonType"]>;
-      "subjectTypes"?: Array<LexiconDefs["com.atproto.moderation.defs"]["subjectType"]>;
+      "reasonTypes"?: Array<
+        LexiconDefs["com.atproto.moderation.defs"]["reasonType"]
+      >;
+      "subjectTypes"?: Array<
+        LexiconDefs["com.atproto.moderation.defs"]["subjectType"]
+      >;
       "subjectCollections"?: Array<string>;
     };
   };
@@ -3061,7 +3326,11 @@ export interface LexiconDefs {
       "cid": string;
       "author": LexiconDefs["social.grain.actor.defs"]["profileView"];
       "reason": string;
-      "reasonSubject"?: LexiconDefs["social.grain.actor.defs"]["profileView"] | LexiconDefs["social.grain.comment.defs"]["commentView"] | LexiconDefs["social.grain.gallery.defs"]["galleryView"] | Record<string, any>;
+      "reasonSubject"?:
+        | LexiconDefs["social.grain.actor.defs"]["profileView"]
+        | LexiconDefs["social.grain.comment.defs"]["commentView"]
+        | LexiconDefs["social.grain.gallery.defs"]["galleryView"]
+        | Record<string, any>;
       "record": unknown;
       "isRead": boolean;
       "indexedAt": string;
@@ -3184,7 +3453,15 @@ export interface LexiconDefs {
   "tools.ozone.hosting.getAccountHistory": {
     "main": never;
     "event": {
-      "details": LexiconDefs["tools.ozone.hosting.getAccountHistory"]["accountCreated"] | LexiconDefs["tools.ozone.hosting.getAccountHistory"]["emailUpdated"] | LexiconDefs["tools.ozone.hosting.getAccountHistory"]["emailConfirmed"] | LexiconDefs["tools.ozone.hosting.getAccountHistory"]["passwordUpdated"] | LexiconDefs["tools.ozone.hosting.getAccountHistory"]["handleUpdated"] | Record<string, any>;
+      "details":
+        | LexiconDefs["tools.ozone.hosting.getAccountHistory"]["accountCreated"]
+        | LexiconDefs["tools.ozone.hosting.getAccountHistory"]["emailUpdated"]
+        | LexiconDefs["tools.ozone.hosting.getAccountHistory"]["emailConfirmed"]
+        | LexiconDefs["tools.ozone.hosting.getAccountHistory"][
+          "passwordUpdated"
+        ]
+        | LexiconDefs["tools.ozone.hosting.getAccountHistory"]["handleUpdated"]
+        | Record<string, any>;
       "createdBy": string;
       "createdAt": string;
     };
@@ -3198,8 +3475,7 @@ export interface LexiconDefs {
     "emailConfirmed": {
       "email": string;
     };
-    "passwordUpdated": {
-    };
+    "passwordUpdated": {};
     "handleUpdated": {
       "handle": string;
     };
@@ -3211,7 +3487,11 @@ export interface LexiconDefs {
     "main": never;
     "cancellationResults": {
       "succeeded": Array<string>;
-      "failed": Array<LexiconDefs["tools.ozone.moderation.cancelScheduledActions"]["failedCancellation"]>;
+      "failed": Array<
+        LexiconDefs["tools.ozone.moderation.cancelScheduledActions"][
+          "failedCancellation"
+        ]
+      >;
     };
     "failedCancellation": {
       "did": string;
@@ -3222,8 +3502,43 @@ export interface LexiconDefs {
   "tools.ozone.moderation.defs": {
     "modEventView": {
       "id": number;
-      "event": LexiconDefs["tools.ozone.moderation.defs"]["modEventTakedown"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventReverseTakedown"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventComment"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventReport"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventLabel"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventAcknowledge"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventEscalate"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventMute"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmute"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventMuteReporter"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmuteReporter"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventEmail"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventResolveAppeal"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventDivert"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventTag"] | LexiconDefs["tools.ozone.moderation.defs"]["accountEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["identityEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["recordEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventPriorityScore"] | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceOverrideEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["revokeAccountCredentialsEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["scheduleTakedownEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["cancelScheduledTakedownEvent"] | Record<string, any>;
-      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | LexiconDefs["chat.bsky.convo.defs"]["messageRef"] | Record<string, any>;
+      "event":
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventTakedown"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventReverseTakedown"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventComment"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventReport"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventLabel"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventAcknowledge"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventEscalate"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventMute"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmute"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventMuteReporter"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmuteReporter"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventEmail"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventResolveAppeal"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventDivert"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventTag"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["accountEvent"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["identityEvent"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["recordEvent"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventPriorityScore"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceEvent"]
+        | LexiconDefs["tools.ozone.moderation.defs"][
+          "ageAssuranceOverrideEvent"
+        ]
+        | LexiconDefs["tools.ozone.moderation.defs"][
+          "revokeAccountCredentialsEvent"
+        ]
+        | LexiconDefs["tools.ozone.moderation.defs"]["scheduleTakedownEvent"]
+        | LexiconDefs["tools.ozone.moderation.defs"][
+          "cancelScheduledTakedownEvent"
+        ]
+        | Record<string, any>;
+      "subject":
+        | LexiconDefs["com.atproto.admin.defs"]["repoRef"]
+        | LexiconDefs["com.atproto.repo.strongRef"]["main"]
+        | LexiconDefs["chat.bsky.convo.defs"]["messageRef"]
+        | Record<string, any>;
       "subjectBlobCids": Array<string>;
       "createdBy": string;
       "createdAt": string;
@@ -3233,22 +3548,68 @@ export interface LexiconDefs {
     };
     "modEventViewDetail": {
       "id": number;
-      "event": LexiconDefs["tools.ozone.moderation.defs"]["modEventTakedown"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventReverseTakedown"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventComment"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventReport"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventLabel"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventAcknowledge"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventEscalate"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventMute"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmute"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventMuteReporter"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmuteReporter"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventEmail"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventResolveAppeal"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventDivert"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventTag"] | LexiconDefs["tools.ozone.moderation.defs"]["accountEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["identityEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["recordEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventPriorityScore"] | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceOverrideEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["revokeAccountCredentialsEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["scheduleTakedownEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["cancelScheduledTakedownEvent"] | Record<string, any>;
-      "subject": LexiconDefs["tools.ozone.moderation.defs"]["repoView"] | LexiconDefs["tools.ozone.moderation.defs"]["repoViewNotFound"] | LexiconDefs["tools.ozone.moderation.defs"]["recordView"] | LexiconDefs["tools.ozone.moderation.defs"]["recordViewNotFound"] | Record<string, any>;
-      "subjectBlobs": Array<LexiconDefs["tools.ozone.moderation.defs"]["blobView"]>;
+      "event":
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventTakedown"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventReverseTakedown"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventComment"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventReport"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventLabel"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventAcknowledge"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventEscalate"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventMute"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmute"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventMuteReporter"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmuteReporter"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventEmail"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventResolveAppeal"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventDivert"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventTag"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["accountEvent"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["identityEvent"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["recordEvent"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventPriorityScore"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceEvent"]
+        | LexiconDefs["tools.ozone.moderation.defs"][
+          "ageAssuranceOverrideEvent"
+        ]
+        | LexiconDefs["tools.ozone.moderation.defs"][
+          "revokeAccountCredentialsEvent"
+        ]
+        | LexiconDefs["tools.ozone.moderation.defs"]["scheduleTakedownEvent"]
+        | LexiconDefs["tools.ozone.moderation.defs"][
+          "cancelScheduledTakedownEvent"
+        ]
+        | Record<string, any>;
+      "subject":
+        | LexiconDefs["tools.ozone.moderation.defs"]["repoView"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["repoViewNotFound"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["recordView"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["recordViewNotFound"]
+        | Record<string, any>;
+      "subjectBlobs": Array<
+        LexiconDefs["tools.ozone.moderation.defs"]["blobView"]
+      >;
       "createdBy": string;
       "createdAt": string;
       "modTool"?: LexiconDefs["tools.ozone.moderation.defs"]["modTool"];
     };
     "subjectStatusView": {
       "id": number;
-      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | LexiconDefs["chat.bsky.convo.defs"]["messageRef"] | Record<string, any>;
-      "hosting"?: LexiconDefs["tools.ozone.moderation.defs"]["accountHosting"] | LexiconDefs["tools.ozone.moderation.defs"]["recordHosting"] | Record<string, any>;
+      "subject":
+        | LexiconDefs["com.atproto.admin.defs"]["repoRef"]
+        | LexiconDefs["com.atproto.repo.strongRef"]["main"]
+        | LexiconDefs["chat.bsky.convo.defs"]["messageRef"]
+        | Record<string, any>;
+      "hosting"?:
+        | LexiconDefs["tools.ozone.moderation.defs"]["accountHosting"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["recordHosting"]
+        | Record<string, any>;
       "subjectBlobCids"?: Array<string>;
       "subjectRepoHandle"?: string;
       "updatedAt": string;
       "createdAt": string;
-      "reviewState": LexiconDefs["tools.ozone.moderation.defs"]["subjectReviewState"];
+      "reviewState":
+        LexiconDefs["tools.ozone.moderation.defs"]["subjectReviewState"];
       "comment"?: string;
       "priorityScore"?: number;
       "muteUntil"?: string;
@@ -3261,16 +3622,20 @@ export interface LexiconDefs {
       "appealed"?: boolean;
       "suspendUntil"?: string;
       "tags"?: Array<string>;
-      "accountStats"?: LexiconDefs["tools.ozone.moderation.defs"]["accountStats"];
-      "recordsStats"?: LexiconDefs["tools.ozone.moderation.defs"]["recordsStats"];
-      "accountStrike"?: LexiconDefs["tools.ozone.moderation.defs"]["accountStrike"];
+      "accountStats"?:
+        LexiconDefs["tools.ozone.moderation.defs"]["accountStats"];
+      "recordsStats"?:
+        LexiconDefs["tools.ozone.moderation.defs"]["recordsStats"];
+      "accountStrike"?:
+        LexiconDefs["tools.ozone.moderation.defs"]["accountStrike"];
       "ageAssuranceState"?: string;
       "ageAssuranceUpdatedBy"?: string;
     };
     "subjectView": {
       "type": LexiconDefs["com.atproto.moderation.defs"]["subjectType"];
       "subject": string;
-      "status"?: LexiconDefs["tools.ozone.moderation.defs"]["subjectStatusView"];
+      "status"?:
+        LexiconDefs["tools.ozone.moderation.defs"]["subjectStatusView"];
       "repo"?: LexiconDefs["tools.ozone.moderation.defs"]["repoViewDetail"];
       "profile"?: never | Record<string, any>;
       "record"?: LexiconDefs["tools.ozone.moderation.defs"]["recordViewDetail"];
@@ -3439,7 +3804,9 @@ export interface LexiconDefs {
       "invitesDisabled"?: boolean;
       "inviteNote"?: string;
       "deactivatedAt"?: string;
-      "threatSignatures"?: Array<LexiconDefs["com.atproto.admin.defs"]["threatSignature"]>;
+      "threatSignatures"?: Array<
+        LexiconDefs["com.atproto.admin.defs"]["threatSignature"]
+      >;
     };
     "repoViewDetail": {
       "did": string;
@@ -3447,7 +3814,8 @@ export interface LexiconDefs {
       "email"?: string;
       "relatedRecords": Array<unknown>;
       "indexedAt": string;
-      "moderation": LexiconDefs["tools.ozone.moderation.defs"]["moderationDetail"];
+      "moderation":
+        LexiconDefs["tools.ozone.moderation.defs"]["moderationDetail"];
       "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
       "invitedBy"?: LexiconDefs["com.atproto.server.defs"]["inviteCode"];
       "invites"?: Array<LexiconDefs["com.atproto.server.defs"]["inviteCode"]>;
@@ -3455,7 +3823,9 @@ export interface LexiconDefs {
       "inviteNote"?: string;
       "emailConfirmedAt"?: string;
       "deactivatedAt"?: string;
-      "threatSignatures"?: Array<LexiconDefs["com.atproto.admin.defs"]["threatSignature"]>;
+      "threatSignatures"?: Array<
+        LexiconDefs["com.atproto.admin.defs"]["threatSignature"]
+      >;
     };
     "repoViewNotFound": {
       "did": string;
@@ -3476,24 +3846,30 @@ export interface LexiconDefs {
       "blobs": Array<LexiconDefs["tools.ozone.moderation.defs"]["blobView"]>;
       "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
       "indexedAt": string;
-      "moderation": LexiconDefs["tools.ozone.moderation.defs"]["moderationDetail"];
+      "moderation":
+        LexiconDefs["tools.ozone.moderation.defs"]["moderationDetail"];
       "repo": LexiconDefs["tools.ozone.moderation.defs"]["repoView"];
     };
     "recordViewNotFound": {
       "uri": string;
     };
     "moderation": {
-      "subjectStatus"?: LexiconDefs["tools.ozone.moderation.defs"]["subjectStatusView"];
+      "subjectStatus"?:
+        LexiconDefs["tools.ozone.moderation.defs"]["subjectStatusView"];
     };
     "moderationDetail": {
-      "subjectStatus"?: LexiconDefs["tools.ozone.moderation.defs"]["subjectStatusView"];
+      "subjectStatus"?:
+        LexiconDefs["tools.ozone.moderation.defs"]["subjectStatusView"];
     };
     "blobView": {
       "cid": string;
       "mimeType": string;
       "size": number;
       "createdAt": string;
-      "details"?: LexiconDefs["tools.ozone.moderation.defs"]["imageDetails"] | LexiconDefs["tools.ozone.moderation.defs"]["videoDetails"] | Record<string, any>;
+      "details"?:
+        | LexiconDefs["tools.ozone.moderation.defs"]["imageDetails"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["videoDetails"]
+        | Record<string, any>;
       "moderation"?: LexiconDefs["tools.ozone.moderation.defs"]["moderation"];
     };
     "imageDetails": {
@@ -3562,7 +3938,11 @@ export interface LexiconDefs {
     "main": never;
     "timelineItem": {
       "day": string;
-      "summary": Array<LexiconDefs["tools.ozone.moderation.getAccountTimeline"]["timelineItemSummary"]>;
+      "summary": Array<
+        LexiconDefs["tools.ozone.moderation.getAccountTimeline"][
+          "timelineItemSummary"
+        ]
+      >;
     };
     "timelineItemSummary": {
       "eventSubjectType": string;
@@ -3623,7 +4003,9 @@ export interface LexiconDefs {
     };
     "scheduledActionResults": {
       "succeeded": Array<string>;
-      "failed": Array<LexiconDefs["tools.ozone.moderation.scheduleAction"]["failedScheduling"]>;
+      "failed": Array<
+        LexiconDefs["tools.ozone.moderation.scheduleAction"]["failedScheduling"]
+      >;
     };
     "failedScheduling": {
       "subject": string;
@@ -3798,7 +4180,9 @@ export interface LexiconDefs {
     "main": never;
     "relatedAccount": {
       "account": LexiconDefs["com.atproto.admin.defs"]["accountView"];
-      "similarities"?: Array<LexiconDefs["tools.ozone.signature.defs"]["sigDetail"]>;
+      "similarities"?: Array<
+        LexiconDefs["tools.ozone.signature.defs"]["sigDetail"]
+      >;
     };
   };
   "tools.ozone.signature.searchAccounts": {
@@ -3844,8 +4228,14 @@ export interface LexiconDefs {
       "revokedBy"?: string;
       "subjectProfile"?: never | Record<string, any>;
       "issuerProfile"?: never | Record<string, any>;
-      "subjectRepo"?: LexiconDefs["tools.ozone.moderation.defs"]["repoViewDetail"] | LexiconDefs["tools.ozone.moderation.defs"]["repoViewNotFound"] | Record<string, any>;
-      "issuerRepo"?: LexiconDefs["tools.ozone.moderation.defs"]["repoViewDetail"] | LexiconDefs["tools.ozone.moderation.defs"]["repoViewNotFound"] | Record<string, any>;
+      "subjectRepo"?:
+        | LexiconDefs["tools.ozone.moderation.defs"]["repoViewDetail"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["repoViewNotFound"]
+        | Record<string, any>;
+      "issuerRepo"?:
+        | LexiconDefs["tools.ozone.moderation.defs"]["repoViewDetail"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["repoViewNotFound"]
+        | Record<string, any>;
     };
   };
   "tools.ozone.verification.grantVerifications": {
@@ -3882,8 +4272,8 @@ export interface LexiconDefs {
 export interface Lexicons {
   "app.bsky.actor.getPreferences": {
     type: "query";
-    params: {
-    };
+    outputEncoding: "application/json";
+    params: {};
     input: never;
     output: {
       "preferences": LexiconDefs["app.bsky.actor.defs"]["preferences"];
@@ -3891,6 +4281,7 @@ export interface Lexicons {
   };
   "app.bsky.actor.getProfile": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "actor": string;
     };
@@ -3899,16 +4290,20 @@ export interface Lexicons {
   };
   "app.bsky.actor.getProfiles": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "actors": Array<string>;
     };
     input: never;
     output: {
-      "profiles": Array<LexiconDefs["app.bsky.actor.defs"]["profileViewDetailed"]>;
+      "profiles": Array<
+        LexiconDefs["app.bsky.actor.defs"]["profileViewDetailed"]
+      >;
     };
   };
   "app.bsky.actor.getSuggestions": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
       "cursor"?: string;
@@ -3926,6 +4321,8 @@ export interface Lexicons {
   };
   "app.bsky.actor.putPreferences": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "preferences": LexiconDefs["app.bsky.actor.defs"]["preferences"];
     };
@@ -3933,6 +4330,7 @@ export interface Lexicons {
   };
   "app.bsky.actor.searchActors": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "term"?: string;
       "q"?: string;
@@ -3947,6 +4345,7 @@ export interface Lexicons {
   };
   "app.bsky.actor.searchActorsTypeahead": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "term"?: string;
       "q"?: string;
@@ -3963,6 +4362,8 @@ export interface Lexicons {
   };
   "app.bsky.ageassurance.begin": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "email": string;
       "language": string;
@@ -3973,12 +4374,14 @@ export interface Lexicons {
   };
   "app.bsky.ageassurance.getConfig": {
     type: "query";
+    outputEncoding: "application/json";
     params: Record<string, never>;
     input: never;
     output: LexiconDefs["app.bsky.ageassurance.defs"]["config"];
   };
   "app.bsky.ageassurance.getState": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "countryCode": string;
       "regionCode"?: string;
@@ -3991,6 +4394,8 @@ export interface Lexicons {
   };
   "app.bsky.bookmark.createBookmark": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "uri": string;
       "cid": string;
@@ -3999,6 +4404,8 @@ export interface Lexicons {
   };
   "app.bsky.bookmark.deleteBookmark": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "uri": string;
     };
@@ -4006,6 +4413,7 @@ export interface Lexicons {
   };
   "app.bsky.bookmark.getBookmarks": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
       "cursor"?: string;
@@ -4018,14 +4426,16 @@ export interface Lexicons {
   };
   "app.bsky.contact.dismissMatch": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "subject": string;
     };
-    output: {
-    };
+    output: {};
   };
   "app.bsky.contact.getMatches": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
       "cursor"?: string;
@@ -4038,8 +4448,8 @@ export interface Lexicons {
   };
   "app.bsky.contact.getSyncStatus": {
     type: "query";
-    params: {
-    };
+    outputEncoding: "application/json";
+    params: {};
     input: never;
     output: {
       "syncStatus"?: LexiconDefs["app.bsky.contact.defs"]["syncStatus"];
@@ -4047,40 +4457,48 @@ export interface Lexicons {
   };
   "app.bsky.contact.importContacts": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "token": string;
       "contacts": Array<string>;
     };
     output: {
-      "matchesAndContactIndexes": Array<LexiconDefs["app.bsky.contact.defs"]["matchAndContactIndex"]>;
+      "matchesAndContactIndexes": Array<
+        LexiconDefs["app.bsky.contact.defs"]["matchAndContactIndex"]
+      >;
     };
   };
   "app.bsky.contact.removeData": {
     type: "procedure";
-    input: {
-    };
-    output: {
-    };
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
+    input: {};
+    output: {};
   };
   "app.bsky.contact.sendNotification": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "from": string;
       "to": string;
     };
-    output: {
-    };
+    output: {};
   };
   "app.bsky.contact.startPhoneVerification": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "phone": string;
     };
-    output: {
-    };
+    output: {};
   };
   "app.bsky.contact.verifyPhone": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "phone": string;
       "code": string;
@@ -4091,6 +4509,8 @@ export interface Lexicons {
   };
   "app.bsky.draft.createDraft": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "text"?: string;
       "langs"?: Array<string>;
@@ -4101,14 +4521,16 @@ export interface Lexicons {
   };
   "app.bsky.draft.deleteDraft": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "uri": string;
     };
-    output: {
-    };
+    output: {};
   };
   "app.bsky.draft.getDrafts": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "cursor"?: string;
       "limit"?: number;
@@ -4121,21 +4543,25 @@ export interface Lexicons {
   };
   "app.bsky.draft.updateDraft": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "uri": string;
       "text"?: string;
       "langs"?: Array<string>;
     };
-    output: {
-    };
+    output: {};
   };
   "app.bsky.feed.describeFeedGenerator": {
     type: "query";
+    outputEncoding: "application/json";
     params: Record<string, never>;
     input: never;
     output: {
       "did": string;
-      "feeds": Array<LexiconDefs["app.bsky.feed.describeFeedGenerator"]["feed"]>;
+      "feeds": Array<
+        LexiconDefs["app.bsky.feed.describeFeedGenerator"]["feed"]
+      >;
       "links"?: LexiconDefs["app.bsky.feed.describeFeedGenerator"]["links"];
     };
   };
@@ -4145,6 +4571,7 @@ export interface Lexicons {
   };
   "app.bsky.feed.getActorFeeds": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "actor": string;
       "limit"?: number;
@@ -4158,6 +4585,7 @@ export interface Lexicons {
   };
   "app.bsky.feed.getActorLikes": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "actor": string;
       "limit"?: number;
@@ -4171,6 +4599,7 @@ export interface Lexicons {
   };
   "app.bsky.feed.getAuthorFeed": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "actor": string;
       "limit"?: number;
@@ -4186,6 +4615,7 @@ export interface Lexicons {
   };
   "app.bsky.feed.getFeed": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "feed": string;
       "limit"?: number;
@@ -4199,6 +4629,7 @@ export interface Lexicons {
   };
   "app.bsky.feed.getFeedGenerator": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "feed": string;
     };
@@ -4211,6 +4642,7 @@ export interface Lexicons {
   };
   "app.bsky.feed.getFeedGenerators": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "feeds": Array<string>;
     };
@@ -4221,6 +4653,7 @@ export interface Lexicons {
   };
   "app.bsky.feed.getFeedSkeleton": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "feed": string;
       "limit"?: number;
@@ -4235,6 +4668,7 @@ export interface Lexicons {
   };
   "app.bsky.feed.getLikes": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "uri": string;
       "cid"?: string;
@@ -4251,6 +4685,7 @@ export interface Lexicons {
   };
   "app.bsky.feed.getListFeed": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "list": string;
       "limit"?: number;
@@ -4264,6 +4699,7 @@ export interface Lexicons {
   };
   "app.bsky.feed.getPosts": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "uris": Array<string>;
     };
@@ -4274,6 +4710,7 @@ export interface Lexicons {
   };
   "app.bsky.feed.getPostThread": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "uri": string;
       "depth"?: number;
@@ -4281,12 +4718,17 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "thread": LexiconDefs["app.bsky.feed.defs"]["threadViewPost"] | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"] | LexiconDefs["app.bsky.feed.defs"]["blockedPost"] | Record<string, any>;
+      "thread":
+        | LexiconDefs["app.bsky.feed.defs"]["threadViewPost"]
+        | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"]
+        | LexiconDefs["app.bsky.feed.defs"]["blockedPost"]
+        | Record<string, any>;
       "threadgate"?: LexiconDefs["app.bsky.feed.defs"]["threadgateView"];
     };
   };
   "app.bsky.feed.getQuotes": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "uri": string;
       "cid"?: string;
@@ -4303,6 +4745,7 @@ export interface Lexicons {
   };
   "app.bsky.feed.getRepostedBy": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "uri": string;
       "cid"?: string;
@@ -4319,6 +4762,7 @@ export interface Lexicons {
   };
   "app.bsky.feed.getSuggestedFeeds": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
       "cursor"?: string;
@@ -4331,6 +4775,7 @@ export interface Lexicons {
   };
   "app.bsky.feed.getTimeline": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "algorithm"?: string;
       "limit"?: number;
@@ -4360,6 +4805,7 @@ export interface Lexicons {
   };
   "app.bsky.feed.searchPosts": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "q": string;
       "sort"?: string;
@@ -4383,11 +4829,12 @@ export interface Lexicons {
   };
   "app.bsky.feed.sendInteractions": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "interactions": Array<LexiconDefs["app.bsky.feed.defs"]["interaction"]>;
     };
-    output: {
-    };
+    output: {};
   };
   "app.bsky.feed.threadgate": {
     type: "record";
@@ -4403,6 +4850,7 @@ export interface Lexicons {
   };
   "app.bsky.graph.getActorStarterPacks": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "actor": string;
       "limit"?: number;
@@ -4411,11 +4859,14 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "starterPacks": Array<LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"]>;
+      "starterPacks": Array<
+        LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"]
+      >;
     };
   };
   "app.bsky.graph.getBlocks": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
       "cursor"?: string;
@@ -4428,6 +4879,7 @@ export interface Lexicons {
   };
   "app.bsky.graph.getFollowers": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "actor": string;
       "limit"?: number;
@@ -4442,6 +4894,7 @@ export interface Lexicons {
   };
   "app.bsky.graph.getFollows": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "actor": string;
       "limit"?: number;
@@ -4456,6 +4909,7 @@ export interface Lexicons {
   };
   "app.bsky.graph.getKnownFollowers": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "actor": string;
       "limit"?: number;
@@ -4470,6 +4924,7 @@ export interface Lexicons {
   };
   "app.bsky.graph.getList": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "list": string;
       "limit"?: number;
@@ -4484,6 +4939,7 @@ export interface Lexicons {
   };
   "app.bsky.graph.getListBlocks": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
       "cursor"?: string;
@@ -4496,6 +4952,7 @@ export interface Lexicons {
   };
   "app.bsky.graph.getListMutes": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
       "cursor"?: string;
@@ -4508,6 +4965,7 @@ export interface Lexicons {
   };
   "app.bsky.graph.getLists": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "actor": string;
       "limit"?: number;
@@ -4522,6 +4980,7 @@ export interface Lexicons {
   };
   "app.bsky.graph.getListsWithMembership": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "actor": string;
       "limit"?: number;
@@ -4531,11 +4990,16 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "listsWithMembership": Array<LexiconDefs["app.bsky.graph.getListsWithMembership"]["listWithMembership"]>;
+      "listsWithMembership": Array<
+        LexiconDefs["app.bsky.graph.getListsWithMembership"][
+          "listWithMembership"
+        ]
+      >;
     };
   };
   "app.bsky.graph.getMutes": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
       "cursor"?: string;
@@ -4548,6 +5012,7 @@ export interface Lexicons {
   };
   "app.bsky.graph.getRelationships": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "actor": string;
       "others"?: Array<string>;
@@ -4555,11 +5020,16 @@ export interface Lexicons {
     input: never;
     output: {
       "actor"?: string;
-      "relationships": Array<LexiconDefs["app.bsky.graph.defs"]["relationship"] | LexiconDefs["app.bsky.graph.defs"]["notFoundActor"] | Record<string, any>>;
+      "relationships": Array<
+        | LexiconDefs["app.bsky.graph.defs"]["relationship"]
+        | LexiconDefs["app.bsky.graph.defs"]["notFoundActor"]
+        | Record<string, any>
+      >;
     };
   };
   "app.bsky.graph.getStarterPack": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "starterPack": string;
     };
@@ -4570,16 +5040,20 @@ export interface Lexicons {
   };
   "app.bsky.graph.getStarterPacks": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "uris": Array<string>;
     };
     input: never;
     output: {
-      "starterPacks": Array<LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"]>;
+      "starterPacks": Array<
+        LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"]
+      >;
     };
   };
   "app.bsky.graph.getStarterPacksWithMembership": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "actor": string;
       "limit"?: number;
@@ -4588,11 +5062,16 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "starterPacksWithMembership": Array<LexiconDefs["app.bsky.graph.getStarterPacksWithMembership"]["starterPackWithMembership"]>;
+      "starterPacksWithMembership": Array<
+        LexiconDefs["app.bsky.graph.getStarterPacksWithMembership"][
+          "starterPackWithMembership"
+        ]
+      >;
     };
   };
   "app.bsky.graph.getSuggestedFollowsByActor": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "actor": string;
     };
@@ -4617,6 +5096,8 @@ export interface Lexicons {
   };
   "app.bsky.graph.muteActor": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "actor": string;
     };
@@ -4624,6 +5105,8 @@ export interface Lexicons {
   };
   "app.bsky.graph.muteActorList": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "list": string;
     };
@@ -4631,6 +5114,8 @@ export interface Lexicons {
   };
   "app.bsky.graph.muteThread": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "root": string;
     };
@@ -4638,6 +5123,7 @@ export interface Lexicons {
   };
   "app.bsky.graph.searchStarterPacks": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "q": string;
       "limit"?: number;
@@ -4646,7 +5132,9 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "starterPacks": Array<LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"]>;
+      "starterPacks": Array<
+        LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"]
+      >;
     };
   };
   "app.bsky.graph.starterpack": {
@@ -4655,6 +5143,8 @@ export interface Lexicons {
   };
   "app.bsky.graph.unmuteActor": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "actor": string;
     };
@@ -4662,6 +5152,8 @@ export interface Lexicons {
   };
   "app.bsky.graph.unmuteActorList": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "list": string;
     };
@@ -4669,6 +5161,8 @@ export interface Lexicons {
   };
   "app.bsky.graph.unmuteThread": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "root": string;
     };
@@ -4680,29 +5174,36 @@ export interface Lexicons {
   };
   "app.bsky.graph.verification.createVerification": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "subject": string;
     };
-    output: {
-    };
+    output: {};
   };
   "app.bsky.graph.verification.deleteVerification": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "subject": string;
     };
-    output: {
-    };
+    output: {};
   };
   "app.bsky.labeler.getServices": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "dids": Array<string>;
       "detailed"?: boolean;
     };
     input: never;
     output: {
-      "views": Array<LexiconDefs["app.bsky.labeler.defs"]["labelerView"] | LexiconDefs["app.bsky.labeler.defs"]["labelerViewDetailed"] | Record<string, any>>;
+      "views": Array<
+        | LexiconDefs["app.bsky.labeler.defs"]["labelerView"]
+        | LexiconDefs["app.bsky.labeler.defs"]["labelerViewDetailed"]
+        | Record<string, any>
+      >;
     };
   };
   "app.bsky.labeler.service": {
@@ -4715,8 +5216,8 @@ export interface Lexicons {
   };
   "app.bsky.notification.getPreferences": {
     type: "query";
-    params: {
-    };
+    outputEncoding: "application/json";
+    params: {};
     input: never;
     output: {
       "preferences": LexiconDefs["app.bsky.notification.defs"]["preferences"];
@@ -4724,6 +5225,7 @@ export interface Lexicons {
   };
   "app.bsky.notification.getUnreadCount": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "priority"?: boolean;
       "seenAt"?: string;
@@ -4735,6 +5237,7 @@ export interface Lexicons {
   };
   "app.bsky.notification.listActivitySubscriptions": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
       "cursor"?: string;
@@ -4747,6 +5250,7 @@ export interface Lexicons {
   };
   "app.bsky.notification.listNotifications": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "reasons"?: Array<string>;
       "limit"?: number;
@@ -4757,32 +5261,41 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "notifications": Array<LexiconDefs["app.bsky.notification.listNotifications"]["notification"]>;
+      "notifications": Array<
+        LexiconDefs["app.bsky.notification.listNotifications"]["notification"]
+      >;
       "priority"?: boolean;
       "seenAt"?: string;
     };
   };
   "app.bsky.notification.putActivitySubscription": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "subject": string;
-      "activitySubscription": LexiconDefs["app.bsky.notification.defs"]["activitySubscription"];
+      "activitySubscription":
+        LexiconDefs["app.bsky.notification.defs"]["activitySubscription"];
     };
     output: {
       "subject": string;
-      "activitySubscription"?: LexiconDefs["app.bsky.notification.defs"]["activitySubscription"];
+      "activitySubscription"?:
+        LexiconDefs["app.bsky.notification.defs"]["activitySubscription"];
     };
   };
   "app.bsky.notification.putNotificationPreferences": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "priority": boolean;
     };
-    output: {
-    };
+    output: {};
   };
   "app.bsky.notification.putPreferences": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "priority": boolean;
     };
@@ -4790,18 +5303,30 @@ export interface Lexicons {
   };
   "app.bsky.notification.putPreferencesV2": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "chat"?: LexiconDefs["app.bsky.notification.defs"]["chatPreference"];
-      "follow"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "like"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "likeViaRepost"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "mention"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "quote"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "reply"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "repost"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "repostViaRepost"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "starterpackJoined"?: LexiconDefs["app.bsky.notification.defs"]["preference"];
-      "subscribedPost"?: LexiconDefs["app.bsky.notification.defs"]["preference"];
+      "follow"?:
+        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "like"?:
+        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "likeViaRepost"?:
+        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "mention"?:
+        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "quote"?:
+        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "reply"?:
+        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "repost"?:
+        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "repostViaRepost"?:
+        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "starterpackJoined"?:
+        LexiconDefs["app.bsky.notification.defs"]["preference"];
+      "subscribedPost"?:
+        LexiconDefs["app.bsky.notification.defs"]["preference"];
       "unverified"?: LexiconDefs["app.bsky.notification.defs"]["preference"];
       "verified"?: LexiconDefs["app.bsky.notification.defs"]["preference"];
     };
@@ -4811,6 +5336,8 @@ export interface Lexicons {
   };
   "app.bsky.notification.registerPush": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "serviceDid": string;
       "token": string;
@@ -4822,6 +5349,8 @@ export interface Lexicons {
   };
   "app.bsky.notification.unregisterPush": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "serviceDid": string;
       "token": string;
@@ -4832,6 +5361,8 @@ export interface Lexicons {
   };
   "app.bsky.notification.updateSeen": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "seenAt": string;
     };
@@ -4839,6 +5370,8 @@ export interface Lexicons {
   };
   "app.bsky.unspecced.confirmAgeAssurance": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "token": string;
     };
@@ -4846,31 +5379,39 @@ export interface Lexicons {
   };
   "app.bsky.unspecced.getAgeAssuranceState": {
     type: "query";
+    outputEncoding: "application/json";
     params: Record<string, never>;
     input: never;
     output: LexiconDefs["app.bsky.unspecced.defs"]["ageAssuranceState"];
   };
   "app.bsky.unspecced.getConfig": {
     type: "query";
+    outputEncoding: "application/json";
     params: Record<string, never>;
     input: never;
     output: {
       "checkEmailConfirmed"?: boolean;
-      "liveNow"?: Array<LexiconDefs["app.bsky.unspecced.getConfig"]["liveNowConfig"]>;
+      "liveNow"?: Array<
+        LexiconDefs["app.bsky.unspecced.getConfig"]["liveNowConfig"]
+      >;
     };
   };
   "app.bsky.unspecced.getOnboardingSuggestedStarterPacks": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
     };
     input: never;
     output: {
-      "starterPacks": Array<LexiconDefs["app.bsky.graph.defs"]["starterPackView"]>;
+      "starterPacks": Array<
+        LexiconDefs["app.bsky.graph.defs"]["starterPackView"]
+      >;
     };
   };
   "app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "viewer"?: string;
       "limit"?: number;
@@ -4882,6 +5423,7 @@ export interface Lexicons {
   };
   "app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "viewer"?: string;
       "category"?: string;
@@ -4896,6 +5438,7 @@ export interface Lexicons {
   };
   "app.bsky.unspecced.getPopularFeedGenerators": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
       "cursor"?: string;
@@ -4909,16 +5452,20 @@ export interface Lexicons {
   };
   "app.bsky.unspecced.getPostThreadOtherV2": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "anchor": string;
     };
     input: never;
     output: {
-      "thread": Array<LexiconDefs["app.bsky.unspecced.getPostThreadOtherV2"]["threadItem"]>;
+      "thread": Array<
+        LexiconDefs["app.bsky.unspecced.getPostThreadOtherV2"]["threadItem"]
+      >;
     };
   };
   "app.bsky.unspecced.getPostThreadV2": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "anchor": string;
       "above"?: boolean;
@@ -4928,13 +5475,16 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "thread": Array<LexiconDefs["app.bsky.unspecced.getPostThreadV2"]["threadItem"]>;
+      "thread": Array<
+        LexiconDefs["app.bsky.unspecced.getPostThreadV2"]["threadItem"]
+      >;
       "threadgate"?: LexiconDefs["app.bsky.feed.defs"]["threadgateView"];
       "hasOtherReplies": boolean;
     };
   };
   "app.bsky.unspecced.getSuggestedFeeds": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
     };
@@ -4945,6 +5495,7 @@ export interface Lexicons {
   };
   "app.bsky.unspecced.getSuggestedFeedsSkeleton": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "viewer"?: string;
       "limit"?: number;
@@ -4956,6 +5507,7 @@ export interface Lexicons {
   };
   "app.bsky.unspecced.getSuggestedOnboardingUsers": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "category"?: string;
       "limit"?: number;
@@ -4969,16 +5521,20 @@ export interface Lexicons {
   };
   "app.bsky.unspecced.getSuggestedStarterPacks": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
     };
     input: never;
     output: {
-      "starterPacks": Array<LexiconDefs["app.bsky.graph.defs"]["starterPackView"]>;
+      "starterPacks": Array<
+        LexiconDefs["app.bsky.graph.defs"]["starterPackView"]
+      >;
     };
   };
   "app.bsky.unspecced.getSuggestedStarterPacksSkeleton": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "viewer"?: string;
       "limit"?: number;
@@ -4990,6 +5546,7 @@ export interface Lexicons {
   };
   "app.bsky.unspecced.getSuggestedUsers": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "category"?: string;
       "limit"?: number;
@@ -5002,6 +5559,7 @@ export interface Lexicons {
   };
   "app.bsky.unspecced.getSuggestedUsersForDiscover": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
     };
@@ -5013,6 +5571,7 @@ export interface Lexicons {
   };
   "app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "viewer"?: string;
       "limit"?: number;
@@ -5025,6 +5584,7 @@ export interface Lexicons {
   };
   "app.bsky.unspecced.getSuggestedUsersForExplore": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "category"?: string;
       "limit"?: number;
@@ -5037,6 +5597,7 @@ export interface Lexicons {
   };
   "app.bsky.unspecced.getSuggestedUsersForExploreSkeleton": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "viewer"?: string;
       "category"?: string;
@@ -5050,6 +5611,7 @@ export interface Lexicons {
   };
   "app.bsky.unspecced.getSuggestedUsersForSeeMore": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "category"?: string;
       "limit"?: number;
@@ -5062,6 +5624,7 @@ export interface Lexicons {
   };
   "app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "viewer"?: string;
       "category"?: string;
@@ -5075,6 +5638,7 @@ export interface Lexicons {
   };
   "app.bsky.unspecced.getSuggestedUsersSkeleton": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "viewer"?: string;
       "category"?: string;
@@ -5088,6 +5652,7 @@ export interface Lexicons {
   };
   "app.bsky.unspecced.getSuggestionsSkeleton": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "viewer"?: string;
       "limit"?: number;
@@ -5097,22 +5662,27 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "actors": Array<LexiconDefs["app.bsky.unspecced.defs"]["skeletonSearchActor"]>;
+      "actors": Array<
+        LexiconDefs["app.bsky.unspecced.defs"]["skeletonSearchActor"]
+      >;
       "relativeToDid"?: string;
       "recId"?: number;
     };
   };
   "app.bsky.unspecced.getTaggedSuggestions": {
     type: "query";
-    params: {
-    };
+    outputEncoding: "application/json";
+    params: {};
     input: never;
     output: {
-      "suggestions": Array<LexiconDefs["app.bsky.unspecced.getTaggedSuggestions"]["suggestion"]>;
+      "suggestions": Array<
+        LexiconDefs["app.bsky.unspecced.getTaggedSuggestions"]["suggestion"]
+      >;
     };
   };
   "app.bsky.unspecced.getTrendingTopics": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "viewer"?: string;
       "limit"?: number;
@@ -5120,11 +5690,14 @@ export interface Lexicons {
     input: never;
     output: {
       "topics": Array<LexiconDefs["app.bsky.unspecced.defs"]["trendingTopic"]>;
-      "suggested": Array<LexiconDefs["app.bsky.unspecced.defs"]["trendingTopic"]>;
+      "suggested": Array<
+        LexiconDefs["app.bsky.unspecced.defs"]["trendingTopic"]
+      >;
     };
   };
   "app.bsky.unspecced.getTrends": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
     };
@@ -5135,6 +5708,7 @@ export interface Lexicons {
   };
   "app.bsky.unspecced.getTrendsSkeleton": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "viewer"?: string;
       "limit"?: number;
@@ -5146,6 +5720,8 @@ export interface Lexicons {
   };
   "app.bsky.unspecced.initAgeAssurance": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "email": string;
       "language": string;
@@ -5155,6 +5731,7 @@ export interface Lexicons {
   };
   "app.bsky.unspecced.searchActorsSkeleton": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "q": string;
       "viewer"?: string;
@@ -5166,11 +5743,14 @@ export interface Lexicons {
     output: {
       "cursor"?: string;
       "hitsTotal"?: number;
-      "actors": Array<LexiconDefs["app.bsky.unspecced.defs"]["skeletonSearchActor"]>;
+      "actors": Array<
+        LexiconDefs["app.bsky.unspecced.defs"]["skeletonSearchActor"]
+      >;
     };
   };
   "app.bsky.unspecced.searchPostsSkeleton": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "q": string;
       "sort"?: string;
@@ -5190,11 +5770,14 @@ export interface Lexicons {
     output: {
       "cursor"?: string;
       "hitsTotal"?: number;
-      "posts": Array<LexiconDefs["app.bsky.unspecced.defs"]["skeletonSearchPost"]>;
+      "posts": Array<
+        LexiconDefs["app.bsky.unspecced.defs"]["skeletonSearchPost"]
+      >;
     };
   };
   "app.bsky.unspecced.searchStarterPacksSkeleton": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "q": string;
       "viewer"?: string;
@@ -5205,11 +5788,14 @@ export interface Lexicons {
     output: {
       "cursor"?: string;
       "hitsTotal"?: number;
-      "starterPacks": Array<LexiconDefs["app.bsky.unspecced.defs"]["skeletonSearchStarterPack"]>;
+      "starterPacks": Array<
+        LexiconDefs["app.bsky.unspecced.defs"]["skeletonSearchStarterPack"]
+      >;
     };
   };
   "app.bsky.video.getJobStatus": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "jobId": string;
     };
@@ -5220,6 +5806,7 @@ export interface Lexicons {
   };
   "app.bsky.video.getUploadLimits": {
     type: "query";
+    outputEncoding: "application/json";
     params: Record<string, never>;
     input: never;
     output: {
@@ -5232,7 +5819,9 @@ export interface Lexicons {
   };
   "app.bsky.video.uploadVideo": {
     type: "procedure";
-    input: never;
+    inputEncoding: "video/mp4";
+    outputEncoding: "application/json";
+    input: Uint8Array;
     output: {
       "jobStatus": LexiconDefs["app.bsky.video.defs"]["jobStatus"];
     };
@@ -5247,18 +5836,22 @@ export interface Lexicons {
   };
   "chat.bsky.actor.deleteAccount": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: never;
-    output: {
-    };
+    output: {};
   };
   "chat.bsky.actor.exportAccountData": {
     type: "query";
+    outputEncoding: "application/jsonl";
     params: Record<string, never>;
     input: never;
-    output: never;
+    output: BinaryXrpcResponse;
   };
   "chat.bsky.convo.acceptConvo": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "convoId": string;
     };
@@ -5268,6 +5861,8 @@ export interface Lexicons {
   };
   "chat.bsky.convo.addReaction": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "convoId": string;
       "messageId": string;
@@ -5279,6 +5874,8 @@ export interface Lexicons {
   };
   "chat.bsky.convo.deleteMessageForSelf": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "convoId": string;
       "messageId": string;
@@ -5287,6 +5884,7 @@ export interface Lexicons {
   };
   "chat.bsky.convo.getConvo": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "convoId": string;
     };
@@ -5297,6 +5895,7 @@ export interface Lexicons {
   };
   "chat.bsky.convo.getConvoAvailability": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "members": Array<string>;
     };
@@ -5308,6 +5907,7 @@ export interface Lexicons {
   };
   "chat.bsky.convo.getConvoForMembers": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "members": Array<string>;
     };
@@ -5318,17 +5918,31 @@ export interface Lexicons {
   };
   "chat.bsky.convo.getLog": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "cursor"?: string;
     };
     input: never;
     output: {
       "cursor"?: string;
-      "logs": Array<LexiconDefs["chat.bsky.convo.defs"]["logBeginConvo"] | LexiconDefs["chat.bsky.convo.defs"]["logAcceptConvo"] | LexiconDefs["chat.bsky.convo.defs"]["logLeaveConvo"] | LexiconDefs["chat.bsky.convo.defs"]["logMuteConvo"] | LexiconDefs["chat.bsky.convo.defs"]["logUnmuteConvo"] | LexiconDefs["chat.bsky.convo.defs"]["logCreateMessage"] | LexiconDefs["chat.bsky.convo.defs"]["logDeleteMessage"] | LexiconDefs["chat.bsky.convo.defs"]["logReadMessage"] | LexiconDefs["chat.bsky.convo.defs"]["logAddReaction"] | LexiconDefs["chat.bsky.convo.defs"]["logRemoveReaction"] | Record<string, any>>;
+      "logs": Array<
+        | LexiconDefs["chat.bsky.convo.defs"]["logBeginConvo"]
+        | LexiconDefs["chat.bsky.convo.defs"]["logAcceptConvo"]
+        | LexiconDefs["chat.bsky.convo.defs"]["logLeaveConvo"]
+        | LexiconDefs["chat.bsky.convo.defs"]["logMuteConvo"]
+        | LexiconDefs["chat.bsky.convo.defs"]["logUnmuteConvo"]
+        | LexiconDefs["chat.bsky.convo.defs"]["logCreateMessage"]
+        | LexiconDefs["chat.bsky.convo.defs"]["logDeleteMessage"]
+        | LexiconDefs["chat.bsky.convo.defs"]["logReadMessage"]
+        | LexiconDefs["chat.bsky.convo.defs"]["logAddReaction"]
+        | LexiconDefs["chat.bsky.convo.defs"]["logRemoveReaction"]
+        | Record<string, any>
+      >;
     };
   };
   "chat.bsky.convo.getMessages": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "convoId": string;
       "limit"?: number;
@@ -5337,11 +5951,17 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "messages": Array<LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>>;
+      "messages": Array<
+        | LexiconDefs["chat.bsky.convo.defs"]["messageView"]
+        | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"]
+        | Record<string, any>
+      >;
     };
   };
   "chat.bsky.convo.leaveConvo": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "convoId": string;
     };
@@ -5352,6 +5972,7 @@ export interface Lexicons {
   };
   "chat.bsky.convo.listConvoRequests": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
       "cursor"?: string;
@@ -5359,11 +5980,16 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "requests": Array<LexiconDefs["chat.bsky.convo.defs"]["convoView"] | LexiconDefs["chat.bsky.group.defs"]["joinRequestView"] | Record<string, any>>;
+      "requests": Array<
+        | LexiconDefs["chat.bsky.convo.defs"]["convoView"]
+        | LexiconDefs["chat.bsky.group.defs"]["joinRequestView"]
+        | Record<string, any>
+      >;
     };
   };
   "chat.bsky.convo.listConvos": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
       "cursor"?: string;
@@ -5378,6 +6004,8 @@ export interface Lexicons {
   };
   "chat.bsky.convo.lockConvo": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "convoId": string;
     };
@@ -5387,6 +6015,8 @@ export interface Lexicons {
   };
   "chat.bsky.convo.muteConvo": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "convoId": string;
     };
@@ -5396,6 +6026,8 @@ export interface Lexicons {
   };
   "chat.bsky.convo.removeReaction": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "convoId": string;
       "messageId": string;
@@ -5407,6 +6039,8 @@ export interface Lexicons {
   };
   "chat.bsky.convo.sendMessage": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "convoId": string;
       "message": LexiconDefs["chat.bsky.convo.defs"]["messageInput"];
@@ -5415,8 +6049,12 @@ export interface Lexicons {
   };
   "chat.bsky.convo.sendMessageBatch": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
-      "items": Array<LexiconDefs["chat.bsky.convo.sendMessageBatch"]["batchItem"]>;
+      "items": Array<
+        LexiconDefs["chat.bsky.convo.sendMessageBatch"]["batchItem"]
+      >;
     };
     output: {
       "items": Array<LexiconDefs["chat.bsky.convo.defs"]["messageView"]>;
@@ -5424,6 +6062,8 @@ export interface Lexicons {
   };
   "chat.bsky.convo.unlockConvo": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "convoId": string;
     };
@@ -5433,6 +6073,8 @@ export interface Lexicons {
   };
   "chat.bsky.convo.unmuteConvo": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "convoId": string;
     };
@@ -5442,6 +6084,8 @@ export interface Lexicons {
   };
   "chat.bsky.convo.updateAllRead": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "status"?: string;
     };
@@ -5451,6 +6095,8 @@ export interface Lexicons {
   };
   "chat.bsky.convo.updateRead": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "convoId": string;
       "messageId"?: string;
@@ -5461,6 +6107,8 @@ export interface Lexicons {
   };
   "chat.bsky.group.addMembers": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "convoId": string;
       "members": Array<string>;
@@ -5471,6 +6119,8 @@ export interface Lexicons {
   };
   "chat.bsky.group.addReaction": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "messageId": string;
       "reaction": string;
@@ -5479,6 +6129,8 @@ export interface Lexicons {
   };
   "chat.bsky.group.approveJoinRequest": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "convoId": string;
       "member": string;
@@ -5489,6 +6141,8 @@ export interface Lexicons {
   };
   "chat.bsky.group.createGroup": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "members": Array<string>;
       "name": string;
@@ -5499,6 +6153,8 @@ export interface Lexicons {
   };
   "chat.bsky.group.createJoinLink": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "convoId": string;
       "requireApproval"?: boolean;
@@ -5510,6 +6166,8 @@ export interface Lexicons {
   };
   "chat.bsky.group.deleteGroup": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "groupUri": string;
     };
@@ -5517,6 +6175,8 @@ export interface Lexicons {
   };
   "chat.bsky.group.deleteMessageForSelf": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "messageId": string;
     };
@@ -5524,6 +6184,8 @@ export interface Lexicons {
   };
   "chat.bsky.group.disableJoinLink": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "convoId": string;
     };
@@ -5533,6 +6195,8 @@ export interface Lexicons {
   };
   "chat.bsky.group.editGroup": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "convoId": string;
       "name": string;
@@ -5543,6 +6207,8 @@ export interface Lexicons {
   };
   "chat.bsky.group.editJoinLink": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "convoId": string;
       "requireApproval"?: boolean;
@@ -5554,6 +6220,8 @@ export interface Lexicons {
   };
   "chat.bsky.group.enableJoinLink": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "convoId": string;
     };
@@ -5563,6 +6231,7 @@ export interface Lexicons {
   };
   "chat.bsky.group.getGroupPublicInfo": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "code": string;
     };
@@ -5573,6 +6242,7 @@ export interface Lexicons {
   };
   "chat.bsky.group.getMessages": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "groupUri": string;
       "limit"?: number;
@@ -5586,6 +6256,8 @@ export interface Lexicons {
   };
   "chat.bsky.group.leaveGroup": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "groupUri": string;
     };
@@ -5593,6 +6265,7 @@ export interface Lexicons {
   };
   "chat.bsky.group.listGroups": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
       "cursor"?: string;
@@ -5605,6 +6278,7 @@ export interface Lexicons {
   };
   "chat.bsky.group.listInviteLinks": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "groupUri": string;
     };
@@ -5615,6 +6289,7 @@ export interface Lexicons {
   };
   "chat.bsky.group.listJoinRequests": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "convoId": string;
       "limit"?: number;
@@ -5628,6 +6303,7 @@ export interface Lexicons {
   };
   "chat.bsky.group.listMembers": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "groupUri": string;
       "limit"?: number;
@@ -5641,15 +6317,18 @@ export interface Lexicons {
   };
   "chat.bsky.group.rejectJoinRequest": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "convoId": string;
       "member": string;
     };
-    output: {
-    };
+    output: {};
   };
   "chat.bsky.group.removeMembers": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "convoId": string;
       "members": Array<string>;
@@ -5660,6 +6339,8 @@ export interface Lexicons {
   };
   "chat.bsky.group.removeReaction": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "messageId": string;
     };
@@ -5667,6 +6348,8 @@ export interface Lexicons {
   };
   "chat.bsky.group.requestJoin": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "code": string;
     };
@@ -5677,6 +6360,8 @@ export interface Lexicons {
   };
   "chat.bsky.group.sendMessage": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "groupUri": string;
       "message": string;
@@ -5685,6 +6370,7 @@ export interface Lexicons {
   };
   "chat.bsky.moderation.getActorMetadata": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "actor": string;
     };
@@ -5697,6 +6383,7 @@ export interface Lexicons {
   };
   "chat.bsky.moderation.getMessageContext": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "convoId"?: string;
       "messageId": string;
@@ -5705,11 +6392,17 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "messages": Array<LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>>;
+      "messages": Array<
+        | LexiconDefs["chat.bsky.convo.defs"]["messageView"]
+        | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"]
+        | Record<string, any>
+      >;
     };
   };
   "chat.bsky.moderation.updateActorAccess": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "actor": string;
       "allowAccess": boolean;
@@ -5719,6 +6412,8 @@ export interface Lexicons {
   };
   "com.atproto.admin.deleteAccount": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "did": string;
     };
@@ -5726,6 +6421,8 @@ export interface Lexicons {
   };
   "com.atproto.admin.disableAccountInvites": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "account": string;
       "note"?: string;
@@ -5734,6 +6431,8 @@ export interface Lexicons {
   };
   "com.atproto.admin.disableInviteCodes": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "codes"?: Array<string>;
       "accounts"?: Array<string>;
@@ -5742,6 +6441,8 @@ export interface Lexicons {
   };
   "com.atproto.admin.enableAccountInvites": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "account": string;
       "note"?: string;
@@ -5750,6 +6451,7 @@ export interface Lexicons {
   };
   "com.atproto.admin.getAccountInfo": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "did": string;
     };
@@ -5758,6 +6460,7 @@ export interface Lexicons {
   };
   "com.atproto.admin.getAccountInfos": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "dids": Array<string>;
     };
@@ -5768,6 +6471,8 @@ export interface Lexicons {
   };
   "com.atproto.admin.getAccountTakedown": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "did": string;
     };
@@ -5778,6 +6483,7 @@ export interface Lexicons {
   };
   "com.atproto.admin.getAccountUsage": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "did": string;
     };
@@ -5792,6 +6498,7 @@ export interface Lexicons {
   };
   "com.atproto.admin.getBlobAuditStatus": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "jobId": string;
     };
@@ -5807,6 +6514,7 @@ export interface Lexicons {
   };
   "com.atproto.admin.getInviteCodes": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "sort"?: string;
       "limit"?: number;
@@ -5820,6 +6528,7 @@ export interface Lexicons {
   };
   "com.atproto.admin.getModerationReports": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "cursor"?: string;
       "limit"?: number;
@@ -5832,6 +6541,7 @@ export interface Lexicons {
   };
   "com.atproto.admin.getServerStats": {
     type: "query";
+    outputEncoding: "application/json";
     params: Record<string, never>;
     input: never;
     output: {
@@ -5843,6 +6553,7 @@ export interface Lexicons {
   };
   "com.atproto.admin.getSubjectStatus": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "did"?: string;
       "uri"?: string;
@@ -5850,13 +6561,19 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | LexiconDefs["com.atproto.admin.defs"]["repoBlobRef"] | Record<string, any>;
+      "subject":
+        | LexiconDefs["com.atproto.admin.defs"]["repoRef"]
+        | LexiconDefs["com.atproto.repo.strongRef"]["main"]
+        | LexiconDefs["com.atproto.admin.defs"]["repoBlobRef"]
+        | Record<string, any>;
       "takedown"?: LexiconDefs["com.atproto.admin.defs"]["statusAttr"];
       "deactivated"?: LexiconDefs["com.atproto.admin.defs"]["statusAttr"];
     };
   };
   "com.atproto.admin.moderateAccount": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "did": string;
       "action": string;
@@ -5872,6 +6589,8 @@ export interface Lexicons {
   };
   "com.atproto.admin.moderateRecord": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "uri": string;
       "action": string;
@@ -5887,6 +6606,7 @@ export interface Lexicons {
   };
   "com.atproto.admin.queryAuditLog": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
       "cursor"?: string;
@@ -5895,11 +6615,15 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "events": Array<any /* unresolved ref: com.atproto.admin.defs#auditLogEvent */>;
+      "events": Array<
+        any /* unresolved ref: com.atproto.admin.defs#auditLogEvent */
+      >;
     };
   };
   "com.atproto.admin.repairRepo": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "did": string;
     };
@@ -5910,16 +6634,19 @@ export interface Lexicons {
   };
   "com.atproto.admin.resolveReport": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "id": number;
       "action"?: string;
       "comment"?: string;
     };
-    output: {
-    };
+    output: {};
   };
   "com.atproto.admin.runBlobAudit": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "type"?: string;
       "dryRun"?: boolean;
@@ -5932,6 +6659,7 @@ export interface Lexicons {
   };
   "com.atproto.admin.searchAccounts": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "email"?: string;
       "cursor"?: string;
@@ -5945,6 +6673,8 @@ export interface Lexicons {
   };
   "com.atproto.admin.sendEmail": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "recipientDid": string;
       "content": string;
@@ -5958,6 +6688,8 @@ export interface Lexicons {
   };
   "com.atproto.admin.takeDownAccount": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "did": string;
       "reason"?: string;
@@ -5969,6 +6701,8 @@ export interface Lexicons {
   };
   "com.atproto.admin.updateAccountEmail": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "account": string;
       "email": string;
@@ -5977,6 +6711,8 @@ export interface Lexicons {
   };
   "com.atproto.admin.updateAccountHandle": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "did": string;
       "handle": string;
@@ -5985,6 +6721,8 @@ export interface Lexicons {
   };
   "com.atproto.admin.updateAccountPassword": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "did": string;
       "password": string;
@@ -5993,6 +6731,8 @@ export interface Lexicons {
   };
   "com.atproto.admin.updateAccountSigningKey": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "did": string;
       "signingKey": string;
@@ -6001,18 +6741,29 @@ export interface Lexicons {
   };
   "com.atproto.admin.updateSubjectStatus": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
-      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | LexiconDefs["com.atproto.admin.defs"]["repoBlobRef"] | Record<string, any>;
+      "subject":
+        | LexiconDefs["com.atproto.admin.defs"]["repoRef"]
+        | LexiconDefs["com.atproto.repo.strongRef"]["main"]
+        | LexiconDefs["com.atproto.admin.defs"]["repoBlobRef"]
+        | Record<string, any>;
       "takedown"?: LexiconDefs["com.atproto.admin.defs"]["statusAttr"];
       "deactivated"?: LexiconDefs["com.atproto.admin.defs"]["statusAttr"];
     };
     output: {
-      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | LexiconDefs["com.atproto.admin.defs"]["repoBlobRef"] | Record<string, any>;
+      "subject":
+        | LexiconDefs["com.atproto.admin.defs"]["repoRef"]
+        | LexiconDefs["com.atproto.repo.strongRef"]["main"]
+        | LexiconDefs["com.atproto.admin.defs"]["repoBlobRef"]
+        | Record<string, any>;
       "takedown"?: LexiconDefs["com.atproto.admin.defs"]["statusAttr"];
     };
   };
   "com.atproto.identity.getRecommendedDidCredentials": {
     type: "query";
+    outputEncoding: "application/json";
     params: Record<string, never>;
     input: never;
     output: {
@@ -6024,6 +6775,8 @@ export interface Lexicons {
   };
   "com.atproto.identity.refreshIdentity": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "identifier": string;
     };
@@ -6031,11 +6784,14 @@ export interface Lexicons {
   };
   "com.atproto.identity.requestPlcOperationSignature": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: never;
     output: never;
   };
   "com.atproto.identity.resolveDid": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "did": string;
     };
@@ -6046,6 +6802,7 @@ export interface Lexicons {
   };
   "com.atproto.identity.resolveHandle": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "handle": string;
     };
@@ -6056,6 +6813,7 @@ export interface Lexicons {
   };
   "com.atproto.identity.resolveIdentity": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "identifier": string;
     };
@@ -6064,6 +6822,8 @@ export interface Lexicons {
   };
   "com.atproto.identity.signPlcOperation": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "token"?: string;
       "rotationKeys"?: Array<string>;
@@ -6077,6 +6837,8 @@ export interface Lexicons {
   };
   "com.atproto.identity.submitPlcOperation": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "operation": unknown;
     };
@@ -6084,6 +6846,8 @@ export interface Lexicons {
   };
   "com.atproto.identity.updateHandle": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "handle": string;
     };
@@ -6091,6 +6855,8 @@ export interface Lexicons {
   };
   "com.atproto.label.createLabel": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "src"?: string;
       "uri": string;
@@ -6103,6 +6869,7 @@ export interface Lexicons {
   };
   "com.atproto.label.getLabels": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "uriPatterns"?: Array<string>;
       "sources"?: Array<string>;
@@ -6119,6 +6886,7 @@ export interface Lexicons {
   };
   "com.atproto.label.queryLabels": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "uriPatterns": Array<string>;
       "sources"?: Array<string>;
@@ -6133,6 +6901,7 @@ export interface Lexicons {
   };
   "com.atproto.lexicon.resolveLexicon": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "nsid": string;
     };
@@ -6149,36 +6918,56 @@ export interface Lexicons {
   };
   "com.atproto.moderation.createReport": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "reasonType": LexiconDefs["com.atproto.moderation.defs"]["reasonType"];
       "reason"?: string;
-      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | Record<string, any>;
+      "subject":
+        | LexiconDefs["com.atproto.admin.defs"]["repoRef"]
+        | LexiconDefs["com.atproto.repo.strongRef"]["main"]
+        | Record<string, any>;
       "modTool"?: LexiconDefs["com.atproto.moderation.createReport"]["modTool"];
     };
     output: {
       "id": number;
       "reasonType": LexiconDefs["com.atproto.moderation.defs"]["reasonType"];
       "reason"?: string;
-      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | Record<string, any>;
+      "subject":
+        | LexiconDefs["com.atproto.admin.defs"]["repoRef"]
+        | LexiconDefs["com.atproto.repo.strongRef"]["main"]
+        | Record<string, any>;
       "reportedBy": string;
       "createdAt": string;
     };
   };
   "com.atproto.repo.applyWrites": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "repo": string;
       "validate"?: boolean;
-      "writes": Array<LexiconDefs["com.atproto.repo.applyWrites"]["create"] | LexiconDefs["com.atproto.repo.applyWrites"]["update"] | LexiconDefs["com.atproto.repo.applyWrites"]["delete"]>;
+      "writes": Array<
+        | LexiconDefs["com.atproto.repo.applyWrites"]["create"]
+        | LexiconDefs["com.atproto.repo.applyWrites"]["update"]
+        | LexiconDefs["com.atproto.repo.applyWrites"]["delete"]
+      >;
       "swapCommit"?: string;
     };
     output: {
       "commit"?: LexiconDefs["com.atproto.repo.defs"]["commitMeta"];
-      "results"?: Array<LexiconDefs["com.atproto.repo.applyWrites"]["createResult"] | LexiconDefs["com.atproto.repo.applyWrites"]["updateResult"] | LexiconDefs["com.atproto.repo.applyWrites"]["deleteResult"]>;
+      "results"?: Array<
+        | LexiconDefs["com.atproto.repo.applyWrites"]["createResult"]
+        | LexiconDefs["com.atproto.repo.applyWrites"]["updateResult"]
+        | LexiconDefs["com.atproto.repo.applyWrites"]["deleteResult"]
+      >;
     };
   };
   "com.atproto.repo.createRecord": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "repo": string;
       "collection": string;
@@ -6196,6 +6985,8 @@ export interface Lexicons {
   };
   "com.atproto.repo.deleteBlob": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "blob": string;
       "collection"?: string;
@@ -6207,6 +6998,8 @@ export interface Lexicons {
   };
   "com.atproto.repo.deleteRecord": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "repo": string;
       "collection": string;
@@ -6220,6 +7013,7 @@ export interface Lexicons {
   };
   "com.atproto.repo.describeRepo": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "repo": string;
     };
@@ -6230,14 +7024,15 @@ export interface Lexicons {
       "didDoc": unknown;
       "collections": Array<string>;
       "collectionStats"?: Array<{
-      "name": string;
-      "count": number;
-    }>;
+        "name": string;
+        "count": number;
+      }>;
       "handleIsCorrect": boolean;
     };
   };
   "com.atproto.repo.getBlob": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "cid": string;
       "did"?: string;
@@ -6247,6 +7042,7 @@ export interface Lexicons {
   };
   "com.atproto.repo.getRecord": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "repo": string;
       "collection": string;
@@ -6262,11 +7058,14 @@ export interface Lexicons {
   };
   "com.atproto.repo.importRepo": {
     type: "procedure";
-    input: never;
+    inputEncoding: "application/vnd.ipld.car";
+    outputEncoding: "application/json";
+    input: Uint8Array;
     output: never;
   };
   "com.atproto.repo.listMissingBlobs": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
       "cursor"?: string;
@@ -6274,11 +7073,14 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "blobs": Array<LexiconDefs["com.atproto.repo.listMissingBlobs"]["recordBlob"]>;
+      "blobs": Array<
+        LexiconDefs["com.atproto.repo.listMissingBlobs"]["recordBlob"]
+      >;
     };
   };
   "com.atproto.repo.listRecords": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "repo": string;
       "collection": string;
@@ -6296,6 +7098,8 @@ export interface Lexicons {
   };
   "com.atproto.repo.putRecord": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "repo": string;
       "collection": string;
@@ -6314,6 +7118,8 @@ export interface Lexicons {
   };
   "com.atproto.repo.updateRecord": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "collection": string;
       "rkey": string;
@@ -6324,18 +7130,23 @@ export interface Lexicons {
   };
   "com.atproto.repo.uploadBlob": {
     type: "procedure";
-    input: never;
+    inputEncoding: "*/*";
+    outputEncoding: "application/json";
+    input: Uint8Array;
     output: {
       "blob": any /* blob */;
     };
   };
   "com.atproto.server.activateAccount": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: never;
     output: never;
   };
   "com.atproto.server.checkAccountStatus": {
     type: "query";
+    outputEncoding: "application/json";
     params: Record<string, never>;
     input: never;
     output: {
@@ -6352,6 +7163,8 @@ export interface Lexicons {
   };
   "com.atproto.server.confirmEmail": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "email": string;
       "token": string;
@@ -6360,6 +7173,8 @@ export interface Lexicons {
   };
   "com.atproto.server.createAccount": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "email"?: string;
       "handle": string;
@@ -6381,6 +7196,8 @@ export interface Lexicons {
   };
   "com.atproto.server.createAppPassword": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "name": string;
       "privileged"?: boolean;
@@ -6389,6 +7206,8 @@ export interface Lexicons {
   };
   "com.atproto.server.createInviteCode": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "useCount": number;
       "forAccount"?: string;
@@ -6399,17 +7218,23 @@ export interface Lexicons {
   };
   "com.atproto.server.createInviteCodes": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "codeCount": number;
       "useCount": number;
       "forAccounts"?: Array<string>;
     };
     output: {
-      "codes": Array<LexiconDefs["com.atproto.server.createInviteCodes"]["accountCodes"]>;
+      "codes": Array<
+        LexiconDefs["com.atproto.server.createInviteCodes"]["accountCodes"]
+      >;
     };
   };
   "com.atproto.server.createSession": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "identifier": string;
       "password": string;
@@ -6427,6 +7252,8 @@ export interface Lexicons {
   };
   "com.atproto.server.deactivateAccount": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "deleteAfter"?: string;
     };
@@ -6434,6 +7261,8 @@ export interface Lexicons {
   };
   "com.atproto.server.deleteAccount": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "did": string;
       "password": string;
@@ -6443,11 +7272,14 @@ export interface Lexicons {
   };
   "com.atproto.server.deleteSession": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: never;
     output: never;
   };
   "com.atproto.server.describeServer": {
     type: "query";
+    outputEncoding: "application/json";
     params: Record<string, never>;
     input: never;
     output: {
@@ -6460,6 +7292,7 @@ export interface Lexicons {
   };
   "com.atproto.server.getAccount": {
     type: "query";
+    outputEncoding: "application/json";
     params: Record<string, never>;
     input: never;
     output: {
@@ -6471,6 +7304,7 @@ export interface Lexicons {
   };
   "com.atproto.server.getAccountInviteCodes": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "includeUsed"?: boolean;
       "createAvailable"?: boolean;
@@ -6482,6 +7316,7 @@ export interface Lexicons {
   };
   "com.atproto.server.getServiceAuth": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "aud": string;
       "exp"?: number;
@@ -6494,6 +7329,7 @@ export interface Lexicons {
   };
   "com.atproto.server.getSession": {
     type: "query";
+    outputEncoding: "application/json";
     params: Record<string, never>;
     input: never;
     output: {
@@ -6509,14 +7345,19 @@ export interface Lexicons {
   };
   "com.atproto.server.listAppPasswords": {
     type: "query";
+    outputEncoding: "application/json";
     params: Record<string, never>;
     input: never;
     output: {
-      "passwords": Array<LexiconDefs["com.atproto.server.listAppPasswords"]["appPassword"]>;
+      "passwords": Array<
+        LexiconDefs["com.atproto.server.listAppPasswords"]["appPassword"]
+      >;
     };
   };
   "com.atproto.server.refreshSession": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: never;
     output: {
       "accessJwt": string;
@@ -6528,16 +7369,22 @@ export interface Lexicons {
   };
   "com.atproto.server.requestAccountDelete": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: never;
     output: never;
   };
   "com.atproto.server.requestEmailConfirmation": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: never;
     output: never;
   };
   "com.atproto.server.requestEmailUpdate": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: never;
     output: {
       "tokenRequired": boolean;
@@ -6545,6 +7392,8 @@ export interface Lexicons {
   };
   "com.atproto.server.requestPasswordReset": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "email": string;
     };
@@ -6552,6 +7401,8 @@ export interface Lexicons {
   };
   "com.atproto.server.reserveSigningKey": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "did"?: string;
     };
@@ -6561,6 +7412,8 @@ export interface Lexicons {
   };
   "com.atproto.server.resetPassword": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "token": string;
       "password": string;
@@ -6569,6 +7422,8 @@ export interface Lexicons {
   };
   "com.atproto.server.revokeAppPassword": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "name": string;
     };
@@ -6576,6 +7431,8 @@ export interface Lexicons {
   };
   "com.atproto.server.updateEmail": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "email": string;
       "emailAuthFactor"?: boolean;
@@ -6585,32 +7442,36 @@ export interface Lexicons {
   };
   "com.atproto.sync.getBlob": {
     type: "query";
+    outputEncoding: "*/*";
     params: {
       "did": string;
       "cid": string;
     };
     input: never;
-    output: never;
+    output: BinaryXrpcResponse;
   };
   "com.atproto.sync.getBlocks": {
     type: "query";
+    outputEncoding: "application/vnd.ipld.car";
     params: {
       "did": string;
       "cids": Array<string>;
     };
     input: never;
-    output: never;
+    output: BinaryXrpcResponse;
   };
   "com.atproto.sync.getCheckout": {
     type: "query";
+    outputEncoding: "application/vnd.ipld.car";
     params: {
       "did": string;
     };
     input: never;
-    output: never;
+    output: BinaryXrpcResponse;
   };
   "com.atproto.sync.getHead": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "did": string;
     };
@@ -6621,6 +7482,7 @@ export interface Lexicons {
   };
   "com.atproto.sync.getHostStatus": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "hostname": string;
     };
@@ -6634,6 +7496,7 @@ export interface Lexicons {
   };
   "com.atproto.sync.getLatestCommit": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "did": string;
     };
@@ -6645,25 +7508,28 @@ export interface Lexicons {
   };
   "com.atproto.sync.getRecord": {
     type: "query";
+    outputEncoding: "application/vnd.ipld.car";
     params: {
       "did": string;
       "collection": string;
       "rkey": string;
     };
     input: never;
-    output: never;
+    output: BinaryXrpcResponse;
   };
   "com.atproto.sync.getRepo": {
     type: "query";
+    outputEncoding: "application/vnd.ipld.car";
     params: {
       "did": string;
       "since"?: string;
     };
     input: never;
-    output: never;
+    output: BinaryXrpcResponse;
   };
   "com.atproto.sync.getRepoStatus": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "did": string;
     };
@@ -6677,6 +7543,7 @@ export interface Lexicons {
   };
   "com.atproto.sync.listBlobs": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "did": string;
       "since"?: string;
@@ -6691,6 +7558,7 @@ export interface Lexicons {
   };
   "com.atproto.sync.listHosts": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
       "cursor"?: string;
@@ -6703,6 +7571,7 @@ export interface Lexicons {
   };
   "com.atproto.sync.listRepos": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
       "cursor"?: string;
@@ -6715,6 +7584,7 @@ export interface Lexicons {
   };
   "com.atproto.sync.listReposByCollection": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "collection": string;
       "limit"?: number;
@@ -6723,11 +7593,15 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "repos": Array<LexiconDefs["com.atproto.sync.listReposByCollection"]["repo"]>;
+      "repos": Array<
+        LexiconDefs["com.atproto.sync.listReposByCollection"]["repo"]
+      >;
     };
   };
   "com.atproto.sync.notifyOfUpdate": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "hostname": string;
     };
@@ -6735,6 +7609,8 @@ export interface Lexicons {
   };
   "com.atproto.sync.requestCrawl": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "hostname": string;
     };
@@ -6742,14 +7618,16 @@ export interface Lexicons {
   };
   "com.atproto.temp.addReservedHandle": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "handle": string;
     };
-    output: {
-    };
+    output: {};
   };
   "com.atproto.temp.checkHandleAvailability": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "handle": string;
       "email"?: string;
@@ -6758,11 +7636,19 @@ export interface Lexicons {
     input: never;
     output: {
       "handle": string;
-      "result": LexiconDefs["com.atproto.temp.checkHandleAvailability"]["resultAvailable"] | LexiconDefs["com.atproto.temp.checkHandleAvailability"]["resultUnavailable"] | Record<string, any>;
+      "result":
+        | LexiconDefs["com.atproto.temp.checkHandleAvailability"][
+          "resultAvailable"
+        ]
+        | LexiconDefs["com.atproto.temp.checkHandleAvailability"][
+          "resultUnavailable"
+        ]
+        | Record<string, any>;
     };
   };
   "com.atproto.temp.checkSignupQueue": {
     type: "query";
+    outputEncoding: "application/json";
     params: Record<string, never>;
     input: never;
     output: {
@@ -6773,6 +7659,7 @@ export interface Lexicons {
   };
   "com.atproto.temp.dereferenceScope": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "scope": string;
     };
@@ -6783,6 +7670,7 @@ export interface Lexicons {
   };
   "com.atproto.temp.fetchLabels": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "since"?: number;
       "limit"?: number;
@@ -6794,6 +7682,8 @@ export interface Lexicons {
   };
   "com.atproto.temp.requestPhoneVerification": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "phoneNumber": string;
     };
@@ -6801,6 +7691,8 @@ export interface Lexicons {
   };
   "com.atproto.temp.revokeAccountCredentials": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "account": string;
     };
@@ -6812,6 +7704,7 @@ export interface Lexicons {
   };
   "com.germnetwork.identity.getAnchorKey": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "did": string;
     };
@@ -6828,6 +7721,8 @@ export interface Lexicons {
   };
   "com.germnetwork.mailbox.claimAddresses": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "agentRef": string;
       "count": number;
@@ -6838,6 +7733,8 @@ export interface Lexicons {
   };
   "com.germnetwork.mailbox.deliver": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "address": string;
       "ciphertext": { $bytes: string } | string;
@@ -6848,6 +7745,7 @@ export interface Lexicons {
   };
   "com.germnetwork.mailbox.poll": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "agentRef": string;
     };
@@ -6858,6 +7756,8 @@ export interface Lexicons {
   };
   "com.germnetwork.rendezvous.deliver": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "address": string;
       "ciphertext": { $bytes: string } | string;
@@ -6868,6 +7768,8 @@ export interface Lexicons {
   };
   "com.germnetwork.rendezvous.register": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "address": string;
       "agentRef": string;
@@ -6879,6 +7781,7 @@ export interface Lexicons {
   };
   "com.shinolabs.pinksea.getAuthorFeed": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "did": string;
       "since"?: string;
@@ -6886,11 +7789,14 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "oekaki": Array<LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]>;
+      "oekaki": Array<
+        LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]
+      >;
     };
   };
   "com.shinolabs.pinksea.getAuthorReplies": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "did": string;
       "since"?: string;
@@ -6898,11 +7804,14 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "oekaki": Array<LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]>;
+      "oekaki": Array<
+        LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]
+      >;
     };
   };
   "com.shinolabs.pinksea.getHandleFromDid": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "did": string;
     };
@@ -6913,8 +7822,8 @@ export interface Lexicons {
   };
   "com.shinolabs.pinksea.getIdentity": {
     type: "query";
-    params: {
-    };
+    outputEncoding: "application/json";
+    params: {};
     input: never;
     output: {
       "did": string;
@@ -6923,18 +7832,25 @@ export interface Lexicons {
   };
   "com.shinolabs.pinksea.getOekaki": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "did": string;
       "rkey": string;
     };
     input: never;
     output: {
-      "parent": LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"] | LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["oekakiTombstone"] | Record<string, any>;
-      "children": Array<LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]>;
+      "parent":
+        | LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]
+        | LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["oekakiTombstone"]
+        | Record<string, any>;
+      "children": Array<
+        LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]
+      >;
     };
   };
   "com.shinolabs.pinksea.getParentForReply": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "did": string;
       "rkey": string;
@@ -6947,17 +7863,21 @@ export interface Lexicons {
   };
   "com.shinolabs.pinksea.getRecent": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "since"?: string;
       "limit"?: number;
     };
     input: never;
     output: {
-      "oekaki": Array<LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]>;
+      "oekaki": Array<
+        LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]
+      >;
     };
   };
   "com.shinolabs.pinksea.getTagFeed": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "tag": string;
       "since"?: string;
@@ -6965,7 +7885,9 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "oekaki": Array<LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]>;
+      "oekaki": Array<
+        LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]
+      >;
     };
   };
   "com.shinolabs.pinksea.oekaki": {
@@ -6982,6 +7904,7 @@ export interface Lexicons {
   };
   "com.whtwnd.blog.getAuthorPosts": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "author": string;
     };
@@ -6992,6 +7915,7 @@ export interface Lexicons {
   };
   "com.whtwnd.blog.getEntryMetadataByName": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "author": string;
       "entryTitle": string;
@@ -7005,6 +7929,7 @@ export interface Lexicons {
   };
   "com.whtwnd.blog.getMentionsByEntry": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "postUri": string;
     };
@@ -7015,11 +7940,12 @@ export interface Lexicons {
   };
   "com.whtwnd.blog.notifyOfNewEntry": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "entryUri": string;
     };
-    output: {
-    };
+    output: {};
   };
   "fyi.frontpage.feed.comment": {
     type: "record";
@@ -7051,6 +7977,8 @@ export interface Lexicons {
   };
   "place.stream.branding.deleteBlob": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "key": string;
       "broadcaster"?: string;
@@ -7061,25 +7989,31 @@ export interface Lexicons {
   };
   "place.stream.branding.getBlob": {
     type: "query";
+    outputEncoding: "*/*";
     params: {
       "key": string;
       "broadcaster"?: string;
     };
     input: never;
-    output: never;
+    output: BinaryXrpcResponse;
   };
   "place.stream.branding.getBranding": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "broadcaster"?: string;
     };
     input: never;
     output: {
-      "assets": Array<LexiconDefs["place.stream.branding.getBranding"]["brandingAsset"]>;
+      "assets": Array<
+        LexiconDefs["place.stream.branding.getBranding"]["brandingAsset"]
+      >;
     };
   };
   "place.stream.branding.updateBlob": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "key": string;
       "broadcaster"?: string;
@@ -7094,8 +8028,8 @@ export interface Lexicons {
   };
   "place.stream.broadcast.getBroadcaster": {
     type: "query";
-    params: {
-    };
+    outputEncoding: "application/json";
+    params: {};
     input: never;
     output: {
       "broadcaster": string;
@@ -7125,6 +8059,7 @@ export interface Lexicons {
   };
   "place.stream.graph.getFollowingUser": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "userDID": string;
       "subjectDID": string;
@@ -7140,36 +8075,46 @@ export interface Lexicons {
   };
   "place.stream.live.getLiveUsers": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
       "before"?: string;
     };
     input: never;
     output: {
-      "streams"?: Array<LexiconDefs["place.stream.livestream"]["livestreamView"]>;
+      "streams"?: Array<
+        LexiconDefs["place.stream.livestream"]["livestreamView"]
+      >;
     };
   };
   "place.stream.live.getProfileCard": {
     type: "query";
+    outputEncoding: "*/*";
     params: {
       "id": string;
     };
     input: never;
-    output: never;
+    output: BinaryXrpcResponse;
   };
   "place.stream.live.getRecommendations": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "userDID": string;
     };
     input: never;
     output: {
-      "recommendations": Array<LexiconDefs["place.stream.live.getRecommendations"]["livestreamRecommendation"] | Record<string, any>>;
+      "recommendations": Array<
+        LexiconDefs["place.stream.live.getRecommendations"][
+          "livestreamRecommendation"
+        ] | Record<string, any>
+      >;
       "userDID"?: string;
     };
   };
   "place.stream.live.getSegments": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "userDID": string;
       "limit"?: number;
@@ -7186,13 +8131,16 @@ export interface Lexicons {
   };
   "place.stream.live.searchActorsTypeahead": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "q"?: string;
       "limit"?: number;
     };
     input: never;
     output: {
-      "actors": Array<LexiconDefs["place.stream.live.searchActorsTypeahead"]["actor"]>;
+      "actors": Array<
+        LexiconDefs["place.stream.live.searchActorsTypeahead"]["actor"]
+      >;
     };
   };
   "place.stream.livestream": {
@@ -7205,6 +8153,8 @@ export interface Lexicons {
   };
   "place.stream.moderation.createBlock": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "streamer": string;
       "subject": string;
@@ -7217,6 +8167,8 @@ export interface Lexicons {
   };
   "place.stream.moderation.createGate": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "streamer": string;
       "messageUri": string;
@@ -7228,21 +8180,23 @@ export interface Lexicons {
   };
   "place.stream.moderation.deleteBlock": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "streamer": string;
       "blockUri": string;
     };
-    output: {
-    };
+    output: {};
   };
   "place.stream.moderation.deleteGate": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "streamer": string;
       "gateUri": string;
     };
-    output: {
-    };
+    output: {};
   };
   "place.stream.moderation.permission": {
     type: "record";
@@ -7250,6 +8204,8 @@ export interface Lexicons {
   };
   "place.stream.moderation.updateLivestream": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "streamer": string;
       "livestreamUri": string;
@@ -7262,35 +8218,45 @@ export interface Lexicons {
   };
   "place.stream.multistream.createTarget": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
-      "multistreamTarget": LexiconDefs["place.stream.multistream.target"]["main"];
+      "multistreamTarget":
+        LexiconDefs["place.stream.multistream.target"]["main"];
     };
     output: LexiconDefs["place.stream.multistream.defs"]["targetView"];
   };
   "place.stream.multistream.deleteTarget": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "rkey": string;
     };
-    output: {
-    };
+    output: {};
   };
   "place.stream.multistream.listTargets": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
       "cursor"?: string;
     };
     input: never;
     output: {
-      "targets": Array<LexiconDefs["place.stream.multistream.defs"]["targetView"]>;
+      "targets": Array<
+        LexiconDefs["place.stream.multistream.defs"]["targetView"]
+      >;
       "cursor"?: string;
     };
   };
   "place.stream.multistream.putTarget": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
-      "multistreamTarget": LexiconDefs["place.stream.multistream.target"]["main"];
+      "multistreamTarget":
+        LexiconDefs["place.stream.multistream.target"]["main"];
       "rkey"?: string;
     };
     output: LexiconDefs["place.stream.multistream.defs"]["targetView"];
@@ -7305,6 +8271,8 @@ export interface Lexicons {
   };
   "place.stream.server.createWebhook": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "url": string;
       "events": Array<string>;
@@ -7322,6 +8290,8 @@ export interface Lexicons {
   };
   "place.stream.server.deleteWebhook": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "id": string;
     };
@@ -7331,8 +8301,8 @@ export interface Lexicons {
   };
   "place.stream.server.getServerTime": {
     type: "query";
-    params: {
-    };
+    outputEncoding: "application/json";
+    params: {};
     input: never;
     output: {
       "serverTime": string;
@@ -7340,6 +8310,7 @@ export interface Lexicons {
   };
   "place.stream.server.getWebhook": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "id": string;
     };
@@ -7350,6 +8321,7 @@ export interface Lexicons {
   };
   "place.stream.server.listWebhooks": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
       "cursor"?: string;
@@ -7368,6 +8340,8 @@ export interface Lexicons {
   };
   "place.stream.server.updateWebhook": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "id": string;
       "url"?: string;
@@ -7394,6 +8368,7 @@ export interface Lexicons {
   };
   "social.grain.actor.getActorFavs": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "actor": string;
       "limit"?: number;
@@ -7407,6 +8382,7 @@ export interface Lexicons {
   };
   "social.grain.actor.getProfile": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "actor": string;
     };
@@ -7419,6 +8395,7 @@ export interface Lexicons {
   };
   "social.grain.actor.searchActors": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "q"?: string;
       "limit"?: number;
@@ -7432,13 +8409,17 @@ export interface Lexicons {
   };
   "social.grain.actor.updateAvatar": {
     type: "procedure";
-    input: never;
+    inputEncoding: "*/*";
+    outputEncoding: "application/json";
+    input: Uint8Array;
     output: {
       "success"?: boolean;
     };
   };
   "social.grain.actor.updateProfile": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "displayName"?: string;
       "description"?: string;
@@ -7453,6 +8434,8 @@ export interface Lexicons {
   };
   "social.grain.comment.createComment": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "text": string;
       "subject": string;
@@ -7465,6 +8448,8 @@ export interface Lexicons {
   };
   "social.grain.comment.deleteComment": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "uri": string;
     };
@@ -7474,11 +8459,12 @@ export interface Lexicons {
   };
   "social.grain.darkroom.getGalleryComposite": {
     type: "query";
+    outputEncoding: "*/*";
     params: {
       "uri": string;
     };
     input: never;
-    output: never;
+    output: BinaryXrpcResponse;
   };
   "social.grain.favorite": {
     type: "record";
@@ -7486,6 +8472,8 @@ export interface Lexicons {
   };
   "social.grain.favorite.createFavorite": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "subject": string;
     };
@@ -7495,6 +8483,8 @@ export interface Lexicons {
   };
   "social.grain.favorite.deleteFavorite": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "uri": string;
     };
@@ -7504,6 +8494,7 @@ export interface Lexicons {
   };
   "social.grain.feed.getTimeline": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "algorithm"?: string;
       "limit"?: number;
@@ -7521,6 +8512,8 @@ export interface Lexicons {
   };
   "social.grain.gallery.applySort": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "writes": Array<LexiconDefs["social.grain.gallery.applySort"]["update"]>;
     };
@@ -7530,6 +8523,8 @@ export interface Lexicons {
   };
   "social.grain.gallery.createGallery": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "title": string;
       "description"?: string;
@@ -7540,6 +8535,8 @@ export interface Lexicons {
   };
   "social.grain.gallery.createItem": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "galleryUri": string;
       "photoUri": string;
@@ -7551,6 +8548,8 @@ export interface Lexicons {
   };
   "social.grain.gallery.deleteGallery": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "uri": string;
       "cascade"?: boolean;
@@ -7561,6 +8560,8 @@ export interface Lexicons {
   };
   "social.grain.gallery.deleteItem": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "uri": string;
     };
@@ -7570,6 +8571,7 @@ export interface Lexicons {
   };
   "social.grain.gallery.getActorGalleries": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "actor": string;
       "limit"?: number;
@@ -7583,6 +8585,7 @@ export interface Lexicons {
   };
   "social.grain.gallery.getGallery": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "uri": string;
     };
@@ -7591,13 +8594,16 @@ export interface Lexicons {
   };
   "social.grain.gallery.getGalleryThread": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "uri": string;
     };
     input: never;
     output: {
       "gallery": LexiconDefs["social.grain.gallery.defs"]["galleryView"];
-      "comments": Array<LexiconDefs["social.grain.comment.defs"]["commentView"]>;
+      "comments": Array<
+        LexiconDefs["social.grain.comment.defs"]["commentView"]
+      >;
     };
   };
   "social.grain.gallery.item": {
@@ -7606,6 +8612,8 @@ export interface Lexicons {
   };
   "social.grain.gallery.updateGallery": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "galleryUri": string;
       "title": string;
@@ -7617,6 +8625,8 @@ export interface Lexicons {
   };
   "social.grain.graph.createFollow": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "subject": string;
     };
@@ -7626,6 +8636,8 @@ export interface Lexicons {
   };
   "social.grain.graph.deleteFollow": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "uri": string;
     };
@@ -7639,6 +8651,7 @@ export interface Lexicons {
   };
   "social.grain.graph.getFollowers": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "actor": string;
       "limit"?: number;
@@ -7653,6 +8666,7 @@ export interface Lexicons {
   };
   "social.grain.graph.getFollows": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "actor": string;
       "limit"?: number;
@@ -7671,6 +8685,7 @@ export interface Lexicons {
   };
   "social.grain.notification.getNotifications": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
       "cursor"?: string;
@@ -7678,12 +8693,18 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "notifications": Array<LexiconDefs["social.grain.notification.defs"]["notificationViewDetailed"]>;
+      "notifications": Array<
+        LexiconDefs["social.grain.notification.defs"][
+          "notificationViewDetailed"
+        ]
+      >;
       "seenAt"?: string;
     };
   };
   "social.grain.notification.updateSeen": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "seenAt": string;
     };
@@ -7695,6 +8716,8 @@ export interface Lexicons {
   };
   "social.grain.photo.applyAlts": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "writes": Array<LexiconDefs["social.grain.photo.applyAlts"]["update"]>;
     };
@@ -7704,6 +8727,8 @@ export interface Lexicons {
   };
   "social.grain.photo.createExif": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "photo": string;
       "dateTimeOriginal"?: string;
@@ -7723,6 +8748,8 @@ export interface Lexicons {
   };
   "social.grain.photo.deletePhoto": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "uri": string;
       "cascade"?: boolean;
@@ -7737,6 +8764,7 @@ export interface Lexicons {
   };
   "social.grain.photo.getActorPhotos": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "actor": string;
       "limit"?: number;
@@ -7750,15 +8778,17 @@ export interface Lexicons {
   };
   "social.grain.photo.uploadPhoto": {
     type: "procedure";
-    input: never;
+    inputEncoding: "*/*";
+    outputEncoding: "application/json";
+    input: Uint8Array;
     output: {
       "photoUri"?: string;
     };
   };
   "tools.garazyk.account.getUsage": {
     type: "query";
-    params: {
-    };
+    outputEncoding: "application/json";
+    params: {};
     input: never;
     output: {
       "did": string;
@@ -7770,16 +8800,19 @@ export interface Lexicons {
   };
   "tools.garazyk.sync.getRepoFiltered": {
     type: "query";
+    outputEncoding: "application/vnd.ipld.car";
     params: {
       "did": string;
       "collections": Array<string>;
       "since"?: string;
     };
     input: never;
-    output: never;
+    output: BinaryXrpcResponse;
   };
   "tools.ozone.communication.createTemplate": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "name": string;
       "contentMarkdown": string;
@@ -7791,6 +8824,8 @@ export interface Lexicons {
   };
   "tools.ozone.communication.deleteTemplate": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "id": string;
     };
@@ -7798,14 +8833,19 @@ export interface Lexicons {
   };
   "tools.ozone.communication.listTemplates": {
     type: "query";
+    outputEncoding: "application/json";
     params: Record<string, never>;
     input: never;
     output: {
-      "communicationTemplates": Array<LexiconDefs["tools.ozone.communication.defs"]["templateView"]>;
+      "communicationTemplates": Array<
+        LexiconDefs["tools.ozone.communication.defs"]["templateView"]
+      >;
     };
   };
   "tools.ozone.communication.updateTemplate": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "id": string;
       "name"?: string;
@@ -7819,6 +8859,7 @@ export interface Lexicons {
   };
   "tools.ozone.hosting.getAccountHistory": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "did": string;
       "events"?: Array<string>;
@@ -7828,11 +8869,15 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "events": Array<LexiconDefs["tools.ozone.hosting.getAccountHistory"]["event"]>;
+      "events": Array<
+        LexiconDefs["tools.ozone.hosting.getAccountHistory"]["event"]
+      >;
     };
   };
   "tools.ozone.moderation.cancelScheduledAction": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "id": string;
     };
@@ -7842,17 +8887,57 @@ export interface Lexicons {
   };
   "tools.ozone.moderation.cancelScheduledActions": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "subjects": Array<string>;
       "comment"?: string;
     };
-    output: LexiconDefs["tools.ozone.moderation.cancelScheduledActions"]["cancellationResults"];
+    output: LexiconDefs["tools.ozone.moderation.cancelScheduledActions"][
+      "cancellationResults"
+    ];
   };
   "tools.ozone.moderation.emitEvent": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
-      "event": LexiconDefs["tools.ozone.moderation.defs"]["modEventTakedown"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventAcknowledge"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventEscalate"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventComment"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventLabel"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventReport"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventMute"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmute"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventMuteReporter"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmuteReporter"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventReverseTakedown"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventResolveAppeal"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventEmail"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventDivert"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventTag"] | LexiconDefs["tools.ozone.moderation.defs"]["accountEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["identityEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["recordEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventPriorityScore"] | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceOverrideEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["revokeAccountCredentialsEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["scheduleTakedownEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["cancelScheduledTakedownEvent"] | Record<string, any>;
-      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | Record<string, any>;
+      "event":
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventTakedown"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventAcknowledge"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventEscalate"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventComment"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventLabel"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventReport"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventMute"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmute"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventMuteReporter"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmuteReporter"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventReverseTakedown"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventResolveAppeal"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventEmail"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventDivert"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventTag"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["accountEvent"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["identityEvent"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["recordEvent"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["modEventPriorityScore"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceEvent"]
+        | LexiconDefs["tools.ozone.moderation.defs"][
+          "ageAssuranceOverrideEvent"
+        ]
+        | LexiconDefs["tools.ozone.moderation.defs"][
+          "revokeAccountCredentialsEvent"
+        ]
+        | LexiconDefs["tools.ozone.moderation.defs"]["scheduleTakedownEvent"]
+        | LexiconDefs["tools.ozone.moderation.defs"][
+          "cancelScheduledTakedownEvent"
+        ]
+        | Record<string, any>;
+      "subject":
+        | LexiconDefs["com.atproto.admin.defs"]["repoRef"]
+        | LexiconDefs["com.atproto.repo.strongRef"]["main"]
+        | Record<string, any>;
       "subjectBlobCids"?: Array<string>;
       "createdBy": string;
       "modTool"?: LexiconDefs["tools.ozone.moderation.defs"]["modTool"];
@@ -7862,16 +8947,20 @@ export interface Lexicons {
   };
   "tools.ozone.moderation.getAccountTimeline": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "did": string;
     };
     input: never;
     output: {
-      "timeline": Array<LexiconDefs["tools.ozone.moderation.getAccountTimeline"]["timelineItem"]>;
+      "timeline": Array<
+        LexiconDefs["tools.ozone.moderation.getAccountTimeline"]["timelineItem"]
+      >;
     };
   };
   "tools.ozone.moderation.getEvent": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "id": number;
     };
@@ -7880,6 +8969,7 @@ export interface Lexicons {
   };
   "tools.ozone.moderation.getRecord": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "uri": string;
       "cid"?: string;
@@ -7889,16 +8979,22 @@ export interface Lexicons {
   };
   "tools.ozone.moderation.getRecords": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "uris": Array<string>;
     };
     input: never;
     output: {
-      "records": Array<LexiconDefs["tools.ozone.moderation.defs"]["recordViewDetail"] | LexiconDefs["tools.ozone.moderation.defs"]["recordViewNotFound"] | Record<string, any>>;
+      "records": Array<
+        | LexiconDefs["tools.ozone.moderation.defs"]["recordViewDetail"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["recordViewNotFound"]
+        | Record<string, any>
+      >;
     };
   };
   "tools.ozone.moderation.getRepo": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "did": string;
     };
@@ -7907,36 +9003,48 @@ export interface Lexicons {
   };
   "tools.ozone.moderation.getReporterStats": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "dids": Array<string>;
     };
     input: never;
     output: {
-      "stats": Array<LexiconDefs["tools.ozone.moderation.defs"]["reporterStats"]>;
+      "stats": Array<
+        LexiconDefs["tools.ozone.moderation.defs"]["reporterStats"]
+      >;
     };
   };
   "tools.ozone.moderation.getRepos": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "dids": Array<string>;
     };
     input: never;
     output: {
-      "repos": Array<LexiconDefs["tools.ozone.moderation.defs"]["repoViewDetail"] | LexiconDefs["tools.ozone.moderation.defs"]["repoViewNotFound"] | Record<string, any>>;
+      "repos": Array<
+        | LexiconDefs["tools.ozone.moderation.defs"]["repoViewDetail"]
+        | LexiconDefs["tools.ozone.moderation.defs"]["repoViewNotFound"]
+        | Record<string, any>
+      >;
     };
   };
   "tools.ozone.moderation.getSubjects": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "subjects": Array<string>;
     };
     input: never;
     output: {
-      "subjects": Array<LexiconDefs["tools.ozone.moderation.defs"]["subjectView"]>;
+      "subjects": Array<
+        LexiconDefs["tools.ozone.moderation.defs"]["subjectView"]
+      >;
     };
   };
   "tools.ozone.moderation.getSubjectStatus": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "did"?: string;
       "uri"?: string;
@@ -7948,6 +9056,8 @@ export interface Lexicons {
   };
   "tools.ozone.moderation.listScheduledActions": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "startsAfter"?: string;
       "endsBefore"?: string;
@@ -7957,12 +9067,15 @@ export interface Lexicons {
       "cursor"?: string;
     };
     output: {
-      "actions": Array<LexiconDefs["tools.ozone.moderation.defs"]["scheduledActionView"]>;
+      "actions": Array<
+        LexiconDefs["tools.ozone.moderation.defs"]["scheduledActionView"]
+      >;
       "cursor"?: string;
     };
   };
   "tools.ozone.moderation.queryEvents": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "types"?: Array<string>;
       "createdBy"?: string;
@@ -7991,11 +9104,14 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "events": Array<LexiconDefs["tools.ozone.moderation.defs"]["modEventView"]>;
+      "events": Array<
+        LexiconDefs["tools.ozone.moderation.defs"]["modEventView"]
+      >;
     };
   };
   "tools.ozone.moderation.queryStatuses": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "queueCount"?: number;
       "queueIndex"?: number;
@@ -8037,22 +9153,33 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "subjectStatuses": Array<LexiconDefs["tools.ozone.moderation.defs"]["subjectStatusView"]>;
+      "subjectStatuses": Array<
+        LexiconDefs["tools.ozone.moderation.defs"]["subjectStatusView"]
+      >;
     };
   };
   "tools.ozone.moderation.scheduleAction": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
-      "action": LexiconDefs["tools.ozone.moderation.scheduleAction"]["takedown"] | Record<string, any>;
+      "action":
+        | LexiconDefs["tools.ozone.moderation.scheduleAction"]["takedown"]
+        | Record<string, any>;
       "subjects": Array<string>;
       "createdBy": string;
-      "scheduling": LexiconDefs["tools.ozone.moderation.scheduleAction"]["schedulingConfig"];
+      "scheduling": LexiconDefs["tools.ozone.moderation.scheduleAction"][
+        "schedulingConfig"
+      ];
       "modTool"?: LexiconDefs["tools.ozone.moderation.defs"]["modTool"];
     };
-    output: LexiconDefs["tools.ozone.moderation.scheduleAction"]["scheduledActionResults"];
+    output: LexiconDefs["tools.ozone.moderation.scheduleAction"][
+      "scheduledActionResults"
+    ];
   };
   "tools.ozone.moderation.searchRepos": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "term"?: string;
       "q"?: string;
@@ -8067,6 +9194,8 @@ export interface Lexicons {
   };
   "tools.ozone.safelink.addRule": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "url": string;
       "pattern": LexiconDefs["tools.ozone.safelink.defs"]["patternType"];
@@ -8079,6 +9208,8 @@ export interface Lexicons {
   };
   "tools.ozone.safelink.queryEvents": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "cursor"?: string;
       "limit"?: number;
@@ -8093,6 +9224,8 @@ export interface Lexicons {
   };
   "tools.ozone.safelink.queryRules": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "cursor"?: string;
       "limit"?: number;
@@ -8110,6 +9243,8 @@ export interface Lexicons {
   };
   "tools.ozone.safelink.removeRule": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "url": string;
       "pattern": LexiconDefs["tools.ozone.safelink.defs"]["patternType"];
@@ -8120,6 +9255,8 @@ export interface Lexicons {
   };
   "tools.ozone.safelink.updateRule": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "url": string;
       "pattern": LexiconDefs["tools.ozone.safelink.defs"]["patternType"];
@@ -8132,12 +9269,14 @@ export interface Lexicons {
   };
   "tools.ozone.server.getConfig": {
     type: "query";
+    outputEncoding: "application/json";
     params: Record<string, never>;
     input: never;
     output: {
       "appview"?: LexiconDefs["tools.ozone.server.getConfig"]["serviceConfig"];
       "pds"?: LexiconDefs["tools.ozone.server.getConfig"]["serviceConfig"];
-      "blobDivert"?: LexiconDefs["tools.ozone.server.getConfig"]["serviceConfig"];
+      "blobDivert"?:
+        LexiconDefs["tools.ozone.server.getConfig"]["serviceConfig"];
       "chat"?: LexiconDefs["tools.ozone.server.getConfig"]["serviceConfig"];
       "viewer"?: LexiconDefs["tools.ozone.server.getConfig"]["viewerConfig"];
       "verifierDid"?: string;
@@ -8145,6 +9284,8 @@ export interface Lexicons {
   };
   "tools.ozone.server.updateConfig": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "settings"?: Record<string, never>;
     };
@@ -8154,6 +9295,8 @@ export interface Lexicons {
   };
   "tools.ozone.set.addValues": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "name": string;
       "values": Array<string>;
@@ -8162,14 +9305,17 @@ export interface Lexicons {
   };
   "tools.ozone.set.deleteSet": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "name": string;
     };
-    output: {
-    };
+    output: {};
   };
   "tools.ozone.set.deleteValues": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "name": string;
       "values": Array<string>;
@@ -8178,6 +9324,7 @@ export interface Lexicons {
   };
   "tools.ozone.set.getValues": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "name": string;
       "limit"?: number;
@@ -8192,6 +9339,7 @@ export interface Lexicons {
   };
   "tools.ozone.set.querySets": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
       "cursor"?: string;
@@ -8207,11 +9355,14 @@ export interface Lexicons {
   };
   "tools.ozone.set.upsertSet": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: LexiconDefs["tools.ozone.set.defs"]["set"];
     output: LexiconDefs["tools.ozone.set.defs"]["setView"];
   };
   "tools.ozone.setting.listOptions": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "limit"?: number;
       "cursor"?: string;
@@ -8227,15 +9378,18 @@ export interface Lexicons {
   };
   "tools.ozone.setting.removeOptions": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "keys": Array<string>;
       "scope": string;
     };
-    output: {
-    };
+    output: {};
   };
   "tools.ozone.setting.upsertOption": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "key": string;
       "scope": string;
@@ -8249,6 +9403,7 @@ export interface Lexicons {
   };
   "tools.ozone.signature.findCorrelation": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "dids": Array<string>;
     };
@@ -8259,6 +9414,7 @@ export interface Lexicons {
   };
   "tools.ozone.signature.findRelatedAccounts": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "did": string;
       "cursor"?: string;
@@ -8267,11 +9423,16 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "accounts": Array<LexiconDefs["tools.ozone.signature.findRelatedAccounts"]["relatedAccount"]>;
+      "accounts": Array<
+        LexiconDefs["tools.ozone.signature.findRelatedAccounts"][
+          "relatedAccount"
+        ]
+      >;
     };
   };
   "tools.ozone.signature.searchAccounts": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "values": Array<string>;
       "cursor"?: string;
@@ -8285,6 +9446,8 @@ export interface Lexicons {
   };
   "tools.ozone.team.addMember": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "did": string;
       "role": string;
@@ -8293,6 +9456,8 @@ export interface Lexicons {
   };
   "tools.ozone.team.deleteMember": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "did": string;
     };
@@ -8300,6 +9465,7 @@ export interface Lexicons {
   };
   "tools.ozone.team.listMembers": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "q"?: string;
       "disabled"?: boolean;
@@ -8315,6 +9481,8 @@ export interface Lexicons {
   };
   "tools.ozone.team.updateMember": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "did": string;
       "disabled"?: boolean;
@@ -8324,16 +9492,27 @@ export interface Lexicons {
   };
   "tools.ozone.verification.grantVerifications": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
-      "verifications": Array<LexiconDefs["tools.ozone.verification.grantVerifications"]["verificationInput"]>;
+      "verifications": Array<
+        LexiconDefs["tools.ozone.verification.grantVerifications"][
+          "verificationInput"
+        ]
+      >;
     };
     output: {
-      "verifications": Array<LexiconDefs["tools.ozone.verification.defs"]["verificationView"]>;
-      "failedVerifications": Array<LexiconDefs["tools.ozone.verification.grantVerifications"]["grantError"]>;
+      "verifications": Array<
+        LexiconDefs["tools.ozone.verification.defs"]["verificationView"]
+      >;
+      "failedVerifications": Array<
+        LexiconDefs["tools.ozone.verification.grantVerifications"]["grantError"]
+      >;
     };
   };
   "tools.ozone.verification.listVerifications": {
     type: "query";
+    outputEncoding: "application/json";
     params: {
       "cursor"?: string;
       "limit"?: number;
@@ -8347,18 +9526,26 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "verifications": Array<LexiconDefs["tools.ozone.verification.defs"]["verificationView"]>;
+      "verifications": Array<
+        LexiconDefs["tools.ozone.verification.defs"]["verificationView"]
+      >;
     };
   };
   "tools.ozone.verification.revokeVerifications": {
     type: "procedure";
+    inputEncoding: "application/json";
+    outputEncoding: "application/json";
     input: {
       "uris": Array<string>;
       "revokeReason"?: string;
     };
     output: {
       "revokedVerifications": Array<string>;
-      "failedRevocations": Array<LexiconDefs["tools.ozone.verification.revokeVerifications"]["revokeError"]>;
+      "failedRevocations": Array<
+        LexiconDefs["tools.ozone.verification.revokeVerifications"][
+          "revokeError"
+        ]
+      >;
     };
   };
   "xyz.statusphere.status": {
@@ -8759,552 +9946,2410 @@ export const LEXICON_METHOD_TYPES = {
   "tools.ozone.verification.revokeVerifications": "procedure",
 } as const;
 
+export const LEXICON_METHOD_INPUT_ENCODINGS = {
+  "app.bsky.actor.putPreferences": "application/json",
+  "app.bsky.ageassurance.begin": "application/json",
+  "app.bsky.bookmark.createBookmark": "application/json",
+  "app.bsky.bookmark.deleteBookmark": "application/json",
+  "app.bsky.contact.dismissMatch": "application/json",
+  "app.bsky.contact.importContacts": "application/json",
+  "app.bsky.contact.removeData": "application/json",
+  "app.bsky.contact.sendNotification": "application/json",
+  "app.bsky.contact.startPhoneVerification": "application/json",
+  "app.bsky.contact.verifyPhone": "application/json",
+  "app.bsky.draft.createDraft": "application/json",
+  "app.bsky.draft.deleteDraft": "application/json",
+  "app.bsky.draft.updateDraft": "application/json",
+  "app.bsky.feed.sendInteractions": "application/json",
+  "app.bsky.graph.muteActor": "application/json",
+  "app.bsky.graph.muteActorList": "application/json",
+  "app.bsky.graph.muteThread": "application/json",
+  "app.bsky.graph.unmuteActor": "application/json",
+  "app.bsky.graph.unmuteActorList": "application/json",
+  "app.bsky.graph.unmuteThread": "application/json",
+  "app.bsky.graph.verification.createVerification": "application/json",
+  "app.bsky.graph.verification.deleteVerification": "application/json",
+  "app.bsky.notification.putActivitySubscription": "application/json",
+  "app.bsky.notification.putNotificationPreferences": "application/json",
+  "app.bsky.notification.putPreferences": "application/json",
+  "app.bsky.notification.putPreferencesV2": "application/json",
+  "app.bsky.notification.registerPush": "application/json",
+  "app.bsky.notification.unregisterPush": "application/json",
+  "app.bsky.notification.updateSeen": "application/json",
+  "app.bsky.unspecced.confirmAgeAssurance": "application/json",
+  "app.bsky.unspecced.initAgeAssurance": "application/json",
+  "app.bsky.video.uploadVideo": "video/mp4",
+  "chat.bsky.actor.deleteAccount": "application/json",
+  "chat.bsky.convo.acceptConvo": "application/json",
+  "chat.bsky.convo.addReaction": "application/json",
+  "chat.bsky.convo.deleteMessageForSelf": "application/json",
+  "chat.bsky.convo.leaveConvo": "application/json",
+  "chat.bsky.convo.lockConvo": "application/json",
+  "chat.bsky.convo.muteConvo": "application/json",
+  "chat.bsky.convo.removeReaction": "application/json",
+  "chat.bsky.convo.sendMessage": "application/json",
+  "chat.bsky.convo.sendMessageBatch": "application/json",
+  "chat.bsky.convo.unlockConvo": "application/json",
+  "chat.bsky.convo.unmuteConvo": "application/json",
+  "chat.bsky.convo.updateAllRead": "application/json",
+  "chat.bsky.convo.updateRead": "application/json",
+  "chat.bsky.group.addMembers": "application/json",
+  "chat.bsky.group.addReaction": "application/json",
+  "chat.bsky.group.approveJoinRequest": "application/json",
+  "chat.bsky.group.createGroup": "application/json",
+  "chat.bsky.group.createJoinLink": "application/json",
+  "chat.bsky.group.deleteGroup": "application/json",
+  "chat.bsky.group.deleteMessageForSelf": "application/json",
+  "chat.bsky.group.disableJoinLink": "application/json",
+  "chat.bsky.group.editGroup": "application/json",
+  "chat.bsky.group.editJoinLink": "application/json",
+  "chat.bsky.group.enableJoinLink": "application/json",
+  "chat.bsky.group.leaveGroup": "application/json",
+  "chat.bsky.group.rejectJoinRequest": "application/json",
+  "chat.bsky.group.removeMembers": "application/json",
+  "chat.bsky.group.removeReaction": "application/json",
+  "chat.bsky.group.requestJoin": "application/json",
+  "chat.bsky.group.sendMessage": "application/json",
+  "chat.bsky.moderation.updateActorAccess": "application/json",
+  "com.atproto.admin.deleteAccount": "application/json",
+  "com.atproto.admin.disableAccountInvites": "application/json",
+  "com.atproto.admin.disableInviteCodes": "application/json",
+  "com.atproto.admin.enableAccountInvites": "application/json",
+  "com.atproto.admin.getAccountTakedown": "application/json",
+  "com.atproto.admin.moderateAccount": "application/json",
+  "com.atproto.admin.moderateRecord": "application/json",
+  "com.atproto.admin.repairRepo": "application/json",
+  "com.atproto.admin.resolveReport": "application/json",
+  "com.atproto.admin.runBlobAudit": "application/json",
+  "com.atproto.admin.sendEmail": "application/json",
+  "com.atproto.admin.takeDownAccount": "application/json",
+  "com.atproto.admin.updateAccountEmail": "application/json",
+  "com.atproto.admin.updateAccountHandle": "application/json",
+  "com.atproto.admin.updateAccountPassword": "application/json",
+  "com.atproto.admin.updateAccountSigningKey": "application/json",
+  "com.atproto.admin.updateSubjectStatus": "application/json",
+  "com.atproto.identity.refreshIdentity": "application/json",
+  "com.atproto.identity.requestPlcOperationSignature": "application/json",
+  "com.atproto.identity.signPlcOperation": "application/json",
+  "com.atproto.identity.submitPlcOperation": "application/json",
+  "com.atproto.identity.updateHandle": "application/json",
+  "com.atproto.label.createLabel": "application/json",
+  "com.atproto.moderation.createReport": "application/json",
+  "com.atproto.repo.applyWrites": "application/json",
+  "com.atproto.repo.createRecord": "application/json",
+  "com.atproto.repo.deleteBlob": "application/json",
+  "com.atproto.repo.deleteRecord": "application/json",
+  "com.atproto.repo.importRepo": "application/vnd.ipld.car",
+  "com.atproto.repo.putRecord": "application/json",
+  "com.atproto.repo.updateRecord": "application/json",
+  "com.atproto.repo.uploadBlob": "*/*",
+  "com.atproto.server.activateAccount": "application/json",
+  "com.atproto.server.confirmEmail": "application/json",
+  "com.atproto.server.createAccount": "application/json",
+  "com.atproto.server.createAppPassword": "application/json",
+  "com.atproto.server.createInviteCode": "application/json",
+  "com.atproto.server.createInviteCodes": "application/json",
+  "com.atproto.server.createSession": "application/json",
+  "com.atproto.server.deactivateAccount": "application/json",
+  "com.atproto.server.deleteAccount": "application/json",
+  "com.atproto.server.deleteSession": "application/json",
+  "com.atproto.server.refreshSession": "application/json",
+  "com.atproto.server.requestAccountDelete": "application/json",
+  "com.atproto.server.requestEmailConfirmation": "application/json",
+  "com.atproto.server.requestEmailUpdate": "application/json",
+  "com.atproto.server.requestPasswordReset": "application/json",
+  "com.atproto.server.reserveSigningKey": "application/json",
+  "com.atproto.server.resetPassword": "application/json",
+  "com.atproto.server.revokeAppPassword": "application/json",
+  "com.atproto.server.updateEmail": "application/json",
+  "com.atproto.sync.notifyOfUpdate": "application/json",
+  "com.atproto.sync.requestCrawl": "application/json",
+  "com.atproto.temp.addReservedHandle": "application/json",
+  "com.atproto.temp.requestPhoneVerification": "application/json",
+  "com.atproto.temp.revokeAccountCredentials": "application/json",
+  "com.germnetwork.mailbox.claimAddresses": "application/json",
+  "com.germnetwork.mailbox.deliver": "application/json",
+  "com.germnetwork.rendezvous.deliver": "application/json",
+  "com.germnetwork.rendezvous.register": "application/json",
+  "com.whtwnd.blog.notifyOfNewEntry": "application/json",
+  "place.stream.branding.deleteBlob": "application/json",
+  "place.stream.branding.updateBlob": "application/json",
+  "place.stream.moderation.createBlock": "application/json",
+  "place.stream.moderation.createGate": "application/json",
+  "place.stream.moderation.deleteBlock": "application/json",
+  "place.stream.moderation.deleteGate": "application/json",
+  "place.stream.moderation.updateLivestream": "application/json",
+  "place.stream.multistream.createTarget": "application/json",
+  "place.stream.multistream.deleteTarget": "application/json",
+  "place.stream.multistream.putTarget": "application/json",
+  "place.stream.server.createWebhook": "application/json",
+  "place.stream.server.deleteWebhook": "application/json",
+  "place.stream.server.updateWebhook": "application/json",
+  "social.grain.actor.updateAvatar": "*/*",
+  "social.grain.actor.updateProfile": "application/json",
+  "social.grain.comment.createComment": "application/json",
+  "social.grain.comment.deleteComment": "application/json",
+  "social.grain.favorite.createFavorite": "application/json",
+  "social.grain.favorite.deleteFavorite": "application/json",
+  "social.grain.gallery.applySort": "application/json",
+  "social.grain.gallery.createGallery": "application/json",
+  "social.grain.gallery.createItem": "application/json",
+  "social.grain.gallery.deleteGallery": "application/json",
+  "social.grain.gallery.deleteItem": "application/json",
+  "social.grain.gallery.updateGallery": "application/json",
+  "social.grain.graph.createFollow": "application/json",
+  "social.grain.graph.deleteFollow": "application/json",
+  "social.grain.notification.updateSeen": "application/json",
+  "social.grain.photo.applyAlts": "application/json",
+  "social.grain.photo.createExif": "application/json",
+  "social.grain.photo.deletePhoto": "application/json",
+  "social.grain.photo.uploadPhoto": "*/*",
+  "tools.ozone.communication.createTemplate": "application/json",
+  "tools.ozone.communication.deleteTemplate": "application/json",
+  "tools.ozone.communication.updateTemplate": "application/json",
+  "tools.ozone.moderation.cancelScheduledAction": "application/json",
+  "tools.ozone.moderation.cancelScheduledActions": "application/json",
+  "tools.ozone.moderation.emitEvent": "application/json",
+  "tools.ozone.moderation.listScheduledActions": "application/json",
+  "tools.ozone.moderation.scheduleAction": "application/json",
+  "tools.ozone.safelink.addRule": "application/json",
+  "tools.ozone.safelink.queryEvents": "application/json",
+  "tools.ozone.safelink.queryRules": "application/json",
+  "tools.ozone.safelink.removeRule": "application/json",
+  "tools.ozone.safelink.updateRule": "application/json",
+  "tools.ozone.server.updateConfig": "application/json",
+  "tools.ozone.set.addValues": "application/json",
+  "tools.ozone.set.deleteSet": "application/json",
+  "tools.ozone.set.deleteValues": "application/json",
+  "tools.ozone.set.upsertSet": "application/json",
+  "tools.ozone.setting.removeOptions": "application/json",
+  "tools.ozone.setting.upsertOption": "application/json",
+  "tools.ozone.team.addMember": "application/json",
+  "tools.ozone.team.deleteMember": "application/json",
+  "tools.ozone.team.updateMember": "application/json",
+  "tools.ozone.verification.grantVerifications": "application/json",
+  "tools.ozone.verification.revokeVerifications": "application/json",
+} as const;
+
+export const LEXICON_METHOD_OUTPUT_ENCODINGS = {
+  "app.bsky.actor.getPreferences": "application/json",
+  "app.bsky.actor.getProfile": "application/json",
+  "app.bsky.actor.getProfiles": "application/json",
+  "app.bsky.actor.getSuggestions": "application/json",
+  "app.bsky.actor.putPreferences": "application/json",
+  "app.bsky.actor.searchActors": "application/json",
+  "app.bsky.actor.searchActorsTypeahead": "application/json",
+  "app.bsky.ageassurance.begin": "application/json",
+  "app.bsky.ageassurance.getConfig": "application/json",
+  "app.bsky.ageassurance.getState": "application/json",
+  "app.bsky.bookmark.createBookmark": "application/json",
+  "app.bsky.bookmark.deleteBookmark": "application/json",
+  "app.bsky.bookmark.getBookmarks": "application/json",
+  "app.bsky.contact.dismissMatch": "application/json",
+  "app.bsky.contact.getMatches": "application/json",
+  "app.bsky.contact.getSyncStatus": "application/json",
+  "app.bsky.contact.importContacts": "application/json",
+  "app.bsky.contact.removeData": "application/json",
+  "app.bsky.contact.sendNotification": "application/json",
+  "app.bsky.contact.startPhoneVerification": "application/json",
+  "app.bsky.contact.verifyPhone": "application/json",
+  "app.bsky.draft.createDraft": "application/json",
+  "app.bsky.draft.deleteDraft": "application/json",
+  "app.bsky.draft.getDrafts": "application/json",
+  "app.bsky.draft.updateDraft": "application/json",
+  "app.bsky.feed.describeFeedGenerator": "application/json",
+  "app.bsky.feed.getActorFeeds": "application/json",
+  "app.bsky.feed.getActorLikes": "application/json",
+  "app.bsky.feed.getAuthorFeed": "application/json",
+  "app.bsky.feed.getFeed": "application/json",
+  "app.bsky.feed.getFeedGenerator": "application/json",
+  "app.bsky.feed.getFeedGenerators": "application/json",
+  "app.bsky.feed.getFeedSkeleton": "application/json",
+  "app.bsky.feed.getLikes": "application/json",
+  "app.bsky.feed.getListFeed": "application/json",
+  "app.bsky.feed.getPosts": "application/json",
+  "app.bsky.feed.getPostThread": "application/json",
+  "app.bsky.feed.getQuotes": "application/json",
+  "app.bsky.feed.getRepostedBy": "application/json",
+  "app.bsky.feed.getSuggestedFeeds": "application/json",
+  "app.bsky.feed.getTimeline": "application/json",
+  "app.bsky.feed.searchPosts": "application/json",
+  "app.bsky.feed.sendInteractions": "application/json",
+  "app.bsky.graph.getActorStarterPacks": "application/json",
+  "app.bsky.graph.getBlocks": "application/json",
+  "app.bsky.graph.getFollowers": "application/json",
+  "app.bsky.graph.getFollows": "application/json",
+  "app.bsky.graph.getKnownFollowers": "application/json",
+  "app.bsky.graph.getList": "application/json",
+  "app.bsky.graph.getListBlocks": "application/json",
+  "app.bsky.graph.getListMutes": "application/json",
+  "app.bsky.graph.getLists": "application/json",
+  "app.bsky.graph.getListsWithMembership": "application/json",
+  "app.bsky.graph.getMutes": "application/json",
+  "app.bsky.graph.getRelationships": "application/json",
+  "app.bsky.graph.getStarterPack": "application/json",
+  "app.bsky.graph.getStarterPacks": "application/json",
+  "app.bsky.graph.getStarterPacksWithMembership": "application/json",
+  "app.bsky.graph.getSuggestedFollowsByActor": "application/json",
+  "app.bsky.graph.muteActor": "application/json",
+  "app.bsky.graph.muteActorList": "application/json",
+  "app.bsky.graph.muteThread": "application/json",
+  "app.bsky.graph.searchStarterPacks": "application/json",
+  "app.bsky.graph.unmuteActor": "application/json",
+  "app.bsky.graph.unmuteActorList": "application/json",
+  "app.bsky.graph.unmuteThread": "application/json",
+  "app.bsky.graph.verification.createVerification": "application/json",
+  "app.bsky.graph.verification.deleteVerification": "application/json",
+  "app.bsky.labeler.getServices": "application/json",
+  "app.bsky.notification.getPreferences": "application/json",
+  "app.bsky.notification.getUnreadCount": "application/json",
+  "app.bsky.notification.listActivitySubscriptions": "application/json",
+  "app.bsky.notification.listNotifications": "application/json",
+  "app.bsky.notification.putActivitySubscription": "application/json",
+  "app.bsky.notification.putNotificationPreferences": "application/json",
+  "app.bsky.notification.putPreferences": "application/json",
+  "app.bsky.notification.putPreferencesV2": "application/json",
+  "app.bsky.notification.registerPush": "application/json",
+  "app.bsky.notification.unregisterPush": "application/json",
+  "app.bsky.notification.updateSeen": "application/json",
+  "app.bsky.unspecced.confirmAgeAssurance": "application/json",
+  "app.bsky.unspecced.getAgeAssuranceState": "application/json",
+  "app.bsky.unspecced.getConfig": "application/json",
+  "app.bsky.unspecced.getOnboardingSuggestedStarterPacks": "application/json",
+  "app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton":
+    "application/json",
+  "app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton": "application/json",
+  "app.bsky.unspecced.getPopularFeedGenerators": "application/json",
+  "app.bsky.unspecced.getPostThreadOtherV2": "application/json",
+  "app.bsky.unspecced.getPostThreadV2": "application/json",
+  "app.bsky.unspecced.getSuggestedFeeds": "application/json",
+  "app.bsky.unspecced.getSuggestedFeedsSkeleton": "application/json",
+  "app.bsky.unspecced.getSuggestedOnboardingUsers": "application/json",
+  "app.bsky.unspecced.getSuggestedStarterPacks": "application/json",
+  "app.bsky.unspecced.getSuggestedStarterPacksSkeleton": "application/json",
+  "app.bsky.unspecced.getSuggestedUsers": "application/json",
+  "app.bsky.unspecced.getSuggestedUsersForDiscover": "application/json",
+  "app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton": "application/json",
+  "app.bsky.unspecced.getSuggestedUsersForExplore": "application/json",
+  "app.bsky.unspecced.getSuggestedUsersForExploreSkeleton": "application/json",
+  "app.bsky.unspecced.getSuggestedUsersForSeeMore": "application/json",
+  "app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton": "application/json",
+  "app.bsky.unspecced.getSuggestedUsersSkeleton": "application/json",
+  "app.bsky.unspecced.getSuggestionsSkeleton": "application/json",
+  "app.bsky.unspecced.getTaggedSuggestions": "application/json",
+  "app.bsky.unspecced.getTrendingTopics": "application/json",
+  "app.bsky.unspecced.getTrends": "application/json",
+  "app.bsky.unspecced.getTrendsSkeleton": "application/json",
+  "app.bsky.unspecced.initAgeAssurance": "application/json",
+  "app.bsky.unspecced.searchActorsSkeleton": "application/json",
+  "app.bsky.unspecced.searchPostsSkeleton": "application/json",
+  "app.bsky.unspecced.searchStarterPacksSkeleton": "application/json",
+  "app.bsky.video.getJobStatus": "application/json",
+  "app.bsky.video.getUploadLimits": "application/json",
+  "app.bsky.video.uploadVideo": "application/json",
+  "chat.bsky.actor.deleteAccount": "application/json",
+  "chat.bsky.actor.exportAccountData": "application/jsonl",
+  "chat.bsky.convo.acceptConvo": "application/json",
+  "chat.bsky.convo.addReaction": "application/json",
+  "chat.bsky.convo.deleteMessageForSelf": "application/json",
+  "chat.bsky.convo.getConvo": "application/json",
+  "chat.bsky.convo.getConvoAvailability": "application/json",
+  "chat.bsky.convo.getConvoForMembers": "application/json",
+  "chat.bsky.convo.getLog": "application/json",
+  "chat.bsky.convo.getMessages": "application/json",
+  "chat.bsky.convo.leaveConvo": "application/json",
+  "chat.bsky.convo.listConvoRequests": "application/json",
+  "chat.bsky.convo.listConvos": "application/json",
+  "chat.bsky.convo.lockConvo": "application/json",
+  "chat.bsky.convo.muteConvo": "application/json",
+  "chat.bsky.convo.removeReaction": "application/json",
+  "chat.bsky.convo.sendMessage": "application/json",
+  "chat.bsky.convo.sendMessageBatch": "application/json",
+  "chat.bsky.convo.unlockConvo": "application/json",
+  "chat.bsky.convo.unmuteConvo": "application/json",
+  "chat.bsky.convo.updateAllRead": "application/json",
+  "chat.bsky.convo.updateRead": "application/json",
+  "chat.bsky.group.addMembers": "application/json",
+  "chat.bsky.group.addReaction": "application/json",
+  "chat.bsky.group.approveJoinRequest": "application/json",
+  "chat.bsky.group.createGroup": "application/json",
+  "chat.bsky.group.createJoinLink": "application/json",
+  "chat.bsky.group.deleteGroup": "application/json",
+  "chat.bsky.group.deleteMessageForSelf": "application/json",
+  "chat.bsky.group.disableJoinLink": "application/json",
+  "chat.bsky.group.editGroup": "application/json",
+  "chat.bsky.group.editJoinLink": "application/json",
+  "chat.bsky.group.enableJoinLink": "application/json",
+  "chat.bsky.group.getGroupPublicInfo": "application/json",
+  "chat.bsky.group.getMessages": "application/json",
+  "chat.bsky.group.leaveGroup": "application/json",
+  "chat.bsky.group.listGroups": "application/json",
+  "chat.bsky.group.listInviteLinks": "application/json",
+  "chat.bsky.group.listJoinRequests": "application/json",
+  "chat.bsky.group.listMembers": "application/json",
+  "chat.bsky.group.rejectJoinRequest": "application/json",
+  "chat.bsky.group.removeMembers": "application/json",
+  "chat.bsky.group.removeReaction": "application/json",
+  "chat.bsky.group.requestJoin": "application/json",
+  "chat.bsky.group.sendMessage": "application/json",
+  "chat.bsky.moderation.getActorMetadata": "application/json",
+  "chat.bsky.moderation.getMessageContext": "application/json",
+  "chat.bsky.moderation.updateActorAccess": "application/json",
+  "com.atproto.admin.deleteAccount": "application/json",
+  "com.atproto.admin.disableAccountInvites": "application/json",
+  "com.atproto.admin.disableInviteCodes": "application/json",
+  "com.atproto.admin.enableAccountInvites": "application/json",
+  "com.atproto.admin.getAccountInfo": "application/json",
+  "com.atproto.admin.getAccountInfos": "application/json",
+  "com.atproto.admin.getAccountTakedown": "application/json",
+  "com.atproto.admin.getAccountUsage": "application/json",
+  "com.atproto.admin.getBlobAuditStatus": "application/json",
+  "com.atproto.admin.getInviteCodes": "application/json",
+  "com.atproto.admin.getModerationReports": "application/json",
+  "com.atproto.admin.getServerStats": "application/json",
+  "com.atproto.admin.getSubjectStatus": "application/json",
+  "com.atproto.admin.moderateAccount": "application/json",
+  "com.atproto.admin.moderateRecord": "application/json",
+  "com.atproto.admin.queryAuditLog": "application/json",
+  "com.atproto.admin.repairRepo": "application/json",
+  "com.atproto.admin.resolveReport": "application/json",
+  "com.atproto.admin.runBlobAudit": "application/json",
+  "com.atproto.admin.searchAccounts": "application/json",
+  "com.atproto.admin.sendEmail": "application/json",
+  "com.atproto.admin.takeDownAccount": "application/json",
+  "com.atproto.admin.updateAccountEmail": "application/json",
+  "com.atproto.admin.updateAccountHandle": "application/json",
+  "com.atproto.admin.updateAccountPassword": "application/json",
+  "com.atproto.admin.updateAccountSigningKey": "application/json",
+  "com.atproto.admin.updateSubjectStatus": "application/json",
+  "com.atproto.identity.getRecommendedDidCredentials": "application/json",
+  "com.atproto.identity.refreshIdentity": "application/json",
+  "com.atproto.identity.requestPlcOperationSignature": "application/json",
+  "com.atproto.identity.resolveDid": "application/json",
+  "com.atproto.identity.resolveHandle": "application/json",
+  "com.atproto.identity.resolveIdentity": "application/json",
+  "com.atproto.identity.signPlcOperation": "application/json",
+  "com.atproto.identity.submitPlcOperation": "application/json",
+  "com.atproto.identity.updateHandle": "application/json",
+  "com.atproto.label.createLabel": "application/json",
+  "com.atproto.label.getLabels": "application/json",
+  "com.atproto.label.queryLabels": "application/json",
+  "com.atproto.lexicon.resolveLexicon": "application/json",
+  "com.atproto.moderation.createReport": "application/json",
+  "com.atproto.repo.applyWrites": "application/json",
+  "com.atproto.repo.createRecord": "application/json",
+  "com.atproto.repo.deleteBlob": "application/json",
+  "com.atproto.repo.deleteRecord": "application/json",
+  "com.atproto.repo.describeRepo": "application/json",
+  "com.atproto.repo.getBlob": "application/json",
+  "com.atproto.repo.getRecord": "application/json",
+  "com.atproto.repo.importRepo": "application/json",
+  "com.atproto.repo.listMissingBlobs": "application/json",
+  "com.atproto.repo.listRecords": "application/json",
+  "com.atproto.repo.putRecord": "application/json",
+  "com.atproto.repo.updateRecord": "application/json",
+  "com.atproto.repo.uploadBlob": "application/json",
+  "com.atproto.server.activateAccount": "application/json",
+  "com.atproto.server.checkAccountStatus": "application/json",
+  "com.atproto.server.confirmEmail": "application/json",
+  "com.atproto.server.createAccount": "application/json",
+  "com.atproto.server.createAppPassword": "application/json",
+  "com.atproto.server.createInviteCode": "application/json",
+  "com.atproto.server.createInviteCodes": "application/json",
+  "com.atproto.server.createSession": "application/json",
+  "com.atproto.server.deactivateAccount": "application/json",
+  "com.atproto.server.deleteAccount": "application/json",
+  "com.atproto.server.deleteSession": "application/json",
+  "com.atproto.server.describeServer": "application/json",
+  "com.atproto.server.getAccount": "application/json",
+  "com.atproto.server.getAccountInviteCodes": "application/json",
+  "com.atproto.server.getServiceAuth": "application/json",
+  "com.atproto.server.getSession": "application/json",
+  "com.atproto.server.listAppPasswords": "application/json",
+  "com.atproto.server.refreshSession": "application/json",
+  "com.atproto.server.requestAccountDelete": "application/json",
+  "com.atproto.server.requestEmailConfirmation": "application/json",
+  "com.atproto.server.requestEmailUpdate": "application/json",
+  "com.atproto.server.requestPasswordReset": "application/json",
+  "com.atproto.server.reserveSigningKey": "application/json",
+  "com.atproto.server.resetPassword": "application/json",
+  "com.atproto.server.revokeAppPassword": "application/json",
+  "com.atproto.server.updateEmail": "application/json",
+  "com.atproto.sync.getBlob": "*/*",
+  "com.atproto.sync.getBlocks": "application/vnd.ipld.car",
+  "com.atproto.sync.getCheckout": "application/vnd.ipld.car",
+  "com.atproto.sync.getHead": "application/json",
+  "com.atproto.sync.getHostStatus": "application/json",
+  "com.atproto.sync.getLatestCommit": "application/json",
+  "com.atproto.sync.getRecord": "application/vnd.ipld.car",
+  "com.atproto.sync.getRepo": "application/vnd.ipld.car",
+  "com.atproto.sync.getRepoStatus": "application/json",
+  "com.atproto.sync.listBlobs": "application/json",
+  "com.atproto.sync.listHosts": "application/json",
+  "com.atproto.sync.listRepos": "application/json",
+  "com.atproto.sync.listReposByCollection": "application/json",
+  "com.atproto.sync.notifyOfUpdate": "application/json",
+  "com.atproto.sync.requestCrawl": "application/json",
+  "com.atproto.temp.addReservedHandle": "application/json",
+  "com.atproto.temp.checkHandleAvailability": "application/json",
+  "com.atproto.temp.checkSignupQueue": "application/json",
+  "com.atproto.temp.dereferenceScope": "application/json",
+  "com.atproto.temp.fetchLabels": "application/json",
+  "com.atproto.temp.requestPhoneVerification": "application/json",
+  "com.atproto.temp.revokeAccountCredentials": "application/json",
+  "com.germnetwork.identity.getAnchorKey": "application/json",
+  "com.germnetwork.mailbox.claimAddresses": "application/json",
+  "com.germnetwork.mailbox.deliver": "application/json",
+  "com.germnetwork.mailbox.poll": "application/json",
+  "com.germnetwork.rendezvous.deliver": "application/json",
+  "com.germnetwork.rendezvous.register": "application/json",
+  "com.shinolabs.pinksea.getAuthorFeed": "application/json",
+  "com.shinolabs.pinksea.getAuthorReplies": "application/json",
+  "com.shinolabs.pinksea.getHandleFromDid": "application/json",
+  "com.shinolabs.pinksea.getIdentity": "application/json",
+  "com.shinolabs.pinksea.getOekaki": "application/json",
+  "com.shinolabs.pinksea.getParentForReply": "application/json",
+  "com.shinolabs.pinksea.getRecent": "application/json",
+  "com.shinolabs.pinksea.getTagFeed": "application/json",
+  "com.whtwnd.blog.getAuthorPosts": "application/json",
+  "com.whtwnd.blog.getEntryMetadataByName": "application/json",
+  "com.whtwnd.blog.getMentionsByEntry": "application/json",
+  "com.whtwnd.blog.notifyOfNewEntry": "application/json",
+  "place.stream.branding.deleteBlob": "application/json",
+  "place.stream.branding.getBlob": "*/*",
+  "place.stream.branding.getBranding": "application/json",
+  "place.stream.branding.updateBlob": "application/json",
+  "place.stream.broadcast.getBroadcaster": "application/json",
+  "place.stream.graph.getFollowingUser": "application/json",
+  "place.stream.live.getLiveUsers": "application/json",
+  "place.stream.live.getProfileCard": "*/*",
+  "place.stream.live.getRecommendations": "application/json",
+  "place.stream.live.getSegments": "application/json",
+  "place.stream.live.searchActorsTypeahead": "application/json",
+  "place.stream.moderation.createBlock": "application/json",
+  "place.stream.moderation.createGate": "application/json",
+  "place.stream.moderation.deleteBlock": "application/json",
+  "place.stream.moderation.deleteGate": "application/json",
+  "place.stream.moderation.updateLivestream": "application/json",
+  "place.stream.multistream.createTarget": "application/json",
+  "place.stream.multistream.deleteTarget": "application/json",
+  "place.stream.multistream.listTargets": "application/json",
+  "place.stream.multistream.putTarget": "application/json",
+  "place.stream.server.createWebhook": "application/json",
+  "place.stream.server.deleteWebhook": "application/json",
+  "place.stream.server.getServerTime": "application/json",
+  "place.stream.server.getWebhook": "application/json",
+  "place.stream.server.listWebhooks": "application/json",
+  "place.stream.server.updateWebhook": "application/json",
+  "social.grain.actor.getActorFavs": "application/json",
+  "social.grain.actor.getProfile": "application/json",
+  "social.grain.actor.searchActors": "application/json",
+  "social.grain.actor.updateAvatar": "application/json",
+  "social.grain.actor.updateProfile": "application/json",
+  "social.grain.comment.createComment": "application/json",
+  "social.grain.comment.deleteComment": "application/json",
+  "social.grain.darkroom.getGalleryComposite": "*/*",
+  "social.grain.favorite.createFavorite": "application/json",
+  "social.grain.favorite.deleteFavorite": "application/json",
+  "social.grain.feed.getTimeline": "application/json",
+  "social.grain.gallery.applySort": "application/json",
+  "social.grain.gallery.createGallery": "application/json",
+  "social.grain.gallery.createItem": "application/json",
+  "social.grain.gallery.deleteGallery": "application/json",
+  "social.grain.gallery.deleteItem": "application/json",
+  "social.grain.gallery.getActorGalleries": "application/json",
+  "social.grain.gallery.getGallery": "application/json",
+  "social.grain.gallery.getGalleryThread": "application/json",
+  "social.grain.gallery.updateGallery": "application/json",
+  "social.grain.graph.createFollow": "application/json",
+  "social.grain.graph.deleteFollow": "application/json",
+  "social.grain.graph.getFollowers": "application/json",
+  "social.grain.graph.getFollows": "application/json",
+  "social.grain.notification.getNotifications": "application/json",
+  "social.grain.notification.updateSeen": "application/json",
+  "social.grain.photo.applyAlts": "application/json",
+  "social.grain.photo.createExif": "application/json",
+  "social.grain.photo.deletePhoto": "application/json",
+  "social.grain.photo.getActorPhotos": "application/json",
+  "social.grain.photo.uploadPhoto": "application/json",
+  "tools.garazyk.account.getUsage": "application/json",
+  "tools.garazyk.sync.getRepoFiltered": "application/vnd.ipld.car",
+  "tools.ozone.communication.createTemplate": "application/json",
+  "tools.ozone.communication.deleteTemplate": "application/json",
+  "tools.ozone.communication.listTemplates": "application/json",
+  "tools.ozone.communication.updateTemplate": "application/json",
+  "tools.ozone.hosting.getAccountHistory": "application/json",
+  "tools.ozone.moderation.cancelScheduledAction": "application/json",
+  "tools.ozone.moderation.cancelScheduledActions": "application/json",
+  "tools.ozone.moderation.emitEvent": "application/json",
+  "tools.ozone.moderation.getAccountTimeline": "application/json",
+  "tools.ozone.moderation.getEvent": "application/json",
+  "tools.ozone.moderation.getRecord": "application/json",
+  "tools.ozone.moderation.getRecords": "application/json",
+  "tools.ozone.moderation.getRepo": "application/json",
+  "tools.ozone.moderation.getReporterStats": "application/json",
+  "tools.ozone.moderation.getRepos": "application/json",
+  "tools.ozone.moderation.getSubjects": "application/json",
+  "tools.ozone.moderation.getSubjectStatus": "application/json",
+  "tools.ozone.moderation.listScheduledActions": "application/json",
+  "tools.ozone.moderation.queryEvents": "application/json",
+  "tools.ozone.moderation.queryStatuses": "application/json",
+  "tools.ozone.moderation.scheduleAction": "application/json",
+  "tools.ozone.moderation.searchRepos": "application/json",
+  "tools.ozone.safelink.addRule": "application/json",
+  "tools.ozone.safelink.queryEvents": "application/json",
+  "tools.ozone.safelink.queryRules": "application/json",
+  "tools.ozone.safelink.removeRule": "application/json",
+  "tools.ozone.safelink.updateRule": "application/json",
+  "tools.ozone.server.getConfig": "application/json",
+  "tools.ozone.server.updateConfig": "application/json",
+  "tools.ozone.set.addValues": "application/json",
+  "tools.ozone.set.deleteSet": "application/json",
+  "tools.ozone.set.deleteValues": "application/json",
+  "tools.ozone.set.getValues": "application/json",
+  "tools.ozone.set.querySets": "application/json",
+  "tools.ozone.set.upsertSet": "application/json",
+  "tools.ozone.setting.listOptions": "application/json",
+  "tools.ozone.setting.removeOptions": "application/json",
+  "tools.ozone.setting.upsertOption": "application/json",
+  "tools.ozone.signature.findCorrelation": "application/json",
+  "tools.ozone.signature.findRelatedAccounts": "application/json",
+  "tools.ozone.signature.searchAccounts": "application/json",
+  "tools.ozone.team.addMember": "application/json",
+  "tools.ozone.team.deleteMember": "application/json",
+  "tools.ozone.team.listMembers": "application/json",
+  "tools.ozone.team.updateMember": "application/json",
+  "tools.ozone.verification.grantVerifications": "application/json",
+  "tools.ozone.verification.listVerifications": "application/json",
+  "tools.ozone.verification.revokeVerifications": "application/json",
+} as const;
 
 export type LexiconIds = keyof Lexicons;
-export type LexiconQueryIds = { [K in LexiconIds]: Lexicons[K] extends { type: "query" } ? K : never }[LexiconIds];
-export type LexiconProcedureIds = { [K in LexiconIds]: Lexicons[K] extends { type: "procedure" } ? K : never }[LexiconIds];
+export type LexiconQueryIds = {
+  [K in LexiconIds]: Lexicons[K] extends { type: "query" } ? K : never;
+}[LexiconIds];
+export type LexiconProcedureIds = {
+  [K in LexiconIds]: Lexicons[K] extends { type: "procedure" } ? K : never;
+}[LexiconIds];
 
-export type QueryParams<K extends LexiconQueryIds> = Lexicons[K] extends { params: infer P } ? P : never;
-export type QueryOutput<K extends LexiconQueryIds> = Lexicons[K] extends { output: infer O } ? O : never;
-export type ProcedureInput<K extends LexiconProcedureIds> = Lexicons[K] extends { input: infer I } ? I : never;
-export type ProcedureOutput<K extends LexiconProcedureIds> = Lexicons[K] extends { output: infer O } ? O : never;
+export type QueryParams<K extends LexiconQueryIds> = Lexicons[K] extends
+  { params: infer P } ? P : never;
+export type QueryOutput<K extends LexiconQueryIds> = Lexicons[K] extends
+  { output: infer O } ? O : never;
+export type ProcedureInput<K extends LexiconProcedureIds> = Lexicons[K] extends
+  { input: infer I } ? I : never;
+export type ProcedureOutput<K extends LexiconProcedureIds> = Lexicons[K] extends
+  { output: infer O } ? O : never;
+export type QueryOutputEncoding<K extends LexiconQueryIds> = Lexicons[K] extends
+  { outputEncoding: infer E } ? E : never;
+export type ProcedureInputEncoding<K extends LexiconProcedureIds> =
+  Lexicons[K] extends { inputEncoding: infer E } ? E : never;
+export type ProcedureOutputEncoding<K extends LexiconProcedureIds> =
+  Lexicons[K] extends { outputEncoding: infer E } ? E : never;
 
 /** Strongly typed nested API client. */
 export interface GeneratedClient {
   "app": {
     "bsky": {
       "actor": {
-        "getPreferences"(params?: QueryParams<"app.bsky.actor.getPreferences">, token?: string): Promise<QueryOutput<"app.bsky.actor.getPreferences">>;
-        "getProfile"(params?: QueryParams<"app.bsky.actor.getProfile">, token?: string): Promise<QueryOutput<"app.bsky.actor.getProfile">>;
-        "getProfiles"(params?: QueryParams<"app.bsky.actor.getProfiles">, token?: string): Promise<QueryOutput<"app.bsky.actor.getProfiles">>;
-        "getSuggestions"(params?: QueryParams<"app.bsky.actor.getSuggestions">, token?: string): Promise<QueryOutput<"app.bsky.actor.getSuggestions">>;
-        "putPreferences"(input?: ProcedureInput<"app.bsky.actor.putPreferences">, token?: string): Promise<ProcedureOutput<"app.bsky.actor.putPreferences">>;
-        "searchActors"(params?: QueryParams<"app.bsky.actor.searchActors">, token?: string): Promise<QueryOutput<"app.bsky.actor.searchActors">>;
-        "searchActorsTypeahead"(params?: QueryParams<"app.bsky.actor.searchActorsTypeahead">, token?: string): Promise<QueryOutput<"app.bsky.actor.searchActorsTypeahead">>;
+        "getPreferences"(
+          params?: QueryParams<"app.bsky.actor.getPreferences">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.actor.getPreferences">>;
+        "getProfile"(
+          params?: QueryParams<"app.bsky.actor.getProfile">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.actor.getProfile">>;
+        "getProfiles"(
+          params?: QueryParams<"app.bsky.actor.getProfiles">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.actor.getProfiles">>;
+        "getSuggestions"(
+          params?: QueryParams<"app.bsky.actor.getSuggestions">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.actor.getSuggestions">>;
+        "putPreferences"(
+          input?: ProcedureInput<"app.bsky.actor.putPreferences">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.actor.putPreferences">>;
+        "searchActors"(
+          params?: QueryParams<"app.bsky.actor.searchActors">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.actor.searchActors">>;
+        "searchActorsTypeahead"(
+          params?: QueryParams<"app.bsky.actor.searchActorsTypeahead">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.actor.searchActorsTypeahead">>;
       };
       "ageassurance": {
-        "begin"(input?: ProcedureInput<"app.bsky.ageassurance.begin">, token?: string): Promise<ProcedureOutput<"app.bsky.ageassurance.begin">>;
-        "getConfig"(params?: QueryParams<"app.bsky.ageassurance.getConfig">, token?: string): Promise<QueryOutput<"app.bsky.ageassurance.getConfig">>;
-        "getState"(params?: QueryParams<"app.bsky.ageassurance.getState">, token?: string): Promise<QueryOutput<"app.bsky.ageassurance.getState">>;
+        "begin"(
+          input?: ProcedureInput<"app.bsky.ageassurance.begin">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.ageassurance.begin">>;
+        "getConfig"(
+          params?: QueryParams<"app.bsky.ageassurance.getConfig">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.ageassurance.getConfig">>;
+        "getState"(
+          params?: QueryParams<"app.bsky.ageassurance.getState">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.ageassurance.getState">>;
       };
       "bookmark": {
-        "createBookmark"(input?: ProcedureInput<"app.bsky.bookmark.createBookmark">, token?: string): Promise<ProcedureOutput<"app.bsky.bookmark.createBookmark">>;
-        "deleteBookmark"(input?: ProcedureInput<"app.bsky.bookmark.deleteBookmark">, token?: string): Promise<ProcedureOutput<"app.bsky.bookmark.deleteBookmark">>;
-        "getBookmarks"(params?: QueryParams<"app.bsky.bookmark.getBookmarks">, token?: string): Promise<QueryOutput<"app.bsky.bookmark.getBookmarks">>;
+        "createBookmark"(
+          input?: ProcedureInput<"app.bsky.bookmark.createBookmark">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.bookmark.createBookmark">>;
+        "deleteBookmark"(
+          input?: ProcedureInput<"app.bsky.bookmark.deleteBookmark">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.bookmark.deleteBookmark">>;
+        "getBookmarks"(
+          params?: QueryParams<"app.bsky.bookmark.getBookmarks">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.bookmark.getBookmarks">>;
       };
       "contact": {
-        "dismissMatch"(input?: ProcedureInput<"app.bsky.contact.dismissMatch">, token?: string): Promise<ProcedureOutput<"app.bsky.contact.dismissMatch">>;
-        "getMatches"(params?: QueryParams<"app.bsky.contact.getMatches">, token?: string): Promise<QueryOutput<"app.bsky.contact.getMatches">>;
-        "getSyncStatus"(params?: QueryParams<"app.bsky.contact.getSyncStatus">, token?: string): Promise<QueryOutput<"app.bsky.contact.getSyncStatus">>;
-        "importContacts"(input?: ProcedureInput<"app.bsky.contact.importContacts">, token?: string): Promise<ProcedureOutput<"app.bsky.contact.importContacts">>;
-        "removeData"(input?: ProcedureInput<"app.bsky.contact.removeData">, token?: string): Promise<ProcedureOutput<"app.bsky.contact.removeData">>;
-        "sendNotification"(input?: ProcedureInput<"app.bsky.contact.sendNotification">, token?: string): Promise<ProcedureOutput<"app.bsky.contact.sendNotification">>;
-        "startPhoneVerification"(input?: ProcedureInput<"app.bsky.contact.startPhoneVerification">, token?: string): Promise<ProcedureOutput<"app.bsky.contact.startPhoneVerification">>;
-        "verifyPhone"(input?: ProcedureInput<"app.bsky.contact.verifyPhone">, token?: string): Promise<ProcedureOutput<"app.bsky.contact.verifyPhone">>;
+        "dismissMatch"(
+          input?: ProcedureInput<"app.bsky.contact.dismissMatch">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.contact.dismissMatch">>;
+        "getMatches"(
+          params?: QueryParams<"app.bsky.contact.getMatches">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.contact.getMatches">>;
+        "getSyncStatus"(
+          params?: QueryParams<"app.bsky.contact.getSyncStatus">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.contact.getSyncStatus">>;
+        "importContacts"(
+          input?: ProcedureInput<"app.bsky.contact.importContacts">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.contact.importContacts">>;
+        "removeData"(
+          input?: ProcedureInput<"app.bsky.contact.removeData">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.contact.removeData">>;
+        "sendNotification"(
+          input?: ProcedureInput<"app.bsky.contact.sendNotification">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.contact.sendNotification">>;
+        "startPhoneVerification"(
+          input?: ProcedureInput<"app.bsky.contact.startPhoneVerification">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.contact.startPhoneVerification">>;
+        "verifyPhone"(
+          input?: ProcedureInput<"app.bsky.contact.verifyPhone">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.contact.verifyPhone">>;
       };
       "draft": {
-        "createDraft"(input?: ProcedureInput<"app.bsky.draft.createDraft">, token?: string): Promise<ProcedureOutput<"app.bsky.draft.createDraft">>;
-        "deleteDraft"(input?: ProcedureInput<"app.bsky.draft.deleteDraft">, token?: string): Promise<ProcedureOutput<"app.bsky.draft.deleteDraft">>;
-        "getDrafts"(params?: QueryParams<"app.bsky.draft.getDrafts">, token?: string): Promise<QueryOutput<"app.bsky.draft.getDrafts">>;
-        "updateDraft"(input?: ProcedureInput<"app.bsky.draft.updateDraft">, token?: string): Promise<ProcedureOutput<"app.bsky.draft.updateDraft">>;
+        "createDraft"(
+          input?: ProcedureInput<"app.bsky.draft.createDraft">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.draft.createDraft">>;
+        "deleteDraft"(
+          input?: ProcedureInput<"app.bsky.draft.deleteDraft">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.draft.deleteDraft">>;
+        "getDrafts"(
+          params?: QueryParams<"app.bsky.draft.getDrafts">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.draft.getDrafts">>;
+        "updateDraft"(
+          input?: ProcedureInput<"app.bsky.draft.updateDraft">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.draft.updateDraft">>;
       };
       "feed": {
-        "describeFeedGenerator"(params?: QueryParams<"app.bsky.feed.describeFeedGenerator">, token?: string): Promise<QueryOutput<"app.bsky.feed.describeFeedGenerator">>;
-        "getActorFeeds"(params?: QueryParams<"app.bsky.feed.getActorFeeds">, token?: string): Promise<QueryOutput<"app.bsky.feed.getActorFeeds">>;
-        "getActorLikes"(params?: QueryParams<"app.bsky.feed.getActorLikes">, token?: string): Promise<QueryOutput<"app.bsky.feed.getActorLikes">>;
-        "getAuthorFeed"(params?: QueryParams<"app.bsky.feed.getAuthorFeed">, token?: string): Promise<QueryOutput<"app.bsky.feed.getAuthorFeed">>;
-        "getFeed"(params?: QueryParams<"app.bsky.feed.getFeed">, token?: string): Promise<QueryOutput<"app.bsky.feed.getFeed">>;
-        "getFeedGenerator"(params?: QueryParams<"app.bsky.feed.getFeedGenerator">, token?: string): Promise<QueryOutput<"app.bsky.feed.getFeedGenerator">>;
-        "getFeedGenerators"(params?: QueryParams<"app.bsky.feed.getFeedGenerators">, token?: string): Promise<QueryOutput<"app.bsky.feed.getFeedGenerators">>;
-        "getFeedSkeleton"(params?: QueryParams<"app.bsky.feed.getFeedSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.feed.getFeedSkeleton">>;
-        "getLikes"(params?: QueryParams<"app.bsky.feed.getLikes">, token?: string): Promise<QueryOutput<"app.bsky.feed.getLikes">>;
-        "getListFeed"(params?: QueryParams<"app.bsky.feed.getListFeed">, token?: string): Promise<QueryOutput<"app.bsky.feed.getListFeed">>;
-        "getPosts"(params?: QueryParams<"app.bsky.feed.getPosts">, token?: string): Promise<QueryOutput<"app.bsky.feed.getPosts">>;
-        "getPostThread"(params?: QueryParams<"app.bsky.feed.getPostThread">, token?: string): Promise<QueryOutput<"app.bsky.feed.getPostThread">>;
-        "getQuotes"(params?: QueryParams<"app.bsky.feed.getQuotes">, token?: string): Promise<QueryOutput<"app.bsky.feed.getQuotes">>;
-        "getRepostedBy"(params?: QueryParams<"app.bsky.feed.getRepostedBy">, token?: string): Promise<QueryOutput<"app.bsky.feed.getRepostedBy">>;
-        "getSuggestedFeeds"(params?: QueryParams<"app.bsky.feed.getSuggestedFeeds">, token?: string): Promise<QueryOutput<"app.bsky.feed.getSuggestedFeeds">>;
-        "getTimeline"(params?: QueryParams<"app.bsky.feed.getTimeline">, token?: string): Promise<QueryOutput<"app.bsky.feed.getTimeline">>;
-        "searchPosts"(params?: QueryParams<"app.bsky.feed.searchPosts">, token?: string): Promise<QueryOutput<"app.bsky.feed.searchPosts">>;
-        "sendInteractions"(input?: ProcedureInput<"app.bsky.feed.sendInteractions">, token?: string): Promise<ProcedureOutput<"app.bsky.feed.sendInteractions">>;
+        "describeFeedGenerator"(
+          params?: QueryParams<"app.bsky.feed.describeFeedGenerator">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.feed.describeFeedGenerator">>;
+        "getActorFeeds"(
+          params?: QueryParams<"app.bsky.feed.getActorFeeds">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.feed.getActorFeeds">>;
+        "getActorLikes"(
+          params?: QueryParams<"app.bsky.feed.getActorLikes">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.feed.getActorLikes">>;
+        "getAuthorFeed"(
+          params?: QueryParams<"app.bsky.feed.getAuthorFeed">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.feed.getAuthorFeed">>;
+        "getFeed"(
+          params?: QueryParams<"app.bsky.feed.getFeed">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.feed.getFeed">>;
+        "getFeedGenerator"(
+          params?: QueryParams<"app.bsky.feed.getFeedGenerator">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.feed.getFeedGenerator">>;
+        "getFeedGenerators"(
+          params?: QueryParams<"app.bsky.feed.getFeedGenerators">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.feed.getFeedGenerators">>;
+        "getFeedSkeleton"(
+          params?: QueryParams<"app.bsky.feed.getFeedSkeleton">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.feed.getFeedSkeleton">>;
+        "getLikes"(
+          params?: QueryParams<"app.bsky.feed.getLikes">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.feed.getLikes">>;
+        "getListFeed"(
+          params?: QueryParams<"app.bsky.feed.getListFeed">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.feed.getListFeed">>;
+        "getPosts"(
+          params?: QueryParams<"app.bsky.feed.getPosts">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.feed.getPosts">>;
+        "getPostThread"(
+          params?: QueryParams<"app.bsky.feed.getPostThread">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.feed.getPostThread">>;
+        "getQuotes"(
+          params?: QueryParams<"app.bsky.feed.getQuotes">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.feed.getQuotes">>;
+        "getRepostedBy"(
+          params?: QueryParams<"app.bsky.feed.getRepostedBy">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.feed.getRepostedBy">>;
+        "getSuggestedFeeds"(
+          params?: QueryParams<"app.bsky.feed.getSuggestedFeeds">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.feed.getSuggestedFeeds">>;
+        "getTimeline"(
+          params?: QueryParams<"app.bsky.feed.getTimeline">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.feed.getTimeline">>;
+        "searchPosts"(
+          params?: QueryParams<"app.bsky.feed.searchPosts">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.feed.searchPosts">>;
+        "sendInteractions"(
+          input?: ProcedureInput<"app.bsky.feed.sendInteractions">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.feed.sendInteractions">>;
       };
       "graph": {
-        "getActorStarterPacks"(params?: QueryParams<"app.bsky.graph.getActorStarterPacks">, token?: string): Promise<QueryOutput<"app.bsky.graph.getActorStarterPacks">>;
-        "getBlocks"(params?: QueryParams<"app.bsky.graph.getBlocks">, token?: string): Promise<QueryOutput<"app.bsky.graph.getBlocks">>;
-        "getFollowers"(params?: QueryParams<"app.bsky.graph.getFollowers">, token?: string): Promise<QueryOutput<"app.bsky.graph.getFollowers">>;
-        "getFollows"(params?: QueryParams<"app.bsky.graph.getFollows">, token?: string): Promise<QueryOutput<"app.bsky.graph.getFollows">>;
-        "getKnownFollowers"(params?: QueryParams<"app.bsky.graph.getKnownFollowers">, token?: string): Promise<QueryOutput<"app.bsky.graph.getKnownFollowers">>;
-        "getList"(params?: QueryParams<"app.bsky.graph.getList">, token?: string): Promise<QueryOutput<"app.bsky.graph.getList">>;
-        "getListBlocks"(params?: QueryParams<"app.bsky.graph.getListBlocks">, token?: string): Promise<QueryOutput<"app.bsky.graph.getListBlocks">>;
-        "getListMutes"(params?: QueryParams<"app.bsky.graph.getListMutes">, token?: string): Promise<QueryOutput<"app.bsky.graph.getListMutes">>;
-        "getLists"(params?: QueryParams<"app.bsky.graph.getLists">, token?: string): Promise<QueryOutput<"app.bsky.graph.getLists">>;
-        "getListsWithMembership"(params?: QueryParams<"app.bsky.graph.getListsWithMembership">, token?: string): Promise<QueryOutput<"app.bsky.graph.getListsWithMembership">>;
-        "getMutes"(params?: QueryParams<"app.bsky.graph.getMutes">, token?: string): Promise<QueryOutput<"app.bsky.graph.getMutes">>;
-        "getRelationships"(params?: QueryParams<"app.bsky.graph.getRelationships">, token?: string): Promise<QueryOutput<"app.bsky.graph.getRelationships">>;
-        "getStarterPack"(params?: QueryParams<"app.bsky.graph.getStarterPack">, token?: string): Promise<QueryOutput<"app.bsky.graph.getStarterPack">>;
-        "getStarterPacks"(params?: QueryParams<"app.bsky.graph.getStarterPacks">, token?: string): Promise<QueryOutput<"app.bsky.graph.getStarterPacks">>;
-        "getStarterPacksWithMembership"(params?: QueryParams<"app.bsky.graph.getStarterPacksWithMembership">, token?: string): Promise<QueryOutput<"app.bsky.graph.getStarterPacksWithMembership">>;
-        "getSuggestedFollowsByActor"(params?: QueryParams<"app.bsky.graph.getSuggestedFollowsByActor">, token?: string): Promise<QueryOutput<"app.bsky.graph.getSuggestedFollowsByActor">>;
-        "muteActor"(input?: ProcedureInput<"app.bsky.graph.muteActor">, token?: string): Promise<ProcedureOutput<"app.bsky.graph.muteActor">>;
-        "muteActorList"(input?: ProcedureInput<"app.bsky.graph.muteActorList">, token?: string): Promise<ProcedureOutput<"app.bsky.graph.muteActorList">>;
-        "muteThread"(input?: ProcedureInput<"app.bsky.graph.muteThread">, token?: string): Promise<ProcedureOutput<"app.bsky.graph.muteThread">>;
-        "searchStarterPacks"(params?: QueryParams<"app.bsky.graph.searchStarterPacks">, token?: string): Promise<QueryOutput<"app.bsky.graph.searchStarterPacks">>;
-        "unmuteActor"(input?: ProcedureInput<"app.bsky.graph.unmuteActor">, token?: string): Promise<ProcedureOutput<"app.bsky.graph.unmuteActor">>;
-        "unmuteActorList"(input?: ProcedureInput<"app.bsky.graph.unmuteActorList">, token?: string): Promise<ProcedureOutput<"app.bsky.graph.unmuteActorList">>;
-        "unmuteThread"(input?: ProcedureInput<"app.bsky.graph.unmuteThread">, token?: string): Promise<ProcedureOutput<"app.bsky.graph.unmuteThread">>;
+        "getActorStarterPacks"(
+          params?: QueryParams<"app.bsky.graph.getActorStarterPacks">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.graph.getActorStarterPacks">>;
+        "getBlocks"(
+          params?: QueryParams<"app.bsky.graph.getBlocks">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.graph.getBlocks">>;
+        "getFollowers"(
+          params?: QueryParams<"app.bsky.graph.getFollowers">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.graph.getFollowers">>;
+        "getFollows"(
+          params?: QueryParams<"app.bsky.graph.getFollows">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.graph.getFollows">>;
+        "getKnownFollowers"(
+          params?: QueryParams<"app.bsky.graph.getKnownFollowers">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.graph.getKnownFollowers">>;
+        "getList"(
+          params?: QueryParams<"app.bsky.graph.getList">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.graph.getList">>;
+        "getListBlocks"(
+          params?: QueryParams<"app.bsky.graph.getListBlocks">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.graph.getListBlocks">>;
+        "getListMutes"(
+          params?: QueryParams<"app.bsky.graph.getListMutes">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.graph.getListMutes">>;
+        "getLists"(
+          params?: QueryParams<"app.bsky.graph.getLists">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.graph.getLists">>;
+        "getListsWithMembership"(
+          params?: QueryParams<"app.bsky.graph.getListsWithMembership">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.graph.getListsWithMembership">>;
+        "getMutes"(
+          params?: QueryParams<"app.bsky.graph.getMutes">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.graph.getMutes">>;
+        "getRelationships"(
+          params?: QueryParams<"app.bsky.graph.getRelationships">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.graph.getRelationships">>;
+        "getStarterPack"(
+          params?: QueryParams<"app.bsky.graph.getStarterPack">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.graph.getStarterPack">>;
+        "getStarterPacks"(
+          params?: QueryParams<"app.bsky.graph.getStarterPacks">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.graph.getStarterPacks">>;
+        "getStarterPacksWithMembership"(
+          params?: QueryParams<"app.bsky.graph.getStarterPacksWithMembership">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.graph.getStarterPacksWithMembership">>;
+        "getSuggestedFollowsByActor"(
+          params?: QueryParams<"app.bsky.graph.getSuggestedFollowsByActor">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.graph.getSuggestedFollowsByActor">>;
+        "muteActor"(
+          input?: ProcedureInput<"app.bsky.graph.muteActor">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.graph.muteActor">>;
+        "muteActorList"(
+          input?: ProcedureInput<"app.bsky.graph.muteActorList">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.graph.muteActorList">>;
+        "muteThread"(
+          input?: ProcedureInput<"app.bsky.graph.muteThread">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.graph.muteThread">>;
+        "searchStarterPacks"(
+          params?: QueryParams<"app.bsky.graph.searchStarterPacks">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.graph.searchStarterPacks">>;
+        "unmuteActor"(
+          input?: ProcedureInput<"app.bsky.graph.unmuteActor">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.graph.unmuteActor">>;
+        "unmuteActorList"(
+          input?: ProcedureInput<"app.bsky.graph.unmuteActorList">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.graph.unmuteActorList">>;
+        "unmuteThread"(
+          input?: ProcedureInput<"app.bsky.graph.unmuteThread">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.graph.unmuteThread">>;
         "verification": {
-          "createVerification"(input?: ProcedureInput<"app.bsky.graph.verification.createVerification">, token?: string): Promise<ProcedureOutput<"app.bsky.graph.verification.createVerification">>;
-          "deleteVerification"(input?: ProcedureInput<"app.bsky.graph.verification.deleteVerification">, token?: string): Promise<ProcedureOutput<"app.bsky.graph.verification.deleteVerification">>;
+          "createVerification"(
+            input?: ProcedureInput<
+              "app.bsky.graph.verification.createVerification"
+            >,
+            token?: string,
+          ): Promise<
+            ProcedureOutput<"app.bsky.graph.verification.createVerification">
+          >;
+          "deleteVerification"(
+            input?: ProcedureInput<
+              "app.bsky.graph.verification.deleteVerification"
+            >,
+            token?: string,
+          ): Promise<
+            ProcedureOutput<"app.bsky.graph.verification.deleteVerification">
+          >;
         };
       };
       "labeler": {
-        "getServices"(params?: QueryParams<"app.bsky.labeler.getServices">, token?: string): Promise<QueryOutput<"app.bsky.labeler.getServices">>;
+        "getServices"(
+          params?: QueryParams<"app.bsky.labeler.getServices">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.labeler.getServices">>;
       };
       "notification": {
-        "getPreferences"(params?: QueryParams<"app.bsky.notification.getPreferences">, token?: string): Promise<QueryOutput<"app.bsky.notification.getPreferences">>;
-        "getUnreadCount"(params?: QueryParams<"app.bsky.notification.getUnreadCount">, token?: string): Promise<QueryOutput<"app.bsky.notification.getUnreadCount">>;
-        "listActivitySubscriptions"(params?: QueryParams<"app.bsky.notification.listActivitySubscriptions">, token?: string): Promise<QueryOutput<"app.bsky.notification.listActivitySubscriptions">>;
-        "listNotifications"(params?: QueryParams<"app.bsky.notification.listNotifications">, token?: string): Promise<QueryOutput<"app.bsky.notification.listNotifications">>;
-        "putActivitySubscription"(input?: ProcedureInput<"app.bsky.notification.putActivitySubscription">, token?: string): Promise<ProcedureOutput<"app.bsky.notification.putActivitySubscription">>;
-        "putNotificationPreferences"(input?: ProcedureInput<"app.bsky.notification.putNotificationPreferences">, token?: string): Promise<ProcedureOutput<"app.bsky.notification.putNotificationPreferences">>;
-        "putPreferences"(input?: ProcedureInput<"app.bsky.notification.putPreferences">, token?: string): Promise<ProcedureOutput<"app.bsky.notification.putPreferences">>;
-        "putPreferencesV2"(input?: ProcedureInput<"app.bsky.notification.putPreferencesV2">, token?: string): Promise<ProcedureOutput<"app.bsky.notification.putPreferencesV2">>;
-        "registerPush"(input?: ProcedureInput<"app.bsky.notification.registerPush">, token?: string): Promise<ProcedureOutput<"app.bsky.notification.registerPush">>;
-        "unregisterPush"(input?: ProcedureInput<"app.bsky.notification.unregisterPush">, token?: string): Promise<ProcedureOutput<"app.bsky.notification.unregisterPush">>;
-        "updateSeen"(input?: ProcedureInput<"app.bsky.notification.updateSeen">, token?: string): Promise<ProcedureOutput<"app.bsky.notification.updateSeen">>;
+        "getPreferences"(
+          params?: QueryParams<"app.bsky.notification.getPreferences">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.notification.getPreferences">>;
+        "getUnreadCount"(
+          params?: QueryParams<"app.bsky.notification.getUnreadCount">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.notification.getUnreadCount">>;
+        "listActivitySubscriptions"(
+          params?: QueryParams<
+            "app.bsky.notification.listActivitySubscriptions"
+          >,
+          token?: string,
+        ): Promise<
+          QueryOutput<"app.bsky.notification.listActivitySubscriptions">
+        >;
+        "listNotifications"(
+          params?: QueryParams<"app.bsky.notification.listNotifications">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.notification.listNotifications">>;
+        "putActivitySubscription"(
+          input?: ProcedureInput<
+            "app.bsky.notification.putActivitySubscription"
+          >,
+          token?: string,
+        ): Promise<
+          ProcedureOutput<"app.bsky.notification.putActivitySubscription">
+        >;
+        "putNotificationPreferences"(
+          input?: ProcedureInput<
+            "app.bsky.notification.putNotificationPreferences"
+          >,
+          token?: string,
+        ): Promise<
+          ProcedureOutput<"app.bsky.notification.putNotificationPreferences">
+        >;
+        "putPreferences"(
+          input?: ProcedureInput<"app.bsky.notification.putPreferences">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.notification.putPreferences">>;
+        "putPreferencesV2"(
+          input?: ProcedureInput<"app.bsky.notification.putPreferencesV2">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.notification.putPreferencesV2">>;
+        "registerPush"(
+          input?: ProcedureInput<"app.bsky.notification.registerPush">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.notification.registerPush">>;
+        "unregisterPush"(
+          input?: ProcedureInput<"app.bsky.notification.unregisterPush">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.notification.unregisterPush">>;
+        "updateSeen"(
+          input?: ProcedureInput<"app.bsky.notification.updateSeen">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.notification.updateSeen">>;
       };
       "unspecced": {
-        "confirmAgeAssurance"(input?: ProcedureInput<"app.bsky.unspecced.confirmAgeAssurance">, token?: string): Promise<ProcedureOutput<"app.bsky.unspecced.confirmAgeAssurance">>;
-        "getAgeAssuranceState"(params?: QueryParams<"app.bsky.unspecced.getAgeAssuranceState">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getAgeAssuranceState">>;
-        "getConfig"(params?: QueryParams<"app.bsky.unspecced.getConfig">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getConfig">>;
-        "getOnboardingSuggestedStarterPacks"(params?: QueryParams<"app.bsky.unspecced.getOnboardingSuggestedStarterPacks">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getOnboardingSuggestedStarterPacks">>;
-        "getOnboardingSuggestedStarterPacksSkeleton"(params?: QueryParams<"app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton">>;
-        "getOnboardingSuggestedUsersSkeleton"(params?: QueryParams<"app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton">>;
-        "getPopularFeedGenerators"(params?: QueryParams<"app.bsky.unspecced.getPopularFeedGenerators">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getPopularFeedGenerators">>;
-        "getPostThreadOtherV2"(params?: QueryParams<"app.bsky.unspecced.getPostThreadOtherV2">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getPostThreadOtherV2">>;
-        "getPostThreadV2"(params?: QueryParams<"app.bsky.unspecced.getPostThreadV2">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getPostThreadV2">>;
-        "getSuggestedFeeds"(params?: QueryParams<"app.bsky.unspecced.getSuggestedFeeds">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedFeeds">>;
-        "getSuggestedFeedsSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestedFeedsSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedFeedsSkeleton">>;
-        "getSuggestedOnboardingUsers"(params?: QueryParams<"app.bsky.unspecced.getSuggestedOnboardingUsers">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedOnboardingUsers">>;
-        "getSuggestedStarterPacks"(params?: QueryParams<"app.bsky.unspecced.getSuggestedStarterPacks">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedStarterPacks">>;
-        "getSuggestedStarterPacksSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestedStarterPacksSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedStarterPacksSkeleton">>;
-        "getSuggestedUsers"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsers">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsers">>;
-        "getSuggestedUsersForDiscover"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForDiscover">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForDiscover">>;
-        "getSuggestedUsersForDiscoverSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton">>;
-        "getSuggestedUsersForExplore"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForExplore">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForExplore">>;
-        "getSuggestedUsersForExploreSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForExploreSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForExploreSkeleton">>;
-        "getSuggestedUsersForSeeMore"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForSeeMore">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForSeeMore">>;
-        "getSuggestedUsersForSeeMoreSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton">>;
-        "getSuggestedUsersSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersSkeleton">>;
-        "getSuggestionsSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestionsSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getSuggestionsSkeleton">>;
-        "getTaggedSuggestions"(params?: QueryParams<"app.bsky.unspecced.getTaggedSuggestions">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getTaggedSuggestions">>;
-        "getTrendingTopics"(params?: QueryParams<"app.bsky.unspecced.getTrendingTopics">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getTrendingTopics">>;
-        "getTrends"(params?: QueryParams<"app.bsky.unspecced.getTrends">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getTrends">>;
-        "getTrendsSkeleton"(params?: QueryParams<"app.bsky.unspecced.getTrendsSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.getTrendsSkeleton">>;
-        "initAgeAssurance"(input?: ProcedureInput<"app.bsky.unspecced.initAgeAssurance">, token?: string): Promise<ProcedureOutput<"app.bsky.unspecced.initAgeAssurance">>;
-        "searchActorsSkeleton"(params?: QueryParams<"app.bsky.unspecced.searchActorsSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.searchActorsSkeleton">>;
-        "searchPostsSkeleton"(params?: QueryParams<"app.bsky.unspecced.searchPostsSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.searchPostsSkeleton">>;
-        "searchStarterPacksSkeleton"(params?: QueryParams<"app.bsky.unspecced.searchStarterPacksSkeleton">, token?: string): Promise<QueryOutput<"app.bsky.unspecced.searchStarterPacksSkeleton">>;
+        "confirmAgeAssurance"(
+          input?: ProcedureInput<"app.bsky.unspecced.confirmAgeAssurance">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.unspecced.confirmAgeAssurance">>;
+        "getAgeAssuranceState"(
+          params?: QueryParams<"app.bsky.unspecced.getAgeAssuranceState">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.unspecced.getAgeAssuranceState">>;
+        "getConfig"(
+          params?: QueryParams<"app.bsky.unspecced.getConfig">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.unspecced.getConfig">>;
+        "getOnboardingSuggestedStarterPacks"(
+          params?: QueryParams<
+            "app.bsky.unspecced.getOnboardingSuggestedStarterPacks"
+          >,
+          token?: string,
+        ): Promise<
+          QueryOutput<"app.bsky.unspecced.getOnboardingSuggestedStarterPacks">
+        >;
+        "getOnboardingSuggestedStarterPacksSkeleton"(
+          params?: QueryParams<
+            "app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton"
+          >,
+          token?: string,
+        ): Promise<
+          QueryOutput<
+            "app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton"
+          >
+        >;
+        "getOnboardingSuggestedUsersSkeleton"(
+          params?: QueryParams<
+            "app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton"
+          >,
+          token?: string,
+        ): Promise<
+          QueryOutput<"app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton">
+        >;
+        "getPopularFeedGenerators"(
+          params?: QueryParams<"app.bsky.unspecced.getPopularFeedGenerators">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.unspecced.getPopularFeedGenerators">>;
+        "getPostThreadOtherV2"(
+          params?: QueryParams<"app.bsky.unspecced.getPostThreadOtherV2">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.unspecced.getPostThreadOtherV2">>;
+        "getPostThreadV2"(
+          params?: QueryParams<"app.bsky.unspecced.getPostThreadV2">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.unspecced.getPostThreadV2">>;
+        "getSuggestedFeeds"(
+          params?: QueryParams<"app.bsky.unspecced.getSuggestedFeeds">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedFeeds">>;
+        "getSuggestedFeedsSkeleton"(
+          params?: QueryParams<"app.bsky.unspecced.getSuggestedFeedsSkeleton">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedFeedsSkeleton">>;
+        "getSuggestedOnboardingUsers"(
+          params?: QueryParams<
+            "app.bsky.unspecced.getSuggestedOnboardingUsers"
+          >,
+          token?: string,
+        ): Promise<
+          QueryOutput<"app.bsky.unspecced.getSuggestedOnboardingUsers">
+        >;
+        "getSuggestedStarterPacks"(
+          params?: QueryParams<"app.bsky.unspecced.getSuggestedStarterPacks">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedStarterPacks">>;
+        "getSuggestedStarterPacksSkeleton"(
+          params?: QueryParams<
+            "app.bsky.unspecced.getSuggestedStarterPacksSkeleton"
+          >,
+          token?: string,
+        ): Promise<
+          QueryOutput<"app.bsky.unspecced.getSuggestedStarterPacksSkeleton">
+        >;
+        "getSuggestedUsers"(
+          params?: QueryParams<"app.bsky.unspecced.getSuggestedUsers">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsers">>;
+        "getSuggestedUsersForDiscover"(
+          params?: QueryParams<
+            "app.bsky.unspecced.getSuggestedUsersForDiscover"
+          >,
+          token?: string,
+        ): Promise<
+          QueryOutput<"app.bsky.unspecced.getSuggestedUsersForDiscover">
+        >;
+        "getSuggestedUsersForDiscoverSkeleton"(
+          params?: QueryParams<
+            "app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton"
+          >,
+          token?: string,
+        ): Promise<
+          QueryOutput<"app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton">
+        >;
+        "getSuggestedUsersForExplore"(
+          params?: QueryParams<
+            "app.bsky.unspecced.getSuggestedUsersForExplore"
+          >,
+          token?: string,
+        ): Promise<
+          QueryOutput<"app.bsky.unspecced.getSuggestedUsersForExplore">
+        >;
+        "getSuggestedUsersForExploreSkeleton"(
+          params?: QueryParams<
+            "app.bsky.unspecced.getSuggestedUsersForExploreSkeleton"
+          >,
+          token?: string,
+        ): Promise<
+          QueryOutput<"app.bsky.unspecced.getSuggestedUsersForExploreSkeleton">
+        >;
+        "getSuggestedUsersForSeeMore"(
+          params?: QueryParams<
+            "app.bsky.unspecced.getSuggestedUsersForSeeMore"
+          >,
+          token?: string,
+        ): Promise<
+          QueryOutput<"app.bsky.unspecced.getSuggestedUsersForSeeMore">
+        >;
+        "getSuggestedUsersForSeeMoreSkeleton"(
+          params?: QueryParams<
+            "app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton"
+          >,
+          token?: string,
+        ): Promise<
+          QueryOutput<"app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton">
+        >;
+        "getSuggestedUsersSkeleton"(
+          params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersSkeleton">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersSkeleton">>;
+        "getSuggestionsSkeleton"(
+          params?: QueryParams<"app.bsky.unspecced.getSuggestionsSkeleton">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.unspecced.getSuggestionsSkeleton">>;
+        "getTaggedSuggestions"(
+          params?: QueryParams<"app.bsky.unspecced.getTaggedSuggestions">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.unspecced.getTaggedSuggestions">>;
+        "getTrendingTopics"(
+          params?: QueryParams<"app.bsky.unspecced.getTrendingTopics">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.unspecced.getTrendingTopics">>;
+        "getTrends"(
+          params?: QueryParams<"app.bsky.unspecced.getTrends">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.unspecced.getTrends">>;
+        "getTrendsSkeleton"(
+          params?: QueryParams<"app.bsky.unspecced.getTrendsSkeleton">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.unspecced.getTrendsSkeleton">>;
+        "initAgeAssurance"(
+          input?: ProcedureInput<"app.bsky.unspecced.initAgeAssurance">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.unspecced.initAgeAssurance">>;
+        "searchActorsSkeleton"(
+          params?: QueryParams<"app.bsky.unspecced.searchActorsSkeleton">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.unspecced.searchActorsSkeleton">>;
+        "searchPostsSkeleton"(
+          params?: QueryParams<"app.bsky.unspecced.searchPostsSkeleton">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.unspecced.searchPostsSkeleton">>;
+        "searchStarterPacksSkeleton"(
+          params?: QueryParams<"app.bsky.unspecced.searchStarterPacksSkeleton">,
+          token?: string,
+        ): Promise<
+          QueryOutput<"app.bsky.unspecced.searchStarterPacksSkeleton">
+        >;
       };
       "video": {
-        "getJobStatus"(params?: QueryParams<"app.bsky.video.getJobStatus">, token?: string): Promise<QueryOutput<"app.bsky.video.getJobStatus">>;
-        "getUploadLimits"(params?: QueryParams<"app.bsky.video.getUploadLimits">, token?: string): Promise<QueryOutput<"app.bsky.video.getUploadLimits">>;
-        "uploadVideo"(input?: ProcedureInput<"app.bsky.video.uploadVideo">, token?: string): Promise<ProcedureOutput<"app.bsky.video.uploadVideo">>;
+        "getJobStatus"(
+          params?: QueryParams<"app.bsky.video.getJobStatus">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.video.getJobStatus">>;
+        "getUploadLimits"(
+          params?: QueryParams<"app.bsky.video.getUploadLimits">,
+          token?: string,
+        ): Promise<QueryOutput<"app.bsky.video.getUploadLimits">>;
+        "uploadVideo"(
+          input?: ProcedureInput<"app.bsky.video.uploadVideo">,
+          token?: string,
+        ): Promise<ProcedureOutput<"app.bsky.video.uploadVideo">>;
       };
     };
   };
   "chat": {
     "bsky": {
       "actor": {
-        "deleteAccount"(input?: ProcedureInput<"chat.bsky.actor.deleteAccount">, token?: string): Promise<ProcedureOutput<"chat.bsky.actor.deleteAccount">>;
-        "exportAccountData"(params?: QueryParams<"chat.bsky.actor.exportAccountData">, token?: string): Promise<QueryOutput<"chat.bsky.actor.exportAccountData">>;
+        "deleteAccount"(
+          input?: ProcedureInput<"chat.bsky.actor.deleteAccount">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.actor.deleteAccount">>;
+        "exportAccountData"(
+          params?: QueryParams<"chat.bsky.actor.exportAccountData">,
+          token?: string,
+        ): Promise<QueryOutput<"chat.bsky.actor.exportAccountData">>;
       };
       "convo": {
-        "acceptConvo"(input?: ProcedureInput<"chat.bsky.convo.acceptConvo">, token?: string): Promise<ProcedureOutput<"chat.bsky.convo.acceptConvo">>;
-        "addReaction"(input?: ProcedureInput<"chat.bsky.convo.addReaction">, token?: string): Promise<ProcedureOutput<"chat.bsky.convo.addReaction">>;
-        "deleteMessageForSelf"(input?: ProcedureInput<"chat.bsky.convo.deleteMessageForSelf">, token?: string): Promise<ProcedureOutput<"chat.bsky.convo.deleteMessageForSelf">>;
-        "getConvo"(params?: QueryParams<"chat.bsky.convo.getConvo">, token?: string): Promise<QueryOutput<"chat.bsky.convo.getConvo">>;
-        "getConvoAvailability"(params?: QueryParams<"chat.bsky.convo.getConvoAvailability">, token?: string): Promise<QueryOutput<"chat.bsky.convo.getConvoAvailability">>;
-        "getConvoForMembers"(params?: QueryParams<"chat.bsky.convo.getConvoForMembers">, token?: string): Promise<QueryOutput<"chat.bsky.convo.getConvoForMembers">>;
-        "getLog"(params?: QueryParams<"chat.bsky.convo.getLog">, token?: string): Promise<QueryOutput<"chat.bsky.convo.getLog">>;
-        "getMessages"(params?: QueryParams<"chat.bsky.convo.getMessages">, token?: string): Promise<QueryOutput<"chat.bsky.convo.getMessages">>;
-        "leaveConvo"(input?: ProcedureInput<"chat.bsky.convo.leaveConvo">, token?: string): Promise<ProcedureOutput<"chat.bsky.convo.leaveConvo">>;
-        "listConvoRequests"(params?: QueryParams<"chat.bsky.convo.listConvoRequests">, token?: string): Promise<QueryOutput<"chat.bsky.convo.listConvoRequests">>;
-        "listConvos"(params?: QueryParams<"chat.bsky.convo.listConvos">, token?: string): Promise<QueryOutput<"chat.bsky.convo.listConvos">>;
-        "lockConvo"(input?: ProcedureInput<"chat.bsky.convo.lockConvo">, token?: string): Promise<ProcedureOutput<"chat.bsky.convo.lockConvo">>;
-        "muteConvo"(input?: ProcedureInput<"chat.bsky.convo.muteConvo">, token?: string): Promise<ProcedureOutput<"chat.bsky.convo.muteConvo">>;
-        "removeReaction"(input?: ProcedureInput<"chat.bsky.convo.removeReaction">, token?: string): Promise<ProcedureOutput<"chat.bsky.convo.removeReaction">>;
-        "sendMessage"(input?: ProcedureInput<"chat.bsky.convo.sendMessage">, token?: string): Promise<ProcedureOutput<"chat.bsky.convo.sendMessage">>;
-        "sendMessageBatch"(input?: ProcedureInput<"chat.bsky.convo.sendMessageBatch">, token?: string): Promise<ProcedureOutput<"chat.bsky.convo.sendMessageBatch">>;
-        "unlockConvo"(input?: ProcedureInput<"chat.bsky.convo.unlockConvo">, token?: string): Promise<ProcedureOutput<"chat.bsky.convo.unlockConvo">>;
-        "unmuteConvo"(input?: ProcedureInput<"chat.bsky.convo.unmuteConvo">, token?: string): Promise<ProcedureOutput<"chat.bsky.convo.unmuteConvo">>;
-        "updateAllRead"(input?: ProcedureInput<"chat.bsky.convo.updateAllRead">, token?: string): Promise<ProcedureOutput<"chat.bsky.convo.updateAllRead">>;
-        "updateRead"(input?: ProcedureInput<"chat.bsky.convo.updateRead">, token?: string): Promise<ProcedureOutput<"chat.bsky.convo.updateRead">>;
+        "acceptConvo"(
+          input?: ProcedureInput<"chat.bsky.convo.acceptConvo">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.convo.acceptConvo">>;
+        "addReaction"(
+          input?: ProcedureInput<"chat.bsky.convo.addReaction">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.convo.addReaction">>;
+        "deleteMessageForSelf"(
+          input?: ProcedureInput<"chat.bsky.convo.deleteMessageForSelf">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.convo.deleteMessageForSelf">>;
+        "getConvo"(
+          params?: QueryParams<"chat.bsky.convo.getConvo">,
+          token?: string,
+        ): Promise<QueryOutput<"chat.bsky.convo.getConvo">>;
+        "getConvoAvailability"(
+          params?: QueryParams<"chat.bsky.convo.getConvoAvailability">,
+          token?: string,
+        ): Promise<QueryOutput<"chat.bsky.convo.getConvoAvailability">>;
+        "getConvoForMembers"(
+          params?: QueryParams<"chat.bsky.convo.getConvoForMembers">,
+          token?: string,
+        ): Promise<QueryOutput<"chat.bsky.convo.getConvoForMembers">>;
+        "getLog"(
+          params?: QueryParams<"chat.bsky.convo.getLog">,
+          token?: string,
+        ): Promise<QueryOutput<"chat.bsky.convo.getLog">>;
+        "getMessages"(
+          params?: QueryParams<"chat.bsky.convo.getMessages">,
+          token?: string,
+        ): Promise<QueryOutput<"chat.bsky.convo.getMessages">>;
+        "leaveConvo"(
+          input?: ProcedureInput<"chat.bsky.convo.leaveConvo">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.convo.leaveConvo">>;
+        "listConvoRequests"(
+          params?: QueryParams<"chat.bsky.convo.listConvoRequests">,
+          token?: string,
+        ): Promise<QueryOutput<"chat.bsky.convo.listConvoRequests">>;
+        "listConvos"(
+          params?: QueryParams<"chat.bsky.convo.listConvos">,
+          token?: string,
+        ): Promise<QueryOutput<"chat.bsky.convo.listConvos">>;
+        "lockConvo"(
+          input?: ProcedureInput<"chat.bsky.convo.lockConvo">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.convo.lockConvo">>;
+        "muteConvo"(
+          input?: ProcedureInput<"chat.bsky.convo.muteConvo">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.convo.muteConvo">>;
+        "removeReaction"(
+          input?: ProcedureInput<"chat.bsky.convo.removeReaction">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.convo.removeReaction">>;
+        "sendMessage"(
+          input?: ProcedureInput<"chat.bsky.convo.sendMessage">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.convo.sendMessage">>;
+        "sendMessageBatch"(
+          input?: ProcedureInput<"chat.bsky.convo.sendMessageBatch">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.convo.sendMessageBatch">>;
+        "unlockConvo"(
+          input?: ProcedureInput<"chat.bsky.convo.unlockConvo">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.convo.unlockConvo">>;
+        "unmuteConvo"(
+          input?: ProcedureInput<"chat.bsky.convo.unmuteConvo">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.convo.unmuteConvo">>;
+        "updateAllRead"(
+          input?: ProcedureInput<"chat.bsky.convo.updateAllRead">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.convo.updateAllRead">>;
+        "updateRead"(
+          input?: ProcedureInput<"chat.bsky.convo.updateRead">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.convo.updateRead">>;
       };
       "group": {
-        "addMembers"(input?: ProcedureInput<"chat.bsky.group.addMembers">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.addMembers">>;
-        "addReaction"(input?: ProcedureInput<"chat.bsky.group.addReaction">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.addReaction">>;
-        "approveJoinRequest"(input?: ProcedureInput<"chat.bsky.group.approveJoinRequest">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.approveJoinRequest">>;
-        "createGroup"(input?: ProcedureInput<"chat.bsky.group.createGroup">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.createGroup">>;
-        "createJoinLink"(input?: ProcedureInput<"chat.bsky.group.createJoinLink">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.createJoinLink">>;
-        "deleteGroup"(input?: ProcedureInput<"chat.bsky.group.deleteGroup">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.deleteGroup">>;
-        "deleteMessageForSelf"(input?: ProcedureInput<"chat.bsky.group.deleteMessageForSelf">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.deleteMessageForSelf">>;
-        "disableJoinLink"(input?: ProcedureInput<"chat.bsky.group.disableJoinLink">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.disableJoinLink">>;
-        "editGroup"(input?: ProcedureInput<"chat.bsky.group.editGroup">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.editGroup">>;
-        "editJoinLink"(input?: ProcedureInput<"chat.bsky.group.editJoinLink">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.editJoinLink">>;
-        "enableJoinLink"(input?: ProcedureInput<"chat.bsky.group.enableJoinLink">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.enableJoinLink">>;
-        "getGroupPublicInfo"(params?: QueryParams<"chat.bsky.group.getGroupPublicInfo">, token?: string): Promise<QueryOutput<"chat.bsky.group.getGroupPublicInfo">>;
-        "getMessages"(params?: QueryParams<"chat.bsky.group.getMessages">, token?: string): Promise<QueryOutput<"chat.bsky.group.getMessages">>;
-        "leaveGroup"(input?: ProcedureInput<"chat.bsky.group.leaveGroup">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.leaveGroup">>;
-        "listGroups"(params?: QueryParams<"chat.bsky.group.listGroups">, token?: string): Promise<QueryOutput<"chat.bsky.group.listGroups">>;
-        "listInviteLinks"(params?: QueryParams<"chat.bsky.group.listInviteLinks">, token?: string): Promise<QueryOutput<"chat.bsky.group.listInviteLinks">>;
-        "listJoinRequests"(params?: QueryParams<"chat.bsky.group.listJoinRequests">, token?: string): Promise<QueryOutput<"chat.bsky.group.listJoinRequests">>;
-        "listMembers"(params?: QueryParams<"chat.bsky.group.listMembers">, token?: string): Promise<QueryOutput<"chat.bsky.group.listMembers">>;
-        "rejectJoinRequest"(input?: ProcedureInput<"chat.bsky.group.rejectJoinRequest">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.rejectJoinRequest">>;
-        "removeMembers"(input?: ProcedureInput<"chat.bsky.group.removeMembers">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.removeMembers">>;
-        "removeReaction"(input?: ProcedureInput<"chat.bsky.group.removeReaction">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.removeReaction">>;
-        "requestJoin"(input?: ProcedureInput<"chat.bsky.group.requestJoin">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.requestJoin">>;
-        "sendMessage"(input?: ProcedureInput<"chat.bsky.group.sendMessage">, token?: string): Promise<ProcedureOutput<"chat.bsky.group.sendMessage">>;
+        "addMembers"(
+          input?: ProcedureInput<"chat.bsky.group.addMembers">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.group.addMembers">>;
+        "addReaction"(
+          input?: ProcedureInput<"chat.bsky.group.addReaction">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.group.addReaction">>;
+        "approveJoinRequest"(
+          input?: ProcedureInput<"chat.bsky.group.approveJoinRequest">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.group.approveJoinRequest">>;
+        "createGroup"(
+          input?: ProcedureInput<"chat.bsky.group.createGroup">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.group.createGroup">>;
+        "createJoinLink"(
+          input?: ProcedureInput<"chat.bsky.group.createJoinLink">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.group.createJoinLink">>;
+        "deleteGroup"(
+          input?: ProcedureInput<"chat.bsky.group.deleteGroup">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.group.deleteGroup">>;
+        "deleteMessageForSelf"(
+          input?: ProcedureInput<"chat.bsky.group.deleteMessageForSelf">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.group.deleteMessageForSelf">>;
+        "disableJoinLink"(
+          input?: ProcedureInput<"chat.bsky.group.disableJoinLink">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.group.disableJoinLink">>;
+        "editGroup"(
+          input?: ProcedureInput<"chat.bsky.group.editGroup">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.group.editGroup">>;
+        "editJoinLink"(
+          input?: ProcedureInput<"chat.bsky.group.editJoinLink">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.group.editJoinLink">>;
+        "enableJoinLink"(
+          input?: ProcedureInput<"chat.bsky.group.enableJoinLink">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.group.enableJoinLink">>;
+        "getGroupPublicInfo"(
+          params?: QueryParams<"chat.bsky.group.getGroupPublicInfo">,
+          token?: string,
+        ): Promise<QueryOutput<"chat.bsky.group.getGroupPublicInfo">>;
+        "getMessages"(
+          params?: QueryParams<"chat.bsky.group.getMessages">,
+          token?: string,
+        ): Promise<QueryOutput<"chat.bsky.group.getMessages">>;
+        "leaveGroup"(
+          input?: ProcedureInput<"chat.bsky.group.leaveGroup">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.group.leaveGroup">>;
+        "listGroups"(
+          params?: QueryParams<"chat.bsky.group.listGroups">,
+          token?: string,
+        ): Promise<QueryOutput<"chat.bsky.group.listGroups">>;
+        "listInviteLinks"(
+          params?: QueryParams<"chat.bsky.group.listInviteLinks">,
+          token?: string,
+        ): Promise<QueryOutput<"chat.bsky.group.listInviteLinks">>;
+        "listJoinRequests"(
+          params?: QueryParams<"chat.bsky.group.listJoinRequests">,
+          token?: string,
+        ): Promise<QueryOutput<"chat.bsky.group.listJoinRequests">>;
+        "listMembers"(
+          params?: QueryParams<"chat.bsky.group.listMembers">,
+          token?: string,
+        ): Promise<QueryOutput<"chat.bsky.group.listMembers">>;
+        "rejectJoinRequest"(
+          input?: ProcedureInput<"chat.bsky.group.rejectJoinRequest">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.group.rejectJoinRequest">>;
+        "removeMembers"(
+          input?: ProcedureInput<"chat.bsky.group.removeMembers">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.group.removeMembers">>;
+        "removeReaction"(
+          input?: ProcedureInput<"chat.bsky.group.removeReaction">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.group.removeReaction">>;
+        "requestJoin"(
+          input?: ProcedureInput<"chat.bsky.group.requestJoin">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.group.requestJoin">>;
+        "sendMessage"(
+          input?: ProcedureInput<"chat.bsky.group.sendMessage">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.group.sendMessage">>;
       };
       "moderation": {
-        "getActorMetadata"(params?: QueryParams<"chat.bsky.moderation.getActorMetadata">, token?: string): Promise<QueryOutput<"chat.bsky.moderation.getActorMetadata">>;
-        "getMessageContext"(params?: QueryParams<"chat.bsky.moderation.getMessageContext">, token?: string): Promise<QueryOutput<"chat.bsky.moderation.getMessageContext">>;
-        "updateActorAccess"(input?: ProcedureInput<"chat.bsky.moderation.updateActorAccess">, token?: string): Promise<ProcedureOutput<"chat.bsky.moderation.updateActorAccess">>;
+        "getActorMetadata"(
+          params?: QueryParams<"chat.bsky.moderation.getActorMetadata">,
+          token?: string,
+        ): Promise<QueryOutput<"chat.bsky.moderation.getActorMetadata">>;
+        "getMessageContext"(
+          params?: QueryParams<"chat.bsky.moderation.getMessageContext">,
+          token?: string,
+        ): Promise<QueryOutput<"chat.bsky.moderation.getMessageContext">>;
+        "updateActorAccess"(
+          input?: ProcedureInput<"chat.bsky.moderation.updateActorAccess">,
+          token?: string,
+        ): Promise<ProcedureOutput<"chat.bsky.moderation.updateActorAccess">>;
       };
     };
   };
   "com": {
     "atproto": {
       "admin": {
-        "deleteAccount"(input?: ProcedureInput<"com.atproto.admin.deleteAccount">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.deleteAccount">>;
-        "disableAccountInvites"(input?: ProcedureInput<"com.atproto.admin.disableAccountInvites">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.disableAccountInvites">>;
-        "disableInviteCodes"(input?: ProcedureInput<"com.atproto.admin.disableInviteCodes">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.disableInviteCodes">>;
-        "enableAccountInvites"(input?: ProcedureInput<"com.atproto.admin.enableAccountInvites">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.enableAccountInvites">>;
-        "getAccountInfo"(params?: QueryParams<"com.atproto.admin.getAccountInfo">, token?: string): Promise<QueryOutput<"com.atproto.admin.getAccountInfo">>;
-        "getAccountInfos"(params?: QueryParams<"com.atproto.admin.getAccountInfos">, token?: string): Promise<QueryOutput<"com.atproto.admin.getAccountInfos">>;
-        "getAccountTakedown"(input?: ProcedureInput<"com.atproto.admin.getAccountTakedown">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.getAccountTakedown">>;
-        "getAccountUsage"(params?: QueryParams<"com.atproto.admin.getAccountUsage">, token?: string): Promise<QueryOutput<"com.atproto.admin.getAccountUsage">>;
-        "getBlobAuditStatus"(params?: QueryParams<"com.atproto.admin.getBlobAuditStatus">, token?: string): Promise<QueryOutput<"com.atproto.admin.getBlobAuditStatus">>;
-        "getInviteCodes"(params?: QueryParams<"com.atproto.admin.getInviteCodes">, token?: string): Promise<QueryOutput<"com.atproto.admin.getInviteCodes">>;
-        "getModerationReports"(params?: QueryParams<"com.atproto.admin.getModerationReports">, token?: string): Promise<QueryOutput<"com.atproto.admin.getModerationReports">>;
-        "getServerStats"(params?: QueryParams<"com.atproto.admin.getServerStats">, token?: string): Promise<QueryOutput<"com.atproto.admin.getServerStats">>;
-        "getSubjectStatus"(params?: QueryParams<"com.atproto.admin.getSubjectStatus">, token?: string): Promise<QueryOutput<"com.atproto.admin.getSubjectStatus">>;
-        "moderateAccount"(input?: ProcedureInput<"com.atproto.admin.moderateAccount">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.moderateAccount">>;
-        "moderateRecord"(input?: ProcedureInput<"com.atproto.admin.moderateRecord">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.moderateRecord">>;
-        "queryAuditLog"(params?: QueryParams<"com.atproto.admin.queryAuditLog">, token?: string): Promise<QueryOutput<"com.atproto.admin.queryAuditLog">>;
-        "repairRepo"(input?: ProcedureInput<"com.atproto.admin.repairRepo">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.repairRepo">>;
-        "resolveReport"(input?: ProcedureInput<"com.atproto.admin.resolveReport">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.resolveReport">>;
-        "runBlobAudit"(input?: ProcedureInput<"com.atproto.admin.runBlobAudit">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.runBlobAudit">>;
-        "searchAccounts"(params?: QueryParams<"com.atproto.admin.searchAccounts">, token?: string): Promise<QueryOutput<"com.atproto.admin.searchAccounts">>;
-        "sendEmail"(input?: ProcedureInput<"com.atproto.admin.sendEmail">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.sendEmail">>;
-        "takeDownAccount"(input?: ProcedureInput<"com.atproto.admin.takeDownAccount">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.takeDownAccount">>;
-        "updateAccountEmail"(input?: ProcedureInput<"com.atproto.admin.updateAccountEmail">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.updateAccountEmail">>;
-        "updateAccountHandle"(input?: ProcedureInput<"com.atproto.admin.updateAccountHandle">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.updateAccountHandle">>;
-        "updateAccountPassword"(input?: ProcedureInput<"com.atproto.admin.updateAccountPassword">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.updateAccountPassword">>;
-        "updateAccountSigningKey"(input?: ProcedureInput<"com.atproto.admin.updateAccountSigningKey">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.updateAccountSigningKey">>;
-        "updateSubjectStatus"(input?: ProcedureInput<"com.atproto.admin.updateSubjectStatus">, token?: string): Promise<ProcedureOutput<"com.atproto.admin.updateSubjectStatus">>;
+        "deleteAccount"(
+          input?: ProcedureInput<"com.atproto.admin.deleteAccount">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.admin.deleteAccount">>;
+        "disableAccountInvites"(
+          input?: ProcedureInput<"com.atproto.admin.disableAccountInvites">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.admin.disableAccountInvites">>;
+        "disableInviteCodes"(
+          input?: ProcedureInput<"com.atproto.admin.disableInviteCodes">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.admin.disableInviteCodes">>;
+        "enableAccountInvites"(
+          input?: ProcedureInput<"com.atproto.admin.enableAccountInvites">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.admin.enableAccountInvites">>;
+        "getAccountInfo"(
+          params?: QueryParams<"com.atproto.admin.getAccountInfo">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.admin.getAccountInfo">>;
+        "getAccountInfos"(
+          params?: QueryParams<"com.atproto.admin.getAccountInfos">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.admin.getAccountInfos">>;
+        "getAccountTakedown"(
+          input?: ProcedureInput<"com.atproto.admin.getAccountTakedown">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.admin.getAccountTakedown">>;
+        "getAccountUsage"(
+          params?: QueryParams<"com.atproto.admin.getAccountUsage">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.admin.getAccountUsage">>;
+        "getBlobAuditStatus"(
+          params?: QueryParams<"com.atproto.admin.getBlobAuditStatus">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.admin.getBlobAuditStatus">>;
+        "getInviteCodes"(
+          params?: QueryParams<"com.atproto.admin.getInviteCodes">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.admin.getInviteCodes">>;
+        "getModerationReports"(
+          params?: QueryParams<"com.atproto.admin.getModerationReports">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.admin.getModerationReports">>;
+        "getServerStats"(
+          params?: QueryParams<"com.atproto.admin.getServerStats">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.admin.getServerStats">>;
+        "getSubjectStatus"(
+          params?: QueryParams<"com.atproto.admin.getSubjectStatus">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.admin.getSubjectStatus">>;
+        "moderateAccount"(
+          input?: ProcedureInput<"com.atproto.admin.moderateAccount">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.admin.moderateAccount">>;
+        "moderateRecord"(
+          input?: ProcedureInput<"com.atproto.admin.moderateRecord">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.admin.moderateRecord">>;
+        "queryAuditLog"(
+          params?: QueryParams<"com.atproto.admin.queryAuditLog">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.admin.queryAuditLog">>;
+        "repairRepo"(
+          input?: ProcedureInput<"com.atproto.admin.repairRepo">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.admin.repairRepo">>;
+        "resolveReport"(
+          input?: ProcedureInput<"com.atproto.admin.resolveReport">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.admin.resolveReport">>;
+        "runBlobAudit"(
+          input?: ProcedureInput<"com.atproto.admin.runBlobAudit">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.admin.runBlobAudit">>;
+        "searchAccounts"(
+          params?: QueryParams<"com.atproto.admin.searchAccounts">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.admin.searchAccounts">>;
+        "sendEmail"(
+          input?: ProcedureInput<"com.atproto.admin.sendEmail">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.admin.sendEmail">>;
+        "takeDownAccount"(
+          input?: ProcedureInput<"com.atproto.admin.takeDownAccount">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.admin.takeDownAccount">>;
+        "updateAccountEmail"(
+          input?: ProcedureInput<"com.atproto.admin.updateAccountEmail">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.admin.updateAccountEmail">>;
+        "updateAccountHandle"(
+          input?: ProcedureInput<"com.atproto.admin.updateAccountHandle">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.admin.updateAccountHandle">>;
+        "updateAccountPassword"(
+          input?: ProcedureInput<"com.atproto.admin.updateAccountPassword">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.admin.updateAccountPassword">>;
+        "updateAccountSigningKey"(
+          input?: ProcedureInput<"com.atproto.admin.updateAccountSigningKey">,
+          token?: string,
+        ): Promise<
+          ProcedureOutput<"com.atproto.admin.updateAccountSigningKey">
+        >;
+        "updateSubjectStatus"(
+          input?: ProcedureInput<"com.atproto.admin.updateSubjectStatus">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.admin.updateSubjectStatus">>;
       };
       "identity": {
-        "getRecommendedDidCredentials"(params?: QueryParams<"com.atproto.identity.getRecommendedDidCredentials">, token?: string): Promise<QueryOutput<"com.atproto.identity.getRecommendedDidCredentials">>;
-        "refreshIdentity"(input?: ProcedureInput<"com.atproto.identity.refreshIdentity">, token?: string): Promise<ProcedureOutput<"com.atproto.identity.refreshIdentity">>;
-        "requestPlcOperationSignature"(input?: ProcedureInput<"com.atproto.identity.requestPlcOperationSignature">, token?: string): Promise<ProcedureOutput<"com.atproto.identity.requestPlcOperationSignature">>;
-        "resolveDid"(params?: QueryParams<"com.atproto.identity.resolveDid">, token?: string): Promise<QueryOutput<"com.atproto.identity.resolveDid">>;
-        "resolveHandle"(params?: QueryParams<"com.atproto.identity.resolveHandle">, token?: string): Promise<QueryOutput<"com.atproto.identity.resolveHandle">>;
-        "resolveIdentity"(params?: QueryParams<"com.atproto.identity.resolveIdentity">, token?: string): Promise<QueryOutput<"com.atproto.identity.resolveIdentity">>;
-        "signPlcOperation"(input?: ProcedureInput<"com.atproto.identity.signPlcOperation">, token?: string): Promise<ProcedureOutput<"com.atproto.identity.signPlcOperation">>;
-        "submitPlcOperation"(input?: ProcedureInput<"com.atproto.identity.submitPlcOperation">, token?: string): Promise<ProcedureOutput<"com.atproto.identity.submitPlcOperation">>;
-        "updateHandle"(input?: ProcedureInput<"com.atproto.identity.updateHandle">, token?: string): Promise<ProcedureOutput<"com.atproto.identity.updateHandle">>;
+        "getRecommendedDidCredentials"(
+          params?: QueryParams<
+            "com.atproto.identity.getRecommendedDidCredentials"
+          >,
+          token?: string,
+        ): Promise<
+          QueryOutput<"com.atproto.identity.getRecommendedDidCredentials">
+        >;
+        "refreshIdentity"(
+          input?: ProcedureInput<"com.atproto.identity.refreshIdentity">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.identity.refreshIdentity">>;
+        "requestPlcOperationSignature"(
+          input?: ProcedureInput<
+            "com.atproto.identity.requestPlcOperationSignature"
+          >,
+          token?: string,
+        ): Promise<
+          ProcedureOutput<"com.atproto.identity.requestPlcOperationSignature">
+        >;
+        "resolveDid"(
+          params?: QueryParams<"com.atproto.identity.resolveDid">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.identity.resolveDid">>;
+        "resolveHandle"(
+          params?: QueryParams<"com.atproto.identity.resolveHandle">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.identity.resolveHandle">>;
+        "resolveIdentity"(
+          params?: QueryParams<"com.atproto.identity.resolveIdentity">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.identity.resolveIdentity">>;
+        "signPlcOperation"(
+          input?: ProcedureInput<"com.atproto.identity.signPlcOperation">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.identity.signPlcOperation">>;
+        "submitPlcOperation"(
+          input?: ProcedureInput<"com.atproto.identity.submitPlcOperation">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.identity.submitPlcOperation">>;
+        "updateHandle"(
+          input?: ProcedureInput<"com.atproto.identity.updateHandle">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.identity.updateHandle">>;
       };
       "label": {
-        "createLabel"(input?: ProcedureInput<"com.atproto.label.createLabel">, token?: string): Promise<ProcedureOutput<"com.atproto.label.createLabel">>;
-        "getLabels"(params?: QueryParams<"com.atproto.label.getLabels">, token?: string): Promise<QueryOutput<"com.atproto.label.getLabels">>;
-        "queryLabels"(params?: QueryParams<"com.atproto.label.queryLabels">, token?: string): Promise<QueryOutput<"com.atproto.label.queryLabels">>;
+        "createLabel"(
+          input?: ProcedureInput<"com.atproto.label.createLabel">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.label.createLabel">>;
+        "getLabels"(
+          params?: QueryParams<"com.atproto.label.getLabels">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.label.getLabels">>;
+        "queryLabels"(
+          params?: QueryParams<"com.atproto.label.queryLabels">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.label.queryLabels">>;
       };
       "lexicon": {
-        "resolveLexicon"(params?: QueryParams<"com.atproto.lexicon.resolveLexicon">, token?: string): Promise<QueryOutput<"com.atproto.lexicon.resolveLexicon">>;
+        "resolveLexicon"(
+          params?: QueryParams<"com.atproto.lexicon.resolveLexicon">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.lexicon.resolveLexicon">>;
       };
       "moderation": {
-        "createReport"(input?: ProcedureInput<"com.atproto.moderation.createReport">, token?: string): Promise<ProcedureOutput<"com.atproto.moderation.createReport">>;
+        "createReport"(
+          input?: ProcedureInput<"com.atproto.moderation.createReport">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.moderation.createReport">>;
       };
       "repo": {
-        "applyWrites"(input?: ProcedureInput<"com.atproto.repo.applyWrites">, token?: string): Promise<ProcedureOutput<"com.atproto.repo.applyWrites">>;
-        "createRecord"(input?: ProcedureInput<"com.atproto.repo.createRecord">, token?: string): Promise<ProcedureOutput<"com.atproto.repo.createRecord">>;
-        "deleteBlob"(input?: ProcedureInput<"com.atproto.repo.deleteBlob">, token?: string): Promise<ProcedureOutput<"com.atproto.repo.deleteBlob">>;
-        "deleteRecord"(input?: ProcedureInput<"com.atproto.repo.deleteRecord">, token?: string): Promise<ProcedureOutput<"com.atproto.repo.deleteRecord">>;
-        "describeRepo"(params?: QueryParams<"com.atproto.repo.describeRepo">, token?: string): Promise<QueryOutput<"com.atproto.repo.describeRepo">>;
-        "getBlob"(params?: QueryParams<"com.atproto.repo.getBlob">, token?: string): Promise<QueryOutput<"com.atproto.repo.getBlob">>;
-        "getRecord"(params?: QueryParams<"com.atproto.repo.getRecord">, token?: string): Promise<QueryOutput<"com.atproto.repo.getRecord">>;
-        "importRepo"(input?: ProcedureInput<"com.atproto.repo.importRepo">, token?: string): Promise<ProcedureOutput<"com.atproto.repo.importRepo">>;
-        "listMissingBlobs"(params?: QueryParams<"com.atproto.repo.listMissingBlobs">, token?: string): Promise<QueryOutput<"com.atproto.repo.listMissingBlobs">>;
-        "listRecords"(params?: QueryParams<"com.atproto.repo.listRecords">, token?: string): Promise<QueryOutput<"com.atproto.repo.listRecords">>;
-        "putRecord"(input?: ProcedureInput<"com.atproto.repo.putRecord">, token?: string): Promise<ProcedureOutput<"com.atproto.repo.putRecord">>;
-        "updateRecord"(input?: ProcedureInput<"com.atproto.repo.updateRecord">, token?: string): Promise<ProcedureOutput<"com.atproto.repo.updateRecord">>;
-        "uploadBlob"(input?: ProcedureInput<"com.atproto.repo.uploadBlob">, token?: string): Promise<ProcedureOutput<"com.atproto.repo.uploadBlob">>;
+        "applyWrites"(
+          input?: ProcedureInput<"com.atproto.repo.applyWrites">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.repo.applyWrites">>;
+        "createRecord"(
+          input?: ProcedureInput<"com.atproto.repo.createRecord">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.repo.createRecord">>;
+        "deleteBlob"(
+          input?: ProcedureInput<"com.atproto.repo.deleteBlob">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.repo.deleteBlob">>;
+        "deleteRecord"(
+          input?: ProcedureInput<"com.atproto.repo.deleteRecord">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.repo.deleteRecord">>;
+        "describeRepo"(
+          params?: QueryParams<"com.atproto.repo.describeRepo">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.repo.describeRepo">>;
+        "getBlob"(
+          params?: QueryParams<"com.atproto.repo.getBlob">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.repo.getBlob">>;
+        "getRecord"(
+          params?: QueryParams<"com.atproto.repo.getRecord">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.repo.getRecord">>;
+        "importRepo"(
+          input?: ProcedureInput<"com.atproto.repo.importRepo">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.repo.importRepo">>;
+        "listMissingBlobs"(
+          params?: QueryParams<"com.atproto.repo.listMissingBlobs">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.repo.listMissingBlobs">>;
+        "listRecords"(
+          params?: QueryParams<"com.atproto.repo.listRecords">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.repo.listRecords">>;
+        "putRecord"(
+          input?: ProcedureInput<"com.atproto.repo.putRecord">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.repo.putRecord">>;
+        "updateRecord"(
+          input?: ProcedureInput<"com.atproto.repo.updateRecord">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.repo.updateRecord">>;
+        "uploadBlob"(
+          input?: ProcedureInput<"com.atproto.repo.uploadBlob">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.repo.uploadBlob">>;
       };
       "server": {
-        "activateAccount"(input?: ProcedureInput<"com.atproto.server.activateAccount">, token?: string): Promise<ProcedureOutput<"com.atproto.server.activateAccount">>;
-        "checkAccountStatus"(params?: QueryParams<"com.atproto.server.checkAccountStatus">, token?: string): Promise<QueryOutput<"com.atproto.server.checkAccountStatus">>;
-        "confirmEmail"(input?: ProcedureInput<"com.atproto.server.confirmEmail">, token?: string): Promise<ProcedureOutput<"com.atproto.server.confirmEmail">>;
-        "createAccount"(input?: ProcedureInput<"com.atproto.server.createAccount">, token?: string): Promise<ProcedureOutput<"com.atproto.server.createAccount">>;
-        "createAppPassword"(input?: ProcedureInput<"com.atproto.server.createAppPassword">, token?: string): Promise<ProcedureOutput<"com.atproto.server.createAppPassword">>;
-        "createInviteCode"(input?: ProcedureInput<"com.atproto.server.createInviteCode">, token?: string): Promise<ProcedureOutput<"com.atproto.server.createInviteCode">>;
-        "createInviteCodes"(input?: ProcedureInput<"com.atproto.server.createInviteCodes">, token?: string): Promise<ProcedureOutput<"com.atproto.server.createInviteCodes">>;
-        "createSession"(input?: ProcedureInput<"com.atproto.server.createSession">, token?: string): Promise<ProcedureOutput<"com.atproto.server.createSession">>;
-        "deactivateAccount"(input?: ProcedureInput<"com.atproto.server.deactivateAccount">, token?: string): Promise<ProcedureOutput<"com.atproto.server.deactivateAccount">>;
-        "deleteAccount"(input?: ProcedureInput<"com.atproto.server.deleteAccount">, token?: string): Promise<ProcedureOutput<"com.atproto.server.deleteAccount">>;
-        "deleteSession"(input?: ProcedureInput<"com.atproto.server.deleteSession">, token?: string): Promise<ProcedureOutput<"com.atproto.server.deleteSession">>;
-        "describeServer"(params?: QueryParams<"com.atproto.server.describeServer">, token?: string): Promise<QueryOutput<"com.atproto.server.describeServer">>;
-        "getAccount"(params?: QueryParams<"com.atproto.server.getAccount">, token?: string): Promise<QueryOutput<"com.atproto.server.getAccount">>;
-        "getAccountInviteCodes"(params?: QueryParams<"com.atproto.server.getAccountInviteCodes">, token?: string): Promise<QueryOutput<"com.atproto.server.getAccountInviteCodes">>;
-        "getServiceAuth"(params?: QueryParams<"com.atproto.server.getServiceAuth">, token?: string): Promise<QueryOutput<"com.atproto.server.getServiceAuth">>;
-        "getSession"(params?: QueryParams<"com.atproto.server.getSession">, token?: string): Promise<QueryOutput<"com.atproto.server.getSession">>;
-        "listAppPasswords"(params?: QueryParams<"com.atproto.server.listAppPasswords">, token?: string): Promise<QueryOutput<"com.atproto.server.listAppPasswords">>;
-        "refreshSession"(input?: ProcedureInput<"com.atproto.server.refreshSession">, token?: string): Promise<ProcedureOutput<"com.atproto.server.refreshSession">>;
-        "requestAccountDelete"(input?: ProcedureInput<"com.atproto.server.requestAccountDelete">, token?: string): Promise<ProcedureOutput<"com.atproto.server.requestAccountDelete">>;
-        "requestEmailConfirmation"(input?: ProcedureInput<"com.atproto.server.requestEmailConfirmation">, token?: string): Promise<ProcedureOutput<"com.atproto.server.requestEmailConfirmation">>;
-        "requestEmailUpdate"(input?: ProcedureInput<"com.atproto.server.requestEmailUpdate">, token?: string): Promise<ProcedureOutput<"com.atproto.server.requestEmailUpdate">>;
-        "requestPasswordReset"(input?: ProcedureInput<"com.atproto.server.requestPasswordReset">, token?: string): Promise<ProcedureOutput<"com.atproto.server.requestPasswordReset">>;
-        "reserveSigningKey"(input?: ProcedureInput<"com.atproto.server.reserveSigningKey">, token?: string): Promise<ProcedureOutput<"com.atproto.server.reserveSigningKey">>;
-        "resetPassword"(input?: ProcedureInput<"com.atproto.server.resetPassword">, token?: string): Promise<ProcedureOutput<"com.atproto.server.resetPassword">>;
-        "revokeAppPassword"(input?: ProcedureInput<"com.atproto.server.revokeAppPassword">, token?: string): Promise<ProcedureOutput<"com.atproto.server.revokeAppPassword">>;
-        "updateEmail"(input?: ProcedureInput<"com.atproto.server.updateEmail">, token?: string): Promise<ProcedureOutput<"com.atproto.server.updateEmail">>;
+        "activateAccount"(
+          input?: ProcedureInput<"com.atproto.server.activateAccount">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.server.activateAccount">>;
+        "checkAccountStatus"(
+          params?: QueryParams<"com.atproto.server.checkAccountStatus">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.server.checkAccountStatus">>;
+        "confirmEmail"(
+          input?: ProcedureInput<"com.atproto.server.confirmEmail">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.server.confirmEmail">>;
+        "createAccount"(
+          input?: ProcedureInput<"com.atproto.server.createAccount">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.server.createAccount">>;
+        "createAppPassword"(
+          input?: ProcedureInput<"com.atproto.server.createAppPassword">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.server.createAppPassword">>;
+        "createInviteCode"(
+          input?: ProcedureInput<"com.atproto.server.createInviteCode">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.server.createInviteCode">>;
+        "createInviteCodes"(
+          input?: ProcedureInput<"com.atproto.server.createInviteCodes">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.server.createInviteCodes">>;
+        "createSession"(
+          input?: ProcedureInput<"com.atproto.server.createSession">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.server.createSession">>;
+        "deactivateAccount"(
+          input?: ProcedureInput<"com.atproto.server.deactivateAccount">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.server.deactivateAccount">>;
+        "deleteAccount"(
+          input?: ProcedureInput<"com.atproto.server.deleteAccount">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.server.deleteAccount">>;
+        "deleteSession"(
+          input?: ProcedureInput<"com.atproto.server.deleteSession">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.server.deleteSession">>;
+        "describeServer"(
+          params?: QueryParams<"com.atproto.server.describeServer">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.server.describeServer">>;
+        "getAccount"(
+          params?: QueryParams<"com.atproto.server.getAccount">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.server.getAccount">>;
+        "getAccountInviteCodes"(
+          params?: QueryParams<"com.atproto.server.getAccountInviteCodes">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.server.getAccountInviteCodes">>;
+        "getServiceAuth"(
+          params?: QueryParams<"com.atproto.server.getServiceAuth">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.server.getServiceAuth">>;
+        "getSession"(
+          params?: QueryParams<"com.atproto.server.getSession">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.server.getSession">>;
+        "listAppPasswords"(
+          params?: QueryParams<"com.atproto.server.listAppPasswords">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.server.listAppPasswords">>;
+        "refreshSession"(
+          input?: ProcedureInput<"com.atproto.server.refreshSession">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.server.refreshSession">>;
+        "requestAccountDelete"(
+          input?: ProcedureInput<"com.atproto.server.requestAccountDelete">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.server.requestAccountDelete">>;
+        "requestEmailConfirmation"(
+          input?: ProcedureInput<"com.atproto.server.requestEmailConfirmation">,
+          token?: string,
+        ): Promise<
+          ProcedureOutput<"com.atproto.server.requestEmailConfirmation">
+        >;
+        "requestEmailUpdate"(
+          input?: ProcedureInput<"com.atproto.server.requestEmailUpdate">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.server.requestEmailUpdate">>;
+        "requestPasswordReset"(
+          input?: ProcedureInput<"com.atproto.server.requestPasswordReset">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.server.requestPasswordReset">>;
+        "reserveSigningKey"(
+          input?: ProcedureInput<"com.atproto.server.reserveSigningKey">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.server.reserveSigningKey">>;
+        "resetPassword"(
+          input?: ProcedureInput<"com.atproto.server.resetPassword">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.server.resetPassword">>;
+        "revokeAppPassword"(
+          input?: ProcedureInput<"com.atproto.server.revokeAppPassword">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.server.revokeAppPassword">>;
+        "updateEmail"(
+          input?: ProcedureInput<"com.atproto.server.updateEmail">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.server.updateEmail">>;
       };
       "sync": {
-        "getBlob"(params?: QueryParams<"com.atproto.sync.getBlob">, token?: string): Promise<QueryOutput<"com.atproto.sync.getBlob">>;
-        "getBlocks"(params?: QueryParams<"com.atproto.sync.getBlocks">, token?: string): Promise<QueryOutput<"com.atproto.sync.getBlocks">>;
-        "getCheckout"(params?: QueryParams<"com.atproto.sync.getCheckout">, token?: string): Promise<QueryOutput<"com.atproto.sync.getCheckout">>;
-        "getHead"(params?: QueryParams<"com.atproto.sync.getHead">, token?: string): Promise<QueryOutput<"com.atproto.sync.getHead">>;
-        "getHostStatus"(params?: QueryParams<"com.atproto.sync.getHostStatus">, token?: string): Promise<QueryOutput<"com.atproto.sync.getHostStatus">>;
-        "getLatestCommit"(params?: QueryParams<"com.atproto.sync.getLatestCommit">, token?: string): Promise<QueryOutput<"com.atproto.sync.getLatestCommit">>;
-        "getRecord"(params?: QueryParams<"com.atproto.sync.getRecord">, token?: string): Promise<QueryOutput<"com.atproto.sync.getRecord">>;
-        "getRepo"(params?: QueryParams<"com.atproto.sync.getRepo">, token?: string): Promise<QueryOutput<"com.atproto.sync.getRepo">>;
-        "getRepoStatus"(params?: QueryParams<"com.atproto.sync.getRepoStatus">, token?: string): Promise<QueryOutput<"com.atproto.sync.getRepoStatus">>;
-        "listBlobs"(params?: QueryParams<"com.atproto.sync.listBlobs">, token?: string): Promise<QueryOutput<"com.atproto.sync.listBlobs">>;
-        "listHosts"(params?: QueryParams<"com.atproto.sync.listHosts">, token?: string): Promise<QueryOutput<"com.atproto.sync.listHosts">>;
-        "listRepos"(params?: QueryParams<"com.atproto.sync.listRepos">, token?: string): Promise<QueryOutput<"com.atproto.sync.listRepos">>;
-        "listReposByCollection"(params?: QueryParams<"com.atproto.sync.listReposByCollection">, token?: string): Promise<QueryOutput<"com.atproto.sync.listReposByCollection">>;
-        "notifyOfUpdate"(input?: ProcedureInput<"com.atproto.sync.notifyOfUpdate">, token?: string): Promise<ProcedureOutput<"com.atproto.sync.notifyOfUpdate">>;
-        "requestCrawl"(input?: ProcedureInput<"com.atproto.sync.requestCrawl">, token?: string): Promise<ProcedureOutput<"com.atproto.sync.requestCrawl">>;
+        "getBlob"(
+          params?: QueryParams<"com.atproto.sync.getBlob">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.sync.getBlob">>;
+        "getBlocks"(
+          params?: QueryParams<"com.atproto.sync.getBlocks">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.sync.getBlocks">>;
+        "getCheckout"(
+          params?: QueryParams<"com.atproto.sync.getCheckout">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.sync.getCheckout">>;
+        "getHead"(
+          params?: QueryParams<"com.atproto.sync.getHead">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.sync.getHead">>;
+        "getHostStatus"(
+          params?: QueryParams<"com.atproto.sync.getHostStatus">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.sync.getHostStatus">>;
+        "getLatestCommit"(
+          params?: QueryParams<"com.atproto.sync.getLatestCommit">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.sync.getLatestCommit">>;
+        "getRecord"(
+          params?: QueryParams<"com.atproto.sync.getRecord">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.sync.getRecord">>;
+        "getRepo"(
+          params?: QueryParams<"com.atproto.sync.getRepo">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.sync.getRepo">>;
+        "getRepoStatus"(
+          params?: QueryParams<"com.atproto.sync.getRepoStatus">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.sync.getRepoStatus">>;
+        "listBlobs"(
+          params?: QueryParams<"com.atproto.sync.listBlobs">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.sync.listBlobs">>;
+        "listHosts"(
+          params?: QueryParams<"com.atproto.sync.listHosts">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.sync.listHosts">>;
+        "listRepos"(
+          params?: QueryParams<"com.atproto.sync.listRepos">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.sync.listRepos">>;
+        "listReposByCollection"(
+          params?: QueryParams<"com.atproto.sync.listReposByCollection">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.sync.listReposByCollection">>;
+        "notifyOfUpdate"(
+          input?: ProcedureInput<"com.atproto.sync.notifyOfUpdate">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.sync.notifyOfUpdate">>;
+        "requestCrawl"(
+          input?: ProcedureInput<"com.atproto.sync.requestCrawl">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.sync.requestCrawl">>;
       };
       "temp": {
-        "addReservedHandle"(input?: ProcedureInput<"com.atproto.temp.addReservedHandle">, token?: string): Promise<ProcedureOutput<"com.atproto.temp.addReservedHandle">>;
-        "checkHandleAvailability"(params?: QueryParams<"com.atproto.temp.checkHandleAvailability">, token?: string): Promise<QueryOutput<"com.atproto.temp.checkHandleAvailability">>;
-        "checkSignupQueue"(params?: QueryParams<"com.atproto.temp.checkSignupQueue">, token?: string): Promise<QueryOutput<"com.atproto.temp.checkSignupQueue">>;
-        "dereferenceScope"(params?: QueryParams<"com.atproto.temp.dereferenceScope">, token?: string): Promise<QueryOutput<"com.atproto.temp.dereferenceScope">>;
-        "fetchLabels"(params?: QueryParams<"com.atproto.temp.fetchLabels">, token?: string): Promise<QueryOutput<"com.atproto.temp.fetchLabels">>;
-        "requestPhoneVerification"(input?: ProcedureInput<"com.atproto.temp.requestPhoneVerification">, token?: string): Promise<ProcedureOutput<"com.atproto.temp.requestPhoneVerification">>;
-        "revokeAccountCredentials"(input?: ProcedureInput<"com.atproto.temp.revokeAccountCredentials">, token?: string): Promise<ProcedureOutput<"com.atproto.temp.revokeAccountCredentials">>;
+        "addReservedHandle"(
+          input?: ProcedureInput<"com.atproto.temp.addReservedHandle">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.atproto.temp.addReservedHandle">>;
+        "checkHandleAvailability"(
+          params?: QueryParams<"com.atproto.temp.checkHandleAvailability">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.temp.checkHandleAvailability">>;
+        "checkSignupQueue"(
+          params?: QueryParams<"com.atproto.temp.checkSignupQueue">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.temp.checkSignupQueue">>;
+        "dereferenceScope"(
+          params?: QueryParams<"com.atproto.temp.dereferenceScope">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.temp.dereferenceScope">>;
+        "fetchLabels"(
+          params?: QueryParams<"com.atproto.temp.fetchLabels">,
+          token?: string,
+        ): Promise<QueryOutput<"com.atproto.temp.fetchLabels">>;
+        "requestPhoneVerification"(
+          input?: ProcedureInput<"com.atproto.temp.requestPhoneVerification">,
+          token?: string,
+        ): Promise<
+          ProcedureOutput<"com.atproto.temp.requestPhoneVerification">
+        >;
+        "revokeAccountCredentials"(
+          input?: ProcedureInput<"com.atproto.temp.revokeAccountCredentials">,
+          token?: string,
+        ): Promise<
+          ProcedureOutput<"com.atproto.temp.revokeAccountCredentials">
+        >;
       };
     };
     "germnetwork": {
       "identity": {
-        "getAnchorKey"(params?: QueryParams<"com.germnetwork.identity.getAnchorKey">, token?: string): Promise<QueryOutput<"com.germnetwork.identity.getAnchorKey">>;
+        "getAnchorKey"(
+          params?: QueryParams<"com.germnetwork.identity.getAnchorKey">,
+          token?: string,
+        ): Promise<QueryOutput<"com.germnetwork.identity.getAnchorKey">>;
       };
       "mailbox": {
-        "claimAddresses"(input?: ProcedureInput<"com.germnetwork.mailbox.claimAddresses">, token?: string): Promise<ProcedureOutput<"com.germnetwork.mailbox.claimAddresses">>;
-        "deliver"(input?: ProcedureInput<"com.germnetwork.mailbox.deliver">, token?: string): Promise<ProcedureOutput<"com.germnetwork.mailbox.deliver">>;
-        "poll"(params?: QueryParams<"com.germnetwork.mailbox.poll">, token?: string): Promise<QueryOutput<"com.germnetwork.mailbox.poll">>;
+        "claimAddresses"(
+          input?: ProcedureInput<"com.germnetwork.mailbox.claimAddresses">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.germnetwork.mailbox.claimAddresses">>;
+        "deliver"(
+          input?: ProcedureInput<"com.germnetwork.mailbox.deliver">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.germnetwork.mailbox.deliver">>;
+        "poll"(
+          params?: QueryParams<"com.germnetwork.mailbox.poll">,
+          token?: string,
+        ): Promise<QueryOutput<"com.germnetwork.mailbox.poll">>;
       };
       "rendezvous": {
-        "deliver"(input?: ProcedureInput<"com.germnetwork.rendezvous.deliver">, token?: string): Promise<ProcedureOutput<"com.germnetwork.rendezvous.deliver">>;
-        "register"(input?: ProcedureInput<"com.germnetwork.rendezvous.register">, token?: string): Promise<ProcedureOutput<"com.germnetwork.rendezvous.register">>;
+        "deliver"(
+          input?: ProcedureInput<"com.germnetwork.rendezvous.deliver">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.germnetwork.rendezvous.deliver">>;
+        "register"(
+          input?: ProcedureInput<"com.germnetwork.rendezvous.register">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.germnetwork.rendezvous.register">>;
       };
     };
     "shinolabs": {
       "pinksea": {
-        "getAuthorFeed"(params?: QueryParams<"com.shinolabs.pinksea.getAuthorFeed">, token?: string): Promise<QueryOutput<"com.shinolabs.pinksea.getAuthorFeed">>;
-        "getAuthorReplies"(params?: QueryParams<"com.shinolabs.pinksea.getAuthorReplies">, token?: string): Promise<QueryOutput<"com.shinolabs.pinksea.getAuthorReplies">>;
-        "getHandleFromDid"(params?: QueryParams<"com.shinolabs.pinksea.getHandleFromDid">, token?: string): Promise<QueryOutput<"com.shinolabs.pinksea.getHandleFromDid">>;
-        "getIdentity"(params?: QueryParams<"com.shinolabs.pinksea.getIdentity">, token?: string): Promise<QueryOutput<"com.shinolabs.pinksea.getIdentity">>;
-        "getOekaki"(params?: QueryParams<"com.shinolabs.pinksea.getOekaki">, token?: string): Promise<QueryOutput<"com.shinolabs.pinksea.getOekaki">>;
-        "getParentForReply"(params?: QueryParams<"com.shinolabs.pinksea.getParentForReply">, token?: string): Promise<QueryOutput<"com.shinolabs.pinksea.getParentForReply">>;
-        "getRecent"(params?: QueryParams<"com.shinolabs.pinksea.getRecent">, token?: string): Promise<QueryOutput<"com.shinolabs.pinksea.getRecent">>;
-        "getTagFeed"(params?: QueryParams<"com.shinolabs.pinksea.getTagFeed">, token?: string): Promise<QueryOutput<"com.shinolabs.pinksea.getTagFeed">>;
+        "getAuthorFeed"(
+          params?: QueryParams<"com.shinolabs.pinksea.getAuthorFeed">,
+          token?: string,
+        ): Promise<QueryOutput<"com.shinolabs.pinksea.getAuthorFeed">>;
+        "getAuthorReplies"(
+          params?: QueryParams<"com.shinolabs.pinksea.getAuthorReplies">,
+          token?: string,
+        ): Promise<QueryOutput<"com.shinolabs.pinksea.getAuthorReplies">>;
+        "getHandleFromDid"(
+          params?: QueryParams<"com.shinolabs.pinksea.getHandleFromDid">,
+          token?: string,
+        ): Promise<QueryOutput<"com.shinolabs.pinksea.getHandleFromDid">>;
+        "getIdentity"(
+          params?: QueryParams<"com.shinolabs.pinksea.getIdentity">,
+          token?: string,
+        ): Promise<QueryOutput<"com.shinolabs.pinksea.getIdentity">>;
+        "getOekaki"(
+          params?: QueryParams<"com.shinolabs.pinksea.getOekaki">,
+          token?: string,
+        ): Promise<QueryOutput<"com.shinolabs.pinksea.getOekaki">>;
+        "getParentForReply"(
+          params?: QueryParams<"com.shinolabs.pinksea.getParentForReply">,
+          token?: string,
+        ): Promise<QueryOutput<"com.shinolabs.pinksea.getParentForReply">>;
+        "getRecent"(
+          params?: QueryParams<"com.shinolabs.pinksea.getRecent">,
+          token?: string,
+        ): Promise<QueryOutput<"com.shinolabs.pinksea.getRecent">>;
+        "getTagFeed"(
+          params?: QueryParams<"com.shinolabs.pinksea.getTagFeed">,
+          token?: string,
+        ): Promise<QueryOutput<"com.shinolabs.pinksea.getTagFeed">>;
       };
     };
     "whtwnd": {
       "blog": {
-        "getAuthorPosts"(params?: QueryParams<"com.whtwnd.blog.getAuthorPosts">, token?: string): Promise<QueryOutput<"com.whtwnd.blog.getAuthorPosts">>;
-        "getEntryMetadataByName"(params?: QueryParams<"com.whtwnd.blog.getEntryMetadataByName">, token?: string): Promise<QueryOutput<"com.whtwnd.blog.getEntryMetadataByName">>;
-        "getMentionsByEntry"(params?: QueryParams<"com.whtwnd.blog.getMentionsByEntry">, token?: string): Promise<QueryOutput<"com.whtwnd.blog.getMentionsByEntry">>;
-        "notifyOfNewEntry"(input?: ProcedureInput<"com.whtwnd.blog.notifyOfNewEntry">, token?: string): Promise<ProcedureOutput<"com.whtwnd.blog.notifyOfNewEntry">>;
+        "getAuthorPosts"(
+          params?: QueryParams<"com.whtwnd.blog.getAuthorPosts">,
+          token?: string,
+        ): Promise<QueryOutput<"com.whtwnd.blog.getAuthorPosts">>;
+        "getEntryMetadataByName"(
+          params?: QueryParams<"com.whtwnd.blog.getEntryMetadataByName">,
+          token?: string,
+        ): Promise<QueryOutput<"com.whtwnd.blog.getEntryMetadataByName">>;
+        "getMentionsByEntry"(
+          params?: QueryParams<"com.whtwnd.blog.getMentionsByEntry">,
+          token?: string,
+        ): Promise<QueryOutput<"com.whtwnd.blog.getMentionsByEntry">>;
+        "notifyOfNewEntry"(
+          input?: ProcedureInput<"com.whtwnd.blog.notifyOfNewEntry">,
+          token?: string,
+        ): Promise<ProcedureOutput<"com.whtwnd.blog.notifyOfNewEntry">>;
       };
     };
   };
   "place": {
     "stream": {
       "branding": {
-        "deleteBlob"(input?: ProcedureInput<"place.stream.branding.deleteBlob">, token?: string): Promise<ProcedureOutput<"place.stream.branding.deleteBlob">>;
-        "getBlob"(params?: QueryParams<"place.stream.branding.getBlob">, token?: string): Promise<QueryOutput<"place.stream.branding.getBlob">>;
-        "getBranding"(params?: QueryParams<"place.stream.branding.getBranding">, token?: string): Promise<QueryOutput<"place.stream.branding.getBranding">>;
-        "updateBlob"(input?: ProcedureInput<"place.stream.branding.updateBlob">, token?: string): Promise<ProcedureOutput<"place.stream.branding.updateBlob">>;
+        "deleteBlob"(
+          input?: ProcedureInput<"place.stream.branding.deleteBlob">,
+          token?: string,
+        ): Promise<ProcedureOutput<"place.stream.branding.deleteBlob">>;
+        "getBlob"(
+          params?: QueryParams<"place.stream.branding.getBlob">,
+          token?: string,
+        ): Promise<QueryOutput<"place.stream.branding.getBlob">>;
+        "getBranding"(
+          params?: QueryParams<"place.stream.branding.getBranding">,
+          token?: string,
+        ): Promise<QueryOutput<"place.stream.branding.getBranding">>;
+        "updateBlob"(
+          input?: ProcedureInput<"place.stream.branding.updateBlob">,
+          token?: string,
+        ): Promise<ProcedureOutput<"place.stream.branding.updateBlob">>;
       };
       "broadcast": {
-        "getBroadcaster"(params?: QueryParams<"place.stream.broadcast.getBroadcaster">, token?: string): Promise<QueryOutput<"place.stream.broadcast.getBroadcaster">>;
+        "getBroadcaster"(
+          params?: QueryParams<"place.stream.broadcast.getBroadcaster">,
+          token?: string,
+        ): Promise<QueryOutput<"place.stream.broadcast.getBroadcaster">>;
       };
       "graph": {
-        "getFollowingUser"(params?: QueryParams<"place.stream.graph.getFollowingUser">, token?: string): Promise<QueryOutput<"place.stream.graph.getFollowingUser">>;
+        "getFollowingUser"(
+          params?: QueryParams<"place.stream.graph.getFollowingUser">,
+          token?: string,
+        ): Promise<QueryOutput<"place.stream.graph.getFollowingUser">>;
       };
       "live": {
-        "getLiveUsers"(params?: QueryParams<"place.stream.live.getLiveUsers">, token?: string): Promise<QueryOutput<"place.stream.live.getLiveUsers">>;
-        "getProfileCard"(params?: QueryParams<"place.stream.live.getProfileCard">, token?: string): Promise<QueryOutput<"place.stream.live.getProfileCard">>;
-        "getRecommendations"(params?: QueryParams<"place.stream.live.getRecommendations">, token?: string): Promise<QueryOutput<"place.stream.live.getRecommendations">>;
-        "getSegments"(params?: QueryParams<"place.stream.live.getSegments">, token?: string): Promise<QueryOutput<"place.stream.live.getSegments">>;
-        "searchActorsTypeahead"(params?: QueryParams<"place.stream.live.searchActorsTypeahead">, token?: string): Promise<QueryOutput<"place.stream.live.searchActorsTypeahead">>;
+        "getLiveUsers"(
+          params?: QueryParams<"place.stream.live.getLiveUsers">,
+          token?: string,
+        ): Promise<QueryOutput<"place.stream.live.getLiveUsers">>;
+        "getProfileCard"(
+          params?: QueryParams<"place.stream.live.getProfileCard">,
+          token?: string,
+        ): Promise<QueryOutput<"place.stream.live.getProfileCard">>;
+        "getRecommendations"(
+          params?: QueryParams<"place.stream.live.getRecommendations">,
+          token?: string,
+        ): Promise<QueryOutput<"place.stream.live.getRecommendations">>;
+        "getSegments"(
+          params?: QueryParams<"place.stream.live.getSegments">,
+          token?: string,
+        ): Promise<QueryOutput<"place.stream.live.getSegments">>;
+        "searchActorsTypeahead"(
+          params?: QueryParams<"place.stream.live.searchActorsTypeahead">,
+          token?: string,
+        ): Promise<QueryOutput<"place.stream.live.searchActorsTypeahead">>;
       };
       "moderation": {
-        "createBlock"(input?: ProcedureInput<"place.stream.moderation.createBlock">, token?: string): Promise<ProcedureOutput<"place.stream.moderation.createBlock">>;
-        "createGate"(input?: ProcedureInput<"place.stream.moderation.createGate">, token?: string): Promise<ProcedureOutput<"place.stream.moderation.createGate">>;
-        "deleteBlock"(input?: ProcedureInput<"place.stream.moderation.deleteBlock">, token?: string): Promise<ProcedureOutput<"place.stream.moderation.deleteBlock">>;
-        "deleteGate"(input?: ProcedureInput<"place.stream.moderation.deleteGate">, token?: string): Promise<ProcedureOutput<"place.stream.moderation.deleteGate">>;
-        "updateLivestream"(input?: ProcedureInput<"place.stream.moderation.updateLivestream">, token?: string): Promise<ProcedureOutput<"place.stream.moderation.updateLivestream">>;
+        "createBlock"(
+          input?: ProcedureInput<"place.stream.moderation.createBlock">,
+          token?: string,
+        ): Promise<ProcedureOutput<"place.stream.moderation.createBlock">>;
+        "createGate"(
+          input?: ProcedureInput<"place.stream.moderation.createGate">,
+          token?: string,
+        ): Promise<ProcedureOutput<"place.stream.moderation.createGate">>;
+        "deleteBlock"(
+          input?: ProcedureInput<"place.stream.moderation.deleteBlock">,
+          token?: string,
+        ): Promise<ProcedureOutput<"place.stream.moderation.deleteBlock">>;
+        "deleteGate"(
+          input?: ProcedureInput<"place.stream.moderation.deleteGate">,
+          token?: string,
+        ): Promise<ProcedureOutput<"place.stream.moderation.deleteGate">>;
+        "updateLivestream"(
+          input?: ProcedureInput<"place.stream.moderation.updateLivestream">,
+          token?: string,
+        ): Promise<ProcedureOutput<"place.stream.moderation.updateLivestream">>;
       };
       "multistream": {
-        "createTarget"(input?: ProcedureInput<"place.stream.multistream.createTarget">, token?: string): Promise<ProcedureOutput<"place.stream.multistream.createTarget">>;
-        "deleteTarget"(input?: ProcedureInput<"place.stream.multistream.deleteTarget">, token?: string): Promise<ProcedureOutput<"place.stream.multistream.deleteTarget">>;
-        "listTargets"(params?: QueryParams<"place.stream.multistream.listTargets">, token?: string): Promise<QueryOutput<"place.stream.multistream.listTargets">>;
-        "putTarget"(input?: ProcedureInput<"place.stream.multistream.putTarget">, token?: string): Promise<ProcedureOutput<"place.stream.multistream.putTarget">>;
+        "createTarget"(
+          input?: ProcedureInput<"place.stream.multistream.createTarget">,
+          token?: string,
+        ): Promise<ProcedureOutput<"place.stream.multistream.createTarget">>;
+        "deleteTarget"(
+          input?: ProcedureInput<"place.stream.multistream.deleteTarget">,
+          token?: string,
+        ): Promise<ProcedureOutput<"place.stream.multistream.deleteTarget">>;
+        "listTargets"(
+          params?: QueryParams<"place.stream.multistream.listTargets">,
+          token?: string,
+        ): Promise<QueryOutput<"place.stream.multistream.listTargets">>;
+        "putTarget"(
+          input?: ProcedureInput<"place.stream.multistream.putTarget">,
+          token?: string,
+        ): Promise<ProcedureOutput<"place.stream.multistream.putTarget">>;
       };
       "server": {
-        "createWebhook"(input?: ProcedureInput<"place.stream.server.createWebhook">, token?: string): Promise<ProcedureOutput<"place.stream.server.createWebhook">>;
-        "deleteWebhook"(input?: ProcedureInput<"place.stream.server.deleteWebhook">, token?: string): Promise<ProcedureOutput<"place.stream.server.deleteWebhook">>;
-        "getServerTime"(params?: QueryParams<"place.stream.server.getServerTime">, token?: string): Promise<QueryOutput<"place.stream.server.getServerTime">>;
-        "getWebhook"(params?: QueryParams<"place.stream.server.getWebhook">, token?: string): Promise<QueryOutput<"place.stream.server.getWebhook">>;
-        "listWebhooks"(params?: QueryParams<"place.stream.server.listWebhooks">, token?: string): Promise<QueryOutput<"place.stream.server.listWebhooks">>;
-        "updateWebhook"(input?: ProcedureInput<"place.stream.server.updateWebhook">, token?: string): Promise<ProcedureOutput<"place.stream.server.updateWebhook">>;
+        "createWebhook"(
+          input?: ProcedureInput<"place.stream.server.createWebhook">,
+          token?: string,
+        ): Promise<ProcedureOutput<"place.stream.server.createWebhook">>;
+        "deleteWebhook"(
+          input?: ProcedureInput<"place.stream.server.deleteWebhook">,
+          token?: string,
+        ): Promise<ProcedureOutput<"place.stream.server.deleteWebhook">>;
+        "getServerTime"(
+          params?: QueryParams<"place.stream.server.getServerTime">,
+          token?: string,
+        ): Promise<QueryOutput<"place.stream.server.getServerTime">>;
+        "getWebhook"(
+          params?: QueryParams<"place.stream.server.getWebhook">,
+          token?: string,
+        ): Promise<QueryOutput<"place.stream.server.getWebhook">>;
+        "listWebhooks"(
+          params?: QueryParams<"place.stream.server.listWebhooks">,
+          token?: string,
+        ): Promise<QueryOutput<"place.stream.server.listWebhooks">>;
+        "updateWebhook"(
+          input?: ProcedureInput<"place.stream.server.updateWebhook">,
+          token?: string,
+        ): Promise<ProcedureOutput<"place.stream.server.updateWebhook">>;
       };
     };
   };
   "social": {
     "grain": {
       "actor": {
-        "getActorFavs"(params?: QueryParams<"social.grain.actor.getActorFavs">, token?: string): Promise<QueryOutput<"social.grain.actor.getActorFavs">>;
-        "getProfile"(params?: QueryParams<"social.grain.actor.getProfile">, token?: string): Promise<QueryOutput<"social.grain.actor.getProfile">>;
-        "searchActors"(params?: QueryParams<"social.grain.actor.searchActors">, token?: string): Promise<QueryOutput<"social.grain.actor.searchActors">>;
-        "updateAvatar"(input?: ProcedureInput<"social.grain.actor.updateAvatar">, token?: string): Promise<ProcedureOutput<"social.grain.actor.updateAvatar">>;
-        "updateProfile"(input?: ProcedureInput<"social.grain.actor.updateProfile">, token?: string): Promise<ProcedureOutput<"social.grain.actor.updateProfile">>;
+        "getActorFavs"(
+          params?: QueryParams<"social.grain.actor.getActorFavs">,
+          token?: string,
+        ): Promise<QueryOutput<"social.grain.actor.getActorFavs">>;
+        "getProfile"(
+          params?: QueryParams<"social.grain.actor.getProfile">,
+          token?: string,
+        ): Promise<QueryOutput<"social.grain.actor.getProfile">>;
+        "searchActors"(
+          params?: QueryParams<"social.grain.actor.searchActors">,
+          token?: string,
+        ): Promise<QueryOutput<"social.grain.actor.searchActors">>;
+        "updateAvatar"(
+          input?: ProcedureInput<"social.grain.actor.updateAvatar">,
+          token?: string,
+        ): Promise<ProcedureOutput<"social.grain.actor.updateAvatar">>;
+        "updateProfile"(
+          input?: ProcedureInput<"social.grain.actor.updateProfile">,
+          token?: string,
+        ): Promise<ProcedureOutput<"social.grain.actor.updateProfile">>;
       };
       "comment": {
-        "createComment"(input?: ProcedureInput<"social.grain.comment.createComment">, token?: string): Promise<ProcedureOutput<"social.grain.comment.createComment">>;
-        "deleteComment"(input?: ProcedureInput<"social.grain.comment.deleteComment">, token?: string): Promise<ProcedureOutput<"social.grain.comment.deleteComment">>;
+        "createComment"(
+          input?: ProcedureInput<"social.grain.comment.createComment">,
+          token?: string,
+        ): Promise<ProcedureOutput<"social.grain.comment.createComment">>;
+        "deleteComment"(
+          input?: ProcedureInput<"social.grain.comment.deleteComment">,
+          token?: string,
+        ): Promise<ProcedureOutput<"social.grain.comment.deleteComment">>;
       };
       "darkroom": {
-        "getGalleryComposite"(params?: QueryParams<"social.grain.darkroom.getGalleryComposite">, token?: string): Promise<QueryOutput<"social.grain.darkroom.getGalleryComposite">>;
+        "getGalleryComposite"(
+          params?: QueryParams<"social.grain.darkroom.getGalleryComposite">,
+          token?: string,
+        ): Promise<QueryOutput<"social.grain.darkroom.getGalleryComposite">>;
       };
       "favorite": {
-        "createFavorite"(input?: ProcedureInput<"social.grain.favorite.createFavorite">, token?: string): Promise<ProcedureOutput<"social.grain.favorite.createFavorite">>;
-        "deleteFavorite"(input?: ProcedureInput<"social.grain.favorite.deleteFavorite">, token?: string): Promise<ProcedureOutput<"social.grain.favorite.deleteFavorite">>;
+        "createFavorite"(
+          input?: ProcedureInput<"social.grain.favorite.createFavorite">,
+          token?: string,
+        ): Promise<ProcedureOutput<"social.grain.favorite.createFavorite">>;
+        "deleteFavorite"(
+          input?: ProcedureInput<"social.grain.favorite.deleteFavorite">,
+          token?: string,
+        ): Promise<ProcedureOutput<"social.grain.favorite.deleteFavorite">>;
       };
       "feed": {
-        "getTimeline"(params?: QueryParams<"social.grain.feed.getTimeline">, token?: string): Promise<QueryOutput<"social.grain.feed.getTimeline">>;
+        "getTimeline"(
+          params?: QueryParams<"social.grain.feed.getTimeline">,
+          token?: string,
+        ): Promise<QueryOutput<"social.grain.feed.getTimeline">>;
       };
       "gallery": {
-        "applySort"(input?: ProcedureInput<"social.grain.gallery.applySort">, token?: string): Promise<ProcedureOutput<"social.grain.gallery.applySort">>;
-        "createGallery"(input?: ProcedureInput<"social.grain.gallery.createGallery">, token?: string): Promise<ProcedureOutput<"social.grain.gallery.createGallery">>;
-        "createItem"(input?: ProcedureInput<"social.grain.gallery.createItem">, token?: string): Promise<ProcedureOutput<"social.grain.gallery.createItem">>;
-        "deleteGallery"(input?: ProcedureInput<"social.grain.gallery.deleteGallery">, token?: string): Promise<ProcedureOutput<"social.grain.gallery.deleteGallery">>;
-        "deleteItem"(input?: ProcedureInput<"social.grain.gallery.deleteItem">, token?: string): Promise<ProcedureOutput<"social.grain.gallery.deleteItem">>;
-        "getActorGalleries"(params?: QueryParams<"social.grain.gallery.getActorGalleries">, token?: string): Promise<QueryOutput<"social.grain.gallery.getActorGalleries">>;
-        "getGallery"(params?: QueryParams<"social.grain.gallery.getGallery">, token?: string): Promise<QueryOutput<"social.grain.gallery.getGallery">>;
-        "getGalleryThread"(params?: QueryParams<"social.grain.gallery.getGalleryThread">, token?: string): Promise<QueryOutput<"social.grain.gallery.getGalleryThread">>;
-        "updateGallery"(input?: ProcedureInput<"social.grain.gallery.updateGallery">, token?: string): Promise<ProcedureOutput<"social.grain.gallery.updateGallery">>;
+        "applySort"(
+          input?: ProcedureInput<"social.grain.gallery.applySort">,
+          token?: string,
+        ): Promise<ProcedureOutput<"social.grain.gallery.applySort">>;
+        "createGallery"(
+          input?: ProcedureInput<"social.grain.gallery.createGallery">,
+          token?: string,
+        ): Promise<ProcedureOutput<"social.grain.gallery.createGallery">>;
+        "createItem"(
+          input?: ProcedureInput<"social.grain.gallery.createItem">,
+          token?: string,
+        ): Promise<ProcedureOutput<"social.grain.gallery.createItem">>;
+        "deleteGallery"(
+          input?: ProcedureInput<"social.grain.gallery.deleteGallery">,
+          token?: string,
+        ): Promise<ProcedureOutput<"social.grain.gallery.deleteGallery">>;
+        "deleteItem"(
+          input?: ProcedureInput<"social.grain.gallery.deleteItem">,
+          token?: string,
+        ): Promise<ProcedureOutput<"social.grain.gallery.deleteItem">>;
+        "getActorGalleries"(
+          params?: QueryParams<"social.grain.gallery.getActorGalleries">,
+          token?: string,
+        ): Promise<QueryOutput<"social.grain.gallery.getActorGalleries">>;
+        "getGallery"(
+          params?: QueryParams<"social.grain.gallery.getGallery">,
+          token?: string,
+        ): Promise<QueryOutput<"social.grain.gallery.getGallery">>;
+        "getGalleryThread"(
+          params?: QueryParams<"social.grain.gallery.getGalleryThread">,
+          token?: string,
+        ): Promise<QueryOutput<"social.grain.gallery.getGalleryThread">>;
+        "updateGallery"(
+          input?: ProcedureInput<"social.grain.gallery.updateGallery">,
+          token?: string,
+        ): Promise<ProcedureOutput<"social.grain.gallery.updateGallery">>;
       };
       "graph": {
-        "createFollow"(input?: ProcedureInput<"social.grain.graph.createFollow">, token?: string): Promise<ProcedureOutput<"social.grain.graph.createFollow">>;
-        "deleteFollow"(input?: ProcedureInput<"social.grain.graph.deleteFollow">, token?: string): Promise<ProcedureOutput<"social.grain.graph.deleteFollow">>;
-        "getFollowers"(params?: QueryParams<"social.grain.graph.getFollowers">, token?: string): Promise<QueryOutput<"social.grain.graph.getFollowers">>;
-        "getFollows"(params?: QueryParams<"social.grain.graph.getFollows">, token?: string): Promise<QueryOutput<"social.grain.graph.getFollows">>;
+        "createFollow"(
+          input?: ProcedureInput<"social.grain.graph.createFollow">,
+          token?: string,
+        ): Promise<ProcedureOutput<"social.grain.graph.createFollow">>;
+        "deleteFollow"(
+          input?: ProcedureInput<"social.grain.graph.deleteFollow">,
+          token?: string,
+        ): Promise<ProcedureOutput<"social.grain.graph.deleteFollow">>;
+        "getFollowers"(
+          params?: QueryParams<"social.grain.graph.getFollowers">,
+          token?: string,
+        ): Promise<QueryOutput<"social.grain.graph.getFollowers">>;
+        "getFollows"(
+          params?: QueryParams<"social.grain.graph.getFollows">,
+          token?: string,
+        ): Promise<QueryOutput<"social.grain.graph.getFollows">>;
       };
       "notification": {
-        "getNotifications"(params?: QueryParams<"social.grain.notification.getNotifications">, token?: string): Promise<QueryOutput<"social.grain.notification.getNotifications">>;
-        "updateSeen"(input?: ProcedureInput<"social.grain.notification.updateSeen">, token?: string): Promise<ProcedureOutput<"social.grain.notification.updateSeen">>;
+        "getNotifications"(
+          params?: QueryParams<"social.grain.notification.getNotifications">,
+          token?: string,
+        ): Promise<QueryOutput<"social.grain.notification.getNotifications">>;
+        "updateSeen"(
+          input?: ProcedureInput<"social.grain.notification.updateSeen">,
+          token?: string,
+        ): Promise<ProcedureOutput<"social.grain.notification.updateSeen">>;
       };
       "photo": {
-        "applyAlts"(input?: ProcedureInput<"social.grain.photo.applyAlts">, token?: string): Promise<ProcedureOutput<"social.grain.photo.applyAlts">>;
-        "createExif"(input?: ProcedureInput<"social.grain.photo.createExif">, token?: string): Promise<ProcedureOutput<"social.grain.photo.createExif">>;
-        "deletePhoto"(input?: ProcedureInput<"social.grain.photo.deletePhoto">, token?: string): Promise<ProcedureOutput<"social.grain.photo.deletePhoto">>;
-        "getActorPhotos"(params?: QueryParams<"social.grain.photo.getActorPhotos">, token?: string): Promise<QueryOutput<"social.grain.photo.getActorPhotos">>;
-        "uploadPhoto"(input?: ProcedureInput<"social.grain.photo.uploadPhoto">, token?: string): Promise<ProcedureOutput<"social.grain.photo.uploadPhoto">>;
+        "applyAlts"(
+          input?: ProcedureInput<"social.grain.photo.applyAlts">,
+          token?: string,
+        ): Promise<ProcedureOutput<"social.grain.photo.applyAlts">>;
+        "createExif"(
+          input?: ProcedureInput<"social.grain.photo.createExif">,
+          token?: string,
+        ): Promise<ProcedureOutput<"social.grain.photo.createExif">>;
+        "deletePhoto"(
+          input?: ProcedureInput<"social.grain.photo.deletePhoto">,
+          token?: string,
+        ): Promise<ProcedureOutput<"social.grain.photo.deletePhoto">>;
+        "getActorPhotos"(
+          params?: QueryParams<"social.grain.photo.getActorPhotos">,
+          token?: string,
+        ): Promise<QueryOutput<"social.grain.photo.getActorPhotos">>;
+        "uploadPhoto"(
+          input?: ProcedureInput<"social.grain.photo.uploadPhoto">,
+          token?: string,
+        ): Promise<ProcedureOutput<"social.grain.photo.uploadPhoto">>;
       };
     };
   };
   "tools": {
     "garazyk": {
       "account": {
-        "getUsage"(params?: QueryParams<"tools.garazyk.account.getUsage">, token?: string): Promise<QueryOutput<"tools.garazyk.account.getUsage">>;
+        "getUsage"(
+          params?: QueryParams<"tools.garazyk.account.getUsage">,
+          token?: string,
+        ): Promise<QueryOutput<"tools.garazyk.account.getUsage">>;
       };
       "sync": {
-        "getRepoFiltered"(params?: QueryParams<"tools.garazyk.sync.getRepoFiltered">, token?: string): Promise<QueryOutput<"tools.garazyk.sync.getRepoFiltered">>;
+        "getRepoFiltered"(
+          params?: QueryParams<"tools.garazyk.sync.getRepoFiltered">,
+          token?: string,
+        ): Promise<QueryOutput<"tools.garazyk.sync.getRepoFiltered">>;
       };
     };
     "ozone": {
       "communication": {
-        "createTemplate"(input?: ProcedureInput<"tools.ozone.communication.createTemplate">, token?: string): Promise<ProcedureOutput<"tools.ozone.communication.createTemplate">>;
-        "deleteTemplate"(input?: ProcedureInput<"tools.ozone.communication.deleteTemplate">, token?: string): Promise<ProcedureOutput<"tools.ozone.communication.deleteTemplate">>;
-        "listTemplates"(params?: QueryParams<"tools.ozone.communication.listTemplates">, token?: string): Promise<QueryOutput<"tools.ozone.communication.listTemplates">>;
-        "updateTemplate"(input?: ProcedureInput<"tools.ozone.communication.updateTemplate">, token?: string): Promise<ProcedureOutput<"tools.ozone.communication.updateTemplate">>;
+        "createTemplate"(
+          input?: ProcedureInput<"tools.ozone.communication.createTemplate">,
+          token?: string,
+        ): Promise<ProcedureOutput<"tools.ozone.communication.createTemplate">>;
+        "deleteTemplate"(
+          input?: ProcedureInput<"tools.ozone.communication.deleteTemplate">,
+          token?: string,
+        ): Promise<ProcedureOutput<"tools.ozone.communication.deleteTemplate">>;
+        "listTemplates"(
+          params?: QueryParams<"tools.ozone.communication.listTemplates">,
+          token?: string,
+        ): Promise<QueryOutput<"tools.ozone.communication.listTemplates">>;
+        "updateTemplate"(
+          input?: ProcedureInput<"tools.ozone.communication.updateTemplate">,
+          token?: string,
+        ): Promise<ProcedureOutput<"tools.ozone.communication.updateTemplate">>;
       };
       "hosting": {
-        "getAccountHistory"(params?: QueryParams<"tools.ozone.hosting.getAccountHistory">, token?: string): Promise<QueryOutput<"tools.ozone.hosting.getAccountHistory">>;
+        "getAccountHistory"(
+          params?: QueryParams<"tools.ozone.hosting.getAccountHistory">,
+          token?: string,
+        ): Promise<QueryOutput<"tools.ozone.hosting.getAccountHistory">>;
       };
       "moderation": {
-        "cancelScheduledAction"(input?: ProcedureInput<"tools.ozone.moderation.cancelScheduledAction">, token?: string): Promise<ProcedureOutput<"tools.ozone.moderation.cancelScheduledAction">>;
-        "cancelScheduledActions"(input?: ProcedureInput<"tools.ozone.moderation.cancelScheduledActions">, token?: string): Promise<ProcedureOutput<"tools.ozone.moderation.cancelScheduledActions">>;
-        "emitEvent"(input?: ProcedureInput<"tools.ozone.moderation.emitEvent">, token?: string): Promise<ProcedureOutput<"tools.ozone.moderation.emitEvent">>;
-        "getAccountTimeline"(params?: QueryParams<"tools.ozone.moderation.getAccountTimeline">, token?: string): Promise<QueryOutput<"tools.ozone.moderation.getAccountTimeline">>;
-        "getEvent"(params?: QueryParams<"tools.ozone.moderation.getEvent">, token?: string): Promise<QueryOutput<"tools.ozone.moderation.getEvent">>;
-        "getRecord"(params?: QueryParams<"tools.ozone.moderation.getRecord">, token?: string): Promise<QueryOutput<"tools.ozone.moderation.getRecord">>;
-        "getRecords"(params?: QueryParams<"tools.ozone.moderation.getRecords">, token?: string): Promise<QueryOutput<"tools.ozone.moderation.getRecords">>;
-        "getRepo"(params?: QueryParams<"tools.ozone.moderation.getRepo">, token?: string): Promise<QueryOutput<"tools.ozone.moderation.getRepo">>;
-        "getReporterStats"(params?: QueryParams<"tools.ozone.moderation.getReporterStats">, token?: string): Promise<QueryOutput<"tools.ozone.moderation.getReporterStats">>;
-        "getRepos"(params?: QueryParams<"tools.ozone.moderation.getRepos">, token?: string): Promise<QueryOutput<"tools.ozone.moderation.getRepos">>;
-        "getSubjects"(params?: QueryParams<"tools.ozone.moderation.getSubjects">, token?: string): Promise<QueryOutput<"tools.ozone.moderation.getSubjects">>;
-        "getSubjectStatus"(params?: QueryParams<"tools.ozone.moderation.getSubjectStatus">, token?: string): Promise<QueryOutput<"tools.ozone.moderation.getSubjectStatus">>;
-        "listScheduledActions"(input?: ProcedureInput<"tools.ozone.moderation.listScheduledActions">, token?: string): Promise<ProcedureOutput<"tools.ozone.moderation.listScheduledActions">>;
-        "queryEvents"(params?: QueryParams<"tools.ozone.moderation.queryEvents">, token?: string): Promise<QueryOutput<"tools.ozone.moderation.queryEvents">>;
-        "queryStatuses"(params?: QueryParams<"tools.ozone.moderation.queryStatuses">, token?: string): Promise<QueryOutput<"tools.ozone.moderation.queryStatuses">>;
-        "scheduleAction"(input?: ProcedureInput<"tools.ozone.moderation.scheduleAction">, token?: string): Promise<ProcedureOutput<"tools.ozone.moderation.scheduleAction">>;
-        "searchRepos"(params?: QueryParams<"tools.ozone.moderation.searchRepos">, token?: string): Promise<QueryOutput<"tools.ozone.moderation.searchRepos">>;
+        "cancelScheduledAction"(
+          input?: ProcedureInput<
+            "tools.ozone.moderation.cancelScheduledAction"
+          >,
+          token?: string,
+        ): Promise<
+          ProcedureOutput<"tools.ozone.moderation.cancelScheduledAction">
+        >;
+        "cancelScheduledActions"(
+          input?: ProcedureInput<
+            "tools.ozone.moderation.cancelScheduledActions"
+          >,
+          token?: string,
+        ): Promise<
+          ProcedureOutput<"tools.ozone.moderation.cancelScheduledActions">
+        >;
+        "emitEvent"(
+          input?: ProcedureInput<"tools.ozone.moderation.emitEvent">,
+          token?: string,
+        ): Promise<ProcedureOutput<"tools.ozone.moderation.emitEvent">>;
+        "getAccountTimeline"(
+          params?: QueryParams<"tools.ozone.moderation.getAccountTimeline">,
+          token?: string,
+        ): Promise<QueryOutput<"tools.ozone.moderation.getAccountTimeline">>;
+        "getEvent"(
+          params?: QueryParams<"tools.ozone.moderation.getEvent">,
+          token?: string,
+        ): Promise<QueryOutput<"tools.ozone.moderation.getEvent">>;
+        "getRecord"(
+          params?: QueryParams<"tools.ozone.moderation.getRecord">,
+          token?: string,
+        ): Promise<QueryOutput<"tools.ozone.moderation.getRecord">>;
+        "getRecords"(
+          params?: QueryParams<"tools.ozone.moderation.getRecords">,
+          token?: string,
+        ): Promise<QueryOutput<"tools.ozone.moderation.getRecords">>;
+        "getRepo"(
+          params?: QueryParams<"tools.ozone.moderation.getRepo">,
+          token?: string,
+        ): Promise<QueryOutput<"tools.ozone.moderation.getRepo">>;
+        "getReporterStats"(
+          params?: QueryParams<"tools.ozone.moderation.getReporterStats">,
+          token?: string,
+        ): Promise<QueryOutput<"tools.ozone.moderation.getReporterStats">>;
+        "getRepos"(
+          params?: QueryParams<"tools.ozone.moderation.getRepos">,
+          token?: string,
+        ): Promise<QueryOutput<"tools.ozone.moderation.getRepos">>;
+        "getSubjects"(
+          params?: QueryParams<"tools.ozone.moderation.getSubjects">,
+          token?: string,
+        ): Promise<QueryOutput<"tools.ozone.moderation.getSubjects">>;
+        "getSubjectStatus"(
+          params?: QueryParams<"tools.ozone.moderation.getSubjectStatus">,
+          token?: string,
+        ): Promise<QueryOutput<"tools.ozone.moderation.getSubjectStatus">>;
+        "listScheduledActions"(
+          input?: ProcedureInput<"tools.ozone.moderation.listScheduledActions">,
+          token?: string,
+        ): Promise<
+          ProcedureOutput<"tools.ozone.moderation.listScheduledActions">
+        >;
+        "queryEvents"(
+          params?: QueryParams<"tools.ozone.moderation.queryEvents">,
+          token?: string,
+        ): Promise<QueryOutput<"tools.ozone.moderation.queryEvents">>;
+        "queryStatuses"(
+          params?: QueryParams<"tools.ozone.moderation.queryStatuses">,
+          token?: string,
+        ): Promise<QueryOutput<"tools.ozone.moderation.queryStatuses">>;
+        "scheduleAction"(
+          input?: ProcedureInput<"tools.ozone.moderation.scheduleAction">,
+          token?: string,
+        ): Promise<ProcedureOutput<"tools.ozone.moderation.scheduleAction">>;
+        "searchRepos"(
+          params?: QueryParams<"tools.ozone.moderation.searchRepos">,
+          token?: string,
+        ): Promise<QueryOutput<"tools.ozone.moderation.searchRepos">>;
       };
       "safelink": {
-        "addRule"(input?: ProcedureInput<"tools.ozone.safelink.addRule">, token?: string): Promise<ProcedureOutput<"tools.ozone.safelink.addRule">>;
-        "queryEvents"(input?: ProcedureInput<"tools.ozone.safelink.queryEvents">, token?: string): Promise<ProcedureOutput<"tools.ozone.safelink.queryEvents">>;
-        "queryRules"(input?: ProcedureInput<"tools.ozone.safelink.queryRules">, token?: string): Promise<ProcedureOutput<"tools.ozone.safelink.queryRules">>;
-        "removeRule"(input?: ProcedureInput<"tools.ozone.safelink.removeRule">, token?: string): Promise<ProcedureOutput<"tools.ozone.safelink.removeRule">>;
-        "updateRule"(input?: ProcedureInput<"tools.ozone.safelink.updateRule">, token?: string): Promise<ProcedureOutput<"tools.ozone.safelink.updateRule">>;
+        "addRule"(
+          input?: ProcedureInput<"tools.ozone.safelink.addRule">,
+          token?: string,
+        ): Promise<ProcedureOutput<"tools.ozone.safelink.addRule">>;
+        "queryEvents"(
+          input?: ProcedureInput<"tools.ozone.safelink.queryEvents">,
+          token?: string,
+        ): Promise<ProcedureOutput<"tools.ozone.safelink.queryEvents">>;
+        "queryRules"(
+          input?: ProcedureInput<"tools.ozone.safelink.queryRules">,
+          token?: string,
+        ): Promise<ProcedureOutput<"tools.ozone.safelink.queryRules">>;
+        "removeRule"(
+          input?: ProcedureInput<"tools.ozone.safelink.removeRule">,
+          token?: string,
+        ): Promise<ProcedureOutput<"tools.ozone.safelink.removeRule">>;
+        "updateRule"(
+          input?: ProcedureInput<"tools.ozone.safelink.updateRule">,
+          token?: string,
+        ): Promise<ProcedureOutput<"tools.ozone.safelink.updateRule">>;
       };
       "server": {
-        "getConfig"(params?: QueryParams<"tools.ozone.server.getConfig">, token?: string): Promise<QueryOutput<"tools.ozone.server.getConfig">>;
-        "updateConfig"(input?: ProcedureInput<"tools.ozone.server.updateConfig">, token?: string): Promise<ProcedureOutput<"tools.ozone.server.updateConfig">>;
+        "getConfig"(
+          params?: QueryParams<"tools.ozone.server.getConfig">,
+          token?: string,
+        ): Promise<QueryOutput<"tools.ozone.server.getConfig">>;
+        "updateConfig"(
+          input?: ProcedureInput<"tools.ozone.server.updateConfig">,
+          token?: string,
+        ): Promise<ProcedureOutput<"tools.ozone.server.updateConfig">>;
       };
       "set": {
-        "addValues"(input?: ProcedureInput<"tools.ozone.set.addValues">, token?: string): Promise<ProcedureOutput<"tools.ozone.set.addValues">>;
-        "deleteSet"(input?: ProcedureInput<"tools.ozone.set.deleteSet">, token?: string): Promise<ProcedureOutput<"tools.ozone.set.deleteSet">>;
-        "deleteValues"(input?: ProcedureInput<"tools.ozone.set.deleteValues">, token?: string): Promise<ProcedureOutput<"tools.ozone.set.deleteValues">>;
-        "getValues"(params?: QueryParams<"tools.ozone.set.getValues">, token?: string): Promise<QueryOutput<"tools.ozone.set.getValues">>;
-        "querySets"(params?: QueryParams<"tools.ozone.set.querySets">, token?: string): Promise<QueryOutput<"tools.ozone.set.querySets">>;
-        "upsertSet"(input?: ProcedureInput<"tools.ozone.set.upsertSet">, token?: string): Promise<ProcedureOutput<"tools.ozone.set.upsertSet">>;
+        "addValues"(
+          input?: ProcedureInput<"tools.ozone.set.addValues">,
+          token?: string,
+        ): Promise<ProcedureOutput<"tools.ozone.set.addValues">>;
+        "deleteSet"(
+          input?: ProcedureInput<"tools.ozone.set.deleteSet">,
+          token?: string,
+        ): Promise<ProcedureOutput<"tools.ozone.set.deleteSet">>;
+        "deleteValues"(
+          input?: ProcedureInput<"tools.ozone.set.deleteValues">,
+          token?: string,
+        ): Promise<ProcedureOutput<"tools.ozone.set.deleteValues">>;
+        "getValues"(
+          params?: QueryParams<"tools.ozone.set.getValues">,
+          token?: string,
+        ): Promise<QueryOutput<"tools.ozone.set.getValues">>;
+        "querySets"(
+          params?: QueryParams<"tools.ozone.set.querySets">,
+          token?: string,
+        ): Promise<QueryOutput<"tools.ozone.set.querySets">>;
+        "upsertSet"(
+          input?: ProcedureInput<"tools.ozone.set.upsertSet">,
+          token?: string,
+        ): Promise<ProcedureOutput<"tools.ozone.set.upsertSet">>;
       };
       "setting": {
-        "listOptions"(params?: QueryParams<"tools.ozone.setting.listOptions">, token?: string): Promise<QueryOutput<"tools.ozone.setting.listOptions">>;
-        "removeOptions"(input?: ProcedureInput<"tools.ozone.setting.removeOptions">, token?: string): Promise<ProcedureOutput<"tools.ozone.setting.removeOptions">>;
-        "upsertOption"(input?: ProcedureInput<"tools.ozone.setting.upsertOption">, token?: string): Promise<ProcedureOutput<"tools.ozone.setting.upsertOption">>;
+        "listOptions"(
+          params?: QueryParams<"tools.ozone.setting.listOptions">,
+          token?: string,
+        ): Promise<QueryOutput<"tools.ozone.setting.listOptions">>;
+        "removeOptions"(
+          input?: ProcedureInput<"tools.ozone.setting.removeOptions">,
+          token?: string,
+        ): Promise<ProcedureOutput<"tools.ozone.setting.removeOptions">>;
+        "upsertOption"(
+          input?: ProcedureInput<"tools.ozone.setting.upsertOption">,
+          token?: string,
+        ): Promise<ProcedureOutput<"tools.ozone.setting.upsertOption">>;
       };
       "signature": {
-        "findCorrelation"(params?: QueryParams<"tools.ozone.signature.findCorrelation">, token?: string): Promise<QueryOutput<"tools.ozone.signature.findCorrelation">>;
-        "findRelatedAccounts"(params?: QueryParams<"tools.ozone.signature.findRelatedAccounts">, token?: string): Promise<QueryOutput<"tools.ozone.signature.findRelatedAccounts">>;
-        "searchAccounts"(params?: QueryParams<"tools.ozone.signature.searchAccounts">, token?: string): Promise<QueryOutput<"tools.ozone.signature.searchAccounts">>;
+        "findCorrelation"(
+          params?: QueryParams<"tools.ozone.signature.findCorrelation">,
+          token?: string,
+        ): Promise<QueryOutput<"tools.ozone.signature.findCorrelation">>;
+        "findRelatedAccounts"(
+          params?: QueryParams<"tools.ozone.signature.findRelatedAccounts">,
+          token?: string,
+        ): Promise<QueryOutput<"tools.ozone.signature.findRelatedAccounts">>;
+        "searchAccounts"(
+          params?: QueryParams<"tools.ozone.signature.searchAccounts">,
+          token?: string,
+        ): Promise<QueryOutput<"tools.ozone.signature.searchAccounts">>;
       };
       "team": {
-        "addMember"(input?: ProcedureInput<"tools.ozone.team.addMember">, token?: string): Promise<ProcedureOutput<"tools.ozone.team.addMember">>;
-        "deleteMember"(input?: ProcedureInput<"tools.ozone.team.deleteMember">, token?: string): Promise<ProcedureOutput<"tools.ozone.team.deleteMember">>;
-        "listMembers"(params?: QueryParams<"tools.ozone.team.listMembers">, token?: string): Promise<QueryOutput<"tools.ozone.team.listMembers">>;
-        "updateMember"(input?: ProcedureInput<"tools.ozone.team.updateMember">, token?: string): Promise<ProcedureOutput<"tools.ozone.team.updateMember">>;
+        "addMember"(
+          input?: ProcedureInput<"tools.ozone.team.addMember">,
+          token?: string,
+        ): Promise<ProcedureOutput<"tools.ozone.team.addMember">>;
+        "deleteMember"(
+          input?: ProcedureInput<"tools.ozone.team.deleteMember">,
+          token?: string,
+        ): Promise<ProcedureOutput<"tools.ozone.team.deleteMember">>;
+        "listMembers"(
+          params?: QueryParams<"tools.ozone.team.listMembers">,
+          token?: string,
+        ): Promise<QueryOutput<"tools.ozone.team.listMembers">>;
+        "updateMember"(
+          input?: ProcedureInput<"tools.ozone.team.updateMember">,
+          token?: string,
+        ): Promise<ProcedureOutput<"tools.ozone.team.updateMember">>;
       };
       "verification": {
-        "grantVerifications"(input?: ProcedureInput<"tools.ozone.verification.grantVerifications">, token?: string): Promise<ProcedureOutput<"tools.ozone.verification.grantVerifications">>;
-        "listVerifications"(params?: QueryParams<"tools.ozone.verification.listVerifications">, token?: string): Promise<QueryOutput<"tools.ozone.verification.listVerifications">>;
-        "revokeVerifications"(input?: ProcedureInput<"tools.ozone.verification.revokeVerifications">, token?: string): Promise<ProcedureOutput<"tools.ozone.verification.revokeVerifications">>;
+        "grantVerifications"(
+          input?: ProcedureInput<"tools.ozone.verification.grantVerifications">,
+          token?: string,
+        ): Promise<
+          ProcedureOutput<"tools.ozone.verification.grantVerifications">
+        >;
+        "listVerifications"(
+          params?: QueryParams<"tools.ozone.verification.listVerifications">,
+          token?: string,
+        ): Promise<QueryOutput<"tools.ozone.verification.listVerifications">>;
+        "revokeVerifications"(
+          input?: ProcedureInput<
+            "tools.ozone.verification.revokeVerifications"
+          >,
+          token?: string,
+        ): Promise<
+          ProcedureOutput<"tools.ozone.verification.revokeVerifications">
+        >;
       };
     };
   };

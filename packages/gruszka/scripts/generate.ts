@@ -27,6 +27,7 @@ interface LexiconParams {
 }
 
 interface LexiconBody {
+  encoding?: string;
   schema?: LexiconSchema;
 }
 
@@ -149,15 +150,21 @@ function renderLexicons(docs: LexiconDoc[]): {
 // @ts-nocheck
 
 export interface LexiconQuery<Params = any, Input = any, Output = any> {
+  inputEncoding?: string;
+  outputEncoding?: string;
   params?: Params;
   input?: Input;
   output?: Output;
 }
 
 export interface LexiconProcedure<Input = any, Output = any> {
+  inputEncoding?: string;
+  outputEncoding?: string;
   input?: Input;
   output?: Output;
 }
+
+export type BinaryXrpcResponse = [status: number, contentType: string, data: Uint8Array];
 
 export interface LexiconDefs {
 `;
@@ -191,6 +198,7 @@ export interface Lexicons {
       out += `  "${doc.id}": {\n`;
       if (mainDef.type === "query") {
         out += `    type: "query";\n`;
+        out += `    outputEncoding: ${tsString(outputEncoding(mainDef))};\n`;
         // parameters
         if (mainDef.parameters && mainDef.parameters.properties) {
           out += `    params: {\n`;
@@ -210,6 +218,8 @@ export interface Lexicons {
         }
       } else {
         out += `    type: "procedure";\n`;
+        out += `    inputEncoding: ${tsString(inputEncoding(mainDef))};\n`;
+        out += `    outputEncoding: ${tsString(outputEncoding(mainDef))};\n`;
       }
 
       // input
@@ -217,6 +227,8 @@ export interface Lexicons {
         out += `    input: ${
           mapSchema(doc.id, mainDef.input.schema, resolver)
         };\n`;
+      } else if (isBinaryEncoding(mainDef.input?.encoding)) {
+        out += `    input: Uint8Array;\n`;
       } else {
         out += `    input: never;\n`;
       }
@@ -226,6 +238,8 @@ export interface Lexicons {
         out += `    output: ${
           mapSchema(doc.id, mainDef.output.schema, resolver)
         };\n`;
+      } else if (isBinaryEncoding(mainDef.output?.encoding)) {
+        out += `    output: BinaryXrpcResponse;\n`;
       } else {
         out += `    output: never;\n`;
       }
@@ -250,6 +264,24 @@ export interface Lexicons {
   }
   out += "} as const;\n\n";
 
+  out += "export const LEXICON_METHOD_INPUT_ENCODINGS = {\n";
+  for (const doc of validDocs) {
+    const mainDef = doc.defs["main"];
+    if (mainDef.type === "procedure") {
+      out += `  "${doc.id}": ${tsString(inputEncoding(mainDef))},\n`;
+    }
+  }
+  out += "} as const;\n\n";
+
+  out += "export const LEXICON_METHOD_OUTPUT_ENCODINGS = {\n";
+  for (const doc of validDocs) {
+    const mainDef = doc.defs["main"];
+    if (mainDef.type === "query" || mainDef.type === "procedure") {
+      out += `  "${doc.id}": ${tsString(outputEncoding(mainDef))},\n`;
+    }
+  }
+  out += "} as const;\n\n";
+
   // Create client escape hatch types
   out += `
 export type LexiconIds = keyof Lexicons;
@@ -260,6 +292,9 @@ export type QueryParams<K extends LexiconQueryIds> = Lexicons[K] extends { param
 export type QueryOutput<K extends LexiconQueryIds> = Lexicons[K] extends { output: infer O } ? O : never;
 export type ProcedureInput<K extends LexiconProcedureIds> = Lexicons[K] extends { input: infer I } ? I : never;
 export type ProcedureOutput<K extends LexiconProcedureIds> = Lexicons[K] extends { output: infer O } ? O : never;
+export type QueryOutputEncoding<K extends LexiconQueryIds> = Lexicons[K] extends { outputEncoding: infer E } ? E : never;
+export type ProcedureInputEncoding<K extends LexiconProcedureIds> = Lexicons[K] extends { inputEncoding: infer E } ? E : never;
+export type ProcedureOutputEncoding<K extends LexiconProcedureIds> = Lexicons[K] extends { outputEncoding: infer E } ? E : never;
 
 /** Strongly typed nested API client. */
 export interface GeneratedClient {
@@ -446,6 +481,18 @@ function mapSchema(
 
 function stringBytesType(): string {
   return "{ $bytes: string } | string";
+}
+
+function inputEncoding(def: LexiconDef): string {
+  return def.input?.encoding ?? "application/json";
+}
+
+function outputEncoding(def: LexiconDef): string {
+  return def.output?.encoding ?? "application/json";
+}
+
+function isBinaryEncoding(encoding: string | undefined): boolean {
+  return encoding !== undefined && encoding !== "application/json";
 }
 
 function tsString(value: string): string {
