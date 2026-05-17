@@ -11,8 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1 } from "@garazyk/hamownia";
+import { PDS1 } from "@garazyk/hamownia/config";
 import { ScenarioResult } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
@@ -42,7 +43,11 @@ export async function run(): Promise<ScenarioResult> {
   if (result.failed > 0) return result;
 
   const session = await timedCall(result, "Create Marcus", async () => {
-    return await client.accounts.createAccount(marcus.handle, marcus.email, marcus.password);
+    return await client.accounts.createAccount(
+      marcus.handle,
+      marcus.email,
+      marcus.password,
+    );
   });
 
   if (!session) {
@@ -65,7 +70,12 @@ export async function run(): Promise<ScenarioResult> {
       await client.records.createRecord(
         marcus.did,
         "app.bsky.feed.post",
-        { $type: "app.bsky.feed.post", text: "too deep", createdAt: now(), testExtra: deepMap },
+        {
+          $type: "app.bsky.feed.post",
+          text: "too deep",
+          createdAt: now(),
+          testExtra: deepMap,
+        },
         marcus.accessJwt,
       );
     },

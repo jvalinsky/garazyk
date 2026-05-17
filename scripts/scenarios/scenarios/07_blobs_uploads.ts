@@ -20,7 +20,8 @@
  */
 
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
-import { getCharacter, PDS1 } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
+import { PDS1 } from "@garazyk/hamownia/config";
 import { ScenarioResult, timedCall } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
@@ -194,7 +195,10 @@ export async function run(): Promise<ScenarioResult> {
       },
     );
   } else {
-    result.stepSkipped("DJ Volt posts 4-image album", "Not enough blobs uploaded");
+    result.stepSkipped(
+      "DJ Volt posts 4-image album",
+      "Not enough blobs uploaded",
+    );
   }
 
   const bannerData = makePng(600, 200);
@@ -235,7 +239,8 @@ export async function run(): Promise<ScenarioResult> {
     try {
       const cid = rosaBlob.ref?.$link || rosaBlob.cid || rosaBlob.ref;
       if (cid) {
-        const blobUrl = `${PDS1}/xrpc/com.atproto.sync.getBlob?did=${rosa.did}&cid=${cid}`;
+        const blobUrl =
+          `${PDS1}/xrpc/com.atproto.sync.getBlob?did=${rosa.did}&cid=${cid}`;
         const resp = await fetch(blobUrl);
         if (resp.ok) {
           const buf = await resp.arrayBuffer();
@@ -264,7 +269,10 @@ export async function run(): Promise<ScenarioResult> {
           marcus.accessJwt,
         );
       } catch (e) {
-        if (e instanceof XrpcError && e.status === 400 && e.body?.error === "BlobTooLarge") {
+        if (
+          e instanceof XrpcError && e.status === 400 &&
+          e.body?.error === "BlobTooLarge"
+        ) {
           return e.body;
         }
         throw e;
@@ -284,7 +292,10 @@ export async function run(): Promise<ScenarioResult> {
           collection: "app.bsky.feed.post",
         }, rosa.accessJwt);
       },
-      (r) => `posts_with_embed=${(r.records || []).some((rec: any) => rec.value?.embed)}`,
+      (r) =>
+        `posts_with_embed=${
+          (r.records || []).some((rec: any) => rec.value?.embed)
+        }`,
     );
   }
 

@@ -11,8 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { SERVICE_URLS } from "@garazyk/hamownia/config";
 import { ScenarioResult } from "@garazyk/hamownia";
+import { getCharacter, PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
@@ -44,7 +45,11 @@ export async function run(): Promise<ScenarioResult> {
   if (result.failed > 0) return result;
 
   for (const char of [luna, marcus]) {
-    const session = await pds.accounts.createAccount(char.handle, char.email, char.password).catch(
+    const session = await pds.accounts.createAccount(
+      char.handle,
+      char.email,
+      char.password,
+    ).catch(
       () => pds.accounts.createSession(char.handle, char.password),
     );
     if (session) {
@@ -61,15 +66,19 @@ export async function run(): Promise<ScenarioResult> {
     createdAt: now(),
   };
 
-  const gatedRef = await timedCall(result, "Create post with no-reply gate", async () => {
-    return await pds.records.createRecord(
-      luna.did,
-      "app.bsky.feed.post",
-      gatedPost,
-      luna.accessJwt,
-      { rkey: gatedRkey },
-    );
-  });
+  const gatedRef = await timedCall(
+    result,
+    "Create post with no-reply gate",
+    async () => {
+      return await pds.records.createRecord(
+        luna.did,
+        "app.bsky.feed.post",
+        gatedPost,
+        luna.accessJwt,
+        { rkey: gatedRkey },
+      );
+    },
+  );
 
   if (gatedRef) {
     const gatedUri = gatedRef.uri;

@@ -19,7 +19,8 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
-import { getCharacter, PDS1 } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
+import { PDS1 } from "@garazyk/hamownia/config";
 
 function now() {
   return new Date().toISOString();
@@ -51,7 +52,11 @@ export async function run(): Promise<ScenarioResult> {
       result,
       `Create account: ${char.name}`,
       async () => {
-        return await client.accounts.createAccount(char.handle, char.email, char.password);
+        return await client.accounts.createAccount(
+          char.handle,
+          char.email,
+          char.password,
+        );
       },
       (s) => `did=${s.did}`,
     );
@@ -68,7 +73,11 @@ export async function run(): Promise<ScenarioResult> {
       await client.records.createRecord(
         char.did,
         "app.bsky.actor.profile",
-        { $type: "app.bsky.actor.profile", displayName: char.name, description: char.persona },
+        {
+          $type: "app.bsky.actor.profile",
+          displayName: char.name,
+          description: char.persona,
+        },
         char.accessJwt,
       );
     } catch (e) {
@@ -85,7 +94,11 @@ export async function run(): Promise<ScenarioResult> {
       "Marcus sets preferences",
       async () => {
         return await client.search.putPreferences(
-          [{ $type: "app.bsky.actor.defs#contentLabelPref", label: "nsfw", visibility: "show" }],
+          [{
+            $type: "app.bsky.actor.defs#contentLabelPref",
+            label: "nsfw",
+            visibility: "show",
+          }],
           marcus.accessJwt,
         );
       },
@@ -200,7 +213,9 @@ export async function run(): Promise<ScenarioResult> {
         result,
         `Typeahead search '${query}'`,
         async () => {
-          return await client.search.searchActorsTypeahead(query, { token: marcus.accessJwt });
+          return await client.search.searchActorsTypeahead(query, {
+            token: marcus.accessJwt,
+          });
         },
         (r) => `found=${r.actors?.length || 0}`,
       );
@@ -212,7 +227,9 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Luna's liked posts",
       async () => {
-        return await client.feed.getActorLikes(luna.did, { token: marcus.accessJwt });
+        return await client.feed.getActorLikes(luna.did, {
+          token: marcus.accessJwt,
+        });
       },
       (r) => `count=${(r.likes || r.feed)?.length || 0}`,
     );
@@ -242,7 +259,9 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Get reposted by",
       async () => {
-        return await client.feed.getRepostedBy(lunaPosts[0].uri, { token: marcus.accessJwt });
+        return await client.feed.getRepostedBy(lunaPosts[0].uri, {
+          token: marcus.accessJwt,
+        });
       },
       (r) => `count=${r.repostedBy?.length || 0}`,
     );

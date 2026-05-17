@@ -19,7 +19,8 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
-import { getCharacter, PDS1, PDS2, SERVICE_URLS } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
+import { PDS1, PDS2, SERVICE_URLS } from "@garazyk/hamownia/config";
 
 /**
  * Executes the scenario logic.
@@ -62,7 +63,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Create admin account on PDS1",
     async () => {
-      const res = await pds1.accounts.createAccount(admin.handle, admin.email, admin.password);
+      const res = await pds1.accounts.createAccount(
+        admin.handle,
+        admin.email,
+        admin.password,
+      );
       admin.did = res.did;
       return res;
     },
@@ -73,7 +78,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Create user account on PDS1",
     async () => {
-      const res = await pds1.accounts.createAccount(luna.handle, luna.email, luna.password);
+      const res = await pds1.accounts.createAccount(
+        luna.handle,
+        luna.email,
+        luna.password,
+      );
       return res;
     },
     (s) => `did=${s.did}`,
@@ -113,10 +122,14 @@ export async function run(): Promise<ScenarioResult> {
         result,
         `Sign handle rotation: ${newHandle1}`,
         async () => {
-          return await pds1.raw.xrpcPost("com.atproto.identity.signPlcOperation", {
-            token,
-            alsoKnownAs: [`at://${newHandle1}`],
-          }, luna.accessJwt);
+          return await pds1.raw.xrpcPost(
+            "com.atproto.identity.signPlcOperation",
+            {
+              token,
+              alsoKnownAs: [`at://${newHandle1}`],
+            },
+            luna.accessJwt,
+          );
         },
       );
 
@@ -129,7 +142,10 @@ export async function run(): Promise<ScenarioResult> {
           body: JSON.stringify(op1),
         });
         if (plcRes.status === 200) {
-          result.stepPassed("First handle rotation (Direct PLC)", `handle=${newHandle1}`);
+          result.stepPassed(
+            "First handle rotation (Direct PLC)",
+            `handle=${newHandle1}`,
+          );
         } else {
           result.stepFailed(
             "First handle rotation (Direct PLC)",
@@ -157,10 +173,14 @@ export async function run(): Promise<ScenarioResult> {
           result,
           `Sign handle rotation: ${newHandle2}`,
           async () => {
-            return await pds1.raw.xrpcPost("com.atproto.identity.signPlcOperation", {
-              token: token2,
-              alsoKnownAs: [`at://${newHandle2}`],
-            }, luna.accessJwt);
+            return await pds1.raw.xrpcPost(
+              "com.atproto.identity.signPlcOperation",
+              {
+                token: token2,
+                alsoKnownAs: [`at://${newHandle2}`],
+              },
+              luna.accessJwt,
+            );
           },
         );
 
@@ -173,7 +193,10 @@ export async function run(): Promise<ScenarioResult> {
             body: JSON.stringify(op2),
           });
           if (plcRes2.status === 200) {
-            result.stepPassed("Second handle rotation (Direct PLC)", `handle=${newHandle2}`);
+            result.stepPassed(
+              "Second handle rotation (Direct PLC)",
+              `handle=${newHandle2}`,
+            );
           } else {
             result.stepFailed(
               "Second handle rotation (Direct PLC)",
@@ -192,7 +215,10 @@ export async function run(): Promise<ScenarioResult> {
     const logResp = await fetch(`${SERVICE_URLS.plc}/${luna.did}/log`);
     if (logResp.status === 200) {
       const operations = await logResp.json();
-      result.stepPassed("Fetch PLC operation log", `total_operations=${operations.length}`);
+      result.stepPassed(
+        "Fetch PLC operation log",
+        `total_operations=${operations.length}`,
+      );
 
       if (operations.length === 0) {
         result.stepFailed("PLC log audit", "Log is empty");
@@ -220,7 +246,10 @@ export async function run(): Promise<ScenarioResult> {
         }
 
         if (isValid) {
-          result.stepPassed("PLC operation chain audit", "Chain is intact and monotonic");
+          result.stepPassed(
+            "PLC operation chain audit",
+            "Chain is intact and monotonic",
+          );
         } else {
           result.stepFailed("PLC operation chain audit", failureReason);
         }

@@ -22,7 +22,8 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
-import { APPVIEW_ADMIN_SECRET, getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { APPVIEW_ADMIN_SECRET } from "@garazyk/hamownia/config";
+import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia/config";
 
 function now() {
   return new Date().toISOString();
@@ -55,7 +56,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "AppView health check",
     async () => {
-      return await av.raw.httpGet("/admin/backfill/status", undefined, adminToken);
+      return await av.raw.httpGet(
+        "/admin/backfill/status",
+        undefined,
+        adminToken,
+      );
     },
     (r) => `enabled=${r.enabled ?? false}`,
   );
@@ -67,7 +72,11 @@ export async function run(): Promise<ScenarioResult> {
       result,
       `Create account: ${char.name}`,
       async () => {
-        return await client.accounts.createAccount(char.handle, char.email, char.password);
+        return await client.accounts.createAccount(
+          char.handle,
+          char.email,
+          char.password,
+        );
       },
       (s) => `did=${s.did}`,
     );
@@ -131,7 +140,10 @@ export async function run(): Promise<ScenarioResult> {
 
   const hookCount = hookData?.count || 0;
   if (hookCount > 0) {
-    result.stepPassed("Hook firing test", `Registry wired with ${hookCount} hook(s)`);
+    result.stepPassed(
+      "Hook firing test",
+      `Registry wired with ${hookCount} hook(s)`,
+    );
   } else {
     result.stepSkipped("Hook firing test", "Hook registry not wired");
   }
@@ -153,23 +165,37 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Dead letter table: empty",
     async () => {
-      return await av.raw.httpGet("/admin/hooks/dead-letter", { limit: 10 }, adminToken);
+      return await av.raw.httpGet(
+        "/admin/hooks/dead-letter",
+        { limit: 10 },
+        adminToken,
+      );
     },
     (r) => `entries=${r.entries?.length || 0}`,
   );
 
   const dlEntries = dlData?.entries || [];
   if (dlEntries.length === 0) {
-    result.stepPassed("Dead letter empty (expected)", "No hook failures recorded");
+    result.stepPassed(
+      "Dead letter empty (expected)",
+      "No hook failures recorded",
+    );
   } else {
-    result.stepPassed("Dead letter has entries", `${dlEntries.length} entries found`);
+    result.stepPassed(
+      "Dead letter has entries",
+      `${dlEntries.length} entries found`,
+    );
   }
 
   await timedCall(
     result,
     "Dead letter with limit=1",
     async () => {
-      return await av.raw.httpGet("/admin/hooks/dead-letter", { limit: 1 }, adminToken);
+      return await av.raw.httpGet(
+        "/admin/hooks/dead-letter",
+        { limit: 1 },
+        adminToken,
+      );
     },
   );
 

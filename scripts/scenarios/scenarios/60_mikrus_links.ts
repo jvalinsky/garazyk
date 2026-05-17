@@ -11,8 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { SERVICE_URLS } from "@garazyk/hamownia/config";
 import { ScenarioResult } from "@garazyk/hamownia";
+import { getCharacter, PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
@@ -50,7 +51,9 @@ async function waitForCount(
     if (lastTotal >= minTotal) return response;
     await new Promise((resolve) => setTimeout(resolve, 1_000));
   }
-  throw new Error(`Timed out waiting for ${source} count on ${subject}; last total=${lastTotal}`);
+  throw new Error(
+    `Timed out waiting for ${source} count on ${subject}; last total=${lastTotal}`,
+  );
 }
 
 export async function run(): Promise<ScenarioResult> {
@@ -75,13 +78,20 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   for (const character of [luna, marcus]) {
-    const session = await timedCall(result, `Create account: ${character.name}`, async () => {
-      return await pds.accounts.createAccount(
-        character.handle,
-        character.email,
-        character.password,
-      ).catch(() => pds.accounts.createSession(character.handle, character.password));
-    }, (session) => `did=${session.did}`);
+    const session = await timedCall(
+      result,
+      `Create account: ${character.name}`,
+      async () => {
+        return await pds.accounts.createAccount(
+          character.handle,
+          character.email,
+          character.password,
+        ).catch(() =>
+          pds.accounts.createSession(character.handle, character.password)
+        );
+      },
+      (session) => `did=${session.did}`,
+    );
     if (session) {
       character.did = session.did;
       character.accessJwt = session.accessJwt;

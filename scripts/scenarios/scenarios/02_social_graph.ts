@@ -17,7 +17,8 @@
  */
 
 import { XrpcClient } from "@garazyk/gruszka";
-import { getCharacter, PDS1 } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
+import { PDS1 } from "@garazyk/hamownia/config";
 import { ScenarioResult, timedCall } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
@@ -26,7 +27,11 @@ function now() {
   return new Date().toISOString();
 }
 
-async function createAccounts(client: XrpcClient, names: string[], result: ScenarioResult) {
+async function createAccounts(
+  client: XrpcClient,
+  names: string[],
+  result: ScenarioResult,
+) {
   const sessions: Record<string, any> = {};
   for (const name of names) {
     const char = getCharacter(name);
@@ -73,11 +78,17 @@ async function follow(
   const target = getCharacter(targetName);
 
   if (!follower.did || !follower.accessJwt) {
-    result.stepSkipped(`${follower.name} follows ${target.name}`, "Follower account not created");
+    result.stepSkipped(
+      `${follower.name} follows ${target.name}`,
+      "Follower account not created",
+    );
     return null;
   }
   if (!target.did) {
-    result.stepSkipped(`${follower.name} follows ${target.name}`, "Target account not created");
+    result.stepSkipped(
+      `${follower.name} follows ${target.name}`,
+      "Target account not created",
+    );
     return null;
   }
 
@@ -125,7 +136,15 @@ export async function run(): Promise<ScenarioResult> {
     return result;
   }
 
-  const pds1Chars = ["luna", "marcus", "rosa", "volt", "troll", "quiet", "admin"];
+  const pds1Chars = [
+    "luna",
+    "marcus",
+    "rosa",
+    "volt",
+    "troll",
+    "quiet",
+    "admin",
+  ];
   await createAccounts(client, pds1Chars, result);
 
   const active = pds1Chars.filter((n) => getCharacter(n).did);
@@ -275,7 +294,11 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Luna's blocks list",
       async () => {
-        const res = await client.raw.get("app.bsky.graph.getBlocks", {}, luna.accessJwt);
+        const res = await client.raw.get(
+          "app.bsky.graph.getBlocks",
+          {},
+          luna.accessJwt,
+        );
         return res;
       },
       (b) => `count=${b.blocks?.length || 0}`,

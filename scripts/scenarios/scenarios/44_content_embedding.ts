@@ -11,8 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { SERVICE_URLS } from "@garazyk/hamownia/config";
 import { ScenarioResult } from "@garazyk/hamownia";
+import { getCharacter, PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
@@ -115,7 +116,11 @@ export async function run(): Promise<ScenarioResult> {
 
   if (result.failed > 0) return result;
 
-  const session = await pds.accounts.createAccount(luna.handle, luna.email, luna.password).catch(
+  const session = await pds.accounts.createAccount(
+    luna.handle,
+    luna.email,
+    luna.password,
+  ).catch(
     () => pds.accounts.createSession(luna.handle, luna.password),
   );
 
@@ -159,7 +164,10 @@ export async function run(): Promise<ScenarioResult> {
         $type: "app.bsky.feed.post",
         text: "Quoting!",
         createdAt: now(),
-        embed: { $type: "app.bsky.embed.record", record: { uri: baseRef.uri, cid: baseRef.cid } },
+        embed: {
+          $type: "app.bsky.embed.record",
+          record: { uri: baseRef.uri, cid: baseRef.cid },
+        },
       }, luna.accessJwt);
     });
   }
@@ -171,7 +179,11 @@ export async function run(): Promise<ScenarioResult> {
       createdAt: now(),
       embed: {
         $type: "app.bsky.embed.external",
-        external: { uri: "https://example.com", title: "Example", description: "Desc" },
+        external: {
+          uri: "https://example.com",
+          title: "Example",
+          description: "Desc",
+        },
       },
     }, luna.accessJwt);
   });

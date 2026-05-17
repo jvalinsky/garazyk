@@ -11,8 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { SERVICE_URLS } from "@garazyk/hamownia/config";
 import { ScenarioResult } from "@garazyk/hamownia";
+import { getCharacter, PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
@@ -75,11 +76,17 @@ export async function run(): Promise<ScenarioResult> {
     relayAvailable = relayHealth.ok;
     result.stepPassed("Relay health check", `status=${relayHealth.status}`);
   } catch (e: any) {
-    result.stepSkipped("Relay health check", `Relay not reachable: ${e.message}`);
+    result.stepSkipped(
+      "Relay health check",
+      `Relay not reachable: ${e.message}`,
+    );
   }
 
   if (!relayAvailable) {
-    result.stepSkipped("PDS→Relay→AppView propagation", "Relay unavailable; skipping relay steps");
+    result.stepSkipped(
+      "PDS→Relay→AppView propagation",
+      "Relay unavailable; skipping relay steps",
+    );
     result.finish();
     return result;
   }
@@ -89,7 +96,11 @@ export async function run(): Promise<ScenarioResult> {
     "Create luna account on PDS",
     async () => {
       try {
-        return await pds.accounts.createAccount(luna.handle, luna.email, luna.password);
+        return await pds.accounts.createAccount(
+          luna.handle,
+          luna.email,
+          luna.password,
+        );
       } catch {
         return await pds.accounts.createSession(luna.handle, luna.password);
       }
@@ -110,9 +121,15 @@ export async function run(): Promise<ScenarioResult> {
   // confirms the Relay has ingested the new commit.
   let baselineRev: string | null = null;
   try {
-    const latestBefore = await relay.raw.get("com.atproto.sync.getLatestCommit", { did: luna.did });
+    const latestBefore = await relay.raw.get(
+      "com.atproto.sync.getLatestCommit",
+      { did: luna.did },
+    );
     baselineRev = latestBefore?.rev ?? null;
-    result.stepPassed("Capture Relay baseline rev for luna", `rev=${baselineRev ?? "none"}`);
+    result.stepPassed(
+      "Capture Relay baseline rev for luna",
+      `rev=${baselineRev ?? "none"}`,
+    );
   } catch {
     // DID not yet known to the Relay — that's fine, any commit will be the first
     result.stepPassed(
@@ -151,7 +168,10 @@ export async function run(): Promise<ScenarioResult> {
     async () => {
       return await pollUntil(async () => {
         try {
-          const latest = await relay.raw.get("com.atproto.sync.getLatestCommit", { did: luna.did });
+          const latest = await relay.raw.get(
+            "com.atproto.sync.getLatestCommit",
+            { did: luna.did },
+          );
           if (latest?.rev && latest.rev !== baselineRev) return latest;
         } catch { /* not yet */ }
         return null;
@@ -170,7 +190,10 @@ export async function run(): Promise<ScenarioResult> {
       async () => {
         return await pollUntil(async () => {
           try {
-            const res = await appview.feed.getPosts([postRef.uri], luna.accessJwt);
+            const res = await appview.feed.getPosts(
+              [postRef.uri],
+              luna.accessJwt,
+            );
             if (res?.posts?.length > 0) return res.posts[0];
           } catch { /* not yet */ }
           return null;
@@ -179,7 +202,10 @@ export async function run(): Promise<ScenarioResult> {
       (p) => `uri=${(p as any)?.post?.uri ?? "present"}`,
     );
   } else {
-    result.stepSkipped("AppView indexed post propagated via Relay", "no post created");
+    result.stepSkipped(
+      "AppView indexed post propagated via Relay",
+      "no post created",
+    );
   }
 
   // --- Handle rotation propagates to Relay identity cache ---
@@ -196,9 +222,12 @@ export async function run(): Promise<ScenarioResult> {
     async () => {
       return await pollUntil(async () => {
         try {
-          const res = await relay.raw.get("com.atproto.identity.resolveHandle", {
-            handle: rotatedHandle,
-          });
+          const res = await relay.raw.get(
+            "com.atproto.identity.resolveHandle",
+            {
+              handle: rotatedHandle,
+            },
+          );
           if (res?.did === luna.did) return res;
         } catch { /* not yet */ }
         return null;

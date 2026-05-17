@@ -11,8 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1 } from "@garazyk/hamownia";
+import { PDS1 } from "@garazyk/hamownia/config";
 import { ScenarioResult } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
@@ -120,7 +121,11 @@ export async function run(): Promise<ScenarioResult> {
 
   if (result.failed > 0) return result;
 
-  const session = await pds.accounts.createAccount(luna.handle, luna.email, luna.password).catch(
+  const session = await pds.accounts.createAccount(
+    luna.handle,
+    luna.email,
+    luna.password,
+  ).catch(
     () => pds.accounts.createSession(luna.handle, luna.password),
   );
 
@@ -132,13 +137,21 @@ export async function run(): Promise<ScenarioResult> {
   luna.did = session.did;
   luna.accessJwt = session.accessJwt;
 
-  const keepBlob = await timedCall(result, "Upload keep-alive snapshot", async () => {
-    return await pds.blobs.uploadBlob(makePng(), "image/png", luna.accessJwt);
-  });
+  const keepBlob = await timedCall(
+    result,
+    "Upload keep-alive snapshot",
+    async () => {
+      return await pds.blobs.uploadBlob(makePng(), "image/png", luna.accessJwt);
+    },
+  );
 
-  const doomedBlob = await timedCall(result, "Upload doomed snapshot", async () => {
-    return await pds.blobs.uploadBlob(makePng(), "image/png", luna.accessJwt);
-  });
+  const doomedBlob = await timedCall(
+    result,
+    "Upload doomed snapshot",
+    async () => {
+      return await pds.blobs.uploadBlob(makePng(), "image/png", luna.accessJwt);
+    },
+  );
 
   const keepCid = blobCid(keepBlob);
   const doomedCid = blobCid(doomedBlob);
@@ -149,23 +162,38 @@ export async function run(): Promise<ScenarioResult> {
         $type: "app.bsky.feed.post",
         text: "Stays",
         createdAt: now(),
-        embed: { $type: "app.bsky.embed.images", images: [{ alt: "green", image: keepBlob.blob }] },
+        embed: {
+          $type: "app.bsky.embed.images",
+          images: [{ alt: "green", image: keepBlob.blob }],
+        },
       }, luna.accessJwt);
     });
 
-    const doomedPost = await timedCall(result, "Create doomed post", async () => {
-      return await pds.records.createRecord(luna.did, "app.bsky.feed.post", {
-        $type: "app.bsky.feed.post",
-        text: "Goes",
-        createdAt: now(),
-        embed: { $type: "app.bsky.embed.images", images: [{ alt: "red", image: doomedBlob.blob }] },
-      }, luna.accessJwt);
-    });
+    const doomedPost = await timedCall(
+      result,
+      "Create doomed post",
+      async () => {
+        return await pds.records.createRecord(luna.did, "app.bsky.feed.post", {
+          $type: "app.bsky.feed.post",
+          text: "Goes",
+          createdAt: now(),
+          embed: {
+            $type: "app.bsky.embed.images",
+            images: [{ alt: "red", image: doomedBlob.blob }],
+          },
+        }, luna.accessJwt);
+      },
+    );
 
     if (doomedPost) {
       const rkey = doomedPost.uri.split("/").pop();
       await timedCall(result, "Delete doomed post", async () => {
-        return await pds.records.deleteRecord(luna.did, "app.bsky.feed.post", rkey, luna.accessJwt);
+        return await pds.records.deleteRecord(
+          luna.did,
+          "app.bsky.feed.post",
+          rkey,
+          luna.accessJwt,
+        );
       });
 
       await timedCall(result, "Delete orphaned blob", async () => {

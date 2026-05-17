@@ -11,8 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { SERVICE_URLS } from "@garazyk/hamownia/config";
 import { ScenarioResult } from "@garazyk/hamownia";
+import { getCharacter, PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
@@ -42,7 +43,11 @@ export async function run(): Promise<ScenarioResult> {
 
   if (result.failed > 0) return result;
 
-  const session = await pds.accounts.createAccount(luna.handle, luna.email, luna.password).catch(
+  const session = await pds.accounts.createAccount(
+    luna.handle,
+    luna.email,
+    luna.password,
+  ).catch(
     () => pds.accounts.createSession(luna.handle, luna.password),
   );
 
@@ -54,13 +59,17 @@ export async function run(): Promise<ScenarioResult> {
   luna.did = session.did;
   luna.accessJwt = session.accessJwt;
 
-  const postRef = await timedCall(result, "Create post before deactivation", async () => {
-    return await pds.records.createRecord(luna.did, "app.bsky.feed.post", {
-      $type: "app.bsky.feed.post",
-      text: "I'll be back!",
-      createdAt: now(),
-    }, luna.accessJwt);
-  });
+  const postRef = await timedCall(
+    result,
+    "Create post before deactivation",
+    async () => {
+      return await pds.records.createRecord(luna.did, "app.bsky.feed.post", {
+        $type: "app.bsky.feed.post",
+        text: "I'll be back!",
+        createdAt: now(),
+      }, luna.accessJwt);
+    },
+  );
 
   await timedCall(result, "Get profile before deactivation", async () => {
     return await appview.feed.getProfile(luna.did, luna.accessJwt);
@@ -76,7 +85,8 @@ export async function run(): Promise<ScenarioResult> {
     try {
       const profile = await appview.feed.getProfile(luna.did, luna.accessJwt);
       assert.isTrue(
-        profile.associated?.deactivated === true || profile.error === "AccountDeactivated",
+        profile.associated?.deactivated === true ||
+          profile.error === "AccountDeactivated",
         "Should be deactivated",
       );
     } catch {
@@ -84,9 +94,13 @@ export async function run(): Promise<ScenarioResult> {
     }
   });
 
-  const reactivated = await timedCall(result, "Reactivate account", async () => {
-    return await pds.accounts.createSession(luna.handle, luna.password);
-  });
+  const reactivated = await timedCall(
+    result,
+    "Reactivate account",
+    async () => {
+      return await pds.accounts.createSession(luna.handle, luna.password);
+    },
+  );
 
   if (reactivated) {
     luna.accessJwt = reactivated.accessJwt;

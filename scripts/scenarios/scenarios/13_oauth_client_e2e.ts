@@ -21,8 +21,10 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
-import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
+import { SERVICE_URLS } from "@garazyk/hamownia/config";
 import { attachPublicNetworkLeakGuard } from "@garazyk/hamownia";
+import { PDS1 } from "@garazyk/hamownia/config";
 import { chromium } from "npm:playwright";
 
 const PDS_URL = SERVICE_URLS.pds;
@@ -43,7 +45,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Create account",
     async () => {
-      return await pds.accounts.createAccount(luna.handle, luna.email, luna.password);
+      return await pds.accounts.createAccount(
+        luna.handle,
+        luna.email,
+        luna.password,
+      );
     },
     (s) => `did=${s.did}`,
   );
@@ -59,7 +65,10 @@ export async function run(): Promise<ScenarioResult> {
     "Verify account resolution",
     async () => {
       const res = await pds.identity.resolveHandle(luna.handle);
-      assert.isTrue(res.did === luna.did, `DID mismatch: expected ${luna.did}, got ${res.did}`);
+      assert.isTrue(
+        res.did === luna.did,
+        `DID mismatch: expected ${luna.did}, got ${res.did}`,
+      );
       return res;
     },
     (r) => `handle ${luna.handle} -> ${r.did}`,
@@ -85,12 +94,21 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Protected resource metadata",
     async () => {
-      const res = await fetch(`${PDS_URL}/.well-known/oauth-protected-resource`, {
-        headers: { "Accept": "application/json", "Origin": SERVICE_URLS.oauthClient },
-      });
+      const res = await fetch(
+        `${PDS_URL}/.well-known/oauth-protected-resource`,
+        {
+          headers: {
+            "Accept": "application/json",
+            "Origin": SERVICE_URLS.oauthClient,
+          },
+        },
+      );
       const body = await res.json();
       assert.isTrue(res.status === 200, `status=${res.status}`);
-      assert.isTrue(body.resource === PDS_URL, `unexpected resource: ${body.resource}`);
+      assert.isTrue(
+        body.resource === PDS_URL,
+        `unexpected resource: ${body.resource}`,
+      );
     },
   );
 
@@ -98,12 +116,21 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Authorization server metadata",
     async () => {
-      const res = await fetch(`${PDS_URL}/.well-known/oauth-authorization-server`, {
-        headers: { "Accept": "application/json", "Origin": SERVICE_URLS.oauthClient },
-      });
+      const res = await fetch(
+        `${PDS_URL}/.well-known/oauth-authorization-server`,
+        {
+          headers: {
+            "Accept": "application/json",
+            "Origin": SERVICE_URLS.oauthClient,
+          },
+        },
+      );
       const body = await res.json();
       assert.isTrue(res.status === 200, `status=${res.status}`);
-      assert.isTrue(body.issuer === PDS_URL, `unexpected issuer: ${body.issuer}`);
+      assert.isTrue(
+        body.issuer === PDS_URL,
+        `unexpected issuer: ${body.issuer}`,
+      );
     },
   );
 
@@ -142,7 +169,9 @@ export async function run(): Promise<ScenarioResult> {
 
     try {
       await page.waitForSelector("#auth-handle", { timeout: 30000 });
-      result.stepPassed("Step 3: Redirected to PDS authorize page (PAR completed)");
+      result.stepPassed(
+        "Step 3: Redirected to PDS authorize page (PAR completed)",
+      );
     } catch (e) {
       const screenshotPath = `/tmp/oauth_failure_${Date.now()}.png`;
       await page.screenshot({ path: screenshotPath });
@@ -160,16 +189,24 @@ export async function run(): Promise<ScenarioResult> {
     await page.click("#auth-signin-btn");
     result.stepPassed("PDS Sign-in successful");
 
-    await page.waitForSelector("button[type='submit'].btn-primary", { timeout: 5000 });
+    await page.waitForSelector("button[type='submit'].btn-primary", {
+      timeout: 5000,
+    });
     await page.click("button[type='submit'].btn-primary");
     result.stepPassed("Consent granted");
 
     await page.waitForSelector("#profile", { timeout: 10000 });
     const displayName = await page.innerText("#display-name");
-    assert.isTrue(displayName.includes("did:plc:"), `Unexpected display name: ${displayName}`);
+    assert.isTrue(
+      displayName.includes("did:plc:"),
+      `Unexpected display name: ${displayName}`,
+    );
     result.stepPassed("Profile displayed", `Logged in as ${displayName}`);
     if (publicNetworkLeaks.length > 0) {
-      result.stepFailed("Public network leak guard", publicNetworkLeaks.slice(0, 5).join(", "));
+      result.stepFailed(
+        "Public network leak guard",
+        publicNetworkLeaks.slice(0, 5).join(", "),
+      );
     } else {
       result.stepPassed("Public network leak guard");
     }

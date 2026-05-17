@@ -11,8 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1 } from "@garazyk/hamownia";
+import { PDS1 } from "@garazyk/hamownia/config";
 import { ScenarioResult } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
@@ -36,7 +37,9 @@ async function connectRawWs(url: string) {
   const conn = await Deno.connect({ hostname: host, port });
   const encoder = new TextEncoder();
 
-  const key = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
+  const key = btoa(
+    String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))),
+  );
   const request = `GET /xrpc/com.atproto.sync.subscribeRepos HTTP/1.1\r\n` +
     `Host: ${host}:${port}\r\n` +
     `Upgrade: websocket\r\n` +
@@ -60,7 +63,9 @@ async function connectRawWs(url: string) {
 }
 
 export async function run(): Promise<ScenarioResult> {
-  const result = new ScenarioResult("Firehose Backpressure (Tortoise Consumer)");
+  const result = new ScenarioResult(
+    "Firehose Backpressure (Tortoise Consumer)",
+  );
   result.start();
 
   const client = new XrpcClient(PDS1);
@@ -72,7 +77,11 @@ export async function run(): Promise<ScenarioResult> {
 
   const volt = getCharacter("volt");
   const session = await timedCall(result, "Create account: volt", async () => {
-    return await client.accounts.createAccount(volt.handle, volt.email, volt.password);
+    return await client.accounts.createAccount(
+      volt.handle,
+      volt.email,
+      volt.password,
+    );
   });
 
   if (!session) {
@@ -131,7 +140,10 @@ export async function run(): Promise<ScenarioResult> {
   if (closed) {
     result.stepPassed("Firehose disconnected (slow consumer dropped)");
   } else {
-    result.stepFailed("Firehose disconnected", "Connection still open or timed out");
+    result.stepFailed(
+      "Firehose disconnected",
+      "Connection still open or timed out",
+    );
   }
 
   try {

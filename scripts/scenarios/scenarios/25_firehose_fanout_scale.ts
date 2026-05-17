@@ -22,9 +22,11 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
-import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
+import { SERVICE_URLS } from "@garazyk/hamownia/config";
 import { FirehoseClient } from "@garazyk/gruszka";
-import { createRunContext } from "@garazyk/hamownia";
+import { createRunContext } from "@garazyk/hamownia/diagnostics";
+import { PDS1 } from "@garazyk/hamownia/config";
 import {
   InstrumentationReport,
   OperationTimer,
@@ -77,7 +79,12 @@ export async function run(): Promise<ScenarioResult> {
       async () => {
         return await timer.measure(
           "create_account",
-          () => client.accounts.createAccount(char.handle, char.email, char.password),
+          () =>
+            client.accounts.createAccount(
+              char.handle,
+              char.email,
+              char.password,
+            ),
         );
       },
       (s) => `did=${s.did}`,
@@ -127,7 +134,10 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   await new Promise((r) => setTimeout(r, 3000));
-  result.stepPassed("Subscriber ramp-up", `Started ${NUM_SUBSCRIBERS} firehose subscribers`);
+  result.stepPassed(
+    "Subscriber ramp-up",
+    `Started ${NUM_SUBSCRIBERS} firehose subscribers`,
+  );
   phaseTimer.endPhase();
 
   phaseTimer.startPhase("event_production");
@@ -173,17 +183,20 @@ export async function run(): Promise<ScenarioResult> {
     const char = getCharacter(name);
     for (let i = 0; i < BURST_PER_USER; i++) {
       try {
-        await timer.measure("create_post_burst", () =>
-          client.records.createRecord(
-            char.did!,
-            "app.bsky.feed.post",
-            {
-              $type: "app.bsky.feed.post",
-              text: `Burst post ${i + 1} from ${char.name}`,
-              createdAt: now(),
-            },
-            char.accessJwt!,
-          ));
+        await timer.measure(
+          "create_post_burst",
+          () =>
+            client.records.createRecord(
+              char.did!,
+              "app.bsky.feed.post",
+              {
+                $type: "app.bsky.feed.post",
+                text: `Burst post ${i + 1} from ${char.name}`,
+                createdAt: now(),
+              },
+              char.accessJwt!,
+            ),
+        );
         burstPosts++;
       } catch { /* ignore rate limits */ }
     }
@@ -203,7 +216,10 @@ export async function run(): Promise<ScenarioResult> {
         bpCritical = parseInt(line.split(" ").pop() || "0");
       }
     }
-    result.stepPassed("Backpressure metrics", `warnings=${bpWarnings}, critical=${bpCritical}`);
+    result.stepPassed(
+      "Backpressure metrics",
+      `warnings=${bpWarnings}, critical=${bpCritical}`,
+    );
   } catch { /* ignore */ }
 
   await new Promise((r) => setTimeout(r, 5000));
@@ -216,7 +232,10 @@ export async function run(): Promise<ScenarioResult> {
     Promise.all([...subscriberPromises, ...extraPromises]),
     new Promise((r) => setTimeout(r, 5000)),
   ]);
-  result.stepPassed("Subscriber teardown", `total_events=${subscriberEvents.length}`);
+  result.stepPassed(
+    "Subscriber teardown",
+    `total_events=${subscriberEvents.length}`,
+  );
   phaseTimer.endPhase();
 
   phaseTimer.startPhase("instrumentation");

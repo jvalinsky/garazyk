@@ -21,7 +21,8 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
-import { getCharacter, PDS1 } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
+import { PDS1 } from "@garazyk/hamownia/config";
 
 function now() {
   return new Date().toISOString();
@@ -53,7 +54,11 @@ export async function run(): Promise<ScenarioResult> {
       result,
       `Create account: ${char.name}`,
       async () => {
-        return await client.accounts.createAccount(char.handle, char.email, char.password);
+        return await client.accounts.createAccount(
+          char.handle,
+          char.email,
+          char.password,
+        );
       },
       (s) => `did=${s.did}`,
     );
@@ -70,7 +75,11 @@ export async function run(): Promise<ScenarioResult> {
       await client.records.createRecord(
         char.did,
         "app.bsky.actor.profile",
-        { $type: "app.bsky.actor.profile", displayName: char.name, description: char.persona },
+        {
+          $type: "app.bsky.actor.profile",
+          displayName: char.name,
+          description: char.persona,
+        },
         char.accessJwt,
       );
     } catch (e) {
@@ -96,7 +105,11 @@ export async function run(): Promise<ScenarioResult> {
           return await client.records.createRecord(
             ff.did,
             "app.bsky.graph.follow",
-            { $type: "app.bsky.graph.follow", subject: tt.did, createdAt: now() },
+            {
+              $type: "app.bsky.graph.follow",
+              subject: tt.did,
+              createdAt: now(),
+            },
             ff.accessJwt,
           );
         },
@@ -148,7 +161,11 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Luna→Marcus relationship",
       async () => {
-        return await client.graph.getRelationships(luna.did, [marcus.did], luna.accessJwt);
+        return await client.graph.getRelationships(
+          luna.did,
+          [marcus.did],
+          luna.accessJwt,
+        );
       },
       (r) => `count=${r.relationships?.length || 0}`,
     );
@@ -203,7 +220,9 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Rosa's starter packs",
       async () => {
-        return await client.graph.getActorStarterPacks(rosa.did, { token: rosa.accessJwt });
+        return await client.graph.getActorStarterPacks(rosa.did, {
+          token: rosa.accessJwt,
+        });
       },
       (r) => `count=${r.starterPacks?.length || 0}`,
     );

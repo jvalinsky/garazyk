@@ -22,7 +22,8 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
-import { APPVIEW_ADMIN_SECRET, getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { APPVIEW_ADMIN_SECRET } from "@garazyk/hamownia/config";
+import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia/config";
 
 function now() {
   return new Date().toISOString();
@@ -55,7 +56,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "AppView health check",
     async () => {
-      return await av.raw.httpGet("/admin/backfill/status", undefined, adminToken);
+      return await av.raw.httpGet(
+        "/admin/backfill/status",
+        undefined,
+        adminToken,
+      );
     },
     (r) => `enabled=${r.enabled ?? false}`,
   );
@@ -67,7 +72,11 @@ export async function run(): Promise<ScenarioResult> {
       result,
       `Create account: ${char.name}`,
       async () => {
-        return await client.accounts.createAccount(char.handle, char.email, char.password);
+        return await client.accounts.createAccount(
+          char.handle,
+          char.email,
+          char.password,
+        );
       },
       (s) => `did=${s.did}`,
     );
@@ -125,7 +134,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Backfill status",
     async () => {
-      return await av.raw.httpGet("/admin/backfill/status", undefined, adminToken);
+      return await av.raw.httpGet(
+        "/admin/backfill/status",
+        undefined,
+        adminToken,
+      );
     },
   );
 
@@ -133,7 +146,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Ingest engine health",
     async () => {
-      return await av.raw.httpGet("/admin/ingest/health", undefined, adminToken);
+      return await av.raw.httpGet(
+        "/admin/ingest/health",
+        undefined,
+        adminToken,
+      );
     },
   );
 
@@ -211,7 +228,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "AppView metrics",
     async () => {
-      return await av.raw.httpGet("/admin/appview/metrics/stats", undefined, adminToken);
+      return await av.raw.httpGet(
+        "/admin/appview/metrics/stats",
+        undefined,
+        adminToken,
+      );
     },
   );
 

@@ -11,8 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1 } from "@garazyk/hamownia";
+import { PDS1 } from "@garazyk/hamownia/config";
 import { ScenarioResult } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
@@ -60,7 +61,11 @@ export async function run(): Promise<ScenarioResult> {
     "Create luna account",
     async () => {
       try {
-        return await pds.accounts.createAccount(luna.handle, luna.email, luna.password);
+        return await pds.accounts.createAccount(
+          luna.handle,
+          luna.email,
+          luna.password,
+        );
       } catch {
         return await pds.accounts.createSession(luna.handle, luna.password);
       }
@@ -82,7 +87,11 @@ export async function run(): Promise<ScenarioResult> {
     "Create nova account",
     async () => {
       try {
-        return await pds.accounts.createAccount(nova.handle, nova.email, nova.password);
+        return await pds.accounts.createAccount(
+          nova.handle,
+          nova.email,
+          nova.password,
+        );
       } catch {
         return await pds.accounts.createSession(nova.handle, nova.password);
       }
@@ -100,7 +109,11 @@ export async function run(): Promise<ScenarioResult> {
     "Create volt account",
     async () => {
       try {
-        return await pds.accounts.createAccount(volt.handle, volt.email, volt.password);
+        return await pds.accounts.createAccount(
+          volt.handle,
+          volt.email,
+          volt.password,
+        );
       } catch {
         return await pds.accounts.createSession(volt.handle, volt.password);
       }
@@ -184,7 +197,10 @@ export async function run(): Promise<ScenarioResult> {
       true, // must throw 401
     );
   } else {
-    result.stepSkipped("Cross-account write denied", "prerequisite accounts not ready");
+    result.stepSkipped(
+      "Cross-account write denied",
+      "prerequisite accounts not ready",
+    );
   }
 
   // --- Step 4: Suspended account write denied ---
@@ -227,8 +243,14 @@ export async function run(): Promise<ScenarioResult> {
     );
   } else {
     result.stepSkipped("Deactivate volt account", "volt session not available");
-    result.stepSkipped("Suspended account write denied", "volt session not available");
-    result.stepSkipped("Suspended account read returns error", "volt session not available");
+    result.stepSkipped(
+      "Suspended account write denied",
+      "volt session not available",
+    );
+    result.stepSkipped(
+      "Suspended account read returns error",
+      "volt session not available",
+    );
   }
 
   result.finish();

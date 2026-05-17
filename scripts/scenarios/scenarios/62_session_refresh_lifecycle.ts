@@ -11,8 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1 } from "@garazyk/hamownia";
+import { PDS1 } from "@garazyk/hamownia/config";
 import { ScenarioResult } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
@@ -46,7 +47,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Create account",
     async () => {
-      return await client.accounts.createAccount(luna.handle, luna.email, luna.password);
+      return await client.accounts.createAccount(
+        luna.handle,
+        luna.email,
+        luna.password,
+      );
     },
     (s) => `did=${s.did}`,
   );
@@ -77,7 +82,8 @@ export async function run(): Promise<ScenarioResult> {
     async () => {
       return await client.accounts.refreshSession(luna.refreshJwt!);
     },
-    (s) => `did=${s.did}, hasAccess=${!!s.accessJwt}, hasRefresh=${!!s.refreshJwt}`,
+    (s) =>
+      `did=${s.did}, hasAccess=${!!s.accessJwt}, hasRefresh=${!!s.refreshJwt}`,
   );
 
   if (refreshedSession) {
@@ -96,7 +102,9 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Second refresh with rotated refreshJwt",
       async () => {
-        return await client.accounts.refreshSession(refreshedSession.refreshJwt);
+        return await client.accounts.refreshSession(
+          refreshedSession.refreshJwt,
+        );
       },
       (s) => `did=${s.did}`,
     );

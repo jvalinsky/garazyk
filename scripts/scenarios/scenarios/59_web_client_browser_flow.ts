@@ -11,8 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { SERVICE_URLS, WEB_CLIENT_TOPOLOGY } from "@garazyk/hamownia";
+import { WEB_CLIENT_TOPOLOGY } from "@garazyk/hamownia/config";
 import { ScenarioResult } from "@garazyk/hamownia";
+import { SERVICE_URLS } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
@@ -31,7 +32,10 @@ export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult(`Web Client Browser Flow (${flow})`);
   result.start();
 
-  const webClientUrl = (SERVICE_URLS.webClient || SERVICE_URLS.ui).replace(/\/$/, "");
+  const webClientUrl = (SERVICE_URLS.webClient || SERVICE_URLS.ui).replace(
+    /\/$/,
+    "",
+  );
   const diagnosticsDir = Deno.env.get("ATPROTO_E2E_DIAGNOSTICS_DIR") || "/tmp";
   const browserDir = join(diagnosticsDir, "browser");
   await Deno.mkdir(browserDir, { recursive: true });
@@ -56,8 +60,14 @@ export async function run(): Promise<ScenarioResult> {
         timeout: 30000,
       });
       assert.isTrue(!!response, "no navigation response");
-      assert.isTrue((response?.status() || 0) < 500, `status=${response?.status()}`);
-      await page.screenshot({ path: join(browserDir, `web-client-${flow}.png`), fullPage: true });
+      assert.isTrue(
+        (response?.status() || 0) < 500,
+        `status=${response?.status()}`,
+      );
+      await page.screenshot({
+        path: join(browserDir, `web-client-${flow}.png`),
+        fullPage: true,
+      });
       return response?.status();
     },
     (status) => `status=${status}`,
@@ -67,7 +77,10 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Browser console is clean",
     () => {
-      assert.isTrue(consoleErrors.length === 0, consoleErrors.slice(0, 5).join("\n"));
+      assert.isTrue(
+        consoleErrors.length === 0,
+        consoleErrors.slice(0, 5).join("\n"),
+      );
     },
   );
 
@@ -75,12 +88,16 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "No public ATProto network leak",
     () => {
-      assert.isTrue(publicNetworkLeaks.length === 0, publicNetworkLeaks.slice(0, 5).join("\n"));
+      assert.isTrue(
+        publicNetworkLeaks.length === 0,
+        publicNetworkLeaks.slice(0, 5).join("\n"),
+      );
     },
   );
 
   if (flow === "login" || flow === "deep") {
-    const adapterPath = WEB_CLIENT_TOPOLOGY?.browserFlow[flow as "login" | "deep"];
+    const adapterPath = WEB_CLIENT_TOPOLOGY
+      ?.browserFlow[flow as "login" | "deep"];
     result.stepSkipped(
       `${flow} adapter flow`,
       adapterPath

@@ -11,8 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1 } from "@garazyk/hamownia";
+import { PDS1 } from "@garazyk/hamownia/config";
 import { ScenarioResult } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
@@ -51,7 +52,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     `Create account: ${luna.name}`,
     async () => {
-      return await client.accounts.createAccount(luna.handle, luna.email, luna.password);
+      return await client.accounts.createAccount(
+        luna.handle,
+        luna.email,
+        luna.password,
+      );
     },
     (s) => `did=${s.did}`,
   );
@@ -67,7 +72,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     `Create account: ${marcus.name}`,
     async () => {
-      return await client.accounts.createAccount(marcus.handle, marcus.email, marcus.password);
+      return await client.accounts.createAccount(
+        marcus.handle,
+        marcus.email,
+        marcus.password,
+      );
     },
     (s) => `did=${s.did}`,
   );
@@ -87,7 +96,11 @@ export async function run(): Promise<ScenarioResult> {
       return await client.records.createRecord(
         luna.did,
         "app.bsky.graph.follow",
-        { $type: "app.bsky.graph.follow", subject: marcus.did, createdAt: now() },
+        {
+          $type: "app.bsky.graph.follow",
+          subject: marcus.did,
+          createdAt: now(),
+        },
         luna.accessJwt,
       );
     },
@@ -100,11 +113,15 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "getFollows returns Marcus",
       async () => {
-        const res = await client.graph.getFollows(luna.did, { token: luna.accessJwt });
+        const res = await client.graph.getFollows(luna.did, {
+          token: luna.accessJwt,
+        });
         const follows = res.follows || [];
         const found = follows.some((f: any) => f.did === marcus.did);
         if (!found) {
-          throw new Error(`Marcus not found in Luna's follows (got ${follows.length} follows)`);
+          throw new Error(
+            `Marcus not found in Luna's follows (got ${follows.length} follows)`,
+          );
         }
         return res;
       },
@@ -116,7 +133,9 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "getFollowers returns Luna",
       async () => {
-        const res = await client.graph.getFollowers(marcus.did, { token: marcus.accessJwt });
+        const res = await client.graph.getFollowers(marcus.did, {
+          token: marcus.accessJwt,
+        });
         const followers = res.followers || [];
         const found = followers.some((f: any) => f.did === luna.did);
         if (!found) {
@@ -134,12 +153,18 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "getRelationships shows Luna→Marcus follow",
       async () => {
-        const res = await client.graph.getRelationships(luna.did, [marcus.did], luna.accessJwt);
+        const res = await client.graph.getRelationships(
+          luna.did,
+          [marcus.did],
+          luna.accessJwt,
+        );
         const rels = res.relationships || [];
         const rel = rels.find((r: any) => r.did === marcus.did);
         if (!rel) throw new Error("No relationship found for Marcus");
         if (!rel.following) {
-          throw new Error(`Expected following=true, got following=${rel.following}`);
+          throw new Error(
+            `Expected following=true, got following=${rel.following}`,
+          );
         }
         return res;
       },
@@ -153,7 +178,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     `Create account: ${troll.name}`,
     async () => {
-      return await client.accounts.createAccount(troll.handle, troll.email, troll.password);
+      return await client.accounts.createAccount(
+        troll.handle,
+        troll.email,
+        troll.password,
+      );
     },
     (s) => `did=${s.did}`,
   );
@@ -168,7 +197,11 @@ export async function run(): Promise<ScenarioResult> {
         return await client.records.createRecord(
           luna.did,
           "app.bsky.graph.block",
-          { $type: "app.bsky.graph.block", subject: troll.did, createdAt: now() },
+          {
+            $type: "app.bsky.graph.block",
+            subject: troll.did,
+            createdAt: now(),
+          },
           luna.accessJwt,
         );
       },
@@ -185,7 +218,9 @@ export async function run(): Promise<ScenarioResult> {
           const blocks = res.blocks || [];
           const found = blocks.some((b: any) => b.did === troll.did);
           if (!found) {
-            throw new Error(`Troll not found in Luna's blocks (got ${blocks.length} blocks)`);
+            throw new Error(
+              `Troll not found in Luna's blocks (got ${blocks.length} blocks)`,
+            );
           }
           return res;
         },
@@ -210,7 +245,11 @@ export async function run(): Promise<ScenarioResult> {
       const res = await client.graph.getMutes(luna.accessJwt);
       const mutes = res.mutes || [];
       const found = mutes.some((m: any) => m.did === marcus.did);
-      if (!found) throw new Error(`Marcus not found in Luna's mutes (got ${mutes.length} mutes)`);
+      if (!found) {
+        throw new Error(
+          `Marcus not found in Luna's mutes (got ${mutes.length} mutes)`,
+        );
+      }
       return res;
     },
     (r) => `mutes=${r.mutes?.length || 0}`,

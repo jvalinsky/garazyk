@@ -18,7 +18,8 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
-import { APPVIEW_ADMIN_SECRET, getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { APPVIEW_ADMIN_SECRET } from "@garazyk/hamownia/config";
+import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia/config";
 
 function now() {
   return new Date().toISOString();
@@ -54,7 +55,11 @@ export async function run(): Promise<ScenarioResult> {
       result,
       `Create account: ${char.name}`,
       async () => {
-        return await client.accounts.createAccount(char.handle, char.email, char.password);
+        return await client.accounts.createAccount(
+          char.handle,
+          char.email,
+          char.password,
+        );
       },
       (s) => `did=${s.did}`,
     );
@@ -107,7 +112,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Ingest engine health",
     async () => {
-      return await av.raw.httpGet("/admin/ingest/health", undefined, adminToken);
+      return await av.raw.httpGet(
+        "/admin/ingest/health",
+        undefined,
+        adminToken,
+      );
     },
     (r) => `running=${r.running ?? false}`,
   );
@@ -116,7 +125,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Backfill status",
     async () => {
-      return await av.raw.httpGet("/admin/backfill/status", undefined, adminToken);
+      return await av.raw.httpGet(
+        "/admin/backfill/status",
+        undefined,
+        adminToken,
+      );
     },
     (r) => `enabled=${r.enabled ?? false}`,
   );
@@ -125,7 +138,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Backfill queue",
     async () => {
-      return await av.raw.httpGet("/admin/backfill/queue", { limit: 10 }, adminToken);
+      return await av.raw.httpGet(
+        "/admin/backfill/queue",
+        { limit: 10 },
+        adminToken,
+      );
     },
     (r) => `entries=${r.entries?.length || 0}, total=${r.total ?? 0}`,
   );
@@ -134,9 +151,14 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Metrics stats",
     async () => {
-      return await av.raw.httpGet("/admin/appview/metrics/stats", undefined, adminToken);
+      return await av.raw.httpGet(
+        "/admin/appview/metrics/stats",
+        undefined,
+        adminToken,
+      );
     },
-    (r) => `repos_total=${r.repos?.total || 0}, queue_depth=${r.queue_depth || 0}`,
+    (r) =>
+      `repos_total=${r.repos?.total || 0}, queue_depth=${r.queue_depth || 0}`,
   );
 
   await timedCall(
@@ -152,7 +174,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "List collections",
     async () => {
-      return await av.raw.httpGet("/admin/lexicons/collections", undefined, adminToken);
+      return await av.raw.httpGet(
+        "/admin/lexicons/collections",
+        undefined,
+        adminToken,
+      );
     },
     (r) => `count=${r.collections?.length || 0}`,
   );
@@ -186,7 +212,10 @@ export async function run(): Promise<ScenarioResult> {
     async () => {
       return await av.raw.httpGet("/admin/endpoints", undefined, adminToken);
     },
-    (r) => `dynamic=${r.dynamic_endpoint_count ?? 0}, custom=${r.custom_handler_count ?? 0}`,
+    (r) =>
+      `dynamic=${r.dynamic_endpoint_count ?? 0}, custom=${
+        r.custom_handler_count ?? 0
+      }`,
   );
 
   await timedCall(
@@ -202,7 +231,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Dead letter hooks",
     async () => {
-      return await av.raw.httpGet("/admin/hooks/dead-letter", { limit: 10 }, adminToken);
+      return await av.raw.httpGet(
+        "/admin/hooks/dead-letter",
+        { limit: 10 },
+        adminToken,
+      );
     },
     (r) => `entries=${r.entries?.length || 0}`,
   );
@@ -220,7 +253,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Backfill scope rebuild",
     async () => {
-      return await av.raw.httpPost("/admin/backfill/scope/rebuild", undefined, adminToken);
+      return await av.raw.httpPost(
+        "/admin/backfill/scope/rebuild",
+        undefined,
+        adminToken,
+      );
     },
     (r) => `success=${r.success ?? false}`,
   );

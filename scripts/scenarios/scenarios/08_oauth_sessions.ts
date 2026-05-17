@@ -19,7 +19,8 @@
  */
 
 import { XrpcClient } from "@garazyk/gruszka";
-import { getCharacter, PDS1 } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
+import { PDS1 } from "@garazyk/hamownia/config";
 import { ScenarioResult, timedCall } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
@@ -96,7 +97,9 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   try {
-    const cmd = new Deno.Command("git", { args: ["rev-parse", "--show-toplevel"] });
+    const cmd = new Deno.Command("git", {
+      args: ["rev-parse", "--show-toplevel"],
+    });
     const { stdout } = await cmd.output();
     const repoRoot = new TextDecoder().decode(stdout).trim() || Deno.cwd();
     const binPaths = [
@@ -182,7 +185,10 @@ export async function run(): Promise<ScenarioResult> {
     });
 
     if ([400, 401, 403].includes(tokenResp.status)) {
-      result.stepPassed("OAuth token endpoint rejects invalid code", `status=${tokenResp.status}`);
+      result.stepPassed(
+        "OAuth token endpoint rejects invalid code",
+        `status=${tokenResp.status}`,
+      );
     } else {
       result.stepSkipped("OAuth token endpoint", `status=${tokenResp.status}`);
     }
@@ -202,9 +208,15 @@ export async function run(): Promise<ScenarioResult> {
     });
 
     if ([200, 400, 401].includes(revokeResp.status)) {
-      result.stepPassed("OAuth revoke endpoint responds", `status=${revokeResp.status}`);
+      result.stepPassed(
+        "OAuth revoke endpoint responds",
+        `status=${revokeResp.status}`,
+      );
     } else {
-      result.stepSkipped("OAuth revoke endpoint", `status=${revokeResp.status}`);
+      result.stepSkipped(
+        "OAuth revoke endpoint",
+        `status=${revokeResp.status}`,
+      );
     }
   } catch (exc: any) {
     result.stepSkipped("OAuth revoke endpoint", String(exc));
@@ -227,7 +239,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Luna gets session info",
     async () => {
-      return await client.raw.get("com.atproto.server.getSession", {}, luna.accessJwt);
+      return await client.raw.get(
+        "com.atproto.server.getSession",
+        {},
+        luna.accessJwt,
+      );
     },
     (s) => `did=${s.did}`,
   );
@@ -237,7 +253,11 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Luna refreshes session",
       async () => {
-        return await client.raw.post("com.atproto.server.refreshSession", {}, luna.refreshJwt);
+        return await client.raw.post(
+          "com.atproto.server.refreshSession",
+          {},
+          luna.refreshJwt,
+        );
       },
       (r) => `token=${r.accessJwt.substring(0, 20)}...`,
     );
@@ -282,7 +302,11 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Refresh after deleteSession fails",
       async () => {
-        await client.raw.post("com.atproto.server.refreshSession", {}, marcusRefreshJwt);
+        await client.raw.post(
+          "com.atproto.server.refreshSession",
+          {},
+          marcusRefreshJwt,
+        );
       },
       undefined,
       true,

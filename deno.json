@@ -4,7 +4,8 @@
     "./packages/gruszka",
     "./packages/schemat",
     "./packages/hamownia",
-    "./scripts/scenario-dashboard"
+    "./packages/dashboard",
+    "./packages/narzedzia"
   ],
   "imports": {
     "@std/path": "jsr:@std/path@0.224.0",
@@ -20,16 +21,20 @@
     "@garazyk/laweta": "./packages/laweta/mod.ts",
     "@garazyk/gruszka": "./packages/gruszka/mod.ts",
     "@garazyk/schemat": "./packages/schemat/mod.ts",
-    "@garazyk/hamownia": "./packages/hamownia/mod.ts"
+    "@garazyk/hamownia": "./packages/hamownia/mod.ts",
+    "@garazyk/dashboard": "./packages/dashboard/mod.ts",
+    "@garazyk/narzedzia": "./packages/narzedzia/mod.ts"
   },
   "tasks": {
     "test": "deno test -A packages/",
-    "check": "deno task boundaries && deno check packages/*/mod.ts scripts/*.ts",
+    "check": "deno task boundaries && deno check packages/*/mod.ts scripts/*.ts && deno task dashboard:check",
+    "dashboard:check": "deno check --config packages/dashboard/deno.json packages/dashboard/mod.ts packages/dashboard/cli.ts packages/dashboard/server.ts packages/dashboard/tui.ts",
     "boundaries": "deno run --allow-read scripts/dev/check_module_boundaries.ts",
     "lint": "deno lint packages/ scripts/",
     "fmt": "deno fmt packages/ scripts/",
     "generate-client": "deno run -A packages/gruszka/scripts/generate.ts",
     "scenarios": "deno run -A scripts/run_scenarios.ts",
-    "dashboard": "cd scripts/scenario-dashboard && deno task dev"
+    "dashboard": "cd packages/dashboard && deno task dev",
+    "dashboard:tui": "cd packages/dashboard && deno task tui"
   }
 }

@@ -21,7 +21,8 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
-import { APPVIEW_ADMIN_SECRET, getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { APPVIEW_ADMIN_SECRET } from "@garazyk/hamownia/config";
+import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia/config";
 
 function now() {
   return new Date().toISOString();
@@ -60,7 +61,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "AppView health check",
     async () => {
-      return await av.raw.httpGet("/admin/backfill/status", undefined, adminToken);
+      return await av.raw.httpGet(
+        "/admin/backfill/status",
+        undefined,
+        adminToken,
+      );
     },
     (r) => `enabled=${r.enabled ?? false}`,
   );
@@ -72,7 +77,11 @@ export async function run(): Promise<ScenarioResult> {
       result,
       `Create account: ${char.name}`,
       async () => {
-        return await client.accounts.createAccount(char.handle, char.email, char.password);
+        return await client.accounts.createAccount(
+          char.handle,
+          char.email,
+          char.password,
+        );
       },
       (s) => `did=${s.did}`,
     );
@@ -151,14 +160,21 @@ export async function run(): Promise<ScenarioResult> {
     async () => {
       return await av.raw.httpGet("/admin/endpoints", undefined, adminToken);
     },
-    (r) => `dynamic=${r.dynamic_endpoint_count ?? 0}, custom=${r.custom_handler_count ?? 0}`,
+    (r) =>
+      `dynamic=${r.dynamic_endpoint_count ?? 0}, custom=${
+        r.custom_handler_count ?? 0
+      }`,
   );
 
   await timedCall(
     result,
     "List indexed collections",
     async () => {
-      return await av.raw.httpGet("/admin/lexicons/collections", undefined, adminToken);
+      return await av.raw.httpGet(
+        "/admin/lexicons/collections",
+        undefined,
+        adminToken,
+      );
     },
     (r) => `count=${r.collections?.length || 0}`,
   );
@@ -223,11 +239,17 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Admin auth: wrong secret rejected",
     async () => {
-      const resp = await av.raw.httpGet("/admin/lexicons", undefined, "wrong-secret-value");
+      const resp = await av.raw.httpGet(
+        "/admin/lexicons",
+        undefined,
+        "wrong-secret-value",
+      );
       // If we get here, the request didn't throw — that's a bug
       // (wrong secret should be rejected with 401/403)
       if (resp && typeof resp === "object" && !("error" in resp)) {
-        throw new Error("Wrong admin secret was accepted — expected 401/403 rejection");
+        throw new Error(
+          "Wrong admin secret was accepted — expected 401/403 rejection",
+        );
       }
       return resp;
     },

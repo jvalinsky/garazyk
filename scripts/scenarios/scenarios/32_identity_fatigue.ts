@@ -11,8 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { SERVICE_URLS } from "@garazyk/hamownia/config";
 import { ScenarioResult } from "@garazyk/hamownia";
+import { getCharacter, PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
@@ -38,7 +39,11 @@ export async function run(): Promise<ScenarioResult> {
   if (result.failed > 0) return result;
 
   const session = await timedCall(result, "Create account: rosa", async () => {
-    return await client.accounts.createAccount(rosa.handle, rosa.email, rosa.password);
+    return await client.accounts.createAccount(
+      rosa.handle,
+      rosa.email,
+      rosa.password,
+    );
   });
 
   if (!session) {
@@ -59,10 +64,14 @@ export async function run(): Promise<ScenarioResult> {
         {},
         rosa.accessJwt,
       );
-      const signResp = await client.raw.xrpcPost("com.atproto.identity.signPlcOperation", {
-        token: tokenResp.token,
-        alsoKnownAs: [`at://rev-${i}-${rosa.handle}`],
-      }, rosa.accessJwt);
+      const signResp = await client.raw.xrpcPost(
+        "com.atproto.identity.signPlcOperation",
+        {
+          token: tokenResp.token,
+          alsoKnownAs: [`at://rev-${i}-${rosa.handle}`],
+        },
+        rosa.accessJwt,
+      );
 
       const op = { ...signResp.operation };
       delete op.did;
@@ -76,7 +85,10 @@ export async function run(): Promise<ScenarioResult> {
       if (plcRes.status === 200) {
         successCount++;
       } else {
-        result.stepFailed("Exhaust Quota", `Failed at iteration ${i}: ${plcRes.status}`);
+        result.stepFailed(
+          "Exhaust Quota",
+          `Failed at iteration ${i}: ${plcRes.status}`,
+        );
         break;
       }
     } catch (e) {
@@ -86,7 +98,10 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   if (successCount === rotations) {
-    result.stepPassed("Quota Exhaustion", `Successfully performed ${successCount} rotations`);
+    result.stepPassed(
+      "Quota Exhaustion",
+      `Successfully performed ${successCount} rotations`,
+    );
 
     // Final rotation should fail
     const tokenResp = await client.raw.xrpcPost(
@@ -94,10 +109,14 @@ export async function run(): Promise<ScenarioResult> {
       {},
       rosa.accessJwt,
     );
-    const signResp = await client.raw.xrpcPost("com.atproto.identity.signPlcOperation", {
-      token: tokenResp.token,
-      alsoKnownAs: [`at://final-${rosa.handle}`],
-    }, rosa.accessJwt);
+    const signResp = await client.raw.xrpcPost(
+      "com.atproto.identity.signPlcOperation",
+      {
+        token: tokenResp.token,
+        alsoKnownAs: [`at://final-${rosa.handle}`],
+      },
+      rosa.accessJwt,
+    );
 
     const op = { ...signResp.operation };
     delete op.did;
@@ -110,7 +129,10 @@ export async function run(): Promise<ScenarioResult> {
 
     const body = await plcRes.text();
     if (plcRes.status === 400 && body.includes("Too many operations")) {
-      result.stepPassed("Verify Hourly Limit", "Rejected operation after limit reached");
+      result.stepPassed(
+        "Verify Hourly Limit",
+        "Rejected operation after limit reached",
+      );
     } else {
       result.stepFailed(
         "Verify Hourly Limit",

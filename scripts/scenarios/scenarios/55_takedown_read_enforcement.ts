@@ -11,8 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1 } from "@garazyk/hamownia";
+import { PDS1 } from "@garazyk/hamownia/config";
 import { ScenarioResult } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
@@ -57,7 +58,11 @@ export async function run(): Promise<ScenarioResult> {
     "Create troll account",
     async () => {
       try {
-        return await pds.accounts.createAccount(troll.handle, troll.email, troll.password);
+        return await pds.accounts.createAccount(
+          troll.handle,
+          troll.email,
+          troll.password,
+        );
       } catch {
         return await pds.accounts.createSession(troll.handle, troll.password);
       }
@@ -90,7 +95,8 @@ export async function run(): Promise<ScenarioResult> {
     (r) => `uri=${r.uri}`,
   );
 
-  const adminPassword = Deno.env.get("PDS_ADMIN_PASSWORD") || "test-admin-password";
+  const adminPassword = Deno.env.get("PDS_ADMIN_PASSWORD") ||
+    "test-admin-password";
   const adminToken = await timedCall(
     result,
     "Admin login",
@@ -114,7 +120,10 @@ export async function run(): Promise<ScenarioResult> {
       },
     );
   } else {
-    result.stepSkipped("Admin applies record takedown", "post or admin token missing");
+    result.stepSkipped(
+      "Admin applies record takedown",
+      "post or admin token missing",
+    );
   }
 
   // --- Public read after record takedown ---
@@ -154,7 +163,10 @@ export async function run(): Promise<ScenarioResult> {
     if (adminRecord) {
       const text = adminRecord.value?.text ?? adminRecord.record?.text;
       if (text === "Bad content that will be taken down.") {
-        result.stepPassed("Admin record content matches original", `text="${text}"`);
+        result.stepPassed(
+          "Admin record content matches original",
+          `text="${text}"`,
+        );
       } else {
         result.stepFailed(
           "Admin record content matches original",
@@ -191,9 +203,18 @@ export async function run(): Promise<ScenarioResult> {
       true, // must throw (400/AccountTakedown or 403)
     );
   } else {
-    result.stepSkipped("Public read of taken-down record is hidden", "post or admin token missing");
-    result.stepSkipped("Admin read of taken-down record succeeds", "post or admin token missing");
-    result.stepSkipped("Admin applies account-level takedown", "post or admin token missing");
+    result.stepSkipped(
+      "Public read of taken-down record is hidden",
+      "post or admin token missing",
+    );
+    result.stepSkipped(
+      "Admin read of taken-down record succeeds",
+      "post or admin token missing",
+    );
+    result.stepSkipped(
+      "Admin applies account-level takedown",
+      "post or admin token missing",
+    );
     result.stepSkipped(
       "Account takedown hides all public repo reads",
       "post or admin token missing",

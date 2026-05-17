@@ -11,8 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1 } from "@garazyk/hamownia";
+import { PDS1 } from "@garazyk/hamownia/config";
 import { ScenarioResult } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
@@ -44,7 +45,11 @@ export async function run(): Promise<ScenarioResult> {
       result,
       `Create account: ${char.name}`,
       async () => {
-        return await client.accounts.createAccount(char.handle, char.email, char.password);
+        return await client.accounts.createAccount(
+          char.handle,
+          char.email,
+          char.password,
+        );
       },
     );
     if (session) {
@@ -63,7 +68,9 @@ export async function run(): Promise<ScenarioResult> {
   let successCount = 0;
   for (let i = 0; i < 60; i++) {
     try {
-      await client.raw.xrpcGet("app.bsky.actor.getProfile", { actor: troll.did }, troll.accessJwt);
+      await client.raw.xrpcGet("app.bsky.actor.getProfile", {
+        actor: troll.did,
+      }, troll.accessJwt);
       successCount++;
     } catch {
       break;
@@ -71,9 +78,15 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   if (successCount === 60) {
-    result.stepPassed("Troll burst completion", `success_count=${successCount}`);
+    result.stepPassed(
+      "Troll burst completion",
+      `success_count=${successCount}`,
+    );
   } else {
-    result.stepFailed("Troll burst completion", `Expected 60 successes, got ${successCount}`);
+    result.stepFailed(
+      "Troll burst completion",
+      `Expected 60 successes, got ${successCount}`,
+    );
   }
 
   // 4. Troll's 61st request should fail with 429
@@ -81,7 +94,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Troll's 61st request (Expect 429)",
     async () => {
-      await client.raw.xrpcGet("app.bsky.actor.getProfile", { actor: troll.did }, troll.accessJwt);
+      await client.raw.xrpcGet("app.bsky.actor.getProfile", {
+        actor: troll.did,
+      }, troll.accessJwt);
     },
     undefined,
     true,

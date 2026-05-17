@@ -16,8 +16,10 @@
  */
 
 import { XrpcClient } from "@garazyk/gruszka";
-import { getCharacter, PDS1, PDS2, SERVICE_URLS } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
+import { SERVICE_URLS } from "@garazyk/hamownia/config";
 import { ScenarioResult, timedCall } from "@garazyk/hamownia";
+import { PDS1, PDS2 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 
@@ -36,12 +38,19 @@ export async function run(): Promise<ScenarioResult> {
   const pds1 = new XrpcClient(PDS1);
   const pds2 = new XrpcClient(PDS2);
 
-  for (const { name, client } of [{ name: "PDS1", client: pds1 }, { name: "PDS2", client: pds2 }]) {
+  for (
+    const { name, client } of [{ name: "PDS1", client: pds1 }, {
+      name: "PDS2",
+      client: pds2,
+    }]
+  ) {
     await timedCall(
       result,
       `${name} health check`,
       async () => {
-        const res = await fetch(`${client.baseUrl}/xrpc/com.atproto.server.describeServer`);
+        const res = await fetch(
+          `${client.baseUrl}/xrpc/com.atproto.server.describeServer`,
+        );
         if (!res.ok) throw new Error(`${name} not healthy`);
       },
     );
@@ -125,7 +134,10 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   for (
-    const { char, client } of [{ char: luna, client: pds1 }, { char: marcus, client: pds1 }, {
+    const { char, client } of [{ char: luna, client: pds1 }, {
+      char: marcus,
+      client: pds1,
+    }, {
       char: nova,
       client: pds2,
     }, { char: rex, client: pds2 }]
@@ -173,7 +185,8 @@ export async function run(): Promise<ScenarioResult> {
         collection: "app.bsky.feed.post",
         record: {
           $type: "app.bsky.feed.post",
-          text: "Federation is the future of social media! Building bridges across PDSes.",
+          text:
+            "Federation is the future of social media! Building bridges across PDSes.",
           createdAt: now(),
         },
       }, marcus.accessJwt);
@@ -190,7 +203,10 @@ export async function run(): Promise<ScenarioResult> {
         `alsoKnownAs=${JSON.stringify(didDoc.alsoKnownAs)}`,
       );
     } else {
-      result.stepSkipped("PLC resolves Luna's DID", `PLC returned ${plcResp.status}`);
+      result.stepSkipped(
+        "PLC resolves Luna's DID",
+        `PLC returned ${plcResp.status}`,
+      );
     }
   } catch (exc: any) {
     result.stepSkipped("PLC resolves Luna's DID", exc.message || String(exc));
@@ -200,7 +216,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Nova resolves Luna's handle from PDS2",
     async () => {
-      return await pds2.raw.get("com.atproto.identity.resolveHandle", { handle: luna.handle });
+      return await pds2.raw.get("com.atproto.identity.resolveHandle", {
+        handle: luna.handle,
+      });
     },
     (r) => `did=${r.did}`,
   );
@@ -275,7 +293,10 @@ export async function run(): Promise<ScenarioResult> {
   try {
     const relayResp = await fetch(`${SERVICE_URLS.relay}/api/relay/health`);
     if (relayResp.ok) {
-      result.stepPassed("Relay health check", `body=${(await relayResp.text()).substring(0, 100)}`);
+      result.stepPassed(
+        "Relay health check",
+        `body=${(await relayResp.text()).substring(0, 100)}`,
+      );
     } else {
       result.stepSkipped("Relay health check", `status=${relayResp.status}`);
     }
@@ -284,7 +305,9 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   try {
-    const upstreamsResp = await fetch(`${SERVICE_URLS.relay}/api/relay/upstreams`);
+    const upstreamsResp = await fetch(
+      `${SERVICE_URLS.relay}/api/relay/upstreams`,
+    );
     if (upstreamsResp.ok) {
       const upstreams = await upstreamsResp.json();
       const count = Array.isArray(upstreams)
@@ -299,16 +322,22 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   try {
-    const appviewResp = await fetch(`${SERVICE_URLS.appview}/admin/backfill/status`, {
-      headers: { "Authorization": "Bearer localdevadmin" },
-    });
+    const appviewResp = await fetch(
+      `${SERVICE_URLS.appview}/admin/backfill/status`,
+      {
+        headers: { "Authorization": "Bearer localdevadmin" },
+      },
+    );
     if (appviewResp.ok) {
       result.stepPassed(
         "AppView backfill status",
         `body=${(await appviewResp.text()).substring(0, 100)}`,
       );
     } else {
-      result.stepSkipped("AppView backfill status", `status=${appviewResp.status}`);
+      result.stepSkipped(
+        "AppView backfill status",
+        `status=${appviewResp.status}`,
+      );
     }
   } catch (exc: any) {
     result.stepSkipped("AppView backfill status", exc.message || String(exc));
@@ -318,7 +347,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Nova views Luna's profile via AppView",
     async () => {
-      return await pds2.raw.get("app.bsky.actor.getProfile", { actor: luna.did }, nova.accessJwt);
+      return await pds2.raw.get("app.bsky.actor.getProfile", {
+        actor: luna.did,
+      }, nova.accessJwt);
     },
     (p) => `displayName=${p.displayName}`,
   );
@@ -327,7 +358,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Nova sees Luna's feed via AppView",
     async () => {
-      return await pds2.raw.get("app.bsky.feed.getAuthorFeed", { actor: luna.did }, nova.accessJwt);
+      return await pds2.raw.get("app.bsky.feed.getAuthorFeed", {
+        actor: luna.did,
+      }, nova.accessJwt);
     },
     (f) => `items=${f.feed?.length || 0}`,
   );

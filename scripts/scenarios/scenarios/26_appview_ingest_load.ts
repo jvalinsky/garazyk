@@ -19,13 +19,15 @@ import {
   StorageMonitor,
 } from "@garazyk/hamownia";
 import { FirehoseClient } from "@garazyk/gruszka";
-import { APPVIEW_ADMIN_SECRET, getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { APPVIEW_ADMIN_SECRET } from "@garazyk/hamownia/config";
+import { SERVICE_URLS } from "@garazyk/hamownia/config";
 import { ScenarioResult } from "@garazyk/hamownia";
+import { getCharacter, PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
 import { assert } from "@garazyk/hamownia";
-import { createRunContext } from "@garazyk/hamownia";
+import { createRunContext } from "@garazyk/hamownia/diagnostics";
 import { join } from "@std/path";
 import { timedCall } from "@garazyk/hamownia";
 
@@ -33,7 +35,10 @@ function now() {
   return new Date().toISOString();
 }
 
-async function appviewAdminGet(path: string, params?: Record<string, any>): Promise<any> {
+async function appviewAdminGet(
+  path: string,
+  params?: Record<string, any>,
+): Promise<any> {
   const url = new URL(path, SERVICE_URLS.appview);
   if (params) {
     for (const [k, v] of Object.entries(params)) {
@@ -46,9 +51,15 @@ async function appviewAdminGet(path: string, params?: Record<string, any>): Prom
   return await res.json();
 }
 
-function summarizeIngestState(health: any, backfill: any, metrics: any, records: any) {
+function summarizeIngestState(
+  health: any,
+  backfill: any,
+  metrics: any,
+  records: any,
+) {
   const backpressureActive =
-    !!(health?.running === false || backfill?.enabled === false || metrics?.backpressure);
+    !!(health?.running === false || backfill?.enabled === false ||
+      metrics?.backpressure);
   const queueDepth = metrics?.queue_depth || health?.queue_depth || 0;
   const ingestLag = metrics?.ingest_lag || 0;
   const indexedRecords = records?.records?.length || records?.total || 0;
@@ -97,7 +108,12 @@ export async function run(): Promise<ScenarioResult> {
       async () => {
         return await timer.measure(
           "create_account",
-          () => client.accounts.createAccount(char.handle, char.email, char.password),
+          () =>
+            client.accounts.createAccount(
+              char.handle,
+              char.email,
+              char.password,
+            ),
         );
       },
       (s) => `did=${s.did}`,
@@ -117,19 +133,30 @@ export async function run(): Promise<ScenarioResult> {
       async () => {
         return await timer.measure(
           "create_account",
-          () => client.accounts.createAccount(handle, `ingest-${i}@test.com`, `pass-${i}`),
+          () =>
+            client.accounts.createAccount(
+              handle,
+              `ingest-${i}@test.com`,
+              `pass-${i}`,
+            ),
         );
       },
     );
     if (session) {
-      activeAccounts.push({ did: session.did, accessJwt: session.accessJwt, name: `Ingest ${i}` });
+      activeAccounts.push({
+        did: session.did,
+        accessJwt: session.accessJwt,
+        name: `Ingest ${i}`,
+      });
     }
   }
 
   const firehoseEvents: any[] = [];
   const fh = new FirehoseClient(SERVICE_URLS.relay);
   const fhStop = { stopped: false };
-  const fhPromise = fh.subscribe((ev) => firehoseEvents.push(ev), 45).catch(() => {});
+  const fhPromise = fh.subscribe((ev) => firehoseEvents.push(ev), 45).catch(
+    () => {},
+  );
 
   result.stepPassed("Firehose subscriber started");
   phaseTimer.endPhase();
@@ -145,7 +172,11 @@ export async function run(): Promise<ScenarioResult> {
         client.records.createRecord(
           acc.did,
           "app.bsky.feed.post",
-          { $type: "app.bsky.feed.post", text: `Sustained post ${i + 1}`, createdAt: now() },
+          {
+            $type: "app.bsky.feed.post",
+            text: `Sustained post ${i + 1}`,
+            createdAt: now(),
+          },
           acc.accessJwt,
         ));
       sustainedCreated++;
@@ -162,13 +193,20 @@ export async function run(): Promise<ScenarioResult> {
   for (let i = 0; i < burstCount; i++) {
     const acc = activeAccounts[i % activeAccounts.length];
     try {
-      await timer.measure("create_post_burst", () =>
-        client.records.createRecord(
-          acc.did,
-          "app.bsky.feed.post",
-          { $type: "app.bsky.feed.post", text: `Burst post ${i + 1}`, createdAt: now() },
-          acc.accessJwt,
-        ));
+      await timer.measure(
+        "create_post_burst",
+        () =>
+          client.records.createRecord(
+            acc.did,
+            "app.bsky.feed.post",
+            {
+              $type: "app.bsky.feed.post",
+              text: `Burst post ${i + 1}`,
+              createdAt: now(),
+            },
+            acc.accessJwt,
+          ),
+      );
       burstCreated++;
     } catch { /* ignore */ }
   }
@@ -196,14 +234,22 @@ export async function run(): Promise<ScenarioResult> {
       limit: 1,
     });
     const s = summarizeIngestState(h, b, m, r);
-    if (s.indexedRecords >= expectedTotal && !s.backpressureActive && s.ingestLag <= 5) {
+    if (
+      s.indexedRecords >= expectedTotal && !s.backpressureActive &&
+      s.ingestLag <= 5
+    ) {
       cleared = true;
-      result.stepPassed("Resume verification", `indexed=${s.indexedRecords}, lag=${s.ingestLag}`);
+      result.stepPassed(
+        "Resume verification",
+        `indexed=${s.indexedRecords}, lag=${s.ingestLag}`,
+      );
       break;
     }
     await new Promise((r) => setTimeout(r, 2000));
   }
-  if (!cleared) result.stepFailed("Resume verification", "Ingest did not clear in time");
+  if (!cleared) {
+    result.stepFailed("Resume verification", "Ingest did not clear in time");
+  }
   phaseTimer.endPhase();
 
   // Consistency
@@ -212,7 +258,8 @@ export async function run(): Promise<ScenarioResult> {
     collection: "app.bsky.feed.post",
     limit: 1000,
   });
-  const appviewTotal = appviewRecords.total || appviewRecords.records?.length || 0;
+  const appviewTotal = appviewRecords.total || appviewRecords.records?.length ||
+    0;
   result.stepPassed("AppView consistency", `appview_posts=${appviewTotal}`);
   phaseTimer.endPhase();
 

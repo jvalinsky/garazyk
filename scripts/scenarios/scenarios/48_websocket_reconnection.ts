@@ -12,8 +12,10 @@
  */
 
 import { FirehoseClient } from "@garazyk/gruszka";
-import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
+import { SERVICE_URLS } from "@garazyk/hamownia/config";
 import { ScenarioResult } from "@garazyk/hamownia";
+import { PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
@@ -42,7 +44,11 @@ export async function run(): Promise<ScenarioResult> {
 
   if (result.failed > 0) return result;
 
-  const session = await pds.accounts.createAccount(luna.handle, luna.email, luna.password).catch(
+  const session = await pds.accounts.createAccount(
+    luna.handle,
+    luna.email,
+    luna.password,
+  ).catch(
     () => pds.accounts.createSession(luna.handle, luna.password),
   );
 
@@ -114,7 +120,10 @@ export async function run(): Promise<ScenarioResult> {
       "No events with seq > 0 received before disconnect",
     );
   } else {
-    result.stepSkipped("Event continuity after reconnect", "No events received after reconnect");
+    result.stepSkipped(
+      "Event continuity after reconnect",
+      "No events received after reconnect",
+    );
   }
 
   result.finish();

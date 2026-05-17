@@ -11,8 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1 } from "@garazyk/hamownia";
+import { PDS1 } from "@garazyk/hamownia/config";
 import { ScenarioResult } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
@@ -42,7 +43,11 @@ export async function run(): Promise<ScenarioResult> {
   if (result.failed > 0) return result;
 
   const session = await timedCall(result, "Create Luna", async () => {
-    return await client.accounts.createAccount(luna.handle, luna.email, luna.password);
+    return await client.accounts.createAccount(
+      luna.handle,
+      luna.email,
+      luna.password,
+    );
   });
 
   if (!session) {
@@ -61,7 +66,9 @@ export async function run(): Promise<ScenarioResult> {
     );
   });
 
-  const repoHead = await client.raw.xrpcGet("com.atproto.sync.getHead", { did: luna.did });
+  const repoHead = await client.raw.xrpcGet("com.atproto.sync.getHead", {
+    did: luna.did,
+  });
   assert.isTrue(repoHead.root, "Missing root in getHead");
 
   // Monotonicity burst

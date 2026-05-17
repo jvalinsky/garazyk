@@ -21,13 +21,19 @@
  */
 
 import { XrpcClient } from "@garazyk/gruszka";
-import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
+import { SERVICE_URLS } from "@garazyk/hamownia/config";
 import { ScenarioResult, timedCall } from "@garazyk/hamownia";
+import { PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcError } from "@garazyk/gruszka";
-import { chatXrpcGet, chatXrpcPost, createChatServiceContext } from "@garazyk/gruszka/seed";
+import {
+  chatXrpcGet,
+  chatXrpcPost,
+  createChatServiceContext,
+} from "@garazyk/gruszka/seed";
 
 /**
  * Executes the scenario logic.
@@ -38,7 +44,8 @@ export async function run(): Promise<ScenarioResult> {
   result.start();
 
   const client = new XrpcClient(PDS1);
-  const chatUrl = Deno.env.get("CHAT_URL") || SERVICE_URLS.chat || "http://localhost:2585";
+  const chatUrl = Deno.env.get("CHAT_URL") || SERVICE_URLS.chat ||
+    "http://localhost:2585";
   const chatContext = createChatServiceContext(
     client,
     chatUrl,
@@ -133,9 +140,14 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Luna gets/creates DM convo with Marcus",
     async () => {
-      return await chatXrpcGet(chatContext, luna.accessJwt, "chat.bsky.convo.getConvoForMembers", {
-        members: [luna.did, marcus.did],
-      });
+      return await chatXrpcGet(
+        chatContext,
+        luna.accessJwt,
+        "chat.bsky.convo.getConvoForMembers",
+        {
+          members: [luna.did, marcus.did],
+        },
+      );
     },
   );
 
@@ -145,10 +157,17 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Luna sends DM to Marcus",
     async () => {
-      return await chatXrpcPost(chatContext, luna.accessJwt, "chat.bsky.convo.sendMessage", {
-        convoId: convoId || "default",
-        message: { text: "Hey Marcus! Want to collaborate on a space-tech project?" },
-      });
+      return await chatXrpcPost(
+        chatContext,
+        luna.accessJwt,
+        "chat.bsky.convo.sendMessage",
+        {
+          convoId: convoId || "default",
+          message: {
+            text: "Hey Marcus! Want to collaborate on a space-tech project?",
+          },
+        },
+      );
     },
   );
 
@@ -158,12 +177,18 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Marcus replies to Luna's DM",
     async () => {
-      return await chatXrpcPost(chatContext, marcus.accessJwt, "chat.bsky.convo.sendMessage", {
-        convoId: convoId || "default",
-        message: {
-          text: "Absolutely! I've been thinking about ATProto + space data. Let's do it!",
+      return await chatXrpcPost(
+        chatContext,
+        marcus.accessJwt,
+        "chat.bsky.convo.sendMessage",
+        {
+          convoId: convoId || "default",
+          message: {
+            text:
+              "Absolutely! I've been thinking about ATProto + space data. Let's do it!",
+          },
         },
-      });
+      );
     },
   );
 
@@ -172,17 +197,24 @@ export async function run(): Promise<ScenarioResult> {
     "Non-member cannot send to Luna and Marcus DM",
     async () => {
       try {
-        await chatXrpcPost(chatContext, volt.accessJwt, "chat.bsky.convo.sendMessage", {
-          convoId: convoId || "default",
-          message: { text: "I should not be able to write into this DM." },
-        });
+        await chatXrpcPost(
+          chatContext,
+          volt.accessJwt,
+          "chat.bsky.convo.sendMessage",
+          {
+            convoId: convoId || "default",
+            message: { text: "I should not be able to write into this DM." },
+          },
+        );
       } catch (error) {
         if (error instanceof XrpcError && error.status === 403) {
           return { rejected: true };
         }
         throw error;
       }
-      throw new Error("Expected non-member sendMessage to be rejected with 403");
+      throw new Error(
+        "Expected non-member sendMessage to be rejected with 403",
+      );
     },
   );
 
@@ -190,9 +222,14 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Marcus lists conversations",
     async () => {
-      return await chatXrpcGet(chatContext, marcus.accessJwt, "chat.bsky.convo.listConvos", {
-        limit: 10,
-      });
+      return await chatXrpcGet(
+        chatContext,
+        marcus.accessJwt,
+        "chat.bsky.convo.listConvos",
+        {
+          limit: 10,
+        },
+      );
     },
   );
 
@@ -201,10 +238,15 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Marcus gets conversation messages",
       async () => {
-        return await chatXrpcGet(chatContext, marcus.accessJwt, "chat.bsky.convo.getMessages", {
-          convoId: convoId,
-          limit: 20,
-        });
+        return await chatXrpcGet(
+          chatContext,
+          marcus.accessJwt,
+          "chat.bsky.convo.getMessages",
+          {
+            convoId: convoId,
+            limit: 20,
+          },
+        );
       },
     );
 
@@ -212,9 +254,14 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Marcus mutes conversation",
       async () => {
-        return await chatXrpcPost(chatContext, marcus.accessJwt, "chat.bsky.convo.muteConvo", {
-          convoId: convoId,
-        });
+        return await chatXrpcPost(
+          chatContext,
+          marcus.accessJwt,
+          "chat.bsky.convo.muteConvo",
+          {
+            convoId: convoId,
+          },
+        );
       },
     );
   }
@@ -223,10 +270,16 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Marcus blocks new incoming conversations",
     async () => {
-      return await client.records.putRecord(marcus.did!, "chat.bsky.actor.declaration", "self", {
-        $type: "chat.bsky.actor.declaration",
-        allowIncoming: "none",
-      }, marcus.accessJwt!);
+      return await client.records.putRecord(
+        marcus.did!,
+        "chat.bsky.actor.declaration",
+        "self",
+        {
+          $type: "chat.bsky.actor.declaration",
+          allowIncoming: "none",
+        },
+        marcus.accessJwt!,
+      );
     },
   );
 
@@ -235,16 +288,23 @@ export async function run(): Promise<ScenarioResult> {
     "Chat respects allowIncoming none",
     async () => {
       try {
-        await chatXrpcGet(chatContext, rosa.accessJwt, "chat.bsky.convo.getConvoForMembers", {
-          members: [rosa.did, marcus.did],
-        });
+        await chatXrpcGet(
+          chatContext,
+          rosa.accessJwt,
+          "chat.bsky.convo.getConvoForMembers",
+          {
+            members: [rosa.did, marcus.did],
+          },
+        );
       } catch (error) {
         if (error instanceof XrpcError && error.status === 403) {
           return { rejected: true };
         }
         throw error;
       }
-      throw new Error("Expected getConvoForMembers to be rejected by allowIncoming=none");
+      throw new Error(
+        "Expected getConvoForMembers to be rejected by allowIncoming=none",
+      );
     },
   );
 
@@ -252,10 +312,16 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Marcus restores incoming chat declaration",
     async () => {
-      return await client.records.putRecord(marcus.did!, "chat.bsky.actor.declaration", "self", {
-        $type: "chat.bsky.actor.declaration",
-        allowIncoming: "all",
-      }, marcus.accessJwt!);
+      return await client.records.putRecord(
+        marcus.did!,
+        "chat.bsky.actor.declaration",
+        "self",
+        {
+          $type: "chat.bsky.actor.declaration",
+          allowIncoming: "all",
+        },
+        marcus.accessJwt!,
+      );
     },
   );
 
@@ -263,10 +329,15 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Rosa creates group chat",
     async () => {
-      return await chatXrpcPost(chatContext, rosa.accessJwt, "chat.bsky.group.createGroup", {
-        name: "Food & Space Enthusiasts",
-        members: [luna.did, volt.did],
-      });
+      return await chatXrpcPost(
+        chatContext,
+        rosa.accessJwt,
+        "chat.bsky.group.createGroup",
+        {
+          name: "Food & Space Enthusiasts",
+          members: [luna.did, volt.did],
+        },
+      );
     },
   );
 
@@ -277,10 +348,15 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Rosa adds member to group",
       async () => {
-        return await chatXrpcPost(chatContext, rosa.accessJwt, "chat.bsky.group.addMember", {
-          groupId: groupId,
-          did: marcus.did,
-        });
+        return await chatXrpcPost(
+          chatContext,
+          rosa.accessJwt,
+          "chat.bsky.group.addMember",
+          {
+            groupId: groupId,
+            did: marcus.did,
+          },
+        );
       },
     );
 
@@ -288,9 +364,14 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Rosa gets group info",
       async () => {
-        return await chatXrpcGet(chatContext, rosa.accessJwt, "chat.bsky.group.getGroup", {
-          groupId: groupId,
-        });
+        return await chatXrpcGet(
+          chatContext,
+          rosa.accessJwt,
+          "chat.bsky.group.getGroup",
+          {
+            groupId: groupId,
+          },
+        );
       },
     );
   }
@@ -300,10 +381,15 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Luna marks conversation as read",
       async () => {
-        return await chatXrpcPost(chatContext, luna.accessJwt, "chat.bsky.convo.updateRead", {
-          convoId: convoId,
-          messageId: lunaMsgId,
-        });
+        return await chatXrpcPost(
+          chatContext,
+          luna.accessJwt,
+          "chat.bsky.convo.updateRead",
+          {
+            convoId: convoId,
+            messageId: lunaMsgId,
+          },
+        );
       },
     );
   }
@@ -313,9 +399,14 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Marcus unmutes conversation",
       async () => {
-        return await chatXrpcPost(chatContext, marcus.accessJwt, "chat.bsky.convo.unmuteConvo", {
-          convoId: convoId,
-        });
+        return await chatXrpcPost(
+          chatContext,
+          marcus.accessJwt,
+          "chat.bsky.convo.unmuteConvo",
+          {
+            convoId: convoId,
+          },
+        );
       },
     );
 
@@ -323,9 +414,14 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Marcus leaves conversation",
       async () => {
-        return await chatXrpcPost(chatContext, marcus.accessJwt, "chat.bsky.convo.leaveConvo", {
-          convoId: convoId,
-        });
+        return await chatXrpcPost(
+          chatContext,
+          marcus.accessJwt,
+          "chat.bsky.convo.leaveConvo",
+          {
+            convoId: convoId,
+          },
+        );
       },
     );
   }

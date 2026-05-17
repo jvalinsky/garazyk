@@ -18,19 +18,19 @@ import {
   PrometheusScraper,
   StorageMonitor,
 } from "@garazyk/hamownia";
+import { SERVICE_URLS } from "@garazyk/hamownia/config";
+import { ScenarioResult } from "@garazyk/hamownia";
 import {
   APPVIEW_ADMIN_SECRET,
   Character,
   getCharacter,
   PDS1,
-  SERVICE_URLS,
-} from "@garazyk/hamownia";
-import { ScenarioResult } from "@garazyk/hamownia";
+} from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
 import { assert } from "@garazyk/hamownia";
-import { createRunContext } from "@garazyk/hamownia";
+import { createRunContext } from "@garazyk/hamownia/diagnostics";
 import { join } from "@std/path";
 import { timedCall } from "@garazyk/hamownia";
 
@@ -75,8 +75,10 @@ export async function run(): Promise<ScenarioResult> {
   });
   promScraper.start();
 
-  const pdsDataDir = Deno.env.get("PDS_DATA_DIR") || "/tmp/garazyk-atproto-e2e/pds-data";
-  const avDataDir = Deno.env.get("APPVIEW_DATA_DIR") || "/tmp/garazyk-atproto-e2e/appview";
+  const pdsDataDir = Deno.env.get("PDS_DATA_DIR") ||
+    "/tmp/garazyk-atproto-e2e/pds-data";
+  const avDataDir = Deno.env.get("APPVIEW_DATA_DIR") ||
+    "/tmp/garazyk-atproto-e2e/appview";
   const storageMonitor = new StorageMonitor({
     pds: [join(pdsDataDir, "pds.db"), join(pdsDataDir, "pds.db-wal")],
     appview: [join(avDataDir, "appview.db"), join(avDataDir, "appview.db-wal")],
@@ -107,7 +109,12 @@ export async function run(): Promise<ScenarioResult> {
         async () => {
           return await timer.measure(
             "create_account",
-            () => client.accounts.createAccount(acc.handle, acc.email, acc.password),
+            () =>
+              client.accounts.createAccount(
+                acc.handle,
+                acc.email,
+                acc.password,
+              ),
           );
         },
       );
@@ -119,17 +126,26 @@ export async function run(): Promise<ScenarioResult> {
         await timer.measure(
           "setup_profile",
           () =>
-            client.records.putRecord(acc.did, "app.bsky.actor.profile", "self", {
-              $type: "app.bsky.actor.profile",
-              displayName: acc.name,
-              description: acc.persona,
-            }, acc.accessJwt),
+            client.records.putRecord(
+              acc.did,
+              "app.bsky.actor.profile",
+              "self",
+              {
+                $type: "app.bsky.actor.profile",
+                displayName: acc.name,
+                description: acc.persona,
+              },
+              acc.accessJwt,
+            ),
         );
       }
     }
 
     if (activeAccounts.length < accounts.length) {
-      result.stepFailed("Account setup", `created=${activeAccounts.length}/${accounts.length}`);
+      result.stepFailed(
+        "Account setup",
+        `created=${activeAccounts.length}/${accounts.length}`,
+      );
     }
 
     phaseTimer.endPhase();
@@ -143,7 +159,8 @@ export async function run(): Promise<ScenarioResult> {
       const postPool: any[] = [];
 
       while (Date.now() < deadline) {
-        const acc = activeAccounts[Math.floor(Math.random() * activeAccounts.length)];
+        const acc =
+          activeAccounts[Math.floor(Math.random() * activeAccounts.length)];
         const op = Math.random();
 
         try {
@@ -151,11 +168,16 @@ export async function run(): Promise<ScenarioResult> {
             const resp = await timer.measure(
               "create_post",
               () =>
-                workerClient.records.createRecord(acc.did, "app.bsky.feed.post", {
-                  $type: "app.bsky.feed.post",
-                  text: `Soak post from worker ${id} at ${now()}`,
-                  createdAt: now(),
-                }, acc.accessJwt),
+                workerClient.records.createRecord(
+                  acc.did,
+                  "app.bsky.feed.post",
+                  {
+                    $type: "app.bsky.feed.post",
+                    text: `Soak post from worker ${id} at ${now()}`,
+                    createdAt: now(),
+                  },
+                  acc.accessJwt,
+                ),
             );
             postPool.push({ uri: resp.uri, cid: resp.cid, author: acc.did });
           } else if (op < 0.5 && postPool.length > 0) { // Like
@@ -163,11 +185,16 @@ export async function run(): Promise<ScenarioResult> {
             await timer.measure(
               "create_like",
               () =>
-                workerClient.records.createRecord(acc.did, "app.bsky.feed.like", {
-                  $type: "app.bsky.feed.like",
-                  subject: { uri: post.uri, cid: post.cid },
-                  createdAt: now(),
-                }, acc.accessJwt),
+                workerClient.records.createRecord(
+                  acc.did,
+                  "app.bsky.feed.like",
+                  {
+                    $type: "app.bsky.feed.like",
+                    subject: { uri: post.uri, cid: post.cid },
+                    createdAt: now(),
+                  },
+                  acc.accessJwt,
+                ),
             );
           } else if (op < 0.7) { // Timeline
             await timer.measure(
@@ -177,7 +204,8 @@ export async function run(): Promise<ScenarioResult> {
           } else { // Notifications
             await timer.measure(
               "list_notifications",
-              () => workerClient.notifications.listNotifications(acc.accessJwt, 50),
+              () =>
+                workerClient.notifications.listNotifications(acc.accessJwt, 50),
             );
           }
         } catch { /* ignore workload errors */ }
@@ -186,7 +214,9 @@ export async function run(): Promise<ScenarioResult> {
       }
     };
 
-    const workerPromises = Array.from({ length: WORKER_COUNT }).map((_, i) => workerLoop(i));
+    const workerPromises = Array.from({ length: WORKER_COUNT }).map((_, i) =>
+      workerLoop(i)
+    );
     await Promise.all(workerPromises);
     phaseTimer.endPhase();
 
@@ -200,7 +230,11 @@ export async function run(): Promise<ScenarioResult> {
     });
 
     await timedCall(result, "AppView check", async () => {
-      return await appview.raw.httpGet("/admin/backfill/status", undefined, adminToken);
+      return await appview.raw.httpGet(
+        "/admin/backfill/status",
+        undefined,
+        adminToken,
+      );
     });
     phaseTimer.endPhase();
   } finally {

@@ -19,22 +19,28 @@
 
 import { bold, brightBlue } from "@std/fmt/colors";
 import { fromFileUrl, join } from "@std/path";
-import { startLocalNetwork, stopLocalNetwork } from "@garazyk/laweta";
-import { collectDiagnostics, createRunContext } from "@garazyk/hamownia";
+import {
+  startLocalNetwork,
+  stopLocalNetwork,
+} from "@garazyk/hamownia/atproto-network";
+import {
+  collectDiagnostics,
+  createRunContext,
+} from "@garazyk/hamownia/diagnostics";
 import { resolveTopology, TopologyRegistry } from "@garazyk/schemat";
 import type { BrowserFlow, Topology } from "@garazyk/schemat";
 import { formatRequirement } from "@garazyk/hamownia";
 import type { ScenarioInfo } from "@garazyk/hamownia";
 import { discoverScenarios, selectScenarios } from "@garazyk/hamownia";
-import { runScenarioLoop } from "@garazyk/hamownia";
+import { runScenarioLoop } from "@garazyk/hamownia/run-loop";
 import type { ScenarioExecutionResult } from "@garazyk/hamownia";
-import { createProcessLifecycle } from "@garazyk/hamownia";
-import { writeOverallSummary } from "@garazyk/hamownia";
+import { createProcessLifecycle } from "@garazyk/hamownia/process-lifecycle";
+import { writeOverallSummary } from "@garazyk/hamownia/report-writer";
 import {
   initE2eTracing,
   isOtelEnabled,
   shutdownTracing,
-} from "@garazyk/hamownia";
+} from "@garazyk/hamownia/otel";
 import { ScenarioResult } from "@garazyk/hamownia";
 import type { RunnerArgs } from "@garazyk/hamownia";
 

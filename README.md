@@ -6,12 +6,13 @@ It provides a programmable, strongly typed interface for spinning up Bluesky top
 
 ## Packages
 
-The project is split into four modular Deno JSR packages:
+The project is split into modular Deno JSR packages:
 
 - **`@garazyk/laweta`**: A generic Deno wrapper for Docker Engine and Docker Compose. Provides utilities for streaming logs, checking container health, and parsing Docker events.
 - **`@garazyk/gruszka`**: A strongly typed XRPC client featuring dynamically generated methods for all Bluesky and ATProto lexicons. Also includes helpers for Firehose ingestion and protocol seeding.
 - **`@garazyk/schemat`**: Defines, validates, and renders Docker Compose layouts for various ATProto service topologies using Zod schemas.
 - **`@garazyk/hamownia`**: An orchestration and testing harness that integrates the topology definition and docker clients to run automated assertions against a live local network. Includes an HTML test report writer and OpenTelemetry instrumentation.
+- **`@garazyk/scenario-dashboard`**: A Fresh web dashboard plus terminal UI for scenario discovery, run history, local network health, and run control.
 
 ## Getting Started
 
@@ -30,6 +31,26 @@ You can limit the execution to specific scenarios using the `--run` or `--grep` 
 ```bash
 # Run only account lifecycle scenarios
 deno run -A scripts/run_scenarios.ts --topology garazyk-default --run 01_account_lifecycle.ts
+```
+
+### Scenario Dashboard
+
+Start the web dashboard from a checkout:
+
+```bash
+deno task dashboard
+```
+
+Open the terminal dashboard:
+
+```bash
+deno task dashboard:tui
+```
+
+After publishing, the dashboard tool can also be run from JSR:
+
+```bash
+deno run -A jsr:@garazyk/scenario-dashboard/cli tui --root /path/to/garazyk
 ```
 
 ### Writing Scenarios

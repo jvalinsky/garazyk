@@ -20,8 +20,10 @@
  */
 
 import { XrpcClient } from "@garazyk/gruszka";
-import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
+import { SERVICE_URLS } from "@garazyk/hamownia/config";
 import { ScenarioResult, timedCall } from "@garazyk/hamownia";
+import { PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { FirehoseClient, FirehoseEvent } from "@garazyk/gruszka";
@@ -66,7 +68,9 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   try {
-    const upstreamsResp = await fetch(`${SERVICE_URLS.relay}/api/relay/upstreams`);
+    const upstreamsResp = await fetch(
+      `${SERVICE_URLS.relay}/api/relay/upstreams`,
+    );
     if (upstreamsResp.ok) {
       const upstreams = await upstreamsResp.json();
       const count = Array.isArray(upstreams) ? upstreams.length : 0;
@@ -124,7 +128,9 @@ export async function run(): Promise<ScenarioResult> {
   await new Promise((r) => setTimeout(r, 2000));
 
   const firehoseEvents: FirehoseEvent[] = [];
-  const fhClient = new FirehoseClient(SERVICE_URLS.relay.replace(/^http/, "ws"));
+  const fhClient = new FirehoseClient(
+    SERVICE_URLS.relay.replace(/^http/, "ws"),
+  );
 
   // Start collecting in background (we don't await this directly)
   const collectionPromise = fhClient.collect(10.0);
@@ -141,7 +147,8 @@ export async function run(): Promise<ScenarioResult> {
         collection: "app.bsky.feed.post",
         record: {
           $type: "app.bsky.feed.post",
-          text: "Firehose test post! If you can see this on the relay, streaming works!",
+          text:
+            "Firehose test post! If you can see this on the relay, streaming works!",
           createdAt: now(),
         },
       }, luna.accessJwt);
@@ -201,7 +208,10 @@ export async function run(): Promise<ScenarioResult> {
   await new Promise((r) => setTimeout(r, 3000));
   const collectedEvents = await collectionPromise;
 
-  result.stepPassed("Post-operation firehose collection", `events=${collectedEvents.length}`);
+  result.stepPassed(
+    "Post-operation firehose collection",
+    `events=${collectedEvents.length}`,
+  );
 
   const targetCount = 3;
   if (collectedEvents.length >= targetCount) {
@@ -215,9 +225,15 @@ export async function run(): Promise<ScenarioResult> {
         }
       }
       if (isOrdered) {
-        result.stepPassed("Event sequencing", `seqs=${seqs.slice(0, 5).join(",")}... (ordered)`);
+        result.stepPassed(
+          "Event sequencing",
+          `seqs=${seqs.slice(0, 5).join(",")}... (ordered)`,
+        );
       } else {
-        result.stepFailed("Event sequencing", `seqs not ordered: ${seqs.join(",")}`);
+        result.stepFailed(
+          "Event sequencing",
+          `seqs not ordered: ${seqs.join(",")}`,
+        );
       }
     } else {
       result.stepFailed(
@@ -236,7 +252,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Sync getHead",
     async () => {
-      return await client.raw.get("com.atproto.sync.getHead", { did: luna.did });
+      return await client.raw.get("com.atproto.sync.getHead", {
+        did: luna.did,
+      });
     },
     (r) => `root=${r.root.substring(0, 20)}`,
   );
@@ -245,7 +263,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Sync getRepo",
     async () => {
-      const res = await fetch(`${PDS1}/xrpc/com.atproto.sync.getRepo?did=${luna.did}`);
+      const res = await fetch(
+        `${PDS1}/xrpc/com.atproto.sync.getRepo?did=${luna.did}`,
+      );
       const buf = await res.arrayBuffer();
       return {
         status: res.status,
@@ -270,16 +290,22 @@ export async function run(): Promise<ScenarioResult> {
   await new Promise((r) => setTimeout(r, 3000));
 
   try {
-    const appviewResp = await fetch(`${SERVICE_URLS.appview}/admin/backfill/status`, {
-      headers: { "Authorization": "Bearer localdevadmin" },
-    });
+    const appviewResp = await fetch(
+      `${SERVICE_URLS.appview}/admin/backfill/status`,
+      {
+        headers: { "Authorization": "Bearer localdevadmin" },
+      },
+    );
     if (appviewResp.ok) {
       result.stepPassed(
         "AppView backfill status",
         `body=${(await appviewResp.text()).substring(0, 100)}`,
       );
     } else {
-      result.stepFailed("AppView backfill status", `status=${appviewResp.status}`);
+      result.stepFailed(
+        "AppView backfill status",
+        `status=${appviewResp.status}`,
+      );
     }
   } catch (exc: any) {
     result.stepFailed("AppView backfill status", String(exc));

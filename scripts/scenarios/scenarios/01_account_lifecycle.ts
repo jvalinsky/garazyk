@@ -15,8 +15,10 @@
  */
 
 import { XrpcClient } from "@garazyk/gruszka";
-import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
+import { SERVICE_URLS } from "@garazyk/hamownia/config";
 import { ScenarioResult, timedCall } from "@garazyk/hamownia";
+import { PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
@@ -69,7 +71,10 @@ export async function run(): Promise<ScenarioResult> {
       } catch (e: any) {
         if (e.message && e.message.includes("already exists")) {
           // If running locally multiple times without wiping db
-          const res = await pds.agent.login({ identifier: luna.handle, password: luna.password });
+          const res = await pds.agent.login({
+            identifier: luna.handle,
+            password: luna.password,
+          });
           return res.data;
         }
         throw e;
@@ -103,7 +108,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Resolve handle",
     async () => {
-      const res = await pds.agent.com.atproto.identity.resolveHandle({ handle: luna.handle });
+      const res = await pds.agent.com.atproto.identity.resolveHandle({
+        handle: luna.handle,
+      });
       return res.data;
     },
     (r) => `did=${r.did}`,
@@ -114,13 +121,20 @@ export async function run(): Promise<ScenarioResult> {
     if (plcResp.ok) {
       const didDoc = await plcResp.json();
       const didField = didDoc.id || didDoc.did;
-      assert.equal(didField, luna.did, `PLC DID mismatch: expected ${luna.did}, got ${didField}`);
+      assert.equal(
+        didField,
+        luna.did,
+        `PLC DID mismatch: expected ${luna.did}, got ${didField}`,
+      );
       result.stepPassed(
         "PLC DID resolution",
         `method=${didDoc.verificationMethod ? "present" : "N/A"}`,
       );
     } else {
-      result.stepSkipped("PLC DID resolution", `PLC returned ${plcResp.status}`);
+      result.stepSkipped(
+        "PLC DID resolution",
+        `PLC returned ${plcResp.status}`,
+      );
     }
   } catch (exc: any) {
     result.stepSkipped("PLC DID resolution", exc.message || String(exc));
@@ -165,9 +179,12 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Refresh session",
       async () => {
-        const res = await pds.agent.com.atproto.server.refreshSession(undefined, {
-          headers: { Authorization: `Bearer ${luna.refreshJwt}` },
-        });
+        const res = await pds.agent.com.atproto.server.refreshSession(
+          undefined,
+          {
+            headers: { Authorization: `Bearer ${luna.refreshJwt}` },
+          },
+        );
         return res.data;
       },
       (r) => `accessJwt=${r.accessJwt.substring(0, 20)}...`,
@@ -183,7 +200,10 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Invalid login rejected",
     async () => {
-      await pds.agent.login({ identifier: luna.handle, password: "wrong_password" });
+      await pds.agent.login({
+        identifier: luna.handle,
+        password: "wrong_password",
+      });
     },
     undefined,
     true,

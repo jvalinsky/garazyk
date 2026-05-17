@@ -18,8 +18,10 @@
  */
 
 import { XrpcClient } from "@garazyk/gruszka";
-import { getCharacter, PDS1, PDS_ADMIN_PASSWORD } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
+import { PDS_ADMIN_PASSWORD } from "@garazyk/hamownia/config";
 import { ScenarioResult, timedCall } from "@garazyk/hamownia";
+import { PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 
@@ -133,7 +135,8 @@ export async function run(): Promise<ScenarioResult> {
         collection: "app.bsky.feed.post",
         record: {
           $type: "app.bsky.feed.post",
-          text: "Beautiful night for stargazing! The Milky Way is visible tonight.",
+          text:
+            "Beautiful night for stargazing! The Milky Way is visible tonight.",
           createdAt: now(),
         },
       }, luna.accessJwt);
@@ -169,7 +172,8 @@ export async function run(): Promise<ScenarioResult> {
           collection: "app.bsky.feed.post",
           record: {
             $type: "app.bsky.feed.post",
-            text: "Your stargazing is stupid and nobody cares. Get a life, loser!",
+            text:
+              "Your stargazing is stupid and nobody cares. Get a life, loser!",
             createdAt: now(),
             reply: {
               root: { uri: lunaPost.uri, cid: lunaPost.cid },
@@ -187,21 +191,28 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Luna reports harassment",
       async () => {
-        const res = await client.raw.post("com.atproto.moderation.createReport", {
-          reasonType: "com.atproto.moderation.defs#reasonRude",
-          subject: {
-            $type: "com.atproto.repo.strongRef",
-            uri: trollHarass.uri,
-            cid: trollHarass.cid,
+        const res = await client.raw.post(
+          "com.atproto.moderation.createReport",
+          {
+            reasonType: "com.atproto.moderation.defs#reasonRude",
+            subject: {
+              $type: "com.atproto.repo.strongRef",
+              uri: trollHarass.uri,
+              cid: trollHarass.cid,
+            },
+            reason: "Targeted harassment and personal attacks",
           },
-          reason: "Targeted harassment and personal attacks",
-        }, luna.accessJwt);
+          luna.accessJwt,
+        );
         return res;
       },
       (r) => `report_id=${r.id}`,
     );
   } else {
-    result.stepFailed("Luna reports harassment", "No harassment post to report");
+    result.stepFailed(
+      "Luna reports harassment",
+      "No harassment post to report",
+    );
   }
 
   if (trollSpam) {
@@ -209,15 +220,19 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Luna reports spam",
       async () => {
-        const res = await client.raw.post("com.atproto.moderation.createReport", {
-          reasonType: "com.atproto.moderation.defs#reasonSpam",
-          subject: {
-            $type: "com.atproto.repo.strongRef",
-            uri: trollSpam.uri,
-            cid: trollSpam.cid,
+        const res = await client.raw.post(
+          "com.atproto.moderation.createReport",
+          {
+            reasonType: "com.atproto.moderation.defs#reasonSpam",
+            subject: {
+              $type: "com.atproto.repo.strongRef",
+              uri: trollSpam.uri,
+              cid: trollSpam.cid,
+            },
+            reason: "Spam content — crypto scam",
           },
-          reason: "Spam content — crypto scam",
-        }, luna.accessJwt);
+          luna.accessJwt,
+        );
         return res;
       },
       (r) => `report_id=${r.id}`,
@@ -329,7 +344,10 @@ export async function run(): Promise<ScenarioResult> {
       true,
     );
   } else {
-    result.stepFailed("Taken-down content check", "No harassment post to verify");
+    result.stepFailed(
+      "Taken-down content check",
+      "No harassment post to verify",
+    );
   }
 
   await timedCall(
@@ -341,7 +359,8 @@ export async function run(): Promise<ScenarioResult> {
         collection: "app.bsky.feed.post",
         record: {
           $type: "app.bsky.feed.post",
-          text: "We've taken action against a spam/harassment account. Stay safe, everyone!",
+          text:
+            "We've taken action against a spam/harassment account. Stay safe, everyone!",
           createdAt: now(),
         },
       }, admin.accessJwt);

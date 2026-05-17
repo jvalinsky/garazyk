@@ -18,7 +18,8 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
-import { getCharacter, PDS1 } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
+import { PDS1 } from "@garazyk/hamownia/config";
 
 function now() {
   return new Date().toISOString();
@@ -50,7 +51,11 @@ export async function run(): Promise<ScenarioResult> {
       result,
       `Create account: ${char.name}`,
       async () => {
-        return await client.accounts.createAccount(char.handle, char.email, char.password);
+        return await client.accounts.createAccount(
+          char.handle,
+          char.email,
+          char.password,
+        );
       },
       (s) => `did=${s.did}`,
     );
@@ -67,7 +72,11 @@ export async function run(): Promise<ScenarioResult> {
       await client.records.createRecord(
         char.did,
         "app.bsky.actor.profile",
-        { $type: "app.bsky.actor.profile", displayName: char.name, description: char.persona },
+        {
+          $type: "app.bsky.actor.profile",
+          displayName: char.name,
+          description: char.persona,
+        },
         char.accessJwt,
       );
     } catch (e) {
@@ -176,7 +185,9 @@ export async function run(): Promise<ScenarioResult> {
           result,
           `Search actors skeleton '${query}'`,
           async () => {
-            return await client.search.searchActorsSkeleton(query, { token: marcus.accessJwt });
+            return await client.search.searchActorsSkeleton(query, {
+              token: marcus.accessJwt,
+            });
           },
           (r) => `found=${r.actors?.length || 0}`,
         );
@@ -187,7 +198,9 @@ export async function run(): Promise<ScenarioResult> {
           result,
           `Search posts skeleton '${query}'`,
           async () => {
-            return await client.search.searchPostsSkeleton(query, { token: marcus.accessJwt });
+            return await client.search.searchPostsSkeleton(query, {
+              token: marcus.accessJwt,
+            });
           },
           (r) => `found=${r.posts?.length || 0}`,
         );

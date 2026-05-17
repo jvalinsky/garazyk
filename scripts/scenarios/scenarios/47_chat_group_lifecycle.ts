@@ -24,8 +24,9 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
 import { assert } from "@garazyk/hamownia";
-import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { SERVICE_URLS } from "@garazyk/hamownia/config";
 import { timedCall } from "@garazyk/hamownia";
+import { getCharacter, PDS1 } from "@garazyk/hamownia/config";
 
 /**
  * Executes the scenario logic.
@@ -37,7 +38,8 @@ export async function run(): Promise<ScenarioResult> {
   result.start();
 
   const pds = new XrpcClient(PDS1);
-  const chatUrl = Deno.env.get("CHAT_URL") || SERVICE_URLS.chat || "http://localhost:2585";
+  const chatUrl = Deno.env.get("CHAT_URL") || SERVICE_URLS.chat ||
+    "http://localhost:2585";
   const chatContext = createChatServiceContext(
     pds,
     chatUrl,
@@ -57,7 +59,11 @@ export async function run(): Promise<ScenarioResult> {
   if (result.failed > 0) return result;
 
   for (const char of [luna, marcus, rosa]) {
-    const session = await pds.accounts.createAccount(char.handle, char.email, char.password).catch(
+    const session = await pds.accounts.createAccount(
+      char.handle,
+      char.email,
+      char.password,
+    ).catch(
       () => pds.accounts.createSession(char.handle, char.password),
     );
     if (session) {
@@ -67,19 +73,28 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   // Create a group conversation
-  const convo = await timedCall(result, "Create group conversation", async () => {
-    return await chatGetConvoForMembers(chatContext, luna.accessJwt, [
-      luna.did,
-      marcus.did,
-      rosa.did,
-    ]);
-  });
+  const convo = await timedCall(
+    result,
+    "Create group conversation",
+    async () => {
+      return await chatGetConvoForMembers(chatContext, luna.accessJwt, [
+        luna.did,
+        marcus.did,
+        rosa.did,
+      ]);
+    },
+  );
 
   if (convo?.convo?.id) {
     const convoId = convo.convo.id;
 
     await timedCall(result, "Luna sends message", async () => {
-      return await chatSendMessage(chatContext, luna.accessJwt, convoId, "Hello group!");
+      return await chatSendMessage(
+        chatContext,
+        luna.accessJwt,
+        convoId,
+        "Hello group!",
+      );
     });
 
     await new Promise((r) => setTimeout(r, 1000));
@@ -93,15 +108,25 @@ export async function run(): Promise<ScenarioResult> {
     });
 
     await timedCall(result, "Marcus mutes group", async () => {
-      return await chatXrpcPost(chatContext, marcus.accessJwt, "chat.bsky.convo.muteConvo", {
-        convoId,
-      });
+      return await chatXrpcPost(
+        chatContext,
+        marcus.accessJwt,
+        "chat.bsky.convo.muteConvo",
+        {
+          convoId,
+        },
+      );
     });
 
     await timedCall(result, "Rosa leaves group", async () => {
-      return await chatXrpcPost(chatContext, rosa.accessJwt, "chat.bsky.convo.leaveConvo", {
-        convoId,
-      });
+      return await chatXrpcPost(
+        chatContext,
+        rosa.accessJwt,
+        "chat.bsky.convo.leaveConvo",
+        {
+          convoId,
+        },
+      );
     });
 
     await timedCall(result, "Verify state", async () => {

@@ -1,5 +1,6 @@
 #!/usr/bin/env -S deno run -A
 import { XrpcClient } from "@garazyk/gruszka";
+import { AccountsClient } from "@garazyk/gruszka/legacy-clients";
 import {
   chatGetConvoForMembers,
   chatGetMessages,
@@ -9,8 +10,14 @@ import {
   waitForServer,
 } from "@garazyk/gruszka/seed";
 
-const baseUrl = (Deno.env.get("PDS_URL") || "http://localhost:2583").replace(/\/$/, "");
-const chatUrl = (Deno.env.get("CHAT_URL") || "http://localhost:2585").replace(/\/$/, "");
+const baseUrl = (Deno.env.get("PDS_URL") || "http://localhost:2583").replace(
+  /\/$/,
+  "",
+);
+const chatUrl = (Deno.env.get("CHAT_URL") || "http://localhost:2585").replace(
+  /\/$/,
+  "",
+);
 const handles = (Deno.env.get("CHAT_ACCOUNTS") ||
   "alice.garazyk.xyz,bob.garazyk.xyz,carol.garazyk.xyz")
   .split(",")
@@ -58,17 +65,26 @@ async function main() {
     const handle = handles[i];
     const password = passwords[i] || passwords.at(-1) || "changeme";
     try {
-      const session = await client.accounts.createSession(handle, password);
+      const session = await (client.accounts as AccountsClient).createSession(
+        handle,
+        password,
+      );
       sessions[handle] = session;
       console.log(`  Logged in: ${handle} (${session.did})`);
     } catch (exc) {
-      console.error(`  FAILED: ${exc instanceof Error ? exc.message : String(exc)}`);
+      console.error(
+        `  FAILED: ${exc instanceof Error ? exc.message : String(exc)}`,
+      );
       Deno.exit(1);
     }
   }
 
-  const dids = Object.fromEntries(handles.map((handle) => [handle, sessions[handle].did]));
-  const jwts = Object.fromEntries(handles.map((handle) => [handle, sessions[handle].accessJwt]));
+  const dids = Object.fromEntries(
+    handles.map((handle) => [handle, sessions[handle].did]),
+  );
+  const jwts = Object.fromEntries(
+    handles.map((handle) => [handle, sessions[handle].accessJwt]),
+  );
   const errors: string[] = [];
   const dmConvoIds = new Map<string, string>();
   const dmMessages = new Map<string, Array<[string, string]>>();
@@ -83,7 +99,10 @@ async function main() {
       const pairKey = `${h1}<->${h2}`;
       console.log(`\n=== DM: ${h1} <-> ${h2} ===`);
 
-      const convo = await chatGetConvoForMembers(chatContext, jwts[h1], [dids[h1], dids[h2]]);
+      const convo = await chatGetConvoForMembers(chatContext, jwts[h1], [
+        dids[h1],
+        dids[h2],
+      ]);
       const convoData = convo.convo ?? convo;
       const convoId = convoData.id ?? "";
       if (!convoId) {
@@ -106,7 +125,12 @@ async function main() {
 
       for (const [sender, text] of messages) {
         try {
-          const msg = await chatSendMessage(chatContext, jwts[sender], convoId, text);
+          const msg = await chatSendMessage(
+            chatContext,
+            jwts[sender],
+            convoId,
+            text,
+          );
           dmMessages.get(pairKey)?.push([sender, text]);
           sentDmMessages++;
           console.log(`  [${sender}]: ${text}`);
@@ -126,7 +150,11 @@ async function main() {
   if (handles.length >= 3) {
     console.log(`\n=== Group Chat: ${handles.slice(0, 3).join(", ")} ===`);
     const groupDids = handles.slice(0, 3).map((handle) => dids[handle]);
-    const groupConvo = await chatGetConvoForMembers(chatContext, jwts[handles[0]], groupDids);
+    const groupConvo = await chatGetConvoForMembers(
+      chatContext,
+      jwts[handles[0]],
+      groupDids,
+    );
     const groupData = groupConvo.convo ?? groupConvo;
     groupConvoId = groupData.id ?? "";
     if (!groupConvoId) {
@@ -161,17 +189,25 @@ async function main() {
   const convoList = convos.convos ?? [];
   console.log(`  ${handles[0]} has ${convoList.length} conversation(s)`);
   for (const convo of convoList) {
-    const members = (convo.members ?? []).map((member: Record<string, string>) =>
+    const members = (convo.members ?? []).map((member) =>
       (member.did ?? "?").slice(0, 25)
     );
-    console.log(`    Convo ${short(convo.id ?? "?")} members: ${members.join(", ")}`);
+    console.log(
+      `    Convo ${short(convo.id ?? "?")} members: ${members.join(", ")}`,
+    );
   }
 
-  const firstDm = dmConvoIds.entries().next().value as [string, string] | undefined;
+  const firstDm = dmConvoIds.entries().next().value as
+    | [string, string]
+    | undefined;
   if (firstDm) {
     const [pairKey, convoId] = firstDm;
     const firstHandle = pairKey.split("<->")[0];
-    const messages = await chatGetMessages(chatContext, jwts[firstHandle], convoId);
+    const messages = await chatGetMessages(
+      chatContext,
+      jwts[firstHandle],
+      convoId,
+    );
     const messageList = messages.messages ?? [];
     const expected = dmMessages.get(pairKey)?.length ?? 0;
     console.log(`\n  Messages in ${pairKey}: ${messageList.length}`);
@@ -183,7 +219,11 @@ async function main() {
   }
 
   if (groupConvoId) {
-    const messages = await chatGetMessages(chatContext, jwts[handles[0]], groupConvoId);
+    const messages = await chatGetMessages(
+      chatContext,
+      jwts[handles[0]],
+      groupConvoId,
+    );
     const messageList = messages.messages ?? [];
     console.log(`\n  Messages in group chat: ${messageList.length}`);
     if (messageList.length < sentGroupMessages) {
@@ -199,7 +239,9 @@ async function main() {
   console.log(`  DM messages sent: ${sentDmMessages}/${expectedDmMessages}`);
   if (handles.length >= 3) {
     console.log(`  Group conversation: ${groupConvoId ? 1 : 0}`);
-    console.log(`  Group messages sent: ${sentGroupMessages}/${expectedGroupMessages}`);
+    console.log(
+      `  Group messages sent: ${sentGroupMessages}/${expectedGroupMessages}`,
+    );
   }
 
   if (errors.length > 0) {

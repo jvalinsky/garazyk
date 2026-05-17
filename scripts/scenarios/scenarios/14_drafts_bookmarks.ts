@@ -20,7 +20,8 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
-import { getCharacter, PDS1 } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
+import { PDS1 } from "@garazyk/hamownia/config";
 
 function now() {
   return new Date().toISOString();
@@ -52,7 +53,11 @@ export async function run(): Promise<ScenarioResult> {
       result,
       `Create account: ${char.name}`,
       async () => {
-        return await client.accounts.createAccount(char.handle, char.email, char.password);
+        return await client.accounts.createAccount(
+          char.handle,
+          char.email,
+          char.password,
+        );
       },
       (s) => `did=${s.did}`,
     );
@@ -99,7 +104,10 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Luna creates draft",
       async () => {
-        return await client.drafts.createDraft(lunaDraftContent, luna.accessJwt);
+        return await client.drafts.createDraft(
+          lunaDraftContent,
+          luna.accessJwt,
+        );
       },
       (r) => `id=${r.id || r.draft?.id || ""}`,
     );
@@ -123,7 +131,8 @@ export async function run(): Promise<ScenarioResult> {
 
     const updatedContent = {
       ...lunaDraftContent,
-      text: "Just captured the most stunning image of the Orion Nebula! #astronomy",
+      text:
+        "Just captured the most stunning image of the Orion Nebula! #astronomy",
       tags: ["astronomy", "nebula"],
     };
 
@@ -131,7 +140,11 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Luna edits draft",
       async () => {
-        return await client.drafts.updateDraft(lunaDraftId!, updatedContent, luna.accessJwt);
+        return await client.drafts.updateDraft(
+          lunaDraftId!,
+          updatedContent,
+          luna.accessJwt,
+        );
       },
       () => `id=${lunaDraftId}`,
     );
@@ -215,13 +228,19 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   const marcusDraftIds: string[] = [];
-  const marcusDrafts = ["Building a new ATProto feed generator", "Thoughts on CBOR encoding"];
+  const marcusDrafts = [
+    "Building a new ATProto feed generator",
+    "Thoughts on CBOR encoding",
+  ];
   for (let i = 0; i < marcusDrafts.length; i++) {
     const resp = await timedCall(
       result,
       `Marcus creates draft ${i + 1}`,
       async () => {
-        return await client.drafts.createDraft({ text: marcusDrafts[i] }, marcus.accessJwt);
+        return await client.drafts.createDraft(
+          { text: marcusDrafts[i] },
+          marcus.accessJwt,
+        );
       },
       (r) => `id=${r.id || r.draft?.id || ""}`,
     );
@@ -235,7 +254,10 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Marcus deletes draft",
       async () => {
-        return await client.drafts.deleteDraft(marcusDraftIds[0], marcus.accessJwt);
+        return await client.drafts.deleteDraft(
+          marcusDraftIds[0],
+          marcus.accessJwt,
+        );
       },
       () => `id=${marcusDraftIds[0]}`,
     );

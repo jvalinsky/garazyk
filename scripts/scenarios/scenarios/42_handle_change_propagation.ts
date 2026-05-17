@@ -11,8 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { SERVICE_URLS } from "@garazyk/hamownia/config";
 import { ScenarioResult } from "@garazyk/hamownia";
+import { getCharacter, PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
@@ -38,7 +39,11 @@ export async function run(): Promise<ScenarioResult> {
 
   if (result.failed > 0) return result;
 
-  const session = await pds.accounts.createAccount(luna.handle, luna.email, luna.password).catch(
+  const session = await pds.accounts.createAccount(
+    luna.handle,
+    luna.email,
+    luna.password,
+  ).catch(
     () => pds.accounts.createSession(luna.handle, luna.password),
   );
 
@@ -65,7 +70,9 @@ export async function run(): Promise<ScenarioResult> {
   try {
     const plcRes = await fetch(`${SERVICE_URLS.plc}/${luna.did}`);
     const doc = await plcRes.json();
-    const hasNewHandle = doc.alsoKnownAs?.some((h: string) => h.includes(newHandle));
+    const hasNewHandle = doc.alsoKnownAs?.some((h: string) =>
+      h.includes(newHandle)
+    );
     assert.isTrue(hasNewHandle, "New handle not found in PLC DID doc");
     result.stepPassed("PLC handle verification");
   } catch (e) {
@@ -74,7 +81,10 @@ export async function run(): Promise<ScenarioResult> {
 
   await timedCall(result, "Verify AppView profile has new handle", async () => {
     const profile = await appview.feed.getProfile(luna.did, luna.accessJwt);
-    assert.isTrue(profile.handle === newHandle, `Expected ${newHandle}, got ${profile.handle}`);
+    assert.isTrue(
+      profile.handle === newHandle,
+      `Expected ${newHandle}, got ${profile.handle}`,
+    );
   });
 
   await timedCall(result, "Resolve new handle", async () => {

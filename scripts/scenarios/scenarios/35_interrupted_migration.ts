@@ -18,7 +18,8 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
-import { getCharacter, PDS1, PDS2, SERVICE_URLS } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
+import { PDS1, PDS2, SERVICE_URLS } from "@garazyk/hamownia/config";
 
 function now() {
   return new Date().toISOString();
@@ -117,9 +118,17 @@ export async function run(): Promise<ScenarioResult> {
 
   if (result.failed > 0) return result;
 
-  const session = await timedCall(result, "Create account on PDS1", async () => {
-    return await pds1.accounts.createAccount(luna.handle, luna.email, luna.password);
-  });
+  const session = await timedCall(
+    result,
+    "Create account on PDS1",
+    async () => {
+      return await pds1.accounts.createAccount(
+        luna.handle,
+        luna.email,
+        luna.password,
+      );
+    },
+  );
 
   if (!session) {
     result.finish();
@@ -129,7 +138,11 @@ export async function run(): Promise<ScenarioResult> {
   luna.accessJwt = session.accessJwt;
 
   const blobResp = await timedCall(result, "Upload blob to PDS1", async () => {
-    return await pds1.blobs.uploadBlob(MINIMAL_PNG, "image/png", luna.accessJwt);
+    return await pds1.blobs.uploadBlob(
+      MINIMAL_PNG,
+      "image/png",
+      luna.accessJwt,
+    );
   });
   const blobRef = blobResp?.blob;
 
@@ -138,7 +151,10 @@ export async function run(): Promise<ScenarioResult> {
       return await pds1.records.createRecord(luna.did, "app.bsky.feed.post", {
         $type: "app.bsky.feed.post",
         text: "Migration test with blob",
-        embed: { $type: "app.bsky.embed.images", images: [{ image: blobRef, alt: "test" }] },
+        embed: {
+          $type: "app.bsky.embed.images",
+          images: [{ image: blobRef, alt: "test" }],
+        },
         createdAt: now(),
       }, luna.accessJwt);
     });
@@ -148,13 +164,17 @@ export async function run(): Promise<ScenarioResult> {
     return await pds2.raw.xrpcPost("com.atproto.server.reserveSigningKey", {});
   });
 
-  await timedCall(result, "Request PLC operation signature from PDS1", async () => {
-    return await pds1.raw.xrpcPost(
-      "com.atproto.identity.requestPlcOperationSignature",
-      {},
-      luna.accessJwt,
-    );
-  });
+  await timedCall(
+    result,
+    "Request PLC operation signature from PDS1",
+    async () => {
+      return await pds1.raw.xrpcPost(
+        "com.atproto.identity.requestPlcOperationSignature",
+        {},
+        luna.accessJwt,
+      );
+    },
+  );
 
   await timedCall(
     result,
@@ -166,7 +186,8 @@ export async function run(): Promise<ScenarioResult> {
         password: luna.password,
         did: luna.did,
         plcOp: { invalid: "op" },
-        recoveryKey: "did:key:zQ3shokFTS3LRDLz6KxreZisUatvXid88vGpkid5X2BebkX2V",
+        recoveryKey:
+          "did:key:zQ3shokFTS3LRDLz6KxreZisUatvXid88vGpkid5X2BebkX2V",
       });
     },
     undefined,
@@ -174,17 +195,23 @@ export async function run(): Promise<ScenarioResult> {
   );
 
   await timedCall(result, "Verify PDS1 remains authority", async () => {
-    return await pds1.raw.xrpcGet("com.atproto.sync.getHead", { did: luna.did });
+    return await pds1.raw.xrpcGet("com.atproto.sync.getHead", {
+      did: luna.did,
+    });
   });
 
   try {
     const plcRes = await fetch(`${SERVICE_URLS.plc}/${luna.did}`);
     const doc = await plcRes.json();
-    const pdsEndpoint = doc.service?.find((s: any) => s.id === "#atproto_pds")?.serviceEndpoint;
+    const pdsEndpoint = doc.service?.find((s: any) => s.id === "#atproto_pds")
+      ?.serviceEndpoint;
     if (pdsEndpoint === PDS1) {
       result.stepPassed("PLC audit: Still points to PDS1");
     } else {
-      result.stepFailed("PLC audit: Points to wrong PDS", `expected=${PDS1}, got=${pdsEndpoint}`);
+      result.stepFailed(
+        "PLC audit: Points to wrong PDS",
+        `expected=${PDS1}, got=${pdsEndpoint}`,
+      );
     }
   } catch (e) {
     result.stepFailed("PLC audit", String(e));

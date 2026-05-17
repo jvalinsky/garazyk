@@ -11,8 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1 } from "@garazyk/hamownia";
+import { PDS1 } from "@garazyk/hamownia/config";
 import { ScenarioResult } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
@@ -130,7 +131,11 @@ export async function run(): Promise<ScenarioResult> {
     "Create luna account",
     async () => {
       try {
-        return await pds.accounts.createAccount(luna.handle, luna.email, luna.password);
+        return await pds.accounts.createAccount(
+          luna.handle,
+          luna.email,
+          luna.password,
+        );
       } catch {
         return await pds.accounts.createSession(luna.handle, luna.password);
       }
@@ -203,10 +208,17 @@ export async function run(): Promise<ScenarioResult> {
 
     if (!hasServerError) {
       if (fulfilled.length === 0) {
-        result.stepFailed("Concurrent putRecord: at least one succeeds", "Both writes failed");
+        result.stepFailed(
+          "Concurrent putRecord: at least one succeeds",
+          "Both writes failed",
+        );
       } else {
         // Read back the winner and assert it has one of the two expected values.
-        const winner = await pds.records.getRecord(luna.did, "app.bsky.actor.profile", profileRkey);
+        const winner = await pds.records.getRecord(
+          luna.did,
+          "app.bsky.actor.profile",
+          profileRkey,
+        );
         const winnerName = (winner as any)?.value?.displayName;
         if (winnerName === "Racer A" || winnerName === "Racer B") {
           result.stepPassed(
@@ -216,7 +228,9 @@ export async function run(): Promise<ScenarioResult> {
         } else {
           result.stepFailed(
             "Concurrent putRecord: winner has expected value",
-            `displayName=${JSON.stringify(winnerName)} is neither "Racer A" nor "Racer B"`,
+            `displayName=${
+              JSON.stringify(winnerName)
+            } is neither "Racer A" nor "Racer B"`,
           );
         }
       }
@@ -234,7 +248,11 @@ export async function run(): Promise<ScenarioResult> {
         pds.raw.post("com.atproto.repo.createRecord", {
           repo: luna.did,
           collection: "app.bsky.feed.post",
-          record: { $type: "app.bsky.feed.post", text: "delete race target", createdAt: now() },
+          record: {
+            $type: "app.bsky.feed.post",
+            text: "delete race target",
+            createdAt: now(),
+          },
         }, luna.accessJwt!),
       (r) => `uri=${r.uri}`,
     );
@@ -242,7 +260,12 @@ export async function run(): Promise<ScenarioResult> {
     if (throwaway) {
       const rkey = throwaway.uri.split("/").pop()!;
       const raceResults = await Promise.allSettled([
-        pds.records.deleteRecord(luna.did, "app.bsky.feed.post", rkey, luna.accessJwt!),
+        pds.records.deleteRecord(
+          luna.did,
+          "app.bsky.feed.post",
+          rkey,
+          luna.accessJwt!,
+        ),
         pds.records.getRecord(luna.did, "app.bsky.feed.post", rkey),
       ]);
 
@@ -318,7 +341,12 @@ export async function run(): Promise<ScenarioResult> {
       if (blobPost) {
         const blobRkey = blobPost.uri.split("/").pop()!;
         const blobRace = await Promise.allSettled([
-          pds.records.deleteRecord(luna.did, "app.bsky.feed.post", blobRkey, luna.accessJwt!),
+          pds.records.deleteRecord(
+            luna.did,
+            "app.bsky.feed.post",
+            blobRkey,
+            luna.accessJwt!,
+          ),
           pds.raw.xrpcGetBinary("com.atproto.sync.getBlob", {
             params: { did: luna.did, cid: blobCid },
           }),
@@ -345,10 +373,16 @@ export async function run(): Promise<ScenarioResult> {
           );
         }
       } else {
-        result.stepSkipped("Racing blob upload+delete produces no 500", "blob post not created");
+        result.stepSkipped(
+          "Racing blob upload+delete produces no 500",
+          "blob post not created",
+        );
       }
     } else {
-      result.stepSkipped("Racing blob upload+delete produces no 500", "blob upload not available");
+      result.stepSkipped(
+        "Racing blob upload+delete produces no 500",
+        "blob upload not available",
+      );
     }
   }
 

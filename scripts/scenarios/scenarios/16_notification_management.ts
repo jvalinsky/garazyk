@@ -19,7 +19,8 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
-import { getCharacter, PDS1 } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
+import { PDS1 } from "@garazyk/hamownia/config";
 
 function now() {
   return new Date().toISOString();
@@ -51,7 +52,11 @@ export async function run(): Promise<ScenarioResult> {
       result,
       `Create account: ${char.name}`,
       async () => {
-        return await client.accounts.createAccount(char.handle, char.email, char.password);
+        return await client.accounts.createAccount(
+          char.handle,
+          char.email,
+          char.password,
+        );
       },
       (s) => `did=${s.did}`,
     );
@@ -68,7 +73,11 @@ export async function run(): Promise<ScenarioResult> {
       await client.records.createRecord(
         char.did,
         "app.bsky.actor.profile",
-        { $type: "app.bsky.actor.profile", displayName: char.name, description: char.persona },
+        {
+          $type: "app.bsky.actor.profile",
+          displayName: char.name,
+          description: char.persona,
+        },
         char.accessJwt,
       );
     } catch (e) {
@@ -89,7 +98,11 @@ export async function run(): Promise<ScenarioResult> {
           return await client.records.createRecord(
             fchar.did,
             "app.bsky.graph.follow",
-            { $type: "app.bsky.graph.follow", subject: luna.did, createdAt: now() },
+            {
+              $type: "app.bsky.graph.follow",
+              subject: luna.did,
+              createdAt: now(),
+            },
             fchar.accessJwt,
           );
         },
@@ -110,7 +123,8 @@ export async function run(): Promise<ScenarioResult> {
             "app.bsky.feed.post",
             {
               $type: "app.bsky.feed.post",
-              text: `Hello from ${char.name}! This is a test post to generate notifications.`,
+              text:
+                `Hello from ${char.name}! This is a test post to generate notifications.`,
               createdAt: now(),
             },
             char.accessJwt,
@@ -205,7 +219,9 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Luna gets notification preferences",
       async () => {
-        return await client.notifications.getNotificationPreferences(luna.accessJwt);
+        return await client.notifications.getNotificationPreferences(
+          luna.accessJwt,
+        );
       },
     );
 
@@ -271,7 +287,9 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Luna lists activity subscriptions",
       async () => {
-        return await client.notifications.listActivitySubscriptions(luna.accessJwt);
+        return await client.notifications.listActivitySubscriptions(
+          luna.accessJwt,
+        );
       },
       (r) => `count=${r.subscriptions?.length || 0}`,
     );

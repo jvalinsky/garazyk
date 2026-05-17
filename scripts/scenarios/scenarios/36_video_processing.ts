@@ -16,8 +16,9 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
 import { assert } from "@garazyk/hamownia";
-import { getCharacter, PDS1, SERVICE_URLS, VIDEO_SERVICE_DID } from "@garazyk/hamownia";
+import { VIDEO_SERVICE_DID } from "@garazyk/hamownia/config";
 import { timedCall } from "@garazyk/hamownia";
+import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia/config";
 
 /**
  * Executes the scenario logic.
@@ -63,7 +64,9 @@ async function uploadVideo(
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(`upload failed: HTTP ${res.status} ${JSON.stringify(body)}`);
+    throw new Error(
+      `upload failed: HTTP ${res.status} ${JSON.stringify(body)}`,
+    );
   }
   return body;
 }
@@ -86,11 +89,19 @@ export async function run(): Promise<ScenarioResult> {
   if (result.failed > 0) return result;
 
   const luna = getCharacter("luna");
-  const session = await timedCall(result, "Create or login account", async () => {
-    return await pdsClient.accounts.createAccount(luna.handle, luna.email, luna.password).catch(
-      () => pdsClient.accounts.createSession(luna.handle, luna.password),
-    );
-  });
+  const session = await timedCall(
+    result,
+    "Create or login account",
+    async () => {
+      return await pdsClient.accounts.createAccount(
+        luna.handle,
+        luna.email,
+        luna.password,
+      ).catch(
+        () => pdsClient.accounts.createSession(luna.handle, luna.password),
+      );
+    },
+  );
 
   if (!session) {
     result.finish();
@@ -99,12 +110,16 @@ export async function run(): Promise<ScenarioResult> {
   luna.did = session.did;
   luna.accessJwt = session.accessJwt;
 
-  const serviceAuth = await timedCall(result, "Get video service auth token", async () => {
-    return await pdsClient.raw.xrpcGet("com.atproto.server.getServiceAuth", {
-      aud: VIDEO_SERVICE_DID,
-      lxm: "app.bsky.video.uploadVideo",
-    }, luna.accessJwt);
-  });
+  const serviceAuth = await timedCall(
+    result,
+    "Get video service auth token",
+    async () => {
+      return await pdsClient.raw.xrpcGet("com.atproto.server.getServiceAuth", {
+        aud: VIDEO_SERVICE_DID,
+        lxm: "app.bsky.video.uploadVideo",
+      }, luna.accessJwt);
+    },
+  );
 
   if (!serviceAuth?.token) {
     result.stepFailed("Get video service auth token", "no token returned");
@@ -124,7 +139,13 @@ export async function run(): Promise<ScenarioResult> {
 
   const videoData = await downloadTestVideo();
   const uploadResp = await timedCall(result, "Upload MP4 video", async () => {
-    return await uploadVideo(videoData, luna.did, "test-video.mp4", videoAuthToken, luna.accessJwt);
+    return await uploadVideo(
+      videoData,
+      luna.did,
+      "test-video.mp4",
+      videoAuthToken,
+      luna.accessJwt,
+    );
   });
 
   if (uploadResp) {

@@ -18,7 +18,7 @@ import {
   type LocalNetworkOptions,
   startLocalNetwork,
   stopLocalNetwork,
-} from "@garazyk/laweta";
+} from "@garazyk/hamownia/atproto-network";
 
 const args = parseArgs(Deno.args, {
   boolean: [

@@ -20,8 +20,10 @@
  */
 
 import { XrpcClient } from "@garazyk/gruszka";
-import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
+import { SERVICE_URLS } from "@garazyk/hamownia/config";
 import { ScenarioResult, timedCall } from "@garazyk/hamownia";
+import { PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 
@@ -111,7 +113,9 @@ export async function run(): Promise<ScenarioResult> {
             collection: "app.bsky.feed.post",
             record: {
               $type: "app.bsky.feed.post",
-              text: `Burst post #${i + 1} from ${char.name}! Load testing the PDS.`,
+              text: `Burst post #${
+                i + 1
+              } from ${char.name}! Load testing the PDS.`,
               createdAt: now(),
             },
           }, char.accessJwt);
@@ -132,9 +136,9 @@ export async function run(): Promise<ScenarioResult> {
   const elapsed = (performance.now() - startTime) / 1000;
   result.stepPassed(
     "Burst post creation",
-    `created=${totalPosts}, failed=${failedPosts}, elapsed=${elapsed.toFixed(1)}s, rate=${
-      (totalPosts / Math.max(elapsed, 0.01)).toFixed(1)
-    } posts/s`,
+    `created=${totalPosts}, failed=${failedPosts}, elapsed=${
+      elapsed.toFixed(1)
+    }s, rate=${(totalPosts / Math.max(elapsed, 0.01)).toFixed(1)} posts/s`,
   );
 
   let totalRecords = 0;
@@ -155,7 +159,10 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  result.stepPassed("Verify posts exist", `total_records_across_users=${totalRecords}`);
+  result.stepPassed(
+    "Verify posts exist",
+    `total_records_across_users=${totalRecords}`,
+  );
 
   const luna = getCharacter("luna");
   const batchWrites: Array<Record<string, unknown>> = [];
@@ -164,7 +171,11 @@ export async function run(): Promise<ScenarioResult> {
       $type: "com.atproto.repo.applyWrites#create",
       collection: "app.bsky.feed.post",
       rkey: `batch-${i}`,
-      value: { $type: "app.bsky.feed.post", text: `Batch post #${i} from Luna`, createdAt: now() },
+      value: {
+        $type: "app.bsky.feed.post",
+        text: `Batch post #${i} from Luna`,
+        createdAt: now(),
+      },
     });
   }
 
@@ -235,7 +246,11 @@ export async function run(): Promise<ScenarioResult> {
       await client.raw.post("com.atproto.repo.createRecord", {
         repo: luna.did,
         collection: "app.bsky.feed.post",
-        record: { $type: "app.bsky.feed.post", text: "unauthorized", createdAt: now() },
+        record: {
+          $type: "app.bsky.feed.post",
+          text: "unauthorized",
+          createdAt: now(),
+        },
       }, "invalid-token-xyz");
     },
     undefined,
@@ -249,7 +264,11 @@ export async function run(): Promise<ScenarioResult> {
       await client.raw.post("com.atproto.repo.createRecord", {
         repo: luna.did,
         collection: "app.bsky.feed.nonexistent",
-        record: { $type: "app.bsky.feed.nonexistent", text: "test", createdAt: now() },
+        record: {
+          $type: "app.bsky.feed.nonexistent",
+          text: "test",
+          createdAt: now(),
+        },
       }, luna.accessJwt);
     },
     undefined,
@@ -259,13 +278,19 @@ export async function run(): Promise<ScenarioResult> {
   await new Promise((r) => setTimeout(r, 5000));
 
   try {
-    const appviewResp = await fetch(`${SERVICE_URLS.appview}/admin/backfill/status`, {
-      headers: { "Authorization": "Bearer localdevadmin" },
-    });
+    const appviewResp = await fetch(
+      `${SERVICE_URLS.appview}/admin/backfill/status`,
+      {
+        headers: { "Authorization": "Bearer localdevadmin" },
+      },
+    );
     if (appviewResp.ok) {
       result.stepPassed("AppView consistency check", "backfill status OK");
     } else {
-      result.stepFailed("AppView consistency check", `status=${appviewResp.status}`);
+      result.stepFailed(
+        "AppView consistency check",
+        `status=${appviewResp.status}`,
+      );
     }
   } catch (exc: any) {
     result.stepFailed("AppView consistency check", String(exc));
@@ -275,7 +300,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Timeline has content after burst",
     async () => {
-      return await client.raw.get("app.bsky.feed.getTimeline", {}, luna.accessJwt);
+      return await client.raw.get(
+        "app.bsky.feed.getTimeline",
+        {},
+        luna.accessJwt,
+      );
     },
     (t) => `items=${t.feed?.length || 0}`,
   );
@@ -285,7 +314,10 @@ export async function run(): Promise<ScenarioResult> {
     if (relayResp.ok) {
       result.stepPassed("Relay healthy after load");
     } else {
-      result.stepSkipped("Relay healthy after load", `status=${relayResp.status}`);
+      result.stepSkipped(
+        "Relay healthy after load",
+        `status=${relayResp.status}`,
+      );
     }
   } catch (exc: any) {
     result.stepSkipped("Relay healthy after load", String(exc));

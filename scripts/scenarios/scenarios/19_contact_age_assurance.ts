@@ -18,7 +18,8 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
-import { getCharacter, PDS1 } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
+import { PDS1 } from "@garazyk/hamownia/config";
 
 /**
  * Executes the scenario logic.
@@ -46,7 +47,11 @@ export async function run(): Promise<ScenarioResult> {
       result,
       `Create account: ${char.name}`,
       async () => {
-        return await client.accounts.createAccount(char.handle, char.email, char.password);
+        return await client.accounts.createAccount(
+          char.handle,
+          char.email,
+          char.password,
+        );
       },
       (s) => `did=${s.did}`,
     );
@@ -65,7 +70,10 @@ export async function run(): Promise<ScenarioResult> {
         result,
         "Luna starts phone verification",
         async () => {
-          return await client.contact.startPhoneVerification("+15551234567", luna.accessJwt);
+          return await client.contact.startPhoneVerification(
+            "+15551234567",
+            luna.accessJwt,
+          );
         },
         (r) => `verificationId=${r.verificationId || ""}`,
       );
@@ -74,7 +82,11 @@ export async function run(): Promise<ScenarioResult> {
         result,
         "Luna verifies phone code",
         async () => {
-          return await client.contact.verifyPhone("+15551234567", "123456", luna.accessJwt);
+          return await client.contact.verifyPhone(
+            "+15551234567",
+            "123456",
+            luna.accessJwt,
+          );
         },
         (r) => `got_token=${!!r.token}`,
       );

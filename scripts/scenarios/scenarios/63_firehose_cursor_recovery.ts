@@ -12,8 +12,10 @@
  */
 
 import { FirehoseClient } from "@garazyk/gruszka";
-import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
+import { SERVICE_URLS } from "@garazyk/hamownia/config";
 import { ScenarioResult } from "@garazyk/hamownia";
+import { PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
@@ -49,7 +51,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Create account",
     async () => {
-      return await client.accounts.createAccount(luna.handle, luna.email, luna.password);
+      return await client.accounts.createAccount(
+        luna.handle,
+        luna.email,
+        luna.password,
+      );
     },
     (s) => `did=${s.did}`,
   );
@@ -141,7 +147,9 @@ export async function run(): Promise<ScenarioResult> {
 
     // Check that we didn't get events with seq <= lastSeq that we already saw
     // (some overlap is OK for cursor semantics, but massive overlap is suspicious)
-    const overlapEvents = eventsAfter.filter((e: any) => e.seq <= lastSeq && e.seq > 0);
+    const overlapEvents = eventsAfter.filter((e: any) =>
+      e.seq <= lastSeq && e.seq > 0
+    );
     if (overlapEvents.length > eventsAfter.length * 0.5) {
       result.stepFailed(
         "Cursor overlap check",
@@ -154,27 +162,40 @@ export async function run(): Promise<ScenarioResult> {
       );
     }
   } else if (lastSeq === 0) {
-    result.stepSkipped("Cursor recovery", "No events with seq > 0 received in baseline");
+    result.stepSkipped(
+      "Cursor recovery",
+      "No events with seq > 0 received in baseline",
+    );
   } else {
-    result.stepSkipped("Cursor recovery", "No events received after resubscribe");
+    result.stepSkipped(
+      "Cursor recovery",
+      "No events received after resubscribe",
+    );
   }
 
   // ── Phase 5: Resubscribe with cursor=0 (full replay) ──────────────────────
   const fh3 = new FirehoseClient(relayUrl);
   const eventsFromZero: any[] = [];
 
-  await timedCall(result, "Resubscribe with cursor=0 (full replay)", async () => {
-    await fh3.subscribe(
-      (ev) => {
-        eventsFromZero.push(ev);
-      },
-      5,
-      0,
-    );
-  });
+  await timedCall(
+    result,
+    "Resubscribe with cursor=0 (full replay)",
+    async () => {
+      await fh3.subscribe(
+        (ev) => {
+          eventsFromZero.push(ev);
+        },
+        5,
+        0,
+      );
+    },
+  );
 
   if (eventsFromZero.length > 0) {
-    result.stepPassed("Full replay returns events", `count=${eventsFromZero.length}`);
+    result.stepPassed(
+      "Full replay returns events",
+      `count=${eventsFromZero.length}`,
+    );
   } else {
     result.stepSkipped("Full replay returns events", "No events received");
   }

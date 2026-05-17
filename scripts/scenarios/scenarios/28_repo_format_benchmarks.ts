@@ -11,8 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1 } from "@garazyk/hamownia";
+import { PDS1 } from "@garazyk/hamownia/config";
 import { ScenarioResult } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
@@ -43,7 +44,11 @@ export async function run(): Promise<ScenarioResult> {
   const luna = getCharacter("luna");
   let session: any = null;
   try {
-    session = await client.accounts.createAccount(luna.handle, luna.email, luna.password);
+    session = await client.accounts.createAccount(
+      luna.handle,
+      luna.email,
+      luna.password,
+    );
   } catch {
     session = await client.accounts.createSession(luna.handle, luna.password);
   }
@@ -57,17 +62,25 @@ export async function run(): Promise<ScenarioResult> {
   luna.accessJwt = session.accessJwt;
 
   const POST_COUNT = 500;
-  const existing = await client.records.listRecords(luna.did, "app.bsky.feed.post", {
-    limit: 1,
-    token: luna.accessJwt,
-  });
+  const existing = await client.records.listRecords(
+    luna.did,
+    "app.bsky.feed.post",
+    {
+      limit: 1,
+      token: luna.accessJwt,
+    },
+  );
   if (existing.records.length < 1) {
     console.log(`Seeding ${POST_COUNT} posts...`);
     for (let i = 0; i < POST_COUNT; i++) {
       await client.records.createRecord(
         luna.did,
         "app.bsky.feed.post",
-        { $type: "app.bsky.feed.post", text: `Benchmark post ${i}`, createdAt: now() },
+        {
+          $type: "app.bsky.feed.post",
+          text: `Benchmark post ${i}`,
+          createdAt: now(),
+        },
         luna.accessJwt,
       );
     }
@@ -96,11 +109,14 @@ export async function run(): Promise<ScenarioResult> {
 
     for (let i = 0; i < iterations; i++) {
       const start = performance.now();
-      const [status, ct, body] = await client.raw.xrpcGetBinary("com.atproto.sync.getRepo", {
-        params: { did: luna.did },
-        token: luna.accessJwt,
-        headers: { "Accept": fmt.mime },
-      });
+      const [status, ct, body] = await client.raw.xrpcGetBinary(
+        "com.atproto.sync.getRepo",
+        {
+          params: { did: luna.did },
+          token: luna.accessJwt,
+          headers: { "Accept": fmt.mime },
+        },
+      );
       const duration = performance.now() - start;
       totalMs += duration;
       totalSize += body.length;

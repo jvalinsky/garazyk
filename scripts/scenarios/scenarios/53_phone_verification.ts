@@ -11,8 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1 } from "@garazyk/hamownia";
+import { PDS1 } from "@garazyk/hamownia/config";
 import { ScenarioResult } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
@@ -66,7 +67,10 @@ export async function run(): Promise<ScenarioResult> {
     () => "ok",
   );
   if (!healthy) {
-    result.stepSkipped("Phone verification", "PDS not healthy, cannot continue");
+    result.stepSkipped(
+      "Phone verification",
+      "PDS not healthy, cannot continue",
+    );
     twilio.stopProcess();
     result.finish();
     return result;
@@ -120,7 +124,9 @@ export async function run(): Promise<ScenarioResult> {
       "Verify code via mock control API",
       async () => {
         // Simulate a VerificationCheck by calling the mock's Twilio endpoint directly
-        const creds = btoa("AC00000000000000000000000000000000:SK00000000000000000000000000000000");
+        const creds = btoa(
+          "AC00000000000000000000000000000000:SK00000000000000000000000000000000",
+        );
         const res = await fetch(
           "http://127.0.0.1:8081/v2/Service/VA00000000000000000000000000000000/VerificationCheck",
           {
@@ -160,7 +166,9 @@ export async function run(): Promise<ScenarioResult> {
       result,
       "Wrong code is rejected",
       async () => {
-        const creds = btoa("AC00000000000000000000000000000000:SK00000000000000000000000000000000");
+        const creds = btoa(
+          "AC00000000000000000000000000000000:SK00000000000000000000000000000000",
+        );
         const res = await fetch(
           "http://127.0.0.1:8081/v2/Service/VA00000000000000000000000000000000/VerificationCheck",
           {
@@ -174,7 +182,9 @@ export async function run(): Promise<ScenarioResult> {
         );
         const body = await res.json();
         if (body.status === "approved") {
-          throw new Error("Wrong code was incorrectly approved — expected rejection");
+          throw new Error(
+            "Wrong code was incorrectly approved — expected rejection",
+          );
         }
         return body;
       },
@@ -188,7 +198,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Always-approve code works",
     async () => {
-      const creds = btoa("AC00000000000000000000000000000000:SK00000000000000000000000000000000");
+      const creds = btoa(
+        "AC00000000000000000000000000000000:SK00000000000000000000000000000000",
+      );
       const res = await fetch(
         "http://127.0.0.1:8081/v2/Service/VA00000000000000000000000000000000/VerificationCheck",
         {

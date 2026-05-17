@@ -21,7 +21,7 @@ import { ScenarioResult, timedCall } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
-import { SERVICE_URLS } from "@garazyk/hamownia";
+import { SERVICE_URLS } from "@garazyk/hamownia/config";
 
 /**
  * Executes the scenario logic.
@@ -39,7 +39,9 @@ export async function run(): Promise<ScenarioResult> {
     "UI Server health check",
     async () => {
       const res = await fetch(`${uiUrl}/lab`, { redirect: "manual" });
-      if (res.status !== 200) throw new Error(`GET /lab returned status=${res.status}`);
+      if (res.status !== 200) {
+        throw new Error(`GET /lab returned status=${res.status}`);
+      }
     },
   );
 
@@ -60,7 +62,10 @@ export async function run(): Promise<ScenarioResult> {
         contentType.toLowerCase().startsWith("text/html"),
         `content_type=${contentType}`,
       );
-      assert.isTrue(body.includes("lab-login-section"), "body missing lab-login-section");
+      assert.isTrue(
+        body.includes("lab-login-section"),
+        "body missing lab-login-section",
+      );
     },
   );
 
@@ -68,7 +73,9 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Lab client metadata valid",
     async () => {
-      const res = await fetch(`${uiUrl}/lab/client-metadata.json`, { redirect: "manual" });
+      const res = await fetch(`${uiUrl}/lab/client-metadata.json`, {
+        redirect: "manual",
+      });
       const metadata = await res.json();
       const requiredKeys = [
         "client_id",
@@ -92,10 +99,18 @@ export async function run(): Promise<ScenarioResult> {
         metadata.grant_types?.includes("authorization_code"),
         "missing auth_code grant",
       );
-      assert.isTrue(metadata.token_endpoint_auth_method === "none", "wrong auth method");
-      assert.isTrue(metadata.dpop_bound_access_tokens === true, "dpop not enabled");
       assert.isTrue(
-        metadata.redirect_uris?.some((uri: string) => uri.includes("/lab/callback")),
+        metadata.token_endpoint_auth_method === "none",
+        "wrong auth method",
+      );
+      assert.isTrue(
+        metadata.dpop_bound_access_tokens === true,
+        "dpop not enabled",
+      );
+      assert.isTrue(
+        metadata.redirect_uris?.some((uri: string) =>
+          uri.includes("/lab/callback")
+        ),
         "missing callback uri",
       );
     },
@@ -205,7 +220,10 @@ export async function run(): Promise<ScenarioResult> {
           headers: { "Cookie": adminCookieHeader },
           redirect: "manual",
         });
-        assert.isTrue(postLogout.status === 302, `status=${postLogout.status} after logout`);
+        assert.isTrue(
+          postLogout.status === 302,
+          `status=${postLogout.status} after logout`,
+        );
       },
     );
   }

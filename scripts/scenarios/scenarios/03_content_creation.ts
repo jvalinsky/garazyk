@@ -17,7 +17,8 @@
  */
 
 import { XrpcClient } from "@garazyk/gruszka";
-import { getCharacter, PDS1 } from "@garazyk/hamownia";
+import { getCharacter } from "@garazyk/hamownia/config";
+import { PDS1 } from "@garazyk/hamownia/config";
 import { ScenarioResult, timedCall } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
@@ -209,7 +210,10 @@ export async function run(): Promise<ScenarioResult> {
 
   const volt = getCharacter("volt");
   for (
-    const { name, rec } of [{ name: "Luna", rec: lunaPost }, { name: "Marcus", rec: marcusPost }, {
+    const { name, rec } of [{ name: "Luna", rec: lunaPost }, {
+      name: "Marcus",
+      rec: marcusPost,
+    }, {
       name: "Rosa",
       rec: rosaPost,
     }]
@@ -293,7 +297,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Luna's timeline",
     async () => {
-      return await client.raw.get("app.bsky.feed.getTimeline", {}, luna.accessJwt);
+      return await client.raw.get(
+        "app.bsky.feed.getTimeline",
+        {},
+        luna.accessJwt,
+      );
     },
     (t) => `items=${t.feed?.length || 0}`,
   );
@@ -342,7 +350,11 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Luna's notifications",
     async () => {
-      return await client.raw.get("app.bsky.notification.listNotifications", {}, luna.accessJwt);
+      return await client.raw.get(
+        "app.bsky.notification.listNotifications",
+        {},
+        luna.accessJwt,
+      );
     },
     (n) => `count=${n.notifications?.length || 0}`,
   );

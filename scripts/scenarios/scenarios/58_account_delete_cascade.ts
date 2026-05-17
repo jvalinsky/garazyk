@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1 } from "@garazyk/hamownia";
+import { PDS1 } from "@garazyk/hamownia/config";
 import { ScenarioResult } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
@@ -136,7 +136,11 @@ export async function run(): Promise<ScenarioResult> {
     "Create ghost account",
     async () => {
       try {
-        return await pds.accounts.createAccount(ghostHandle, ghostEmail, ghostPassword);
+        return await pds.accounts.createAccount(
+          ghostHandle,
+          ghostEmail,
+          ghostPassword,
+        );
       } catch {
         return await pds.accounts.createSession(ghostHandle, ghostPassword);
       }
@@ -163,7 +167,11 @@ export async function run(): Promise<ScenarioResult> {
     await pds.raw.post("com.atproto.repo.createRecord", {
       repo: ghostDid,
       collection: "app.bsky.feed.post",
-      record: { $type: "app.bsky.feed.post", text: "Soon to be deleted.", createdAt: now() },
+      record: {
+        $type: "app.bsky.feed.post",
+        text: "Soon to be deleted.",
+        createdAt: now(),
+      },
     }, ghostAccessJwt);
   });
 
@@ -172,7 +180,10 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Ghost uploads a blob",
     async () => pds.blobs.uploadBlob(TINY_PNG, "image/png", ghostAccessJwt!),
-    (r) => `cid=${(r as any)?.blob?.$link ?? (r as any)?.blob?.ref?.$link ?? "present"}`,
+    (r) =>
+      `cid=${
+        (r as any)?.blob?.$link ?? (r as any)?.blob?.ref?.$link ?? "present"
+      }`,
   );
   const blobCid: string | null = (blobResult as any)?.blob?.$link ??
     (blobResult as any)?.blob?.ref?.$link ??
@@ -253,7 +264,10 @@ export async function run(): Promise<ScenarioResult> {
       true, // must throw 404
     );
   } else {
-    result.stepSkipped("Blob inaccessible after account delete", "no blob was uploaded");
+    result.stepSkipped(
+      "Blob inaccessible after account delete",
+      "no blob was uploaded",
+    );
   }
 
   // Firehose tombstone verification requires a streaming consumer — out of scope for this tier.

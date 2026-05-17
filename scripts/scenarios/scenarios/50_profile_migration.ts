@@ -11,8 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia";
+import { SERVICE_URLS } from "@garazyk/hamownia/config";
 import { ScenarioResult } from "@garazyk/hamownia";
+import { getCharacter, PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
@@ -120,7 +121,11 @@ export async function run(): Promise<ScenarioResult> {
   if (result.failed > 0) return result;
 
   for (const char of [luna, marcus]) {
-    const session = await pds.accounts.createAccount(char.handle, char.email, char.password).catch(
+    const session = await pds.accounts.createAccount(
+      char.handle,
+      char.email,
+      char.password,
+    ).catch(
       () => pds.accounts.createSession(char.handle, char.password),
     );
     if (session) {
@@ -129,13 +134,29 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const avatarV1 = await timedCall(result, "Luna uploads first portrait", async () => {
-    return await pds.blobs.uploadBlob(makePng(64, 64), "image/png", luna.accessJwt);
-  });
+  const avatarV1 = await timedCall(
+    result,
+    "Luna uploads first portrait",
+    async () => {
+      return await pds.blobs.uploadBlob(
+        makePng(64, 64),
+        "image/png",
+        luna.accessJwt,
+      );
+    },
+  );
 
-  const bannerV1 = await timedCall(result, "Luna uploads first banner", async () => {
-    return await pds.blobs.uploadBlob(makePng(64, 64), "image/png", luna.accessJwt);
-  });
+  const bannerV1 = await timedCall(
+    result,
+    "Luna uploads first banner",
+    async () => {
+      return await pds.blobs.uploadBlob(
+        makePng(64, 64),
+        "image/png",
+        luna.accessJwt,
+      );
+    },
+  );
 
   if (avatarV1?.blob && bannerV1?.blob) {
     const initialProfile = {
@@ -158,23 +179,43 @@ export async function run(): Promise<ScenarioResult> {
 
     const newName = "Luna Reframed";
     await timedCall(result, "Luna sharpens display name", async () => {
-      return await pds.records.putRecord(luna.did, "app.bsky.actor.profile", "self", {
-        ...initialProfile,
-        displayName: newName,
-      }, luna.accessJwt);
+      return await pds.records.putRecord(
+        luna.did,
+        "app.bsky.actor.profile",
+        "self",
+        {
+          ...initialProfile,
+          displayName: newName,
+        },
+        luna.accessJwt,
+      );
     });
 
-    const avatarV2 = await timedCall(result, "Luna trades portrait", async () => {
-      return await pds.blobs.uploadBlob(makePng(64, 64), "image/png", luna.accessJwt);
-    });
+    const avatarV2 = await timedCall(
+      result,
+      "Luna trades portrait",
+      async () => {
+        return await pds.blobs.uploadBlob(
+          makePng(64, 64),
+          "image/png",
+          luna.accessJwt,
+        );
+      },
+    );
 
     if (avatarV2?.blob) {
       await timedCall(result, "Luna swaps portrait", async () => {
-        return await pds.records.putRecord(luna.did, "app.bsky.actor.profile", "self", {
-          ...initialProfile,
-          displayName: newName,
-          avatar: avatarV2.blob,
-        }, luna.accessJwt);
+        return await pds.records.putRecord(
+          luna.did,
+          "app.bsky.actor.profile",
+          "self",
+          {
+            ...initialProfile,
+            displayName: newName,
+            avatar: avatarV2.blob,
+          },
+          luna.accessJwt,
+        );
       });
     }
 
