@@ -369,10 +369,10 @@ export class ContainerEventWatcher {
       this._unhandledRejectionHandler = null;
     }
 
-    // Abort the event stream. This causes the pending reader.read()
-    // in streamEvents() to reject with AbortError, which is caught
-    // by the .catch() handler and converted to done=true.
-    this.abortController.abort();
+    // Abort the event stream.
+    if (!this.abortController.signal.aborted) {
+      this.abortController.abort();
+    }
 
     // Reject all pending waiters
     for (const waiter of this.waiters) {

@@ -22,9 +22,20 @@ import { XrpcClient } from "@garazyk/atproto-client";
 
 const client = new XrpcClient("https://bsky.social");
 
-// Fully typed query
-const profile = await client.query("app.bsky.actor.getProfile", {
+// Idiomatic nested API access
+const profile = await client.api.app.bsky.actor.getProfile({
   actor: "did:plc:..."
 });
-console.log(profile.handle);
+
+// Authenticated calls with full type safety
+const session = await client.api.com.atproto.server.createSession({
+  identifier: "alice.test",
+  password: "password"
+});
+
+const myProfile = await client.api.app.bsky.actor.getProfile({
+    actor: session.did
+}, session.accessJwt);
+
+console.log(myProfile.handle);
 ```

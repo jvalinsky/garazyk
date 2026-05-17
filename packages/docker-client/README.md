@@ -21,7 +21,12 @@ deno add jsr:@garazyk/docker-client
 ```typescript
 import { createDockerClient } from "@garazyk/docker-client";
 
-const docker = createDockerClient();
-const containers = await docker.listContainers();
-console.log(containers);
+// Automatically discovers OrbStack, Docker Desktop, or Linux system socket.
+// Respects DOCKER_HOST environment variable.
+const docker = await createDockerClient();
+
+if (docker) {
+  const containers = await docker.listContainers();
+  console.log(containers);
+}
 ```
