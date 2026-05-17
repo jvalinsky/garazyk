@@ -1,4 +1,4 @@
-import { assertEquals } from "jsr:@std/assert";
+import { assertEquals } from "@std/assert";
 import {
   buildDockerRunnerArgs,
   DOCKER_RUNNER_TIMEOUT_EXIT_CODE,

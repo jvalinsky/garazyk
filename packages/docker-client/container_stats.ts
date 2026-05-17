@@ -25,8 +25,6 @@ import {
 } from "./docker_api.ts";
 import {
   addSpanEvent,
-  createCounter,
-  createGauge,
   isOtelEnabled,
   type MetricAttributes,
   recordCounter,
@@ -126,10 +124,6 @@ export class ContainerStatsSampler {
   private previousNetworkRx = new Map<string, number>();
   private previousNetworkTx = new Map<string, number>();
 
-  // Cached OTel instruments (created once, reused)
-  private gauges: Record<string, any> = {};
-  private counters: Record<string, any> = {};
-
   constructor(opts: StatsSamplerOptions) {
     this.client = opts.client;
     this.intervalMs = opts.intervalMs ?? 5000;
@@ -186,7 +180,9 @@ export class ContainerStatsSampler {
 
       for (const container of projectContainers) {
         try {
-          const stats = await this.client.containerStats(container.Id, { oneShot: true });
+          const stats = await this.client.containerStats(container.Id, {
+            oneShot: true,
+          });
           const snapshot = this.buildSnapshot(container, stats);
           snapshots.push(snapshot);
           if (isOtelEnabled()) {
@@ -211,9 +207,11 @@ export class ContainerStatsSampler {
     container: ContainerSummary,
     stats: ContainerStats,
   ): ContainerStatsSnapshot {
-    const serviceName = composeServiceName(container) ?? container.Names?.[0]?.replace(/^\//, "") ??
+    const serviceName = composeServiceName(container) ??
+      container.Names?.[0]?.replace(/^\//, "") ??
       "unknown";
-    const containerName = container.Names?.[0]?.replace(/^\//, "") ?? container.Id.substring(0, 12);
+    const containerName = container.Names?.[0]?.replace(/^\//, "") ??
+      container.Id.substring(0, 12);
     const memUsage = memoryUsage(stats);
     const memLimit = memoryLimit(stats);
     const memPercent = memLimit > 0 ? (memUsage / memLimit) * 100 : 0;
@@ -273,34 +271,55 @@ export class ContainerStatsSampler {
 
     // Gauges (point-in-time values) — fire-and-forget
     recordGauge("container.cpu.percent", s.cpuPercent, attrs).catch(() => {});
-    recordGauge("container.memory.usage_bytes", s.memoryUsageBytes, attrs).catch(() => {});
-    recordGauge("container.memory.limit_bytes", s.memoryLimitBytes, attrs).catch(() => {});
-    recordGauge("container.memory.percent", s.memoryPercent, attrs).catch(() => {});
-    recordGauge("container.memory.rss_bytes", s.memoryRssBytes, attrs).catch(() => {});
-    recordGauge("container.memory.cache_bytes", s.memoryCacheBytes, attrs).catch(() => {});
+    recordGauge("container.memory.usage_bytes", s.memoryUsageBytes, attrs)
+      .catch(() => {});
+    recordGauge("container.memory.limit_bytes", s.memoryLimitBytes, attrs)
+      .catch(() => {});
+    recordGauge("container.memory.percent", s.memoryPercent, attrs).catch(
+      () => {},
+    );
+    recordGauge("container.memory.rss_bytes", s.memoryRssBytes, attrs).catch(
+      () => {},
+    );
+    recordGauge("container.memory.cache_bytes", s.memoryCacheBytes, attrs)
+      .catch(() => {});
     recordGauge("container.pids", s.pids, attrs).catch(() => {});
 
     // Counters (cumulative values)
-    recordCounter("container.memory.failcnt", s.memoryFailcnt, attrs).catch(() => {});
+    recordCounter("container.memory.failcnt", s.memoryFailcnt, attrs).catch(
+      () => {},
+    );
 
     // Network counters — record deltas if we have previous values
     const prevRx = this.previousNetworkRx.get(s.containerId) ?? 0;
     const prevTx = this.previousNetworkTx.get(s.containerId) ?? 0;
     if (s.networkRxBytes >= prevRx) {
-      recordCounter("container.network.rx_bytes", s.networkRxBytes - prevRx, attrs).catch(() => {});
+      recordCounter(
+        "container.network.rx_bytes",
+        s.networkRxBytes - prevRx,
+        attrs,
+      ).catch(() => {});
     }
     if (s.networkTxBytes >= prevTx) {
-      recordCounter("container.network.tx_bytes", s.networkTxBytes - prevTx, attrs).catch(() => {});
+      recordCounter(
+        "container.network.tx_bytes",
+        s.networkTxBytes - prevTx,
+        attrs,
+      ).catch(() => {});
     }
-    recordCounter("container.network.rx_errors", s.networkRxErrors, attrs).catch(() => {});
-    recordCounter("container.network.tx_errors", s.networkTxErrors, attrs).catch(() => {});
+    recordCounter("container.network.rx_errors", s.networkRxErrors, attrs)
+      .catch(() => {});
+    recordCounter("container.network.tx_errors", s.networkTxErrors, attrs)
+      .catch(() => {});
 
     this.previousNetworkRx.set(s.containerId, s.networkRxBytes);
     this.previousNetworkTx.set(s.containerId, s.networkTxBytes);
 
     // Block I/O counters
-    recordCounter("container.blockio.read_bytes", s.blockioReadBytes, attrs).catch(() => {});
-    recordCounter("container.blockio.write_bytes", s.blockioWriteBytes, attrs).catch(() => {});
+    recordCounter("container.blockio.read_bytes", s.blockioReadBytes, attrs)
+      .catch(() => {});
+    recordCounter("container.blockio.write_bytes", s.blockioWriteBytes, attrs)
+      .catch(() => {});
 
     // Span event for correlation with traces
     addSpanEvent("container.stats", {

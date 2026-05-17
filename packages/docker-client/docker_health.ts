@@ -18,7 +18,10 @@ export async function waitForHttp(
   const deadline = Date.now() + timeoutSeconds * 1000;
   while (Date.now() < deadline) {
     try {
-      const resp = await fetch(url, { headers, signal: AbortSignal.timeout(5000) });
+      const resp = await fetch(url, {
+        headers,
+        signal: AbortSignal.timeout(5000),
+      });
       if (resp.ok) {
         console.log(`[OK]    ${label} is healthy`);
         return true;
@@ -48,11 +51,16 @@ export async function waitForService(
   const watcher = sharedWatcher ?? await ContainerEventWatcher.create();
   if (watcher) {
     try {
-      const ok = await watcher.waitForHealthy(serviceName, timeoutSeconds * 1000);
+      const ok = await watcher.waitForHealthy(
+        serviceName,
+        timeoutSeconds * 1000,
+      );
       if (ok) {
         console.log(`[OK]    ${serviceName} is healthy`);
       } else {
-        console.log(`[WARN]  ${serviceName} not healthy after ${timeoutSeconds}s`);
+        console.log(
+          `[WARN]  ${serviceName} not healthy after ${timeoutSeconds}s`,
+        );
       }
       return ok;
     } finally {
@@ -60,7 +68,12 @@ export async function waitForService(
     }
   }
 
-  return waitForServiceCLI(serviceName, composeProject, composeFile, timeoutSeconds);
+  return waitForServiceCLI(
+    serviceName,
+    composeProject,
+    composeFile,
+    timeoutSeconds,
+  );
 }
 
 /** CLI fallback: poll `docker compose ps` + `docker inspect`. */
@@ -74,7 +87,16 @@ export async function waitForServiceCLI(
   while (Date.now() < deadline) {
     try {
       const psProc = new Deno.Command("docker", {
-        args: ["compose", "-p", composeProject, "-f", composeFile, "ps", "-q", serviceName],
+        args: [
+          "compose",
+          "-p",
+          composeProject,
+          "-f",
+          composeFile,
+          "ps",
+          "-q",
+          serviceName,
+        ],
         stdout: "piped",
       });
       const { code, stdout } = await psProc.output();
@@ -97,7 +119,9 @@ export async function waitForServiceCLI(
               console.log(`[OK]    ${serviceName} is healthy`);
               return true;
             }
-            if (status === "unhealthy" || status === "exited" || status === "dead") {
+            if (
+              status === "unhealthy" || status === "exited" || status === "dead"
+            ) {
               return false;
             }
           }

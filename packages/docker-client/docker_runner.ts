@@ -5,7 +5,7 @@
  * and lets scenarios run against remote Docker hosts.
  */
 
-import { join, relative, resolve } from "@std/path";
+import { relative, resolve } from "@std/path";
 
 /** Options for running a scenario inside a Docker container. */
 export interface DockerRunnerOptions {

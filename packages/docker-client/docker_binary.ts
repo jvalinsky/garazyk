@@ -15,7 +15,7 @@ import type { LocalNetworkOptions, RunContext } from "./docker_types.ts";
 /** Start local ATProto services from build binaries (PLC, PDS, Relay, AppView). */
 export async function startBinaryServices(
   ctx: RunContext,
-  opts: LocalNetworkOptions,
+  _opts: LocalNetworkOptions,
 ): Promise<void> {
   const root = await repoRoot();
   const buildBin = Deno.env.get("BUILD_DIR") || join(root, "build/bin");
@@ -63,7 +63,12 @@ export async function startBinaryServices(
   console.log(`[INFO]  Starting PLC on port ${SERVICE_PORTS.plc}...`);
   const plcProc = new Deno.Command(join(buildBin, "campagnola"), {
     args: ["serve", "--port", String(SERVICE_PORTS.plc), "--data-dir", plcData],
-    env: { ...commonEnv, PLC_HOURLY_LIMIT: "5", PLC_DAILY_LIMIT: "15", PLC_WEEKLY_LIMIT: "50" },
+    env: {
+      ...commonEnv,
+      PLC_HOURLY_LIMIT: "5",
+      PLC_DAILY_LIMIT: "15",
+      PLC_WEEKLY_LIMIT: "50",
+    },
     stdout: "piped",
     stderr: "piped",
   });
@@ -87,7 +92,11 @@ export async function startBinaryServices(
       pdsData,
       "--foreground",
     ],
-    env: { ...commonEnv, PDS_ALLOW_HTTP: "1", PDS_PLC_KEYS_DIR: join(pdsData, "keys") },
+    env: {
+      ...commonEnv,
+      PDS_ALLOW_HTTP: "1",
+      PDS_PLC_KEYS_DIR: join(pdsData, "keys"),
+    },
     stdout: "piped",
     stderr: "piped",
   });
@@ -95,7 +104,11 @@ export async function startBinaryServices(
   await appendPid(ctx.pidFile, "PDS", pdsChild.pid);
   await new Promise((r) => setTimeout(r, 3000));
   if (
-    !await waitForHttp(`${serviceUrl("pds")}/xrpc/com.atproto.server.describeServer`, "PDS", 60)
+    !await waitForHttp(
+      `${serviceUrl("pds")}/xrpc/com.atproto.server.describeServer`,
+      "PDS",
+      60,
+    )
   ) {
     throw new Error("PDS failed to start");
   }
@@ -119,7 +132,9 @@ export async function startBinaryServices(
   const relayChild = relayProc.spawn();
   await appendPid(ctx.pidFile, "RELAY", relayChild.pid);
   await new Promise((r) => setTimeout(r, 2000));
-  if (!await waitForHttp(`${serviceUrl("relay")}/api/relay/health`, "Relay", 30)) {
+  if (
+    !await waitForHttp(`${serviceUrl("relay")}/api/relay/health`, "Relay", 30)
+  ) {
     throw new Error("Relay failed to start");
   }
 
@@ -148,9 +163,14 @@ export async function startBinaryServices(
   await appendPid(ctx.pidFile, "APPVIEW", appviewChild.pid);
   await new Promise((r) => setTimeout(r, 3000));
   if (
-    !await waitForHttp(`${serviceUrl("appview")}/admin/backfill/status`, "AppView", 60, {
-      "Authorization": "Bearer localdevadmin",
-    })
+    !await waitForHttp(
+      `${serviceUrl("appview")}/admin/backfill/status`,
+      "AppView",
+      60,
+      {
+        "Authorization": "Bearer localdevadmin",
+      },
+    )
   ) {
     throw new Error("AppView failed to start");
   }
@@ -160,7 +180,11 @@ export async function startBinaryServices(
   console.log("[OK]    Binary network is ready!");
 }
 
-async function appendPid(pidFile: string, label: string, pid: number): Promise<void> {
+async function appendPid(
+  pidFile: string,
+  label: string,
+  pid: number,
+): Promise<void> {
   const line = `${label}_PID=${pid}\n`;
   const existing = await Deno.readTextFile(pidFile).catch(() => "");
   await Deno.writeTextFile(pidFile, existing + line);

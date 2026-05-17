@@ -123,6 +123,32 @@ interface Waiter {
   waitFor: "healthy" | "running";
 }
 
+/** Options for creating a ContainerEventWatcher. */
+export interface ContainerEventWatcherOptions {
+  /** Docker socket path override. */
+  socketPath?: string;
+  /** Compose project used to scope container event and list filters. */
+  composeProject?: string;
+}
+
+/** Build Docker API filters for container event watching. */
+export function buildContainerEventFilters(
+  composeProject?: string,
+): Record<string, string[]> {
+  const filters: Record<string, string[]> = {
+    type: ["container"],
+    event: ["start", "die", "health_status", "oom"],
+  };
+  if (composeProject) {
+    filters.label = [`com.docker.compose.project=${composeProject}`];
+  }
+  return filters;
+}
+
+function isAbortError(err: unknown): boolean {
+  return err instanceof Error && err.name === "AbortError";
+}
+
 // ---------------------------------------------------------------------------
 // DockerEventParser (sans-IO core)
 // ---------------------------------------------------------------------------
@@ -335,7 +361,10 @@ export class ContainerEventWatcher {
   private subscribers: Array<(event: WatcherEvent) => void> = [];
   private _closed = false;
   private eventLoopPromise: Promise<void> | null = null;
-  private constructor(client: DockerApiClient) {
+  private constructor(
+    client: DockerApiClient,
+    private readonly options: ContainerEventWatcherOptions = {},
+  ) {
     this.client = client;
   }
 
@@ -345,12 +374,16 @@ export class ContainerEventWatcher {
    * Returns null if the Docker API is not available.
    */
   static async create(
-    socketPath?: string,
+    socketPathOrOptions?: string | ContainerEventWatcherOptions,
   ): Promise<ContainerEventWatcher | null> {
-    const client = await createDockerClient(socketPath);
+    const options: ContainerEventWatcherOptions =
+      typeof socketPathOrOptions === "string"
+        ? { socketPath: socketPathOrOptions }
+        : socketPathOrOptions ?? {};
+    const client = await createDockerClient(options.socketPath);
     if (!client) return null;
 
-    const watcher = new ContainerEventWatcher(client);
+    const watcher = new ContainerEventWatcher(client, options);
     await watcher.start();
     return watcher;
   }
@@ -456,10 +489,7 @@ export class ContainerEventWatcher {
 
     // Start the event stream
     this.eventStream = this.client.streamEvents(
-      {
-        type: ["container"],
-        event: ["start", "die", "health_status", "oom"],
-      },
+      buildContainerEventFilters(this.options.composeProject),
       this.abortController.signal,
     );
 
@@ -469,7 +499,12 @@ export class ContainerEventWatcher {
 
   private async buildContainerMap(): Promise<void> {
     try {
-      const containers = await this.client.listContainers();
+      const filters = this.options.composeProject
+        ? {
+          label: [`com.docker.compose.project=${this.options.composeProject}`],
+        }
+        : undefined;
+      const containers = await this.client.listContainers(filters);
       this.parser.loadContainers(containers);
     } catch {
       // Container listing may fail if daemon is busy — events will
@@ -501,8 +536,8 @@ export class ContainerEventWatcher {
           }
         }
       }
-    } catch (err: any) {
-      if (!this._closed && !(err && err.name === "AbortError")) {
+    } catch (err: unknown) {
+      if (!this._closed && !isAbortError(err)) {
         console.error("[docker_events] event stream error:", err);
       }
     }

@@ -7,18 +7,25 @@
 
 import {
   ContainerStatsSampler,
-  type ContainerStatsSnapshot,
   type MemoryPressureAlert,
 } from "./container_stats.ts";
-import type { ContainerStats, ContainerSummary, DockerApiClient } from "./docker_api.ts";
+import type {
+  ContainerStats,
+  ContainerSummary,
+  DockerApiClient,
+} from "./docker_api.ts";
 import { assertEquals } from "@std/assert";
 
 // ---------------------------------------------------------------------------
 // Mock Docker API client
 // ---------------------------------------------------------------------------
 
-function makeMockClient(containers: ContainerSummary[], stats: ContainerStats): DockerApiClient {
+function makeMockClient(
+  containers: ContainerSummary[],
+  stats: ContainerStats,
+): DockerApiClient {
   return {
+    // deno-lint-ignore no-explicit-any
     client: {} as any,
     _socketPath: "/mock",
     _available: true,
@@ -26,37 +33,41 @@ function makeMockClient(containers: ContainerSummary[], stats: ContainerStats): 
     get available() {
       return true;
     },
-    async init() {
-      return true;
+    init() {
+      return Promise.resolve(true);
     },
     close() {},
-    async ping() {
-      return true;
+    ping() {
+      return Promise.resolve(true);
     },
-    async version() {
-      return {} as any;
+    version() {
+      // deno-lint-ignore no-explicit-any
+      return Promise.resolve({} as any);
     },
-    async listContainers() {
-      return containers;
+    listContainers() {
+      return Promise.resolve(containers);
     },
-    async inspectContainer() {
-      return {} as any;
+    inspectContainer() {
+      // deno-lint-ignore no-explicit-any
+      return Promise.resolve({} as any);
     },
-    async containerLogs() {
-      return new ReadableStream();
+    containerLogs() {
+      return Promise.resolve(new ReadableStream());
     },
-    async containerStats(_id: string, _opts?: { oneShot?: boolean }) {
-      return stats;
+    containerStats(_id: string, _opts?: { oneShot?: boolean }) {
+      return Promise.resolve(stats);
     },
-    async waitContainer() {
-      return { StatusCode: 0 };
+    waitContainer() {
+      return Promise.resolve({ StatusCode: 0 });
     },
     async *streamEvents() {},
     async *streamContainerStats() {},
   } as unknown as DockerApiClient;
 }
 
-function makeContainerSummary(overrides: Partial<ContainerSummary> = {}): ContainerSummary {
+function makeContainerSummary(
+  overrides: Partial<ContainerSummary> = {},
+): ContainerSummary {
   return {
     Id: "abc123def456",
     Names: ["/local-pds"],
@@ -71,7 +82,9 @@ function makeContainerSummary(overrides: Partial<ContainerSummary> = {}): Contai
   } as unknown as ContainerSummary;
 }
 
-function makeContainerStats(overrides: Partial<ContainerStats> = {}): ContainerStats {
+function makeContainerStats(
+  overrides: Partial<ContainerStats> = {},
+): ContainerStats {
   return {
     read: new Date().toISOString(),
     preread: new Date().toISOString(),
@@ -301,7 +314,7 @@ Deno.test("memory pressure: fires callback when failcnt increases", async () => 
       },
     }),
   );
-  // Replace the client's containerStats method
+  // deno-lint-ignore no-explicit-any
   (sampler as any).client = client2;
 
   await sampler.sample();
@@ -352,10 +365,12 @@ Deno.test("sampler: start/stop lifecycle", async () => {
 
   // Start should not throw
   sampler.start();
+  // deno-lint-ignore no-explicit-any
   assertEquals((sampler as any).running, true);
 
   // Stop should not throw
   await sampler.stop();
+  // deno-lint-ignore no-explicit-any
   assertEquals((sampler as any).running, false);
 });
 

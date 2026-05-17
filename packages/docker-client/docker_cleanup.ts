@@ -5,13 +5,10 @@
  */
 
 import {
-  composeServiceName,
-  type ContainerSummary,
   createDockerClient,
-  findPortConflicts,
   findStaleProjectsOnPorts,
 } from "./docker_api.ts";
-import { neededPorts, serviceUrl } from "@garazyk/atproto-topology";
+import { neededPorts } from "@garazyk/atproto-topology";
 import { composeDown } from "./docker_compose.ts";
 
 // ---------------------------------------------------------------------------
@@ -29,12 +26,20 @@ export async function stopStaleDockerE2e(
   }
 
   const ports = neededPorts(opts);
-  const staleProjects = await findStaleProjectsOnPorts(client, ports, currentProject);
+  const staleProjects = await findStaleProjectsOnPorts(
+    client,
+    ports,
+    currentProject,
+  );
 
   if (staleProjects.size === 0) return [];
 
   const projectNames = [...staleProjects];
-  console.log(`[WARN] Stale e2e projects holding needed ports: ${projectNames.join(", ")}`);
+  console.log(
+    `[WARN] Stale e2e projects holding needed ports: ${
+      projectNames.join(", ")
+    }`,
+  );
 
   for (const project of projectNames) {
     console.log(`[INFO] Tearing down stale compose project: ${project}`);
@@ -68,7 +73,8 @@ async function stopStaleDockerE2eCLI(
       const { code, stdout } = await proc.output();
       if (code !== 0) continue;
 
-      const containerIds = new TextDecoder().decode(stdout).trim().split("\n").filter(Boolean);
+      const containerIds = new TextDecoder().decode(stdout).trim().split("\n")
+        .filter(Boolean);
       for (const cid of containerIds) {
         const inspectProc = new Deno.Command("docker", {
           args: [
@@ -87,14 +93,22 @@ async function stopStaleDockerE2eCLI(
         }
       }
     } catch (e) {
-      console.warn("[docker] failed to inspect stale Docker projects on port", port, e);
+      console.warn(
+        "[docker] failed to inspect stale Docker projects on port",
+        port,
+        e,
+      );
     }
   }
 
   if (staleProjects.size === 0) return [];
 
   const projectNames = [...staleProjects];
-  console.log(`[WARN] Stale e2e projects holding needed ports: ${projectNames.join(", ")}`);
+  console.log(
+    `[WARN] Stale e2e projects holding needed ports: ${
+      projectNames.join(", ")
+    }`,
+  );
   for (const project of projectNames) {
     console.log(`[INFO] Tearing down stale compose project: ${project}`);
     await composeDown(project);
@@ -131,7 +145,9 @@ export async function stopStaleHostProcesses(
       const { code, stdout } = await lsofProc.output();
       if (code !== 0) continue;
 
-      const pids = new TextDecoder().decode(stdout).trim().split("\n").filter(Boolean);
+      const pids = new TextDecoder().decode(stdout).trim().split("\n").filter(
+        Boolean,
+      );
       for (const pid of pids) {
         const psProc = new Deno.Command("ps", {
           args: ["-p", pid, "-o", "comm="],
@@ -141,8 +157,13 @@ export async function stopStaleHostProcesses(
         if (pc !== 0) continue;
 
         const cmd = new TextDecoder().decode(pout).trim();
-        if (knownBinaries.has(cmd) || cmd.startsWith("garazyk") || cmd.startsWith("atproto")) {
-          console.log(`[WARN] Stale host process holding port ${port} (PID: ${pid}, cmd: ${cmd})`);
+        if (
+          knownBinaries.has(cmd) || cmd.startsWith("garazyk") ||
+          cmd.startsWith("atproto")
+        ) {
+          console.log(
+            `[WARN] Stale host process holding port ${port} (PID: ${pid}, cmd: ${cmd})`,
+          );
           try {
             const killProc = new Deno.Command("kill", { args: ["-9", pid] });
             await killProc.output();

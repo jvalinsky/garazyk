@@ -11,22 +11,42 @@ import { join } from "@std/path";
 import { formatBytes } from "@garazyk/scenario-runner";
 import { initRunDir, repoRoot } from "@garazyk/atproto-topology";
 import { composeDown, composeUp } from "./docker_compose.ts";
-import { stopStaleDockerE2e, stopStaleHostProcesses } from "./docker_cleanup.ts";
-import { waitForHttp, waitForService, waitForServiceCLI } from "./docker_health.ts";
+import {
+  stopStaleDockerE2e,
+  stopStaleHostProcesses,
+} from "./docker_cleanup.ts";
+import {
+  waitForHttp,
+  waitForService,
+  waitForServiceCLI,
+} from "./docker_health.ts";
 import { collectDockerDiagnostics as collectDiagnostics } from "@garazyk/scenario-runner";
 import { startBinaryServices, stopBinaryServices } from "./docker_binary.ts";
 import { ContainerEventWatcher } from "./docker_events.ts";
 import { isOtelEnabled, withSpan } from "@garazyk/scenario-runner";
 import { ContainerStatsSampler } from "./container_stats.ts";
 import { createDockerClient } from "./docker_api.ts";
-import type { LocalNetworkOptions, RunContext } from "./docker_types.ts";
+import type { LocalNetworkOptions } from "./docker_types.ts";
 
 // Re-exports for backward compatibility
 export type { LocalNetworkOptions, RunContext } from "./docker_types.ts";
-export { initRunDir, neededPorts, repoRoot, SERVICE_PORTS, serviceUrl } from "@garazyk/atproto-topology";
+export {
+  initRunDir,
+  neededPorts,
+  repoRoot,
+  SERVICE_PORTS,
+  serviceUrl,
+} from "@garazyk/atproto-topology";
 export { composeDown, composeUp } from "./docker_compose.ts";
-export { stopStaleDockerE2e, stopStaleHostProcesses } from "./docker_cleanup.ts";
-export { waitForHttp, waitForService, waitForServiceCLI } from "./docker_health.ts";
+export {
+  stopStaleDockerE2e,
+  stopStaleHostProcesses,
+} from "./docker_cleanup.ts";
+export {
+  waitForHttp,
+  waitForService,
+  waitForServiceCLI,
+} from "./docker_health.ts";
 export { collectDockerDiagnostics as collectDiagnostics } from "@garazyk/scenario-runner";
 export { startBinaryServices, stopBinaryServices } from "./docker_binary.ts";
 
@@ -43,7 +63,9 @@ export { startBinaryServices, stopBinaryServices } from "./docker_binary.ts";
  *
  * In binary mode: starts local binaries and waits for HTTP health.
  */
-export async function startLocalNetwork(options: LocalNetworkOptions = {}): Promise<void> {
+export async function startLocalNetwork(
+  options: LocalNetworkOptions = {},
+): Promise<void> {
   return await withSpan("localNetwork.start", async () => {
     const ctx = initRunDir(options.runId);
 
@@ -105,7 +127,9 @@ export async function startLocalNetwork(options: LocalNetworkOptions = {}): Prom
     }
 
     if (options.topology && Deno.env.get("ATPROTO_TOPOLOGY_MANIFEST")) {
-      const { loadTopologyManifest } = await import("@garazyk/atproto-topology");
+      const { loadTopologyManifest } = await import(
+        "@garazyk/atproto-topology"
+      );
       const manifest = loadTopologyManifest(topologyManifest);
       if (manifest) {
         const watcher = await ContainerEventWatcher.create();
@@ -113,9 +137,17 @@ export async function startLocalNetwork(options: LocalNetworkOptions = {}): Prom
           console.log(`[INFO]  Waiting for ${probe.label} (${probe.mode})...`);
           let ok: boolean;
           if (probe.mode === "http") {
-            ok = await waitForHttp(probe.url!, probe.label, probe.timeoutSeconds, probe.headers);
+            ok = await waitForHttp(
+              probe.url!,
+              probe.label,
+              probe.timeoutSeconds,
+              probe.headers,
+            );
           } else if (watcher) {
-            ok = await watcher.waitForHealthy(probe.serviceName, probe.timeoutSeconds * 1000);
+            ok = await watcher.waitForHealthy(
+              probe.serviceName,
+              probe.timeoutSeconds * 1000,
+            );
           } else {
             ok = await waitForServiceCLI(
               probe.serviceName,
@@ -126,7 +158,9 @@ export async function startLocalNetwork(options: LocalNetworkOptions = {}): Prom
           }
           if (!ok) {
             await watcher?.close();
-            throw new Error(`${probe.label} not healthy after ${probe.timeoutSeconds}s`);
+            throw new Error(
+              `${probe.label} not healthy after ${probe.timeoutSeconds}s`,
+            );
           }
           console.log(`[OK]    ${probe.label} is healthy`);
         }
@@ -135,9 +169,27 @@ export async function startLocalNetwork(options: LocalNetworkOptions = {}): Prom
     } else {
       const sharedWatcher = await ContainerEventWatcher.create();
       try {
-        await waitForService("local-plc", ctx.composeProject, composeFiles[0], 60, sharedWatcher);
-        await waitForService("local-pds", ctx.composeProject, composeFiles[0], 60, sharedWatcher);
-        await waitForService("local-relay", ctx.composeProject, composeFiles[0], 60, sharedWatcher);
+        await waitForService(
+          "local-plc",
+          ctx.composeProject,
+          composeFiles[0],
+          60,
+          sharedWatcher,
+        );
+        await waitForService(
+          "local-pds",
+          ctx.composeProject,
+          composeFiles[0],
+          60,
+          sharedWatcher,
+        );
+        await waitForService(
+          "local-relay",
+          ctx.composeProject,
+          composeFiles[0],
+          60,
+          sharedWatcher,
+        );
         const appviewOk = await waitForService(
           "local-appview",
           ctx.composeProject,
@@ -175,7 +227,9 @@ export async function startLocalNetwork(options: LocalNetworkOptions = {}): Prom
           onMemoryPressure: (alert) => {
             console.warn(
               `[WARN]  Memory pressure: ${alert.serviceName} failcnt=${alert.failcnt} ` +
-                `(${formatBytes(alert.memoryUsageBytes)} / ${formatBytes(alert.memoryLimitBytes)})`,
+                `(${formatBytes(alert.memoryUsageBytes)} / ${
+                  formatBytes(alert.memoryLimitBytes)
+                })`,
             );
           },
         });

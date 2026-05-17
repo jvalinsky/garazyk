@@ -14,7 +14,7 @@ import {
   type ContainerSummary,
   cpuPercent,
   createDockerClient,
-  DockerApiClient,
+  type DockerApiClient,
   type DockerEvent,
   findPortConflicts,
   formatMemory,

@@ -1,6 +1,8 @@
 # @garazyk/docker-client
 
-A generic Deno wrapper for Docker Engine and Docker Compose. This package provides utilities for programmatically managing Docker containers, streaming logs, checking health status, and parsing Docker events.
+A generic Deno wrapper for Docker Engine and Docker Compose. This package
+provides utilities for programmatically managing Docker containers, streaming
+logs, checking health status, and parsing Docker events.
 
 ## Installation
 
@@ -10,7 +12,8 @@ deno add jsr:@garazyk/docker-client
 
 ## Features
 
-- **Docker Engine API Client**: Typed wrappers for container and image management.
+- **Docker Engine API Client**: Typed wrappers for container and image
+  management.
 - **Docker Compose Integration**: Wrappers for `docker compose up/down/ps`.
 - **Event Streaming**: Listen to Docker engine events with ease.
 - **Resource Monitoring**: Stream container stats (CPU, Memory, IO).

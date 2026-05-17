@@ -5,8 +5,11 @@
  * and state tracking logic without requiring a Docker daemon.
  */
 
-import { assertEquals, assertExists, assertFalse } from "jsr:@std/assert";
-import { DockerEventParser } from "./docker_events.ts";
+import { assertEquals, assertExists } from "@std/assert";
+import {
+  buildContainerEventFilters,
+  DockerEventParser,
+} from "./docker_events.ts";
 import type { ContainerSummary, DockerEvent } from "./docker_api.ts";
 
 // ---------------------------------------------------------------------------
@@ -66,6 +69,14 @@ Deno.test("DockerEventParser.feed() - start event", () => {
     assertEquals(events[0].serviceName, "local-pds");
     assertEquals(events[0].containerId, "abc123def456");
   }
+});
+
+Deno.test("buildContainerEventFilters includes compose project label", () => {
+  assertEquals(buildContainerEventFilters("garazyk-e2e-test"), {
+    type: ["container"],
+    event: ["start", "die", "health_status", "oom"],
+    label: ["com.docker.compose.project=garazyk-e2e-test"],
+  });
 });
 
 Deno.test("DockerEventParser.feed() - health_status: healthy", () => {
