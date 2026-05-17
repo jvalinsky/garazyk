@@ -5,11 +5,16 @@
 ### Import Order
 
 ```html
-<link rel="stylesheet" href="/css/system.css">   <!-- Fonts, vars, reset -->
-<link rel="stylesheet" href="/css/tokens.css">   <!-- Color & spacing tokens -->
-<link rel="stylesheet" href="/css/layout.css">   <!-- Toolbar, sidebar, panes -->
-<link rel="stylesheet" href="/css/components.css"> <!-- Buttons, forms, cards -->
-<link rel="stylesheet" href="/css/utilities.css"> <!-- Spacing, text, helpers -->
+<link rel="stylesheet" href="/css/system.css">
+<!-- Fonts, vars, reset -->
+<link rel="stylesheet" href="/css/tokens.css">
+<!-- Color & spacing tokens -->
+<link rel="stylesheet" href="/css/layout.css">
+<!-- Toolbar, sidebar, panes -->
+<link rel="stylesheet" href="/css/components.css">
+<!-- Buttons, forms, cards -->
+<link rel="stylesheet" href="/css/utilities.css">
+<!-- Spacing, text, helpers -->
 ```
 
 ---
@@ -219,23 +224,27 @@ space-xl: 24px   (generous spacing)
 space-2xl: 32px  (large breaks)
 ```
 
-**Rule**: Use `gap` for sibling spacing (flexbox), `padding` for internal, avoid margins on boundaries.
+**Rule**: Use `gap` for sibling spacing (flexbox), `padding` for internal, avoid margins on
+boundaries.
 
 ---
 
 ## Color Tokens
 
 ### Backgrounds
+
 - `--color-bg-primary`: Main background
 - `--color-bg-secondary`: Cards, panels
 - `--color-bg-tertiary`: Hover states, subtle contrast
 
 ### Text
+
 - `--color-text-primary`: Main text
 - `--color-text-secondary`: Labels, captions
 - `--color-text-tertiary`: Subtle hints
 
 ### Actions
+
 - `--color-accent`: Primary actions
 - `--color-success`: Positive outcomes
 - `--color-warning`: Caution
@@ -243,6 +252,7 @@ space-2xl: 32px  (large breaks)
 - `--color-info`: Informational
 
 ### Structural
+
 - `--separator-color`: Standard borders
 - `--separator-color-secondary`: Subtle borders
 
@@ -251,6 +261,7 @@ space-2xl: 32px  (large breaks)
 ## Utility Classes
 
 ### Display
+
 ```
 .d-flex / .d-flex-col / .d-flex-row
 .d-block / .d-inline-block / .d-none
@@ -258,6 +269,7 @@ space-2xl: 32px  (large breaks)
 ```
 
 ### Flexbox
+
 ```
 .gap-xs / .gap-sm / .gap-md / .gap-lg
 .align-items-center / .align-items-start / .align-items-end
@@ -266,6 +278,7 @@ space-2xl: 32px  (large breaks)
 ```
 
 ### Text
+
 ```
 .text-xs / .text-sm / .text-base / .text-lg / .text-xl / .text-2xl
 .text-primary / .text-secondary / .text-tertiary
@@ -275,6 +288,7 @@ space-2xl: 32px  (large breaks)
 ```
 
 ### Spacing
+
 ```
 .m-0 / .m-xs / .m-sm / .m-md / .m-lg / .m-xl
 .mt-lg / .mb-lg / .mx-auto
@@ -282,6 +296,7 @@ space-2xl: 32px  (large breaks)
 ```
 
 ### Borders & Shadows
+
 ```
 .border / .border-top / .border-bottom
 .rounded / .rounded-sm / .rounded-lg / .rounded-full
@@ -289,6 +304,7 @@ space-2xl: 32px  (large breaks)
 ```
 
 ### State
+
 ```
 .is-active / .is-inactive / .is-loading / .is-disabled
 .is-error / .is-success / .is-warning
@@ -299,6 +315,7 @@ space-2xl: 32px  (large breaks)
 ## Layout Patterns
 
 ### Full-Screen App
+
 ```html
 <div class="app-shell">
   <header class="toolbar">
@@ -306,10 +323,10 @@ space-2xl: 32px  (large breaks)
     <div class="toolbar-section">Navigation</div>
     <div class="toolbar-section">User Menu</div>
   </header>
-  
+
   <div class="app-layout">
     <aside class="sidebar"><!-- Navigation --></aside>
-    
+
     <main role="main">
       <div class="content-area">
         <div class="content-pane"><!-- Content --></div>
@@ -317,7 +334,7 @@ space-2xl: 32px  (large breaks)
       <div class="inspector-pane"><!-- Inspector/Details --></div>
     </main>
   </div>
-  
+
   <footer role="contentinfo" class="status-bar">
     <!-- Status info -->
   </footer>
@@ -325,13 +342,14 @@ space-2xl: 32px  (large breaks)
 ```
 
 ### Card-Based Page
+
 ```html
 <div class="content-pane">
   <div class="content-header">
     <h1 class="content-title">Page Title</h1>
     <p class="content-subtitle">Subtitle</p>
   </div>
-  
+
   <div class="stack-lg">
     <div class="card"><!-- Card 1 --></div>
     <div class="card"><!-- Card 2 --></div>
@@ -380,6 +398,7 @@ Add this to `<head>` to test dark mode in dev:
 ```
 
 Or force via CSS:
+
 ```css
 :root {
   color-scheme: dark;
@@ -403,18 +422,22 @@ All tokens automatically adjust via `@media (prefers-color-scheme: dark)`.
 ## Debugging
 
 ### Check Color Contrast
+
 DevTools → Accessibility panel → Check text/background ratios
 
 ### Keyboard Navigation
+
 - Tab through all elements
 - Tab + Shift to go backward
 - Enter/Space to activate
 - Escape to close modals
 
 ### Mobile Testing
+
 DevTools → Device Toolbar → Test at 375px, 768px, 1024px
 
 ### Dark Mode
+
 DevTools → Rendering → Emulate CSS media feature prefers-color-scheme
 
 ---
@@ -422,6 +445,7 @@ DevTools → Rendering → Emulate CSS media feature prefers-color-scheme
 ## Demo & Showcase
 
 Visit `/admin/demo` to see:
+
 - All components and variants
 - Color palette swatches
 - Typography scale
@@ -439,5 +463,5 @@ Visit `/admin/demo` to see:
 
 ---
 
-**Last Updated**: May 2026  
+**Last Updated**: May 2026\
 **Theme**: AppKit-native, light/dark mode, OKLCH colors, 4pt grid

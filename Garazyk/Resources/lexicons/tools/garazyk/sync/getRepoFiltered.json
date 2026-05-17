@@ -16,7 +16,10 @@
             "items": { "type": "string", "format": "nsid" },
             "minLength": 1
           },
-          "since": { "type": "string", "description": "Optional revision cursor for incremental sync." }
+          "since": {
+            "type": "string",
+            "description": "Optional revision cursor for incremental sync."
+          }
         }
       },
       "output": {

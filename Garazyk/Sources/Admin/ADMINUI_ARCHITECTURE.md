@@ -2,7 +2,9 @@
 
 ## System Overview
 
-The AdminUI is an admin panel for the AT Protocol PDS (Personal Data Server). It provides a unified interface for managing multiple services:
+The AdminUI is an admin panel for the AT Protocol PDS (Personal Data Server). It provides a unified
+interface for managing multiple services:
+
 - **PDS** (Personal Data Server)
 - **PLC** (DID Registry)
 - **Relay** (BGS - Firehose Aggregator)
@@ -63,6 +65,7 @@ AdminUI/
 ## Data Flow
 
 ### Initial Page Load
+
 ```
 User Browser
      ↓
@@ -74,6 +77,7 @@ Browser renders HTML + loads CSS + executes JS
 ```
 
 ### Sidebar Navigation (HTMX)
+
 ```
 User clicks "Users" in sidebar
      ↓
@@ -89,6 +93,7 @@ HTMX swaps content in #content-pane
 ```
 
 ### Form Submission
+
 ```
 User submits search form
      ↓
@@ -104,6 +109,7 @@ HTMX swaps table rows in #users-list
 ```
 
 ### Real-time Events (SSE)
+
 ```
 User loads Events section
      ↓
@@ -119,6 +125,7 @@ Events stream to browser and HTMX appends to list
 ## CSS System
 
 ### Color Tokens
+
 ```
 Light Mode:
 --color-bg-primary: #f5f5f7 (lightest background)
@@ -136,6 +143,7 @@ Auto-switches via @media (prefers-color-scheme: dark)
 ```
 
 ### Spacing Scale
+
 ```
 --space-xs: 4px
 --space-sm: 8px
@@ -146,6 +154,7 @@ Auto-switches via @media (prefers-color-scheme: dark)
 ```
 
 ### Semantic Layout
+
 ```
 ┌─────────────────────────────────────┐
 │ Header/Toolbar (52px)               │
@@ -162,16 +171,19 @@ Auto-switches via @media (prefers-color-scheme: dark)
 ## JavaScript Interactivity
 
 ### Service Switching
+
 - Cmd/Ctrl+1 through Cmd/Ctrl+5 switch services
 - Saves preference to localStorage
 - Toggles sidebar section visibility
 
 ### Sidebar Sections
+
 - Click title to collapse/expand
 - Collapse state persists in localStorage
 - Auto-scrolls to active item
 
 ### HTMX Integration
+
 - Automatic loading indicators
 - Error handling and notifications
 - Form validation
@@ -180,6 +192,7 @@ Auto-switches via @media (prefers-color-scheme: dark)
 - Debounced search (500ms)
 
 ### Keyboard Navigation
+
 - Tab navigation through all interactive elements
 - Focus indicators on all buttons
 - Escape to close modals
@@ -188,6 +201,7 @@ Auto-switches via @media (prefers-color-scheme: dark)
 ## Component Patterns
 
 ### Card
+
 ```html
 <div class="card">
   <div class="card-header">
@@ -203,6 +217,7 @@ Auto-switches via @media (prefers-color-scheme: dark)
 ```
 
 ### Table with Actions
+
 ```html
 <table class="table">
   <thead>
@@ -223,6 +238,7 @@ Auto-switches via @media (prefers-color-scheme: dark)
 ```
 
 ### Form
+
 ```html
 <form class="form" hx-post="/admin/endpoint" hx-swap="swap:outerHTML">
   <div class="form-group">
@@ -237,6 +253,7 @@ Auto-switches via @media (prefers-color-scheme: dark)
 ## Template Engine
 
 ### Features
+
 - **Variable substitution**: `{{key}}` → value
 - **Conditionals**: `{{#if key}}...{{/if}}`
 - **Loops**: `{{#each array}}...{{/each}}`
@@ -244,6 +261,7 @@ Auto-switches via @media (prefers-color-scheme: dark)
 - **Nesting**: Conditionals and loops can nest
 
 ### Example
+
 ```html
 <table>
   <tbody>
@@ -252,14 +270,13 @@ Auto-switches via @media (prefers-color-scheme: dark)
       <td>{{name}}</td>
       <td>
         {{#if active}}
-          <span class="badge badge-success">Active</span>
+        <span class="badge badge-success">Active</span>
         {{else}}
-          <span class="badge badge-secondary">Inactive</span>
+        <span class="badge badge-secondary">Inactive</span>
         {{/if}}
       </td>
     </tr>
-    {{/each}}
-    {{#if !users}}
+    {{/each}} {{#if !users}}
     <tr>
       <td colspan="2">No users found</td>
     </tr>
@@ -279,6 +296,7 @@ Auto-switches via @media (prefers-color-scheme: dark)
 ## Performance
 
 ### Bundle Size
+
 - HTML entry point: ~12 KB
 - CSS (all files): ~35 KB
 - JavaScript: ~8 KB
@@ -286,11 +304,13 @@ Auto-switches via @media (prefers-color-scheme: dark)
 - **Total**: ~100 KB (cached)
 
 ### Load Time
+
 - Initial page load: ~500ms (gzipped)
 - Partial loads: ~100-200ms (over network)
 - Asset caching: Browser cache + CDN cache
 
 ### Real-time Updates
+
 - SSE connections are lightweight
 - Automatic reconnection on disconnect
 - Backpressure handling for high-volume events
@@ -298,6 +318,7 @@ Auto-switches via @media (prefers-color-scheme: dark)
 ## Accessibility
 
 ### WCAG 2.1 AA Compliance
+
 - ✅ Semantic HTML (header, nav, main, aside, footer)
 - ✅ ARIA labels on all interactive elements
 - ✅ Focus visible outlines (2px)
@@ -306,12 +327,14 @@ Auto-switches via @media (prefers-color-scheme: dark)
 - ✅ Screen reader support
 
 ### Focus Management
+
 - Focus trapped in modals (Escape to close)
 - Auto-focus on error/notification alerts
 - Tab order follows DOM structure
 - Skip links not yet implemented (future)
 
 ### Dark Mode
+
 - Automatic detection via `prefers-color-scheme`
 - All colors have dark mode variants
 - Contrast ratios maintained in both modes
@@ -319,11 +342,13 @@ Auto-switches via @media (prefers-color-scheme: dark)
 ## Responsive Design
 
 ### Breakpoints
+
 - Desktop: 1024px+ (full layout)
 - Tablet: 768px-1023px (collapsible sidebar)
 - Mobile: <768px (mobile-optimized, limited)
 
 ### Mobile Considerations
+
 - Sidebar collapses with hamburger menu
 - Touch targets minimum 44px
 - Single-column layout on mobile
