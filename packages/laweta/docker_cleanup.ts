@@ -4,11 +4,8 @@
  * @module docker_cleanup
  */
 
-import {
-  createDockerClient,
-  findStaleProjectsOnPorts,
-} from "./docker_api.ts";
-import { neededPorts } from "@garazyk/schemat";
+import { createDockerClient, findStaleProjectsOnPorts } from "./docker_api.ts";
+import { neededPorts } from "./runtime_config.ts";
 import { composeDown } from "./docker_compose.ts";
 
 // ---------------------------------------------------------------------------

@@ -8,8 +8,11 @@
  */
 
 import { join } from "@std/path";
-import { formatBytes } from "@garazyk/hamownia";
-import { initRunDir as initTopologyRunDir, repoRoot } from "@garazyk/schemat";
+import { formatBytes } from "./format.ts";
+import {
+  initRunDir as initTopologyRunDir,
+  repoRoot,
+} from "./runtime_config.ts";
 import { composeDown, composeUp } from "./docker_compose.ts";
 import {
   stopStaleDockerE2e,
@@ -20,10 +23,9 @@ import {
   waitForService,
   waitForServiceCLI,
 } from "./docker_health.ts";
-import { collectDockerDiagnostics as collectDiagnostics } from "@garazyk/hamownia";
 import { startBinaryServices, stopBinaryServices } from "./docker_binary.ts";
 import { ContainerEventWatcher } from "./docker_events.ts";
-import { isOtelEnabled, withSpan } from "@garazyk/hamownia";
+import { isOtelEnabled, withSpan } from "./telemetry.ts";
 import { ContainerStatsSampler } from "./container_stats.ts";
 import { createDockerClient } from "./docker_api.ts";
 import type { LocalNetworkOptions, RunContext } from "./docker_types.ts";
@@ -35,7 +37,7 @@ export {
   repoRoot,
   SERVICE_PORTS,
   serviceUrl,
-} from "@garazyk/schemat";
+} from "./runtime_config.ts";
 export { composeDown, composeUp } from "./docker_compose.ts";
 export {
   stopStaleDockerE2e,
@@ -46,7 +48,6 @@ export {
   waitForService,
   waitForServiceCLI,
 } from "./docker_health.ts";
-export { collectDockerDiagnostics as collectDiagnostics } from "@garazyk/hamownia";
 export { startBinaryServices, stopBinaryServices } from "./docker_binary.ts";
 
 /** Initialize local-network run paths using laweta's orchestration context type. */
@@ -95,23 +96,11 @@ export async function startLocalNetwork(
     const composeDir = join(root, "docker/local-network");
 
     const composeFiles: string[] = [];
-    const topologyComposeFile = join(ctx.runDir, "docker-compose.topology.yml");
-    const topologyManifest = join(ctx.runDir, "topology-manifest.json");
 
     if (options.topology) {
-      const { compileTopology } = await import("@garazyk/schemat");
-      await compileTopology({
-        preset: options.topology,
-        runDir: ctx.runDir,
-        repoRoot: root,
-        composeProject: ctx.composeProject,
-        includePds2: options.withPds2,
-        otel: options.otel,
-        manifestFile: topologyManifest,
-      });
-      composeFiles.push(topologyComposeFile);
-      Deno.env.set("ATPROTO_TOPOLOGY", options.topology);
-      Deno.env.set("ATPROTO_TOPOLOGY_MANIFEST", topologyManifest);
+      throw new Error(
+        "Topology-aware orchestration moved to @garazyk/hamownia/atproto-network",
+      );
     } else {
       composeFiles.push(join(composeDir, "docker-compose.yml"));
       if (options.withPds2) {
@@ -130,92 +119,50 @@ export async function startLocalNetwork(
       await composeUp(ctx.composeProject, composeFiles);
     }
 
-    if (options.topology && Deno.env.get("ATPROTO_TOPOLOGY_MANIFEST")) {
-      const { loadTopologyManifest } = await import(
-        "@garazyk/schemat"
+    const sharedWatcher = await ContainerEventWatcher.create();
+    try {
+      await waitForService(
+        "local-plc",
+        ctx.composeProject,
+        composeFiles[0],
+        60,
+        sharedWatcher,
       );
-      const manifest = loadTopologyManifest(topologyManifest);
-      if (manifest) {
-        const watcher = await ContainerEventWatcher.create();
-        for (const probe of manifest.health) {
-          console.log(`[INFO]  Waiting for ${probe.label} (${probe.mode})...`);
-          let ok: boolean;
-          if (probe.mode === "http") {
-            ok = await waitForHttp(
-              probe.url!,
-              probe.label,
-              probe.timeoutSeconds,
-              probe.headers,
-            );
-          } else if (watcher) {
-            ok = await watcher.waitForHealthy(
-              probe.serviceName,
-              probe.timeoutSeconds * 1000,
-            );
-          } else {
-            ok = await waitForServiceCLI(
-              probe.serviceName,
-              ctx.composeProject,
-              topologyComposeFile,
-              probe.timeoutSeconds,
-            );
-          }
-          if (!ok) {
-            await watcher?.close();
-            throw new Error(
-              `${probe.label} not healthy after ${probe.timeoutSeconds}s`,
-            );
-          }
-          console.log(`[OK]    ${probe.label} is healthy`);
-        }
-        await watcher?.close();
+      await waitForService(
+        "local-pds",
+        ctx.composeProject,
+        composeFiles[0],
+        60,
+        sharedWatcher,
+      );
+      await waitForService(
+        "local-relay",
+        ctx.composeProject,
+        composeFiles[0],
+        60,
+        sharedWatcher,
+      );
+      const appviewOk = await waitForService(
+        "local-appview",
+        ctx.composeProject,
+        composeFiles[0],
+        90,
+        sharedWatcher,
+      );
+      if (!appviewOk) {
+        throw new Error("AppView failed to start within 90s");
       }
-    } else {
-      const sharedWatcher = await ContainerEventWatcher.create();
-      try {
+      if (options.withPds2) {
         await waitForService(
-          "local-plc",
+          "local-pds2",
           ctx.composeProject,
           composeFiles[0],
           60,
           sharedWatcher,
         );
-        await waitForService(
-          "local-pds",
-          ctx.composeProject,
-          composeFiles[0],
-          60,
-          sharedWatcher,
-        );
-        await waitForService(
-          "local-relay",
-          ctx.composeProject,
-          composeFiles[0],
-          60,
-          sharedWatcher,
-        );
-        const appviewOk = await waitForService(
-          "local-appview",
-          ctx.composeProject,
-          composeFiles[0],
-          90,
-          sharedWatcher,
-        );
-        if (!appviewOk) {
-          throw new Error("AppView failed to start within 90s");
-        }
-        if (options.withPds2) {
-          await waitForService(
-            "local-pds2",
-            ctx.composeProject,
-            composeFiles[0],
-            60,
-            sharedWatcher,
-          );
-        }
-      } finally {
-        await sharedWatcher?.close();
       }
+    } finally {
+      await sharedWatcher?.close();
     }
 
     console.log("[INFO]  Waiting for services to settle...");
@@ -254,10 +201,6 @@ export async function stopLocalNetwork(
 ): Promise<void> {
   return await withSpan("localNetwork.stop", async () => {
     const ctx = initRunDir(options.runId);
-
-    if (options.collectDiagnostics) {
-      await collectDiagnostics(ctx);
-    }
 
     if (options.useBinary) {
       console.log("[INFO]  Stopping binary services...");

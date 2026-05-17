@@ -29,8 +29,8 @@ import {
   type MetricAttributes,
   recordCounter,
   recordGauge,
-} from "@garazyk/hamownia";
-import { formatBytes } from "@garazyk/hamownia";
+} from "./telemetry.ts";
+import { formatBytes } from "./format.ts";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -124,6 +124,10 @@ export class ContainerStatsSampler {
   private previousNetworkRx = new Map<string, number>();
   private previousNetworkTx = new Map<string, number>();
 
+  /**
+   * Create a stats sampler.
+   * @param opts - Sampler options.
+   */
   constructor(opts: StatsSamplerOptions) {
     this.client = opts.client;
     this.intervalMs = opts.intervalMs ?? 5000;

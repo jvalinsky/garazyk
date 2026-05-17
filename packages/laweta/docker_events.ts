@@ -26,7 +26,7 @@ import {
   type DockerEvent,
   healthStatus,
 } from "./docker_api.ts";
-import { addSpanEvent, withSpan } from "@garazyk/hamownia";
+import { addSpanEvent, withSpan } from "./telemetry.ts";
 
 // ---------------------------------------------------------------------------
 // Scoped AbortError suppression
@@ -109,9 +109,13 @@ export type WatcherEvent =
   };
 
 /** Tracked state for a single container. */
-interface ContainerState {
+/** Tracked state for a single container. */
+export interface ContainerState {
+  /** Current lifecycle or health status. */
   status: string;
+  /** Exit code reported by Docker, when available. */
   exitCode: number;
+  /** Whether Docker reported the container as OOM-killed. */
   oomKilled: boolean;
 }
 
@@ -483,6 +487,7 @@ export class ContainerEventWatcher {
   // Internal
   // -----------------------------------------------------------------------
 
+  /** Start the event stream and initial container state load. */
   private async start(): Promise<void> {
     // Build initial container name → ID mapping
     await this.buildContainerMap();
@@ -497,6 +502,7 @@ export class ContainerEventWatcher {
     this.eventLoopPromise = this.processEvents();
   }
 
+  /** Build the initial map from Compose service names to container IDs. */
   private async buildContainerMap(): Promise<void> {
     try {
       const filters = this.options.composeProject
@@ -512,6 +518,7 @@ export class ContainerEventWatcher {
     }
   }
 
+  /** Process Docker event stream entries until closed or aborted. */
   private async processEvents(): Promise<void> {
     if (!this.eventStream) return;
 
@@ -543,6 +550,7 @@ export class ContainerEventWatcher {
     }
   }
 
+  /** Emit a parsed event to subscribers and waiting promises. */
   private emit(event: WatcherEvent): void {
     for (const subscriber of this.subscribers) {
       try {
@@ -553,6 +561,7 @@ export class ContainerEventWatcher {
     }
   }
 
+  /** Resolve pending waiters affected by a parsed watcher event. */
   private resolveWaiters(event: WatcherEvent): void {
     const { serviceName, kind } = event;
 
@@ -568,6 +577,7 @@ export class ContainerEventWatcher {
     }
   }
 
+  /** Resolve waiters for a service when it reaches a terminal state. */
   private resolveWaitersFor(
     serviceName: string,
     waitFor: "healthy" | "running",
@@ -585,6 +595,7 @@ export class ContainerEventWatcher {
     );
   }
 
+  /** Wait for a service to reach a target parser state. */
   private waitFor(
     serviceName: string,
     waitFor: "healthy" | "running",

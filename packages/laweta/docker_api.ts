@@ -13,8 +13,8 @@
  * @module docker_api
  */
 
-import { formatBytes } from "@garazyk/hamownia";
-import { withSpan } from "@garazyk/hamownia";
+import { formatBytes } from "./format.ts";
+import { withSpan } from "./telemetry.ts";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -296,6 +296,10 @@ export class DockerApiClient {
   private _baseUrl: string;
   private _useUnix = true;
 
+  /**
+   * Create a Docker API client.
+   * @param endpoint - Optional Docker host endpoint or Unix socket path.
+   */
   constructor(endpoint?: string) {
     const host = endpoint || Deno.env.get("DOCKER_HOST") || "";
     if (
@@ -679,6 +683,7 @@ export class DockerApiClient {
     return resp;
   }
 
+  /** Execute a Docker API request and parse the JSON response body. */
   private async requestJSON<T>(method: string, path: string): Promise<T> {
     const resp = await this.request(method, path);
     return await resp.json();
