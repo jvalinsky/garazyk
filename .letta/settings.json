@@ -366,7 +366,8 @@
       "Bash(deciduous status 189 in_progress)",
       "Bash(deciduous status 190 completed)",
       "Bash(deciduous status 189 completed)",
-      "Bash(deciduous status 193 completed)"
+      "Bash(deciduous status 193 completed)",
+      "Bash(deno run -A docs/tsdoc-coverage.ts lib/deno scenario-dashboard 2)"
     ]
   }
 }
