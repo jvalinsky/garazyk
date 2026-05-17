@@ -1,13 +1,13 @@
 /**
  * Markdown Link Parser
- * 
+ *
  * Parses Markdown files to extract all links including:
  * - Inline links: [text](url)
  * - Autolinks: <url>
  * - Bare URLs: http://example.com
  * - Anchor links: #section
  * - Reference-style links: [text][ref]
- * 
+ *
  * Distinguishes between internal (relative) and external (absolute) links.
  * Provides line and column information for each link.
  */
@@ -16,11 +16,11 @@
  * Link type enumeration
  */
 export const LinkType = {
-  RELATIVE: 'relative',      // ./file.md, ../other.md, file.md
-  ABSOLUTE: 'absolute',      // /docs/file.md
-  ANCHOR: 'anchor',          // #section
-  EXTERNAL: 'external',      // http://example.com, https://example.com
-  REFERENCE: 'reference'     // [text][ref] style links
+  RELATIVE: "relative", // ./file.md, ../other.md, file.md
+  ABSOLUTE: "absolute", // /docs/file.md
+  ANCHOR: "anchor", // #section
+  EXTERNAL: "external", // http://example.com, https://example.com
+  REFERENCE: "reference", // [text][ref] style links
 };
 
 /**
@@ -40,7 +40,7 @@ export const LinkType = {
  * @returns {string} Link type from LinkType enum
  */
 export function classifyLink(href) {
-  if (!href || typeof href !== 'string') {
+  if (!href || typeof href !== "string") {
     return LinkType.EXTERNAL;
   }
 
@@ -50,12 +50,12 @@ export function classifyLink(href) {
   }
 
   // Anchor links (#section)
-  if (href.startsWith('#')) {
+  if (href.startsWith("#")) {
     return LinkType.ANCHOR;
   }
 
   // Absolute paths (/docs/file.md)
-  if (href.startsWith('/')) {
+  if (href.startsWith("/")) {
     return LinkType.ABSOLUTE;
   }
 
@@ -69,9 +69,9 @@ export function classifyLink(href) {
  * @returns {boolean} True if link is internal
  */
 export function isInternalLink(type) {
-  return type === LinkType.RELATIVE || 
-         type === LinkType.ABSOLUTE || 
-         type === LinkType.ANCHOR;
+  return type === LinkType.RELATIVE ||
+    type === LinkType.ABSOLUTE ||
+    type === LinkType.ANCHOR;
 }
 
 /**
@@ -85,36 +85,36 @@ function parseInlineLinks(content, codeRanges) {
   // Match [text](url) or [text](url "title")
   // Handles escaped brackets and parentheses
   const inlineLinkRegex = /\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
-  
+
   let match;
   while ((match = inlineLinkRegex.exec(content)) !== null) {
     const position = match.index;
-    
+
     // Skip if in code block
     if (isInCodeBlock(position, codeRanges)) {
       continue;
     }
-    
+
     const text = match[1];
     const href = match[2];
-    
+
     // Calculate line and column
     const beforeMatch = content.substring(0, position);
     const line = (beforeMatch.match(/\n/g) || []).length + 1;
-    const lastNewline = beforeMatch.lastIndexOf('\n');
+    const lastNewline = beforeMatch.lastIndexOf("\n");
     const column = position - lastNewline;
-    
+
     const type = classifyLink(href);
-    
+
     links.push({
       type,
       text,
       href,
       line,
-      column
+      column,
     });
   }
-  
+
   return links;
 }
 
@@ -128,35 +128,35 @@ function parseAutolinks(content, codeRanges) {
   const links = [];
   // Match <url> but not HTML tags
   const autolinkRegex = /<((?:https?|ftp|mailto):[^>\s]+)>/g;
-  
+
   let match;
   while ((match = autolinkRegex.exec(content)) !== null) {
     const position = match.index;
-    
+
     // Skip if in code block
     if (isInCodeBlock(position, codeRanges)) {
       continue;
     }
-    
+
     const href = match[1];
-    
+
     // Calculate line and column
     const beforeMatch = content.substring(0, position);
     const line = (beforeMatch.match(/\n/g) || []).length + 1;
-    const lastNewline = beforeMatch.lastIndexOf('\n');
+    const lastNewline = beforeMatch.lastIndexOf("\n");
     const column = position - lastNewline;
-    
+
     const type = classifyLink(href);
-    
+
     links.push({
       type,
       text: href,
       href,
       line,
-      column
+      column,
     });
   }
-  
+
   return links;
 }
 
@@ -172,41 +172,41 @@ function parseBareUrls(content, codeRanges) {
   // This is a simplified pattern - bare URLs in markdown are tricky
   // Negative lookbehind to avoid matching URLs in links, autolinks, or reference definitions
   const bareUrlRegex = /(?<![(\[<:])https?:\/\/[^\s<>)\]]+/g;
-  
+
   let match;
   while ((match = bareUrlRegex.exec(content)) !== null) {
     const position = match.index;
-    
+
     // Skip if in code block
     if (isInCodeBlock(position, codeRanges)) {
       continue;
     }
-    
+
     // Skip if this is part of a reference definition
     // Check if the line starts with [ref]: before this URL
     const beforeMatch = content.substring(0, position);
-    const lastNewline = beforeMatch.lastIndexOf('\n');
+    const lastNewline = beforeMatch.lastIndexOf("\n");
     const lineStart = lastNewline === -1 ? 0 : lastNewline + 1;
     const linePrefix = content.substring(lineStart, position);
     if (/^\[[^\]]+\]:\s*$/.test(linePrefix)) {
       continue;
     }
-    
+
     const href = match[0];
-    
+
     // Calculate line and column
     const line = (beforeMatch.match(/\n/g) || []).length + 1;
     const column = position - lastNewline;
-    
+
     links.push({
       type: LinkType.EXTERNAL,
       text: href,
       href,
       line,
-      column
+      column,
     });
   }
-  
+
   return links;
 }
 
@@ -219,14 +219,14 @@ function parseReferenceDefs(content) {
   const refs = new Map();
   // Match [id]: url or [id]: url "title"
   const refDefRegex = /^\[([^\]]+)\]:\s*(\S+)(?:\s+"[^"]*")?$/gm;
-  
+
   let match;
   while ((match = refDefRegex.exec(content)) !== null) {
     const refId = match[1].toLowerCase();
     const href = match[2];
     refs.set(refId, href);
   }
-  
+
   return refs;
 }
 
@@ -241,53 +241,53 @@ function parseReferenceLinks(content, refs, codeRanges) {
   const links = [];
   // Match [text][ref] or [text][] or [text]
   const refLinkRegex = /\[([^\]]+)\](?:\[([^\]]*)\])?(?!\()/g;
-  
+
   let match;
   while ((match = refLinkRegex.exec(content)) !== null) {
     const position = match.index;
-    
+
     // Skip if in code block
     if (isInCodeBlock(position, codeRanges)) {
       continue;
     }
-    
+
     const text = match[1];
     // For [text][], match[2] is empty string; for [text], match[2] is undefined
     // In both cases, use text as the refId
-    const refId = (match[2] !== undefined && match[2] !== '' ? match[2] : text).toLowerCase();
-    
+    const refId = (match[2] !== undefined && match[2] !== "" ? match[2] : text).toLowerCase();
+
     // Skip if this is a reference definition (starts at beginning of line)
     const beforeMatch = content.substring(0, position);
-    const lastNewline = beforeMatch.lastIndexOf('\n');
+    const lastNewline = beforeMatch.lastIndexOf("\n");
     const lineStart = lastNewline === -1 ? 0 : lastNewline + 1;
     const linePrefix = content.substring(lineStart, position).trim();
-    if (linePrefix === '' && content[position + match[0].length] === ':') {
+    if (linePrefix === "" && content[position + match[0].length] === ":") {
       continue;
     }
-    
+
     // Look up the reference
     const href = refs.get(refId);
     if (!href) {
       // Reference not found - skip
       continue;
     }
-    
+
     // Calculate line and column
     const line = (beforeMatch.match(/\n/g) || []).length + 1;
     const column = position - lastNewline;
-    
+
     const type = classifyLink(href);
-    
+
     links.push({
       type,
       text,
       href,
       line,
       column,
-      refId
+      refId,
     });
   }
-  
+
   return links;
 }
 
@@ -298,45 +298,45 @@ function parseReferenceLinks(content, refs, codeRanges) {
  */
 function getCodeBlockRanges(content) {
   const ranges = [];
-  
+
   // Find fenced code blocks (``` or ~~~)
   const fencedRegex = /^```[\s\S]*?^```$|^~~~[\s\S]*?^~~~$/gm;
   let match;
   while ((match = fencedRegex.exec(content)) !== null) {
     ranges.push({ start: match.index, end: match.index + match[0].length });
   }
-  
+
   // Find indented code blocks (4 spaces or tab at start of line)
-  const lines = content.split('\n');
+  const lines = content.split("\n");
   let inCodeBlock = false;
   let codeBlockStart = 0;
   let position = 0;
-  
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const isCodeLine = /^(?:    |\t)/.test(line);
-    
+
     if (isCodeLine && !inCodeBlock) {
       inCodeBlock = true;
       codeBlockStart = position;
-    } else if (!isCodeLine && inCodeBlock && line.trim() !== '') {
+    } else if (!isCodeLine && inCodeBlock && line.trim() !== "") {
       inCodeBlock = false;
       ranges.push({ start: codeBlockStart, end: position });
     }
-    
+
     position += line.length + 1; // +1 for newline
   }
-  
+
   if (inCodeBlock) {
     ranges.push({ start: codeBlockStart, end: content.length });
   }
-  
+
   // Find inline code (`code`)
   const inlineCodeRegex = /`[^`\n]+`/g;
   while ((match = inlineCodeRegex.exec(content)) !== null) {
     ranges.push({ start: match.index, end: match.index + match[0].length });
   }
-  
+
   // Sort and merge overlapping ranges
   ranges.sort((a, b) => a.start - b.start);
   const merged = [];
@@ -347,7 +347,7 @@ function getCodeBlockRanges(content) {
       merged[merged.length - 1].end = Math.max(merged[merged.length - 1].end, range.end);
     }
   }
-  
+
   return merged;
 }
 
@@ -358,7 +358,7 @@ function getCodeBlockRanges(content) {
  * @returns {boolean} True if position is in code
  */
 function isInCodeBlock(position, codeRanges) {
-  return codeRanges.some(range => position >= range.start && position < range.end);
+  return codeRanges.some((range) => position >= range.start && position < range.end);
 }
 
 /**
@@ -367,30 +367,30 @@ function isInCodeBlock(position, codeRanges) {
  * @returns {Link[]} Array of link objects with type, text, href, line, column
  */
 export function parseMarkdownLinks(content) {
-  if (!content || typeof content !== 'string') {
+  if (!content || typeof content !== "string") {
     return [];
   }
-  
+
   // Identify code block regions
   const codeRanges = getCodeBlockRanges(content);
-  
+
   // Parse reference definitions first
   const refs = parseReferenceDefs(content);
-  
+
   // Parse all link types
   const inlineLinks = parseInlineLinks(content, codeRanges);
   const autolinks = parseAutolinks(content, codeRanges);
   const bareUrls = parseBareUrls(content, codeRanges);
   const referenceLinks = parseReferenceLinks(content, refs, codeRanges);
-  
+
   // Combine all links
   const allLinks = [
     ...inlineLinks,
     ...autolinks,
     ...bareUrls,
-    ...referenceLinks
+    ...referenceLinks,
   ];
-  
+
   // Sort by line and column
   allLinks.sort((a, b) => {
     if (a.line !== b.line) {
@@ -398,7 +398,7 @@ export function parseMarkdownLinks(content) {
     }
     return a.column - b.column;
   });
-  
+
   return allLinks;
 }
 
@@ -408,7 +408,7 @@ export function parseMarkdownLinks(content) {
  * @returns {Link[]} Array of internal link objects
  */
 export function filterInternalLinks(links) {
-  return links.filter(link => isInternalLink(link.type));
+  return links.filter((link) => isInternalLink(link.type));
 }
 
 /**
@@ -417,7 +417,7 @@ export function filterInternalLinks(links) {
  * @returns {Link[]} Array of external link objects
  */
 export function filterExternalLinks(links) {
-  return links.filter(link => link.type === LinkType.EXTERNAL);
+  return links.filter((link) => link.type === LinkType.EXTERNAL);
 }
 
 /**
@@ -431,12 +431,12 @@ export function groupLinksByType(links) {
     absolute: [],
     anchor: [],
     external: [],
-    reference: []
+    reference: [],
   };
-  
+
   for (const link of links) {
     grouped[link.type].push(link);
   }
-  
+
   return grouped;
 }

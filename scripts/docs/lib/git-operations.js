@@ -6,9 +6,9 @@
  * capabilities for safe migration operations.
  */
 
-import { execSync } from 'child_process';
-import fs from 'fs-extra';
-import path from 'path';
+import { execSync } from "child_process";
+import fs from "fs-extra";
+import path from "path";
 
 /**
  * Error class for git operation failures
@@ -16,7 +16,7 @@ import path from 'path';
 export class GitOperationError extends Error {
   constructor(message, command = null, stderr = null) {
     super(message);
-    this.name = 'GitOperationError';
+    this.name = "GitOperationError";
     this.command = command;
     this.stderr = stderr;
   }
@@ -30,10 +30,10 @@ export class GitOperationError extends Error {
  */
 export function isGitRepository(dirPath = process.cwd()) {
   try {
-    execSync('git rev-parse --git-dir', {
+    execSync("git rev-parse --git-dir", {
       cwd: dirPath,
-      stdio: 'pipe',
-      encoding: 'utf8'
+      stdio: "pipe",
+      encoding: "utf8",
     });
     return true;
   } catch (error) {
@@ -52,8 +52,8 @@ export function isFileTracked(filePath, repoRoot = process.cwd()) {
   try {
     execSync(`git ls-files --error-unmatch "${filePath}"`, {
       cwd: repoRoot,
-      stdio: 'pipe',
-      encoding: 'utf8'
+      stdio: "pipe",
+      encoding: "utf8",
     });
     return true;
   } catch (error) {
@@ -78,18 +78,18 @@ export async function executeGitMv(sourcePath, destPath, options = {}) {
     repoRoot = process.cwd(),
     force = false,
     dryRun = false,
-    verbose = false
+    verbose = false,
   } = options;
 
   // Validate inputs
   if (!sourcePath || !destPath) {
-    throw new GitOperationError('Source and destination paths are required');
+    throw new GitOperationError("Source and destination paths are required");
   }
 
   // Check if we're in a git repository
   if (!isGitRepository(repoRoot)) {
     throw new GitOperationError(
-      `Not a git repository: ${repoRoot}`
+      `Not a git repository: ${repoRoot}`,
     );
   }
 
@@ -100,14 +100,14 @@ export async function executeGitMv(sourcePath, destPath, options = {}) {
   // Check if source file exists
   if (!await fs.pathExists(absoluteSource)) {
     throw new GitOperationError(
-      `Source file does not exist: ${sourcePath}`
+      `Source file does not exist: ${sourcePath}`,
     );
   }
 
   // Check if source is tracked by git
   if (!isFileTracked(sourcePath, repoRoot)) {
     throw new GitOperationError(
-      `Source file is not tracked by git: ${sourcePath}`
+      `Source file is not tracked by git: ${sourcePath}`,
     );
   }
 
@@ -118,7 +118,7 @@ export async function executeGitMv(sourcePath, destPath, options = {}) {
   }
 
   // Build git mv command
-  const forceFlag = force ? '-f ' : '';
+  const forceFlag = force ? "-f " : "";
   const command = `git mv ${forceFlag}"${sourcePath}" "${destPath}"`;
 
   if (verbose) {
@@ -131,7 +131,7 @@ export async function executeGitMv(sourcePath, destPath, options = {}) {
       sourcePath,
       destPath,
       message: `[DRY RUN] Would execute: ${command}`,
-      dryRun: true
+      dryRun: true,
     };
   }
 
@@ -139,8 +139,8 @@ export async function executeGitMv(sourcePath, destPath, options = {}) {
   try {
     const output = execSync(command, {
       cwd: repoRoot,
-      encoding: 'utf8',
-      stdio: 'pipe'
+      encoding: "utf8",
+      stdio: "pipe",
     });
 
     return {
@@ -148,13 +148,13 @@ export async function executeGitMv(sourcePath, destPath, options = {}) {
       sourcePath,
       destPath,
       message: `Successfully moved ${sourcePath} to ${destPath}`,
-      output: output.trim()
+      output: output.trim(),
     };
   } catch (error) {
     throw new GitOperationError(
       `Failed to execute git mv: ${error.message}`,
       command,
-      error.stderr
+      error.stderr,
     );
   }
 }
@@ -179,18 +179,18 @@ export async function batchGitMv(fileList, options = {}) {
     dryRun = false,
     verbose = false,
     continueOnError = false,
-    onProgress = null
+    onProgress = null,
   } = options;
 
   // Validate inputs
   if (!Array.isArray(fileList) || fileList.length === 0) {
-    throw new GitOperationError('File list must be a non-empty array');
+    throw new GitOperationError("File list must be a non-empty array");
   }
 
   // Check if we're in a git repository
   if (!isGitRepository(repoRoot)) {
     throw new GitOperationError(
-      `Not a git repository: ${repoRoot}`
+      `Not a git repository: ${repoRoot}`,
     );
   }
 
@@ -209,7 +209,7 @@ export async function batchGitMv(fileList, options = {}) {
       const error = {
         index: i,
         file,
-        message: 'Invalid file entry: must have source and destination properties'
+        message: "Invalid file entry: must have source and destination properties",
       };
       errors.push(error);
       failureCount++;
@@ -225,7 +225,7 @@ export async function batchGitMv(fileList, options = {}) {
         repoRoot,
         force,
         dryRun,
-        verbose
+        verbose,
       });
 
       results.push(result);
@@ -246,7 +246,7 @@ export async function batchGitMv(fileList, options = {}) {
         file,
         message: error.message,
         command: error.command,
-        stderr: error.stderr
+        stderr: error.stderr,
       };
       errors.push(errorInfo);
       failureCount++;
@@ -255,7 +255,7 @@ export async function batchGitMv(fileList, options = {}) {
         // Rollback on failure
         if (!dryRun && results.length > 0) {
           if (verbose) {
-            console.log('\nError occurred, attempting rollback...');
+            console.log("\nError occurred, attempting rollback...");
           }
           await rollbackGitMv(results, { repoRoot, verbose });
         }
@@ -263,7 +263,7 @@ export async function batchGitMv(fileList, options = {}) {
         throw new GitOperationError(
           `Batch operation failed at file ${i + 1}/${fileList.length}: ${error.message}`,
           error.command,
-          error.stderr
+          error.stderr,
         );
       }
 
@@ -278,14 +278,14 @@ export async function batchGitMv(fileList, options = {}) {
     total: fileList.length,
     success: successCount,
     failed: failureCount,
-    skipped: skippedCount
+    skipped: skippedCount,
   };
 
   return {
     success: failureCount === 0,
     results,
     errors,
-    summary
+    summary,
   };
 }
 
@@ -301,7 +301,7 @@ export async function batchGitMv(fileList, options = {}) {
 export async function rollbackGitMv(results, options = {}) {
   const {
     repoRoot = process.cwd(),
-    verbose = false
+    verbose = false,
   } = options;
 
   // Filter for successful moves only
@@ -312,7 +312,7 @@ export async function rollbackGitMv(results, options = {}) {
       success: true,
       rolledBack: 0,
       failed: 0,
-      message: 'No operations to rollback'
+      message: "No operations to rollback",
     };
   }
 
@@ -338,8 +338,8 @@ export async function rollbackGitMv(results, options = {}) {
 
       execSync(command, {
         cwd: repoRoot,
-        encoding: 'utf8',
-        stdio: 'pipe'
+        encoding: "utf8",
+        stdio: "pipe",
       });
 
       rolledBack++;
@@ -348,7 +348,7 @@ export async function rollbackGitMv(results, options = {}) {
       rollbackErrors.push({
         sourcePath: result.sourcePath,
         destPath: result.destPath,
-        message: error.message
+        message: error.message,
       });
 
       if (verbose) {
@@ -361,7 +361,7 @@ export async function rollbackGitMv(results, options = {}) {
     success: failed === 0,
     rolledBack,
     failed,
-    errors: rollbackErrors
+    errors: rollbackErrors,
   };
 }
 
@@ -377,7 +377,7 @@ export async function rollbackGitMv(results, options = {}) {
 export async function verifyHistoryPreservation(filePath, options = {}) {
   const {
     repoRoot = process.cwd(),
-    minCommits = 1
+    minCommits = 1,
   } = options;
 
   // Check if file exists
@@ -386,7 +386,7 @@ export async function verifyHistoryPreservation(filePath, options = {}) {
     return {
       preserved: false,
       commitCount: 0,
-      message: `File does not exist: ${filePath}`
+      message: `File does not exist: ${filePath}`,
     };
   }
 
@@ -396,12 +396,12 @@ export async function verifyHistoryPreservation(filePath, options = {}) {
       `git log --follow --oneline -- "${filePath}"`,
       {
         cwd: repoRoot,
-        encoding: 'utf8',
-        stdio: 'pipe'
-      }
+        encoding: "utf8",
+        stdio: "pipe",
+      },
     );
 
-    const commits = output.trim().split('\n').filter((line) => line.length > 0);
+    const commits = output.trim().split("\n").filter((line) => line.length > 0);
     const commitCount = commits.length;
 
     return {
@@ -410,13 +410,13 @@ export async function verifyHistoryPreservation(filePath, options = {}) {
       history: commits,
       message: commitCount >= minCommits
         ? `History preserved: ${commitCount} commits found`
-        : `Insufficient history: ${commitCount} commits (expected at least ${minCommits})`
+        : `Insufficient history: ${commitCount} commits (expected at least ${minCommits})`,
     };
   } catch (error) {
     return {
       preserved: false,
       commitCount: 0,
-      message: `Failed to retrieve git history: ${error.message}`
+      message: `Failed to retrieve git history: ${error.message}`,
     };
   }
 }
