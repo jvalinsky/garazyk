@@ -5,8 +5,8 @@
   "parameters": {
     "type": "object",
     "properties": {
-      "limit": {"type": "integer", "maximum": 100},
-      "cursor": {"type": "string"}
+      "limit": { "type": "integer", "maximum": 100 },
+      "cursor": { "type": "string" }
     }
   },
   "output": {

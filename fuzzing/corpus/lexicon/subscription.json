@@ -5,14 +5,14 @@
   "parameters": {
     "type": "object",
     "properties": {
-      "cursor": {"type": "integer"}
+      "cursor": { "type": "integer" }
     }
   },
   "message": {
     "oneOf": [
       {
         "type": "object",
-        "properties": {"action": {"type": "string"}}
+        "properties": { "action": { "type": "string" } }
       }
     ]
   }

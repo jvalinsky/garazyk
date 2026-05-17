@@ -5,10 +5,10 @@
   "record": {
     "type": "object",
     "properties": {
-      "union": {"oneOf": [{"type": "string"}, {"type": "integer"}]},
-      "array": {"type": "array", "items": {"type": "string"}},
-      "ref": {"type": "ref", "ref": "com.example.other#record"},
-      "blob": {"type": "blob"}
+      "union": { "oneOf": [{ "type": "string" }, { "type": "integer" }] },
+      "array": { "type": "array", "items": { "type": "string" } },
+      "ref": { "type": "ref", "ref": "com.example.other#record" },
+      "blob": { "type": "blob" }
     }
   }
 }

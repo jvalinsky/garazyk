@@ -1,1 +1,6 @@
-{ "repo": "did:plc:abc123", "collection": "app.bsky.graph.block", "rkey": "3k5c2l242v2c2", "record": { "$type": "app.bsky.graph.block", "subject": "did:plc:target456" } }
+{
+  "repo": "did:plc:abc123",
+  "collection": "app.bsky.graph.block",
+  "rkey": "3k5c2l242v2c2",
+  "record": { "$type": "app.bsky.graph.block", "subject": "did:plc:target456" }
+}
