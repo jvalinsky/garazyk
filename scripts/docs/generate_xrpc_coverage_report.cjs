@@ -58,12 +58,16 @@ function parseArgs(argv) {
   }
 
   args.xrpcDir = args.xrpcDir || path.join(args.repoRoot, "reports", "xrpc_sync_raw");
-  args.stubPath = args.stubPath || path.join(args.repoRoot, "reports", "stub_scan_raw", "stubs.json");
+  args.stubPath = args.stubPath ||
+    path.join(args.repoRoot, "reports", "stub_scan_raw", "stubs.json");
   args.outJson = args.outJson || path.join(args.repoRoot, "reports", "xrpc_coverage.json");
   args.outMd = args.outMd || path.join(args.repoRoot, "reports", "xrpc_coverage.md");
-  args.scopeFile = args.scopeFile || path.join(args.repoRoot, "scripts", "docs", "xrpc_coverage_scope.txt");
-  args.registryPath = args.registryPath || path.join(args.repoRoot, "Garazyk", "Sources", "Network", "XrpcMethodRegistry.m");
-  args.handlerPath = args.handlerPath || path.join(args.repoRoot, "Garazyk", "Sources", "Network", "XrpcHandler.m");
+  args.scopeFile = args.scopeFile ||
+    path.join(args.repoRoot, "scripts", "docs", "xrpc_coverage_scope.txt");
+  args.registryPath = args.registryPath ||
+    path.join(args.repoRoot, "Garazyk", "Sources", "Network", "XrpcMethodRegistry.m");
+  args.handlerPath = args.handlerPath ||
+    path.join(args.repoRoot, "Garazyk", "Sources", "Network", "XrpcHandler.m");
   args.networkDir = args.networkDir || path.join(args.repoRoot, "Garazyk", "Sources", "Network");
   if (args.lexiconRoots.length === 0) {
     args.lexiconRoots.push(path.join(args.repoRoot, "Garazyk", "Resources", "lexicons"));
@@ -228,7 +232,10 @@ function extractLexiconMethodsFromRoots(roots) {
           }
         }
       } catch (error) {
-        errors.push({ file: filePath, message: String(error && error.message ? error.message : error) });
+        errors.push({
+          file: filePath,
+          message: String(error && error.message ? error.message : error),
+        });
       }
     }
   }
@@ -239,7 +246,8 @@ function parseDispatcherMethodMap(handlerPath) {
   ensureFileExists(handlerPath);
   const source = fs.readFileSync(handlerPath, "utf8");
   const map = new Map();
-  const regex = /-\s*\(void\)\s*(register[A-Za-z0-9]+)\s*:\s*\(XrpcMethodHandler\)handler\s*\{\s*\[self registerMethod:@"([^"]+)" handler:handler\];\s*\}/gms;
+  const regex =
+    /-\s*\(void\)\s*(register[A-Za-z0-9]+)\s*:\s*\(XrpcMethodHandler\)handler\s*\{\s*\[self registerMethod:@"([^"]+)" handler:handler\];\s*\}/gms;
   for (const match of source.matchAll(regex)) {
     map.set(match[1], match[2]);
   }
@@ -332,7 +340,10 @@ function computeCrossScopeDuplicateStats(scopeStats) {
   }
 
   const expectedScopePairSet = new Set([
-    normalizeScopePair("class.registerMethodsWithDispatcher:controller", "class.registerMethodsWithDispatcher:application"),
+    normalizeScopePair(
+      "class.registerMethodsWithDispatcher:controller",
+      "class.registerMethodsWithDispatcher:application",
+    ),
   ]);
 
   const rawMethods = [];
@@ -353,8 +364,8 @@ function computeCrossScopeDuplicateStats(scopeStats) {
     rawMethods.push(methodEntry);
     rawCount += registrations;
 
-    const expectedPairOnly = scopes.length === 2
-      && expectedScopePairSet.has(normalizeScopePair(scopes[0], scopes[1]));
+    const expectedPairOnly = scopes.length === 2 &&
+      expectedScopePairSet.has(normalizeScopePair(scopes[0], scopes[1]));
     if (expectedPairOnly) {
       expectedMethods.push(methodEntry);
       expectedCount += registrations;
@@ -476,7 +487,10 @@ function extractScopeStatsFromSources(sourceFiles, methodMap, rootDir) {
     const filteredMethods = extracted.methods.filter((methodId) => methodId !== "unknown");
     const uniqueMethods = uniqueSorted(filteredMethods);
     const duplicateMethods = duplicateMethodsForList(extracted.methods);
-    const duplicateRegistrations = duplicateMethods.reduce((sum, entry) => sum + (entry.count - 1), 0);
+    const duplicateRegistrations = duplicateMethods.reduce(
+      (sum, entry) => sum + (entry.count - 1),
+      0,
+    );
     const scopeName = path.relative(rootDir, sourcePath).replace(/\\/g, "/");
 
     scopes.push({
@@ -484,7 +498,9 @@ function extractScopeStatsFromSources(sourceFiles, methodMap, rootDir) {
       registrations_total: filteredMethods.length,
       registrations_unique: uniqueMethods.length,
       methods: uniqueMethods,
-      unknown_registry_entries: extracted.methods.filter((methodId) => methodId === "unknown").length,
+      unknown_registry_entries: extracted.methods.filter((methodId) =>
+        methodId === "unknown"
+      ).length,
       duplicate_registrations: duplicateRegistrations,
       duplicate_methods: duplicateMethods,
       unresolved_typed_registrations: extracted.unresolvedTyped,
@@ -508,8 +524,15 @@ function extractImplementedMethodsFromSource(registryPath, handlerPath, networkD
   const sourcesRoot = path.dirname(networkDir);
   const moduleFiles = registrarModuleFilesFromRegistry(registrySource, networkDir, sourcesRoot);
   const sourceFiles = expandSourceFiles([registryPath, ...moduleFiles], sourcesRoot);
-  const extracted = extractScopeStatsFromSources(sourceFiles, methodMap, path.dirname(registryPath));
-  const scopedDuplicateRegistrations = extracted.scopes.reduce((sum, scope) => sum + scope.duplicate_registrations, 0);
+  const extracted = extractScopeStatsFromSources(
+    sourceFiles,
+    methodMap,
+    path.dirname(registryPath),
+  );
+  const scopedDuplicateRegistrations = extracted.scopes.reduce(
+    (sum, scope) => sum + scope.duplicate_registrations,
+    0,
+  );
   const crossScopeDuplicateStats = computeCrossScopeDuplicateStats(extracted.scopes);
 
   return {
@@ -576,8 +599,10 @@ function makeNamespaceCoverage(implementedSet, lexiconSet) {
       }
     });
 
-    const missingInCode = Array.from(lexicon).filter((methodId) => !implemented.has(methodId)).sort();
-    const missingInLexicons = Array.from(implemented).filter((methodId) => !lexicon.has(methodId)).sort();
+    const missingInCode = Array.from(lexicon).filter((methodId) => !implemented.has(methodId))
+      .sort();
+    const missingInLexicons = Array.from(implemented).filter((methodId) => !lexicon.has(methodId))
+      .sort();
 
     return {
       namespace,
@@ -604,7 +629,9 @@ function createMarkdown(report) {
   lines.push("");
   lines.push("## Summary");
   lines.push("");
-  lines.push(`- Implemented methods (unique, excluding \`unknown\`): ${report.counts.implemented_unique}`);
+  lines.push(
+    `- Implemented methods (unique, excluding \`unknown\`): ${report.counts.implemented_unique}`,
+  );
   lines.push(`- Lexicon XRPC methods (unique, all scopes): ${report.counts.lexicon_unique_total}`);
   lines.push(`- Lexicon XRPC methods (in scope): ${report.counts.lexicon_unique_in_scope}`);
   lines.push(`- Implemented and in lexicons (in scope): ${report.counts.in_both_in_scope}`);
@@ -613,15 +640,23 @@ function createMarkdown(report) {
   lines.push(`- Coverage (in scope, implemented / lexicon): ${report.counts.coverage_pct}%`);
   lines.push(`- Missing in code (out of scope): ${report.counts.missing_in_code_out_of_scope}`);
   lines.push(`- Unknown registry entries: ${report.counts.unknown_registry_entries}`);
-  lines.push(`- Duplicate registry registrations: ${report.counts.duplicate_registry_registrations}`);
+  lines.push(
+    `- Duplicate registry registrations: ${report.counts.duplicate_registry_registrations}`,
+  );
   if (typeof report.counts.duplicate_registry_registrations_cross_scope === "number") {
-    lines.push(`- Duplicate registry registrations (cross-scope, actionable): ${report.counts.duplicate_registry_registrations_cross_scope}`);
+    lines.push(
+      `- Duplicate registry registrations (cross-scope, actionable): ${report.counts.duplicate_registry_registrations_cross_scope}`,
+    );
   }
   if (typeof report.counts.duplicate_registry_registrations_cross_scope_expected === "number") {
-    lines.push(`- Cross-scope overlap (expected controller/application dual-path): ${report.counts.duplicate_registry_registrations_cross_scope_expected}`);
+    lines.push(
+      `- Cross-scope overlap (expected controller/application dual-path): ${report.counts.duplicate_registry_registrations_cross_scope_expected}`,
+    );
   }
   if (typeof report.counts.duplicate_registry_registrations_cross_scope_raw === "number") {
-    lines.push(`- Cross-scope overlap (raw total): ${report.counts.duplicate_registry_registrations_cross_scope_raw}`);
+    lines.push(
+      `- Cross-scope overlap (raw total): ${report.counts.duplicate_registry_registrations_cross_scope_raw}`,
+    );
   }
   lines.push("");
   lines.push("## Namespace Coverage");
@@ -630,7 +665,9 @@ function createMarkdown(report) {
   lines.push("|---|---:|---:|---:|---:|---:|");
   report.namespace_coverage.forEach((entry) => {
     const coverage = entry.coverage_pct === null ? "n/a" : `${entry.coverage_pct}%`;
-    lines.push(`| ${entry.namespace} | ${entry.lexicon_methods} | ${entry.implemented_methods} | ${entry.in_both} | ${coverage} | ${entry.missing_in_code_count} |`);
+    lines.push(
+      `| ${entry.namespace} | ${entry.lexicon_methods} | ${entry.implemented_methods} | ${entry.in_both} | ${coverage} | ${entry.missing_in_code_count} |`,
+    );
   });
   lines.push("");
   lines.push("## Missing In Code (Top 60, In Scope)");
@@ -654,8 +691,12 @@ function createMarkdown(report) {
   lines.push("## Scope");
   lines.push("");
   lines.push(`- Scope config source: \`${report.scope.source}\``);
-  lines.push(`- Include globs: ${report.scope.includes.map((glob) => `\`${glob}\``).join(", ") || "(none)"}`);
-  lines.push(`- Exclude globs: ${report.scope.excludes.map((glob) => `\`${glob}\``).join(", ") || "(none)"}`);
+  lines.push(
+    `- Include globs: ${report.scope.includes.map((glob) => `\`${glob}\``).join(", ") || "(none)"}`,
+  );
+  lines.push(
+    `- Exclude globs: ${report.scope.excludes.map((glob) => `\`${glob}\``).join(", ") || "(none)"}`,
+  );
   lines.push("");
   lines.push("## Stub Scan");
   lines.push("");
@@ -697,7 +738,10 @@ function createMarkdown(report) {
   }
   lines.push(`- \`${report.inputs.stubs_json}\``);
   lines.push("");
-  if (Array.isArray(report.inputs.unresolved_typed_registrations) && report.inputs.unresolved_typed_registrations.length > 0) {
+  if (
+    Array.isArray(report.inputs.unresolved_typed_registrations) &&
+    report.inputs.unresolved_typed_registrations.length > 0
+  ) {
     lines.push("## Unresolved Typed Registrations");
     lines.push("");
     report.inputs.unresolved_typed_registrations.forEach((entry) => {
@@ -705,7 +749,9 @@ function createMarkdown(report) {
     });
     lines.push("");
   }
-  if (Array.isArray(report.registration_scope_stats) && report.registration_scope_stats.length > 0) {
+  if (
+    Array.isArray(report.registration_scope_stats) && report.registration_scope_stats.length > 0
+  ) {
     lines.push("## Registration Scope Duplicates");
     lines.push("");
     report.registration_scope_stats.forEach((scopeStat) => {
@@ -723,7 +769,9 @@ function createMarkdown(report) {
       lines.push("");
     });
   }
-  if (report.cross_scope_duplicates && Array.isArray(report.cross_scope_duplicates.unexpected_methods)) {
+  if (
+    report.cross_scope_duplicates && Array.isArray(report.cross_scope_duplicates.unexpected_methods)
+  ) {
     lines.push("## Cross-Scope Duplicate Methods (Actionable)");
     lines.push("");
     if (report.cross_scope_duplicates.unexpected_methods.length === 0) {
@@ -735,10 +783,14 @@ function createMarkdown(report) {
     }
     lines.push("");
   }
-  if (report.cross_scope_duplicates && Array.isArray(report.cross_scope_duplicates.expected_methods)) {
+  if (
+    report.cross_scope_duplicates && Array.isArray(report.cross_scope_duplicates.expected_methods)
+  ) {
     lines.push("## Cross-Scope Overlap (Expected)");
     lines.push("");
-    lines.push(`- Methods overlapping between controller/application registrations: ${report.cross_scope_duplicates.expected_methods.length}`);
+    lines.push(
+      `- Methods overlapping between controller/application registrations: ${report.cross_scope_duplicates.expected_methods.length}`,
+    );
     lines.push("");
   }
   return `${lines.join("\n")}\n`;
@@ -764,10 +816,10 @@ function main() {
   let lexiconsTsvUsed = lexiconsTsv;
   let diffJsonUsed = diffJson;
 
-  const canUseLegacy = !args.sourceOnly
-    && fs.existsSync(methodsTsv)
-    && fs.existsSync(lexiconsTsv)
-    && fs.existsSync(diffJson);
+  const canUseLegacy = !args.sourceOnly &&
+    fs.existsSync(methodsTsv) &&
+    fs.existsSync(lexiconsTsv) &&
+    fs.existsSync(diffJson);
 
   if (canUseLegacy) {
     const methodRows = parseTsv(methodsTsv);
@@ -780,7 +832,11 @@ function main() {
     lexiconsTsvUsed = null;
     diffJsonUsed = null;
 
-    const extracted = extractImplementedMethodsFromSource(args.registryPath, args.handlerPath, args.networkDir);
+    const extracted = extractImplementedMethodsFromSource(
+      args.registryPath,
+      args.handlerPath,
+      args.networkDir,
+    );
     implementedRaw = extracted.implementedRaw;
     unresolvedTypedRegistrations = extracted.unresolvedTyped;
     registrationScopeStats = extracted.registrationScopeStats;
@@ -796,7 +852,8 @@ function main() {
   const scopeConfig = loadScopeConfig(args.scopeFile);
   const includeRegexes = scopeConfig.includes.map(globToRegExp);
   const excludeRegexes = scopeConfig.excludes.map(globToRegExp);
-  const inScope = (methodId) => methodInScope(methodId, scopeConfig, includeRegexes, excludeRegexes);
+  const inScope = (methodId) =>
+    methodInScope(methodId, scopeConfig, includeRegexes, excludeRegexes);
 
   const stubs = readJsonIfExists(args.stubPath, {});
   const unknownRegistryEntries = implementedRaw.filter((methodId) => methodId === "unknown").length;
@@ -825,13 +882,19 @@ function main() {
     }
   });
 
-  const missingInCode = lexiconUniqueInScope.filter((methodId) => !implementedSetInScope.has(methodId));
-  const missingInLexicons = implementedInScope.filter((methodId) => !lexiconSetInScope.has(methodId));
+  const missingInCode = lexiconUniqueInScope.filter((methodId) =>
+    !implementedSetInScope.has(methodId)
+  );
+  const missingInLexicons = implementedInScope.filter((methodId) =>
+    !lexiconSetInScope.has(methodId)
+  );
 
   const lexiconOutOfScope = lexiconUniqueAll.filter((methodId) => !inScope(methodId));
   const implementedOutOfScope = implementedUnique.filter((methodId) => !inScope(methodId));
   const implementedOutOfScopeSet = new Set(implementedOutOfScope);
-  const missingInCodeOutOfScope = lexiconOutOfScope.filter((methodId) => !implementedOutOfScopeSet.has(methodId));
+  const missingInCodeOutOfScope = lexiconOutOfScope.filter((methodId) =>
+    !implementedOutOfScopeSet.has(methodId)
+  );
 
   const stubMarkers = Array.isArray(stubs.stub_markers) ? stubs.stub_markers : [];
   const xrpcRelatedStubMarkers = stubMarkers.filter((hit) => {
@@ -852,7 +915,9 @@ function main() {
       parsed_source_files: inputMode === "source-parsed" ? parsedSourceFiles : null,
       lexicon_roots: inputMode === "source-parsed" ? args.lexiconRoots : null,
       unresolved_typed_registrations: unresolvedTypedRegistrations,
-      registration_scopes: inputMode === "source-parsed" ? registrationScopeStats.map((entry) => entry.scope) : null,
+      registration_scopes: inputMode === "source-parsed"
+        ? registrationScopeStats.map((entry) => entry.scope)
+        : null,
       lexicon_parse_errors: lexiconParseErrors,
       stubs_json: args.stubPath,
     },
@@ -869,17 +934,23 @@ function main() {
       unknown_registry_entries: unknownRegistryEntries,
       duplicate_registry_registrations: duplicateRegistrations,
       duplicate_registry_registrations_cross_scope: duplicateRegistrationsCrossScope,
-      duplicate_registry_registrations_cross_scope_expected: duplicateRegistrationsCrossScopeExpected,
+      duplicate_registry_registrations_cross_scope_expected:
+        duplicateRegistrationsCrossScopeExpected,
       duplicate_registry_registrations_cross_scope_raw: duplicateRegistrationsCrossScopeRaw,
     },
-    namespace_coverage: makeNamespaceCoverage(new Set(implementedInScope), new Set(lexiconUniqueInScope)),
+    namespace_coverage: makeNamespaceCoverage(
+      new Set(implementedInScope),
+      new Set(lexiconUniqueInScope),
+    ),
     missing_in_code: missingInCode,
     missing_in_code_out_of_scope: missingInCodeOutOfScope,
     missing_in_lexicons: missingInLexicons,
     registration_scope_stats: registrationScopeStats,
     cross_scope_duplicates: crossScopeDuplicateStats,
     stub_scan: {
-      not_implemented_count: Array.isArray(stubs.not_implemented) ? stubs.not_implemented.length : 0,
+      not_implemented_count: Array.isArray(stubs.not_implemented)
+        ? stubs.not_implemented.length
+        : 0,
       todo_fixme_count: Array.isArray(stubs.todo_fixme) ? stubs.todo_fixme.length : 0,
       stub_markers_count: stubMarkers.length,
       xrpc_related_stub_markers_count: xrpcRelatedStubMarkers.length,

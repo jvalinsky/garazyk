@@ -5,8 +5,8 @@
  * status of all moved files, validation results, and human-readable summary.
  */
 
-import fs from 'fs-extra';
-import path from 'path';
+import fs from "fs-extra";
+import path from "path";
 
 /**
  * Generates a migration report from migration results
@@ -23,31 +23,31 @@ import path from 'path';
 export function generateMigrationReport(migrationData, options = {}) {
   const { repoRoot = process.cwd() } = options;
 
-  if (!migrationData || typeof migrationData !== 'object') {
-    throw new TypeError('migrationData must be an object');
+  if (!migrationData || typeof migrationData !== "object") {
+    throw new TypeError("migrationData must be an object");
   }
 
   const {
     movedFiles = [],
     updatedLinks = [],
     errors = [],
-    validation = {}
+    validation = {},
   } = migrationData;
 
   // Calculate statistics
   const stats = {
     totalFilesMoved: movedFiles.length,
-    successfulMoves: movedFiles.filter((f) => f.status === 'success').length,
-    failedMoves: movedFiles.filter((f) => f.status === 'failed').length,
+    successfulMoves: movedFiles.filter((f) => f.status === "success").length,
+    failedMoves: movedFiles.filter((f) => f.status === "failed").length,
     totalLinksUpdated: updatedLinks.length,
     totalErrors: errors.length,
-    validationPassed: validation.passed === true
+    validationPassed: validation.passed === true,
   };
 
   // Categorize errors by type
   const errorsByType = {};
   for (const error of errors) {
-    const type = error.type || 'unknown';
+    const type = error.type || "unknown";
     if (!errorsByType[type]) {
       errorsByType[type] = [];
     }
@@ -58,7 +58,7 @@ export function generateMigrationReport(migrationData, options = {}) {
   const summary = generateSummary(stats, errorsByType);
 
   return {
-    version: '1.0.0',
+    version: "1.0.0",
     generatedAt: new Date().toISOString(),
     repoRoot,
     statistics: stats,
@@ -67,7 +67,7 @@ export function generateMigrationReport(migrationData, options = {}) {
     errors,
     errorsByType,
     validation,
-    summary
+    summary,
   };
 }
 
@@ -81,19 +81,19 @@ export function generateMigrationReport(migrationData, options = {}) {
 function generateSummary(stats, errorsByType) {
   const lines = [];
 
-  lines.push('Migration Summary');
-  lines.push('=================');
-  lines.push('');
+  lines.push("Migration Summary");
+  lines.push("=================");
+  lines.push("");
 
   // Files moved
   lines.push(`Files Moved: ${stats.totalFilesMoved}`);
   lines.push(`  - Successful: ${stats.successfulMoves}`);
   lines.push(`  - Failed: ${stats.failedMoves}`);
-  lines.push('');
+  lines.push("");
 
   // Links updated
   lines.push(`Links Updated: ${stats.totalLinksUpdated}`);
-  lines.push('');
+  lines.push("");
 
   // Errors
   if (stats.totalErrors > 0) {
@@ -101,21 +101,21 @@ function generateSummary(stats, errorsByType) {
     for (const [type, errors] of Object.entries(errorsByType)) {
       lines.push(`  - ${type}: ${errors.length}`);
     }
-    lines.push('');
+    lines.push("");
   }
 
   // Validation
-  lines.push(`Validation: ${stats.validationPassed ? 'PASSED' : 'FAILED'}`);
-  lines.push('');
+  lines.push(`Validation: ${stats.validationPassed ? "PASSED" : "FAILED"}`);
+  lines.push("");
 
   // Overall status
   const overallStatus = stats.failedMoves === 0 && stats.totalErrors === 0 && stats.validationPassed
-    ? 'SUCCESS'
-    : 'COMPLETED WITH ISSUES';
+    ? "SUCCESS"
+    : "COMPLETED WITH ISSUES";
 
   lines.push(`Overall Status: ${overallStatus}`);
 
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
 /**
@@ -126,12 +126,12 @@ function generateSummary(stats, errorsByType) {
  * @returns {Promise<void>}
  */
 export async function writeMigrationReport(report, outputPath) {
-  if (!report || typeof report !== 'object') {
-    throw new TypeError('report must be an object');
+  if (!report || typeof report !== "object") {
+    throw new TypeError("report must be an object");
   }
 
-  if (!outputPath || typeof outputPath !== 'string') {
-    throw new TypeError('outputPath must be a string');
+  if (!outputPath || typeof outputPath !== "string") {
+    throw new TypeError("outputPath must be a string");
   }
 
   // Ensure output directory exists
@@ -142,7 +142,7 @@ export async function writeMigrationReport(report, outputPath) {
   await fs.writeFile(
     outputPath,
     JSON.stringify(report, null, 2),
-    'utf8'
+    "utf8",
   );
 }
 
@@ -171,7 +171,7 @@ export async function readMigrationReport(reportPath) {
     throw new Error(`Migration report file not found: ${reportPath}`);
   }
 
-  const content = await fs.readFile(reportPath, 'utf8');
+  const content = await fs.readFile(reportPath, "utf8");
   return JSON.parse(content);
 }
 
@@ -190,29 +190,29 @@ export function createMigrationData(operations = {}) {
     moves = [],
     linkUpdates = [],
     errors = [],
-    validation = { passed: true }
+    validation = { passed: true },
   } = operations;
 
   return {
     movedFiles: moves.map((move) => ({
       source: move.source,
       destination: move.destination,
-      status: move.error ? 'failed' : 'success',
-      error: move.error || undefined
+      status: move.error ? "failed" : "success",
+      error: move.error || undefined,
     })),
     updatedLinks: linkUpdates.map((update) => ({
       file: update.file,
       oldLink: update.oldLink,
       newLink: update.newLink,
-      status: update.error ? 'failed' : 'success',
-      error: update.error || undefined
+      status: update.error ? "failed" : "success",
+      error: update.error || undefined,
     })),
     errors: errors.map((error) => ({
-      type: error.type || 'unknown',
+      type: error.type || "unknown",
       message: error.message,
       file: error.file || undefined,
-      details: error.details || undefined
+      details: error.details || undefined,
     })),
-    validation
+    validation,
   };
 }

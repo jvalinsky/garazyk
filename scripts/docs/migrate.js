@@ -10,28 +10,28 @@
  * Usage: node migrate.js [config-file]
  */
 
-import { version } from './index.js';
-import path from 'path';
-import { execSync } from 'child_process';
-import fs from 'fs-extra';
-import { loadMigrationConfig } from './lib/migration-schema.js';
-import { discoverFiles } from './lib/file-discovery.js';
-import { batchGitMv } from './lib/git-operations.js';
-import { parseMarkdownLinks, filterInternalLinks } from './lib/link-parser.js';
-import { splitHref } from './lib/path-resolver.js';
-import { updateFileLinks } from './lib/content-updater.js';
-import { generateAndWriteMapping, readMigrationMapping } from './lib/migration-mapping.js';
-import { createMigrationData, generateAndWriteReport } from './lib/migration-report.js';
-import { removeEmptyDirectories } from './lib/directory-cleanup.js';
+import { version } from "./index.js";
+import path from "path";
+import { execSync } from "child_process";
+import fs from "fs-extra";
+import { loadMigrationConfig } from "./lib/migration-schema.js";
+import { discoverFiles } from "./lib/file-discovery.js";
+import { batchGitMv } from "./lib/git-operations.js";
+import { filterInternalLinks, parseMarkdownLinks } from "./lib/link-parser.js";
+import { splitHref } from "./lib/path-resolver.js";
+import { updateFileLinks } from "./lib/content-updater.js";
+import { generateAndWriteMapping, readMigrationMapping } from "./lib/migration-mapping.js";
+import { createMigrationData, generateAndWriteReport } from "./lib/migration-report.js";
+import { removeEmptyDirectories } from "./lib/directory-cleanup.js";
 
 console.log(`Documentation Migration Tool v${version}`);
 
 function getRepoRoot(cwd = process.cwd()) {
   try {
-    return execSync('git rev-parse --show-toplevel', {
+    return execSync("git rev-parse --show-toplevel", {
       cwd,
-      stdio: 'pipe',
-      encoding: 'utf8'
+      stdio: "pipe",
+      encoding: "utf8",
     }).trim();
   } catch {
     return cwd;
@@ -39,8 +39,8 @@ function getRepoRoot(cwd = process.cwd()) {
 }
 
 function normalizeRepoPath(p) {
-  if (!p) return '';
-  return p.replace(/\\/g, '/').replace(/^\.\/+/, '');
+  if (!p) return "";
+  return p.replace(/\\/g, "/").replace(/^\.\/+/, "");
 }
 
 function computeDestinationPath(migration, discoveredRelativePath) {
@@ -55,10 +55,10 @@ function computeUpdatedHref({
   oldFilePath,
   newFilePath,
   href,
-  movedPathMap
+  movedPathMap,
 }) {
-  if (!href || typeof href !== 'string') {
-    return href || '';
+  if (!href || typeof href !== "string") {
+    return href || "";
   }
 
   // External schemes unchanged
@@ -67,7 +67,7 @@ function computeUpdatedHref({
   }
 
   // Anchor-only links unchanged
-  if (href.startsWith('#')) {
+  if (href.startsWith("#")) {
     return href;
   }
 
@@ -82,7 +82,7 @@ function computeUpdatedHref({
   const newFile = normalizeRepoPath(newFilePath);
 
   // Absolute internal links: keep absolute style; only update if target moved
-  if (linkPath.startsWith('/')) {
+  if (linkPath.startsWith("/")) {
     const oldTarget = normalizeRepoPath(linkPath.slice(1));
     const newTarget = movedPathMap.get(oldTarget) || oldTarget;
     const newAbsHref = `/${newTarget}${fragment}`;
@@ -90,14 +90,14 @@ function computeUpdatedHref({
   }
 
   // Relative internal links
-  const originalHadDotSlash = linkPath.startsWith('./');
+  const originalHadDotSlash = linkPath.startsWith("./");
   const oldDir = path.posix.dirname(oldFile);
   const oldTarget = normalizeRepoPath(path.posix.normalize(path.posix.join(oldDir, linkPath)));
   const newTarget = movedPathMap.get(oldTarget) || oldTarget;
 
   const newDir = path.posix.dirname(newFile);
   let newRel = path.posix.relative(newDir, newTarget);
-  if (originalHadDotSlash && !newRel.startsWith('../') && !newRel.startsWith('./')) {
+  if (originalHadDotSlash && !newRel.startsWith("../") && !newRel.startsWith("./")) {
     newRel = `./${newRel}`;
   }
 
@@ -109,21 +109,21 @@ async function updateReferencesAcrossRepo({
   movedPathMap,
   reverseMovedPathMap,
   dryRun,
-  verbose
+  verbose,
 }) {
   const excludePatterns = [
-    '**/.git/**',
-    '**/node_modules/**',
-    '**/build/**',
-    '**/tmp/**',
-    '**/.DS_Store',
-    '**/Thumbs.db'
+    "**/.git/**",
+    "**/node_modules/**",
+    "**/build/**",
+    "**/tmp/**",
+    "**/.DS_Store",
+    "**/Thumbs.db",
   ];
 
-  const markdownFiles = await discoverFiles('.', {
-    filePatterns: ['**/*.md'],
+  const markdownFiles = await discoverFiles(".", {
+    filePatterns: ["**/*.md"],
     excludePatterns,
-    repoRoot
+    repoRoot,
   });
 
   const linkUpdates = [];
@@ -134,7 +134,7 @@ async function updateReferencesAcrossRepo({
     const oldFilePath = reverseMovedPathMap.get(newFilePath) || newFilePath;
 
     const absPath = path.resolve(repoRoot, newFilePath);
-    const content = await fs.readFile(absPath, 'utf8');
+    const content = await fs.readFile(absPath, "utf8");
 
     const links = parseMarkdownLinks(content);
     const internalLinks = filterInternalLinks(links);
@@ -148,11 +148,13 @@ async function updateReferencesAcrossRepo({
       let targetOldPath = null;
 
       if (linkPath) {
-        if (linkPath.startsWith('/')) {
+        if (linkPath.startsWith("/")) {
           targetOldPath = normalizeRepoPath(linkPath.slice(1));
-        } else if (!/^[a-z][a-z0-9+.-]*:/i.test(linkPath) && !linkPath.startsWith('#')) {
+        } else if (!/^[a-z][a-z0-9+.-]*:/i.test(linkPath) && !linkPath.startsWith("#")) {
           const oldDir = path.posix.dirname(normalizeRepoPath(oldFilePath));
-          targetOldPath = normalizeRepoPath(path.posix.normalize(path.posix.join(oldDir, linkPath)));
+          targetOldPath = normalizeRepoPath(
+            path.posix.normalize(path.posix.join(oldDir, linkPath)),
+          );
         }
       }
 
@@ -165,7 +167,7 @@ async function updateReferencesAcrossRepo({
         oldFilePath,
         newFilePath,
         href: link.href,
-        movedPathMap
+        movedPathMap,
       });
 
       if (newHref && newHref !== link.href) {
@@ -175,7 +177,7 @@ async function updateReferencesAcrossRepo({
         linkUpdates.push({
           file: newFilePath,
           oldLink: link.href,
-          newLink: newHref
+          newLink: newHref,
         });
       }
     }
@@ -203,7 +205,10 @@ async function runMigration(configPath) {
   const dryRun = config.options?.dryRun === true;
   const verbose = config.options?.verbose === true;
   const continueOnError = config.options?.continueOnError === true;
-  const mappingOutputPath = path.resolve(repoRoot, config.options?.mappingPath || 'migration-mapping.json');
+  const mappingOutputPath = path.resolve(
+    repoRoot,
+    config.options?.mappingPath || "migration-mapping.json",
+  );
 
   if (config.description) {
     console.log(config.description);
@@ -219,7 +224,7 @@ async function runMigration(configPath) {
     const discovered = await discoverFiles(migration.source, {
       filePatterns: migration.filePatterns,
       excludePatterns: migration.excludePatterns,
-      repoRoot
+      repoRoot,
     });
 
     const destNames = new Set();
@@ -235,7 +240,7 @@ async function runMigration(configPath) {
 
       return {
         source: normalizeRepoPath(path.posix.join(migration.source, rel)),
-        destination: normalizeRepoPath(dest)
+        destination: normalizeRepoPath(dest),
       };
     });
 
@@ -257,13 +262,20 @@ async function runMigration(configPath) {
       const mapping = await readMigrationMapping(mappingOutputPath);
       if (mapping?.mappings?.length > 0) {
         if (verbose) {
-          console.log(`No sources found; resuming from mapping: ${path.relative(repoRoot, mappingOutputPath)}`);
+          console.log(
+            `No sources found; resuming from mapping: ${
+              path.relative(repoRoot, mappingOutputPath)
+            }`,
+          );
         }
         for (const entry of mapping.mappings) {
           if (!entry?.oldPath || !entry?.newPath) {
             continue;
           }
-          allFileList.push({ source: normalizeRepoPath(entry.oldPath), destination: normalizeRepoPath(entry.newPath) });
+          allFileList.push({
+            source: normalizeRepoPath(entry.oldPath),
+            destination: normalizeRepoPath(entry.newPath),
+          });
         }
         skipMoves = true;
       }
@@ -271,8 +283,12 @@ async function runMigration(configPath) {
   }
 
   if (allFileList.length === 0) {
-    console.log('No files to migrate.');
-    return { repoRoot, config, operations: { moves: [], linkUpdates: [], errors: [], validation: { passed: true } } };
+    console.log("No files to migrate.");
+    return {
+      repoRoot,
+      config,
+      operations: { moves: [], linkUpdates: [], errors: [], validation: { passed: true } },
+    };
   }
 
   // Generate mapping before moving (captures metadata at old paths)
@@ -300,7 +316,7 @@ async function runMigration(configPath) {
           source: entry.source,
           destination: entry.destination,
           error: null,
-          resumed: true
+          resumed: true,
         });
       }
     } else {
@@ -308,19 +324,19 @@ async function runMigration(configPath) {
         repoRoot,
         dryRun,
         verbose,
-        continueOnError
+        continueOnError,
       });
 
       for (const result of batch.results) {
         moveResults.push({
           source: result.sourcePath,
           destination: result.destPath,
-          error: result.success ? null : result.message
+          error: result.success ? null : result.message,
         });
       }
     }
   } catch (error) {
-    errors.push({ type: 'git', message: error.message, details: error.stderr?.toString?.() });
+    errors.push({ type: "git", message: error.message, details: error.stderr?.toString?.() });
     throw error;
   }
 
@@ -336,14 +352,14 @@ async function runMigration(configPath) {
   let linkUpdates = [];
   if (config.migrations.some((m) => m.updateReferences !== false)) {
     if (verbose) {
-      console.log('\nUpdating references across repository...');
+      console.log("\nUpdating references across repository...");
     }
     linkUpdates = await updateReferencesAcrossRepo({
       repoRoot,
       movedPathMap,
       reverseMovedPathMap,
       dryRun,
-      verbose
+      verbose,
     });
   }
 
@@ -358,7 +374,7 @@ async function runMigration(configPath) {
     await removeEmptyDirectories(migration.source, {
       repoRoot,
       dryRun,
-      removeRoot: true
+      removeRoot: true,
     });
   }
 
@@ -366,12 +382,15 @@ async function runMigration(configPath) {
     moves: moveResults,
     linkUpdates,
     errors,
-    validation: { passed: true }
+    validation: { passed: true },
   };
 
   // Generate report
   if (config.options?.generateReport !== false) {
-    const reportOutputPath = path.resolve(repoRoot, config.options?.reportPath || 'migration-report.json');
+    const reportOutputPath = path.resolve(
+      repoRoot,
+      config.options?.reportPath || "migration-report.json",
+    );
     if (verbose) {
       console.log(`\nWriting report: ${path.relative(repoRoot, reportOutputPath)}`);
     }
@@ -384,13 +403,13 @@ async function runMigration(configPath) {
   return { repoRoot, config, operations };
 }
 
-const configPathArg = process.argv[2] || 'configs/plan-consolidation.json';
+const configPathArg = process.argv[2] || "configs/plan-consolidation.json";
 
 try {
   await runMigration(configPathArg);
   process.exit(0);
 } catch (error) {
-  console.error('\nMigration failed.');
+  console.error("\nMigration failed.");
   console.error(error?.message || error);
   process.exit(1);
 }
