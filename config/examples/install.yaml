@@ -6,7 +6,7 @@ server:
   host: "0.0.0.0"
   port: 8080
   data_dir: "./data"
-  
+
 # Server Links
 links:
   privacy_policy: "https://example.com/privacy"

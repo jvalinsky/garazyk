@@ -19,7 +19,7 @@ services:
       - HOME=/var/lib/atprotopds
       - PDS_DATA_DIR=/var/lib/atprotopds
       - PDS_TRUST_PROXY_HEADERS=1
-    command: [ "serve", "--config", "/var/lib/atprotopds/config.json", "--foreground" ]
+    command: ["serve", "--config", "/var/lib/atprotopds/config.json", "--foreground"]
     labels:
       - "com.garazyk.git_commit=8750efa944d6af8a9a72c3ec5fc1f66c8de0af6d"
     restart: unless-stopped
