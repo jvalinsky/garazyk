@@ -9,7 +9,11 @@ import type {
   QueryOutput,
   QueryParams,
 } from "./generated_types.ts";
-import { LEXICON_METHOD_TYPES } from "./lexicons.ts";
+import {
+  LEXICON_METHOD_INPUT_ENCODINGS,
+  LEXICON_METHOD_OUTPUT_ENCODINGS,
+  LEXICON_METHOD_TYPES,
+} from "./lexicons.ts";
 import {
   AccountsClient,
   AdminClient,
@@ -119,7 +123,17 @@ export class XrpcClient {
     method: K,
     params?: QueryParams<K>,
     token?: string,
-  ): Promise<QueryOutput<K>> {
+  ): Promise<QueryOutput<K>>;
+  async query(
+    method: string,
+    params?: Record<string, unknown>,
+    token?: string,
+  ): Promise<unknown>;
+  async query(
+    method: string,
+    params?: Record<string, unknown>,
+    token?: string,
+  ): Promise<unknown> {
     return await this.raw.query(method, params, token);
   }
 
@@ -135,7 +149,17 @@ export class XrpcClient {
     method: K,
     input?: ProcedureInput<K>,
     token?: string,
-  ): Promise<ProcedureOutput<K>> {
+  ): Promise<ProcedureOutput<K>>;
+  async procedure(
+    method: string,
+    input?: unknown,
+    token?: string,
+  ): Promise<unknown>;
+  async procedure(
+    method: string,
+    input?: unknown,
+    token?: string,
+  ): Promise<unknown> {
     return await this.raw.procedure(method, input, token);
   }
 
@@ -228,6 +252,26 @@ function isQueryMethod(method: string): boolean {
     LEXICON_METHOD_TYPES[method as keyof typeof LEXICON_METHOD_TYPES];
   if (methodType) return methodType === "query";
   return /^(get|list|resolve|describe)/i.test(method.split(".").pop() || "");
+}
+
+function outputEncodingFor(method: string): string {
+  return LEXICON_METHOD_OUTPUT_ENCODINGS[
+    method as keyof typeof LEXICON_METHOD_OUTPUT_ENCODINGS
+  ] ?? "application/json";
+}
+
+function inputEncodingFor(method: string): string {
+  return LEXICON_METHOD_INPUT_ENCODINGS[
+    method as keyof typeof LEXICON_METHOD_INPUT_ENCODINGS
+  ] ?? "application/json";
+}
+
+function isBinaryEncoding(encoding: string): boolean {
+  return encoding !== "application/json";
+}
+
+function contentTypeForInputEncoding(encoding: string): string {
+  return encoding === "*/*" ? "application/octet-stream" : encoding;
 }
 
 /**
@@ -341,9 +385,22 @@ function createAgentProxy(
       const isQuery = isQueryMethod(method);
 
       const data = isQuery
-        ? await client.rawTransport.get(
+        ? isBinaryEncoding(outputEncodingFor(method))
+          ? await client.rawTransport.getBinary(
+            method,
+            params as Record<string, unknown> | undefined,
+            token,
+          )
+          : await client.rawTransport.get(
+            method,
+            params as Record<string, unknown> | undefined,
+            token,
+          )
+        : isBinaryEncoding(inputEncodingFor(method))
+        ? await client.rawTransport.postBinary(
           method,
-          params as Record<string, unknown> | undefined,
+          params as Uint8Array,
+          contentTypeForInputEncoding(inputEncodingFor(method)),
           token,
         )
         : await client.rawTransport.post(method, params, token);
@@ -371,14 +428,30 @@ function createGeneratedClient(
       const finalToken = typeof callToken === "string" ? callToken : token;
       const isQuery = isQueryMethod(method);
       if (isQuery) {
+        if (isBinaryEncoding(outputEncodingFor(method))) {
+          return await transport.getBinary(
+            method,
+            params as Record<string, unknown> | undefined,
+            finalToken,
+          );
+        }
         return await transport.get(
           method,
           params as Record<string, unknown> | undefined,
           finalToken,
         );
-      } else {
-        return await transport.post(method, params, finalToken);
       }
+
+      const inputEncoding = inputEncodingFor(method);
+      if (isBinaryEncoding(inputEncoding)) {
+        return await transport.postBinary(
+          method,
+          params as Uint8Array,
+          contentTypeForInputEncoding(inputEncoding),
+          finalToken,
+        );
+      }
+      return await transport.post(method, params, finalToken);
     },
   }) as GeneratedClient;
 }

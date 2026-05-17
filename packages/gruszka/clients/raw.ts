@@ -8,6 +8,10 @@ import type {
   QueryOutput,
   QueryParams,
 } from "../generated_types.ts";
+import {
+  LEXICON_METHOD_INPUT_ENCODINGS,
+  LEXICON_METHOD_OUTPUT_ENCODINGS,
+} from "../lexicons.ts";
 
 /** Client for raw HTTP and XRPC calls without a namespace-specific helper. */
 export class RawClient {
@@ -27,12 +31,29 @@ export class RawClient {
     method: K,
     params?: QueryParams<K>,
     token?: string,
-  ): Promise<QueryOutput<K>> {
+  ): Promise<QueryOutput<K>>;
+  async query(
+    method: string,
+    params?: Record<string, unknown>,
+    token?: string,
+  ): Promise<unknown>;
+  async query(
+    method: string,
+    params?: Record<string, unknown>,
+    token?: string,
+  ): Promise<unknown> {
+    if (isBinaryEncoding(outputEncodingFor(method))) {
+      return (await this.transport.getBinary(
+        method,
+        params as Record<string, unknown> | undefined,
+        token,
+      )) as unknown;
+    }
     return (await this.transport.get(
       method,
       params as Record<string, unknown> | undefined,
       token,
-    )) as QueryOutput<K>;
+    )) as unknown;
   }
 
   /**
@@ -45,10 +66,27 @@ export class RawClient {
     method: K,
     input?: ProcedureInput<K>,
     token?: string,
-  ): Promise<ProcedureOutput<K>> {
-    return (await this.transport.post(method, input, token)) as ProcedureOutput<
-      K
-    >;
+  ): Promise<ProcedureOutput<K>>;
+  async procedure(
+    method: string,
+    input?: unknown,
+    token?: string,
+  ): Promise<unknown>;
+  async procedure(
+    method: string,
+    input?: unknown,
+    token?: string,
+  ): Promise<unknown> {
+    const inputEncoding = inputEncodingFor(method);
+    if (isBinaryEncoding(inputEncoding)) {
+      return (await this.transport.postBinary(
+        method,
+        input as Uint8Array,
+        contentTypeForInputEncoding(inputEncoding),
+        token,
+      )) as unknown;
+    }
+    return (await this.transport.post(method, input, token)) as unknown;
   }
 
   /**
@@ -215,4 +253,24 @@ export class RawClient {
       options.headers,
     );
   }
+}
+
+function outputEncodingFor(method: string): string {
+  return LEXICON_METHOD_OUTPUT_ENCODINGS[
+    method as keyof typeof LEXICON_METHOD_OUTPUT_ENCODINGS
+  ] ?? "application/json";
+}
+
+function inputEncodingFor(method: string): string {
+  return LEXICON_METHOD_INPUT_ENCODINGS[
+    method as keyof typeof LEXICON_METHOD_INPUT_ENCODINGS
+  ] ?? "application/json";
+}
+
+function isBinaryEncoding(encoding: string): boolean {
+  return encoding !== "application/json";
+}
+
+function contentTypeForInputEncoding(encoding: string): string {
+  return encoding === "*/*" ? "application/octet-stream" : encoding;
 }
