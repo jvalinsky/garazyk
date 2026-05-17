@@ -2,7 +2,6 @@
 import { Database } from "sqlite3";
 import { SCHEMA } from "./schema.ts";
 import { runMigrations } from "./migrations.ts";
-import { scanReports } from "../services/report_scanner.ts";
 import { getDashboardPaths } from "../paths.ts";
 
 const DB_PATH = getDashboardPaths().dashboardDbPath;
@@ -24,13 +23,4 @@ if (!isBuild) {
   // Apply migrations for new features
   runMigrations(db);
 
-  // Scan reports in background — do not block server startup
-  setTimeout(async () => {
-    try {
-      const n = await scanReports(db);
-      if (n > 0) console.log(`[db] Imported ${n} report(s) on startup`);
-    } catch (e) {
-      console.error("[db] scanReports failed on startup:", e);
-    }
-  }, 0);
 }

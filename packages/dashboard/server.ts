@@ -4,6 +4,8 @@ import {
   type DashboardPathOptions,
   getDashboardPaths,
 } from "./paths.ts";
+import { db } from "./db/index.ts";
+import { scanReports } from "./services/report_scanner.ts";
 
 /** Options for starting the scenario dashboard web server. */
 export interface DashboardServerOptions extends DashboardPathOptions {
@@ -25,6 +27,11 @@ export async function startDashboard(
   ]);
 
   await runManager.recover();
+
+  // Scan reports in background — do not block server startup
+  scanReports(db).catch((e) =>
+    console.error("[server] scanReports failed:", e)
+  );
 
   await start(manifest, {
     plugins: [],

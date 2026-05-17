@@ -44,6 +44,7 @@ import {
   type DashboardPathOptions,
 } from "./paths.ts";
 import { getScenariosItemCount, getScenariosItemAt } from "./tui/panels/scenarios.ts";
+import { scanReports } from "./services/report_scanner.ts";
 
 // ---------------------------------------------------------------------------
 // Options
@@ -66,6 +67,11 @@ export async function runDashboardTui(
   options: DashboardTuiOptions = {},
 ): Promise<void> {
   configureDashboardPaths(options);
+
+  // Scan reports in background — do not block TUI startup
+  scanReports(db).catch((e) =>
+    console.error("[tui] scanReports failed:", e)
+  );
 
   // One-shot mode — render a single frame and exit
   if (options.once) {
