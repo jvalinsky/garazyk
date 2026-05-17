@@ -1,6 +1,7 @@
 {
   "name": "@garazyk/atproto-client",
   "version": "0.1.0",
+  "description": "Strongly typed AT Protocol XRPC client with generated lexicon methods.",
   "exports": {
     ".": "./mod.ts",
     "./seed": "./seed.ts"
