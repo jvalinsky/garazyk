@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -24,7 +24,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * @returns A promise that resolves to the scenario result
  */
 
-
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Handle Change Propagation");
   result.start();
@@ -33,12 +32,14 @@ export async function run(): Promise<ScenarioResult> {
   const appview = new XrpcClient(SERVICE_URLS.appview);
   const luna = getCharacter("luna");
 
-  await timedCall(result, "PDS health check", async () => { await pds.waitForHealthy(30); });
+  await timedCall(result, "PDS health check", async () => {
+    await pds.waitForHealthy(30);
+  });
 
   if (result.failed > 0) return result;
 
-  const session = await pds.accounts.createAccount(luna.handle, luna.email, luna.password).catch(() =>
-    pds.accounts.createSession(luna.handle, luna.password)
+  const session = await pds.accounts.createAccount(luna.handle, luna.email, luna.password).catch(
+    () => pds.accounts.createSession(luna.handle, luna.password),
   );
 
   if (!session) {
@@ -59,7 +60,7 @@ export async function run(): Promise<ScenarioResult> {
     return await pds.identity.updateHandle(newHandle, luna.accessJwt);
   });
 
-  await new Promise(r => setTimeout(r, 3000));
+  await new Promise((r) => setTimeout(r, 3000));
 
   try {
     const plcRes = await fetch(`${SERVICE_URLS.plc}/${luna.did}`);
@@ -85,7 +86,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

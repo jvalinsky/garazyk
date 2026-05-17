@@ -11,7 +11,13 @@
         "ref": "main",
         "dockerfile": "cmd/relay/Dockerfile"
       },
-      "command": ["run", "--listen-addr", "0.0.0.0:2584", "--upstream", "ws://local-pds:2583/xrpc/com.atproto.sync.subscribeRepos"],
+      "command": [
+        "run",
+        "--listen-addr",
+        "0.0.0.0:2584",
+        "--upstream",
+        "ws://local-pds:2583/xrpc/com.atproto.sync.subscribeRepos"
+      ],
       "env": {
         "RELAY_DIDPLC_URL": "http://local-plc:2582"
       },

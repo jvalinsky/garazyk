@@ -9,7 +9,12 @@
 
 import { Head } from "$fresh/runtime.ts";
 import { Handlers, PageProps } from "$fresh/server.ts";
-import { APPVIEW_READ_METHODS, METHOD_ROUTES, SERVICE_URLS, VIDEO_SERVICE_DID } from "../services/config.ts";
+import {
+  APPVIEW_READ_METHODS,
+  METHOD_ROUTES,
+  SERVICE_URLS,
+  VIDEO_SERVICE_DID,
+} from "../services/config.ts";
 
 interface PageData {
   services: Record<string, string>;
@@ -94,16 +99,28 @@ export default function SkyLabPage({ data }: PageProps<PageData>) {
                 <h2 class="skylab-card-title">Sign In to SkyLab</h2>
                 <div class="skylab-form-group">
                   <label class="skylab-form-label">Handle or Email</label>
-                  <input type="text" class="skylab-form-input" id="login-identifier"
-                    placeholder="luna.test" autocomplete="username" />
+                  <input
+                    type="text"
+                    class="skylab-form-input"
+                    id="login-identifier"
+                    placeholder="luna.test"
+                    autocomplete="username"
+                  />
                 </div>
                 <div class="skylab-form-group">
                   <label class="skylab-form-label">Password</label>
-                  <input type="password" class="skylab-form-input" id="login-password"
-                    placeholder="password" autocomplete="current-password" />
+                  <input
+                    type="password"
+                    class="skylab-form-input"
+                    id="login-password"
+                    placeholder="password"
+                    autocomplete="current-password"
+                  />
                 </div>
                 <div class="skylab-form-error" id="login-error" style="display:none;"></div>
-                <button class="skylab-btn skylab-btn-primary skylab-btn-block" id="login-submit">Sign In</button>
+                <button class="skylab-btn skylab-btn-primary skylab-btn-block" id="login-submit">
+                  Sign In
+                </button>
                 <button class="skylab-btn skylab-btn-block" id="login-cancel">Cancel</button>
               </div>
             </div>
@@ -115,23 +132,51 @@ export default function SkyLabPage({ data }: PageProps<PageData>) {
                 <button class="skylab-btn skylab-btn-sm" id="timeline-refresh">Refresh</button>
               </div>
               <div class="skylab-composer" id="timeline-composer">
-                <textarea class="skylab-composer-input" id="composer-text"
-                  placeholder="What's up?" rows={3} maxlength={300}></textarea>
+                <textarea
+                  class="skylab-composer-input"
+                  id="composer-text"
+                  placeholder="What's up?"
+                  rows={3}
+                  maxlength={300}
+                >
+                </textarea>
                 <div class="skylab-composer-video" id="composer-video">
-                  <input type="file" class="skylab-form-input" id="composer-video-file"
-                    accept="video/mp4,video/quicktime,video/x-matroska" />
-                  <input type="text" class="skylab-form-input" id="composer-video-alt"
-                    placeholder="Alt text for video" maxlength={1000} />
-                  <div class="skylab-video-progress" id="composer-video-progress" style="display:none;">
+                  <input
+                    type="file"
+                    class="skylab-form-input"
+                    id="composer-video-file"
+                    accept="video/mp4,video/quicktime,video/x-matroska"
+                  />
+                  <input
+                    type="text"
+                    class="skylab-form-input"
+                    id="composer-video-alt"
+                    placeholder="Alt text for video"
+                    maxlength={1000}
+                  />
+                  <div
+                    class="skylab-video-progress"
+                    id="composer-video-progress"
+                    style="display:none;"
+                  >
                     <div class="skylab-progress-bar">
-                      <div class="skylab-progress-fill" id="composer-video-progress-fill" style="width:0%"></div>
+                      <div
+                        class="skylab-progress-fill"
+                        id="composer-video-progress-fill"
+                        style="width:0%"
+                      >
+                      </div>
                     </div>
-                    <span class="skylab-progress-text" id="composer-video-progress-text">No video attached</span>
+                    <span class="skylab-progress-text" id="composer-video-progress-text">
+                      No video attached
+                    </span>
                   </div>
                 </div>
                 <div class="skylab-composer-actions">
                   <span class="skylab-char-count" id="composer-char-count">0/300</span>
-                  <button class="skylab-btn skylab-btn-primary skylab-btn-sm" id="composer-post">Post</button>
+                  <button class="skylab-btn skylab-btn-primary skylab-btn-sm" id="composer-post">
+                    Post
+                  </button>
                 </div>
               </div>
               <div class="skylab-feed" id="timeline-feed">
@@ -144,7 +189,9 @@ export default function SkyLabPage({ data }: PageProps<PageData>) {
               <div class="skylab-panel-header">
                 <h1 class="skylab-panel-title">Chat</h1>
                 <div class="skylab-chat-mode-toggle">
-                  <button class="skylab-btn skylab-btn-sm active" id="chat-mode-plain">Plaintext</button>
+                  <button class="skylab-btn skylab-btn-sm active" id="chat-mode-plain">
+                    Plaintext
+                  </button>
                   <button class="skylab-btn skylab-btn-sm" id="chat-mode-e2ee">E2EE (Germ)</button>
                 </div>
               </div>
@@ -166,15 +213,22 @@ export default function SkyLabPage({ data }: PageProps<PageData>) {
               <div class="skylab-video-upload" id="video-upload">
                 <div class="skylab-card">
                   <h3 class="skylab-card-title">Upload Video</h3>
-                  <input type="file" class="skylab-form-input" id="video-file-input"
-                    accept="video/mp4,video/quicktime,video/x-matroska" />
+                  <input
+                    type="file"
+                    class="skylab-form-input"
+                    id="video-file-input"
+                    accept="video/mp4,video/quicktime,video/x-matroska"
+                  />
                   <div class="skylab-video-progress" id="video-progress" style="display:none;">
                     <div class="skylab-progress-bar">
-                      <div class="skylab-progress-fill" id="video-progress-fill" style="width:0%"></div>
+                      <div class="skylab-progress-fill" id="video-progress-fill" style="width:0%">
+                      </div>
                     </div>
                     <span class="skylab-progress-text" id="video-progress-text">0%</span>
                   </div>
-                  <button class="skylab-btn skylab-btn-primary" id="video-upload-btn">Upload</button>
+                  <button class="skylab-btn skylab-btn-primary" id="video-upload-btn">
+                    Upload
+                  </button>
                 </div>
               </div>
               <div class="skylab-video-jobs" id="video-jobs">
@@ -187,14 +241,26 @@ export default function SkyLabPage({ data }: PageProps<PageData>) {
               <div class="skylab-panel-header">
                 <h1 class="skylab-panel-title">Firehose</h1>
                 <div class="skylab-firehose-controls">
-                  <button class="skylab-btn skylab-btn-sm skylab-btn-primary" id="firehose-connect">Connect</button>
-                  <button class="skylab-btn skylab-btn-sm" id="firehose-disconnect" style="display:none;">Disconnect</button>
+                  <button class="skylab-btn skylab-btn-sm skylab-btn-primary" id="firehose-connect">
+                    Connect
+                  </button>
+                  <button
+                    class="skylab-btn skylab-btn-sm"
+                    id="firehose-disconnect"
+                    style="display:none;"
+                  >
+                    Disconnect
+                  </button>
                   <span class="skylab-firehose-seq" id="firehose-seq">seq: 0</span>
                 </div>
               </div>
               <div class="skylab-firehose-filter">
-                <input type="text" class="skylab-form-input" id="firehose-filter"
-                  placeholder="Filter by NSID or DID..." />
+                <input
+                  type="text"
+                  class="skylab-form-input"
+                  id="firehose-filter"
+                  placeholder="Filter by NSID or DID..."
+                />
               </div>
               <div class="skylab-firehose-events" id="firehose-events">
                 <div class="skylab-empty-state">Not connected</div>

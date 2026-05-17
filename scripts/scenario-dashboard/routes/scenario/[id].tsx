@@ -21,6 +21,7 @@ interface ScenarioPageData {
   };
 }
 
+/** Page handler for scenario detail data. */
 export const handler: Handlers<ScenarioPageData> = {
   async GET(req, ctx) {
     try {
@@ -31,10 +32,10 @@ export const handler: Handlers<ScenarioPageData> = {
       const scenarios = await getScenarios();
 
       let scenario = scenarios.find((s) => s.id === id);
-      
+
       let latestResult: ScenarioPageData["latestResult"] = undefined;
       let dbScenarioName: string | undefined = undefined;
-      
+
       try {
         let query = `
           SELECT status, passed, failed, skipped, steps_json as stepsJson, artifacts_json as artifactsJson, scenario_name as scenarioName
@@ -67,7 +68,7 @@ export const handler: Handlers<ScenarioPageData> = {
             passed: resultRow.passed,
             failed: resultRow.failed,
             skipped: resultRow.skipped,
-            steps: (JSON.parse(resultRow.stepsJson || "[]") as any[]).map(s => ({
+            steps: (JSON.parse(resultRow.stepsJson || "[]") as any[]).map((s) => ({
               name: s.name,
               status: s.status,
               detail: s.detail,
@@ -115,7 +116,10 @@ export default function ScenarioDetailPage({ data }: PageProps<ScenarioPageData>
       <Sidebar activeScenario={scenario.id} />
       <main class="main-content">
         <div style="margin-bottom: var(--space-lg);">
-          <a href="/" style="color: var(--color-accent); text-decoration: none; font-size: var(--font-size-sm);">
+          <a
+            href="/"
+            style="color: var(--color-accent); text-decoration: none; font-size: var(--font-size-sm);"
+          >
             ← Back
           </a>
         </div>
@@ -124,37 +128,53 @@ export default function ScenarioDetailPage({ data }: PageProps<ScenarioPageData>
           Scenario {scenario.id}: {scenario.name}
         </h1>
 
-        {latestResult ? (
-          <div class="card" style="margin-bottom: var(--space-lg);">
-            <div class="card-body">
-              <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-md);">
-                <span class={`badge ${latestResult.status === "passed" ? "badge-success" : latestResult.status === "failed" ? "badge-destructive" : latestResult.status === "running" ? "badge-info" : "badge-secondary"}`}>
-                  {latestResult.status.toUpperCase()}
-                </span>
-                <span style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">
-                  {latestResult.passed} passed · {latestResult.failed} failed · {latestResult.skipped} skipped
-                </span>
+        {latestResult
+          ? (
+            <div class="card" style="margin-bottom: var(--space-lg);">
+              <div class="card-body">
+                <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-md);">
+                  <span
+                    class={`badge ${
+                      latestResult.status === "passed"
+                        ? "badge-success"
+                        : latestResult.status === "failed"
+                        ? "badge-destructive"
+                        : latestResult.status === "running"
+                        ? "badge-info"
+                        : "badge-secondary"
+                    }`}
+                  >
+                    {latestResult.status.toUpperCase()}
+                  </span>
+                  <span style="color: var(--color-text-secondary); font-size: var(--font-size-sm);">
+                    {latestResult.passed} passed · {latestResult.failed} failed ·{" "}
+                    {latestResult.skipped} skipped
+                  </span>
+                </div>
+                <ul class="step-list">
+                  {latestResult.steps.map((step, i) => (
+                    <StepRow
+                      key={i}
+                      name={step.name}
+                      status={step.status as "passed" | "failed" | "skipped"}
+                      detail={step.detail || undefined}
+                      durationMs={step.durationMs || undefined}
+                    />
+                  ))}
+                </ul>
               </div>
-              <ul class="step-list">
-                {latestResult.steps.map((step, i) => (
-                  <StepRow
-                    key={i}
-                    name={step.name}
-                    status={step.status as "passed" | "failed" | "skipped"}
-                    detail={step.detail || undefined}
-                    durationMs={step.durationMs || undefined}
-                  />
-                ))}
-              </ul>
             </div>
-          </div>
-        ) : (
-          <div class="card" style="margin-bottom: var(--space-lg);">
-            <div class="card-body" style="text-align: center; color: var(--color-text-secondary); padding: var(--space-2xl);">
-              No results recorded yet for this scenario.
+          )
+          : (
+            <div class="card" style="margin-bottom: var(--space-lg);">
+              <div
+                class="card-body"
+                style="text-align: center; color: var(--color-text-secondary); padding: var(--space-2xl);"
+              >
+                No results recorded yet for this scenario.
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         <div style="display: flex; gap: var(--space-md);">
           <ScenarioRunner scenarioId={scenario.id} needsPds2={scenario.needsPds2} />

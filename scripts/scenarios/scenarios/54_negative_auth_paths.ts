@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -24,15 +24,12 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * @returns A promise that resolves to the scenario result
  */
 
-
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 // Covers: revoked token reuse, expired JWT rejection, cross-account write denial,
 //   suspended account write, suspended account read.
 // Production paths: com.atproto.server.{deleteSession,createSession,deactivateAccount},
 //   com.atproto.repo.{createRecord,listRecords} (auth enforcement).
-
-
 
 function now() {
   return new Date().toISOString();
@@ -59,7 +56,8 @@ export async function run(): Promise<ScenarioResult> {
   // --- Setup: create accounts ---
 
   const lunaSession = await timedCall(
-    result, "Create luna account",
+    result,
+    "Create luna account",
     async () => {
       try {
         return await pds.accounts.createAccount(luna.handle, luna.email, luna.password);
@@ -67,7 +65,7 @@ export async function run(): Promise<ScenarioResult> {
         return await pds.accounts.createSession(luna.handle, luna.password);
       }
     },
-    (s) => `did=${s.did}`
+    (s) => `did=${s.did}`,
   );
 
   if (lunaSession) {
@@ -80,7 +78,8 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   const novaSession = await timedCall(
-    result, "Create nova account",
+    result,
+    "Create nova account",
     async () => {
       try {
         return await pds.accounts.createAccount(nova.handle, nova.email, nova.password);
@@ -88,7 +87,7 @@ export async function run(): Promise<ScenarioResult> {
         return await pds.accounts.createSession(nova.handle, nova.password);
       }
     },
-    (s) => `did=${s.did}`
+    (s) => `did=${s.did}`,
   );
 
   if (novaSession) {
@@ -97,7 +96,8 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   const voltSession = await timedCall(
-    result, "Create volt account",
+    result,
+    "Create volt account",
     async () => {
       try {
         return await pds.accounts.createAccount(volt.handle, volt.email, volt.password);
@@ -105,7 +105,7 @@ export async function run(): Promise<ScenarioResult> {
         return await pds.accounts.createSession(volt.handle, volt.password);
       }
     },
-    (s) => `did=${s.did}`
+    (s) => `did=${s.did}`,
   );
 
   if (voltSession) {
@@ -117,22 +117,26 @@ export async function run(): Promise<ScenarioResult> {
   // Save luna's token, delete the session, then assert the saved token is rejected with 401.
   const savedJwt = luna.accessJwt!;
 
-  await timedCall(result, "Delete luna session (revoke token)",
-    async () => { await pds.accounts.deleteSession(savedJwt); }
-  );
+  await timedCall(result, "Delete luna session (revoke token)", async () => {
+    await pds.accounts.deleteSession(savedJwt);
+  });
 
   await timedCall(
-    result, "Revoked token reuse rejected",
-    async () => { await pds.accounts.getSession(savedJwt); },
+    result,
+    "Revoked token reuse rejected",
+    async () => {
+      await pds.accounts.getSession(savedJwt);
+    },
     undefined,
-    true  // must throw XrpcError(401)
+    true, // must throw XrpcError(401)
   );
 
   // Re-login luna so she has a valid token for subsequent steps.
   const lunaSession2 = await timedCall(
-    result, "Re-login luna after token revocation",
+    result,
+    "Re-login luna after token revocation",
     async () => pds.accounts.createSession(luna.handle, luna.password),
-    (s) => `did=${s.did}`
+    (s) => `did=${s.did}`,
   );
   if (lunaSession2) luna.accessJwt = lunaSession2.accessJwt;
 
@@ -144,16 +148,18 @@ export async function run(): Promise<ScenarioResult> {
       .replace(/=/g, "")
       .replace(/\+/g, "-")
       .replace(/\//g, "_");
-  const expiredJwt =
-    `${b64url({ alg: "HS256", typ: "JWT" })}` +
+  const expiredJwt = `${b64url({ alg: "HS256", typ: "JWT" })}` +
     `.${b64url({ sub: "did:plc:fake", exp: 1, iat: 1 })}` +
     `.invalidsig`;
 
   await timedCall(
-    result, "Expired JWT rejected",
-    async () => { await pds.accounts.getSession(expiredJwt); },
+    result,
+    "Expired JWT rejected",
+    async () => {
+      await pds.accounts.getSession(expiredJwt);
+    },
     undefined,
-    true  // must throw (401)
+    true, // must throw (401)
   );
 
   // --- Step 3: Cross-account write denial ---
@@ -161,7 +167,8 @@ export async function run(): Promise<ScenarioResult> {
   // The PDS must reject this because luna.did != nova.did.
   if (luna.accessJwt && nova.did) {
     await timedCall(
-      result, "Cross-account write denied",
+      result,
+      "Cross-account write denied",
       async () => {
         await pds.raw.post("com.atproto.repo.createRecord", {
           repo: nova.did,
@@ -174,7 +181,7 @@ export async function run(): Promise<ScenarioResult> {
         }, luna.accessJwt);
       },
       undefined,
-      true  // must throw 401
+      true, // must throw 401
     );
   } else {
     result.stepSkipped("Cross-account write denied", "prerequisite accounts not ready");
@@ -183,12 +190,13 @@ export async function run(): Promise<ScenarioResult> {
   // --- Step 4: Suspended account write denied ---
   // Deactivate volt, then assert volt can no longer create records.
   if (volt.accessJwt && volt.did) {
-    await timedCall(result, "Deactivate volt account",
-      async () => { await pds.accounts.deactivateAccount(volt.accessJwt!); }
-    );
+    await timedCall(result, "Deactivate volt account", async () => {
+      await pds.accounts.deactivateAccount(volt.accessJwt!);
+    });
 
     await timedCall(
-      result, "Suspended account write denied",
+      result,
+      "Suspended account write denied",
       async () => {
         await pds.raw.post("com.atproto.repo.createRecord", {
           repo: volt.did,
@@ -201,12 +209,13 @@ export async function run(): Promise<ScenarioResult> {
         }, volt.accessJwt);
       },
       undefined,
-      true  // must throw 400/AccountDeactivated or 401
+      true, // must throw 400/AccountDeactivated or 401
     );
 
     // --- Step 5: Suspended account read behavior ---
     await timedCall(
-      result, "Suspended account read returns error",
+      result,
+      "Suspended account read returns error",
       async () => {
         await pds.raw.get("com.atproto.repo.listRecords", {
           repo: volt.did,
@@ -214,7 +223,7 @@ export async function run(): Promise<ScenarioResult> {
         });
       },
       undefined,
-      true  // must throw (400/AccountDeactivated or 403)
+      true, // must throw (400/AccountDeactivated or 403)
     );
   } else {
     result.stepSkipped("Deactivate volt account", "volt session not available");
@@ -227,7 +236,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

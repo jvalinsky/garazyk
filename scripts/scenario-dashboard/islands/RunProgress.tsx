@@ -25,6 +25,7 @@ function staleLevel(secondsSinceUpdate: number): "active" | "slow" | "stale" {
   return "stale";
 }
 
+/** RunProgress island for live progress, elapsed time, and activity indicator. */
 export default function RunProgress({ runId, startedAt, status }: RunProgressProps) {
   const { state, dispatch } = useRuntime();
   const progress = state.value.runs.progressByRunId[runId];

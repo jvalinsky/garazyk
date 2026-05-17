@@ -46,14 +46,17 @@ export const handler: Handlers = {
       });
     }
 
-    return new Response(JSON.stringify({
-      message: "Run initiated",
-      runId: result.runId,
-      scenarioIds: ids,
-      pds2,
-    }), {
-      status: 202,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        message: "Run initiated",
+        runId: result.runId,
+        scenarioIds: ids,
+        pds2,
+      }),
+      {
+        status: 202,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   },
 };

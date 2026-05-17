@@ -21,7 +21,7 @@ export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
-import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
 
 function now() {
   return new Date().toISOString();
@@ -50,11 +50,12 @@ export async function run(): Promise<ScenarioResult> {
   for (const name of charNames) {
     const char = getCharacter(name);
     const session = await timedCall(
-      result, `Create account: ${char.name}`,
+      result,
+      `Create account: ${char.name}`,
       async () => {
         return await client.accounts.createAccount(char.handle, char.email, char.password);
       },
-      (s) => `did=${s.did}`
+      (s) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -62,14 +63,15 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const active = charNames.filter(n => getCharacter(n).did);
+  const active = charNames.filter((n) => getCharacter(n).did);
   for (const name of active) {
     const char = getCharacter(name);
     try {
       await client.records.createRecord(
-        char.did, "app.bsky.actor.profile",
+        char.did,
+        "app.bsky.actor.profile",
         { $type: "app.bsky.actor.profile", displayName: char.name, description: char.persona },
-        char.accessJwt
+        char.accessJwt,
       );
     } catch (e) {
       if (!(e instanceof XrpcError && e.status === 404)) throw e;
@@ -88,98 +90,109 @@ export async function run(): Promise<ScenarioResult> {
     const tt = getCharacter(t);
     if (ff.did && tt.did) {
       await timedCall(
-        result, `${ff.name} follows ${tt.name}`,
+        result,
+        `${ff.name} follows ${tt.name}`,
         async () => {
           return await client.records.createRecord(
-            ff.did, "app.bsky.graph.follow",
+            ff.did,
+            "app.bsky.graph.follow",
             { $type: "app.bsky.graph.follow", subject: tt.did, createdAt: now() },
-            ff.accessJwt
+            ff.accessJwt,
           );
         },
-        (r) => `uri=${r.uri}`
+        (r) => `uri=${r.uri}`,
       );
     }
   }
 
-  await new Promise(r => setTimeout(r, 1000));
+  await new Promise((r) => setTimeout(r, 1000));
 
   if (quiet.did && troll.did) {
     await timedCall(
-      result, "Quiet mutes Trollface",
+      result,
+      "Quiet mutes Trollface",
       async () => {
         return await client.graph.muteActor(troll.did, quiet.accessJwt);
-      }
+      },
     );
 
     await timedCall(
-      result, "Quiet checks mutes list",
+      result,
+      "Quiet checks mutes list",
       async () => {
         return await client.graph.getMutes(quiet.accessJwt);
       },
-      (r) => `count=${r.mutes?.length || 0}`
+      (r) => `count=${r.mutes?.length || 0}`,
     );
 
     await timedCall(
-      result, "Quiet unmutes Trollface",
+      result,
+      "Quiet unmutes Trollface",
       async () => {
         return await client.graph.unmuteActor(troll.did, quiet.accessJwt);
-      }
+      },
     );
 
     await timedCall(
-      result, "Quiet verifies unmute",
+      result,
+      "Quiet verifies unmute",
       async () => {
         return await client.graph.getMutes(quiet.accessJwt);
       },
-      (r) => `count=${r.mutes?.length || 0}`
+      (r) => `count=${r.mutes?.length || 0}`,
     );
   }
 
   if (luna.did && marcus.did) {
     await timedCall(
-      result, "Luna→Marcus relationship",
+      result,
+      "Luna→Marcus relationship",
       async () => {
         return await client.graph.getRelationships(luna.did, [marcus.did], luna.accessJwt);
       },
-      (r) => `count=${r.relationships?.length || 0}`
+      (r) => `count=${r.relationships?.length || 0}`,
     );
   }
 
   let rosaSpUri: string | null = null;
   if (rosa.did && luna.did && marcus.did) {
     const listRec = await timedCall(
-      result, "Rosa creates list for starter pack",
+      result,
+      "Rosa creates list for starter pack",
       async () => {
         return await client.records.createRecord(
-          rosa.did, "app.bsky.graph.list",
+          rosa.did,
+          "app.bsky.graph.list",
           {
             $type: "app.bsky.graph.list",
             name: "Foodie Friends",
             purpose: "app.bsky.graph.defs#curatelist",
             createdAt: now(),
           },
-          rosa.accessJwt
+          rosa.accessJwt,
         );
       },
-      (r) => `uri=${r.uri}`
+      (r) => `uri=${r.uri}`,
     );
 
     if (listRec) {
       const sp = await timedCall(
-        result, "Rosa creates starter pack",
+        result,
+        "Rosa creates starter pack",
         async () => {
           return await client.records.createRecord(
-            rosa.did, "app.bsky.graph.starterpack",
+            rosa.did,
+            "app.bsky.graph.starterpack",
             {
               $type: "app.bsky.graph.starterpack",
               name: "Foodie Friends",
               list: listRec.uri,
               createdAt: now(),
             },
-            rosa.accessJwt
+            rosa.accessJwt,
           );
         },
-        (r) => `uri=${r.uri}`
+        (r) => `uri=${r.uri}`,
       );
       rosaSpUri = sp?.uri || null;
     }
@@ -187,29 +200,32 @@ export async function run(): Promise<ScenarioResult> {
 
   if (rosa.did) {
     await timedCall(
-      result, "Rosa's starter packs",
+      result,
+      "Rosa's starter packs",
       async () => {
         return await client.graph.getActorStarterPacks(rosa.did, { token: rosa.accessJwt });
       },
-      (r) => `count=${r.starterPacks?.length || 0}`
+      (r) => `count=${r.starterPacks?.length || 0}`,
     );
   }
 
   if (rosaSpUri) {
     await timedCall(
-      result, "Get starter pack by URI",
+      result,
+      "Get starter pack by URI",
       async () => {
         return await client.graph.getStarterPack(rosaSpUri!, rosa.accessJwt);
       },
-      (r) => `name=${r.starterPack?.name || ""}`
+      (r) => `name=${r.starterPack?.name || ""}`,
     );
 
     await timedCall(
-      result, "Get starter packs by URIs",
+      result,
+      "Get starter packs by URIs",
       async () => {
         return await client.graph.getStarterPacks([rosaSpUri!], rosa.accessJwt);
       },
-      (r) => `count=${r.starterPacks?.length || 0}`
+      (r) => `count=${r.starterPacks?.length || 0}`,
     );
   }
 
@@ -218,7 +234,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

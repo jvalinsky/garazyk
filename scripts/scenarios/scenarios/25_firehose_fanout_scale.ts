@@ -22,14 +22,14 @@ export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { FirehoseClient } from "../../lib/deno/firehose.ts";
 import { createRunContext } from "../../lib/deno/diagnostics.ts";
 import {
+  InstrumentationReport,
   OperationTimer,
   PhaseTimer,
   PrometheusScraper,
-  InstrumentationReport,
 } from "../../lib/deno/instrumentation.ts";
 import { join } from "@std/path";
 
@@ -72,13 +72,15 @@ export async function run(): Promise<ScenarioResult> {
   for (const name of charNames) {
     const char = getCharacter(name);
     const session = await timedCall(
-      result, `Create account: ${char.name}`,
+      result,
+      `Create account: ${char.name}`,
       async () => {
-        return await timer.measure("create_account", () =>
-          client.accounts.createAccount(char.handle, char.email, char.password)
+        return await timer.measure(
+          "create_account",
+          () => client.accounts.createAccount(char.handle, char.email, char.password),
         );
       },
-      (s) => `did=${s.did}`
+      (s) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -86,7 +88,7 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const active = charNames.filter(n => getCharacter(n).did);
+  const active = charNames.filter((n) => getCharacter(n).did);
   phaseTimer.endPhase();
 
   phaseTimer.startPhase("subscriber_rampup");
@@ -101,14 +103,19 @@ export async function run(): Promise<ScenarioResult> {
     const fh = new FirehoseClient(relayUrl);
     while (!subscriberStop.stopped && !abortController.signal.aborted) {
       try {
-        await fh.subscribe((ev) => {
-          (ev as any)._subscriber_id = id;
-          (ev as any)._received_at = Date.now() / 1000;
-          subscriberEvents.push(ev);
-        }, 60, undefined, abortController.signal);
+        await fh.subscribe(
+          (ev) => {
+            (ev as any)._subscriber_id = id;
+            (ev as any)._received_at = Date.now() / 1000;
+            subscriberEvents.push(ev);
+          },
+          60,
+          undefined,
+          abortController.signal,
+        );
       } catch {
         if (!subscriberStop.stopped && !abortController.signal.aborted) {
-          await new Promise(r => setTimeout(r, 1000));
+          await new Promise((r) => setTimeout(r, 1000));
         }
       }
     }
@@ -119,7 +126,7 @@ export async function run(): Promise<ScenarioResult> {
     subscriberPromises.push(startSubscriber(i));
   }
 
-  await new Promise(r => setTimeout(r, 3000));
+  await new Promise((r) => setTimeout(r, 3000));
   result.stepPassed("Subscriber ramp-up", `Started ${NUM_SUBSCRIBERS} firehose subscribers`);
   phaseTimer.endPhase();
 
@@ -134,11 +141,15 @@ export async function run(): Promise<ScenarioResult> {
       try {
         await timer.measure("create_post", () =>
           client.records.createRecord(
-            char.did!, "app.bsky.feed.post",
-            { $type: "app.bsky.feed.post", text: `Fanout post ${i + 1} from ${char.name}`, createdAt: now() },
-            char.accessJwt!
-          )
-        );
+            char.did!,
+            "app.bsky.feed.post",
+            {
+              $type: "app.bsky.feed.post",
+              text: `Fanout post ${i + 1} from ${char.name}`,
+              createdAt: now(),
+            },
+            char.accessJwt!,
+          ));
         totalPosts++;
       } catch { /* ignore rate limits */ }
     }
@@ -146,7 +157,7 @@ export async function run(): Promise<ScenarioResult> {
   result.stepPassed("Event production", `created=${totalPosts}`);
   phaseTimer.endPhase();
 
-  await new Promise(r => setTimeout(r, 5000));
+  await new Promise((r) => setTimeout(r, 5000));
 
   phaseTimer.startPhase("backpressure_test");
   const extraPromises: Promise<void>[] = [];
@@ -154,7 +165,7 @@ export async function run(): Promise<ScenarioResult> {
     extraPromises.push(startSubscriber(NUM_SUBSCRIBERS + i));
   }
 
-  await new Promise(r => setTimeout(r, 3000));
+  await new Promise((r) => setTimeout(r, 3000));
 
   const BURST_PER_USER = 40;
   let burstPosts = 0;
@@ -164,11 +175,15 @@ export async function run(): Promise<ScenarioResult> {
       try {
         await timer.measure("create_post_burst", () =>
           client.records.createRecord(
-            char.did!, "app.bsky.feed.post",
-            { $type: "app.bsky.feed.post", text: `Burst post ${i + 1} from ${char.name}`, createdAt: now() },
-            char.accessJwt!
-          )
-        );
+            char.did!,
+            "app.bsky.feed.post",
+            {
+              $type: "app.bsky.feed.post",
+              text: `Burst post ${i + 1} from ${char.name}`,
+              createdAt: now(),
+            },
+            char.accessJwt!,
+          ));
         burstPosts++;
       } catch { /* ignore rate limits */ }
     }
@@ -181,13 +196,17 @@ export async function run(): Promise<ScenarioResult> {
     let bpWarnings = 0;
     let bpCritical = 0;
     for (const line of text.split("\n")) {
-      if (line.includes("pds_websocket_backpressure_warnings_total")) bpWarnings = parseInt(line.split(" ").pop() || "0");
-      if (line.includes("pds_websocket_backpressure_critical_total")) bpCritical = parseInt(line.split(" ").pop() || "0");
+      if (line.includes("pds_websocket_backpressure_warnings_total")) {
+        bpWarnings = parseInt(line.split(" ").pop() || "0");
+      }
+      if (line.includes("pds_websocket_backpressure_critical_total")) {
+        bpCritical = parseInt(line.split(" ").pop() || "0");
+      }
     }
     result.stepPassed("Backpressure metrics", `warnings=${bpWarnings}, critical=${bpCritical}`);
   } catch { /* ignore */ }
 
-  await new Promise(r => setTimeout(r, 5000));
+  await new Promise((r) => setTimeout(r, 5000));
   phaseTimer.endPhase();
 
   phaseTimer.startPhase("subscriber_teardown");
@@ -195,7 +214,7 @@ export async function run(): Promise<ScenarioResult> {
   abortController.abort();
   await Promise.race([
     Promise.all([...subscriberPromises, ...extraPromises]),
-    new Promise(r => setTimeout(r, 5000)),
+    new Promise((r) => setTimeout(r, 5000)),
   ]);
   result.stepPassed("Subscriber teardown", `total_events=${subscriberEvents.length}`);
   phaseTimer.endPhase();
@@ -208,7 +227,7 @@ export async function run(): Promise<ScenarioResult> {
     metricsTs,
     {},
     {},
-    phaseTimer.toDict()
+    phaseTimer.toDict(),
   );
   result.recordArtifact("instrumentation", report.toDict());
   await report.writeJson(join(ctx.reportsDir, "instrumentation-25.json"));
@@ -229,7 +248,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

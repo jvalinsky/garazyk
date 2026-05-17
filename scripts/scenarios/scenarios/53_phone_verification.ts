@@ -11,20 +11,23 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
 import { assert } from "../../lib/deno/assertions.ts";
-import { startMockTwilioServer, stopMockTwilioServer, MockTwilioServer } from "../../lib/deno/mock_twilio.ts";
+import {
+  MockTwilioServer,
+  startMockTwilioServer,
+  stopMockTwilioServer,
+} from "../../lib/deno/mock_twilio.ts";
 import { timedCall } from "../../lib/deno/runner.ts";
 
 /**
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Phone Verification (Twilio)");
@@ -53,13 +56,14 @@ export async function run(): Promise<ScenarioResult> {
 
   // ── Ensure PDS is healthy ────────────────────────────────────────────────
   const healthy = await timedCall(
-    result, "PDS health check",
+    result,
+    "PDS health check",
     async () => {
       const res = await fetch(`${PDS1}/xrpc/com.atproto.server.describeServer`);
       if (!res.ok) throw new Error(`PDS not healthy: ${res.status}`);
       return res.status;
     },
-    () => "ok"
+    () => "ok",
   );
   if (!healthy) {
     result.stepSkipped("Phone verification", "PDS not healthy, cannot continue");
@@ -78,7 +82,8 @@ export async function run(): Promise<ScenarioResult> {
   const phoneNumber = "+15551234567";
 
   await timedCall(
-    result, "com.atproto.temp.requestPhoneVerification",
+    result,
+    "com.atproto.temp.requestPhoneVerification",
     async () => {
       return await pds.raw.xrpcPost(
         "com.atproto.temp.requestPhoneVerification",
@@ -92,14 +97,18 @@ export async function run(): Promise<ScenarioResult> {
   const stateAfterSend = await twilio.getState();
   const storedForPhone = stateAfterSend.store[phoneNumber];
   if (storedForPhone) {
-    result.stepPassed("Twilio received verification request",
-      `phone=${phoneNumber} code=${storedForPhone.code}`);
+    result.stepPassed(
+      "Twilio received verification request",
+      `phone=${phoneNumber} code=${storedForPhone.code}`,
+    );
   } else {
     const keys = Object.keys(stateAfterSend.store);
-    result.stepSkipped("Twilio received verification request",
+    result.stepSkipped(
+      "Twilio received verification request",
       keys.length > 0
         ? `No entry for ${phoneNumber}, but store has: ${keys.join(", ")}`
-        : "No entries in mock store — PDS may not be configured for Twilio");
+        : "No entries in mock store — PDS may not be configured for Twilio",
+    );
   }
 
   // ── Verify code via mock ─────────────────────────────────────────────────
@@ -107,7 +116,8 @@ export async function run(): Promise<ScenarioResult> {
   if (storedForPhone) {
     const code = storedForPhone.code;
     await timedCall(
-      result, "Verify code via mock control API",
+      result,
+      "Verify code via mock control API",
       async () => {
         // Simulate a VerificationCheck by calling the mock's Twilio endpoint directly
         const creds = btoa("AC00000000000000000000000000000000:SK00000000000000000000000000000000");
@@ -120,7 +130,7 @@ export async function run(): Promise<ScenarioResult> {
               "authorization": `Basic ${creds}`,
             },
             body: JSON.stringify({ To: phoneNumber, Code: code }),
-          }
+          },
         );
         const body = await res.json();
         if (body.status !== "approved") {
@@ -128,7 +138,7 @@ export async function run(): Promise<ScenarioResult> {
         }
         return body;
       },
-      (r) => `status=${r.status} valid=${r.valid}`
+      (r) => `status=${r.status} valid=${r.valid}`,
     );
 
     // Verify the mock marked it as verified
@@ -137,14 +147,18 @@ export async function run(): Promise<ScenarioResult> {
     if (verified) {
       result.stepPassed("Mock state reflects verified", "phone_verified=true");
     } else {
-      result.stepFailed("Mock state reflects verified", "phone not verified after successful check");
+      result.stepFailed(
+        "Mock state reflects verified",
+        "phone not verified after successful check",
+      );
     }
   }
 
   // ── Test wrong code rejection ────────────────────────────────────────────
   if (storedForPhone) {
     await timedCall(
-      result, "Wrong code is rejected",
+      result,
+      "Wrong code is rejected",
       async () => {
         const creds = btoa("AC00000000000000000000000000000000:SK00000000000000000000000000000000");
         const res = await fetch(
@@ -156,7 +170,7 @@ export async function run(): Promise<ScenarioResult> {
               "authorization": `Basic ${creds}`,
             },
             body: JSON.stringify({ To: phoneNumber, Code: "000000" }),
-          }
+          },
         );
         const body = await res.json();
         if (body.status === "approved") {
@@ -164,14 +178,15 @@ export async function run(): Promise<ScenarioResult> {
         }
         return body;
       },
-      (r) => `status=${r.status} (correctly rejected)`
+      (r) => `status=${r.status} (correctly rejected)`,
     );
   }
 
   // ── Always-approve code test ─────────────────────────────────────────────
   await twilio.setAlwaysApprove(["123456"]);
   await timedCall(
-    result, "Always-approve code works",
+    result,
+    "Always-approve code works",
     async () => {
       const creds = btoa("AC00000000000000000000000000000000:SK00000000000000000000000000000000");
       const res = await fetch(
@@ -183,7 +198,7 @@ export async function run(): Promise<ScenarioResult> {
             "authorization": `Basic ${creds}`,
           },
           body: JSON.stringify({ To: phoneNumber, Code: "123456" }),
-        }
+        },
       );
       const body = await res.json();
       if (body.status !== "approved") {
@@ -191,7 +206,7 @@ export async function run(): Promise<ScenarioResult> {
       }
       return body;
     },
-    (r) => `status=${r.status}`
+    (r) => `status=${r.status}`,
   );
 
   // ── Reset mock state ────────────────────────────────────────────────────
@@ -211,7 +226,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

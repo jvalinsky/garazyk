@@ -1,6 +1,7 @@
 import { Handlers } from "$fresh/server.ts";
 import { getTopologyPreview } from "../../../services/topology_service.ts";
 
+/** API handler for a topology preview. */
 export const handler: Handlers = {
   async GET(_req, ctx) {
     const name = ctx.params.name;

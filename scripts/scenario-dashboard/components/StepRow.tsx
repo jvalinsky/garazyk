@@ -1,6 +1,6 @@
 /** Single step row — displays step name, status icon, duration, and optional detail. @module StepRow */
 import { ScenarioStatus } from "../services/types.ts";
-import { STATUS_ICONS, formatDurationMs } from "../utils.ts";
+import { formatDurationMs, STATUS_ICONS } from "../utils.ts";
 
 /** Props for the StepRow component. */
 interface StepRowProps {

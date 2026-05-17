@@ -30,7 +30,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * @returns A promise that resolves to the scenario result
  */
 
-
 const GERM_URL = Deno.env.get("GERM_URL") || "http://127.0.0.1:8082";
 
 function now() {

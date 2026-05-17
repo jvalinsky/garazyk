@@ -25,7 +25,13 @@
         "path": null,
         "customTest": ["CMD-SHELL", "wget -qO- http://localhost:2582/_health || exit 1"]
       },
-      "capabilities": ["createAccount", "didResolution", "operationLog", "handleRotation", "quotaEnforcement"],
+      "capabilities": [
+        "createAccount",
+        "didResolution",
+        "operationLog",
+        "handleRotation",
+        "quotaEnforcement"
+      ],
       "dependsOn": ["local-plc-db"],
       "sidecars": {
         "local-plc-db": {

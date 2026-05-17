@@ -17,7 +17,7 @@
  */
 
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -33,7 +33,7 @@ async function createPost(
   result: ScenarioResult,
   facets?: any[],
   reply?: any,
-  embed?: any
+  embed?: any,
 ) {
   const author = getCharacter(authorName);
   const record: any = {
@@ -46,16 +46,17 @@ async function createPost(
   if (embed) record.embed = embed;
 
   const rec = await timedCall(
-    result, `${author.name} posts`,
+    result,
+    `${author.name} posts`,
     async () => {
       const res = await client.raw.post("com.atproto.repo.createRecord", {
         repo: author.did,
         collection: "app.bsky.feed.post",
-        record
+        record,
       }, author.accessJwt);
       return res;
     },
-    () => text.substring(0, 60)
+    () => text.substring(0, 60),
   );
   return rec;
 }
@@ -71,11 +72,12 @@ export async function run(): Promise<ScenarioResult> {
   const client = new XrpcClient(PDS1);
 
   await timedCall(
-    result, "Server health check",
+    result,
+    "Server health check",
     async () => {
       const res = await fetch(`${PDS1}/xrpc/com.atproto.server.describeServer`);
       if (!res.ok) throw new Error("Server not healthy");
-    }
+    },
   );
 
   if (result.failed > 0) {
@@ -87,20 +89,28 @@ export async function run(): Promise<ScenarioResult> {
   for (const name of charNames) {
     const char = getCharacter(name);
     const session = await timedCall(
-      result, `Create account: ${char.name}`,
+      result,
+      `Create account: ${char.name}`,
       async () => {
         try {
-          const res = await client.agent.createAccount({ handle: char.handle, email: char.email, password: char.password });
+          const res = await client.agent.createAccount({
+            handle: char.handle,
+            email: char.email,
+            password: char.password,
+          });
           return res.data;
         } catch (e: any) {
           if (e.message && e.message.includes("already exists")) {
-            const res = await client.agent.login({ identifier: char.handle, password: char.password });
+            const res = await client.agent.login({
+              identifier: char.handle,
+              password: char.password,
+            });
             return res.data;
           }
           throw e;
         }
       },
-      (s) => `did=${s.did}`
+      (s) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -108,7 +118,7 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const active = charNames.filter(n => getCharacter(n).did);
+  const active = charNames.filter((n) => getCharacter(n).did);
   if (active.length < 3) {
     result.stepFailed("Account creation", "Not enough accounts");
     result.finish();
@@ -118,7 +128,8 @@ export async function run(): Promise<ScenarioResult> {
   for (const name of active) {
     const char = getCharacter(name);
     await timedCall(
-      result, `Set profile: ${char.name}`,
+      result,
+      `Set profile: ${char.name}`,
       async () => {
         const res = await client.raw.post("com.atproto.repo.createRecord", {
           repo: char.did,
@@ -127,35 +138,39 @@ export async function run(): Promise<ScenarioResult> {
             $type: "app.bsky.actor.profile",
             displayName: char.name,
             description: char.persona,
-          }
+          },
         }, char.accessJwt);
         return res;
-      }
+      },
     );
   }
 
   const lunaPost = await createPost(
-    client, "luna",
+    client,
+    "luna",
     "Just captured the most stunning image of the Orion Nebula! The colors are breathtaking. #astronomy",
-    result
+    result,
   );
 
   const marcusPost = await createPost(
-    client, "marcus",
+    client,
+    "marcus",
     "Just shipped a new XRPC handler for the PDS. Open source is the way!",
-    result
+    result,
   );
 
   const rosaPost = await createPost(
-    client, "rosa",
+    client,
+    "rosa",
     "Made the most incredible sourdough today. The crust was perfect!",
-    result
+    result,
   );
 
   const voltPost = await createPost(
-    client, "volt",
+    client,
+    "volt",
     "New beat dropping this weekend. Get ready for the drop!",
-    result
+    result,
   );
 
   if (lunaPost && marcusPost) {
@@ -164,11 +179,12 @@ export async function run(): Promise<ScenarioResult> {
       parent: { uri: lunaPost.uri, cid: lunaPost.cid },
     };
     await createPost(
-      client, "marcus",
+      client,
+      "marcus",
       "The data pipeline for nebula images is fascinating — CBOR-encoded CAR blocks!",
       result,
       undefined,
-      replyRef
+      replyRef,
     );
   } else {
     result.stepSkipped("Marcus replies to Luna", "Missing post references");
@@ -176,25 +192,32 @@ export async function run(): Promise<ScenarioResult> {
 
   if (lunaPost) {
     await createPost(
-      client, "rosa",
+      client,
+      "rosa",
       "Space food is underrated — imagine sourdough on the ISS!",
       result,
       undefined,
       undefined,
       {
         $type: "app.bsky.embed.record",
-        record: { uri: lunaPost.uri, cid: lunaPost.cid }
-      }
+        record: { uri: lunaPost.uri, cid: lunaPost.cid },
+      },
     );
   } else {
     result.stepSkipped("Rosa quotes Luna", "Missing post reference");
   }
 
   const volt = getCharacter("volt");
-  for (const { name, rec } of [{ name: "Luna", rec: lunaPost }, { name: "Marcus", rec: marcusPost }, { name: "Rosa", rec: rosaPost }]) {
+  for (
+    const { name, rec } of [{ name: "Luna", rec: lunaPost }, { name: "Marcus", rec: marcusPost }, {
+      name: "Rosa",
+      rec: rosaPost,
+    }]
+  ) {
     if (rec) {
       await timedCall(
-        result, `DJ Volt likes ${name}'s post`,
+        result,
+        `DJ Volt likes ${name}'s post`,
         async () => {
           await client.raw.post("com.atproto.repo.createRecord", {
             repo: volt.did,
@@ -202,10 +225,10 @@ export async function run(): Promise<ScenarioResult> {
             record: {
               $type: "app.bsky.feed.like",
               subject: { uri: rec.uri, cid: rec.cid },
-              createdAt: now()
-            }
+              createdAt: now(),
+            },
           }, volt.accessJwt);
-        }
+        },
       );
     }
   }
@@ -213,94 +236,115 @@ export async function run(): Promise<ScenarioResult> {
   const quiet = getCharacter("quiet");
   if (lunaPost) {
     await timedCall(
-      result, "Quiet Observer bookmarks Luna's post",
+      result,
+      "Quiet Observer bookmarks Luna's post",
       async () => {
         await client.raw.post("app.bsky.bookmark.createBookmark", {
           uri: lunaPost.uri,
-          cid: lunaPost.cid
+          cid: lunaPost.cid,
         }, quiet.accessJwt);
-      }
+      },
     );
   }
 
   const rosa = getCharacter("rosa");
   const rosaTemp = await createPost(
-    client, "rosa",
+    client,
+    "rosa",
     "This post will be deleted soon. Don't get attached!",
-    result
+    result,
   );
 
   if (rosaTemp) {
     const rkey = rosaTemp.uri.split("/").pop()!;
     await timedCall(
-      result, "Rosa deletes her post",
+      result,
+      "Rosa deletes her post",
       async () => {
         await client.raw.post("com.atproto.repo.deleteRecord", {
           repo: rosa.did,
           collection: "app.bsky.feed.post",
-          rkey
+          rkey,
         }, rosa.accessJwt);
       },
-      () => `rkey=${rkey}`
+      () => `rkey=${rkey}`,
     );
 
     await timedCall(
-      result, "Verify deletion",
+      result,
+      "Verify deletion",
       async () => {
         await client.agent.com.atproto.repo.getRecord({
           repo: rosa.did,
           collection: "app.bsky.feed.post",
-          rkey
+          rkey,
         });
       },
       undefined,
-      true
+      true,
     );
   }
 
-  await new Promise(r => setTimeout(r, 3000));
+  await new Promise((r) => setTimeout(r, 3000));
 
   const luna = getCharacter("luna");
 
   await timedCall(
-    result, "Luna's timeline",
+    result,
+    "Luna's timeline",
     async () => {
       return await client.raw.get("app.bsky.feed.getTimeline", {}, luna.accessJwt);
     },
-    (t) => `items=${t.feed?.length || 0}`
+    (t) => `items=${t.feed?.length || 0}`,
   );
 
   await timedCall(
-    result, "Luna's author feed",
+    result,
+    "Luna's author feed",
     async () => {
-      return await client.raw.get("app.bsky.feed.getAuthorFeed", { actor: luna.did }, luna.accessJwt);
+      return await client.raw.get(
+        "app.bsky.feed.getAuthorFeed",
+        { actor: luna.did },
+        luna.accessJwt,
+      );
     },
-    (f) => `items=${f.feed?.length || 0}`
+    (f) => `items=${f.feed?.length || 0}`,
   );
 
   if (lunaPost) {
     await timedCall(
-      result, "Post thread view",
+      result,
+      "Post thread view",
       async () => {
-        return await client.raw.get("app.bsky.feed.getPostThread", { uri: lunaPost.uri }, luna.accessJwt);
-      }
+        return await client.raw.get(
+          "app.bsky.feed.getPostThread",
+          { uri: lunaPost.uri },
+          luna.accessJwt,
+        );
+      },
     );
 
     await timedCall(
-      result, "Likes on Luna's post",
+      result,
+      "Likes on Luna's post",
       async () => {
-        return await client.raw.get("app.bsky.feed.getLikes", { uri: lunaPost.uri }, luna.accessJwt);
+        return await client.raw.get(
+          "app.bsky.feed.getLikes",
+          { uri: lunaPost.uri },
+          luna.accessJwt,
+        );
       },
-      (l) => `count=${l.likes?.length || 0}`
+      (l) => `count=${l.likes?.length || 0}`,
     );
   }
 
   await timedCall(
-    result, "Luna's notifications",
+    result,
+    "Luna's notifications",
     async () => {
       return await client.raw.get("app.bsky.notification.listNotifications", {}, luna.accessJwt);
     },
-    (n) => `count=${n.notifications?.length || 0}`
+    (n) => `count=${n.notifications?.length || 0}`,
   );
 
   result.finish();
@@ -308,7 +352,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

@@ -12,9 +12,12 @@
       "command": [
         "allegedly",
         "mirror",
-        "--upstream", "http://local-ref-plc:3000",
-        "--wrap", "http://local-ref-plc:3000",
-        "--bind", "0.0.0.0:2582"
+        "--upstream",
+        "http://local-ref-plc:3000",
+        "--wrap",
+        "http://local-ref-plc:3000",
+        "--bind",
+        "0.0.0.0:2582"
       ],
       "env": {
         "ALLEGEDLY_WRAP_PG": "postgres://plc:plc@local-plc-db:5432/plc",
@@ -26,7 +29,13 @@
         "path": null,
         "customTest": ["CMD-SHELL", "wget -qO- http://localhost:2582/ || exit 1"]
       },
-      "capabilities": ["createAccount", "didResolution", "operationLog", "handleRotation", "quotaEnforcement"],
+      "capabilities": [
+        "createAccount",
+        "didResolution",
+        "operationLog",
+        "handleRotation",
+        "quotaEnforcement"
+      ],
       "dependsOn": ["local-ref-plc", "local-plc-db"],
       "sidecars": {
         "local-ref-plc": {

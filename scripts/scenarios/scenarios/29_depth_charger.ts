@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -23,7 +23,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-
 
 function now() {
   return new Date().toISOString();
@@ -60,16 +59,18 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   await timedCall(
-    result, "Reject 32-level Lexicon nesting",
+    result,
+    "Reject 32-level Lexicon nesting",
     async () => {
       await client.records.createRecord(
-        marcus.did, "app.bsky.feed.post",
+        marcus.did,
+        "app.bsky.feed.post",
         { $type: "app.bsky.feed.post", text: "too deep", createdAt: now(), testExtra: deepMap },
-        marcus.accessJwt
+        marcus.accessJwt,
       );
     },
     undefined,
-    true // Expect failure
+    true, // Expect failure
   );
 
   result.finish();
@@ -77,7 +78,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

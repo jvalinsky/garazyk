@@ -26,11 +26,26 @@
         "path": "/xrpc/app.bsky.actor.getProfile"
       },
       "capabilities": [
-        "getTimeline", "getProfile", "getFeed",
-        "posts", "likes", "reposts", "follows", "blocks",
-        "labels", "lists", "mutes", "notifications", "feeds"
+        "getTimeline",
+        "getProfile",
+        "getFeed",
+        "posts",
+        "likes",
+        "reposts",
+        "follows",
+        "blocks",
+        "labels",
+        "lists",
+        "mutes",
+        "notifications",
+        "feeds"
       ],
-      "dependsOn": ["local-parakeet-db", "local-parakeet-redis", "local-parakeet-index", "local-parakeet-consumer"],
+      "dependsOn": [
+        "local-parakeet-db",
+        "local-parakeet-redis",
+        "local-parakeet-index",
+        "local-parakeet-consumer"
+      ],
       "sidecars": {
         "local-parakeet-consumer": {
           "image": "registry.gitlab.com/parakeet-social/parakeet/parakeet-consumer:main",

@@ -16,7 +16,7 @@
  */
 
 import { parseArgs } from "@std/cli";
-import { compileTopology, CompilerOptions } from "../lib/deno/topology_compiler.ts";
+import { CompilerOptions, compileTopology } from "../lib/deno/topology_compiler.ts";
 
 const args = parseArgs(Deno.args, {
   string: ["preset", "output", "run-dir", "repo-root", "sources-json", "manifest-json"],
@@ -33,7 +33,9 @@ const args = parseArgs(Deno.args, {
 
 if (!args.preset) {
   console.error("Error: --preset is required");
-  console.error("Usage: compile_topology.ts --preset <name> [--output <path>] [--run-dir <dir>] [--repo-root <dir>] [--sources-json <path>] [--manifest-json <path>] [--include-pds2]");
+  console.error(
+    "Usage: compile_topology.ts --preset <name> [--output <path>] [--run-dir <dir>] [--repo-root <dir>] [--sources-json <path>] [--manifest-json <path>] [--include-pds2]",
+  );
   Deno.exit(1);
 }
 

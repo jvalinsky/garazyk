@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -24,7 +24,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * @returns A promise that resolves to the scenario result
  */
 
-
 function now() {
   return new Date().toISOString();
 }
@@ -36,12 +35,14 @@ export async function run(): Promise<ScenarioResult> {
   const pds = new XrpcClient(PDS1);
   const luna = getCharacter("luna");
 
-  await timedCall(result, "PDS health check", async () => { await pds.waitForHealthy(30); });
+  await timedCall(result, "PDS health check", async () => {
+    await pds.waitForHealthy(30);
+  });
 
   if (result.failed > 0) return result;
 
-  const session = await pds.accounts.createAccount(luna.handle, luna.email, luna.password).catch(() =>
-    pds.accounts.createSession(luna.handle, luna.password)
+  const session = await pds.accounts.createAccount(luna.handle, luna.email, luna.password).catch(
+    () => pds.accounts.createSession(luna.handle, luna.password),
   );
 
   if (!session) {
@@ -57,7 +58,9 @@ export async function run(): Promise<ScenarioResult> {
   for (let i = 0; i < 100; i++) {
     try {
       await pds.records.createRecord(luna.did, "app.bsky.feed.post", {
-        $type: "app.bsky.feed.post", text: `Rate test ${i}`, createdAt: now()
+        $type: "app.bsky.feed.post",
+        text: `Rate test ${i}`,
+        createdAt: now(),
       }, luna.accessJwt);
     } catch (e) {
       if (e instanceof XrpcError && e.status === 429) {
@@ -71,7 +74,7 @@ export async function run(): Promise<ScenarioResult> {
   if (!hitLimit) result.stepSkipped("Rate limit trigger", "Limits might be too high for local dev");
 
   // Recovery
-  await new Promise(r => setTimeout(r, 2000));
+  await new Promise((r) => setTimeout(r, 2000));
   await timedCall(result, "Verify recovery", async () => {
     return await pds.accounts.getSession(luna.accessJwt);
   });
@@ -81,7 +84,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -24,7 +24,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * @returns A promise that resolves to the scenario result
  */
 
-
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
 // Covers: PDS1 write → Relay sequence (rev) advances → AppView indexes the record.
@@ -33,8 +32,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
 // Production paths: com.atproto.sync.getLatestCommit (Relay), app.bsky.feed.getPosts (AppView),
 //   com.atproto.identity.{updateHandle,resolveHandle}.
 
-
-
 function now() {
   return new Date().toISOString();
 }
@@ -42,13 +39,13 @@ function now() {
 async function pollUntil<T>(
   fn: () => Promise<T | null>,
   timeoutMs: number,
-  intervalMs = 1000
+  intervalMs = 1000,
 ): Promise<T> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     const val = await fn();
     if (val !== null && val !== undefined) return val;
-    await new Promise(r => setTimeout(r, intervalMs));
+    await new Promise((r) => setTimeout(r, intervalMs));
   }
   throw new Error(`pollUntil timed out after ${timeoutMs}ms`);
 }
@@ -88,7 +85,8 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   const session = await timedCall(
-    result, "Create luna account on PDS",
+    result,
+    "Create luna account on PDS",
     async () => {
       try {
         return await pds.accounts.createAccount(luna.handle, luna.email, luna.password);
@@ -96,7 +94,7 @@ export async function run(): Promise<ScenarioResult> {
         return await pds.accounts.createSession(luna.handle, luna.password);
       }
     },
-    (s) => `did=${s.did}`
+    (s) => `did=${s.did}`,
   );
 
   if (session) {
@@ -117,28 +115,39 @@ export async function run(): Promise<ScenarioResult> {
     result.stepPassed("Capture Relay baseline rev for luna", `rev=${baselineRev ?? "none"}`);
   } catch {
     // DID not yet known to the Relay — that's fine, any commit will be the first
-    result.stepPassed("Capture Relay baseline rev for luna", "DID not yet known to Relay (rev=null)");
+    result.stepPassed(
+      "Capture Relay baseline rev for luna",
+      "DID not yet known to Relay (rev=null)",
+    );
   }
 
   // --- Write a post on PDS ---
   const postRkey = `relay-prop-${Date.now()}`;
   const postRef = await timedCall(
-    result, "Write post on PDS",
+    result,
+    "Write post on PDS",
     async () => {
-      return await pds.records.createRecord(luna.did, "app.bsky.feed.post", {
-        $type: "app.bsky.feed.post",
-        text: "Relay propagation test post.",
-        createdAt: now(),
-      }, luna.accessJwt, { rkey: postRkey });
+      return await pds.records.createRecord(
+        luna.did,
+        "app.bsky.feed.post",
+        {
+          $type: "app.bsky.feed.post",
+          text: "Relay propagation test post.",
+          createdAt: now(),
+        },
+        luna.accessJwt,
+        { rkey: postRkey },
+      );
     },
-    (r) => `uri=${r.uri}`
+    (r) => `uri=${r.uri}`,
   );
 
   // --- Relay sequence (rev) advances after PDS write ---
   // Poll getLatestCommit until rev changes from the baseline. A changed rev means the Relay
   // received the commit from the PDS firehose.
   await timedCall(
-    result, "Relay rev advances after PDS write",
+    result,
+    "Relay rev advances after PDS write",
     async () => {
       return await pollUntil(async () => {
         try {
@@ -148,7 +157,7 @@ export async function run(): Promise<ScenarioResult> {
         return null;
       }, 15_000);
     },
-    (r) => `rev=${r?.rev}`
+    (r) => `rev=${r?.rev}`,
   );
 
   // --- AppView indexed post propagated via Relay ---
@@ -156,7 +165,8 @@ export async function run(): Promise<ScenarioResult> {
   // firehose, this transitively verifies the PDS→Relay→AppView path.
   if (postRef) {
     await timedCall(
-      result, "AppView indexed post propagated via Relay",
+      result,
+      "AppView indexed post propagated via Relay",
       async () => {
         return await pollUntil(async () => {
           try {
@@ -166,7 +176,7 @@ export async function run(): Promise<ScenarioResult> {
           return null;
         }, 30_000);
       },
-      (p) => `uri=${(p as any)?.post?.uri ?? "present"}`
+      (p) => `uri=${(p as any)?.post?.uri ?? "present"}`,
     );
   } else {
     result.stepSkipped("AppView indexed post propagated via Relay", "no post created");
@@ -176,23 +186,25 @@ export async function run(): Promise<ScenarioResult> {
   // Update luna's handle on PDS, then poll the Relay's resolveHandle until it returns
   // luna's DID, confirming the Relay updated its identity cache.
   const rotatedHandle = `luna-rotated-${Date.now()}.test`;
-  await timedCall(result, "Handle rotation on PDS",
-    async () => { await pds.identity.updateHandle(rotatedHandle, luna.accessJwt!); }
-  );
+  await timedCall(result, "Handle rotation on PDS", async () => {
+    await pds.identity.updateHandle(rotatedHandle, luna.accessJwt!);
+  });
 
   await timedCall(
-    result, "Handle rotation propagates to Relay identity cache",
+    result,
+    "Handle rotation propagates to Relay identity cache",
     async () => {
       return await pollUntil(async () => {
         try {
-          const res = await relay.raw.get("com.atproto.identity.resolveHandle",
-            { handle: rotatedHandle });
+          const res = await relay.raw.get("com.atproto.identity.resolveHandle", {
+            handle: rotatedHandle,
+          });
           if (res?.did === luna.did) return res;
         } catch { /* not yet */ }
         return null;
       }, 15_000);
     },
-    (r) => `did=${(r as any)?.did}`
+    (r) => `did=${(r as any)?.did}`,
   );
 
   result.finish();
@@ -200,7 +212,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

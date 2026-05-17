@@ -63,15 +63,17 @@ export default function NetworkStatus() {
                   {s.url}
                 </td>
                 <td>
-                  <span class={`badge ${
-                    s.status === "running"
-                      ? s.healthy ? "badge-success" : "badge-warning"
-                      : s.status === "starting"
-                      ? "badge-warning"
-                      : s.status === "error"
-                      ? "badge-destructive"
-                      : "badge-secondary"
-                  }`}>
+                  <span
+                    class={`badge ${
+                      s.status === "running"
+                        ? s.healthy ? "badge-success" : "badge-warning"
+                        : s.status === "starting"
+                        ? "badge-warning"
+                        : s.status === "error"
+                        ? "badge-destructive"
+                        : "badge-secondary"
+                    }`}
+                  >
                     {s.status}
                   </span>
                 </td>

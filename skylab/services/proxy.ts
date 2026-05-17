@@ -96,9 +96,7 @@ export async function proxyRequest(
   }
 
   const headers = proxyUpstreamHeaders(req);
-  const body = req.method !== "GET" && req.method !== "HEAD"
-    ? await req.arrayBuffer()
-    : undefined;
+  const body = req.method !== "GET" && req.method !== "HEAD" ? await req.arrayBuffer() : undefined;
 
   try {
     const resp = await fetch(target.toString(), {
@@ -165,9 +163,7 @@ export async function proxyPassthrough(
   }
 
   const headers = proxyUpstreamHeaders(req);
-  const body = req.method !== "GET" && req.method !== "HEAD"
-    ? await req.arrayBuffer()
-    : undefined;
+  const body = req.method !== "GET" && req.method !== "HEAD" ? await req.arrayBuffer() : undefined;
 
   try {
     const resp = await fetch(target.toString(), {

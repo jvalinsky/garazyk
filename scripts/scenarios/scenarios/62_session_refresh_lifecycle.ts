@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -23,7 +23,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-
 
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Session Refresh Lifecycle");

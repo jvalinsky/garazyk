@@ -32,7 +32,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * @returns A promise that resolves to the scenario result
  */
 
-
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Chat Group Lifecycle");
   result.start();

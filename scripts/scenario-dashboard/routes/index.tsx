@@ -2,7 +2,7 @@
 import { Handlers, PageProps } from "$fresh/server.ts";
 import { getScenarios } from "../services/scenario_discovery.ts";
 import { db } from "../db/index.ts";
-import { fetchRuns, fetchLatestResultPerScenario } from "../db/queries.ts";
+import { fetchLatestResultPerScenario, fetchRuns } from "../db/queries.ts";
 import Layout from "../components/Layout.tsx";
 import Toolbar from "../islands/Toolbar.tsx";
 import Sidebar from "../islands/Sidebar.tsx";
@@ -35,9 +35,9 @@ export const handler: Handlers<PageData> = {
     const runs = fetchRuns(db, 10);
 
     const latestResults = fetchLatestResultPerScenario(db);
-    const resultMap = new Map(latestResults.map(r => [r.scenario_id, r]));
+    const resultMap = new Map(latestResults.map((r) => [r.scenario_id, r]));
 
-    const scenarios = scenariosBase.map(s => {
+    const scenarios = scenariosBase.map((s) => {
       const res = resultMap.get(s.id);
       return {
         ...s,
@@ -52,6 +52,7 @@ export const handler: Handlers<PageData> = {
   },
 };
 
+/** Page component for the dashboard home page. */
 export default function DashboardPage({ data }: PageProps<PageData>) {
   const { scenarios, runs } = data;
 
@@ -73,7 +74,12 @@ export default function DashboardPage({ data }: PageProps<PageData>) {
       <Sidebar />
       <main class="main-content">
         <NetworkStatus />
-        <SummaryCards passed={latestRun?.passed ?? 0} failed={latestRun?.failed ?? 0} skipped={latestRun?.skipped ?? 0} label={summaryLabel} />
+        <SummaryCards
+          passed={latestRun?.passed ?? 0}
+          failed={latestRun?.failed ?? 0}
+          skipped={latestRun?.skipped ?? 0}
+          label={summaryLabel}
+        />
         <h2 class="section-heading">Scenarios</h2>
         <ScenarioGrid scenarios={scenarioGridData} />
         <RunHistory runs={runs} />

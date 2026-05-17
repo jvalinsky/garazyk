@@ -7,10 +7,7 @@
 
 import { Handlers } from "$fresh/server.ts";
 import { SERVICE_URLS } from "../../services/config.ts";
-import {
-  getBrowserClientCount,
-  getEventCount,
-} from "../../services/control_bridge.ts";
+import { getBrowserClientCount, getEventCount } from "../../services/control_bridge.ts";
 
 export const handler: Handlers = {
   GET() {

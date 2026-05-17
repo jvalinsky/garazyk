@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -23,7 +23,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-
 
 function now() {
   return new Date().toISOString();
@@ -56,7 +55,10 @@ export async function run(): Promise<ScenarioResult> {
     },
     (s) => `did=${s.did}`,
   );
-  if (!lunaSession) { result.finish(); return result; }
+  if (!lunaSession) {
+    result.finish();
+    return result;
+  }
   luna.did = lunaSession.did;
   luna.accessJwt = lunaSession.accessJwt;
   luna.refreshJwt = lunaSession.refreshJwt;
@@ -69,7 +71,10 @@ export async function run(): Promise<ScenarioResult> {
     },
     (s) => `did=${s.did}`,
   );
-  if (!marcusSession) { result.finish(); return result; }
+  if (!marcusSession) {
+    result.finish();
+    return result;
+  }
   marcus.did = marcusSession.did;
   marcus.accessJwt = marcusSession.accessJwt;
   marcus.refreshJwt = marcusSession.refreshJwt;
@@ -98,7 +103,9 @@ export async function run(): Promise<ScenarioResult> {
         const res = await client.graph.getFollows(luna.did, { token: luna.accessJwt });
         const follows = res.follows || [];
         const found = follows.some((f: any) => f.did === marcus.did);
-        if (!found) throw new Error(`Marcus not found in Luna's follows (got ${follows.length} follows)`);
+        if (!found) {
+          throw new Error(`Marcus not found in Luna's follows (got ${follows.length} follows)`);
+        }
         return res;
       },
       (r) => `follows=${r.follows?.length || 0}`,
@@ -112,7 +119,11 @@ export async function run(): Promise<ScenarioResult> {
         const res = await client.graph.getFollowers(marcus.did, { token: marcus.accessJwt });
         const followers = res.followers || [];
         const found = followers.some((f: any) => f.did === luna.did);
-        if (!found) throw new Error(`Luna not found in Marcus's followers (got ${followers.length} followers)`);
+        if (!found) {
+          throw new Error(
+            `Luna not found in Marcus's followers (got ${followers.length} followers)`,
+          );
+        }
         return res;
       },
       (r) => `followers=${r.followers?.length || 0}`,
@@ -127,7 +138,9 @@ export async function run(): Promise<ScenarioResult> {
         const rels = res.relationships || [];
         const rel = rels.find((r: any) => r.did === marcus.did);
         if (!rel) throw new Error("No relationship found for Marcus");
-        if (!rel.following) throw new Error(`Expected following=true, got following=${rel.following}`);
+        if (!rel.following) {
+          throw new Error(`Expected following=true, got following=${rel.following}`);
+        }
         return res;
       },
       (r) => `relationships=${r.relationships?.length || 0}`,
@@ -171,7 +184,9 @@ export async function run(): Promise<ScenarioResult> {
           const res = await client.graph.getBlocks(luna.accessJwt);
           const blocks = res.blocks || [];
           const found = blocks.some((b: any) => b.did === troll.did);
-          if (!found) throw new Error(`Troll not found in Luna's blocks (got ${blocks.length} blocks)`);
+          if (!found) {
+            throw new Error(`Troll not found in Luna's blocks (got ${blocks.length} blocks)`);
+          }
           return res;
         },
         (r) => `blocks=${r.blocks?.length || 0}`,

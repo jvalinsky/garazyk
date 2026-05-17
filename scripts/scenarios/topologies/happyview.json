@@ -28,10 +28,20 @@
         "path": "/"
       },
       "capabilities": [
-        "getTimeline", "getProfile", "getFeed", "search",
-        "xrpcEndpoints", "oauth", "realTimeSync", "backfill",
-        "lexiconDriven", "luaScripting", "indexHooks",
-        "networkLexicons", "hotReloading", "adminDashboard"
+        "getTimeline",
+        "getProfile",
+        "getFeed",
+        "search",
+        "xrpcEndpoints",
+        "oauth",
+        "realTimeSync",
+        "backfill",
+        "lexiconDriven",
+        "luaScripting",
+        "indexHooks",
+        "networkLexicons",
+        "hotReloading",
+        "adminDashboard"
       ],
       "dependsOn": ["local-relay"]
     }

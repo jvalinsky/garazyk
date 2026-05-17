@@ -20,7 +20,7 @@
  */
 
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -41,11 +41,12 @@ export async function run(): Promise<ScenarioResult> {
   const client = new XrpcClient(PDS1);
 
   await timedCall(
-    result, "Server health check",
+    result,
+    "Server health check",
     async () => {
       const res = await fetch(`${PDS1}/xrpc/com.atproto.server.describeServer`);
       if (!res.ok) throw new Error("Server not healthy");
-    }
+    },
   );
 
   if (result.failed > 0) {
@@ -81,20 +82,28 @@ export async function run(): Promise<ScenarioResult> {
   for (const name of charNames) {
     const char = getCharacter(name);
     const session = await timedCall(
-      result, `Create account: ${char.name}`,
+      result,
+      `Create account: ${char.name}`,
       async () => {
         try {
-          const res = await client.agent.createAccount({ handle: char.handle, email: char.email, password: char.password });
+          const res = await client.agent.createAccount({
+            handle: char.handle,
+            email: char.email,
+            password: char.password,
+          });
           return res.data;
         } catch (e: any) {
           if (e.message && e.message.includes("already exists")) {
-            const res = await client.agent.login({ identifier: char.handle, password: char.password });
+            const res = await client.agent.login({
+              identifier: char.handle,
+              password: char.password,
+            });
             return res.data;
           }
           throw e;
         }
       },
-      (s) => `did=${s.did}`
+      (s) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -112,7 +121,7 @@ export async function run(): Promise<ScenarioResult> {
     return result;
   }
 
-  await new Promise(r => setTimeout(r, 2000));
+  await new Promise((r) => setTimeout(r, 2000));
 
   const firehoseEvents: FirehoseEvent[] = [];
   const fhClient = new FirehoseClient(SERVICE_URLS.relay.replace(/^http/, "ws"));
@@ -120,11 +129,12 @@ export async function run(): Promise<ScenarioResult> {
   // Start collecting in background (we don't await this directly)
   const collectionPromise = fhClient.collect(10.0);
 
-  await new Promise(r => setTimeout(r, 1000));
+  await new Promise((r) => setTimeout(r, 1000));
   result.stepPassed("Firehose WebSocket connection", "started collecting");
 
   const lunaPost = await timedCall(
-    result, "Luna creates firehose test post",
+    result,
+    "Luna creates firehose test post",
     async () => {
       return await client.raw.post("com.atproto.repo.createRecord", {
         repo: luna.did,
@@ -132,14 +142,15 @@ export async function run(): Promise<ScenarioResult> {
         record: {
           $type: "app.bsky.feed.post",
           text: "Firehose test post! If you can see this on the relay, streaming works!",
-          createdAt: now()
-        }
+          createdAt: now(),
+        },
       }, luna.accessJwt);
-    }
+    },
   );
 
   await timedCall(
-    result, "Marcus follows Luna (firehose event)",
+    result,
+    "Marcus follows Luna (firehose event)",
     async () => {
       return await client.raw.post("com.atproto.repo.createRecord", {
         repo: marcus.did,
@@ -147,15 +158,16 @@ export async function run(): Promise<ScenarioResult> {
         record: {
           $type: "app.bsky.graph.follow",
           subject: luna.did,
-          createdAt: now()
-        }
+          createdAt: now(),
+        },
       }, marcus.accessJwt);
-    }
+    },
   );
 
   if (lunaPost) {
     await timedCall(
-      result, "Rosa likes Luna's post (firehose event)",
+      result,
+      "Rosa likes Luna's post (firehose event)",
       async () => {
         return await client.raw.post("com.atproto.repo.createRecord", {
           repo: rosa.did,
@@ -163,15 +175,16 @@ export async function run(): Promise<ScenarioResult> {
           record: {
             $type: "app.bsky.feed.like",
             subject: { uri: lunaPost.uri, cid: lunaPost.cid },
-            createdAt: now()
-          }
+            createdAt: now(),
+          },
         }, rosa.accessJwt);
-      }
+      },
     );
   }
 
   await timedCall(
-    result, "Luna updates profile (firehose event)",
+    result,
+    "Luna updates profile (firehose event)",
     async () => {
       return await client.raw.post("com.atproto.repo.createRecord", {
         repo: luna.did,
@@ -179,20 +192,20 @@ export async function run(): Promise<ScenarioResult> {
         record: {
           $type: "app.bsky.actor.profile",
           displayName: "Luna Starfield",
-          description: "Astronomy enthusiast. Firehose tester."
-        }
+          description: "Astronomy enthusiast. Firehose tester.",
+        },
       }, luna.accessJwt);
-    }
+    },
   );
 
-  await new Promise(r => setTimeout(r, 3000));
+  await new Promise((r) => setTimeout(r, 3000));
   const collectedEvents = await collectionPromise;
 
   result.stepPassed("Post-operation firehose collection", `events=${collectedEvents.length}`);
 
   const targetCount = 3;
   if (collectedEvents.length >= targetCount) {
-    const seqs = collectedEvents.map(e => e.seq).filter(s => s > 0);
+    const seqs = collectedEvents.map((e) => e.seq).filter((s) => s > 0);
     if (seqs.length > 0) {
       let isOrdered = true;
       for (let i = 0; i < seqs.length - 1; i++) {
@@ -207,46 +220,64 @@ export async function run(): Promise<ScenarioResult> {
         result.stepFailed("Event sequencing", `seqs not ordered: ${seqs.join(",")}`);
       }
     } else {
-      result.stepFailed("Event sequencing", `No seq numbers found in ${collectedEvents.length} events`);
+      result.stepFailed(
+        "Event sequencing",
+        `No seq numbers found in ${collectedEvents.length} events`,
+      );
     }
   } else {
-    result.stepFailed("Event sequencing", `Only ${collectedEvents.length} events collected, need ${targetCount}`);
+    result.stepFailed(
+      "Event sequencing",
+      `Only ${collectedEvents.length} events collected, need ${targetCount}`,
+    );
   }
 
   await timedCall(
-    result, "Sync getHead",
+    result,
+    "Sync getHead",
     async () => {
       return await client.raw.get("com.atproto.sync.getHead", { did: luna.did });
     },
-    (r) => `root=${r.root.substring(0, 20)}`
+    (r) => `root=${r.root.substring(0, 20)}`,
   );
 
   const repoResp = await timedCall(
-    result, "Sync getRepo",
+    result,
+    "Sync getRepo",
     async () => {
       const res = await fetch(`${PDS1}/xrpc/com.atproto.sync.getRepo?did=${luna.did}`);
       const buf = await res.arrayBuffer();
-      return { status: res.status, contentType: res.headers.get("Content-Type") || "", body: new Uint8Array(buf) };
+      return {
+        status: res.status,
+        contentType: res.headers.get("Content-Type") || "",
+        body: new Uint8Array(buf),
+      };
     },
-    (r) => `car bytes=${r.body.length} content_type=${r.contentType}`
+    (r) => `car bytes=${r.body.length} content_type=${r.contentType}`,
   );
 
   if (repoResp) {
     if (!repoResp.contentType.includes("application/vnd.ipld.car")) {
-      result.stepFailed("Sync getRepo", `unexpected content_type=${repoResp.contentType} status=${repoResp.status}`);
+      result.stepFailed(
+        "Sync getRepo",
+        `unexpected content_type=${repoResp.contentType} status=${repoResp.status}`,
+      );
     } else if (repoResp.body.length === 0) {
       result.stepFailed("Sync getRepo", "empty CAR body");
     }
   }
 
-  await new Promise(r => setTimeout(r, 3000));
+  await new Promise((r) => setTimeout(r, 3000));
 
   try {
     const appviewResp = await fetch(`${SERVICE_URLS.appview}/admin/backfill/status`, {
-      headers: { "Authorization": "Bearer localdevadmin" }
+      headers: { "Authorization": "Bearer localdevadmin" },
     });
     if (appviewResp.ok) {
-      result.stepPassed("AppView backfill status", `body=${(await appviewResp.text()).substring(0, 100)}`);
+      result.stepPassed(
+        "AppView backfill status",
+        `body=${(await appviewResp.text()).substring(0, 100)}`,
+      );
     } else {
       result.stepFailed("AppView backfill status", `status=${appviewResp.status}`);
     }
@@ -255,11 +286,16 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   await timedCall(
-    result, "AppView indexed Luna's posts",
+    result,
+    "AppView indexed Luna's posts",
     async () => {
-      return await client.raw.get("app.bsky.feed.getAuthorFeed", { actor: luna.did }, luna.accessJwt);
+      return await client.raw.get(
+        "app.bsky.feed.getAuthorFeed",
+        { actor: luna.did },
+        luna.accessJwt,
+      );
     },
-    (f) => `items=${f.feed?.length || 0}`
+    (f) => `items=${f.feed?.length || 0}`,
   );
 
   result.finish();
@@ -267,7 +303,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

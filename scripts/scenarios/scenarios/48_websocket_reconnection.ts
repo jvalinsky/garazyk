@@ -12,7 +12,7 @@
  */
 
 import { FirehoseClient } from "../../lib/deno/firehose.ts";
-import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -25,7 +25,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * @returns A promise that resolves to the scenario result
  */
 
-
 function now() {
   return new Date().toISOString();
 }
@@ -37,12 +36,14 @@ export async function run(): Promise<ScenarioResult> {
   const pds = new XrpcClient(PDS1);
   const luna = getCharacter("luna");
 
-  await timedCall(result, "PDS health check", async () => { await pds.waitForHealthy(30); });
+  await timedCall(result, "PDS health check", async () => {
+    await pds.waitForHealthy(30);
+  });
 
   if (result.failed > 0) return result;
 
-  const session = await pds.accounts.createAccount(luna.handle, luna.email, luna.password).catch(() =>
-    pds.accounts.createSession(luna.handle, luna.password)
+  const session = await pds.accounts.createAccount(luna.handle, luna.email, luna.password).catch(
+    () => pds.accounts.createSession(luna.handle, luna.password),
   );
 
   if (!session) {
@@ -66,34 +67,52 @@ export async function run(): Promise<ScenarioResult> {
     }, 5);
   });
 
-  result.stepPassed("Events collected before disconnect", `count=${eventsBefore.length}, last_seq=${lastSeq}`);
+  result.stepPassed(
+    "Events collected before disconnect",
+    `count=${eventsBefore.length}, last_seq=${lastSeq}`,
+  );
 
   await timedCall(result, "Create post during disconnect", async () => {
     return await pds.records.createRecord(luna.did, "app.bsky.feed.post", {
-      $type: "app.bsky.feed.post", text: "Posted during disconnect", createdAt: now()
+      $type: "app.bsky.feed.post",
+      text: "Posted during disconnect",
+      createdAt: now(),
     }, luna.accessJwt);
   });
 
   const eventsAfter: any[] = [];
   await timedCall(result, "Reconnect with cursor", async () => {
     const fh2 = new FirehoseClient(relayUrl);
-    await fh2.subscribe((ev) => {
-      eventsAfter.push(ev);
-    }, 5, lastSeq);
+    await fh2.subscribe(
+      (ev) => {
+        eventsAfter.push(ev);
+      },
+      5,
+      lastSeq,
+    );
   });
 
   // Assert continuity: events after reconnect should have seq > lastSeq
   if (eventsAfter.length > 0 && lastSeq > 0) {
-    const minSeqAfter = Math.min(...eventsAfter.map((e: any) => e.seq).filter((s: number) => s > 0));
+    const minSeqAfter = Math.min(
+      ...eventsAfter.map((e: any) => e.seq).filter((s: number) => s > 0),
+    );
     if (minSeqAfter > lastSeq) {
-      result.stepPassed("Event continuity after reconnect",
-        `last_seq_before=${lastSeq}, first_seq_after=${minSeqAfter}, events=${eventsAfter.length}`);
+      result.stepPassed(
+        "Event continuity after reconnect",
+        `last_seq_before=${lastSeq}, first_seq_after=${minSeqAfter}, events=${eventsAfter.length}`,
+      );
     } else {
-      result.stepFailed("Event continuity after reconnect",
-        `Expected seq > ${lastSeq} but got min_seq=${minSeqAfter}`);
+      result.stepFailed(
+        "Event continuity after reconnect",
+        `Expected seq > ${lastSeq} but got min_seq=${minSeqAfter}`,
+      );
     }
   } else if (lastSeq === 0) {
-    result.stepSkipped("Event continuity after reconnect", "No events with seq > 0 received before disconnect");
+    result.stepSkipped(
+      "Event continuity after reconnect",
+      "No events with seq > 0 received before disconnect",
+    );
   } else {
     result.stepSkipped("Event continuity after reconnect", "No events received after reconnect");
   }
@@ -103,7 +122,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

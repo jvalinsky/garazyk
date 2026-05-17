@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -23,7 +23,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-
 
 function now() {
   return new Date().toISOString();
@@ -55,9 +54,10 @@ export async function run(): Promise<ScenarioResult> {
 
   await timedCall(result, "Create Post A", async () => {
     return await client.records.createRecord(
-      luna.did, "app.bsky.feed.post",
+      luna.did,
+      "app.bsky.feed.post",
       { $type: "app.bsky.feed.post", text: "Post A", createdAt: now() },
-      luna.accessJwt
+      luna.accessJwt,
     );
   });
 
@@ -67,9 +67,10 @@ export async function run(): Promise<ScenarioResult> {
   // Monotonicity burst
   for (let i = 0; i < 10; i++) {
     await client.records.createRecord(
-      luna.did, "app.bsky.feed.post",
+      luna.did,
+      "app.bsky.feed.post",
       { $type: "app.bsky.feed.post", text: `Burst ${i}`, createdAt: now() },
-      luna.accessJwt
+      luna.accessJwt,
     );
   }
 
@@ -79,7 +80,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

@@ -13,8 +13,7 @@ export default function StatusBar({ lastRun, pdsUrl, pdsHealthy }: StatusBarProp
       {lastRun && <span>Last run: {lastRun}</span>}
       {pdsUrl && (
         <span>
-          PDS: {pdsUrl}{" "}
-          <span class={`health-dot ${pdsHealthy ? "healthy" : "unhealthy"}`} />
+          PDS: {pdsUrl} <span class={`health-dot ${pdsHealthy ? "healthy" : "unhealthy"}`} />
         </span>
       )}
     </footer>

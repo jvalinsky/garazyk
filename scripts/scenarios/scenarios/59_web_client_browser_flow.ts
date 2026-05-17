@@ -26,7 +26,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * @returns A promise that resolves to the scenario result
  */
 
-
 export async function run(): Promise<ScenarioResult> {
   const flow = Deno.env.get("ATPROTO_CLIENT_FLOW") || "smoke";
   const result = new ScenarioResult(`Web Client Browser Flow (${flow})`);

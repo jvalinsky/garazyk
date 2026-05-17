@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -24,7 +24,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * @returns A promise that resolves to the scenario result
  */
 
-
 export async function run(): Promise<ScenarioResult> {
   const result = new ScenarioResult("Multi-Device Session Management");
   result.start();
@@ -32,12 +31,14 @@ export async function run(): Promise<ScenarioResult> {
   const pds = new XrpcClient(PDS1);
   const luna = getCharacter("luna");
 
-  await timedCall(result, "PDS health check", async () => { await pds.waitForHealthy(30); });
+  await timedCall(result, "PDS health check", async () => {
+    await pds.waitForHealthy(30);
+  });
 
   if (result.failed > 0) return result;
 
-  const session = await pds.accounts.createAccount(luna.handle, luna.email, luna.password).catch(() =>
-    pds.accounts.createSession(luna.handle, luna.password)
+  const session = await pds.accounts.createAccount(luna.handle, luna.email, luna.password).catch(
+    () => pds.accounts.createSession(luna.handle, luna.password),
   );
 
   if (!session) {
@@ -74,12 +75,13 @@ export async function run(): Promise<ScenarioResult> {
     });
 
     await timedCall(
-      result, "Verify device 1 session invalid",
+      result,
+      "Verify device 1 session invalid",
       async () => {
         await pds.accounts.getSession(d1.accessJwt);
       },
       undefined,
-      true // Expect failure
+      true, // Expect failure
     );
   }
 
@@ -88,7 +90,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

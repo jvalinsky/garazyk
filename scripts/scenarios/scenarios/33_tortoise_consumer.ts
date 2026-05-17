@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -23,7 +23,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-
 
 function now() {
   return new Date().toISOString();
@@ -103,7 +102,9 @@ export async function run(): Promise<ScenarioResult> {
   for (let i = 0; i < POST_COUNT; i++) {
     try {
       await client.records.createRecord(volt.did, "app.bsky.feed.post", {
-        $type: "app.bsky.feed.post", text: `backpressure test ${i}`, createdAt: now()
+        $type: "app.bsky.feed.post",
+        text: `backpressure test ${i}`,
+        createdAt: now(),
       }, volt.accessJwt);
     } catch { /* ignore */ }
     if (i % 100 === 0) console.log(`  Sent ${i} records...`);
@@ -124,7 +125,7 @@ export async function run(): Promise<ScenarioResult> {
       closed = true;
       break;
     }
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise((r) => setTimeout(r, 1000));
   }
 
   if (closed) {
@@ -133,13 +134,15 @@ export async function run(): Promise<ScenarioResult> {
     result.stepFailed("Firehose disconnected", "Connection still open or timed out");
   }
 
-  try { conn.close(); } catch { /* ignore */ }
+  try {
+    conn.close();
+  } catch { /* ignore */ }
   result.finish();
   return result;
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

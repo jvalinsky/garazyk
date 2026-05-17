@@ -6,7 +6,12 @@
  */
 
 import { Handlers } from "$fresh/server.ts";
-import { APPVIEW_READ_METHODS, METHOD_ROUTES, SERVICE_URLS, VIDEO_SERVICE_DID } from "../../services/config.ts";
+import {
+  APPVIEW_READ_METHODS,
+  METHOD_ROUTES,
+  SERVICE_URLS,
+  VIDEO_SERVICE_DID,
+} from "../../services/config.ts";
 
 export const handler: Handlers = {
   GET() {

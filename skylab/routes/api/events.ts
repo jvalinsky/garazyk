@@ -6,11 +6,7 @@
  */
 
 import { Handlers } from "$fresh/server.ts";
-import {
-  getEvents,
-  getEventCount,
-  recordEvent,
-} from "../../services/control_bridge.ts";
+import { getEventCount, getEvents, recordEvent } from "../../services/control_bridge.ts";
 
 export const handler: Handlers = {
   GET() {

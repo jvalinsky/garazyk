@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -23,7 +23,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-
 
 function now() {
   return new Date().toISOString();
@@ -38,13 +37,15 @@ export async function run(): Promise<ScenarioResult> {
   const luna = getCharacter("luna");
   const marcus = getCharacter("marcus");
 
-  await timedCall(result, "PDS health check", async () => { await pds.waitForHealthy(30); });
+  await timedCall(result, "PDS health check", async () => {
+    await pds.waitForHealthy(30);
+  });
 
   if (result.failed > 0) return result;
 
   for (const char of [luna, marcus]) {
-    const session = await pds.accounts.createAccount(char.handle, char.email, char.password).catch(() =>
-      pds.accounts.createSession(char.handle, char.password)
+    const session = await pds.accounts.createAccount(char.handle, char.email, char.password).catch(
+      () => pds.accounts.createSession(char.handle, char.password),
     );
     if (session) {
       char.did = session.did;
@@ -62,7 +63,13 @@ export async function run(): Promise<ScenarioResult> {
   };
 
   const listRef = await timedCall(result, "Create curate list", async () => {
-    return await pds.records.createRecord(luna.did, "app.bsky.graph.list", listRecord, luna.accessJwt, { rkey: listRkey });
+    return await pds.records.createRecord(
+      luna.did,
+      "app.bsky.graph.list",
+      listRecord,
+      luna.accessJwt,
+      { rkey: listRkey },
+    );
   });
 
   if (listRef) {
@@ -70,27 +77,46 @@ export async function run(): Promise<ScenarioResult> {
     const itemRkey = `item-${Date.now()}`;
 
     await timedCall(result, "Add Marcus to list", async () => {
-      return await pds.records.createRecord(luna.did, "app.bsky.graph.listitem", {
-        $type: "app.bsky.graph.listitem",
-        list: listUri,
-        subject: marcus.did,
-        createdAt: now()
-      }, luna.accessJwt, { rkey: itemRkey });
+      return await pds.records.createRecord(
+        luna.did,
+        "app.bsky.graph.listitem",
+        {
+          $type: "app.bsky.graph.listitem",
+          list: listUri,
+          subject: marcus.did,
+          createdAt: now(),
+        },
+        luna.accessJwt,
+        { rkey: itemRkey },
+      );
     });
 
-    await new Promise(r => setTimeout(r, 2000));
+    await new Promise((r) => setTimeout(r, 2000));
 
     await timedCall(result, "Get lists for Luna", async () => {
       // Note: appview.graph.getLists doesn't exist yet, I'll use raw
-      return await appview.raw.xrpcGet("app.bsky.graph.getLists", { actor: luna.did, limit: 10 }, luna.accessJwt);
+      return await appview.raw.xrpcGet(
+        "app.bsky.graph.getLists",
+        { actor: luna.did, limit: 10 },
+        luna.accessJwt,
+      );
     });
 
     await timedCall(result, "Get list items", async () => {
-      return await appview.raw.xrpcGet("app.bsky.graph.getList", { list: listUri, limit: 10 }, luna.accessJwt);
+      return await appview.raw.xrpcGet(
+        "app.bsky.graph.getList",
+        { list: listUri, limit: 10 },
+        luna.accessJwt,
+      );
     });
 
     await timedCall(result, "Remove Marcus from list", async () => {
-      return await pds.records.deleteRecord(luna.did, "app.bsky.graph.listitem", itemRkey, luna.accessJwt);
+      return await pds.records.deleteRecord(
+        luna.did,
+        "app.bsky.graph.listitem",
+        itemRkey,
+        luna.accessJwt,
+      );
     });
   }
 
@@ -99,7 +125,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

@@ -18,18 +18,83 @@ export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { PDS1, PDS2, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1, PDS2, SERVICE_URLS } from "../../lib/deno/config.ts";
 
 function now() {
   return new Date().toISOString();
 }
 
 const MINIMAL_PNG = new Uint8Array([
-  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
-  0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53,
-  0xde, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x44, 0x41, 0x54, 0x08, 0xd7, 0x63, 0xfc, 0xff, 0x9f, 0xa1,
-  0x1e, 0x00, 0x07, 0x82, 0x02, 0x3c, 0x3f, 0xc8, 0x48, 0xef, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45,
-  0x4e, 0x44, 0xae, 0x42, 0x60, 0x82
+  0x89,
+  0x50,
+  0x4e,
+  0x47,
+  0x0d,
+  0x0a,
+  0x1a,
+  0x0a,
+  0x00,
+  0x00,
+  0x00,
+  0x0d,
+  0x49,
+  0x48,
+  0x44,
+  0x52,
+  0x00,
+  0x00,
+  0x00,
+  0x01,
+  0x00,
+  0x00,
+  0x00,
+  0x01,
+  0x08,
+  0x02,
+  0x00,
+  0x00,
+  0x00,
+  0x90,
+  0x77,
+  0x53,
+  0xde,
+  0x00,
+  0x00,
+  0x00,
+  0x0d,
+  0x49,
+  0x44,
+  0x41,
+  0x54,
+  0x08,
+  0xd7,
+  0x63,
+  0xfc,
+  0xff,
+  0x9f,
+  0xa1,
+  0x1e,
+  0x00,
+  0x07,
+  0x82,
+  0x02,
+  0x3c,
+  0x3f,
+  0xc8,
+  0x48,
+  0xef,
+  0x00,
+  0x00,
+  0x00,
+  0x00,
+  0x49,
+  0x45,
+  0x4e,
+  0x44,
+  0xae,
+  0x42,
+  0x60,
+  0x82,
 ]);
 
 /**
@@ -45,7 +110,9 @@ export async function run(): Promise<ScenarioResult> {
   const luna = getCharacter("luna");
 
   for (const [name, client] of [["PDS1", pds1], ["PDS2", pds2]] as const) {
-    await timedCall(result, `${name} health check`, async () => { await client.waitForHealthy(30); });
+    await timedCall(result, `${name} health check`, async () => {
+      await client.waitForHealthy(30);
+    });
   }
 
   if (result.failed > 0) return result;
@@ -72,7 +139,7 @@ export async function run(): Promise<ScenarioResult> {
         $type: "app.bsky.feed.post",
         text: "Migration test with blob",
         embed: { $type: "app.bsky.embed.images", images: [{ image: blobRef, alt: "test" }] },
-        createdAt: now()
+        createdAt: now(),
       }, luna.accessJwt);
     });
   }
@@ -82,11 +149,16 @@ export async function run(): Promise<ScenarioResult> {
   });
 
   await timedCall(result, "Request PLC operation signature from PDS1", async () => {
-    return await pds1.raw.xrpcPost("com.atproto.identity.requestPlcOperationSignature", {}, luna.accessJwt);
+    return await pds1.raw.xrpcPost(
+      "com.atproto.identity.requestPlcOperationSignature",
+      {},
+      luna.accessJwt,
+    );
   });
 
   await timedCall(
-    result, "Initiate failed migration",
+    result,
+    "Initiate failed migration",
     async () => {
       await pds2.raw.xrpcPost("com.atproto.server.createAccount", {
         handle: luna.handle,
@@ -94,11 +166,11 @@ export async function run(): Promise<ScenarioResult> {
         password: luna.password,
         did: luna.did,
         plcOp: { invalid: "op" },
-        recoveryKey: "did:key:zQ3shokFTS3LRDLz6KxreZisUatvXid88vGpkid5X2BebkX2V"
+        recoveryKey: "did:key:zQ3shokFTS3LRDLz6KxreZisUatvXid88vGpkid5X2BebkX2V",
       });
     },
     undefined,
-    true
+    true,
   );
 
   await timedCall(result, "Verify PDS1 remains authority", async () => {
@@ -123,7 +195,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

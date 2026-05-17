@@ -7,11 +7,7 @@
  */
 
 import { Handlers } from "$fresh/server.ts";
-import {
-  resetState,
-  clearEvents,
-  broadcastToBrowsers,
-} from "../../services/control_bridge.ts";
+import { broadcastToBrowsers, clearEvents, resetState } from "../../services/control_bridge.ts";
 
 export const handler: Handlers = {
   POST() {

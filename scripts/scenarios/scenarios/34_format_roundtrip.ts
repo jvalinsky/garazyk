@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -23,7 +23,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-
 
 function now() {
   return new Date().toISOString();
@@ -59,17 +58,21 @@ export async function run(): Promise<ScenarioResult> {
   const recordCount = 10;
   for (let i = 0; i < recordCount; i++) {
     await client.records.createRecord(luna.did, "app.bsky.feed.post", {
-      $type: "app.bsky.feed.post", text: `Roundtrip test ${i}`, createdAt: now()
+      $type: "app.bsky.feed.post",
+      text: `Roundtrip test ${i}`,
+      createdAt: now(),
     }, luna.accessJwt);
   }
   result.stepPassed("Seeding records");
 
-  const [s1, ct1, body1] = await client.raw.xrpcGetBinary("com.atproto.sync.getRepo", { params: { did: luna.did } });
+  const [s1, ct1, body1] = await client.raw.xrpcGetBinary("com.atproto.sync.getRepo", {
+    params: { did: luna.did },
+  });
   assert.isTrue(ct1.includes("application/vnd.ipld.car"), "Expected CAR");
 
   const [s2, ct2, body2] = await client.raw.xrpcGetBinary("com.atproto.sync.getRepo", {
     params: { did: luna.did },
-    headers: { "Accept": "application/vnd.atproto.star" }
+    headers: { "Accept": "application/vnd.atproto.star" },
   });
   assert.isTrue(ct2.includes("application/vnd.atproto.star"), "Expected STAR");
   assert.isTrue(body2[0] === 0x2A, "Expected STAR magic byte 0x2A");
@@ -86,7 +89,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

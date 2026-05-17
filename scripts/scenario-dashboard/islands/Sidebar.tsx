@@ -38,16 +38,16 @@ export default function Sidebar({ activeScenario }: SidebarProps) {
   const filterScenarios = (scen: typeof scenarios): typeof scenarios => {
     if (!searchTerm) return scen;
     const term = searchTerm.toLowerCase();
-    return scen.filter((s) =>
-      s.id.includes(term) || s.name.toLowerCase().includes(term)
-    );
+    return scen.filter((s) => s.id.includes(term) || s.name.toLowerCase().includes(term));
   };
 
   const runningServices = services.filter((s) => s.status === "running").length;
   const totalServices = services.length;
-  const dotClass = runningServices === 0 ? "stopped"
-               : runningServices < totalServices ? "starting"
-               : "running";
+  const dotClass = runningServices === 0
+    ? "stopped"
+    : runningServices < totalServices
+    ? "starting"
+    : "running";
 
   return (
     <aside class="sidebar">
@@ -57,7 +57,8 @@ export default function Sidebar({ activeScenario }: SidebarProps) {
           class="filter-input"
           placeholder="Search scenarios..."
           value={searchTerm}
-          onInput={(e) => dispatch({ type: "ux/setSearchTerm", term: (e.target as HTMLInputElement).value })}
+          onInput={(e) =>
+            dispatch({ type: "ux/setSearchTerm", term: (e.target as HTMLInputElement).value })}
           style="margin-bottom: var(--space-md);"
         />
       </div>

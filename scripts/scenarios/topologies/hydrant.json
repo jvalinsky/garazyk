@@ -28,9 +28,13 @@
         "path": "/stats"
       },
       "capabilities": [
-        "backfill", "filteredSync", "xrpcQueries",
-        "eventStream", "filterManagement",
-        "ingestionControl", "repoManagement"
+        "backfill",
+        "filteredSync",
+        "xrpcQueries",
+        "eventStream",
+        "filterManagement",
+        "ingestionControl",
+        "repoManagement"
       ],
       "dependsOn": ["local-relay"]
     }

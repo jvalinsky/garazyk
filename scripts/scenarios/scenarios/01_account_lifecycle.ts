@@ -15,7 +15,7 @@
  */
 
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { PDS1, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -33,11 +33,12 @@ export async function run(): Promise<ScenarioResult> {
   const luna = getCharacter("luna");
 
   await timedCall(
-    result, "Server health check",
+    result,
+    "Server health check",
     async () => {
       const res = await fetch(`${PDS1}/xrpc/com.atproto.server.describeServer`);
       if (!res.ok) throw new Error("Server not healthy");
-    }
+    },
   );
 
   if (result.failed > 0) {
@@ -46,18 +47,24 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   await timedCall(
-    result, "Describe server",
+    result,
+    "Describe server",
     async () => {
       return await pds.raw.get("com.atproto.server.describeServer");
     },
-    (d) => `domains=${d.availableUserDomains}`
+    (d) => `domains=${d.availableUserDomains}`,
   );
 
   const session = await timedCall(
-    result, "Create account",
+    result,
+    "Create account",
     async () => {
       try {
-        const res = await pds.agent.createAccount({ handle: luna.handle, email: luna.email, password: luna.password });
+        const res = await pds.agent.createAccount({
+          handle: luna.handle,
+          email: luna.email,
+          password: luna.password,
+        });
         return res.data;
       } catch (e: any) {
         if (e.message && e.message.includes("already exists")) {
@@ -68,7 +75,7 @@ export async function run(): Promise<ScenarioResult> {
         throw e;
       }
     },
-    (s) => `did=${s.did}`
+    (s) => `did=${s.did}`,
   );
 
   if (session) {
@@ -81,21 +88,25 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   await timedCall(
-    result, "Get session",
+    result,
+    "Get session",
     async () => {
-      const res = await pds.agent.com.atproto.server.getSession(undefined, { headers: { Authorization: `Bearer ${luna.accessJwt}` }});
+      const res = await pds.agent.com.atproto.server.getSession(undefined, {
+        headers: { Authorization: `Bearer ${luna.accessJwt}` },
+      });
       return res.data;
     },
-    (s) => `did=${s.did}`
+    (s) => `did=${s.did}`,
   );
 
   await timedCall(
-    result, "Resolve handle",
+    result,
+    "Resolve handle",
     async () => {
       const res = await pds.agent.com.atproto.identity.resolveHandle({ handle: luna.handle });
       return res.data;
     },
-    (r) => `did=${r.did}`
+    (r) => `did=${r.did}`,
   );
 
   try {
@@ -104,7 +115,10 @@ export async function run(): Promise<ScenarioResult> {
       const didDoc = await plcResp.json();
       const didField = didDoc.id || didDoc.did;
       assert.equal(didField, luna.did, `PLC DID mismatch: expected ${luna.did}, got ${didField}`);
-      result.stepPassed("PLC DID resolution", `method=${didDoc.verificationMethod ? "present" : "N/A"}`);
+      result.stepPassed(
+        "PLC DID resolution",
+        `method=${didDoc.verificationMethod ? "present" : "N/A"}`,
+      );
     } else {
       result.stepSkipped("PLC DID resolution", `PLC returned ${plcResp.status}`);
     }
@@ -119,35 +133,44 @@ export async function run(): Promise<ScenarioResult> {
   };
 
   await timedCall(
-    result, "Create profile",
+    result,
+    "Create profile",
     async () => {
       const res = await pds.agent.com.atproto.repo.createRecord({
         repo: luna.did,
         collection: "app.bsky.actor.profile",
-        record: profile
+        record: profile,
       });
       return res.data;
     },
-    (r) => `uri=${r.uri}`
+    (r) => `uri=${r.uri}`,
   );
 
   await timedCall(
-    result, "Get profile",
+    result,
+    "Get profile",
     async () => {
-      const res = await pds.raw.get("app.bsky.actor.getProfile", { actor: luna.did }, luna.accessJwt);
+      const res = await pds.raw.get(
+        "app.bsky.actor.getProfile",
+        { actor: luna.did },
+        luna.accessJwt,
+      );
       return res;
     },
-    (p) => `displayName=${p?.displayName || p?.record?.displayName}`
+    (p) => `displayName=${p?.displayName || p?.record?.displayName}`,
   );
 
   if (luna.refreshJwt) {
     const refreshed = await timedCall(
-      result, "Refresh session",
+      result,
+      "Refresh session",
       async () => {
-        const res = await pds.agent.com.atproto.server.refreshSession(undefined, { headers: { Authorization: `Bearer ${luna.refreshJwt}` }});
+        const res = await pds.agent.com.atproto.server.refreshSession(undefined, {
+          headers: { Authorization: `Bearer ${luna.refreshJwt}` },
+        });
         return res.data;
       },
-      (r) => `accessJwt=${r.accessJwt.substring(0, 20)}...`
+      (r) => `accessJwt=${r.accessJwt.substring(0, 20)}...`,
     );
     if (refreshed) {
       luna.accessJwt = refreshed.accessJwt;
@@ -157,16 +180,19 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   await timedCall(
-    result, "Invalid login rejected",
+    result,
+    "Invalid login rejected",
     async () => {
       await pds.agent.login({ identifier: luna.handle, password: "wrong_password" });
     },
     undefined,
-    true
+    true,
   );
 
   try {
-    await pds.agent.com.atproto.server.deleteSession(undefined, { headers: { Authorization: `Bearer ${luna.refreshJwt || luna.accessJwt}` }});
+    await pds.agent.com.atproto.server.deleteSession(undefined, {
+      headers: { Authorization: `Bearer ${luna.refreshJwt || luna.accessJwt}` },
+    });
     result.stepPassed("Delete session (logout)");
   } catch (exc: any) {
     result.stepSkipped("Delete session", exc.message || String(exc));
@@ -177,7 +203,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

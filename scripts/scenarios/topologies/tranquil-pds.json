@@ -18,12 +18,26 @@
         "path": "/xrpc/com.atproto.server.describeServer"
       },
       "capabilities": [
-        "describeServer", "createAccount", "createSession", "getSession",
-        "createRecord", "getRecord", "deleteRecord", "listRecords",
-        "uploadBlob", "getBlob",
-        "resolveHandle", "updateHandle",
-        "subscribeRepos", "getHead", "getRepo", "requestCrawl",
-        "repo", "identity", "blob", "sync"
+        "describeServer",
+        "createAccount",
+        "createSession",
+        "getSession",
+        "createRecord",
+        "getRecord",
+        "deleteRecord",
+        "listRecords",
+        "uploadBlob",
+        "getBlob",
+        "resolveHandle",
+        "updateHandle",
+        "subscribeRepos",
+        "getHead",
+        "getRepo",
+        "requestCrawl",
+        "repo",
+        "identity",
+        "blob",
+        "sync"
       ],
       "dependsOn": ["local-plc"]
     },

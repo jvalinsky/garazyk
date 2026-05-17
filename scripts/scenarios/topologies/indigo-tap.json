@@ -28,9 +28,13 @@
         "path": "/health"
       },
       "capabilities": [
-        "backfill", "filteredSync", "repoVerification",
-        "webhookDelivery", "collectionFiltering",
-        "perRepoOrdering", "identityCaching"
+        "backfill",
+        "filteredSync",
+        "repoVerification",
+        "webhookDelivery",
+        "collectionFiltering",
+        "perRepoOrdering",
+        "identityCaching"
       ],
       "dependsOn": ["local-relay"]
     }

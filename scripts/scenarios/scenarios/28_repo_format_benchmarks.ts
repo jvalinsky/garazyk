@@ -11,7 +11,7 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1 } from "../../lib/deno/config.ts";
 import { ScenarioResult } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -23,7 +23,6 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-
 
 function now() {
   return new Date().toISOString();
@@ -58,14 +57,18 @@ export async function run(): Promise<ScenarioResult> {
   luna.accessJwt = session.accessJwt;
 
   const POST_COUNT = 500;
-  const existing = await client.records.listRecords(luna.did, "app.bsky.feed.post", { limit: 1, token: luna.accessJwt });
+  const existing = await client.records.listRecords(luna.did, "app.bsky.feed.post", {
+    limit: 1,
+    token: luna.accessJwt,
+  });
   if (existing.records.length < 1) {
     console.log(`Seeding ${POST_COUNT} posts...`);
     for (let i = 0; i < POST_COUNT; i++) {
       await client.records.createRecord(
-        luna.did, "app.bsky.feed.post",
+        luna.did,
+        "app.bsky.feed.post",
         { $type: "app.bsky.feed.post", text: `Benchmark post ${i}`, createdAt: now() },
-        luna.accessJwt
+        luna.accessJwt,
       );
     }
     result.stepPassed("Seeding", `Created ${POST_COUNT} posts`);
@@ -84,7 +87,7 @@ export async function run(): Promise<ScenarioResult> {
     await client.raw.xrpcGetBinary("com.atproto.sync.getRepo", {
       params: { did: luna.did },
       token: luna.accessJwt,
-      headers: { "Accept": fmt.mime }
+      headers: { "Accept": fmt.mime },
     });
 
     let totalMs = 0;
@@ -96,13 +99,16 @@ export async function run(): Promise<ScenarioResult> {
       const [status, ct, body] = await client.raw.xrpcGetBinary("com.atproto.sync.getRepo", {
         params: { did: luna.did },
         token: luna.accessJwt,
-        headers: { "Accept": fmt.mime }
+        headers: { "Accept": fmt.mime },
       });
       const duration = performance.now() - start;
       totalMs += duration;
       totalSize += body.length;
 
-      result.stepPassed(`Fetch ${fmt.label} (Iter ${i + 1})`, `bytes=${body.length} duration=${duration.toFixed(1)}ms`);
+      result.stepPassed(
+        `Fetch ${fmt.label} (Iter ${i + 1})`,
+        `bytes=${body.length} duration=${duration.toFixed(1)}ms`,
+      );
 
       if (fmt.label !== "CAR" && body.length > 0) {
         assert.isTrue(body[0] === 0x2A, `Invalid magic byte for ${fmt.label}`);
@@ -122,7 +128,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

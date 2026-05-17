@@ -16,7 +16,7 @@
  */
 
 import { XrpcClient } from "../../lib/deno/client.ts";
-import { PDS1, PDS2, SERVICE_URLS, getCharacter } from "../../lib/deno/config.ts";
+import { getCharacter, PDS1, PDS2, SERVICE_URLS } from "../../lib/deno/config.ts";
 import { ScenarioResult, timedCall } from "../../lib/deno/runner.ts";
 export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts";
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
@@ -38,11 +38,12 @@ export async function run(): Promise<ScenarioResult> {
 
   for (const { name, client } of [{ name: "PDS1", client: pds1 }, { name: "PDS2", client: pds2 }]) {
     await timedCall(
-      result, `${name} health check`,
+      result,
+      `${name} health check`,
       async () => {
         const res = await fetch(`${client.baseUrl}/xrpc/com.atproto.server.describeServer`);
         if (!res.ok) throw new Error(`${name} not healthy`);
-      }
+      },
     );
   }
 
@@ -55,20 +56,28 @@ export async function run(): Promise<ScenarioResult> {
   const marcus = getCharacter("marcus");
   for (const char of [luna, marcus]) {
     const session = await timedCall(
-      result, `Create account on PDS1: ${char.name}`,
+      result,
+      `Create account on PDS1: ${char.name}`,
       async () => {
         try {
-          const res = await pds1.agent.createAccount({ handle: char.handle, email: char.email, password: char.password });
+          const res = await pds1.agent.createAccount({
+            handle: char.handle,
+            email: char.email,
+            password: char.password,
+          });
           return res.data;
         } catch (e: any) {
           if (e.message && e.message.includes("already exists")) {
-            const res = await pds1.agent.login({ identifier: char.handle, password: char.password });
+            const res = await pds1.agent.login({
+              identifier: char.handle,
+              password: char.password,
+            });
             return res.data;
           }
           throw e;
         }
       },
-      (s) => `did=${s.did}`
+      (s) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -80,20 +89,28 @@ export async function run(): Promise<ScenarioResult> {
   const rex = getCharacter("rex");
   for (const char of [nova, rex]) {
     const session = await timedCall(
-      result, `Create account on PDS2: ${char.name}`,
+      result,
+      `Create account on PDS2: ${char.name}`,
       async () => {
         try {
-          const res = await pds2.agent.createAccount({ handle: char.handle, email: char.email, password: char.password });
+          const res = await pds2.agent.createAccount({
+            handle: char.handle,
+            email: char.email,
+            password: char.password,
+          });
           return res.data;
         } catch (e: any) {
           if (e.message && e.message.includes("already exists")) {
-            const res = await pds2.agent.login({ identifier: char.handle, password: char.password });
+            const res = await pds2.agent.login({
+              identifier: char.handle,
+              password: char.password,
+            });
             return res.data;
           }
           throw e;
         }
       },
-      (s) => `did=${s.did}`
+      (s) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -107,9 +124,15 @@ export async function run(): Promise<ScenarioResult> {
     return result;
   }
 
-  for (const { char, client } of [{ char: luna, client: pds1 }, { char: marcus, client: pds1 }, { char: nova, client: pds2 }, { char: rex, client: pds2 }]) {
+  for (
+    const { char, client } of [{ char: luna, client: pds1 }, { char: marcus, client: pds1 }, {
+      char: nova,
+      client: pds2,
+    }, { char: rex, client: pds2 }]
+  ) {
     await timedCall(
-      result, `Set profile: ${char.name}`,
+      result,
+      `Set profile: ${char.name}`,
       async () => {
         await client.raw.post("com.atproto.repo.createRecord", {
           repo: char.did,
@@ -118,14 +141,15 @@ export async function run(): Promise<ScenarioResult> {
             $type: "app.bsky.actor.profile",
             displayName: char.name,
             description: char.persona,
-          }
+          },
         }, char.accessJwt);
-      }
+      },
     );
   }
 
   const lunaPost = await timedCall(
-    result, "Luna posts on PDS 1",
+    result,
+    "Luna posts on PDS 1",
     async () => {
       const res = await pds1.raw.post("com.atproto.repo.createRecord", {
         repo: luna.did,
@@ -133,15 +157,16 @@ export async function run(): Promise<ScenarioResult> {
         record: {
           $type: "app.bsky.feed.post",
           text: "Hello from PDS 1! Can anyone on PDS 2 see this?",
-          createdAt: now()
-        }
+          createdAt: now(),
+        },
       }, luna.accessJwt);
       return res;
-    }
+    },
   );
 
   const marcusPost = await timedCall(
-    result, "Marcus posts on PDS 1",
+    result,
+    "Marcus posts on PDS 1",
     async () => {
       const res = await pds1.raw.post("com.atproto.repo.createRecord", {
         repo: marcus.did,
@@ -149,18 +174,21 @@ export async function run(): Promise<ScenarioResult> {
         record: {
           $type: "app.bsky.feed.post",
           text: "Federation is the future of social media! Building bridges across PDSes.",
-          createdAt: now()
-        }
+          createdAt: now(),
+        },
       }, marcus.accessJwt);
       return res;
-    }
+    },
   );
 
   try {
     const plcResp = await fetch(`${SERVICE_URLS.plc}/${luna.did}`);
     if (plcResp.ok) {
       const didDoc = await plcResp.json();
-      result.stepPassed("PLC resolves Luna's DID", `alsoKnownAs=${JSON.stringify(didDoc.alsoKnownAs)}`);
+      result.stepPassed(
+        "PLC resolves Luna's DID",
+        `alsoKnownAs=${JSON.stringify(didDoc.alsoKnownAs)}`,
+      );
     } else {
       result.stepSkipped("PLC resolves Luna's DID", `PLC returned ${plcResp.status}`);
     }
@@ -169,19 +197,24 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   const resolved = await timedCall(
-    result, "Nova resolves Luna's handle from PDS2",
+    result,
+    "Nova resolves Luna's handle from PDS2",
     async () => {
       return await pds2.raw.get("com.atproto.identity.resolveHandle", { handle: luna.handle });
     },
-    (r) => `did=${r.did}`
+    (r) => `did=${r.did}`,
   );
 
   if (resolved && resolved.did !== luna.did) {
-    result.stepFailed("Nova resolves Luna's handle from PDS2", `expected ${luna.did}, got ${resolved.did}`);
+    result.stepFailed(
+      "Nova resolves Luna's handle from PDS2",
+      `expected ${luna.did}, got ${resolved.did}`,
+    );
   }
 
   await timedCall(
-    result, "Nova follows Luna (cross-PDS)",
+    result,
+    "Nova follows Luna (cross-PDS)",
     async () => {
       const res = await pds2.raw.post("com.atproto.repo.createRecord", {
         repo: nova.did,
@@ -189,16 +222,17 @@ export async function run(): Promise<ScenarioResult> {
         record: {
           $type: "app.bsky.graph.follow",
           subject: luna.did,
-          createdAt: now()
-        }
+          createdAt: now(),
+        },
       }, nova.accessJwt);
       return res;
     },
-    (r) => `uri=${r.uri}`
+    (r) => `uri=${r.uri}`,
   );
 
   await timedCall(
-    result, "Rex follows Marcus (cross-PDS)",
+    result,
+    "Rex follows Marcus (cross-PDS)",
     async () => {
       const res = await pds2.raw.post("com.atproto.repo.createRecord", {
         repo: rex.did,
@@ -206,17 +240,18 @@ export async function run(): Promise<ScenarioResult> {
         record: {
           $type: "app.bsky.graph.follow",
           subject: marcus.did,
-          createdAt: now()
-        }
+          createdAt: now(),
+        },
       }, rex.accessJwt);
       return res;
     },
-    (r) => `uri=${r.uri}`
+    (r) => `uri=${r.uri}`,
   );
 
   if (marcusPost) {
     await timedCall(
-      result, "Rex replies to Marcus (cross-PDS)",
+      result,
+      "Rex replies to Marcus (cross-PDS)",
       async () => {
         await pds2.raw.post("com.atproto.repo.createRecord", {
           repo: rex.did,
@@ -227,15 +262,15 @@ export async function run(): Promise<ScenarioResult> {
             createdAt: now(),
             reply: {
               root: { uri: marcusPost.uri, cid: marcusPost.cid },
-              parent: { uri: marcusPost.uri, cid: marcusPost.cid }
-            }
-          }
+              parent: { uri: marcusPost.uri, cid: marcusPost.cid },
+            },
+          },
         }, rex.accessJwt);
-      }
+      },
     );
   }
 
-  await new Promise(r => setTimeout(r, 5000));
+  await new Promise((r) => setTimeout(r, 5000));
 
   try {
     const relayResp = await fetch(`${SERVICE_URLS.relay}/api/relay/health`);
@@ -252,7 +287,9 @@ export async function run(): Promise<ScenarioResult> {
     const upstreamsResp = await fetch(`${SERVICE_URLS.relay}/api/relay/upstreams`);
     if (upstreamsResp.ok) {
       const upstreams = await upstreamsResp.json();
-      const count = Array.isArray(upstreams) ? upstreams.length : (upstreams.upstreams?.length || 0);
+      const count = Array.isArray(upstreams)
+        ? upstreams.length
+        : (upstreams.upstreams?.length || 0);
       result.stepPassed("Relay upstreams", `count=${count}`);
     } else {
       result.stepSkipped("Relay upstreams", `status=${upstreamsResp.status}`);
@@ -263,10 +300,13 @@ export async function run(): Promise<ScenarioResult> {
 
   try {
     const appviewResp = await fetch(`${SERVICE_URLS.appview}/admin/backfill/status`, {
-      headers: { "Authorization": "Bearer localdevadmin" }
+      headers: { "Authorization": "Bearer localdevadmin" },
     });
     if (appviewResp.ok) {
-      result.stepPassed("AppView backfill status", `body=${(await appviewResp.text()).substring(0, 100)}`);
+      result.stepPassed(
+        "AppView backfill status",
+        `body=${(await appviewResp.text()).substring(0, 100)}`,
+      );
     } else {
       result.stepSkipped("AppView backfill status", `status=${appviewResp.status}`);
     }
@@ -275,32 +315,35 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   await timedCall(
-    result, "Nova views Luna's profile via AppView",
+    result,
+    "Nova views Luna's profile via AppView",
     async () => {
       return await pds2.raw.get("app.bsky.actor.getProfile", { actor: luna.did }, nova.accessJwt);
     },
-    (p) => `displayName=${p.displayName}`
+    (p) => `displayName=${p.displayName}`,
   );
 
   await timedCall(
-    result, "Nova sees Luna's feed via AppView",
+    result,
+    "Nova sees Luna's feed via AppView",
     async () => {
       return await pds2.raw.get("app.bsky.feed.getAuthorFeed", { actor: luna.did }, nova.accessJwt);
     },
-    (f) => `items=${f.feed?.length || 0}`
+    (f) => `items=${f.feed?.length || 0}`,
   );
 
   if (lunaPost) {
     await timedCall(
-      result, "Cross-PDS record retrieval",
+      result,
+      "Cross-PDS record retrieval",
       async () => {
         return await pds2.raw.get("com.atproto.repo.getRecord", {
           repo: luna.did,
           collection: "app.bsky.feed.post",
-          rkey: lunaPost.uri.split("/").pop()
+          rkey: lunaPost.uri.split("/").pop(),
         }, nova.accessJwt);
       },
-      (r) => `uri=${r.uri}`
+      (r) => `uri=${r.uri}`,
     );
   }
 
@@ -309,7 +352,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

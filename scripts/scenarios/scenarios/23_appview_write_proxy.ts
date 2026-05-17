@@ -22,7 +22,7 @@ export { ScenarioResult, StepResult, StepStatus } from "../../lib/deno/runner.ts
 export type { ScenarioReport } from "../../lib/deno/runner.ts";
 import { assert } from "../../lib/deno/assertions.ts";
 import { XrpcClient, XrpcError } from "../../lib/deno/client.ts";
-import { PDS1, SERVICE_URLS, APPVIEW_ADMIN_SECRET, getCharacter } from "../../lib/deno/config.ts";
+import { APPVIEW_ADMIN_SECRET, getCharacter, PDS1, SERVICE_URLS } from "../../lib/deno/config.ts";
 
 function now() {
   return new Date().toISOString();
@@ -52,22 +52,24 @@ export async function run(): Promise<ScenarioResult> {
   const av = new XrpcClient(avUrl);
 
   await timedCall(
-    result, "AppView health check",
+    result,
+    "AppView health check",
     async () => {
       return await av.raw.httpGet("/admin/backfill/status", undefined, adminToken);
     },
-    (r) => `enabled=${r.enabled ?? false}`
+    (r) => `enabled=${r.enabled ?? false}`,
   );
 
   const charNames = ["luna", "marcus"];
   for (const name of charNames) {
     const char = getCharacter(name);
     const session = await timedCall(
-      result, `Create account: ${char.name}`,
+      result,
+      `Create account: ${char.name}`,
       async () => {
         return await client.accounts.createAccount(char.handle, char.email, char.password);
       },
-      (s) => `did=${s.did}`
+      (s) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -75,7 +77,7 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const active = charNames.filter(n => getCharacter(n).did);
+  const active = charNames.filter((n) => getCharacter(n).did);
   if (active.length < 1) {
     result.stepFailed("Account creation", "No accounts created");
     result.finish();
@@ -86,9 +88,10 @@ export async function run(): Promise<ScenarioResult> {
     const char = getCharacter(name);
     try {
       await client.records.createRecord(
-        char.did, "app.bsky.actor.profile",
+        char.did,
+        "app.bsky.actor.profile",
         { $type: "app.bsky.actor.profile", displayName: char.name },
-        char.accessJwt
+        char.accessJwt,
       );
     } catch (e) {
       if (!(e instanceof XrpcError && e.status === 404)) throw e;
@@ -98,37 +101,46 @@ export async function run(): Promise<ScenarioResult> {
   const luna = getCharacter("luna");
   if (luna.did && luna.accessJwt) {
     await timedCall(
-      result, "Luna creates a post",
+      result,
+      "Luna creates a post",
       async () => {
         return await client.records.createRecord(
-          luna.did, "app.bsky.feed.post",
-          { $type: "app.bsky.feed.post", text: "Write proxy test post from Luna", createdAt: now() },
-          luna.accessJwt
+          luna.did,
+          "app.bsky.feed.post",
+          {
+            $type: "app.bsky.feed.post",
+            text: "Write proxy test post from Luna",
+            createdAt: now(),
+          },
+          luna.accessJwt,
         );
       },
-      (r) => `uri=${r.uri}`
+      (r) => `uri=${r.uri}`,
     );
   }
 
-  await new Promise(r => setTimeout(r, 3000));
+  await new Promise((r) => setTimeout(r, 3000));
 
   await timedCall(
-    result, "Backfill status",
+    result,
+    "Backfill status",
     async () => {
       return await av.raw.httpGet("/admin/backfill/status", undefined, adminToken);
-    }
+    },
   );
 
   await timedCall(
-    result, "Ingest engine health",
+    result,
+    "Ingest engine health",
     async () => {
       return await av.raw.httpGet("/admin/ingest/health", undefined, adminToken);
-    }
+    },
   );
 
   if (luna.did && luna.accessJwt) {
     await timedCall(
-      result, "Write proxy: createRecord on AppView (unwired)",
+      result,
+      "Write proxy: createRecord on AppView (unwired)",
       async () => {
         return await av.raw.httpPost(
           "/xrpc/com.atproto.repo.createRecord",
@@ -141,61 +153,66 @@ export async function run(): Promise<ScenarioResult> {
               createdAt: now(),
             },
           },
-          luna.accessJwt
+          luna.accessJwt,
         );
-      }
+      },
     );
 
     await timedCall(
-      result, "OAuth2: valid Bearer token on AppView",
+      result,
+      "OAuth2: valid Bearer token on AppView",
       async () => {
         return await av.raw.httpGet(
           "/xrpc/app.bsky.actor.getProfile",
           { actor: luna.did },
-          luna.accessJwt
+          luna.accessJwt,
         );
       },
-      (r) => `handle=${r.handle || "unknown"}`
+      (r) => `handle=${r.handle || "unknown"}`,
     );
   }
 
   if (luna.did) {
     await timedCall(
-      result, "OAuth2: DID-as-token on AppView",
+      result,
+      "OAuth2: DID-as-token on AppView",
       async () => {
         return await av.raw.httpGet(
           "/xrpc/app.bsky.actor.getProfile",
           { actor: luna.did },
-          luna.did
+          luna.did,
         );
       },
-      (r) => `status=200`
+      (r) => `status=200`,
     );
   }
 
   await timedCall(
-    result, "OAuth2: invalid Bearer token on AppView",
+    result,
+    "OAuth2: invalid Bearer token on AppView",
     async () => {
       return await av.raw.httpGet(
         "/xrpc/app.bsky.actor.getProfile",
         { actor: luna.did || "did:plc:unknown" },
-        "invalid-garbage-token-xyz"
+        "invalid-garbage-token-xyz",
       );
-    }
+    },
   );
 
   await timedCall(
-    result, "Endpoint counts after operations",
+    result,
+    "Endpoint counts after operations",
     async () => {
       return await av.raw.httpGet("/admin/endpoints", undefined, adminToken);
-    }
+    },
   );
 
   await timedCall(
-    result, "AppView metrics",
+    result,
+    "AppView metrics",
     async () => {
       return await av.raw.httpGet("/admin/appview/metrics/stats", undefined, adminToken);
-    }
+    },
   );
 
   result.finish();
@@ -203,7 +220,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then(res => {
+  run().then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

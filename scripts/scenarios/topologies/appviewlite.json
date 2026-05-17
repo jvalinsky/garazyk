@@ -31,10 +31,24 @@
         "path": "/"
       },
       "capabilities": [
-        "getTimeline", "getProfile", "getFeed", "search",
-        "posts", "likes", "reposts", "follows", "blocks",
-        "labels", "lists", "mutes", "notifications", "feeds",
-        "video", "mediaGrid", "dataExport", "multiProtocol"
+        "getTimeline",
+        "getProfile",
+        "getFeed",
+        "search",
+        "posts",
+        "likes",
+        "reposts",
+        "follows",
+        "blocks",
+        "labels",
+        "lists",
+        "mutes",
+        "notifications",
+        "feeds",
+        "video",
+        "mediaGrid",
+        "dataExport",
+        "multiProtocol"
       ],
       "dependsOn": ["local-relay"]
     }
