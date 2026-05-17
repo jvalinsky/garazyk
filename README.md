@@ -1,135 +1,63 @@
 # Garazyk
 
-Garazyk is an AT Protocol stack written in Objective-C. It provides federated social networking
-services capable of running on macOS (Apple frameworks) and Linux (GNUstep).
+Garazyk is a suite of Deno tools and JSR packages designed for orchestrating local AT Protocol networks and executing end-to-end (E2E) protocol simulation scenarios.
 
-## The Stack
+It provides a programmable, strongly typed interface for spinning up Bluesky topologies (PDS, BGS, AppView, PLC, etc.) via Docker, interacting with those services via generated Lexicon clients, and asserting complex social behaviors.
 
-This repository contains core AT Protocol services that can be self-hosted individually or together
-as a local network:
+## Packages
 
-- **PDS (Personal Data Server)**: Handles user repository hosting, blob storage, account management,
-  and serves XRPC endpoints.
-- **AppView**: Provides indexing, backfill processing, and serves profile, feed, and notification
-  queries.
-- **Relay (BGS)**: Handles firehose aggregation, dispatches network crawls, and broadcasts the
-  global event stream.
-- **PLC Server**: A decentralized identity directory providing rotation key management, operation
-  logs, and DID resolution.
-- **Admin UI**: A standalone HTMX-based web interface for live monitoring, moderation, and
-  administration of the PDS.
+The project is split into four modular Deno JSR packages:
 
-## Deployment & Self-Hosting
+- **`@garazyk/docker-client`**: A generic Deno wrapper for Docker Engine and Docker Compose. Provides utilities for streaming logs, checking container health, and parsing Docker events.
+- **`@garazyk/atproto-client`**: A strongly typed XRPC client featuring dynamically generated methods for all Bluesky and ATProto lexicons. Also includes helpers for Firehose ingestion and protocol seeding.
+- **`@garazyk/atproto-topology`**: Defines, validates, and renders Docker Compose layouts for various ATProto service topologies using Zod schemas.
+- **`@garazyk/scenario-runner`**: An orchestration and testing harness that integrates the topology definition and docker clients to run automated assertions against a live local network. Includes an HTML test report writer and OpenTelemetry instrumentation.
 
-Run the Garazyk stack for testing or local development via the included Docker Compose
-configuration:
+## Getting Started
+
+Garazyk requires [Deno v2.2+](https://deno.com/) and [Docker](https://www.docker.com/).
+
+### Running the E2E Scenario Suite
+
+You can execute the full scenario test suite against a default ATProto topology:
 
 ```bash
-docker compose up
+deno run -A scripts/run_scenarios.ts --topology garazyk-default
 ```
 
-### Production Deployment
-
-Garazyk services speak plain HTTP. **For production use, place the services behind a reverse proxy
-(like Caddy or Nginx) to terminate TLS/HTTPS.** Without HTTPS, the AT Protocol OAuth flow and
-Bluesky federation will refuse connections.
-
-For instructions on provisioning reverse proxies, configuring environment variables (`PDS_ISSUER`,
-`PDS_ADMIN_PASSWORD`), and managing database backups, read the
-**[Deployment Guide](docs/guides/DEPLOYMENT.md)**.
-
-## Technical Architecture
-
-Garazyk implements the ATProto topology:
-
-- **Sans-I/O Networking:** The HTTP stack separates protocol state (`HttpProtocolDriver`) from
-  connection management (`HttpConnectionIOCoordinator`), enabling the code to run across bare-metal
-  sockets or behind WebSocket proxies.
-- **Database Layer:** Storage is managed via SQLite in WAL (Write-Ahead Log) mode.
-- **Media Processing:** Video transcoding utilizes AVFoundation hardware acceleration on macOS and
-  FFmpeg on Linux for H.264/H.265 processing.
-- **WASM execution:** The repository includes a WASM kernel (`objc-jupyter-wasm/`) capable of
-  executing Objective-C in the browser via an integrated C interpreter.
-
-For system design, data models, and request lifecycle, see the
-**[Architecture Overview](docs/architecture/atproto_pds_architecture.md)**.
-
-## Building from Source
-
-### Prerequisites
-
-- **macOS**: `brew install cmake xcodegen deno`
-- **Linux**: `apt install clang cmake libsqlite3-dev libssl-dev gnustep-devel` (and
-  [install Deno](https://deno.land/manual/getting_started/installation))
-
-### macOS Build
+You can limit the execution to specific scenarios using the `--run` or `--grep` flags:
 
 ```bash
-xcodegen generate
-xcodebuild -scheme AllTests build
-./build/tests/AllTests
+# Run only account lifecycle scenarios
+deno run -A scripts/run_scenarios.ts --topology garazyk-default --run 01_account_lifecycle.ts
 ```
 
-### Linux/GNUstep Build
+### Writing Scenarios
 
-```bash
-cmake -S . -B build-linux -DCMAKE_BUILD_TYPE=Debug
-cmake --build build-linux -j
-./build-linux/tests/AllTests
+Scenarios are written using the `@garazyk/scenario-runner` package. Here is an example of a simple assertion:
+
+```typescript
+import { ScenarioResult, timedCall, assert } from "@garazyk/scenario-runner";
+import { createAccountOrLogin } from "@garazyk/atproto-client/seed";
+
+export async function run(args) {
+  const result = new ScenarioResult("Account Creation");
+  result.start();
+
+  await timedCall(result, "Register User", async () => {
+     const res = await createAccountOrLogin(args.client, "alice.test", "alice@test.com", "password");
+     assert.isNotNull(res.did);
+  });
+
+  result.finish();
+  return result;
+}
 ```
 
-## Testing
+## Documentation
 
-Garazyk includes a test suite with over 2,600 tests. The project features a **Deno Scenario
-Framework** (`scripts/scenarios/`) that orchestrates integration tests against the local Docker
-network to validate federation and OAuth flows.
+The project includes legacy deployment documentation which is currently being updated to reflect the new Deno-centric orchestration layer. 
 
-## Documentation Directory
+## License
 
-The `docs/` folder is the source of truth for operators and contributors.
-
-- **[Deployment Guide](docs/guides/DEPLOYMENT.md)**
-- **[Architecture Overview](docs/architecture/atproto_pds_architecture.md)**
-- [Contributor Setup](docs/01-getting-started/setup.md)
-- [Codebase Map](docs/01-getting-started/codebase-map.md)
-- [Developer Tutorials](docs/10-tutorials/index.md)
-- [Deno Scenario Framework](docs/11-reference/deno-scenario-framework.md)
-
-## Licensing
-
-Original code in this repository is released to the public domain under the **Unlicense OR CC0-1.0**
-dual dedication. Per-file SPDX headers are authoritative. Full license texts are in `UNLICENSE` and
-`LICENSES/`.
-
-### Original code (`Garazyk/Sources/`, `Garazyk/Tests/`, `Garazyk/Binaries/`)
-
-Licensed under `Unlicense OR CC0-1.0` — your choice. Each file carries:
-
-```
-SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
-SPDX-License-Identifier: Unlicense OR CC0-1.0
-```
-
-### Compat/ platform shims (`Garazyk/Sources/Compat/`)
-
-These files are **original** API-compatible reimplementations of Apple framework APIs (CommonCrypto,
-Security, CoreFoundation, LocalAuthentication, os/log, XCTest). They are not derived from Apple or
-GNUstep source code — they merely provide the same API surface, backed by OpenSSL, SQLite, and other
-open-source libraries on Linux. They are released under the same `Unlicense OR CC0-1.0` terms as the
-rest of the project.
-
-**Note**: On Linux, the runtime links against GNUstepBase (LGPL-2.1+). This is a library dependency,
-not a code provenance issue — the Compat/ shims are original work that calls into GNUstepBase, not
-derived from it.
-
-### Vendored third-party code
-
-| Path                               | License           | Copyright          |
-| ---------------------------------- | ----------------- | ------------------ |
-| `secp256k1/`                       | MIT               | Pieter Wuille      |
-| `vendor/secp256k1/`                | MIT               | Pieter Wuille      |
-| `vendor/reference/did-method-plc/` | MIT OR Apache-2.0 | Bluesky Social PBC |
-| `vendor/reference/Allegedly/`      | Apache-2.0        | Bluesky Social PBC |
-
-These directories retain their original licenses and are **not** covered by the Unlicense/CC0
-dedication. See their respective `LICENSE`/`COPYING` files.
+Garazyk is dual-licensed under MIT and Unlicense.
