@@ -461,9 +461,7 @@ export class DockerApiClient {
         if (signal?.aborted) break;
         const { done, value } = await reader.read().catch((err: Error) => {
           // AbortError is expected when close() cancels the stream.
-          // Return done=true so the generator exits cleanly instead of
-          // propagating the error as an unhandled rejection.
-          if (err instanceof DOMException && err.name === "AbortError") {
+          if (err.name === "AbortError") {
             return { done: true as const, value: undefined as unknown as Uint8Array };
           }
           throw err;
@@ -487,7 +485,7 @@ export class DockerApiClient {
     } finally {
       reader.releaseLock();
       try {
-        resp.body?.cancel();
+        resp.body?.cancel().catch(() => {});
       } catch { /* ignore */ }
     }
   }
@@ -540,9 +538,7 @@ export class DockerApiClient {
         if (signal?.aborted) break;
         const { done, value } = await reader.read().catch((err: Error) => {
           // AbortError is expected when close() cancels the stream.
-          // Return done=true so the generator exits cleanly instead of
-          // propagating the error as an unhandled rejection.
-          if (err instanceof DOMException && err.name === "AbortError") {
+          if (err.name === "AbortError") {
             return { done: true as const, value: undefined as unknown as Uint8Array };
           }
           throw err;
@@ -567,7 +563,7 @@ export class DockerApiClient {
     } finally {
       reader.releaseLock();
       try {
-        resp.body?.cancel();
+        resp.body?.cancel().catch(() => {});
       } catch { /* ignore */ }
     }
   }

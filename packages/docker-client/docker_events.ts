@@ -273,20 +273,8 @@ export class ContainerEventWatcher {
   private subscribers: Array<(event: WatcherEvent) => void> = [];
   private _closed = false;
   private eventLoopPromise: Promise<void> | null = null;
-  private _unhandledRejectionHandler: ((e: PromiseRejectionEvent) => void) | null = null;
-
   private constructor(client: DockerApiClient) {
     this.client = client;
-
-    // Install a scoped AbortError suppression handler.
-    // This is removed in close() to avoid masking real bugs elsewhere.
-    this._unhandledRejectionHandler = (e) => {
-      const reason = e.reason;
-      if (reason instanceof DOMException && reason.name === "AbortError") {
-        e.preventDefault();
-      }
-    };
-    globalThis.addEventListener("unhandledrejection", this._unhandledRejectionHandler);
   }
 
   /**
@@ -363,12 +351,6 @@ export class ContainerEventWatcher {
     if (this._closed) return;
     this._closed = true;
 
-    // Remove the scoped AbortError suppression handler.
-    if (this._unhandledRejectionHandler) {
-      globalThis.removeEventListener("unhandledrejection", this._unhandledRejectionHandler);
-      this._unhandledRejectionHandler = null;
-    }
-
     // Abort the event stream.
     if (!this.abortController.signal.aborted) {
       this.abortController.abort();
@@ -388,7 +370,7 @@ export class ContainerEventWatcher {
     // Rust HTTP client layer in time.
     if (this.eventLoopPromise) {
       await Promise.race([
-        this.eventLoopPromise.then(() => {}, () => {}),
+        this.eventLoopPromise.catch(() => {}),
         new Promise<void>((resolve) => setTimeout(resolve, 100)),
       ]);
       this.eventLoopPromise = null;
@@ -453,7 +435,7 @@ export class ContainerEventWatcher {
         }
       }
     } catch (err) {
-      if (!this._closed && !(err instanceof DOMException && err.name === "AbortError")) {
+      if (!this._closed && !(err && err.name === "AbortError")) {
         console.error("[docker_events] event stream error:", err);
       }
     }
