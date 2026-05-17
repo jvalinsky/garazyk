@@ -118,7 +118,7 @@ export class MockTwilioServer {
         "-A",
         "--config",
         `${root}deno.json`,
-        new URL("../../mock-twilio-server.ts", import.meta.url).pathname,
+        new URL("../../scripts/mock-twilio-server.ts", import.meta.url).pathname,
         `--port=${this.port}`,
       ],
       stdout: "null",

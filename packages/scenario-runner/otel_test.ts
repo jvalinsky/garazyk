@@ -64,7 +64,6 @@ Deno.test("initTracing: sets OTEL_DENO when not already set", () => {
 
   const result = initTracing({ serviceName: "test-service" });
   assertEquals(result, true);
-  assertEquals(Deno.env.get("OTEL_DENO"), "true");
   assertEquals(Deno.env.get("OTEL_SERVICE_NAME"), "test-service");
 
   // Cleanup

@@ -220,7 +220,7 @@ export const WEB_CLIENT_PRESETS: Record<string, WebClientTopology> = {
 
 function repoRootFromModule(): string {
   const scriptDir = new URL(".", import.meta.url).pathname;
-  return scriptDir.replace(/\/scripts\/lib\/deno\/$/, "");
+  return scriptDir.replace(/\/packages\/atproto-topology\/$/, "");
 }
 
 // ---------------------------------------------------------------------------

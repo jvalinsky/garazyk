@@ -73,7 +73,7 @@ export async function startLocalNetwork(options: LocalNetworkOptions = {}): Prom
     const topologyManifest = join(ctx.runDir, "topology-manifest.json");
 
     if (options.topology) {
-      const { compileTopology } = await import("./topology_compiler.ts");
+      const { compileTopology } = await import("@garazyk/atproto-topology");
       await compileTopology({
         preset: options.topology,
         runDir: ctx.runDir,
@@ -105,7 +105,7 @@ export async function startLocalNetwork(options: LocalNetworkOptions = {}): Prom
     }
 
     if (options.topology && Deno.env.get("ATPROTO_TOPOLOGY_MANIFEST")) {
-      const { loadTopologyManifest } = await import("./topology.ts");
+      const { loadTopologyManifest } = await import("@garazyk/atproto-topology");
       const manifest = loadTopologyManifest(topologyManifest);
       if (manifest) {
         const watcher = await ContainerEventWatcher.create();
