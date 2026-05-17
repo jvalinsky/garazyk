@@ -24,7 +24,8 @@
   },
   "tasks": {
     "test": "deno test -A packages/",
-    "check": "deno check packages/*/mod.ts scripts/*.ts",
+    "check": "deno task boundaries && deno check packages/*/mod.ts scripts/*.ts",
+    "boundaries": "deno run --allow-read scripts/dev/check_module_boundaries.ts",
     "lint": "deno lint packages/ scripts/",
     "fmt": "deno fmt packages/ scripts/",
     "generate-client": "deno run -A packages/gruszka/scripts/generate.ts",
