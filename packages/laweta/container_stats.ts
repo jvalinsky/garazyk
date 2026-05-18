@@ -120,9 +120,9 @@ export class ContainerStatsSampler {
   private onMemoryPressure?: (alert: MemoryPressureAlert) => void;
   private running = false;
   private timerId: ReturnType<typeof setInterval> | null = null;
+  private sampleInFlight: Promise<ContainerStatsSnapshot[]> | null = null;
   private previousFailcnt = new Map<string, number>();
-  private previousNetworkRx = new Map<string, number>();
-  private previousNetworkTx = new Map<string, number>();
+  private previousCounters = new Map<string, number>();
 
   /**
    * Create a stats sampler.
@@ -144,9 +144,12 @@ export class ContainerStatsSampler {
   start(): void {
     if (this.running) return;
     this.running = true;
-    this.timerId = setInterval(() => this.sample(), this.intervalMs);
+    this.timerId = setInterval(
+      () => this.runScheduledSample(),
+      this.intervalMs,
+    );
     // Fire an initial sample immediately
-    this.sample();
+    this.runScheduledSample();
   }
 
   /**
@@ -155,11 +158,16 @@ export class ContainerStatsSampler {
    * Records a final snapshot of all containers before stopping.
    */
   async stop(): Promise<void> {
-    if (!this.running) return;
+    const wasRunning = this.running;
+    const scheduledSample = this.sampleInFlight;
+    if (!wasRunning && scheduledSample === null) return;
     this.running = false;
     if (this.timerId !== null) {
       clearInterval(this.timerId);
       this.timerId = null;
+    }
+    if (scheduledSample !== null) {
+      await scheduledSample;
     }
     // Record one final snapshot
     await this.sample();
@@ -289,41 +297,48 @@ export class ContainerStatsSampler {
       .catch(() => {});
     recordGauge("container.pids", s.pids, attrs).catch(() => {});
 
-    // Counters (cumulative values)
-    recordCounter("container.memory.failcnt", s.memoryFailcnt, attrs).catch(
-      () => {},
+    this.recordCounterDelta(
+      "container.memory.failcnt",
+      s.containerId,
+      s.memoryFailcnt,
+      attrs,
     );
-
-    // Network counters — record deltas if we have previous values
-    const prevRx = this.previousNetworkRx.get(s.containerId) ?? 0;
-    const prevTx = this.previousNetworkTx.get(s.containerId) ?? 0;
-    if (s.networkRxBytes >= prevRx) {
-      recordCounter(
-        "container.network.rx_bytes",
-        s.networkRxBytes - prevRx,
-        attrs,
-      ).catch(() => {});
-    }
-    if (s.networkTxBytes >= prevTx) {
-      recordCounter(
-        "container.network.tx_bytes",
-        s.networkTxBytes - prevTx,
-        attrs,
-      ).catch(() => {});
-    }
-    recordCounter("container.network.rx_errors", s.networkRxErrors, attrs)
-      .catch(() => {});
-    recordCounter("container.network.tx_errors", s.networkTxErrors, attrs)
-      .catch(() => {});
-
-    this.previousNetworkRx.set(s.containerId, s.networkRxBytes);
-    this.previousNetworkTx.set(s.containerId, s.networkTxBytes);
-
-    // Block I/O counters
-    recordCounter("container.blockio.read_bytes", s.blockioReadBytes, attrs)
-      .catch(() => {});
-    recordCounter("container.blockio.write_bytes", s.blockioWriteBytes, attrs)
-      .catch(() => {});
+    this.recordCounterDelta(
+      "container.network.rx_bytes",
+      s.containerId,
+      s.networkRxBytes,
+      attrs,
+    );
+    this.recordCounterDelta(
+      "container.network.tx_bytes",
+      s.containerId,
+      s.networkTxBytes,
+      attrs,
+    );
+    this.recordCounterDelta(
+      "container.network.rx_errors",
+      s.containerId,
+      s.networkRxErrors,
+      attrs,
+    );
+    this.recordCounterDelta(
+      "container.network.tx_errors",
+      s.containerId,
+      s.networkTxErrors,
+      attrs,
+    );
+    this.recordCounterDelta(
+      "container.blockio.read_bytes",
+      s.containerId,
+      s.blockioReadBytes,
+      attrs,
+    );
+    this.recordCounterDelta(
+      "container.blockio.write_bytes",
+      s.containerId,
+      s.blockioWriteBytes,
+      attrs,
+    );
 
     // Span event for correlation with traces
     addSpanEvent("container.stats", {
@@ -335,6 +350,39 @@ export class ContainerStatsSampler {
       "container.memory_limit": formatBytes(s.memoryLimitBytes),
       "container.pids": s.pids,
     });
+  }
+
+  private runScheduledSample(): void {
+    if (this.sampleInFlight !== null) return;
+    const sample = this.sample().catch((e) => {
+      console.debug("[container-stats] scheduled sample failed", e);
+      return [];
+    });
+    this.sampleInFlight = sample;
+    sample.finally(() => {
+      if (this.sampleInFlight === sample) {
+        this.sampleInFlight = null;
+      }
+    });
+  }
+
+  private recordCounterDelta(
+    metricName: string,
+    containerId: string,
+    currentValue: number,
+    attrs: MetricAttributes,
+  ): void {
+    const key = `${containerId}:${metricName}`;
+    const previousValue = this.previousCounters.get(key);
+    this.previousCounters.set(key, currentValue);
+
+    if (previousValue === undefined || currentValue <= previousValue) {
+      return;
+    }
+
+    recordCounter(metricName, currentValue - previousValue, attrs).catch(
+      () => {},
+    );
   }
 
   /**

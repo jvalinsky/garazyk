@@ -14,6 +14,7 @@ import type {
   ContainerSummary,
   DockerApiClient,
 } from "./docker_api.ts";
+import { setTelemetryTestHook } from "./telemetry.ts";
 import { assertEquals } from "@std/assert";
 
 // ---------------------------------------------------------------------------
@@ -138,6 +139,79 @@ function makeContainerStats(
     },
     ...overrides,
   } as ContainerStats;
+}
+
+function makeSequencedMockClient(
+  containers: ContainerSummary[],
+  statsSequence: ContainerStats[],
+): DockerApiClient {
+  let index = 0;
+  return {
+    listContainers() {
+      return Promise.resolve(containers);
+    },
+    containerStats() {
+      const stats = statsSequence[Math.min(index, statsSequence.length - 1)];
+      index += 1;
+      return Promise.resolve(stats);
+    },
+  } as unknown as DockerApiClient;
+}
+
+interface Deferred<T> {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+}
+
+function deferred<T>(): Deferred<T> {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((res) => {
+    resolve = res;
+  });
+  return { promise, resolve };
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+interface RecordedMetric {
+  name: string;
+  value: number;
+}
+
+async function withTelemetryCapture(
+  fn: (metrics: {
+    gauges: RecordedMetric[];
+    counters: RecordedMetric[];
+  }) => Promise<void>,
+): Promise<void> {
+  const previousOtel = Deno.env.get("OTEL_DENO");
+  const metrics = {
+    gauges: [] as RecordedMetric[],
+    counters: [] as RecordedMetric[],
+  };
+
+  Deno.env.set("OTEL_DENO", "true");
+  setTelemetryTestHook({
+    recordGauge(name, value) {
+      metrics.gauges.push({ name, value });
+    },
+    recordCounter(name, value) {
+      metrics.counters.push({ name, value });
+    },
+  });
+
+  try {
+    await fn(metrics);
+  } finally {
+    setTelemetryTestHook(null);
+    if (previousOtel === undefined) {
+      Deno.env.delete("OTEL_DENO");
+    } else {
+      Deno.env.set("OTEL_DENO", previousOtel);
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -350,6 +424,282 @@ Deno.test("memory pressure: does not fire when failcnt stays at 0", async () => 
   await sampler.sample();
   await sampler.sample();
   assertEquals(alertFired, false);
+});
+
+Deno.test("sampler: timer samples do not run concurrently", async () => {
+  const container = makeContainerSummary();
+  const stats = makeContainerStats();
+  let activeSamples = 0;
+  let maxActiveSamples = 0;
+
+  const client = {
+    listContainers() {
+      return Promise.resolve([container]);
+    },
+    async containerStats() {
+      activeSamples += 1;
+      maxActiveSamples = Math.max(maxActiveSamples, activeSamples);
+      await delay(30);
+      activeSamples -= 1;
+      return stats;
+    },
+  } as unknown as DockerApiClient;
+
+  const sampler = new ContainerStatsSampler({
+    client,
+    composeProject: "garazyk-e2e-test",
+    intervalMs: 1,
+  });
+
+  sampler.start();
+  await delay(10);
+  await sampler.stop();
+
+  assertEquals(maxActiveSamples, 1);
+});
+
+Deno.test("sampler: direct sample can run while scheduled sample is in flight", async () => {
+  const container = makeContainerSummary();
+  const stats = makeContainerStats();
+  const firstSample = deferred<ContainerStats>();
+  let calls = 0;
+  let activeSamples = 0;
+  let maxActiveSamples = 0;
+
+  const client = {
+    listContainers() {
+      return Promise.resolve([container]);
+    },
+    async containerStats() {
+      calls += 1;
+      activeSamples += 1;
+      maxActiveSamples = Math.max(maxActiveSamples, activeSamples);
+      if (calls === 1) {
+        await firstSample.promise;
+      }
+      activeSamples -= 1;
+      return stats;
+    },
+  } as unknown as DockerApiClient;
+
+  const sampler = new ContainerStatsSampler({
+    client,
+    composeProject: "garazyk-e2e-test",
+    intervalMs: 1000,
+  });
+
+  sampler.start();
+  await delay(0);
+  const directSample = sampler.sample();
+  await delay(0);
+
+  assertEquals(maxActiveSamples, 2);
+  firstSample.resolve(stats);
+  await directSample;
+  await sampler.stop();
+});
+
+Deno.test("sampler: stop waits for scheduled sample and records one final sample", async () => {
+  const container = makeContainerSummary();
+  const stats = makeContainerStats();
+  const firstSample = deferred<ContainerStats>();
+  let calls = 0;
+
+  const client = {
+    listContainers() {
+      return Promise.resolve([container]);
+    },
+    async containerStats() {
+      calls += 1;
+      if (calls === 1) {
+        await firstSample.promise;
+      }
+      return stats;
+    },
+  } as unknown as DockerApiClient;
+
+  const sampler = new ContainerStatsSampler({
+    client,
+    composeProject: "garazyk-e2e-test",
+    intervalMs: 1000,
+  });
+
+  sampler.start();
+  await delay(0);
+  const stop = sampler.stop();
+  await delay(0);
+  assertEquals(calls, 1);
+
+  firstSample.resolve(stats);
+  await stop;
+  assertEquals(calls, 2);
+  await sampler.stop();
+  assertEquals(calls, 2);
+});
+
+Deno.test("telemetry: first sample emits gauges but no counter deltas", async () => {
+  await withTelemetryCapture(async (metrics) => {
+    const container = makeContainerSummary();
+    const client = makeMockClient([container], makeContainerStats());
+    const sampler = new ContainerStatsSampler({
+      client,
+      composeProject: "garazyk-e2e-test",
+    });
+
+    await sampler.sample();
+
+    assertEquals(metrics.gauges.map((metric) => metric.name), [
+      "container.cpu.percent",
+      "container.memory.usage_bytes",
+      "container.memory.limit_bytes",
+      "container.memory.percent",
+      "container.memory.rss_bytes",
+      "container.memory.cache_bytes",
+      "container.pids",
+    ]);
+    assertEquals(metrics.counters, []);
+  });
+});
+
+Deno.test("telemetry: second sample emits cumulative counter deltas", async () => {
+  await withTelemetryCapture(async (metrics) => {
+    const container = makeContainerSummary();
+    const client = makeSequencedMockClient([container], [
+      makeContainerStats({
+        memory_stats: {
+          usage: 128000000,
+          max_usage: 128000000,
+          limit: 512000000,
+          stats: { cache: 1, rss: 2 },
+          failcnt: 1,
+        },
+        networks: {
+          eth0: {
+            rx_bytes: 100,
+            rx_packets: 0,
+            rx_errors: 1,
+            rx_dropped: 0,
+            tx_bytes: 200,
+            tx_packets: 0,
+            tx_errors: 2,
+            tx_dropped: 0,
+          },
+        },
+        blkio_stats: {
+          io_service_bytes_recursive: [
+            { major: 8, minor: 0, op: "read", value: 300 },
+            { major: 8, minor: 0, op: "write", value: 400 },
+          ],
+        },
+      }),
+      makeContainerStats({
+        memory_stats: {
+          usage: 128000000,
+          max_usage: 128000000,
+          limit: 512000000,
+          stats: { cache: 1, rss: 2 },
+          failcnt: 4,
+        },
+        networks: {
+          eth0: {
+            rx_bytes: 150,
+            rx_packets: 0,
+            rx_errors: 3,
+            rx_dropped: 0,
+            tx_bytes: 260,
+            tx_packets: 0,
+            tx_errors: 5,
+            tx_dropped: 0,
+          },
+        },
+        blkio_stats: {
+          io_service_bytes_recursive: [
+            { major: 8, minor: 0, op: "read", value: 310 },
+            { major: 8, minor: 0, op: "write", value: 425 },
+          ],
+        },
+      }),
+    ]);
+    const sampler = new ContainerStatsSampler({
+      client,
+      composeProject: "garazyk-e2e-test",
+    });
+
+    await sampler.sample();
+    await sampler.sample();
+
+    assertEquals(metrics.counters, [
+      { name: "container.memory.failcnt", value: 3 },
+      { name: "container.network.rx_bytes", value: 50 },
+      { name: "container.network.tx_bytes", value: 60 },
+      { name: "container.network.rx_errors", value: 2 },
+      { name: "container.network.tx_errors", value: 3 },
+      { name: "container.blockio.read_bytes", value: 10 },
+      { name: "container.blockio.write_bytes", value: 25 },
+    ]);
+  });
+});
+
+Deno.test("telemetry: counter reset emits no negative delta and updates baseline", async () => {
+  await withTelemetryCapture(async (metrics) => {
+    const container = makeContainerSummary();
+    const client = makeSequencedMockClient([container], [
+      makeContainerStats({
+        networks: {
+          eth0: {
+            rx_bytes: 100,
+            rx_packets: 0,
+            rx_errors: 0,
+            rx_dropped: 0,
+            tx_bytes: 0,
+            tx_packets: 0,
+            tx_errors: 0,
+            tx_dropped: 0,
+          },
+        },
+      }),
+      makeContainerStats({
+        networks: {
+          eth0: {
+            rx_bytes: 20,
+            rx_packets: 0,
+            rx_errors: 0,
+            rx_dropped: 0,
+            tx_bytes: 0,
+            tx_packets: 0,
+            tx_errors: 0,
+            tx_dropped: 0,
+          },
+        },
+      }),
+      makeContainerStats({
+        networks: {
+          eth0: {
+            rx_bytes: 35,
+            rx_packets: 0,
+            rx_errors: 0,
+            rx_dropped: 0,
+            tx_bytes: 0,
+            tx_packets: 0,
+            tx_errors: 0,
+            tx_dropped: 0,
+          },
+        },
+      }),
+    ]);
+    const sampler = new ContainerStatsSampler({
+      client,
+      composeProject: "garazyk-e2e-test",
+    });
+
+    await sampler.sample();
+    await sampler.sample();
+    await sampler.sample();
+
+    assertEquals(metrics.counters, [
+      { name: "container.network.rx_bytes", value: 15 },
+    ]);
+  });
 });
 
 Deno.test("sampler: start/stop lifecycle", async () => {
