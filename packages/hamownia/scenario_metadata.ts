@@ -4,9 +4,14 @@
  * Centralizes scenario requirements, PDS2 needs, and browser flow declarations.
  */
 
-import type { BrowserFlow, Topology } from "@garazyk/schemat";
-import type { ScenarioRequirement } from "@garazyk/schemat/topology-schema";
-import { parseScenarioRequirement } from "@garazyk/schemat/topology-schema";
+import {
+  type BrowserFlow,
+  Cap,
+  requires as requireCapability,
+  Role,
+  type ScenarioRequirement,
+  type Topology,
+} from "@garazyk/schemat";
 import { validateRoleCapability } from "@garazyk/schemat";
 
 /**
@@ -14,9 +19,9 @@ import { validateRoleCapability } from "@garazyk/schemat";
  */
 export interface ScenarioManifest {
   /** Roles/capabilities required for this scenario to run */
-  requires?: Array<string | ScenarioRequirement>;
+  requires?: ScenarioRequirement[];
   /** Roles/capabilities that enhance the scenario but aren't required */
-  optional?: Array<string | ScenarioRequirement>;
+  optional?: ScenarioRequirement[];
   /** Whether this scenario needs a second PDS instance */
   needsPds2?: boolean;
   /** Browser automation flows this scenario supports */
@@ -64,47 +69,55 @@ export interface ScenarioInfo {
  * This is the single source of truth for scenario requirements.
  */
 export const SCENARIO_MANIFESTS: Record<string, ScenarioManifest> = {
-  "01": { requires: ["plc:didResolution"] },
+  "01": { requires: [requireCapability(Role.plc, Cap.plc.didResolution)] },
   "05": {
     needsPds2: true,
     requires: [
-      "plc:didResolution",
-      "relay:subscribeRepos",
-      "relay:requestCrawl",
-      "appview:backfill",
+      requireCapability(Role.plc, Cap.plc.didResolution),
+      requireCapability(Role.relay, Cap.relay.subscribeRepos),
+      requireCapability(Role.relay, Cap.relay.requestCrawl),
+      requireCapability(Role.appview, Cap.appview.backfill),
     ],
   },
-  "06": { requires: ["chat:chat"] },
+  "06": { requires: [requireCapability(Role.chat, Cap.chat.chat)] },
   "09": {
     requires: [
-      "relay:subscribeRepos",
-      "relay:requestCrawl",
-      "appview:backfill",
+      requireCapability(Role.relay, Cap.relay.subscribeRepos),
+      requireCapability(Role.relay, Cap.relay.requestCrawl),
+      requireCapability(Role.appview, Cap.appview.backfill),
     ],
   },
-  "10": { requires: ["appview:backfill", "relay:subscribeRepos"] },
+  "10": {
+    requires: [
+      requireCapability(Role.appview, Cap.appview.backfill),
+      requireCapability(Role.relay, Cap.relay.subscribeRepos),
+    ],
+  },
   "11": { browserFlows: ["smoke", "login"] },
   "12": {
     needsPds2: true,
     requires: [
-      "plc:didResolution",
-      "plc:operationLog",
-      "plc:handleRotation",
-      "plc:quotaEnforcement",
+      requireCapability(Role.plc, Cap.plc.didResolution),
+      requireCapability(Role.plc, Cap.plc.operationLog),
+      requireCapability(Role.plc, Cap.plc.handleRotation),
+      requireCapability(Role.plc, Cap.plc.quotaEnforcement),
     ],
   },
   "13": { browserFlows: ["login"] },
   "32": {
     requires: [
-      "plc:didResolution",
-      "plc:handleRotation",
-      "plc:quotaEnforcement",
+      requireCapability(Role.plc, Cap.plc.didResolution),
+      requireCapability(Role.plc, Cap.plc.handleRotation),
+      requireCapability(Role.plc, Cap.plc.quotaEnforcement),
     ],
   },
-  "35": { needsPds2: true, requires: ["plc:didResolution"] },
-  "37": { requires: ["chat:chat"] },
-  "42": { requires: ["plc:didResolution"] },
-  "47": { requires: ["chat:groupChat"] },
+  "35": {
+    needsPds2: true,
+    requires: [requireCapability(Role.plc, Cap.plc.didResolution)],
+  },
+  "37": { requires: [requireCapability(Role.chat, Cap.chat.chat)] },
+  "42": { requires: [requireCapability(Role.plc, Cap.plc.didResolution)] },
+  "47": { requires: [requireCapability(Role.chat, Cap.chat.groupChat)] },
   "59": {
     browserFlows: ["smoke", "login", "deep"],
     parameters: {
@@ -175,22 +188,19 @@ export function getTimeout(scenarioId: string): number | undefined {
 }
 
 /**
- * Normalize scenario requirements from string or object form.
+ * Validate typed scenario requirements.
  */
 export function normalizeScenarioRequirements(
-  values: Array<string | ScenarioRequirement>,
+  values: ScenarioRequirement[],
   label: string,
 ): ScenarioRequirement[] {
-  return values.map((value) => {
-    const requirement = parseScenarioRequirement(value);
-    if (requirement.role) {
-      const error = validateRoleCapability(
-        requirement.role,
-        requirement.capability,
-      );
-      if (error) {
-        throw new Error(`Invalid scenario requirement ${label}: ${error}`);
-      }
+  return values.map((requirement) => {
+    const error = validateRoleCapability(
+      requirement.role,
+      requirement.capability,
+    );
+    if (error) {
+      throw new Error(`Invalid scenario requirement ${label}: ${error}`);
     }
     return requirement;
   });
@@ -200,14 +210,9 @@ export function normalizeScenarioRequirements(
  * Format a requirement for display.
  */
 export function formatRequirement(
-  requirement: string | ScenarioRequirement,
+  requirement: ScenarioRequirement,
 ): string {
-  const parsed = typeof requirement === "string"
-    ? parseScenarioRequirement(requirement)
-    : requirement;
-  return parsed.role
-    ? `${parsed.role}:${parsed.capability}`
-    : parsed.capability;
+  return `${requirement.role}:${requirement.capability}`;
 }
 
 /**
@@ -215,16 +220,11 @@ export function formatRequirement(
  */
 export function hasRequirement(
   topology: Topology,
-  requirement: string | ScenarioRequirement,
+  requirement: ScenarioRequirement,
 ): boolean {
-  const parsed = typeof requirement === "string"
-    ? parseScenarioRequirement(requirement)
-    : requirement;
-  if (parsed.role) {
-    return topology.capabilitiesByRole[parsed.role]?.has(parsed.capability) ||
-      false;
-  }
-  return topology.capabilities.has(parsed.capability);
+  return topology.capabilitiesByRole[requirement.role]?.has(
+    requirement.capability,
+  ) || false;
 }
 
 /**

@@ -45,7 +45,7 @@ export {
 } from "./browser_flow.ts";
 export type { RunnerArgs } from "./run_scenarios_types.ts";
 export type { ScenarioExecutionResult } from "./run_loop.ts";
-export type { ScenarioRequirement } from "@garazyk/schemat/topology-schema";
+export type { ScenarioRequirement } from "@garazyk/schemat";
 export {
   handleMockTwilioRequest,
   MockTwilioServer,
