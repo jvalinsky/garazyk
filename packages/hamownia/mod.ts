@@ -34,6 +34,8 @@ export {
 export type {
   CharacterRegistry,
   ScenarioConfig,
+  ScenarioConfigOptions,
+  WebClientConfig,
 } from "./config.ts";
 export {
   InstrumentationReport,
