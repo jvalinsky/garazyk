@@ -1,0 +1,53 @@
+{
+  "name": "@garazyk/hamownia",
+  "version": "0.1.0-alpha.1",
+  "description": "Assertion-based E2E testing framework for AT Protocol simulations.",
+  "exports": {
+    ".": "./mod.ts",
+    "./atproto-network": "./atproto_network.ts",
+    "./binary-services": "./binary_services.ts",
+    "./browser-flow": "./browser_flow.ts",
+    "./config": "./config.ts",
+    "./run-diagnostics": "./run_diagnostics.ts",
+    "./docker-diagnostics": "./docker_diagnostics.ts",
+    "./docker-runner": "./docker_runner.ts",
+    "./format": "./format.ts",
+    "./instrumentation": "./instrumentation.ts",
+    "./mock-twilio": "./mock_twilio.ts",
+    "./account-discovery": "./account_discovery.ts",
+    "./invite-code": "./invite_code.ts",
+    "./pds-cli": "./pds_cli.ts",
+    "./otel": "./otel.ts",
+    "./process-lifecycle": "./process_lifecycle.ts",
+    "./progress": "./progress.ts",
+    "./report-writer": "./report_writer.ts",
+    "./run-loop": "./run_loop.ts",
+    "./run-command": "./run_command.ts",
+    "./run-scenarios-types": "./run_scenarios_types.ts",
+    "./scenario-runner": "./scenario_runner.ts",
+    "./scenario-context": "./scenario_context.ts",
+    "./scenario-selector": "./scenario_selector.ts",
+    "./stale-cleanup": "./stale_cleanup.ts",
+    "./service-command": "./service_command.ts",
+    "./demo-command": "./demo_command.ts",
+    "./test-command": "./test_command.ts"
+  },
+  "lint": {
+    "rules": {
+      "exclude": ["unanalyzable-dynamic-import"]
+    }
+  },
+  "license": "Unlicense OR CC0-1.0",
+  "publish": {
+    "include": [
+      "README.md",
+      "LICENSE",
+      "deno.json",
+      "*.ts"
+    ],
+    "exclude": [
+      "**/*.test.ts",
+      "**/*_test.ts"
+    ]
+  }
+}
