@@ -2,3 +2,5 @@
 [2026-05-16T15:22:55.581Z] POST-COMMIT: 3174169f "tests: fix XrpcProxyTests for non-protected proxia" - Run: deciduous add outcome "..." --commit HEAD
 [2026-05-16T15:40:44.111Z] POST-COMMIT: e623a3aa "feat: add ASCII art root endpoints to Germ and Cha" - Run: deciduous add outcome "..." --commit HEAD
 [2026-05-16T16:34:53.304Z] POST-COMMIT: 3f5eb9fe "feat(chat): add did:web DID document support and d" - Run: deciduous add outcome "..." --commit HEAD
+[2026-05-18T16:55:33.802Z] POST-COMMIT: 42a45e7f "feat: add JSR packages (laweta, gruszka, schemat, " - Run: deciduous add outcome "..." --commit HEAD
+[2026-05-18T17:06:46.301Z] POST-COMMIT: 3bd1a0ec "fix: remove root tsconfig.json (interferes with De" - Run: deciduous add outcome "..." --commit HEAD
