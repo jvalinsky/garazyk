@@ -4,7 +4,6 @@
   "description": "A generic Deno client for Docker Engine and Docker Compose.",
   "exports": {
     ".": "./mod.ts",
-    "./atproto-runtime": "./atproto_runtime.ts",
     "./compose": "./compose.ts"
   },
   "license": "Unlicense OR CC0-1.0"

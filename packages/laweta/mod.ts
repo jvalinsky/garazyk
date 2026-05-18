@@ -1,9 +1,8 @@
 /**
- * Generic Docker Engine, Compose, health, event, stats, and runner utilities.
+ * Generic Docker Engine, Compose, health, event, and stats utilities.
  *
- * Garazyk's ATProto network orchestration is intentionally outside the root
- * package API. Use `@garazyk/hamownia/atproto-network` for scenario-network
- * lifecycle management.
+ * Scenario Docker execution has moved to `@garazyk/hamownia/docker-runner`.
+ * ATProto network orchestration is at `@garazyk/hamownia/atproto-network`.
  *
  * @module laweta
  */
@@ -56,9 +55,3 @@ export type {
   StatsSamplerOptions,
 } from "./container_stats.ts";
 export { composeDown, composeUp } from "./docker_compose.ts";
-export {
-  buildDockerRunnerArgs,
-  DOCKER_RUNNER_TIMEOUT_EXIT_CODE,
-  runScenarioInDocker,
-} from "./docker_runner.ts";
-export type { DockerRunnerOptions } from "./docker_runner.ts";
