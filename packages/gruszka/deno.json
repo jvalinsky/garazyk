@@ -1,0 +1,29 @@
+{
+  "name": "@garazyk/gruszka",
+  "version": "0.1.0-alpha.1",
+  "description": "Strongly typed AT Protocol XRPC client with generated lexicon methods.",
+  "exports": {
+    ".": "./mod.ts",
+    "./doc-links": "./doc_links.ts",
+    "./legacy-clients": "./legacy_clients.ts",
+    "./lexicons": "./lexicons.ts",
+    "./seed": "./seed.ts",
+    "./chat-viewer": "./chat_viewer.ts",
+    "./account-ops": "./account_ops.ts"
+  },
+  "license": "Unlicense OR CC0-1.0",
+  "publish": {
+    "include": [
+      "README.md",
+      "LICENSE",
+      "deno.json",
+      "*.ts",
+      "clients/**/*.ts"
+    ],
+    "exclude": [
+      "**/*.test.ts",
+      "**/*_test.ts",
+      "scripts/**"
+    ]
+  }
+}
