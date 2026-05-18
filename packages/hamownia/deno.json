@@ -22,6 +22,7 @@
     "./progress": "./progress.ts",
     "./report-writer": "./report_writer.ts",
     "./run-loop": "./run_loop.ts",
+    "./run-command": "./run_command.ts",
     "./run-scenarios-types": "./run_scenarios_types.ts",
     "./scenario-runner": "./scenario_runner.ts",
     "./scenario-selector": "./scenario_selector.ts",
