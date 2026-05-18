@@ -296,6 +296,14 @@ export type QueryOutputEncoding<K extends LexiconQueryIds> = Lexicons[K] extends
 export type ProcedureInputEncoding<K extends LexiconProcedureIds> = Lexicons[K] extends { inputEncoding: infer E } ? E : never;
 export type ProcedureOutputEncoding<K extends LexiconProcedureIds> = Lexicons[K] extends { outputEncoding: infer E } ? E : never;
 
+export interface CallOptions {
+  headers?: { Authorization?: string };
+}
+
+export interface XrpcCaller {
+  call(method: string, data?: any, tokenOrOpts?: string | CallOptions): Promise<any>;
+}
+
 /** Strongly typed nested API client. */
 export interface GeneratedClient {
 `;
@@ -334,10 +342,10 @@ export interface GeneratedClient {
         const isQuery = doc.defs["main"].type === "query";
         if (isQuery) {
           result +=
-            `${indent}"${key}"(params?: QueryParams<"${doc.id}">, token?: string): Promise<QueryOutput<"${doc.id}">>;\n`;
+            `${indent}"${key}"(params?: QueryParams<"${doc.id}">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"${doc.id}">>;\n`;
         } else {
           result +=
-            `${indent}"${key}"(input?: ProcedureInput<"${doc.id}">, token?: string): Promise<ProcedureOutput<"${doc.id}">>;\n`;
+            `${indent}"${key}"(input?: ProcedureInput<"${doc.id}">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"${doc.id}">>;\n`;
         }
       } else {
         // It's a namespace
@@ -349,7 +357,34 @@ export interface GeneratedClient {
     return result;
   }
 
+  function generateImpl(node: ClientTree, indent: string): string {
+    let result = "";
+    const entries = Object.entries(node).sort(([a], [b]) => a.localeCompare(b));
+    for (const [key, value] of entries) {
+      if (isLexiconDoc(value)) {
+        const doc = value;
+        const isQuery = doc.defs["main"].type === "query";
+        if (isQuery) {
+          result += `${indent}"${key}": (params?: QueryParams<"${doc.id}">, tokenOrOpts?: string | CallOptions) => caller.call("${doc.id}", params, tokenOrOpts) as Promise<QueryOutput<"${doc.id}">>,\n`;
+        } else {
+          result += `${indent}"${key}": (input?: ProcedureInput<"${doc.id}">, tokenOrOpts?: string | CallOptions) => caller.call("${doc.id}", input, tokenOrOpts) as Promise<ProcedureOutput<"${doc.id}">>,\n`;
+        }
+      } else {
+        result += `${indent}"${key}": {\n`;
+        result += generateImpl(value, indent + "  ");
+        result += `${indent}},\n`;
+      }
+    }
+    return result;
+  }
+
   out += generateInterface(tree, "  ");
+  out += "}\n\n";
+
+  out += "export function createGeneratedClient(caller: XrpcCaller): GeneratedClient {\n";
+  out += "  return {\n";
+  out += generateImpl(tree, "    ");
+  out += "  };\n";
   out += "}\n";
 
   return { source: out, lexiconCount: validDocs.length };

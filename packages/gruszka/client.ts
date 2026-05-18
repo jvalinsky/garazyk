@@ -8,12 +8,16 @@ import type {
   ProcedureOutput,
   QueryOutput,
   QueryParams,
+  CallOptions,
+  XrpcCaller,
 } from "./generated_types.ts";
 import {
+  createGeneratedClient,
   LEXICON_METHOD_INPUT_ENCODINGS,
   LEXICON_METHOD_OUTPUT_ENCODINGS,
   LEXICON_METHOD_TYPES,
 } from "./lexicons.ts";
+
 import {
   AccountsClient,
   AdminClient,
@@ -59,29 +63,29 @@ export class XrpcClient {
   public rawTransport: TransportLayer;
 
   /** Account creation, login, session, and service-description operations. */
-  public accounts: unknown;
+  public accounts: AccountsClient;
   /** Handle resolution and identity-management operations. */
-  public identity: unknown;
+  public identity: IdentityClient;
   /** Repository record CRUD and write-batch operations. */
-  public records: unknown;
+  public records: RecordsClient;
   /** Blob upload and retrieval operations. */
-  public blobs: unknown;
+  public blobs: BlobsClient;
   /** Social graph operations such as follows, blocks, mutes, and lists. */
-  public graph: unknown;
+  public graph: GraphClient;
   /** Feed, timeline, actor, and post-read operations. */
-  public feed: unknown;
+  public feed: FeedClient;
   /** Notification and push-preference operations. */
-  public notifications: unknown;
+  public notifications: NotificationsClient;
   /** Draft post operations. */
-  public drafts: unknown;
+  public drafts: DraftsClient;
   /** Search and suggestion operations. */
-  public search: unknown;
+  public search: SearchClient;
   /** Phone contact verification and import operations. */
-  public contact: unknown;
+  public contact: ContactClient;
   /** Age-assurance flow operations. */
-  public ageAssurance: unknown;
+  public ageAssurance: AgeAssuranceClient;
   /** Admin and moderation operations. */
-  public admin: unknown;
+  public admin: AdminClient;
   /** Raw HTTP and XRPC access for endpoints without a typed helper. */
   public raw: RawClient;
   /** Generated nested API client matching ATProto namespaces. */
@@ -108,7 +112,7 @@ export class XrpcClient {
     this.ageAssurance = new AgeAssuranceClient(t);
     this.admin = new AdminClient(t);
     this.raw = new RawClient(t);
-    this.api = createGeneratedClient(t);
+    this.api = createGeneratedClientHelper(t);
   }
 
   /**
@@ -169,7 +173,7 @@ export class XrpcClient {
    * @returns A typed client instance
    */
   auth(token: string): GeneratedClient {
-    return createGeneratedClient(this.rawTransport, [], token);
+    return createGeneratedClientHelper(this.rawTransport, token);
   }
 
   /**
@@ -197,7 +201,7 @@ export class XrpcClient {
   /** Dynamic proxy for authenticated XRPC method calls */
   get agent(): AgentProxy {
     const self = this;
-    return createAgentProxy([], self, this.#agentSession);
+    return createAgentProxy(self, this.#agentSession);
   }
 
   /** Check if the service is responding at the health endpoint. */
@@ -285,175 +289,176 @@ function contentTypeForInputEncoding(encoding: string): string {
  * The proxy builds method paths via property access and invokes them
  * via function call. Returns `{ data }` on success, throws on error.
  */
-export type AgentProxy = GeneratedClient & {
+type WrapData<T> = T extends Promise<infer U> ? Promise<{ data: U }> : T;
+
+type WrapClient<C> = {
+  [K in keyof C]: C[K] extends (...args: any[]) => any
+    ? (...args: Parameters<C[K]>) => WrapData<ReturnType<C[K]>>
+    : WrapClient<C[K]>;
+};
+
+export type AgentProxy = WrapClient<GeneratedClient> & {
   /** Create a new account and store the session. */
   createAccount(params: {
     handle: string;
     email: string;
     password: string;
-  }): Promise<
-    {
-      data: {
-        accessJwt: string;
-        refreshJwt: string;
-        did: string;
-        handle: string;
-      };
-    }
-  >;
+  }): Promise<{
+    data: {
+      accessJwt: string;
+      refreshJwt: string;
+      did: string;
+      handle: string;
+    };
+  }>;
   /** Log in with existing credentials and store the session. */
   login(params: {
     identifier: string;
     password: string;
-  }): Promise<
-    {
-      data: {
-        accessJwt: string;
-        refreshJwt: string;
-        did: string;
-        handle: string;
-      };
-    }
-  >;
-  /** Access nested XRPC methods. */
+  }): Promise<{
+    data: {
+      accessJwt: string;
+      refreshJwt: string;
+      did: string;
+      handle: string;
+    };
+  }>;
 };
 
-/** Create a dynamic proxy for authenticated XRPC method calls
- * @param path - The accumulated XRPC namespace path
- * @param client - The owning XRPC client
- * @param session - Stored agent session credentials
- * @returns A proxy that dispatches authenticated XRPC calls
- */
-function createAgentProxy(
-  path: string[],
-  client: XrpcClient,
-  session: AgentSession,
-): AgentProxy {
-  return new Proxy(function () {} as unknown as AgentProxy, {
-    get(_target, prop: string) {
-      if (typeof prop !== "string") return undefined;
-      // Prevent the proxy from becoming accidentally thenable.
-      if (prop === "then") return undefined;
-      if (prop === "toJSON") return undefined;
-
-      if (prop === "createAccount") {
-        return async (params: {
-          handle: string;
-          email: string;
-          password: string;
-        }) => {
-          const data = await (client.accounts as AccountsClient).createAccount(
-            params.handle,
-            params.email,
-            params.password,
-          );
-          session.accessJwt = data.accessJwt;
-          session.refreshJwt = data.refreshJwt;
-          session.did = data.did;
-          session.handle = data.handle;
-          return { data };
-        };
-      }
-
-      if (prop === "login") {
-        return async (params: {
-          identifier: string;
-          password: string;
-        }) => {
-          const data = await (client.accounts as AccountsClient).createSession(
-            params.identifier,
-            params.password,
-          );
-          session.accessJwt = data.accessJwt;
-          session.refreshJwt = data.refreshJwt;
-          session.did = data.did;
-          session.handle = data.handle;
-          return { data };
-        };
-      }
-
-      return createAgentProxy([...path, prop], client, session);
-    },
-    async apply(_target, _thisArg, args: unknown[]) {
-      const method = path.join(".");
-      const [params, opts] = args;
-      const token = resolveToken(
-        opts as { headers?: { Authorization?: string } } | undefined,
-        session,
-      );
-
-      const isQuery = isQueryMethod(method);
-
-      const data = isQuery
-        ? isBinaryEncoding(outputEncodingFor(method))
-          ? await client.rawTransport.getBinary(
-            method,
-            params as Record<string, unknown> | undefined,
-            token,
-          )
-          : await client.rawTransport.get(
-            method,
-            params as Record<string, unknown> | undefined,
-            token,
-          )
-        : isBinaryEncoding(inputEncodingFor(method))
-        ? await client.rawTransport.postBinary(
-          method,
-          params as Uint8Array,
-          contentTypeForInputEncoding(inputEncodingFor(method)),
-          token,
-        )
-        : await client.rawTransport.post(method, params, token);
-      return { data };
-    },
-  });
+function extractToken(tokenOrOpts?: string | CallOptions): string | undefined {
+  if (typeof tokenOrOpts === "string") return tokenOrOpts;
+  return tokenOrOpts?.headers?.Authorization?.replace(/^Bearer\s+/i, "");
 }
 
-/** Create a nested proxy that dispatches to the transport layer. */
-function createGeneratedClient(
-  transport: TransportLayer,
-  path: string[] = [],
-  token?: string,
-): GeneratedClient {
-  return new Proxy(function () {} as unknown as GeneratedClient, {
-    get(_target, prop: string) {
-      if (typeof prop !== "string" || prop === "then" || prop === "toJSON") {
-        return undefined;
-      }
-      return createGeneratedClient(transport, [...path, prop], token);
-    },
-    async apply(_target, _thisArg, args: unknown[]) {
-      const method = path.join(".");
-      const [params, callToken] = args;
-      const finalToken = typeof callToken === "string" ? callToken : token;
-      const isQuery = isQueryMethod(method);
-      if (isQuery) {
-        if (isBinaryEncoding(outputEncodingFor(method))) {
-          return await transport.getBinary(
-            method,
-            params as Record<string, unknown> | undefined,
-            finalToken,
-          );
-        }
-        return await transport.get(
+class RawCaller implements XrpcCaller {
+  constructor(private transport: TransportLayer, private defaultToken?: string) {}
+
+  async call(method: string, paramsOrInput?: any, tokenOrOpts?: string | CallOptions): Promise<any> {
+    const finalToken = extractToken(tokenOrOpts) || this.defaultToken;
+    const isQuery = isQueryMethod(method);
+
+    if (isQuery) {
+      if (isBinaryEncoding(outputEncodingFor(method))) {
+        return await this.transport.getBinary(
           method,
-          params as Record<string, unknown> | undefined,
+          paramsOrInput as Record<string, unknown> | undefined,
           finalToken,
         );
       }
+      return await this.transport.get(
+        method,
+        paramsOrInput as Record<string, unknown> | undefined,
+        finalToken,
+      );
+    }
 
+    const inputEncoding = inputEncodingFor(method);
+    if (isBinaryEncoding(inputEncoding)) {
+      return await this.transport.postBinary(
+        method,
+        paramsOrInput as Uint8Array,
+        contentTypeForInputEncoding(inputEncoding),
+        finalToken,
+      );
+    }
+    return await this.transport.post(method, paramsOrInput, finalToken);
+  }
+}
+
+class AgentCaller implements XrpcCaller {
+  constructor(
+    private transport: TransportLayer,
+    private session: AgentSession,
+  ) {}
+
+  async call(method: string, paramsOrInput?: any, tokenOrOpts?: string | CallOptions): Promise<any> {
+    const finalToken = extractToken(tokenOrOpts) || this.session.accessJwt;
+    const isQuery = isQueryMethod(method);
+
+    let data;
+    if (isQuery) {
+      if (isBinaryEncoding(outputEncodingFor(method))) {
+        data = await this.transport.getBinary(
+          method,
+          paramsOrInput as Record<string, unknown> | undefined,
+          finalToken,
+        );
+      } else {
+        data = await this.transport.get(
+          method,
+          paramsOrInput as Record<string, unknown> | undefined,
+          finalToken,
+        );
+      }
+    } else {
       const inputEncoding = inputEncodingFor(method);
       if (isBinaryEncoding(inputEncoding)) {
-        return await transport.postBinary(
+        data = await this.transport.postBinary(
           method,
-          params as Uint8Array,
+          paramsOrInput as Uint8Array,
           contentTypeForInputEncoding(inputEncoding),
           finalToken,
         );
+      } else {
+        data = await this.transport.post(method, paramsOrInput, finalToken);
       }
-      return await transport.post(method, params, finalToken);
+    }
+    
+    // Maintain the legacy `{ data }` wrapping for the AgentProxy
+    return { data };
+  }
+}
+
+/** Create a concrete client for authenticated XRPC method calls */
+function createAgentProxy(
+  client: XrpcClient,
+  session: AgentSession,
+): AgentProxy {
+  const caller = new AgentCaller(client.rawTransport, session);
+  const baseClient = createGeneratedClient(caller);
+  
+  return Object.assign(baseClient, {
+    createAccount: async (params: {
+      handle: string;
+      email: string;
+      password: string;
+    }) => {
+      const data = await (client.accounts as AccountsClient).createAccount(
+        params.handle,
+        params.email,
+        params.password,
+      );
+      session.accessJwt = data.accessJwt;
+      session.refreshJwt = data.refreshJwt;
+      session.did = data.did;
+      session.handle = data.handle;
+      return { data };
     },
-  }) as GeneratedClient;
+    login: async (params: {
+      identifier: string;
+      password: string;
+    }) => {
+      const data = await (client.accounts as AccountsClient).createSession(
+        params.identifier,
+        params.password,
+      );
+      session.accessJwt = data.accessJwt;
+      session.refreshJwt = data.refreshJwt;
+      session.did = data.did;
+      session.handle = data.handle;
+      return { data };
+    }
+  }) as unknown as AgentProxy;
+}
+
+/** Create a nested concrete client that dispatches to the transport layer. */
+function createGeneratedClientHelper(
+  transport: TransportLayer,
+  token?: string,
+): GeneratedClient {
+  const caller = new RawCaller(transport, token);
+  return createGeneratedClient(caller);
 }
 
 export { XrpcError };
+

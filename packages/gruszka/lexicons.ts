@@ -18,11 +18,7 @@ export interface LexiconProcedure<Input = any, Output = any> {
   output?: Output;
 }
 
-export type BinaryXrpcResponse = [
-  status: number,
-  contentType: string,
-  data: Uint8Array,
-];
+export type BinaryXrpcResponse = [status: number, contentType: string, data: Uint8Array];
 
 export interface LexiconDefs {
   "app.bsky.actor.defs": {
@@ -45,22 +41,7 @@ export interface LexiconDefs {
       "value": string;
       "pinned": boolean;
     };
-    "preferences": Array<
-      | LexiconDefs["app.bsky.actor.defs"]["adultContentPref"]
-      | LexiconDefs["app.bsky.actor.defs"]["contentLabelPref"]
-      | LexiconDefs["app.bsky.actor.defs"]["savedFeedsPref"]
-      | LexiconDefs["app.bsky.actor.defs"]["savedFeedsPrefV2"]
-      | LexiconDefs["app.bsky.actor.defs"]["personalDetailsPref"]
-      | LexiconDefs["app.bsky.actor.defs"]["feedViewPref"]
-      | LexiconDefs["app.bsky.actor.defs"]["threadViewPref"]
-      | LexiconDefs["app.bsky.actor.defs"]["interestsPref"]
-      | LexiconDefs["app.bsky.actor.defs"]["mutedWordsPref"]
-      | LexiconDefs["app.bsky.actor.defs"]["hiddenPostsPref"]
-      | LexiconDefs["app.bsky.actor.defs"]["bskyAppStatePref"]
-      | LexiconDefs["app.bsky.actor.defs"]["labelersPref"]
-      | LexiconDefs["app.bsky.actor.defs"]["postInteractionSettingsPref"]
-      | Record<string, any>
-    >;
+    "preferences": Array<LexiconDefs["app.bsky.actor.defs"]["adultContentPref"] | LexiconDefs["app.bsky.actor.defs"]["contentLabelPref"] | LexiconDefs["app.bsky.actor.defs"]["savedFeedsPref"] | LexiconDefs["app.bsky.actor.defs"]["savedFeedsPrefV2"] | LexiconDefs["app.bsky.actor.defs"]["personalDetailsPref"] | LexiconDefs["app.bsky.actor.defs"]["feedViewPref"] | LexiconDefs["app.bsky.actor.defs"]["threadViewPref"] | LexiconDefs["app.bsky.actor.defs"]["interestsPref"] | LexiconDefs["app.bsky.actor.defs"]["mutedWordsPref"] | LexiconDefs["app.bsky.actor.defs"]["hiddenPostsPref"] | LexiconDefs["app.bsky.actor.defs"]["bskyAppStatePref"] | LexiconDefs["app.bsky.actor.defs"]["labelersPref"] | LexiconDefs["app.bsky.actor.defs"]["postInteractionSettingsPref"] | Record<string, any>>;
     "profileView": {
       "did": string;
       "avatar"?: string;
@@ -99,9 +80,7 @@ export interface LexiconDefs {
     };
     "knownFollowers": {
       "count": number;
-      "followers": Array<
-        LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"]
-      >;
+      "followers": Array<LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"]>;
     };
     "mutedWordsPref": {
       "items": Array<LexiconDefs["app.bsky.actor.defs"]["mutedWord"]>;
@@ -128,8 +107,7 @@ export interface LexiconDefs {
     "bskyAppStatePref": {
       "nuxs"?: Array<LexiconDefs["app.bsky.actor.defs"]["nux"]>;
       "queuedNudges"?: Array<string>;
-      "activeProgressGuide"?:
-        LexiconDefs["app.bsky.actor.defs"]["bskyAppProgressGuide"];
+      "activeProgressGuide"?: LexiconDefs["app.bsky.actor.defs"]["bskyAppProgressGuide"];
     };
     "contentLabelPref": {
       "label": string;
@@ -175,8 +153,7 @@ export interface LexiconDefs {
       "displayName"?: string;
       "followsCount"?: number;
       "followersCount"?: number;
-      "joinedViaStarterPack"?:
-        LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"];
+      "joinedViaStarterPack"?: LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"];
     };
     "bskyAppProgressGuide": {
       "guide": string;
@@ -185,17 +162,8 @@ export interface LexiconDefs {
       "allowIncoming": string;
     };
     "postInteractionSettingsPref": {
-      "threadgateAllowRules"?: Array<
-        | LexiconDefs["app.bsky.feed.threadgate"]["mentionRule"]
-        | LexiconDefs["app.bsky.feed.threadgate"]["followerRule"]
-        | LexiconDefs["app.bsky.feed.threadgate"]["followingRule"]
-        | LexiconDefs["app.bsky.feed.threadgate"]["listRule"]
-        | Record<string, any>
-      >;
-      "postgateEmbeddingRules"?: Array<
-        | LexiconDefs["app.bsky.feed.postgate"]["disableRule"]
-        | Record<string, any>
-      >;
+      "threadgateAllowRules"?: Array<LexiconDefs["app.bsky.feed.threadgate"]["mentionRule"] | LexiconDefs["app.bsky.feed.threadgate"]["followerRule"] | LexiconDefs["app.bsky.feed.threadgate"]["followingRule"] | LexiconDefs["app.bsky.feed.threadgate"]["listRule"] | Record<string, any>>;
+      "postgateEmbeddingRules"?: Array<LexiconDefs["app.bsky.feed.postgate"]["disableRule"] | Record<string, any>>;
     };
   };
   "app.bsky.actor.getPreferences": {
@@ -214,15 +182,12 @@ export interface LexiconDefs {
     "main": {
       "avatar"?: any /* blob */;
       "banner"?: any /* blob */;
-      "labels"?:
-        | LexiconDefs["com.atproto.label.defs"]["selfLabels"]
-        | Record<string, any>;
+      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
       "createdAt"?: string;
       "pinnedPost"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
       "description"?: string;
       "displayName"?: string;
-      "joinedViaStarterPack"?:
-        LexiconDefs["com.atproto.repo.strongRef"]["main"];
+      "joinedViaStarterPack"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
     };
   };
   "app.bsky.actor.putPreferences": {
@@ -237,9 +202,7 @@ export interface LexiconDefs {
   "app.bsky.actor.status": {
     "main": {
       "status": string;
-      "embed"?:
-        | LexiconDefs["app.bsky.embed.external"]["main"]
-        | Record<string, any>;
+      "embed"?: LexiconDefs["app.bsky.embed.external"]["main"] | Record<string, any>;
       "durationMinutes"?: number;
       "createdAt": string;
     };
@@ -260,36 +223,13 @@ export interface LexiconDefs {
       "accountCreatedAt"?: string;
     };
     "config": {
-      "regions": Array<
-        LexiconDefs["app.bsky.ageassurance.defs"]["configRegion"]
-      >;
+      "regions": Array<LexiconDefs["app.bsky.ageassurance.defs"]["configRegion"]>;
     };
     "configRegion": {
       "countryCode": string;
       "regionCode"?: string;
       "minAccessAge": number;
-      "rules": Array<
-        | LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleDefault"]
-        | LexiconDefs["app.bsky.ageassurance.defs"][
-          "configRegionRuleIfDeclaredOverAge"
-        ]
-        | LexiconDefs["app.bsky.ageassurance.defs"][
-          "configRegionRuleIfDeclaredUnderAge"
-        ]
-        | LexiconDefs["app.bsky.ageassurance.defs"][
-          "configRegionRuleIfAssuredOverAge"
-        ]
-        | LexiconDefs["app.bsky.ageassurance.defs"][
-          "configRegionRuleIfAssuredUnderAge"
-        ]
-        | LexiconDefs["app.bsky.ageassurance.defs"][
-          "configRegionRuleIfAccountNewerThan"
-        ]
-        | LexiconDefs["app.bsky.ageassurance.defs"][
-          "configRegionRuleIfAccountOlderThan"
-        ]
-        | Record<string, any>
-      >;
+      "rules": Array<LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleDefault"] | LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleIfDeclaredOverAge"] | LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleIfDeclaredUnderAge"] | LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleIfAssuredOverAge"] | LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleIfAssuredUnderAge"] | LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleIfAccountNewerThan"] | LexiconDefs["app.bsky.ageassurance.defs"]["configRegionRuleIfAccountOlderThan"] | Record<string, any>>;
     };
     "configRegionRuleDefault": {
       "access": LexiconDefs["app.bsky.ageassurance.defs"]["access"];
@@ -372,11 +312,7 @@ export interface LexiconDefs {
     "bookmarkView": {
       "subject": LexiconDefs["com.atproto.repo.strongRef"]["main"];
       "createdAt"?: string;
-      "item":
-        | LexiconDefs["app.bsky.feed.defs"]["blockedPost"]
-        | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"]
-        | LexiconDefs["app.bsky.feed.defs"]["postView"]
-        | Record<string, any>;
+      "item": LexiconDefs["app.bsky.feed.defs"]["blockedPost"] | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"] | LexiconDefs["app.bsky.feed.defs"]["postView"] | Record<string, any>;
     };
   };
   "app.bsky.bookmark.deleteBookmark": {
@@ -485,30 +421,14 @@ export interface LexiconDefs {
       "record": LexiconDefs["com.atproto.repo.strongRef"]["main"];
     };
     "view": {
-      "record":
-        | LexiconDefs["app.bsky.embed.record"]["viewRecord"]
-        | LexiconDefs["app.bsky.embed.record"]["viewNotFound"]
-        | LexiconDefs["app.bsky.embed.record"]["viewBlocked"]
-        | LexiconDefs["app.bsky.embed.record"]["viewDetached"]
-        | LexiconDefs["app.bsky.feed.defs"]["generatorView"]
-        | LexiconDefs["app.bsky.graph.defs"]["listView"]
-        | LexiconDefs["app.bsky.labeler.defs"]["labelerView"]
-        | LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"]
-        | Record<string, any>;
+      "record": LexiconDefs["app.bsky.embed.record"]["viewRecord"] | LexiconDefs["app.bsky.embed.record"]["viewNotFound"] | LexiconDefs["app.bsky.embed.record"]["viewBlocked"] | LexiconDefs["app.bsky.embed.record"]["viewDetached"] | LexiconDefs["app.bsky.feed.defs"]["generatorView"] | LexiconDefs["app.bsky.graph.defs"]["listView"] | LexiconDefs["app.bsky.labeler.defs"]["labelerView"] | LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"] | Record<string, any>;
     };
     "viewRecord": {
       "cid": string;
       "uri": string;
       "value": unknown;
       "author": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
-      "embeds"?: Array<
-        | LexiconDefs["app.bsky.embed.images"]["view"]
-        | LexiconDefs["app.bsky.embed.video"]["view"]
-        | LexiconDefs["app.bsky.embed.external"]["view"]
-        | LexiconDefs["app.bsky.embed.record"]["view"]
-        | LexiconDefs["app.bsky.embed.recordWithMedia"]["view"]
-        | Record<string, any>
-      >;
+      "embeds"?: Array<LexiconDefs["app.bsky.embed.images"]["view"] | LexiconDefs["app.bsky.embed.video"]["view"] | LexiconDefs["app.bsky.embed.external"]["view"] | LexiconDefs["app.bsky.embed.record"]["view"] | LexiconDefs["app.bsky.embed.recordWithMedia"]["view"] | Record<string, any>>;
       "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
       "indexedAt": string;
       "likeCount"?: number;
@@ -532,19 +452,11 @@ export interface LexiconDefs {
   };
   "app.bsky.embed.recordWithMedia": {
     "main": {
-      "media":
-        | LexiconDefs["app.bsky.embed.images"]["main"]
-        | LexiconDefs["app.bsky.embed.video"]["main"]
-        | LexiconDefs["app.bsky.embed.external"]["main"]
-        | Record<string, any>;
+      "media": LexiconDefs["app.bsky.embed.images"]["main"] | LexiconDefs["app.bsky.embed.video"]["main"] | LexiconDefs["app.bsky.embed.external"]["main"] | Record<string, any>;
       "record": LexiconDefs["app.bsky.embed.record"]["main"];
     };
     "view": {
-      "media":
-        | LexiconDefs["app.bsky.embed.images"]["view"]
-        | LexiconDefs["app.bsky.embed.video"]["view"]
-        | LexiconDefs["app.bsky.embed.external"]["view"]
-        | Record<string, any>;
+      "media": LexiconDefs["app.bsky.embed.images"]["view"] | LexiconDefs["app.bsky.embed.video"]["view"] | LexiconDefs["app.bsky.embed.external"]["view"] | Record<string, any>;
       "record": LexiconDefs["app.bsky.embed.record"]["view"];
     };
   };
@@ -571,13 +483,7 @@ export interface LexiconDefs {
     "postView": {
       "cid": string;
       "uri": string;
-      "embed"?:
-        | LexiconDefs["app.bsky.embed.images"]["view"]
-        | LexiconDefs["app.bsky.embed.video"]["view"]
-        | LexiconDefs["app.bsky.embed.external"]["view"]
-        | LexiconDefs["app.bsky.embed.record"]["view"]
-        | LexiconDefs["app.bsky.embed.recordWithMedia"]["view"]
-        | Record<string, any>;
+      "embed"?: LexiconDefs["app.bsky.embed.images"]["view"] | LexiconDefs["app.bsky.embed.video"]["view"] | LexiconDefs["app.bsky.embed.external"]["view"] | LexiconDefs["app.bsky.embed.record"]["view"] | LexiconDefs["app.bsky.embed.recordWithMedia"]["view"] | Record<string, any>;
       "author": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
       "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
       "record": unknown;
@@ -590,20 +496,12 @@ export interface LexiconDefs {
       "repostCount"?: number;
     };
     "replyRef": {
-      "root":
-        | LexiconDefs["app.bsky.feed.defs"]["postView"]
-        | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"]
-        | LexiconDefs["app.bsky.feed.defs"]["blockedPost"]
-        | Record<string, any>;
-      "parent":
-        | LexiconDefs["app.bsky.feed.defs"]["postView"]
-        | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"]
-        | LexiconDefs["app.bsky.feed.defs"]["blockedPost"]
-        | Record<string, any>;
-      "grandparentAuthor"?:
-        LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
+      "root": LexiconDefs["app.bsky.feed.defs"]["postView"] | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"] | LexiconDefs["app.bsky.feed.defs"]["blockedPost"] | Record<string, any>;
+      "parent": LexiconDefs["app.bsky.feed.defs"]["postView"] | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"] | LexiconDefs["app.bsky.feed.defs"]["blockedPost"] | Record<string, any>;
+      "grandparentAuthor"?: LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
     };
-    "reasonPin": {};
+    "reasonPin": {
+    };
     "blockedPost": {
       "uri": string;
       "author": LexiconDefs["app.bsky.feed.defs"]["blockedAuthor"];
@@ -627,10 +525,7 @@ export interface LexiconDefs {
     "feedViewPost": {
       "post": LexiconDefs["app.bsky.feed.defs"]["postView"];
       "reply"?: LexiconDefs["app.bsky.feed.defs"]["replyRef"];
-      "reason"?:
-        | LexiconDefs["app.bsky.feed.defs"]["reasonRepost"]
-        | LexiconDefs["app.bsky.feed.defs"]["reasonPin"]
-        | Record<string, any>;
+      "reason"?: LexiconDefs["app.bsky.feed.defs"]["reasonRepost"] | LexiconDefs["app.bsky.feed.defs"]["reasonPin"] | Record<string, any>;
       "feedContext"?: string;
     };
     "notFoundPost": {
@@ -658,9 +553,7 @@ export interface LexiconDefs {
       "contentMode"?: string;
       "description"?: string;
       "displayName": string;
-      "descriptionFacets"?: Array<
-        LexiconDefs["app.bsky.richtext.facet"]["main"]
-      >;
+      "descriptionFacets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
       "acceptsInteractions"?: boolean;
     };
     "threadContext": {
@@ -668,17 +561,8 @@ export interface LexiconDefs {
     };
     "threadViewPost": {
       "post": LexiconDefs["app.bsky.feed.defs"]["postView"];
-      "parent"?:
-        | LexiconDefs["app.bsky.feed.defs"]["threadViewPost"]
-        | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"]
-        | LexiconDefs["app.bsky.feed.defs"]["blockedPost"]
-        | Record<string, any>;
-      "replies"?: Array<
-        | LexiconDefs["app.bsky.feed.defs"]["threadViewPost"]
-        | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"]
-        | LexiconDefs["app.bsky.feed.defs"]["blockedPost"]
-        | Record<string, any>
-      >;
+      "parent"?: LexiconDefs["app.bsky.feed.defs"]["threadViewPost"] | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"] | LexiconDefs["app.bsky.feed.defs"]["blockedPost"] | Record<string, any>;
+      "replies"?: Array<LexiconDefs["app.bsky.feed.defs"]["threadViewPost"] | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"] | LexiconDefs["app.bsky.feed.defs"]["blockedPost"] | Record<string, any>>;
       "threadContext"?: LexiconDefs["app.bsky.feed.defs"]["threadContext"];
     };
     "threadgateView": {
@@ -696,15 +580,13 @@ export interface LexiconDefs {
     "interactionShare": string;
     "skeletonFeedPost": {
       "post": string;
-      "reason"?:
-        | LexiconDefs["app.bsky.feed.defs"]["skeletonReasonRepost"]
-        | LexiconDefs["app.bsky.feed.defs"]["skeletonReasonPin"]
-        | Record<string, any>;
+      "reason"?: LexiconDefs["app.bsky.feed.defs"]["skeletonReasonRepost"] | LexiconDefs["app.bsky.feed.defs"]["skeletonReasonPin"] | Record<string, any>;
       "feedContext"?: string;
     };
     "clickthroughEmbed": string;
     "interactionRepost": string;
-    "skeletonReasonPin": {};
+    "skeletonReasonPin": {
+    };
     "clickthroughAuthor": string;
     "clickthroughReposter": string;
     "generatorViewerState": {
@@ -730,14 +612,10 @@ export interface LexiconDefs {
       "did": string;
       "displayName": string;
       "description"?: string;
-      "descriptionFacets"?: Array<
-        LexiconDefs["app.bsky.richtext.facet"]["main"]
-      >;
+      "descriptionFacets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
       "avatar"?: any /* blob */;
       "acceptsInteractions"?: boolean;
-      "labels"?:
-        | LexiconDefs["com.atproto.label.defs"]["selfLabels"]
-        | Record<string, any>;
+      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
       "contentMode"?: string;
       "createdAt": string;
     };
@@ -805,17 +683,9 @@ export interface LexiconDefs {
       "entities"?: Array<LexiconDefs["app.bsky.feed.post"]["entity"]>;
       "facets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
       "reply"?: LexiconDefs["app.bsky.feed.post"]["replyRef"];
-      "embed"?:
-        | LexiconDefs["app.bsky.embed.images"]["main"]
-        | LexiconDefs["app.bsky.embed.video"]["main"]
-        | LexiconDefs["app.bsky.embed.external"]["main"]
-        | LexiconDefs["app.bsky.embed.record"]["main"]
-        | LexiconDefs["app.bsky.embed.recordWithMedia"]["main"]
-        | Record<string, any>;
+      "embed"?: LexiconDefs["app.bsky.embed.images"]["main"] | LexiconDefs["app.bsky.embed.video"]["main"] | LexiconDefs["app.bsky.embed.external"]["main"] | LexiconDefs["app.bsky.embed.record"]["main"] | LexiconDefs["app.bsky.embed.recordWithMedia"]["main"] | Record<string, any>;
       "langs"?: Array<string>;
-      "labels"?:
-        | LexiconDefs["com.atproto.label.defs"]["selfLabels"]
-        | Record<string, any>;
+      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
       "tags"?: Array<string>;
       "createdAt": string;
     };
@@ -837,13 +707,11 @@ export interface LexiconDefs {
     "main": {
       "post": string;
       "createdAt": string;
-      "embeddingRules"?: Array<
-        | LexiconDefs["app.bsky.feed.postgate"]["disableRule"]
-        | Record<string, any>
-      >;
+      "embeddingRules"?: Array<LexiconDefs["app.bsky.feed.postgate"]["disableRule"] | Record<string, any>>;
       "detachedEmbeddingUris"?: Array<string>;
     };
-    "disableRule": {};
+    "disableRule": {
+    };
   };
   "app.bsky.feed.repost": {
     "main": {
@@ -861,22 +729,19 @@ export interface LexiconDefs {
   "app.bsky.feed.threadgate": {
     "main": {
       "post": string;
-      "allow"?: Array<
-        | LexiconDefs["app.bsky.feed.threadgate"]["mentionRule"]
-        | LexiconDefs["app.bsky.feed.threadgate"]["followerRule"]
-        | LexiconDefs["app.bsky.feed.threadgate"]["followingRule"]
-        | LexiconDefs["app.bsky.feed.threadgate"]["listRule"]
-        | Record<string, any>
-      >;
+      "allow"?: Array<LexiconDefs["app.bsky.feed.threadgate"]["mentionRule"] | LexiconDefs["app.bsky.feed.threadgate"]["followerRule"] | LexiconDefs["app.bsky.feed.threadgate"]["followingRule"] | LexiconDefs["app.bsky.feed.threadgate"]["listRule"] | Record<string, any>>;
       "createdAt": string;
       "hiddenReplies"?: Array<string>;
     };
     "listRule": {
       "list": string;
     };
-    "mentionRule": {};
-    "followerRule": {};
-    "followingRule": {};
+    "mentionRule": {
+    };
+    "followerRule": {
+    };
+    "followingRule": {
+    };
   };
   "app.bsky.graph.block": {
     "main": {
@@ -898,9 +763,7 @@ export interface LexiconDefs {
       "indexedAt": string;
       "description"?: string;
       "listItemCount"?: number;
-      "descriptionFacets"?: Array<
-        LexiconDefs["app.bsky.richtext.facet"]["main"]
-      >;
+      "descriptionFacets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
     };
     "curatelist": string;
     "listPurpose": string;
@@ -943,9 +806,7 @@ export interface LexiconDefs {
       "creator": LexiconDefs["app.bsky.actor.defs"]["profileViewBasic"];
       "indexedAt": string;
       "joinedWeekCount"?: number;
-      "listItemsSample"?: Array<
-        LexiconDefs["app.bsky.graph.defs"]["listItemView"]
-      >;
+      "listItemsSample"?: Array<LexiconDefs["app.bsky.graph.defs"]["listItemView"]>;
       "joinedAllTimeCount"?: number;
     };
     "starterPackViewBasic": {
@@ -1027,13 +888,9 @@ export interface LexiconDefs {
       "purpose": LexiconDefs["app.bsky.graph.defs"]["listPurpose"];
       "name": string;
       "description"?: string;
-      "descriptionFacets"?: Array<
-        LexiconDefs["app.bsky.richtext.facet"]["main"]
-      >;
+      "descriptionFacets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
       "avatar"?: any /* blob */;
-      "labels"?:
-        | LexiconDefs["com.atproto.label.defs"]["selfLabels"]
-        | Record<string, any>;
+      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
       "createdAt": string;
     };
   };
@@ -1066,9 +923,7 @@ export interface LexiconDefs {
     "main": {
       "name": string;
       "description"?: string;
-      "descriptionFacets"?: Array<
-        LexiconDefs["app.bsky.richtext.facet"]["main"]
-      >;
+      "descriptionFacets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
       "list": string;
       "feeds"?: Array<LexiconDefs["app.bsky.graph.starterpack"]["feedItem"]>;
       "createdAt": string;
@@ -1111,12 +966,8 @@ export interface LexiconDefs {
       "likeCount"?: number;
     };
     "labelerPolicies": {
-      "labelValues": Array<
-        any /* unresolved ref: com.atproto.label.defs#labelValue */
-      >;
-      "labelValueDefinitions"?: Array<
-        any /* unresolved ref: com.atproto.label.defs#labelValueDefinition */
-      >;
+      "labelValues": Array<any /* unresolved ref: com.atproto.label.defs#labelValue */>;
+      "labelValueDefinitions"?: Array<any /* unresolved ref: com.atproto.label.defs#labelValueDefinition */>;
     };
     "labelerViewerState": {
       "like"?: string;
@@ -1138,16 +989,10 @@ export interface LexiconDefs {
   "app.bsky.labeler.service": {
     "main": {
       "policies": LexiconDefs["app.bsky.labeler.defs"]["labelerPolicies"];
-      "labels"?:
-        | LexiconDefs["com.atproto.label.defs"]["selfLabels"]
-        | Record<string, any>;
+      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
       "createdAt": string;
-      "reasonTypes"?: Array<
-        LexiconDefs["com.atproto.moderation.defs"]["reasonType"]
-      >;
-      "subjectTypes"?: Array<
-        LexiconDefs["com.atproto.moderation.defs"]["subjectType"]
-      >;
+      "reasonTypes"?: Array<LexiconDefs["com.atproto.moderation.defs"]["reasonType"]>;
+      "subjectTypes"?: Array<LexiconDefs["com.atproto.moderation.defs"]["subjectType"]>;
       "subjectCollections"?: Array<string>;
     };
   };
@@ -1157,7 +1002,8 @@ export interface LexiconDefs {
     };
   };
   "app.bsky.notification.defs": {
-    "recordDeleted": {};
+    "recordDeleted": {
+    };
     "chatPreference": {
       "include": string;
       "push": boolean;
@@ -1173,23 +1019,15 @@ export interface LexiconDefs {
     };
     "preferences": {
       "chat": LexiconDefs["app.bsky.notification.defs"]["chatPreference"];
-      "follow":
-        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "follow": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
       "like": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "likeViaRepost":
-        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "mention":
-        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "quote":
-        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "reply":
-        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "repost":
-        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "repostViaRepost":
-        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "starterpackJoined":
-        LexiconDefs["app.bsky.notification.defs"]["preference"];
+      "likeViaRepost": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "mention": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "quote": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "reply": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "repost": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "repostViaRepost": LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "starterpackJoined": LexiconDefs["app.bsky.notification.defs"]["preference"];
       "subscribedPost": LexiconDefs["app.bsky.notification.defs"]["preference"];
       "unverified": LexiconDefs["app.bsky.notification.defs"]["preference"];
       "verified": LexiconDefs["app.bsky.notification.defs"]["preference"];
@@ -1200,8 +1038,7 @@ export interface LexiconDefs {
     };
     "subjectActivitySubscription": {
       "subject": string;
-      "activitySubscription":
-        LexiconDefs["app.bsky.notification.defs"]["activitySubscription"];
+      "activitySubscription": LexiconDefs["app.bsky.notification.defs"]["activitySubscription"];
     };
   };
   "app.bsky.notification.getPreferences": {
@@ -1251,12 +1088,7 @@ export interface LexiconDefs {
   "app.bsky.richtext.facet": {
     "main": {
       "index": LexiconDefs["app.bsky.richtext.facet"]["byteSlice"];
-      "features": Array<
-        | LexiconDefs["app.bsky.richtext.facet"]["mention"]
-        | LexiconDefs["app.bsky.richtext.facet"]["link"]
-        | LexiconDefs["app.bsky.richtext.facet"]["tag"]
-        | Record<string, any>
-      >;
+      "features": Array<LexiconDefs["app.bsky.richtext.facet"]["mention"] | LexiconDefs["app.bsky.richtext.facet"]["link"] | LexiconDefs["app.bsky.richtext.facet"]["tag"] | Record<string, any>>;
     };
     "mention": {
       "did": string;
@@ -1319,8 +1151,10 @@ export interface LexiconDefs {
       "hiddenByThreadgate": boolean;
       "mutedByViewer": boolean;
     };
-    "threadItemNoUnauthenticated": {};
-    "threadItemNotFound": {};
+    "threadItemNoUnauthenticated": {
+    };
+    "threadItemNotFound": {
+    };
     "threadItemBlocked": {
       "author": LexiconDefs["app.bsky.feed.defs"]["blockedAuthor"];
     };
@@ -1366,9 +1200,7 @@ export interface LexiconDefs {
     "threadItem": {
       "uri": string;
       "depth": number;
-      "value":
-        | LexiconDefs["app.bsky.unspecced.defs"]["threadItemPost"]
-        | Record<string, any>;
+      "value": LexiconDefs["app.bsky.unspecced.defs"]["threadItemPost"] | Record<string, any>;
     };
   };
   "app.bsky.unspecced.getPostThreadV2": {
@@ -1376,12 +1208,7 @@ export interface LexiconDefs {
     "threadItem": {
       "uri": string;
       "depth": number;
-      "value":
-        | LexiconDefs["app.bsky.unspecced.defs"]["threadItemPost"]
-        | LexiconDefs["app.bsky.unspecced.defs"]["threadItemNoUnauthenticated"]
-        | LexiconDefs["app.bsky.unspecced.defs"]["threadItemNotFound"]
-        | LexiconDefs["app.bsky.unspecced.defs"]["threadItemBlocked"]
-        | Record<string, any>;
+      "value": LexiconDefs["app.bsky.unspecced.defs"]["threadItemPost"] | LexiconDefs["app.bsky.unspecced.defs"]["threadItemNoUnauthenticated"] | LexiconDefs["app.bsky.unspecced.defs"]["threadItemNotFound"] | LexiconDefs["app.bsky.unspecced.defs"]["threadItemBlocked"] | Record<string, any>;
     };
   };
   "app.bsky.unspecced.getSuggestedFeeds": {
@@ -1465,9 +1292,9 @@ export interface LexiconDefs {
       "error"?: string;
       "message"?: string;
       "aspectRatio"?: {
-        "width"?: number;
-        "height"?: number;
-      };
+      "width"?: number;
+      "height"?: number;
+    };
     };
   };
   "app.bsky.video.getJobStatus": {
@@ -1503,8 +1330,7 @@ export interface LexiconDefs {
       "viewer"?: LexiconDefs["app.bsky.actor.defs"]["viewerState"];
       "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
       "chatDisabled"?: boolean;
-      "verification"?:
-        any /* unresolved ref: app.bsky.actor.defs#verificationState */;
+      "verification"?: any /* unresolved ref: app.bsky.actor.defs#verificationState */;
     };
   };
   "chat.bsky.actor.deleteAccount": {
@@ -1531,18 +1357,14 @@ export interface LexiconDefs {
     "messageInput": {
       "text": string;
       "facets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
-      "embed"?:
-        | LexiconDefs["app.bsky.embed.record"]["main"]
-        | Record<string, any>;
+      "embed"?: LexiconDefs["app.bsky.embed.record"]["main"] | Record<string, any>;
     };
     "messageView": {
       "id": string;
       "rev": string;
       "text": string;
       "facets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
-      "embed"?:
-        | LexiconDefs["app.bsky.embed.record"]["view"]
-        | Record<string, any>;
+      "embed"?: LexiconDefs["app.bsky.embed.record"]["view"] | Record<string, any>;
       "reactions"?: Array<LexiconDefs["chat.bsky.convo.defs"]["reactionView"]>;
       "sender": LexiconDefs["chat.bsky.convo.defs"]["messageViewSender"];
       "sentAt": string;
@@ -1572,13 +1394,8 @@ export interface LexiconDefs {
       "id": string;
       "rev": string;
       "members": Array<LexiconDefs["chat.bsky.actor.defs"]["profileViewBasic"]>;
-      "lastMessage"?:
-        | LexiconDefs["chat.bsky.convo.defs"]["messageView"]
-        | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"]
-        | Record<string, any>;
-      "lastReaction"?:
-        | LexiconDefs["chat.bsky.convo.defs"]["messageAndReactionView"]
-        | Record<string, any>;
+      "lastMessage"?: LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>;
+      "lastReaction"?: LexiconDefs["chat.bsky.convo.defs"]["messageAndReactionView"] | Record<string, any>;
       "muted": boolean;
       "status"?: string;
       "unreadCount": number;
@@ -1606,43 +1423,28 @@ export interface LexiconDefs {
     "logCreateMessage": {
       "rev": string;
       "convoId": string;
-      "message":
-        | LexiconDefs["chat.bsky.convo.defs"]["messageView"]
-        | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"]
-        | Record<string, any>;
+      "message": LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>;
     };
     "logDeleteMessage": {
       "rev": string;
       "convoId": string;
-      "message":
-        | LexiconDefs["chat.bsky.convo.defs"]["messageView"]
-        | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"]
-        | Record<string, any>;
+      "message": LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>;
     };
     "logReadMessage": {
       "rev": string;
       "convoId": string;
-      "message":
-        | LexiconDefs["chat.bsky.convo.defs"]["messageView"]
-        | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"]
-        | Record<string, any>;
+      "message": LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>;
     };
     "logAddReaction": {
       "rev": string;
       "convoId": string;
-      "message":
-        | LexiconDefs["chat.bsky.convo.defs"]["messageView"]
-        | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"]
-        | Record<string, any>;
+      "message": LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>;
       "reaction": LexiconDefs["chat.bsky.convo.defs"]["reactionView"];
     };
     "logRemoveReaction": {
       "rev": string;
       "convoId": string;
-      "message":
-        | LexiconDefs["chat.bsky.convo.defs"]["messageView"]
-        | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"]
-        | Record<string, any>;
+      "message": LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>;
       "reaction": LexiconDefs["chat.bsky.convo.defs"]["reactionView"];
     };
   };
@@ -1827,9 +1629,7 @@ export interface LexiconDefs {
       "emailConfirmedAt"?: string;
       "inviteNote"?: string;
       "deactivatedAt"?: string;
-      "threatSignatures"?: Array<
-        LexiconDefs["com.atproto.admin.defs"]["threatSignature"]
-      >;
+      "threatSignatures"?: Array<LexiconDefs["com.atproto.admin.defs"]["threatSignature"]>;
     };
     "repoRef": {
       "did": string;
@@ -2047,7 +1847,8 @@ export interface LexiconDefs {
       "cid": string;
       "validationStatus"?: string;
     };
-    "deleteResult": {};
+    "deleteResult": {
+    };
   };
   "com.atproto.repo.createRecord": {
     "main": never;
@@ -2334,11 +2135,10 @@ export interface LexiconDefs {
   };
   "com.atproto.temp.checkHandleAvailability": {
     "main": never;
-    "resultAvailable": {};
+    "resultAvailable": {
+    };
     "resultUnavailable": {
-      "suggestions": Array<
-        LexiconDefs["com.atproto.temp.checkHandleAvailability"]["suggestion"]
-      >;
+      "suggestions": Array<LexiconDefs["com.atproto.temp.checkHandleAvailability"]["suggestion"]>;
     };
     "suggestion": {
       "handle": string;
@@ -2469,9 +2269,7 @@ export interface LexiconDefs {
       "avatar"?: LexiconDefs["com.atproto.repo.strongRef"]["main"];
       "nickname"?: string;
       "bio"?: string;
-      "links"?: Array<
-        LexiconDefs["com.shinolabs.pinksea.profile"]["profileLink"]
-      >;
+      "links"?: Array<LexiconDefs["com.shinolabs.pinksea.profile"]["profileLink"]>;
     };
     "profileLink": {
       "name": string;
@@ -2533,9 +2331,7 @@ export interface LexiconDefs {
   "fyi.frontpage.feed.post": {
     "main": {
       "title": string;
-      "subject":
-        | LexiconDefs["fyi.frontpage.feed.post"]["urlSubject"]
-        | Record<string, any>;
+      "subject": LexiconDefs["fyi.frontpage.feed.post"]["urlSubject"] | Record<string, any>;
       "createdAt": string;
     };
     "urlSubject": {
@@ -2550,9 +2346,7 @@ export interface LexiconDefs {
   };
   "fyi.frontpage.richtext.block": {
     "main": {
-      "content":
-        | LexiconDefs["fyi.frontpage.richtext.block"]["plaintextParagraph"]
-        | Record<string, any>;
+      "content": LexiconDefs["fyi.frontpage.richtext.block"]["plaintextParagraph"] | Record<string, any>;
     };
     "plaintextParagraph": {
       "text": string;
@@ -2596,22 +2390,13 @@ export interface LexiconDefs {
   "my.skylights.listItem": {
     "main": {
       "item"?: LexiconDefs["my.skylights.defs"]["item"];
-      "list":
-        | LexiconDefs["my.skylights.list"]["main"]
-        | LexiconDefs["my.skylights.listItem"]["builtin"]
-        | Record<string, any>;
+      "list": LexiconDefs["my.skylights.list"]["main"] | LexiconDefs["my.skylights.listItem"]["builtin"] | Record<string, any>;
       "addedAt": string;
       "position": string;
       "note"?: string;
     };
     "builtin": {
-      "type"?:
-        | LexiconDefs["my.skylights.listItem"]["inProgress"]
-        | LexiconDefs["my.skylights.listItem"]["queue"]
-        | LexiconDefs["my.skylights.listItem"]["abandoned"]
-        | LexiconDefs["my.skylights.listItem"]["owned"]
-        | LexiconDefs["my.skylights.listItem"]["wishlist"]
-        | Record<string, any>;
+      "type"?: LexiconDefs["my.skylights.listItem"]["inProgress"] | LexiconDefs["my.skylights.listItem"]["queue"] | LexiconDefs["my.skylights.listItem"]["abandoned"] | LexiconDefs["my.skylights.listItem"]["owned"] | LexiconDefs["my.skylights.listItem"]["wishlist"] | Record<string, any>;
     };
     "inProgress": string;
     "queue": string;
@@ -2692,9 +2477,7 @@ export interface LexiconDefs {
       "record": unknown;
       "indexedAt": string;
       "chatProfile"?: LexiconDefs["place.stream.chat.profile"]["main"];
-      "replyTo"?:
-        | LexiconDefs["place.stream.chat.defs"]["messageView"]
-        | Record<string, any>;
+      "replyTo"?: LexiconDefs["place.stream.chat.defs"]["messageView"] | Record<string, any>;
       "deleted"?: boolean;
     };
   };
@@ -2793,8 +2576,7 @@ export interface LexiconDefs {
       "agent"?: string;
       "canonicalUrl"?: string;
       "thumb"?: any /* blob */;
-      "notificationSettings"?:
-        LexiconDefs["place.stream.livestream"]["notificationSettings"];
+      "notificationSettings"?: LexiconDefs["place.stream.livestream"]["notificationSettings"];
     };
     "notificationSettings": {
       "pushNotification"?: boolean;
@@ -2811,24 +2593,14 @@ export interface LexiconDefs {
       "count": number;
     };
     "streamplaceAnything": {
-      "livestream":
-        | LexiconDefs["place.stream.livestream"]["livestreamView"]
-        | LexiconDefs["place.stream.livestream"]["viewerCount"]
-        | LexiconDefs["place.stream.defs"]["blockView"]
-        | LexiconDefs["place.stream.defs"]["renditions"]
-        | LexiconDefs["place.stream.defs"]["rendition"]
-        | LexiconDefs["place.stream.chat.defs"]["messageView"]
-        | Record<string, any>;
+      "livestream": LexiconDefs["place.stream.livestream"]["livestreamView"] | LexiconDefs["place.stream.livestream"]["viewerCount"] | LexiconDefs["place.stream.defs"]["blockView"] | LexiconDefs["place.stream.defs"]["renditions"] | LexiconDefs["place.stream.defs"]["rendition"] | LexiconDefs["place.stream.chat.defs"]["messageView"] | Record<string, any>;
     };
   };
   "place.stream.metadata.configuration": {
     "main": {
-      "contentWarnings"?:
-        LexiconDefs["place.stream.metadata.contentWarnings"]["main"];
-      "contentRights"?:
-        LexiconDefs["place.stream.metadata.contentRights"]["main"];
-      "distributionPolicy"?:
-        LexiconDefs["place.stream.metadata.distributionPolicy"]["main"];
+      "contentWarnings"?: LexiconDefs["place.stream.metadata.contentWarnings"]["main"];
+      "contentRights"?: LexiconDefs["place.stream.metadata.contentRights"]["main"];
+      "distributionPolicy"?: LexiconDefs["place.stream.metadata.distributionPolicy"]["main"];
     };
   };
   "place.stream.metadata.contentRights": {
@@ -2941,11 +2713,7 @@ export interface LexiconDefs {
   "place.stream.richtext.facet": {
     "main": {
       "index": LexiconDefs["app.bsky.richtext.facet"]["byteSlice"];
-      "features": Array<
-        | LexiconDefs["app.bsky.richtext.facet"]["mention"]
-        | LexiconDefs["app.bsky.richtext.facet"]["link"]
-        | Record<string, any>
-      >;
+      "features": Array<LexiconDefs["app.bsky.richtext.facet"]["mention"] | LexiconDefs["app.bsky.richtext.facet"]["link"] | Record<string, any>>;
     };
   };
   "place.stream.segment": {
@@ -2958,12 +2726,9 @@ export interface LexiconDefs {
       "video"?: Array<LexiconDefs["place.stream.segment"]["video"]>;
       "audio"?: Array<LexiconDefs["place.stream.segment"]["audio"]>;
       "size"?: number;
-      "contentWarnings"?:
-        LexiconDefs["place.stream.metadata.contentWarnings"]["main"];
-      "contentRights"?:
-        LexiconDefs["place.stream.metadata.contentRights"]["main"];
-      "distributionPolicy"?:
-        LexiconDefs["place.stream.metadata.distributionPolicy"]["main"];
+      "contentWarnings"?: LexiconDefs["place.stream.metadata.contentWarnings"]["main"];
+      "contentRights"?: LexiconDefs["place.stream.metadata.contentRights"]["main"];
+      "distributionPolicy"?: LexiconDefs["place.stream.metadata.distributionPolicy"]["main"];
     };
     "audio": {
       "codec": string;
@@ -3123,12 +2888,8 @@ export interface LexiconDefs {
       "record"?: unknown;
       "text": string;
       "facets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
-      "subject"?:
-        | LexiconDefs["social.grain.gallery.defs"]["galleryView"]
-        | Record<string, any>;
-      "focus"?:
-        | LexiconDefs["social.grain.photo.defs"]["photoView"]
-        | Record<string, any>;
+      "subject"?: LexiconDefs["social.grain.gallery.defs"]["galleryView"] | Record<string, any>;
+      "focus"?: LexiconDefs["social.grain.photo.defs"]["photoView"] | Record<string, any>;
       "replyTo"?: string;
       "createdAt": string;
     };
@@ -3165,9 +2926,7 @@ export interface LexiconDefs {
       "title": string;
       "description"?: string;
       "facets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
-      "labels"?:
-        | LexiconDefs["com.atproto.label.defs"]["selfLabels"]
-        | Record<string, any>;
+      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
       "updatedAt"?: string;
       "createdAt": string;
     };
@@ -3195,10 +2954,7 @@ export interface LexiconDefs {
       "facets"?: Array<LexiconDefs["app.bsky.richtext.facet"]["main"]>;
       "creator": LexiconDefs["social.grain.actor.defs"]["profileView"];
       "record": unknown;
-      "items"?: Array<
-        | LexiconDefs["social.grain.photo.defs"]["photoView"]
-        | Record<string, any>
-      >;
+      "items"?: Array<LexiconDefs["social.grain.photo.defs"]["photoView"] | Record<string, any>>;
       "favCount"?: number;
       "commentCount"?: number;
       "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
@@ -3268,45 +3024,30 @@ export interface LexiconDefs {
       "uri": string;
       "cid": string;
       "creator": LexiconDefs["app.bsky.actor.defs"]["profileView"];
-      "policies":
-        any /* unresolved ref: social.grain.actor.defs#labelerPolicies */;
+      "policies": any /* unresolved ref: social.grain.actor.defs#labelerPolicies */;
       "favoriteCount"?: number;
       "viewer"?: LexiconDefs["social.grain.labeler.defs"]["labelerViewerState"];
       "indexedAt": string;
       "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
-      "reasonTypes"?: Array<
-        LexiconDefs["com.atproto.moderation.defs"]["reasonType"]
-      >;
-      "subjectTypes"?: Array<
-        LexiconDefs["com.atproto.moderation.defs"]["subjectType"]
-      >;
+      "reasonTypes"?: Array<LexiconDefs["com.atproto.moderation.defs"]["reasonType"]>;
+      "subjectTypes"?: Array<LexiconDefs["com.atproto.moderation.defs"]["subjectType"]>;
       "subjectCollections"?: Array<string>;
     };
     "labelerViewerState": {
       "like"?: string;
     };
     "labelerPolicies": {
-      "labelValues": Array<
-        any /* unresolved ref: com.atproto.label.defs#labelValue */
-      >;
-      "labelValueDefinitions"?: Array<
-        any /* unresolved ref: com.atproto.label.defs#labelValueDefinition */
-      >;
+      "labelValues": Array<any /* unresolved ref: com.atproto.label.defs#labelValue */>;
+      "labelValueDefinitions"?: Array<any /* unresolved ref: com.atproto.label.defs#labelValueDefinition */>;
     };
   };
   "social.grain.labeler.service": {
     "main": {
       "policies": LexiconDefs["app.bsky.labeler.defs"]["labelerPolicies"];
-      "labels"?:
-        | LexiconDefs["com.atproto.label.defs"]["selfLabels"]
-        | Record<string, any>;
+      "labels"?: LexiconDefs["com.atproto.label.defs"]["selfLabels"] | Record<string, any>;
       "createdAt": string;
-      "reasonTypes"?: Array<
-        LexiconDefs["com.atproto.moderation.defs"]["reasonType"]
-      >;
-      "subjectTypes"?: Array<
-        LexiconDefs["com.atproto.moderation.defs"]["subjectType"]
-      >;
+      "reasonTypes"?: Array<LexiconDefs["com.atproto.moderation.defs"]["reasonType"]>;
+      "subjectTypes"?: Array<LexiconDefs["com.atproto.moderation.defs"]["subjectType"]>;
       "subjectCollections"?: Array<string>;
     };
   };
@@ -3326,11 +3067,7 @@ export interface LexiconDefs {
       "cid": string;
       "author": LexiconDefs["social.grain.actor.defs"]["profileView"];
       "reason": string;
-      "reasonSubject"?:
-        | LexiconDefs["social.grain.actor.defs"]["profileView"]
-        | LexiconDefs["social.grain.comment.defs"]["commentView"]
-        | LexiconDefs["social.grain.gallery.defs"]["galleryView"]
-        | Record<string, any>;
+      "reasonSubject"?: LexiconDefs["social.grain.actor.defs"]["profileView"] | LexiconDefs["social.grain.comment.defs"]["commentView"] | LexiconDefs["social.grain.gallery.defs"]["galleryView"] | Record<string, any>;
       "record": unknown;
       "isRead": boolean;
       "indexedAt": string;
@@ -3453,15 +3190,7 @@ export interface LexiconDefs {
   "tools.ozone.hosting.getAccountHistory": {
     "main": never;
     "event": {
-      "details":
-        | LexiconDefs["tools.ozone.hosting.getAccountHistory"]["accountCreated"]
-        | LexiconDefs["tools.ozone.hosting.getAccountHistory"]["emailUpdated"]
-        | LexiconDefs["tools.ozone.hosting.getAccountHistory"]["emailConfirmed"]
-        | LexiconDefs["tools.ozone.hosting.getAccountHistory"][
-          "passwordUpdated"
-        ]
-        | LexiconDefs["tools.ozone.hosting.getAccountHistory"]["handleUpdated"]
-        | Record<string, any>;
+      "details": LexiconDefs["tools.ozone.hosting.getAccountHistory"]["accountCreated"] | LexiconDefs["tools.ozone.hosting.getAccountHistory"]["emailUpdated"] | LexiconDefs["tools.ozone.hosting.getAccountHistory"]["emailConfirmed"] | LexiconDefs["tools.ozone.hosting.getAccountHistory"]["passwordUpdated"] | LexiconDefs["tools.ozone.hosting.getAccountHistory"]["handleUpdated"] | Record<string, any>;
       "createdBy": string;
       "createdAt": string;
     };
@@ -3475,7 +3204,8 @@ export interface LexiconDefs {
     "emailConfirmed": {
       "email": string;
     };
-    "passwordUpdated": {};
+    "passwordUpdated": {
+    };
     "handleUpdated": {
       "handle": string;
     };
@@ -3487,11 +3217,7 @@ export interface LexiconDefs {
     "main": never;
     "cancellationResults": {
       "succeeded": Array<string>;
-      "failed": Array<
-        LexiconDefs["tools.ozone.moderation.cancelScheduledActions"][
-          "failedCancellation"
-        ]
-      >;
+      "failed": Array<LexiconDefs["tools.ozone.moderation.cancelScheduledActions"]["failedCancellation"]>;
     };
     "failedCancellation": {
       "did": string;
@@ -3502,43 +3228,8 @@ export interface LexiconDefs {
   "tools.ozone.moderation.defs": {
     "modEventView": {
       "id": number;
-      "event":
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventTakedown"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventReverseTakedown"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventComment"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventReport"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventLabel"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventAcknowledge"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventEscalate"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventMute"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmute"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventMuteReporter"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmuteReporter"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventEmail"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventResolveAppeal"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventDivert"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventTag"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["accountEvent"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["identityEvent"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["recordEvent"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventPriorityScore"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceEvent"]
-        | LexiconDefs["tools.ozone.moderation.defs"][
-          "ageAssuranceOverrideEvent"
-        ]
-        | LexiconDefs["tools.ozone.moderation.defs"][
-          "revokeAccountCredentialsEvent"
-        ]
-        | LexiconDefs["tools.ozone.moderation.defs"]["scheduleTakedownEvent"]
-        | LexiconDefs["tools.ozone.moderation.defs"][
-          "cancelScheduledTakedownEvent"
-        ]
-        | Record<string, any>;
-      "subject":
-        | LexiconDefs["com.atproto.admin.defs"]["repoRef"]
-        | LexiconDefs["com.atproto.repo.strongRef"]["main"]
-        | LexiconDefs["chat.bsky.convo.defs"]["messageRef"]
-        | Record<string, any>;
+      "event": LexiconDefs["tools.ozone.moderation.defs"]["modEventTakedown"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventReverseTakedown"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventComment"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventReport"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventLabel"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventAcknowledge"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventEscalate"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventMute"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmute"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventMuteReporter"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmuteReporter"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventEmail"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventResolveAppeal"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventDivert"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventTag"] | LexiconDefs["tools.ozone.moderation.defs"]["accountEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["identityEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["recordEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventPriorityScore"] | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceOverrideEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["revokeAccountCredentialsEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["scheduleTakedownEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["cancelScheduledTakedownEvent"] | Record<string, any>;
+      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | LexiconDefs["chat.bsky.convo.defs"]["messageRef"] | Record<string, any>;
       "subjectBlobCids": Array<string>;
       "createdBy": string;
       "createdAt": string;
@@ -3548,68 +3239,22 @@ export interface LexiconDefs {
     };
     "modEventViewDetail": {
       "id": number;
-      "event":
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventTakedown"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventReverseTakedown"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventComment"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventReport"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventLabel"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventAcknowledge"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventEscalate"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventMute"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmute"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventMuteReporter"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmuteReporter"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventEmail"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventResolveAppeal"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventDivert"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventTag"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["accountEvent"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["identityEvent"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["recordEvent"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventPriorityScore"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceEvent"]
-        | LexiconDefs["tools.ozone.moderation.defs"][
-          "ageAssuranceOverrideEvent"
-        ]
-        | LexiconDefs["tools.ozone.moderation.defs"][
-          "revokeAccountCredentialsEvent"
-        ]
-        | LexiconDefs["tools.ozone.moderation.defs"]["scheduleTakedownEvent"]
-        | LexiconDefs["tools.ozone.moderation.defs"][
-          "cancelScheduledTakedownEvent"
-        ]
-        | Record<string, any>;
-      "subject":
-        | LexiconDefs["tools.ozone.moderation.defs"]["repoView"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["repoViewNotFound"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["recordView"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["recordViewNotFound"]
-        | Record<string, any>;
-      "subjectBlobs": Array<
-        LexiconDefs["tools.ozone.moderation.defs"]["blobView"]
-      >;
+      "event": LexiconDefs["tools.ozone.moderation.defs"]["modEventTakedown"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventReverseTakedown"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventComment"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventReport"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventLabel"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventAcknowledge"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventEscalate"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventMute"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmute"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventMuteReporter"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmuteReporter"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventEmail"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventResolveAppeal"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventDivert"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventTag"] | LexiconDefs["tools.ozone.moderation.defs"]["accountEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["identityEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["recordEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventPriorityScore"] | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceOverrideEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["revokeAccountCredentialsEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["scheduleTakedownEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["cancelScheduledTakedownEvent"] | Record<string, any>;
+      "subject": LexiconDefs["tools.ozone.moderation.defs"]["repoView"] | LexiconDefs["tools.ozone.moderation.defs"]["repoViewNotFound"] | LexiconDefs["tools.ozone.moderation.defs"]["recordView"] | LexiconDefs["tools.ozone.moderation.defs"]["recordViewNotFound"] | Record<string, any>;
+      "subjectBlobs": Array<LexiconDefs["tools.ozone.moderation.defs"]["blobView"]>;
       "createdBy": string;
       "createdAt": string;
       "modTool"?: LexiconDefs["tools.ozone.moderation.defs"]["modTool"];
     };
     "subjectStatusView": {
       "id": number;
-      "subject":
-        | LexiconDefs["com.atproto.admin.defs"]["repoRef"]
-        | LexiconDefs["com.atproto.repo.strongRef"]["main"]
-        | LexiconDefs["chat.bsky.convo.defs"]["messageRef"]
-        | Record<string, any>;
-      "hosting"?:
-        | LexiconDefs["tools.ozone.moderation.defs"]["accountHosting"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["recordHosting"]
-        | Record<string, any>;
+      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | LexiconDefs["chat.bsky.convo.defs"]["messageRef"] | Record<string, any>;
+      "hosting"?: LexiconDefs["tools.ozone.moderation.defs"]["accountHosting"] | LexiconDefs["tools.ozone.moderation.defs"]["recordHosting"] | Record<string, any>;
       "subjectBlobCids"?: Array<string>;
       "subjectRepoHandle"?: string;
       "updatedAt": string;
       "createdAt": string;
-      "reviewState":
-        LexiconDefs["tools.ozone.moderation.defs"]["subjectReviewState"];
+      "reviewState": LexiconDefs["tools.ozone.moderation.defs"]["subjectReviewState"];
       "comment"?: string;
       "priorityScore"?: number;
       "muteUntil"?: string;
@@ -3622,20 +3267,16 @@ export interface LexiconDefs {
       "appealed"?: boolean;
       "suspendUntil"?: string;
       "tags"?: Array<string>;
-      "accountStats"?:
-        LexiconDefs["tools.ozone.moderation.defs"]["accountStats"];
-      "recordsStats"?:
-        LexiconDefs["tools.ozone.moderation.defs"]["recordsStats"];
-      "accountStrike"?:
-        LexiconDefs["tools.ozone.moderation.defs"]["accountStrike"];
+      "accountStats"?: LexiconDefs["tools.ozone.moderation.defs"]["accountStats"];
+      "recordsStats"?: LexiconDefs["tools.ozone.moderation.defs"]["recordsStats"];
+      "accountStrike"?: LexiconDefs["tools.ozone.moderation.defs"]["accountStrike"];
       "ageAssuranceState"?: string;
       "ageAssuranceUpdatedBy"?: string;
     };
     "subjectView": {
       "type": LexiconDefs["com.atproto.moderation.defs"]["subjectType"];
       "subject": string;
-      "status"?:
-        LexiconDefs["tools.ozone.moderation.defs"]["subjectStatusView"];
+      "status"?: LexiconDefs["tools.ozone.moderation.defs"]["subjectStatusView"];
       "repo"?: LexiconDefs["tools.ozone.moderation.defs"]["repoViewDetail"];
       "profile"?: never | Record<string, any>;
       "record"?: LexiconDefs["tools.ozone.moderation.defs"]["recordViewDetail"];
@@ -3804,9 +3445,7 @@ export interface LexiconDefs {
       "invitesDisabled"?: boolean;
       "inviteNote"?: string;
       "deactivatedAt"?: string;
-      "threatSignatures"?: Array<
-        LexiconDefs["com.atproto.admin.defs"]["threatSignature"]
-      >;
+      "threatSignatures"?: Array<LexiconDefs["com.atproto.admin.defs"]["threatSignature"]>;
     };
     "repoViewDetail": {
       "did": string;
@@ -3814,8 +3453,7 @@ export interface LexiconDefs {
       "email"?: string;
       "relatedRecords": Array<unknown>;
       "indexedAt": string;
-      "moderation":
-        LexiconDefs["tools.ozone.moderation.defs"]["moderationDetail"];
+      "moderation": LexiconDefs["tools.ozone.moderation.defs"]["moderationDetail"];
       "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
       "invitedBy"?: LexiconDefs["com.atproto.server.defs"]["inviteCode"];
       "invites"?: Array<LexiconDefs["com.atproto.server.defs"]["inviteCode"]>;
@@ -3823,9 +3461,7 @@ export interface LexiconDefs {
       "inviteNote"?: string;
       "emailConfirmedAt"?: string;
       "deactivatedAt"?: string;
-      "threatSignatures"?: Array<
-        LexiconDefs["com.atproto.admin.defs"]["threatSignature"]
-      >;
+      "threatSignatures"?: Array<LexiconDefs["com.atproto.admin.defs"]["threatSignature"]>;
     };
     "repoViewNotFound": {
       "did": string;
@@ -3846,30 +3482,24 @@ export interface LexiconDefs {
       "blobs": Array<LexiconDefs["tools.ozone.moderation.defs"]["blobView"]>;
       "labels"?: Array<LexiconDefs["com.atproto.label.defs"]["label"]>;
       "indexedAt": string;
-      "moderation":
-        LexiconDefs["tools.ozone.moderation.defs"]["moderationDetail"];
+      "moderation": LexiconDefs["tools.ozone.moderation.defs"]["moderationDetail"];
       "repo": LexiconDefs["tools.ozone.moderation.defs"]["repoView"];
     };
     "recordViewNotFound": {
       "uri": string;
     };
     "moderation": {
-      "subjectStatus"?:
-        LexiconDefs["tools.ozone.moderation.defs"]["subjectStatusView"];
+      "subjectStatus"?: LexiconDefs["tools.ozone.moderation.defs"]["subjectStatusView"];
     };
     "moderationDetail": {
-      "subjectStatus"?:
-        LexiconDefs["tools.ozone.moderation.defs"]["subjectStatusView"];
+      "subjectStatus"?: LexiconDefs["tools.ozone.moderation.defs"]["subjectStatusView"];
     };
     "blobView": {
       "cid": string;
       "mimeType": string;
       "size": number;
       "createdAt": string;
-      "details"?:
-        | LexiconDefs["tools.ozone.moderation.defs"]["imageDetails"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["videoDetails"]
-        | Record<string, any>;
+      "details"?: LexiconDefs["tools.ozone.moderation.defs"]["imageDetails"] | LexiconDefs["tools.ozone.moderation.defs"]["videoDetails"] | Record<string, any>;
       "moderation"?: LexiconDefs["tools.ozone.moderation.defs"]["moderation"];
     };
     "imageDetails": {
@@ -3938,11 +3568,7 @@ export interface LexiconDefs {
     "main": never;
     "timelineItem": {
       "day": string;
-      "summary": Array<
-        LexiconDefs["tools.ozone.moderation.getAccountTimeline"][
-          "timelineItemSummary"
-        ]
-      >;
+      "summary": Array<LexiconDefs["tools.ozone.moderation.getAccountTimeline"]["timelineItemSummary"]>;
     };
     "timelineItemSummary": {
       "eventSubjectType": string;
@@ -4003,9 +3629,7 @@ export interface LexiconDefs {
     };
     "scheduledActionResults": {
       "succeeded": Array<string>;
-      "failed": Array<
-        LexiconDefs["tools.ozone.moderation.scheduleAction"]["failedScheduling"]
-      >;
+      "failed": Array<LexiconDefs["tools.ozone.moderation.scheduleAction"]["failedScheduling"]>;
     };
     "failedScheduling": {
       "subject": string;
@@ -4180,9 +3804,7 @@ export interface LexiconDefs {
     "main": never;
     "relatedAccount": {
       "account": LexiconDefs["com.atproto.admin.defs"]["accountView"];
-      "similarities"?: Array<
-        LexiconDefs["tools.ozone.signature.defs"]["sigDetail"]
-      >;
+      "similarities"?: Array<LexiconDefs["tools.ozone.signature.defs"]["sigDetail"]>;
     };
   };
   "tools.ozone.signature.searchAccounts": {
@@ -4228,14 +3850,8 @@ export interface LexiconDefs {
       "revokedBy"?: string;
       "subjectProfile"?: never | Record<string, any>;
       "issuerProfile"?: never | Record<string, any>;
-      "subjectRepo"?:
-        | LexiconDefs["tools.ozone.moderation.defs"]["repoViewDetail"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["repoViewNotFound"]
-        | Record<string, any>;
-      "issuerRepo"?:
-        | LexiconDefs["tools.ozone.moderation.defs"]["repoViewDetail"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["repoViewNotFound"]
-        | Record<string, any>;
+      "subjectRepo"?: LexiconDefs["tools.ozone.moderation.defs"]["repoViewDetail"] | LexiconDefs["tools.ozone.moderation.defs"]["repoViewNotFound"] | Record<string, any>;
+      "issuerRepo"?: LexiconDefs["tools.ozone.moderation.defs"]["repoViewDetail"] | LexiconDefs["tools.ozone.moderation.defs"]["repoViewNotFound"] | Record<string, any>;
     };
   };
   "tools.ozone.verification.grantVerifications": {
@@ -4273,7 +3889,8 @@ export interface Lexicons {
   "app.bsky.actor.getPreferences": {
     type: "query";
     outputEncoding: "application/json";
-    params: {};
+    params: {
+    };
     input: never;
     output: {
       "preferences": LexiconDefs["app.bsky.actor.defs"]["preferences"];
@@ -4296,9 +3913,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "profiles": Array<
-        LexiconDefs["app.bsky.actor.defs"]["profileViewDetailed"]
-      >;
+      "profiles": Array<LexiconDefs["app.bsky.actor.defs"]["profileViewDetailed"]>;
     };
   };
   "app.bsky.actor.getSuggestions": {
@@ -4431,7 +4046,8 @@ export interface Lexicons {
     input: {
       "subject": string;
     };
-    output: {};
+    output: {
+    };
   };
   "app.bsky.contact.getMatches": {
     type: "query";
@@ -4449,7 +4065,8 @@ export interface Lexicons {
   "app.bsky.contact.getSyncStatus": {
     type: "query";
     outputEncoding: "application/json";
-    params: {};
+    params: {
+    };
     input: never;
     output: {
       "syncStatus"?: LexiconDefs["app.bsky.contact.defs"]["syncStatus"];
@@ -4464,17 +4081,17 @@ export interface Lexicons {
       "contacts": Array<string>;
     };
     output: {
-      "matchesAndContactIndexes": Array<
-        LexiconDefs["app.bsky.contact.defs"]["matchAndContactIndex"]
-      >;
+      "matchesAndContactIndexes": Array<LexiconDefs["app.bsky.contact.defs"]["matchAndContactIndex"]>;
     };
   };
   "app.bsky.contact.removeData": {
     type: "procedure";
     inputEncoding: "application/json";
     outputEncoding: "application/json";
-    input: {};
-    output: {};
+    input: {
+    };
+    output: {
+    };
   };
   "app.bsky.contact.sendNotification": {
     type: "procedure";
@@ -4484,7 +4101,8 @@ export interface Lexicons {
       "from": string;
       "to": string;
     };
-    output: {};
+    output: {
+    };
   };
   "app.bsky.contact.startPhoneVerification": {
     type: "procedure";
@@ -4493,7 +4111,8 @@ export interface Lexicons {
     input: {
       "phone": string;
     };
-    output: {};
+    output: {
+    };
   };
   "app.bsky.contact.verifyPhone": {
     type: "procedure";
@@ -4526,7 +4145,8 @@ export interface Lexicons {
     input: {
       "uri": string;
     };
-    output: {};
+    output: {
+    };
   };
   "app.bsky.draft.getDrafts": {
     type: "query";
@@ -4550,7 +4170,8 @@ export interface Lexicons {
       "text"?: string;
       "langs"?: Array<string>;
     };
-    output: {};
+    output: {
+    };
   };
   "app.bsky.feed.describeFeedGenerator": {
     type: "query";
@@ -4559,9 +4180,7 @@ export interface Lexicons {
     input: never;
     output: {
       "did": string;
-      "feeds": Array<
-        LexiconDefs["app.bsky.feed.describeFeedGenerator"]["feed"]
-      >;
+      "feeds": Array<LexiconDefs["app.bsky.feed.describeFeedGenerator"]["feed"]>;
       "links"?: LexiconDefs["app.bsky.feed.describeFeedGenerator"]["links"];
     };
   };
@@ -4718,11 +4337,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "thread":
-        | LexiconDefs["app.bsky.feed.defs"]["threadViewPost"]
-        | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"]
-        | LexiconDefs["app.bsky.feed.defs"]["blockedPost"]
-        | Record<string, any>;
+      "thread": LexiconDefs["app.bsky.feed.defs"]["threadViewPost"] | LexiconDefs["app.bsky.feed.defs"]["notFoundPost"] | LexiconDefs["app.bsky.feed.defs"]["blockedPost"] | Record<string, any>;
       "threadgate"?: LexiconDefs["app.bsky.feed.defs"]["threadgateView"];
     };
   };
@@ -4834,7 +4449,8 @@ export interface Lexicons {
     input: {
       "interactions": Array<LexiconDefs["app.bsky.feed.defs"]["interaction"]>;
     };
-    output: {};
+    output: {
+    };
   };
   "app.bsky.feed.threadgate": {
     type: "record";
@@ -4859,9 +4475,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "starterPacks": Array<
-        LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"]
-      >;
+      "starterPacks": Array<LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"]>;
     };
   };
   "app.bsky.graph.getBlocks": {
@@ -4990,11 +4604,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "listsWithMembership": Array<
-        LexiconDefs["app.bsky.graph.getListsWithMembership"][
-          "listWithMembership"
-        ]
-      >;
+      "listsWithMembership": Array<LexiconDefs["app.bsky.graph.getListsWithMembership"]["listWithMembership"]>;
     };
   };
   "app.bsky.graph.getMutes": {
@@ -5020,11 +4630,7 @@ export interface Lexicons {
     input: never;
     output: {
       "actor"?: string;
-      "relationships": Array<
-        | LexiconDefs["app.bsky.graph.defs"]["relationship"]
-        | LexiconDefs["app.bsky.graph.defs"]["notFoundActor"]
-        | Record<string, any>
-      >;
+      "relationships": Array<LexiconDefs["app.bsky.graph.defs"]["relationship"] | LexiconDefs["app.bsky.graph.defs"]["notFoundActor"] | Record<string, any>>;
     };
   };
   "app.bsky.graph.getStarterPack": {
@@ -5046,9 +4652,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "starterPacks": Array<
-        LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"]
-      >;
+      "starterPacks": Array<LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"]>;
     };
   };
   "app.bsky.graph.getStarterPacksWithMembership": {
@@ -5062,11 +4666,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "starterPacksWithMembership": Array<
-        LexiconDefs["app.bsky.graph.getStarterPacksWithMembership"][
-          "starterPackWithMembership"
-        ]
-      >;
+      "starterPacksWithMembership": Array<LexiconDefs["app.bsky.graph.getStarterPacksWithMembership"]["starterPackWithMembership"]>;
     };
   };
   "app.bsky.graph.getSuggestedFollowsByActor": {
@@ -5132,9 +4732,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "starterPacks": Array<
-        LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"]
-      >;
+      "starterPacks": Array<LexiconDefs["app.bsky.graph.defs"]["starterPackViewBasic"]>;
     };
   };
   "app.bsky.graph.starterpack": {
@@ -5179,7 +4777,8 @@ export interface Lexicons {
     input: {
       "subject": string;
     };
-    output: {};
+    output: {
+    };
   };
   "app.bsky.graph.verification.deleteVerification": {
     type: "procedure";
@@ -5188,7 +4787,8 @@ export interface Lexicons {
     input: {
       "subject": string;
     };
-    output: {};
+    output: {
+    };
   };
   "app.bsky.labeler.getServices": {
     type: "query";
@@ -5199,11 +4799,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "views": Array<
-        | LexiconDefs["app.bsky.labeler.defs"]["labelerView"]
-        | LexiconDefs["app.bsky.labeler.defs"]["labelerViewDetailed"]
-        | Record<string, any>
-      >;
+      "views": Array<LexiconDefs["app.bsky.labeler.defs"]["labelerView"] | LexiconDefs["app.bsky.labeler.defs"]["labelerViewDetailed"] | Record<string, any>>;
     };
   };
   "app.bsky.labeler.service": {
@@ -5217,7 +4813,8 @@ export interface Lexicons {
   "app.bsky.notification.getPreferences": {
     type: "query";
     outputEncoding: "application/json";
-    params: {};
+    params: {
+    };
     input: never;
     output: {
       "preferences": LexiconDefs["app.bsky.notification.defs"]["preferences"];
@@ -5261,9 +4858,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "notifications": Array<
-        LexiconDefs["app.bsky.notification.listNotifications"]["notification"]
-      >;
+      "notifications": Array<LexiconDefs["app.bsky.notification.listNotifications"]["notification"]>;
       "priority"?: boolean;
       "seenAt"?: string;
     };
@@ -5274,13 +4869,11 @@ export interface Lexicons {
     outputEncoding: "application/json";
     input: {
       "subject": string;
-      "activitySubscription":
-        LexiconDefs["app.bsky.notification.defs"]["activitySubscription"];
+      "activitySubscription": LexiconDefs["app.bsky.notification.defs"]["activitySubscription"];
     };
     output: {
       "subject": string;
-      "activitySubscription"?:
-        LexiconDefs["app.bsky.notification.defs"]["activitySubscription"];
+      "activitySubscription"?: LexiconDefs["app.bsky.notification.defs"]["activitySubscription"];
     };
   };
   "app.bsky.notification.putNotificationPreferences": {
@@ -5290,7 +4883,8 @@ export interface Lexicons {
     input: {
       "priority": boolean;
     };
-    output: {};
+    output: {
+    };
   };
   "app.bsky.notification.putPreferences": {
     type: "procedure";
@@ -5307,26 +4901,16 @@ export interface Lexicons {
     outputEncoding: "application/json";
     input: {
       "chat"?: LexiconDefs["app.bsky.notification.defs"]["chatPreference"];
-      "follow"?:
-        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "like"?:
-        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "likeViaRepost"?:
-        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "mention"?:
-        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "quote"?:
-        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "reply"?:
-        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "repost"?:
-        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "repostViaRepost"?:
-        LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
-      "starterpackJoined"?:
-        LexiconDefs["app.bsky.notification.defs"]["preference"];
-      "subscribedPost"?:
-        LexiconDefs["app.bsky.notification.defs"]["preference"];
+      "follow"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "like"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "likeViaRepost"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "mention"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "quote"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "reply"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "repost"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "repostViaRepost"?: LexiconDefs["app.bsky.notification.defs"]["filterablePreference"];
+      "starterpackJoined"?: LexiconDefs["app.bsky.notification.defs"]["preference"];
+      "subscribedPost"?: LexiconDefs["app.bsky.notification.defs"]["preference"];
       "unverified"?: LexiconDefs["app.bsky.notification.defs"]["preference"];
       "verified"?: LexiconDefs["app.bsky.notification.defs"]["preference"];
     };
@@ -5391,9 +4975,7 @@ export interface Lexicons {
     input: never;
     output: {
       "checkEmailConfirmed"?: boolean;
-      "liveNow"?: Array<
-        LexiconDefs["app.bsky.unspecced.getConfig"]["liveNowConfig"]
-      >;
+      "liveNow"?: Array<LexiconDefs["app.bsky.unspecced.getConfig"]["liveNowConfig"]>;
     };
   };
   "app.bsky.unspecced.getOnboardingSuggestedStarterPacks": {
@@ -5404,9 +4986,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "starterPacks": Array<
-        LexiconDefs["app.bsky.graph.defs"]["starterPackView"]
-      >;
+      "starterPacks": Array<LexiconDefs["app.bsky.graph.defs"]["starterPackView"]>;
     };
   };
   "app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton": {
@@ -5458,9 +5038,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "thread": Array<
-        LexiconDefs["app.bsky.unspecced.getPostThreadOtherV2"]["threadItem"]
-      >;
+      "thread": Array<LexiconDefs["app.bsky.unspecced.getPostThreadOtherV2"]["threadItem"]>;
     };
   };
   "app.bsky.unspecced.getPostThreadV2": {
@@ -5475,9 +5053,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "thread": Array<
-        LexiconDefs["app.bsky.unspecced.getPostThreadV2"]["threadItem"]
-      >;
+      "thread": Array<LexiconDefs["app.bsky.unspecced.getPostThreadV2"]["threadItem"]>;
       "threadgate"?: LexiconDefs["app.bsky.feed.defs"]["threadgateView"];
       "hasOtherReplies": boolean;
     };
@@ -5527,9 +5103,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "starterPacks": Array<
-        LexiconDefs["app.bsky.graph.defs"]["starterPackView"]
-      >;
+      "starterPacks": Array<LexiconDefs["app.bsky.graph.defs"]["starterPackView"]>;
     };
   };
   "app.bsky.unspecced.getSuggestedStarterPacksSkeleton": {
@@ -5662,9 +5236,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "actors": Array<
-        LexiconDefs["app.bsky.unspecced.defs"]["skeletonSearchActor"]
-      >;
+      "actors": Array<LexiconDefs["app.bsky.unspecced.defs"]["skeletonSearchActor"]>;
       "relativeToDid"?: string;
       "recId"?: number;
     };
@@ -5672,12 +5244,11 @@ export interface Lexicons {
   "app.bsky.unspecced.getTaggedSuggestions": {
     type: "query";
     outputEncoding: "application/json";
-    params: {};
+    params: {
+    };
     input: never;
     output: {
-      "suggestions": Array<
-        LexiconDefs["app.bsky.unspecced.getTaggedSuggestions"]["suggestion"]
-      >;
+      "suggestions": Array<LexiconDefs["app.bsky.unspecced.getTaggedSuggestions"]["suggestion"]>;
     };
   };
   "app.bsky.unspecced.getTrendingTopics": {
@@ -5690,9 +5261,7 @@ export interface Lexicons {
     input: never;
     output: {
       "topics": Array<LexiconDefs["app.bsky.unspecced.defs"]["trendingTopic"]>;
-      "suggested": Array<
-        LexiconDefs["app.bsky.unspecced.defs"]["trendingTopic"]
-      >;
+      "suggested": Array<LexiconDefs["app.bsky.unspecced.defs"]["trendingTopic"]>;
     };
   };
   "app.bsky.unspecced.getTrends": {
@@ -5743,9 +5312,7 @@ export interface Lexicons {
     output: {
       "cursor"?: string;
       "hitsTotal"?: number;
-      "actors": Array<
-        LexiconDefs["app.bsky.unspecced.defs"]["skeletonSearchActor"]
-      >;
+      "actors": Array<LexiconDefs["app.bsky.unspecced.defs"]["skeletonSearchActor"]>;
     };
   };
   "app.bsky.unspecced.searchPostsSkeleton": {
@@ -5770,9 +5337,7 @@ export interface Lexicons {
     output: {
       "cursor"?: string;
       "hitsTotal"?: number;
-      "posts": Array<
-        LexiconDefs["app.bsky.unspecced.defs"]["skeletonSearchPost"]
-      >;
+      "posts": Array<LexiconDefs["app.bsky.unspecced.defs"]["skeletonSearchPost"]>;
     };
   };
   "app.bsky.unspecced.searchStarterPacksSkeleton": {
@@ -5788,9 +5353,7 @@ export interface Lexicons {
     output: {
       "cursor"?: string;
       "hitsTotal"?: number;
-      "starterPacks": Array<
-        LexiconDefs["app.bsky.unspecced.defs"]["skeletonSearchStarterPack"]
-      >;
+      "starterPacks": Array<LexiconDefs["app.bsky.unspecced.defs"]["skeletonSearchStarterPack"]>;
     };
   };
   "app.bsky.video.getJobStatus": {
@@ -5839,7 +5402,8 @@ export interface Lexicons {
     inputEncoding: "application/json";
     outputEncoding: "application/json";
     input: never;
-    output: {};
+    output: {
+    };
   };
   "chat.bsky.actor.exportAccountData": {
     type: "query";
@@ -5925,19 +5489,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "logs": Array<
-        | LexiconDefs["chat.bsky.convo.defs"]["logBeginConvo"]
-        | LexiconDefs["chat.bsky.convo.defs"]["logAcceptConvo"]
-        | LexiconDefs["chat.bsky.convo.defs"]["logLeaveConvo"]
-        | LexiconDefs["chat.bsky.convo.defs"]["logMuteConvo"]
-        | LexiconDefs["chat.bsky.convo.defs"]["logUnmuteConvo"]
-        | LexiconDefs["chat.bsky.convo.defs"]["logCreateMessage"]
-        | LexiconDefs["chat.bsky.convo.defs"]["logDeleteMessage"]
-        | LexiconDefs["chat.bsky.convo.defs"]["logReadMessage"]
-        | LexiconDefs["chat.bsky.convo.defs"]["logAddReaction"]
-        | LexiconDefs["chat.bsky.convo.defs"]["logRemoveReaction"]
-        | Record<string, any>
-      >;
+      "logs": Array<LexiconDefs["chat.bsky.convo.defs"]["logBeginConvo"] | LexiconDefs["chat.bsky.convo.defs"]["logAcceptConvo"] | LexiconDefs["chat.bsky.convo.defs"]["logLeaveConvo"] | LexiconDefs["chat.bsky.convo.defs"]["logMuteConvo"] | LexiconDefs["chat.bsky.convo.defs"]["logUnmuteConvo"] | LexiconDefs["chat.bsky.convo.defs"]["logCreateMessage"] | LexiconDefs["chat.bsky.convo.defs"]["logDeleteMessage"] | LexiconDefs["chat.bsky.convo.defs"]["logReadMessage"] | LexiconDefs["chat.bsky.convo.defs"]["logAddReaction"] | LexiconDefs["chat.bsky.convo.defs"]["logRemoveReaction"] | Record<string, any>>;
     };
   };
   "chat.bsky.convo.getMessages": {
@@ -5951,11 +5503,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "messages": Array<
-        | LexiconDefs["chat.bsky.convo.defs"]["messageView"]
-        | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"]
-        | Record<string, any>
-      >;
+      "messages": Array<LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>>;
     };
   };
   "chat.bsky.convo.leaveConvo": {
@@ -5980,11 +5528,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "requests": Array<
-        | LexiconDefs["chat.bsky.convo.defs"]["convoView"]
-        | LexiconDefs["chat.bsky.group.defs"]["joinRequestView"]
-        | Record<string, any>
-      >;
+      "requests": Array<LexiconDefs["chat.bsky.convo.defs"]["convoView"] | LexiconDefs["chat.bsky.group.defs"]["joinRequestView"] | Record<string, any>>;
     };
   };
   "chat.bsky.convo.listConvos": {
@@ -6052,9 +5596,7 @@ export interface Lexicons {
     inputEncoding: "application/json";
     outputEncoding: "application/json";
     input: {
-      "items": Array<
-        LexiconDefs["chat.bsky.convo.sendMessageBatch"]["batchItem"]
-      >;
+      "items": Array<LexiconDefs["chat.bsky.convo.sendMessageBatch"]["batchItem"]>;
     };
     output: {
       "items": Array<LexiconDefs["chat.bsky.convo.defs"]["messageView"]>;
@@ -6323,7 +5865,8 @@ export interface Lexicons {
       "convoId": string;
       "member": string;
     };
-    output: {};
+    output: {
+    };
   };
   "chat.bsky.group.removeMembers": {
     type: "procedure";
@@ -6392,11 +5935,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "messages": Array<
-        | LexiconDefs["chat.bsky.convo.defs"]["messageView"]
-        | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"]
-        | Record<string, any>
-      >;
+      "messages": Array<LexiconDefs["chat.bsky.convo.defs"]["messageView"] | LexiconDefs["chat.bsky.convo.defs"]["deletedMessageView"] | Record<string, any>>;
     };
   };
   "chat.bsky.moderation.updateActorAccess": {
@@ -6561,11 +6100,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "subject":
-        | LexiconDefs["com.atproto.admin.defs"]["repoRef"]
-        | LexiconDefs["com.atproto.repo.strongRef"]["main"]
-        | LexiconDefs["com.atproto.admin.defs"]["repoBlobRef"]
-        | Record<string, any>;
+      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | LexiconDefs["com.atproto.admin.defs"]["repoBlobRef"] | Record<string, any>;
       "takedown"?: LexiconDefs["com.atproto.admin.defs"]["statusAttr"];
       "deactivated"?: LexiconDefs["com.atproto.admin.defs"]["statusAttr"];
     };
@@ -6615,9 +6150,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "events": Array<
-        any /* unresolved ref: com.atproto.admin.defs#auditLogEvent */
-      >;
+      "events": Array<any /* unresolved ref: com.atproto.admin.defs#auditLogEvent */>;
     };
   };
   "com.atproto.admin.repairRepo": {
@@ -6641,7 +6174,8 @@ export interface Lexicons {
       "action"?: string;
       "comment"?: string;
     };
-    output: {};
+    output: {
+    };
   };
   "com.atproto.admin.runBlobAudit": {
     type: "procedure";
@@ -6744,20 +6278,12 @@ export interface Lexicons {
     inputEncoding: "application/json";
     outputEncoding: "application/json";
     input: {
-      "subject":
-        | LexiconDefs["com.atproto.admin.defs"]["repoRef"]
-        | LexiconDefs["com.atproto.repo.strongRef"]["main"]
-        | LexiconDefs["com.atproto.admin.defs"]["repoBlobRef"]
-        | Record<string, any>;
+      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | LexiconDefs["com.atproto.admin.defs"]["repoBlobRef"] | Record<string, any>;
       "takedown"?: LexiconDefs["com.atproto.admin.defs"]["statusAttr"];
       "deactivated"?: LexiconDefs["com.atproto.admin.defs"]["statusAttr"];
     };
     output: {
-      "subject":
-        | LexiconDefs["com.atproto.admin.defs"]["repoRef"]
-        | LexiconDefs["com.atproto.repo.strongRef"]["main"]
-        | LexiconDefs["com.atproto.admin.defs"]["repoBlobRef"]
-        | Record<string, any>;
+      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | LexiconDefs["com.atproto.admin.defs"]["repoBlobRef"] | Record<string, any>;
       "takedown"?: LexiconDefs["com.atproto.admin.defs"]["statusAttr"];
     };
   };
@@ -6923,20 +6449,14 @@ export interface Lexicons {
     input: {
       "reasonType": LexiconDefs["com.atproto.moderation.defs"]["reasonType"];
       "reason"?: string;
-      "subject":
-        | LexiconDefs["com.atproto.admin.defs"]["repoRef"]
-        | LexiconDefs["com.atproto.repo.strongRef"]["main"]
-        | Record<string, any>;
+      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | Record<string, any>;
       "modTool"?: LexiconDefs["com.atproto.moderation.createReport"]["modTool"];
     };
     output: {
       "id": number;
       "reasonType": LexiconDefs["com.atproto.moderation.defs"]["reasonType"];
       "reason"?: string;
-      "subject":
-        | LexiconDefs["com.atproto.admin.defs"]["repoRef"]
-        | LexiconDefs["com.atproto.repo.strongRef"]["main"]
-        | Record<string, any>;
+      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | Record<string, any>;
       "reportedBy": string;
       "createdAt": string;
     };
@@ -6948,20 +6468,12 @@ export interface Lexicons {
     input: {
       "repo": string;
       "validate"?: boolean;
-      "writes": Array<
-        | LexiconDefs["com.atproto.repo.applyWrites"]["create"]
-        | LexiconDefs["com.atproto.repo.applyWrites"]["update"]
-        | LexiconDefs["com.atproto.repo.applyWrites"]["delete"]
-      >;
+      "writes": Array<LexiconDefs["com.atproto.repo.applyWrites"]["create"] | LexiconDefs["com.atproto.repo.applyWrites"]["update"] | LexiconDefs["com.atproto.repo.applyWrites"]["delete"]>;
       "swapCommit"?: string;
     };
     output: {
       "commit"?: LexiconDefs["com.atproto.repo.defs"]["commitMeta"];
-      "results"?: Array<
-        | LexiconDefs["com.atproto.repo.applyWrites"]["createResult"]
-        | LexiconDefs["com.atproto.repo.applyWrites"]["updateResult"]
-        | LexiconDefs["com.atproto.repo.applyWrites"]["deleteResult"]
-      >;
+      "results"?: Array<LexiconDefs["com.atproto.repo.applyWrites"]["createResult"] | LexiconDefs["com.atproto.repo.applyWrites"]["updateResult"] | LexiconDefs["com.atproto.repo.applyWrites"]["deleteResult"]>;
     };
   };
   "com.atproto.repo.createRecord": {
@@ -7024,9 +6536,9 @@ export interface Lexicons {
       "didDoc": unknown;
       "collections": Array<string>;
       "collectionStats"?: Array<{
-        "name": string;
-        "count": number;
-      }>;
+      "name": string;
+      "count": number;
+    }>;
       "handleIsCorrect": boolean;
     };
   };
@@ -7073,9 +6585,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "blobs": Array<
-        LexiconDefs["com.atproto.repo.listMissingBlobs"]["recordBlob"]
-      >;
+      "blobs": Array<LexiconDefs["com.atproto.repo.listMissingBlobs"]["recordBlob"]>;
     };
   };
   "com.atproto.repo.listRecords": {
@@ -7226,9 +6736,7 @@ export interface Lexicons {
       "forAccounts"?: Array<string>;
     };
     output: {
-      "codes": Array<
-        LexiconDefs["com.atproto.server.createInviteCodes"]["accountCodes"]
-      >;
+      "codes": Array<LexiconDefs["com.atproto.server.createInviteCodes"]["accountCodes"]>;
     };
   };
   "com.atproto.server.createSession": {
@@ -7349,9 +6857,7 @@ export interface Lexicons {
     params: Record<string, never>;
     input: never;
     output: {
-      "passwords": Array<
-        LexiconDefs["com.atproto.server.listAppPasswords"]["appPassword"]
-      >;
+      "passwords": Array<LexiconDefs["com.atproto.server.listAppPasswords"]["appPassword"]>;
     };
   };
   "com.atproto.server.refreshSession": {
@@ -7593,9 +7099,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "repos": Array<
-        LexiconDefs["com.atproto.sync.listReposByCollection"]["repo"]
-      >;
+      "repos": Array<LexiconDefs["com.atproto.sync.listReposByCollection"]["repo"]>;
     };
   };
   "com.atproto.sync.notifyOfUpdate": {
@@ -7623,7 +7127,8 @@ export interface Lexicons {
     input: {
       "handle": string;
     };
-    output: {};
+    output: {
+    };
   };
   "com.atproto.temp.checkHandleAvailability": {
     type: "query";
@@ -7636,14 +7141,7 @@ export interface Lexicons {
     input: never;
     output: {
       "handle": string;
-      "result":
-        | LexiconDefs["com.atproto.temp.checkHandleAvailability"][
-          "resultAvailable"
-        ]
-        | LexiconDefs["com.atproto.temp.checkHandleAvailability"][
-          "resultUnavailable"
-        ]
-        | Record<string, any>;
+      "result": LexiconDefs["com.atproto.temp.checkHandleAvailability"]["resultAvailable"] | LexiconDefs["com.atproto.temp.checkHandleAvailability"]["resultUnavailable"] | Record<string, any>;
     };
   };
   "com.atproto.temp.checkSignupQueue": {
@@ -7789,9 +7287,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "oekaki": Array<
-        LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]
-      >;
+      "oekaki": Array<LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]>;
     };
   };
   "com.shinolabs.pinksea.getAuthorReplies": {
@@ -7804,9 +7300,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "oekaki": Array<
-        LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]
-      >;
+      "oekaki": Array<LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]>;
     };
   };
   "com.shinolabs.pinksea.getHandleFromDid": {
@@ -7823,7 +7317,8 @@ export interface Lexicons {
   "com.shinolabs.pinksea.getIdentity": {
     type: "query";
     outputEncoding: "application/json";
-    params: {};
+    params: {
+    };
     input: never;
     output: {
       "did": string;
@@ -7839,13 +7334,8 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "parent":
-        | LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]
-        | LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["oekakiTombstone"]
-        | Record<string, any>;
-      "children": Array<
-        LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]
-      >;
+      "parent": LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"] | LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["oekakiTombstone"] | Record<string, any>;
+      "children": Array<LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]>;
     };
   };
   "com.shinolabs.pinksea.getParentForReply": {
@@ -7870,9 +7360,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "oekaki": Array<
-        LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]
-      >;
+      "oekaki": Array<LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]>;
     };
   };
   "com.shinolabs.pinksea.getTagFeed": {
@@ -7885,9 +7373,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "oekaki": Array<
-        LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]
-      >;
+      "oekaki": Array<LexiconDefs["com.shinolabs.pinksea.appViewDefs"]["hydratedOekaki"]>;
     };
   };
   "com.shinolabs.pinksea.oekaki": {
@@ -7945,7 +7431,8 @@ export interface Lexicons {
     input: {
       "entryUri": string;
     };
-    output: {};
+    output: {
+    };
   };
   "fyi.frontpage.feed.comment": {
     type: "record";
@@ -8005,9 +7492,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "assets": Array<
-        LexiconDefs["place.stream.branding.getBranding"]["brandingAsset"]
-      >;
+      "assets": Array<LexiconDefs["place.stream.branding.getBranding"]["brandingAsset"]>;
     };
   };
   "place.stream.branding.updateBlob": {
@@ -8029,7 +7514,8 @@ export interface Lexicons {
   "place.stream.broadcast.getBroadcaster": {
     type: "query";
     outputEncoding: "application/json";
-    params: {};
+    params: {
+    };
     input: never;
     output: {
       "broadcaster": string;
@@ -8082,9 +7568,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "streams"?: Array<
-        LexiconDefs["place.stream.livestream"]["livestreamView"]
-      >;
+      "streams"?: Array<LexiconDefs["place.stream.livestream"]["livestreamView"]>;
     };
   };
   "place.stream.live.getProfileCard": {
@@ -8104,11 +7588,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "recommendations": Array<
-        LexiconDefs["place.stream.live.getRecommendations"][
-          "livestreamRecommendation"
-        ] | Record<string, any>
-      >;
+      "recommendations": Array<LexiconDefs["place.stream.live.getRecommendations"]["livestreamRecommendation"] | Record<string, any>>;
       "userDID"?: string;
     };
   };
@@ -8138,9 +7618,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "actors": Array<
-        LexiconDefs["place.stream.live.searchActorsTypeahead"]["actor"]
-      >;
+      "actors": Array<LexiconDefs["place.stream.live.searchActorsTypeahead"]["actor"]>;
     };
   };
   "place.stream.livestream": {
@@ -8186,7 +7664,8 @@ export interface Lexicons {
       "streamer": string;
       "blockUri": string;
     };
-    output: {};
+    output: {
+    };
   };
   "place.stream.moderation.deleteGate": {
     type: "procedure";
@@ -8196,7 +7675,8 @@ export interface Lexicons {
       "streamer": string;
       "gateUri": string;
     };
-    output: {};
+    output: {
+    };
   };
   "place.stream.moderation.permission": {
     type: "record";
@@ -8221,8 +7701,7 @@ export interface Lexicons {
     inputEncoding: "application/json";
     outputEncoding: "application/json";
     input: {
-      "multistreamTarget":
-        LexiconDefs["place.stream.multistream.target"]["main"];
+      "multistreamTarget": LexiconDefs["place.stream.multistream.target"]["main"];
     };
     output: LexiconDefs["place.stream.multistream.defs"]["targetView"];
   };
@@ -8233,7 +7712,8 @@ export interface Lexicons {
     input: {
       "rkey": string;
     };
-    output: {};
+    output: {
+    };
   };
   "place.stream.multistream.listTargets": {
     type: "query";
@@ -8244,9 +7724,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "targets": Array<
-        LexiconDefs["place.stream.multistream.defs"]["targetView"]
-      >;
+      "targets": Array<LexiconDefs["place.stream.multistream.defs"]["targetView"]>;
       "cursor"?: string;
     };
   };
@@ -8255,8 +7733,7 @@ export interface Lexicons {
     inputEncoding: "application/json";
     outputEncoding: "application/json";
     input: {
-      "multistreamTarget":
-        LexiconDefs["place.stream.multistream.target"]["main"];
+      "multistreamTarget": LexiconDefs["place.stream.multistream.target"]["main"];
       "rkey"?: string;
     };
     output: LexiconDefs["place.stream.multistream.defs"]["targetView"];
@@ -8302,7 +7779,8 @@ export interface Lexicons {
   "place.stream.server.getServerTime": {
     type: "query";
     outputEncoding: "application/json";
-    params: {};
+    params: {
+    };
     input: never;
     output: {
       "serverTime": string;
@@ -8601,9 +8079,7 @@ export interface Lexicons {
     input: never;
     output: {
       "gallery": LexiconDefs["social.grain.gallery.defs"]["galleryView"];
-      "comments": Array<
-        LexiconDefs["social.grain.comment.defs"]["commentView"]
-      >;
+      "comments": Array<LexiconDefs["social.grain.comment.defs"]["commentView"]>;
     };
   };
   "social.grain.gallery.item": {
@@ -8693,11 +8169,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "notifications": Array<
-        LexiconDefs["social.grain.notification.defs"][
-          "notificationViewDetailed"
-        ]
-      >;
+      "notifications": Array<LexiconDefs["social.grain.notification.defs"]["notificationViewDetailed"]>;
       "seenAt"?: string;
     };
   };
@@ -8788,7 +8260,8 @@ export interface Lexicons {
   "tools.garazyk.account.getUsage": {
     type: "query";
     outputEncoding: "application/json";
-    params: {};
+    params: {
+    };
     input: never;
     output: {
       "did": string;
@@ -8837,9 +8310,7 @@ export interface Lexicons {
     params: Record<string, never>;
     input: never;
     output: {
-      "communicationTemplates": Array<
-        LexiconDefs["tools.ozone.communication.defs"]["templateView"]
-      >;
+      "communicationTemplates": Array<LexiconDefs["tools.ozone.communication.defs"]["templateView"]>;
     };
   };
   "tools.ozone.communication.updateTemplate": {
@@ -8869,9 +8340,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "events": Array<
-        LexiconDefs["tools.ozone.hosting.getAccountHistory"]["event"]
-      >;
+      "events": Array<LexiconDefs["tools.ozone.hosting.getAccountHistory"]["event"]>;
     };
   };
   "tools.ozone.moderation.cancelScheduledAction": {
@@ -8893,51 +8362,15 @@ export interface Lexicons {
       "subjects": Array<string>;
       "comment"?: string;
     };
-    output: LexiconDefs["tools.ozone.moderation.cancelScheduledActions"][
-      "cancellationResults"
-    ];
+    output: LexiconDefs["tools.ozone.moderation.cancelScheduledActions"]["cancellationResults"];
   };
   "tools.ozone.moderation.emitEvent": {
     type: "procedure";
     inputEncoding: "application/json";
     outputEncoding: "application/json";
     input: {
-      "event":
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventTakedown"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventAcknowledge"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventEscalate"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventComment"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventLabel"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventReport"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventMute"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmute"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventMuteReporter"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmuteReporter"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventReverseTakedown"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventResolveAppeal"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventEmail"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventDivert"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventTag"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["accountEvent"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["identityEvent"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["recordEvent"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["modEventPriorityScore"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceEvent"]
-        | LexiconDefs["tools.ozone.moderation.defs"][
-          "ageAssuranceOverrideEvent"
-        ]
-        | LexiconDefs["tools.ozone.moderation.defs"][
-          "revokeAccountCredentialsEvent"
-        ]
-        | LexiconDefs["tools.ozone.moderation.defs"]["scheduleTakedownEvent"]
-        | LexiconDefs["tools.ozone.moderation.defs"][
-          "cancelScheduledTakedownEvent"
-        ]
-        | Record<string, any>;
-      "subject":
-        | LexiconDefs["com.atproto.admin.defs"]["repoRef"]
-        | LexiconDefs["com.atproto.repo.strongRef"]["main"]
-        | Record<string, any>;
+      "event": LexiconDefs["tools.ozone.moderation.defs"]["modEventTakedown"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventAcknowledge"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventEscalate"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventComment"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventLabel"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventReport"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventMute"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmute"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventMuteReporter"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventUnmuteReporter"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventReverseTakedown"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventResolveAppeal"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventEmail"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventDivert"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventTag"] | LexiconDefs["tools.ozone.moderation.defs"]["accountEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["identityEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["recordEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["modEventPriorityScore"] | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["ageAssuranceOverrideEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["revokeAccountCredentialsEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["scheduleTakedownEvent"] | LexiconDefs["tools.ozone.moderation.defs"]["cancelScheduledTakedownEvent"] | Record<string, any>;
+      "subject": LexiconDefs["com.atproto.admin.defs"]["repoRef"] | LexiconDefs["com.atproto.repo.strongRef"]["main"] | Record<string, any>;
       "subjectBlobCids"?: Array<string>;
       "createdBy": string;
       "modTool"?: LexiconDefs["tools.ozone.moderation.defs"]["modTool"];
@@ -8953,9 +8386,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "timeline": Array<
-        LexiconDefs["tools.ozone.moderation.getAccountTimeline"]["timelineItem"]
-      >;
+      "timeline": Array<LexiconDefs["tools.ozone.moderation.getAccountTimeline"]["timelineItem"]>;
     };
   };
   "tools.ozone.moderation.getEvent": {
@@ -8985,11 +8416,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "records": Array<
-        | LexiconDefs["tools.ozone.moderation.defs"]["recordViewDetail"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["recordViewNotFound"]
-        | Record<string, any>
-      >;
+      "records": Array<LexiconDefs["tools.ozone.moderation.defs"]["recordViewDetail"] | LexiconDefs["tools.ozone.moderation.defs"]["recordViewNotFound"] | Record<string, any>>;
     };
   };
   "tools.ozone.moderation.getRepo": {
@@ -9009,9 +8436,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "stats": Array<
-        LexiconDefs["tools.ozone.moderation.defs"]["reporterStats"]
-      >;
+      "stats": Array<LexiconDefs["tools.ozone.moderation.defs"]["reporterStats"]>;
     };
   };
   "tools.ozone.moderation.getRepos": {
@@ -9022,11 +8447,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "repos": Array<
-        | LexiconDefs["tools.ozone.moderation.defs"]["repoViewDetail"]
-        | LexiconDefs["tools.ozone.moderation.defs"]["repoViewNotFound"]
-        | Record<string, any>
-      >;
+      "repos": Array<LexiconDefs["tools.ozone.moderation.defs"]["repoViewDetail"] | LexiconDefs["tools.ozone.moderation.defs"]["repoViewNotFound"] | Record<string, any>>;
     };
   };
   "tools.ozone.moderation.getSubjects": {
@@ -9037,9 +8458,7 @@ export interface Lexicons {
     };
     input: never;
     output: {
-      "subjects": Array<
-        LexiconDefs["tools.ozone.moderation.defs"]["subjectView"]
-      >;
+      "subjects": Array<LexiconDefs["tools.ozone.moderation.defs"]["subjectView"]>;
     };
   };
   "tools.ozone.moderation.getSubjectStatus": {
@@ -9067,9 +8486,7 @@ export interface Lexicons {
       "cursor"?: string;
     };
     output: {
-      "actions": Array<
-        LexiconDefs["tools.ozone.moderation.defs"]["scheduledActionView"]
-      >;
+      "actions": Array<LexiconDefs["tools.ozone.moderation.defs"]["scheduledActionView"]>;
       "cursor"?: string;
     };
   };
@@ -9104,9 +8521,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "events": Array<
-        LexiconDefs["tools.ozone.moderation.defs"]["modEventView"]
-      >;
+      "events": Array<LexiconDefs["tools.ozone.moderation.defs"]["modEventView"]>;
     };
   };
   "tools.ozone.moderation.queryStatuses": {
@@ -9153,9 +8568,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "subjectStatuses": Array<
-        LexiconDefs["tools.ozone.moderation.defs"]["subjectStatusView"]
-      >;
+      "subjectStatuses": Array<LexiconDefs["tools.ozone.moderation.defs"]["subjectStatusView"]>;
     };
   };
   "tools.ozone.moderation.scheduleAction": {
@@ -9163,19 +8576,13 @@ export interface Lexicons {
     inputEncoding: "application/json";
     outputEncoding: "application/json";
     input: {
-      "action":
-        | LexiconDefs["tools.ozone.moderation.scheduleAction"]["takedown"]
-        | Record<string, any>;
+      "action": LexiconDefs["tools.ozone.moderation.scheduleAction"]["takedown"] | Record<string, any>;
       "subjects": Array<string>;
       "createdBy": string;
-      "scheduling": LexiconDefs["tools.ozone.moderation.scheduleAction"][
-        "schedulingConfig"
-      ];
+      "scheduling": LexiconDefs["tools.ozone.moderation.scheduleAction"]["schedulingConfig"];
       "modTool"?: LexiconDefs["tools.ozone.moderation.defs"]["modTool"];
     };
-    output: LexiconDefs["tools.ozone.moderation.scheduleAction"][
-      "scheduledActionResults"
-    ];
+    output: LexiconDefs["tools.ozone.moderation.scheduleAction"]["scheduledActionResults"];
   };
   "tools.ozone.moderation.searchRepos": {
     type: "query";
@@ -9275,8 +8682,7 @@ export interface Lexicons {
     output: {
       "appview"?: LexiconDefs["tools.ozone.server.getConfig"]["serviceConfig"];
       "pds"?: LexiconDefs["tools.ozone.server.getConfig"]["serviceConfig"];
-      "blobDivert"?:
-        LexiconDefs["tools.ozone.server.getConfig"]["serviceConfig"];
+      "blobDivert"?: LexiconDefs["tools.ozone.server.getConfig"]["serviceConfig"];
       "chat"?: LexiconDefs["tools.ozone.server.getConfig"]["serviceConfig"];
       "viewer"?: LexiconDefs["tools.ozone.server.getConfig"]["viewerConfig"];
       "verifierDid"?: string;
@@ -9310,7 +8716,8 @@ export interface Lexicons {
     input: {
       "name": string;
     };
-    output: {};
+    output: {
+    };
   };
   "tools.ozone.set.deleteValues": {
     type: "procedure";
@@ -9384,7 +8791,8 @@ export interface Lexicons {
       "keys": Array<string>;
       "scope": string;
     };
-    output: {};
+    output: {
+    };
   };
   "tools.ozone.setting.upsertOption": {
     type: "procedure";
@@ -9423,11 +8831,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "accounts": Array<
-        LexiconDefs["tools.ozone.signature.findRelatedAccounts"][
-          "relatedAccount"
-        ]
-      >;
+      "accounts": Array<LexiconDefs["tools.ozone.signature.findRelatedAccounts"]["relatedAccount"]>;
     };
   };
   "tools.ozone.signature.searchAccounts": {
@@ -9495,19 +8899,11 @@ export interface Lexicons {
     inputEncoding: "application/json";
     outputEncoding: "application/json";
     input: {
-      "verifications": Array<
-        LexiconDefs["tools.ozone.verification.grantVerifications"][
-          "verificationInput"
-        ]
-      >;
+      "verifications": Array<LexiconDefs["tools.ozone.verification.grantVerifications"]["verificationInput"]>;
     };
     output: {
-      "verifications": Array<
-        LexiconDefs["tools.ozone.verification.defs"]["verificationView"]
-      >;
-      "failedVerifications": Array<
-        LexiconDefs["tools.ozone.verification.grantVerifications"]["grantError"]
-      >;
+      "verifications": Array<LexiconDefs["tools.ozone.verification.defs"]["verificationView"]>;
+      "failedVerifications": Array<LexiconDefs["tools.ozone.verification.grantVerifications"]["grantError"]>;
     };
   };
   "tools.ozone.verification.listVerifications": {
@@ -9526,9 +8922,7 @@ export interface Lexicons {
     input: never;
     output: {
       "cursor"?: string;
-      "verifications": Array<
-        LexiconDefs["tools.ozone.verification.defs"]["verificationView"]
-      >;
+      "verifications": Array<LexiconDefs["tools.ozone.verification.defs"]["verificationView"]>;
     };
   };
   "tools.ozone.verification.revokeVerifications": {
@@ -9541,11 +8935,7 @@ export interface Lexicons {
     };
     output: {
       "revokedVerifications": Array<string>;
-      "failedRevocations": Array<
-        LexiconDefs["tools.ozone.verification.revokeVerifications"][
-          "revokeError"
-        ]
-      >;
+      "failedRevocations": Array<LexiconDefs["tools.ozone.verification.revokeVerifications"]["revokeError"]>;
     };
   };
   "xyz.statusphere.status": {
@@ -10216,8 +9606,7 @@ export const LEXICON_METHOD_OUTPUT_ENCODINGS = {
   "app.bsky.unspecced.getAgeAssuranceState": "application/json",
   "app.bsky.unspecced.getConfig": "application/json",
   "app.bsky.unspecced.getOnboardingSuggestedStarterPacks": "application/json",
-  "app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton":
-    "application/json",
+  "app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton": "application/json",
   "app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton": "application/json",
   "app.bsky.unspecced.getPopularFeedGenerators": "application/json",
   "app.bsky.unspecced.getPostThreadOtherV2": "application/json",
@@ -10524,1833 +9913,1106 @@ export const LEXICON_METHOD_OUTPUT_ENCODINGS = {
   "tools.ozone.verification.revokeVerifications": "application/json",
 } as const;
 
-export type LexiconIds = keyof Lexicons;
-export type LexiconQueryIds = {
-  [K in LexiconIds]: Lexicons[K] extends { type: "query" } ? K : never;
-}[LexiconIds];
-export type LexiconProcedureIds = {
-  [K in LexiconIds]: Lexicons[K] extends { type: "procedure" } ? K : never;
-}[LexiconIds];
 
-export type QueryParams<K extends LexiconQueryIds> = Lexicons[K] extends
-  { params: infer P } ? P : never;
-export type QueryOutput<K extends LexiconQueryIds> = Lexicons[K] extends
-  { output: infer O } ? O : never;
-export type ProcedureInput<K extends LexiconProcedureIds> = Lexicons[K] extends
-  { input: infer I } ? I : never;
-export type ProcedureOutput<K extends LexiconProcedureIds> = Lexicons[K] extends
-  { output: infer O } ? O : never;
-export type QueryOutputEncoding<K extends LexiconQueryIds> = Lexicons[K] extends
-  { outputEncoding: infer E } ? E : never;
-export type ProcedureInputEncoding<K extends LexiconProcedureIds> =
-  Lexicons[K] extends { inputEncoding: infer E } ? E : never;
-export type ProcedureOutputEncoding<K extends LexiconProcedureIds> =
-  Lexicons[K] extends { outputEncoding: infer E } ? E : never;
+export type LexiconIds = keyof Lexicons;
+export type LexiconQueryIds = { [K in LexiconIds]: Lexicons[K] extends { type: "query" } ? K : never }[LexiconIds];
+export type LexiconProcedureIds = { [K in LexiconIds]: Lexicons[K] extends { type: "procedure" } ? K : never }[LexiconIds];
+
+export type QueryParams<K extends LexiconQueryIds> = Lexicons[K] extends { params: infer P } ? P : never;
+export type QueryOutput<K extends LexiconQueryIds> = Lexicons[K] extends { output: infer O } ? O : never;
+export type ProcedureInput<K extends LexiconProcedureIds> = Lexicons[K] extends { input: infer I } ? I : never;
+export type ProcedureOutput<K extends LexiconProcedureIds> = Lexicons[K] extends { output: infer O } ? O : never;
+export type QueryOutputEncoding<K extends LexiconQueryIds> = Lexicons[K] extends { outputEncoding: infer E } ? E : never;
+export type ProcedureInputEncoding<K extends LexiconProcedureIds> = Lexicons[K] extends { inputEncoding: infer E } ? E : never;
+export type ProcedureOutputEncoding<K extends LexiconProcedureIds> = Lexicons[K] extends { outputEncoding: infer E } ? E : never;
+
+export interface CallOptions {
+  headers?: { Authorization?: string };
+}
+
+export interface XrpcCaller {
+  call(method: string, data?: any, tokenOrOpts?: string | CallOptions): Promise<any>;
+}
 
 /** Strongly typed nested API client. */
 export interface GeneratedClient {
   "app": {
     "bsky": {
       "actor": {
-        "getPreferences"(
-          params?: QueryParams<"app.bsky.actor.getPreferences">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.actor.getPreferences">>;
-        "getProfile"(
-          params?: QueryParams<"app.bsky.actor.getProfile">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.actor.getProfile">>;
-        "getProfiles"(
-          params?: QueryParams<"app.bsky.actor.getProfiles">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.actor.getProfiles">>;
-        "getSuggestions"(
-          params?: QueryParams<"app.bsky.actor.getSuggestions">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.actor.getSuggestions">>;
-        "putPreferences"(
-          input?: ProcedureInput<"app.bsky.actor.putPreferences">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.actor.putPreferences">>;
-        "searchActors"(
-          params?: QueryParams<"app.bsky.actor.searchActors">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.actor.searchActors">>;
-        "searchActorsTypeahead"(
-          params?: QueryParams<"app.bsky.actor.searchActorsTypeahead">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.actor.searchActorsTypeahead">>;
+        "getPreferences"(params?: QueryParams<"app.bsky.actor.getPreferences">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.actor.getPreferences">>;
+        "getProfile"(params?: QueryParams<"app.bsky.actor.getProfile">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.actor.getProfile">>;
+        "getProfiles"(params?: QueryParams<"app.bsky.actor.getProfiles">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.actor.getProfiles">>;
+        "getSuggestions"(params?: QueryParams<"app.bsky.actor.getSuggestions">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.actor.getSuggestions">>;
+        "putPreferences"(input?: ProcedureInput<"app.bsky.actor.putPreferences">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.actor.putPreferences">>;
+        "searchActors"(params?: QueryParams<"app.bsky.actor.searchActors">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.actor.searchActors">>;
+        "searchActorsTypeahead"(params?: QueryParams<"app.bsky.actor.searchActorsTypeahead">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.actor.searchActorsTypeahead">>;
       };
       "ageassurance": {
-        "begin"(
-          input?: ProcedureInput<"app.bsky.ageassurance.begin">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.ageassurance.begin">>;
-        "getConfig"(
-          params?: QueryParams<"app.bsky.ageassurance.getConfig">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.ageassurance.getConfig">>;
-        "getState"(
-          params?: QueryParams<"app.bsky.ageassurance.getState">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.ageassurance.getState">>;
+        "begin"(input?: ProcedureInput<"app.bsky.ageassurance.begin">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.ageassurance.begin">>;
+        "getConfig"(params?: QueryParams<"app.bsky.ageassurance.getConfig">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.ageassurance.getConfig">>;
+        "getState"(params?: QueryParams<"app.bsky.ageassurance.getState">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.ageassurance.getState">>;
       };
       "bookmark": {
-        "createBookmark"(
-          input?: ProcedureInput<"app.bsky.bookmark.createBookmark">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.bookmark.createBookmark">>;
-        "deleteBookmark"(
-          input?: ProcedureInput<"app.bsky.bookmark.deleteBookmark">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.bookmark.deleteBookmark">>;
-        "getBookmarks"(
-          params?: QueryParams<"app.bsky.bookmark.getBookmarks">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.bookmark.getBookmarks">>;
+        "createBookmark"(input?: ProcedureInput<"app.bsky.bookmark.createBookmark">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.bookmark.createBookmark">>;
+        "deleteBookmark"(input?: ProcedureInput<"app.bsky.bookmark.deleteBookmark">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.bookmark.deleteBookmark">>;
+        "getBookmarks"(params?: QueryParams<"app.bsky.bookmark.getBookmarks">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.bookmark.getBookmarks">>;
       };
       "contact": {
-        "dismissMatch"(
-          input?: ProcedureInput<"app.bsky.contact.dismissMatch">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.contact.dismissMatch">>;
-        "getMatches"(
-          params?: QueryParams<"app.bsky.contact.getMatches">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.contact.getMatches">>;
-        "getSyncStatus"(
-          params?: QueryParams<"app.bsky.contact.getSyncStatus">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.contact.getSyncStatus">>;
-        "importContacts"(
-          input?: ProcedureInput<"app.bsky.contact.importContacts">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.contact.importContacts">>;
-        "removeData"(
-          input?: ProcedureInput<"app.bsky.contact.removeData">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.contact.removeData">>;
-        "sendNotification"(
-          input?: ProcedureInput<"app.bsky.contact.sendNotification">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.contact.sendNotification">>;
-        "startPhoneVerification"(
-          input?: ProcedureInput<"app.bsky.contact.startPhoneVerification">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.contact.startPhoneVerification">>;
-        "verifyPhone"(
-          input?: ProcedureInput<"app.bsky.contact.verifyPhone">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.contact.verifyPhone">>;
+        "dismissMatch"(input?: ProcedureInput<"app.bsky.contact.dismissMatch">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.contact.dismissMatch">>;
+        "getMatches"(params?: QueryParams<"app.bsky.contact.getMatches">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.contact.getMatches">>;
+        "getSyncStatus"(params?: QueryParams<"app.bsky.contact.getSyncStatus">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.contact.getSyncStatus">>;
+        "importContacts"(input?: ProcedureInput<"app.bsky.contact.importContacts">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.contact.importContacts">>;
+        "removeData"(input?: ProcedureInput<"app.bsky.contact.removeData">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.contact.removeData">>;
+        "sendNotification"(input?: ProcedureInput<"app.bsky.contact.sendNotification">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.contact.sendNotification">>;
+        "startPhoneVerification"(input?: ProcedureInput<"app.bsky.contact.startPhoneVerification">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.contact.startPhoneVerification">>;
+        "verifyPhone"(input?: ProcedureInput<"app.bsky.contact.verifyPhone">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.contact.verifyPhone">>;
       };
       "draft": {
-        "createDraft"(
-          input?: ProcedureInput<"app.bsky.draft.createDraft">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.draft.createDraft">>;
-        "deleteDraft"(
-          input?: ProcedureInput<"app.bsky.draft.deleteDraft">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.draft.deleteDraft">>;
-        "getDrafts"(
-          params?: QueryParams<"app.bsky.draft.getDrafts">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.draft.getDrafts">>;
-        "updateDraft"(
-          input?: ProcedureInput<"app.bsky.draft.updateDraft">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.draft.updateDraft">>;
+        "createDraft"(input?: ProcedureInput<"app.bsky.draft.createDraft">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.draft.createDraft">>;
+        "deleteDraft"(input?: ProcedureInput<"app.bsky.draft.deleteDraft">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.draft.deleteDraft">>;
+        "getDrafts"(params?: QueryParams<"app.bsky.draft.getDrafts">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.draft.getDrafts">>;
+        "updateDraft"(input?: ProcedureInput<"app.bsky.draft.updateDraft">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.draft.updateDraft">>;
       };
       "feed": {
-        "describeFeedGenerator"(
-          params?: QueryParams<"app.bsky.feed.describeFeedGenerator">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.feed.describeFeedGenerator">>;
-        "getActorFeeds"(
-          params?: QueryParams<"app.bsky.feed.getActorFeeds">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.feed.getActorFeeds">>;
-        "getActorLikes"(
-          params?: QueryParams<"app.bsky.feed.getActorLikes">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.feed.getActorLikes">>;
-        "getAuthorFeed"(
-          params?: QueryParams<"app.bsky.feed.getAuthorFeed">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.feed.getAuthorFeed">>;
-        "getFeed"(
-          params?: QueryParams<"app.bsky.feed.getFeed">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.feed.getFeed">>;
-        "getFeedGenerator"(
-          params?: QueryParams<"app.bsky.feed.getFeedGenerator">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.feed.getFeedGenerator">>;
-        "getFeedGenerators"(
-          params?: QueryParams<"app.bsky.feed.getFeedGenerators">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.feed.getFeedGenerators">>;
-        "getFeedSkeleton"(
-          params?: QueryParams<"app.bsky.feed.getFeedSkeleton">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.feed.getFeedSkeleton">>;
-        "getLikes"(
-          params?: QueryParams<"app.bsky.feed.getLikes">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.feed.getLikes">>;
-        "getListFeed"(
-          params?: QueryParams<"app.bsky.feed.getListFeed">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.feed.getListFeed">>;
-        "getPosts"(
-          params?: QueryParams<"app.bsky.feed.getPosts">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.feed.getPosts">>;
-        "getPostThread"(
-          params?: QueryParams<"app.bsky.feed.getPostThread">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.feed.getPostThread">>;
-        "getQuotes"(
-          params?: QueryParams<"app.bsky.feed.getQuotes">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.feed.getQuotes">>;
-        "getRepostedBy"(
-          params?: QueryParams<"app.bsky.feed.getRepostedBy">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.feed.getRepostedBy">>;
-        "getSuggestedFeeds"(
-          params?: QueryParams<"app.bsky.feed.getSuggestedFeeds">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.feed.getSuggestedFeeds">>;
-        "getTimeline"(
-          params?: QueryParams<"app.bsky.feed.getTimeline">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.feed.getTimeline">>;
-        "searchPosts"(
-          params?: QueryParams<"app.bsky.feed.searchPosts">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.feed.searchPosts">>;
-        "sendInteractions"(
-          input?: ProcedureInput<"app.bsky.feed.sendInteractions">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.feed.sendInteractions">>;
+        "describeFeedGenerator"(params?: QueryParams<"app.bsky.feed.describeFeedGenerator">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.describeFeedGenerator">>;
+        "getActorFeeds"(params?: QueryParams<"app.bsky.feed.getActorFeeds">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getActorFeeds">>;
+        "getActorLikes"(params?: QueryParams<"app.bsky.feed.getActorLikes">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getActorLikes">>;
+        "getAuthorFeed"(params?: QueryParams<"app.bsky.feed.getAuthorFeed">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getAuthorFeed">>;
+        "getFeed"(params?: QueryParams<"app.bsky.feed.getFeed">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getFeed">>;
+        "getFeedGenerator"(params?: QueryParams<"app.bsky.feed.getFeedGenerator">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getFeedGenerator">>;
+        "getFeedGenerators"(params?: QueryParams<"app.bsky.feed.getFeedGenerators">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getFeedGenerators">>;
+        "getFeedSkeleton"(params?: QueryParams<"app.bsky.feed.getFeedSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getFeedSkeleton">>;
+        "getLikes"(params?: QueryParams<"app.bsky.feed.getLikes">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getLikes">>;
+        "getListFeed"(params?: QueryParams<"app.bsky.feed.getListFeed">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getListFeed">>;
+        "getPosts"(params?: QueryParams<"app.bsky.feed.getPosts">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getPosts">>;
+        "getPostThread"(params?: QueryParams<"app.bsky.feed.getPostThread">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getPostThread">>;
+        "getQuotes"(params?: QueryParams<"app.bsky.feed.getQuotes">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getQuotes">>;
+        "getRepostedBy"(params?: QueryParams<"app.bsky.feed.getRepostedBy">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getRepostedBy">>;
+        "getSuggestedFeeds"(params?: QueryParams<"app.bsky.feed.getSuggestedFeeds">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getSuggestedFeeds">>;
+        "getTimeline"(params?: QueryParams<"app.bsky.feed.getTimeline">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.getTimeline">>;
+        "searchPosts"(params?: QueryParams<"app.bsky.feed.searchPosts">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.feed.searchPosts">>;
+        "sendInteractions"(input?: ProcedureInput<"app.bsky.feed.sendInteractions">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.feed.sendInteractions">>;
       };
       "graph": {
-        "getActorStarterPacks"(
-          params?: QueryParams<"app.bsky.graph.getActorStarterPacks">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.graph.getActorStarterPacks">>;
-        "getBlocks"(
-          params?: QueryParams<"app.bsky.graph.getBlocks">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.graph.getBlocks">>;
-        "getFollowers"(
-          params?: QueryParams<"app.bsky.graph.getFollowers">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.graph.getFollowers">>;
-        "getFollows"(
-          params?: QueryParams<"app.bsky.graph.getFollows">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.graph.getFollows">>;
-        "getKnownFollowers"(
-          params?: QueryParams<"app.bsky.graph.getKnownFollowers">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.graph.getKnownFollowers">>;
-        "getList"(
-          params?: QueryParams<"app.bsky.graph.getList">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.graph.getList">>;
-        "getListBlocks"(
-          params?: QueryParams<"app.bsky.graph.getListBlocks">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.graph.getListBlocks">>;
-        "getListMutes"(
-          params?: QueryParams<"app.bsky.graph.getListMutes">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.graph.getListMutes">>;
-        "getLists"(
-          params?: QueryParams<"app.bsky.graph.getLists">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.graph.getLists">>;
-        "getListsWithMembership"(
-          params?: QueryParams<"app.bsky.graph.getListsWithMembership">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.graph.getListsWithMembership">>;
-        "getMutes"(
-          params?: QueryParams<"app.bsky.graph.getMutes">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.graph.getMutes">>;
-        "getRelationships"(
-          params?: QueryParams<"app.bsky.graph.getRelationships">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.graph.getRelationships">>;
-        "getStarterPack"(
-          params?: QueryParams<"app.bsky.graph.getStarterPack">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.graph.getStarterPack">>;
-        "getStarterPacks"(
-          params?: QueryParams<"app.bsky.graph.getStarterPacks">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.graph.getStarterPacks">>;
-        "getStarterPacksWithMembership"(
-          params?: QueryParams<"app.bsky.graph.getStarterPacksWithMembership">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.graph.getStarterPacksWithMembership">>;
-        "getSuggestedFollowsByActor"(
-          params?: QueryParams<"app.bsky.graph.getSuggestedFollowsByActor">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.graph.getSuggestedFollowsByActor">>;
-        "muteActor"(
-          input?: ProcedureInput<"app.bsky.graph.muteActor">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.graph.muteActor">>;
-        "muteActorList"(
-          input?: ProcedureInput<"app.bsky.graph.muteActorList">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.graph.muteActorList">>;
-        "muteThread"(
-          input?: ProcedureInput<"app.bsky.graph.muteThread">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.graph.muteThread">>;
-        "searchStarterPacks"(
-          params?: QueryParams<"app.bsky.graph.searchStarterPacks">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.graph.searchStarterPacks">>;
-        "unmuteActor"(
-          input?: ProcedureInput<"app.bsky.graph.unmuteActor">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.graph.unmuteActor">>;
-        "unmuteActorList"(
-          input?: ProcedureInput<"app.bsky.graph.unmuteActorList">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.graph.unmuteActorList">>;
-        "unmuteThread"(
-          input?: ProcedureInput<"app.bsky.graph.unmuteThread">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.graph.unmuteThread">>;
+        "getActorStarterPacks"(params?: QueryParams<"app.bsky.graph.getActorStarterPacks">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getActorStarterPacks">>;
+        "getBlocks"(params?: QueryParams<"app.bsky.graph.getBlocks">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getBlocks">>;
+        "getFollowers"(params?: QueryParams<"app.bsky.graph.getFollowers">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getFollowers">>;
+        "getFollows"(params?: QueryParams<"app.bsky.graph.getFollows">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getFollows">>;
+        "getKnownFollowers"(params?: QueryParams<"app.bsky.graph.getKnownFollowers">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getKnownFollowers">>;
+        "getList"(params?: QueryParams<"app.bsky.graph.getList">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getList">>;
+        "getListBlocks"(params?: QueryParams<"app.bsky.graph.getListBlocks">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getListBlocks">>;
+        "getListMutes"(params?: QueryParams<"app.bsky.graph.getListMutes">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getListMutes">>;
+        "getLists"(params?: QueryParams<"app.bsky.graph.getLists">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getLists">>;
+        "getListsWithMembership"(params?: QueryParams<"app.bsky.graph.getListsWithMembership">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getListsWithMembership">>;
+        "getMutes"(params?: QueryParams<"app.bsky.graph.getMutes">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getMutes">>;
+        "getRelationships"(params?: QueryParams<"app.bsky.graph.getRelationships">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getRelationships">>;
+        "getStarterPack"(params?: QueryParams<"app.bsky.graph.getStarterPack">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getStarterPack">>;
+        "getStarterPacks"(params?: QueryParams<"app.bsky.graph.getStarterPacks">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getStarterPacks">>;
+        "getStarterPacksWithMembership"(params?: QueryParams<"app.bsky.graph.getStarterPacksWithMembership">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getStarterPacksWithMembership">>;
+        "getSuggestedFollowsByActor"(params?: QueryParams<"app.bsky.graph.getSuggestedFollowsByActor">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.getSuggestedFollowsByActor">>;
+        "muteActor"(input?: ProcedureInput<"app.bsky.graph.muteActor">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.graph.muteActor">>;
+        "muteActorList"(input?: ProcedureInput<"app.bsky.graph.muteActorList">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.graph.muteActorList">>;
+        "muteThread"(input?: ProcedureInput<"app.bsky.graph.muteThread">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.graph.muteThread">>;
+        "searchStarterPacks"(params?: QueryParams<"app.bsky.graph.searchStarterPacks">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.graph.searchStarterPacks">>;
+        "unmuteActor"(input?: ProcedureInput<"app.bsky.graph.unmuteActor">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.graph.unmuteActor">>;
+        "unmuteActorList"(input?: ProcedureInput<"app.bsky.graph.unmuteActorList">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.graph.unmuteActorList">>;
+        "unmuteThread"(input?: ProcedureInput<"app.bsky.graph.unmuteThread">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.graph.unmuteThread">>;
         "verification": {
-          "createVerification"(
-            input?: ProcedureInput<
-              "app.bsky.graph.verification.createVerification"
-            >,
-            token?: string,
-          ): Promise<
-            ProcedureOutput<"app.bsky.graph.verification.createVerification">
-          >;
-          "deleteVerification"(
-            input?: ProcedureInput<
-              "app.bsky.graph.verification.deleteVerification"
-            >,
-            token?: string,
-          ): Promise<
-            ProcedureOutput<"app.bsky.graph.verification.deleteVerification">
-          >;
+          "createVerification"(input?: ProcedureInput<"app.bsky.graph.verification.createVerification">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.graph.verification.createVerification">>;
+          "deleteVerification"(input?: ProcedureInput<"app.bsky.graph.verification.deleteVerification">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.graph.verification.deleteVerification">>;
         };
       };
       "labeler": {
-        "getServices"(
-          params?: QueryParams<"app.bsky.labeler.getServices">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.labeler.getServices">>;
+        "getServices"(params?: QueryParams<"app.bsky.labeler.getServices">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.labeler.getServices">>;
       };
       "notification": {
-        "getPreferences"(
-          params?: QueryParams<"app.bsky.notification.getPreferences">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.notification.getPreferences">>;
-        "getUnreadCount"(
-          params?: QueryParams<"app.bsky.notification.getUnreadCount">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.notification.getUnreadCount">>;
-        "listActivitySubscriptions"(
-          params?: QueryParams<
-            "app.bsky.notification.listActivitySubscriptions"
-          >,
-          token?: string,
-        ): Promise<
-          QueryOutput<"app.bsky.notification.listActivitySubscriptions">
-        >;
-        "listNotifications"(
-          params?: QueryParams<"app.bsky.notification.listNotifications">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.notification.listNotifications">>;
-        "putActivitySubscription"(
-          input?: ProcedureInput<
-            "app.bsky.notification.putActivitySubscription"
-          >,
-          token?: string,
-        ): Promise<
-          ProcedureOutput<"app.bsky.notification.putActivitySubscription">
-        >;
-        "putNotificationPreferences"(
-          input?: ProcedureInput<
-            "app.bsky.notification.putNotificationPreferences"
-          >,
-          token?: string,
-        ): Promise<
-          ProcedureOutput<"app.bsky.notification.putNotificationPreferences">
-        >;
-        "putPreferences"(
-          input?: ProcedureInput<"app.bsky.notification.putPreferences">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.notification.putPreferences">>;
-        "putPreferencesV2"(
-          input?: ProcedureInput<"app.bsky.notification.putPreferencesV2">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.notification.putPreferencesV2">>;
-        "registerPush"(
-          input?: ProcedureInput<"app.bsky.notification.registerPush">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.notification.registerPush">>;
-        "unregisterPush"(
-          input?: ProcedureInput<"app.bsky.notification.unregisterPush">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.notification.unregisterPush">>;
-        "updateSeen"(
-          input?: ProcedureInput<"app.bsky.notification.updateSeen">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.notification.updateSeen">>;
+        "getPreferences"(params?: QueryParams<"app.bsky.notification.getPreferences">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.notification.getPreferences">>;
+        "getUnreadCount"(params?: QueryParams<"app.bsky.notification.getUnreadCount">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.notification.getUnreadCount">>;
+        "listActivitySubscriptions"(params?: QueryParams<"app.bsky.notification.listActivitySubscriptions">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.notification.listActivitySubscriptions">>;
+        "listNotifications"(params?: QueryParams<"app.bsky.notification.listNotifications">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.notification.listNotifications">>;
+        "putActivitySubscription"(input?: ProcedureInput<"app.bsky.notification.putActivitySubscription">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.notification.putActivitySubscription">>;
+        "putNotificationPreferences"(input?: ProcedureInput<"app.bsky.notification.putNotificationPreferences">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.notification.putNotificationPreferences">>;
+        "putPreferences"(input?: ProcedureInput<"app.bsky.notification.putPreferences">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.notification.putPreferences">>;
+        "putPreferencesV2"(input?: ProcedureInput<"app.bsky.notification.putPreferencesV2">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.notification.putPreferencesV2">>;
+        "registerPush"(input?: ProcedureInput<"app.bsky.notification.registerPush">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.notification.registerPush">>;
+        "unregisterPush"(input?: ProcedureInput<"app.bsky.notification.unregisterPush">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.notification.unregisterPush">>;
+        "updateSeen"(input?: ProcedureInput<"app.bsky.notification.updateSeen">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.notification.updateSeen">>;
       };
       "unspecced": {
-        "confirmAgeAssurance"(
-          input?: ProcedureInput<"app.bsky.unspecced.confirmAgeAssurance">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.unspecced.confirmAgeAssurance">>;
-        "getAgeAssuranceState"(
-          params?: QueryParams<"app.bsky.unspecced.getAgeAssuranceState">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.unspecced.getAgeAssuranceState">>;
-        "getConfig"(
-          params?: QueryParams<"app.bsky.unspecced.getConfig">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.unspecced.getConfig">>;
-        "getOnboardingSuggestedStarterPacks"(
-          params?: QueryParams<
-            "app.bsky.unspecced.getOnboardingSuggestedStarterPacks"
-          >,
-          token?: string,
-        ): Promise<
-          QueryOutput<"app.bsky.unspecced.getOnboardingSuggestedStarterPacks">
-        >;
-        "getOnboardingSuggestedStarterPacksSkeleton"(
-          params?: QueryParams<
-            "app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton"
-          >,
-          token?: string,
-        ): Promise<
-          QueryOutput<
-            "app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton"
-          >
-        >;
-        "getOnboardingSuggestedUsersSkeleton"(
-          params?: QueryParams<
-            "app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton"
-          >,
-          token?: string,
-        ): Promise<
-          QueryOutput<"app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton">
-        >;
-        "getPopularFeedGenerators"(
-          params?: QueryParams<"app.bsky.unspecced.getPopularFeedGenerators">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.unspecced.getPopularFeedGenerators">>;
-        "getPostThreadOtherV2"(
-          params?: QueryParams<"app.bsky.unspecced.getPostThreadOtherV2">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.unspecced.getPostThreadOtherV2">>;
-        "getPostThreadV2"(
-          params?: QueryParams<"app.bsky.unspecced.getPostThreadV2">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.unspecced.getPostThreadV2">>;
-        "getSuggestedFeeds"(
-          params?: QueryParams<"app.bsky.unspecced.getSuggestedFeeds">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedFeeds">>;
-        "getSuggestedFeedsSkeleton"(
-          params?: QueryParams<"app.bsky.unspecced.getSuggestedFeedsSkeleton">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedFeedsSkeleton">>;
-        "getSuggestedOnboardingUsers"(
-          params?: QueryParams<
-            "app.bsky.unspecced.getSuggestedOnboardingUsers"
-          >,
-          token?: string,
-        ): Promise<
-          QueryOutput<"app.bsky.unspecced.getSuggestedOnboardingUsers">
-        >;
-        "getSuggestedStarterPacks"(
-          params?: QueryParams<"app.bsky.unspecced.getSuggestedStarterPacks">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedStarterPacks">>;
-        "getSuggestedStarterPacksSkeleton"(
-          params?: QueryParams<
-            "app.bsky.unspecced.getSuggestedStarterPacksSkeleton"
-          >,
-          token?: string,
-        ): Promise<
-          QueryOutput<"app.bsky.unspecced.getSuggestedStarterPacksSkeleton">
-        >;
-        "getSuggestedUsers"(
-          params?: QueryParams<"app.bsky.unspecced.getSuggestedUsers">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsers">>;
-        "getSuggestedUsersForDiscover"(
-          params?: QueryParams<
-            "app.bsky.unspecced.getSuggestedUsersForDiscover"
-          >,
-          token?: string,
-        ): Promise<
-          QueryOutput<"app.bsky.unspecced.getSuggestedUsersForDiscover">
-        >;
-        "getSuggestedUsersForDiscoverSkeleton"(
-          params?: QueryParams<
-            "app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton"
-          >,
-          token?: string,
-        ): Promise<
-          QueryOutput<"app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton">
-        >;
-        "getSuggestedUsersForExplore"(
-          params?: QueryParams<
-            "app.bsky.unspecced.getSuggestedUsersForExplore"
-          >,
-          token?: string,
-        ): Promise<
-          QueryOutput<"app.bsky.unspecced.getSuggestedUsersForExplore">
-        >;
-        "getSuggestedUsersForExploreSkeleton"(
-          params?: QueryParams<
-            "app.bsky.unspecced.getSuggestedUsersForExploreSkeleton"
-          >,
-          token?: string,
-        ): Promise<
-          QueryOutput<"app.bsky.unspecced.getSuggestedUsersForExploreSkeleton">
-        >;
-        "getSuggestedUsersForSeeMore"(
-          params?: QueryParams<
-            "app.bsky.unspecced.getSuggestedUsersForSeeMore"
-          >,
-          token?: string,
-        ): Promise<
-          QueryOutput<"app.bsky.unspecced.getSuggestedUsersForSeeMore">
-        >;
-        "getSuggestedUsersForSeeMoreSkeleton"(
-          params?: QueryParams<
-            "app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton"
-          >,
-          token?: string,
-        ): Promise<
-          QueryOutput<"app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton">
-        >;
-        "getSuggestedUsersSkeleton"(
-          params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersSkeleton">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersSkeleton">>;
-        "getSuggestionsSkeleton"(
-          params?: QueryParams<"app.bsky.unspecced.getSuggestionsSkeleton">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.unspecced.getSuggestionsSkeleton">>;
-        "getTaggedSuggestions"(
-          params?: QueryParams<"app.bsky.unspecced.getTaggedSuggestions">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.unspecced.getTaggedSuggestions">>;
-        "getTrendingTopics"(
-          params?: QueryParams<"app.bsky.unspecced.getTrendingTopics">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.unspecced.getTrendingTopics">>;
-        "getTrends"(
-          params?: QueryParams<"app.bsky.unspecced.getTrends">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.unspecced.getTrends">>;
-        "getTrendsSkeleton"(
-          params?: QueryParams<"app.bsky.unspecced.getTrendsSkeleton">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.unspecced.getTrendsSkeleton">>;
-        "initAgeAssurance"(
-          input?: ProcedureInput<"app.bsky.unspecced.initAgeAssurance">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.unspecced.initAgeAssurance">>;
-        "searchActorsSkeleton"(
-          params?: QueryParams<"app.bsky.unspecced.searchActorsSkeleton">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.unspecced.searchActorsSkeleton">>;
-        "searchPostsSkeleton"(
-          params?: QueryParams<"app.bsky.unspecced.searchPostsSkeleton">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.unspecced.searchPostsSkeleton">>;
-        "searchStarterPacksSkeleton"(
-          params?: QueryParams<"app.bsky.unspecced.searchStarterPacksSkeleton">,
-          token?: string,
-        ): Promise<
-          QueryOutput<"app.bsky.unspecced.searchStarterPacksSkeleton">
-        >;
+        "confirmAgeAssurance"(input?: ProcedureInput<"app.bsky.unspecced.confirmAgeAssurance">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.unspecced.confirmAgeAssurance">>;
+        "getAgeAssuranceState"(params?: QueryParams<"app.bsky.unspecced.getAgeAssuranceState">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getAgeAssuranceState">>;
+        "getConfig"(params?: QueryParams<"app.bsky.unspecced.getConfig">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getConfig">>;
+        "getOnboardingSuggestedStarterPacks"(params?: QueryParams<"app.bsky.unspecced.getOnboardingSuggestedStarterPacks">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getOnboardingSuggestedStarterPacks">>;
+        "getOnboardingSuggestedStarterPacksSkeleton"(params?: QueryParams<"app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton">>;
+        "getOnboardingSuggestedUsersSkeleton"(params?: QueryParams<"app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton">>;
+        "getPopularFeedGenerators"(params?: QueryParams<"app.bsky.unspecced.getPopularFeedGenerators">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getPopularFeedGenerators">>;
+        "getPostThreadOtherV2"(params?: QueryParams<"app.bsky.unspecced.getPostThreadOtherV2">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getPostThreadOtherV2">>;
+        "getPostThreadV2"(params?: QueryParams<"app.bsky.unspecced.getPostThreadV2">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getPostThreadV2">>;
+        "getSuggestedFeeds"(params?: QueryParams<"app.bsky.unspecced.getSuggestedFeeds">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedFeeds">>;
+        "getSuggestedFeedsSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestedFeedsSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedFeedsSkeleton">>;
+        "getSuggestedOnboardingUsers"(params?: QueryParams<"app.bsky.unspecced.getSuggestedOnboardingUsers">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedOnboardingUsers">>;
+        "getSuggestedStarterPacks"(params?: QueryParams<"app.bsky.unspecced.getSuggestedStarterPacks">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedStarterPacks">>;
+        "getSuggestedStarterPacksSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestedStarterPacksSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedStarterPacksSkeleton">>;
+        "getSuggestedUsers"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsers">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsers">>;
+        "getSuggestedUsersForDiscover"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForDiscover">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForDiscover">>;
+        "getSuggestedUsersForDiscoverSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton">>;
+        "getSuggestedUsersForExplore"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForExplore">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForExplore">>;
+        "getSuggestedUsersForExploreSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForExploreSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForExploreSkeleton">>;
+        "getSuggestedUsersForSeeMore"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForSeeMore">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForSeeMore">>;
+        "getSuggestedUsersForSeeMoreSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton">>;
+        "getSuggestedUsersSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersSkeleton">>;
+        "getSuggestionsSkeleton"(params?: QueryParams<"app.bsky.unspecced.getSuggestionsSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getSuggestionsSkeleton">>;
+        "getTaggedSuggestions"(params?: QueryParams<"app.bsky.unspecced.getTaggedSuggestions">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getTaggedSuggestions">>;
+        "getTrendingTopics"(params?: QueryParams<"app.bsky.unspecced.getTrendingTopics">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getTrendingTopics">>;
+        "getTrends"(params?: QueryParams<"app.bsky.unspecced.getTrends">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getTrends">>;
+        "getTrendsSkeleton"(params?: QueryParams<"app.bsky.unspecced.getTrendsSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.getTrendsSkeleton">>;
+        "initAgeAssurance"(input?: ProcedureInput<"app.bsky.unspecced.initAgeAssurance">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.unspecced.initAgeAssurance">>;
+        "searchActorsSkeleton"(params?: QueryParams<"app.bsky.unspecced.searchActorsSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.searchActorsSkeleton">>;
+        "searchPostsSkeleton"(params?: QueryParams<"app.bsky.unspecced.searchPostsSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.searchPostsSkeleton">>;
+        "searchStarterPacksSkeleton"(params?: QueryParams<"app.bsky.unspecced.searchStarterPacksSkeleton">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.unspecced.searchStarterPacksSkeleton">>;
       };
       "video": {
-        "getJobStatus"(
-          params?: QueryParams<"app.bsky.video.getJobStatus">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.video.getJobStatus">>;
-        "getUploadLimits"(
-          params?: QueryParams<"app.bsky.video.getUploadLimits">,
-          token?: string,
-        ): Promise<QueryOutput<"app.bsky.video.getUploadLimits">>;
-        "uploadVideo"(
-          input?: ProcedureInput<"app.bsky.video.uploadVideo">,
-          token?: string,
-        ): Promise<ProcedureOutput<"app.bsky.video.uploadVideo">>;
+        "getJobStatus"(params?: QueryParams<"app.bsky.video.getJobStatus">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.video.getJobStatus">>;
+        "getUploadLimits"(params?: QueryParams<"app.bsky.video.getUploadLimits">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"app.bsky.video.getUploadLimits">>;
+        "uploadVideo"(input?: ProcedureInput<"app.bsky.video.uploadVideo">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"app.bsky.video.uploadVideo">>;
       };
     };
   };
   "chat": {
     "bsky": {
       "actor": {
-        "deleteAccount"(
-          input?: ProcedureInput<"chat.bsky.actor.deleteAccount">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.actor.deleteAccount">>;
-        "exportAccountData"(
-          params?: QueryParams<"chat.bsky.actor.exportAccountData">,
-          token?: string,
-        ): Promise<QueryOutput<"chat.bsky.actor.exportAccountData">>;
+        "deleteAccount"(input?: ProcedureInput<"chat.bsky.actor.deleteAccount">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.actor.deleteAccount">>;
+        "exportAccountData"(params?: QueryParams<"chat.bsky.actor.exportAccountData">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.actor.exportAccountData">>;
       };
       "convo": {
-        "acceptConvo"(
-          input?: ProcedureInput<"chat.bsky.convo.acceptConvo">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.convo.acceptConvo">>;
-        "addReaction"(
-          input?: ProcedureInput<"chat.bsky.convo.addReaction">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.convo.addReaction">>;
-        "deleteMessageForSelf"(
-          input?: ProcedureInput<"chat.bsky.convo.deleteMessageForSelf">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.convo.deleteMessageForSelf">>;
-        "getConvo"(
-          params?: QueryParams<"chat.bsky.convo.getConvo">,
-          token?: string,
-        ): Promise<QueryOutput<"chat.bsky.convo.getConvo">>;
-        "getConvoAvailability"(
-          params?: QueryParams<"chat.bsky.convo.getConvoAvailability">,
-          token?: string,
-        ): Promise<QueryOutput<"chat.bsky.convo.getConvoAvailability">>;
-        "getConvoForMembers"(
-          params?: QueryParams<"chat.bsky.convo.getConvoForMembers">,
-          token?: string,
-        ): Promise<QueryOutput<"chat.bsky.convo.getConvoForMembers">>;
-        "getLog"(
-          params?: QueryParams<"chat.bsky.convo.getLog">,
-          token?: string,
-        ): Promise<QueryOutput<"chat.bsky.convo.getLog">>;
-        "getMessages"(
-          params?: QueryParams<"chat.bsky.convo.getMessages">,
-          token?: string,
-        ): Promise<QueryOutput<"chat.bsky.convo.getMessages">>;
-        "leaveConvo"(
-          input?: ProcedureInput<"chat.bsky.convo.leaveConvo">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.convo.leaveConvo">>;
-        "listConvoRequests"(
-          params?: QueryParams<"chat.bsky.convo.listConvoRequests">,
-          token?: string,
-        ): Promise<QueryOutput<"chat.bsky.convo.listConvoRequests">>;
-        "listConvos"(
-          params?: QueryParams<"chat.bsky.convo.listConvos">,
-          token?: string,
-        ): Promise<QueryOutput<"chat.bsky.convo.listConvos">>;
-        "lockConvo"(
-          input?: ProcedureInput<"chat.bsky.convo.lockConvo">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.convo.lockConvo">>;
-        "muteConvo"(
-          input?: ProcedureInput<"chat.bsky.convo.muteConvo">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.convo.muteConvo">>;
-        "removeReaction"(
-          input?: ProcedureInput<"chat.bsky.convo.removeReaction">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.convo.removeReaction">>;
-        "sendMessage"(
-          input?: ProcedureInput<"chat.bsky.convo.sendMessage">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.convo.sendMessage">>;
-        "sendMessageBatch"(
-          input?: ProcedureInput<"chat.bsky.convo.sendMessageBatch">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.convo.sendMessageBatch">>;
-        "unlockConvo"(
-          input?: ProcedureInput<"chat.bsky.convo.unlockConvo">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.convo.unlockConvo">>;
-        "unmuteConvo"(
-          input?: ProcedureInput<"chat.bsky.convo.unmuteConvo">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.convo.unmuteConvo">>;
-        "updateAllRead"(
-          input?: ProcedureInput<"chat.bsky.convo.updateAllRead">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.convo.updateAllRead">>;
-        "updateRead"(
-          input?: ProcedureInput<"chat.bsky.convo.updateRead">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.convo.updateRead">>;
+        "acceptConvo"(input?: ProcedureInput<"chat.bsky.convo.acceptConvo">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.convo.acceptConvo">>;
+        "addReaction"(input?: ProcedureInput<"chat.bsky.convo.addReaction">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.convo.addReaction">>;
+        "deleteMessageForSelf"(input?: ProcedureInput<"chat.bsky.convo.deleteMessageForSelf">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.convo.deleteMessageForSelf">>;
+        "getConvo"(params?: QueryParams<"chat.bsky.convo.getConvo">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.convo.getConvo">>;
+        "getConvoAvailability"(params?: QueryParams<"chat.bsky.convo.getConvoAvailability">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.convo.getConvoAvailability">>;
+        "getConvoForMembers"(params?: QueryParams<"chat.bsky.convo.getConvoForMembers">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.convo.getConvoForMembers">>;
+        "getLog"(params?: QueryParams<"chat.bsky.convo.getLog">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.convo.getLog">>;
+        "getMessages"(params?: QueryParams<"chat.bsky.convo.getMessages">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.convo.getMessages">>;
+        "leaveConvo"(input?: ProcedureInput<"chat.bsky.convo.leaveConvo">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.convo.leaveConvo">>;
+        "listConvoRequests"(params?: QueryParams<"chat.bsky.convo.listConvoRequests">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.convo.listConvoRequests">>;
+        "listConvos"(params?: QueryParams<"chat.bsky.convo.listConvos">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.convo.listConvos">>;
+        "lockConvo"(input?: ProcedureInput<"chat.bsky.convo.lockConvo">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.convo.lockConvo">>;
+        "muteConvo"(input?: ProcedureInput<"chat.bsky.convo.muteConvo">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.convo.muteConvo">>;
+        "removeReaction"(input?: ProcedureInput<"chat.bsky.convo.removeReaction">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.convo.removeReaction">>;
+        "sendMessage"(input?: ProcedureInput<"chat.bsky.convo.sendMessage">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.convo.sendMessage">>;
+        "sendMessageBatch"(input?: ProcedureInput<"chat.bsky.convo.sendMessageBatch">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.convo.sendMessageBatch">>;
+        "unlockConvo"(input?: ProcedureInput<"chat.bsky.convo.unlockConvo">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.convo.unlockConvo">>;
+        "unmuteConvo"(input?: ProcedureInput<"chat.bsky.convo.unmuteConvo">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.convo.unmuteConvo">>;
+        "updateAllRead"(input?: ProcedureInput<"chat.bsky.convo.updateAllRead">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.convo.updateAllRead">>;
+        "updateRead"(input?: ProcedureInput<"chat.bsky.convo.updateRead">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.convo.updateRead">>;
       };
       "group": {
-        "addMembers"(
-          input?: ProcedureInput<"chat.bsky.group.addMembers">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.group.addMembers">>;
-        "addReaction"(
-          input?: ProcedureInput<"chat.bsky.group.addReaction">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.group.addReaction">>;
-        "approveJoinRequest"(
-          input?: ProcedureInput<"chat.bsky.group.approveJoinRequest">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.group.approveJoinRequest">>;
-        "createGroup"(
-          input?: ProcedureInput<"chat.bsky.group.createGroup">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.group.createGroup">>;
-        "createJoinLink"(
-          input?: ProcedureInput<"chat.bsky.group.createJoinLink">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.group.createJoinLink">>;
-        "deleteGroup"(
-          input?: ProcedureInput<"chat.bsky.group.deleteGroup">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.group.deleteGroup">>;
-        "deleteMessageForSelf"(
-          input?: ProcedureInput<"chat.bsky.group.deleteMessageForSelf">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.group.deleteMessageForSelf">>;
-        "disableJoinLink"(
-          input?: ProcedureInput<"chat.bsky.group.disableJoinLink">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.group.disableJoinLink">>;
-        "editGroup"(
-          input?: ProcedureInput<"chat.bsky.group.editGroup">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.group.editGroup">>;
-        "editJoinLink"(
-          input?: ProcedureInput<"chat.bsky.group.editJoinLink">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.group.editJoinLink">>;
-        "enableJoinLink"(
-          input?: ProcedureInput<"chat.bsky.group.enableJoinLink">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.group.enableJoinLink">>;
-        "getGroupPublicInfo"(
-          params?: QueryParams<"chat.bsky.group.getGroupPublicInfo">,
-          token?: string,
-        ): Promise<QueryOutput<"chat.bsky.group.getGroupPublicInfo">>;
-        "getMessages"(
-          params?: QueryParams<"chat.bsky.group.getMessages">,
-          token?: string,
-        ): Promise<QueryOutput<"chat.bsky.group.getMessages">>;
-        "leaveGroup"(
-          input?: ProcedureInput<"chat.bsky.group.leaveGroup">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.group.leaveGroup">>;
-        "listGroups"(
-          params?: QueryParams<"chat.bsky.group.listGroups">,
-          token?: string,
-        ): Promise<QueryOutput<"chat.bsky.group.listGroups">>;
-        "listInviteLinks"(
-          params?: QueryParams<"chat.bsky.group.listInviteLinks">,
-          token?: string,
-        ): Promise<QueryOutput<"chat.bsky.group.listInviteLinks">>;
-        "listJoinRequests"(
-          params?: QueryParams<"chat.bsky.group.listJoinRequests">,
-          token?: string,
-        ): Promise<QueryOutput<"chat.bsky.group.listJoinRequests">>;
-        "listMembers"(
-          params?: QueryParams<"chat.bsky.group.listMembers">,
-          token?: string,
-        ): Promise<QueryOutput<"chat.bsky.group.listMembers">>;
-        "rejectJoinRequest"(
-          input?: ProcedureInput<"chat.bsky.group.rejectJoinRequest">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.group.rejectJoinRequest">>;
-        "removeMembers"(
-          input?: ProcedureInput<"chat.bsky.group.removeMembers">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.group.removeMembers">>;
-        "removeReaction"(
-          input?: ProcedureInput<"chat.bsky.group.removeReaction">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.group.removeReaction">>;
-        "requestJoin"(
-          input?: ProcedureInput<"chat.bsky.group.requestJoin">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.group.requestJoin">>;
-        "sendMessage"(
-          input?: ProcedureInput<"chat.bsky.group.sendMessage">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.group.sendMessage">>;
+        "addMembers"(input?: ProcedureInput<"chat.bsky.group.addMembers">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.addMembers">>;
+        "addReaction"(input?: ProcedureInput<"chat.bsky.group.addReaction">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.addReaction">>;
+        "approveJoinRequest"(input?: ProcedureInput<"chat.bsky.group.approveJoinRequest">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.approveJoinRequest">>;
+        "createGroup"(input?: ProcedureInput<"chat.bsky.group.createGroup">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.createGroup">>;
+        "createJoinLink"(input?: ProcedureInput<"chat.bsky.group.createJoinLink">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.createJoinLink">>;
+        "deleteGroup"(input?: ProcedureInput<"chat.bsky.group.deleteGroup">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.deleteGroup">>;
+        "deleteMessageForSelf"(input?: ProcedureInput<"chat.bsky.group.deleteMessageForSelf">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.deleteMessageForSelf">>;
+        "disableJoinLink"(input?: ProcedureInput<"chat.bsky.group.disableJoinLink">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.disableJoinLink">>;
+        "editGroup"(input?: ProcedureInput<"chat.bsky.group.editGroup">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.editGroup">>;
+        "editJoinLink"(input?: ProcedureInput<"chat.bsky.group.editJoinLink">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.editJoinLink">>;
+        "enableJoinLink"(input?: ProcedureInput<"chat.bsky.group.enableJoinLink">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.enableJoinLink">>;
+        "getGroupPublicInfo"(params?: QueryParams<"chat.bsky.group.getGroupPublicInfo">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.group.getGroupPublicInfo">>;
+        "getMessages"(params?: QueryParams<"chat.bsky.group.getMessages">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.group.getMessages">>;
+        "leaveGroup"(input?: ProcedureInput<"chat.bsky.group.leaveGroup">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.leaveGroup">>;
+        "listGroups"(params?: QueryParams<"chat.bsky.group.listGroups">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.group.listGroups">>;
+        "listInviteLinks"(params?: QueryParams<"chat.bsky.group.listInviteLinks">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.group.listInviteLinks">>;
+        "listJoinRequests"(params?: QueryParams<"chat.bsky.group.listJoinRequests">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.group.listJoinRequests">>;
+        "listMembers"(params?: QueryParams<"chat.bsky.group.listMembers">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.group.listMembers">>;
+        "rejectJoinRequest"(input?: ProcedureInput<"chat.bsky.group.rejectJoinRequest">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.rejectJoinRequest">>;
+        "removeMembers"(input?: ProcedureInput<"chat.bsky.group.removeMembers">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.removeMembers">>;
+        "removeReaction"(input?: ProcedureInput<"chat.bsky.group.removeReaction">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.removeReaction">>;
+        "requestJoin"(input?: ProcedureInput<"chat.bsky.group.requestJoin">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.requestJoin">>;
+        "sendMessage"(input?: ProcedureInput<"chat.bsky.group.sendMessage">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.group.sendMessage">>;
       };
       "moderation": {
-        "getActorMetadata"(
-          params?: QueryParams<"chat.bsky.moderation.getActorMetadata">,
-          token?: string,
-        ): Promise<QueryOutput<"chat.bsky.moderation.getActorMetadata">>;
-        "getMessageContext"(
-          params?: QueryParams<"chat.bsky.moderation.getMessageContext">,
-          token?: string,
-        ): Promise<QueryOutput<"chat.bsky.moderation.getMessageContext">>;
-        "updateActorAccess"(
-          input?: ProcedureInput<"chat.bsky.moderation.updateActorAccess">,
-          token?: string,
-        ): Promise<ProcedureOutput<"chat.bsky.moderation.updateActorAccess">>;
+        "getActorMetadata"(params?: QueryParams<"chat.bsky.moderation.getActorMetadata">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.moderation.getActorMetadata">>;
+        "getMessageContext"(params?: QueryParams<"chat.bsky.moderation.getMessageContext">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"chat.bsky.moderation.getMessageContext">>;
+        "updateActorAccess"(input?: ProcedureInput<"chat.bsky.moderation.updateActorAccess">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"chat.bsky.moderation.updateActorAccess">>;
       };
     };
   };
   "com": {
     "atproto": {
       "admin": {
-        "deleteAccount"(
-          input?: ProcedureInput<"com.atproto.admin.deleteAccount">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.admin.deleteAccount">>;
-        "disableAccountInvites"(
-          input?: ProcedureInput<"com.atproto.admin.disableAccountInvites">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.admin.disableAccountInvites">>;
-        "disableInviteCodes"(
-          input?: ProcedureInput<"com.atproto.admin.disableInviteCodes">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.admin.disableInviteCodes">>;
-        "enableAccountInvites"(
-          input?: ProcedureInput<"com.atproto.admin.enableAccountInvites">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.admin.enableAccountInvites">>;
-        "getAccountInfo"(
-          params?: QueryParams<"com.atproto.admin.getAccountInfo">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.admin.getAccountInfo">>;
-        "getAccountInfos"(
-          params?: QueryParams<"com.atproto.admin.getAccountInfos">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.admin.getAccountInfos">>;
-        "getAccountTakedown"(
-          input?: ProcedureInput<"com.atproto.admin.getAccountTakedown">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.admin.getAccountTakedown">>;
-        "getAccountUsage"(
-          params?: QueryParams<"com.atproto.admin.getAccountUsage">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.admin.getAccountUsage">>;
-        "getBlobAuditStatus"(
-          params?: QueryParams<"com.atproto.admin.getBlobAuditStatus">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.admin.getBlobAuditStatus">>;
-        "getInviteCodes"(
-          params?: QueryParams<"com.atproto.admin.getInviteCodes">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.admin.getInviteCodes">>;
-        "getModerationReports"(
-          params?: QueryParams<"com.atproto.admin.getModerationReports">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.admin.getModerationReports">>;
-        "getServerStats"(
-          params?: QueryParams<"com.atproto.admin.getServerStats">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.admin.getServerStats">>;
-        "getSubjectStatus"(
-          params?: QueryParams<"com.atproto.admin.getSubjectStatus">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.admin.getSubjectStatus">>;
-        "moderateAccount"(
-          input?: ProcedureInput<"com.atproto.admin.moderateAccount">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.admin.moderateAccount">>;
-        "moderateRecord"(
-          input?: ProcedureInput<"com.atproto.admin.moderateRecord">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.admin.moderateRecord">>;
-        "queryAuditLog"(
-          params?: QueryParams<"com.atproto.admin.queryAuditLog">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.admin.queryAuditLog">>;
-        "repairRepo"(
-          input?: ProcedureInput<"com.atproto.admin.repairRepo">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.admin.repairRepo">>;
-        "resolveReport"(
-          input?: ProcedureInput<"com.atproto.admin.resolveReport">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.admin.resolveReport">>;
-        "runBlobAudit"(
-          input?: ProcedureInput<"com.atproto.admin.runBlobAudit">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.admin.runBlobAudit">>;
-        "searchAccounts"(
-          params?: QueryParams<"com.atproto.admin.searchAccounts">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.admin.searchAccounts">>;
-        "sendEmail"(
-          input?: ProcedureInput<"com.atproto.admin.sendEmail">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.admin.sendEmail">>;
-        "takeDownAccount"(
-          input?: ProcedureInput<"com.atproto.admin.takeDownAccount">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.admin.takeDownAccount">>;
-        "updateAccountEmail"(
-          input?: ProcedureInput<"com.atproto.admin.updateAccountEmail">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.admin.updateAccountEmail">>;
-        "updateAccountHandle"(
-          input?: ProcedureInput<"com.atproto.admin.updateAccountHandle">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.admin.updateAccountHandle">>;
-        "updateAccountPassword"(
-          input?: ProcedureInput<"com.atproto.admin.updateAccountPassword">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.admin.updateAccountPassword">>;
-        "updateAccountSigningKey"(
-          input?: ProcedureInput<"com.atproto.admin.updateAccountSigningKey">,
-          token?: string,
-        ): Promise<
-          ProcedureOutput<"com.atproto.admin.updateAccountSigningKey">
-        >;
-        "updateSubjectStatus"(
-          input?: ProcedureInput<"com.atproto.admin.updateSubjectStatus">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.admin.updateSubjectStatus">>;
+        "deleteAccount"(input?: ProcedureInput<"com.atproto.admin.deleteAccount">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.deleteAccount">>;
+        "disableAccountInvites"(input?: ProcedureInput<"com.atproto.admin.disableAccountInvites">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.disableAccountInvites">>;
+        "disableInviteCodes"(input?: ProcedureInput<"com.atproto.admin.disableInviteCodes">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.disableInviteCodes">>;
+        "enableAccountInvites"(input?: ProcedureInput<"com.atproto.admin.enableAccountInvites">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.enableAccountInvites">>;
+        "getAccountInfo"(params?: QueryParams<"com.atproto.admin.getAccountInfo">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.admin.getAccountInfo">>;
+        "getAccountInfos"(params?: QueryParams<"com.atproto.admin.getAccountInfos">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.admin.getAccountInfos">>;
+        "getAccountTakedown"(input?: ProcedureInput<"com.atproto.admin.getAccountTakedown">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.getAccountTakedown">>;
+        "getAccountUsage"(params?: QueryParams<"com.atproto.admin.getAccountUsage">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.admin.getAccountUsage">>;
+        "getBlobAuditStatus"(params?: QueryParams<"com.atproto.admin.getBlobAuditStatus">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.admin.getBlobAuditStatus">>;
+        "getInviteCodes"(params?: QueryParams<"com.atproto.admin.getInviteCodes">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.admin.getInviteCodes">>;
+        "getModerationReports"(params?: QueryParams<"com.atproto.admin.getModerationReports">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.admin.getModerationReports">>;
+        "getServerStats"(params?: QueryParams<"com.atproto.admin.getServerStats">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.admin.getServerStats">>;
+        "getSubjectStatus"(params?: QueryParams<"com.atproto.admin.getSubjectStatus">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.admin.getSubjectStatus">>;
+        "moderateAccount"(input?: ProcedureInput<"com.atproto.admin.moderateAccount">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.moderateAccount">>;
+        "moderateRecord"(input?: ProcedureInput<"com.atproto.admin.moderateRecord">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.moderateRecord">>;
+        "queryAuditLog"(params?: QueryParams<"com.atproto.admin.queryAuditLog">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.admin.queryAuditLog">>;
+        "repairRepo"(input?: ProcedureInput<"com.atproto.admin.repairRepo">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.repairRepo">>;
+        "resolveReport"(input?: ProcedureInput<"com.atproto.admin.resolveReport">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.resolveReport">>;
+        "runBlobAudit"(input?: ProcedureInput<"com.atproto.admin.runBlobAudit">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.runBlobAudit">>;
+        "searchAccounts"(params?: QueryParams<"com.atproto.admin.searchAccounts">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.admin.searchAccounts">>;
+        "sendEmail"(input?: ProcedureInput<"com.atproto.admin.sendEmail">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.sendEmail">>;
+        "takeDownAccount"(input?: ProcedureInput<"com.atproto.admin.takeDownAccount">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.takeDownAccount">>;
+        "updateAccountEmail"(input?: ProcedureInput<"com.atproto.admin.updateAccountEmail">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.updateAccountEmail">>;
+        "updateAccountHandle"(input?: ProcedureInput<"com.atproto.admin.updateAccountHandle">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.updateAccountHandle">>;
+        "updateAccountPassword"(input?: ProcedureInput<"com.atproto.admin.updateAccountPassword">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.updateAccountPassword">>;
+        "updateAccountSigningKey"(input?: ProcedureInput<"com.atproto.admin.updateAccountSigningKey">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.updateAccountSigningKey">>;
+        "updateSubjectStatus"(input?: ProcedureInput<"com.atproto.admin.updateSubjectStatus">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.admin.updateSubjectStatus">>;
       };
       "identity": {
-        "getRecommendedDidCredentials"(
-          params?: QueryParams<
-            "com.atproto.identity.getRecommendedDidCredentials"
-          >,
-          token?: string,
-        ): Promise<
-          QueryOutput<"com.atproto.identity.getRecommendedDidCredentials">
-        >;
-        "refreshIdentity"(
-          input?: ProcedureInput<"com.atproto.identity.refreshIdentity">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.identity.refreshIdentity">>;
-        "requestPlcOperationSignature"(
-          input?: ProcedureInput<
-            "com.atproto.identity.requestPlcOperationSignature"
-          >,
-          token?: string,
-        ): Promise<
-          ProcedureOutput<"com.atproto.identity.requestPlcOperationSignature">
-        >;
-        "resolveDid"(
-          params?: QueryParams<"com.atproto.identity.resolveDid">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.identity.resolveDid">>;
-        "resolveHandle"(
-          params?: QueryParams<"com.atproto.identity.resolveHandle">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.identity.resolveHandle">>;
-        "resolveIdentity"(
-          params?: QueryParams<"com.atproto.identity.resolveIdentity">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.identity.resolveIdentity">>;
-        "signPlcOperation"(
-          input?: ProcedureInput<"com.atproto.identity.signPlcOperation">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.identity.signPlcOperation">>;
-        "submitPlcOperation"(
-          input?: ProcedureInput<"com.atproto.identity.submitPlcOperation">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.identity.submitPlcOperation">>;
-        "updateHandle"(
-          input?: ProcedureInput<"com.atproto.identity.updateHandle">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.identity.updateHandle">>;
+        "getRecommendedDidCredentials"(params?: QueryParams<"com.atproto.identity.getRecommendedDidCredentials">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.identity.getRecommendedDidCredentials">>;
+        "refreshIdentity"(input?: ProcedureInput<"com.atproto.identity.refreshIdentity">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.identity.refreshIdentity">>;
+        "requestPlcOperationSignature"(input?: ProcedureInput<"com.atproto.identity.requestPlcOperationSignature">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.identity.requestPlcOperationSignature">>;
+        "resolveDid"(params?: QueryParams<"com.atproto.identity.resolveDid">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.identity.resolveDid">>;
+        "resolveHandle"(params?: QueryParams<"com.atproto.identity.resolveHandle">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.identity.resolveHandle">>;
+        "resolveIdentity"(params?: QueryParams<"com.atproto.identity.resolveIdentity">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.identity.resolveIdentity">>;
+        "signPlcOperation"(input?: ProcedureInput<"com.atproto.identity.signPlcOperation">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.identity.signPlcOperation">>;
+        "submitPlcOperation"(input?: ProcedureInput<"com.atproto.identity.submitPlcOperation">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.identity.submitPlcOperation">>;
+        "updateHandle"(input?: ProcedureInput<"com.atproto.identity.updateHandle">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.identity.updateHandle">>;
       };
       "label": {
-        "createLabel"(
-          input?: ProcedureInput<"com.atproto.label.createLabel">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.label.createLabel">>;
-        "getLabels"(
-          params?: QueryParams<"com.atproto.label.getLabels">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.label.getLabels">>;
-        "queryLabels"(
-          params?: QueryParams<"com.atproto.label.queryLabels">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.label.queryLabels">>;
+        "createLabel"(input?: ProcedureInput<"com.atproto.label.createLabel">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.label.createLabel">>;
+        "getLabels"(params?: QueryParams<"com.atproto.label.getLabels">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.label.getLabels">>;
+        "queryLabels"(params?: QueryParams<"com.atproto.label.queryLabels">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.label.queryLabels">>;
       };
       "lexicon": {
-        "resolveLexicon"(
-          params?: QueryParams<"com.atproto.lexicon.resolveLexicon">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.lexicon.resolveLexicon">>;
+        "resolveLexicon"(params?: QueryParams<"com.atproto.lexicon.resolveLexicon">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.lexicon.resolveLexicon">>;
       };
       "moderation": {
-        "createReport"(
-          input?: ProcedureInput<"com.atproto.moderation.createReport">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.moderation.createReport">>;
+        "createReport"(input?: ProcedureInput<"com.atproto.moderation.createReport">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.moderation.createReport">>;
       };
       "repo": {
-        "applyWrites"(
-          input?: ProcedureInput<"com.atproto.repo.applyWrites">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.repo.applyWrites">>;
-        "createRecord"(
-          input?: ProcedureInput<"com.atproto.repo.createRecord">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.repo.createRecord">>;
-        "deleteBlob"(
-          input?: ProcedureInput<"com.atproto.repo.deleteBlob">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.repo.deleteBlob">>;
-        "deleteRecord"(
-          input?: ProcedureInput<"com.atproto.repo.deleteRecord">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.repo.deleteRecord">>;
-        "describeRepo"(
-          params?: QueryParams<"com.atproto.repo.describeRepo">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.repo.describeRepo">>;
-        "getBlob"(
-          params?: QueryParams<"com.atproto.repo.getBlob">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.repo.getBlob">>;
-        "getRecord"(
-          params?: QueryParams<"com.atproto.repo.getRecord">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.repo.getRecord">>;
-        "importRepo"(
-          input?: ProcedureInput<"com.atproto.repo.importRepo">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.repo.importRepo">>;
-        "listMissingBlobs"(
-          params?: QueryParams<"com.atproto.repo.listMissingBlobs">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.repo.listMissingBlobs">>;
-        "listRecords"(
-          params?: QueryParams<"com.atproto.repo.listRecords">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.repo.listRecords">>;
-        "putRecord"(
-          input?: ProcedureInput<"com.atproto.repo.putRecord">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.repo.putRecord">>;
-        "updateRecord"(
-          input?: ProcedureInput<"com.atproto.repo.updateRecord">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.repo.updateRecord">>;
-        "uploadBlob"(
-          input?: ProcedureInput<"com.atproto.repo.uploadBlob">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.repo.uploadBlob">>;
+        "applyWrites"(input?: ProcedureInput<"com.atproto.repo.applyWrites">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.repo.applyWrites">>;
+        "createRecord"(input?: ProcedureInput<"com.atproto.repo.createRecord">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.repo.createRecord">>;
+        "deleteBlob"(input?: ProcedureInput<"com.atproto.repo.deleteBlob">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.repo.deleteBlob">>;
+        "deleteRecord"(input?: ProcedureInput<"com.atproto.repo.deleteRecord">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.repo.deleteRecord">>;
+        "describeRepo"(params?: QueryParams<"com.atproto.repo.describeRepo">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.repo.describeRepo">>;
+        "getBlob"(params?: QueryParams<"com.atproto.repo.getBlob">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.repo.getBlob">>;
+        "getRecord"(params?: QueryParams<"com.atproto.repo.getRecord">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.repo.getRecord">>;
+        "importRepo"(input?: ProcedureInput<"com.atproto.repo.importRepo">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.repo.importRepo">>;
+        "listMissingBlobs"(params?: QueryParams<"com.atproto.repo.listMissingBlobs">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.repo.listMissingBlobs">>;
+        "listRecords"(params?: QueryParams<"com.atproto.repo.listRecords">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.repo.listRecords">>;
+        "putRecord"(input?: ProcedureInput<"com.atproto.repo.putRecord">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.repo.putRecord">>;
+        "updateRecord"(input?: ProcedureInput<"com.atproto.repo.updateRecord">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.repo.updateRecord">>;
+        "uploadBlob"(input?: ProcedureInput<"com.atproto.repo.uploadBlob">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.repo.uploadBlob">>;
       };
       "server": {
-        "activateAccount"(
-          input?: ProcedureInput<"com.atproto.server.activateAccount">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.server.activateAccount">>;
-        "checkAccountStatus"(
-          params?: QueryParams<"com.atproto.server.checkAccountStatus">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.server.checkAccountStatus">>;
-        "confirmEmail"(
-          input?: ProcedureInput<"com.atproto.server.confirmEmail">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.server.confirmEmail">>;
-        "createAccount"(
-          input?: ProcedureInput<"com.atproto.server.createAccount">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.server.createAccount">>;
-        "createAppPassword"(
-          input?: ProcedureInput<"com.atproto.server.createAppPassword">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.server.createAppPassword">>;
-        "createInviteCode"(
-          input?: ProcedureInput<"com.atproto.server.createInviteCode">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.server.createInviteCode">>;
-        "createInviteCodes"(
-          input?: ProcedureInput<"com.atproto.server.createInviteCodes">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.server.createInviteCodes">>;
-        "createSession"(
-          input?: ProcedureInput<"com.atproto.server.createSession">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.server.createSession">>;
-        "deactivateAccount"(
-          input?: ProcedureInput<"com.atproto.server.deactivateAccount">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.server.deactivateAccount">>;
-        "deleteAccount"(
-          input?: ProcedureInput<"com.atproto.server.deleteAccount">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.server.deleteAccount">>;
-        "deleteSession"(
-          input?: ProcedureInput<"com.atproto.server.deleteSession">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.server.deleteSession">>;
-        "describeServer"(
-          params?: QueryParams<"com.atproto.server.describeServer">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.server.describeServer">>;
-        "getAccount"(
-          params?: QueryParams<"com.atproto.server.getAccount">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.server.getAccount">>;
-        "getAccountInviteCodes"(
-          params?: QueryParams<"com.atproto.server.getAccountInviteCodes">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.server.getAccountInviteCodes">>;
-        "getServiceAuth"(
-          params?: QueryParams<"com.atproto.server.getServiceAuth">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.server.getServiceAuth">>;
-        "getSession"(
-          params?: QueryParams<"com.atproto.server.getSession">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.server.getSession">>;
-        "listAppPasswords"(
-          params?: QueryParams<"com.atproto.server.listAppPasswords">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.server.listAppPasswords">>;
-        "refreshSession"(
-          input?: ProcedureInput<"com.atproto.server.refreshSession">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.server.refreshSession">>;
-        "requestAccountDelete"(
-          input?: ProcedureInput<"com.atproto.server.requestAccountDelete">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.server.requestAccountDelete">>;
-        "requestEmailConfirmation"(
-          input?: ProcedureInput<"com.atproto.server.requestEmailConfirmation">,
-          token?: string,
-        ): Promise<
-          ProcedureOutput<"com.atproto.server.requestEmailConfirmation">
-        >;
-        "requestEmailUpdate"(
-          input?: ProcedureInput<"com.atproto.server.requestEmailUpdate">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.server.requestEmailUpdate">>;
-        "requestPasswordReset"(
-          input?: ProcedureInput<"com.atproto.server.requestPasswordReset">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.server.requestPasswordReset">>;
-        "reserveSigningKey"(
-          input?: ProcedureInput<"com.atproto.server.reserveSigningKey">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.server.reserveSigningKey">>;
-        "resetPassword"(
-          input?: ProcedureInput<"com.atproto.server.resetPassword">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.server.resetPassword">>;
-        "revokeAppPassword"(
-          input?: ProcedureInput<"com.atproto.server.revokeAppPassword">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.server.revokeAppPassword">>;
-        "updateEmail"(
-          input?: ProcedureInput<"com.atproto.server.updateEmail">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.server.updateEmail">>;
+        "activateAccount"(input?: ProcedureInput<"com.atproto.server.activateAccount">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.activateAccount">>;
+        "checkAccountStatus"(params?: QueryParams<"com.atproto.server.checkAccountStatus">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.server.checkAccountStatus">>;
+        "confirmEmail"(input?: ProcedureInput<"com.atproto.server.confirmEmail">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.confirmEmail">>;
+        "createAccount"(input?: ProcedureInput<"com.atproto.server.createAccount">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.createAccount">>;
+        "createAppPassword"(input?: ProcedureInput<"com.atproto.server.createAppPassword">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.createAppPassword">>;
+        "createInviteCode"(input?: ProcedureInput<"com.atproto.server.createInviteCode">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.createInviteCode">>;
+        "createInviteCodes"(input?: ProcedureInput<"com.atproto.server.createInviteCodes">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.createInviteCodes">>;
+        "createSession"(input?: ProcedureInput<"com.atproto.server.createSession">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.createSession">>;
+        "deactivateAccount"(input?: ProcedureInput<"com.atproto.server.deactivateAccount">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.deactivateAccount">>;
+        "deleteAccount"(input?: ProcedureInput<"com.atproto.server.deleteAccount">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.deleteAccount">>;
+        "deleteSession"(input?: ProcedureInput<"com.atproto.server.deleteSession">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.deleteSession">>;
+        "describeServer"(params?: QueryParams<"com.atproto.server.describeServer">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.server.describeServer">>;
+        "getAccount"(params?: QueryParams<"com.atproto.server.getAccount">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.server.getAccount">>;
+        "getAccountInviteCodes"(params?: QueryParams<"com.atproto.server.getAccountInviteCodes">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.server.getAccountInviteCodes">>;
+        "getServiceAuth"(params?: QueryParams<"com.atproto.server.getServiceAuth">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.server.getServiceAuth">>;
+        "getSession"(params?: QueryParams<"com.atproto.server.getSession">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.server.getSession">>;
+        "listAppPasswords"(params?: QueryParams<"com.atproto.server.listAppPasswords">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.server.listAppPasswords">>;
+        "refreshSession"(input?: ProcedureInput<"com.atproto.server.refreshSession">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.refreshSession">>;
+        "requestAccountDelete"(input?: ProcedureInput<"com.atproto.server.requestAccountDelete">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.requestAccountDelete">>;
+        "requestEmailConfirmation"(input?: ProcedureInput<"com.atproto.server.requestEmailConfirmation">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.requestEmailConfirmation">>;
+        "requestEmailUpdate"(input?: ProcedureInput<"com.atproto.server.requestEmailUpdate">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.requestEmailUpdate">>;
+        "requestPasswordReset"(input?: ProcedureInput<"com.atproto.server.requestPasswordReset">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.requestPasswordReset">>;
+        "reserveSigningKey"(input?: ProcedureInput<"com.atproto.server.reserveSigningKey">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.reserveSigningKey">>;
+        "resetPassword"(input?: ProcedureInput<"com.atproto.server.resetPassword">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.resetPassword">>;
+        "revokeAppPassword"(input?: ProcedureInput<"com.atproto.server.revokeAppPassword">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.revokeAppPassword">>;
+        "updateEmail"(input?: ProcedureInput<"com.atproto.server.updateEmail">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.server.updateEmail">>;
       };
       "sync": {
-        "getBlob"(
-          params?: QueryParams<"com.atproto.sync.getBlob">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.sync.getBlob">>;
-        "getBlocks"(
-          params?: QueryParams<"com.atproto.sync.getBlocks">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.sync.getBlocks">>;
-        "getCheckout"(
-          params?: QueryParams<"com.atproto.sync.getCheckout">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.sync.getCheckout">>;
-        "getHead"(
-          params?: QueryParams<"com.atproto.sync.getHead">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.sync.getHead">>;
-        "getHostStatus"(
-          params?: QueryParams<"com.atproto.sync.getHostStatus">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.sync.getHostStatus">>;
-        "getLatestCommit"(
-          params?: QueryParams<"com.atproto.sync.getLatestCommit">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.sync.getLatestCommit">>;
-        "getRecord"(
-          params?: QueryParams<"com.atproto.sync.getRecord">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.sync.getRecord">>;
-        "getRepo"(
-          params?: QueryParams<"com.atproto.sync.getRepo">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.sync.getRepo">>;
-        "getRepoStatus"(
-          params?: QueryParams<"com.atproto.sync.getRepoStatus">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.sync.getRepoStatus">>;
-        "listBlobs"(
-          params?: QueryParams<"com.atproto.sync.listBlobs">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.sync.listBlobs">>;
-        "listHosts"(
-          params?: QueryParams<"com.atproto.sync.listHosts">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.sync.listHosts">>;
-        "listRepos"(
-          params?: QueryParams<"com.atproto.sync.listRepos">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.sync.listRepos">>;
-        "listReposByCollection"(
-          params?: QueryParams<"com.atproto.sync.listReposByCollection">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.sync.listReposByCollection">>;
-        "notifyOfUpdate"(
-          input?: ProcedureInput<"com.atproto.sync.notifyOfUpdate">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.sync.notifyOfUpdate">>;
-        "requestCrawl"(
-          input?: ProcedureInput<"com.atproto.sync.requestCrawl">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.sync.requestCrawl">>;
+        "getBlob"(params?: QueryParams<"com.atproto.sync.getBlob">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.getBlob">>;
+        "getBlocks"(params?: QueryParams<"com.atproto.sync.getBlocks">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.getBlocks">>;
+        "getCheckout"(params?: QueryParams<"com.atproto.sync.getCheckout">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.getCheckout">>;
+        "getHead"(params?: QueryParams<"com.atproto.sync.getHead">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.getHead">>;
+        "getHostStatus"(params?: QueryParams<"com.atproto.sync.getHostStatus">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.getHostStatus">>;
+        "getLatestCommit"(params?: QueryParams<"com.atproto.sync.getLatestCommit">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.getLatestCommit">>;
+        "getRecord"(params?: QueryParams<"com.atproto.sync.getRecord">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.getRecord">>;
+        "getRepo"(params?: QueryParams<"com.atproto.sync.getRepo">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.getRepo">>;
+        "getRepoStatus"(params?: QueryParams<"com.atproto.sync.getRepoStatus">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.getRepoStatus">>;
+        "listBlobs"(params?: QueryParams<"com.atproto.sync.listBlobs">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.listBlobs">>;
+        "listHosts"(params?: QueryParams<"com.atproto.sync.listHosts">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.listHosts">>;
+        "listRepos"(params?: QueryParams<"com.atproto.sync.listRepos">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.listRepos">>;
+        "listReposByCollection"(params?: QueryParams<"com.atproto.sync.listReposByCollection">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.sync.listReposByCollection">>;
+        "notifyOfUpdate"(input?: ProcedureInput<"com.atproto.sync.notifyOfUpdate">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.sync.notifyOfUpdate">>;
+        "requestCrawl"(input?: ProcedureInput<"com.atproto.sync.requestCrawl">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.sync.requestCrawl">>;
       };
       "temp": {
-        "addReservedHandle"(
-          input?: ProcedureInput<"com.atproto.temp.addReservedHandle">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.atproto.temp.addReservedHandle">>;
-        "checkHandleAvailability"(
-          params?: QueryParams<"com.atproto.temp.checkHandleAvailability">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.temp.checkHandleAvailability">>;
-        "checkSignupQueue"(
-          params?: QueryParams<"com.atproto.temp.checkSignupQueue">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.temp.checkSignupQueue">>;
-        "dereferenceScope"(
-          params?: QueryParams<"com.atproto.temp.dereferenceScope">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.temp.dereferenceScope">>;
-        "fetchLabels"(
-          params?: QueryParams<"com.atproto.temp.fetchLabels">,
-          token?: string,
-        ): Promise<QueryOutput<"com.atproto.temp.fetchLabels">>;
-        "requestPhoneVerification"(
-          input?: ProcedureInput<"com.atproto.temp.requestPhoneVerification">,
-          token?: string,
-        ): Promise<
-          ProcedureOutput<"com.atproto.temp.requestPhoneVerification">
-        >;
-        "revokeAccountCredentials"(
-          input?: ProcedureInput<"com.atproto.temp.revokeAccountCredentials">,
-          token?: string,
-        ): Promise<
-          ProcedureOutput<"com.atproto.temp.revokeAccountCredentials">
-        >;
+        "addReservedHandle"(input?: ProcedureInput<"com.atproto.temp.addReservedHandle">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.temp.addReservedHandle">>;
+        "checkHandleAvailability"(params?: QueryParams<"com.atproto.temp.checkHandleAvailability">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.temp.checkHandleAvailability">>;
+        "checkSignupQueue"(params?: QueryParams<"com.atproto.temp.checkSignupQueue">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.temp.checkSignupQueue">>;
+        "dereferenceScope"(params?: QueryParams<"com.atproto.temp.dereferenceScope">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.temp.dereferenceScope">>;
+        "fetchLabels"(params?: QueryParams<"com.atproto.temp.fetchLabels">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.atproto.temp.fetchLabels">>;
+        "requestPhoneVerification"(input?: ProcedureInput<"com.atproto.temp.requestPhoneVerification">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.temp.requestPhoneVerification">>;
+        "revokeAccountCredentials"(input?: ProcedureInput<"com.atproto.temp.revokeAccountCredentials">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.atproto.temp.revokeAccountCredentials">>;
       };
     };
     "germnetwork": {
       "identity": {
-        "getAnchorKey"(
-          params?: QueryParams<"com.germnetwork.identity.getAnchorKey">,
-          token?: string,
-        ): Promise<QueryOutput<"com.germnetwork.identity.getAnchorKey">>;
+        "getAnchorKey"(params?: QueryParams<"com.germnetwork.identity.getAnchorKey">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.germnetwork.identity.getAnchorKey">>;
       };
       "mailbox": {
-        "claimAddresses"(
-          input?: ProcedureInput<"com.germnetwork.mailbox.claimAddresses">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.germnetwork.mailbox.claimAddresses">>;
-        "deliver"(
-          input?: ProcedureInput<"com.germnetwork.mailbox.deliver">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.germnetwork.mailbox.deliver">>;
-        "poll"(
-          params?: QueryParams<"com.germnetwork.mailbox.poll">,
-          token?: string,
-        ): Promise<QueryOutput<"com.germnetwork.mailbox.poll">>;
+        "claimAddresses"(input?: ProcedureInput<"com.germnetwork.mailbox.claimAddresses">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.germnetwork.mailbox.claimAddresses">>;
+        "deliver"(input?: ProcedureInput<"com.germnetwork.mailbox.deliver">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.germnetwork.mailbox.deliver">>;
+        "poll"(params?: QueryParams<"com.germnetwork.mailbox.poll">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.germnetwork.mailbox.poll">>;
       };
       "rendezvous": {
-        "deliver"(
-          input?: ProcedureInput<"com.germnetwork.rendezvous.deliver">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.germnetwork.rendezvous.deliver">>;
-        "register"(
-          input?: ProcedureInput<"com.germnetwork.rendezvous.register">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.germnetwork.rendezvous.register">>;
+        "deliver"(input?: ProcedureInput<"com.germnetwork.rendezvous.deliver">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.germnetwork.rendezvous.deliver">>;
+        "register"(input?: ProcedureInput<"com.germnetwork.rendezvous.register">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.germnetwork.rendezvous.register">>;
       };
     };
     "shinolabs": {
       "pinksea": {
-        "getAuthorFeed"(
-          params?: QueryParams<"com.shinolabs.pinksea.getAuthorFeed">,
-          token?: string,
-        ): Promise<QueryOutput<"com.shinolabs.pinksea.getAuthorFeed">>;
-        "getAuthorReplies"(
-          params?: QueryParams<"com.shinolabs.pinksea.getAuthorReplies">,
-          token?: string,
-        ): Promise<QueryOutput<"com.shinolabs.pinksea.getAuthorReplies">>;
-        "getHandleFromDid"(
-          params?: QueryParams<"com.shinolabs.pinksea.getHandleFromDid">,
-          token?: string,
-        ): Promise<QueryOutput<"com.shinolabs.pinksea.getHandleFromDid">>;
-        "getIdentity"(
-          params?: QueryParams<"com.shinolabs.pinksea.getIdentity">,
-          token?: string,
-        ): Promise<QueryOutput<"com.shinolabs.pinksea.getIdentity">>;
-        "getOekaki"(
-          params?: QueryParams<"com.shinolabs.pinksea.getOekaki">,
-          token?: string,
-        ): Promise<QueryOutput<"com.shinolabs.pinksea.getOekaki">>;
-        "getParentForReply"(
-          params?: QueryParams<"com.shinolabs.pinksea.getParentForReply">,
-          token?: string,
-        ): Promise<QueryOutput<"com.shinolabs.pinksea.getParentForReply">>;
-        "getRecent"(
-          params?: QueryParams<"com.shinolabs.pinksea.getRecent">,
-          token?: string,
-        ): Promise<QueryOutput<"com.shinolabs.pinksea.getRecent">>;
-        "getTagFeed"(
-          params?: QueryParams<"com.shinolabs.pinksea.getTagFeed">,
-          token?: string,
-        ): Promise<QueryOutput<"com.shinolabs.pinksea.getTagFeed">>;
+        "getAuthorFeed"(params?: QueryParams<"com.shinolabs.pinksea.getAuthorFeed">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.shinolabs.pinksea.getAuthorFeed">>;
+        "getAuthorReplies"(params?: QueryParams<"com.shinolabs.pinksea.getAuthorReplies">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.shinolabs.pinksea.getAuthorReplies">>;
+        "getHandleFromDid"(params?: QueryParams<"com.shinolabs.pinksea.getHandleFromDid">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.shinolabs.pinksea.getHandleFromDid">>;
+        "getIdentity"(params?: QueryParams<"com.shinolabs.pinksea.getIdentity">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.shinolabs.pinksea.getIdentity">>;
+        "getOekaki"(params?: QueryParams<"com.shinolabs.pinksea.getOekaki">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.shinolabs.pinksea.getOekaki">>;
+        "getParentForReply"(params?: QueryParams<"com.shinolabs.pinksea.getParentForReply">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.shinolabs.pinksea.getParentForReply">>;
+        "getRecent"(params?: QueryParams<"com.shinolabs.pinksea.getRecent">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.shinolabs.pinksea.getRecent">>;
+        "getTagFeed"(params?: QueryParams<"com.shinolabs.pinksea.getTagFeed">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.shinolabs.pinksea.getTagFeed">>;
       };
     };
     "whtwnd": {
       "blog": {
-        "getAuthorPosts"(
-          params?: QueryParams<"com.whtwnd.blog.getAuthorPosts">,
-          token?: string,
-        ): Promise<QueryOutput<"com.whtwnd.blog.getAuthorPosts">>;
-        "getEntryMetadataByName"(
-          params?: QueryParams<"com.whtwnd.blog.getEntryMetadataByName">,
-          token?: string,
-        ): Promise<QueryOutput<"com.whtwnd.blog.getEntryMetadataByName">>;
-        "getMentionsByEntry"(
-          params?: QueryParams<"com.whtwnd.blog.getMentionsByEntry">,
-          token?: string,
-        ): Promise<QueryOutput<"com.whtwnd.blog.getMentionsByEntry">>;
-        "notifyOfNewEntry"(
-          input?: ProcedureInput<"com.whtwnd.blog.notifyOfNewEntry">,
-          token?: string,
-        ): Promise<ProcedureOutput<"com.whtwnd.blog.notifyOfNewEntry">>;
+        "getAuthorPosts"(params?: QueryParams<"com.whtwnd.blog.getAuthorPosts">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.whtwnd.blog.getAuthorPosts">>;
+        "getEntryMetadataByName"(params?: QueryParams<"com.whtwnd.blog.getEntryMetadataByName">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.whtwnd.blog.getEntryMetadataByName">>;
+        "getMentionsByEntry"(params?: QueryParams<"com.whtwnd.blog.getMentionsByEntry">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"com.whtwnd.blog.getMentionsByEntry">>;
+        "notifyOfNewEntry"(input?: ProcedureInput<"com.whtwnd.blog.notifyOfNewEntry">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"com.whtwnd.blog.notifyOfNewEntry">>;
       };
     };
   };
   "place": {
     "stream": {
       "branding": {
-        "deleteBlob"(
-          input?: ProcedureInput<"place.stream.branding.deleteBlob">,
-          token?: string,
-        ): Promise<ProcedureOutput<"place.stream.branding.deleteBlob">>;
-        "getBlob"(
-          params?: QueryParams<"place.stream.branding.getBlob">,
-          token?: string,
-        ): Promise<QueryOutput<"place.stream.branding.getBlob">>;
-        "getBranding"(
-          params?: QueryParams<"place.stream.branding.getBranding">,
-          token?: string,
-        ): Promise<QueryOutput<"place.stream.branding.getBranding">>;
-        "updateBlob"(
-          input?: ProcedureInput<"place.stream.branding.updateBlob">,
-          token?: string,
-        ): Promise<ProcedureOutput<"place.stream.branding.updateBlob">>;
+        "deleteBlob"(input?: ProcedureInput<"place.stream.branding.deleteBlob">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.branding.deleteBlob">>;
+        "getBlob"(params?: QueryParams<"place.stream.branding.getBlob">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.branding.getBlob">>;
+        "getBranding"(params?: QueryParams<"place.stream.branding.getBranding">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.branding.getBranding">>;
+        "updateBlob"(input?: ProcedureInput<"place.stream.branding.updateBlob">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.branding.updateBlob">>;
       };
       "broadcast": {
-        "getBroadcaster"(
-          params?: QueryParams<"place.stream.broadcast.getBroadcaster">,
-          token?: string,
-        ): Promise<QueryOutput<"place.stream.broadcast.getBroadcaster">>;
+        "getBroadcaster"(params?: QueryParams<"place.stream.broadcast.getBroadcaster">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.broadcast.getBroadcaster">>;
       };
       "graph": {
-        "getFollowingUser"(
-          params?: QueryParams<"place.stream.graph.getFollowingUser">,
-          token?: string,
-        ): Promise<QueryOutput<"place.stream.graph.getFollowingUser">>;
+        "getFollowingUser"(params?: QueryParams<"place.stream.graph.getFollowingUser">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.graph.getFollowingUser">>;
       };
       "live": {
-        "getLiveUsers"(
-          params?: QueryParams<"place.stream.live.getLiveUsers">,
-          token?: string,
-        ): Promise<QueryOutput<"place.stream.live.getLiveUsers">>;
-        "getProfileCard"(
-          params?: QueryParams<"place.stream.live.getProfileCard">,
-          token?: string,
-        ): Promise<QueryOutput<"place.stream.live.getProfileCard">>;
-        "getRecommendations"(
-          params?: QueryParams<"place.stream.live.getRecommendations">,
-          token?: string,
-        ): Promise<QueryOutput<"place.stream.live.getRecommendations">>;
-        "getSegments"(
-          params?: QueryParams<"place.stream.live.getSegments">,
-          token?: string,
-        ): Promise<QueryOutput<"place.stream.live.getSegments">>;
-        "searchActorsTypeahead"(
-          params?: QueryParams<"place.stream.live.searchActorsTypeahead">,
-          token?: string,
-        ): Promise<QueryOutput<"place.stream.live.searchActorsTypeahead">>;
+        "getLiveUsers"(params?: QueryParams<"place.stream.live.getLiveUsers">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.live.getLiveUsers">>;
+        "getProfileCard"(params?: QueryParams<"place.stream.live.getProfileCard">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.live.getProfileCard">>;
+        "getRecommendations"(params?: QueryParams<"place.stream.live.getRecommendations">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.live.getRecommendations">>;
+        "getSegments"(params?: QueryParams<"place.stream.live.getSegments">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.live.getSegments">>;
+        "searchActorsTypeahead"(params?: QueryParams<"place.stream.live.searchActorsTypeahead">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.live.searchActorsTypeahead">>;
       };
       "moderation": {
-        "createBlock"(
-          input?: ProcedureInput<"place.stream.moderation.createBlock">,
-          token?: string,
-        ): Promise<ProcedureOutput<"place.stream.moderation.createBlock">>;
-        "createGate"(
-          input?: ProcedureInput<"place.stream.moderation.createGate">,
-          token?: string,
-        ): Promise<ProcedureOutput<"place.stream.moderation.createGate">>;
-        "deleteBlock"(
-          input?: ProcedureInput<"place.stream.moderation.deleteBlock">,
-          token?: string,
-        ): Promise<ProcedureOutput<"place.stream.moderation.deleteBlock">>;
-        "deleteGate"(
-          input?: ProcedureInput<"place.stream.moderation.deleteGate">,
-          token?: string,
-        ): Promise<ProcedureOutput<"place.stream.moderation.deleteGate">>;
-        "updateLivestream"(
-          input?: ProcedureInput<"place.stream.moderation.updateLivestream">,
-          token?: string,
-        ): Promise<ProcedureOutput<"place.stream.moderation.updateLivestream">>;
+        "createBlock"(input?: ProcedureInput<"place.stream.moderation.createBlock">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.moderation.createBlock">>;
+        "createGate"(input?: ProcedureInput<"place.stream.moderation.createGate">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.moderation.createGate">>;
+        "deleteBlock"(input?: ProcedureInput<"place.stream.moderation.deleteBlock">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.moderation.deleteBlock">>;
+        "deleteGate"(input?: ProcedureInput<"place.stream.moderation.deleteGate">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.moderation.deleteGate">>;
+        "updateLivestream"(input?: ProcedureInput<"place.stream.moderation.updateLivestream">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.moderation.updateLivestream">>;
       };
       "multistream": {
-        "createTarget"(
-          input?: ProcedureInput<"place.stream.multistream.createTarget">,
-          token?: string,
-        ): Promise<ProcedureOutput<"place.stream.multistream.createTarget">>;
-        "deleteTarget"(
-          input?: ProcedureInput<"place.stream.multistream.deleteTarget">,
-          token?: string,
-        ): Promise<ProcedureOutput<"place.stream.multistream.deleteTarget">>;
-        "listTargets"(
-          params?: QueryParams<"place.stream.multistream.listTargets">,
-          token?: string,
-        ): Promise<QueryOutput<"place.stream.multistream.listTargets">>;
-        "putTarget"(
-          input?: ProcedureInput<"place.stream.multistream.putTarget">,
-          token?: string,
-        ): Promise<ProcedureOutput<"place.stream.multistream.putTarget">>;
+        "createTarget"(input?: ProcedureInput<"place.stream.multistream.createTarget">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.multistream.createTarget">>;
+        "deleteTarget"(input?: ProcedureInput<"place.stream.multistream.deleteTarget">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.multistream.deleteTarget">>;
+        "listTargets"(params?: QueryParams<"place.stream.multistream.listTargets">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.multistream.listTargets">>;
+        "putTarget"(input?: ProcedureInput<"place.stream.multistream.putTarget">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.multistream.putTarget">>;
       };
       "server": {
-        "createWebhook"(
-          input?: ProcedureInput<"place.stream.server.createWebhook">,
-          token?: string,
-        ): Promise<ProcedureOutput<"place.stream.server.createWebhook">>;
-        "deleteWebhook"(
-          input?: ProcedureInput<"place.stream.server.deleteWebhook">,
-          token?: string,
-        ): Promise<ProcedureOutput<"place.stream.server.deleteWebhook">>;
-        "getServerTime"(
-          params?: QueryParams<"place.stream.server.getServerTime">,
-          token?: string,
-        ): Promise<QueryOutput<"place.stream.server.getServerTime">>;
-        "getWebhook"(
-          params?: QueryParams<"place.stream.server.getWebhook">,
-          token?: string,
-        ): Promise<QueryOutput<"place.stream.server.getWebhook">>;
-        "listWebhooks"(
-          params?: QueryParams<"place.stream.server.listWebhooks">,
-          token?: string,
-        ): Promise<QueryOutput<"place.stream.server.listWebhooks">>;
-        "updateWebhook"(
-          input?: ProcedureInput<"place.stream.server.updateWebhook">,
-          token?: string,
-        ): Promise<ProcedureOutput<"place.stream.server.updateWebhook">>;
+        "createWebhook"(input?: ProcedureInput<"place.stream.server.createWebhook">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.server.createWebhook">>;
+        "deleteWebhook"(input?: ProcedureInput<"place.stream.server.deleteWebhook">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.server.deleteWebhook">>;
+        "getServerTime"(params?: QueryParams<"place.stream.server.getServerTime">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.server.getServerTime">>;
+        "getWebhook"(params?: QueryParams<"place.stream.server.getWebhook">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.server.getWebhook">>;
+        "listWebhooks"(params?: QueryParams<"place.stream.server.listWebhooks">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"place.stream.server.listWebhooks">>;
+        "updateWebhook"(input?: ProcedureInput<"place.stream.server.updateWebhook">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"place.stream.server.updateWebhook">>;
       };
     };
   };
   "social": {
     "grain": {
       "actor": {
-        "getActorFavs"(
-          params?: QueryParams<"social.grain.actor.getActorFavs">,
-          token?: string,
-        ): Promise<QueryOutput<"social.grain.actor.getActorFavs">>;
-        "getProfile"(
-          params?: QueryParams<"social.grain.actor.getProfile">,
-          token?: string,
-        ): Promise<QueryOutput<"social.grain.actor.getProfile">>;
-        "searchActors"(
-          params?: QueryParams<"social.grain.actor.searchActors">,
-          token?: string,
-        ): Promise<QueryOutput<"social.grain.actor.searchActors">>;
-        "updateAvatar"(
-          input?: ProcedureInput<"social.grain.actor.updateAvatar">,
-          token?: string,
-        ): Promise<ProcedureOutput<"social.grain.actor.updateAvatar">>;
-        "updateProfile"(
-          input?: ProcedureInput<"social.grain.actor.updateProfile">,
-          token?: string,
-        ): Promise<ProcedureOutput<"social.grain.actor.updateProfile">>;
+        "getActorFavs"(params?: QueryParams<"social.grain.actor.getActorFavs">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"social.grain.actor.getActorFavs">>;
+        "getProfile"(params?: QueryParams<"social.grain.actor.getProfile">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"social.grain.actor.getProfile">>;
+        "searchActors"(params?: QueryParams<"social.grain.actor.searchActors">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"social.grain.actor.searchActors">>;
+        "updateAvatar"(input?: ProcedureInput<"social.grain.actor.updateAvatar">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.actor.updateAvatar">>;
+        "updateProfile"(input?: ProcedureInput<"social.grain.actor.updateProfile">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.actor.updateProfile">>;
       };
       "comment": {
-        "createComment"(
-          input?: ProcedureInput<"social.grain.comment.createComment">,
-          token?: string,
-        ): Promise<ProcedureOutput<"social.grain.comment.createComment">>;
-        "deleteComment"(
-          input?: ProcedureInput<"social.grain.comment.deleteComment">,
-          token?: string,
-        ): Promise<ProcedureOutput<"social.grain.comment.deleteComment">>;
+        "createComment"(input?: ProcedureInput<"social.grain.comment.createComment">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.comment.createComment">>;
+        "deleteComment"(input?: ProcedureInput<"social.grain.comment.deleteComment">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.comment.deleteComment">>;
       };
       "darkroom": {
-        "getGalleryComposite"(
-          params?: QueryParams<"social.grain.darkroom.getGalleryComposite">,
-          token?: string,
-        ): Promise<QueryOutput<"social.grain.darkroom.getGalleryComposite">>;
+        "getGalleryComposite"(params?: QueryParams<"social.grain.darkroom.getGalleryComposite">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"social.grain.darkroom.getGalleryComposite">>;
       };
       "favorite": {
-        "createFavorite"(
-          input?: ProcedureInput<"social.grain.favorite.createFavorite">,
-          token?: string,
-        ): Promise<ProcedureOutput<"social.grain.favorite.createFavorite">>;
-        "deleteFavorite"(
-          input?: ProcedureInput<"social.grain.favorite.deleteFavorite">,
-          token?: string,
-        ): Promise<ProcedureOutput<"social.grain.favorite.deleteFavorite">>;
+        "createFavorite"(input?: ProcedureInput<"social.grain.favorite.createFavorite">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.favorite.createFavorite">>;
+        "deleteFavorite"(input?: ProcedureInput<"social.grain.favorite.deleteFavorite">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.favorite.deleteFavorite">>;
       };
       "feed": {
-        "getTimeline"(
-          params?: QueryParams<"social.grain.feed.getTimeline">,
-          token?: string,
-        ): Promise<QueryOutput<"social.grain.feed.getTimeline">>;
+        "getTimeline"(params?: QueryParams<"social.grain.feed.getTimeline">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"social.grain.feed.getTimeline">>;
       };
       "gallery": {
-        "applySort"(
-          input?: ProcedureInput<"social.grain.gallery.applySort">,
-          token?: string,
-        ): Promise<ProcedureOutput<"social.grain.gallery.applySort">>;
-        "createGallery"(
-          input?: ProcedureInput<"social.grain.gallery.createGallery">,
-          token?: string,
-        ): Promise<ProcedureOutput<"social.grain.gallery.createGallery">>;
-        "createItem"(
-          input?: ProcedureInput<"social.grain.gallery.createItem">,
-          token?: string,
-        ): Promise<ProcedureOutput<"social.grain.gallery.createItem">>;
-        "deleteGallery"(
-          input?: ProcedureInput<"social.grain.gallery.deleteGallery">,
-          token?: string,
-        ): Promise<ProcedureOutput<"social.grain.gallery.deleteGallery">>;
-        "deleteItem"(
-          input?: ProcedureInput<"social.grain.gallery.deleteItem">,
-          token?: string,
-        ): Promise<ProcedureOutput<"social.grain.gallery.deleteItem">>;
-        "getActorGalleries"(
-          params?: QueryParams<"social.grain.gallery.getActorGalleries">,
-          token?: string,
-        ): Promise<QueryOutput<"social.grain.gallery.getActorGalleries">>;
-        "getGallery"(
-          params?: QueryParams<"social.grain.gallery.getGallery">,
-          token?: string,
-        ): Promise<QueryOutput<"social.grain.gallery.getGallery">>;
-        "getGalleryThread"(
-          params?: QueryParams<"social.grain.gallery.getGalleryThread">,
-          token?: string,
-        ): Promise<QueryOutput<"social.grain.gallery.getGalleryThread">>;
-        "updateGallery"(
-          input?: ProcedureInput<"social.grain.gallery.updateGallery">,
-          token?: string,
-        ): Promise<ProcedureOutput<"social.grain.gallery.updateGallery">>;
+        "applySort"(input?: ProcedureInput<"social.grain.gallery.applySort">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.gallery.applySort">>;
+        "createGallery"(input?: ProcedureInput<"social.grain.gallery.createGallery">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.gallery.createGallery">>;
+        "createItem"(input?: ProcedureInput<"social.grain.gallery.createItem">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.gallery.createItem">>;
+        "deleteGallery"(input?: ProcedureInput<"social.grain.gallery.deleteGallery">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.gallery.deleteGallery">>;
+        "deleteItem"(input?: ProcedureInput<"social.grain.gallery.deleteItem">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.gallery.deleteItem">>;
+        "getActorGalleries"(params?: QueryParams<"social.grain.gallery.getActorGalleries">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"social.grain.gallery.getActorGalleries">>;
+        "getGallery"(params?: QueryParams<"social.grain.gallery.getGallery">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"social.grain.gallery.getGallery">>;
+        "getGalleryThread"(params?: QueryParams<"social.grain.gallery.getGalleryThread">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"social.grain.gallery.getGalleryThread">>;
+        "updateGallery"(input?: ProcedureInput<"social.grain.gallery.updateGallery">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.gallery.updateGallery">>;
       };
       "graph": {
-        "createFollow"(
-          input?: ProcedureInput<"social.grain.graph.createFollow">,
-          token?: string,
-        ): Promise<ProcedureOutput<"social.grain.graph.createFollow">>;
-        "deleteFollow"(
-          input?: ProcedureInput<"social.grain.graph.deleteFollow">,
-          token?: string,
-        ): Promise<ProcedureOutput<"social.grain.graph.deleteFollow">>;
-        "getFollowers"(
-          params?: QueryParams<"social.grain.graph.getFollowers">,
-          token?: string,
-        ): Promise<QueryOutput<"social.grain.graph.getFollowers">>;
-        "getFollows"(
-          params?: QueryParams<"social.grain.graph.getFollows">,
-          token?: string,
-        ): Promise<QueryOutput<"social.grain.graph.getFollows">>;
+        "createFollow"(input?: ProcedureInput<"social.grain.graph.createFollow">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.graph.createFollow">>;
+        "deleteFollow"(input?: ProcedureInput<"social.grain.graph.deleteFollow">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.graph.deleteFollow">>;
+        "getFollowers"(params?: QueryParams<"social.grain.graph.getFollowers">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"social.grain.graph.getFollowers">>;
+        "getFollows"(params?: QueryParams<"social.grain.graph.getFollows">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"social.grain.graph.getFollows">>;
       };
       "notification": {
-        "getNotifications"(
-          params?: QueryParams<"social.grain.notification.getNotifications">,
-          token?: string,
-        ): Promise<QueryOutput<"social.grain.notification.getNotifications">>;
-        "updateSeen"(
-          input?: ProcedureInput<"social.grain.notification.updateSeen">,
-          token?: string,
-        ): Promise<ProcedureOutput<"social.grain.notification.updateSeen">>;
+        "getNotifications"(params?: QueryParams<"social.grain.notification.getNotifications">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"social.grain.notification.getNotifications">>;
+        "updateSeen"(input?: ProcedureInput<"social.grain.notification.updateSeen">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.notification.updateSeen">>;
       };
       "photo": {
-        "applyAlts"(
-          input?: ProcedureInput<"social.grain.photo.applyAlts">,
-          token?: string,
-        ): Promise<ProcedureOutput<"social.grain.photo.applyAlts">>;
-        "createExif"(
-          input?: ProcedureInput<"social.grain.photo.createExif">,
-          token?: string,
-        ): Promise<ProcedureOutput<"social.grain.photo.createExif">>;
-        "deletePhoto"(
-          input?: ProcedureInput<"social.grain.photo.deletePhoto">,
-          token?: string,
-        ): Promise<ProcedureOutput<"social.grain.photo.deletePhoto">>;
-        "getActorPhotos"(
-          params?: QueryParams<"social.grain.photo.getActorPhotos">,
-          token?: string,
-        ): Promise<QueryOutput<"social.grain.photo.getActorPhotos">>;
-        "uploadPhoto"(
-          input?: ProcedureInput<"social.grain.photo.uploadPhoto">,
-          token?: string,
-        ): Promise<ProcedureOutput<"social.grain.photo.uploadPhoto">>;
+        "applyAlts"(input?: ProcedureInput<"social.grain.photo.applyAlts">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.photo.applyAlts">>;
+        "createExif"(input?: ProcedureInput<"social.grain.photo.createExif">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.photo.createExif">>;
+        "deletePhoto"(input?: ProcedureInput<"social.grain.photo.deletePhoto">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.photo.deletePhoto">>;
+        "getActorPhotos"(params?: QueryParams<"social.grain.photo.getActorPhotos">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"social.grain.photo.getActorPhotos">>;
+        "uploadPhoto"(input?: ProcedureInput<"social.grain.photo.uploadPhoto">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"social.grain.photo.uploadPhoto">>;
       };
     };
   };
   "tools": {
     "garazyk": {
       "account": {
-        "getUsage"(
-          params?: QueryParams<"tools.garazyk.account.getUsage">,
-          token?: string,
-        ): Promise<QueryOutput<"tools.garazyk.account.getUsage">>;
+        "getUsage"(params?: QueryParams<"tools.garazyk.account.getUsage">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.garazyk.account.getUsage">>;
       };
       "sync": {
-        "getRepoFiltered"(
-          params?: QueryParams<"tools.garazyk.sync.getRepoFiltered">,
-          token?: string,
-        ): Promise<QueryOutput<"tools.garazyk.sync.getRepoFiltered">>;
+        "getRepoFiltered"(params?: QueryParams<"tools.garazyk.sync.getRepoFiltered">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.garazyk.sync.getRepoFiltered">>;
       };
     };
     "ozone": {
       "communication": {
-        "createTemplate"(
-          input?: ProcedureInput<"tools.ozone.communication.createTemplate">,
-          token?: string,
-        ): Promise<ProcedureOutput<"tools.ozone.communication.createTemplate">>;
-        "deleteTemplate"(
-          input?: ProcedureInput<"tools.ozone.communication.deleteTemplate">,
-          token?: string,
-        ): Promise<ProcedureOutput<"tools.ozone.communication.deleteTemplate">>;
-        "listTemplates"(
-          params?: QueryParams<"tools.ozone.communication.listTemplates">,
-          token?: string,
-        ): Promise<QueryOutput<"tools.ozone.communication.listTemplates">>;
-        "updateTemplate"(
-          input?: ProcedureInput<"tools.ozone.communication.updateTemplate">,
-          token?: string,
-        ): Promise<ProcedureOutput<"tools.ozone.communication.updateTemplate">>;
+        "createTemplate"(input?: ProcedureInput<"tools.ozone.communication.createTemplate">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.communication.createTemplate">>;
+        "deleteTemplate"(input?: ProcedureInput<"tools.ozone.communication.deleteTemplate">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.communication.deleteTemplate">>;
+        "listTemplates"(params?: QueryParams<"tools.ozone.communication.listTemplates">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.communication.listTemplates">>;
+        "updateTemplate"(input?: ProcedureInput<"tools.ozone.communication.updateTemplate">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.communication.updateTemplate">>;
       };
       "hosting": {
-        "getAccountHistory"(
-          params?: QueryParams<"tools.ozone.hosting.getAccountHistory">,
-          token?: string,
-        ): Promise<QueryOutput<"tools.ozone.hosting.getAccountHistory">>;
+        "getAccountHistory"(params?: QueryParams<"tools.ozone.hosting.getAccountHistory">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.hosting.getAccountHistory">>;
       };
       "moderation": {
-        "cancelScheduledAction"(
-          input?: ProcedureInput<
-            "tools.ozone.moderation.cancelScheduledAction"
-          >,
-          token?: string,
-        ): Promise<
-          ProcedureOutput<"tools.ozone.moderation.cancelScheduledAction">
-        >;
-        "cancelScheduledActions"(
-          input?: ProcedureInput<
-            "tools.ozone.moderation.cancelScheduledActions"
-          >,
-          token?: string,
-        ): Promise<
-          ProcedureOutput<"tools.ozone.moderation.cancelScheduledActions">
-        >;
-        "emitEvent"(
-          input?: ProcedureInput<"tools.ozone.moderation.emitEvent">,
-          token?: string,
-        ): Promise<ProcedureOutput<"tools.ozone.moderation.emitEvent">>;
-        "getAccountTimeline"(
-          params?: QueryParams<"tools.ozone.moderation.getAccountTimeline">,
-          token?: string,
-        ): Promise<QueryOutput<"tools.ozone.moderation.getAccountTimeline">>;
-        "getEvent"(
-          params?: QueryParams<"tools.ozone.moderation.getEvent">,
-          token?: string,
-        ): Promise<QueryOutput<"tools.ozone.moderation.getEvent">>;
-        "getRecord"(
-          params?: QueryParams<"tools.ozone.moderation.getRecord">,
-          token?: string,
-        ): Promise<QueryOutput<"tools.ozone.moderation.getRecord">>;
-        "getRecords"(
-          params?: QueryParams<"tools.ozone.moderation.getRecords">,
-          token?: string,
-        ): Promise<QueryOutput<"tools.ozone.moderation.getRecords">>;
-        "getRepo"(
-          params?: QueryParams<"tools.ozone.moderation.getRepo">,
-          token?: string,
-        ): Promise<QueryOutput<"tools.ozone.moderation.getRepo">>;
-        "getReporterStats"(
-          params?: QueryParams<"tools.ozone.moderation.getReporterStats">,
-          token?: string,
-        ): Promise<QueryOutput<"tools.ozone.moderation.getReporterStats">>;
-        "getRepos"(
-          params?: QueryParams<"tools.ozone.moderation.getRepos">,
-          token?: string,
-        ): Promise<QueryOutput<"tools.ozone.moderation.getRepos">>;
-        "getSubjects"(
-          params?: QueryParams<"tools.ozone.moderation.getSubjects">,
-          token?: string,
-        ): Promise<QueryOutput<"tools.ozone.moderation.getSubjects">>;
-        "getSubjectStatus"(
-          params?: QueryParams<"tools.ozone.moderation.getSubjectStatus">,
-          token?: string,
-        ): Promise<QueryOutput<"tools.ozone.moderation.getSubjectStatus">>;
-        "listScheduledActions"(
-          input?: ProcedureInput<"tools.ozone.moderation.listScheduledActions">,
-          token?: string,
-        ): Promise<
-          ProcedureOutput<"tools.ozone.moderation.listScheduledActions">
-        >;
-        "queryEvents"(
-          params?: QueryParams<"tools.ozone.moderation.queryEvents">,
-          token?: string,
-        ): Promise<QueryOutput<"tools.ozone.moderation.queryEvents">>;
-        "queryStatuses"(
-          params?: QueryParams<"tools.ozone.moderation.queryStatuses">,
-          token?: string,
-        ): Promise<QueryOutput<"tools.ozone.moderation.queryStatuses">>;
-        "scheduleAction"(
-          input?: ProcedureInput<"tools.ozone.moderation.scheduleAction">,
-          token?: string,
-        ): Promise<ProcedureOutput<"tools.ozone.moderation.scheduleAction">>;
-        "searchRepos"(
-          params?: QueryParams<"tools.ozone.moderation.searchRepos">,
-          token?: string,
-        ): Promise<QueryOutput<"tools.ozone.moderation.searchRepos">>;
+        "cancelScheduledAction"(input?: ProcedureInput<"tools.ozone.moderation.cancelScheduledAction">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.moderation.cancelScheduledAction">>;
+        "cancelScheduledActions"(input?: ProcedureInput<"tools.ozone.moderation.cancelScheduledActions">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.moderation.cancelScheduledActions">>;
+        "emitEvent"(input?: ProcedureInput<"tools.ozone.moderation.emitEvent">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.moderation.emitEvent">>;
+        "getAccountTimeline"(params?: QueryParams<"tools.ozone.moderation.getAccountTimeline">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.moderation.getAccountTimeline">>;
+        "getEvent"(params?: QueryParams<"tools.ozone.moderation.getEvent">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.moderation.getEvent">>;
+        "getRecord"(params?: QueryParams<"tools.ozone.moderation.getRecord">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.moderation.getRecord">>;
+        "getRecords"(params?: QueryParams<"tools.ozone.moderation.getRecords">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.moderation.getRecords">>;
+        "getRepo"(params?: QueryParams<"tools.ozone.moderation.getRepo">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.moderation.getRepo">>;
+        "getReporterStats"(params?: QueryParams<"tools.ozone.moderation.getReporterStats">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.moderation.getReporterStats">>;
+        "getRepos"(params?: QueryParams<"tools.ozone.moderation.getRepos">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.moderation.getRepos">>;
+        "getSubjects"(params?: QueryParams<"tools.ozone.moderation.getSubjects">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.moderation.getSubjects">>;
+        "getSubjectStatus"(params?: QueryParams<"tools.ozone.moderation.getSubjectStatus">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.moderation.getSubjectStatus">>;
+        "listScheduledActions"(input?: ProcedureInput<"tools.ozone.moderation.listScheduledActions">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.moderation.listScheduledActions">>;
+        "queryEvents"(params?: QueryParams<"tools.ozone.moderation.queryEvents">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.moderation.queryEvents">>;
+        "queryStatuses"(params?: QueryParams<"tools.ozone.moderation.queryStatuses">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.moderation.queryStatuses">>;
+        "scheduleAction"(input?: ProcedureInput<"tools.ozone.moderation.scheduleAction">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.moderation.scheduleAction">>;
+        "searchRepos"(params?: QueryParams<"tools.ozone.moderation.searchRepos">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.moderation.searchRepos">>;
       };
       "safelink": {
-        "addRule"(
-          input?: ProcedureInput<"tools.ozone.safelink.addRule">,
-          token?: string,
-        ): Promise<ProcedureOutput<"tools.ozone.safelink.addRule">>;
-        "queryEvents"(
-          input?: ProcedureInput<"tools.ozone.safelink.queryEvents">,
-          token?: string,
-        ): Promise<ProcedureOutput<"tools.ozone.safelink.queryEvents">>;
-        "queryRules"(
-          input?: ProcedureInput<"tools.ozone.safelink.queryRules">,
-          token?: string,
-        ): Promise<ProcedureOutput<"tools.ozone.safelink.queryRules">>;
-        "removeRule"(
-          input?: ProcedureInput<"tools.ozone.safelink.removeRule">,
-          token?: string,
-        ): Promise<ProcedureOutput<"tools.ozone.safelink.removeRule">>;
-        "updateRule"(
-          input?: ProcedureInput<"tools.ozone.safelink.updateRule">,
-          token?: string,
-        ): Promise<ProcedureOutput<"tools.ozone.safelink.updateRule">>;
+        "addRule"(input?: ProcedureInput<"tools.ozone.safelink.addRule">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.safelink.addRule">>;
+        "queryEvents"(input?: ProcedureInput<"tools.ozone.safelink.queryEvents">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.safelink.queryEvents">>;
+        "queryRules"(input?: ProcedureInput<"tools.ozone.safelink.queryRules">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.safelink.queryRules">>;
+        "removeRule"(input?: ProcedureInput<"tools.ozone.safelink.removeRule">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.safelink.removeRule">>;
+        "updateRule"(input?: ProcedureInput<"tools.ozone.safelink.updateRule">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.safelink.updateRule">>;
       };
       "server": {
-        "getConfig"(
-          params?: QueryParams<"tools.ozone.server.getConfig">,
-          token?: string,
-        ): Promise<QueryOutput<"tools.ozone.server.getConfig">>;
-        "updateConfig"(
-          input?: ProcedureInput<"tools.ozone.server.updateConfig">,
-          token?: string,
-        ): Promise<ProcedureOutput<"tools.ozone.server.updateConfig">>;
+        "getConfig"(params?: QueryParams<"tools.ozone.server.getConfig">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.server.getConfig">>;
+        "updateConfig"(input?: ProcedureInput<"tools.ozone.server.updateConfig">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.server.updateConfig">>;
       };
       "set": {
-        "addValues"(
-          input?: ProcedureInput<"tools.ozone.set.addValues">,
-          token?: string,
-        ): Promise<ProcedureOutput<"tools.ozone.set.addValues">>;
-        "deleteSet"(
-          input?: ProcedureInput<"tools.ozone.set.deleteSet">,
-          token?: string,
-        ): Promise<ProcedureOutput<"tools.ozone.set.deleteSet">>;
-        "deleteValues"(
-          input?: ProcedureInput<"tools.ozone.set.deleteValues">,
-          token?: string,
-        ): Promise<ProcedureOutput<"tools.ozone.set.deleteValues">>;
-        "getValues"(
-          params?: QueryParams<"tools.ozone.set.getValues">,
-          token?: string,
-        ): Promise<QueryOutput<"tools.ozone.set.getValues">>;
-        "querySets"(
-          params?: QueryParams<"tools.ozone.set.querySets">,
-          token?: string,
-        ): Promise<QueryOutput<"tools.ozone.set.querySets">>;
-        "upsertSet"(
-          input?: ProcedureInput<"tools.ozone.set.upsertSet">,
-          token?: string,
-        ): Promise<ProcedureOutput<"tools.ozone.set.upsertSet">>;
+        "addValues"(input?: ProcedureInput<"tools.ozone.set.addValues">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.set.addValues">>;
+        "deleteSet"(input?: ProcedureInput<"tools.ozone.set.deleteSet">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.set.deleteSet">>;
+        "deleteValues"(input?: ProcedureInput<"tools.ozone.set.deleteValues">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.set.deleteValues">>;
+        "getValues"(params?: QueryParams<"tools.ozone.set.getValues">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.set.getValues">>;
+        "querySets"(params?: QueryParams<"tools.ozone.set.querySets">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.set.querySets">>;
+        "upsertSet"(input?: ProcedureInput<"tools.ozone.set.upsertSet">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.set.upsertSet">>;
       };
       "setting": {
-        "listOptions"(
-          params?: QueryParams<"tools.ozone.setting.listOptions">,
-          token?: string,
-        ): Promise<QueryOutput<"tools.ozone.setting.listOptions">>;
-        "removeOptions"(
-          input?: ProcedureInput<"tools.ozone.setting.removeOptions">,
-          token?: string,
-        ): Promise<ProcedureOutput<"tools.ozone.setting.removeOptions">>;
-        "upsertOption"(
-          input?: ProcedureInput<"tools.ozone.setting.upsertOption">,
-          token?: string,
-        ): Promise<ProcedureOutput<"tools.ozone.setting.upsertOption">>;
+        "listOptions"(params?: QueryParams<"tools.ozone.setting.listOptions">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.setting.listOptions">>;
+        "removeOptions"(input?: ProcedureInput<"tools.ozone.setting.removeOptions">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.setting.removeOptions">>;
+        "upsertOption"(input?: ProcedureInput<"tools.ozone.setting.upsertOption">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.setting.upsertOption">>;
       };
       "signature": {
-        "findCorrelation"(
-          params?: QueryParams<"tools.ozone.signature.findCorrelation">,
-          token?: string,
-        ): Promise<QueryOutput<"tools.ozone.signature.findCorrelation">>;
-        "findRelatedAccounts"(
-          params?: QueryParams<"tools.ozone.signature.findRelatedAccounts">,
-          token?: string,
-        ): Promise<QueryOutput<"tools.ozone.signature.findRelatedAccounts">>;
-        "searchAccounts"(
-          params?: QueryParams<"tools.ozone.signature.searchAccounts">,
-          token?: string,
-        ): Promise<QueryOutput<"tools.ozone.signature.searchAccounts">>;
+        "findCorrelation"(params?: QueryParams<"tools.ozone.signature.findCorrelation">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.signature.findCorrelation">>;
+        "findRelatedAccounts"(params?: QueryParams<"tools.ozone.signature.findRelatedAccounts">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.signature.findRelatedAccounts">>;
+        "searchAccounts"(params?: QueryParams<"tools.ozone.signature.searchAccounts">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.signature.searchAccounts">>;
       };
       "team": {
-        "addMember"(
-          input?: ProcedureInput<"tools.ozone.team.addMember">,
-          token?: string,
-        ): Promise<ProcedureOutput<"tools.ozone.team.addMember">>;
-        "deleteMember"(
-          input?: ProcedureInput<"tools.ozone.team.deleteMember">,
-          token?: string,
-        ): Promise<ProcedureOutput<"tools.ozone.team.deleteMember">>;
-        "listMembers"(
-          params?: QueryParams<"tools.ozone.team.listMembers">,
-          token?: string,
-        ): Promise<QueryOutput<"tools.ozone.team.listMembers">>;
-        "updateMember"(
-          input?: ProcedureInput<"tools.ozone.team.updateMember">,
-          token?: string,
-        ): Promise<ProcedureOutput<"tools.ozone.team.updateMember">>;
+        "addMember"(input?: ProcedureInput<"tools.ozone.team.addMember">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.team.addMember">>;
+        "deleteMember"(input?: ProcedureInput<"tools.ozone.team.deleteMember">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.team.deleteMember">>;
+        "listMembers"(params?: QueryParams<"tools.ozone.team.listMembers">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.team.listMembers">>;
+        "updateMember"(input?: ProcedureInput<"tools.ozone.team.updateMember">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.team.updateMember">>;
       };
       "verification": {
-        "grantVerifications"(
-          input?: ProcedureInput<"tools.ozone.verification.grantVerifications">,
-          token?: string,
-        ): Promise<
-          ProcedureOutput<"tools.ozone.verification.grantVerifications">
-        >;
-        "listVerifications"(
-          params?: QueryParams<"tools.ozone.verification.listVerifications">,
-          token?: string,
-        ): Promise<QueryOutput<"tools.ozone.verification.listVerifications">>;
-        "revokeVerifications"(
-          input?: ProcedureInput<
-            "tools.ozone.verification.revokeVerifications"
-          >,
-          token?: string,
-        ): Promise<
-          ProcedureOutput<"tools.ozone.verification.revokeVerifications">
-        >;
+        "grantVerifications"(input?: ProcedureInput<"tools.ozone.verification.grantVerifications">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.verification.grantVerifications">>;
+        "listVerifications"(params?: QueryParams<"tools.ozone.verification.listVerifications">, tokenOrOpts?: string | CallOptions): Promise<QueryOutput<"tools.ozone.verification.listVerifications">>;
+        "revokeVerifications"(input?: ProcedureInput<"tools.ozone.verification.revokeVerifications">, tokenOrOpts?: string | CallOptions): Promise<ProcedureOutput<"tools.ozone.verification.revokeVerifications">>;
       };
     };
+  };
+}
+
+export function createGeneratedClient(caller: XrpcCaller): GeneratedClient {
+  return {
+    "app": {
+      "bsky": {
+        "actor": {
+          "getPreferences": (params?: QueryParams<"app.bsky.actor.getPreferences">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.actor.getPreferences", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.actor.getPreferences">>,
+          "getProfile": (params?: QueryParams<"app.bsky.actor.getProfile">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.actor.getProfile", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.actor.getProfile">>,
+          "getProfiles": (params?: QueryParams<"app.bsky.actor.getProfiles">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.actor.getProfiles", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.actor.getProfiles">>,
+          "getSuggestions": (params?: QueryParams<"app.bsky.actor.getSuggestions">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.actor.getSuggestions", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.actor.getSuggestions">>,
+          "putPreferences": (input?: ProcedureInput<"app.bsky.actor.putPreferences">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.actor.putPreferences", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.actor.putPreferences">>,
+          "searchActors": (params?: QueryParams<"app.bsky.actor.searchActors">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.actor.searchActors", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.actor.searchActors">>,
+          "searchActorsTypeahead": (params?: QueryParams<"app.bsky.actor.searchActorsTypeahead">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.actor.searchActorsTypeahead", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.actor.searchActorsTypeahead">>,
+        },
+        "ageassurance": {
+          "begin": (input?: ProcedureInput<"app.bsky.ageassurance.begin">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.ageassurance.begin", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.ageassurance.begin">>,
+          "getConfig": (params?: QueryParams<"app.bsky.ageassurance.getConfig">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.ageassurance.getConfig", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.ageassurance.getConfig">>,
+          "getState": (params?: QueryParams<"app.bsky.ageassurance.getState">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.ageassurance.getState", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.ageassurance.getState">>,
+        },
+        "bookmark": {
+          "createBookmark": (input?: ProcedureInput<"app.bsky.bookmark.createBookmark">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.bookmark.createBookmark", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.bookmark.createBookmark">>,
+          "deleteBookmark": (input?: ProcedureInput<"app.bsky.bookmark.deleteBookmark">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.bookmark.deleteBookmark", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.bookmark.deleteBookmark">>,
+          "getBookmarks": (params?: QueryParams<"app.bsky.bookmark.getBookmarks">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.bookmark.getBookmarks", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.bookmark.getBookmarks">>,
+        },
+        "contact": {
+          "dismissMatch": (input?: ProcedureInput<"app.bsky.contact.dismissMatch">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.contact.dismissMatch", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.contact.dismissMatch">>,
+          "getMatches": (params?: QueryParams<"app.bsky.contact.getMatches">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.contact.getMatches", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.contact.getMatches">>,
+          "getSyncStatus": (params?: QueryParams<"app.bsky.contact.getSyncStatus">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.contact.getSyncStatus", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.contact.getSyncStatus">>,
+          "importContacts": (input?: ProcedureInput<"app.bsky.contact.importContacts">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.contact.importContacts", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.contact.importContacts">>,
+          "removeData": (input?: ProcedureInput<"app.bsky.contact.removeData">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.contact.removeData", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.contact.removeData">>,
+          "sendNotification": (input?: ProcedureInput<"app.bsky.contact.sendNotification">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.contact.sendNotification", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.contact.sendNotification">>,
+          "startPhoneVerification": (input?: ProcedureInput<"app.bsky.contact.startPhoneVerification">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.contact.startPhoneVerification", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.contact.startPhoneVerification">>,
+          "verifyPhone": (input?: ProcedureInput<"app.bsky.contact.verifyPhone">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.contact.verifyPhone", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.contact.verifyPhone">>,
+        },
+        "draft": {
+          "createDraft": (input?: ProcedureInput<"app.bsky.draft.createDraft">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.draft.createDraft", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.draft.createDraft">>,
+          "deleteDraft": (input?: ProcedureInput<"app.bsky.draft.deleteDraft">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.draft.deleteDraft", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.draft.deleteDraft">>,
+          "getDrafts": (params?: QueryParams<"app.bsky.draft.getDrafts">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.draft.getDrafts", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.draft.getDrafts">>,
+          "updateDraft": (input?: ProcedureInput<"app.bsky.draft.updateDraft">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.draft.updateDraft", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.draft.updateDraft">>,
+        },
+        "feed": {
+          "describeFeedGenerator": (params?: QueryParams<"app.bsky.feed.describeFeedGenerator">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.feed.describeFeedGenerator", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.feed.describeFeedGenerator">>,
+          "getActorFeeds": (params?: QueryParams<"app.bsky.feed.getActorFeeds">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.feed.getActorFeeds", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.feed.getActorFeeds">>,
+          "getActorLikes": (params?: QueryParams<"app.bsky.feed.getActorLikes">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.feed.getActorLikes", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.feed.getActorLikes">>,
+          "getAuthorFeed": (params?: QueryParams<"app.bsky.feed.getAuthorFeed">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.feed.getAuthorFeed", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.feed.getAuthorFeed">>,
+          "getFeed": (params?: QueryParams<"app.bsky.feed.getFeed">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.feed.getFeed", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.feed.getFeed">>,
+          "getFeedGenerator": (params?: QueryParams<"app.bsky.feed.getFeedGenerator">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.feed.getFeedGenerator", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.feed.getFeedGenerator">>,
+          "getFeedGenerators": (params?: QueryParams<"app.bsky.feed.getFeedGenerators">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.feed.getFeedGenerators", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.feed.getFeedGenerators">>,
+          "getFeedSkeleton": (params?: QueryParams<"app.bsky.feed.getFeedSkeleton">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.feed.getFeedSkeleton", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.feed.getFeedSkeleton">>,
+          "getLikes": (params?: QueryParams<"app.bsky.feed.getLikes">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.feed.getLikes", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.feed.getLikes">>,
+          "getListFeed": (params?: QueryParams<"app.bsky.feed.getListFeed">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.feed.getListFeed", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.feed.getListFeed">>,
+          "getPosts": (params?: QueryParams<"app.bsky.feed.getPosts">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.feed.getPosts", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.feed.getPosts">>,
+          "getPostThread": (params?: QueryParams<"app.bsky.feed.getPostThread">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.feed.getPostThread", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.feed.getPostThread">>,
+          "getQuotes": (params?: QueryParams<"app.bsky.feed.getQuotes">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.feed.getQuotes", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.feed.getQuotes">>,
+          "getRepostedBy": (params?: QueryParams<"app.bsky.feed.getRepostedBy">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.feed.getRepostedBy", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.feed.getRepostedBy">>,
+          "getSuggestedFeeds": (params?: QueryParams<"app.bsky.feed.getSuggestedFeeds">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.feed.getSuggestedFeeds", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.feed.getSuggestedFeeds">>,
+          "getTimeline": (params?: QueryParams<"app.bsky.feed.getTimeline">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.feed.getTimeline", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.feed.getTimeline">>,
+          "searchPosts": (params?: QueryParams<"app.bsky.feed.searchPosts">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.feed.searchPosts", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.feed.searchPosts">>,
+          "sendInteractions": (input?: ProcedureInput<"app.bsky.feed.sendInteractions">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.feed.sendInteractions", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.feed.sendInteractions">>,
+        },
+        "graph": {
+          "getActorStarterPacks": (params?: QueryParams<"app.bsky.graph.getActorStarterPacks">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.graph.getActorStarterPacks", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.graph.getActorStarterPacks">>,
+          "getBlocks": (params?: QueryParams<"app.bsky.graph.getBlocks">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.graph.getBlocks", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.graph.getBlocks">>,
+          "getFollowers": (params?: QueryParams<"app.bsky.graph.getFollowers">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.graph.getFollowers", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.graph.getFollowers">>,
+          "getFollows": (params?: QueryParams<"app.bsky.graph.getFollows">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.graph.getFollows", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.graph.getFollows">>,
+          "getKnownFollowers": (params?: QueryParams<"app.bsky.graph.getKnownFollowers">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.graph.getKnownFollowers", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.graph.getKnownFollowers">>,
+          "getList": (params?: QueryParams<"app.bsky.graph.getList">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.graph.getList", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.graph.getList">>,
+          "getListBlocks": (params?: QueryParams<"app.bsky.graph.getListBlocks">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.graph.getListBlocks", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.graph.getListBlocks">>,
+          "getListMutes": (params?: QueryParams<"app.bsky.graph.getListMutes">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.graph.getListMutes", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.graph.getListMutes">>,
+          "getLists": (params?: QueryParams<"app.bsky.graph.getLists">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.graph.getLists", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.graph.getLists">>,
+          "getListsWithMembership": (params?: QueryParams<"app.bsky.graph.getListsWithMembership">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.graph.getListsWithMembership", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.graph.getListsWithMembership">>,
+          "getMutes": (params?: QueryParams<"app.bsky.graph.getMutes">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.graph.getMutes", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.graph.getMutes">>,
+          "getRelationships": (params?: QueryParams<"app.bsky.graph.getRelationships">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.graph.getRelationships", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.graph.getRelationships">>,
+          "getStarterPack": (params?: QueryParams<"app.bsky.graph.getStarterPack">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.graph.getStarterPack", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.graph.getStarterPack">>,
+          "getStarterPacks": (params?: QueryParams<"app.bsky.graph.getStarterPacks">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.graph.getStarterPacks", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.graph.getStarterPacks">>,
+          "getStarterPacksWithMembership": (params?: QueryParams<"app.bsky.graph.getStarterPacksWithMembership">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.graph.getStarterPacksWithMembership", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.graph.getStarterPacksWithMembership">>,
+          "getSuggestedFollowsByActor": (params?: QueryParams<"app.bsky.graph.getSuggestedFollowsByActor">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.graph.getSuggestedFollowsByActor", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.graph.getSuggestedFollowsByActor">>,
+          "muteActor": (input?: ProcedureInput<"app.bsky.graph.muteActor">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.graph.muteActor", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.graph.muteActor">>,
+          "muteActorList": (input?: ProcedureInput<"app.bsky.graph.muteActorList">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.graph.muteActorList", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.graph.muteActorList">>,
+          "muteThread": (input?: ProcedureInput<"app.bsky.graph.muteThread">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.graph.muteThread", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.graph.muteThread">>,
+          "searchStarterPacks": (params?: QueryParams<"app.bsky.graph.searchStarterPacks">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.graph.searchStarterPacks", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.graph.searchStarterPacks">>,
+          "unmuteActor": (input?: ProcedureInput<"app.bsky.graph.unmuteActor">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.graph.unmuteActor", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.graph.unmuteActor">>,
+          "unmuteActorList": (input?: ProcedureInput<"app.bsky.graph.unmuteActorList">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.graph.unmuteActorList", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.graph.unmuteActorList">>,
+          "unmuteThread": (input?: ProcedureInput<"app.bsky.graph.unmuteThread">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.graph.unmuteThread", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.graph.unmuteThread">>,
+          "verification": {
+            "createVerification": (input?: ProcedureInput<"app.bsky.graph.verification.createVerification">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.graph.verification.createVerification", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.graph.verification.createVerification">>,
+            "deleteVerification": (input?: ProcedureInput<"app.bsky.graph.verification.deleteVerification">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.graph.verification.deleteVerification", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.graph.verification.deleteVerification">>,
+          },
+        },
+        "labeler": {
+          "getServices": (params?: QueryParams<"app.bsky.labeler.getServices">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.labeler.getServices", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.labeler.getServices">>,
+        },
+        "notification": {
+          "getPreferences": (params?: QueryParams<"app.bsky.notification.getPreferences">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.notification.getPreferences", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.notification.getPreferences">>,
+          "getUnreadCount": (params?: QueryParams<"app.bsky.notification.getUnreadCount">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.notification.getUnreadCount", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.notification.getUnreadCount">>,
+          "listActivitySubscriptions": (params?: QueryParams<"app.bsky.notification.listActivitySubscriptions">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.notification.listActivitySubscriptions", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.notification.listActivitySubscriptions">>,
+          "listNotifications": (params?: QueryParams<"app.bsky.notification.listNotifications">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.notification.listNotifications", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.notification.listNotifications">>,
+          "putActivitySubscription": (input?: ProcedureInput<"app.bsky.notification.putActivitySubscription">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.notification.putActivitySubscription", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.notification.putActivitySubscription">>,
+          "putNotificationPreferences": (input?: ProcedureInput<"app.bsky.notification.putNotificationPreferences">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.notification.putNotificationPreferences", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.notification.putNotificationPreferences">>,
+          "putPreferences": (input?: ProcedureInput<"app.bsky.notification.putPreferences">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.notification.putPreferences", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.notification.putPreferences">>,
+          "putPreferencesV2": (input?: ProcedureInput<"app.bsky.notification.putPreferencesV2">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.notification.putPreferencesV2", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.notification.putPreferencesV2">>,
+          "registerPush": (input?: ProcedureInput<"app.bsky.notification.registerPush">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.notification.registerPush", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.notification.registerPush">>,
+          "unregisterPush": (input?: ProcedureInput<"app.bsky.notification.unregisterPush">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.notification.unregisterPush", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.notification.unregisterPush">>,
+          "updateSeen": (input?: ProcedureInput<"app.bsky.notification.updateSeen">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.notification.updateSeen", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.notification.updateSeen">>,
+        },
+        "unspecced": {
+          "confirmAgeAssurance": (input?: ProcedureInput<"app.bsky.unspecced.confirmAgeAssurance">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.confirmAgeAssurance", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.unspecced.confirmAgeAssurance">>,
+          "getAgeAssuranceState": (params?: QueryParams<"app.bsky.unspecced.getAgeAssuranceState">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.getAgeAssuranceState", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.getAgeAssuranceState">>,
+          "getConfig": (params?: QueryParams<"app.bsky.unspecced.getConfig">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.getConfig", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.getConfig">>,
+          "getOnboardingSuggestedStarterPacks": (params?: QueryParams<"app.bsky.unspecced.getOnboardingSuggestedStarterPacks">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.getOnboardingSuggestedStarterPacks", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.getOnboardingSuggestedStarterPacks">>,
+          "getOnboardingSuggestedStarterPacksSkeleton": (params?: QueryParams<"app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.getOnboardingSuggestedStarterPacksSkeleton">>,
+          "getOnboardingSuggestedUsersSkeleton": (params?: QueryParams<"app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.getOnboardingSuggestedUsersSkeleton">>,
+          "getPopularFeedGenerators": (params?: QueryParams<"app.bsky.unspecced.getPopularFeedGenerators">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.getPopularFeedGenerators", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.getPopularFeedGenerators">>,
+          "getPostThreadOtherV2": (params?: QueryParams<"app.bsky.unspecced.getPostThreadOtherV2">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.getPostThreadOtherV2", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.getPostThreadOtherV2">>,
+          "getPostThreadV2": (params?: QueryParams<"app.bsky.unspecced.getPostThreadV2">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.getPostThreadV2", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.getPostThreadV2">>,
+          "getSuggestedFeeds": (params?: QueryParams<"app.bsky.unspecced.getSuggestedFeeds">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.getSuggestedFeeds", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.getSuggestedFeeds">>,
+          "getSuggestedFeedsSkeleton": (params?: QueryParams<"app.bsky.unspecced.getSuggestedFeedsSkeleton">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.getSuggestedFeedsSkeleton", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.getSuggestedFeedsSkeleton">>,
+          "getSuggestedOnboardingUsers": (params?: QueryParams<"app.bsky.unspecced.getSuggestedOnboardingUsers">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.getSuggestedOnboardingUsers", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.getSuggestedOnboardingUsers">>,
+          "getSuggestedStarterPacks": (params?: QueryParams<"app.bsky.unspecced.getSuggestedStarterPacks">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.getSuggestedStarterPacks", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.getSuggestedStarterPacks">>,
+          "getSuggestedStarterPacksSkeleton": (params?: QueryParams<"app.bsky.unspecced.getSuggestedStarterPacksSkeleton">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.getSuggestedStarterPacksSkeleton", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.getSuggestedStarterPacksSkeleton">>,
+          "getSuggestedUsers": (params?: QueryParams<"app.bsky.unspecced.getSuggestedUsers">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.getSuggestedUsers", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsers">>,
+          "getSuggestedUsersForDiscover": (params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForDiscover">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.getSuggestedUsersForDiscover", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForDiscover">>,
+          "getSuggestedUsersForDiscoverSkeleton": (params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForDiscoverSkeleton">>,
+          "getSuggestedUsersForExplore": (params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForExplore">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.getSuggestedUsersForExplore", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForExplore">>,
+          "getSuggestedUsersForExploreSkeleton": (params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForExploreSkeleton">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.getSuggestedUsersForExploreSkeleton", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForExploreSkeleton">>,
+          "getSuggestedUsersForSeeMore": (params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForSeeMore">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.getSuggestedUsersForSeeMore", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForSeeMore">>,
+          "getSuggestedUsersForSeeMoreSkeleton": (params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersForSeeMoreSkeleton">>,
+          "getSuggestedUsersSkeleton": (params?: QueryParams<"app.bsky.unspecced.getSuggestedUsersSkeleton">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.getSuggestedUsersSkeleton", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.getSuggestedUsersSkeleton">>,
+          "getSuggestionsSkeleton": (params?: QueryParams<"app.bsky.unspecced.getSuggestionsSkeleton">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.getSuggestionsSkeleton", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.getSuggestionsSkeleton">>,
+          "getTaggedSuggestions": (params?: QueryParams<"app.bsky.unspecced.getTaggedSuggestions">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.getTaggedSuggestions", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.getTaggedSuggestions">>,
+          "getTrendingTopics": (params?: QueryParams<"app.bsky.unspecced.getTrendingTopics">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.getTrendingTopics", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.getTrendingTopics">>,
+          "getTrends": (params?: QueryParams<"app.bsky.unspecced.getTrends">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.getTrends", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.getTrends">>,
+          "getTrendsSkeleton": (params?: QueryParams<"app.bsky.unspecced.getTrendsSkeleton">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.getTrendsSkeleton", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.getTrendsSkeleton">>,
+          "initAgeAssurance": (input?: ProcedureInput<"app.bsky.unspecced.initAgeAssurance">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.initAgeAssurance", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.unspecced.initAgeAssurance">>,
+          "searchActorsSkeleton": (params?: QueryParams<"app.bsky.unspecced.searchActorsSkeleton">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.searchActorsSkeleton", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.searchActorsSkeleton">>,
+          "searchPostsSkeleton": (params?: QueryParams<"app.bsky.unspecced.searchPostsSkeleton">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.searchPostsSkeleton", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.searchPostsSkeleton">>,
+          "searchStarterPacksSkeleton": (params?: QueryParams<"app.bsky.unspecced.searchStarterPacksSkeleton">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.unspecced.searchStarterPacksSkeleton", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.unspecced.searchStarterPacksSkeleton">>,
+        },
+        "video": {
+          "getJobStatus": (params?: QueryParams<"app.bsky.video.getJobStatus">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.video.getJobStatus", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.video.getJobStatus">>,
+          "getUploadLimits": (params?: QueryParams<"app.bsky.video.getUploadLimits">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.video.getUploadLimits", params, tokenOrOpts) as Promise<QueryOutput<"app.bsky.video.getUploadLimits">>,
+          "uploadVideo": (input?: ProcedureInput<"app.bsky.video.uploadVideo">, tokenOrOpts?: string | CallOptions) => caller.call("app.bsky.video.uploadVideo", input, tokenOrOpts) as Promise<ProcedureOutput<"app.bsky.video.uploadVideo">>,
+        },
+      },
+    },
+    "chat": {
+      "bsky": {
+        "actor": {
+          "deleteAccount": (input?: ProcedureInput<"chat.bsky.actor.deleteAccount">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.actor.deleteAccount", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.actor.deleteAccount">>,
+          "exportAccountData": (params?: QueryParams<"chat.bsky.actor.exportAccountData">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.actor.exportAccountData", params, tokenOrOpts) as Promise<QueryOutput<"chat.bsky.actor.exportAccountData">>,
+        },
+        "convo": {
+          "acceptConvo": (input?: ProcedureInput<"chat.bsky.convo.acceptConvo">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.convo.acceptConvo", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.convo.acceptConvo">>,
+          "addReaction": (input?: ProcedureInput<"chat.bsky.convo.addReaction">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.convo.addReaction", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.convo.addReaction">>,
+          "deleteMessageForSelf": (input?: ProcedureInput<"chat.bsky.convo.deleteMessageForSelf">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.convo.deleteMessageForSelf", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.convo.deleteMessageForSelf">>,
+          "getConvo": (params?: QueryParams<"chat.bsky.convo.getConvo">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.convo.getConvo", params, tokenOrOpts) as Promise<QueryOutput<"chat.bsky.convo.getConvo">>,
+          "getConvoAvailability": (params?: QueryParams<"chat.bsky.convo.getConvoAvailability">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.convo.getConvoAvailability", params, tokenOrOpts) as Promise<QueryOutput<"chat.bsky.convo.getConvoAvailability">>,
+          "getConvoForMembers": (params?: QueryParams<"chat.bsky.convo.getConvoForMembers">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.convo.getConvoForMembers", params, tokenOrOpts) as Promise<QueryOutput<"chat.bsky.convo.getConvoForMembers">>,
+          "getLog": (params?: QueryParams<"chat.bsky.convo.getLog">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.convo.getLog", params, tokenOrOpts) as Promise<QueryOutput<"chat.bsky.convo.getLog">>,
+          "getMessages": (params?: QueryParams<"chat.bsky.convo.getMessages">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.convo.getMessages", params, tokenOrOpts) as Promise<QueryOutput<"chat.bsky.convo.getMessages">>,
+          "leaveConvo": (input?: ProcedureInput<"chat.bsky.convo.leaveConvo">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.convo.leaveConvo", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.convo.leaveConvo">>,
+          "listConvoRequests": (params?: QueryParams<"chat.bsky.convo.listConvoRequests">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.convo.listConvoRequests", params, tokenOrOpts) as Promise<QueryOutput<"chat.bsky.convo.listConvoRequests">>,
+          "listConvos": (params?: QueryParams<"chat.bsky.convo.listConvos">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.convo.listConvos", params, tokenOrOpts) as Promise<QueryOutput<"chat.bsky.convo.listConvos">>,
+          "lockConvo": (input?: ProcedureInput<"chat.bsky.convo.lockConvo">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.convo.lockConvo", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.convo.lockConvo">>,
+          "muteConvo": (input?: ProcedureInput<"chat.bsky.convo.muteConvo">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.convo.muteConvo", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.convo.muteConvo">>,
+          "removeReaction": (input?: ProcedureInput<"chat.bsky.convo.removeReaction">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.convo.removeReaction", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.convo.removeReaction">>,
+          "sendMessage": (input?: ProcedureInput<"chat.bsky.convo.sendMessage">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.convo.sendMessage", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.convo.sendMessage">>,
+          "sendMessageBatch": (input?: ProcedureInput<"chat.bsky.convo.sendMessageBatch">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.convo.sendMessageBatch", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.convo.sendMessageBatch">>,
+          "unlockConvo": (input?: ProcedureInput<"chat.bsky.convo.unlockConvo">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.convo.unlockConvo", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.convo.unlockConvo">>,
+          "unmuteConvo": (input?: ProcedureInput<"chat.bsky.convo.unmuteConvo">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.convo.unmuteConvo", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.convo.unmuteConvo">>,
+          "updateAllRead": (input?: ProcedureInput<"chat.bsky.convo.updateAllRead">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.convo.updateAllRead", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.convo.updateAllRead">>,
+          "updateRead": (input?: ProcedureInput<"chat.bsky.convo.updateRead">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.convo.updateRead", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.convo.updateRead">>,
+        },
+        "group": {
+          "addMembers": (input?: ProcedureInput<"chat.bsky.group.addMembers">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.group.addMembers", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.group.addMembers">>,
+          "addReaction": (input?: ProcedureInput<"chat.bsky.group.addReaction">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.group.addReaction", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.group.addReaction">>,
+          "approveJoinRequest": (input?: ProcedureInput<"chat.bsky.group.approveJoinRequest">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.group.approveJoinRequest", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.group.approveJoinRequest">>,
+          "createGroup": (input?: ProcedureInput<"chat.bsky.group.createGroup">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.group.createGroup", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.group.createGroup">>,
+          "createJoinLink": (input?: ProcedureInput<"chat.bsky.group.createJoinLink">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.group.createJoinLink", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.group.createJoinLink">>,
+          "deleteGroup": (input?: ProcedureInput<"chat.bsky.group.deleteGroup">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.group.deleteGroup", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.group.deleteGroup">>,
+          "deleteMessageForSelf": (input?: ProcedureInput<"chat.bsky.group.deleteMessageForSelf">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.group.deleteMessageForSelf", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.group.deleteMessageForSelf">>,
+          "disableJoinLink": (input?: ProcedureInput<"chat.bsky.group.disableJoinLink">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.group.disableJoinLink", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.group.disableJoinLink">>,
+          "editGroup": (input?: ProcedureInput<"chat.bsky.group.editGroup">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.group.editGroup", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.group.editGroup">>,
+          "editJoinLink": (input?: ProcedureInput<"chat.bsky.group.editJoinLink">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.group.editJoinLink", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.group.editJoinLink">>,
+          "enableJoinLink": (input?: ProcedureInput<"chat.bsky.group.enableJoinLink">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.group.enableJoinLink", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.group.enableJoinLink">>,
+          "getGroupPublicInfo": (params?: QueryParams<"chat.bsky.group.getGroupPublicInfo">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.group.getGroupPublicInfo", params, tokenOrOpts) as Promise<QueryOutput<"chat.bsky.group.getGroupPublicInfo">>,
+          "getMessages": (params?: QueryParams<"chat.bsky.group.getMessages">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.group.getMessages", params, tokenOrOpts) as Promise<QueryOutput<"chat.bsky.group.getMessages">>,
+          "leaveGroup": (input?: ProcedureInput<"chat.bsky.group.leaveGroup">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.group.leaveGroup", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.group.leaveGroup">>,
+          "listGroups": (params?: QueryParams<"chat.bsky.group.listGroups">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.group.listGroups", params, tokenOrOpts) as Promise<QueryOutput<"chat.bsky.group.listGroups">>,
+          "listInviteLinks": (params?: QueryParams<"chat.bsky.group.listInviteLinks">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.group.listInviteLinks", params, tokenOrOpts) as Promise<QueryOutput<"chat.bsky.group.listInviteLinks">>,
+          "listJoinRequests": (params?: QueryParams<"chat.bsky.group.listJoinRequests">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.group.listJoinRequests", params, tokenOrOpts) as Promise<QueryOutput<"chat.bsky.group.listJoinRequests">>,
+          "listMembers": (params?: QueryParams<"chat.bsky.group.listMembers">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.group.listMembers", params, tokenOrOpts) as Promise<QueryOutput<"chat.bsky.group.listMembers">>,
+          "rejectJoinRequest": (input?: ProcedureInput<"chat.bsky.group.rejectJoinRequest">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.group.rejectJoinRequest", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.group.rejectJoinRequest">>,
+          "removeMembers": (input?: ProcedureInput<"chat.bsky.group.removeMembers">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.group.removeMembers", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.group.removeMembers">>,
+          "removeReaction": (input?: ProcedureInput<"chat.bsky.group.removeReaction">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.group.removeReaction", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.group.removeReaction">>,
+          "requestJoin": (input?: ProcedureInput<"chat.bsky.group.requestJoin">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.group.requestJoin", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.group.requestJoin">>,
+          "sendMessage": (input?: ProcedureInput<"chat.bsky.group.sendMessage">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.group.sendMessage", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.group.sendMessage">>,
+        },
+        "moderation": {
+          "getActorMetadata": (params?: QueryParams<"chat.bsky.moderation.getActorMetadata">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.moderation.getActorMetadata", params, tokenOrOpts) as Promise<QueryOutput<"chat.bsky.moderation.getActorMetadata">>,
+          "getMessageContext": (params?: QueryParams<"chat.bsky.moderation.getMessageContext">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.moderation.getMessageContext", params, tokenOrOpts) as Promise<QueryOutput<"chat.bsky.moderation.getMessageContext">>,
+          "updateActorAccess": (input?: ProcedureInput<"chat.bsky.moderation.updateActorAccess">, tokenOrOpts?: string | CallOptions) => caller.call("chat.bsky.moderation.updateActorAccess", input, tokenOrOpts) as Promise<ProcedureOutput<"chat.bsky.moderation.updateActorAccess">>,
+        },
+      },
+    },
+    "com": {
+      "atproto": {
+        "admin": {
+          "deleteAccount": (input?: ProcedureInput<"com.atproto.admin.deleteAccount">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.deleteAccount", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.admin.deleteAccount">>,
+          "disableAccountInvites": (input?: ProcedureInput<"com.atproto.admin.disableAccountInvites">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.disableAccountInvites", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.admin.disableAccountInvites">>,
+          "disableInviteCodes": (input?: ProcedureInput<"com.atproto.admin.disableInviteCodes">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.disableInviteCodes", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.admin.disableInviteCodes">>,
+          "enableAccountInvites": (input?: ProcedureInput<"com.atproto.admin.enableAccountInvites">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.enableAccountInvites", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.admin.enableAccountInvites">>,
+          "getAccountInfo": (params?: QueryParams<"com.atproto.admin.getAccountInfo">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.getAccountInfo", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.admin.getAccountInfo">>,
+          "getAccountInfos": (params?: QueryParams<"com.atproto.admin.getAccountInfos">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.getAccountInfos", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.admin.getAccountInfos">>,
+          "getAccountTakedown": (input?: ProcedureInput<"com.atproto.admin.getAccountTakedown">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.getAccountTakedown", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.admin.getAccountTakedown">>,
+          "getAccountUsage": (params?: QueryParams<"com.atproto.admin.getAccountUsage">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.getAccountUsage", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.admin.getAccountUsage">>,
+          "getBlobAuditStatus": (params?: QueryParams<"com.atproto.admin.getBlobAuditStatus">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.getBlobAuditStatus", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.admin.getBlobAuditStatus">>,
+          "getInviteCodes": (params?: QueryParams<"com.atproto.admin.getInviteCodes">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.getInviteCodes", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.admin.getInviteCodes">>,
+          "getModerationReports": (params?: QueryParams<"com.atproto.admin.getModerationReports">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.getModerationReports", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.admin.getModerationReports">>,
+          "getServerStats": (params?: QueryParams<"com.atproto.admin.getServerStats">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.getServerStats", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.admin.getServerStats">>,
+          "getSubjectStatus": (params?: QueryParams<"com.atproto.admin.getSubjectStatus">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.getSubjectStatus", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.admin.getSubjectStatus">>,
+          "moderateAccount": (input?: ProcedureInput<"com.atproto.admin.moderateAccount">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.moderateAccount", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.admin.moderateAccount">>,
+          "moderateRecord": (input?: ProcedureInput<"com.atproto.admin.moderateRecord">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.moderateRecord", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.admin.moderateRecord">>,
+          "queryAuditLog": (params?: QueryParams<"com.atproto.admin.queryAuditLog">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.queryAuditLog", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.admin.queryAuditLog">>,
+          "repairRepo": (input?: ProcedureInput<"com.atproto.admin.repairRepo">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.repairRepo", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.admin.repairRepo">>,
+          "resolveReport": (input?: ProcedureInput<"com.atproto.admin.resolveReport">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.resolveReport", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.admin.resolveReport">>,
+          "runBlobAudit": (input?: ProcedureInput<"com.atproto.admin.runBlobAudit">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.runBlobAudit", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.admin.runBlobAudit">>,
+          "searchAccounts": (params?: QueryParams<"com.atproto.admin.searchAccounts">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.searchAccounts", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.admin.searchAccounts">>,
+          "sendEmail": (input?: ProcedureInput<"com.atproto.admin.sendEmail">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.sendEmail", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.admin.sendEmail">>,
+          "takeDownAccount": (input?: ProcedureInput<"com.atproto.admin.takeDownAccount">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.takeDownAccount", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.admin.takeDownAccount">>,
+          "updateAccountEmail": (input?: ProcedureInput<"com.atproto.admin.updateAccountEmail">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.updateAccountEmail", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.admin.updateAccountEmail">>,
+          "updateAccountHandle": (input?: ProcedureInput<"com.atproto.admin.updateAccountHandle">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.updateAccountHandle", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.admin.updateAccountHandle">>,
+          "updateAccountPassword": (input?: ProcedureInput<"com.atproto.admin.updateAccountPassword">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.updateAccountPassword", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.admin.updateAccountPassword">>,
+          "updateAccountSigningKey": (input?: ProcedureInput<"com.atproto.admin.updateAccountSigningKey">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.updateAccountSigningKey", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.admin.updateAccountSigningKey">>,
+          "updateSubjectStatus": (input?: ProcedureInput<"com.atproto.admin.updateSubjectStatus">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.admin.updateSubjectStatus", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.admin.updateSubjectStatus">>,
+        },
+        "identity": {
+          "getRecommendedDidCredentials": (params?: QueryParams<"com.atproto.identity.getRecommendedDidCredentials">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.identity.getRecommendedDidCredentials", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.identity.getRecommendedDidCredentials">>,
+          "refreshIdentity": (input?: ProcedureInput<"com.atproto.identity.refreshIdentity">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.identity.refreshIdentity", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.identity.refreshIdentity">>,
+          "requestPlcOperationSignature": (input?: ProcedureInput<"com.atproto.identity.requestPlcOperationSignature">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.identity.requestPlcOperationSignature", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.identity.requestPlcOperationSignature">>,
+          "resolveDid": (params?: QueryParams<"com.atproto.identity.resolveDid">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.identity.resolveDid", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.identity.resolveDid">>,
+          "resolveHandle": (params?: QueryParams<"com.atproto.identity.resolveHandle">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.identity.resolveHandle", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.identity.resolveHandle">>,
+          "resolveIdentity": (params?: QueryParams<"com.atproto.identity.resolveIdentity">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.identity.resolveIdentity", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.identity.resolveIdentity">>,
+          "signPlcOperation": (input?: ProcedureInput<"com.atproto.identity.signPlcOperation">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.identity.signPlcOperation", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.identity.signPlcOperation">>,
+          "submitPlcOperation": (input?: ProcedureInput<"com.atproto.identity.submitPlcOperation">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.identity.submitPlcOperation", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.identity.submitPlcOperation">>,
+          "updateHandle": (input?: ProcedureInput<"com.atproto.identity.updateHandle">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.identity.updateHandle", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.identity.updateHandle">>,
+        },
+        "label": {
+          "createLabel": (input?: ProcedureInput<"com.atproto.label.createLabel">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.label.createLabel", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.label.createLabel">>,
+          "getLabels": (params?: QueryParams<"com.atproto.label.getLabels">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.label.getLabels", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.label.getLabels">>,
+          "queryLabels": (params?: QueryParams<"com.atproto.label.queryLabels">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.label.queryLabels", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.label.queryLabels">>,
+        },
+        "lexicon": {
+          "resolveLexicon": (params?: QueryParams<"com.atproto.lexicon.resolveLexicon">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.lexicon.resolveLexicon", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.lexicon.resolveLexicon">>,
+        },
+        "moderation": {
+          "createReport": (input?: ProcedureInput<"com.atproto.moderation.createReport">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.moderation.createReport", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.moderation.createReport">>,
+        },
+        "repo": {
+          "applyWrites": (input?: ProcedureInput<"com.atproto.repo.applyWrites">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.repo.applyWrites", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.repo.applyWrites">>,
+          "createRecord": (input?: ProcedureInput<"com.atproto.repo.createRecord">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.repo.createRecord", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.repo.createRecord">>,
+          "deleteBlob": (input?: ProcedureInput<"com.atproto.repo.deleteBlob">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.repo.deleteBlob", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.repo.deleteBlob">>,
+          "deleteRecord": (input?: ProcedureInput<"com.atproto.repo.deleteRecord">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.repo.deleteRecord", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.repo.deleteRecord">>,
+          "describeRepo": (params?: QueryParams<"com.atproto.repo.describeRepo">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.repo.describeRepo", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.repo.describeRepo">>,
+          "getBlob": (params?: QueryParams<"com.atproto.repo.getBlob">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.repo.getBlob", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.repo.getBlob">>,
+          "getRecord": (params?: QueryParams<"com.atproto.repo.getRecord">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.repo.getRecord", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.repo.getRecord">>,
+          "importRepo": (input?: ProcedureInput<"com.atproto.repo.importRepo">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.repo.importRepo", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.repo.importRepo">>,
+          "listMissingBlobs": (params?: QueryParams<"com.atproto.repo.listMissingBlobs">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.repo.listMissingBlobs", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.repo.listMissingBlobs">>,
+          "listRecords": (params?: QueryParams<"com.atproto.repo.listRecords">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.repo.listRecords", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.repo.listRecords">>,
+          "putRecord": (input?: ProcedureInput<"com.atproto.repo.putRecord">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.repo.putRecord", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.repo.putRecord">>,
+          "updateRecord": (input?: ProcedureInput<"com.atproto.repo.updateRecord">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.repo.updateRecord", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.repo.updateRecord">>,
+          "uploadBlob": (input?: ProcedureInput<"com.atproto.repo.uploadBlob">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.repo.uploadBlob", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.repo.uploadBlob">>,
+        },
+        "server": {
+          "activateAccount": (input?: ProcedureInput<"com.atproto.server.activateAccount">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.server.activateAccount", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.server.activateAccount">>,
+          "checkAccountStatus": (params?: QueryParams<"com.atproto.server.checkAccountStatus">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.server.checkAccountStatus", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.server.checkAccountStatus">>,
+          "confirmEmail": (input?: ProcedureInput<"com.atproto.server.confirmEmail">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.server.confirmEmail", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.server.confirmEmail">>,
+          "createAccount": (input?: ProcedureInput<"com.atproto.server.createAccount">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.server.createAccount", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.server.createAccount">>,
+          "createAppPassword": (input?: ProcedureInput<"com.atproto.server.createAppPassword">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.server.createAppPassword", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.server.createAppPassword">>,
+          "createInviteCode": (input?: ProcedureInput<"com.atproto.server.createInviteCode">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.server.createInviteCode", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.server.createInviteCode">>,
+          "createInviteCodes": (input?: ProcedureInput<"com.atproto.server.createInviteCodes">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.server.createInviteCodes", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.server.createInviteCodes">>,
+          "createSession": (input?: ProcedureInput<"com.atproto.server.createSession">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.server.createSession", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.server.createSession">>,
+          "deactivateAccount": (input?: ProcedureInput<"com.atproto.server.deactivateAccount">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.server.deactivateAccount", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.server.deactivateAccount">>,
+          "deleteAccount": (input?: ProcedureInput<"com.atproto.server.deleteAccount">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.server.deleteAccount", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.server.deleteAccount">>,
+          "deleteSession": (input?: ProcedureInput<"com.atproto.server.deleteSession">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.server.deleteSession", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.server.deleteSession">>,
+          "describeServer": (params?: QueryParams<"com.atproto.server.describeServer">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.server.describeServer", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.server.describeServer">>,
+          "getAccount": (params?: QueryParams<"com.atproto.server.getAccount">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.server.getAccount", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.server.getAccount">>,
+          "getAccountInviteCodes": (params?: QueryParams<"com.atproto.server.getAccountInviteCodes">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.server.getAccountInviteCodes", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.server.getAccountInviteCodes">>,
+          "getServiceAuth": (params?: QueryParams<"com.atproto.server.getServiceAuth">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.server.getServiceAuth", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.server.getServiceAuth">>,
+          "getSession": (params?: QueryParams<"com.atproto.server.getSession">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.server.getSession", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.server.getSession">>,
+          "listAppPasswords": (params?: QueryParams<"com.atproto.server.listAppPasswords">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.server.listAppPasswords", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.server.listAppPasswords">>,
+          "refreshSession": (input?: ProcedureInput<"com.atproto.server.refreshSession">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.server.refreshSession", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.server.refreshSession">>,
+          "requestAccountDelete": (input?: ProcedureInput<"com.atproto.server.requestAccountDelete">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.server.requestAccountDelete", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.server.requestAccountDelete">>,
+          "requestEmailConfirmation": (input?: ProcedureInput<"com.atproto.server.requestEmailConfirmation">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.server.requestEmailConfirmation", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.server.requestEmailConfirmation">>,
+          "requestEmailUpdate": (input?: ProcedureInput<"com.atproto.server.requestEmailUpdate">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.server.requestEmailUpdate", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.server.requestEmailUpdate">>,
+          "requestPasswordReset": (input?: ProcedureInput<"com.atproto.server.requestPasswordReset">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.server.requestPasswordReset", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.server.requestPasswordReset">>,
+          "reserveSigningKey": (input?: ProcedureInput<"com.atproto.server.reserveSigningKey">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.server.reserveSigningKey", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.server.reserveSigningKey">>,
+          "resetPassword": (input?: ProcedureInput<"com.atproto.server.resetPassword">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.server.resetPassword", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.server.resetPassword">>,
+          "revokeAppPassword": (input?: ProcedureInput<"com.atproto.server.revokeAppPassword">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.server.revokeAppPassword", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.server.revokeAppPassword">>,
+          "updateEmail": (input?: ProcedureInput<"com.atproto.server.updateEmail">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.server.updateEmail", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.server.updateEmail">>,
+        },
+        "sync": {
+          "getBlob": (params?: QueryParams<"com.atproto.sync.getBlob">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.sync.getBlob", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.sync.getBlob">>,
+          "getBlocks": (params?: QueryParams<"com.atproto.sync.getBlocks">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.sync.getBlocks", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.sync.getBlocks">>,
+          "getCheckout": (params?: QueryParams<"com.atproto.sync.getCheckout">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.sync.getCheckout", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.sync.getCheckout">>,
+          "getHead": (params?: QueryParams<"com.atproto.sync.getHead">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.sync.getHead", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.sync.getHead">>,
+          "getHostStatus": (params?: QueryParams<"com.atproto.sync.getHostStatus">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.sync.getHostStatus", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.sync.getHostStatus">>,
+          "getLatestCommit": (params?: QueryParams<"com.atproto.sync.getLatestCommit">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.sync.getLatestCommit", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.sync.getLatestCommit">>,
+          "getRecord": (params?: QueryParams<"com.atproto.sync.getRecord">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.sync.getRecord", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.sync.getRecord">>,
+          "getRepo": (params?: QueryParams<"com.atproto.sync.getRepo">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.sync.getRepo", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.sync.getRepo">>,
+          "getRepoStatus": (params?: QueryParams<"com.atproto.sync.getRepoStatus">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.sync.getRepoStatus", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.sync.getRepoStatus">>,
+          "listBlobs": (params?: QueryParams<"com.atproto.sync.listBlobs">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.sync.listBlobs", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.sync.listBlobs">>,
+          "listHosts": (params?: QueryParams<"com.atproto.sync.listHosts">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.sync.listHosts", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.sync.listHosts">>,
+          "listRepos": (params?: QueryParams<"com.atproto.sync.listRepos">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.sync.listRepos", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.sync.listRepos">>,
+          "listReposByCollection": (params?: QueryParams<"com.atproto.sync.listReposByCollection">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.sync.listReposByCollection", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.sync.listReposByCollection">>,
+          "notifyOfUpdate": (input?: ProcedureInput<"com.atproto.sync.notifyOfUpdate">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.sync.notifyOfUpdate", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.sync.notifyOfUpdate">>,
+          "requestCrawl": (input?: ProcedureInput<"com.atproto.sync.requestCrawl">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.sync.requestCrawl", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.sync.requestCrawl">>,
+        },
+        "temp": {
+          "addReservedHandle": (input?: ProcedureInput<"com.atproto.temp.addReservedHandle">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.temp.addReservedHandle", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.temp.addReservedHandle">>,
+          "checkHandleAvailability": (params?: QueryParams<"com.atproto.temp.checkHandleAvailability">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.temp.checkHandleAvailability", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.temp.checkHandleAvailability">>,
+          "checkSignupQueue": (params?: QueryParams<"com.atproto.temp.checkSignupQueue">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.temp.checkSignupQueue", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.temp.checkSignupQueue">>,
+          "dereferenceScope": (params?: QueryParams<"com.atproto.temp.dereferenceScope">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.temp.dereferenceScope", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.temp.dereferenceScope">>,
+          "fetchLabels": (params?: QueryParams<"com.atproto.temp.fetchLabels">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.temp.fetchLabels", params, tokenOrOpts) as Promise<QueryOutput<"com.atproto.temp.fetchLabels">>,
+          "requestPhoneVerification": (input?: ProcedureInput<"com.atproto.temp.requestPhoneVerification">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.temp.requestPhoneVerification", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.temp.requestPhoneVerification">>,
+          "revokeAccountCredentials": (input?: ProcedureInput<"com.atproto.temp.revokeAccountCredentials">, tokenOrOpts?: string | CallOptions) => caller.call("com.atproto.temp.revokeAccountCredentials", input, tokenOrOpts) as Promise<ProcedureOutput<"com.atproto.temp.revokeAccountCredentials">>,
+        },
+      },
+      "germnetwork": {
+        "identity": {
+          "getAnchorKey": (params?: QueryParams<"com.germnetwork.identity.getAnchorKey">, tokenOrOpts?: string | CallOptions) => caller.call("com.germnetwork.identity.getAnchorKey", params, tokenOrOpts) as Promise<QueryOutput<"com.germnetwork.identity.getAnchorKey">>,
+        },
+        "mailbox": {
+          "claimAddresses": (input?: ProcedureInput<"com.germnetwork.mailbox.claimAddresses">, tokenOrOpts?: string | CallOptions) => caller.call("com.germnetwork.mailbox.claimAddresses", input, tokenOrOpts) as Promise<ProcedureOutput<"com.germnetwork.mailbox.claimAddresses">>,
+          "deliver": (input?: ProcedureInput<"com.germnetwork.mailbox.deliver">, tokenOrOpts?: string | CallOptions) => caller.call("com.germnetwork.mailbox.deliver", input, tokenOrOpts) as Promise<ProcedureOutput<"com.germnetwork.mailbox.deliver">>,
+          "poll": (params?: QueryParams<"com.germnetwork.mailbox.poll">, tokenOrOpts?: string | CallOptions) => caller.call("com.germnetwork.mailbox.poll", params, tokenOrOpts) as Promise<QueryOutput<"com.germnetwork.mailbox.poll">>,
+        },
+        "rendezvous": {
+          "deliver": (input?: ProcedureInput<"com.germnetwork.rendezvous.deliver">, tokenOrOpts?: string | CallOptions) => caller.call("com.germnetwork.rendezvous.deliver", input, tokenOrOpts) as Promise<ProcedureOutput<"com.germnetwork.rendezvous.deliver">>,
+          "register": (input?: ProcedureInput<"com.germnetwork.rendezvous.register">, tokenOrOpts?: string | CallOptions) => caller.call("com.germnetwork.rendezvous.register", input, tokenOrOpts) as Promise<ProcedureOutput<"com.germnetwork.rendezvous.register">>,
+        },
+      },
+      "shinolabs": {
+        "pinksea": {
+          "getAuthorFeed": (params?: QueryParams<"com.shinolabs.pinksea.getAuthorFeed">, tokenOrOpts?: string | CallOptions) => caller.call("com.shinolabs.pinksea.getAuthorFeed", params, tokenOrOpts) as Promise<QueryOutput<"com.shinolabs.pinksea.getAuthorFeed">>,
+          "getAuthorReplies": (params?: QueryParams<"com.shinolabs.pinksea.getAuthorReplies">, tokenOrOpts?: string | CallOptions) => caller.call("com.shinolabs.pinksea.getAuthorReplies", params, tokenOrOpts) as Promise<QueryOutput<"com.shinolabs.pinksea.getAuthorReplies">>,
+          "getHandleFromDid": (params?: QueryParams<"com.shinolabs.pinksea.getHandleFromDid">, tokenOrOpts?: string | CallOptions) => caller.call("com.shinolabs.pinksea.getHandleFromDid", params, tokenOrOpts) as Promise<QueryOutput<"com.shinolabs.pinksea.getHandleFromDid">>,
+          "getIdentity": (params?: QueryParams<"com.shinolabs.pinksea.getIdentity">, tokenOrOpts?: string | CallOptions) => caller.call("com.shinolabs.pinksea.getIdentity", params, tokenOrOpts) as Promise<QueryOutput<"com.shinolabs.pinksea.getIdentity">>,
+          "getOekaki": (params?: QueryParams<"com.shinolabs.pinksea.getOekaki">, tokenOrOpts?: string | CallOptions) => caller.call("com.shinolabs.pinksea.getOekaki", params, tokenOrOpts) as Promise<QueryOutput<"com.shinolabs.pinksea.getOekaki">>,
+          "getParentForReply": (params?: QueryParams<"com.shinolabs.pinksea.getParentForReply">, tokenOrOpts?: string | CallOptions) => caller.call("com.shinolabs.pinksea.getParentForReply", params, tokenOrOpts) as Promise<QueryOutput<"com.shinolabs.pinksea.getParentForReply">>,
+          "getRecent": (params?: QueryParams<"com.shinolabs.pinksea.getRecent">, tokenOrOpts?: string | CallOptions) => caller.call("com.shinolabs.pinksea.getRecent", params, tokenOrOpts) as Promise<QueryOutput<"com.shinolabs.pinksea.getRecent">>,
+          "getTagFeed": (params?: QueryParams<"com.shinolabs.pinksea.getTagFeed">, tokenOrOpts?: string | CallOptions) => caller.call("com.shinolabs.pinksea.getTagFeed", params, tokenOrOpts) as Promise<QueryOutput<"com.shinolabs.pinksea.getTagFeed">>,
+        },
+      },
+      "whtwnd": {
+        "blog": {
+          "getAuthorPosts": (params?: QueryParams<"com.whtwnd.blog.getAuthorPosts">, tokenOrOpts?: string | CallOptions) => caller.call("com.whtwnd.blog.getAuthorPosts", params, tokenOrOpts) as Promise<QueryOutput<"com.whtwnd.blog.getAuthorPosts">>,
+          "getEntryMetadataByName": (params?: QueryParams<"com.whtwnd.blog.getEntryMetadataByName">, tokenOrOpts?: string | CallOptions) => caller.call("com.whtwnd.blog.getEntryMetadataByName", params, tokenOrOpts) as Promise<QueryOutput<"com.whtwnd.blog.getEntryMetadataByName">>,
+          "getMentionsByEntry": (params?: QueryParams<"com.whtwnd.blog.getMentionsByEntry">, tokenOrOpts?: string | CallOptions) => caller.call("com.whtwnd.blog.getMentionsByEntry", params, tokenOrOpts) as Promise<QueryOutput<"com.whtwnd.blog.getMentionsByEntry">>,
+          "notifyOfNewEntry": (input?: ProcedureInput<"com.whtwnd.blog.notifyOfNewEntry">, tokenOrOpts?: string | CallOptions) => caller.call("com.whtwnd.blog.notifyOfNewEntry", input, tokenOrOpts) as Promise<ProcedureOutput<"com.whtwnd.blog.notifyOfNewEntry">>,
+        },
+      },
+    },
+    "place": {
+      "stream": {
+        "branding": {
+          "deleteBlob": (input?: ProcedureInput<"place.stream.branding.deleteBlob">, tokenOrOpts?: string | CallOptions) => caller.call("place.stream.branding.deleteBlob", input, tokenOrOpts) as Promise<ProcedureOutput<"place.stream.branding.deleteBlob">>,
+          "getBlob": (params?: QueryParams<"place.stream.branding.getBlob">, tokenOrOpts?: string | CallOptions) => caller.call("place.stream.branding.getBlob", params, tokenOrOpts) as Promise<QueryOutput<"place.stream.branding.getBlob">>,
+          "getBranding": (params?: QueryParams<"place.stream.branding.getBranding">, tokenOrOpts?: string | CallOptions) => caller.call("place.stream.branding.getBranding", params, tokenOrOpts) as Promise<QueryOutput<"place.stream.branding.getBranding">>,
+          "updateBlob": (input?: ProcedureInput<"place.stream.branding.updateBlob">, tokenOrOpts?: string | CallOptions) => caller.call("place.stream.branding.updateBlob", input, tokenOrOpts) as Promise<ProcedureOutput<"place.stream.branding.updateBlob">>,
+        },
+        "broadcast": {
+          "getBroadcaster": (params?: QueryParams<"place.stream.broadcast.getBroadcaster">, tokenOrOpts?: string | CallOptions) => caller.call("place.stream.broadcast.getBroadcaster", params, tokenOrOpts) as Promise<QueryOutput<"place.stream.broadcast.getBroadcaster">>,
+        },
+        "graph": {
+          "getFollowingUser": (params?: QueryParams<"place.stream.graph.getFollowingUser">, tokenOrOpts?: string | CallOptions) => caller.call("place.stream.graph.getFollowingUser", params, tokenOrOpts) as Promise<QueryOutput<"place.stream.graph.getFollowingUser">>,
+        },
+        "live": {
+          "getLiveUsers": (params?: QueryParams<"place.stream.live.getLiveUsers">, tokenOrOpts?: string | CallOptions) => caller.call("place.stream.live.getLiveUsers", params, tokenOrOpts) as Promise<QueryOutput<"place.stream.live.getLiveUsers">>,
+          "getProfileCard": (params?: QueryParams<"place.stream.live.getProfileCard">, tokenOrOpts?: string | CallOptions) => caller.call("place.stream.live.getProfileCard", params, tokenOrOpts) as Promise<QueryOutput<"place.stream.live.getProfileCard">>,
+          "getRecommendations": (params?: QueryParams<"place.stream.live.getRecommendations">, tokenOrOpts?: string | CallOptions) => caller.call("place.stream.live.getRecommendations", params, tokenOrOpts) as Promise<QueryOutput<"place.stream.live.getRecommendations">>,
+          "getSegments": (params?: QueryParams<"place.stream.live.getSegments">, tokenOrOpts?: string | CallOptions) => caller.call("place.stream.live.getSegments", params, tokenOrOpts) as Promise<QueryOutput<"place.stream.live.getSegments">>,
+          "searchActorsTypeahead": (params?: QueryParams<"place.stream.live.searchActorsTypeahead">, tokenOrOpts?: string | CallOptions) => caller.call("place.stream.live.searchActorsTypeahead", params, tokenOrOpts) as Promise<QueryOutput<"place.stream.live.searchActorsTypeahead">>,
+        },
+        "moderation": {
+          "createBlock": (input?: ProcedureInput<"place.stream.moderation.createBlock">, tokenOrOpts?: string | CallOptions) => caller.call("place.stream.moderation.createBlock", input, tokenOrOpts) as Promise<ProcedureOutput<"place.stream.moderation.createBlock">>,
+          "createGate": (input?: ProcedureInput<"place.stream.moderation.createGate">, tokenOrOpts?: string | CallOptions) => caller.call("place.stream.moderation.createGate", input, tokenOrOpts) as Promise<ProcedureOutput<"place.stream.moderation.createGate">>,
+          "deleteBlock": (input?: ProcedureInput<"place.stream.moderation.deleteBlock">, tokenOrOpts?: string | CallOptions) => caller.call("place.stream.moderation.deleteBlock", input, tokenOrOpts) as Promise<ProcedureOutput<"place.stream.moderation.deleteBlock">>,
+          "deleteGate": (input?: ProcedureInput<"place.stream.moderation.deleteGate">, tokenOrOpts?: string | CallOptions) => caller.call("place.stream.moderation.deleteGate", input, tokenOrOpts) as Promise<ProcedureOutput<"place.stream.moderation.deleteGate">>,
+          "updateLivestream": (input?: ProcedureInput<"place.stream.moderation.updateLivestream">, tokenOrOpts?: string | CallOptions) => caller.call("place.stream.moderation.updateLivestream", input, tokenOrOpts) as Promise<ProcedureOutput<"place.stream.moderation.updateLivestream">>,
+        },
+        "multistream": {
+          "createTarget": (input?: ProcedureInput<"place.stream.multistream.createTarget">, tokenOrOpts?: string | CallOptions) => caller.call("place.stream.multistream.createTarget", input, tokenOrOpts) as Promise<ProcedureOutput<"place.stream.multistream.createTarget">>,
+          "deleteTarget": (input?: ProcedureInput<"place.stream.multistream.deleteTarget">, tokenOrOpts?: string | CallOptions) => caller.call("place.stream.multistream.deleteTarget", input, tokenOrOpts) as Promise<ProcedureOutput<"place.stream.multistream.deleteTarget">>,
+          "listTargets": (params?: QueryParams<"place.stream.multistream.listTargets">, tokenOrOpts?: string | CallOptions) => caller.call("place.stream.multistream.listTargets", params, tokenOrOpts) as Promise<QueryOutput<"place.stream.multistream.listTargets">>,
+          "putTarget": (input?: ProcedureInput<"place.stream.multistream.putTarget">, tokenOrOpts?: string | CallOptions) => caller.call("place.stream.multistream.putTarget", input, tokenOrOpts) as Promise<ProcedureOutput<"place.stream.multistream.putTarget">>,
+        },
+        "server": {
+          "createWebhook": (input?: ProcedureInput<"place.stream.server.createWebhook">, tokenOrOpts?: string | CallOptions) => caller.call("place.stream.server.createWebhook", input, tokenOrOpts) as Promise<ProcedureOutput<"place.stream.server.createWebhook">>,
+          "deleteWebhook": (input?: ProcedureInput<"place.stream.server.deleteWebhook">, tokenOrOpts?: string | CallOptions) => caller.call("place.stream.server.deleteWebhook", input, tokenOrOpts) as Promise<ProcedureOutput<"place.stream.server.deleteWebhook">>,
+          "getServerTime": (params?: QueryParams<"place.stream.server.getServerTime">, tokenOrOpts?: string | CallOptions) => caller.call("place.stream.server.getServerTime", params, tokenOrOpts) as Promise<QueryOutput<"place.stream.server.getServerTime">>,
+          "getWebhook": (params?: QueryParams<"place.stream.server.getWebhook">, tokenOrOpts?: string | CallOptions) => caller.call("place.stream.server.getWebhook", params, tokenOrOpts) as Promise<QueryOutput<"place.stream.server.getWebhook">>,
+          "listWebhooks": (params?: QueryParams<"place.stream.server.listWebhooks">, tokenOrOpts?: string | CallOptions) => caller.call("place.stream.server.listWebhooks", params, tokenOrOpts) as Promise<QueryOutput<"place.stream.server.listWebhooks">>,
+          "updateWebhook": (input?: ProcedureInput<"place.stream.server.updateWebhook">, tokenOrOpts?: string | CallOptions) => caller.call("place.stream.server.updateWebhook", input, tokenOrOpts) as Promise<ProcedureOutput<"place.stream.server.updateWebhook">>,
+        },
+      },
+    },
+    "social": {
+      "grain": {
+        "actor": {
+          "getActorFavs": (params?: QueryParams<"social.grain.actor.getActorFavs">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.actor.getActorFavs", params, tokenOrOpts) as Promise<QueryOutput<"social.grain.actor.getActorFavs">>,
+          "getProfile": (params?: QueryParams<"social.grain.actor.getProfile">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.actor.getProfile", params, tokenOrOpts) as Promise<QueryOutput<"social.grain.actor.getProfile">>,
+          "searchActors": (params?: QueryParams<"social.grain.actor.searchActors">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.actor.searchActors", params, tokenOrOpts) as Promise<QueryOutput<"social.grain.actor.searchActors">>,
+          "updateAvatar": (input?: ProcedureInput<"social.grain.actor.updateAvatar">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.actor.updateAvatar", input, tokenOrOpts) as Promise<ProcedureOutput<"social.grain.actor.updateAvatar">>,
+          "updateProfile": (input?: ProcedureInput<"social.grain.actor.updateProfile">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.actor.updateProfile", input, tokenOrOpts) as Promise<ProcedureOutput<"social.grain.actor.updateProfile">>,
+        },
+        "comment": {
+          "createComment": (input?: ProcedureInput<"social.grain.comment.createComment">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.comment.createComment", input, tokenOrOpts) as Promise<ProcedureOutput<"social.grain.comment.createComment">>,
+          "deleteComment": (input?: ProcedureInput<"social.grain.comment.deleteComment">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.comment.deleteComment", input, tokenOrOpts) as Promise<ProcedureOutput<"social.grain.comment.deleteComment">>,
+        },
+        "darkroom": {
+          "getGalleryComposite": (params?: QueryParams<"social.grain.darkroom.getGalleryComposite">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.darkroom.getGalleryComposite", params, tokenOrOpts) as Promise<QueryOutput<"social.grain.darkroom.getGalleryComposite">>,
+        },
+        "favorite": {
+          "createFavorite": (input?: ProcedureInput<"social.grain.favorite.createFavorite">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.favorite.createFavorite", input, tokenOrOpts) as Promise<ProcedureOutput<"social.grain.favorite.createFavorite">>,
+          "deleteFavorite": (input?: ProcedureInput<"social.grain.favorite.deleteFavorite">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.favorite.deleteFavorite", input, tokenOrOpts) as Promise<ProcedureOutput<"social.grain.favorite.deleteFavorite">>,
+        },
+        "feed": {
+          "getTimeline": (params?: QueryParams<"social.grain.feed.getTimeline">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.feed.getTimeline", params, tokenOrOpts) as Promise<QueryOutput<"social.grain.feed.getTimeline">>,
+        },
+        "gallery": {
+          "applySort": (input?: ProcedureInput<"social.grain.gallery.applySort">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.gallery.applySort", input, tokenOrOpts) as Promise<ProcedureOutput<"social.grain.gallery.applySort">>,
+          "createGallery": (input?: ProcedureInput<"social.grain.gallery.createGallery">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.gallery.createGallery", input, tokenOrOpts) as Promise<ProcedureOutput<"social.grain.gallery.createGallery">>,
+          "createItem": (input?: ProcedureInput<"social.grain.gallery.createItem">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.gallery.createItem", input, tokenOrOpts) as Promise<ProcedureOutput<"social.grain.gallery.createItem">>,
+          "deleteGallery": (input?: ProcedureInput<"social.grain.gallery.deleteGallery">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.gallery.deleteGallery", input, tokenOrOpts) as Promise<ProcedureOutput<"social.grain.gallery.deleteGallery">>,
+          "deleteItem": (input?: ProcedureInput<"social.grain.gallery.deleteItem">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.gallery.deleteItem", input, tokenOrOpts) as Promise<ProcedureOutput<"social.grain.gallery.deleteItem">>,
+          "getActorGalleries": (params?: QueryParams<"social.grain.gallery.getActorGalleries">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.gallery.getActorGalleries", params, tokenOrOpts) as Promise<QueryOutput<"social.grain.gallery.getActorGalleries">>,
+          "getGallery": (params?: QueryParams<"social.grain.gallery.getGallery">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.gallery.getGallery", params, tokenOrOpts) as Promise<QueryOutput<"social.grain.gallery.getGallery">>,
+          "getGalleryThread": (params?: QueryParams<"social.grain.gallery.getGalleryThread">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.gallery.getGalleryThread", params, tokenOrOpts) as Promise<QueryOutput<"social.grain.gallery.getGalleryThread">>,
+          "updateGallery": (input?: ProcedureInput<"social.grain.gallery.updateGallery">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.gallery.updateGallery", input, tokenOrOpts) as Promise<ProcedureOutput<"social.grain.gallery.updateGallery">>,
+        },
+        "graph": {
+          "createFollow": (input?: ProcedureInput<"social.grain.graph.createFollow">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.graph.createFollow", input, tokenOrOpts) as Promise<ProcedureOutput<"social.grain.graph.createFollow">>,
+          "deleteFollow": (input?: ProcedureInput<"social.grain.graph.deleteFollow">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.graph.deleteFollow", input, tokenOrOpts) as Promise<ProcedureOutput<"social.grain.graph.deleteFollow">>,
+          "getFollowers": (params?: QueryParams<"social.grain.graph.getFollowers">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.graph.getFollowers", params, tokenOrOpts) as Promise<QueryOutput<"social.grain.graph.getFollowers">>,
+          "getFollows": (params?: QueryParams<"social.grain.graph.getFollows">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.graph.getFollows", params, tokenOrOpts) as Promise<QueryOutput<"social.grain.graph.getFollows">>,
+        },
+        "notification": {
+          "getNotifications": (params?: QueryParams<"social.grain.notification.getNotifications">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.notification.getNotifications", params, tokenOrOpts) as Promise<QueryOutput<"social.grain.notification.getNotifications">>,
+          "updateSeen": (input?: ProcedureInput<"social.grain.notification.updateSeen">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.notification.updateSeen", input, tokenOrOpts) as Promise<ProcedureOutput<"social.grain.notification.updateSeen">>,
+        },
+        "photo": {
+          "applyAlts": (input?: ProcedureInput<"social.grain.photo.applyAlts">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.photo.applyAlts", input, tokenOrOpts) as Promise<ProcedureOutput<"social.grain.photo.applyAlts">>,
+          "createExif": (input?: ProcedureInput<"social.grain.photo.createExif">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.photo.createExif", input, tokenOrOpts) as Promise<ProcedureOutput<"social.grain.photo.createExif">>,
+          "deletePhoto": (input?: ProcedureInput<"social.grain.photo.deletePhoto">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.photo.deletePhoto", input, tokenOrOpts) as Promise<ProcedureOutput<"social.grain.photo.deletePhoto">>,
+          "getActorPhotos": (params?: QueryParams<"social.grain.photo.getActorPhotos">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.photo.getActorPhotos", params, tokenOrOpts) as Promise<QueryOutput<"social.grain.photo.getActorPhotos">>,
+          "uploadPhoto": (input?: ProcedureInput<"social.grain.photo.uploadPhoto">, tokenOrOpts?: string | CallOptions) => caller.call("social.grain.photo.uploadPhoto", input, tokenOrOpts) as Promise<ProcedureOutput<"social.grain.photo.uploadPhoto">>,
+        },
+      },
+    },
+    "tools": {
+      "garazyk": {
+        "account": {
+          "getUsage": (params?: QueryParams<"tools.garazyk.account.getUsage">, tokenOrOpts?: string | CallOptions) => caller.call("tools.garazyk.account.getUsage", params, tokenOrOpts) as Promise<QueryOutput<"tools.garazyk.account.getUsage">>,
+        },
+        "sync": {
+          "getRepoFiltered": (params?: QueryParams<"tools.garazyk.sync.getRepoFiltered">, tokenOrOpts?: string | CallOptions) => caller.call("tools.garazyk.sync.getRepoFiltered", params, tokenOrOpts) as Promise<QueryOutput<"tools.garazyk.sync.getRepoFiltered">>,
+        },
+      },
+      "ozone": {
+        "communication": {
+          "createTemplate": (input?: ProcedureInput<"tools.ozone.communication.createTemplate">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.communication.createTemplate", input, tokenOrOpts) as Promise<ProcedureOutput<"tools.ozone.communication.createTemplate">>,
+          "deleteTemplate": (input?: ProcedureInput<"tools.ozone.communication.deleteTemplate">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.communication.deleteTemplate", input, tokenOrOpts) as Promise<ProcedureOutput<"tools.ozone.communication.deleteTemplate">>,
+          "listTemplates": (params?: QueryParams<"tools.ozone.communication.listTemplates">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.communication.listTemplates", params, tokenOrOpts) as Promise<QueryOutput<"tools.ozone.communication.listTemplates">>,
+          "updateTemplate": (input?: ProcedureInput<"tools.ozone.communication.updateTemplate">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.communication.updateTemplate", input, tokenOrOpts) as Promise<ProcedureOutput<"tools.ozone.communication.updateTemplate">>,
+        },
+        "hosting": {
+          "getAccountHistory": (params?: QueryParams<"tools.ozone.hosting.getAccountHistory">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.hosting.getAccountHistory", params, tokenOrOpts) as Promise<QueryOutput<"tools.ozone.hosting.getAccountHistory">>,
+        },
+        "moderation": {
+          "cancelScheduledAction": (input?: ProcedureInput<"tools.ozone.moderation.cancelScheduledAction">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.moderation.cancelScheduledAction", input, tokenOrOpts) as Promise<ProcedureOutput<"tools.ozone.moderation.cancelScheduledAction">>,
+          "cancelScheduledActions": (input?: ProcedureInput<"tools.ozone.moderation.cancelScheduledActions">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.moderation.cancelScheduledActions", input, tokenOrOpts) as Promise<ProcedureOutput<"tools.ozone.moderation.cancelScheduledActions">>,
+          "emitEvent": (input?: ProcedureInput<"tools.ozone.moderation.emitEvent">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.moderation.emitEvent", input, tokenOrOpts) as Promise<ProcedureOutput<"tools.ozone.moderation.emitEvent">>,
+          "getAccountTimeline": (params?: QueryParams<"tools.ozone.moderation.getAccountTimeline">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.moderation.getAccountTimeline", params, tokenOrOpts) as Promise<QueryOutput<"tools.ozone.moderation.getAccountTimeline">>,
+          "getEvent": (params?: QueryParams<"tools.ozone.moderation.getEvent">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.moderation.getEvent", params, tokenOrOpts) as Promise<QueryOutput<"tools.ozone.moderation.getEvent">>,
+          "getRecord": (params?: QueryParams<"tools.ozone.moderation.getRecord">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.moderation.getRecord", params, tokenOrOpts) as Promise<QueryOutput<"tools.ozone.moderation.getRecord">>,
+          "getRecords": (params?: QueryParams<"tools.ozone.moderation.getRecords">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.moderation.getRecords", params, tokenOrOpts) as Promise<QueryOutput<"tools.ozone.moderation.getRecords">>,
+          "getRepo": (params?: QueryParams<"tools.ozone.moderation.getRepo">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.moderation.getRepo", params, tokenOrOpts) as Promise<QueryOutput<"tools.ozone.moderation.getRepo">>,
+          "getReporterStats": (params?: QueryParams<"tools.ozone.moderation.getReporterStats">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.moderation.getReporterStats", params, tokenOrOpts) as Promise<QueryOutput<"tools.ozone.moderation.getReporterStats">>,
+          "getRepos": (params?: QueryParams<"tools.ozone.moderation.getRepos">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.moderation.getRepos", params, tokenOrOpts) as Promise<QueryOutput<"tools.ozone.moderation.getRepos">>,
+          "getSubjects": (params?: QueryParams<"tools.ozone.moderation.getSubjects">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.moderation.getSubjects", params, tokenOrOpts) as Promise<QueryOutput<"tools.ozone.moderation.getSubjects">>,
+          "getSubjectStatus": (params?: QueryParams<"tools.ozone.moderation.getSubjectStatus">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.moderation.getSubjectStatus", params, tokenOrOpts) as Promise<QueryOutput<"tools.ozone.moderation.getSubjectStatus">>,
+          "listScheduledActions": (input?: ProcedureInput<"tools.ozone.moderation.listScheduledActions">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.moderation.listScheduledActions", input, tokenOrOpts) as Promise<ProcedureOutput<"tools.ozone.moderation.listScheduledActions">>,
+          "queryEvents": (params?: QueryParams<"tools.ozone.moderation.queryEvents">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.moderation.queryEvents", params, tokenOrOpts) as Promise<QueryOutput<"tools.ozone.moderation.queryEvents">>,
+          "queryStatuses": (params?: QueryParams<"tools.ozone.moderation.queryStatuses">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.moderation.queryStatuses", params, tokenOrOpts) as Promise<QueryOutput<"tools.ozone.moderation.queryStatuses">>,
+          "scheduleAction": (input?: ProcedureInput<"tools.ozone.moderation.scheduleAction">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.moderation.scheduleAction", input, tokenOrOpts) as Promise<ProcedureOutput<"tools.ozone.moderation.scheduleAction">>,
+          "searchRepos": (params?: QueryParams<"tools.ozone.moderation.searchRepos">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.moderation.searchRepos", params, tokenOrOpts) as Promise<QueryOutput<"tools.ozone.moderation.searchRepos">>,
+        },
+        "safelink": {
+          "addRule": (input?: ProcedureInput<"tools.ozone.safelink.addRule">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.safelink.addRule", input, tokenOrOpts) as Promise<ProcedureOutput<"tools.ozone.safelink.addRule">>,
+          "queryEvents": (input?: ProcedureInput<"tools.ozone.safelink.queryEvents">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.safelink.queryEvents", input, tokenOrOpts) as Promise<ProcedureOutput<"tools.ozone.safelink.queryEvents">>,
+          "queryRules": (input?: ProcedureInput<"tools.ozone.safelink.queryRules">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.safelink.queryRules", input, tokenOrOpts) as Promise<ProcedureOutput<"tools.ozone.safelink.queryRules">>,
+          "removeRule": (input?: ProcedureInput<"tools.ozone.safelink.removeRule">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.safelink.removeRule", input, tokenOrOpts) as Promise<ProcedureOutput<"tools.ozone.safelink.removeRule">>,
+          "updateRule": (input?: ProcedureInput<"tools.ozone.safelink.updateRule">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.safelink.updateRule", input, tokenOrOpts) as Promise<ProcedureOutput<"tools.ozone.safelink.updateRule">>,
+        },
+        "server": {
+          "getConfig": (params?: QueryParams<"tools.ozone.server.getConfig">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.server.getConfig", params, tokenOrOpts) as Promise<QueryOutput<"tools.ozone.server.getConfig">>,
+          "updateConfig": (input?: ProcedureInput<"tools.ozone.server.updateConfig">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.server.updateConfig", input, tokenOrOpts) as Promise<ProcedureOutput<"tools.ozone.server.updateConfig">>,
+        },
+        "set": {
+          "addValues": (input?: ProcedureInput<"tools.ozone.set.addValues">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.set.addValues", input, tokenOrOpts) as Promise<ProcedureOutput<"tools.ozone.set.addValues">>,
+          "deleteSet": (input?: ProcedureInput<"tools.ozone.set.deleteSet">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.set.deleteSet", input, tokenOrOpts) as Promise<ProcedureOutput<"tools.ozone.set.deleteSet">>,
+          "deleteValues": (input?: ProcedureInput<"tools.ozone.set.deleteValues">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.set.deleteValues", input, tokenOrOpts) as Promise<ProcedureOutput<"tools.ozone.set.deleteValues">>,
+          "getValues": (params?: QueryParams<"tools.ozone.set.getValues">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.set.getValues", params, tokenOrOpts) as Promise<QueryOutput<"tools.ozone.set.getValues">>,
+          "querySets": (params?: QueryParams<"tools.ozone.set.querySets">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.set.querySets", params, tokenOrOpts) as Promise<QueryOutput<"tools.ozone.set.querySets">>,
+          "upsertSet": (input?: ProcedureInput<"tools.ozone.set.upsertSet">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.set.upsertSet", input, tokenOrOpts) as Promise<ProcedureOutput<"tools.ozone.set.upsertSet">>,
+        },
+        "setting": {
+          "listOptions": (params?: QueryParams<"tools.ozone.setting.listOptions">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.setting.listOptions", params, tokenOrOpts) as Promise<QueryOutput<"tools.ozone.setting.listOptions">>,
+          "removeOptions": (input?: ProcedureInput<"tools.ozone.setting.removeOptions">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.setting.removeOptions", input, tokenOrOpts) as Promise<ProcedureOutput<"tools.ozone.setting.removeOptions">>,
+          "upsertOption": (input?: ProcedureInput<"tools.ozone.setting.upsertOption">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.setting.upsertOption", input, tokenOrOpts) as Promise<ProcedureOutput<"tools.ozone.setting.upsertOption">>,
+        },
+        "signature": {
+          "findCorrelation": (params?: QueryParams<"tools.ozone.signature.findCorrelation">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.signature.findCorrelation", params, tokenOrOpts) as Promise<QueryOutput<"tools.ozone.signature.findCorrelation">>,
+          "findRelatedAccounts": (params?: QueryParams<"tools.ozone.signature.findRelatedAccounts">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.signature.findRelatedAccounts", params, tokenOrOpts) as Promise<QueryOutput<"tools.ozone.signature.findRelatedAccounts">>,
+          "searchAccounts": (params?: QueryParams<"tools.ozone.signature.searchAccounts">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.signature.searchAccounts", params, tokenOrOpts) as Promise<QueryOutput<"tools.ozone.signature.searchAccounts">>,
+        },
+        "team": {
+          "addMember": (input?: ProcedureInput<"tools.ozone.team.addMember">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.team.addMember", input, tokenOrOpts) as Promise<ProcedureOutput<"tools.ozone.team.addMember">>,
+          "deleteMember": (input?: ProcedureInput<"tools.ozone.team.deleteMember">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.team.deleteMember", input, tokenOrOpts) as Promise<ProcedureOutput<"tools.ozone.team.deleteMember">>,
+          "listMembers": (params?: QueryParams<"tools.ozone.team.listMembers">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.team.listMembers", params, tokenOrOpts) as Promise<QueryOutput<"tools.ozone.team.listMembers">>,
+          "updateMember": (input?: ProcedureInput<"tools.ozone.team.updateMember">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.team.updateMember", input, tokenOrOpts) as Promise<ProcedureOutput<"tools.ozone.team.updateMember">>,
+        },
+        "verification": {
+          "grantVerifications": (input?: ProcedureInput<"tools.ozone.verification.grantVerifications">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.verification.grantVerifications", input, tokenOrOpts) as Promise<ProcedureOutput<"tools.ozone.verification.grantVerifications">>,
+          "listVerifications": (params?: QueryParams<"tools.ozone.verification.listVerifications">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.verification.listVerifications", params, tokenOrOpts) as Promise<QueryOutput<"tools.ozone.verification.listVerifications">>,
+          "revokeVerifications": (input?: ProcedureInput<"tools.ozone.verification.revokeVerifications">, tokenOrOpts?: string | CallOptions) => caller.call("tools.ozone.verification.revokeVerifications", input, tokenOrOpts) as Promise<ProcedureOutput<"tools.ozone.verification.revokeVerifications">>,
+        },
+      },
+    },
   };
 }

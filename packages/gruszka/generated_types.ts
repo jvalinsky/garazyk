@@ -12,6 +12,7 @@ export {
 
 export type {
   BinaryXrpcResponse,
+  CallOptions,
   GeneratedClient,
   LexiconDefs,
   LexiconIds,
@@ -25,6 +26,7 @@ export type {
   QueryOutput,
   QueryOutputEncoding,
   QueryParams,
+  XrpcCaller,
 } from "./lexicons.ts";
 
 // deno-lint-ignore no-explicit-any -- Backward-compatible alias for older callers.
