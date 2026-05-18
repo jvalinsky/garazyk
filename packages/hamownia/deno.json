@@ -27,7 +27,10 @@
     "./scenario-runner": "./scenario_runner.ts",
     "./scenario-context": "./scenario_context.ts",
     "./scenario-selector": "./scenario_selector.ts",
-    "./stale-cleanup": "./stale_cleanup.ts"
+    "./stale-cleanup": "./stale_cleanup.ts",
+    "./service-command": "./service_command.ts",
+    "./demo-command": "./demo_command.ts",
+    "./test-command": "./test_command.ts"
   },
   "license": "Unlicense OR CC0-1.0"
 }
