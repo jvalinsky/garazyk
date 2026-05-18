@@ -18,11 +18,7 @@ import {
   stopStaleDockerE2e,
   stopStaleHostProcesses,
 } from "./docker_cleanup.ts";
-import {
-  waitForHttp,
-  waitForService,
-  waitForServiceCLI,
-} from "./docker_health.ts";
+import { waitForService } from "./docker_health.ts";
 import { startBinaryServices, stopBinaryServices } from "./docker_binary.ts";
 import { ContainerEventWatcher } from "./docker_events.ts";
 import { isOtelEnabled, withSpan } from "./telemetry.ts";

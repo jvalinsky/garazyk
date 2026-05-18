@@ -6,7 +6,10 @@ logs, checking health status, and parsing Docker events.
 
 ## Why Laweta?
 
-**Laweta** is the Polish word for a **tow truck**. Much like a tow truck is used to haul and manage vehicles, this package is designed to "tow" and manage Docker containers, handling the heavy lifting of container lifecycles and infrastructure management.
+**Laweta** is the Polish word for a **tow truck**. Much like a tow truck is used
+to haul and manage vehicles, this package is designed to "tow" and manage Docker
+containers, handling the heavy lifting of container lifecycles and
+infrastructure management.
 
 ## Installation
 
