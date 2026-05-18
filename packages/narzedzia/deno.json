@@ -9,7 +9,10 @@
     "./repo-docs": "./repo_docs.ts",
     "./boundary-check": "./boundary_check.ts",
     "./spdx-headers": "./spdx_headers.ts",
-    "./vitepress-migration": "./vitepress_migration.ts"
+    "./vitepress-migration": "./vitepress_migration.ts",
+    "./build-command": "./build_command.ts",
+    "./fuzz-command": "./fuzz_command.ts",
+    "./ops-command": "./ops_command.ts"
   },
   "license": "Unlicense OR CC0-1.0"
 }
