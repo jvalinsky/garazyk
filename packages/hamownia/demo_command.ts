@@ -8,23 +8,31 @@ import { initRunDir, repoRoot } from "@garazyk/schemat/runtime";
 import {
   initLogger,
   logError,
+  logHeader,
   logInfo,
   logOk,
-  logHeader,
 } from "@garazyk/schemat";
 import {
-  startBinaryServices,
-  stopBinaryServices,
   addRelayUpstream,
   type BinaryServiceName,
+  startBinaryServices,
+  stopBinaryServices,
 } from "./binary_services.ts";
 import { collectDiagnostics } from "./run_diagnostics.ts";
 import { join } from "@std/path";
 
 /** Entry point for the full-suite demo CLI. */
-export async function demoCommandMain(argv: string[]) {
+export async function demoCommandMain(argv: string[]): Promise<void> {
   const flags = parseArgs(argv, {
-    boolean: ["skip-seed", "stop", "keep-running", "collect-diagnostics", "verbose", "quiet", "help"],
+    boolean: [
+      "skip-seed",
+      "stop",
+      "keep-running",
+      "collect-diagnostics",
+      "verbose",
+      "quiet",
+      "help",
+    ],
     string: ["run-id", "diagnostics-dir"],
     alias: { h: "help", v: "verbose", q: "quiet" },
   });
@@ -58,52 +66,69 @@ Options:
   }
 
   if (flags["collect-diagnostics"]) {
-    await collectDiagnostics(ctx, { label: "full-suite-demo" });
+    await collectDiagnostics({
+      runId: ctx.runId,
+      runDir: ctx.runDir,
+      logsDir: ctx.logDir,
+      reportsDir: join(ctx.runDir, "reports"),
+      diagnosticsDir: flags["diagnostics-dir"] ?? ctx.diagnosticsDir,
+      pidFile: ctx.pidFile,
+      composeProject: ctx.composeProject,
+    }, { label: "full-suite-demo" });
     return;
   }
 
-  const PDS_MASTER_SECRET = Deno.env.get("PDS_MASTER_SECRET") || "test-master-secret-123";
-  const PDS_ADMIN_PASSWORD = Deno.env.get("PDS_ADMIN_PASSWORD") || "localdevadmin";
-  const APPVIEW_ADMIN_SECRET = Deno.env.get("APPVIEW_ADMIN_SECRET") || "localdevadmin";
-  const CHAT_ADMIN_SECRET = Deno.env.get("CHAT_ADMIN_SECRET") || "localdevadmin";
-  const VIDEO_ADMIN_SECRET = Deno.env.get("VIDEO_ADMIN_SECRET") || "localdevadmin";
+  const PDS_MASTER_SECRET = Deno.env.get("PDS_MASTER_SECRET") ||
+    "test-master-secret-123";
+  const PDS_ADMIN_PASSWORD = Deno.env.get("PDS_ADMIN_PASSWORD") ||
+    "localdevadmin";
+  const APPVIEW_ADMIN_SECRET = Deno.env.get("APPVIEW_ADMIN_SECRET") ||
+    "localdevadmin";
+  const CHAT_ADMIN_SECRET = Deno.env.get("CHAT_ADMIN_SECRET") ||
+    "localdevadmin";
+  const VIDEO_ADMIN_SECRET = Deno.env.get("VIDEO_ADMIN_SECRET") ||
+    "localdevadmin";
   const UI_ADMIN_PASSWORD = Deno.env.get("UI_ADMIN_PASSWORD") || "localdev";
 
-  async function writePdsConfig() {
+  async function writePdsConfig(): Promise<string> {
     const config = {
       server: {
         host: "127.0.0.1",
         port: 2583,
         data_dir: join(ctx.runDir, "data", "pds"),
         issuer: "http://127.0.0.1:2583",
-        available_user_domains: ["test"]
+        available_user_domains: ["test"],
       },
       appview: {
         url: "http://127.0.0.1:3200",
-        did: "did:web:localhost"
+        did: "did:web:localhost",
       },
       database: { service_pool_max_size: 10, user_pool_max_size: 50 },
       logging: { format: "text", level: "info" },
       session: {
         access_token_ttl_seconds: 1800,
         refresh_token_ttl_seconds: 2592000,
-        invite_code_required: false
+        invite_code_required: false,
       },
       registration: {
         invite_code_required: false,
         phone_verification_required: false,
         captcha_required: false,
-        oauth_only_registration: false
+        oauth_only_registration: false,
       },
       relays: ["http://127.0.0.1:2584"],
-      plc: { url: "http://127.0.0.1:2582", retry_count: 3, retry_delay_ms: 500 },
+      plc: {
+        url: "http://127.0.0.1:2582",
+        retry_count: 3,
+        retry_delay_ms: 500,
+      },
       cors: {
         allowed_origins: ["*"],
         allowed_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"],
         allowed_headers: ["DPoP", "Authorization", "Content-Type", "*"],
-        max_age: 86400
+        max_age: 86400,
       },
-      auth: { master_secret: PDS_MASTER_SECRET }
+      auth: { master_secret: PDS_MASTER_SECRET },
     };
     const configPath = join(ctx.runDir, "data", "config", "pds-config.json");
     await Deno.mkdir(join(ctx.runDir, "data", "config"), { recursive: true });
@@ -112,11 +137,18 @@ Options:
   }
 
   logHeader("Starting full ATProto suite demo...");
-  
+
   const pdsConfigPath = await writePdsConfig();
 
-  const services: BinaryServiceName[] = ["plc", "pds", "relay", "appview", "chat", "video"];
-  
+  const services: BinaryServiceName[] = [
+    "plc",
+    "pds",
+    "relay",
+    "appview",
+    "chat",
+    "video",
+  ];
+
   await startBinaryServices(ctx, {
     services,
     env: {
@@ -132,7 +164,8 @@ Options:
       },
       relay: { RELAY_ADMIN_PASSWORD: APPVIEW_ADMIN_SECRET },
       appview: {
-        APPVIEW_RELAY_URLS: "ws://127.0.0.1:2584/xrpc/com.atproto.sync.subscribeRepos",
+        APPVIEW_RELAY_URLS:
+          "ws://127.0.0.1:2584/xrpc/com.atproto.sync.subscribeRepos",
         APPVIEW_ADMIN_SECRET,
         APPVIEW_MASTER_SECRET: PDS_MASTER_SECRET,
         APPVIEW_PLC_URL: "http://127.0.0.1:2582",
@@ -144,17 +177,20 @@ Options:
       video: {
         JELCZ_ADMIN_SECRET: VIDEO_ADMIN_SECRET,
         JELCZ_PDS_URL: "http://127.0.0.1:2583",
-      }
+      },
     },
     args: {
       pds: [
         "serve",
-        "--config", pdsConfigPath,
-        "--port", "2583",
-        "--data-dir", join(ctx.runDir, "data", "pds"),
-        "--foreground"
-      ]
-    }
+        "--config",
+        pdsConfigPath,
+        "--port",
+        "2583",
+        "--data-dir",
+        join(ctx.runDir, "data", "pds"),
+        "--foreground",
+      ],
+    },
   });
 
   // Start UI
@@ -176,7 +212,11 @@ Options:
   const uiChild = uiProc.spawn();
 
   // Wiring
-  await addRelayUpstream("http://127.0.0.1:2584", "http://127.0.0.1:2583", APPVIEW_ADMIN_SECRET);
+  await addRelayUpstream(
+    "http://127.0.0.1:2584",
+    "http://127.0.0.1:2583",
+    APPVIEW_ADMIN_SECRET,
+  );
 
   // Seeding
   if (!flags["skip-seed"]) {
@@ -186,7 +226,7 @@ Options:
       env: {
         PDS_URL: "http://127.0.0.1:2583",
         CHAT_URL: "http://127.0.0.1:2585",
-      }
+      },
     });
     const { code } = await seedProc.output();
     if (code === 0) {
@@ -207,10 +247,14 @@ Options:
 
   if (flags["keep-running"]) {
     logInfo("Keeping services running. Press Ctrl+C to stop.");
-    await new Promise(() => {}); 
+    await new Promise(() => {});
   } else {
-    logInfo("Smoke completed; cleaning up now. Use --keep-running to leave services up.");
+    logInfo(
+      "Smoke completed; cleaning up now. Use --keep-running to leave services up.",
+    );
     await stopBinaryServices(ctx);
-    try { uiChild.kill(); } catch { /* ignore */ }
+    try {
+      uiChild.kill();
+    } catch { /* ignore */ }
   }
 }

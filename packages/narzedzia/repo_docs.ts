@@ -363,11 +363,26 @@ function* iterMarkdownLinks(
   }
 }
 
+export interface LinkStats {
+  internal: number;
+  external: number;
+  anchor: number;
+  missing: number;
+}
+
+export interface LinkAnalysis {
+  edges: LinkEdge[];
+  issues: LinkIssue[];
+  outgoing: Record<string, string[]>;
+  stats: LinkStats;
+  externalCounts: Record<string, number>;
+}
+
 export async function analyzeLinks(
   files: string[],
   records: DocRecord[],
   paths: RepoDocsPaths,
-) {
+): Promise<LinkAnalysis> {
   const recordPaths = new Set(records.map((record) => record.path));
   const edges: LinkEdge[] = [];
   const issues: LinkIssue[] = [];
@@ -436,11 +451,16 @@ async function loadOrphanAllowlist(path: string): Promise<Set<string>> {
   );
 }
 
+export interface OrphanAnalysis {
+  orphans: string[];
+  inbound: Record<string, number>;
+}
+
 export async function computeOrphans(
   records: DocRecord[],
   edges: LinkEdge[],
   orphanAllowlistPath: string,
-) {
+): Promise<OrphanAnalysis> {
   const inbound: Record<string, number> = Object.fromEntries(
     records.map((record) => [record.path, 0]),
   );
@@ -636,7 +656,7 @@ async function writeGraphOutputs(
   edges: LinkEdge[],
   issues: LinkIssue[],
   inbound: Record<string, number>,
-  stats: Record<string, number>,
+  stats: LinkStats,
   externalCounts: Record<string, number>,
   paths: RepoDocsPaths,
 ) {
@@ -780,10 +800,22 @@ async function validateInternalStrict(
   return await analyzeLinks(files, records, paths);
 }
 
+export interface ExternalLinkResult {
+  status: string;
+  code: number | null;
+  message: string;
+}
+
+export interface ExternalLinkReport {
+  generated_at: number;
+  checked: number;
+  results: Record<string, ExternalLinkResult>;
+}
+
 export async function checkExternalLinks(
   records: DocRecord[],
   paths: RepoDocsPaths,
-) {
+): Promise<ExternalLinkReport> {
   const files = records.map((record) => join(paths.root, record.path)).filter(
     (path) => {
       try {

@@ -1,9 +1,8 @@
 /**
  * Stale container and host process cleanup for the local ATProto network.
  *
- * Moved from `@garazyk/laweta/docker_cleanup.ts` — stale-process
- * cleanup is ATProto-specific (hardcoded binary names, port sets)
- * and belongs in hamownia.
+ * Stale-process cleanup is ATProto-specific (hardcoded binary names, port
+ * sets) and belongs in hamownia.
  *
  * @module stale_cleanup
  */

@@ -18,16 +18,9 @@
     "playwright": "npm:playwright@^1.40.0",
     "@ipld/dag-cbor": "npm:@ipld/dag-cbor@^9.0.0",
     "cborg": "npm:cborg@5.1.1",
-    "zod": "npm:zod@^3.22.0",
-    "@garazyk/laweta": "./packages/laweta/mod.ts",
-    "@garazyk/gruszka": "./packages/gruszka/mod.ts",
-    "@garazyk/schemat": "./packages/schemat/mod.ts",
-    "@garazyk/hamownia": "./packages/hamownia/mod.ts",
-    "@garazyk/dashboard": "./packages/dashboard/mod.ts",
-    "@garazyk/narzedzia": "./packages/narzedzia/mod.ts"
+    "zod": "npm:zod@^3.22.0"
   },
   "tasks": {
-    "test": "deno test -A packages/",
     "check": "deno task boundaries && deno check packages/*/mod.ts scripts/*.ts && deno task dashboard:check",
     "dashboard:check": "deno check --config packages/dashboard/deno.json packages/dashboard/mod.ts packages/dashboard/cli.ts packages/dashboard/server.ts packages/dashboard/tui.ts",
     "boundaries": "deno run --allow-read scripts/dev/check_module_boundaries.ts",
@@ -35,8 +28,9 @@
     "fmt": "deno fmt packages/ scripts/",
     "build": "deno run -A scripts/build.ts",
     "build:docker-stage": "deno run -A scripts/build.ts docker-stage",
-    "generate-client": "deno run -A packages/gruszka/scripts/generate.ts",
     "test": "deno run -A scripts/test_runner.ts",
+    "test:packages": "deno test -A packages/",
+    "generate-client": "deno run -A packages/gruszka/scripts/generate.ts",
     "docs:validate": "deno run -A -e 'import { docValidationMain } from \"@garazyk/narzedzia\"; await docValidationMain();'",
     "scenarios": "deno run -A scripts/run_scenarios.ts",
     "demo": "deno run -A scripts/demo.ts",

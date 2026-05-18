@@ -7,12 +7,20 @@ and scenarios to the new structure.
 ## Overview of Changes
 
 The core logic previously located in `scripts/lib/deno/` has been split into
-four JSR packages:
+five JSR packages:
 
-1. **`@garazyk/laweta`**: Low-level Docker and Compose wrappers.
+1. **`@garazyk/laweta`**: Generic Docker Engine, Compose, health, event, and
+   stats primitives.
 2. **`@garazyk/gruszka`**: Strongly-typed XRPC client and protocol seed helpers.
-3. **`@garazyk/schemat`**: Zod-validated network blueprints.
-4. **`@garazyk/hamownia`**: The E2E test orchestration framework.
+3. **`@garazyk/schemat`**: Zod-validated topology/runtime schemas, service role
+   metadata, and compose manifests.
+4. **`@garazyk/hamownia`**: Scenario execution, ATProto network orchestration,
+   diagnostics, and E2E test framework surfaces.
+5. **`@garazyk/narzedzia`**: Repository tooling for boundaries, docs validation,
+   code generation helpers, and operational command modules.
+
+`packages/dashboard` remains a local workspace package for development checks
+and checkout-local dashboard commands. It is not part of the JSR publish set.
 
 ## 1. Updating Scenario Imports
 
@@ -48,6 +56,9 @@ build lexicons.
 | `deno task check`           | Type-check the entire monorepo.   |
 | `deno task generate-client` | Rebuild typed lexicon interfaces. |
 
+Local `@garazyk/*` imports resolve through Deno workspace package names. The
+root config only keeps third-party import aliases used by scripts and packages.
+
 ## 3. Topology Registry
 
 The `@garazyk/schemat` package now includes all standard topologies as embedded
@@ -78,3 +89,16 @@ deno add jsr:@garazyk/gruszka
 import { XrpcClient } from "@garazyk/gruszka";
 // ... use the strongly typed API
 ```
+
+## 5. Publishing
+
+CI publishes only the five libraries:
+
+- `packages/laweta`
+- `packages/gruszka`
+- `packages/schemat`
+- `packages/hamownia`
+- `packages/narzedzia`
+
+Do not run `deno publish` at the repository root while the local dashboard
+workspace member is present.

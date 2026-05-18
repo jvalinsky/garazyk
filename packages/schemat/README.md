@@ -1,8 +1,9 @@
 # @garazyk/schemat
 
-Deterministic Docker Compose topology definitions for AT Protocol networks.
-This package provides Zod-validated schemas for mapping out multi-service
-ATProto stacks (PDS, AppView, Relay, PLC) into functional Docker networks.
+Deterministic topology and runtime schemas for AT Protocol networks. This
+package provides Zod-validated service definitions, role metadata, runtime path
+helpers, and Docker Compose manifest rendering for multi-service ATProto stacks
+(PDS, AppView, Relay, PLC).
 
 ## Why Schemat?
 
@@ -21,10 +22,14 @@ deno add jsr:@garazyk/schemat
 
 - **Topology Schemas**: Zod-validated structures for service roles and
   capabilities.
+- **Runtime Helpers**: Run-directory, service URL, and required-port helpers
+  exposed through `@garazyk/schemat/runtime`.
+- **Role Metadata**: Canonical role-to-port, role-to-service, and role-to-env
+  mapping used by scenario orchestration.
 - **Manifest Generation**: Compile high-level presets into raw Docker Compose
   YAML.
-- **Service Registration**: Built-in registry of ATProto roles and their required
-  ports/protocols.
+- **Service Registration**: Built-in registry of ATProto roles and their
+  required ports/protocols.
 - **Web Client Compose**: Utilities for rendering browser-ready frontend
   overlays.
 

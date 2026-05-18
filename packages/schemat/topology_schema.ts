@@ -293,11 +293,16 @@ export const topologyServiceJsonSchema = containerPrimitiveSchema.extend({
 /** Raw service specification before normalization */
 export type TopologyServiceJson = z.infer<typeof topologyServiceJsonSchema>;
 
-/** Zod schema for inherited service references */
-export const inheritedServiceSchema = z.object({ inherit: z.string().min(1) })
-  .strict();
 /** Inheritance marker for raw topology presets */
-export type InheritedServiceSpec = z.infer<typeof inheritedServiceSchema>;
+export interface InheritedServiceSpec {
+  /** Service name to inherit from. */
+  inherit: string;
+}
+
+/** Zod schema for inherited service references */
+export const inheritedServiceSchema: z.ZodType<InheritedServiceSpec> = z.object({
+  inherit: z.string().min(1),
+}).strict();
 
 /** Zod schema for experimental role metadata */
 export const experimentalRoleSchema = z.object({

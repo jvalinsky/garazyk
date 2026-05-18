@@ -4,7 +4,7 @@
  * These are integration tests that require a running Docker daemon.
  * They are skipped if the Docker socket is not available.
  *
- * Run with: deno test -A --unstable scripts/lib/deno/docker_api_test.ts
+ * Run with: deno test -A packages/laweta/docker_api_test.ts
  */
 
 import {

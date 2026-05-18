@@ -83,6 +83,14 @@ export interface LocalNetworkOptions {
  */
 export type RunContext = TopologyRunContext;
 
+/** Dependency overrides for tests that must not start Docker or binaries. */
+export interface LocalNetworkDependencies {
+  /** Run-directory initializer. Defaults to `initRunDir`. */
+  initRunDir?: (requestedId?: string) => TopologyRunContext;
+  /** Binary service starter. Defaults to `startBinaryServices`. */
+  startBinaryServices?: typeof startBinaryServices;
+}
+
 // ---------------------------------------------------------------------------
 // Re-exports
 // ---------------------------------------------------------------------------
@@ -109,9 +117,10 @@ export function initRunDir(requestedId?: string): TopologyRunContext {
  */
 export async function startLocalNetwork(
   options: LocalNetworkOptions = {},
+  dependencies: LocalNetworkDependencies = {},
 ): Promise<void> {
   return await withSpan("localNetwork.start", async () => {
-    const ctx = initRunDir(options.runId);
+    const ctx = (dependencies.initRunDir ?? initRunDir)(options.runId);
 
     const latestFile = join(ctx.baseDir, "latest-scenario-run-id");
     try {
@@ -127,7 +136,7 @@ export async function startLocalNetwork(
     }
 
     if (options.useBinary) {
-      await startBinaryServices(ctx);
+      await (dependencies.startBinaryServices ?? startBinaryServices)(ctx);
       return;
     }
 
@@ -136,7 +145,7 @@ export async function startLocalNetwork(
 
     const composeFiles: string[] = [];
     const topologyComposeFile = join(ctx.runDir, "docker-compose.topology.yml");
-    const topologyManifest = join(ctx.runDir, "topology-manifest.json");
+    const topologyManifest = topologyManifestPath(ctx);
 
     if (options.topology) {
       await compileTopology({
@@ -149,8 +158,7 @@ export async function startLocalNetwork(
         manifestFile: topologyManifest,
       });
       composeFiles.push(topologyComposeFile);
-      Deno.env.set("ATPROTO_TOPOLOGY", options.topology);
-      Deno.env.set("ATPROTO_TOPOLOGY_MANIFEST", topologyManifest);
+      applyTopologyEnvironment(options.topology, topologyManifest);
     } else {
       composeFiles.push(join(composeDir, "docker-compose.yml"));
       if (options.withPds2) {
@@ -279,6 +287,20 @@ export async function startLocalNetwork(
 
     console.log("[OK]    Local network is ready!");
   });
+}
+
+/** Return the topology manifest path for a run context. */
+export function topologyManifestPath(ctx: TopologyRunContext): string {
+  return join(ctx.runDir, "topology-manifest.json");
+}
+
+/** Apply environment variables consumed by scenario and dashboard tooling. */
+export function applyTopologyEnvironment(
+  topology: string,
+  manifestPath: string,
+): void {
+  Deno.env.set("ATPROTO_TOPOLOGY", topology);
+  Deno.env.set("ATPROTO_TOPOLOGY_MANIFEST", manifestPath);
 }
 
 /** Stop the local ATProto network. */

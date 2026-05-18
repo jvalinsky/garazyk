@@ -9,7 +9,7 @@
 
 import { join } from "@std/path";
 import { repoRoot, SERVICE_PORTS, serviceUrl } from "@garazyk/schemat/runtime";
-import { logInfo, logOk, logWarn, logError, logHeader } from "@garazyk/schemat";
+import { logHeader, logInfo, logOk, logWarn } from "@garazyk/schemat";
 import { waitForHttp } from "@garazyk/laweta";
 import type { TopologyRunContext } from "@garazyk/schemat/runtime";
 
@@ -50,14 +50,15 @@ export type BinaryServiceName = keyof typeof BINARY_SERVICES;
  * Start local ATProto services from build binaries.
  *
  * @param ctx - Run context with `runDir` and `pidFile` paths.
- * @param services - List of services to start. Defaults to [plc, pds, relay, appview].
+ * @param options - Service selection and per-service launch overrides.
  */
 export async function startBinaryServices(
   ctx: TopologyRunContext,
-  services: BinaryServiceName[] = ["plc", "pds", "relay", "appview"],
+  options: StartBinaryOptions = {},
 ): Promise<void> {
   const root = await repoRoot();
   const buildBin = Deno.env.get("BUILD_DIR") || join(root, "build/bin");
+  const services = defaultBinaryServices(options.services);
 
   for (const name of services) {
     const svc = BINARY_SERVICES[name];
@@ -97,89 +98,41 @@ export async function startBinaryServices(
 
   for (const name of services) {
     const svc = BINARY_SERVICES[name];
-    const port = SERVICE_PORTS[name];
-    const dataDir = join(dataRoot, name);
+    const plan = resolveBinaryServiceStartPlan({
+      name,
+      root,
+      dataRoot,
+      commonEnv,
+      options,
+    });
     const logFile = join(logsDir, `${name}.log`);
-    Deno.mkdirSync(dataDir, { recursive: true });
+    Deno.mkdirSync(plan.dataDir, { recursive: true });
 
-    logInfo(`Starting ${name.toUpperCase()} on port ${port}...`);
+    logInfo(`Starting ${name.toUpperCase()} on port ${plan.port}...`);
 
-    let args: string[] = options.args?.[name] || [];
-    const env: Record<string, string> = { 
-      ...commonEnv, 
-      ...(options.env?.[name] || {}) 
-    };
-
-    if (args.length === 0) {
-      switch (name) {
-      case "plc":
-        args = ["serve", "--port", String(port), "--data-dir", dataDir];
-        env.PLC_HOURLY_LIMIT = "5";
-        env.PLC_DAILY_LIMIT = "15";
-        env.PLC_WEEKLY_LIMIT = "50";
-        break;
-      case "pds":
-        args = [
-          "serve",
-          "--config",
-          join(root, "scripts/scenarios/config/pds-config.json"),
-          "--port",
-          String(port),
-          "--data-dir",
-          dataDir,
-          "--foreground",
-        ];
-        env.PDS_ALLOW_HTTP = "1";
-        env.PDS_PLC_KEYS_DIR = join(dataDir, "keys");
-        env.PDS_PLC_URL = serviceUrl("plc");
-        break;
-      case "relay":
-        args = [
-          "serve",
-          "--port",
-          String(port),
-          "--upstream",
-          `ws://127.0.0.1:${SERVICE_PORTS.pds}/xrpc/com.atproto.sync.subscribeRepos`,
-          "--data-dir",
-          dataDir,
-        ];
-        break;
-      case "appview":
-        args = [
-          "serve",
-          "--relay",
-          `ws://127.0.0.1:${SERVICE_PORTS.pds}/xrpc/com.atproto.sync.subscribeRepos`,
-          "--port",
-          String(port),
-          "--data-dir",
-          dataDir,
-        ];
-        env.APPVIEW_ADMIN_SECRET = "localdevadmin";
-        env.APPVIEW_PLC_URL = serviceUrl("plc");
-        env.APPVIEW_PDS_URL = serviceUrl("pds");
-        break;
-      default:
-        args = ["serve", "--port", String(port), "--data-dir", dataDir];
-    }
-
-    const logWriter = await Deno.open(logFile, {
+    const stdoutLog = await Deno.open(logFile, {
+      create: true,
+      append: true,
+      write: true,
+    });
+    const stderrLog = await Deno.open(logFile, {
       create: true,
       append: true,
       write: true,
     });
 
-    const proc = new Deno.Command(join(buildBin, svc.binary), {
-      args,
-      env,
-      stdout: logWriter.rid,
-      stderr: logWriter.rid,
-    });
-
-    const child = proc.spawn();
+    const child = new Deno.Command(join(buildBin, svc.binary), {
+      args: plan.args,
+      env: plan.env,
+      stdout: "piped",
+      stderr: "piped",
+    }).spawn();
+    pipeProcessLog(child.stdout, stdoutLog);
+    pipeProcessLog(child.stderr, stderrLog);
     await appendPid(ctx.pidFile, name.toUpperCase(), child.pid);
 
     const headers: Record<string, string> = {};
-    if (svc.adminAuth) {
+    if ("adminAuth" in svc && svc.adminAuth) {
       headers["Authorization"] = "Bearer localdevadmin";
     }
 
@@ -204,6 +157,19 @@ export async function startBinaryServices(
   logOk("Binary network is ready!");
 }
 
+function pipeProcessLog(
+  stream: ReadableStream<Uint8Array>,
+  file: Deno.FsFile,
+): void {
+  stream.pipeTo(file.writable).catch(() => {
+    try {
+      file.close();
+    } catch {
+      // Stream closure already owns the file lifetime in the success path.
+    }
+  });
+}
+
 /** Options for starting binary services. */
 export interface StartBinaryOptions {
   /** List of services to start. */
@@ -213,7 +179,139 @@ export interface StartBinaryOptions {
   /** Per-service argument overrides. */
   args?: Partial<Record<BinaryServiceName, string[]>>;
   /** Callback fired after each service starts and passes its health check. */
-  onServiceStarted?: (name: BinaryServiceName, child: Deno.ChildProcess) => Promise<void> | void;
+  onServiceStarted?: (
+    name: BinaryServiceName,
+    child: Deno.ChildProcess,
+  ) => Promise<void> | void;
+}
+
+/** Health and process state for a binary service. */
+export interface BinaryServiceStatus {
+  /** Whether the PID from the run file still exists. */
+  running: boolean;
+  /** Process identifier parsed from the run file, when present. */
+  pid?: number;
+  /** Whether the service health probe returned an HTTP success. */
+  healthy?: boolean;
+}
+
+/** Process and HTTP probes used by status checks. */
+export interface BinaryServiceStatusProbeOptions {
+  /** Returns whether a process id is alive. Defaults to `Deno.kill(pid, 0)`. */
+  isProcessRunning?: (pid: number) => boolean;
+  /** Fetch implementation used for health probes. Defaults to global `fetch`. */
+  fetchHealth?: typeof fetch;
+}
+
+interface BinaryServiceStartPlan {
+  name: BinaryServiceName;
+  port: number;
+  dataDir: string;
+  args: string[];
+  env: Record<string, string>;
+}
+
+interface ResolveBinaryServiceStartPlanOptions {
+  name: BinaryServiceName;
+  root: string;
+  dataRoot: string;
+  commonEnv: Record<string, string>;
+  options?: StartBinaryOptions;
+}
+
+export function defaultBinaryServices(
+  services?: BinaryServiceName[],
+): BinaryServiceName[] {
+  return services ?? ["plc", "pds", "relay", "appview"];
+}
+
+/** @internal Exported for unit tests that must not launch real binaries. */
+export function resolveBinaryServiceStartPlan(
+  {
+    name,
+    root,
+    dataRoot,
+    commonEnv,
+    options = {},
+  }: ResolveBinaryServiceStartPlanOptions,
+): BinaryServiceStartPlan {
+  const port = SERVICE_PORTS[name];
+  const dataDir = join(dataRoot, name);
+  const env: Record<string, string> = {
+    ...commonEnv,
+    ...(options.env?.[name] ?? {}),
+  };
+  const overrideArgs = options.args?.[name];
+
+  if (overrideArgs) {
+    return {
+      name,
+      port,
+      dataDir,
+      args: overrideArgs,
+      env,
+    };
+  }
+
+  let args: string[];
+  switch (name) {
+    case "plc":
+      args = ["serve", "--port", String(port), "--data-dir", dataDir];
+      env.PLC_HOURLY_LIMIT = "5";
+      env.PLC_DAILY_LIMIT = "15";
+      env.PLC_WEEKLY_LIMIT = "50";
+      break;
+    case "pds":
+      args = [
+        "serve",
+        "--config",
+        join(root, "scripts/scenarios/config/pds-config.json"),
+        "--port",
+        String(port),
+        "--data-dir",
+        dataDir,
+        "--foreground",
+      ];
+      env.PDS_ALLOW_HTTP = "1";
+      env.PDS_PLC_KEYS_DIR = join(dataDir, "keys");
+      env.PDS_PLC_URL = serviceUrl("plc");
+      break;
+    case "relay":
+      args = [
+        "serve",
+        "--port",
+        String(port),
+        "--upstream",
+        `ws://127.0.0.1:${SERVICE_PORTS.pds}/xrpc/com.atproto.sync.subscribeRepos`,
+        "--data-dir",
+        dataDir,
+      ];
+      break;
+    case "appview":
+      args = [
+        "serve",
+        "--relay",
+        `ws://127.0.0.1:${SERVICE_PORTS.pds}/xrpc/com.atproto.sync.subscribeRepos`,
+        "--port",
+        String(port),
+        "--data-dir",
+        dataDir,
+      ];
+      env.APPVIEW_ADMIN_SECRET = "localdevadmin";
+      env.APPVIEW_PLC_URL = serviceUrl("plc");
+      env.APPVIEW_PDS_URL = serviceUrl("pds");
+      break;
+    default:
+      args = ["serve", "--port", String(port), "--data-dir", dataDir];
+  }
+
+  return {
+    name,
+    port,
+    dataDir,
+    args,
+    env,
+  };
 }
 
 /**
@@ -318,8 +416,24 @@ export async function stopBinaryServices(
  */
 export async function getBinaryServiceStatus(
   ctx: TopologyRunContext,
-): Promise<Record<BinaryServiceName, { running: boolean; pid?: number; healthy?: boolean }>> {
-  const status: Record<string, { running: boolean; pid?: number; healthy?: boolean }> = {};
+  probes: BinaryServiceStatusProbeOptions = {},
+): Promise<Record<BinaryServiceName, BinaryServiceStatus>> {
+  const isProcessRunning = probes.isProcessRunning ??
+    ((pid: number): boolean => {
+      try {
+        Deno.kill(pid, 0);
+        return true;
+      } catch {
+        return false;
+      }
+    });
+  const fetchHealth = probes.fetchHealth ?? fetch;
+  const status = Object.fromEntries(
+    (Object.keys(BINARY_SERVICES) as BinaryServiceName[]).map((name) => [
+      name,
+      { running: false },
+    ]),
+  ) as Record<BinaryServiceName, BinaryServiceStatus>;
   const pidMap = await readPidFile(ctx.pidFile);
 
   for (const name of Object.keys(BINARY_SERVICES) as BinaryServiceName[]) {
@@ -328,22 +442,17 @@ export async function getBinaryServiceStatus(
     let healthy = false;
 
     if (pid) {
-      try {
-        Deno.kill(pid, 0); // Check if process exists
-        running = true;
-      } catch {
-        running = false;
-      }
+      running = isProcessRunning(pid);
     }
 
     if (running) {
       const svc = BINARY_SERVICES[name];
       const headers: Record<string, string> = {};
-      if (svc.adminAuth) {
+      if ("adminAuth" in svc && svc.adminAuth) {
         headers["Authorization"] = "Bearer localdevadmin";
       }
       try {
-        const resp = await fetch(`${serviceUrl(name)}${svc.healthPath}`, {
+        const resp = await fetchHealth(`${serviceUrl(name)}${svc.healthPath}`, {
           headers,
           signal: AbortSignal.timeout(2000),
         });
@@ -356,7 +465,7 @@ export async function getBinaryServiceStatus(
     status[name] = { running, pid, healthy };
   }
 
-  return status as any;
+  return status;
 }
 
 async function readPidFile(pidFile: string): Promise<Record<string, number>> {
@@ -376,12 +485,15 @@ async function readPidFile(pidFile: string): Promise<Record<string, number>> {
 /**
  * Print status report for binary services.
  */
-export async function printBinaryStatusReport(ctx: TopologyRunContext): Promise<void> {
+export async function printBinaryStatusReport(
+  ctx: TopologyRunContext,
+): Promise<void> {
   const status = await getBinaryServiceStatus(ctx);
   logHeader("Service Status Report");
   console.log("");
 
-  for (const [name, info] of Object.entries(status)) {
+  for (const name of Object.keys(status) as BinaryServiceName[]) {
+    const info = status[name];
     const svcName = name.toUpperCase();
     logHeader(`${svcName} Service (port ${SERVICE_PORTS[name]}):`);
     if (info.running) {

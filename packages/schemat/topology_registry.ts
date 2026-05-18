@@ -22,7 +22,18 @@ export type RoleKey = KnownServiceRole;
 export type ServiceRoleKey = KnownServiceRole | `x-${string}`;
 
 /** Built-in service role constants for typed topology authoring. */
-export const Role = {
+export const Role: {
+  readonly plc: "plc";
+  readonly pds: "pds";
+  readonly pds2: "pds2";
+  readonly relay: "relay";
+  readonly appview: "appview";
+  readonly mikrus: "mikrus";
+  readonly chat: "chat";
+  readonly video: "video";
+  readonly ui: "ui";
+  readonly backfill: "backfill";
+} = {
   plc: "plc",
   pds: "pds",
   pds2: "pds2",
@@ -33,7 +44,7 @@ export const Role = {
   video: "video",
   ui: "ui",
   backfill: "backfill",
-} as const satisfies { readonly [R in RoleKey]: R };
+};
 
 /** Metadata for an experimental service role. */
 export interface ExperimentalRoleMetadata {
@@ -88,7 +99,154 @@ export const ROLE_ENV_REGISTRY: Record<KnownServiceRole, string> = {
 };
 
 /** Registered capabilities for each built-in role. */
-export const CAPABILITY_REGISTRY = {
+export const CAPABILITY_REGISTRY: {
+  readonly plc: readonly [
+    "createAccount",
+    "didResolution",
+    "operationLog",
+    "handleRotation",
+    "quotaEnforcement",
+  ];
+  readonly pds: readonly [
+    "admin",
+    "blob",
+    "createAccount",
+    "createRecord",
+    "createSession",
+    "deleteRecord",
+    "describeServer",
+    "getBlob",
+    "getHead",
+    "getRecord",
+    "getRepo",
+    "getSession",
+    "identity",
+    "labeling",
+    "listBlobs",
+    "listRecords",
+    "moderation",
+    "repo",
+    "requestCrawl",
+    "requestPlcOperationSignature",
+    "resolveHandle",
+    "signPlcOperation",
+    "subscribeRepos",
+    "sync",
+    "updateHandle",
+    "uploadBlob",
+  ];
+  readonly pds2: readonly [
+    "admin",
+    "blob",
+    "createAccount",
+    "createRecord",
+    "createSession",
+    "deleteRecord",
+    "describeServer",
+    "getBlob",
+    "getHead",
+    "getRecord",
+    "getRepo",
+    "getSession",
+    "identity",
+    "labeling",
+    "listBlobs",
+    "listRecords",
+    "moderation",
+    "repo",
+    "requestCrawl",
+    "requestPlcOperationSignature",
+    "resolveHandle",
+    "signPlcOperation",
+    "subscribeRepos",
+    "sync",
+    "updateHandle",
+    "uploadBlob",
+  ];
+  readonly relay: readonly [
+    "healthCheck",
+    "listHosts",
+    "listRepos",
+    "requestCrawl",
+    "subscribeRepos",
+    "upstreams",
+  ];
+  readonly appview: readonly [
+    "admin",
+    "adminDashboard",
+    "backfill",
+    "blocks",
+    "dataExport",
+    "feeds",
+    "follows",
+    "getFeed",
+    "getProfile",
+    "getTimeline",
+    "hotReloading",
+    "indexHooks",
+    "labels",
+    "lexiconDriven",
+    "likes",
+    "lists",
+    "luaScripting",
+    "mediaGrid",
+    "multiProtocol",
+    "mutes",
+    "networkLexicons",
+    "notifications",
+    "oauth",
+    "posts",
+    "realTimeSync",
+    "reposts",
+    "search",
+    "video",
+    "xrpcEndpoints",
+  ];
+  readonly mikrus: readonly [
+    "firehoseIndexing",
+    "getBacklinks",
+    "getBacklinkDids",
+    "getBacklinksCount",
+    "getManyToMany",
+    "getManyToManyCounts",
+    "getRecordByUri",
+    "resolveMiniDoc",
+  ];
+  readonly backfill: readonly [
+    "backfill",
+    "collectionFiltering",
+    "eventStream",
+    "filteredSync",
+    "filterManagement",
+    "fullNetworkIndexing",
+    "healthCheck",
+    "identityCaching",
+    "ingestionControl",
+    "labelSubscription",
+    "perRepoOrdering",
+    "prometheusMetrics",
+    "directIndexing",
+    "repoManagement",
+    "repoBackfill",
+    "repoVerification",
+    "subscribeRepos",
+    "verification",
+    "webhookDelivery",
+    "xrpcQueries",
+  ];
+  readonly chat: readonly ["chat", "dm", "groupChat", "healthCheck"];
+  readonly video: readonly ["getVideoStatus", "healthCheck", "uploadVideo"];
+  readonly ui: readonly [
+    "admin",
+    "compose",
+    "deep",
+    "login",
+    "oauth",
+    "profiles",
+    "smoke",
+    "timeline",
+  ];
+} = {
   plc: [
     "createAccount",
     "didResolution",
@@ -235,7 +393,7 @@ export const CAPABILITY_REGISTRY = {
     "smoke",
     "timeline",
   ],
-} as const satisfies Record<RoleKey, readonly string[]>;
+};
 
 /** Built-in capability registry keyed by role. */
 export type RoleCapabilityMap = typeof CAPABILITY_REGISTRY;

@@ -1,8 +1,9 @@
 # Documentation Tooling
 
-This directory contains documentation tooling for managing, validating, and maintaining the Garazyk
-documentation ecosystem. Legacy migration helpers still use Node.js; active repo-wide registry,
-link, and coverage checks use Deno/TypeScript.
+This directory contains documentation tooling for managing, validating, and
+maintaining the Garazyk documentation ecosystem. Legacy migration helpers still
+use Node.js; active repo-wide registry, link, and coverage checks use
+Deno/TypeScript.
 
 ## Setup
 
@@ -17,7 +18,8 @@ npm install
 
 ### Migration Tool (`migrate.js`)
 
-Consolidates documentation from multiple source directories into the unified `docs/` structure.
+Consolidates documentation from multiple source directories into the unified
+`docs/` structure.
 
 **Features:**
 
@@ -42,8 +44,8 @@ npm run migrate configs/plan-consolidation.json -- --verbose
 
 **Configuration:**
 
-Migration configurations are JSON files that define source/destination mappings, file patterns, and
-options. See `configs/README.md` for detailed documentation.
+Migration configurations are JSON files that define source/destination mappings,
+file patterns, and options. See `configs/README.md` for detailed documentation.
 
 Example configuration:
 
@@ -115,8 +117,8 @@ npm run archive
 
 ### Repo-Wide Registry and Validation (`repo_docs.ts`)
 
-Generates canonical metadata and enforces strict internal link/discoverability checks across
-repository markdown.
+Generates canonical metadata and enforces strict internal link/discoverability
+checks across repository markdown.
 
 **Usage:**
 
@@ -133,7 +135,9 @@ deno run -A scripts/docs/repo_docs.ts validate --external-report
 
 ### Deno/TypeScript API Documentation
 
-The scenario harness API is documented from `scripts/lib/deno/mod.ts`.
+The scenario harness API is documented from package entrypoints such as
+`packages/hamownia/mod.ts`, `packages/gruszka/mod.ts`, and
+`packages/schemat/mod.ts`.
 
 ```bash
 # Install or refresh the docs package dependencies after package metadata changes
@@ -184,5 +188,5 @@ npm test
 
 ## Documentation
 
-See the [Documentation Map](../../docs/11-reference/documentation-map.md) for current repository
-documentation conventions and ownership.
+See the [Documentation Map](../../docs/11-reference/documentation-map.md) for
+current repository documentation conventions and ownership.

@@ -34,8 +34,13 @@ export {
 export type {
   Classification,
   DocRecord,
+  ExternalLinkReport,
+  ExternalLinkResult,
+  LinkAnalysis,
   LinkEdge,
   LinkIssue,
+  LinkStats,
+  OrphanAnalysis,
   RepoDocsPaths,
 } from "./repo_docs.ts";
 export {

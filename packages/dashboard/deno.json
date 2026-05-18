@@ -10,21 +10,12 @@
   },
   "license": "Unlicense OR CC0-1.0",
   "publish": {
-    "include": [
-      "README.md",
-      "deno.json",
-      "mod.ts",
-      "cli.ts",
-      "tui.ts",
-      "paths.ts",
-      "utils.ts",
-      "services/**/*.ts",
-      "db/**/*.ts",
-      "tui/**/*.ts"
-    ],
     "exclude": [
       "**/*.test.ts",
-      "**/*_test.ts"
+      "**/*_test.ts",
+      "*.test.ts",
+      "*_test.ts",
+      "**/node_modules/**"
     ]
   },
   "tasks": {

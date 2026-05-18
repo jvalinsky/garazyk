@@ -6,5 +6,17 @@
     ".": "./mod.ts",
     "./compose": "./compose.ts"
   },
-  "license": "Unlicense OR CC0-1.0"
+  "license": "Unlicense OR CC0-1.0",
+  "publish": {
+    "include": [
+      "README.md",
+      "LICENSE",
+      "deno.json",
+      "*.ts"
+    ],
+    "exclude": [
+      "**/*.test.ts",
+      "**/*_test.ts"
+    ]
+  }
 }

@@ -1,8 +1,8 @@
 /**
  * Generic Docker Engine, Compose, health, event, and stats utilities.
  *
- * Scenario Docker execution has moved to `@garazyk/hamownia/docker-runner`.
- * ATProto network orchestration is at `@garazyk/hamownia/atproto-network`.
+ * Protocol-specific orchestration and scenario execution live outside this
+ * package.
  *
  * @module laweta
  */

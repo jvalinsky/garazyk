@@ -8,8 +8,8 @@
  * mapping. Callers that need ATProto role conventions should pass
  * `roleEnvMapper` (e.g. `roleEnvKey` from `@garazyk/schemat`).
  *
- * Moved from `@garazyk/laweta/docker_runner.ts` — scenario Docker execution
- * is orchestration, not generic Docker infrastructure.
+ * Scenario Docker execution is orchestration, not generic Docker
+ * infrastructure.
  *
  * @module docker_runner
  */

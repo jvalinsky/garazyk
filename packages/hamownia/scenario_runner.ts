@@ -5,7 +5,10 @@ import type { RunnerArgs } from "./run_scenarios_types.ts";
 import type { Topology } from "@garazyk/schemat";
 import { roleEnvKey } from "@garazyk/schemat";
 import { type ScenarioReport, ScenarioResult } from "./runner.ts";
-import { runScenarioInDocker } from "./docker_runner.ts";
+import {
+  type DockerRunnerOptions,
+  runScenarioInDocker,
+} from "./docker_runner.ts";
 
 const HOST_CHILD_GRACE_MS = 2_000;
 
@@ -59,27 +62,16 @@ export async function runScenario(
   // Docker runner mode: execute the scenario inside a container
   if (args.runner === "docker") {
     try {
-      const exitCode = await runScenarioInDocker({
-        repoRoot,
-        composeProject,
-        networkName: topology.manifest
-          ? `${composeProject}_${topology.manifest.networkName}`
-          : `${composeProject}_local_net`,
-        internalUrls: topology.internalUrls,
-        dockerRunnerEnv: topology.manifest?.env?.dockerRunner,
-        capabilities: topology.capabilities,
-        scenarioPath: scenario.path,
-        timeoutSeconds,
-        roleEnvMapper: roleEnvKey,
-        env: {
-          ...(topology.manifest?.scenarioEnv || {}),
-          ...(topology.manifest?.env?.scenario || {}),
-          ATPROTO_CLIENT_FLOW: args.clientFlow,
-          ATPROTO_ALLOW_HYBRID_NETWORK: args.allowHybridNetwork ? "1" : "0",
-          ...(args.webClient ? { ATPROTO_WEB_CLIENT: args.webClient } : {}),
-          ...(args.topology ? { ATPROTO_TOPOLOGY: args.topology } : {}),
-        },
-      });
+      const exitCode = await runScenarioInDocker(
+        buildDockerScenarioRunnerOptions(
+          scenario,
+          timeoutSeconds,
+          args,
+          topology,
+          repoRoot,
+          composeProject,
+        ),
+      );
       const result = new ScenarioResult(scenario.name);
       result.start();
       if (exitCode === 0) {
@@ -108,6 +100,38 @@ export async function runScenario(
   }
 
   return await runHostScenarioInChild(scenario, timeoutSeconds, args, topology);
+}
+
+/** Build Docker-runner options for a scenario without launching Docker. */
+export function buildDockerScenarioRunnerOptions(
+  scenario: ScenarioInfo,
+  timeoutSeconds: number,
+  args: RunnerArgs,
+  topology: Topology,
+  repoRoot: string,
+  composeProject: string,
+): DockerRunnerOptions {
+  return {
+    repoRoot,
+    composeProject,
+    networkName: topology.manifest
+      ? `${composeProject}_${topology.manifest.networkName}`
+      : `${composeProject}_local_net`,
+    internalUrls: topology.internalUrls,
+    dockerRunnerEnv: topology.manifest?.env?.dockerRunner,
+    capabilities: topology.capabilities,
+    scenarioPath: scenario.path,
+    timeoutSeconds,
+    roleEnvMapper: roleEnvKey,
+    env: {
+      ...(topology.manifest?.scenarioEnv || {}),
+      ...(topology.manifest?.env?.scenario || {}),
+      ATPROTO_CLIENT_FLOW: args.clientFlow,
+      ATPROTO_ALLOW_HYBRID_NETWORK: args.allowHybridNetwork ? "1" : "0",
+      ...(args.webClient ? { ATPROTO_WEB_CLIENT: args.webClient } : {}),
+      ...(args.topology ? { ATPROTO_TOPOLOGY: args.topology } : {}),
+    },
+  };
 }
 
 function buildHostScenarioEnv(

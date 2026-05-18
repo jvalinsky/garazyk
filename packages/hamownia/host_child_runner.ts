@@ -51,6 +51,7 @@ async function runChild(): Promise<number> {
   const args = parseArgs(Deno.args);
   const result = new ScenarioResult(args.scenarioName);
   try {
+    // deno-lint-ignore unanalyzable-dynamic-import
     const module = await import(
       `${toFileUrl(args.scenarioPath).href}?run=${Date.now()}`
     ) as ScenarioModule;

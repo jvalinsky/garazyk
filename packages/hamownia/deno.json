@@ -32,5 +32,22 @@
     "./demo-command": "./demo_command.ts",
     "./test-command": "./test_command.ts"
   },
-  "license": "Unlicense OR CC0-1.0"
+  "lint": {
+    "rules": {
+      "exclude": ["unanalyzable-dynamic-import"]
+    }
+  },
+  "license": "Unlicense OR CC0-1.0",
+  "publish": {
+    "include": [
+      "README.md",
+      "LICENSE",
+      "deno.json",
+      "*.ts"
+    ],
+    "exclude": [
+      "**/*.test.ts",
+      "**/*_test.ts"
+    ]
+  }
 }

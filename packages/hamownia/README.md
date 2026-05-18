@@ -1,8 +1,8 @@
 # @garazyk/hamownia
 
-An assertion-based end-to-end (E2E) testing framework designed for AT Protocol
-simulations. It orchestrates the lifecycle of a local network and executes
-automated assertions against its services.
+An assertion-based end-to-end (E2E) testing framework and AT Protocol
+orchestration package. It owns scenario execution, local network lifecycle,
+binary service startup, stale cleanup, diagnostics, and reports.
 
 ## Why Hamownia?
 
@@ -21,11 +21,16 @@ deno add jsr:@garazyk/hamownia
 
 - **Scenario Orchestration**: Automated setup and teardown of the test
   environment.
+- **ATProto Network Control**: Docker and binary-mode local network startup via
+  explicit subpaths such as `@garazyk/hamownia/atproto-network` and
+  `@garazyk/hamownia/binary-services`.
+- **Docker Scenario Runner**: Scenario container execution is owned here, not by
+  `@garazyk/laweta`.
 - **Assertion Library**: Domain-specific assertions for ATProto behavior.
 - **Report Writing**: Generates HTML and JSON test reports with timing
   statistics.
-- **Account Discovery**: Helpers for finding and resolving DIDs via SSH,
-  admin APIs, or local databases.
+- **Account Discovery**: Helpers for finding and resolving DIDs via SSH, admin
+  APIs, or local databases.
 - **Mock Twilio**: Integrated mock SMS gateway for testing account verification
   flows.
 - **OpenTelemetry Integration**: Built-in support for distributed tracing of

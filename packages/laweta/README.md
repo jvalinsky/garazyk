@@ -2,7 +2,11 @@
 
 A generic Deno wrapper for Docker Engine and Docker Compose. This package
 provides utilities for programmatically managing Docker containers, streaming
-logs, checking health status, and parsing Docker events.
+logs, checking health status, sampling stats, and parsing Docker events.
+
+`laweta` intentionally contains no protocol-specific orchestration. Scenario
+execution, service lifecycle commands, and domain-specific cleanup live outside
+this package.
 
 ## Why Laweta?
 
@@ -25,6 +29,9 @@ deno add jsr:@garazyk/laweta
 - **Event Streaming**: Listen to Docker engine events with ease.
 - **Resource Monitoring**: Stream container stats (CPU, Memory, IO).
 - **Health Checks**: Wait for HTTP or Docker-level health status.
+
+For scenario orchestration, use `@garazyk/hamownia`. For topology and service
+role metadata, use `@garazyk/schemat`.
 
 ## Usage
 

@@ -1,8 +1,9 @@
 # ATProto Scenario Simulation Suite
 
-Scenario-based simulation scripts that exercise all four ATProto services (PDS, AppView, Relay/BGS,
-PLC) running in the local-network Docker environment. Each scenario tells a story with named
-characters, exercises specific XRPC endpoints, and validates the full stack.
+Scenario-based simulation scripts that exercise all four ATProto services (PDS,
+AppView, Relay/BGS, PLC) running in the local-network Docker environment. Each
+scenario tells a story with named characters, exercises specific XRPC endpoints,
+and validates the full stack.
 
 ## Quick Start
 
@@ -53,7 +54,8 @@ deno --version
 
 ## Core Scenarios
 
-Use `./scripts/run_scenarios.ts --list` for the complete auto-discovered scenario set.
+Use `./scripts/run_scenarios.ts --list` for the complete auto-discovered
+scenario set.
 
 | ID | Name                                 | Description                                                           | Services                   | PDS2? |
 | -- | ------------------------------------ | --------------------------------------------------------------------- | -------------------------- | ----- |
@@ -177,8 +179,8 @@ Each scenario prints a colored PASS/FAIL/SKIP table:
 ### JSON Reports
 
 Machine-readable reports are written to the run directory by default:
-`/tmp/garazyk-atproto-e2e/<run-id>/reports/`. Each report includes run metadata, service URLs, and
-the diagnostics directory.
+`/tmp/garazyk-atproto-e2e/<run-id>/reports/`. Each report includes run metadata,
+service URLs, and the diagnostics directory.
 
 ```json
 {
@@ -187,7 +189,12 @@ the diagnostics directory.
   "finished_at": 1713900015.0,
   "duration_s": 15.0,
   "steps": [
-    { "name": "Server health check", "status": "passed", "detail": "", "duration_ms": 0 },
+    {
+      "name": "Server health check",
+      "status": "passed",
+      "detail": "",
+      "duration_ms": 0
+    },
     {
       "name": "Create account",
       "status": "passed",
@@ -207,47 +214,47 @@ the diagnostics directory.
 
 ### Diagnostics
 
-Every supported runner writes diagnostics under `/tmp/garazyk-atproto-e2e/<run-id>/diagnostics/`
-unless `--diagnostics-dir` is provided. Bundles include:
+Every supported runner writes diagnostics under
+`/tmp/garazyk-atproto-e2e/<run-id>/diagnostics/` unless `--diagnostics-dir` is
+provided. Bundles include:
 
 - `run-metadata.*` with run id, repo state, service URLs, and compose project
 - `http/*.txt` health/admin endpoint captures with tokens redacted
-- `docker/ps.txt`, `docker/config.txt`, and redacted Docker logs for compose runs
+- `docker/ps.txt`, `docker/config.txt`, and redacted Docker logs for compose
+  runs
 - `service-logs/*.log` and `pids.txt` for local binary runs
 
-Use `--collect-diagnostics` on `setup_local_network.sh`, `teardown_local_network.sh`,
-`run_scenarios.ts`, `full_suite_demo.sh`, or the e2e wrappers to capture the current state without
-rerunning tests.
+Use `--collect-diagnostics` on `setup_local_network.sh`,
+`teardown_local_network.sh`, `run_scenarios.ts`, `full_suite_demo.sh`, or the
+e2e wrappers to capture the current state without rerunning tests.
 
 ## Architecture
 
 ```
 scripts/
 ├── run_scenarios.ts                    # Scenario runner
-├── lib/deno/                           # Shared TypeScript scenario helpers
-│   ├── client.ts                       # XRPC/HTTP client with auth, retry, logging
-│   ├── config.ts                       # Service URLs and character fixtures
-│   ├── runner.ts                       # Scenario result reporting
-│   ├── docker.ts                       # Local-network process boundary
-│   └── ...
 └── scenarios/
     ├── README.md
-    ├── setup_local_network.sh          # Start Docker/binary services
-    ├── teardown_local_network.sh       # Stop services
     └── scenarios/
         ├── 01_account_lifecycle.ts
         ├── 02_social_graph.ts
         └── ...
+
+packages/
+├── hamownia/                           # Scenario execution and reports
+├── gruszka/                            # XRPC clients and seed helpers
+└── schemat/                            # Topology/runtime schemas
 ```
 
 ## Adding a New Scenario
 
-1. Create `scripts/scenarios/scenarios/NN_name.ts` with a `run()` function that returns a
-   `ScenarioResult`.
-2. Import shared helpers from `../../lib/deno/`.
+1. Create `scripts/scenarios/scenarios/NN_name.ts` with a `run()` function that
+   returns a `ScenarioResult`.
+2. Import shared helpers from `@garazyk/hamownia`, `@garazyk/gruszka`, and
+   `@garazyk/schemat`.
 3. Use the `NN_` filename prefix; discovery is automatic.
-4. Add characters to `scripts/lib/deno/config.ts` if needed.
-5. Add any new XRPC helpers under `scripts/lib/deno/clients/`.
+4. Add characters through `@garazyk/hamownia/config` if needed.
+5. Add reusable XRPC helpers under `packages/gruszka`.
 
 ### Template
 
@@ -278,39 +285,48 @@ if (import.meta.main) {
 
 ## Endpoint Coverage
 
-| Namespace | Scenarios | Key Endpoints | |---|---|---|---| | `com.atproto.server.*` | 1, 8 |
-createAccount, createSession, getSession, refreshSession, deleteSession, describeServer | |
-`com.atproto.identity.*` | 1, 5 | resolveHandle, updateHandle | | `com.atproto.repo.*` | 3, 7, 10 |
-createRecord, getRecord, deleteRecord, uploadBlob, applyWrites, listRecords | | `com.atproto.sync.*`
-| 5, 9 | subscribeRepos, getRepo, getHead, getBlob, getRecord | | `com.atproto.moderation.*` | 4 |
-createReport | | `com.atproto.admin.*` | 4 | getSubjectStatus, updateSubjectStatus | |
-`com.atproto.label.*` | 4 | getLabels, queryLabels | | `app.bsky.actor.*` | 1, 2, 3, 17 |
-getProfile, getProfiles, searchActors, searchActorsTypeahead, getPreferences, putPreferences,
-getSuggestions, profile record | | `app.bsky.feed.*` | 3, 10, 17 | post, like, repost, bookmark,
-getTimeline, getAuthorFeed, getPostThread, getLikes, getActorLikes, getPosts, getRepostedBy, getFeed
-| | `app.bsky.graph.*` | 2, 15 | follow, block, getFollows, getFollowers, getBlocks, getMutes,
-muteActor, unmuteActor, getRelationships, getStarterPack, getActorStarterPacks, getStarterPacks | |
-`app.bsky.graph.starterpack` | 15, 20 | starterpack record, getStarterPack, getActorStarterPacks,
-getStarterPacks | | `app.bsky.notification.*` | 3, 16 | listNotifications, getUnreadCount,
-updateSeen, registerPush, unregisterPush, getPreferences, putPreferences, listActivitySubscriptions,
-putActivitySubscription | | `app.bsky.draft.*` | 14 | createDraft, updateDraft, getDrafts,
-deleteDraft | | `app.bsky.bookmark.*` | 3, 14 | getBookmarks, createBookmark, deleteBookmark | |
-`app.bsky.contact.*` | 19 | startPhoneVerification, verifyPhone, importContacts, getMatches,
-dismissMatch, getSyncStatus, removeData | | `app.bsky.ageassurance.*` | 19 | begin, getConfig,
-getState | | `app.bsky.unspecced.*` | 20 | searchActorsSkeleton, searchPostsSkeleton,
-searchStarterPacksSkeleton | | `chat.bsky.convo.*` | 6 | getConvo, sendMessage, getList,
-getMessages, muteConvo | | `chat.bsky.group.*` | 6 | createGroup, getGroup, addMember | |
-`tools.ozone.*` | 4 | queryReports, emitEvent | | OAuth2 | 8 | /oauth/authorize, /oauth/token,
-/oauth/revoke | | PLC | 1, 5 | DID creation, resolution | | Relay API | 5, 9, 10 |
-/api/relay/health, /api/relay/upstreams | | AppView Admin | 3, 5, 9, 18 | /admin/backfill/status,
-/admin/backfill/queue, /admin/backfill/repos, /admin/backfill/scope/rebuild, /admin/ingest/health,
-/admin/appview/metrics/stats, /admin/lexicons, /admin/lexicons/collections, /admin/records,
-/admin/hooks, /admin/hooks/dead-letter, /admin/handlers, /admin/endpoints |
+| Namespace | Scenarios | Key Endpoints | |---|---|---|---| |
+`com.atproto.server.*` | 1, 8 | createAccount, createSession, getSession,
+refreshSession, deleteSession, describeServer | | `com.atproto.identity.*` | 1,
+5 | resolveHandle, updateHandle | | `com.atproto.repo.*` | 3, 7, 10 |
+createRecord, getRecord, deleteRecord, uploadBlob, applyWrites, listRecords | |
+`com.atproto.sync.*` | 5, 9 | subscribeRepos, getRepo, getHead, getBlob,
+getRecord | | `com.atproto.moderation.*` | 4 | createReport | |
+`com.atproto.admin.*` | 4 | getSubjectStatus, updateSubjectStatus | |
+`com.atproto.label.*` | 4 | getLabels, queryLabels | | `app.bsky.actor.*` | 1,
+2, 3, 17 | getProfile, getProfiles, searchActors, searchActorsTypeahead,
+getPreferences, putPreferences, getSuggestions, profile record | |
+`app.bsky.feed.*` | 3, 10, 17 | post, like, repost, bookmark, getTimeline,
+getAuthorFeed, getPostThread, getLikes, getActorLikes, getPosts, getRepostedBy,
+getFeed | | `app.bsky.graph.*` | 2, 15 | follow, block, getFollows,
+getFollowers, getBlocks, getMutes, muteActor, unmuteActor, getRelationships,
+getStarterPack, getActorStarterPacks, getStarterPacks | |
+`app.bsky.graph.starterpack` | 15, 20 | starterpack record, getStarterPack,
+getActorStarterPacks, getStarterPacks | | `app.bsky.notification.*` | 3, 16 |
+listNotifications, getUnreadCount, updateSeen, registerPush, unregisterPush,
+getPreferences, putPreferences, listActivitySubscriptions,
+putActivitySubscription | | `app.bsky.draft.*` | 14 | createDraft, updateDraft,
+getDrafts, deleteDraft | | `app.bsky.bookmark.*` | 3, 14 | getBookmarks,
+createBookmark, deleteBookmark | | `app.bsky.contact.*` | 19 |
+startPhoneVerification, verifyPhone, importContacts, getMatches, dismissMatch,
+getSyncStatus, removeData | | `app.bsky.ageassurance.*` | 19 | begin, getConfig,
+getState | | `app.bsky.unspecced.*` | 20 | searchActorsSkeleton,
+searchPostsSkeleton, searchStarterPacksSkeleton | | `chat.bsky.convo.*` | 6 |
+getConvo, sendMessage, getList, getMessages, muteConvo | | `chat.bsky.group.*` |
+6 | createGroup, getGroup, addMember | | `tools.ozone.*` | 4 | queryReports,
+emitEvent | | OAuth2 | 8 | /oauth/authorize, /oauth/token, /oauth/revoke | | PLC
+| 1, 5 | DID creation, resolution | | Relay API | 5, 9, 10 | /api/relay/health,
+/api/relay/upstreams | | AppView Admin | 3, 5, 9, 18 | /admin/backfill/status,
+/admin/backfill/queue, /admin/backfill/repos, /admin/backfill/scope/rebuild,
+/admin/ingest/health, /admin/appview/metrics/stats, /admin/lexicons,
+/admin/lexicons/collections, /admin/records, /admin/hooks,
+/admin/hooks/dead-letter, /admin/handlers, /admin/endpoints |
 
 ## Topologies
 
-Topologies swap out individual services (PLC, relay, PDS) with alternate implementations to test
-interop. See [topologies/README.md](topologies/README.md) for the full catalog and known
+Topologies swap out individual services (PLC, relay, PDS) with alternate
+implementations to test interop. See
+[topologies/README.md](topologies/README.md) for the full catalog and known
 compatibility issues.
 
 ### Quick reference
