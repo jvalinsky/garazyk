@@ -14,7 +14,7 @@ import {
   type ContainerSummary,
   cpuPercent,
   createDockerClient,
-  type DockerApiClient,
+  DockerApiClient,
   type DockerEvent,
   findPortConflicts,
   formatMemory,
@@ -62,6 +62,113 @@ function concatBytes(...chunks: Uint8Array[]): Uint8Array {
   return output;
 }
 
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+interface RecordedRequest {
+  pathname: string;
+  search: string;
+}
+
+async function withFakeDockerApi(
+  handler: (req: Request, requests: RecordedRequest[]) => Response,
+  fn: (client: DockerApiClient, requests: RecordedRequest[]) => Promise<void>,
+): Promise<void> {
+  const requests: RecordedRequest[] = [];
+  const server = Deno.serve({
+    hostname: "127.0.0.1",
+    port: 0,
+    onListen: () => {},
+  }, (req) => {
+    const url = new URL(req.url);
+    requests.push({ pathname: url.pathname, search: url.search });
+    if (url.pathname === "/v1.43/_ping") {
+      return new Response("OK");
+    }
+    return handler(req, requests);
+  });
+
+  const client = new DockerApiClient(
+    `http://127.0.0.1:${server.addr.port}`,
+  );
+  try {
+    assertEquals(await client.init(), true);
+    requests.length = 0;
+    await fn(client, requests);
+  } finally {
+    client.close();
+    await server.shutdown();
+  }
+}
+
+const minimalInspect: ContainerInspect = {
+  Id: "abc123",
+  Created: "",
+  Name: "/abc123",
+  State: {
+    Status: "running",
+    Running: true,
+    Paused: false,
+    Restarting: false,
+    OOMKilled: false,
+    Dead: false,
+    Pid: 1,
+    ExitCode: 0,
+    Error: "",
+    StartedAt: "",
+    FinishedAt: "",
+  },
+  Config: {
+    Image: "alpine",
+    Labels: {},
+    Env: [],
+  },
+  NetworkSettings: {
+    Bridge: "",
+    Ports: {},
+    Networks: {},
+  },
+  Mounts: [],
+};
+
+const minimalStats: import("./docker_api.ts").ContainerStats = {
+  read: "",
+  preread: "",
+  num_procs: 1,
+  cpu_stats: {
+    cpu_usage: {
+      total_usage: 0,
+      percpu_usage: [],
+      usage_in_kernelmode: 0,
+      usage_in_usermode: 0,
+    },
+    system_cpu_usage: 0,
+    online_cpus: 1,
+    throttling_data: { periods: 0, throttled_periods: 0, throttled_time: 0 },
+  },
+  precpu_stats: {
+    cpu_usage: {
+      total_usage: 0,
+      percpu_usage: [],
+      usage_in_kernelmode: 0,
+      usage_in_usermode: 0,
+    },
+    system_cpu_usage: 0,
+    online_cpus: 1,
+    throttling_data: { periods: 0, throttled_periods: 0, throttled_time: 0 },
+  },
+  memory_stats: {
+    usage: 0,
+    max_usage: 0,
+    limit: 0,
+    stats: { cache: 0, rss: 0 },
+    failcnt: 0,
+  },
+  blkio_stats: { io_service_bytes_recursive: [] },
+  networks: {},
+};
+
 // Final test that cleans up the shared client
 Deno.test(
   {
@@ -99,6 +206,72 @@ Deno.test(
     assertEquals(ping, true);
   },
 );
+
+Deno.test("DockerApiClient: encodes container path segments", async () => {
+  await withFakeDockerApi((req) => {
+    const url = new URL(req.url);
+    if (url.pathname.endsWith("/json")) {
+      return Response.json(minimalInspect);
+    }
+    if (url.pathname.endsWith("/logs")) {
+      return new Response("log line\n");
+    }
+    if (url.pathname.endsWith("/stats")) {
+      return Response.json(minimalStats);
+    }
+    if (url.pathname.endsWith("/wait")) {
+      return Response.json({ StatusCode: 0 });
+    }
+    return new Response("not found", { status: 404 });
+  }, async (client, requests) => {
+    await client.inspectContainer("project/service");
+    assertEquals(
+      requests.at(-1),
+      { pathname: "/v1.43/containers/project%2Fservice/json", search: "" },
+    );
+
+    await client.containerLogs("name with spaces", { tail: "10" });
+    assertEquals(
+      requests.at(-1),
+      {
+        pathname: "/v1.43/containers/name%20with%20spaces/logs",
+        search: "?stdout=true&stderr=true&tail=10",
+      },
+    );
+
+    await client.containerStats("name?x=y", { oneShot: true });
+    assertEquals(
+      requests.at(-1),
+      {
+        pathname: "/v1.43/containers/name%3Fx%3Dy/stats",
+        search: "?stream=false&one-shot=true",
+      },
+    );
+
+    for await (const _stats of client.streamContainerStats("a/b")) {
+      break;
+    }
+    assertEquals(
+      requests.at(-1),
+      {
+        pathname: "/v1.43/containers/a%2Fb/stats",
+        search: "?stream=true",
+      },
+    );
+
+    await client.waitContainer("a#b");
+    assertEquals(
+      requests.at(-1),
+      { pathname: "/v1.43/containers/a%23b/wait", search: "" },
+    );
+
+    await client.inspectContainer("abc123");
+    assertEquals(
+      requests.at(-1),
+      { pathname: "/v1.43/containers/abc123/json", search: "" },
+    );
+  });
+});
 
 Deno.test("DockerApiClient: version", async () => {
   const client = await getClient();
@@ -265,6 +438,95 @@ Deno.test("DockerApiClient: streamEvents (basic)", async () => {
   // We may or may not have captured events depending on timing,
   // but the stream mechanism should work without errors
   console.log(`  Captured ${events.length} event(s)`);
+});
+
+Deno.test("DockerApiClient: streamEvents yields final line without newline", async () => {
+  await withFakeDockerApi(() =>
+    new Response(
+      new TextEncoder().encode(
+        JSON.stringify({
+          type: "container",
+          action: "start",
+          actor: { ID: "abc", Attributes: {} },
+          scope: "local",
+          time: 1,
+          timeNano: 1,
+        }),
+      ),
+    ), async (client) => {
+    const events: DockerEvent[] = [];
+    for await (const event of client.streamEvents()) {
+      events.push(event);
+    }
+
+    assertEquals(events.length, 1);
+    assertEquals(events[0].action, "start");
+  });
+});
+
+Deno.test("DockerApiClient: streamEvents skips malformed NDJSON lines", async () => {
+  const originalDebug = console.debug;
+  const debugMessages: unknown[][] = [];
+  console.debug = (...args: unknown[]) => {
+    debugMessages.push(args);
+  };
+
+  try {
+    await withFakeDockerApi(() =>
+      new Response(
+        [
+          "{not-json}",
+          JSON.stringify({
+            type: "container",
+            action: "die",
+            actor: { ID: "abc", Attributes: {} },
+            scope: "local",
+            time: 1,
+            timeNano: 1,
+          }),
+          "",
+        ].join("\n"),
+      ), async (client) => {
+      const events: DockerEvent[] = [];
+      for await (const event of client.streamEvents()) {
+        events.push(event);
+      }
+
+      assertEquals(events.length, 1);
+      assertEquals(events[0].action, "die");
+      assertEquals(debugMessages.length, 1);
+      assertEquals(
+        String(debugMessages[0][0]).includes("DockerApiClient.streamEvents"),
+        true,
+      );
+    });
+  } finally {
+    console.debug = originalDebug;
+  }
+});
+
+Deno.test("DockerApiClient: streamEvents abort exits cleanly", async () => {
+  await withFakeDockerApi(() =>
+    new Response(
+      new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode("\n"));
+        },
+      }),
+    ), async (client) => {
+    const abort = new AbortController();
+    const events: DockerEvent[] = [];
+    const consume = (async () => {
+      for await (const event of client.streamEvents(undefined, abort.signal)) {
+        events.push(event);
+      }
+    })();
+
+    await delay(10);
+    abort.abort();
+    await consume;
+    assertEquals(events.length, 0);
+  });
 });
 
 // ---------------------------------------------------------------------------

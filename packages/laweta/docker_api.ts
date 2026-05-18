@@ -346,11 +346,14 @@ export class DockerApiClient {
       }
       const ok = await this.ping();
       this._available = ok;
+      if (!ok) {
+        this.close();
+      }
       return ok;
     } catch (e) {
-      console.warn("[docker-api] failed to initialize Docker client", e);
+      console.debug("[docker-api] Docker daemon unavailable during init", e);
       this._available = false;
-      this.client = null;
+      this.close();
       return false;
     }
   }
@@ -375,7 +378,7 @@ export class DockerApiClient {
       await resp.body?.cancel().catch(() => {});
       return resp.status === 200;
     } catch (e) {
-      console.warn("[docker-api] ping failed", e);
+      console.debug("[docker-api] Docker daemon ping failed", e);
       return false;
     }
   }
@@ -429,7 +432,11 @@ export class DockerApiClient {
   async inspectContainer(id: string): Promise<ContainerInspect> {
     return await withSpan(
       "docker.inspectContainer",
-      () => this.requestJSON<ContainerInspect>("GET", `/containers/${id}/json`),
+      () =>
+        this.requestJSON<ContainerInspect>(
+          "GET",
+          this.containerPath(id, "/json"),
+        ),
       { "docker.container_id": id.substring(0, 12) },
     );
   }
@@ -453,7 +460,7 @@ export class DockerApiClient {
     return await withSpan("docker.containerLogs", async () => {
       const resp = await this.request(
         "GET",
-        `/containers/${id}/logs?${params.toString()}`,
+        this.containerPath(id, `/logs?${params.toString()}`),
       );
       return await demuxLogStream(resp);
     }, { "docker.container_id": id.substring(0, 12) });
@@ -478,7 +485,7 @@ export class DockerApiClient {
       () =>
         this.requestJSON<ContainerStats>(
           "GET",
-          `/containers/${id}/stats?${qs}`,
+          this.containerPath(id, `/stats?${qs}`),
         ),
       { "docker.container_id": id.substring(0, 12) },
     );
@@ -499,51 +506,22 @@ export class DockerApiClient {
   ): AsyncIterable<ContainerStats> {
     const resp = await this.request(
       "GET",
-      `/containers/${id}/stats?stream=true`,
+      this.containerPath(id, "/stats?stream=true"),
       undefined,
       signal,
     );
 
     if (!resp.body) return;
-
-    const reader = resp.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-
-    try {
-      while (true) {
-        if (signal?.aborted) break;
-        const { done, value } = await reader.read().catch((err: Error) => {
-          // AbortError is expected when close() cancels the stream.
-          if (err.name === "AbortError") {
-            return {
-              done: true as const,
-              value: undefined as unknown as Uint8Array,
-            };
-          }
-          throw err;
-        });
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed) continue;
-          try {
-            yield JSON.parse(trimmed) as ContainerStats;
-          } catch {
-            // Skip malformed lines
-          }
-        }
-      }
-    } finally {
-      reader.releaseLock();
-      try {
-        resp.body?.cancel().catch(() => {});
-      } catch { /* ignore */ }
+    for await (
+      const stats of parseNdjsonStream<ContainerStats>(
+        resp.body,
+        `DockerApiClient.streamContainerStats GET ${
+          this.containerPath(id, "/stats?stream=true")
+        }`,
+        signal,
+      )
+    ) {
+      yield stats;
     }
   }
 
@@ -558,7 +536,7 @@ export class DockerApiClient {
       () =>
         this.requestJSON<{ StatusCode: number }>(
           "POST",
-          `/containers/${id}/wait`,
+          this.containerPath(id, "/wait"),
         ),
       { "docker.container_id": id.substring(0, 12) },
     );
@@ -594,45 +572,14 @@ export class DockerApiClient {
       return;
     }
 
-    const reader = resp.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-
-    try {
-      while (true) {
-        if (signal?.aborted) break;
-        const { done, value } = await reader.read().catch((err: Error) => {
-          // AbortError is expected when close() cancels the stream.
-          if (err.name === "AbortError") {
-            return {
-              done: true as const,
-              value: undefined as unknown as Uint8Array,
-            };
-          }
-          throw err;
-        });
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        // Keep the last (possibly incomplete) line in the buffer
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed) continue;
-          try {
-            yield JSON.parse(trimmed) as DockerEvent;
-          } catch {
-            // Skip malformed lines (Docker sometimes sends empty lines)
-          }
-        }
-      }
-    } finally {
-      reader.releaseLock();
-      try {
-        resp.body?.cancel().catch(() => {});
-      } catch { /* ignore */ }
+    for await (
+      const event of parseNdjsonStream<DockerEvent>(
+        resp.body,
+        `DockerApiClient.streamEvents GET ${path}`,
+        signal,
+      )
+    ) {
+      yield event;
     }
   }
 
@@ -687,6 +634,15 @@ export class DockerApiClient {
   private async requestJSON<T>(method: string, path: string): Promise<T> {
     const resp = await this.request(method, path);
     return await resp.json();
+  }
+
+  private containerPath(id: string, suffix: string): string {
+    if (!suffix.startsWith("/")) {
+      throw new Error(
+        `Docker container API suffix must start with /: ${suffix}`,
+      );
+    }
+    return `/containers/${encodeURIComponent(id)}${suffix}`;
   }
 }
 
@@ -743,6 +699,63 @@ function detectSocketPath(): string {
 
   // Default to standard path even if it doesn't exist yet
   return "/var/run/docker.sock";
+}
+
+async function* parseNdjsonStream<T>(
+  body: ReadableStream<Uint8Array>,
+  context: string,
+  signal?: AbortSignal,
+): AsyncIterable<T> {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  const parseLine = function* (line: string): Iterable<T> {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+    try {
+      yield JSON.parse(trimmed) as T;
+    } catch (e) {
+      console.debug(
+        `[docker-api] skipped malformed NDJSON line: ${context}`,
+        e,
+      );
+    }
+  };
+
+  try {
+    while (true) {
+      if (signal?.aborted) break;
+      let result: ReadableStreamReadResult<Uint8Array>;
+      try {
+        result = await reader.read();
+      } catch (e) {
+        if (e instanceof Error && e.name === "AbortError") {
+          break;
+        }
+        throw e;
+      }
+      if (result.done) break;
+
+      buffer += decoder.decode(result.value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        yield* parseLine(line);
+      }
+    }
+
+    buffer += decoder.decode();
+    yield* parseLine(buffer);
+  } finally {
+    reader.releaseLock();
+    try {
+      await body.cancel();
+    } catch {
+      // The stream may already be closed or locked by the runtime.
+    }
+  }
 }
 
 /**
