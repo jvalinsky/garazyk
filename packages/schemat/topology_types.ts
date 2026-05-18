@@ -106,6 +106,8 @@ export interface SidecarAdapter {
   };
   /** Upstream dependencies referenced by name */
   dependsOn?: string[];
+  /** Upstream dependencies referenced by topology role */
+  dependsOnRoles?: ServiceRole[];
   /** Additional probes collected for diagnostics */
   diagnostics?: DiagnosticProbeConfig[];
 }
@@ -152,6 +154,8 @@ export interface ServiceAdapter {
   capabilities: string[];
   /** Upstream dependencies referenced by role or service name */
   dependsOn?: string[];
+  /** Upstream dependencies referenced by topology role */
+  dependsOnRoles?: ServiceRole[];
   /** Named sidecars started with the service */
   sidecars?: Record<string, SidecarAdapter>;
   /** Additional probes collected for diagnostics */
@@ -426,7 +430,8 @@ export interface TopologyResolveOptions {
 }
 
 /** Default compose service name for each known role */
-export const ROLE_TO_SERVICE: Record<ServiceRole, string> = DEFAULT_SERVICE_NAMES;
+export const ROLE_TO_SERVICE: Record<ServiceRole, string> =
+  DEFAULT_SERVICE_NAMES;
 /** Default host port for each known role */
 export const ROLE_TO_PORT: Record<ServiceRole, string> = DEFAULT_PORTS;
 /** Default environment variable name for each known role */

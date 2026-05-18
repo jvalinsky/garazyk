@@ -16,8 +16,24 @@ export const KNOWN_SERVICE_ROLES = [
 
 /** Built-in service role names. */
 export type KnownServiceRole = typeof KNOWN_SERVICE_ROLES[number];
+/** Built-in role names used by the TypeScript authoring API. */
+export type RoleKey = KnownServiceRole;
 /** A service role name, including experimental `x-...` roles. */
 export type ServiceRoleKey = KnownServiceRole | `x-${string}`;
+
+/** Built-in service role constants for typed topology authoring. */
+export const Role = {
+  plc: "plc",
+  pds: "pds",
+  pds2: "pds2",
+  relay: "relay",
+  appview: "appview",
+  mikrus: "mikrus",
+  chat: "chat",
+  video: "video",
+  ui: "ui",
+  backfill: "backfill",
+} as const satisfies { readonly [R in RoleKey]: R };
 
 /** Metadata for an experimental service role. */
 export interface ExperimentalRoleMetadata {
@@ -72,7 +88,7 @@ export const ROLE_ENV_REGISTRY: Record<KnownServiceRole, string> = {
 };
 
 /** Registered capabilities for each built-in role. */
-export const CAPABILITY_REGISTRY: Record<KnownServiceRole, readonly string[]> = {
+export const CAPABILITY_REGISTRY = {
   plc: [
     "createAccount",
     "didResolution",
@@ -209,7 +225,47 @@ export const CAPABILITY_REGISTRY: Record<KnownServiceRole, readonly string[]> = 
   ],
   chat: ["chat", "dm", "groupChat", "healthCheck"],
   video: ["getVideoStatus", "healthCheck", "uploadVideo"],
-  ui: ["admin", "compose", "deep", "login", "oauth", "profiles", "smoke", "timeline"],
+  ui: [
+    "admin",
+    "compose",
+    "deep",
+    "login",
+    "oauth",
+    "profiles",
+    "smoke",
+    "timeline",
+  ],
+} as const satisfies Record<RoleKey, readonly string[]>;
+
+/** Built-in capability registry keyed by role. */
+export type RoleCapabilityMap = typeof CAPABILITY_REGISTRY;
+/** Capabilities that are valid for a specific built-in role. */
+export type CapabilityForRole<R extends RoleKey> = RoleCapabilityMap[R][number];
+/** Any built-in capability across all roles. */
+export type AnyCapability = CapabilityForRole<RoleKey>;
+
+function capabilityConstants<const Caps extends readonly string[]>(
+  capabilities: Caps,
+): { readonly [C in Caps[number]]: C } {
+  return Object.fromEntries(
+    capabilities.map((capability) => [capability, capability]),
+  ) as { readonly [C in Caps[number]]: C };
+}
+
+/** Capability constants grouped by role for typed topology authoring. */
+export const Cap: {
+  readonly [R in RoleKey]: { readonly [C in CapabilityForRole<R>]: C };
+} = {
+  plc: capabilityConstants(CAPABILITY_REGISTRY.plc),
+  pds: capabilityConstants(CAPABILITY_REGISTRY.pds),
+  pds2: capabilityConstants(CAPABILITY_REGISTRY.pds2),
+  relay: capabilityConstants(CAPABILITY_REGISTRY.relay),
+  appview: capabilityConstants(CAPABILITY_REGISTRY.appview),
+  mikrus: capabilityConstants(CAPABILITY_REGISTRY.mikrus),
+  chat: capabilityConstants(CAPABILITY_REGISTRY.chat),
+  video: capabilityConstants(CAPABILITY_REGISTRY.video),
+  ui: capabilityConstants(CAPABILITY_REGISTRY.ui),
+  backfill: capabilityConstants(CAPABILITY_REGISTRY.backfill),
 };
 
 const KNOWN_ROLE_SET = new Set<string>(KNOWN_SERVICE_ROLES);
@@ -243,7 +299,9 @@ export function roleEnvKey(
 
 /** Get the default Docker Compose service name for a role. */
 export function defaultServiceName(role: string): string {
-  return isKnownServiceRole(role) ? DEFAULT_SERVICE_NAMES[role] : `local-${role}`;
+  return isKnownServiceRole(role)
+    ? DEFAULT_SERVICE_NAMES[role]
+    : `local-${role}`;
 }
 
 /** Get the default host port for a service role. */
@@ -256,12 +314,15 @@ export function defaultRolePort(
 }
 
 /** Validate that a capability is allowed for a role. @param role - Service role name. @param capability - Capability name to validate. @returns An error message when the capability is invalid, otherwise `undefined`. */
-export function validateRoleCapability(role: string, capability: string): string | undefined {
+export function validateRoleCapability(
+  role: string,
+  capability: string,
+): string | undefined {
   if (isExperimentalCapability(capability)) return undefined;
   if (!isKnownServiceRole(role)) {
     return `Role "${role}" may only declare experimental capabilities like x-namespace:name`;
   }
-  if (!CAPABILITY_REGISTRY[role].includes(capability)) {
+  if (!(CAPABILITY_REGISTRY[role] as readonly string[]).includes(capability)) {
     return `Capability "${capability}" is not registered for role "${role}"`;
   }
   return undefined;

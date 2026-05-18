@@ -267,6 +267,7 @@ const containerPrimitiveSchema = z.object({
     diagnosticProbeSchema,
   ])).optional(),
   dependsOn: z.array(z.string()).optional(),
+  dependsOnRoles: z.array(z.string()).optional(),
   configFiles: stringRecordSchema.optional(),
 }).strict();
 
@@ -372,6 +373,8 @@ export interface ContainerSpec {
   diagnostics: DiagnosticProbeSpec[];
   /** Upstream dependencies expressed by name */
   dependsOn: string[];
+  /** Upstream dependencies expressed by topology role */
+  dependsOnRoles: string[];
   /** Config files materialized for the container */
   configFiles?: Record<string, string>;
 }
@@ -565,8 +568,11 @@ export function resolveNormalizedTopologyPreset(
     for (const capability of roleCapabilities) capabilities.add(capability);
     Object.assign(scenario, service.scenarioEnv);
 
-    const requestedDeps = service.dependsOn;
-    const resolvedDeps = requestedDeps.map((dep) => serviceNames[dep] || dep);
+    const dependencyInfo = dependencyInfoForNormalizedService(
+      service,
+      roleServiceNames(preset.roles),
+      preset.name,
+    );
 
     const resolvedService: ResolvedTopologyService = {
       ...service,
@@ -578,8 +584,8 @@ export function resolveNormalizedTopologyPreset(
         scenarioEnv: service.scenarioEnv,
       },
       dependencies: {
-        requested: requestedDeps,
-        composeServiceNames: resolvedDeps,
+        requested: dependencyInfo.requested,
+        composeServiceNames: dependencyInfo.composeServiceNames,
       },
     };
     services[role] = resolvedService;
@@ -663,6 +669,7 @@ function normalizeService(
     health,
     diagnostics: normalizeDiagnostics(merged.diagnostics, role),
     dependsOn: merged.dependsOn || [],
+    dependsOnRoles: merged.dependsOnRoles || [],
     configFiles: merged.configFiles,
     capabilities: merged.capabilities || [],
     sidecars: normalizeSidecars(merged.sidecars || {}),
@@ -691,6 +698,7 @@ function normalizeSidecars(
         health,
         diagnostics: normalizeDiagnostics(raw.diagnostics, name),
         dependsOn: raw.dependsOn || [],
+        dependsOnRoles: raw.dependsOnRoles || [],
         configFiles: raw.configFiles,
         capabilities: raw.capabilities || [],
       };
@@ -738,7 +746,7 @@ export function normalizeVolumes(
       kind: source.startsWith(".") || source.startsWith("/") ? "bind" : "named",
       source,
       target,
-      mode,
+      ...(mode === undefined ? {} : { mode }),
     };
   });
 }
@@ -860,6 +868,41 @@ function sourceInfo(
     buildArgs: source.buildArgs || {},
     dockerfileOverlay: source.dockerfileOverlay || "",
     overlayDir: source.overlayDir || "",
+  };
+}
+
+function roleServiceNames(
+  roles: NormalizedTopologyPreset["roles"],
+): Record<string, string> {
+  const names: Record<string, string> = {};
+  for (const [role, value] of Object.entries(roles)) {
+    if ("inherit" in value) {
+      names[role] = defaultServiceName(role);
+      continue;
+    }
+    names[role] = value.serviceName;
+  }
+  return names;
+}
+
+function dependencyInfoForNormalizedService(
+  service: Pick<NormalizedServiceSpec, "dependsOn" | "dependsOnRoles">,
+  serviceNamesByRole: Record<string, string>,
+  presetName: string,
+): { requested: string[]; composeServiceNames: string[] } {
+  const requested = [...service.dependsOn, ...service.dependsOnRoles];
+  const roleDependencies = service.dependsOnRoles.map((role) => {
+    const serviceName = serviceNamesByRole[role];
+    if (!serviceName) {
+      throw new Error(
+        `Invalid topology preset "${presetName}": dependency role "${role}" is not defined.`,
+      );
+    }
+    return serviceName;
+  });
+  return {
+    requested,
+    composeServiceNames: [...service.dependsOn, ...roleDependencies],
   };
 }
 

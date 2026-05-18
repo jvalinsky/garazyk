@@ -5,10 +5,15 @@
  */
 
 import { join } from "@std/path";
-import { defaultRolePort, defaultServiceName, roleEnvKey } from "./topology_registry.ts";
+import {
+  defaultRolePort,
+  defaultServiceName,
+  roleEnvKey,
+} from "./topology_registry.ts";
 import { parseTopologyManifestJson } from "./topology_schema.ts";
 import type {
   DiagnosticProbeConfig,
+  InheritedAdapter,
   ServiceAdapter,
   ServiceRole,
   SourceBuild,
@@ -29,8 +34,46 @@ export function sanitizeTopologyName(name: string): string {
 }
 
 /** Get the Docker Compose service name for a role. */
-export function serviceNameForRole(role: string, adapter?: ServiceAdapter): string {
+export function serviceNameForRole(
+  role: string,
+  adapter?: ServiceAdapter,
+): string {
   return adapter?.serviceName || defaultServiceName(role);
+}
+
+/** Resolve direct service-name dependencies and role dependencies for a service. */
+export function dependencyInfoForService(
+  adapter: Pick<ServiceAdapter, "dependsOn" | "dependsOnRoles">,
+  roles: TopologyPreset["roles"],
+): { requested: string[]; composeServiceNames: string[] } {
+  const directDependencies = adapter.dependsOn || [];
+  const roleDependencies = adapter.dependsOnRoles || [];
+  return {
+    requested: [...directDependencies, ...roleDependencies],
+    composeServiceNames: [
+      ...directDependencies,
+      ...roleDependencies.map((role) =>
+        serviceNameForDependencyRole(role, roles)
+      ),
+    ],
+  };
+}
+
+function serviceNameForDependencyRole(
+  role: string,
+  roles: TopologyPreset["roles"],
+): string {
+  const adapter =
+    (roles as Record<string, ServiceAdapter | InheritedAdapter | undefined>)[
+      role
+    ];
+  if (!adapter) {
+    throw new Error(
+      `Dependency role "${role}" is not defined in topology preset.`,
+    );
+  }
+  if ("inherit" in adapter) return defaultServiceName(role);
+  return serviceNameForRole(role, adapter);
 }
 
 /** Get the default host port for a role. */
@@ -39,10 +82,14 @@ export function defaultPortForRole(role: string): string {
 }
 
 /** Parse a Docker port mapping into host and container ports. @returns An object with `hostPort` and `containerPort`. */
-export function parsePortMapping(mapping?: string): { hostPort: string; containerPort: string } {
+export function parsePortMapping(
+  mapping?: string,
+): { hostPort: string; containerPort: string } {
   if (!mapping) return { hostPort: "", containerPort: "" };
   const parts = mapping.split(":");
-  if (parts.length === 1) return { hostPort: parts[0], containerPort: parts[0] };
+  if (parts.length === 1) {
+    return { hostPort: parts[0], containerPort: parts[0] };
+  }
   return {
     hostPort: parts[parts.length - 2],
     containerPort: parts[parts.length - 1],
@@ -50,16 +97,23 @@ export function parsePortMapping(mapping?: string): { hostPort: string; containe
 }
 
 /** Build the public URL for a role. */
-export function publicUrlForRole(role: string, adapter: ServiceAdapter): string {
+export function publicUrlForRole(
+  role: string,
+  adapter: ServiceAdapter,
+): string {
   const parsed = parsePortMapping(adapter.ports?.[0]);
   const port = parsed.hostPort || defaultPortForRole(role);
   return `http://localhost:${port}`;
 }
 
 /** Build the internal Docker URL for a role. */
-export function internalUrlForRole(role: string, adapter: ServiceAdapter): string {
+export function internalUrlForRole(
+  role: string,
+  adapter: ServiceAdapter,
+): string {
   const parsed = parsePortMapping(adapter.ports?.[0]);
-  const port = parsed.containerPort || parsed.hostPort || defaultPortForRole(role);
+  const port = parsed.containerPort || parsed.hostPort ||
+    defaultPortForRole(role);
   return `http://${serviceNameForRole(role, adapter)}:${port}`;
 }
 
@@ -142,15 +196,14 @@ export function createTopologyManifest(
     const roleCapabilities = [...adapter.capabilities];
     capabilitiesByRole[role] = roleCapabilities;
     for (const cap of roleCapabilities) capabilitySet.add(cap);
+    const dependencyInfo = dependencyInfoForService(adapter, preset.roles);
+
     services[role] = {
       role,
       name: adapter.name,
       serviceName,
       capabilities: roleCapabilities,
-      dependencies: {
-        requested: adapter.dependsOn || [],
-        composeServiceNames: adapter.dependsOn || [],
-      },
+      dependencies: dependencyInfo,
       secrets: Object.keys(adapter.env || {}).filter((key) =>
         /(SECRET|TOKEN|PASSWORD|JWT|KEY)/i.test(key)
       ),
@@ -206,17 +259,29 @@ export function createTopologyManifest(
       });
     }
 
-    for (const [_sidecarName, sidecar] of Object.entries(adapter.sidecars || {})) {
+    for (
+      const [_sidecarName, sidecar] of Object.entries(adapter.sidecars || {})
+    ) {
       if (sidecar.source) {
-        sources.push(sourceInfo(_sidecarName, sidecar.source, options.runDir, _sidecarName));
+        sources.push(
+          sourceInfo(
+            _sidecarName,
+            sidecar.source,
+            options.runDir,
+            _sidecarName,
+          ),
+        );
       }
     }
   }
 
   scenarioEnv.ATPROTO_TOPOLOGY = preset.name;
-  scenarioEnv.ATPROTO_TOPOLOGY_CAPABILITIES = [...capabilitySet].sort().join(",");
+  scenarioEnv.ATPROTO_TOPOLOGY_CAPABILITIES = [...capabilitySet].sort().join(
+    ",",
+  );
   scenarioOnlyEnv.ATPROTO_TOPOLOGY = preset.name;
-  scenarioOnlyEnv.ATPROTO_TOPOLOGY_CAPABILITIES = [...capabilitySet].sort().join(",");
+  scenarioOnlyEnv.ATPROTO_TOPOLOGY_CAPABILITIES = [...capabilitySet].sort()
+    .join(",");
 
   return {
     version: 2,
@@ -224,7 +289,8 @@ export function createTopologyManifest(
     description: preset.description,
     runDir: options.runDir,
     repoRoot: options.repoRoot,
-    composeFile: options.composeFile || join(options.runDir, "docker-compose.topology.yml"),
+    composeFile: options.composeFile ||
+      join(options.runDir, "docker-compose.topology.yml"),
     networkName: "topology_net",
     serviceUrls,
     internalUrls,
@@ -266,18 +332,23 @@ export function createTopologyManifest(
 // ---------------------------------------------------------------------------
 
 /** Write a topology manifest to disk. @param path - Destination file path. @param manifest - Manifest data to write. @returns A promise that resolves when the file has been written. */
-export function writeTopologyManifest(path: string, manifest: TopologyManifest): Promise<void> {
+export function writeTopologyManifest(
+  path: string,
+  manifest: TopologyManifest,
+): Promise<void> {
   parseTopologyManifestJson(manifest, path);
   return Deno.writeTextFile(path, JSON.stringify(manifest, null, 2) + "\n");
 }
 
-/** 
- * Load a topology manifest from disk or the environment. 
- * @param path - Optional explicit manifest path. 
- * @returns The parsed topology manifest, or `undefined` when no path is configured. 
+/**
+ * Load a topology manifest from disk or the environment.
+ * @param path - Optional explicit manifest path.
+ * @returns The parsed topology manifest, or `undefined` when no path is configured.
  * @throws {Error} If the manifest fails schema validation or is malformed.
  */
-export function loadTopologyManifest(path?: string): TopologyManifest | undefined {
+export function loadTopologyManifest(
+  path?: string,
+): TopologyManifest | undefined {
   const explicitPath = path || readEnv("ATPROTO_TOPOLOGY_MANIFEST");
   const manifestPath = explicitPath;
   if (!manifestPath) return undefined;

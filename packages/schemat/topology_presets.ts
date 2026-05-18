@@ -1,4 +1,16 @@
-import type { RawTopologyPresetV1, WebClientTopology } from "./topology_types.ts";
+import type {
+  RawTopologyPresetV1,
+  WebClientTopology,
+} from "./topology_types.ts";
+import {
+  defineTopology,
+  health as topologyHealth,
+  port,
+  role,
+  source,
+  volume,
+} from "./topology_authoring.ts";
+import { Cap, Role } from "./topology_registry.ts";
 
 /**
  * Central registry for ATProto network topologies.
@@ -9,12 +21,12 @@ export class TopologyRegistry {
   private static webClients: Map<string, WebClientTopology> = new Map();
 
   /** Register a topology preset programmatically. */
-  static register(preset: RawTopologyPresetV1) {
+  static register(preset: RawTopologyPresetV1): void {
     this.presets.set(preset.name, preset);
   }
 
   /** Register a web client preset programmatically. */
-  static registerWebClient(client: WebClientTopology) {
+  static registerWebClient(client: WebClientTopology): void {
     this.webClients.set(client.name, client);
   }
 
@@ -43,16 +55,25 @@ export class TopologyRegistry {
 // Built-in Web Clients
 // ---------------------------------------------------------------------------
 
+interface RuntimeEnv {
+  Deno?: {
+    env?: {
+      get(name: string): string | undefined;
+    };
+  };
+}
+
 function readEnv(name: string): string | undefined {
   try {
-    return (globalThis as any).Deno?.env.get(name) || undefined;
+    return (globalThis as RuntimeEnv).Deno?.env?.get(name) || undefined;
   } catch {
     return undefined;
   }
 }
 
 const publicWebUrl = readEnv("WEB_CLIENT_URL") || "http://localhost:2591";
-const internalWebUrl = readEnv("WEB_CLIENT_INTERNAL_URL") || "http://web-client:2590";
+const internalWebUrl = readEnv("WEB_CLIENT_INTERNAL_URL") ||
+  "http://web-client:2590";
 
 function health(url: string) {
   return {
@@ -174,7 +195,8 @@ for (const client of BUILTIN_WEB_CLIENTS) {
 
 const GARAZYK_DEFAULT: RawTopologyPresetV1 = {
   "name": "garazyk-default",
-  "description": "Full Garazyk stack: PDS (kaszlak), Relay (zuk), PLC (campagnola), AppView (syrena), Chat (syrena-chat), Video (jelcz). Built from local source.",
+  "description":
+    "Full Garazyk stack: PDS (kaszlak), Relay (zuk), PLC (campagnola), AppView (syrena), Chat (syrena-chat), Video (jelcz). Built from local source.",
   "roles": {
     "plc": {
       "name": "campagnola",
@@ -182,26 +204,41 @@ const GARAZYK_DEFAULT: RawTopologyPresetV1 = {
       "dockerfile": "Dockerfile.local",
       "entrypoint": ["/usr/local/bin/campagnola"],
       "command": [
-        "serve", "--host", "0.0.0.0", "--port", "2582", "--database", "/var/lib/atprotopds/plc.db"
+        "serve",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "2582",
+        "--database",
+        "/var/lib/atprotopds/plc.db",
       ],
       "env": {
         "TZ": "UTC",
         "PLC_HOURLY_LIMIT": "500",
         "PLC_DAILY_LIMIT": "1000",
-        "PLC_WEEKLY_LIMIT": "5000"
+        "PLC_WEEKLY_LIMIT": "5000",
       },
       "ports": ["2582:2582"],
       "volumes": ["local_plc_data:/var/lib/atprotopds"],
       "healthCheck": { "path": "/_health" },
       "capabilities": [
-        "createAccount", "didResolution", "operationLog", "handleRotation", "quotaEnforcement"
-      ]
+        "createAccount",
+        "didResolution",
+        "operationLog",
+        "handleRotation",
+        "quotaEnforcement",
+      ],
     },
     "pds": {
       "name": "kaszlak",
       "buildContext": "docker/local-network",
       "dockerfile": "Dockerfile.local",
-      "command": ["serve", "--config", "/var/lib/atprotopds/config.json", "--foreground"],
+      "command": [
+        "serve",
+        "--config",
+        "/var/lib/atprotopds/config.json",
+        "--foreground",
+      ],
       "env": {
         "TZ": "UTC",
         "PDS_ALLOW_PRIVATE_SSRF": "1",
@@ -209,29 +246,50 @@ const GARAZYK_DEFAULT: RawTopologyPresetV1 = {
         "PDS_LEXICON_PATH": "/usr/share/atprotopds/lexicons",
         "HOME": "/var/lib/atprotopds",
         "PDS_RATELIMIT_ENABLED": "false",
-        "PDS_MASTER_SECRET": "32107992c973da8445b485263cb2bd3157859cb94294a2355e3c4a7b0f825afe",
-        "PDS_ADMIN_PASSWORD": "admin-localdev"
+        "PDS_MASTER_SECRET":
+          "32107992c973da8445b485263cb2bd3157859cb94294a2355e3c4a7b0f825afe",
+        "PDS_ADMIN_PASSWORD": "admin-localdev",
       },
       "ports": ["2583:2583"],
       "volumes": [
         "local_pds_data:/var/lib/atprotopds",
         "./pds-config.json:/var/lib/atprotopds/config.json:ro",
-        "local_pds_keys:/var/lib/atprotopds/keys"
+        "local_pds_keys:/var/lib/atprotopds/keys",
       ],
       "healthCheck": { "path": "/xrpc/com.atproto.server.describeServer" },
       "capabilities": [
-        "describeServer", "createAccount", "createSession", "getSession", "createRecord",
-        "getRecord", "deleteRecord", "listRecords", "uploadBlob", "getBlob", "listBlobs",
-        "resolveHandle", "updateHandle", "subscribeRepos", "getHead", "getRepo",
-        "requestCrawl", "admin", "sync"
+        "describeServer",
+        "createAccount",
+        "createSession",
+        "getSession",
+        "createRecord",
+        "getRecord",
+        "deleteRecord",
+        "listRecords",
+        "uploadBlob",
+        "getBlob",
+        "listBlobs",
+        "resolveHandle",
+        "updateHandle",
+        "subscribeRepos",
+        "getHead",
+        "getRepo",
+        "requestCrawl",
+        "admin",
+        "sync",
       ],
-      "dependsOn": ["local-plc"]
+      "dependsOn": ["local-plc"],
     },
     "pds2": {
       "name": "kaszlak-pds2",
       "buildContext": "docker/local-network",
       "dockerfile": "Dockerfile.local",
-      "command": ["serve", "--config", "/var/lib/atprotopds/config.json", "--foreground"],
+      "command": [
+        "serve",
+        "--config",
+        "/var/lib/atprotopds/config.json",
+        "--foreground",
+      ],
       "env": {
         "TZ": "UTC",
         "PDS_ALLOW_PRIVATE_SSRF": "1",
@@ -239,23 +297,39 @@ const GARAZYK_DEFAULT: RawTopologyPresetV1 = {
         "PDS_LEXICON_PATH": "/usr/share/atprotopds/lexicons",
         "HOME": "/var/lib/atprotopds",
         "PDS_RATELIMIT_ENABLED": "false",
-        "PDS_MASTER_SECRET": "32107992c973da8445b485263cb2bd3157859cb94294a2355e3c4a7b0f825afe",
-        "PDS_ADMIN_PASSWORD": "admin-localdev"
+        "PDS_MASTER_SECRET":
+          "32107992c973da8445b485263cb2bd3157859cb94294a2355e3c4a7b0f825afe",
+        "PDS_ADMIN_PASSWORD": "admin-localdev",
       },
       "ports": ["2587:2587"],
       "volumes": [
         "local_pds2_data:/var/lib/atprotopds",
         "./pds2-config.json:/var/lib/atprotopds/config.json:ro",
-        "local_pds2_keys:/var/lib/atprotopds/keys"
+        "local_pds2_keys:/var/lib/atprotopds/keys",
       ],
       "healthCheck": { "path": "/xrpc/com.atproto.server.describeServer" },
       "capabilities": [
-        "describeServer", "createAccount", "createSession", "getSession", "createRecord",
-        "getRecord", "deleteRecord", "listRecords", "uploadBlob", "getBlob", "listBlobs",
-        "resolveHandle", "updateHandle", "subscribeRepos", "getHead", "getRepo",
-        "requestCrawl", "admin", "sync"
+        "describeServer",
+        "createAccount",
+        "createSession",
+        "getSession",
+        "createRecord",
+        "getRecord",
+        "deleteRecord",
+        "listRecords",
+        "uploadBlob",
+        "getBlob",
+        "listBlobs",
+        "resolveHandle",
+        "updateHandle",
+        "subscribeRepos",
+        "getHead",
+        "getRepo",
+        "requestCrawl",
+        "admin",
+        "sync",
       ],
-      "dependsOn": ["local-plc"]
+      "dependsOn": ["local-plc"],
     },
     "relay": {
       "name": "zuk",
@@ -263,14 +337,17 @@ const GARAZYK_DEFAULT: RawTopologyPresetV1 = {
       "dockerfile": "Dockerfile.local",
       "entrypoint": ["/usr/local/bin/zuk"],
       "command": [
-        "serve", "--upstream", "ws://local-pds:2583/xrpc/com.atproto.sync.subscribeRepos",
-        "--port", "2584"
+        "serve",
+        "--upstream",
+        "ws://local-pds:2583/xrpc/com.atproto.sync.subscribeRepos",
+        "--port",
+        "2584",
       ],
       "ports": ["2584:2584"],
       "volumes": ["local_relay_data:/var/lib/atprotopds"],
       "healthCheck": { "path": "/api/relay/health" },
       "capabilities": ["subscribeRepos", "requestCrawl", "healthCheck"],
-      "dependsOn": ["local-pds"]
+      "dependsOn": ["local-pds"],
     },
     "appview": {
       "name": "syrena",
@@ -278,21 +355,33 @@ const GARAZYK_DEFAULT: RawTopologyPresetV1 = {
       "dockerfile": "Dockerfile.local",
       "entrypoint": ["/usr/local/bin/syrena"],
       "command": [
-        "serve", "--relay", "ws://local-relay:2584", "--port", "3200", "--no-backfill"
+        "serve",
+        "--relay",
+        "ws://local-relay:2584",
+        "--port",
+        "3200",
+        "--no-backfill",
       ],
       "env": {
         "APPVIEW_ADMIN_SECRET": "localdevadmin",
         "APPVIEW_PLC_URL": "http://local-plc:2582",
-        "APPVIEW_PDS_URL": "http://local-pds:2583"
+        "APPVIEW_PDS_URL": "http://local-pds:2583",
       },
       "ports": ["3200:3200"],
       "volumes": ["local_appview_data:/var/lib/atprotopds"],
       "healthCheck": {
         "path": "/admin/backfill/status",
-        "headers": { "Authorization": "Bearer localdevadmin" }
+        "headers": { "Authorization": "Bearer localdevadmin" },
       },
-      "capabilities": ["getTimeline", "getProfile", "getFeed", "search", "backfill", "admin"],
-      "dependsOn": ["local-relay"]
+      "capabilities": [
+        "getTimeline",
+        "getProfile",
+        "getFeed",
+        "search",
+        "backfill",
+        "admin",
+      ],
+      "dependsOn": ["local-relay"],
     },
     "chat": {
       "name": "syrena-chat",
@@ -304,7 +393,7 @@ const GARAZYK_DEFAULT: RawTopologyPresetV1 = {
       "volumes": ["local_chat_data:/var/lib/atprotopds"],
       "healthCheck": { "path": "/_health" },
       "capabilities": ["dm", "chat"],
-      "dependsOn": ["local-pds"]
+      "dependsOn": ["local-pds"],
     },
     "video": {
       "name": "jelcz",
@@ -316,76 +405,104 @@ const GARAZYK_DEFAULT: RawTopologyPresetV1 = {
       "volumes": ["local_video_data:/var/lib/atprotopds"],
       "healthCheck": { "path": "/_health" },
       "capabilities": ["uploadVideo", "getVideoStatus"],
-      "dependsOn": ["local-pds"]
-    }
+      "dependsOn": ["local-pds"],
+    },
   },
   "networkAliases": {
-    "local-appview": ["bsky.app"]
-  }
+    "local-appview": ["bsky.app"],
+  },
 };
 
 const REFERENCE_PDS: RawTopologyPresetV1 = {
   "name": "reference-pds",
-  "description": "Bluesky reference PDS (TypeScript) with Garazyk Relay, PLC, and AppView.",
+  "description":
+    "Bluesky reference PDS (TypeScript) with Garazyk Relay, PLC, and AppView.",
   "roles": {
     "plc": { "inherit": "garazyk-default" },
     "pds": {
       "name": "reference-pds",
       "source": {
         "repo": "https://github.com/bluesky-social/pds.git",
-        "ref": "v0.4.219"
+        "ref": "v0.4.219",
       },
       "command": ["--port", "2583"],
       "env": {
         "PDS_HOSTNAME": "localhost",
         "PDS_JETSTREAM_URL": "ws://local-relay:2584",
         "PDS_BLOB_CACHE_LOC": "/tmp/pds-blob-cache",
-        "PDS_DIDPLC_URL": "http://local-plc:2582"
+        "PDS_DIDPLC_URL": "http://local-plc:2582",
       },
       "ports": ["2583:2583"],
       "volumes": ["ref_pds_data:/data"],
       "healthCheck": { "path": "/xrpc/com.atproto.server.describeServer" },
       "capabilities": [
-        "describeServer", "createAccount", "createSession", "getSession", "createRecord",
-        "getRecord", "deleteRecord", "listRecords", "uploadBlob", "getBlob", "listBlobs",
-        "resolveHandle", "updateHandle", "subscribeRepos", "getHead", "getRepo",
-        "requestCrawl", "admin", "sync"
+        "describeServer",
+        "createAccount",
+        "createSession",
+        "getSession",
+        "createRecord",
+        "getRecord",
+        "deleteRecord",
+        "listRecords",
+        "uploadBlob",
+        "getBlob",
+        "listBlobs",
+        "resolveHandle",
+        "updateHandle",
+        "subscribeRepos",
+        "getHead",
+        "getRepo",
+        "requestCrawl",
+        "admin",
+        "sync",
       ],
-      "dependsOn": ["local-plc"]
+      "dependsOn": ["local-plc"],
     },
     "relay": { "inherit": "garazyk-default" },
-    "appview": { "inherit": "garazyk-default" }
-  }
+    "appview": { "inherit": "garazyk-default" },
+  },
 };
 
 const REFERENCE_PLC: RawTopologyPresetV1 = {
   "name": "reference-plc",
-  "description": "Bluesky reference PLC directory server (TypeScript, did-method-plc) with Garazyk PDS, Relay, and AppView.",
+  "description":
+    "Bluesky reference PLC directory server (TypeScript, did-method-plc) with Garazyk PDS, Relay, and AppView.",
   "roles": {
     "plc": {
       "name": "reference-plc",
       "source": {
         "repo": "https://github.com/did-method-plc/did-method-plc.git",
         "ref": "main",
-        "dockerfile": "packages/server/Dockerfile"
+        "dockerfile": "packages/server/Dockerfile",
       },
       "command": ["node", "--enable-source-maps", "index.js"],
       "env": {
         "PORT": "2582",
         "NODE_ENV": "production",
-        "DB_CREDS_JSON": "{\"host\":\"local-plc-db\",\"port\":5432,\"username\":\"plc\",\"password\":\"plc\",\"database\":\"plc\"}",
+        "DB_CREDS_JSON":
+          '{"host":"local-plc-db","port":5432,"username":"plc","password":"plc","database":"plc"}',
         "ENABLE_MIGRATIONS": "true",
-        "DB_MIGRATE_CREDS_JSON": "{\"host\":\"local-plc-db\",\"port\":5432,\"username\":\"plc\",\"password\":\"plc\",\"database\":\"plc\"}",
+        "DB_MIGRATE_CREDS_JSON":
+          '{"host":"local-plc-db","port":5432,"username":"plc","password":"plc","database":"plc"}',
         "DEBUG_MODE": "1",
         "LOG_ENABLED": "true",
-        "LOG_LEVEL": "debug"
+        "LOG_LEVEL": "debug",
       },
       "ports": ["2582:2582"],
       "healthCheck": {
         "path": null as any,
-        "customTest": ["CMD-SHELL", "wget -qO- http://localhost:2582/_health || exit 1"]
+        "customTest": [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:2582/_health || exit 1",
+        ],
       },
-      "capabilities": ["createAccount", "didResolution", "operationLog", "handleRotation", "quotaEnforcement"],
+      "capabilities": [
+        "createAccount",
+        "didResolution",
+        "operationLog",
+        "handleRotation",
+        "quotaEnforcement",
+      ],
       "dependsOn": ["local-plc-db"],
       "sidecars": {
         "local-plc-db": {
@@ -393,28 +510,29 @@ const REFERENCE_PLC: RawTopologyPresetV1 = {
           "env": {
             "POSTGRES_USER": "plc",
             "POSTGRES_PASSWORD": "plc",
-            "POSTGRES_DB": "plc"
+            "POSTGRES_DB": "plc",
           },
           "volumes": ["ref_plc_pg_data:/var/lib/postgresql/data"],
           "healthCheck": {
             "path": null as any,
-            "customTest": ["CMD-SHELL", "pg_isready -U plc"]
-          }
-        }
-      }
+            "customTest": ["CMD-SHELL", "pg_isready -U plc"],
+          },
+        },
+      },
     },
     "pds": { "inherit": "garazyk-default" },
     "pds2": { "inherit": "garazyk-default" },
     "relay": { "inherit": "garazyk-default" },
     "appview": { "inherit": "garazyk-default" },
     "chat": { "inherit": "garazyk-default" },
-    "video": { "inherit": "garazyk-default" }
-  }
+    "video": { "inherit": "garazyk-default" },
+  },
 };
 
 const APPVIEWLITE: RawTopologyPresetV1 = {
   "name": "appviewlite",
-  "description": "AppViewLite (C#/.NET 9, alnkesq) with Garazyk PDS, Relay, and PLC.",
+  "description":
+    "AppViewLite (C#/.NET 9, alnkesq) with Garazyk PDS, Relay, and PLC.",
   "roles": {
     "plc": { "inherit": "garazyk-default" },
     "pds": { "inherit": "garazyk-default" },
@@ -425,7 +543,7 @@ const APPVIEWLITE: RawTopologyPresetV1 = {
       "source": {
         "repo": "https://github.com/alnkesq/AppViewLite.git",
         "ref": "main",
-        "dockerDir": "src"
+        "dockerDir": "src",
       },
       "command": ["dotnet", "AppViewLite.Web.dll"],
       "env": {
@@ -433,19 +551,39 @@ const APPVIEWLITE: RawTopologyPresetV1 = {
         "APPVIEWLITE_BIND_URLS": "http://+:3200",
         "APPVIEWLITE_ALLOW_NEW_DATABASE": "1",
         "APPVIEWLITE_PLC_DIRECTORY": "http://local-plc:2582",
-        "APPVIEWLITE_FIREHOSES": "ws://local-relay:2584/xrpc/com.atproto.sync.subscribeRepos",
+        "APPVIEWLITE_FIREHOSES":
+          "ws://local-relay:2584/xrpc/com.atproto.sync.subscribeRepos",
         "APPVIEWLITE_LISTEN_TO_FIREHOSE": "1",
         "APPVIEWLITE_LISTEN_TO_PLC_DIRECTORY": "1",
         "APPVIEWLITE_ADMINISTRATIVE_DIDS": "*",
-        "APPVIEWLITE_QUICK_REVERSE_BACKFILL_INSTANCE": "-"
+        "APPVIEWLITE_QUICK_REVERSE_BACKFILL_INSTANCE": "-",
       },
       "ports": ["3200:3200"],
       "volumes": ["appviewlite_data:/data"],
       "healthCheck": { "path": "/" },
-      "capabilities": ["getTimeline", "getProfile", "getFeed", "search", "posts", "likes", "reposts", "follows", "blocks", "labels", "lists", "mutes", "notifications", "feeds", "video", "mediaGrid", "dataExport", "multiProtocol"],
-      "dependsOn": ["local-relay"]
-    }
-  }
+      "capabilities": [
+        "getTimeline",
+        "getProfile",
+        "getFeed",
+        "search",
+        "posts",
+        "likes",
+        "reposts",
+        "follows",
+        "blocks",
+        "labels",
+        "lists",
+        "mutes",
+        "notifications",
+        "feeds",
+        "video",
+        "mediaGrid",
+        "dataExport",
+        "multiProtocol",
+      ],
+      "dependsOn": ["local-relay"],
+    },
+  },
 };
 
 const INDIGO_RELAY: RawTopologyPresetV1 = {
@@ -459,100 +597,122 @@ const INDIGO_RELAY: RawTopologyPresetV1 = {
       "source": {
         "repo": "https://github.com/bluesky-social/indigo.git",
         "ref": "main",
-        "dockerfile": "cmd/relay/Dockerfile"
+        "dockerfile": "cmd/relay/Dockerfile",
       },
       "command": [
         "run",
-        "--listen-addr", "0.0.0.0:2584",
-        "--upstream", "ws://local-pds:2583/xrpc/com.atproto.sync.subscribeRepos"
+        "--listen-addr",
+        "0.0.0.0:2584",
+        "--upstream",
+        "ws://local-pds:2583/xrpc/com.atproto.sync.subscribeRepos",
       ],
       "env": { "RELAY_DIDPLC_URL": "http://local-plc:2582" },
       "ports": ["2584:2584"],
       "volumes": ["indigo_relay_data:/data"],
       "healthCheck": { "path": "/xrpc/com.atproto.sync.subscribeRepos" },
       "capabilities": ["subscribeRepos", "requestCrawl", "healthCheck"],
-      "dependsOn": ["local-pds"]
+      "dependsOn": ["local-pds"],
     },
-    "appview": { "inherit": "garazyk-default" }
-  }
+    "appview": { "inherit": "garazyk-default" },
+  },
 };
 
-const RSKY_PDS: RawTopologyPresetV1 = {
-  "name": "rsky-pds",
-  "description": "Garazyk stack with rsky-pds (Rust, blacksky-algorithms).",
-  "roles": {
-    "plc": { "inherit": "garazyk-default" },
-    "pds": {
-      "name": "rsky-pds",
-      "source": {
-        "repo": "https://github.com/blacksky-algorithms/rsky.git",
-        "ref": "main",
-        "overlayDir": "docker/rsky-pds"
+const RSKY_PDS: RawTopologyPresetV1 = defineTopology({
+  name: "rsky-pds",
+  description: "Garazyk stack with rsky-pds (Rust, blacksky-algorithms).",
+  roles: {
+    [Role.plc]: role.inherit("garazyk-default"),
+    [Role.pds]: role.pds({
+      name: "rsky-pds",
+      source: source.git({
+        repo: "https://github.com/blacksky-algorithms/rsky.git",
+        ref: "main",
+        overlayDir: "docker/rsky-pds",
+      }),
+      env: {
+        PDS_HOSTNAME: "localhost",
+        PDS_PORT: "2583",
+        PDS_DEV_MODE: "true",
+        PDS_INVITE_REQUIRED: "false",
+        PDS_DID_PLC_URL: "http://local-plc:2582",
+        PDS_SERVICE_HANDLE_DOMAINS: ".test",
+        PDS_CRAWLERS: "http://local-relay:2584",
+        DATABASE_URL: "postgres://pds:pds@local-pds-db:5432/pds",
+        AWS_ENDPOINT: "http://local-pds-s3:3900",
+        AWS_ACCESS_KEY_ID: "GKlocaltopologyaccesskey",
+        AWS_SECRET_ACCESS_KEY: "localtopologysecretkey1234567890abcdef",
+        AWS_ENDPOINT_BUCKET: "local-pds-s3",
+        AWS_REGION: "garage",
+        ROCKET_ADDRESS: "0.0.0.0",
+        ROCKET_PORT: "2583",
       },
-      "env": {
-        "PDS_HOSTNAME": "localhost",
-        "PDS_PORT": "2583",
-        "PDS_DEV_MODE": "true",
-        "PDS_INVITE_REQUIRED": "false",
-        "PDS_DID_PLC_URL": "http://local-plc:2582",
-        "PDS_SERVICE_HANDLE_DOMAINS": ".test",
-        "PDS_CRAWLERS": "http://local-relay:2584",
-        "DATABASE_URL": "postgres://pds:pds@local-pds-db:5432/pds",
-        "AWS_ENDPOINT": "http://local-pds-s3:3900",
-        "AWS_ACCESS_KEY_ID": "GKlocaltopologyaccesskey",
-        "AWS_SECRET_ACCESS_KEY": "localtopologysecretkey1234567890abcdef",
-        "AWS_ENDPOINT_BUCKET": "local-pds-s3",
-        "AWS_REGION": "garage",
-        "ROCKET_ADDRESS": "0.0.0.0",
-        "ROCKET_PORT": "2583"
-      },
-      "ports": ["2583:2583"],
-      "volumes": ["rsky_pds_data:/usr/src/rsky"],
-      "healthCheck": {
-        "path": null as any,
-        "customTest": ["CMD-SHELL", "wget -qO- http://localhost:2583/health || exit 1"]
-      },
-      "capabilities": [
-        "describeServer", "createAccount", "createSession", "getSession", "createRecord",
-        "getRecord", "deleteRecord", "listRecords", "uploadBlob", "getBlob", "listBlobs",
-        "resolveHandle", "updateHandle", "subscribeRepos", "getHead", "getRepo",
-        "requestCrawl", "admin", "repo", "identity", "blob", "sync"
+      ports: [port(2583)],
+      volumes: [volume.named("rsky_pds_data", "/usr/src/rsky")],
+      health: topologyHealth.command([
+        "CMD-SHELL",
+        "wget -qO- http://localhost:2583/health || exit 1",
+      ]),
+      capabilities: [
+        Cap.pds.describeServer,
+        Cap.pds.createAccount,
+        Cap.pds.createSession,
+        Cap.pds.getSession,
+        Cap.pds.createRecord,
+        Cap.pds.getRecord,
+        Cap.pds.deleteRecord,
+        Cap.pds.listRecords,
+        Cap.pds.uploadBlob,
+        Cap.pds.getBlob,
+        Cap.pds.listBlobs,
+        Cap.pds.resolveHandle,
+        Cap.pds.updateHandle,
+        Cap.pds.subscribeRepos,
+        Cap.pds.getHead,
+        Cap.pds.getRepo,
+        Cap.pds.requestCrawl,
+        Cap.pds.admin,
+        Cap.pds.repo,
+        Cap.pds.identity,
+        Cap.pds.blob,
+        Cap.pds.sync,
       ],
-      "dependsOn": ["local-pds-db", "local-pds-s3"],
-      "sidecars": {
+      dependsOn: ["local-pds-db", "local-pds-s3"],
+      sidecars: {
         "local-pds-db": {
-          "image": "postgres:16-alpine",
-          "env": {
-            "POSTGRES_USER": "pds",
-            "POSTGRES_PASSWORD": "pds",
-            "POSTGRES_DB": "pds"
+          source: source.image("postgres:16-alpine"),
+          env: {
+            POSTGRES_USER: "pds",
+            POSTGRES_PASSWORD: "pds",
+            POSTGRES_DB: "pds",
           },
-          "volumes": ["rsky_pds_pg_data:/var/lib/postgresql/data"],
-          "healthCheck": {
-            "path": null as any,
-            "customTest": ["CMD-SHELL", "pg_isready -U pds"]
-          }
+          volumes: [
+            volume.named("rsky_pds_pg_data", "/var/lib/postgresql/data"),
+          ],
+          health: topologyHealth.command(["CMD-SHELL", "pg_isready -U pds"]),
         },
         "local-pds-s3": {
-          "image": "dxflrs/garage:v2.3.0",
-          "command": ["/garage", "server", "--single-node", "--default-bucket"],
-          "env": {
-            "GARAGE_DEFAULT_ACCESS_KEY": "GKlocaltopologyaccesskey",
-            "GARAGE_DEFAULT_SECRET_KEY": "localtopologysecretkey1234567890abcdef",
-            "GARAGE_DEFAULT_BUCKET": "default-bucket"
+          source: source.image("dxflrs/garage:v2.3.0"),
+          command: ["/garage", "server", "--single-node", "--default-bucket"],
+          env: {
+            GARAGE_DEFAULT_ACCESS_KEY: "GKlocaltopologyaccesskey",
+            GARAGE_DEFAULT_SECRET_KEY: "localtopologysecretkey1234567890abcdef",
+            GARAGE_DEFAULT_BUCKET: "default-bucket",
           },
-          "volumes": ["rsky_pds_garage_meta:/var/lib/garage/meta", "rsky_pds_garage_data:/var/lib/garage/data"],
-          "healthCheck": {
-            "path": null as any,
-            "customTest": ["CMD-SHELL", "wget -qO- http://localhost:3900/health || exit 1"]
-          }
-        }
-      }
-    },
-    "relay": { "inherit": "garazyk-default" },
-    "appview": { "inherit": "garazyk-default" }
-  }
-};
+          volumes: [
+            volume.named("rsky_pds_garage_meta", "/var/lib/garage/meta"),
+            volume.named("rsky_pds_garage_data", "/var/lib/garage/data"),
+          ],
+          health: topologyHealth.command([
+            "CMD-SHELL",
+            "wget -qO- http://localhost:3900/health || exit 1",
+          ]),
+        },
+      },
+    }),
+    [Role.relay]: role.inherit("garazyk-default"),
+    [Role.appview]: role.inherit("garazyk-default"),
+  },
+});
 
 const RSKY_RELAY: RawTopologyPresetV1 = {
   "name": "rsky-relay",
@@ -565,7 +725,7 @@ const RSKY_RELAY: RawTopologyPresetV1 = {
       "source": {
         "repo": "https://github.com/blacksky-algorithms/rsky.git",
         "ref": "fd88a2740da299377ee08cf4e76f80e4ad45fc4a",
-        "overlayDir": "docker/rsky-relay"
+        "overlayDir": "docker/rsky-relay",
       },
       "command": ["rsky-relay", "--no-plc-export"],
       "env": {
@@ -575,94 +735,122 @@ const RSKY_RELAY: RawTopologyPresetV1 = {
         "RELAY_DISCOVERY_UPSTREAMS": "",
         "RELAY_DISCOVERY_ALLOW_HTTP": "true",
         "RELAY_DB_PATH": "/data/db",
-        "RUST_LOG": "rsky_relay=debug,info"
+        "RUST_LOG": "rsky_relay=debug,info",
       },
       "ports": ["2584:2584"],
       "volumes": ["rsky_relay_data:/data"],
       "healthCheck": {
         "path": null as any,
-        "customTest": ["CMD-SHELL", "wget -qO- http://localhost:2584/xrpc/com.atproto.sync.subscribeRepos || exit 1"]
+        "customTest": [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:2584/xrpc/com.atproto.sync.subscribeRepos || exit 1",
+        ],
       },
       "capabilities": ["subscribeRepos", "requestCrawl", "healthCheck"],
-      "dependsOn": ["local-pds"]
+      "dependsOn": ["local-pds"],
     },
-    "appview": { "inherit": "garazyk-default" }
-  }
+    "appview": { "inherit": "garazyk-default" },
+  },
 };
 
 const ALLEGEDLY_PLC: RawTopologyPresetV1 = {
   "name": "allegedly-plc",
-  "description": "Allegedly PLC mirror/wrapper (Rust) wrapping the reference PLC server.",
+  "description":
+    "Allegedly PLC mirror/wrapper (Rust) wrapping the reference PLC server.",
   "roles": {
     "plc": {
       "name": "allegedly-plc",
       "source": {
         "repo": "https://tangled.org/microcosm.blue/Allegedly",
         "ref": "main",
-        "dockerfileOverlay": "docker/allegedly/Dockerfile"
+        "dockerfileOverlay": "docker/allegedly/Dockerfile",
       },
-      "command": ["allegedly", "mirror", "--upstream", "http://local-ref-plc:3000", "--wrap", "http://local-ref-plc:3000", "--bind", "0.0.0.0:2582"],
+      "command": [
+        "allegedly",
+        "mirror",
+        "--upstream",
+        "http://local-ref-plc:3000",
+        "--wrap",
+        "http://local-ref-plc:3000",
+        "--bind",
+        "0.0.0.0:2582",
+      ],
       "env": {
         "ALLEGEDLY_WRAP_PG": "postgres://plc:plc@local-plc-db:5432/plc",
-        "RUST_LOG": "allegedly=debug,info"
+        "RUST_LOG": "allegedly=debug,info",
       },
       "ports": ["2582:2582"],
       "volumes": ["allegedly_plc_data:/data"],
       "healthCheck": {
         "path": null as any,
-        "customTest": ["CMD-SHELL", "wget -qO- http://localhost:2582/ || exit 1"]
+        "customTest": [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:2582/ || exit 1",
+        ],
       },
-      "capabilities": ["createAccount", "didResolution", "operationLog", "handleRotation", "quotaEnforcement"],
+      "capabilities": [
+        "createAccount",
+        "didResolution",
+        "operationLog",
+        "handleRotation",
+        "quotaEnforcement",
+      ],
       "dependsOn": ["local-ref-plc", "local-plc-db"],
       "sidecars": {
         "local-ref-plc": {
           "source": {
             "repo": "https://github.com/did-method-plc/did-method-plc.git",
             "ref": "244abb5f6a75916984d5853df34d7bcefc4d2faf",
-            "dockerfile": "packages/server/Dockerfile"
+            "dockerfile": "packages/server/Dockerfile",
           },
           "command": ["node", "--enable-source-maps", "index.js"],
           "env": {
             "PORT": "3000",
             "NODE_ENV": "production",
-            "DB_CREDS_JSON": "{\"host\":\"local-plc-db\",\"port\":5432,\"username\":\"plc\",\"password\":\"plc\",\"database\":\"plc\"}",
+            "DB_CREDS_JSON":
+              '{"host":"local-plc-db","port":5432,"username":"plc","password":"plc","database":"plc"}',
             "ENABLE_MIGRATIONS": "true",
-            "DB_MIGRATE_CREDS_JSON": "{\"host\":\"local-plc-db\",\"port\":5432,\"username\":\"plc\",\"password\":\"plc\",\"database\":\"plc\"}",
+            "DB_MIGRATE_CREDS_JSON":
+              '{"host":"local-plc-db","port":5432,"username":"plc","password":"plc","database":"plc"}',
             "DEBUG_MODE": "1",
             "LOG_ENABLED": "true",
-            "LOG_LEVEL": "debug"
+            "LOG_LEVEL": "debug",
           },
           "healthCheck": {
             "path": null as any,
-            "customTest": ["CMD-SHELL", "wget -qO- http://localhost:3000/_health || exit 1"]
+            "customTest": [
+              "CMD-SHELL",
+              "wget -qO- http://localhost:3000/_health || exit 1",
+            ],
           },
-          "dependsOn": ["local-plc-db"]
+          "dependsOn": ["local-plc-db"],
         },
         "local-plc-db": {
           "image": "postgres:16-alpine",
           "env": {
             "POSTGRES_USER": "plc",
             "POSTGRES_PASSWORD": "plc",
-            "POSTGRES_DB": "plc"
+            "POSTGRES_DB": "plc",
           },
           "volumes": ["allegedly_plc_pg_data:/var/lib/postgresql/data"],
           "healthCheck": {
             "path": null as any,
-            "customTest": ["CMD-SHELL", "pg_isready -U plc"]
-          }
-        }
-      }
+            "customTest": ["CMD-SHELL", "pg_isready -U plc"],
+          },
+        },
+      },
     },
     "pds": { "inherit": "garazyk-default" },
     "pds2": { "inherit": "garazyk-default" },
     "relay": { "inherit": "garazyk-default" },
-    "appview": { "inherit": "garazyk-default" }
-  }
+    "appview": { "inherit": "garazyk-default" },
+  },
 };
 
 const HAPPYVIEW: RawTopologyPresetV1 = {
   "name": "happyview",
-  "description": "HappyView (TypeScript/Rust, trezy) with Garazyk PDS, Relay, and PLC.",
+  "description":
+    "HappyView (TypeScript/Rust, trezy) with Garazyk PDS, Relay, and PLC.",
   "roles": {
     "plc": { "inherit": "garazyk-default" },
     "pds": { "inherit": "garazyk-default" },
@@ -673,22 +861,38 @@ const HAPPYVIEW: RawTopologyPresetV1 = {
       "source": {
         "repo": "https://github.com/gamesgamesgamesgamesgames/happyview.git",
         "ref": "v2.7.0",
-        "buildArgs": { "HAPPYVIEW_VERSION": "2.7.0" }
+        "buildArgs": { "HAPPYVIEW_VERSION": "2.7.0" },
       },
       "env": {
         "DATABASE_URL": "sqlite:///data/happyview.db?mode=rwc",
         "PUBLIC_URL": "http://localhost:3200",
         "SESSION_SECRET": "localdev-session-secret",
-        "RELAY_URL": "ws://local-relay:2584/xrpc/com.atproto.sync.subscribeRepos",
-        "PORT": "3200"
+        "RELAY_URL":
+          "ws://local-relay:2584/xrpc/com.atproto.sync.subscribeRepos",
+        "PORT": "3200",
       },
       "ports": ["3200:3000"],
       "volumes": ["happyview_data:/data"],
       "healthCheck": { "path": "/" },
-      "capabilities": ["getTimeline", "getProfile", "getFeed", "search", "xrpcEndpoints", "oauth", "realTimeSync", "backfill", "lexiconDriven", "luaScripting", "indexHooks", "networkLexicons", "hotReloading", "adminDashboard"],
-      "dependsOn": ["local-relay"]
-    }
-  }
+      "capabilities": [
+        "getTimeline",
+        "getProfile",
+        "getFeed",
+        "search",
+        "xrpcEndpoints",
+        "oauth",
+        "realTimeSync",
+        "backfill",
+        "lexiconDriven",
+        "luaScripting",
+        "indexHooks",
+        "networkLexicons",
+        "hotReloading",
+        "adminDashboard",
+      ],
+      "dependsOn": ["local-relay"],
+    },
+  },
 };
 
 const PARAKEET: RawTopologyPresetV1 = {
@@ -701,59 +905,98 @@ const PARAKEET: RawTopologyPresetV1 = {
     "relay": { "inherit": "garazyk-default" },
     "appview": {
       "name": "parakeet",
-      "image": "registry.gitlab.com/parakeet-social/parakeet/parakeet-appview:main",
+      "image":
+        "registry.gitlab.com/parakeet-social/parakeet/parakeet-appview:main",
       "env": {
         "PK_SERVER__PORT": "3200",
         "PK_SERVER__BIND_ADDRESS": "0.0.0.0",
-        "PK_DATABASE_URL": "postgres://parakeet:parakeet@local-parakeet-db:5432/parakeet",
+        "PK_DATABASE_URL":
+          "postgres://parakeet:parakeet@local-parakeet-db:5432/parakeet",
         "PK_INDEX_URI": "local-parakeet-index:6001",
         "PK_REDIS_URI": "redis://local-parakeet-redis:6379",
         "PK_PLC_DIRECTORY": "http://local-plc:2582",
         "PK_MIGRATE": "true",
         "PK_CDN__BASE": "https://cdn.bsky.app",
-        "PK_CDN__VIDEO_BASE": "https://video.bsky.app"
+        "PK_CDN__VIDEO_BASE": "https://video.bsky.app",
       },
       "ports": ["3200:3200"],
       "healthCheck": { "path": "/xrpc/app.bsky.actor.getProfile" },
-      "capabilities": ["getTimeline", "getProfile", "getFeed", "posts", "likes", "reposts", "follows", "blocks", "labels", "lists", "mutes", "notifications", "feeds"],
-      "dependsOn": ["local-parakeet-db", "local-parakeet-redis", "local-parakeet-index", "local-parakeet-consumer"],
+      "capabilities": [
+        "getTimeline",
+        "getProfile",
+        "getFeed",
+        "posts",
+        "likes",
+        "reposts",
+        "follows",
+        "blocks",
+        "labels",
+        "lists",
+        "mutes",
+        "notifications",
+        "feeds",
+      ],
+      "dependsOn": [
+        "local-parakeet-db",
+        "local-parakeet-redis",
+        "local-parakeet-index",
+        "local-parakeet-consumer",
+      ],
       "sidecars": {
         "local-parakeet-consumer": {
-          "image": "registry.gitlab.com/parakeet-social/parakeet/parakeet-consumer:main",
+          "image":
+            "registry.gitlab.com/parakeet-social/parakeet/parakeet-consumer:main",
           "env": {
-            "PKC_DATABASE__URL": "postgres://parakeet:parakeet@local-parakeet-db:5432/parakeet",
+            "PKC_DATABASE__URL":
+              "postgres://parakeet:parakeet@local-parakeet-db:5432/parakeet",
             "PKC_INDEX_URI": "local-parakeet-index:6001",
             "PKC_REDIS_URI": "redis://local-parakeet-redis:6379",
             "PKC_PLC_DIRECTORY": "http://local-plc:2582",
             "PKC_RESUME_PATH": "/data/consumer-cursor.json",
-            "PKC_INDEXER__RELAY_SOURCE": "ws://local-relay:2584/xrpc/com.atproto.sync.subscribeRepos",
+            "PKC_INDEXER__RELAY_SOURCE":
+              "ws://local-relay:2584/xrpc/com.atproto.sync.subscribeRepos",
             "PKC_INDEXER__HISTORY_MODE": "realtime",
             "PKC_INDEXER__INDEXER_WORKERS": "4",
             "PKC_INDEXER__SKIP_HANDLE_VALIDATION": "true",
-            "PKC_UA_CONTACT": "garazyk-scenario-test"
+            "PKC_UA_CONTACT": "garazyk-scenario-test",
           },
           "volumes": ["parakeet_consumer_data:/data"],
-          "healthCheck": { "path": null as any }
+          "healthCheck": { "path": null as any },
         },
         "local-parakeet-index": {
-          "image": "registry.gitlab.com/parakeet-social/parakeet/parakeet-index:main",
-          "env": { "PKI_SERVER__BIND_ADDRESS": "0.0.0.0", "PKI_SERVER__PORT": "6001", "PKI_INDEX_DB_PATH": "/data/index-db" },
+          "image":
+            "registry.gitlab.com/parakeet-social/parakeet/parakeet-index:main",
+          "env": {
+            "PKI_SERVER__BIND_ADDRESS": "0.0.0.0",
+            "PKI_SERVER__PORT": "6001",
+            "PKI_INDEX_DB_PATH": "/data/index-db",
+          },
           "volumes": ["parakeet_index_data:/data"],
-          "healthCheck": { "path": null as any }
+          "healthCheck": { "path": null as any },
         },
         "local-parakeet-db": {
           "image": "postgres:16-alpine",
-          "env": { "POSTGRES_USER": "parakeet", "POSTGRES_PASSWORD": "parakeet", "POSTGRES_DB": "parakeet" },
+          "env": {
+            "POSTGRES_USER": "parakeet",
+            "POSTGRES_PASSWORD": "parakeet",
+            "POSTGRES_DB": "parakeet",
+          },
           "volumes": ["parakeet_pg_data:/var/lib/postgresql/data"],
-          "healthCheck": { "path": null as any, "customTest": ["CMD-SHELL", "pg_isready -U parakeet"] }
+          "healthCheck": {
+            "path": null as any,
+            "customTest": ["CMD-SHELL", "pg_isready -U parakeet"],
+          },
         },
         "local-parakeet-redis": {
           "image": "redis:7-alpine",
-          "healthCheck": { "path": null as any, "customTest": ["CMD", "redis-cli", "ping"] }
-        }
-      }
-    }
-  }
+          "healthCheck": {
+            "path": null as any,
+            "customTest": ["CMD", "redis-cli", "ping"],
+          },
+        },
+      },
+    },
+  },
 };
 
 const WINTERMUTE: RawTopologyPresetV1 = {
@@ -770,43 +1013,77 @@ const WINTERMUTE: RawTopologyPresetV1 = {
       "source": {
         "repo": "https://github.com/blacksky-algorithms/rsky.git",
         "ref": "main",
-        "overlayDir": "docker/wintermute"
+        "overlayDir": "docker/wintermute",
       },
       "env": {
         "RELAY_HOSTS": "http://local-relay:2584",
-        "DATABASE_URL": "postgres://wintermute:wintermute@local-wintermute-db:5432/bsky",
+        "DATABASE_URL":
+          "postgres://wintermute:wintermute@local-wintermute-db:5432/bsky",
         "DATABASE_HOST": "local-wintermute-db",
         "DATABASE_PORT": "5432",
         "DATABASE_USER": "wintermute",
         "METRICS_PORT": "9090",
-        "RUST_LOG": "info"
+        "RUST_LOG": "info",
       },
       "ports": ["9090:9090"],
       "volumes": ["wintermute_data:/data"],
       "healthCheck": {
         "path": null as any,
-        "customTest": ["CMD-SHELL", "wget -qO- http://localhost:9090/metrics || exit 1"]
+        "customTest": [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:9090/metrics || exit 1",
+        ],
       },
-      "capabilities": ["backfill", "fullNetworkIndexing", "labelSubscription", "prometheusMetrics", "repoBackfill", "directIndexing"],
+      "capabilities": [
+        "backfill",
+        "fullNetworkIndexing",
+        "labelSubscription",
+        "prometheusMetrics",
+        "repoBackfill",
+        "directIndexing",
+      ],
       "dependsOn": ["local-dataplane"],
       "sidecars": {
         "local-wintermute-db": {
           "image": "postgres:16-alpine",
-          "env": { "POSTGRES_DB": "bsky", "POSTGRES_USER": "wintermute", "POSTGRES_PASSWORD": "wintermute" },
+          "env": {
+            "POSTGRES_DB": "bsky",
+            "POSTGRES_USER": "wintermute",
+            "POSTGRES_PASSWORD": "wintermute",
+          },
           "ports": ["5433:5432"],
           "volumes": ["wintermute_db_data:/var/lib/postgresql/data"],
-          "healthCheck": { "path": null as any, "customTest": ["CMD-SHELL", "pg_isready -U wintermute -d bsky"] }
+          "healthCheck": {
+            "path": null as any,
+            "customTest": ["CMD-SHELL", "pg_isready -U wintermute -d bsky"],
+          },
         },
         "local-dataplane": {
-          "source": { "repo": "https://github.com/bluesky-social/atproto.git", "ref": "main", "overlayDir": "docker/bsky-dataplane" },
-          "env": { "BSKY_DB_POSTGRES_URL": "postgres://wintermute:wintermute@local-wintermute-db:5432/bsky?options=-csearch_path%3Dbsky", "BSKY_DB_POSTGRES_SCHEMA": "bsky", "BSKY_DATAPLANE_PORT": "2585", "BSKY_DID_PLC_URL": "http://local-plc:2582" },
+          "source": {
+            "repo": "https://github.com/bluesky-social/atproto.git",
+            "ref": "main",
+            "overlayDir": "docker/bsky-dataplane",
+          },
+          "env": {
+            "BSKY_DB_POSTGRES_URL":
+              "postgres://wintermute:wintermute@local-wintermute-db:5432/bsky?options=-csearch_path%3Dbsky",
+            "BSKY_DB_POSTGRES_SCHEMA": "bsky",
+            "BSKY_DATAPLANE_PORT": "2585",
+            "BSKY_DID_PLC_URL": "http://local-plc:2582",
+          },
           "ports": ["2585:2585"],
-          "healthCheck": { "path": null as any, "customTest": ["CMD-SHELL", "wget -qO- http://localhost:2585/ || exit 1"] },
-          "dependsOn": ["local-wintermute-db"]
-        }
-      }
-    }
-  }
+          "healthCheck": {
+            "path": null as any,
+            "customTest": [
+              "CMD-SHELL",
+              "wget -qO- http://localhost:2585/ || exit 1",
+            ],
+          },
+          "dependsOn": ["local-wintermute-db"],
+        },
+      },
+    },
+  },
 };
 
 const HYDRANT: RawTopologyPresetV1 = {
@@ -820,15 +1097,35 @@ const HYDRANT: RawTopologyPresetV1 = {
     "appview": { "inherit": "garazyk-default" },
     "backfill": {
       "name": "hydrant",
-      "source": { "repo": "https://tangled.org/ptr.pet/hydrant", "ref": "main" },
-      "env": { "HYDRANT_RELAY_HOST": "ws://local-relay:2584/xrpc/com.atproto.sync.subscribeRepos", "HYDRANT_PLC_URL": "http://local-plc:2582", "HYDRANT_DATABASE_PATH": "/data/hydrant.db", "HYDRANT_API_PORT": "3000", "HYDRANT_FULL_NETWORK": "false", "HYDRANT_FILTER_SIGNALS": "app.bsky.actor.profile", "RUST_LOG": "info" },
+      "source": {
+        "repo": "https://tangled.org/ptr.pet/hydrant",
+        "ref": "main",
+      },
+      "env": {
+        "HYDRANT_RELAY_HOST":
+          "ws://local-relay:2584/xrpc/com.atproto.sync.subscribeRepos",
+        "HYDRANT_PLC_URL": "http://local-plc:2582",
+        "HYDRANT_DATABASE_PATH": "/data/hydrant.db",
+        "HYDRANT_API_PORT": "3000",
+        "HYDRANT_FULL_NETWORK": "false",
+        "HYDRANT_FILTER_SIGNALS": "app.bsky.actor.profile",
+        "RUST_LOG": "info",
+      },
       "ports": ["3000:3000"],
       "volumes": ["hydrant_data:/data"],
       "healthCheck": { "path": "/stats" },
-      "capabilities": ["backfill", "filteredSync", "xrpcQueries", "eventStream", "filterManagement", "ingestionControl", "repoManagement"],
-      "dependsOn": ["local-relay"]
-    }
-  }
+      "capabilities": [
+        "backfill",
+        "filteredSync",
+        "xrpcQueries",
+        "eventStream",
+        "filterManagement",
+        "ingestionControl",
+        "repoManagement",
+      ],
+      "dependsOn": ["local-relay"],
+    },
+  },
 };
 
 const ZLAY_RELAY: RawTopologyPresetV1 = {
@@ -839,24 +1136,59 @@ const ZLAY_RELAY: RawTopologyPresetV1 = {
     "pds": { "inherit": "garazyk-default" },
     "relay": {
       "name": "zlay",
-      "source": { "repo": "https://tangled.org/zzstoatzz.io/zlay", "ref": "main", "dockerfileOverlay": "docker/zlay/Dockerfile" },
-      "env": { "RELAY_PORT": "2584", "RELAY_METRICS_PORT": "3001", "RELAY_UPSTREAM": "none", "RELAY_DATA_DIR": "/data/events", "COLLECTION_INDEX_DIR": "/data/collection-index", "RELAY_RETENTION_HOURS": "72", "DATABASE_URL": "postgres://relay:relay@local-relay-db:5432/relay", "RESOLVER_THREADS": "2", "FRAME_WORKERS": "4", "FRAME_QUEUE_CAPACITY": "2048", "VALIDATOR_CACHE_SIZE": "50000" },
+      "source": {
+        "repo": "https://tangled.org/zzstoatzz.io/zlay",
+        "ref": "main",
+        "dockerfileOverlay": "docker/zlay/Dockerfile",
+      },
+      "env": {
+        "RELAY_PORT": "2584",
+        "RELAY_METRICS_PORT": "3001",
+        "RELAY_UPSTREAM": "none",
+        "RELAY_DATA_DIR": "/data/events",
+        "COLLECTION_INDEX_DIR": "/data/collection-index",
+        "RELAY_RETENTION_HOURS": "72",
+        "DATABASE_URL": "postgres://relay:relay@local-relay-db:5432/relay",
+        "RESOLVER_THREADS": "2",
+        "FRAME_WORKERS": "4",
+        "FRAME_QUEUE_CAPACITY": "2048",
+        "VALIDATOR_CACHE_SIZE": "50000",
+      },
       "ports": ["2584:2584"],
       "volumes": ["zlay_relay_data:/data"],
-      "healthCheck": { "path": null as any, "customTest": ["CMD-SHELL", "wget -qO- http://localhost:2584/_healthz || exit 1"] },
-      "capabilities": ["subscribeRepos", "requestCrawl", "listRepos", "listHosts", "healthCheck"],
+      "healthCheck": {
+        "path": null as any,
+        "customTest": [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:2584/_healthz || exit 1",
+        ],
+      },
+      "capabilities": [
+        "subscribeRepos",
+        "requestCrawl",
+        "listRepos",
+        "listHosts",
+        "healthCheck",
+      ],
       "dependsOn": ["local-relay-db"],
       "sidecars": {
         "local-relay-db": {
           "image": "postgres:16-alpine",
-          "env": { "POSTGRES_USER": "relay", "POSTGRES_PASSWORD": "relay", "POSTGRES_DB": "relay" },
+          "env": {
+            "POSTGRES_USER": "relay",
+            "POSTGRES_PASSWORD": "relay",
+            "POSTGRES_DB": "relay",
+          },
           "volumes": ["zlay_pg_data:/var/lib/postgresql/data"],
-          "healthCheck": { "path": null as any, "customTest": ["CMD-SHELL", "pg_isready -U relay"] }
-        }
-      }
+          "healthCheck": {
+            "path": null as any,
+            "customTest": ["CMD-SHELL", "pg_isready -U relay"],
+          },
+        },
+      },
     },
-    "appview": { "inherit": "syrena" as any }
-  }
+    "appview": { "inherit": "syrena" as any },
+  },
 };
 
 TopologyRegistry.register(GARAZYK_DEFAULT);
@@ -865,30 +1197,38 @@ TopologyRegistry.register(REFERENCE_PLC);
 TopologyRegistry.register(APPVIEWLITE);
 TopologyRegistry.register(INDIGO_RELAY);
 
-const INDIGO_TAP: RawTopologyPresetV1 = {
-  "name": "indigo-tap",
-  "description": "Indigo Tap (Go) standalone sync utility.",
-  "roles": {
-    "plc": { "inherit": "garazyk-default" as any },
-    "pds": { "inherit": "garazyk-default" as any },
-    "relay": { "inherit": "garazyk-default" as any },
-    "backfill": {
-      "name": "indigo-tap",
-      "source": {
-        "repo": "https://github.com/bluesky-social/indigo.git",
-        "ref": "main",
-        "dockerfile": "cmd/tap/Dockerfile"
+const INDIGO_TAP: RawTopologyPresetV1 = defineTopology({
+  name: "indigo-tap",
+  description: "Indigo Tap (Go) standalone sync utility.",
+  roles: {
+    [Role.plc]: role.inherit("garazyk-default"),
+    [Role.pds]: role.inherit("garazyk-default"),
+    [Role.relay]: role.inherit("garazyk-default"),
+    [Role.backfill]: role.backfill({
+      name: "indigo-tap",
+      source: source.git({
+        repo: "https://github.com/bluesky-social/indigo.git",
+        ref: "main",
+        dockerfile: "cmd/tap/Dockerfile",
+      }),
+      env: {
+        TAP_RELAY_HOST: "ws://local-relay:2584",
+        TAP_PLC_URL: "http://local-plc:2582",
       },
-      "env": {
-        "TAP_RELAY_HOST": "ws://local-relay:2584",
-        "TAP_PLC_URL": "http://local-plc:2582"
-      },
-      "healthCheck": { "path": null as any },
-      "capabilities": ["subscribeRepos", "filteredSync", "repoVerification", "webhookDelivery", "collectionFiltering", "perRepoOrdering", "identityCaching"],
-      "dependsOn": ["local-relay"]
-    }
-  }
-};
+      health: topologyHealth.none(),
+      capabilities: [
+        Cap.backfill.subscribeRepos,
+        Cap.backfill.filteredSync,
+        Cap.backfill.repoVerification,
+        Cap.backfill.webhookDelivery,
+        Cap.backfill.collectionFiltering,
+        Cap.backfill.perRepoOrdering,
+        Cap.backfill.identityCaching,
+      ],
+      dependsOnRoles: [Role.relay],
+    }),
+  },
+});
 
 TopologyRegistry.register(INDIGO_TAP);
 TopologyRegistry.register(RSKY_PDS);
@@ -896,7 +1236,8 @@ TopologyRegistry.register(RSKY_RELAY);
 
 const SYRENA: RawTopologyPresetV1 = {
   "name": "syrena",
-  "description": "Syrena AppView (Objective-C) with Garazyk PDS, Relay, and PLC.",
+  "description":
+    "Syrena AppView (Objective-C) with Garazyk PDS, Relay, and PLC.",
   "roles": {
     "plc": { "inherit": "garazyk-default" as any },
     "pds": { "inherit": "garazyk-default" as any },
@@ -907,7 +1248,14 @@ const SYRENA: RawTopologyPresetV1 = {
       "dockerfile": "Dockerfile.local",
       "entrypoint": ["/usr/local/bin/syrena"],
       "command": [
-        "serve", "--relay", "ws://local-relay:2584", "--port", "3200", "--data-dir", "/var/lib/atprotopds", "--no-backfill"
+        "serve",
+        "--relay",
+        "ws://local-relay:2584",
+        "--port",
+        "3200",
+        "--data-dir",
+        "/var/lib/atprotopds",
+        "--no-backfill",
       ],
       "env": {
         "TZ": "UTC",
@@ -919,18 +1267,25 @@ const SYRENA: RawTopologyPresetV1 = {
         "APPVIEW_DATA_DIR": "/var/lib/atprotopds",
         "APPVIEW_PLC_URL": "http://local-plc:2582",
         "APPVIEW_PDS_URL": "http://local-pds:2583",
-        "APPVIEW_HTTP_PORT": "3200"
+        "APPVIEW_HTTP_PORT": "3200",
       },
       "ports": ["3200:3200"],
       "volumes": ["local_appview_data:/var/lib/atprotopds"],
       "healthCheck": {
         "path": "/admin/backfill/status",
-        "headers": { "Authorization": "Bearer localdevadmin" }
+        "headers": { "Authorization": "Bearer localdevadmin" },
       },
-      "capabilities": ["getTimeline", "getProfile", "getFeed", "search", "backfill", "admin"],
-      "dependsOn": ["local-relay"]
-    }
-  }
+      "capabilities": [
+        "getTimeline",
+        "getProfile",
+        "getFeed",
+        "search",
+        "backfill",
+        "admin",
+      ],
+      "dependsOn": ["local-relay"],
+    },
+  },
 };
 
 const TRANQUIL_PDS: RawTopologyPresetV1 = {
@@ -945,22 +1300,40 @@ const TRANQUIL_PDS: RawTopologyPresetV1 = {
       "env": {
         "TRANQUIL_PDS_HOSTNAME": "localhost",
         "TRANQUIL_PDS_PLC_URL": "http://local-plc:2582",
-        "TRANQUIL_PDS_DATA_DIR": "/data"
+        "TRANQUIL_PDS_DATA_DIR": "/data",
       },
       "ports": ["2583:2583"],
       "volumes": ["tranquil_pds_data:/data"],
       "healthCheck": { "path": "/xrpc/com.atproto.server.describeServer" },
       "capabilities": [
-        "describeServer", "createAccount", "createSession", "getSession", "createRecord",
-        "getRecord", "deleteRecord", "listRecords", "uploadBlob", "getBlob", "listBlobs",
-        "resolveHandle", "updateHandle", "subscribeRepos", "getHead", "getRepo",
-        "requestCrawl", "admin", "repo", "identity", "blob", "sync"
+        "describeServer",
+        "createAccount",
+        "createSession",
+        "getSession",
+        "createRecord",
+        "getRecord",
+        "deleteRecord",
+        "listRecords",
+        "uploadBlob",
+        "getBlob",
+        "listBlobs",
+        "resolveHandle",
+        "updateHandle",
+        "subscribeRepos",
+        "getHead",
+        "getRepo",
+        "requestCrawl",
+        "admin",
+        "repo",
+        "identity",
+        "blob",
+        "sync",
       ],
-      "dependsOn": ["local-plc"]
+      "dependsOn": ["local-plc"],
     },
     "relay": { "inherit": "garazyk-default" as any },
-    "appview": { "inherit": "garazyk-default" as any }
-  }
+    "appview": { "inherit": "garazyk-default" as any },
+  },
 };
 
 TopologyRegistry.register(SYRENA);
@@ -977,27 +1350,45 @@ const COCOON_PDS: RawTopologyPresetV1 = {
       "source": {
         "repo": "https://github.com/bluesky-social/cocoon.git",
         "ref": "main",
-        "dockerfile": "Dockerfile"
+        "dockerfile": "Dockerfile",
       },
       "command": ["serve", "--port", "2583"],
       "env": {
         "COCOON_HOSTNAME": "localhost",
-        "COCOON_PLC_URL": "http://local-plc:2582"
+        "COCOON_PLC_URL": "http://local-plc:2582",
       },
       "ports": ["2583:2583"],
       "volumes": ["cocoon_pds_data:/data"],
       "healthCheck": { "path": "/xrpc/com.atproto.server.describeServer" },
       "capabilities": [
-        "describeServer", "createAccount", "createSession", "getSession", "createRecord",
-        "getRecord", "deleteRecord", "listRecords", "uploadBlob", "getBlob", "listBlobs",
-        "resolveHandle", "updateHandle", "subscribeRepos", "getHead", "getRepo",
-        "requestCrawl", "admin", "repo", "identity", "blob", "sync"
+        "describeServer",
+        "createAccount",
+        "createSession",
+        "getSession",
+        "createRecord",
+        "getRecord",
+        "deleteRecord",
+        "listRecords",
+        "uploadBlob",
+        "getBlob",
+        "listBlobs",
+        "resolveHandle",
+        "updateHandle",
+        "subscribeRepos",
+        "getHead",
+        "getRepo",
+        "requestCrawl",
+        "admin",
+        "repo",
+        "identity",
+        "blob",
+        "sync",
       ],
-      "dependsOn": ["local-plc"]
+      "dependsOn": ["local-plc"],
     },
     "relay": { "inherit": "garazyk-default" as any },
-    "appview": { "inherit": "garazyk-default" as any }
-  }
+    "appview": { "inherit": "garazyk-default" as any },
+  },
 };
 
 TopologyRegistry.register(COCOON_PDS);

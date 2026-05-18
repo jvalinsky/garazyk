@@ -19,6 +19,7 @@ export {
 export {
   createTopologyManifest,
   defaultPortForRole,
+  dependencyInfoForService,
   internalUrlForRole,
   loadTopologyManifest,
   parsePortMapping,
@@ -36,6 +37,7 @@ export {
 
 // Registry and resolution
 export {
+  Cap,
   CAPABILITY_REGISTRY,
   DEFAULT_PORTS,
   DEFAULT_SERVICE_NAMES,
@@ -45,10 +47,21 @@ export {
   isExperimentalRole,
   isKnownServiceRole,
   KNOWN_SERVICE_ROLES,
+  Role,
   ROLE_ENV_REGISTRY,
   roleEnvKey,
   validateRoleCapability,
 } from "./topology_registry.ts";
+export {
+  defineTopology,
+  health,
+  optional,
+  port,
+  requires,
+  role,
+  source,
+  volume,
+} from "./topology_authoring.ts";
 export { listTopologyPresets } from "./topology_list.ts";
 export {
   ROLE_TO_ENV,
@@ -89,8 +102,35 @@ export type {
 } from "./topology_schema.ts";
 export type { CompilerOptions, CompilerResult } from "./topology_compiler.ts";
 export type {
+  AnyCapability,
+  CapabilityForRole,
   ExperimentalRoleMetadata,
   KnownServiceRole,
+  RoleCapabilityMap,
+  RoleKey,
   ServiceRoleKey,
 } from "./topology_registry.ts";
+export type {
+  AuthoringDiagnosticProbe,
+  AuthoringHealth,
+  AuthoringRoleMap,
+  AuthoringServiceInput,
+  AuthoringServiceSpec,
+  AuthoringSidecarSpec,
+  CapabilityInput,
+  CommandHealth,
+  ExperimentalCapability,
+  GitSource,
+  HttpHealth,
+  ImageSource,
+  LegacyHealthInput,
+  LocalBuildSource,
+  NoHealth,
+  PortInput,
+  PortMappingInput,
+  PortValue,
+  ServiceSource,
+  TopologyDefinition,
+  VolumeInput,
+} from "./topology_authoring.ts";
 export type { TopologyPresetSummary } from "./topology_list.ts";

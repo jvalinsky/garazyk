@@ -3,6 +3,7 @@ import { join, relative, resolve } from "@std/path";
 import {
   createTopologyManifest,
   defaultPortForRole,
+  dependencyInfoForService,
   parsePortMapping,
   resolvePreset,
   sanitizeTopologyName,
@@ -76,12 +77,18 @@ export function validatePreset(preset: TopologyPreset): string[] {
   const usedPorts = new Set<string>();
   for (const [role, adapter] of Object.entries(preset.roles)) {
     if (!isKnownServiceRole(role) && !isExperimentalRole(role)) {
-      errors.push(`Unknown role "${role}" (experimental roles must use x-<name>)`);
+      errors.push(
+        `Unknown role "${role}" (experimental roles must use x-<name>)`,
+      );
     }
     if ("inherit" in adapter) continue;
     if (!adapter.name) errors.push(`Role "${role}": missing adapter name`);
-    if (!adapter.healthCheck) errors.push(`Role "${role}": missing healthCheck`);
-    if (!adapter.capabilities?.length) errors.push(`Role "${role}": no capabilities declared`);
+    if (!adapter.healthCheck) {
+      errors.push(`Role "${role}": missing healthCheck`);
+    }
+    if (!adapter.capabilities?.length) {
+      errors.push(`Role "${role}": no capabilities declared`);
+    }
     for (const capability of adapter.capabilities || []) {
       const capabilityError = validateRoleCapability(role, capability);
       if (capabilityError) errors.push(capabilityError);
@@ -92,7 +99,9 @@ export function validatePreset(preset: TopologyPreset): string[] {
       for (const portMapping of adapter.ports) {
         const hostPort = portMapping.split(":")[0];
         if (usedPorts.has(hostPort)) {
-          errors.push(`Duplicate host port: ${hostPort} (used by role "${role}" and another)`);
+          errors.push(
+            `Duplicate host port: ${hostPort} (used by role "${role}" and another)`,
+          );
         }
         usedPorts.add(hostPort);
       }
@@ -102,7 +111,9 @@ export function validatePreset(preset: TopologyPreset): string[] {
     if (adapter.sidecars) {
       for (const [sidecarName, sidecar] of Object.entries(adapter.sidecars)) {
         if (!sidecar.image && !sidecar.source) {
-          errors.push(`Role "${role}" sidecar "${sidecarName}": missing image or source`);
+          errors.push(
+            `Role "${role}" sidecar "${sidecarName}": missing image or source`,
+          );
         }
       }
     }
@@ -131,7 +142,9 @@ function renderSigNozServices(lines: string[], volumes: Set<string>): void {
   lines.push("    environment:");
   lines.push("      - CLICKHOUSE_DB=signoz");
   lines.push("    healthcheck:");
-  lines.push('      test: ["CMD", "wget", "--spider", "-q", "localhost:8123/clickhouse"]');
+  lines.push(
+    '      test: ["CMD", "wget", "--spider", "-q", "localhost:8123/clickhouse"]',
+  );
   lines.push("      interval: 10s");
   lines.push("      timeout: 5s");
   lines.push("      retries: 5");
@@ -149,7 +162,9 @@ function renderSigNozServices(lines: string[], volumes: Set<string>): void {
   lines.push("    volumes:");
   lines.push("      - signoz_zookeeper_data:/bitnami/zookeeper");
   lines.push("    healthcheck:");
-  lines.push('      test: ["CMD", "bash", "-c", "echo ruok | nc localhost 2181 | grep imok"]');
+  lines.push(
+    '      test: ["CMD", "bash", "-c", "echo ruok | nc localhost 2181 | grep imok"]',
+  );
   lines.push("      interval: 10s");
   lines.push("      timeout: 5s");
   lines.push("      retries: 5");
@@ -169,12 +184,20 @@ function renderSigNozServices(lines: string[], volumes: Set<string>): void {
     "        /signoz-otel-collector --config=/etc/otel-collector-config.yaml --manager-config=/etc/manager-config.yaml --copy-path=/var/tmp/collector-config.yaml",
   );
   lines.push("    volumes:");
-  lines.push("      - ../docker/otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml");
-  lines.push("      - ../docker/otel/otel-collector-opamp-config.yaml:/etc/manager-config.yaml");
+  lines.push(
+    "      - ../docker/otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml",
+  );
+  lines.push(
+    "      - ../docker/otel/otel-collector-opamp-config.yaml:/etc/manager-config.yaml",
+  );
   lines.push("    environment:");
-  lines.push("      - OTEL_RESOURCE_ATTRIBUTES=host.name=signoz-host,os.type=linux");
+  lines.push(
+    "      - OTEL_RESOURCE_ATTRIBUTES=host.name=signoz-host,os.type=linux",
+  );
   lines.push("      - LOW_CARDINAL_EXCEPTION_GROUPING=false");
-  lines.push("      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_DSN=tcp://clickhouse:9000");
+  lines.push(
+    "      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_DSN=tcp://clickhouse:9000",
+  );
   lines.push("      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_CLUSTER=cluster");
   lines.push("      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_REPLICATION=false");
   lines.push("      - SIGNOZ_OTEL_COLLECTOR_TIMEOUT=10m");
@@ -187,7 +210,9 @@ function renderSigNozServices(lines: string[], volumes: Set<string>): void {
   lines.push("      signoz-zookeeper:");
   lines.push("        condition: service_healthy");
   lines.push("    healthcheck:");
-  lines.push('      test: ["CMD", "wget", "--spider", "-q", "localhost:13133/"]');
+  lines.push(
+    '      test: ["CMD", "wget", "--spider", "-q", "localhost:13133/"]',
+  );
   lines.push("      interval: 10s");
   lines.push("      timeout: 5s");
   lines.push("      retries: 5");
@@ -205,7 +230,9 @@ function renderSigNozServices(lines: string[], volumes: Set<string>): void {
   lines.push("      - signoz_sqlite_data:/var/lib/signoz/");
   lines.push("    environment:");
   lines.push("      - SIGNOZ_ALERTMANAGER_PROVIDER=signoz");
-  lines.push("      - SIGNOZ_TELEMETRYSTORE_CLICKHOUSE_DSN=tcp://clickhouse:9000");
+  lines.push(
+    "      - SIGNOZ_TELEMETRYSTORE_CLICKHOUSE_DSN=tcp://clickhouse:9000",
+  );
   lines.push("      - SIGNOZ_SQLSTORE_SQLITE_PATH=/var/lib/signoz/signoz.db");
   lines.push("      - SIGNOZ_TOKENIZER_JWT_SECRET=localdev-signoz-secret");
   lines.push("    depends_on:");
@@ -214,7 +241,9 @@ function renderSigNozServices(lines: string[], volumes: Set<string>): void {
   lines.push("      signoz-otel-collector:");
   lines.push("        condition: service_healthy");
   lines.push("    healthcheck:");
-  lines.push('      test: ["CMD", "wget", "--spider", "-q", "localhost:8080/api/v1/health"]');
+  lines.push(
+    '      test: ["CMD", "wget", "--spider", "-q", "localhost:8080/api/v1/health"]',
+  );
   lines.push("      interval: 30s");
   lines.push("      timeout: 5s");
   lines.push("      retries: 3");
@@ -254,7 +283,11 @@ export function renderComposeYaml(
     if (adapter.image) {
       service.image = adapter.image;
     } else if (adapter.source) {
-      const cloneDir = join(options.runDir, "sources", sanitizeTopologyName(adapter.name));
+      const cloneDir = join(
+        options.runDir,
+        "sources",
+        sanitizeTopologyName(adapter.name),
+      );
       const dockerDir = adapter.source.dockerDir || ".";
       const buildCtx = adapter.source.dockerDir
         ? join(cloneDir, adapter.source.dockerDir)
@@ -263,7 +296,10 @@ export function renderComposeYaml(
         context: buildCtx,
         dockerfile: adapter.source.dockerfile || "Dockerfile",
       };
-      if (adapter.source.buildArgs && Object.keys(adapter.source.buildArgs).length > 0) {
+      if (
+        adapter.source.buildArgs &&
+        Object.keys(adapter.source.buildArgs).length > 0
+      ) {
         build.args = adapter.source.buildArgs;
       }
       service.build = build;
@@ -286,7 +322,9 @@ export function renderComposeYaml(
 
     // Volumes
     if (adapter.volumes && adapter.volumes.length > 0) {
-      service.volumes = adapter.volumes.map((vol) => renderVolume(vol, adapter, repoRoot));
+      service.volumes = adapter.volumes.map((vol) =>
+        renderVolume(vol, adapter, repoRoot)
+      );
       for (const vol of adapter.volumes) {
         const volName = vol.split(":")[0];
         if (!volName.startsWith(".") && !volName.startsWith("/")) {
@@ -305,18 +343,23 @@ export function renderComposeYaml(
     // Inject OpenTelemetry environment variables when --otel is set
     if (options.otel) {
       envEntries.push(`OTEL_SERVICE_NAME=${adapter.name}`);
-      envEntries.push("OTEL_EXPORTER_OTLP_ENDPOINT=http://signoz-otel-collector:4318");
+      envEntries.push(
+        "OTEL_EXPORTER_OTLP_ENDPOINT=http://signoz-otel-collector:4318",
+      );
       envEntries.push("OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf");
-      envEntries.push("OTEL_RESOURCE_ATTRIBUTES=service.version=dev,deployment.environment=e2e");
+      envEntries.push(
+        "OTEL_RESOURCE_ATTRIBUTES=service.version=dev,deployment.environment=e2e",
+      );
     }
     if (envEntries.length > 0) {
       service.environment = envEntries;
     }
 
     // Depends on
-    if (adapter.dependsOn && adapter.dependsOn.length > 0) {
+    const dependencyInfo = dependencyInfoForService(adapter, preset.roles);
+    if (dependencyInfo.composeServiceNames.length > 0) {
       const deps: Record<string, any> = {};
-      for (const dep of adapter.dependsOn) {
+      for (const dep of dependencyInfo.composeServiceNames) {
         deps[dep] = { condition: "service_healthy" };
       }
       service.depends_on = deps;
@@ -341,11 +384,18 @@ export function renderComposeYaml(
       };
     } else if (healthPath) {
       service.healthcheck = {
-        test: ["CMD", "curl", "-f", ...healthHeaders, `http://localhost:${port}${healthPath}`],
+        test: [
+          "CMD",
+          "curl",
+          "-f",
+          ...healthHeaders,
+          `http://localhost:${port}${healthPath}`,
+        ],
         interval: "5s",
         timeout: "3s",
         retries: 10,
-        start_period: role === "pds" || role === "pds2" || role === "appview" || role === "backfill"
+        start_period: role === "pds" || role === "pds2" || role === "appview" ||
+            role === "backfill"
           ? "15s"
           : "10s",
       };
@@ -372,6 +422,7 @@ export function renderComposeYaml(
           sidecar,
           volumes,
           options.runDir,
+          preset.roles,
           parentCloneDir,
         );
         services[sidecarName] = sidecarService;
@@ -390,7 +441,11 @@ export function renderComposeYaml(
       lines.push(`      dockerfile: ${svc.build.dockerfile}`);
       if (svc.build.args) {
         lines.push(`      args:`);
-        for (const [k, v] of Object.entries(svc.build.args as Record<string, string>)) {
+        for (
+          const [k, v] of Object.entries(
+            svc.build.args as Record<string, string>,
+          )
+        ) {
           lines.push(`        ${k}: "${v}"`);
         }
       }
@@ -416,7 +471,9 @@ export function renderComposeYaml(
     if (svc.depends_on) {
       lines.push(`    depends_on:`);
       for (
-        const [dep, cfg] of Object.entries(svc.depends_on as Record<string, { condition: string }>)
+        const [dep, cfg] of Object.entries(
+          svc.depends_on as Record<string, { condition: string }>,
+        )
       ) {
         lines.push(`      ${dep}:`);
         lines.push(`        condition: ${cfg.condition}`);
@@ -461,20 +518,24 @@ export function renderComposeYaml(
  * @returns The compilation result
  * @throws {Error} If the preset is invalid or writing files fails.
  */
-export async function compileTopology(options: CompilerOptions): Promise<CompilerResult> {
+export async function compileTopology(
+  options: CompilerOptions,
+): Promise<CompilerResult> {
   // Resolve preset
   const preset: TopologyPreset = typeof options.preset === "string"
-    ? resolvePreset(options.preset as string, { 
-        includePds2: options.includePds2, 
-        presetDir: options.presetDir 
-      })
+    ? resolvePreset(options.preset as string, {
+      includePds2: options.includePds2,
+      presetDir: options.presetDir,
+    })
     : options.preset;
 
   // Validate
   const errors = validatePreset(preset);
   if (errors.length > 0) {
     throw new Error(
-      `Invalid topology preset "${preset.name}":\n${errors.map((e) => `  - ${e}`).join("\n")}`,
+      `Invalid topology preset "${preset.name}":\n${
+        errors.map((e) => `  - ${e}`).join("\n")
+      }`,
     );
   }
 
@@ -492,7 +553,8 @@ export async function compileTopology(options: CompilerOptions): Promise<Compile
   await Deno.mkdir(options.runDir, { recursive: true });
   await Deno.writeTextFile(composeFile, composeYaml);
 
-  const manifestFile = options.manifestFile || join(options.runDir, "topology-manifest.json");
+  const manifestFile = options.manifestFile ||
+    join(options.runDir, "topology-manifest.json");
   await writeTopologyManifest(manifestFile, manifest);
 
   return {
@@ -514,12 +576,18 @@ function extractHostPort(adapter: ServiceAdapter): string | undefined {
 }
 
 /** Extract the container port from the first port mapping (e.g. "3200:3000" → "3000") */
-function extractContainerPort(adapter: ServiceAdapter | SidecarAdapter): string | undefined {
+function extractContainerPort(
+  adapter: ServiceAdapter | SidecarAdapter,
+): string | undefined {
   if (!adapter.ports || adapter.ports.length === 0) return undefined;
   return parsePortMapping(adapter.ports[0]).containerPort;
 }
 
-function renderVolume(volume: string, adapter: ServiceAdapter, repoRoot: string): string {
+function renderVolume(
+  volume: string,
+  adapter: ServiceAdapter,
+  repoRoot: string,
+): string {
   const parts = volume.split(":");
   if (parts.length < 2) return volume;
 
@@ -554,7 +622,9 @@ function renderNetworks(lines: string[], networks: any) {
     return;
   }
   for (
-    const [network, config] of Object.entries(networks || { topology_net: {} }) as Array<
+    const [network, config] of Object.entries(
+      networks || { topology_net: {} },
+    ) as Array<
       [string, any]
     >
   ) {
@@ -572,6 +642,7 @@ function renderSidecarService(
   sidecar: SidecarAdapter,
   volumes: Set<string>,
   runDir?: string,
+  roles: TopologyPreset["roles"] = {},
   parentCloneDir?: string,
 ): Record<string, any> {
   const service: Record<string, any> = {};
@@ -580,12 +651,17 @@ function renderSidecarService(
     service.image = sidecar.image;
   } else if (sidecar.source && runDir) {
     const cloneDir = join(runDir, "sources", sanitizeTopologyName(name));
-    const buildCtx = sidecar.source.dockerDir ? join(cloneDir, sidecar.source.dockerDir) : cloneDir;
+    const buildCtx = sidecar.source.dockerDir
+      ? join(cloneDir, sidecar.source.dockerDir)
+      : cloneDir;
     const build: Record<string, any> = {
       context: buildCtx,
       dockerfile: sidecar.source.dockerfile || "Dockerfile",
     };
-    if (sidecar.source.buildArgs && Object.keys(sidecar.source.buildArgs).length > 0) {
+    if (
+      sidecar.source.buildArgs &&
+      Object.keys(sidecar.source.buildArgs).length > 0
+    ) {
       build.args = sidecar.source.buildArgs;
     }
     service.build = build;
@@ -608,7 +684,11 @@ function renderSidecarService(
 
   // Render configFiles as bind mounts from the parent adapter's source clone
   if (sidecar.configFiles && parentCloneDir) {
-    for (const [containerPath, sourceRelPath] of Object.entries(sidecar.configFiles)) {
+    for (
+      const [containerPath, sourceRelPath] of Object.entries(
+        sidecar.configFiles,
+      )
+    ) {
       const hostPath = join(parentCloneDir, sourceRelPath);
       // Verify the config file path stays under the parent clone directory.
       const resolvedHost = resolve(hostPath);
@@ -644,7 +724,12 @@ function renderSidecarService(
   } else if (sidecar.healthCheck?.path) {
     const port = extractContainerPort(sidecar) || "8080";
     service.healthcheck = {
-      test: ["CMD", "curl", "-f", `http://localhost:${port}${sidecar.healthCheck.path}`],
+      test: [
+        "CMD",
+        "curl",
+        "-f",
+        `http://localhost:${port}${sidecar.healthCheck.path}`,
+      ],
       interval: "5s",
       timeout: "3s",
       retries: 10,
@@ -655,9 +740,10 @@ function renderSidecarService(
   service.networks = ["topology_net"];
 
   // Sidecar dependencies
-  if (sidecar.dependsOn && sidecar.dependsOn.length > 0) {
+  const dependencyInfo = dependencyInfoForService(sidecar, roles);
+  if (dependencyInfo.composeServiceNames.length > 0) {
     const deps: Record<string, { condition: string }> = {};
-    for (const dep of sidecar.dependsOn) {
+    for (const dep of dependencyInfo.composeServiceNames) {
       deps[dep] = { condition: "service_healthy" };
     }
     service.depends_on = deps;

@@ -54,6 +54,7 @@ export type {
 export {
   createTopologyManifest,
   defaultPortForRole,
+  dependencyInfoForService,
   internalUrlForRole,
   loadTopologyManifest,
   parsePortMapping,
@@ -164,6 +165,9 @@ function denormalizeService(service: NormalizedServiceSpec): ServiceAdapter {
     healthCheck: denormalizeHealth(service.health),
     capabilities: service.capabilities,
     dependsOn: emptyArrayToUndefined(service.dependsOn),
+    dependsOnRoles: emptyArrayToUndefined(service.dependsOnRoles) as
+      | ServiceRole[]
+      | undefined,
     sidecars: denormalizeSidecars(service.sidecars),
     diagnostics: denormalizeDiagnostics(service.diagnostics),
     scenarioEnv: emptyObjectToUndefined(service.scenarioEnv),
@@ -188,6 +192,9 @@ function denormalizeSidecars(
         configFiles: sidecar.configFiles,
         healthCheck: denormalizeHealth(sidecar.health),
         dependsOn: emptyArrayToUndefined(sidecar.dependsOn),
+        dependsOnRoles: emptyArrayToUndefined(sidecar.dependsOnRoles) as
+          | ServiceRole[]
+          | undefined,
         diagnostics: denormalizeDiagnostics(sidecar.diagnostics),
       },
     ]),
