@@ -2,8 +2,12 @@
 import { signal } from "@preact/signals-core";
 import type { Cmd, DashboardState, Msg, RunProgress, TopologyPreview } from "./dashboard_state.ts";
 import { bootCmds, createInitialState, update } from "./dashboard_state.ts";
+import { TransportLayer } from "@garazyk/gruszka";
 
 export const IS_BROWSER = typeof globalThis !== "undefined" && "document" in globalThis;
+
+/** Singleton transport layer for the dashboard. */
+export const globalTransport = new TransportLayer("");
 
 // Wraps a Preact Signal to present a non-nullable DashboardState type.
 // Preact Signal<T> resolves as value: T|undefined in the version served
@@ -99,27 +103,14 @@ function createRuntime(initialState?: DashboardState): RuntimeHandle {
     d: (msg: Msg) => void,
   ): Promise<void> {
     try {
-      const opts: RequestInit = {};
-      if (cmd.method) opts.method = cmd.method;
-      if (cmd.body !== undefined) opts.body = JSON.stringify(cmd.body);
-      opts.headers = { "Content-Type": "application/json" };
-
-      const res = await fetch(cmd.url, opts);
-      const text = await res.text();
       let data: unknown;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        data = text;
-      }
-
-      if (!res.ok) {
-        const errMsg =
-          (data && typeof data === "object" && "error" in (data as Record<string, unknown>))
-            ? String((data as Record<string, string>).error)
-            : `HTTP ${res.status}: ${res.statusText}`;
-        d(constructErrorMsg(cmd.onError, errMsg, cmd.meta));
-        return;
+      
+      if (cmd.method === "POST" || cmd.method === "PUT") {
+        data = await globalTransport.httpPost(cmd.url, cmd.body);
+      } else if (cmd.method === "DELETE") {
+        data = await fetch(cmd.url, { method: "DELETE" }).then(r => r.json());
+      } else {
+        data = await globalTransport.httpGet(cmd.url);
       }
 
       d(constructMsg(cmd.onSuccess, data, cmd.meta));

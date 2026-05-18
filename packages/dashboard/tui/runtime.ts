@@ -457,13 +457,36 @@ export function createTuiRuntime(initialState?: DashboardState): TuiRuntimeHandl
     d: (msg: Msg) => void,
   ): Promise<void> {
     try {
-      const handler = await resolveServiceHandler(cmd.url);
-      if (!handler) {
-        d(constructErrorMsg(cmd.onError, `No handler for ${cmd.url}`, cmd.meta ?? {}));
+      let data: unknown;
+      
+      // In the TUI, URLs are usually relative or absolute "pseudo-urls".
+      // We assume there's a local server running or it's hitting external.
+      // If we need the mocked resolveServiceHandler, it should be an HTTP interceptor on the transport.
+      // For now, we align the fetch loop with the Web UI.
+      
+      const opts: RequestInit = {};
+      if (cmd.method) opts.method = cmd.method;
+      if (cmd.body !== undefined) opts.body = JSON.stringify(cmd.body);
+      opts.headers = { "Content-Type": "application/json" };
+
+      const res = await fetch(cmd.url, opts);
+      const text = await res.text();
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = text;
+      }
+
+      if (!res.ok) {
+        const errMsg =
+          (data && typeof data === "object" && "error" in (data as Record<string, unknown>))
+            ? String((data as Record<string, string>).error)
+            : `HTTP ${res.status}: ${res.statusText}`;
+        d(constructErrorMsg(cmd.onError, errMsg, cmd.meta));
         return;
       }
-      const data = await handler(cmd.url, cmd.method, cmd.body);
-      d(constructMsg(cmd.onSuccess, data, cmd.meta ?? {}));
+
+      d(constructMsg(cmd.onSuccess, data, cmd.meta));
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       d(constructErrorMsg(cmd.onError, msg, cmd.meta ?? {}));
