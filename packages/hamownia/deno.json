@@ -25,6 +25,7 @@
     "./run-command": "./run_command.ts",
     "./run-scenarios-types": "./run_scenarios_types.ts",
     "./scenario-runner": "./scenario_runner.ts",
+    "./scenario-context": "./scenario_context.ts",
     "./scenario-selector": "./scenario_selector.ts",
     "./stale-cleanup": "./stale_cleanup.ts"
   },

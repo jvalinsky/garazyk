@@ -1,6 +1,8 @@
 /** Host subprocess entry point for isolated scenario execution. @module host_child_runner */
 import { dirname, toFileUrl } from "@std/path";
 import { refreshScenarioConfigFromEnv } from "./config.ts";
+import { createScenarioContext } from "./scenario_context.ts";
+import type { ScenarioContext } from "./scenario_context.ts";
 import { ScenarioResult } from "./runner.ts";
 
 interface HostChildArgs {
@@ -11,7 +13,7 @@ interface HostChildArgs {
 }
 
 interface ScenarioModule {
-  run?: () => Promise<ScenarioResult> | ScenarioResult;
+  run?: (ctx?: ScenarioContext) => Promise<ScenarioResult> | ScenarioResult;
 }
 
 function parseArgs(argv: string[]): HostChildArgs {
@@ -50,7 +52,6 @@ async function runChild(): Promise<number> {
   const args = parseArgs(Deno.args);
   const result = new ScenarioResult(args.scenarioName);
   try {
-    refreshScenarioConfigFromEnv();
     const module = await import(
       `${toFileUrl(args.scenarioPath).href}?run=${Date.now()}`
     ) as ScenarioModule;
@@ -65,7 +66,18 @@ async function runChild(): Promise<number> {
       return 1;
     }
 
-    const scenarioResult = await module.run();
+    let scenarioResult: ScenarioResult;
+
+    if (module.run.length === 0) {
+      // Legacy scenario — refresh globals so it reads correct env vars
+      refreshScenarioConfigFromEnv();
+      scenarioResult = await module.run();
+    } else {
+      // Context-injected scenario — pass ScenarioContext
+      const ctx = createScenarioContext();
+      scenarioResult = await module.run(ctx);
+    }
+
     if (!(scenarioResult instanceof ScenarioResult)) {
       result.start();
       result.stepFailed(

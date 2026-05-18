@@ -1,6 +1,7 @@
 /** Test character definitions, registry, and service URL configuration. @module config */
 import { resolveTopology } from "@garazyk/schemat";
 import type { Topology } from "@garazyk/schemat";
+export type { ScenarioContext } from "./scenario_context.ts";
 
 /** Browser client topology exposed through scenario configuration. */
 export interface WebClientConfig {
