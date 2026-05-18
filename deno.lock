@@ -941,9 +941,6 @@
       "packages/dashboard": {
         "dependencies": [
           "jsr:@db/sqlite@0.13.0",
-          "jsr:@garazyk/hamownia@0.1.0-alpha.1",
-          "jsr:@garazyk/laweta@0.1.0-alpha.1",
-          "jsr:@garazyk/schemat@0.1.0-alpha.1",
           "jsr:@std/assert@1",
           "jsr:@std/cli@1.0.6",
           "jsr:@std/fmt@1",
