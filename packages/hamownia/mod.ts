@@ -1,7 +1,9 @@
 /**
  * Scenario authoring primitives for Garazyk end-to-end tests.
  *
- * Mutable environment globals live under `@garazyk/hamownia/config`.
+ * Scenario configuration and character registry live under
+ * `@garazyk/hamownia/config`. Injected context is at
+ * `@garazyk/hamownia/scenario-context`.
  * Network orchestration, diagnostics, progress, OTel, lifecycle, and mock
  * services are exposed through explicit subpaths.
  *

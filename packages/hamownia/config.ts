@@ -129,40 +129,6 @@ export function createScenarioConfig(
   };
 }
 
-let defaultScenarioConfig = createScenarioConfig();
-let topology: Topology = defaultScenarioConfig.topology;
-
-/** Primary PDS URL used by scenarios. */
-export let PDS1: string = defaultScenarioConfig.pds1;
-/** Secondary PDS URL used by federation scenarios. */
-export let PDS2: string = defaultScenarioConfig.pds2;
-// Admin credentials for local development PDS/AppView instances.
-// These are NOT production secrets — they are the default credentials
-// for locally-run test services. Set the env vars to override.
-/** Local AppView admin secret used by test services. */
-export let APPVIEW_ADMIN_SECRET: string =
-  defaultScenarioConfig.appviewAdminSecret;
-/** Local PDS admin password used by test services. */
-export let PDS_ADMIN_PASSWORD: string = defaultScenarioConfig.pdsAdminPassword;
-
-/** Public service URLs keyed by service role. */
-export let SERVICE_URLS: Record<string, string> =
-  defaultScenarioConfig.serviceUrls;
-
-/** Capability set supported by the resolved topology. */
-export let TOPOLOGY_CAPABILITIES: Set<string> =
-  defaultScenarioConfig.topologyCapabilities;
-/** Capability sets grouped by service role. */
-export let TOPOLOGY_CAPABILITIES_BY_ROLE: Record<string, Set<string>> =
-  defaultScenarioConfig.topologyCapabilitiesByRole;
-
-/** Browser client topology attached to the resolved test network, when configured. */
-export let WEB_CLIENT_TOPOLOGY: WebClientConfig | undefined =
-  defaultScenarioConfig.webClientTopology;
-
-/** DID used by video-service scenarios. */
-export let VIDEO_SERVICE_DID: string = defaultScenarioConfig.videoServiceDid;
-
 /** A test character with PDS-issued credentials. */
 export class Character {
   /** DID assigned after account creation. */
@@ -189,7 +155,7 @@ export class Character {
     public password: string,
     public persona: string,
     public role: "user" | "admin" | "mod" = "user",
-    public pdsUrl: string = PDS1,
+    public pdsUrl: string = "",
   ) {}
 
   /** Current access token for authenticated calls. */
@@ -345,7 +311,8 @@ let _registryCounter = 0;
  *
  * @example
  * ```ts
- * const registry = createCharacterRegistry();
+ * const config = createScenarioConfig();
+ * const registry = createCharacterRegistry(config);
  * const luna = registry.getCharacter("luna");
  * const admins = registry.getCharactersByRole("admin");
  * ```
@@ -354,8 +321,8 @@ let _registryCounter = 0;
  * @param pds2Url - URL for the secondary PDS when the first argument is a string
  */
 export function createCharacterRegistry(
-  configOrPds1Url: ScenarioConfig | string = PDS1,
-  pds2Url: string = PDS2,
+  configOrPds1Url: ScenarioConfig | string = "http://localhost:2583",
+  pds2Url: string = "http://localhost:2587",
 ): CharacterRegistry {
   const pds1Url = typeof configOrPds1Url === "string"
     ? configOrPds1Url
@@ -406,48 +373,4 @@ export function createCharacterRegistry(
       return { ...chars };
     },
   };
-}
-
-// ---------------------------------------------------------------------------
-// Legacy module-level API (backward compat)
-// ---------------------------------------------------------------------------
-
-// A default registry for callers that haven't migrated to the factory API.
-let registry = createCharacterRegistry();
-
-/** Refresh scenario configuration from the current process environment. */
-export function refreshScenarioConfigFromEnv(): void {
-  defaultScenarioConfig = createScenarioConfig();
-  topology = defaultScenarioConfig.topology;
-  PDS1 = defaultScenarioConfig.pds1;
-  PDS2 = defaultScenarioConfig.pds2;
-  APPVIEW_ADMIN_SECRET = defaultScenarioConfig.appviewAdminSecret;
-  PDS_ADMIN_PASSWORD = defaultScenarioConfig.pdsAdminPassword;
-  SERVICE_URLS = defaultScenarioConfig.serviceUrls;
-  TOPOLOGY_CAPABILITIES = defaultScenarioConfig.topologyCapabilities;
-  TOPOLOGY_CAPABILITIES_BY_ROLE =
-    defaultScenarioConfig.topologyCapabilitiesByRole;
-  WEB_CLIENT_TOPOLOGY = defaultScenarioConfig.webClientTopology;
-  VIDEO_SERVICE_DID = defaultScenarioConfig.videoServiceDid;
-  registry = createCharacterRegistry();
-}
-
-/** Reset the default character registry (creates a fresh set with unique handles). */
-export function resetCharacters(): void {
-  registry = createCharacterRegistry();
-}
-
-/** Look up a character by name from the default registry. */
-export function getCharacter(name: string): Character {
-  return registry.getCharacter(name);
-}
-
-/** Get all characters matching the given role from the default registry. */
-export function getCharactersByRole(role: string): Character[] {
-  return registry.getCharactersByRole(role);
-}
-
-/** Get all characters assigned to the given PDS URL from the default registry. */
-export function getCharactersByPds(pdsUrl: string): Character[] {
-  return registry.getCharactersByPds(pdsUrl);
 }

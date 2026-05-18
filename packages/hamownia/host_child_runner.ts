@@ -1,6 +1,5 @@
 /** Host subprocess entry point for isolated scenario execution. @module host_child_runner */
 import { dirname, toFileUrl } from "@std/path";
-import { refreshScenarioConfigFromEnv } from "./config.ts";
 import { createScenarioContext } from "./scenario_context.ts";
 import type { ScenarioContext } from "./scenario_context.ts";
 import { ScenarioResult } from "./runner.ts";
@@ -13,7 +12,7 @@ interface HostChildArgs {
 }
 
 interface ScenarioModule {
-  run?: (ctx?: ScenarioContext) => Promise<ScenarioResult> | ScenarioResult;
+  run?: (ctx: ScenarioContext) => Promise<ScenarioResult> | ScenarioResult;
 }
 
 function parseArgs(argv: string[]): HostChildArgs {
@@ -66,17 +65,8 @@ async function runChild(): Promise<number> {
       return 1;
     }
 
-    let scenarioResult: ScenarioResult;
-
-    if (module.run.length === 0) {
-      // Legacy scenario — refresh globals so it reads correct env vars
-      refreshScenarioConfigFromEnv();
-      scenarioResult = await module.run();
-    } else {
-      // Context-injected scenario — pass ScenarioContext
-      const ctx = createScenarioContext();
-      scenarioResult = await module.run(ctx);
-    }
+    const ctx = createScenarioContext();
+    const scenarioResult = await module.run(ctx);
 
     if (!(scenarioResult instanceof ScenarioResult)) {
       result.start();
