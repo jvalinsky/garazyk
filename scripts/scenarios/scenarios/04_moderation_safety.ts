@@ -18,10 +18,9 @@
  */
 
 import { XrpcClient } from "@garazyk/gruszka";
-import { getCharacter } from "@garazyk/hamownia/config";
-import { PDS_ADMIN_PASSWORD } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { ScenarioResult, timedCall } from "@garazyk/hamownia";
-import { PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 
@@ -33,17 +32,17 @@ function now() {
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Moderation & Safety");
   result.start();
 
-  const client = new XrpcClient(PDS1);
+  const client = new XrpcClient(ctx.pds1);
 
   await timedCall(
     result,
     "Server health check",
     async () => {
-      const res = await fetch(`${PDS1}/xrpc/com.atproto.server.describeServer`);
+      const res = await fetch(`${ctx.pds1}/xrpc/com.atproto.server.describeServer`);
       if (!res.ok) throw new Error("Server not healthy");
     },
   );
@@ -55,7 +54,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const charNames = ["luna", "troll", "admin", "mod"];
   for (const name of charNames) {
-    const char = getCharacter(name);
+    const char = ctx.getCharacter(name);
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
@@ -86,10 +85,10 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const luna = getCharacter("luna");
-  const troll = getCharacter("troll");
-  const admin = getCharacter("admin");
-  const mod = getCharacter("mod");
+  const luna = ctx.getCharacter("luna");
+  const troll = ctx.getCharacter("troll");
+  const admin = ctx.getCharacter("admin");
+  const mod = ctx.getCharacter("mod");
 
   if (!luna.did || !troll.did || !admin.did || !mod.did) {
     result.stepFailed("Account creation", "Not all accounts created");
@@ -97,7 +96,7 @@ export async function run(): Promise<ScenarioResult> {
     return result;
   }
 
-  const adminPassword = PDS_ADMIN_PASSWORD;
+  const adminPassword = ctx.pdsAdminPassword;
   const adminToken = await timedCall(
     result,
     "Admin login",
@@ -108,7 +107,7 @@ export async function run(): Promise<ScenarioResult> {
   );
 
   for (const name of charNames) {
-    const char = getCharacter(name);
+    const char = ctx.getCharacter(name);
     await timedCall(
       result,
       `Set profile: ${char.name}`,
@@ -372,7 +371,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

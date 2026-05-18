@@ -11,9 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1 } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { ScenarioResult } from "@garazyk/hamownia";
-import { getCharacter } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
@@ -29,11 +29,11 @@ function now() {
   return new Date().toISOString();
 }
 
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Repo Format Benchmarks");
   result.start();
 
-  const client = new XrpcClient(PDS1);
+  const client = new XrpcClient(ctx.pds1);
 
   await timedCall(result, "Server health check", async () => {
     await client.waitForHealthy(30);
@@ -41,7 +41,7 @@ export async function run(): Promise<ScenarioResult> {
 
   if (result.failed > 0) return result;
 
-  const luna = getCharacter("luna");
+  const luna = ctx.getCharacter("luna");
   let session: any = null;
   try {
     session = await client.accounts.createAccount(
@@ -144,7 +144,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

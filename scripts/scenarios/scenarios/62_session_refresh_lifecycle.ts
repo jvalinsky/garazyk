@@ -11,9 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1 } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { ScenarioResult } from "@garazyk/hamownia";
-import { getCharacter } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
@@ -25,11 +25,11 @@ import { timedCall } from "@garazyk/hamownia";
  * @returns A promise that resolves to the scenario result
  */
 
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Session Refresh Lifecycle");
   result.start();
 
-  const client = new XrpcClient(PDS1);
+  const client = new XrpcClient(ctx.pds1);
 
   await timedCall(result, "PDS health check", async () => {
     await client.waitForHealthy(30);
@@ -40,7 +40,7 @@ export async function run(): Promise<ScenarioResult> {
     return result;
   }
 
-  const luna = getCharacter("luna");
+  const luna = ctx.getCharacter("luna");
 
   // ── Create account and get initial session ─────────────────────────────────
   const initialSession = await timedCall(
@@ -160,7 +160,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  const r = await run();
+  const r = await run(createScenarioContext());
   console.log(r.summary());
   Deno.exit(r.ok ? 0 : 1);
 }

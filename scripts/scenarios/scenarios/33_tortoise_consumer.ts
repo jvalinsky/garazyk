@@ -11,9 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1 } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { ScenarioResult } from "@garazyk/hamownia";
-import { getCharacter } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
@@ -62,20 +62,20 @@ async function connectRawWs(url: string) {
   return conn;
 }
 
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult(
     "Firehose Backpressure (Tortoise Consumer)",
   );
   result.start();
 
-  const client = new XrpcClient(PDS1);
+  const client = new XrpcClient(ctx.pds1);
   await timedCall(result, "Server health check", async () => {
     await client.waitForHealthy(30);
   });
 
   if (result.failed > 0) return result;
 
-  const volt = getCharacter("volt");
+  const volt = ctx.getCharacter("volt");
   const session = await timedCall(result, "Create account: volt", async () => {
     return await client.accounts.createAccount(
       volt.handle,
@@ -93,7 +93,7 @@ export async function run(): Promise<ScenarioResult> {
 
   let conn: Deno.Conn;
   try {
-    conn = await connectRawWs(PDS1);
+    conn = await connectRawWs(ctx.pds1);
     result.stepPassed("Connect to firehose");
   } catch (e) {
     result.stepFailed("Connect to firehose", String(e));
@@ -154,7 +154,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

@@ -14,26 +14,25 @@
  * - PLC operation log audit verifies chain integrity and handle updates.
  */
 
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { ScenarioResult, timedCall } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
-import { getCharacter } from "@garazyk/hamownia/config";
-import { PDS1, PDS2, SERVICE_URLS } from "@garazyk/hamownia/config";
-
 /**
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Account Migration & PLC Audit");
   result.start();
 
-  const pds1 = new XrpcClient(PDS1);
-  const pds2 = new XrpcClient(PDS2);
-  const luna = getCharacter("luna");
-  const admin = getCharacter("admin");
+  const pds1 = new XrpcClient(ctx.pds1);
+  const pds2 = new XrpcClient(ctx.pds2);
+  const luna = ctx.getCharacter("luna");
+  const admin = ctx.getCharacter("admin");
 
   for (const [name, client] of [["PDS1", pds1], ["PDS2", pds2]] as const) {
     await timedCall(
@@ -54,7 +53,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "PLC health check",
     async () => {
-      const res = await fetch(`${SERVICE_URLS.plc}/_health`);
+      const res = await fetch(`${ctx.serviceUrls.plc}/_health`);
       if (res.status !== 200) throw new Error(`PLC status=${res.status}`);
     },
   );
@@ -136,7 +135,7 @@ export async function run(): Promise<ScenarioResult> {
       if (signResp1) {
         const op1 = { ...signResp1.operation };
         delete op1.did;
-        const plcRes = await fetch(`${SERVICE_URLS.plc}/${luna.did}`, {
+        const plcRes = await fetch(`${ctx.serviceUrls.plc}/${luna.did}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(op1),
@@ -187,7 +186,7 @@ export async function run(): Promise<ScenarioResult> {
         if (signResp2) {
           const op2 = { ...signResp2.operation };
           delete op2.did;
-          const plcRes2 = await fetch(`${SERVICE_URLS.plc}/${luna.did}`, {
+          const plcRes2 = await fetch(`${ctx.serviceUrls.plc}/${luna.did}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(op2),
@@ -212,7 +211,7 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   try {
-    const logResp = await fetch(`${SERVICE_URLS.plc}/${luna.did}/log`);
+    const logResp = await fetch(`${ctx.serviceUrls.plc}/${luna.did}/log`);
     if (logResp.status === 200) {
       const operations = await logResp.json();
       result.stepPassed(
@@ -289,7 +288,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

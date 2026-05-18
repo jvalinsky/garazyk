@@ -11,9 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { SERVICE_URLS } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { ScenarioResult } from "@garazyk/hamownia";
-import { getCharacter, PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
@@ -27,7 +27,7 @@ import { timedCall } from "@garazyk/hamownia";
 
 // SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
 // SPDX-License-Identifier: Unlicense OR CC0-1.0
-// Covers: PDS1 write → Relay sequence (rev) advances → AppView indexes the record.
+// Covers: PDS write → Relay sequence (rev) advances → AppView indexes the record.
 // Extends 49_cross_service_consistency.ts (PDS→AppView only) to verify Relay as the middle hop.
 // Also verifies handle rotation propagates to Relay's identity cache.
 // Production paths: com.atproto.sync.getLatestCommit (Relay), app.bsky.feed.getPosts (AppView),
@@ -51,14 +51,14 @@ async function pollUntil<T>(
   throw new Error(`pollUntil timed out after ${timeoutMs}ms`);
 }
 
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Federation Relay Propagation");
   result.start();
 
-  const pds = new XrpcClient(PDS1);
-  const relay = new XrpcClient(SERVICE_URLS.relay);
-  const appview = new XrpcClient(SERVICE_URLS.appview);
-  const luna = getCharacter("luna");
+  const pds = new XrpcClient(ctx.pds1);
+  const relay = new XrpcClient(ctx.serviceUrls.relay);
+  const appview = new XrpcClient(ctx.serviceUrls.appview);
+  const luna = ctx.getCharacter("luna");
 
   await timedCall(result, "PDS health check", async () => {
     await pds.waitForHealthy(30);
@@ -72,7 +72,7 @@ export async function run(): Promise<ScenarioResult> {
   // --- Relay availability ---
   let relayAvailable = false;
   try {
-    const relayHealth = await fetch(`${SERVICE_URLS.relay}/_health`);
+    const relayHealth = await fetch(`${ctx.serviceUrls.relay}/_health`);
     relayAvailable = relayHealth.ok;
     result.stepPassed("Relay health check", `status=${relayHealth.status}`);
   } catch (e: any) {
@@ -241,7 +241,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

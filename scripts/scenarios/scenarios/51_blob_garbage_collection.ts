@@ -11,9 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1 } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { ScenarioResult } from "@garazyk/hamownia";
-import { getCharacter } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
@@ -108,12 +108,12 @@ function blobCid(resp: any): string {
   return resp?.blob?.ref?.$link || resp?.blob?.cid || "";
 }
 
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("The Blob Janitor");
   result.start();
 
-  const pds = new XrpcClient(PDS1);
-  const luna = getCharacter("luna");
+  const pds = new XrpcClient(ctx.pds1);
+  const luna = ctx.getCharacter("luna");
 
   await timedCall(result, "PDS health check", async () => {
     await pds.waitForHealthy(30);
@@ -208,7 +208,7 @@ export async function run(): Promise<ScenarioResult> {
       let doomed404 = false;
       for (let i = 0; i < 10; i++) {
         const res = await fetch(
-          `${PDS1}/xrpc/com.atproto.sync.getBlob?did=${luna.did}&cid=${doomedCid}`,
+          `${ctx.pds1}/xrpc/com.atproto.sync.getBlob?did=${luna.did}&cid=${doomedCid}`,
         );
         if (res.status === 404) {
           doomed404 = true;
@@ -220,7 +220,7 @@ export async function run(): Promise<ScenarioResult> {
       result.stepPassed("Doomed blob returns 404");
 
       const keepRes = await fetch(
-        `${PDS1}/xrpc/com.atproto.sync.getBlob?did=${luna.did}&cid=${keepCid}`,
+        `${ctx.pds1}/xrpc/com.atproto.sync.getBlob?did=${luna.did}&cid=${keepCid}`,
       );
       assert.isTrue(keepRes.status === 200, "Keep-alive blob missing");
       result.stepPassed("Keep-alive blob still downloads");
@@ -232,7 +232,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

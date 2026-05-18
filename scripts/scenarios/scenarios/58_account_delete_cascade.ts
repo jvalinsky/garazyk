@@ -11,7 +11,8 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1 } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { ScenarioResult } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
@@ -110,11 +111,11 @@ const TINY_PNG = new Uint8Array([
   0x82,
 ]);
 
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Account Delete Cascade");
   result.start();
 
-  const pds = new XrpcClient(PDS1);
+  const pds = new XrpcClient(ctx.pds1);
 
   // "ghost" is not in config.ts BASE_CHARACTERS — create an ephemeral account inline
   // so this scenario is self-contained and always cleans up after itself.
@@ -281,7 +282,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

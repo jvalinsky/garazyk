@@ -22,9 +22,9 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
 import { assert } from "@garazyk/hamownia";
-import { SERVICE_URLS } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { timedCall } from "@garazyk/hamownia";
-import { getCharacter, PDS1 } from "@garazyk/hamownia/config";
 
 /**
  * Executes the scenario logic.
@@ -67,12 +67,12 @@ async function germGet(
   return null;
 }
 
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Germ E2EE DMs");
   result.start();
 
-  const client = new XrpcClient(PDS1);
-  const chatUrl = Deno.env.get("CHAT_URL") || SERVICE_URLS.chat ||
+  const client = new XrpcClient(ctx.pds1);
+  const chatUrl = Deno.env.get("CHAT_URL") || ctx.serviceUrls.chat ||
     "http://localhost:2585";
   const chatContext = createChatServiceContext(
     client,
@@ -98,8 +98,8 @@ export async function run(): Promise<ScenarioResult> {
     result.stepSkipped("Germ service health check", "Not running on 8082");
   }
 
-  const luna = getCharacter("luna");
-  const marcus = getCharacter("marcus");
+  const luna = ctx.getCharacter("luna");
+  const marcus = ctx.getCharacter("marcus");
 
   for (const char of [luna, marcus]) {
     const session = await client.accounts.createAccount(
@@ -229,7 +229,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

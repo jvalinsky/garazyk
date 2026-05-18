@@ -21,17 +21,18 @@ import { ScenarioResult, timedCall } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
-import { SERVICE_URLS } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 
 /**
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Lab OAuth2 Login");
   result.start();
 
-  const uiUrl = (SERVICE_URLS.webClient || SERVICE_URLS.ui).replace(/\/$/, "");
+  const uiUrl = (ctx.serviceUrls.webClient || ctx.serviceUrls.ui).replace(/\/$/, "");
   const adminPassword = Deno.env.get("GARAZYK_UI_ADMIN_PASSWORD") || "changeme";
 
   await timedCall(
@@ -233,7 +234,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

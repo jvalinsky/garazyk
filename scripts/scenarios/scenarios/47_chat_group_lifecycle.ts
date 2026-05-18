@@ -24,30 +24,30 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
 import { assert } from "@garazyk/hamownia";
-import { SERVICE_URLS } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { timedCall } from "@garazyk/hamownia";
-import { getCharacter, PDS1 } from "@garazyk/hamownia/config";
 
 /**
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
 
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Chat Group Lifecycle");
   result.start();
 
-  const pds = new XrpcClient(PDS1);
-  const chatUrl = Deno.env.get("CHAT_URL") || SERVICE_URLS.chat ||
+  const pds = new XrpcClient(ctx.pds1);
+  const chatUrl = Deno.env.get("CHAT_URL") || ctx.serviceUrls.chat ||
     "http://localhost:2585";
   const chatContext = createChatServiceContext(
     pds,
     chatUrl,
     Deno.env.get("CHAT_SERVICE_DID") || undefined,
   );
-  const luna = getCharacter("luna");
-  const marcus = getCharacter("marcus");
-  const rosa = getCharacter("rosa");
+  const luna = ctx.getCharacter("luna");
+  const marcus = ctx.getCharacter("marcus");
+  const rosa = ctx.getCharacter("rosa");
 
   await timedCall(result, "PDS health check", async () => {
     await pds.waitForHealthy(30);
@@ -139,7 +139,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

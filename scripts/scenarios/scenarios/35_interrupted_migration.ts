@@ -13,14 +13,13 @@
  * - PDS1 remains the authoritative PDS for the identity following the failed migration attempt.
  */
 
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { ScenarioResult, timedCall } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
-import { getCharacter } from "@garazyk/hamownia/config";
-import { PDS1, PDS2, SERVICE_URLS } from "@garazyk/hamownia/config";
-
 function now() {
   return new Date().toISOString();
 }
@@ -102,13 +101,13 @@ const MINIMAL_PNG = new Uint8Array([
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Interrupted Account Migration");
   result.start();
 
-  const pds1 = new XrpcClient(PDS1);
-  const pds2 = new XrpcClient(PDS2);
-  const luna = getCharacter("luna");
+  const pds1 = new XrpcClient(ctx.pds1);
+  const pds2 = new XrpcClient(ctx.pds2);
+  const luna = ctx.getCharacter("luna");
 
   for (const [name, client] of [["PDS1", pds1], ["PDS2", pds2]] as const) {
     await timedCall(result, `${name} health check`, async () => {
@@ -201,16 +200,16 @@ export async function run(): Promise<ScenarioResult> {
   });
 
   try {
-    const plcRes = await fetch(`${SERVICE_URLS.plc}/${luna.did}`);
+    const plcRes = await fetch(`${ctx.serviceUrls.plc}/${luna.did}`);
     const doc = await plcRes.json();
     const pdsEndpoint = doc.service?.find((s: any) => s.id === "#atproto_pds")
       ?.serviceEndpoint;
-    if (pdsEndpoint === PDS1) {
+    if (pdsEndpoint === ctx.pds1) {
       result.stepPassed("PLC audit: Still points to PDS1");
     } else {
       result.stepFailed(
         "PLC audit: Points to wrong PDS",
-        `expected=${PDS1}, got=${pdsEndpoint}`,
+        `expected=${ctx.pds1}, got=${pdsEndpoint}`,
       );
     }
   } catch (e) {
@@ -222,7 +221,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

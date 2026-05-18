@@ -22,11 +22,10 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
-import { getCharacter } from "@garazyk/hamownia/config";
-import { SERVICE_URLS } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { FirehoseClient } from "@garazyk/gruszka";
 import { createRunContext } from "@garazyk/hamownia/diagnostics";
-import { PDS1 } from "@garazyk/hamownia/config";
 import {
   InstrumentationReport,
   OperationTimer,
@@ -43,19 +42,19 @@ function now() {
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Firehose Fan-Out at Scale");
   result.start();
 
-  const client = new XrpcClient(PDS1);
+  const client = new XrpcClient(ctx.pds1);
   const timer = new OperationTimer();
   const phaseTimer = new PhaseTimer();
 
   phaseTimer.startPhase("setup");
 
   const promEndpoints = {
-    pds: `${SERVICE_URLS.pds}/metrics`,
-    relay: `${SERVICE_URLS.relay}/api/relay/metrics`,
+    pds: `${ctx.serviceUrls.pds}/metrics`,
+    relay: `${ctx.serviceUrls.relay}/api/relay/metrics`,
   };
   const promScraper = new PrometheusScraper(promEndpoints);
   promScraper.start();
@@ -72,7 +71,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const charNames = ["luna", "marcus", "rosa", "volt", "quiet"];
   for (const name of charNames) {
-    const char = getCharacter(name);
+    const char = ctx.getCharacter(name);
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
@@ -95,7 +94,7 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const active = charNames.filter((n) => getCharacter(n).did);
+  const active = charNames.filter((n) => ctx.getCharacter(n).did);
   phaseTimer.endPhase();
 
   phaseTimer.startPhase("subscriber_rampup");
@@ -103,7 +102,7 @@ export async function run(): Promise<ScenarioResult> {
   const NUM_SUBSCRIBERS = 50;
   const subscriberEvents: any[] = [];
   const subscriberStop = { stopped: false };
-  const relayUrl = SERVICE_URLS.relay;
+  const relayUrl = ctx.serviceUrls.relay;
   const abortController = new AbortController();
 
   const startSubscriber = async (id: number) => {
@@ -146,7 +145,7 @@ export async function run(): Promise<ScenarioResult> {
   const POSTS_PER_USER = 20;
   let totalPosts = 0;
   for (const name of active) {
-    const char = getCharacter(name);
+    const char = ctx.getCharacter(name);
     for (let i = 0; i < POSTS_PER_USER; i++) {
       try {
         await timer.measure("create_post", () =>
@@ -180,7 +179,7 @@ export async function run(): Promise<ScenarioResult> {
   const BURST_PER_USER = 40;
   let burstPosts = 0;
   for (const name of active) {
-    const char = getCharacter(name);
+    const char = ctx.getCharacter(name);
     for (let i = 0; i < BURST_PER_USER; i++) {
       try {
         await timer.measure(
@@ -204,7 +203,7 @@ export async function run(): Promise<ScenarioResult> {
   result.stepPassed("Backpressure burst", `created=${burstPosts}`);
 
   try {
-    const res = await fetch(`${SERVICE_URLS.pds}/metrics`);
+    const res = await fetch(`${ctx.serviceUrls.pds}/metrics`);
     const text = await res.text();
     let bpWarnings = 0;
     let bpCritical = 0;
@@ -240,7 +239,6 @@ export async function run(): Promise<ScenarioResult> {
 
   phaseTimer.startPhase("instrumentation");
   const metricsTs = await promScraper.stop();
-  const ctx = await createRunContext();
   const report = new InstrumentationReport(
     timer.toDict(),
     metricsTs,
@@ -248,8 +246,9 @@ export async function run(): Promise<ScenarioResult> {
     {},
     phaseTimer.toDict(),
   );
+  const runCtx = await createRunContext();
   result.recordArtifact("instrumentation", report.toDict());
-  await report.writeJson(join(ctx.reportsDir, "instrumentation-25.json"));
+  await report.writeJson(join(runCtx.reportsDir, "instrumentation-25.json"));
   phaseTimer.endPhase();
 
   const stats = timer.getStats("create_post");
@@ -267,7 +266,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

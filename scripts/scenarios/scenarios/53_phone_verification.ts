@@ -11,9 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1 } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { ScenarioResult } from "@garazyk/hamownia";
-import { getCharacter } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
@@ -30,7 +30,7 @@ import { timedCall } from "@garazyk/hamownia";
  * @returns A promise that resolves to the scenario result
  */
 
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Phone Verification (Twilio)");
   result.start();
 
@@ -52,15 +52,15 @@ export async function run(): Promise<ScenarioResult> {
     return result;
   }
 
-  const pds = new XrpcClient(PDS1);
-  const luna = getCharacter("luna");
+  const pds = new XrpcClient(ctx.pds1);
+  const luna = ctx.getCharacter("luna");
 
   // ── Ensure PDS is healthy ────────────────────────────────────────────────
   const healthy = await timedCall(
     result,
     "PDS health check",
     async () => {
-      const res = await fetch(`${PDS1}/xrpc/com.atproto.server.describeServer`);
+      const res = await fetch(`${ctx.pds1}/xrpc/com.atproto.server.describeServer`);
       if (!res.ok) throw new Error(`PDS not healthy: ${res.status}`);
       return res.status;
     },
@@ -238,7 +238,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

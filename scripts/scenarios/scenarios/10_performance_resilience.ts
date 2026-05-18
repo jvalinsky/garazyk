@@ -20,10 +20,9 @@
  */
 
 import { XrpcClient } from "@garazyk/gruszka";
-import { getCharacter } from "@garazyk/hamownia/config";
-import { SERVICE_URLS } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { ScenarioResult, timedCall } from "@garazyk/hamownia";
-import { PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 
@@ -35,17 +34,17 @@ function now() {
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Performance & Resilience");
   result.start();
 
-  const client = new XrpcClient(PDS1);
+  const client = new XrpcClient(ctx.pds1);
 
   await timedCall(
     result,
     "Server health check",
     async () => {
-      const res = await fetch(`${PDS1}/xrpc/com.atproto.server.describeServer`);
+      const res = await fetch(`${ctx.pds1}/xrpc/com.atproto.server.describeServer`);
       if (!res.ok) throw new Error("Server not healthy");
     },
   );
@@ -57,7 +56,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const charNames = ["luna", "marcus", "rosa", "volt", "quiet"];
   for (const name of charNames) {
-    const char = getCharacter(name);
+    const char = ctx.getCharacter(name);
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
@@ -88,7 +87,7 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const active = charNames.filter((n) => getCharacter(n).did);
+  const active = charNames.filter((n) => ctx.getCharacter(n).did);
   if (active.length < 3) {
     result.stepFailed("Account creation", "Not enough accounts");
     result.finish();
@@ -104,7 +103,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const promises = [];
   for (const name of active) {
-    const char = getCharacter(name);
+    const char = ctx.getCharacter(name);
     for (let i = 0; i < POSTS_PER_USER; i++) {
       promises.push((async () => {
         try {
@@ -143,7 +142,7 @@ export async function run(): Promise<ScenarioResult> {
 
   let totalRecords = 0;
   for (const name of active) {
-    const char = getCharacter(name);
+    const char = ctx.getCharacter(name);
     const records = await timedCall(
       result,
       `Verify posts: ${char.name}`,
@@ -164,7 +163,7 @@ export async function run(): Promise<ScenarioResult> {
     `total_records_across_users=${totalRecords}`,
   );
 
-  const luna = getCharacter("luna");
+  const luna = ctx.getCharacter("luna");
   const batchWrites: Array<Record<string, unknown>> = [];
   for (let i = 0; i < 5; i++) {
     batchWrites.push({
@@ -279,7 +278,7 @@ export async function run(): Promise<ScenarioResult> {
 
   try {
     const appviewResp = await fetch(
-      `${SERVICE_URLS.appview}/admin/backfill/status`,
+      `${ctx.serviceUrls.appview}/admin/backfill/status`,
       {
         headers: { "Authorization": "Bearer localdevadmin" },
       },
@@ -310,7 +309,7 @@ export async function run(): Promise<ScenarioResult> {
   );
 
   try {
-    const relayResp = await fetch(`${SERVICE_URLS.relay}/api/relay/health`);
+    const relayResp = await fetch(`${ctx.serviceUrls.relay}/api/relay/health`);
     if (relayResp.ok) {
       result.stepPassed("Relay healthy after load");
     } else {
@@ -328,7 +327,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

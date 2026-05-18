@@ -11,9 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { SERVICE_URLS } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { ScenarioResult } from "@garazyk/hamownia";
-import { getCharacter, PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
@@ -25,12 +25,12 @@ import { timedCall } from "@garazyk/hamownia";
  * @returns A promise that resolves to the scenario result
  */
 
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Identity Fatigue");
   result.start();
 
-  const client = new XrpcClient(PDS1);
-  const rosa = getCharacter("rosa");
+  const client = new XrpcClient(ctx.pds1);
+  const rosa = ctx.getCharacter("rosa");
 
   await timedCall(result, "PDS health check", async () => {
     await client.waitForHealthy(30);
@@ -76,7 +76,7 @@ export async function run(): Promise<ScenarioResult> {
       const op = { ...signResp.operation };
       delete op.did;
 
-      const plcRes = await fetch(`${SERVICE_URLS.plc}/${rosa.did}`, {
+      const plcRes = await fetch(`${ctx.serviceUrls.plc}/${rosa.did}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(op),
@@ -121,7 +121,7 @@ export async function run(): Promise<ScenarioResult> {
     const op = { ...signResp.operation };
     delete op.did;
 
-    const plcRes = await fetch(`${SERVICE_URLS.plc}/${rosa.did}`, {
+    const plcRes = await fetch(`${ctx.serviceUrls.plc}/${rosa.did}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(op),
@@ -146,7 +146,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

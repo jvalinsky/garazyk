@@ -18,14 +18,10 @@ import {
   PrometheusScraper,
   StorageMonitor,
 } from "@garazyk/hamownia";
-import { SERVICE_URLS } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { ScenarioResult } from "@garazyk/hamownia";
-import {
-  APPVIEW_ADMIN_SECRET,
-  Character,
-  getCharacter,
-  PDS1,
-} from "@garazyk/hamownia/config";
+import { Character } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
@@ -57,21 +53,21 @@ function makeSoakCharacter(index: number): Character {
   );
 }
 
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Full-Stack Soak");
   result.start();
 
-  const client = new XrpcClient(PDS1);
-  const appview = new XrpcClient(SERVICE_URLS.appview);
-  const adminToken = APPVIEW_ADMIN_SECRET;
+  const client = new XrpcClient(ctx.pds1);
+  const appview = new XrpcClient(ctx.serviceUrls.appview);
+  const adminToken = ctx.appviewAdminSecret;
 
   const timer = new OperationTimer();
   const phaseTimer = new PhaseTimer();
 
   const promScraper = new PrometheusScraper({
-    pds: `${PDS1}/metrics`,
-    relay: `${SERVICE_URLS.relay}/api/relay/metrics`,
-    appview: `${SERVICE_URLS.appview}/admin/appview/metrics/stats`,
+    pds: `${ctx.pds1}/metrics`,
+    relay: `${ctx.serviceUrls.relay}/api/relay/metrics`,
+    appview: `${ctx.serviceUrls.appview}/admin/appview/metrics/stats`,
   });
   promScraper.start();
 
@@ -95,7 +91,7 @@ export async function run(): Promise<ScenarioResult> {
 
     const accounts: Character[] = [];
     for (const name of ["luna", "marcus", "rosa", "volt", "quiet"]) {
-      accounts.push(getCharacter(name));
+      accounts.push(ctx.getCharacter(name));
     }
     for (let i = 1; i <= 12; i++) {
       accounts.push(makeSoakCharacter(i));
@@ -155,7 +151,7 @@ export async function run(): Promise<ScenarioResult> {
     const deadline = workloadStart + WORKLOAD_SECONDS * 1000;
 
     const workerLoop = async (id: number) => {
-      const workerClient = new XrpcClient(PDS1);
+      const workerClient = new XrpcClient(ctx.pds1);
       const postPool: any[] = [];
 
       while (Date.now() < deadline) {
@@ -240,7 +236,7 @@ export async function run(): Promise<ScenarioResult> {
   } finally {
     const metricsTs = await promScraper.stop();
     const storageData = await storageMonitor.stop();
-    const ctx = await createRunContext();
+    const reportCtx = await createRunContext();
 
     const report = new InstrumentationReport(
       timer.toDict(),
@@ -251,7 +247,7 @@ export async function run(): Promise<ScenarioResult> {
     );
 
     result.recordArtifact("instrumentation", report.toDict());
-    await report.writeJson(join(ctx.reportsDir, "instrumentation-27.json"));
+    await report.writeJson(join(reportCtx.reportsDir, "instrumentation-27.json"));
 
     result.finish();
   }
@@ -260,7 +256,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

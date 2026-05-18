@@ -19,10 +19,9 @@ import {
   StorageMonitor,
 } from "@garazyk/hamownia";
 import { FirehoseClient } from "@garazyk/gruszka";
-import { APPVIEW_ADMIN_SECRET } from "@garazyk/hamownia/config";
-import { SERVICE_URLS } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { ScenarioResult } from "@garazyk/hamownia";
-import { getCharacter, PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
@@ -36,17 +35,18 @@ function now() {
 }
 
 async function appviewAdminGet(
+  ctx: ScenarioContext,
   path: string,
   params?: Record<string, any>,
 ): Promise<any> {
-  const url = new URL(path, SERVICE_URLS.appview);
+  const url = new URL(path, ctx.serviceUrls.appview);
   if (params) {
     for (const [k, v] of Object.entries(params)) {
       url.searchParams.append(k, String(v));
     }
   }
   const res = await fetch(url.toString(), {
-    headers: { "Authorization": `Bearer ${APPVIEW_ADMIN_SECRET}` },
+    headers: { "Authorization": `Bearer ${ctx.appviewAdminSecret}` },
   });
   return await res.json();
 }
@@ -71,18 +71,18 @@ function summarizeIngestState(
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("AppView Ingest Under Load");
   result.start();
 
-  const client = new XrpcClient(PDS1);
+  const client = new XrpcClient(ctx.pds1);
   const timer = new OperationTimer();
   const phaseTimer = new PhaseTimer();
 
-  const ctx = await createRunContext();
+  const reportCtx = await createRunContext();
   const promScraper = new PrometheusScraper({
-    pds: `${PDS1}/metrics`,
-    appview: `${SERVICE_URLS.appview}/admin/appview/metrics/stats`,
+    pds: `${ctx.pds1}/metrics`,
+    appview: `${ctx.serviceUrls.appview}/admin/appview/metrics/stats`,
   });
   promScraper.start();
 
@@ -101,7 +101,7 @@ export async function run(): Promise<ScenarioResult> {
   const activeAccounts: any[] = [];
 
   for (const name of charNames) {
-    const char = getCharacter(name);
+    const char = ctx.getCharacter(name);
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
@@ -152,7 +152,7 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   const firehoseEvents: any[] = [];
-  const fh = new FirehoseClient(SERVICE_URLS.relay);
+  const fh = new FirehoseClient(ctx.serviceUrls.relay);
   const fhStop = { stopped: false };
   const fhPromise = fh.subscribe((ev) => firehoseEvents.push(ev), 45).catch(
     () => {},
@@ -211,9 +211,9 @@ export async function run(): Promise<ScenarioResult> {
     } catch { /* ignore */ }
   }
 
-  const health = await appviewAdminGet("/admin/ingest/health");
-  const backfill = await appviewAdminGet("/admin/backfill/status");
-  const metrics = await appviewAdminGet("/admin/appview/metrics/stats");
+  const health = await appviewAdminGet(ctx, "/admin/ingest/health");
+  const backfill = await appviewAdminGet(ctx, "/admin/backfill/status");
+  const metrics = await appviewAdminGet(ctx, "/admin/appview/metrics/stats");
   const burstSummary = summarizeIngestState(health, backfill, metrics, null);
   result.stepPassed(
     "Backpressure trigger",
@@ -226,10 +226,10 @@ export async function run(): Promise<ScenarioResult> {
   const expectedTotal = sustainedCreated + burstCreated;
   let cleared = false;
   for (let attempt = 0; attempt < 30; attempt++) {
-    const h = await appviewAdminGet("/admin/ingest/health");
-    const b = await appviewAdminGet("/admin/backfill/status");
-    const m = await appviewAdminGet("/admin/appview/metrics/stats");
-    const r = await appviewAdminGet("/admin/records", {
+    const h = await appviewAdminGet(ctx, "/admin/ingest/health");
+    const b = await appviewAdminGet(ctx, "/admin/backfill/status");
+    const m = await appviewAdminGet(ctx, "/admin/appview/metrics/stats");
+    const r = await appviewAdminGet(ctx, "/admin/records", {
       collection: "app.bsky.feed.post",
       limit: 1,
     });
@@ -254,7 +254,7 @@ export async function run(): Promise<ScenarioResult> {
 
   // Consistency
   phaseTimer.startPhase("AppView consistency");
-  const appviewRecords = await appviewAdminGet("/admin/records", {
+  const appviewRecords = await appviewAdminGet(ctx, "/admin/records", {
     collection: "app.bsky.feed.post",
     limit: 1000,
   });
@@ -271,14 +271,14 @@ export async function run(): Promise<ScenarioResult> {
     {},
     phaseTimer.toDict(),
   );
-  await report.writeJson(join(ctx.reportsDir, "instrumentation-26.json"));
+  await report.writeJson(join(reportCtx.reportsDir, "instrumentation-26.json"));
 
   result.finish();
   return result;
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

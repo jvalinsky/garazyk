@@ -22,8 +22,8 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
-import { APPVIEW_ADMIN_SECRET } from "@garazyk/hamownia/config";
-import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 
 function now() {
   return new Date().toISOString();
@@ -33,11 +33,11 @@ function now() {
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("AppView Index Hooks & Dead Letter");
   result.start();
 
-  const client = new XrpcClient(PDS1);
+  const client = new XrpcClient(ctx.pds1);
 
   await timedCall(result, "PDS health check", async () => {
     await client.waitForHealthy(30);
@@ -48,8 +48,8 @@ export async function run(): Promise<ScenarioResult> {
     return result;
   }
 
-  const avUrl = SERVICE_URLS.appview;
-  const adminToken = APPVIEW_ADMIN_SECRET;
+  const avUrl = ctx.serviceUrls.appview;
+  const adminToken = ctx.appviewAdminSecret;
   const av = new XrpcClient(avUrl);
 
   await timedCall(
@@ -67,7 +67,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const charNames = ["luna", "marcus"];
   for (const name of charNames) {
-    const char = getCharacter(name);
+    const char = ctx.getCharacter(name);
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
@@ -86,7 +86,7 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const active = charNames.filter((n) => getCharacter(n).did);
+  const active = charNames.filter((n) => ctx.getCharacter(n).did);
   if (active.length < 2) {
     result.stepFailed("Account creation", "Not enough accounts created");
     result.finish();
@@ -94,7 +94,7 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   for (const name of active) {
-    const char = getCharacter(name);
+    const char = ctx.getCharacter(name);
     await timedCall(result, `Set profile: ${char.name}`, async () => {
       return await client.records.createRecord(
         char.did,
@@ -127,7 +127,7 @@ export async function run(): Promise<ScenarioResult> {
 
   await new Promise((r) => setTimeout(r, 3000));
 
-  const luna = getCharacter("luna");
+  const luna = ctx.getCharacter("luna");
 
   const hookData = await timedCall(
     result,
@@ -268,7 +268,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

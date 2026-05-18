@@ -15,11 +15,10 @@
  * - Relay and AppView successfully propagate cross-PDS data
  */
 
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { XrpcClient } from "@garazyk/gruszka";
-import { getCharacter } from "@garazyk/hamownia/config";
-import { SERVICE_URLS } from "@garazyk/hamownia/config";
 import { ScenarioResult, timedCall } from "@garazyk/hamownia";
-import { PDS1, PDS2 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 
@@ -31,12 +30,12 @@ function now() {
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Federation & Multi-PDS");
   result.start();
 
-  const pds1 = new XrpcClient(PDS1);
-  const pds2 = new XrpcClient(PDS2);
+  const pds1 = new XrpcClient(ctx.pds1);
+  const pds2 = new XrpcClient(ctx.pds2);
 
   for (
     const { name, client } of [{ name: "PDS1", client: pds1 }, {
@@ -61,8 +60,8 @@ export async function run(): Promise<ScenarioResult> {
     return result;
   }
 
-  const luna = getCharacter("luna");
-  const marcus = getCharacter("marcus");
+  const luna = ctx.getCharacter("luna");
+  const marcus = ctx.getCharacter("marcus");
   for (const char of [luna, marcus]) {
     const session = await timedCall(
       result,
@@ -94,8 +93,8 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const nova = getCharacter("nova");
-  const rex = getCharacter("rex");
+  const nova = ctx.getCharacter("nova");
+  const rex = ctx.getCharacter("rex");
   for (const char of [nova, rex]) {
     const session = await timedCall(
       result,
@@ -195,7 +194,7 @@ export async function run(): Promise<ScenarioResult> {
   );
 
   try {
-    const plcResp = await fetch(`${SERVICE_URLS.plc}/${luna.did}`);
+    const plcResp = await fetch(`${ctx.serviceUrls.plc}/${luna.did}`);
     if (plcResp.ok) {
       const didDoc = await plcResp.json();
       result.stepPassed(
@@ -291,7 +290,7 @@ export async function run(): Promise<ScenarioResult> {
   await new Promise((r) => setTimeout(r, 5000));
 
   try {
-    const relayResp = await fetch(`${SERVICE_URLS.relay}/api/relay/health`);
+    const relayResp = await fetch(`${ctx.serviceUrls.relay}/api/relay/health`);
     if (relayResp.ok) {
       result.stepPassed(
         "Relay health check",
@@ -306,7 +305,7 @@ export async function run(): Promise<ScenarioResult> {
 
   try {
     const upstreamsResp = await fetch(
-      `${SERVICE_URLS.relay}/api/relay/upstreams`,
+      `${ctx.serviceUrls.relay}/api/relay/upstreams`,
     );
     if (upstreamsResp.ok) {
       const upstreams = await upstreamsResp.json();
@@ -323,7 +322,7 @@ export async function run(): Promise<ScenarioResult> {
 
   try {
     const appviewResp = await fetch(
-      `${SERVICE_URLS.appview}/admin/backfill/status`,
+      `${ctx.serviceUrls.appview}/admin/backfill/status`,
       {
         headers: { "Authorization": "Bearer localdevadmin" },
       },
@@ -385,7 +384,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

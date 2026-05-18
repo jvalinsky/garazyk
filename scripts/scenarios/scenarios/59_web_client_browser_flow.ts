@@ -11,9 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { WEB_CLIENT_TOPOLOGY } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { ScenarioResult } from "@garazyk/hamownia";
-import { SERVICE_URLS } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
@@ -27,12 +27,12 @@ import { timedCall } from "@garazyk/hamownia";
  * @returns A promise that resolves to the scenario result
  */
 
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const flow = Deno.env.get("ATPROTO_CLIENT_FLOW") || "smoke";
   const result = new ScenarioResult(`Web Client Browser Flow (${flow})`);
   result.start();
 
-  const webClientUrl = (SERVICE_URLS.webClient || SERVICE_URLS.ui).replace(
+  const webClientUrl = (ctx.serviceUrls.webClient || ctx.serviceUrls.ui).replace(
     /\/$/,
     "",
   );
@@ -96,7 +96,7 @@ export async function run(): Promise<ScenarioResult> {
   );
 
   if (flow === "login" || flow === "deep") {
-    const adapterPath = WEB_CLIENT_TOPOLOGY
+    const adapterPath = ctx.webClientTopology
       ?.browserFlow[flow as "login" | "deep"];
     result.stepSkipped(
       `${flow} adapter flow`,
@@ -110,14 +110,14 @@ export async function run(): Promise<ScenarioResult> {
   result.recordArtifact("browser", {
     screenshots_dir: browserDir,
     web_client_url: webClientUrl,
-    web_client: WEB_CLIENT_TOPOLOGY || null,
+    web_client: ctx.webClientTopology || null,
   });
   result.finish();
   return result;
 }
 
 if (import.meta.main) {
-  const result = await run();
+  const result = await run(createScenarioContext());
   console.log(result.summary());
   Deno.exit(result.ok ? 0 : 1);
 }

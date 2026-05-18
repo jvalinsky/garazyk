@@ -21,10 +21,9 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
-import { getCharacter } from "@garazyk/hamownia/config";
-import { SERVICE_URLS } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { createRunContext } from "@garazyk/hamownia/diagnostics";
-import { PDS1 } from "@garazyk/hamownia/config";
 import { join } from "@std/path";
 import {
   InstrumentationReport,
@@ -42,12 +41,11 @@ function now() {
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Concurrent Write Throughput");
   result.start();
 
-  const ctx = await createRunContext();
-  const client = new XrpcClient(PDS1);
+  const client = new XrpcClient(ctx.pds1);
   interface AccountPlan {
     slot: number;
     label: string;
@@ -68,7 +66,7 @@ export async function run(): Promise<ScenarioResult> {
     const seedNames = ["luna", "marcus", "rosa", "volt", "quiet"];
 
     for (let i = 0; i < seedNames.length; i++) {
-      const char = getCharacter(seedNames[i]);
+      const char = ctx.getCharacter(seedNames[i]);
       accounts.push({
         slot: i + 1,
         label: seedNames[i],
@@ -102,7 +100,7 @@ export async function run(): Promise<ScenarioResult> {
     return accounts;
   }
 
-  const pdsMetricsUrl = `${SERVICE_URLS.pds}/metrics`;
+  const pdsMetricsUrl = `${ctx.serviceUrls.pds}/metrics`;
   const pdsDataDir = Deno.env.get("PDS_DATA_DIR") ||
     "/tmp/garazyk-atproto-e2e/pds-data";
   const pdsDbPath = `${pdsDataDir}/pds.db`;
@@ -149,7 +147,7 @@ export async function run(): Promise<ScenarioResult> {
         plan.accessJwt = session.accessJwt;
         createdCount++;
         if (plan.slot <= 5) {
-          const char = getCharacter(plan.label);
+          const char = ctx.getCharacter(plan.label);
           char.did = session.did;
           char.accessJwt = session.accessJwt;
         }
@@ -359,9 +357,10 @@ export async function run(): Promise<ScenarioResult> {
       storageData,
       phaseTimer.toDict(),
     );
+    const runCtx = await createRunContext();
 
     result.recordArtifact("instrumentation", report.toDict());
-    await report.writeJson(join(ctx.reportsDir, "instrumentation-24.json"));
+    await report.writeJson(join(runCtx.reportsDir, "instrumentation-24.json"));
 
     if (workloadCompleted) {
       const stats = globalTimer.getStats("create_record");
@@ -388,7 +387,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

@@ -11,9 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { SERVICE_URLS } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { ScenarioResult } from "@garazyk/hamownia";
-import { getCharacter, PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
@@ -102,13 +102,13 @@ const MINIMAL_PNG = new Uint8Array([
   0x82,
 ]);
 
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Content Embedding");
   result.start();
 
-  const pds = new XrpcClient(PDS1);
-  const appview = new XrpcClient(SERVICE_URLS.appview);
-  const luna = getCharacter("luna");
+  const pds = new XrpcClient(ctx.pds1);
+  const appview = new XrpcClient(ctx.serviceUrls.appview);
+  const luna = ctx.getCharacter("luna");
 
   await timedCall(result, "PDS health check", async () => {
     await pds.waitForHealthy(30);
@@ -205,7 +205,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

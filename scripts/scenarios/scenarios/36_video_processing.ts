@@ -16,9 +16,9 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
 import { assert } from "@garazyk/hamownia";
-import { VIDEO_SERVICE_DID } from "@garazyk/hamownia/config";
 import { timedCall } from "@garazyk/hamownia";
-import { getCharacter, PDS1, SERVICE_URLS } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 
 /**
  * Executes the scenario logic.
@@ -43,13 +43,14 @@ async function downloadTestVideo(): Promise<Uint8Array> {
 }
 
 async function uploadVideo(
+  ctx: ScenarioContext,
   data: Uint8Array,
   did: string,
   name: string,
   token: string,
   accessJwt: string,
 ) {
-  const url = new URL("/xrpc/app.bsky.video.uploadVideo", SERVICE_URLS.video);
+  const url = new URL("/xrpc/app.bsky.video.uploadVideo", ctx.serviceUrls.video);
   url.searchParams.set("did", did);
   url.searchParams.set("name", name);
 
@@ -71,12 +72,12 @@ async function uploadVideo(
   return body;
 }
 
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Video Processing (The Projection Booth)");
   result.start();
 
-  const pdsClient = new XrpcClient(PDS1);
-  const videoUrl = SERVICE_URLS.video;
+  const pdsClient = new XrpcClient(ctx.pds1);
+  const videoUrl = ctx.serviceUrls.video;
   const videoClient = new XrpcClient(videoUrl);
 
   await timedCall(result, "PDS health check", async () => {
@@ -88,7 +89,7 @@ export async function run(): Promise<ScenarioResult> {
 
   if (result.failed > 0) return result;
 
-  const luna = getCharacter("luna");
+  const luna = ctx.getCharacter("luna");
   const session = await timedCall(
     result,
     "Create or login account",
@@ -115,7 +116,7 @@ export async function run(): Promise<ScenarioResult> {
     "Get video service auth token",
     async () => {
       return await pdsClient.raw.xrpcGet("com.atproto.server.getServiceAuth", {
-        aud: VIDEO_SERVICE_DID,
+        aud: ctx.videoServiceDid,
         lxm: "app.bsky.video.uploadVideo",
       }, luna.accessJwt);
     },
@@ -140,6 +141,7 @@ export async function run(): Promise<ScenarioResult> {
   const videoData = await downloadTestVideo();
   const uploadResp = await timedCall(result, "Upload MP4 video", async () => {
     return await uploadVideo(
+      ctx,
       videoData,
       luna.did,
       "test-video.mp4",
@@ -188,6 +190,7 @@ export async function run(): Promise<ScenarioResult> {
     "Reject non-video content",
     async () => {
       await uploadVideo(
+        ctx,
         new TextEncoder().encode("not a video"),
         luna.did,
         "test-invalid.txt",
@@ -204,7 +207,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

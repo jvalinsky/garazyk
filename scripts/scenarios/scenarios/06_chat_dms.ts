@@ -21,10 +21,9 @@
  */
 
 import { XrpcClient } from "@garazyk/gruszka";
-import { getCharacter } from "@garazyk/hamownia/config";
-import { SERVICE_URLS } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { ScenarioResult, timedCall } from "@garazyk/hamownia";
-import { PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
@@ -39,12 +38,12 @@ import {
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Chat & DMs");
   result.start();
 
-  const client = new XrpcClient(PDS1);
-  const chatUrl = Deno.env.get("CHAT_URL") || SERVICE_URLS.chat ||
+  const client = new XrpcClient(ctx.pds1);
+  const chatUrl = Deno.env.get("CHAT_URL") || ctx.serviceUrls.chat ||
     "http://localhost:2585";
   const chatContext = createChatServiceContext(
     client,
@@ -56,7 +55,7 @@ export async function run(): Promise<ScenarioResult> {
     result,
     "Server health check",
     async () => {
-      const res = await fetch(`${PDS1}/xrpc/com.atproto.server.describeServer`);
+      const res = await fetch(`${ctx.pds1}/xrpc/com.atproto.server.describeServer`);
       if (!res.ok) throw new Error("Server not healthy");
     },
   );
@@ -75,7 +74,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const charNames = ["luna", "marcus", "rosa", "volt"];
   for (const name of charNames) {
-    const char = getCharacter(name);
+    const char = ctx.getCharacter(name);
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
@@ -106,10 +105,10 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const luna = getCharacter("luna");
-  const marcus = getCharacter("marcus");
-  const rosa = getCharacter("rosa");
-  const volt = getCharacter("volt");
+  const luna = ctx.getCharacter("luna");
+  const marcus = ctx.getCharacter("marcus");
+  const rosa = ctx.getCharacter("rosa");
+  const volt = ctx.getCharacter("volt");
 
   if (!luna.did || !marcus.did || !rosa.did || !volt.did) {
     result.stepFailed("Account creation", "Not all accounts created");
@@ -431,7 +430,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

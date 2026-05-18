@@ -11,9 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { SERVICE_URLS } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { ScenarioResult } from "@garazyk/hamownia";
-import { getCharacter, PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
@@ -25,9 +25,7 @@ import { timedCall } from "@garazyk/hamownia";
  * @returns A promise that resolves to the scenario result
  */
 
-const MIKRUS_URL = Deno.env.get("MIKRUS_URL") ||
-  SERVICE_URLS.mikrus ||
-  "http://localhost:3210";
+const DEFAULT_MIKRUS_URL = "http://localhost:3210";
 
 function now() {
   return new Date().toISOString();
@@ -56,14 +54,17 @@ async function waitForCount(
   );
 }
 
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Mikrus Links");
   result.start();
 
-  const pds = new XrpcClient(PDS1);
-  const mikrus = new XrpcClient(MIKRUS_URL);
-  const luna = getCharacter("luna");
-  const marcus = getCharacter("marcus");
+  const pds = new XrpcClient(ctx.pds1);
+  const mikrusUrl = Deno.env.get("MIKRUS_URL") ||
+    ctx.serviceUrls.mikrus ||
+    DEFAULT_MIKRUS_URL;
+  const mikrus = new XrpcClient(mikrusUrl);
+  const luna = ctx.getCharacter("luna");
+  const marcus = ctx.getCharacter("marcus");
 
   await timedCall(result, "PDS health check", async () => {
     await pds.waitForHealthy(30);
@@ -264,7 +265,7 @@ export async function run(): Promise<ScenarioResult> {
   }, (response) => `cid=${response.cid}`);
 
   result.recordArtifact("mikrus", {
-    url: MIKRUS_URL,
+    url: mikrusUrl,
     postUri,
     listUri: listRef?.uri,
     luna: luna.did,
@@ -276,7 +277,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  const result = await run();
+  const result = await run(createScenarioContext());
   console.log(result.summary());
   Deno.exit(result.ok ? 0 : 1);
 }

@@ -11,9 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { PDS1 } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { ScenarioResult } from "@garazyk/hamownia";
-import { getCharacter } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
@@ -29,11 +29,11 @@ function now() {
   return new Date().toISOString();
 }
 
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Graph Read Verification");
   result.start();
 
-  const client = new XrpcClient(PDS1);
+  const client = new XrpcClient(ctx.pds1);
 
   await timedCall(result, "PDS health check", async () => {
     await client.waitForHealthy(30);
@@ -45,8 +45,8 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   // Create two accounts
-  const luna = getCharacter("luna");
-  const marcus = getCharacter("marcus");
+  const luna = ctx.getCharacter("luna");
+  const marcus = ctx.getCharacter("marcus");
 
   const lunaSession = await timedCall(
     result,
@@ -173,7 +173,7 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   // ── Block: Luna blocks Troll ─────────────────────────────────────────────
-  const troll = getCharacter("troll");
+  const troll = ctx.getCharacter("troll");
   const trollSession = await timedCall(
     result,
     `Create account: ${troll.name}`,
@@ -282,7 +282,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  const r = await run();
+  const r = await run(createScenarioContext());
   console.log(r.summary());
   Deno.exit(r.ok ? 0 : 1);
 }

@@ -11,14 +11,9 @@
  * - Scenario completes successfully without errors.
  */
 
-import { VIDEO_SERVICE_DID } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { ScenarioResult } from "@garazyk/hamownia";
-import {
-  APPVIEW_ADMIN_SECRET,
-  getCharacter,
-  PDS1,
-  SERVICE_URLS,
-} from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
@@ -46,12 +41,13 @@ async function readTestVideo(): Promise<Uint8Array> {
 }
 
 async function uploadVideo(
+  ctx: ScenarioContext,
   data: Uint8Array,
   did: string,
   token: string,
   accessJwt: string,
 ) {
-  const url = new URL("/xrpc/app.bsky.video.uploadVideo", SERVICE_URLS.video);
+  const url = new URL("/xrpc/app.bsky.video.uploadVideo", ctx.serviceUrls.video);
   url.searchParams.set("did", did);
   url.searchParams.set("name", "cdn-test.mp4");
   const res = await fetch(url, {
@@ -93,12 +89,15 @@ async function waitForVideoJob(
   throw new Error("video job did not complete before timeout");
 }
 
-async function waitForAppViewHealthy(timeout = 30): Promise<void> {
+async function waitForAppViewHealthy(
+  ctx: ScenarioContext,
+  timeout = 30,
+): Promise<void> {
   const startedAt = Date.now();
   while (Date.now() - startedAt < timeout * 1000) {
     try {
-      const res = await fetch(`${SERVICE_URLS.appview}/admin/ingest/health`, {
-        headers: { Authorization: `Bearer ${APPVIEW_ADMIN_SECRET}` },
+      const res = await fetch(`${ctx.serviceUrls.appview}/admin/ingest/health`, {
+        headers: { Authorization: `Bearer ${ctx.appviewAdminSecret}` },
       });
       if (res.ok) return;
     } catch {
@@ -107,24 +106,24 @@ async function waitForAppViewHealthy(timeout = 30): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
   throw new Error(
-    `AppView at ${SERVICE_URLS.appview} not healthy after ${timeout}s`,
+    `AppView at ${ctx.serviceUrls.appview} not healthy after ${timeout}s`,
   );
 }
 
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Video CDN Playback");
   result.start();
 
-  const pds = new XrpcClient(PDS1);
-  const appview = new XrpcClient(SERVICE_URLS.appview);
-  const video = new XrpcClient(SERVICE_URLS.video);
-  const luna = getCharacter("luna");
+  const pds = new XrpcClient(ctx.pds1);
+  const appview = new XrpcClient(ctx.serviceUrls.appview);
+  const video = new XrpcClient(ctx.serviceUrls.video);
+  const luna = ctx.getCharacter("luna");
 
   await timedCall(result, "PDS health check", async () => {
     await pds.waitForHealthy(30);
   });
   await timedCall(result, "AppView health check", async () => {
-    await waitForAppViewHealthy(30);
+    await waitForAppViewHealthy(ctx, 30);
   });
   await timedCall(result, "Jelcz health check", async () => {
     await video.waitForHealthy(30);
@@ -159,7 +158,7 @@ export async function run(): Promise<ScenarioResult> {
     "Get video service auth token",
     async () => {
       return await pds.raw.xrpcGet("com.atproto.server.getServiceAuth", {
-        aud: VIDEO_SERVICE_DID,
+        aud: ctx.videoServiceDid,
         lxm: "app.bsky.video.uploadVideo",
       }, luna.accessJwt);
     },
@@ -176,6 +175,7 @@ export async function run(): Promise<ScenarioResult> {
     "Upload MP4 and poll to completion",
     async () => {
       const upload = await uploadVideo(
+        ctx,
         await readTestVideo(),
         luna.did,
         serviceAuth.token,
@@ -262,7 +262,7 @@ export async function run(): Promise<ScenarioResult> {
     async () => {
       const cid = finalJob.blob.ref.$link;
       const playlist = await fetch(
-        `${SERVICE_URLS.video}/watch/${luna.did}/${cid}/playlist.m3u8`,
+        `${ctx.serviceUrls.video}/watch/${luna.did}/${cid}/playlist.m3u8`,
       );
       assert.isTrue(playlist.ok, `playlist HTTP ${playlist.status}`);
       assert.isTrue(
@@ -270,7 +270,7 @@ export async function run(): Promise<ScenarioResult> {
         "playlist should be HLS content",
       );
       const thumbnail = await fetch(
-        `${SERVICE_URLS.video}/watch/${luna.did}/${cid}/thumbnail.jpg`,
+        `${ctx.serviceUrls.video}/watch/${luna.did}/${cid}/thumbnail.jpg`,
       );
       assert.isTrue(thumbnail.ok, `thumbnail HTTP ${thumbnail.status}`);
       assert.isTrue(
@@ -285,7 +285,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  const res = await run();
+  const res = await run(createScenarioContext());
   console.log(res.summary());
   Deno.exit(res.ok ? 0 : 1);
 }

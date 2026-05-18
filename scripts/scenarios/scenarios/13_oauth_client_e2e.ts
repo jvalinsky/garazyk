@@ -21,25 +21,23 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
-import { getCharacter } from "@garazyk/hamownia/config";
-import { SERVICE_URLS } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { attachPublicNetworkLeakGuard } from "@garazyk/hamownia";
-import { PDS1 } from "@garazyk/hamownia/config";
 import { chromium } from "npm:playwright";
-
-const PDS_URL = SERVICE_URLS.pds;
-const PLC_URL = SERVICE_URLS.plc;
 
 /**
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("E2E OAuth2 Client Integration");
   result.start();
 
-  const pds = new XrpcClient(PDS1);
-  const luna = getCharacter("luna");
+  const pds = new XrpcClient(ctx.pds1);
+  const luna = ctx.getCharacter("luna");
+  const PDS_URL = ctx.serviceUrls.pds;
+  const PLC_URL = ctx.serviceUrls.plc;
 
   const session = await timedCall(
     result,
@@ -99,7 +97,7 @@ export async function run(): Promise<ScenarioResult> {
         {
           headers: {
             "Accept": "application/json",
-            "Origin": SERVICE_URLS.oauthClient,
+            "Origin": ctx.serviceUrls.oauthClient,
           },
         },
       );
@@ -121,7 +119,7 @@ export async function run(): Promise<ScenarioResult> {
         {
           headers: {
             "Accept": "application/json",
-            "Origin": SERVICE_URLS.oauthClient,
+            "Origin": ctx.serviceUrls.oauthClient,
           },
         },
       );
@@ -134,7 +132,7 @@ export async function run(): Promise<ScenarioResult> {
     },
   );
 
-  const clientUrl = SERVICE_URLS.oauthClient.replace(/\/$/, "");
+  const clientUrl = ctx.serviceUrls.oauthClient.replace(/\/$/, "");
   try {
     const res = await fetch(`${clientUrl}/client-metadata.json`);
     if (res.status !== 200) {
@@ -221,7 +219,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

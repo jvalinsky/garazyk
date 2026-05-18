@@ -15,10 +15,9 @@
  */
 
 import { XrpcClient } from "@garazyk/gruszka";
-import { getCharacter } from "@garazyk/hamownia/config";
-import { SERVICE_URLS } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { ScenarioResult, timedCall } from "@garazyk/hamownia";
-import { PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
@@ -27,18 +26,18 @@ import { assert } from "@garazyk/hamownia";
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Account Lifecycle & Identity");
   result.start();
 
-  const pds = new XrpcClient(PDS1);
-  const luna = getCharacter("luna");
+  const pds = new XrpcClient(ctx.pds1);
+  const luna = ctx.getCharacter("luna");
 
   await timedCall(
     result,
     "Server health check",
     async () => {
-      const res = await fetch(`${PDS1}/xrpc/com.atproto.server.describeServer`);
+      const res = await fetch(`${ctx.pds1}/xrpc/com.atproto.server.describeServer`);
       if (!res.ok) throw new Error("Server not healthy");
     },
   );
@@ -117,7 +116,7 @@ export async function run(): Promise<ScenarioResult> {
   );
 
   try {
-    const plcResp = await fetch(`${SERVICE_URLS.plc}/${luna.did}`);
+    const plcResp = await fetch(`${ctx.serviceUrls.plc}/${luna.did}`);
     if (plcResp.ok) {
       const didDoc = await plcResp.json();
       const didField = didDoc.id || didDoc.did;
@@ -223,7 +222,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

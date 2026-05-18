@@ -13,10 +13,9 @@
 
 import { FirehoseClient } from "@garazyk/gruszka";
 import type { FirehoseEvent } from "@garazyk/gruszka";
-import { getCharacter } from "@garazyk/hamownia/config";
-import { SERVICE_URLS } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { ScenarioResult } from "@garazyk/hamownia";
-import { PDS1 } from "@garazyk/hamownia/config";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
@@ -36,11 +35,11 @@ function now() {
   return new Date().toISOString();
 }
 
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Firehose Cursor Recovery");
   result.start();
 
-  const client = new XrpcClient(PDS1);
+  const client = new XrpcClient(ctx.pds1);
 
   await timedCall(result, "PDS health check", async () => {
     await client.waitForHealthy(30);
@@ -51,7 +50,7 @@ export async function run(): Promise<ScenarioResult> {
     return result;
   }
 
-  const luna = getCharacter("luna");
+  const luna = ctx.getCharacter("luna");
   const session = await timedCall(
     result,
     "Create account",
@@ -85,7 +84,7 @@ export async function run(): Promise<ScenarioResult> {
   luna.did = session.did;
   luna.accessJwt = session.accessJwt;
 
-  const relayUrl = SERVICE_URLS.relay;
+  const relayUrl = ctx.serviceUrls.relay;
 
   // ── Phase 1: Subscribe and collect baseline events ───────────────────────
   const fh1 = new FirehoseClient(relayUrl);
@@ -247,7 +246,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  const r = await run();
+  const r = await run(createScenarioContext());
   console.log(r.summary());
   Deno.exit(r.ok ? 0 : 1);
 }
