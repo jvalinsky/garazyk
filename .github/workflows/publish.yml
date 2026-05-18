@@ -3,7 +3,7 @@ name: Publish
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   publish:
@@ -28,13 +28,26 @@ jobs:
 
       - name: Publish Packages
         run: |
-          for pkg in laweta gruszka schemat hamownia; do
-            echo "--- Publishing @garazyk/$pkg ---"
-            cd packages/$pkg
-            if [ "$pkg" = "schemat" ]; then
-              deno publish --allow-slow-types
-            else
-              deno publish
-            fi
-            cd ../..
-          done
+          echo "--- Publishing @garazyk/laweta ---"
+          cd packages/laweta
+          deno publish --allow-slow-types
+          cd ../..
+
+          echo "--- Publishing @garazyk/gruszka ---"
+          cd packages/gruszka
+          deno publish --allow-slow-types
+          cd ../..
+
+          echo "--- Publishing @garazyk/schemat ---"
+          cd packages/schemat
+          deno publish --allow-slow-types
+          cd ../..
+
+          echo "--- Publishing @garazyk/hamownia ---"
+          cd packages/hamownia
+          deno publish --allow-slow-types
+          cd ../..
+
+          echo "--- Publishing @garazyk/narzedzia ---"
+          cd packages/narzedzia
+          deno publish --allow-slow-types

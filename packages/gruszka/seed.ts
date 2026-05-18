@@ -81,7 +81,7 @@ export async function createAccountOrLogin(
       email,
       handle,
       password,
-    }) as any;
+    }) as unknown as ProcedureOutput<"com.atproto.server.createSession">;
   } catch {
     return await api.com.atproto.server.createSession({
       identifier: handle,

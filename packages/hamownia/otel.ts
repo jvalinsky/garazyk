@@ -22,6 +22,24 @@
 // Types
 // ---------------------------------------------------------------------------
 
+import type {
+  Counter,
+  Exception,
+  Gauge,
+  Meter,
+  Span,
+  Tracer,
+} from "@opentelemetry/api";
+
+/** Local SpanStatusCode constants (avoids runtime import of OTel API when disabled). */
+const OTEL_STATUS = { UNSET: 0, OK: 1, ERROR: 2 } as const;
+
+/** Minimal interface for SDK provider flush/shutdown. */
+interface SdkProvider {
+  forceFlush(): Promise<void>;
+  shutdown(): Promise<void>;
+}
+
 export interface TracingConfig {
   /** Service name for OTel resource attributes. */
   serviceName: string;
@@ -37,10 +55,8 @@ export interface TracingConfig {
 // Lazy-loaded OpenTelemetry API
 // ---------------------------------------------------------------------------
 
-// deno-lint-ignore no-explicit-any
-let _tracer: any = null;
-// deno-lint-ignore no-explicit-any
-let _meter: any = null;
+let _tracer: Tracer | null = null;
+let _meter: Meter | null = null;
 let _initialized = false;
 let _config: TracingConfig | null = null;
 
@@ -49,8 +65,7 @@ let _config: TracingConfig | null = null;
  *
  * Returns a no-op tracer when OTel is not enabled.
  */
-// deno-lint-ignore no-explicit-any
-async function getTracer(): Promise<any> {
+async function getTracer(): Promise<Tracer> {
   if (_tracer) return _tracer;
   if (!isOtelEnabled()) return noopTracer;
   try {
@@ -67,8 +82,7 @@ async function getTracer(): Promise<any> {
  *
  * Returns a no-op meter when OTel is not enabled.
  */
-// deno-lint-ignore no-explicit-any
-async function getMeter(): Promise<any> {
+async function getMeter(): Promise<Meter> {
   if (_meter) return _meter;
   if (!isOtelEnabled()) return noopMeter;
   try {
@@ -199,18 +213,17 @@ export async function withSpan<T>(
   return await tracer.startActiveSpan(
     name,
     { attributes },
-    // deno-lint-ignore no-explicit-any
-    async (span: any) => {
+    async (span: Span) => {
       try {
         const result = await fn();
-        span.setStatus({ code: 0 }); // OK
+        span.setStatus({ code: OTEL_STATUS.OK });
         return result;
       } catch (err) {
         span.setStatus({
-          code: 2, // ERROR
+          code: OTEL_STATUS.ERROR,
           message: err instanceof Error ? err.message : String(err),
         });
-        span.recordException(err);
+        span.recordException(err as Exception);
         throw err;
       } finally {
         span.end();
@@ -277,20 +290,14 @@ export async function shutdownTracing(): Promise<void> {
   try {
     const api = await import("@opentelemetry/api");
     const provider = api.trace.getTracerProvider();
-    // The SDK's TracerProvider has a forceFlush() method, but
-    // the API type doesn't expose it. Try to call it if present.
-    // deno-lint-ignore no-explicit-any
-    if (typeof (provider as any).forceFlush === "function") {
+    if (typeof (provider as unknown as SdkProvider).forceFlush === "function") {
       await Promise.race([
-        // deno-lint-ignore no-explicit-any
-        (provider as any).forceFlush(),
+        (provider as unknown as SdkProvider).forceFlush(),
         new Promise<void>((resolve) => setTimeout(resolve, 2000)),
       ]);
-      // deno-lint-ignore no-explicit-any
-    } else if (typeof (provider as any).shutdown === "function") {
+    } else if (typeof (provider as unknown as SdkProvider).shutdown === "function") {
       await Promise.race([
-        // deno-lint-ignore no-explicit-any
-        (provider as any).shutdown(),
+        (provider as unknown as SdkProvider).shutdown(),
         new Promise<void>((resolve) => setTimeout(resolve, 2000)),
       ]);
     }
@@ -377,8 +384,7 @@ export async function recordCounter(
 export async function createGauge(
   name: string,
   description?: string,
-  // deno-lint-ignore no-explicit-any
-): Promise<any> {
+): Promise<Gauge> {
   if (!isOtelEnabled()) return noopInstrument;
   try {
     const meter = await getMeter();
@@ -399,8 +405,7 @@ export async function createGauge(
 export async function createCounter(
   name: string,
   description?: string,
-  // deno-lint-ignore no-explicit-any
-): Promise<any> {
+): Promise<Counter> {
   if (!isOtelEnabled()) return noopInstrument;
   try {
     const meter = await getMeter();
@@ -415,44 +420,49 @@ export async function createCounter(
 // ---------------------------------------------------------------------------
 
 const noopTracer = {
-  // deno-lint-ignore no-explicit-any
-  startActiveSpan(_name: string, _opts: any, fn: (span: any) => any): any {
+  startActiveSpan(
+    _name: string,
+    _opts: unknown,
+    fn?: (span: Span) => unknown,
+  ): unknown {
     const noopSpan = {
       setStatus() {},
       setAttribute() {},
       addEvent() {},
       recordException() {},
       end() {},
-    };
+      isRecording() { return false; },
+      updateName() {},
+      getContext() {
+        return { traceId: "", spanId: "", traceFlags: 0, isRemote: false };
+      },
+      spanContext() {
+        return { traceId: "", spanId: "", traceFlags: 0, isRemote: false };
+      },
+    } as unknown as Span;
     if (typeof _opts === "function") {
-      return _opts(noopSpan);
+      return (_opts as (span: Span) => unknown)(noopSpan);
     }
-    return fn(noopSpan);
+    return fn!(noopSpan);
   },
-};
+} as unknown as Tracer;
 
 const noopMeter = {
-  // deno-lint-ignore no-explicit-any
-  createGauge(_name: string, _opts?: any): any {
+  createGauge(_name: string, _opts?: unknown): Counter & Pick<Gauge, "record"> {
     return noopInstrument;
   },
-  // deno-lint-ignore no-explicit-any
-  createCounter(_name: string, _opts?: any): any {
+  createCounter(_name: string, _opts?: unknown): Counter {
     return noopInstrument;
   },
-  // deno-lint-ignore no-explicit-any
-  createHistogram(_name: string, _opts?: any): any {
+  createHistogram(_name: string, _opts?: unknown) {
     return noopInstrument;
   },
-  // deno-lint-ignore no-explicit-any
-  createUpDownCounter(_name: string, _opts?: any): any {
+  createUpDownCounter(_name: string, _opts?: unknown) {
     return noopInstrument;
   },
-};
+} as unknown as Meter;
 
 const noopInstrument = {
-  // deno-lint-ignore no-explicit-any
-  record(_value: number, _attrs?: any) {},
-  // deno-lint-ignore no-explicit-any
-  add(_value: number, _attrs?: any) {},
-};
+  record(_value: number, _attrs?: Record<string, string | number | boolean>) {},
+  add(_value: number, _attrs?: Record<string, string | number | boolean>) {},
+} as unknown as Counter & Pick<Gauge, "record">;

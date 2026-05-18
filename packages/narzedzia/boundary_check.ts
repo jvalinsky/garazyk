@@ -109,7 +109,7 @@ export async function checkBoundaries(
   return violations;
 }
 
-export async function main() {
+export async function main(): Promise<void> {
   const violations = await checkBoundaries(root, rules, currentBaseline);
   const newViolations = violations.filter((violation) =>
     !currentBaseline.has(violation.baselineKey)

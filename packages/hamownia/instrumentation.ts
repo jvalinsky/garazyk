@@ -206,6 +206,12 @@ export class PhaseTimer {
   }
 }
 
+/** A time-series entry for a single metric. */
+export interface MetricSeriesEntry {
+  metric_name: string;
+  samples: Array<[number, number]>;
+}
+
 /** Periodically scrapes Prometheus metrics endpoints and records time-series data. */
 export class PrometheusScraper {
   private samples: Record<string, MetricsSample[]> = {};
@@ -226,7 +232,7 @@ export class PrometheusScraper {
    * Stops scraping, performs one final scrape, and returns the collected time series.
    * @returns The aggregated metric time series.
    */
-  async stop(): Promise<Record<string, unknown>> {
+  async stop(): Promise<Record<string, MetricSeriesEntry>> {
     if (this.intervalId) clearInterval(this.intervalId);
     await this.scrape(); // Final scrape
     return this.getTimeSeries();
@@ -264,13 +270,14 @@ export class PrometheusScraper {
    * Returns the collected metric time series.
    * @returns A map of metric names to timestamped samples.
    */
-  getTimeSeries(): Record<string, unknown> {
-    // deno-lint-ignore no-explicit-any
-    const res: Record<string, any> = {};
+  getTimeSeries(): Record<string, MetricSeriesEntry> {
+    const res: Record<string, MetricSeriesEntry> = {};
     for (const samples of Object.values(this.samples)) {
       for (const sample of samples) {
         for (const [key, val] of Object.entries(sample.metrics)) {
-          if (!res[key]) res[key] = { metric_name: key, samples: [] };
+          if (!res[key]) {
+            res[key] = { metric_name: key, samples: [] };
+          }
           res[key].samples.push([sample.timestamp, val]);
         }
       }
@@ -361,7 +368,7 @@ export class InstrumentationReport {
    * Writes the report as formatted JSON.
    * @param path - Output file path.
    */
-  async writeJson(path: string) {
+  async writeJson(path: string): Promise<void> {
     await Deno.mkdir(join(path, ".."), { recursive: true });
     await Deno.writeTextFile(path, JSON.stringify(this.toDict(), null, 2));
   }

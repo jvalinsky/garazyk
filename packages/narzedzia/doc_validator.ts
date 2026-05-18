@@ -181,7 +181,7 @@ export async function checkDocPatterns(options: DocValidationOptions): Promise<b
 }
 
 /** Entry point for documentation validation CLI. */
-export async function docValidationMain() {
+export async function docValidationMain(): Promise<void> {
   const repoRootPath = await repoRoot();
   const docsDir = join(repoRootPath, "docs");
   

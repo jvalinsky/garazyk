@@ -688,7 +688,7 @@ export async function parseArgs(
   return options;
 }
 
-export async function main() {
+export async function main(): Promise<void> {
   try {
     const options = await parseArgs(Deno.args);
     const report = await buildReport(options);

@@ -17,7 +17,7 @@ import { basename, dirname, join } from "@std/path";
 import { walk } from "@std/fs";
 
 /** Entry point for the operations CLI. */
-export async function opsCommandMain(argv: string[]) {
+export async function opsCommandMain(argv: string[]): Promise<void> {
   const flags = parseArgs(argv, {
     string: [
       "data-dir",

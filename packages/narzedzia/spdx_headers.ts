@@ -67,7 +67,7 @@ export async function processFile(
   return "added";
 }
 
-export async function main() {
+export async function main(): Promise<void> {
   const root = await repoRoot();
   const sourceDirs = [
     join(root, "Garazyk/Sources"),

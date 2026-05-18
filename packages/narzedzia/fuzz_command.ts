@@ -16,7 +16,7 @@ import {
 import { join } from "@std/path";
 
 /** Entry point for the fuzzing orchestration CLI. */
-export async function fuzzCommandMain(argv: string[]) {
+export async function fuzzCommandMain(argv: string[]): Promise<void> {
   const flags = parseArgs(argv, {
     string: ["fuzzer", "corpus", "runs", "jobs", "output"],
     boolean: ["verbose", "quiet", "help"],

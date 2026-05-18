@@ -484,7 +484,7 @@ export class MigrationTool {
 // CLI Entry Point
 // ============================================================================
 
-export async function main() {
+export async function main(): Promise<void> {
   const args = Deno.args;
 
   const options: MigrationOptions = {

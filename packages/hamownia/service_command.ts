@@ -22,7 +22,7 @@ import {
 } from "./binary_services.ts";
 
 /** Entry point for the service management CLI. */
-export async function serviceCommandMain(argv: string[]) {
+export async function serviceCommandMain(argv: string[]): Promise<void> {
   const flags = parseArgs(argv, {
     boolean: ["verbose", "quiet", "help", "all"],
     string: ["service"],

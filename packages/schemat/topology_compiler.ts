@@ -612,7 +612,10 @@ function renderVolume(
   return [resolvedSource, ...parts.slice(1)].join(":");
 }
 
-function renderNetworks(lines: string[], networks: any) {
+function renderNetworks(
+  lines: string[],
+  networks: string[] | Record<string, { aliases?: string[] }>,
+) {
   lines.push(`    networks:`);
   if (Array.isArray(networks)) {
     for (const network of networks) lines.push(`      - ${network}`);
@@ -622,7 +625,7 @@ function renderNetworks(lines: string[], networks: any) {
     const [network, config] of Object.entries(
       networks || { topology_net: {} },
     ) as Array<
-      [string, any]
+      [string, { aliases?: string[] }]
     >
   ) {
     lines.push(`      ${network}:`);

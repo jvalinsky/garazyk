@@ -15,7 +15,7 @@ import {
 import { join } from "@std/path";
 
 /** Entry point for the build orchestration CLI. */
-export async function buildCommandMain(argv: string[]) {
+export async function buildCommandMain(argv: string[]): Promise<void> {
   const flags = parseArgs(argv, {
     boolean: ["wasm", "native", "all", "verbose", "quiet", "help"],
     alias: { h: "help", v: "verbose", q: "quiet" },

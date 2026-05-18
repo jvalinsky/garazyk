@@ -36,12 +36,12 @@ export class RawClient {
     method: string,
     params?: Record<string, unknown>,
     token?: string,
-  ): Promise<any>;
+  ): Promise<unknown>;
   async query(
     method: string,
     params?: Record<string, unknown>,
     token?: string,
-  ): Promise<any> {
+  ): Promise<unknown> {
     if (isBinaryEncoding(outputEncodingFor(method))) {
       return (await this.transport.getBinary(
         method,
@@ -71,12 +71,12 @@ export class RawClient {
     method: string,
     input?: unknown,
     token?: string,
-  ): Promise<any>;
+  ): Promise<unknown>;
   async procedure(
     method: string,
     input?: unknown,
     token?: string,
-  ): Promise<any> {
+  ): Promise<unknown> {
     const inputEncoding = inputEncodingFor(method);
     if (isBinaryEncoding(inputEncoding)) {
       return (await this.transport.postBinary(
