@@ -18,15 +18,15 @@ import {
   PrometheusScraper,
   StorageMonitor,
 } from "@garazyk/hamownia";
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import { createScenarioContext } from "@garazyk/hamownia";
 import { ScenarioResult } from "@garazyk/hamownia";
-import { Character } from "@garazyk/hamownia/config";
+import { Character } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
 import { assert } from "@garazyk/hamownia";
-import { createRunContext } from "@garazyk/hamownia/run-diagnostics";
+import { createRunContext } from "@garazyk/hamownia";
 import { join } from "@std/path";
 import { timedCall } from "@garazyk/hamownia";
 
@@ -239,11 +239,11 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     const reportCtx = await createRunContext();
 
     const report = new InstrumentationReport(
-      timer.toDict(),
-      metricsTs,
+      timer.toDict() as any,
+      metricsTs as any,
       {},
-      storageData,
-      phaseTimer.toDict(),
+      storageData as any,
+      phaseTimer.toDict() as any,
     );
 
     result.recordArtifact("instrumentation", report.toDict());

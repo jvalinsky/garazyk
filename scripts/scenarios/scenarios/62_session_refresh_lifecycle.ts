@@ -11,8 +11,8 @@
  * - Scenario completes successfully without errors.
  */
 
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import { createScenarioContext } from "@garazyk/hamownia";
 import { ScenarioResult } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
@@ -53,7 +53,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         luna.password,
       );
     },
-    (s) => `did=${s.did}`,
+    (s: any) => `did=${s.did}`,
   );
 
   if (!initialSession) {
@@ -72,7 +72,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     async () => {
       return await client.accounts.getSession(luna.accessJwt);
     },
-    (s) => `handle=${s.handle}`,
+    (s: any) => `handle=${s.handle}`,
   );
 
   // ── Refresh the session ───────────────────────────────────────────────────
@@ -82,8 +82,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     async () => {
       return await client.accounts.refreshSession(luna.refreshJwt!);
     },
-    (s) =>
-      `did=${s.did}, hasAccess=${!!s.accessJwt}, hasRefresh=${!!s.refreshJwt}`,
+    (s: any) => `did=${s.did}, hasAccess=${!!s.accessJwt}, hasRefresh=${!!s.refreshJwt}`,
   );
 
   if (refreshedSession) {
@@ -94,7 +93,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       async () => {
         return await client.accounts.getSession(refreshedSession.accessJwt);
       },
-      (s) => `handle=${s.handle}`,
+      (s: any) => `handle=${s.handle}`,
     );
 
     // ── Verify new refresh token works (rotation) ────────────────────────────
@@ -106,7 +105,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           refreshedSession.refreshJwt,
         );
       },
-      (s) => `did=${s.did}`,
+      (s: any) => `did=${s.did}`,
     );
 
     // ── Verify old refresh token is invalidated ─────────────────────────────

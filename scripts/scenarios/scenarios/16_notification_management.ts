@@ -14,12 +14,12 @@
  * - Notification seen/unread status updates correctly.
  */
 
-import { ScenarioResult, timedCall } from "@garazyk/hamownia";
+import {  ScenarioResult, timedCall , createScenarioContext } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
-import type { ScenarioContext } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia";
 
 function now() {
   return new Date().toISOString();
@@ -57,7 +57,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           char.password,
         );
       },
-      (s) => `did=${s.did}`,
+      (s: any) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -105,7 +105,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
             fchar.accessJwt,
           );
         },
-        (r) => `uri=${r.uri}`,
+        (r: any) => `uri=${r.uri}`,
       );
     }
   }
@@ -129,7 +129,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
             char.accessJwt,
           );
         },
-        (r) => `uri=${r.uri}`,
+        (r: any) => `uri=${r.uri}`,
       );
     }
   }
@@ -150,7 +150,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           luna.accessJwt,
         );
       },
-      (r) => `uri=${r.uri}`,
+      (r: any) => `uri=${r.uri}`,
     );
   }
 
@@ -163,7 +163,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       async () => {
         return await client.notifications.listNotifications(luna.accessJwt);
       },
-      (r) => `count=${r.notifications?.length || 0}`,
+      (r: any) => `count=${r.notifications?.length || 0}`,
     );
 
     await timedCall(
@@ -176,7 +176,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           luna.accessJwt,
         );
       },
-      (r) => `count=${r.count ?? 0}`,
+      (r: any) => `count=${r.count ?? 0}`,
     );
 
     await timedCall(
@@ -197,7 +197,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           luna.accessJwt,
         );
       },
-      (r) => `count=${r.count ?? 0}`,
+      (r: any) => `count=${r.count ?? 0}`,
     );
 
     await timedCall(
@@ -263,7 +263,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       async () => {
         return await client.notifications.listNotifications(luna.accessJwt);
       },
-      (r) => `count=${r.notifications?.length || 0}`,
+      (r: any) => `count=${r.notifications?.length || 0}`,
     );
 
     const marcus = ctx.getCharacter("marcus");
@@ -290,7 +290,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           luna.accessJwt,
         );
       },
-      (r) => `count=${r.subscriptions?.length || 0}`,
+      (r: any) => `count=${r.subscriptions?.length || 0}`,
     );
 
     await timedCall(

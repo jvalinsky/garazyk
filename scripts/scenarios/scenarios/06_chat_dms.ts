@@ -20,14 +20,9 @@
  * - Group and DM lifecycle management functions correctly.
  */
 
-import { XrpcClient } from "@garazyk/gruszka";
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
-import { ScenarioResult, timedCall } from "@garazyk/hamownia";
-export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
-export type { ScenarioReport } from "@garazyk/hamownia";
-import { assert } from "@garazyk/hamownia";
-import { XrpcError } from "@garazyk/gruszka";
+import { XrpcClient, XrpcError } from "@garazyk/gruszka";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import { createScenarioContext, ScenarioResult, timedCall, assert } from "@garazyk/hamownia";
 import {
   chatXrpcGet,
   chatXrpcPost,
@@ -86,8 +81,8 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
             password: char.password,
           });
           return res.data;
-        } catch (e) {
-          if (e instanceof Error && e.message.includes("already exists")) {
+        } catch (e: any) {
+          if (e.message && e.message.includes("already exists")) {
             const res = await client.agent.login({
               identifier: char.handle,
               password: char.password,
@@ -97,7 +92,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           throw e;
         }
       },
-      (s) => `did=${s.did}`,
+      (s: any) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -122,7 +117,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     async () => {
       const declaration = await chatXrpcGet(
         chatContext,
-        luna.accessJwt,
+        luna.accessJwt!,
         "chat.bsky.actor.declaration",
         {},
       );
@@ -141,16 +136,16 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     async () => {
       return await chatXrpcGet(
         chatContext,
-        luna.accessJwt,
+        luna.accessJwt!,
         "chat.bsky.convo.getConvoForMembers",
         {
-          members: [luna.did, marcus.did],
+          members: [luna.did!, marcus.did!],
         },
       );
     },
   );
 
-  const convoId = convo?.convo?.id;
+  const convoId = (convo as any)?.convo?.id;
 
   const lunaMsg = await timedCall(
     result,
@@ -158,7 +153,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     async () => {
       return await chatXrpcPost(
         chatContext,
-        luna.accessJwt,
+        luna.accessJwt!,
         "chat.bsky.convo.sendMessage",
         {
           convoId: convoId || "default",
@@ -170,7 +165,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     },
   );
 
-  const lunaMsgId = lunaMsg?.id;
+  const lunaMsgId = (lunaMsg as any)?.id;
 
   await timedCall(
     result,
@@ -178,7 +173,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     async () => {
       return await chatXrpcPost(
         chatContext,
-        marcus.accessJwt,
+        marcus.accessJwt!,
         "chat.bsky.convo.sendMessage",
         {
           convoId: convoId || "default",
@@ -198,7 +193,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       try {
         await chatXrpcPost(
           chatContext,
-          volt.accessJwt,
+          volt.accessJwt!,
           "chat.bsky.convo.sendMessage",
           {
             convoId: convoId || "default",
@@ -223,7 +218,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     async () => {
       return await chatXrpcGet(
         chatContext,
-        marcus.accessJwt,
+        marcus.accessJwt!,
         "chat.bsky.convo.listConvos",
         {
           limit: 10,
@@ -239,7 +234,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       async () => {
         return await chatXrpcGet(
           chatContext,
-          marcus.accessJwt,
+          marcus.accessJwt!,
           "chat.bsky.convo.getMessages",
           {
             convoId: convoId,
@@ -255,7 +250,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       async () => {
         return await chatXrpcPost(
           chatContext,
-          marcus.accessJwt,
+          marcus.accessJwt!,
           "chat.bsky.convo.muteConvo",
           {
             convoId: convoId,
@@ -289,10 +284,10 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       try {
         await chatXrpcGet(
           chatContext,
-          rosa.accessJwt,
+          rosa.accessJwt!,
           "chat.bsky.convo.getConvoForMembers",
           {
-            members: [rosa.did, marcus.did],
+            members: [rosa.did!, marcus.did!],
           },
         );
       } catch (error) {
@@ -324,17 +319,17 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     },
   );
 
-  const group = await timedCall(
+  const group: any = await timedCall(
     result,
     "Rosa creates group chat",
     async () => {
       return await chatXrpcPost(
         chatContext,
-        rosa.accessJwt,
+        rosa.accessJwt!,
         "chat.bsky.group.createGroup",
         {
           name: "Food & Space Enthusiasts",
-          members: [luna.did, volt.did],
+          members: [luna.did!, volt.did!],
         },
       );
     },
@@ -349,11 +344,11 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       async () => {
         return await chatXrpcPost(
           chatContext,
-          rosa.accessJwt,
+          rosa.accessJwt!,
           "chat.bsky.group.addMember",
           {
             groupId: groupId,
-            did: marcus.did,
+            did: marcus.did!,
           },
         );
       },
@@ -365,7 +360,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       async () => {
         return await chatXrpcGet(
           chatContext,
-          rosa.accessJwt,
+          rosa.accessJwt!,
           "chat.bsky.group.getGroup",
           {
             groupId: groupId,
@@ -382,7 +377,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       async () => {
         return await chatXrpcPost(
           chatContext,
-          luna.accessJwt,
+          luna.accessJwt!,
           "chat.bsky.convo.updateRead",
           {
             convoId: convoId,
@@ -400,7 +395,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       async () => {
         return await chatXrpcPost(
           chatContext,
-          marcus.accessJwt,
+          marcus.accessJwt!,
           "chat.bsky.convo.unmuteConvo",
           {
             convoId: convoId,
@@ -415,7 +410,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       async () => {
         return await chatXrpcPost(
           chatContext,
-          marcus.accessJwt,
+          marcus.accessJwt!,
           "chat.bsky.convo.leaveConvo",
           {
             convoId: convoId,

@@ -16,12 +16,12 @@
  * - User interactions adhere to the expected graph API behavior.
  */
 
-import { ScenarioResult, timedCall } from "@garazyk/hamownia";
+import {  ScenarioResult, timedCall , createScenarioContext } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
-import type { ScenarioContext } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia";
 
 function now() {
   return new Date().toISOString();
@@ -59,7 +59,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           char.password,
         );
       },
-      (s) => `did=${s.did}`,
+      (s: any) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -112,7 +112,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
             ff.accessJwt,
           );
         },
-        (r) => `uri=${r.uri}`,
+        (r: any) => `uri=${r.uri}`,
       );
     }
   }
@@ -134,7 +134,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       async () => {
         return await client.graph.getMutes(quiet.accessJwt);
       },
-      (r) => `count=${r.mutes?.length || 0}`,
+      (r: any) => `count=${r.mutes?.length || 0}`,
     );
 
     await timedCall(
@@ -151,7 +151,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       async () => {
         return await client.graph.getMutes(quiet.accessJwt);
       },
-      (r) => `count=${r.mutes?.length || 0}`,
+      (r: any) => `count=${r.mutes?.length || 0}`,
     );
   }
 
@@ -166,7 +166,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           luna.accessJwt,
         );
       },
-      (r) => `count=${r.relationships?.length || 0}`,
+      (r: any) => `count=${r.relationships?.length || 0}`,
     );
   }
 
@@ -188,7 +188,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           rosa.accessJwt,
         );
       },
-      (r) => `uri=${r.uri}`,
+      (r: any) => `uri=${r.uri}`,
     );
 
     if (listRec) {
@@ -208,7 +208,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
             rosa.accessJwt,
           );
         },
-        (r) => `uri=${r.uri}`,
+        (r: any) => `uri=${r.uri}`,
       );
       rosaSpUri = sp?.uri || null;
     }
@@ -223,7 +223,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           token: rosa.accessJwt,
         });
       },
-      (r) => `count=${r.starterPacks?.length || 0}`,
+      (r: any) => `count=${r.starterPacks?.length || 0}`,
     );
   }
 
@@ -234,7 +234,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       async () => {
         return await client.graph.getStarterPack(rosaSpUri!, rosa.accessJwt);
       },
-      (r) => `name=${r.starterPack?.name || ""}`,
+      (r: any) => `name=${r.starterPack?.name || ""}`,
     );
 
     await timedCall(
@@ -243,7 +243,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       async () => {
         return await client.graph.getStarterPacks([rosaSpUri!], rosa.accessJwt);
       },
-      (r) => `count=${r.starterPacks?.length || 0}`,
+      (r: any) => `count=${r.starterPacks?.length || 0}`,
     );
   }
 

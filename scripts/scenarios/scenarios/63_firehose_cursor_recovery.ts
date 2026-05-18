@@ -13,8 +13,8 @@
 
 import { FirehoseClient } from "@garazyk/gruszka";
 import type { FirehoseEvent } from "@garazyk/gruszka";
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import { createScenarioContext } from "@garazyk/hamownia";
 import { ScenarioResult } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
@@ -73,7 +73,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       }
       return res.data;
     },
-    (s) => `did=${s.did}`,
+    (s: any) => `did=${s.did}`,
   );
 
   if (!session) {
@@ -133,9 +133,9 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
             },
           },
           luna.accessJwt,
-        ) as CreateRecordResponse;
+        ) as any as CreateRecordResponse;
       },
-      (r) => `uri=${r.uri}`,
+      (r: any) => `uri=${r.uri}`,
     );
     if (post) postUris.push(post.uri);
   }

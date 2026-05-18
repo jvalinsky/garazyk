@@ -11,8 +11,8 @@
  * - Scenario completes successfully without errors.
  */
 
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import { createScenarioContext } from "@garazyk/hamownia";
 import { ScenarioResult } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
@@ -194,7 +194,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       );
       return status;
     },
-    (status) => `cid=${status.blob.ref.$link}`,
+    (status: any) => `cid=${status.blob.ref.$link}`,
   );
 
   if (!finalJob?.blob) {
@@ -222,7 +222,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         },
       }, luna.accessJwt);
     },
-    (body) => `uri=${body.uri}`,
+    (body: any) => `uri=${body.uri}`,
   );
 
   await timedCall(result, "AppView returns playable video embed", async () => {
@@ -254,7 +254,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       "view should include thumbnail URL",
     );
     return post.embed;
-  }, (embed) => `playlist=${embed.playlist}`);
+  }, (embed: any) => `playlist=${embed.playlist}`);
 
   await timedCall(
     result,

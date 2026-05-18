@@ -11,8 +11,8 @@
  * - Scenario completes successfully without errors.
  */
 
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import { createScenarioContext } from "@garazyk/hamownia";
 import { ScenarioResult } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
@@ -67,7 +67,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         return await pds.accounts.createSession(troll.handle, troll.password);
       }
     },
-    (s) => `did=${s.did}`,
+    (s: any) => `did=${s.did}`,
   );
 
   if (session) {
@@ -90,9 +90,9 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           text: "Bad content that will be taken down.",
           createdAt: now(),
         },
-      }, troll.accessJwt);
+      }, troll.accessJwt) as any;
     },
-    (r) => `uri=${r.uri}`,
+    (r: any) => `uri=${r.uri}`,
   );
 
   const adminPassword = Deno.env.get("PDS_ADMIN_PASSWORD") ||
@@ -116,7 +116,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
             cid: post.cid,
           },
           takedown: { applied: true, ref: "takedown-e2e-test" },
-        }, adminToken);
+        }, adminToken) as any;
       },
     );
   } else {
@@ -140,7 +140,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           repo: troll.did,
           collection: "app.bsky.feed.post",
           rkey: postRkey,
-        });
+        }) as any;
       },
       undefined,
       true, // must throw (404 or 410)
@@ -154,7 +154,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       async () => {
         return await pds.raw.get("com.atproto.admin.getRecord", {
           uri: post.uri,
-        }, adminToken);
+        }, adminToken) as any;
       },
       (r) => `cid=${r?.cid ?? "present"}`,
     );
@@ -186,7 +186,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
             did: troll.did,
           },
           takedown: { applied: true, ref: "account-takedown-e2e" },
-        }, adminToken);
+        }, adminToken) as any;
       },
     );
 
@@ -197,7 +197,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         await pds.raw.get("com.atproto.repo.listRecords", {
           repo: troll.did,
           collection: "app.bsky.feed.post",
-        });
+        }) as any;
       },
       undefined,
       true, // must throw (400/AccountTakedown or 403)

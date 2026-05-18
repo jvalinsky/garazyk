@@ -17,11 +17,12 @@
  */
 
 import { XrpcClient } from "@garazyk/gruszka";
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
-import { ScenarioResult, timedCall } from "@garazyk/hamownia";
-export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
-export type { ScenarioReport } from "@garazyk/hamownia";
+import {
+  createScenarioContext,
+  ScenarioResult,
+  timedCall,
+} from "@garazyk/hamownia";
+import type { ScenarioContext } from "@garazyk/hamownia";
 
 function now() {
   return new Date().toISOString();
@@ -58,7 +59,7 @@ async function createAccounts(
           throw e;
         }
       },
-      (s) => `did=${s.did}`,
+      (s: any) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -98,18 +99,18 @@ async function follow(
     result,
     `${follower.name} follows ${target.name}`,
     async () => {
-      const res = await client.raw.post("com.atproto.repo.createRecord", {
-        repo: follower.did,
+      const res = await client.api.com.atproto.repo.createRecord({
+        repo: follower.did!,
         collection: "app.bsky.graph.follow",
         record: {
           $type: "app.bsky.graph.follow",
-          subject: target.did,
+          subject: target.did!,
           createdAt: now(),
         },
       }, follower.accessJwt);
       return res;
     },
-    (r) => `uri=${r.uri}`,
+    (r: any) => `uri=${r.uri}`,
   );
   return rec;
 }
@@ -165,8 +166,8 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       result,
       `Set profile: ${char.name}`,
       async () => {
-        const res = await client.raw.post("com.atproto.repo.createRecord", {
-          repo: char.did,
+        const res = await client.api.com.atproto.repo.createRecord({
+          repo: char.did!,
           collection: "app.bsky.actor.profile",
           record: {
             $type: "app.bsky.actor.profile",
@@ -199,28 +200,26 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     result,
     "Marcus's follows list",
     async () => {
-      const res = await client.raw.get(
-        "app.bsky.graph.getFollows",
-        { actor: marcus.did },
+      const res = await client.api.app.bsky.graph.getFollows(
+        { actor: marcus.did! },
         marcus.accessJwt,
       );
       return res;
     },
-    (f) => `count=${f.follows?.length || 0}`,
+    (f: any) => `count=${f.follows?.length || 0}`,
   );
 
   await timedCall(
     result,
     "Luna's followers list",
     async () => {
-      const res = await client.raw.get(
-        "app.bsky.graph.getFollowers",
-        { actor: luna.did },
+      const res = await client.api.app.bsky.graph.getFollowers(
+        { actor: luna.did! },
         luna.accessJwt,
       );
       return res;
     },
-    (f) => `count=${f.followers?.length || 0}`,
+    (f: any) => `count=${f.followers?.length || 0}`,
   );
 
   const volt = ctx.getCharacter("volt");
@@ -229,7 +228,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     "Marcus lists follow records (for unfollow)",
     async () => {
       const res = await client.agent.com.atproto.repo.listRecords({
-        repo: marcus.did,
+        repo: marcus.did!,
         collection: "app.bsky.graph.follow",
       });
       return res.data;
@@ -251,8 +250,8 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         result,
         "Marcus unfollows DJ Volt",
         async () => {
-          await client.raw.post("com.atproto.repo.deleteRecord", {
-            repo: marcus.did,
+          await client.api.com.atproto.repo.deleteRecord({
+            repo: marcus.did!,
             collection: "app.bsky.graph.follow",
             rkey,
           }, marcus.accessJwt);
@@ -274,18 +273,18 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       result,
       "Luna blocks Trollface",
       async () => {
-        const res = await client.raw.post("com.atproto.repo.createRecord", {
-          repo: luna.did,
+        const res = await client.api.com.atproto.repo.createRecord({
+          repo: luna.did!,
           collection: "app.bsky.graph.block",
           record: {
             $type: "app.bsky.graph.block",
-            subject: troll.did,
+            subject: troll.did!,
             createdAt: now(),
           },
         }, luna.accessJwt);
         return res;
       },
-      (r) => `uri=${r.uri}`,
+      (r: any) => `uri=${r.uri}`,
     );
   }
 
@@ -296,14 +295,13 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       result,
       "Luna's blocks list",
       async () => {
-        const res = await client.raw.get(
-          "app.bsky.graph.getBlocks",
+        const res = await client.api.app.bsky.graph.getBlocks(
           {},
           luna.accessJwt,
         );
         return res;
       },
-      (b) => `count=${b.blocks?.length || 0}`,
+      (b: any) => `count=${b.blocks?.length || 0}`,
     );
   }
 
@@ -311,14 +309,13 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     result,
     "Marcus profile counts",
     async () => {
-      const res = await client.raw.get(
-        "app.bsky.actor.getProfile",
-        { actor: marcus.did },
+      const res = await client.api.app.bsky.actor.getProfile(
+        { actor: marcus.did! },
         marcus.accessJwt,
       );
       return res;
     },
-    (p) => `follows=${p.followsCount || 0}, followers=${p.followersCount || 0}`,
+    (p: any) => `follows=${p.followsCount || 0}, followers=${p.followersCount || 0}`,
   );
 
   if (!luna.did || !luna.accessJwt) {
@@ -328,14 +325,13 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       result,
       "Search actors",
       async () => {
-        const res = await client.raw.get(
-          "app.bsky.actor.searchActors",
+        const res = await client.api.app.bsky.actor.searchActors(
           { q: "Luna" },
           luna.accessJwt,
         );
         return res;
       },
-      (s) => `found=${s.actors?.length || 0}`,
+      (s: any) => `found=${s.actors?.length || 0}`,
     );
   }
 

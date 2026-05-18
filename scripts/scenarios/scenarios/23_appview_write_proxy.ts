@@ -22,8 +22,8 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import { createScenarioContext } from "@garazyk/hamownia";
 
 function now() {
   return new Date().toISOString();
@@ -62,7 +62,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         adminToken,
       );
     },
-    (r) => `enabled=${r.enabled ?? false}`,
+    (r: any) => `enabled=${r.enabled ?? false}`,
   );
 
   const charNames = ["luna", "marcus"];
@@ -78,7 +78,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           char.password,
         );
       },
-      (s) => `did=${s.did}`,
+      (s: any) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -124,7 +124,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           luna.accessJwt,
         );
       },
-      (r) => `uri=${r.uri}`,
+      (r: any) => `uri=${r.uri}`,
     );
   }
 
@@ -185,7 +185,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           luna.accessJwt,
         );
       },
-      (r) => `handle=${r.handle || "unknown"}`,
+      (r: any) => `handle=${r.handle || "unknown"}`,
     );
   }
 

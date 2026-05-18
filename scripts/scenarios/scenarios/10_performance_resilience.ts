@@ -20,8 +20,8 @@
  */
 
 import { XrpcClient } from "@garazyk/gruszka";
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import { createScenarioContext } from "@garazyk/hamownia";
 import { ScenarioResult, timedCall } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
@@ -79,7 +79,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           throw e;
         }
       },
-      (s) => `did=${s.did}`,
+      (s: any) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -117,7 +117,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
               } from ${char.name}! Load testing the PDS.`,
               createdAt: now(),
             },
-          }, char.accessJwt);
+          }, char.accessJwt) as any;
           return true;
         } catch {
           return false;
@@ -150,7 +150,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         return await client.raw.get("com.atproto.repo.listRecords", {
           repo: char.did,
           collection: "app.bsky.feed.post",
-        }, char.accessJwt);
+        }, char.accessJwt) as any;
       },
     );
     if (records) {
@@ -185,7 +185,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       return await client.raw.post("com.atproto.repo.applyWrites", {
         repo: luna.did,
         writes: batchWrites,
-      }, luna.accessJwt);
+      }, luna.accessJwt) as any;
     },
     () => "5 records created",
   );
@@ -198,7 +198,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         repo: luna.did,
         collection: "app.bsky.feed.post",
         record: { $type: "app.bsky.feed.post" },
-      }, luna.accessJwt);
+      }, luna.accessJwt) as any;
     },
     undefined,
     true,
@@ -214,7 +214,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         createdAt: now(),
       },
       rkey: "duplicate-test-rkey",
-    }, luna.accessJwt);
+    }, luna.accessJwt) as any;
 
     await timedCall(
       result,
@@ -229,7 +229,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
             createdAt: now(),
           },
           rkey: "duplicate-test-rkey",
-        }, luna.accessJwt);
+        }, luna.accessJwt) as any;
       },
       undefined,
       true,
@@ -250,7 +250,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           text: "unauthorized",
           createdAt: now(),
         },
-      }, "invalid-token-xyz");
+      }, "invalid-token-xyz") as any;
     },
     undefined,
     true,
@@ -268,7 +268,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           text: "test",
           createdAt: now(),
         },
-      }, luna.accessJwt);
+      }, luna.accessJwt) as any;
     },
     undefined,
     true,
@@ -303,9 +303,9 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         "app.bsky.feed.getTimeline",
         {},
         luna.accessJwt,
-      );
+      ) as any;
     },
-    (t) => `items=${t.feed?.length || 0}`,
+    (t: any) => `items=${t.feed?.length || 0}`,
   );
 
   try {

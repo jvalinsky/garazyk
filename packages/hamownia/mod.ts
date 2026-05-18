@@ -11,6 +11,49 @@
  */
 
 export {
+  discoverLocalDidTargets,
+  discoverRemoteAccountsViaAdminApi,
+  discoverRemoteAccountsViaSsh,
+  firstExistingServiceDbPath,
+  resolveTargets,
+} from "./account_discovery.ts";
+export type {
+  ResolveTargetsOptions,
+  TargetIdentity,
+} from "./account_discovery.ts";
+export { assert } from "./assertions.ts";
+export {
+  attachPublicNetworkLeakGuard,
+  blockedPublicHosts,
+} from "./browser_flow.ts";
+export {
+  Character,
+  createCharacterRegistry,
+  createScenarioConfig,
+} from "./config.ts";
+export type {
+  CharacterRegistry,
+  ScenarioConfig,
+} from "./config.ts";
+export {
+  InstrumentationReport,
+  OperationTimer,
+  PhaseTimer,
+  PrometheusScraper,
+  StorageMonitor,
+} from "./instrumentation.ts";
+export {
+  getExistingInviteCodeViaSsh,
+  insertInviteCodeViaSsh,
+} from "./invite_code.ts";
+export {
+  handleAccountCreate,
+  handlePostCreate,
+  handleProfileUpdate,
+  runKaszlak,
+} from "./pds_cli.ts";
+export type { PdsCliConfig } from "./pds_cli.ts";
+export {
   ScenarioResult,
   StepResult,
   StepStatus,
@@ -19,7 +62,18 @@ export {
   unwrapOutcome,
 } from "./runner.ts";
 export type { ScenarioReport, TimedCallOutcome } from "./runner.ts";
-export { assert } from "./assertions.ts";
+export {
+  collectDiagnostics,
+  createRunContext,
+  redactDiagnosticText,
+} from "./run_diagnostics.ts";
+export type { E2ERunContext } from "./run_diagnostics.ts";
+export {
+  createScenarioContext,
+} from "./scenario_context.ts";
+export type {
+  ScenarioContext,
+} from "./scenario_context.ts";
 export {
   browserFlows,
   formatRequirement,
@@ -41,12 +95,8 @@ export {
   normalizeScenarioId,
   selectScenarios,
 } from "./scenario_selector.ts";
-export {
-  attachPublicNetworkLeakGuard,
-  blockedPublicHosts,
-} from "./browser_flow.ts";
-export type { RunnerArgs } from "./run_scenarios_types.ts";
 export type { ScenarioExecutionResult } from "./run_loop.ts";
+export type { RunnerArgs } from "./run_scenarios_types.ts";
 export type { ScenarioRequirement } from "@garazyk/schemat";
 export {
   handleMockTwilioRequest,
@@ -61,25 +111,3 @@ export type {
   MockTwilioServerConfig,
   MockVerificationState,
 } from "./mock_twilio.ts";
-export {
-  discoverLocalDidTargets,
-  discoverRemoteAccountsViaAdminApi,
-  discoverRemoteAccountsViaSsh,
-  firstExistingServiceDbPath,
-  resolveTargets,
-} from "./account_discovery.ts";
-export type {
-  ResolveTargetsOptions,
-  TargetIdentity,
-} from "./account_discovery.ts";
-export {
-  getExistingInviteCodeViaSsh,
-  insertInviteCodeViaSsh,
-} from "./invite_code.ts";
-export {
-  handleAccountCreate,
-  handlePostCreate,
-  handleProfileUpdate,
-  runKaszlak,
-} from "./pds_cli.ts";
-export type { PdsCliConfig } from "./pds_cli.ts";

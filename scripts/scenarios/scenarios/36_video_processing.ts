@@ -17,8 +17,8 @@ export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
 import { assert } from "@garazyk/hamownia";
 import { timedCall } from "@garazyk/hamownia";
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import { createScenarioContext } from "@garazyk/hamownia";
 
 /**
  * Executes the scenario logic.
@@ -151,7 +151,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   });
 
   if (uploadResp) {
-    const jobId = uploadResp.jobStatus?.jobId;
+    const jobId = uploadResp.data.jobStatus?.jobId;
     if (!jobId) {
       result.stepFailed(
         "Video job polling",
@@ -168,7 +168,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
             { jobId },
             luna.accessJwt,
           );
-          const state = (jobResp.jobStatus || jobResp).state;
+          const state = (jobResp.data.jobStatus || jobResp).state;
           if (state === "JOB_STATE_COMPLETED" || state === "JOB_STATE_FAILED") {
             finalState = state;
             break;

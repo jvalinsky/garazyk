@@ -13,12 +13,12 @@
  * - Age assurance configuration and state endpoints return expected responses.
  */
 
-import { ScenarioResult, timedCall } from "@garazyk/hamownia";
+import {  ScenarioResult, timedCall , createScenarioContext } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
-import type { ScenarioContext } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia";
 
 /**
  * Executes the scenario logic.
@@ -52,7 +52,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           char.password,
         );
       },
-      (s) => `did=${s.did}`,
+      (s: any) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -74,7 +74,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
             luna.accessJwt,
           );
         },
-        (r) => `verificationId=${r.verificationId || ""}`,
+        (r: any) => `verificationId=${r.verificationId || ""}`,
       );
 
       await timedCall(
@@ -100,7 +100,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
             luna.accessJwt,
           );
         },
-        (r) => `matches=${r.matches?.length || 0}`,
+        (r: any) => `matches=${r.matches?.length || 0}`,
       );
 
       await timedCall(

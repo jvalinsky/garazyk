@@ -22,8 +22,8 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
 import { assert } from "@garazyk/hamownia";
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import { createScenarioContext } from "@garazyk/hamownia";
 import { timedCall } from "@garazyk/hamownia";
 
 /**
@@ -147,7 +147,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       },
     );
     const found = messages?.messages?.some((m: any) => m.text === plaintext);
-    assert.isTrue(found, "Plaintext not found");
+    assert.isTrue(!!found, "Plaintext not found");
   }
 
   if (germHealthy) {

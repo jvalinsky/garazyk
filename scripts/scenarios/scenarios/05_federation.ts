@@ -15,12 +15,9 @@
  * - Relay and AppView successfully propagate cross-PDS data
  */
 
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import { createScenarioContext, ScenarioResult, timedCall } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
-import { ScenarioResult, timedCall } from "@garazyk/hamownia";
-export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
-export type { ScenarioReport } from "@garazyk/hamownia";
 
 function now() {
   return new Date().toISOString();
@@ -85,7 +82,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           throw e;
         }
       },
-      (s) => `did=${s.did}`,
+      (s: any) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -118,7 +115,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           throw e;
         }
       },
-      (s) => `did=${s.did}`,
+      (s: any) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -145,8 +142,8 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       result,
       `Set profile: ${char.name}`,
       async () => {
-        await client.raw.post("com.atproto.repo.createRecord", {
-          repo: char.did,
+        await client.api.com.atproto.repo.createRecord({
+          repo: char.did!,
           collection: "app.bsky.actor.profile",
           record: {
             $type: "app.bsky.actor.profile",
@@ -162,8 +159,8 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     result,
     "Luna posts on PDS 1",
     async () => {
-      const res = await pds1.raw.post("com.atproto.repo.createRecord", {
-        repo: luna.did,
+      return await pds1.api.com.atproto.repo.createRecord({
+        repo: luna.did!,
         collection: "app.bsky.feed.post",
         record: {
           $type: "app.bsky.feed.post",
@@ -171,7 +168,6 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           createdAt: now(),
         },
       }, luna.accessJwt);
-      return res;
     },
   );
 
@@ -179,8 +175,8 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     result,
     "Marcus posts on PDS 1",
     async () => {
-      const res = await pds1.raw.post("com.atproto.repo.createRecord", {
-        repo: marcus.did,
+      return await pds1.api.com.atproto.repo.createRecord({
+        repo: marcus.did!,
         collection: "app.bsky.feed.post",
         record: {
           $type: "app.bsky.feed.post",
@@ -189,7 +185,6 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           createdAt: now(),
         },
       }, marcus.accessJwt);
-      return res;
     },
   );
 
@@ -211,15 +206,15 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     result.stepSkipped("PLC resolves Luna's DID", exc.message || String(exc));
   }
 
-  const resolved = await timedCall(
+  const resolved: any = await timedCall(
     result,
     "Nova resolves Luna's handle from PDS2",
     async () => {
-      return await pds2.raw.get("com.atproto.identity.resolveHandle", {
+      return await pds2.api.com.atproto.identity.resolveHandle({
         handle: luna.handle,
       });
     },
-    (r) => `did=${r.did}`,
+    (r: any) => `did=${r.did}`,
   );
 
   if (resolved && resolved.did !== luna.did) {
@@ -233,36 +228,34 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     result,
     "Nova follows Luna (cross-PDS)",
     async () => {
-      const res = await pds2.raw.post("com.atproto.repo.createRecord", {
-        repo: nova.did,
+      return await pds2.api.com.atproto.repo.createRecord({
+        repo: nova.did!,
         collection: "app.bsky.graph.follow",
         record: {
           $type: "app.bsky.graph.follow",
-          subject: luna.did,
+          subject: luna.did!,
           createdAt: now(),
         },
       }, nova.accessJwt);
-      return res;
     },
-    (r) => `uri=${r.uri}`,
+    (r: any) => `uri=${r.uri}`,
   );
 
   await timedCall(
     result,
     "Rex follows Marcus (cross-PDS)",
     async () => {
-      const res = await pds2.raw.post("com.atproto.repo.createRecord", {
-        repo: rex.did,
+      return await pds2.api.com.atproto.repo.createRecord({
+        repo: rex.did!,
         collection: "app.bsky.graph.follow",
         record: {
           $type: "app.bsky.graph.follow",
-          subject: marcus.did,
+          subject: marcus.did!,
           createdAt: now(),
         },
       }, rex.accessJwt);
-      return res;
     },
-    (r) => `uri=${r.uri}`,
+    (r: any) => `uri=${r.uri}`,
   );
 
   if (marcusPost) {
@@ -270,8 +263,8 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       result,
       "Rex replies to Marcus (cross-PDS)",
       async () => {
-        await pds2.raw.post("com.atproto.repo.createRecord", {
-          repo: rex.did,
+        await pds2.api.com.atproto.repo.createRecord({
+          repo: rex.did!,
           collection: "app.bsky.feed.post",
           record: {
             $type: "app.bsky.feed.post",
@@ -346,22 +339,24 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     result,
     "Nova views Luna's profile via AppView",
     async () => {
-      return await pds2.raw.get("app.bsky.actor.getProfile", {
-        actor: luna.did,
-      }, nova.accessJwt);
+      return await pds2.api.app.bsky.actor.getProfile(
+        { actor: luna.did! },
+        nova.accessJwt,
+      );
     },
-    (p) => `displayName=${p.displayName}`,
+    (p: any) => `displayName=${p.displayName}`,
   );
 
   await timedCall(
     result,
     "Nova sees Luna's feed via AppView",
     async () => {
-      return await pds2.raw.get("app.bsky.feed.getAuthorFeed", {
-        actor: luna.did,
-      }, nova.accessJwt);
+      return await pds2.api.app.bsky.feed.getAuthorFeed(
+        { actor: luna.did! },
+        nova.accessJwt,
+      );
     },
-    (f) => `items=${f.feed?.length || 0}`,
+    (f: any) => `items=${f.feed?.length || 0}`,
   );
 
   if (lunaPost) {
@@ -369,13 +364,13 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       result,
       "Cross-PDS record retrieval",
       async () => {
-        return await pds2.raw.get("com.atproto.repo.getRecord", {
-          repo: luna.did,
+        return await pds2.api.com.atproto.repo.getRecord({
+          repo: luna.did!,
           collection: "app.bsky.feed.post",
-          rkey: lunaPost.uri.split("/").pop(),
+          rkey: lunaPost.uri.split("/").pop()!,
         }, nova.accessJwt);
       },
-      (r) => `uri=${r.uri}`,
+      (r: any) => `uri=${r.uri}`,
     );
   }
 

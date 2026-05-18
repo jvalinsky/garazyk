@@ -15,27 +15,22 @@
  */
 
 import { XrpcClient } from "@garazyk/gruszka";
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
-import { ScenarioResult, timedCall } from "@garazyk/hamownia";
-export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
-export type { ScenarioReport } from "@garazyk/hamownia";
-import { assert } from "@garazyk/hamownia";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import { createScenarioContext, ScenarioResult, timedCall, assert } from "@garazyk/hamownia";
 
 /**
  * Executes the scenario logic.
+ * @param ctx - The scenario context including character registry and service URLs
  * @returns A promise that resolves to the scenario result
  */
 export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Account Lifecycle & Identity");
-  result.start();
-
   const pds = new XrpcClient(ctx.pds1);
   const luna = ctx.getCharacter("luna");
 
   await timedCall(
     result,
-    "Server health check",
+    "Verify PDS health",
     async () => {
       const res = await fetch(`${ctx.pds1}/xrpc/com.atproto.server.describeServer`);
       if (!res.ok) throw new Error("Server not healthy");
@@ -51,9 +46,9 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     result,
     "Describe server",
     async () => {
-      return await pds.raw.get("com.atproto.server.describeServer");
+      return await pds.api.com.atproto.server.describeServer();
     },
-    (d) => `domains=${d.availableUserDomains}`,
+    (d: any) => `domains=${d.availableUserDomains}`,
   );
 
   const session = await timedCall(
@@ -68,28 +63,40 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         });
         return res.data;
       } catch (e: any) {
-        if (e.message && e.message.includes("already exists")) {
-          // If running locally multiple times without wiping db
-          const res = await pds.agent.login({
-            identifier: luna.handle,
-            password: luna.password,
-          });
-          return res.data;
-        }
-        throw e;
+        throw new Error(`Failed to create account: ${e.message || String(e)}`);
       }
     },
-    (s) => `did=${s.did}`,
+    (s: any) => `did=${s.did}`,
   );
 
-  if (session) {
-    luna.did = session.did;
-    luna.accessJwt = session.accessJwt;
-    luna.refreshJwt = session.refreshJwt;
-  } else {
+  if (!session) {
     result.finish();
     return result;
   }
+
+  await timedCall(
+    result,
+    "Verify handle resolution",
+    async () => {
+      const res = await pds.api.com.atproto.identity.resolveHandle({
+        handle: luna.handle,
+      });
+      assert.equal(res.did, session.did, "DID mismatch in handle resolution");
+      return res;
+    },
+  );
+
+  await timedCall(
+    result,
+    "Verify PLC resolution",
+    async () => {
+      const plcUrl = (ctx as any).plc || "https://plc.directory";
+      const res = await fetch(`${plcUrl}/${session.did}`);
+      if (!res.ok) throw new Error("PLC resolution failed");
+      const doc = await res.json();
+      assert.equal(doc.id, session.did, "DID mismatch in PLC document");
+    },
+  );
 
   await timedCall(
     result,
@@ -100,50 +107,8 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       });
       return res.data;
     },
-    (s) => `did=${s.did}`,
+    (s: any) => `handle=${s.handle}`,
   );
-
-  await timedCall(
-    result,
-    "Resolve handle",
-    async () => {
-      const res = await pds.agent.com.atproto.identity.resolveHandle({
-        handle: luna.handle,
-      });
-      return res.data;
-    },
-    (r) => `did=${r.did}`,
-  );
-
-  try {
-    const plcResp = await fetch(`${ctx.serviceUrls.plc}/${luna.did}`);
-    if (plcResp.ok) {
-      const didDoc = await plcResp.json();
-      const didField = didDoc.id || didDoc.did;
-      assert.equal(
-        didField,
-        luna.did,
-        `PLC DID mismatch: expected ${luna.did}, got ${didField}`,
-      );
-      result.stepPassed(
-        "PLC DID resolution",
-        `method=${didDoc.verificationMethod ? "present" : "N/A"}`,
-      );
-    } else {
-      result.stepSkipped(
-        "PLC DID resolution",
-        `PLC returned ${plcResp.status}`,
-      );
-    }
-  } catch (exc: any) {
-    result.stepSkipped("PLC DID resolution", exc.message || String(exc));
-  }
-
-  const profile = {
-    $type: "app.bsky.actor.profile",
-    displayName: "Luna Starfield",
-    description: "Astronomy enthusiast. Looking up, always.",
-  };
 
   await timedCall(
     result,
@@ -152,25 +117,27 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       const res = await pds.agent.com.atproto.repo.createRecord({
         repo: luna.did,
         collection: "app.bsky.actor.profile",
-        record: profile,
+        record: {
+          $type: "app.bsky.actor.profile",
+          displayName: "Luna Valinsky",
+          description: "Testing account lifecycle",
+        },
       });
       return res.data;
     },
-    (r) => `uri=${r.uri}`,
+    (r: any) => `uri=${r.uri}`,
   );
 
   await timedCall(
     result,
-    "Get profile",
+    "Verify profile via XRPC",
     async () => {
-      const res = await pds.raw.get(
-        "app.bsky.actor.getProfile",
+      return await pds.api.app.bsky.actor.getProfile(
         { actor: luna.did },
         luna.accessJwt,
       );
-      return res;
     },
-    (p) => `displayName=${p?.displayName || p?.record?.displayName}`,
+    (p) => `displayName=${p?.displayName}`,
   );
 
   if (luna.refreshJwt) {
@@ -178,41 +145,45 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       result,
       "Refresh session",
       async () => {
-        const res = await pds.agent.com.atproto.server.refreshSession(
-          undefined,
-          {
-            headers: { Authorization: `Bearer ${luna.refreshJwt}` },
-          },
-        );
+        const res = await pds.agent.com.atproto.server.refreshSession(undefined, {
+          headers: { Authorization: `Bearer ${luna.refreshJwt}` },
+        });
         return res.data;
       },
-      (r) => `accessJwt=${r.accessJwt.substring(0, 20)}...`,
     );
+
     if (refreshed) {
       luna.accessJwt = refreshed.accessJwt;
+      luna.refreshJwt = refreshed.refreshJwt;
     }
-  } else {
-    result.stepSkipped("Refresh session", "No refreshJwt available");
   }
 
   await timedCall(
     result,
-    "Invalid login rejected",
+    "Login with invalid credentials",
     async () => {
-      await pds.agent.login({
-        identifier: luna.handle,
-        password: "wrong_password",
-      });
+      try {
+        await pds.agent.login({
+          identifier: luna.handle,
+          password: "wrong-password",
+        });
+        throw new Error("Login should have failed");
+      } catch (err: any) {
+        if (!err.message.includes("Invalid identifier or password")) {
+          throw err;
+        }
+      }
     },
-    undefined,
-    true,
   );
 
   try {
-    await pds.agent.com.atproto.server.deleteSession(undefined, {
-      headers: { Authorization: `Bearer ${luna.refreshJwt || luna.accessJwt}` },
-    });
-    result.stepPassed("Delete session (logout)");
+    await timedCall(
+      result,
+      "Delete session",
+      async () => {
+        await pds.api.com.atproto.server.deleteSession(undefined, luna.accessJwt);
+      },
+    );
   } catch (exc: any) {
     result.stepSkipped("Delete session", exc.message || String(exc));
   }

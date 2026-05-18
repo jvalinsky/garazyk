@@ -20,8 +20,8 @@
  */
 
 import { XrpcClient } from "@garazyk/gruszka";
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import { createScenarioContext } from "@garazyk/hamownia";
 import { ScenarioResult, timedCall } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
@@ -123,7 +123,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           throw e;
         }
       },
-      (s) => `did=${s.did}`,
+      (s: any) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -166,7 +166,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
             "Firehose test post! If you can see this on the relay, streaming works!",
           createdAt: now(),
         },
-      }, luna.accessJwt) as CreateRecordResponse;
+      }, luna.accessJwt) as any as CreateRecordResponse;
     },
   );
 
@@ -182,7 +182,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           subject: luna.did,
           createdAt: now(),
         },
-      }, marcus.accessJwt);
+      }, marcus.accessJwt) as any;
     },
   );
 
@@ -199,7 +199,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
             subject: { uri: lunaPost.uri, cid: lunaPost.cid },
             createdAt: now(),
           },
-        }, rosa.accessJwt);
+        }, rosa.accessJwt) as any;
       },
     );
   }
@@ -216,7 +216,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           displayName: "Luna Starfield",
           description: "Astronomy enthusiast. Firehose tester.",
         },
-      }, luna.accessJwt);
+      }, luna.accessJwt) as any;
     },
   );
 
@@ -284,9 +284,9 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     async () => {
       return await client.raw.get("com.atproto.sync.getHead", {
         did: luna.did,
-      }) as GetHeadResponse;
+      }) as any as GetHeadResponse;
     },
-    (r) => `root=${r.root.substring(0, 20)}`,
+    (r: any) => `root=${r.root.substring(0, 20)}`,
   );
 
   const repoResp = await timedCall(
@@ -303,7 +303,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         body: new Uint8Array(buf),
       };
     },
-    (r) => `car bytes=${r.body.length} content_type=${r.contentType}`,
+    (r: any) => `car bytes=${r.body.length} content_type=${r.contentType}`,
   );
 
   if (repoResp) {
@@ -349,9 +349,9 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         "app.bsky.feed.getAuthorFeed",
         { actor: luna.did },
         luna.accessJwt,
-      ) as AuthorFeedResponse;
+      ) as any as AuthorFeedResponse;
     },
-    (f) => `items=${f.feed?.length || 0}`,
+    (f: any) => `items=${f.feed?.length || 0}`,
   );
 
   result.finish();

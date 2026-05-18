@@ -19,14 +19,14 @@ import {
   StorageMonitor,
 } from "@garazyk/hamownia";
 import { FirehoseClient } from "@garazyk/gruszka";
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import { createScenarioContext } from "@garazyk/hamownia";
 import { ScenarioResult } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
 import { assert } from "@garazyk/hamownia";
-import { createRunContext } from "@garazyk/hamownia/run-diagnostics";
+import { createRunContext } from "@garazyk/hamownia";
 import { join } from "@std/path";
 import { timedCall } from "@garazyk/hamownia";
 
@@ -116,7 +116,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
             ),
         );
       },
-      (s) => `did=${s.did}`,
+      (s: any) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -265,11 +265,11 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
 
   const metricsTs = await promScraper.stop();
   const report = new InstrumentationReport(
-    timer.toDict(),
-    metricsTs,
+    timer.toDict() as any,
+    metricsTs as any,
     {},
     {},
-    phaseTimer.toDict(),
+    phaseTimer.toDict() as any,
   );
   await report.writeJson(join(reportCtx.reportsDir, "instrumentation-26.json"));
 

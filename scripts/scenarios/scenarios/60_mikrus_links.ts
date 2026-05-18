@@ -11,8 +11,8 @@
  * - Scenario completes successfully without errors.
  */
 
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import { createScenarioContext } from "@garazyk/hamownia";
 import { ScenarioResult } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
@@ -91,7 +91,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           pds.accounts.createSession(character.handle, character.password)
         );
       },
-      (session) => `did=${session.did}`,
+      (session: any) => `did=${session.did}`,
     );
     if (session) {
       character.did = session.did;
@@ -209,7 +209,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     );
     assert.equal(response.total, 1);
     return response;
-  }, (response) => `total=${response.total}`);
+  }, (response: any) => `total=${response.total}`);
 
   await timedCall(result, "Post like backlink", async () => {
     const response = await waitForCount(
@@ -220,7 +220,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     );
     assert.equal(response.total, 1);
     return response;
-  }, (response) => `total=${response.total}`);
+  }, (response: any) => `total=${response.total}`);
 
   await timedCall(result, "Backlink DID lookup", async () => {
     const response = await mikrus.raw.xrpcGet(
@@ -232,7 +232,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     );
     assert.equal(response.linking_dids, [marcus.did]);
     return response;
-  }, (response) => `dids=${response.linking_dids.join(",")}`);
+  }, (response: any) => `dids=${response.linking_dids.join(",")}`);
 
   if (listRef) {
     await timedCall(result, "Many-to-many list count", async () => {
@@ -251,7 +251,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         "list URI missing from many-to-many counts",
       );
       return response;
-    }, (response) => `items=${response.counts_by_other_subject.length}`);
+    }, (response: any) => `items=${response.counts_by_other_subject.length}`);
   }
 
   await timedCall(result, "Record lookup by URI", async () => {
@@ -262,7 +262,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     assert.equal(response.uri, postUri);
     assert.equal(response.cid, postRef.cid);
     return response;
-  }, (response) => `cid=${response.cid}`);
+  }, (response: any) => `cid=${response.cid}`);
 
   result.recordArtifact("mikrus", {
     url: mikrusUrl,

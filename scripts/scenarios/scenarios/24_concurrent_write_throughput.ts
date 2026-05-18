@@ -21,9 +21,9 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
-import { createRunContext } from "@garazyk/hamownia/run-diagnostics";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import { createScenarioContext } from "@garazyk/hamownia";
+import { createRunContext } from "@garazyk/hamownia";
 import { join } from "@std/path";
 import {
   InstrumentationReport,
@@ -46,6 +46,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   result.start();
 
   const client = new XrpcClient(ctx.pds1);
+  const accounts = buildAccounts();
   interface AccountPlan {
     slot: number;
     label: string;
@@ -100,7 +101,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     return accounts;
   }
 
-  const pdsMetricsUrl = `${ctx.serviceUrls.pds}/metrics`;
+  const pdsMetricsUrl = `${(ctx as any).serviceUrls?.pds}/metrics`;
   const pdsDataDir = Deno.env.get("PDS_DATA_DIR") ||
     "/tmp/garazyk-atproto-e2e/pds-data";
   const pdsDbPath = `${pdsDataDir}/pds.db`;
@@ -140,7 +141,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
               ),
           );
         },
-        (s) => `did=${s.did}`,
+        (s: any) => `did=${s.did}`,
       );
       if (session) {
         plan.did = session.did;
@@ -351,11 +352,11 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     const storageData = await storageMonitor.stop();
 
     const report = new InstrumentationReport(
-      globalTimer.toDict(),
-      prometheusData,
+      globalTimer.toDict() as any,
+      prometheusData as any,
       {}, // Process stats not implemented for now
-      storageData,
-      phaseTimer.toDict(),
+      storageData as any,
+      phaseTimer.toDict() as any,
     );
     const runCtx = await createRunContext();
 

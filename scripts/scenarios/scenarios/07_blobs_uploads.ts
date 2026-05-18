@@ -20,10 +20,8 @@
  */
 
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { ScenarioResult, timedCall } from "@garazyk/hamownia";
-export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
-export type { ScenarioReport } from "@garazyk/hamownia";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import { createScenarioContext, ScenarioResult, timedCall } from "@garazyk/hamownia";
 
 function now() {
   return new Date().toISOString();
@@ -90,7 +88,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           throw e;
         }
       },
-      (s) => `did=${s.did}`,
+      (s: any) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -110,18 +108,16 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   }
 
   const pngData = makePng(200, 200);
-  const rosaBlobResp = await timedCall(
+  const rosaBlobResp: any = await timedCall(
     result,
     "Rosa uploads food photo",
     async () => {
-      return await client.raw.postBinary(
-        "com.atproto.repo.uploadBlob",
+      return await client.api.com.atproto.repo.uploadBlob(
         pngData,
-        "image/png",
         rosa.accessJwt,
       );
     },
-    (r) => `size=${r.blob?.size || "unknown"}`,
+    (r: any) => `size=${r.blob?.size || "unknown"}`,
   );
 
   const rosaBlob = rosaBlobResp?.blob;
@@ -131,8 +127,8 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       result,
       "Rosa posts with image embed",
       async () => {
-        await client.raw.post("com.atproto.repo.createRecord", {
-          repo: rosa.did,
+        await client.api.com.atproto.repo.createRecord({
+          repo: rosa.did!,
           collection: "app.bsky.feed.post",
           record: {
             $type: "app.bsky.feed.post",
@@ -153,14 +149,12 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const voltBlobs: Array<Record<string, unknown>> = [];
   for (let i = 0; i < 4; i++) {
     const data = makePng(100 + i * 10, 100 + i * 10);
-    const blobResp = await timedCall(
+    const blobResp: any = await timedCall(
       result,
       `DJ Volt uploads image ${i + 1}`,
       async () => {
-        return await client.raw.postBinary(
-          "com.atproto.repo.uploadBlob",
+        return await client.api.com.atproto.repo.uploadBlob(
           data,
-          "image/png",
           volt.accessJwt,
         );
       },
@@ -175,8 +169,8 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       result,
       "DJ Volt posts 4-image album",
       async () => {
-        await client.raw.post("com.atproto.repo.createRecord", {
-          repo: volt.did,
+        await client.api.com.atproto.repo.createRecord({
+          repo: volt.did!,
           collection: "app.bsky.feed.post",
           record: {
             $type: "app.bsky.feed.post",
@@ -201,14 +195,12 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   }
 
   const bannerData = makePng(600, 200);
-  const bannerBlobResp = await timedCall(
+  const bannerBlobResp: any = await timedCall(
     result,
     "Luna uploads banner image",
     async () => {
-      return await client.raw.postBinary(
-        "com.atproto.repo.uploadBlob",
+      return await client.api.com.atproto.repo.uploadBlob(
         bannerData,
-        "image/png",
         luna.accessJwt,
       );
     },
@@ -220,8 +212,8 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       result,
       "Luna sets profile banner",
       async () => {
-        await client.raw.post("com.atproto.repo.createRecord", {
-          repo: luna.did,
+        await client.api.com.atproto.repo.createRecord({
+          repo: luna.did!,
           collection: "app.bsky.actor.profile",
           record: {
             $type: "app.bsky.actor.profile",
@@ -261,16 +253,14 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     "Oversized blob upload",
     async () => {
       try {
-        await client.raw.postBinary(
-          "com.atproto.repo.uploadBlob",
+        await client.api.com.atproto.repo.uploadBlob(
           largeData,
-          "application/octet-stream",
           marcus.accessJwt,
         );
-      } catch (e) {
+      } catch (e: any) {
         if (
           e instanceof XrpcError && e.status === 400 &&
-          e.body?.error === "BlobTooLarge"
+          (e.body as any)?.error === "BlobTooLarge"
         ) {
           return e.body;
         }
@@ -278,7 +268,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       }
       throw new Error("Expected BlobTooLarge response");
     },
-    (body) => `error=${body.error}`,
+    (body: any) => `error=${body.error}`,
   );
 
   if (rosaBlob) {
@@ -286,12 +276,12 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       result,
       "Records contain blob refs",
       async () => {
-        return await client.raw.get("com.atproto.repo.listRecords", {
-          repo: rosa.did,
+        return await client.api.com.atproto.repo.listRecords({
+          repo: rosa.did!,
           collection: "app.bsky.feed.post",
         }, rosa.accessJwt);
       },
-      (r) =>
+      (r: any) =>
         `posts_with_embed=${
           (r.records || []).some((rec: any) => rec.value?.embed)
         }`,

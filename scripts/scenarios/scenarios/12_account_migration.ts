@@ -14,8 +14,8 @@
  * - PLC operation log audit verifies chain integrity and handle updates.
  */
 
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import { createScenarioContext } from "@garazyk/hamownia";
 import { ScenarioResult, timedCall } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
@@ -70,7 +70,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       admin.did = res.did;
       return res;
     },
-    (s) => `did=${s.did}`,
+    (s: any) => `did=${s.did}`,
   );
 
   const session = await timedCall(
@@ -84,7 +84,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       );
       return res;
     },
-    (s) => `did=${s.did}`,
+    (s: any) => `did=${s.did}`,
   );
 
   if (!session) {
@@ -114,7 +114,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         );
       },
     );
-    const token = tokenResp?.token;
+    const token = tokenResp?.data?.token;
 
     if (token) {
       const signResp1 = await timedCall(
@@ -133,7 +133,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       );
 
       if (signResp1) {
-        const op1 = { ...signResp1.operation };
+        const op1 = { ...signResp1.data.operation };
         delete op1.did;
         const plcRes = await fetch(`${ctx.serviceUrls.plc}/${luna.did}`, {
           method: "POST",
@@ -165,7 +165,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           );
         },
       );
-      const token2 = tokenResp2?.token;
+      const token2 = tokenResp2?.data?.token;
 
       if (token2) {
         const signResp2 = await timedCall(
@@ -184,7 +184,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         );
 
         if (signResp2) {
-          const op2 = { ...signResp2.operation };
+          const op2 = { ...signResp2.data.operation };
           delete op2.did;
           const plcRes2 = await fetch(`${ctx.serviceUrls.plc}/${luna.did}`, {
             method: "POST",

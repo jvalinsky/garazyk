@@ -11,8 +11,8 @@
  * - Scenario completes successfully without errors.
  */
 
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import { createScenarioContext } from "@garazyk/hamownia";
 import { ScenarioResult } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
@@ -70,7 +70,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         return await pds.accounts.createSession(luna.handle, luna.password);
       }
     },
-    (s) => `did=${s.did}`,
+    (s: any) => `did=${s.did}`,
   );
 
   if (lunaSession) {
@@ -96,7 +96,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         return await pds.accounts.createSession(nova.handle, nova.password);
       }
     },
-    (s) => `did=${s.did}`,
+    (s: any) => `did=${s.did}`,
   );
 
   if (novaSession) {
@@ -118,7 +118,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         return await pds.accounts.createSession(volt.handle, volt.password);
       }
     },
-    (s) => `did=${s.did}`,
+    (s: any) => `did=${s.did}`,
   );
 
   if (voltSession) {
@@ -149,7 +149,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     result,
     "Re-login luna after token revocation",
     async () => pds.accounts.createSession(luna.handle, luna.password),
-    (s) => `did=${s.did}`,
+    (s: any) => `did=${s.did}`,
   );
   if (lunaSession2) luna.accessJwt = lunaSession2.accessJwt;
 
@@ -191,7 +191,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
             text: "unauthorized cross-account write attempt",
             createdAt: now(),
           },
-        }, luna.accessJwt);
+        }, luna.accessJwt) as any;
       },
       undefined,
       true, // must throw 401
@@ -222,7 +222,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
             text: "deactivated account write attempt",
             createdAt: now(),
           },
-        }, volt.accessJwt);
+        }, volt.accessJwt) as any;
       },
       undefined,
       true, // must throw 400/AccountDeactivated or 401
@@ -236,7 +236,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         await pds.raw.get("com.atproto.repo.listRecords", {
           repo: volt.did,
           collection: "app.bsky.feed.post",
-        });
+        }) as any;
       },
       undefined,
       true, // must throw (400/AccountDeactivated or 403)

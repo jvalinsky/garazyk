@@ -11,8 +11,8 @@
  * - Scenario completes successfully without errors.
  */
 
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import { createScenarioContext } from "@garazyk/hamownia";
 import { ScenarioResult } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
@@ -140,7 +140,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         return await pds.accounts.createSession(luna.handle, luna.password);
       }
     },
-    (s) => `did=${s.did}`,
+    (s: any) => `did=${s.did}`,
   );
 
   if (session) {
@@ -166,7 +166,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           displayName: "Initial Name",
           description: "seed record for conflict test",
         },
-      }, luna.accessJwt);
+      }, luna.accessJwt) as any;
     },
   );
 
@@ -253,8 +253,8 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
             text: "delete race target",
             createdAt: now(),
           },
-        }, luna.accessJwt!),
-      (r) => `uri=${r.uri}`,
+        }, luna.accessJwt!) as any,
+      (r: any) => `uri=${r.uri}`,
     );
 
     if (throwaway) {
@@ -334,8 +334,8 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
                 }],
               },
             },
-          }, luna.accessJwt!),
-        (r) => `uri=${r.uri}`,
+          }, luna.accessJwt!) as any,
+        (r: any) => `uri=${r.uri}`,
       );
 
       if (blobPost) {

@@ -14,12 +14,12 @@
  * - Discovery features (search, suggestions, feed lookups) return expected actor and feed data.
  */
 
-import { ScenarioResult, timedCall } from "@garazyk/hamownia";
+import {  ScenarioResult, timedCall , createScenarioContext } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
-import type { ScenarioContext } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia";
 
 function now() {
   return new Date().toISOString();
@@ -57,7 +57,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           char.password,
         );
       },
-      (s) => `did=${s.did}`,
+      (s: any) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -109,7 +109,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       async () => {
         return await client.search.getPreferences(marcus.accessJwt);
       },
-      (r) => `count=${r.preferences?.length || 0}`,
+      (r: any) => `count=${r.preferences?.length || 0}`,
     );
   }
 
@@ -132,7 +132,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
             luna.accessJwt,
           );
         },
-        (r) => `uri=${r.uri}`,
+        (r: any) => `uri=${r.uri}`,
       );
       if (rec) lunaPosts.push(rec);
     }
@@ -156,7 +156,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
             marcus.accessJwt,
           );
         },
-        (r) => `uri=${r.uri}`,
+        (r: any) => `uri=${r.uri}`,
       );
       if (rec) marcusPosts.push(rec);
     }
@@ -216,7 +216,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
             token: marcus.accessJwt,
           });
         },
-        (r) => `found=${r.actors?.length || 0}`,
+        (r: any) => `found=${r.actors?.length || 0}`,
       );
     }
   }
@@ -262,7 +262,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           token: marcus.accessJwt,
         });
       },
-      (r) => `count=${r.repostedBy?.length || 0}`,
+      (r: any) => `count=${r.repostedBy?.length || 0}`,
     );
   }
 
@@ -273,7 +273,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       async () => {
         return await client.search.getSuggestions(marcus.accessJwt);
       },
-      (r) => `count=${r.actors?.length || 0}`,
+      (r: any) => `count=${r.actors?.length || 0}`,
     );
   }
 

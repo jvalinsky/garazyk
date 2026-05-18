@@ -17,10 +17,12 @@
  */
 
 import { XrpcClient } from "@garazyk/gruszka";
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { ScenarioResult, timedCall } from "@garazyk/hamownia";
-export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
-export type { ScenarioReport } from "@garazyk/hamownia";
+import {
+  createScenarioContext,
+  ScenarioResult,
+  timedCall,
+} from "@garazyk/hamownia";
+import type { ScenarioContext } from "@garazyk/hamownia";
 
 function now() {
   return new Date().toISOString();
@@ -50,8 +52,8 @@ async function createPost(
     result,
     `${author.name} posts`,
     async () => {
-      const res = await client.raw.post("com.atproto.repo.createRecord", {
-        repo: author.did,
+      const res = await client.api.com.atproto.repo.createRecord({
+        repo: author.did!,
         collection: "app.bsky.feed.post",
         record,
       }, author.accessJwt);
@@ -111,7 +113,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           throw e;
         }
       },
-      (s) => `did=${s.did}`,
+      (s: any) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -132,8 +134,8 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       result,
       `Set profile: ${char.name}`,
       async () => {
-        const res = await client.raw.post("com.atproto.repo.createRecord", {
-          repo: char.did,
+        const res = await client.api.com.atproto.repo.createRecord({
+          repo: char.did!,
           collection: "app.bsky.actor.profile",
           record: {
             $type: "app.bsky.actor.profile",
@@ -152,7 +154,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     "luna",
     "Just captured the most stunning image of the Orion Nebula! The colors are breathtaking. #astronomy",
     result,
-  );
+  ) as any;
 
   const marcusPost = await createPost(
     ctx,
@@ -160,7 +162,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     "marcus",
     "Just shipped a new XRPC handler for the PDS. Open source is the way!",
     result,
-  );
+  ) as any;
 
   const rosaPost = await createPost(
     ctx,
@@ -168,7 +170,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     "rosa",
     "Made the most incredible sourdough today. The crust was perfect!",
     result,
-  );
+  ) as any;
 
   const voltPost = await createPost(
     ctx,
@@ -176,7 +178,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     "volt",
     "New beat dropping this weekend. Get ready for the drop!",
     result,
-  );
+  ) as any;
 
   if (lunaPost && marcusPost) {
     const replyRef = {
@@ -229,8 +231,8 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         result,
         `DJ Volt likes ${name}'s post`,
         async () => {
-          await client.raw.post("com.atproto.repo.createRecord", {
-            repo: volt.did,
+          await client.api.com.atproto.repo.createRecord({
+            repo: volt.did!,
             collection: "app.bsky.feed.like",
             record: {
               $type: "app.bsky.feed.like",
@@ -249,10 +251,19 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       result,
       "Quiet Observer bookmarks Luna's post",
       async () => {
-        await client.raw.post("app.bsky.bookmark.createBookmark", {
-          uri: lunaPost.uri,
-          cid: lunaPost.cid,
-        }, quiet.accessJwt);
+        // app.bsky.bookmark is not standard, let's use raw or any for non-standard lexicons if not in api
+        try {
+          await (client.api.app.bsky as any).bookmark.createBookmark({
+            uri: lunaPost.uri,
+            cid: lunaPost.cid,
+          }, quiet.accessJwt);
+        } catch {
+          // fallback to raw if not in api
+          await client.raw.post("app.bsky.bookmark.createBookmark", {
+            uri: lunaPost.uri,
+            cid: lunaPost.cid,
+          }, quiet.accessJwt) as any;
+        }
       },
     );
   }
@@ -264,7 +275,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     "rosa",
     "This post will be deleted soon. Don't get attached!",
     result,
-  );
+  ) as any;
 
   if (rosaTemp) {
     const rkey = rosaTemp.uri.split("/").pop()!;
@@ -272,8 +283,8 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       result,
       "Rosa deletes her post",
       async () => {
-        await client.raw.post("com.atproto.repo.deleteRecord", {
-          repo: rosa.did,
+        await client.api.com.atproto.repo.deleteRecord({
+          repo: rosa.did!,
           collection: "app.bsky.feed.post",
           rkey,
         }, rosa.accessJwt);
@@ -286,7 +297,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       "Verify deletion",
       async () => {
         await client.agent.com.atproto.repo.getRecord({
-          repo: rosa.did,
+          repo: rosa.did!,
           collection: "app.bsky.feed.post",
           rkey,
         });
@@ -304,26 +315,24 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     result,
     "Luna's timeline",
     async () => {
-      return await client.raw.get(
-        "app.bsky.feed.getTimeline",
+      return await client.api.app.bsky.feed.getTimeline(
         {},
         luna.accessJwt,
       );
     },
-    (t) => `items=${t.feed?.length || 0}`,
+    (t: any) => `items=${t.feed?.length || 0}`,
   );
 
   await timedCall(
     result,
     "Luna's author feed",
     async () => {
-      return await client.raw.get(
-        "app.bsky.feed.getAuthorFeed",
-        { actor: luna.did },
+      return await client.api.app.bsky.feed.getAuthorFeed(
+        { actor: luna.did! },
         luna.accessJwt,
       );
     },
-    (f) => `items=${f.feed?.length || 0}`,
+    (f: any) => `items=${f.feed?.length || 0}`,
   );
 
   if (lunaPost) {
@@ -331,8 +340,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       result,
       "Post thread view",
       async () => {
-        return await client.raw.get(
-          "app.bsky.feed.getPostThread",
+        return await client.api.app.bsky.feed.getPostThread(
           { uri: lunaPost.uri },
           luna.accessJwt,
         );
@@ -343,13 +351,12 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       result,
       "Likes on Luna's post",
       async () => {
-        return await client.raw.get(
-          "app.bsky.feed.getLikes",
+        return await client.api.app.bsky.feed.getLikes(
           { uri: lunaPost.uri },
           luna.accessJwt,
         );
       },
-      (l) => `count=${l.likes?.length || 0}`,
+      (l: any) => `count=${l.likes?.length || 0}`,
     );
   }
 
@@ -357,13 +364,12 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     result,
     "Luna's notifications",
     async () => {
-      return await client.raw.get(
-        "app.bsky.notification.listNotifications",
+      return await client.api.app.bsky.notification.listNotifications(
         {},
         luna.accessJwt,
       );
     },
-    (n) => `count=${n.notifications?.length || 0}`,
+    (n: any) => `count=${n.notifications?.length || 0}`,
   );
 
   result.finish();

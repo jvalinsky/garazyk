@@ -18,8 +18,8 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import { createScenarioContext } from "@garazyk/hamownia";
 
 function now() {
   return new Date().toISOString();
@@ -61,7 +61,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           char.password,
         );
       },
-      (s) => `did=${s.did}`,
+      (s: any) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -101,7 +101,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
               char.accessJwt,
             );
           },
-          (r) => `uri=${r.uri}`,
+          (r: any) => `uri=${r.uri}`,
         );
       }
     }
@@ -118,7 +118,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         adminToken,
       );
     },
-    (r) => `running=${r.running ?? false}`,
+    (r: any) => `running=${r.running ?? false}`,
   );
 
   await timedCall(
@@ -131,7 +131,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         adminToken,
       );
     },
-    (r) => `enabled=${r.enabled ?? false}`,
+    (r: any) => `enabled=${r.enabled ?? false}`,
   );
 
   await timedCall(
@@ -144,7 +144,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         adminToken,
       );
     },
-    (r) => `entries=${r.entries?.length || 0}, total=${r.total ?? 0}`,
+    (r: any) => `entries=${r.entries?.length || 0}, total=${r.total ?? 0}`,
   );
 
   await timedCall(
@@ -157,8 +157,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         adminToken,
       );
     },
-    (r) =>
-      `repos_total=${r.repos?.total || 0}, queue_depth=${r.queue_depth || 0}`,
+    (r: any) => `repos_total=${r.repos?.total || 0}, queue_depth=${r.queue_depth || 0}`,
   );
 
   await timedCall(
@@ -167,7 +166,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     async () => {
       return await av.raw.httpGet("/admin/lexicons", undefined, adminToken);
     },
-    (r) => `count=${r.count ?? 0}`,
+    (r: any) => `count=${r.count ?? 0}`,
   );
 
   await timedCall(
@@ -180,7 +179,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         adminToken,
       );
     },
-    (r) => `count=${r.collections?.length || 0}`,
+    (r: any) => `count=${r.collections?.length || 0}`,
   );
 
   await timedCall(
@@ -193,7 +192,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         adminToken,
       );
     },
-    (r) => `records=${r.records?.length || 0}`,
+    (r: any) => `records=${r.records?.length || 0}`,
   );
 
   await timedCall(
@@ -212,8 +211,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     async () => {
       return await av.raw.httpGet("/admin/endpoints", undefined, adminToken);
     },
-    (r) =>
-      `dynamic=${r.dynamic_endpoint_count ?? 0}, custom=${
+    (r: any) => `dynamic=${r.dynamic_endpoint_count ?? 0}, custom=${
         r.custom_handler_count ?? 0
       }`,
   );
@@ -224,7 +222,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     async () => {
       return await av.raw.httpGet("/admin/hooks", undefined, adminToken);
     },
-    (r) => `count=${r.count ?? 0}`,
+    (r: any) => `count=${r.count ?? 0}`,
   );
 
   await timedCall(
@@ -237,7 +235,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         adminToken,
       );
     },
-    (r) => `entries=${r.entries?.length || 0}`,
+    (r: any) => `entries=${r.entries?.length || 0}`,
   );
 
   await timedCall(
@@ -246,7 +244,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     async () => {
       return await av.raw.httpGet("/admin/handlers", undefined, adminToken);
     },
-    (r) => `count=${r.count ?? 0}`,
+    (r: any) => `count=${r.count ?? 0}`,
   );
 
   await timedCall(
@@ -259,7 +257,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         adminToken,
       );
     },
-    (r) => `success=${r.success ?? false}`,
+    (r: any) => `success=${r.success ?? false}`,
   );
 
   await timedCall(

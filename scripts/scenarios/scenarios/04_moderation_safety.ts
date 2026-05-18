@@ -18,11 +18,8 @@
  */
 
 import { XrpcClient } from "@garazyk/gruszka";
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
-import { ScenarioResult, timedCall } from "@garazyk/hamownia";
-export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
-export type { ScenarioReport } from "@garazyk/hamownia";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import { createScenarioContext, ScenarioResult, timedCall } from "@garazyk/hamownia";
 
 function now() {
   return new Date().toISOString();
@@ -77,7 +74,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           throw e;
         }
       },
-      (s) => `did=${s.did}`,
+      (s: any) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -112,8 +109,8 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       result,
       `Set profile: ${char.name}`,
       async () => {
-        await client.raw.post("com.atproto.repo.createRecord", {
-          repo: char.did,
+        await client.api.com.atproto.repo.createRecord({
+          repo: char.did!,
           collection: "app.bsky.actor.profile",
           record: {
             $type: "app.bsky.actor.profile",
@@ -129,8 +126,8 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     result,
     "Luna posts stargazing content",
     async () => {
-      const res = await client.raw.post("com.atproto.repo.createRecord", {
-        repo: luna.did,
+      return await client.api.com.atproto.repo.createRecord({
+        repo: luna.did!,
         collection: "app.bsky.feed.post",
         record: {
           $type: "app.bsky.feed.post",
@@ -139,7 +136,6 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           createdAt: now(),
         },
       }, luna.accessJwt);
-      return res;
     },
   );
 
@@ -147,8 +143,8 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     result,
     "Trollface posts spam",
     async () => {
-      const res = await client.raw.post("com.atproto.repo.createRecord", {
-        repo: troll.did,
+      return await client.api.com.atproto.repo.createRecord({
+        repo: troll.did!,
         collection: "app.bsky.feed.post",
         record: {
           $type: "app.bsky.feed.post",
@@ -156,18 +152,17 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           createdAt: now(),
         },
       }, troll.accessJwt);
-      return res;
     },
   );
 
-  let trollHarass = null;
+  let trollHarass: any = null;
   if (lunaPost) {
     trollHarass = await timedCall(
       result,
       "Trollface harasses Luna",
       async () => {
-        const res = await client.raw.post("com.atproto.repo.createRecord", {
-          repo: troll.did,
+        return await client.api.com.atproto.repo.createRecord({
+          repo: troll.did!,
           collection: "app.bsky.feed.post",
           record: {
             $type: "app.bsky.feed.post",
@@ -180,7 +175,6 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
             },
           },
         }, troll.accessJwt);
-        return res;
       },
     );
   }
@@ -190,8 +184,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       result,
       "Luna reports harassment",
       async () => {
-        const res = await client.raw.post(
-          "com.atproto.moderation.createReport",
+        return await client.api.com.atproto.moderation.createReport(
           {
             reasonType: "com.atproto.moderation.defs#reasonRude",
             subject: {
@@ -203,9 +196,8 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           },
           luna.accessJwt,
         );
-        return res;
       },
-      (r) => `report_id=${r.id}`,
+      (r: any) => `report_id=${r.id}`,
     );
   } else {
     result.stepFailed(
@@ -219,8 +211,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       result,
       "Luna reports spam",
       async () => {
-        const res = await client.raw.post(
-          "com.atproto.moderation.createReport",
+        return await client.api.com.atproto.moderation.createReport(
           {
             reasonType: "com.atproto.moderation.defs#reasonSpam",
             subject: {
@@ -232,9 +223,8 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           },
           luna.accessJwt,
         );
-        return res;
       },
-      (r) => `report_id=${r.id}`,
+      (r: any) => `report_id=${r.id}`,
     );
   }
 
@@ -243,13 +233,12 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       result,
       "Admin checks Trollface status",
       async () => {
-        return await client.raw.get(
-          "com.atproto.admin.getSubjectStatus",
-          { did: troll.did },
+        return await client.api.com.atproto.admin.getSubjectStatus(
+          { did: troll.did! },
           adminToken,
         );
       },
-      (s) => `status=${JSON.stringify(s)}`,
+      (s: any) => `status=${JSON.stringify(s)}`,
     );
   } else {
     result.stepFailed("Admin checks Trollface status", "No admin token");
@@ -260,12 +249,12 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       result,
       "Mod queries reports via Ozone",
       async () => {
-        return await client.raw.get("tools.ozone.moderation.queryEvents", {
-          types: "tools.ozone.moderation.defs#modEventReport",
-          subject: troll.did,
+        return await client.api.tools.ozone.moderation.queryEvents({
+          types: ["tools.ozone.moderation.defs#modEventReport"],
+          subject: troll.did!,
         }, adminToken);
       },
-      (e) => `count=${e.events?.length || 0}`,
+      (e: any) => `count=${e.events?.length || 0}`,
     );
   } else {
     result.stepFailed("Mod queries reports via Ozone", "No admin token");
@@ -276,16 +265,16 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       result,
       "Mod applies takedown via Ozone",
       async () => {
-        await client.raw.post("tools.ozone.moderation.emitEvent", {
+        await client.api.tools.ozone.moderation.emitEvent({
           event: {
             $type: "tools.ozone.moderation.defs#modEventTakedown",
             comment: "Harassment and spam — takedown applied by Mod Justice",
           },
           subject: {
             $type: "com.atproto.admin.defs#repoRef",
-            did: troll.did,
+            did: troll.did!,
           },
-          createdBy: mod.did,
+          createdBy: mod.did!,
         }, adminToken);
       },
     );
@@ -296,10 +285,10 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       result,
       "Admin applies takedown on Trollface",
       async () => {
-        await client.raw.post("com.atproto.admin.updateSubjectStatus", {
+        await client.api.com.atproto.admin.updateSubjectStatus({
           subject: {
             $type: "com.atproto.admin.defs#repoRef",
-            did: troll.did,
+            did: troll.did!,
           },
           takedown: {
             applied: true,
@@ -317,11 +306,11 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       result,
       "Labels query",
       async () => {
-        return await client.raw.get("com.atproto.label.queryLabels", {
+        return await client.api.com.atproto.label.queryLabels({
           uriPatterns: trollHarass ? [trollHarass.uri] : [],
         }, adminToken);
       },
-      (l) => `labels=${JSON.stringify(l)}`,
+      (l: any) => `labels=${JSON.stringify(l)}`,
     );
   } else {
     result.stepFailed("Labels query", "No admin token");
@@ -334,7 +323,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       async () => {
         const rkey = trollHarass.uri.split("/").pop()!;
         await client.agent.com.atproto.repo.getRecord({
-          repo: troll.did,
+          repo: troll.did!,
           collection: "app.bsky.feed.post",
           rkey,
         });
@@ -353,8 +342,8 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     result,
     "Admin posts community notice",
     async () => {
-      await client.raw.post("com.atproto.repo.createRecord", {
-        repo: admin.did,
+      await client.api.com.atproto.repo.createRecord({
+        repo: admin.did!,
         collection: "app.bsky.feed.post",
         record: {
           $type: "app.bsky.feed.post",

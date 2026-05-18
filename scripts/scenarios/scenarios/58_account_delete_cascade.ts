@@ -11,8 +11,8 @@
  * - Scenario completes successfully without errors.
  */
 
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import { createScenarioContext } from "@garazyk/hamownia";
 import { ScenarioResult } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
@@ -146,7 +146,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         return await pds.accounts.createSession(ghostHandle, ghostPassword);
       }
     },
-    (s) => `did=${s.did}`,
+    (s: any) => `did=${s.did}`,
   );
 
   if (!session) {
@@ -164,7 +164,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       collection: "app.bsky.actor.profile",
       rkey: "self",
       record: { $type: "app.bsky.actor.profile", displayName: "Ghost Account" },
-    }, ghostAccessJwt);
+    }, ghostAccessJwt) as any;
     await pds.raw.post("com.atproto.repo.createRecord", {
       repo: ghostDid,
       collection: "app.bsky.feed.post",
@@ -173,7 +173,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         text: "Soon to be deleted.",
         createdAt: now(),
       },
-    }, ghostAccessJwt);
+    }, ghostAccessJwt) as any;
   });
 
   // Upload a blob so we can verify it becomes inaccessible after account deletion.
@@ -200,7 +200,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       await pds.raw.post("com.atproto.server.deleteAccount", {
         did: ghostDid,
         password: ghostPassword,
-      });
+      }) as any;
     },
   );
 
@@ -219,7 +219,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       await pds.raw.get("com.atproto.repo.listRecords", {
         repo: ghostDid,
         collection: "app.bsky.feed.post",
-      });
+      }) as any;
     },
     undefined,
     true, // must throw

@@ -11,8 +11,8 @@
  * - Scenario completes successfully without errors.
  */
 
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import { createScenarioContext } from "@garazyk/hamownia";
 import { ScenarioResult } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
@@ -58,7 +58,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         luna.password,
       );
     },
-    (s) => `did=${s.did}`,
+    (s: any) => `did=${s.did}`,
   );
   if (!lunaSession) {
     result.finish();
@@ -78,7 +78,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         marcus.password,
       );
     },
-    (s) => `did=${s.did}`,
+    (s: any) => `did=${s.did}`,
   );
   if (!marcusSession) {
     result.finish();
@@ -104,7 +104,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         luna.accessJwt,
       );
     },
-    (r) => `uri=${r.uri}`,
+    (r: any) => `uri=${r.uri}`,
   );
 
   // ── Verify getFollows returns Marcus ──────────────────────────────────────
@@ -125,7 +125,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         }
         return res;
       },
-      (r) => `follows=${r.follows?.length || 0}`,
+      (r: any) => `follows=${r.follows?.length || 0}`,
     );
 
     // ── Verify getFollowers returns Luna ──────────────────────────────────────
@@ -145,7 +145,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         }
         return res;
       },
-      (r) => `followers=${r.followers?.length || 0}`,
+      (r: any) => `followers=${r.followers?.length || 0}`,
     );
 
     // ── Verify getRelationships ──────────────────────────────────────────────
@@ -168,7 +168,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         }
         return res;
       },
-      (r) => `relationships=${r.relationships?.length || 0}`,
+      (r: any) => `relationships=${r.relationships?.length || 0}`,
     );
   }
 
@@ -184,7 +184,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         troll.password,
       );
     },
-    (s) => `did=${s.did}`,
+    (s: any) => `did=${s.did}`,
   );
   if (trollSession) {
     troll.did = trollSession.did;
@@ -205,7 +205,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           luna.accessJwt,
         );
       },
-      (r) => `uri=${r.uri}`,
+      (r: any) => `uri=${r.uri}`,
     );
 
     if (blockUri) {
@@ -224,7 +224,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           }
           return res;
         },
-        (r) => `blocks=${r.blocks?.length || 0}`,
+        (r: any) => `blocks=${r.blocks?.length || 0}`,
       );
     }
   }
@@ -252,7 +252,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       }
       return res;
     },
-    (r) => `mutes=${r.mutes?.length || 0}`,
+    (r: any) => `mutes=${r.mutes?.length || 0}`,
   );
 
   // ── Unmute ────────────────────────────────────────────────────────────────
@@ -274,7 +274,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       if (found) throw new Error("Marcus still in mutes after unmute");
       return res;
     },
-    (r) => `mutes=${r.mutes?.length || 0}`,
+    (r: any) => `mutes=${r.mutes?.length || 0}`,
   );
 
   result.finish();

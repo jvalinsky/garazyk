@@ -11,8 +11,8 @@
  * - Scenario completes successfully without errors.
  */
 
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import { createScenarioContext } from "@garazyk/hamownia";
 import { ScenarioResult } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
@@ -105,7 +105,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         return await pds.accounts.createSession(luna.handle, luna.password);
       }
     },
-    (s) => `did=${s.did}`,
+    (s: any) => `did=${s.did}`,
   );
 
   if (session) {
@@ -124,7 +124,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
     const latestBefore = await relay.raw.get(
       "com.atproto.sync.getLatestCommit",
       { did: luna.did },
-    );
+    ) as any;
     baselineRev = latestBefore?.rev ?? null;
     result.stepPassed(
       "Capture Relay baseline rev for luna",
@@ -156,7 +156,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         { rkey: postRkey },
       );
     },
-    (r) => `uri=${r.uri}`,
+    (r: any) => `uri=${r.uri}`,
   );
 
   // --- Relay sequence (rev) advances after PDS write ---
@@ -171,7 +171,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           const latest = await relay.raw.get(
             "com.atproto.sync.getLatestCommit",
             { did: luna.did },
-          );
+          ) as any;
           if (latest?.rev && latest.rev !== baselineRev) return latest;
         } catch { /* not yet */ }
         return null;
@@ -227,7 +227,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
             {
               handle: rotatedHandle,
             },
-          );
+          ) as any;
           if (res?.did === luna.did) return res;
         } catch { /* not yet */ }
         return null;

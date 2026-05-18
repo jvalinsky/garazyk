@@ -19,8 +19,8 @@
  */
 
 import { XrpcClient } from "@garazyk/gruszka";
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { ScenarioResult, timedCall } from "@garazyk/hamownia";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import {  ScenarioResult, timedCall , createScenarioContext } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 
@@ -77,7 +77,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           throw e;
         }
       },
-      (s) => `did=${s.did}`,
+      (s: any) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -228,10 +228,10 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       const res = await client.raw.post("com.atproto.server.createSession", {
         identifier: luna.handle,
         password: luna.password,
-      });
+      }) as any;
       return res;
     },
-    (s) => `token=${s.accessJwt.substring(0, 20)}...`,
+    (s: any) => `token=${s.accessJwt.substring(0, 20)}...`,
   );
 
   await timedCall(
@@ -242,9 +242,9 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         "com.atproto.server.getSession",
         {},
         luna.accessJwt,
-      );
+      ) as any;
     },
-    (s) => `did=${s.did}`,
+    (s: any) => `did=${s.did}`,
   );
 
   if (luna.refreshJwt) {
@@ -256,9 +256,9 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           "com.atproto.server.refreshSession",
           {},
           luna.refreshJwt,
-        );
+        ) as any;
       },
-      (r) => `token=${r.accessJwt.substring(0, 20)}...`,
+      (r: any) => `token=${r.accessJwt.substring(0, 20)}...`,
     );
     if (refreshed) {
       luna.accessJwt = refreshed.accessJwt;
@@ -275,7 +275,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       return await client.raw.post("com.atproto.server.createSession", {
         identifier: marcus.handle,
         password: marcus.password,
-      });
+      }) as any;
     },
   );
 
@@ -290,7 +290,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       "com.atproto.server.deleteSession",
       {},
       marcus.refreshJwt || marcus.accessJwt,
-    );
+    ) as any;
     result.stepPassed("Marcus deletes session (logout)");
   } catch (exc: any) {
     result.stepFailed("Marcus deletes session", String(exc));
@@ -305,7 +305,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           "com.atproto.server.refreshSession",
           {},
           marcusRefreshJwt,
-        );
+        ) as any;
       },
       undefined,
       true,
@@ -324,7 +324,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       await client.raw.post("com.atproto.server.createSession", {
         identifier: luna.handle,
         password: "absolutely_wrong_password",
-      });
+      }) as any;
     },
     undefined,
     true,
@@ -342,7 +342,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           text: "unauthorized",
           createdAt: now(),
         },
-      }, "invalid-token-xyz");
+      }, "invalid-token-xyz") as any;
     },
     undefined,
     true,

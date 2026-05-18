@@ -13,12 +13,12 @@
  * - Search results correctly include actors, posts, and starter packs created in the scenario.
  */
 
-import { ScenarioResult, timedCall } from "@garazyk/hamownia";
+import {  ScenarioResult, timedCall , createScenarioContext } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
-import type { ScenarioContext } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia";
 
 function now() {
   return new Date().toISOString();
@@ -56,7 +56,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           char.password,
         );
       },
-      (s) => `did=${s.did}`,
+      (s: any) => `did=${s.did}`,
     );
     if (session) {
       char.did = session.did;
@@ -126,7 +126,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
               char.accessJwt,
             );
           },
-          (r) => `uri=${r.uri}`,
+          (r: any) => `uri=${r.uri}`,
         );
       }
     }
@@ -149,7 +149,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
           rosa.accessJwt,
         );
       },
-      (r) => `uri=${r.uri}`,
+      (r: any) => `uri=${r.uri}`,
     );
 
     if (listRec) {
@@ -170,7 +170,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
             rosa.accessJwt,
           );
         },
-        (r) => `uri=${r.uri}`,
+        (r: any) => `uri=${r.uri}`,
       );
     }
   }
@@ -188,7 +188,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
               token: marcus.accessJwt,
             });
           },
-          (r) => `found=${r.actors?.length || 0}`,
+          (r: any) => `found=${r.actors?.length || 0}`,
         );
       }
 
@@ -201,7 +201,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
               token: marcus.accessJwt,
             });
           },
-          (r) => `found=${r.posts?.length || 0}`,
+          (r: any) => `found=${r.posts?.length || 0}`,
         );
       }
 
@@ -213,7 +213,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
             token: marcus.accessJwt,
           });
         },
-        (r) => `found=${r.starterPacks?.length || 0}`,
+        (r: any) => `found=${r.starterPacks?.length || 0}`,
       );
     } catch (e) {
       if (!(e instanceof XrpcError && e.status === 404)) throw e;

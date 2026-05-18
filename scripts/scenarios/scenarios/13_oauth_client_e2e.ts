@@ -21,8 +21,8 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
-import type { ScenarioContext } from "@garazyk/hamownia/config";
-import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
+import type { ScenarioContext } from "@garazyk/hamownia";
+import { createScenarioContext } from "@garazyk/hamownia";
 import { attachPublicNetworkLeakGuard } from "@garazyk/hamownia";
 import { chromium } from "npm:playwright";
 
@@ -36,7 +36,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
 
   const pds = new XrpcClient(ctx.pds1);
   const luna = ctx.getCharacter("luna");
-  const PDS_URL = ctx.serviceUrls.pds;
+  const PDS_URL = (ctx as any).serviceUrls?.pds;
   const PLC_URL = ctx.serviceUrls.plc;
 
   const session = await timedCall(
@@ -49,7 +49,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
         luna.password,
       );
     },
-    (s) => `did=${s.did}`,
+    (s: any) => `did=${s.did}`,
   );
 
   if (!session) {
@@ -69,7 +69,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       );
       return res;
     },
-    (r) => `handle ${luna.handle} -> ${r.did}`,
+    (r: any) => `handle ${luna.handle} -> ${r.did}`,
   );
 
   await timedCall(
@@ -85,7 +85,7 @@ export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
       assert.isTrue(pdsEndpoint, "PDS serviceEndpoint not found in DID doc");
       return { pdsEndpoint };
     },
-    (r) => `serviceEndpoint=${r.pdsEndpoint}`,
+    (r: any) => `serviceEndpoint=${r.pdsEndpoint}`,
   );
 
   await timedCall(
