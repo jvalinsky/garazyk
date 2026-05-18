@@ -1,6 +1,7 @@
 #!/usr/bin/env -S deno run -A
 import { fromFileUrl, join } from "@std/path";
-import { bold, brightBlue, green, red, yellow } from "@std/fmt/colors";
+import { bold, brightBlue, green, red } from "@std/fmt/colors";
+import { TopologyRegistry } from "@garazyk/schemat";
 
 interface TopologySummary {
   topology: string;
@@ -15,7 +16,8 @@ const DEFAULT_BASE_PORT = 2600;
 const PORTS_PER_RUN = 10;
 
 function usage() {
-  console.log(`Usage: scripts/run_topology_matrix.ts [topology_filter] [run_scenarios_args...]
+  console.log(
+    `Usage: scripts/run_topology_matrix.ts [topology_filter] [run_scenarios_args...]
 
 Options:
   --parallel               Run topologies in parallel (experimental)
@@ -25,7 +27,8 @@ Examples:
   scripts/run_topology_matrix.ts            # Run all topologies, all scenarios
   scripts/run_topology_matrix.ts pds        # Run topologies containing "pds"
   scripts/run_topology_matrix.ts --parallel # Run all topologies in parallel
-`);
+`,
+  );
   Deno.exit(0);
 }
 
@@ -51,40 +54,34 @@ async function main() {
 
   const scriptDir = fromFileUrl(new URL(".", import.meta.url));
   const repoRoot = join(scriptDir, "..");
-  const topologyDir = join(scriptDir, "scenarios", "topologies");
   const reportsDir = join(repoRoot, "matrix_reports");
 
   // 1. Discover Topologies
-  const topologies: string[] = [];
   const isAll = topologyFilter === "all" || !topologyFilter;
-  try {
-    for await (const entry of Deno.readDir(topologyDir)) {
-      if (entry.isFile && entry.name.endsWith(".json")) {
-        const name = entry.name.replace(".json", "");
-        if (isAll || (topologyFilter && name.includes(topologyFilter))) {
-          topologies.push(name);
-        }
-      }
-    }
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error(red(`Failed to discover topologies in ${topologyDir}: ${msg}`));
-    Deno.exit(1);
-  }
-  topologies.sort();
+  const topologies = TopologyRegistry.listPresets()
+    .filter((name) =>
+      isAll || (topologyFilter && name.includes(topologyFilter))
+    );
 
   if (topologies.length === 0) {
-    console.log(red(`No topologies found matching filter: ${topologyFilter || "all"}`));
+    console.log(
+      red(`No topologies found matching filter: ${topologyFilter || "all"}`),
+    );
     Deno.exit(1);
   }
 
   console.log(
-    bold(`\nStarting Topology Matrix Run: ${topologies.length} configurations selected\n`),
+    bold(
+      `\nStarting Topology Matrix Run: ${topologies.length} configurations selected\n`,
+    ),
   );
 
   const summaries: TopologySummary[] = [];
 
-  const runTopology = async (topology: string, index: number): Promise<TopologySummary> => {
+  const runTopology = async (
+    topology: string,
+    index: number,
+  ): Promise<TopologySummary> => {
     try {
       console.log(bold(brightBlue(`\n>>> Testing Topology: ${topology}`)));
       const topologyReportsDir = join(reportsDir, topology);
@@ -142,7 +139,9 @@ async function main() {
         summary = JSON.parse(summaryText).summary;
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        if (!parallel) console.error(red(`Failed to read summary for ${topology}: ${msg}`));
+        if (!parallel) {
+          console.error(red(`Failed to read summary for ${topology}: ${msg}`));
+        }
       }
 
       return {
@@ -155,7 +154,9 @@ async function main() {
       };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error(red(`Unexpected error running topology ${topology}: ${msg}`));
+      console.error(
+        red(`Unexpected error running topology ${topology}: ${msg}`),
+      );
       return {
         topology,
         passed: 0,
@@ -169,7 +170,9 @@ async function main() {
 
   // 2. Run Matrix
   if (parallel) {
-    const results = await Promise.all(topologies.map((t, i) => runTopology(t, i)));
+    const results = await Promise.all(
+      topologies.map((t, i) => runTopology(t, i)),
+    );
     summaries.push(...results);
   } else {
     for (let i = 0; i < topologies.length; i++) {
@@ -189,7 +192,9 @@ async function main() {
     const resultText = s.ok ? green("PASS") : red("FAIL");
     if (s.ok) totalPassedTopologies++;
     console.log(
-      `  ${s.topology.padEnd(25)} ${resultText.padEnd(19)} ${s.passed}/${s.failed}/${s.skipped}`,
+      `  ${s.topology.padEnd(25)} ${
+        resultText.padEnd(19)
+      } ${s.passed}/${s.failed}/${s.skipped}`,
     );
   }
 
@@ -197,7 +202,11 @@ async function main() {
   const total = summaries.length;
   const color = totalPassedTopologies === total ? green : red;
   console.log(
-    bold(`Overall: ${color(`${totalPassedTopologies}/${total} topologies passed`)}\n`),
+    bold(
+      `Overall: ${
+        color(`${totalPassedTopologies}/${total} topologies passed`)
+      }\n`,
+    ),
   );
 
   if (totalPassedTopologies < total) {

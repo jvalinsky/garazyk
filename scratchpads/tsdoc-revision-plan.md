@@ -1,17 +1,19 @@
 # TSDoc Revision & TypeScript Doc Generation Plan
 
-**Date:** 2026-05-16 **Scope:** `scripts/` TypeScript layer (Deno) **Status:** Draft
+**Date:** 2026-05-16 **Scope:** `scripts/` TypeScript layer (Deno) **Status:**
+Draft
 
 ---
 
 ## 0. Executive Summary
 
-The TypeScript layer has ~100 source files across three domains: XRPC client library,
-Docker/topology infrastructure, and scenario dashboard. Current TSDoc coverage is uneven — the
-transport and accounts layers are well-documented, but 8 client classes, 4 type-heavy files, and the
-entire topology schema layer have zero or near-zero documentation. The existing TypeDoc config only
-covers 5 of ~15 public entry points. The house standards skill is missing several 2026-era TSDoc
-tags.
+The TypeScript layer has ~100 source files across three domains: XRPC client
+library, Docker/topology infrastructure, and scenario dashboard. Current TSDoc
+coverage is uneven — the transport and accounts layers are well-documented, but
+8 client classes, 4 type-heavy files, and the entire topology schema layer have
+zero or near-zero documentation. The existing TypeDoc config only covers 5 of
+~15 public entry points. The house standards skill is missing several 2026-era
+TSDoc tags.
 
 This plan has 6 phases, ordered by dependency and impact:
 
@@ -30,8 +32,9 @@ Total estimated effort: **2–3 focused sessions**.
 
 ## 1. Phase 1: Update House Standards Skill
 
-**Why first:** All subsequent phases need the updated tag requirements as a reference. Without this,
-reviewers and agents have no canonical spec for `@typeParam`, release tags, etc.
+**Why first:** All subsequent phases need the updated tag requirements as a
+reference. Without this, reviewers and agents have no canonical spec for
+`@typeParam`, release tags, etc.
 
 **File:** `.agents/skills/tsdoc-standards/SKILL.md`
 
@@ -47,13 +50,15 @@ reviewers and agents have no canonical spec for `@typeParam`, release tags, etc.
 
 #### 1b. Add to "Style Rules"
 
-- Use `{@link SymbolName}` for inline cross-references (not `{ @link }` with spaces — TSDoc spec
-  uses no spaces)
+- Use `{@link SymbolName}` for inline cross-references (not `{ @link }` with
+  spaces — TSDoc spec uses no spaces)
 - Use `@see` for "see also" lists; `{@link}` for inline references
-- Use `@example` with fenced `ts` code blocks for public APIs with non-trivial usage
-- Use `@remarks` for behavioral notes, edge cases, and constraints (not just classes)
-- Use release tags (`@public`, `@beta`, `@alpha`, `@internal`) on all exported symbols to define API
-  stability
+- Use `@example` with fenced `ts` code blocks for public APIs with non-trivial
+  usage
+- Use `@remarks` for behavioral notes, edge cases, and constraints (not just
+  classes)
+- Use release tags (`@public`, `@beta`, `@alpha`, `@internal`) on all exported
+  symbols to define API stability
 - Use `@typeParam <name> - Description` for every generic type parameter
 
 #### 1c. Add to "Enforcement"
@@ -61,23 +66,25 @@ reviewers and agents have no canonical spec for `@typeParam`, release tags, etc.
 - Run `deno doc --lint <file>` to verify compliance (existing)
 - Add `eslint-plugin-tsdoc` for syntax validation in CI/editor
 - Add TypeDoc `validation.notDocumented` for coverage enforcement (Phase 5)
-- Build a Deno-native doc-coverage tool analogous to the existing Obj-C one (Phase 5)
+- Build a Deno-native doc-coverage tool analogous to the existing Obj-C one
+  (Phase 5)
 
 #### 1d. Fix existing style rule
 
-Current: `{ @link ClassName }` (spaces inside braces) Correct: `{@link ClassName}` (TSDoc spec — no
-spaces)
+Current: `{ @link ClassName }` (spaces inside braces) Correct:
+`{@link ClassName}` (TSDoc spec — no spaces)
 
 ---
 
 ## 2. Phase 2: Document Type-Heavy Files
 
-**Why second:** These files define the shared vocabulary used by every other module. Undocumented
-types propagate confusion to all consumers.
+**Why second:** These files define the shared vocabulary used by every other
+module. Undocumented types propagate confusion to all consumers.
 
 ### 2a. `scripts/lib/deno/topology_types.ts` — P0, largest gap
 
-**Current state:** 12 interfaces, ~80 properties, zero property docs. `@module` present.
+**Current state:** 12 interfaces, ~80 properties, zero property docs. `@module`
+present.
 
 **Work required:**
 
@@ -102,8 +109,8 @@ types propagate confusion to all consumers.
 - Add interface-level `/** ... */` descriptions for all 12 interfaces
 - Add property-level `/** ... */` for every property
 - Use `@remarks` for `TopologyManifest` (complex, versioned)
-- Add `@typeParam`-style notes for discriminated fields (e.g., `ServiceAdapter.container` is
-  `Partial<ServiceAdapter>`)
+- Add `@typeParam`-style notes for discriminated fields (e.g.,
+  `ServiceAdapter.container` is `Partial<ServiceAdapter>`)
 - Add `@defaultValue` where defaults exist in consuming code
 
 **Example before/after:**
@@ -144,7 +151,8 @@ export interface SourceBuild {
 
 ### 2b. `scripts/lib/deno/docker_types.ts` — P0
 
-**Current state:** 2 interfaces, 20 properties, zero property docs. `@module` present.
+**Current state:** 2 interfaces, 20 properties, zero property docs. `@module`
+present.
 
 **Work required:**
 
@@ -156,7 +164,8 @@ export interface SourceBuild {
 
 ### 2c. `scripts/lib/deno/run_scenarios_types.ts` — P1
 
-**Current state:** 1 interface, 26 properties, zero docs. `@module` present but no description.
+**Current state:** 1 interface, 26 properties, zero docs. `@module` present but
+no description.
 
 **Work required:**
 
@@ -169,8 +178,8 @@ export interface SourceBuild {
 
 ### 2d. `scripts/scenario-dashboard/services/types.ts` — P1
 
-**Current state:** 6 interfaces, ~40 properties. Has module-level doc but no `@module` tag.
-Type-level docs present for some, property docs absent.
+**Current state:** 6 interfaces, ~40 properties. Has module-level doc but no
+`@module` tag. Type-level docs present for some, property docs absent.
 
 **Work required:**
 
@@ -183,21 +192,23 @@ Type-level docs present for some, property docs absent.
 
 ### 2e. `scripts/lib/deno/topology_schema.ts` — P1
 
-**Current state:** 1-line `@module`. 10+ exported Zod schemas, 7+ exported types, 6+ exported
-functions — none documented.
+**Current state:** 1-line `@module`. 10+ exported Zod schemas, 7+ exported
+types, 6+ exported functions — none documented.
 
 **Work required:**
 
 - Expand `@module` doc to explain the schema/validation architecture
-- Add `/** ... */` descriptions for each exported schema (`sourceBuildSchema`, `portSpecSchema`,
-  etc.)
-- Add `/** ... */` descriptions for each exported type (`PortSpec`, `VolumeSpec`, `ResourceHints`,
-  etc.)
-- Add `@param`/`@returns`/`@throws` for each exported function (`parseScenarioRequirement`,
-  `normalizePorts`, `renderPortSpec`, `normalizeVolumes`, `renderVolumeSpec`,
-  `parseRawTopologyPresetV1`, `normalizeTopologyPreset`, `resolveNormalizedTopologyPreset`,
-  `parseTopologyManifestJson`, `formatZodError`)
-- Add `@remarks` for `normalizePorts` and `normalizeVolumes` (string-to-struct coercion logic)
+- Add `/** ... */` descriptions for each exported schema (`sourceBuildSchema`,
+  `portSpecSchema`, etc.)
+- Add `/** ... */` descriptions for each exported type (`PortSpec`,
+  `VolumeSpec`, `ResourceHints`, etc.)
+- Add `@param`/`@returns`/`@throws` for each exported function
+  (`parseScenarioRequirement`, `normalizePorts`, `renderPortSpec`,
+  `normalizeVolumes`, `renderVolumeSpec`, `normalizeTopologyPreset`,
+  `resolveNormalizedTopologyPreset`, `parseTopologyManifestJson`,
+  `formatZodError`)
+- Add `@remarks` for `normalizePorts` and `normalizeVolumes` (string-to-struct
+  coercion logic)
 
 **Estimated effort:** ~30 min
 
@@ -205,11 +216,11 @@ functions — none documented.
 
 ## 3. Phase 3: Document Client Classes
 
-**Why third:** These are the public API surface that scenario authors and external consumers use.
-Zero docs = zero discoverability.
+**Why third:** These are the public API surface that scenario authors and
+external consumers use. Zero docs = zero discoverability.
 
-All 8 files share the same pattern: class with constructor + methods, no `@module`, no `@param`, no
-`@returns`, no `@throws`.
+All 8 files share the same pattern: class with constructor + methods, no
+`@module`, no `@param`, no `@returns`, no `@throws`.
 
 ### Template for each file
 
@@ -276,27 +287,30 @@ export class <Name>Client {
 
 ### 4a. `scripts/lib/deno/runner.ts` — P1
 
-**Current state:** `@module` missing. `StepStatus` enum undocumented. `StepResult` class
-undocumented. `ScenarioResult` class has description but methods lack `@param`/`@returns`.
-`timedCallChecked` and `timedCall` are well-documented.
+**Current state:** `@module` missing. `StepStatus` enum undocumented.
+`StepResult` class undocumented. `ScenarioResult` class has description but
+methods lack `@param`/`@returns`. `timedCallChecked` and `timedCall` are
+well-documented.
 
 **Work required:**
 
 - Add `@module runner`
 - Add `/** ... */` for `StepStatus` enum and its members
 - Add `/** ... */` for `StepResult` class and its constructor `@param`s
-- Add `@param`/`@returns` for `ScenarioResult` methods: `start`, `finish`, `step`, `stepPassed`,
-  `stepFailed`, `stepSkipped`, `recordArtifact`, `summary`, `printSummary`, `toReport`,
-  `writeReport`
-- Add `@param`/`@returns` for getters: `passed`, `failed`, `skipped`, `total`, `ok`
+- Add `@param`/`@returns` for `ScenarioResult` methods: `start`, `finish`,
+  `step`, `stepPassed`, `stepFailed`, `stepSkipped`, `recordArtifact`,
+  `summary`, `printSummary`, `toReport`, `writeReport`
+- Add `@param`/`@returns` for getters: `passed`, `failed`, `skipped`, `total`,
+  `ok`
 
 **Estimated effort:** ~20 min
 
 ### 4b. `scripts/lib/deno/client.ts` — P1
 
-**Current state:** `@module` present. `XrpcClient` well-documented except `adminLogin` (missing
-`@param`/`@returns`), `lastResponse`/`lastResponses` getters (missing descriptions), `agent` getter
-(missing description). `AgentSession` undocumented. `resolveToken` undocumented. `createAgentProxy`
+**Current state:** `@module` present. `XrpcClient` well-documented except
+`adminLogin` (missing `@param`/`@returns`), `lastResponse`/`lastResponses`
+getters (missing descriptions), `agent` getter (missing description).
+`AgentSession` undocumented. `resolveToken` undocumented. `createAgentProxy`
 undocumented.
 
 **Work required:**
@@ -306,15 +320,15 @@ undocumented.
 - Add `/** ... */` to `AgentSession` class and properties
 - Add `@param`/`@returns` to `resolveToken`
 - Add `@param`/`@returns` to `createAgentProxy`
-- Add `@typeParam` to generic signatures (none currently — `XrpcClient` isn't generic but
-  `AgentProxy` uses index signatures)
+- Add `@typeParam` to generic signatures (none currently — `XrpcClient` isn't
+  generic but `AgentProxy` uses index signatures)
 
 **Estimated effort:** ~15 min
 
 ### 4c. `scripts/lib/deno/raw.ts` — P1
 
-**Current state:** `@module` present. All methods have 1-line descriptions but no
-`@param`/`@returns`/`@throws`. Constructor undocumented.
+**Current state:** `@module` present. All methods have 1-line descriptions but
+no `@param`/`@returns`/`@throws`. Constructor undocumented.
 
 **Work required:**
 
@@ -326,7 +340,8 @@ undocumented.
 
 ### 4d. `scripts/lib/deno/scenario_runner.ts` — P1
 
-**Current state:** `@module` missing. `withTimeout` and `runScenario` undocumented.
+**Current state:** `@module` missing. `withTimeout` and `runScenario`
+undocumented.
 
 **Work required:**
 
@@ -339,12 +354,13 @@ undocumented.
 
 ### 4e. `scripts/lib/deno/transport.ts` — P1 (minor)
 
-**Current state:** Gold standard. Only gap: missing `@typeParam` on generic methods.
+**Current state:** Gold standard. Only gap: missing `@typeParam` on generic
+methods.
 
 **Work required:**
 
-- Add `@typeParam T - The expected response body type` to `request<T>`, `get<T>`, `post<T>`,
-  `postBinary<T>`, `httpGet<T>`, `httpPost<T>`
+- Add `@typeParam T - The expected response body type` to `request<T>`,
+  `get<T>`, `post<T>`, `postBinary<T>`, `httpGet<T>`, `httpPost<T>`
 
 **Estimated effort:** ~5 min
 
@@ -414,15 +430,16 @@ undocumented.
 }
 ```
 
-**Note:** `validation.notDocumented` will emit warnings for any exported symbol missing TSDoc. This
-is the enforcement hook — it won't fail CI initially, but will surface gaps.
+**Note:** `validation.notDocumented` will emit warnings for any exported symbol
+missing TSDoc. This is the enforcement hook — it won't fail CI initially, but
+will surface gaps.
 
 **Estimated effort:** ~10 min
 
 ### 5b. Add `deno doc --lint` to CI
 
-**Current state:** `deno.json` has `"test": "deno test -A --doc"` which runs doc tests (code blocks
-in comments) but doesn't lint TSDoc syntax.
+**Current state:** `deno.json` has `"test": "deno test -A --doc"` which runs doc
+tests (code blocks in comments) but doesn't lint TSDoc syntax.
 
 **Proposed:** Add a CI step or `deno.json` task:
 
@@ -434,13 +451,15 @@ in comments) but doesn't lint TSDoc syntax.
 
 ### 5c. Build TypeScript doc-coverage tool
 
-**Current state:** `scripts/docs/doc-coverage.ts` exists but is Obj-C only (walks `.h` files, counts
-`@interface`, `@property`, etc.).
+**Current state:** `scripts/docs/doc-coverage.ts` exists but is Obj-C only
+(walks `.h` files, counts `@interface`, `@property`, etc.).
 
 **Proposed:** Create `scripts/docs/tsdoc-coverage.ts` that:
 
-1. Walks all `.ts` files in `scripts/lib/deno/` and `scripts/scenario-dashboard/`
-2. For each exported symbol (class, interface, type, function, enum), checks for:
+1. Walks all `.ts` files in `scripts/lib/deno/` and
+   `scripts/scenario-dashboard/`
+2. For each exported symbol (class, interface, type, function, enum), checks
+   for:
    - Presence of a doc comment (`/** ... */`)
    - For functions/methods: presence of `@param` for each parameter, `@returns`
    - For interfaces: presence of property docs
@@ -448,9 +467,9 @@ in comments) but doesn't lint TSDoc syntax.
 3. Outputs a coverage report in the same format as the Obj-C tool
 4. Exits with code 1 if overall coverage < 70%
 
-**Implementation approach:** Use Deno's `deno doc` JSON output (`deno doc --json <file>`) which
-provides structured symbol data, then check for doc comments on each node. This is more reliable
-than regex parsing.
+**Implementation approach:** Use Deno's `deno doc` JSON output
+(`deno doc --json <file>`) which provides structured symbol data, then check for
+doc comments on each node. This is more reliable than regex parsing.
 
 **Estimated effort:** ~60 min
 
@@ -458,12 +477,13 @@ than regex parsing.
 
 **Current state:** No ESLint config in the Deno layer.
 
-**Decision needed:** Deno has its own linter (`deno lint`). Adding ESLint just for
-`eslint-plugin-tsdoc` may not be worth the tooling overhead. Alternative: rely on
-`deno doc --lint` + the custom coverage tool from 5c.
+**Decision needed:** Deno has its own linter (`deno lint`). Adding ESLint just
+for `eslint-plugin-tsdoc` may not be worth the tooling overhead. Alternative:
+rely on `deno doc --lint` + the custom coverage tool from 5c.
 
-**Recommendation:** Defer ESLint integration. `deno doc --lint` + custom coverage tool covers syntax
-validation + coverage enforcement without adding a second linter ecosystem.
+**Recommendation:** Defer ESLint integration. `deno doc --lint` + custom
+coverage tool covers syntax validation + coverage enforcement without adding a
+second linter ecosystem.
 
 **Estimated effort:** 0 (deferred)
 
@@ -471,8 +491,8 @@ validation + coverage enforcement without adding a second linter ecosystem.
 
 ## 6. Phase 6: Add `@example` Tags to Key APIs
 
-**Why last:** Examples are high-value but lower priority than completeness. Only add to the
-most-consumed APIs.
+**Why last:** Examples are high-value but lower priority than completeness. Only
+add to the most-consumed APIs.
 
 ### 6a. `XrpcClient` — the primary entry point
 
@@ -538,7 +558,8 @@ Phase 5 (tooling) ── depends on Phases 2-4 being complete for meaningful cov
 Phase 6 (examples) ── independent, can run in parallel with Phase 5
 ```
 
-Phases 2, 3, and 4 can be parallelized across separate agents since they touch different files.
+Phases 2, 3, and 4 can be parallelized across separate agents since they touch
+different files.
 
 ---
 
