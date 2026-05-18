@@ -113,7 +113,7 @@ export async function run(): Promise<ScenarioResult> {
       return await chatGetMessages(chatContext, marcus.accessJwt, convoId, 20);
     });
     const found = messages?.messages?.some((m: any) => m.text === plaintext);
-    assert.isTrue(found, "Plaintext not found");
+    assert.isTrue(found ?? false, "Plaintext not found");
   }
 
   if (germHealthy) {

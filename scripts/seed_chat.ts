@@ -52,7 +52,7 @@ async function main() {
     Deno.env.get("CHAT_SERVICE_DID") || undefined,
   );
   console.log(`Chat DID: ${chatContext.serviceDid}`);
-  const sessions: Record<string, Record<string, string>> = {};
+  const sessions: Record<string, any> = {};
 
   for (let i = 0; i < handles.length; i++) {
     const handle = handles[i];
@@ -161,7 +161,7 @@ async function main() {
   const convoList = convos.convos ?? [];
   console.log(`  ${handles[0]} has ${convoList.length} conversation(s)`);
   for (const convo of convoList) {
-    const members = (convo.members ?? []).map((member: Record<string, string>) =>
+    const members = (convo.members ?? []).map((member: any) =>
       (member.did ?? "?").slice(0, 25)
     );
     console.log(`    Convo ${short(convo.id ?? "?")} members: ${members.join(", ")}`);

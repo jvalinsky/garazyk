@@ -67,7 +67,7 @@ export async function run(): Promise<ScenarioResult> {
         async () => {
           return await client.contact.startPhoneVerification("+15551234567", luna.accessJwt);
         },
-        (r) => `verificationId=${r.verificationId || ""}`,
+        (r: Record<string, unknown>) => `verificationId=${r.verificationId || ""}`,
       );
 
       await timedCall(
@@ -89,7 +89,7 @@ export async function run(): Promise<ScenarioResult> {
             luna.accessJwt,
           );
         },
-        (r) => `matches=${r.matches?.length || 0}`,
+        (r: any) => `matches=${r.matchesAndContactIndexes?.length || 0}`,
       );
 
       await timedCall(
@@ -98,7 +98,7 @@ export async function run(): Promise<ScenarioResult> {
         async () => {
           return await client.contact.getContactMatches(luna.accessJwt);
         },
-        (r) => `matches=${(Array.isArray(r) ? r : r.matches)?.length || 0}`,
+        (r: any) => `matches=${(Array.isArray(r) ? r : r.matchesAndContactIndexes)?.length || 0}`,
       );
 
       await timedCall(
