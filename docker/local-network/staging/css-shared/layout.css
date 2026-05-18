@@ -1,0 +1,704 @@
+// SPDX-FileCopyrightText: 2025-2026 Jack Valinsky
+// SPDX-License-Identifier: Unlicense OR CC0-1.0
+/* Apple HIG-aligned layout structures */
+
+/* Main app layout */
+.app-layout {
+  display: flex;
+  height: calc(100vh - var(--toolbar-height) - var(--status-bar-height));
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Header/Toolbar - NSVisualEffectView inspired materials */
+header[role="banner"] {
+  height: var(--toolbar-height);
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--separator-color);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  z-index: var(--z-sticky);
+}
+
+.toolbar {
+  height: var(--toolbar-height);
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--separator-color);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-md);
+  gap: var(--space-md);
+  width: 100%;
+}
+
+.toolbar-blur {
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+@media (prefers-color-scheme: dark) {
+  .toolbar-blur {
+    background: color-mix(in srgb, var(--color-bg-secondary), transparent 20%);
+  }
+}
+
+.toolbar-section {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.toolbar-section:first-child {
+  flex: 0 0 auto;
+}
+
+.toolbar-section:nth-child(2) {
+  flex: 1;
+  justify-content: center;
+}
+
+.toolbar-section:last-child {
+  flex: 0 0 auto;
+}
+
+/* Service segments - NSSegmentedControl inspired */
+.service-segments {
+  display: flex;
+  gap: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-tertiary);
+  padding: 3px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.service-segment {
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  position: relative;
+}
+
+.service-segment:hover:not(.active) {
+  color: var(--color-text-primary);
+}
+
+.service-segment.active {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+@media (prefers-color-scheme: dark) {
+  .service-segment:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Sidebar - NSVisualEffectView sidebar material */
+aside[role="complementary"] {
+  width: 220px;
+  min-width: 220px;
+  background: var(--color-bg-secondary);
+  border-right: 1px solid var(--separator-color);
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex-shrink: 0;
+  z-index: var(--z-sticky);
+}
+
+.sidebar-blur {
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: var(--space-md) 0;
+}
+
+.sidebar-section {
+  padding: 0;
+  margin-bottom: var(--space-sm);
+}
+
+.sidebar-section-title {
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: default;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: transparent;
+  border: none;
+  width: 100%;
+}
+
+.sidebar-section-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: transform var(--transition-fast);
+  padding: 0;
+}
+
+.sidebar-section-toggle[aria-expanded="false"] {
+  transform: rotate(-90deg);
+}
+
+.sidebar-section-toggle:hover {
+  color: var(--color-text-primary);
+}
+
+/* Sidebar section transition */
+.sidebar-items {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows var(--transition-normal);
+  overflow: hidden;
+}
+
+.sidebar-items.hidden {
+  grid-template-rows: 0fr;
+  display: grid !important; /* Overriding common .hidden */
+}
+
+.sidebar-items > div {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0 var(--space-sm);
+}
+
+.sidebar-section.is-hidden {
+  display: none;
+}
+
+/* Main content area - unified AppKit layout */
+main[role="main"] {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  background: var(--color-bg-primary);
+}
+
+.content-pane {
+  flex: 1;
+  padding: var(--space-lg);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Header within content pane */
+.content-header {
+  padding-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--separator-color);
+  margin-bottom: var(--space-lg);
+}
+
+.breadcrumbs {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.breadcrumbs a {
+  color: var(--color-accent);
+}
+
+.breadcrumbs-separator {
+  color: var(--color-text-tertiary);
+}
+
+/* Footer/Status bar */
+footer[role="contentinfo"] {
+  height: var(--status-bar-height);
+  background: var(--color-bg-secondary);
+  border-top: 1px solid var(--separator-color);
+  padding: 0 var(--space-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.status-bar-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.status-indicator.connected {
+  background: var(--color-success);
+}
+
+.status-indicator.disconnected {
+  background: var(--color-destructive);
+}
+
+.status-indicator.pending {
+  background: var(--color-warning);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* AppKit-style status bar with segmented info */
+.status-bar-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 0 var(--space-md);
+}
+
+/* Loading indicator - Generic */
+.loading-indicator {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--color-bg-tertiary);
+  border-top-color: var(--color-accent);
+  border-radius: var(--radius-full);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Strawberry loading indicator - Polish motif */
+.loading-strawberry {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.loading-strawberry::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  background: var(--color-strawberry);
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  animation: bounce-strawberry 0.6s ease-in-out infinite;
+}
+
+.loading-strawberry::after {
+  content: "";
+  width: 0;
+  height: 0;
+  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
+  border-bottom: 6px solid var(--color-strawberry-leaf);
+}
+
+@keyframes bounce-strawberry {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .app-layout {
+    flex-direction: column;
+  }
+
+  aside[role="complementary"] {
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--separator-color);
+    max-height: 40vh;
+    overflow-y: auto;
+  }
+
+  .service-segments {
+    flex-wrap: wrap;
+  }
+}
+
+/* App shell primitives for non-admin surfaces */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--color-bg-primary);
+}
+
+.menu-bar,
+ul[role="menu-bar"] {
+  height: 44px;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 0 var(--space-md);
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--separator-color);
+  margin: 0;
+  position: relative;
+  z-index: var(--z-sticky);
+}
+
+.menu-bar > li,
+ul[role="menu-bar"] > li {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 var(--space-sm);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+}
+
+.menu-bar > li:hover,
+ul[role="menu-bar"] > li:hover {
+  background: var(--color-bg-tertiary);
+}
+
+ul[role="menu-bar"] [role="menu"] {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-sm);
+  min-width: 180px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--separator-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  display: none;
+}
+
+ul[role="menu-bar"] li:hover > [role="menu"],
+ul[role="menu-bar"] li.menu-open > [role="menu"] {
+  display: block;
+}
+
+ul[role="menu-bar"] [role="menu-item"] a {
+  color: var(--color-text-primary);
+  display: block;
+  width: 100%;
+  padding: 6px var(--space-sm);
+  border-radius: var(--radius-sm);
+}
+
+ul[role="menu-bar"] [role="menu-item"] a:hover {
+  background: var(--color-bg-tertiary);
+  opacity: 1;
+}
+
+ul[role="menu-bar"] [role="menu-item"] a:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+ul[role="menu-bar"] [role="menu-item"].divider {
+  border-top: 1px solid var(--separator-color);
+  margin: var(--space-xs) 0;
+  height: 0;
+  padding: 0;
+}
+
+.menu-right {
+  margin-left: auto;
+}
+
+.desktop {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  padding: var(--space-md);
+  overflow: hidden;
+}
+
+.window {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--separator-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.title-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  justify-content: space-between;
+  min-height: 40px;
+  padding: 0 var(--space-md);
+  border-bottom: 1px solid var(--separator-color);
+  background: var(--color-bg-tertiary);
+}
+
+.title-bar .title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.window-body,
+.window-pane {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--space-md);
+}
+
+.status-bar {
+  height: 34px;
+  display: flex;
+  align-items: center;
+  border-top: 1px solid var(--separator-color);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.status-bar-field {
+  margin: 0;
+  flex: 1;
+  padding: 0 var(--space-md);
+  border-right: 1px solid var(--separator-color);
+}
+
+.status-bar-field:last-child {
+  border-right: none;
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.field-row-stacked {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.tree-view {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Strawberry icon - Polish motif */
+.strawberry-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity var(--transition-normal);
+}
+
+.strawberry-icon:hover {
+  opacity: 1;
+}
+
+/* Window title bar buttons - macOS style */
+.title-bar .close,
+.title-bar .resize {
+  background: transparent;
+  border: none;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.title-bar .close:hover,
+.title-bar .resize:hover {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+.title-bar .close {
+  margin-left: auto;
+}
+
+/* Shared state classes across shipped web UIs */
+.is-hidden {
+  display: none !important;
+}
+
+.is-active {
+  opacity: 1;
+}
+
+.is-loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.is-error {
+  color: var(--color-destructive);
+}
+
+/* Three-pane layout - AppKit inspector pattern */
+.content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+main[role="main"] {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  background: var(--color-bg-primary);
+}
+
+main[role="main"] > .content-area {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+main[role="main"] > .inspector-pane {
+  width: 320px;
+  min-width: 280px;
+  max-width: 480px;
+  border-left: 1px solid var(--separator-color);
+  background: var(--color-bg-secondary);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width var(--transition-normal), opacity var(--transition-normal);
+}
+
+main[role="main"] > .inspector-pane:not([hidden]) {
+  width: 320px;
+  opacity: 1;
+}
+
+main[role="main"] > .inspector-pane[hidden] {
+  display: flex;
+  width: 0;
+  opacity: 0;
+  border-left-width: 0;
+}
+
+.inspector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--separator-color);
+  background: var(--color-bg-tertiary);
+  flex-shrink: 0;
+}
+
+.inspector-title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.inspector-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-md);
+}
+
+.inspector-section {
+  margin-bottom: var(--space-lg);
+}
+
+.inspector-section-title {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--space-sm);
+}
+
+.inspector-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-xs) 0;
+  font-size: var(--font-size-sm);
+}
+
+.inspector-row label {
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.inspector-row span,
+.inspector-row code {
+  color: var(--color-text-primary);
+  text-align: right;
+  word-break: break-all;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

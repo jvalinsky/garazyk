@@ -1,0 +1,4 @@
+interface:
+  display_name: "ATProto Attestation"
+  short_description: "Implement badge.blue record attestations"
+  default_prompt: "Use $atproto-attestation to verify this AT Protocol record attestation."

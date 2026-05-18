@@ -13,6 +13,32 @@ import { logHeader, logInfo, logOk, logWarn } from "@garazyk/schemat";
 import { waitForHttp } from "@garazyk/laweta";
 import type { TopologyRunContext } from "@garazyk/schemat/runtime";
 
+const PDS_CONFIG = {
+  server: {
+    host: "127.0.0.1",
+    port: 2583,
+    issuer: "http://localhost:2583",
+    available_user_domains: ["test"],
+  },
+  appview: { url: "http://127.0.0.1:3200", did: "did:web:localhost", local_enabled: false },
+  database: { service_pool_max_size: 10, user_pool_max_size: 50 },
+  logging: { format: "text", level: "info" },
+  session: { access_token_ttl_seconds: 1800, refresh_token_ttl_seconds: 2592000, invite_code_required: false },
+  links: { privacy_policy: "", terms_of_service: "" },
+  relays: ["http://localhost:2584"],
+  plc: { url: "http://localhost:2582", retry_count: 3, retry_delay_ms: 500 },
+  cors: {
+    allowed_origins: ["*"],
+    allowed_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"],
+    allowed_headers: ["DPoP", "Authorization", "Content-Type", "*"],
+    max_age: 86400,
+  },
+  rate_limit: { enabled: true, did_limit: 60, did_window: 60, blob_limit: 50, blob_window: 3600 },
+  providers: { phone_verification: { type: "twilio" } },
+  registration: { phone_verification_required: false },
+  auth: { master_secret: "test-master-secret-123" },
+};
+
 /**
  * Service descriptors for binary management.
  */
@@ -98,7 +124,7 @@ export async function startBinaryServices(
 
   for (const name of services) {
     const svc = BINARY_SERVICES[name];
-    const plan = resolveBinaryServiceStartPlan({
+    const plan = await resolveBinaryServiceStartPlan({
       name,
       root,
       dataRoot,
@@ -226,7 +252,7 @@ export function defaultBinaryServices(
 }
 
 /** @internal Exported for unit tests that must not launch real binaries. */
-export function resolveBinaryServiceStartPlan(
+export async function resolveBinaryServiceStartPlan(
   {
     name,
     root,
@@ -234,7 +260,7 @@ export function resolveBinaryServiceStartPlan(
     commonEnv,
     options = {},
   }: ResolveBinaryServiceStartPlanOptions,
-): BinaryServiceStartPlan {
+): Promise<BinaryServiceStartPlan> {
   const port = SERVICE_PORTS[name];
   const dataDir = join(dataRoot, name);
   const env: Record<string, string> = {
@@ -261,11 +287,13 @@ export function resolveBinaryServiceStartPlan(
       env.PLC_DAILY_LIMIT = "15";
       env.PLC_WEEKLY_LIMIT = "50";
       break;
-    case "pds":
+    case "pds": {
+      const configPath = join(dataDir, "pds-config.json");
+      await Deno.writeTextFile(configPath, JSON.stringify(PDS_CONFIG, null, 2));
       args = [
         "serve",
         "--config",
-        join(root, "scripts/scenarios/config/pds-config.json"),
+        configPath,
         "--port",
         String(port),
         "--data-dir",
@@ -275,6 +303,8 @@ export function resolveBinaryServiceStartPlan(
       env.PDS_ALLOW_HTTP = "1";
       env.PDS_PLC_KEYS_DIR = join(dataDir, "keys");
       env.PDS_PLC_URL = serviceUrl("plc");
+      break;
+    }
       break;
     case "relay":
       args = [

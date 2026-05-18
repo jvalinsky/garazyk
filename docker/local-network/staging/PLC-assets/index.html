@@ -1,0 +1,157 @@
+<!-- SPDX-FileCopyrightText: 2025-2026 Jack Valinsky -->
+<!-- SPDX-License-Identifier: Unlicense OR CC0-1.0 -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campagnola PLC Explorer</title>
+    <link rel="stylesheet" href="/css/shared/system.css">
+    <link rel="stylesheet" href="/css/plc.css">
+</head>
+
+<body>
+    <ul role="menu-bar">
+        <li role="menu-item" tabindex="0" aria-haspopup="true">
+            Campagnola
+            <ul role="menu">
+                <li role="menu-item"><a href="#">About Campagnola</a></li>
+            </ul>
+        </li>
+        <li role="menu-item" tabindex="0" aria-haspopup="true">
+            PLC
+            <ul role="menu">
+                <li role="menu-item"><a href="#" id="menu-summary">Identity Summary</a></li>
+                <li role="menu-item"><a href="#" id="menu-metrics">Server Metrics</a></li>
+                <li role="menu-item" class="divider"></li>
+                <li role="menu-item"><a href="#" id="pds-link">Kaszlak</a></li>
+            </ul>
+        </li>
+        <li role="menu-item" tabindex="0" aria-haspopup="true">
+            View
+            <ul role="menu">
+                <li role="menu-item"><a href="#" onclick="openWindow('summary')">Identity Summary</a></li>
+                <li role="menu-item"><a href="#" onclick="openWindow('timeline')">Operation Timeline</a></li>
+                <li role="menu-item"><a href="#" onclick="openWindow('auditor')">Security Audit</a></li>
+                <li role="menu-item"><a href="#" onclick="openWindow('graph')">Identity Graph</a></li>
+            </ul>
+        </li>
+        <li role="menu-item" class="menu-right">
+            <span id="status-clock">12:00 PM</span>
+        </li>
+    </ul>
+
+    <div class="desktop">
+        <!-- Search Window -->
+        <div class="window" id="win-search">
+            <div class="title-bar">
+                <span class="title">Find DID</span>
+                <button class="close" onclick="closeWindow('win-search')"><span>Close</span></button>
+            </div>
+            <div class="window-pane">
+                <div class="field-row">
+                    <input class="w-full" type="text" id="lookup-input" placeholder="Search DID...">
+                </div>
+                <div class="field-row justify-end mt-xs">
+                    <button id="search-btn" class="btn btn-default">Find</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metric Window -->
+        <div class="window" id="win-metrics">
+            <div class="title-bar">
+                <span class="title">Health &amp; Metrics</span>
+                <button class="close" onclick="closeWindow('win-metrics')"><span>Close</span></button>
+            </div>
+            <div class="window-pane">
+                <div id="metrics-content">Loading...</div>
+            </div>
+        </div>
+
+        <!-- Main Workspace Window -->
+        <div class="window" id="win-content">
+            <div class="title-bar">
+                <button class="close" onclick="closeWindow('win-content')"><span>Close</span></button>
+                <span class="title" id="content-title">Identity Summary</span>
+                <button class="resize"><span>Resize</span></button>
+            </div>
+            <div class="window-pane">
+                <div id="section-container">
+                    <section id="summary" class="doc-section active">
+                        <div id="summary-content">
+                            <p class="placeholder">Search for a DID to view identity details.</p>
+                        </div>
+                    </section>
+
+                    <section id="timeline" class="doc-section">
+                        <div id="timeline-content">
+                            <p class="placeholder">Operation history will appear here.</p>
+                        </div>
+                    </section>
+
+                    <section id="auditor" class="doc-section">
+                        <div id="auditor-content">
+                            <p class="placeholder">Security audit results will appear here.</p>
+                        </div>
+                    </section>
+
+                    <section id="graph" class="doc-section">
+                        <div id="graph-content">
+                            <p class="placeholder">Identity graph visualization.</p>
+                        </div>
+                    </section>
+                </div>
+            </div>
+            <div class="status-bar">
+                <p class="status-bar-field">PLC Server</p>
+                <p class="status-bar-field" id="status-right">Ready</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/js/explorer.js"></script>
+    <script>
+        window.openWindow = function (sectionId) {
+            document.querySelectorAll('.doc-section').forEach(s => s.classList.remove('active'));
+            const section = document.getElementById(sectionId);
+            if (section) section.classList.add('active');
+
+            const titles = {
+                'summary': 'Identity Summary',
+                'timeline': 'Operation Timeline',
+                'auditor': 'Security Audit',
+                'graph': 'Identity Graph'
+            };
+
+            document.getElementById('content-title').innerText = titles[sectionId] || 'Campagnola';
+            document.getElementById('win-content').style.display = 'block';
+        };
+
+        window.closeWindow = function (winId) {
+            document.getElementById(winId).style.display = 'none';
+        };
+
+        // Derive PDS base URL from current page origin
+        const PDS_BASE = (function() {
+            const loc = window.location;
+            const host = loc.hostname;
+            if (host.endsWith('garazyk.xyz')) {
+                return loc.protocol + '//pds.garazyk.xyz';
+            }
+            // For exe.dev proxy or other hosts, PDS is on the default port (80)
+            return loc.protocol + '//' + host;
+        })();
+        const pdsLink = document.getElementById('pds-link');
+        if (pdsLink) pdsLink.href = PDS_BASE;
+
+        // Simple Clock
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('status-clock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }, 1000);
+    </script>
+</body>
+
+</html>

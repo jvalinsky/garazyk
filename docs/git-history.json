@@ -1,0 +1,58 @@
+[
+  {
+    "hash": "95d8efc398f9659129dff13ddaf2d3fcd9bbc30b",
+    "short_hash": "95d8efc",
+    "author": "Jack Valinsky",
+    "date": "2026-05-17T22:20:17-04:00",
+    "message": "chore(laweta): clean package gates",
+    "files_changed": 2
+  },
+  {
+    "hash": "bf72afbfbfdd209bd8cf5f24067b1b64a7992cd3",
+    "short_hash": "bf72afb",
+    "author": "Jack Valinsky",
+    "date": "2026-05-17T22:19:56-04:00",
+    "message": "fix(laweta): correct stats sampler counters",
+    "files_changed": 3
+  },
+  {
+    "hash": "37722edce0dff1828c13800a093653d78cbc33ec",
+    "short_hash": "37722ed",
+    "author": "Jack Valinsky",
+    "date": "2026-05-17T22:19:40-04:00",
+    "message": "fix(laweta): harden Docker API streams and paths",
+    "files_changed": 2
+  },
+  {
+    "hash": "882c220c6e8847ea641c64c08b5c75c0b6998c02",
+    "short_hash": "882c220",
+    "author": "Jack Valinsky",
+    "date": "2026-05-17T21:32:08-04:00",
+    "message": "Remove stale topology docs and JSON presets",
+    "files_changed": 237
+  },
+  {
+    "hash": "4ccedeae4f8f9929853c9b8054d4167d8f46e2a5",
+    "short_hash": "4ccedea",
+    "author": "Jack Valinsky",
+    "date": "2026-05-17T21:31:57-04:00",
+    "message": "Require typed scenario requirements",
+    "files_changed": 3
+  },
+  {
+    "hash": "926900abbf27cb5ada5422ad93e83b90508adaa5",
+    "short_hash": "926900a",
+    "author": "Jack Valinsky",
+    "date": "2026-05-17T21:31:45-04:00",
+    "message": "Make topology presets typed-only",
+    "files_changed": 12
+  },
+  {
+    "hash": "39850854b3b29fd036dce769d3e5a710fcf51551",
+    "short_hash": "3985085",
+    "author": "Jack Valinsky",
+    "date": "2026-05-17T02:48:14-04:00",
+    "message": "Fix gruszka lexicon generator paths",
+    "files_changed": 4
+  }
+]

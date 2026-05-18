@@ -1,0 +1,4 @@
+interface:
+  display_name: "ATProto Repository"
+  short_description: "Inspect ATProto repos, CARs, and MSTs"
+  default_prompt: "Use $atproto-repository to inspect this repo CAR and verify its commit."

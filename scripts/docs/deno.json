@@ -1,7 +1,0 @@
-{
-  "extends": "../../deno.json",
-  "fmt": {
-    "lineWidth": 100
-  },
-  "lock": "../../deno.lock"
-}

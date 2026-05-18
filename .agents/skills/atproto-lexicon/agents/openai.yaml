@@ -1,0 +1,4 @@
+interface:
+  display_name: "ATProto Lexicon"
+  short_description: "Author and validate ATProto lexicons"
+  default_prompt: "Use $atproto-lexicon to review this lexicon and XRPC shape."

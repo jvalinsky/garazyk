@@ -1,4 +1,4 @@
-# Secrets — never commit real credentials
+# Secrets
 .env
 .env.*
 !.env.example
@@ -8,29 +8,13 @@
 *.pfx
 *.jks
 secrets/
-docker/local-network/secrets/
 
-# JupyterLite build output
-_output/
-
-# Nix build results
-result/
-
-# Build directories
+# Build
+node_modules/
 build/
 build-*/
 build_data/
 DerivedData/
-node_modules/
-
-# CMake in-source configure artifacts
-CMakeFiles/
-__cmake_systeminformation/
-cmake_install.cmake
-CMakeCache.txt
-
-# Submodules
-vendor/secp256k1/
 
 # IDE
 .DS_Store
@@ -40,56 +24,28 @@ vendor/secp256k1/
 *~
 *.tmp
 *.temp
-.ruff_cache/
-
-#tmp_*
-
-letta.js
-indigo_research
-# Xcode
-*.xcodeproj/
-*.xcworkspace/
-xcuserdata/
-*.pbxproj.bak
-*.pbxuser
-*.mode1v3
-*.mode2v3
-*.mode2v3
-*.perspectivev3
-*.hmap
-*.ipa
-*.dSYM.zip
-*.dSYM
-
-# Cache & Worktrees
-.cache/
-.worktrees/
-.vitepress/
-docs/.vitepress/dist/
-docs/.vitepress/cache/
 
 # AI / Agentic Development Tools
-# Per github/gitignore PR #4719: ignore user-local config, keep project-level config
-
-# Claude Code — local user settings only (project commands/skills/hooks are committed)
 .claude/settings.local.json
 .claude/**/*.log
-
-# OpenCode — local caches only (project skills/plans are committed)
 .opencode/node_modules/
 .opencode/package-lock.json
 .opencode/bun.lock
-
-# Agent scratch directories (ephemeral session output)
 .scratch/
 .scratchpad/
 
 # Deciduous local state
-.deciduous/deciduous.db
+.deciduous/
 
-# Data, Logs and State
+# Letta memory
+.letta/
+
+# Beads / Dolt
+.dolt/
+.beads-credential-key
+
+# Data, Logs, State
 data/
-demo_data/
 reports/
 *.log
 *.pid
@@ -100,138 +56,11 @@ config.json
 :memory:
 :memory:-shm
 :memory:-wal
-localdb.sqlite*
-docs/tutorial-site.tar.gz
-
-# Python virtual environments
-search_venv/
-*.egg-info/
-__pycache__/
-
-# Runtime cache directories
 cache/
-
-# Runtime service databases
-did_cache/
-sequencer/
-service/
-
-# Docker staging
-docker/local-network/staging/
-
-# Temp files
 health.html
 plan_*.txt
 scratchpad_*.md
 
-# CTest artifacts
-Testing/
-
-# Research and Reference (local copies)
-reference/
-vendor/reference/
-
-Garazyk/Tests/Blob/debug_blob_test.txt
-
-com.apple.DeveloperTools/
-
-# Coverage files
-*.profdata
-*.profraw
-coverage/
-
-# Test logs
-testing_*_logs.txt
-testing_*_log.txt
-test_output_log_*.txt
-test_*.txt
-tests_*.txt
-*_log.txt
-
-# Test artifacts
-simulation_data/
-test_data/
-tmp_atproto/
-tmp_social_app/
-source.tar.gz
-
-# Docs generated artifacts
-docs/git-history.json
-docs/graph-data.json
-docs/migration-mapping.json
-docs/metadata/
-docs/node_modules/
-
-# Cadmus build data
-.cadmus/
-
-# Build artifacts
-build_output.txt
-buildServer.json
-*.vsix
-*.bak
-
-# Compiled tutorial binaries
-examples/tutorial-*/tutorial-*
-
-# TypeScript build output
-tooling/vscode-objective-j/out/
-
-# objc-jupyter-wasm build artifacts
-objc-jupyter-wasm/lib/
-objc-jupyter-wasm/dist/
-objc-jupyter-wasm/objc_jupyter_wasm/labextension/
-objc-jupyter-wasm/kernel/*.wasm
-objc-jupyter-wasm/compiler/*.wasm
-
-# Generated docs
-docs/api/
-scripts/docs/api/
-.cache/m.css/
-docs/*.html
-docs/*.css
-docs/*.js
-docs/*.ts/
-docs/*.test.ts/
-docs/clients/
-docs/jsr.json/
-
-# Fuzzing generated output
-fuzzing/results/
-fuzzing/regression_results/
-
-# Deciduous scratch/state
-.deciduous/scratch/
-.deciduous/plugin.log
-
-# Generated audit/result JSON artifacts
-Garazyk/audit_results*.json
-Garazyk/batch*_report.json
-tooling/test-audit-validator/batch*_*.json
-tooling/test-audit-validator/repo_scan*.json
-
-# Generated test-audit artifacts
-tooling/test-audit-validator/test-audit-validator
-tooling/test-audit-validator/audit-report.md
-tooling/test-audit-validator/auth_report.md
-tooling/test-audit-validator/critical-findings.md
-tooling/test-audit-validator/batch*_fixes.txt
-tooling/test-audit-validator/batch*_remaining.txt
-tooling/test-audit-validator/.artifacts/
-
-# Deciduous database (local)
-.deciduous/
-plc_data/
-.letta/
-
-# OAuth client Vite build output (built in Dockerfile)
-docker/local-network/oauth-client/dist/
-objc-jupyter-wasm/.letta/
-objc-jupyter-wasm/result
-result
-docker/local-network/sources_cache/
-build/
-
-# Beads / Dolt files (added by bd init)
-.dolt/
-.beads-credential-key
+# Python
+__pycache__/
+*.egg-info/

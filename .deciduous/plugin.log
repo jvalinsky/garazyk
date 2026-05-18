@@ -13,3 +13,4 @@
 [2026-05-18T15:40:02.347Z] POST-COMMIT: 5bbc1867 "fix: resolve slow-type errors and optimize JSR pub" - Run: deciduous add outcome "..." --commit HEAD
 [2026-05-18T16:07:58.587Z] REMINDER: No recent action/goal node found. Run: deciduous add goal "..." or deciduous add action "..."
 [2026-05-18T16:08:05.378Z] REMINDER: No recent action/goal node found. Run: deciduous add goal "..." or deciduous add action "..."
+[2026-05-18T16:25:05.627Z] POST-COMMIT: 5f1edd01 "fix: eliminate any/Promise<any>/as any and missing" - Run: deciduous add outcome "..." --commit HEAD

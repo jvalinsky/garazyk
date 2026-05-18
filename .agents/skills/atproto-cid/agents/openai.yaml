@@ -1,0 +1,4 @@
+interface:
+  display_name: "ATProto CID"
+  short_description: "Parse and validate ATProto CIDs"
+  default_prompt: "Use $atproto-cid to debug this AT Protocol CID mismatch."

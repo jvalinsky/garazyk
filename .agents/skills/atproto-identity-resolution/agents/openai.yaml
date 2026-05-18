@@ -1,0 +1,4 @@
+interface:
+  display_name: "ATProto Identity Resolution"
+  short_description: "Resolve ATProto handles and DIDs"
+  default_prompt: "Use $atproto-identity-resolution to debug this handle or DID resolution issue."

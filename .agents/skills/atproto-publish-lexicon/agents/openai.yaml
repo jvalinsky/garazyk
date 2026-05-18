@@ -1,0 +1,4 @@
+interface:
+  display_name: "ATProto Lexicon Publishing"
+  short_description: "Publish lexicons as ATProto records"
+  default_prompt: "Use $atproto-publish-lexicon to publish this lexicon record safely."

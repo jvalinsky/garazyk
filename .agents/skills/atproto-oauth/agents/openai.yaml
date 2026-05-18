@@ -1,0 +1,4 @@
+interface:
+  display_name: "ATProto OAuth"
+  short_description: "Build and debug ATProto OAuth flows"
+  default_prompt: "Use $atproto-oauth to debug this AT Protocol OAuth flow."
