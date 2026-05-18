@@ -18,7 +18,8 @@ import {
   type LocalNetworkOptions,
   startLocalNetwork,
   stopLocalNetwork,
-} from "./lib/deno/docker.ts";
+} from "@garazyk/hamownia/atproto-network";
+import { initE2eTracing } from "@garazyk/hamownia/otel";
 
 const args = parseArgs(Deno.args, {
   boolean: [
@@ -65,10 +66,13 @@ if (args.help) {
   Deno.exit(0);
 }
 
+if (args.otel) {
+  initE2eTracing("garazyk-manage-network");
+}
+
 const opts: LocalNetworkOptions = {
   useBinary: args.binary,
   withPds2: args.pds2,
-  otel: args.otel,
   keepRunning: args["keep-running"],
   waitOnly: args["wait-only"],
   skipDockerStage: args["skip-docker-stage"],
