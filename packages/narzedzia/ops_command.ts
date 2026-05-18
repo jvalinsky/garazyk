@@ -254,7 +254,7 @@ Options:
   }
 
   async function runValidateConfig() {
-    const configPath = flags._[1] as string || "docker/pds/config.json";
+    const configPath = flags._[1] as string || "pds-config.json";
 
     try {
       const text = await Deno.readTextFile(configPath);

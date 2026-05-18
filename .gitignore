@@ -9,6 +9,13 @@
 *.jks
 secrets/
 
+# Deleted JSR monorepo artifacts
+docker/
+docs/
+scripts/
+vendor/
+scratchpads/
+
 # Build
 node_modules/
 build/
