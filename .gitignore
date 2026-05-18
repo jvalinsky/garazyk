@@ -231,3 +231,7 @@ objc-jupyter-wasm/result
 result
 docker/local-network/sources_cache/
 build/
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+.beads-credential-key

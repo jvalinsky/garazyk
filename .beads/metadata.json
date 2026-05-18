@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "garazyk",
+  "project_id": "3e24e71e-7195-41e0-803d-732df2f59413"
+}
