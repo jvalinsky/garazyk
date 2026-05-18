@@ -18,8 +18,8 @@ import type {
   NormalizedServiceSpec,
   NormalizedTopologyPreset,
   PortSpec,
-  RawTopologyPresetV1,
   ResolvedTopology,
+  ResourceHints,
   ScenarioRequirement,
   SidecarSpec,
   VolumeSpec,
@@ -37,7 +37,6 @@ export type {
   NormalizedServiceSpec,
   NormalizedTopologyPreset,
   PortSpec,
-  RawTopologyPresetV1,
   ResolvedTopology,
   ScenarioRequirement,
   SidecarSpec,
@@ -96,6 +95,8 @@ export interface SidecarAdapter {
   ports?: string[];
   /** Volume mappings mounted into the sidecar */
   volumes?: string[];
+  /** Resource hints used for manifests and scheduling diagnostics */
+  resources?: ResourceHints;
   /** Config files materialized for the sidecar */
   configFiles?: Record<string, string>;
   /** Health check definition used to monitor the sidecar */
@@ -144,6 +145,8 @@ export interface ServiceAdapter {
   ports?: string[];
   /** Volume mappings mounted into the service */
   volumes?: string[];
+  /** Resource hints used for manifests and scheduling diagnostics */
+  resources?: ResourceHints;
   /** Primary health check used by the runner */
   healthCheck: {
     path: string | null;
@@ -409,7 +412,7 @@ export interface TopologyManifest {
   }>;
 }
 
-/** Options for resolving a topology preset from disk
+/** Options for resolving a topology preset
  *
  * @remarks
  * Paths are optional and fall back to repository conventions; `includePds2` expands the role set when requested
@@ -417,8 +420,6 @@ export interface TopologyManifest {
 export interface TopologyResolveOptions {
   /** Repository root used to resolve relative paths */
   repoRoot?: string;
-  /** Directory containing topology preset JSON files */
-  presetDir?: string;
   /** Run directory used for derived outputs */
   runDir?: string;
   /** Compose file path to load */

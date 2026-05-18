@@ -1,9 +1,19 @@
 import { assertEquals, assertThrows } from "@std/assert";
 import {
+  Cap,
   compileTopology,
+  defineTopology,
+  health,
+  port,
   renderComposeYaml,
+  requires,
+  Role,
+  role,
+  source,
+  TopologyRegistry,
   validatePreset,
-} from "./topology_compiler.ts";
+  volume,
+} from "./mod.ts";
 import {
   createTopologyManifest,
   loadTopologyManifest,
@@ -14,16 +24,26 @@ import {
 } from "./topology.ts";
 import {
   normalizeTopologyPreset,
-  parseRawTopologyPresetV1,
+  parseTopologyPresetJson,
 } from "./topology_schema.ts";
+import type { ScenarioRequirement } from "@garazyk/schemat";
 import { ScenarioInfo } from "@garazyk/hamownia";
 import { selectScenarios } from "@garazyk/hamownia";
-import { parseScenarioRequirement } from "./topology_schema.ts";
-import type { ScenarioRequirement } from "./topology_schema.ts";
 
 /** Helper to convert string-form requirements to ScenarioRequirement objects. */
 function req(...strings: string[]): ScenarioRequirement[] {
-  return strings.map(parseScenarioRequirement);
+  return strings.map((value) => {
+    const [roleName, capability] = value.split(":");
+    if (roleName === Role.plc) return requires(Role.plc, capability as never);
+    if (roleName === Role.relay) {
+      return requires(Role.relay, capability as never);
+    }
+    if (roleName === Role.appview) {
+      return requires(Role.appview, capability as never);
+    }
+    if (roleName === Role.chat) return requires(Role.chat, capability as never);
+    throw new Error(`Unsupported test requirement: ${value}`);
+  });
 }
 
 const VALID_ADAPTER: ServiceAdapter = {
@@ -564,39 +584,29 @@ Deno.test("createTopologyManifest: public and internal URLs use host and contain
   assertEquals(manifest.diagnostics[0].url, "http://localhost:3200/");
 });
 
-Deno.test("compileTopology: object-form ports and volumes survive preset normalization", async () => {
-  const presetDir = await Deno.makeTempDir({ prefix: "topology-preset-" });
+Deno.test("compileTopology: typed port and volume objects survive registry loading", async () => {
   const runDir = await Deno.makeTempDir({ prefix: "topology-test-" });
-  try {
-    await Deno.writeTextFile(
-      `${presetDir}/object-form.json`,
-      JSON.stringify({
-        name: "object-form",
-        description: "Object port and volume forms",
-        roles: {
-          appview: {
-            name: "object-appview",
-            image: "example/appview:latest",
-            ports: [{ host: "3300", container: "3000" }],
-            volumes: [
-              { kind: "named", source: "object_appview_data", target: "/data" },
-              {
-                kind: "bind",
-                source: "./fixtures",
-                target: "/fixtures",
-                mode: "ro",
-              },
-            ],
-            healthCheck: { path: "/health" },
-            capabilities: ["getTimeline"],
-          },
-        },
+  const preset = defineTopology({
+    name: "object-form",
+    description: "Object port and volume forms",
+    roles: {
+      [Role.appview]: role.appview({
+        name: "object-appview",
+        source: source.image("example/appview:latest"),
+        ports: [port({ host: 3300, container: 3000 })],
+        volumes: [
+          volume.named("object_appview_data", "/data"),
+          volume.bind("./fixtures", "/fixtures", "ro"),
+        ],
+        health: health.http("/health"),
+        capabilities: [Cap.appview.getTimeline],
       }),
-    );
-
+    },
+  });
+  TopologyRegistry.register(preset);
+  try {
     const result = await compileTopology({
       preset: "object-form",
-      presetDir,
       runDir,
       repoRoot: "/repo",
       composeProject: "test",
@@ -615,7 +625,6 @@ Deno.test("compileTopology: object-form ports and volumes survive preset normali
       "http://local-appview:3000",
     );
   } finally {
-    await Deno.remove(presetDir, { recursive: true });
     await Deno.remove(runDir, { recursive: true });
   }
 });
@@ -777,9 +786,7 @@ Deno.test("selectScenarios: explicit scenario IDs bypass missing requirements", 
 });
 
 Deno.test("compileTopology: every topology preset resolves, renders, and writes manifest", async () => {
-  for await (const entry of Deno.readDir("scripts/scenarios/topologies")) {
-    if (!entry.isFile || !entry.name.endsWith(".json")) continue;
-    const preset = entry.name.replace(/\.json$/, "");
+  for (const preset of TopologyRegistry.listPresets()) {
     const runDir = await Deno.makeTempDir({ prefix: `topology-${preset}-` });
     try {
       const result = await compileTopology({
@@ -798,7 +805,7 @@ Deno.test("compileTopology: every topology preset resolves, renders, and writes 
 });
 
 Deno.test("schema: unknown roles require x- namespace and metadata", () => {
-  const raw = parseRawTopologyPresetV1({
+  const raw = parseTopologyPresetJson({
     name: "bad-role",
     description: "Reject unknown role",
     roles: {
@@ -818,7 +825,7 @@ Deno.test("schema: unknown roles require x- namespace and metadata", () => {
 });
 
 Deno.test("schema: experimental roles require env/default port/runner exposure metadata", () => {
-  const raw = parseRawTopologyPresetV1({
+  const raw = parseTopologyPresetJson({
     name: "experimental-role",
     description: "Reject incomplete experimental role",
     roles: {

@@ -7,10 +7,8 @@
  * @module topology
  */
 
-import { join, resolve } from "@std/path";
 import {
   normalizeTopologyPreset,
-  parseRawTopologyPresetV1,
   renderPortSpec,
   renderVolumeSpec,
 } from "./topology_schema.ts";
@@ -27,7 +25,6 @@ export type {
   NormalizedServiceSpec,
   NormalizedTopologyPreset,
   PortSpec,
-  RawTopologyPresetV1,
   ResolvedTopology,
   ScenarioRequirement,
   SidecarSpec,
@@ -140,7 +137,6 @@ function normalizeAdapter(
   if ("inherit" in raw) return raw;
   const container = raw.container || {};
   const merged = { ...container, ...raw } as ServiceAdapter;
-  merged.healthCheck = merged.healthCheck || (merged as any).health;
   return merged;
 }
 
@@ -162,6 +158,7 @@ function denormalizeService(service: NormalizedServiceSpec): ServiceAdapter {
     env: emptyObjectToUndefined(service.env),
     ports: service.ports.map(renderPortSpec),
     volumes: service.volumes.map(renderVolumeSpec),
+    resources: service.resources,
     healthCheck: denormalizeHealth(service.health),
     capabilities: service.capabilities,
     dependsOn: emptyArrayToUndefined(service.dependsOn),
@@ -189,6 +186,7 @@ function denormalizeSidecars(
         env: emptyObjectToUndefined(sidecar.env),
         ports: sidecar.ports.map(renderPortSpec),
         volumes: sidecar.volumes.map(renderVolumeSpec),
+        resources: sidecar.resources,
         configFiles: sidecar.configFiles,
         healthCheck: denormalizeHealth(sidecar.health),
         dependsOn: emptyArrayToUndefined(sidecar.dependsOn),
@@ -256,87 +254,22 @@ function emptyArrayToUndefined<T>(value: T[]): T[] | undefined {
 }
 
 /**
- * Load a topology preset from the registry or an optional filesystem directory.
+ * Load a topology preset from the typed registry.
  * @param name - Preset name
- * @param presetDir - Optional directory to search for preset JSON files.
  * @returns The loaded topology preset
  * @throws {Error} If the preset is not found or is invalid.
  */
-export function loadTopologyPreset(
-  name: string,
-  presetDir?: string,
-): TopologyPreset {
-  // 1. Check registry for embedded presets
+export function loadTopologyPreset(name: string): TopologyPreset {
   const embedded = TopologyRegistry.getPreset(name);
   if (embedded) {
-    const rawPreset = parseRawTopologyPresetV1(embedded, `registry:${name}`);
-    const preset = denormalizePreset(normalizeTopologyPreset(rawPreset));
+    const preset = denormalizePreset(embedded);
     for (const [role, adapter] of Object.entries(preset.roles)) {
       preset.roles[role as ServiceRole] = normalizeAdapter(adapter);
     }
     return preset;
   }
 
-  // 2. Check filesystem (legacy/override)
-  if (!presetDir) {
-    throw new Error(
-      `Unknown topology preset: ${name}. No presetDir provided for filesystem lookup.`,
-    );
-  }
-
-  if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
-    throw new Error(
-      `Invalid topology preset name: "${name}". Only alphanumeric characters, hyphens, and underscores are allowed.`,
-    );
-  }
-
-  const presetPath = join(presetDir, `${name}.json`);
-
-  const resolvedPath = resolve(presetPath);
-  const resolvedDir = resolve(presetDir);
-  if (
-    !resolvedPath.startsWith(resolvedDir + "/") && resolvedPath !== resolvedDir
-  ) {
-    throw new Error(
-      `Preset path escapes topologies directory: ${presetPath} (resolved: ${resolvedPath})`,
-    );
-  }
-
-  let rawText: string;
-  try {
-    rawText = Deno.readTextFileSync(presetPath);
-  } catch {
-    throw new Error(
-      `Unknown topology preset: ${name}. File not found: ${presetPath}`,
-    );
-  }
-
-  let rawJson: unknown;
-  try {
-    rawJson = JSON.parse(rawText);
-  } catch (exc) {
-    throw new Error(
-      `Invalid topology preset ${presetPath}: malformed JSON (${exc})`,
-    );
-  }
-
-  const rawPreset = parseRawTopologyPresetV1(rawJson, presetPath);
-  const preset = denormalizePreset(normalizeTopologyPreset(rawPreset));
-
-  for (const [role, adapter] of Object.entries(preset.roles)) {
-    preset.roles[role as ServiceRole] = normalizeAdapter(adapter);
-    if ("inherit" in adapter && typeof (adapter as any).inherit === "string") {
-      continue;
-    }
-    const concrete = preset.roles[role as ServiceRole] as ServiceAdapter;
-    if (!concrete.name || !concrete.healthCheck || !concrete.capabilities) {
-      throw new Error(
-        `Invalid adapter for role "${role}" in preset "${name}": missing name, healthCheck, or capabilities.`,
-      );
-    }
-  }
-
-  return preset;
+  throw new Error(`Unknown topology preset: ${name}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -347,7 +280,6 @@ function resolveInheritedAdapter(
   role: ServiceRole,
   adapter: ServiceAdapter | InheritedAdapter,
   seen: string[],
-  presetDir?: string,
 ): ServiceAdapter {
   const normalized = normalizeAdapter(adapter);
   if (!("inherit" in normalized)) return normalized;
@@ -362,7 +294,7 @@ function resolveInheritedAdapter(
     );
   }
 
-  const parentPreset = loadTopologyPreset(parentName, presetDir);
+  const parentPreset = loadTopologyPreset(parentName);
   const parentAdapter = parentPreset.roles[role];
   if (!parentAdapter) {
     throw new Error(
@@ -373,7 +305,6 @@ function resolveInheritedAdapter(
     role,
     parentAdapter,
     [...seen, key],
-    presetDir,
   );
 }
 
@@ -386,9 +317,9 @@ function resolveInheritedAdapter(
  */
 export function resolvePreset(
   presetName: string,
-  options: { includePds2?: boolean; presetDir?: string } = {},
+  options: { includePds2?: boolean } = {},
 ): TopologyPreset {
-  const preset = clonePreset(loadTopologyPreset(presetName, options.presetDir));
+  const preset = clonePreset(loadTopologyPreset(presetName));
   const resolvedRoles: Partial<Record<ServiceRole, ServiceAdapter>> = {};
   const includePds2 = options.includePds2 === true;
 
@@ -398,20 +329,16 @@ export function resolvePreset(
       role as ServiceRole,
       adapter,
       [`${presetName}:${role}`],
-      options.presetDir,
     );
   }
 
   if (includePds2 && !resolvedRoles.pds2) {
-    const defaultPreset = loadTopologyPreset(
-      "garazyk-default",
-      options.presetDir,
-    );
+    const defaultPreset = loadTopologyPreset("garazyk-default");
     const defaultPds2 = defaultPreset.roles.pds2;
     if (defaultPds2) {
       resolvedRoles.pds2 = resolveInheritedAdapter("pds2", defaultPds2, [
         "garazyk-default:pds2",
-      ], options.presetDir);
+      ]);
     }
   }
 
@@ -498,7 +425,6 @@ export function resolveTopology(
       preset: topologyName
         ? resolvePreset(topologyName, {
           includePds2: options.includePds2,
-          presetDir: options.presetDir,
         })
         : undefined,
       webClient,
@@ -527,7 +453,6 @@ export function resolveTopology(
   if (topologyName) {
     preset = resolvePreset(topologyName, {
       includePds2: options.includePds2,
-      presetDir: options.presetDir,
     });
     for (const [role, adapter] of Object.entries(preset.roles)) {
       if ("inherit" in adapter) continue;

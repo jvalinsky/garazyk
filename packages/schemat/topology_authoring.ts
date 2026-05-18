@@ -2,20 +2,18 @@
 import { Cap, Role } from "./topology_registry.ts";
 import type { CapabilityForRole, RoleKey } from "./topology_registry.ts";
 import {
-  normalizePorts,
-  normalizeVolumes,
-  parseRawTopologyPresetV1,
+  normalizeTopologyPreset,
+  parseTopologyPresetJson,
 } from "./topology_schema.ts";
 import type {
   DiagnosticProbeSpec,
   InheritedServiceSpec,
+  NormalizedTopologyPreset,
   PortSpec,
-  RawServiceSpec,
-  RawSidecarSpec,
-  RawTopologyPresetV1,
   ResourceHints,
-  ScenarioRequirement,
   SourceBuildSpec,
+  TopologyServiceJson,
+  TopologySidecarJson,
   VolumeSpec,
 } from "./topology_schema.ts";
 import type { WebClientTopology } from "./topology_types.ts";
@@ -29,6 +27,27 @@ export type ExperimentalCapability = `x-${string}:${string}`;
 export type CapabilityInput<R extends RoleKey> =
   | CapabilityForRole<R>
   | ExperimentalCapability;
+
+/** Canonical topology type stored in the registry. */
+export type RegisteredTopologyPreset = NormalizedTopologyPreset;
+
+/** Role-scoped scenario requirement emitted by the typed authoring helpers. */
+export interface ScenarioRequirement<R extends RoleKey = RoleKey> {
+  /** Service role that must provide the capability. */
+  role: R;
+  /** Capability required by the scenario. */
+  capability: CapabilityInput<R>;
+}
+
+declare const serviceRefBrand: unique symbol;
+
+/** Branded direct Docker Compose service reference for sidecars/support services. */
+export type ServiceRef = string & { readonly [serviceRefBrand]: true };
+
+/** Create a branded direct Docker Compose service dependency reference. */
+export function serviceRef(name: string): ServiceRef {
+  return name as ServiceRef;
+}
 
 /** Service image source for typed topology authoring. */
 export interface ImageSource {
@@ -86,18 +105,8 @@ export interface NoHealth {
 /** Typed health probe input accepted by role builders. */
 export type AuthoringHealth = HttpHealth | CommandHealth | NoHealth;
 
-/** Existing health-check shape accepted by topology JSON presets. */
-export interface LegacyHealthInput {
-  /** HTTP path, or null for command/no health. */
-  path: string | null;
-  /** Optional Docker healthcheck command. */
-  customTest?: readonly string[];
-  /** Optional HTTP headers. */
-  headers?: Record<string, string>;
-}
-
-/** Numeric or string port value. */
-export type PortValue = string | number;
+/** Numeric port value accepted by the `port(...)` helper. */
+export type PortValue = number;
 /** Authoring object form for a Docker port mapping. */
 export interface PortMappingInput {
   /** Optional host port. Defaults to the container port when omitted by the helper. */
@@ -107,10 +116,8 @@ export interface PortMappingInput {
   /** Transport protocol. */
   protocol?: "tcp" | "udp";
 }
-/** Port input accepted by typed topology authoring. */
-export type PortInput = string | number | PortMappingInput;
-/** Volume input accepted by typed topology authoring. */
-export type VolumeInput = string | VolumeSpec;
+/** Port input accepted by the `port(...)` helper. */
+export type PortInput = number | PortMappingInput;
 
 /** Diagnostic probe accepted by typed topology authoring. */
 export type AuthoringDiagnosticProbe =
@@ -137,21 +144,19 @@ export interface AuthoringSidecarSpec {
   /** Environment variables. */
   env?: Record<string, string>;
   /** Port mappings. */
-  ports?: readonly PortInput[];
+  ports?: readonly PortSpec[];
   /** Volume mappings. */
-  volumes?: readonly VolumeInput[];
+  volumes?: readonly VolumeSpec[];
   /** Resource hints. */
   resources?: ResourceHints;
   /** Secret names. */
   secrets?: readonly string[];
   /** Typed health probe. */
   health?: AuthoringHealth;
-  /** Existing topology health-check shape. */
-  healthCheck?: LegacyHealthInput;
   /** Diagnostic probes. */
   diagnostics?: readonly AuthoringDiagnosticProbe[];
   /** Direct Docker Compose service dependencies. */
-  dependsOn?: readonly string[];
+  dependsOn?: readonly ServiceRef[];
   /** Topology role dependencies. */
   dependsOnRoles?: readonly RoleKey[];
   /** Config files materialized for the sidecar. */
@@ -175,21 +180,19 @@ export interface AuthoringServiceInput<R extends RoleKey> {
   /** Environment variables. */
   env?: Record<string, string>;
   /** Port mappings. */
-  ports?: readonly PortInput[];
+  ports?: readonly PortSpec[];
   /** Volume mappings. */
-  volumes?: readonly VolumeInput[];
+  volumes?: readonly VolumeSpec[];
   /** Resource hints. */
   resources?: ResourceHints;
   /** Secret names. */
   secrets?: readonly string[];
   /** Typed health probe. */
   health?: AuthoringHealth;
-  /** Existing topology health-check shape. */
-  healthCheck?: LegacyHealthInput;
   /** Diagnostic probes. */
   diagnostics?: readonly AuthoringDiagnosticProbe[];
   /** Direct Docker Compose service dependencies. */
-  dependsOn?: readonly string[];
+  dependsOn?: readonly ServiceRef[];
   /** Topology role dependencies resolved to service names during compilation. */
   dependsOnRoles?: readonly RoleKey[];
   /** Config files materialized for the container. */
@@ -282,7 +285,6 @@ export function port(input: PortInput): PortSpec {
     const value = String(input);
     return { host: value, container: value, protocol: "tcp" };
   }
-  if (typeof input === "string") return normalizePorts([input])[0];
   return {
     host: input.host === undefined ? undefined : String(input.host),
     container: String(input.container),
@@ -402,7 +404,7 @@ export const role = {
 export function requires<R extends RoleKey>(
   role: R,
   capability: CapabilityInput<R>,
-): ScenarioRequirement {
+): ScenarioRequirement<R> {
   return { role, capability };
 }
 
@@ -410,33 +412,34 @@ export function requires<R extends RoleKey>(
 export function optional<R extends RoleKey>(
   role: R,
   capability: CapabilityInput<R>,
-): ScenarioRequirement {
+): ScenarioRequirement<R> {
   return { role, capability };
 }
 
 /** Validate and normalize a typed topology definition into the raw preset shape. */
 export function defineTopology<const Definition extends TopologyDefinition>(
   definition: Definition,
-): RawTopologyPresetV1 {
-  const roles: RawTopologyPresetV1["roles"] = {};
+): RegisteredTopologyPreset {
+  const roles: Record<string, TopologyServiceJson | InheritedServiceSpec> = {};
   for (const [roleKey, value] of Object.entries(definition.roles)) {
     if (value === undefined) continue;
     roles[roleKey] = "inherit" in value ? value : serviceToRaw(roleKey, value);
   }
 
-  return parseRawTopologyPresetV1({
+  const raw = parseTopologyPresetJson({
     name: definition.name,
     description: definition.description,
     roles,
     webClient: definition.webClient,
     networkAliases: definition.networkAliases,
   }, `defineTopology:${definition.name}`);
+  return normalizeTopologyPreset(raw);
 }
 
 function serviceToRaw<R extends RoleKey>(
   roleKey: string,
   input: AuthoringServiceSpec<R>,
-): RawServiceSpec {
+): TopologyServiceJson {
   return {
     role: input.role || roleKey,
     name: input.name,
@@ -445,13 +448,13 @@ function serviceToRaw<R extends RoleKey>(
     entrypoint: copyArray(input.entrypoint),
     command: copyArray(input.command),
     env: input.env,
-    ports: normalizePortInputs(input.ports),
-    volumes: normalizeVolumeInputs(input.volumes),
+    ports: copyArray(input.ports),
+    volumes: copyArray(input.volumes),
     resources: input.resources,
     secrets: copyArray(input.secrets),
-    healthCheck: normalizeHealthInput(input.health || input.healthCheck),
+    health: normalizeHealthInput(input.health),
     diagnostics: copyDiagnostics(input.diagnostics),
-    dependsOn: copyArray(input.dependsOn),
+    dependsOn: copyServiceRefs(input.dependsOn),
     dependsOnRoles: copyArray(input.dependsOnRoles),
     configFiles: input.configFiles,
     capabilities: [...input.capabilities],
@@ -462,7 +465,7 @@ function serviceToRaw<R extends RoleKey>(
 
 function sidecarsToRaw(
   sidecars: Record<string, AuthoringSidecarSpec> | undefined,
-): Record<string, RawSidecarSpec> | undefined {
+): Record<string, TopologySidecarJson> | undefined {
   if (!sidecars) return undefined;
   return Object.fromEntries(
     Object.entries(sidecars).map((
@@ -471,19 +474,19 @@ function sidecarsToRaw(
   );
 }
 
-function sidecarToRaw(input: AuthoringSidecarSpec): RawSidecarSpec {
+function sidecarToRaw(input: AuthoringSidecarSpec): TopologySidecarJson {
   return {
     ...sourceToRaw(input.source),
     entrypoint: copyArray(input.entrypoint),
     command: copyArray(input.command),
     env: input.env,
-    ports: normalizePortInputs(input.ports),
-    volumes: normalizeVolumeInputs(input.volumes),
+    ports: copyArray(input.ports),
+    volumes: copyArray(input.volumes),
     resources: input.resources,
     secrets: copyArray(input.secrets),
-    healthCheck: normalizeHealthInput(input.health || input.healthCheck),
+    health: normalizeHealthInput(input.health),
     diagnostics: copyDiagnostics(input.diagnostics),
-    dependsOn: copyArray(input.dependsOn),
+    dependsOn: copyServiceRefs(input.dependsOn),
     dependsOnRoles: copyArray(input.dependsOnRoles),
     configFiles: input.configFiles,
     capabilities: copyArray(input.capabilities),
@@ -492,52 +495,40 @@ function sidecarToRaw(input: AuthoringSidecarSpec): RawSidecarSpec {
 
 function sourceToRaw(
   input: ServiceSource,
-): Pick<RawServiceSpec, "image" | "source" | "buildContext" | "dockerfile"> {
+): Pick<
+  TopologyServiceJson,
+  "image" | "source" | "buildContext" | "dockerfile"
+> {
   if (input.kind === "image") return { image: input.image };
   if (input.kind === "git") return { source: input.source };
   return { buildContext: input.buildContext, dockerfile: input.dockerfile };
 }
 
 function normalizeHealthInput(
-  input: AuthoringHealth | LegacyHealthInput | undefined,
-): RawServiceSpec["healthCheck"] {
+  input: AuthoringHealth | undefined,
+): TopologyServiceJson["health"] {
   if (!input) return undefined;
-  if ("type" in input) {
-    if (input.type === "none") return { path: null };
-    if (input.type === "command") {
-      return { path: null, customTest: [...input.customTest] };
-    }
-    return { path: input.path, headers: input.headers };
+  if (input.type === "none") return { path: null };
+  if (input.type === "command") {
+    return { path: null, customTest: [...input.customTest] };
   }
-  return {
-    path: input.path,
-    customTest: copyArray(input.customTest),
-    headers: input.headers,
-  };
-}
-
-function normalizePortInputs(
-  inputs: readonly PortInput[] | undefined,
-): PortSpec[] | undefined {
-  return inputs?.map(port);
-}
-
-function normalizeVolumeInputs(
-  inputs: readonly VolumeInput[] | undefined,
-): VolumeSpec[] | undefined {
-  return inputs?.map((input) =>
-    typeof input === "string" ? normalizeVolumes([input])[0] : input
-  );
+  return { path: input.path, headers: input.headers };
 }
 
 function copyArray<T>(input: readonly T[] | undefined): T[] | undefined {
   return input === undefined ? undefined : [...input];
 }
 
+function copyServiceRefs(
+  input: readonly ServiceRef[] | undefined,
+): string[] | undefined {
+  return input === undefined ? undefined : [...input];
+}
+
 function copyDiagnostics(
   input: readonly AuthoringDiagnosticProbe[] | undefined,
-): RawServiceSpec["diagnostics"] {
+): TopologyServiceJson["diagnostics"] {
   return input === undefined
     ? undefined
-    : [...input] as RawServiceSpec["diagnostics"];
+    : [...input] as TopologyServiceJson["diagnostics"];
 }

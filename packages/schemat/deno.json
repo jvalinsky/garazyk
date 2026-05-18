@@ -6,7 +6,6 @@
     ".": "./mod.ts",
     "./runtime": "./runtime.ts",
     "./topology-authoring": "./topology_authoring.ts",
-    "./topology-schema": "./topology_schema.ts",
     "./web-client-compose": "./web_client_compose.ts"
   },
   "license": "Unlicense OR CC0-1.0"

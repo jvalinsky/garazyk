@@ -27,8 +27,6 @@ export type { SourceBuildInfo } from "./topology.ts";
 export interface CompilerOptions {
   /** Preset name (e.g. "garazyk-default") or loaded TopologyPreset */
   preset: string | TopologyPreset;
-  /** Directory containing topology preset JSON files */
-  presetDir?: string;
   /** Directory where compose file and run artifacts are written */
   runDir: string;
   /** Absolute path to repo root */
@@ -525,7 +523,6 @@ export async function compileTopology(
   const preset: TopologyPreset = typeof options.preset === "string"
     ? resolvePreset(options.preset as string, {
       includePds2: options.includePds2,
-      presetDir: options.presetDir,
     })
     : options.preset;
 

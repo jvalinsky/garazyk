@@ -212,8 +212,8 @@ export function createTopologyManifest(
     if (adapter.source) {
       sources.push(sourceInfo(adapter.name, adapter.source, options.runDir));
     }
-    if ((adapter as any).resources) {
-      resources[role] = (adapter as any).resources;
+    if (adapter.resources) {
+      resources[role] = adapter.resources;
     }
 
     const healthCheck = adapter.healthCheck;

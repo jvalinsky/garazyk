@@ -59,6 +59,7 @@ export {
   port,
   requires,
   role,
+  serviceRef,
   source,
   volume,
 } from "./topology_authoring.ts";
@@ -123,14 +124,15 @@ export type {
   GitSource,
   HttpHealth,
   ImageSource,
-  LegacyHealthInput,
   LocalBuildSource,
   NoHealth,
   PortInput,
   PortMappingInput,
   PortValue,
+  RegisteredTopologyPreset,
+  ScenarioRequirement,
+  ServiceRef,
   ServiceSource,
   TopologyDefinition,
-  VolumeInput,
 } from "./topology_authoring.ts";
 export type { TopologyPresetSummary } from "./topology_list.ts";

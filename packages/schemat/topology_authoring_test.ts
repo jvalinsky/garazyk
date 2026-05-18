@@ -7,15 +7,12 @@ import {
   requires,
   Role,
   role,
+  serviceRef,
   source,
   TopologyRegistry,
   volume,
 } from "./mod.ts";
 import { compileTopology, renderComposeYaml } from "./topology_compiler.ts";
-import {
-  normalizeTopologyPreset,
-  parseRawTopologyPresetV1,
-} from "./topology_schema.ts";
 
 const typeCheckedPreset = defineTopology({
   name: "type-checked-authoring",
@@ -39,7 +36,115 @@ void typeCheckedPreset;
 const badRequirement = requires(Role.pds, Cap.relay.listRepos);
 void badRequirement;
 
-Deno.test("defineTopology: typed service normalizes like equivalent raw preset", () => {
+function compileTimeRawAuthoringRejections(): void {
+  const stringPortPreset = defineTopology({
+    name: "string-port-authoring",
+    description: "String ports are rejected by typed authoring",
+    roles: {
+      [Role.pds]: role.pds({
+        name: "bad-pds",
+        source: source.image("example/pds:latest"),
+        // @ts-expect-error string port mappings must use port(...).
+        ports: ["2583:2583"],
+        health: health.http("/xrpc/com.atproto.server.describeServer"),
+        capabilities: [Cap.pds.describeServer],
+      }),
+    },
+  });
+  void stringPortPreset;
+
+  const stringVolumePreset = defineTopology({
+    name: "string-volume-authoring",
+    description: "String volumes are rejected by typed authoring",
+    roles: {
+      [Role.pds]: role.pds({
+        name: "bad-pds",
+        source: source.image("example/pds:latest"),
+        ports: [port(2583)],
+        // @ts-expect-error string volume mappings must use volume.*(...).
+        volumes: ["pds_data:/data"],
+        health: health.http("/xrpc/com.atproto.server.describeServer"),
+        capabilities: [Cap.pds.describeServer],
+      }),
+    },
+  });
+  void stringVolumePreset;
+
+  const rawHealthPreset = defineTopology({
+    name: "raw-health-authoring",
+    description: "Raw healthCheck is rejected by typed authoring",
+    roles: {
+      [Role.pds]: role.pds({
+        name: "bad-pds",
+        source: source.image("example/pds:latest"),
+        ports: [port(2583)],
+        // @ts-expect-error typed authoring uses health: health.*(...).
+        healthCheck: { path: "/xrpc/com.atproto.server.describeServer" },
+        capabilities: [Cap.pds.describeServer],
+      }),
+    },
+  });
+  void rawHealthPreset;
+
+  const rawImagePreset = defineTopology({
+    name: "raw-image-authoring",
+    description: "Raw image is rejected by typed authoring",
+    roles: {
+      [Role.pds]: role.pds({
+        name: "bad-pds",
+        // @ts-expect-error typed authoring uses source: source.image(...).
+        image: "example/pds:latest",
+        ports: [port(2583)],
+        health: health.http("/xrpc/com.atproto.server.describeServer"),
+        capabilities: [Cap.pds.describeServer],
+      }),
+    },
+  });
+  void rawImagePreset;
+
+  const rawBuildContextPreset = defineTopology({
+    name: "raw-build-context-authoring",
+    description: "Raw buildContext is rejected by typed authoring",
+    roles: {
+      [Role.pds]: role.pds({
+        name: "bad-pds",
+        // @ts-expect-error typed authoring uses source: source.localBuild(...).
+        buildContext: "docker/local-network",
+        ports: [port(2583)],
+        health: health.http("/xrpc/com.atproto.server.describeServer"),
+        capabilities: [Cap.pds.describeServer],
+      }),
+    },
+  });
+  void rawBuildContextPreset;
+
+  const rawDependsOnPreset = defineTopology({
+    name: "raw-depends-on-authoring",
+    description: "Raw dependsOn strings are rejected by typed authoring",
+    roles: {
+      [Role.pds]: role.pds({
+        name: "bad-pds",
+        source: source.image("example/pds:latest"),
+        ports: [port(2583)],
+        health: health.http("/xrpc/com.atproto.server.describeServer"),
+        capabilities: [Cap.pds.describeServer],
+        // @ts-expect-error direct service dependencies must use serviceRef(...).
+        dependsOn: ["local-plc"],
+      }),
+    },
+  });
+  void rawDependsOnPreset;
+
+  // @ts-expect-error registry registration accepts normalized typed presets only.
+  TopologyRegistry.register({
+    name: "raw-registration",
+    description: "Raw registry registration is rejected",
+    roles: {},
+  });
+}
+void compileTimeRawAuthoringRejections;
+
+Deno.test("defineTopology: typed service returns registry-ready normalized preset", () => {
   const typed = defineTopology({
     name: "typed-normalization",
     description: "Typed topology normalization",
@@ -51,33 +156,16 @@ Deno.test("defineTopology: typed service normalizes like equivalent raw preset",
         volumes: [volume.named("typed_pds_data", "/data")],
         health: health.http("/xrpc/com.atproto.server.describeServer"),
         capabilities: [Cap.pds.describeServer],
-        dependsOn: ["local-plc"],
+        dependsOn: [serviceRef("local-plc")],
       }),
     },
   });
 
-  const raw = parseRawTopologyPresetV1({
-    name: "typed-normalization",
-    description: "Typed topology normalization",
-    roles: {
-      pds: {
-        role: "pds",
-        name: "typed-pds",
-        image: "example/pds:latest",
-        ports: [{ host: "2583", container: "2583", protocol: "tcp" }],
-        volumes: [
-          { kind: "named", source: "typed_pds_data", target: "/data" },
-        ],
-        healthCheck: {
-          path: "/xrpc/com.atproto.server.describeServer",
-        },
-        capabilities: ["describeServer"],
-        dependsOn: ["local-plc"],
-      },
-    },
-  }, "inline");
-
-  assertEquals(normalizeTopologyPreset(typed), normalizeTopologyPreset(raw));
+  const pds = typed.roles.pds;
+  if (!pds || "inherit" in pds) throw new Error("pds should be concrete");
+  assertEquals(typed.name, "typed-normalization");
+  assertEquals(pds.image, "example/pds:latest");
+  assertEquals(pds.dependsOn, ["local-plc"]);
 });
 
 Deno.test("defineTopology: source, port, and volume helpers normalize to raw schema", () => {
@@ -95,7 +183,7 @@ Deno.test("defineTopology: source, port, and volume helpers normalize to raw sch
         ports: [port({ host: 2583, container: 8080 })],
         volumes: [
           volume.bind("./fixtures", "/fixtures", "ro"),
-          "helper_pds_data:/data",
+          volume.named("helper_pds_data", "/data"),
         ],
         health: health.command(["CMD-SHELL", "test -f /tmp/ready"]),
         capabilities: [Cap.pds.describeServer],
@@ -124,10 +212,14 @@ Deno.test("defineTopology: source, port, and volume helpers normalize to raw sch
     { kind: "bind", source: "./fixtures", target: "/fixtures", mode: "ro" },
     { kind: "named", source: "helper_pds_data", target: "/data" },
   ]);
-  assertEquals(pds.healthCheck?.customTest, [
-    "CMD-SHELL",
-    "test -f /tmp/ready",
-  ]);
+  assertEquals(pds.health, {
+    type: "command",
+    customTest: [
+      "CMD-SHELL",
+      "test -f /tmp/ready",
+    ],
+    timeoutSeconds: 60,
+  });
 
   const appview = typed.roles.appview;
   if (!appview || "inherit" in appview) {
@@ -135,7 +227,7 @@ Deno.test("defineTopology: source, port, and volume helpers normalize to raw sch
   }
   assertEquals(appview.buildContext, "docker/appview");
   assertEquals(appview.dockerfile, "Dockerfile.local");
-  assertEquals(appview.healthCheck, { path: null });
+  assertEquals(appview.health, undefined);
 });
 
 Deno.test("dependsOnRoles: compiler resolves role dependencies to compose service names", async () => {

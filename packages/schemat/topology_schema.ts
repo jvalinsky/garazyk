@@ -272,26 +272,26 @@ const containerPrimitiveSchema = z.object({
 }).strict();
 
 /** Zod schema for raw sidecar specifications */
-export const rawSidecarSpecSchema = containerPrimitiveSchema.extend({
+export const topologySidecarJsonSchema = containerPrimitiveSchema.extend({
   capabilities: z.array(z.string()).optional(),
 });
 
 /** Raw sidecar specification before normalization */
-export type RawSidecarSpec = z.infer<typeof rawSidecarSpecSchema>;
+export type TopologySidecarJson = z.infer<typeof topologySidecarJsonSchema>;
 
 /** Zod schema for raw service specifications */
-export const rawServiceSpecSchema = containerPrimitiveSchema.extend({
+export const topologyServiceJsonSchema = containerPrimitiveSchema.extend({
   role: z.string().optional(),
   name: z.string().min(1),
   serviceName: z.string().optional(),
   container: containerPrimitiveSchema.partial().optional(),
   capabilities: z.array(z.string()).default([]),
-  sidecars: z.record(rawSidecarSpecSchema).optional(),
+  sidecars: z.record(topologySidecarJsonSchema).optional(),
   scenarioEnv: stringRecordSchema.optional(),
 }).strict();
 
 /** Raw service specification before normalization */
-export type RawServiceSpec = z.infer<typeof rawServiceSpecSchema>;
+export type TopologyServiceJson = z.infer<typeof topologyServiceJsonSchema>;
 
 /** Zod schema for inherited service references */
 export const inheritedServiceSchema = z.object({ inherit: z.string().min(1) })
@@ -307,17 +307,17 @@ export const experimentalRoleSchema = z.object({
 }).strict();
 
 /** Zod schema for version 1 topology presets */
-export const rawTopologyPresetV1Schema = z.object({
+export const topologyPresetJsonSchema = z.object({
   name: z.string().min(1),
   description: z.string().min(1),
-  roles: z.record(z.union([rawServiceSpecSchema, inheritedServiceSchema])),
+  roles: z.record(z.union([topologyServiceJsonSchema, inheritedServiceSchema])),
   experimentalRoles: z.record(experimentalRoleSchema).optional(),
   webClient: z.unknown().optional(),
   networkAliases: z.record(z.array(z.string())).optional(),
 }).strict();
 
 /** Raw topology preset shape before normalization */
-export type RawTopologyPresetV1 = z.infer<typeof rawTopologyPresetV1Schema>;
+export type TopologyPresetJson = z.infer<typeof topologyPresetJsonSchema>;
 
 /** Normalized topology preset ready for resolution
  *
@@ -486,11 +486,11 @@ export interface ResolvedTopology {
 }
 
 /** Parse and validate a raw topology preset JSON value */
-export function parseRawTopologyPresetV1(
+export function parseTopologyPresetJson(
   value: unknown,
   pathLabel: string,
-): RawTopologyPresetV1 {
-  const result = rawTopologyPresetV1Schema.safeParse(value);
+): TopologyPresetJson {
+  const result = topologyPresetJsonSchema.safeParse(value);
   if (result.success) return result.data;
   throw new Error(
     `Invalid topology preset ${pathLabel}:\n${formatZodError(result.error)}`,
@@ -499,7 +499,7 @@ export function parseRawTopologyPresetV1(
 
 /** Normalize raw topology preset data into a {@link NormalizedTopologyPreset} */
 export function normalizeTopologyPreset(
-  raw: RawTopologyPresetV1,
+  raw: TopologyPresetJson,
 ): NormalizedTopologyPreset {
   const experimentalRoles = raw.experimentalRoles || {};
   validateRoleDeclarations(raw.roles, experimentalRoles, raw.name);
@@ -511,7 +511,7 @@ export function normalizeTopologyPreset(
       roles[roleKey] = value as InheritedServiceSpec;
       continue;
     }
-    roles[roleKey] = normalizeService(roleKey, value as RawServiceSpec);
+    roles[roleKey] = normalizeService(roleKey, value as TopologyServiceJson);
   }
 
   return {
@@ -642,14 +642,14 @@ export function resolveNormalizedTopologyPreset(
 
 function normalizeService(
   role: string,
-  raw: RawServiceSpec,
+  raw: TopologyServiceJson,
 ): NormalizedServiceSpec {
   const container = raw.container || {};
   const merged = {
     ...container,
     ...raw,
     container: undefined,
-  } as RawServiceSpec;
+  } as TopologyServiceJson;
   const health = normalizeHealth(merged.healthCheck || merged.health);
   return {
     role: merged.role || role,
@@ -678,7 +678,7 @@ function normalizeService(
 }
 
 function normalizeSidecars(
-  rawSidecars: Record<string, RawSidecarSpec>,
+  rawSidecars: Record<string, TopologySidecarJson>,
 ): Record<string, SidecarSpec> {
   return Object.fromEntries(
     Object.entries(rawSidecars).map(([name, raw]) => {
