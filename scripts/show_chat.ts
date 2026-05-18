@@ -21,7 +21,7 @@ if (!pdsUrl || !chatUrl || !handle || !password) {
 function getTermWidth(): number {
   // 1. Try Deno consoleSize (works for real TTYs)
   try {
-    const { columns } = Deno.consoleSize(Deno.stdout.rid);
+    const { columns } = Deno.consoleSize();
     if (columns > 0) return columns;
   } catch {
     // not a TTY
