@@ -4,309 +4,310 @@ Continuing from the laweta/hamownia ATProto decoupling (PRs 2–7), this plan
 addresses the remaining coupling risks and structural issues across the
 workspace.
 
-## Current State
+## Current State (after Phases 1–2)
 
 ```
 gruszka   = standalone XRPC client layer          ✅ clean
-schemat   = declarative topology model/compiler   ⚠️ 1 test-only baseline violation
-laweta    = generic Docker/process primitives      ⚠️ 1 env var leak (ATPROTO_OTEL)
+schemat   = declarative topology model/compiler   ✅ zero baseline violations
+laweta    = generic Docker/process primitives      ✅ zero ATProto strings
 hamownia  = scenario framework + ATProto orchestration  ⚠️ config.ts singleton, broad surface
-dashboard = UI app over hamownia/schemat/laweta   ✅ clean (app-level coupling is expected)
+dashboard = UI app over hamownia/schemat/laweta   ✅ clean
 narzedzia = repo tooling                          ✅ clean
-scripts/  = CLI wrappers + scenarios              ⚠️ run_scenarios.ts is 492 lines, not thin
+scripts/  = CLI wrappers + scenarios              ✅ run_scenarios.ts is a thin wrapper
 ```
 
-## Dependency Graph
+**Completed:** Phase 1 (delete orphan, remove ATPROTO_OTEL, fix baseline
+violation) and Phase 2 (thin run_scenarios.ts) are done. 324 tests pass,
+zero boundary violations.
 
-```
-gruszka  (standalone)
-   ↑
-schemat  (leaf — no @garazyk imports)
-   ↑
-laweta   (leaf — no @garazyk imports)
-   ↑
-narzedzia (imports schemat + gruszka, not laweta/hamownia/dashboard)
-   ↑
-hamownia (imports schemat + laweta + gruszka)
-   ↑
-dashboard (imports schemat + laweta + hamownia)
-```
-
----
-
-## Phase 1: Quick Wins
-
-Independent, low-risk changes that don't require design decisions.
-
-### 1A. Delete `hamownia/config_export.ts`
-
-**Problem:** One-line `export * from "./config.ts"` with zero consumers. Not in
-`deno.json` exports, not in `mod.ts`, not imported anywhere.
-
-**Change:** Delete the file.
-
-**Risk:** None. Pure dead code.
-
-**Verification:** `deno check`, `deno task boundaries`, `deno test -A`.
-
-### 1B. Remove `ATPROTO_OTEL` from laweta
-
-**Problem:** `laweta/telemetry.ts:36` checks `ATPROTO_OTEL` env var. This is the
-last ATProto-specific string in laweta. Laweta should be publishable as a
-generic Docker package.
-
-**Change:**
-- Remove `Deno.env.get("ATPROTO_OTEL") === "true"` from `isOtelEnabled()`.
-- In `hamownia/otel.ts`, when `initE2eTracing()` is called, set
-  `Deno.env.set("OTEL_DENO", "true")` before any laweta code runs. This way
-  hamownia's OTel initialization activates laweta's telemetry through the
-  generic env var.
-
-**Risk:** Low. The only callers of `isOtelEnabled()` are laweta internals
-(`withSpan`, `addSpanEvent`). Hamownia's `initE2eTracing()` already sets
-`OTEL_DENO=true` in the re-exec env (see `run_scenarios.ts:478`).
-
-**Verification:** `deno check`, `deno test -A`, manual check that
-`--otel` flag still works.
-
-### 1C. Fix schemat baseline violation
-
-**Problem:** `schemat/topology_compiler_test.ts` imports `ScenarioInfo` and
-`selectScenarios` from `@garazyk/hamownia`. This is the only baseline violation
-and it means schemat's test suite can't run without hamownia installed.
-
-**Analysis:** The hamownia imports are used in 4 tests (lines 632–786) that test
-`selectScenarios` behavior — role-scoped requirements, optional capabilities,
-PDS2 filtering, and explicit-ID bypass. These tests are really about
-**scenario selection logic**, not topology compilation.
-
-**Change:**
-- Move the 4 `selectScenarios` tests to `hamownia/scenario_selector_test.ts`.
-- Remove the `@garazyk/hamownia` imports from `topology_compiler_test.ts`.
-- Remove the baseline entry from `narzedzia/boundary_check.ts`.
-
-**Risk:** Low. The tests are self-contained and only depend on the
-`selectScenarios` function and `ScenarioInfo` type.
-
-**Verification:** `deno task boundaries` should pass with 0 baseline violations.
-`deno test -A packages/schemat/ packages/hamownia/`.
-
----
-
-## Phase 2: Thin `scripts/run_scenarios.ts`
-
-### 2A. Create `hamownia/run_command.ts`
-
-**Problem:** `scripts/run_scenarios.ts` is 492 lines of orchestration logic:
-CLI parsing, OTel re-exec, network lifecycle, scenario discovery, run loop
-execution, result accumulation, signal handling, and report writing. It should
-be a thin wrapper.
-
-**Design:**
-
-Create `hamownia/run_command.ts` that exports a single `runScenarioCommand`
-function. This function owns the full orchestration lifecycle. The script
-becomes:
-
-```ts
-#!/usr/bin/env -S deno run -A
-import { runScenarioCommand } from "@garazyk/hamownia/run-command";
-runScenarioCommand(Deno.args);
-```
-
-**What moves into `run_command.ts`:**
-- `parseRunnerArgs()` — CLI argument parsing
-- `usage()` — help text
-- `shouldReexecForOtel()` / `reexecWithOtel()` / `buildOtelReexecEnv()` —
-  OTel re-exec logic
-- `appendScenarioLoopResult()` — result accumulation
-- The `main()` function body — network lifecycle, scenario discovery,
-  run loop, signal handling, report writing
-
-**What stays in the script:**
-- The shebang line
-- The `import`
-- The `runScenarioCommand(Deno.args)` call
-
-**What stays in hamownia (already there):**
-- `runScenarioLoop` — already in `hamownia/run-loop`
-- `startLocalNetwork` / `stopLocalNetwork` — already in `hamownia/atproto-network`
-- `discoverScenarios` / `selectScenarios` — already in `hamownia/mod.ts`
-- `createProcessLifecycle` — already in `hamownia/process-lifecycle`
-- `writeOverallSummary` — already in `hamownia/report-writer`
-- `initE2eTracing` / `shutdownTracing` — already in `hamownia/otel`
-
-**New subpath export:** `./run-command` in `hamownia/deno.json`.
-
-**Risk:** Medium. The script is the main entry point for the entire test
-harness. Need to verify:
-- `deno task scenarios` still works
-- Docker runner mode still works
-- OTel re-exec still works
-- Signal handling (Ctrl+C) still works
-- `--setup-only`, `--teardown-only`, `--collect-diagnostics` still work
-
-**Verification:** Full scenario run (at least `--setup-only` + `--list`),
-`deno check`, `deno test -A`.
-
-### 2B. Move `run_scenarios_test.ts` into hamownia
-
-**Problem:** `scripts/run_scenarios_test.ts` tests `buildOtelReexecEnv` and
-`parseRunnerArgs`, which will live in `hamownia/run_command.ts` after 2A.
-
-**Change:** Move the test to `hamownia/run_command_test.ts`. Update imports.
-
-**Risk:** Low.
+**Remaining:** Phase 3 (config singleton migration) and Phase 4 (boundary
+check hardening).
 
 ---
 
 ## Phase 3: Config Singleton Migration
 
-This is the largest and most impactful change. The goal is to eliminate
-mutable module-level state from `hamownia/config.ts` so scenarios receive
-configuration through injection rather than reading globals.
+### The Problem
 
-### 3A. Define the `ScenarioContext` type
-
-**Current pattern:** Scenarios import mutable globals:
+`hamownia/config.ts` exports 10 mutable `let` bindings and 3 legacy
+convenience functions that read from a module-level singleton:
 
 ```ts
+export let PDS1: string = ...;
+export let PDS2: string = ...;
+export let SERVICE_URLS: Record<string, string> = ...;
+export let APPVIEW_ADMIN_SECRET: string = ...;
+export let PDS_ADMIN_PASSWORD: string = ...;
+export let TOPOLOGY_CAPABILITIES: Set<string> = ...;
+export let TOPOLOGY_CAPABILITIES_BY_ROLE: Record<string, Set<string>> = ...;
+export let WEB_CLIENT_TOPOLOGY: WebClientConfig | undefined = ...;
+export let VIDEO_SERVICE_DID: string = ...;
+
+export function getCharacter(name: string): Character { ... }
+export function getCharactersByRole(role: string): Character[] { ... }
+export function getCharactersByPds(pdsUrl: string): Character[] { ... }
+
+export function refreshScenarioConfigFromEnv(): void { ... }
+```
+
+All 63 scenario files import these globals directly:
+
+| Symbol | Scenarios using it |
+|--------|-------------------|
+| `PDS1` | 59 |
+| `getCharacter` | 58 |
+| `SERVICE_URLS` | 35 |
+| `APPVIEW_ADMIN_SECRET` | 5 |
+| `PDS2` | 3 |
+| `VIDEO_SERVICE_DID` | 2 |
+| `WEB_CLIENT_TOPOLOGY` | 1 |
+| `PDS_ADMIN_PASSWORD` | 1 |
+
+**Why this is a problem:**
+
+1. **Implicit coupling.** Scenarios reach into module-level mutable state
+   instead of receiving their dependencies. This makes scenarios hard to
+   test in isolation and hard to compose (e.g., running two scenarios against
+   different topologies in the same process).
+
+2. **Initialization order.** `refreshScenarioConfigFromEnv()` must be called
+   before scenarios can read correct values. The host child runner calls it
+   at line 53. If someone forgets, scenarios read stale defaults.
+
+3. **No type safety.** The `let` exports can be reassigned from anywhere.
+   There's no guarantee that the values are consistent (e.g., `PDS1` might
+   not match `SERVICE_URLS.pds`).
+
+### The Target
+
+Scenarios receive a `ScenarioContext` object through their `run()` function:
+
+```ts
+// Before:
 import { PDS1, SERVICE_URLS, getCharacter } from "@garazyk/hamownia/config";
-```
-
-**Target pattern:** Scenarios receive a context object:
-
-```ts
-export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
-  const pds = new XrpcClient(ctx.pds1);
-  const luna = ctx.getCharacter("luna");
-  // ...
-}
-```
-
-**Design:**
-
-```ts
-/** Injected context for a single scenario execution. */
-export interface ScenarioContext {
-  /** Primary PDS URL. */
-  pds1: string;
-  /** Secondary PDS URL. */
-  pds2: string;
-  /** Public service URLs keyed by role. */
-  serviceUrls: Record<string, string>;
-  /** AppView admin secret. */
-  appviewAdminSecret: string;
-  /** PDS admin password. */
-  pdsAdminPassword: string;
-  /** Topology capabilities. */
-  topologyCapabilities: Set<string>;
-  /** Capabilities by role. */
-  topologyCapabilitiesByRole: Record<string, Set<string>>;
-  /** Browser client topology. */
-  webClientTopology?: WebClientConfig;
-  /** Video service DID. */
-  videoServiceDid: string;
-  /** Resolved topology. */
-  topology: Topology;
-  /** Character registry. */
-  getCharacter(name: string): Character;
-  getCharactersByRole(role: string): Character[];
-  getCharactersByPds(pdsUrl: string): Character[];
-}
-```
-
-**Where to define it:** `hamownia/scenario_context.ts`. This is a new file.
-
-**Risk:** Low (type-only change, no runtime effect yet).
-
-### 3B. Add `ScenarioContext` to the scenario runner
-
-**Change:** Modify `host_child_runner.ts` to create a `ScenarioContext` from
-`createScenarioConfig()` and pass it to the scenario's `run()` function.
-
-The scenario module interface changes from:
-
-```ts
-interface ScenarioModule {
-  run?: () => Promise<ScenarioResult> | ScenarioResult;
-}
-```
-
-to:
-
-```ts
-interface ScenarioModule {
-  run?: (ctx: ScenarioContext) => Promise<ScenarioResult> | ScenarioResult;
-}
-```
-
-**Backward compatibility:** The runner should check the `run` function's
-arity. If `run.length === 0`, call it with no arguments (legacy mode).
-If `run.length === 1`, pass the context. This allows incremental migration.
-
-**Risk:** Medium. Need to update `host_child_runner.ts` and the Docker runner
-env injection. The Docker runner passes env vars, so scenarios in Docker mode
-will continue to read `PDS_URL` etc. from env — the context injection only
-applies to host-mode scenarios initially.
-
-### 3C. Migrate scenarios incrementally
-
-**Strategy:** Migrate scenarios one at a time from global imports to context
-injection. Each migration is a single-file change.
-
-**Migration pattern for a scenario:**
-
-Before:
-```ts
-import { PDS1, SERVICE_URLS, getCharacter } from "@garazyk/hamownia/config";
-
 export async function run(): Promise<ScenarioResult> {
   const pds = new XrpcClient(PDS1);
   const luna = getCharacter("luna");
-  // ...
+  const plc = await fetch(`${SERVICE_URLS.plc}/...`);
 }
-```
 
-After:
-```ts
+// After:
 import type { ScenarioContext } from "@garazyk/hamownia/config";
-
 export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const pds = new XrpcClient(ctx.pds1);
   const luna = ctx.getCharacter("luna");
-  // ...
+  const plc = await fetch(`${ctx.serviceUrls.plc}/...`);
 }
 ```
 
-**Batch strategy:** Migrate in groups of 5–10 scenarios, running the full
-test suite after each batch. Start with the simplest scenarios (those that
-only use `PDS1` and `getCharacter`), then handle the ones that use
-`SERVICE_URLS`, `PDS2`, `APPVIEW_ADMIN_SECRET`, etc.
+### 3A. Define `ScenarioContext`
 
-**63 scenarios total.** Estimated 6–8 batches.
+**Design:** `ScenarioContext` is `ScenarioConfig & CharacterRegistry`. The
+`ScenarioConfig` interface already exists in `config.ts` (lines 46–67) and
+has all the fields scenarios need. The `CharacterRegistry` interface also
+exists (lines 205–226). The composite type is:
 
-**Risk:** Low per batch, but high total surface area. Each scenario change
-is mechanical. The backward-compat shim in `host_child_runner.ts` means
-unmigrated scenarios keep working.
+```ts
+/** Injected context for a single scenario execution. */
+export type ScenarioContext = ScenarioConfig & CharacterRegistry;
+```
+
+**Where to define it:** `hamownia/scenario_context.ts`. This is a new file
+that re-exports the composite type. It also exports a factory function:
+
+```ts
+/** Create a ScenarioContext from a ScenarioConfig and CharacterRegistry. */
+export function createScenarioContext(
+  config: ScenarioConfig,
+): ScenarioContext {
+  const registry = createCharacterRegistry(config);
+  return { ...config, ...registry };
+}
+```
+
+**Why a separate file:** `config.ts` is already 453 lines. Adding the
+context factory there would further bloat it. A separate file keeps the
+concern boundary clean: `config.ts` defines the data types and the legacy
+API; `scenario_context.ts` defines the injection API.
+
+**Subpath export:** Add `./scenario-context` to `hamownia/deno.json`.
+
+**Risk:** None. Type-only addition, no runtime effect.
+
+### 3B. Update `host_child_runner.ts` to pass `ScenarioContext`
+
+**Current flow:**
+
+```
+host_child_runner.ts
+  → refreshScenarioConfigFromEnv()   // mutates module-level let bindings
+  → import(scenarioPath)             // scenario reads globals at import time
+  → module.run()                     // scenario reads globals at call time
+```
+
+**New flow:**
+
+```
+host_child_runner.ts
+  → const config = createScenarioConfig()   // pure function, no mutation
+  → const ctx = createScenarioContext(config)
+  → import(scenarioPath)
+  → module.run(ctx)                         // scenario receives context
+```
+
+**Backward compatibility:** The runner checks `run.length`:
+
+```ts
+const result = module.run.length === 0
+  ? await module.run()           // legacy: reads globals
+  : await module.run(ctx);       // new: receives context
+```
+
+This means unmigrated scenarios keep working. We can migrate incrementally.
+
+**Important:** We still need to call `refreshScenarioConfigFromEnv()` for
+legacy scenarios. The runner should call it only when the scenario uses the
+legacy signature (`run.length === 0`):
+
+```ts
+if (module.run.length === 0) {
+  // Legacy scenario — refresh globals so it reads correct env vars
+  refreshScenarioConfigFromEnv();
+  result = await module.run();
+} else {
+  // New scenario — pass context directly
+  result = await module.run(ctx);
+}
+```
+
+**Risk:** Low. The arity check is a standard JavaScript pattern. The
+backward-compat shim means we can migrate one scenario at a time without
+breaking anything.
+
+### 3C. Migrate scenarios incrementally
+
+**Strategy:** Migrate scenarios in batches of ~10, running the full test
+suite after each batch. Each migration is a mechanical single-file change.
+
+**Migration pattern:**
+
+1. Replace `import { PDS1, ... } from "@garazyk/hamownia/config"` with
+   `import type { ScenarioContext } from "@garazyk/hamownia/config"`.
+2. Change `run()` signature to `run(ctx: ScenarioContext)`.
+3. Replace every `PDS1` → `ctx.pds1`, `SERVICE_URLS` → `ctx.serviceUrls`,
+   `getCharacter("luna")` → `ctx.getCharacter("luna")`, etc.
+4. Remove any `export { ScenarioResult, ... } from "@garazyk/hamownia"`
+   re-exports that are only there for the type checker (these are fine to
+   keep — they don't use config globals).
+
+**Symbol mapping:**
+
+| Old global | New context field |
+|-----------|-------------------|
+| `PDS1` | `ctx.pds1` |
+| `PDS2` | `ctx.pds2` |
+| `SERVICE_URLS` | `ctx.serviceUrls` |
+| `APPVIEW_ADMIN_SECRET` | `ctx.appviewAdminSecret` |
+| `PDS_ADMIN_PASSWORD` | `ctx.pdsAdminPassword` |
+| `TOPOLOGY_CAPABILITIES` | `ctx.topologyCapabilities` |
+| `TOPOLOGY_CAPABILITIES_BY_ROLE` | `ctx.topologyCapabilitiesByRole` |
+| `WEB_CLIENT_TOPOLOGY` | `ctx.webClientTopology` |
+| `VIDEO_SERVICE_DID` | `ctx.videoServiceDid` |
+| `getCharacter("luna")` | `ctx.getCharacter("luna")` |
+| `getCharactersByRole("admin")` | `ctx.getCharactersByRole("admin")` |
+| `getCharactersByPds(url)` | `ctx.getCharactersByPds(url)` |
+
+**Batch plan (by complexity tier):**
+
+**Batch 1 — Simple (PDS1 + getCharacter only):**
+- 02_social_graph, 03_content_creation, 07_blobs_uploads,
+  08_oauth_sessions, 14_drafts_bookmarks, 15_mutes_relationships_starterpacks,
+  16_notification_management, 17_actor_preferences_discovery,
+  19_contact_age_assurance, 20_unspecced_search
+
+**Batch 2 — Simple + SERVICE_URLS:**
+- 01_account_lifecycle, 06_chat_dms, 09_firehose_streaming,
+  10_performance_resilience, 13_oauth_client_e2e,
+  24_concurrent_write_throughput, 25_firehose_fanout_scale,
+  32_identity_fatigue, 37_germ_e2ee_dms, 38_feed_generator
+
+**Batch 3 — SERVICE_URLS + PDS1 + getCharacter:**
+- 39_list_management, 40_thread_gating, 41_account_deactivation,
+  42_handle_change_propagation, 44_content_embedding,
+  45_labeler_subscription, 47_chat_group_lifecycle,
+  48_websocket_reconnection, 49_cross_service_consistency,
+  50_profile_migration, 60_mikrus_links
+
+**Batch 4 — PDS2 + federation:**
+- 05_federation, 12_account_migration, 35_interrupted_migration
+
+**Batch 5 — APPVIEW_ADMIN_SECRET:**
+- 18_admin_operations, 21_appview_lexicon_endpoints,
+  22_appview_hooks, 23_appview_write_proxy, 26_appview_ingest_load,
+  27_fullstack_soak
+
+**Batch 6 — Special symbols:**
+- 04_moderation_safety (PDS_ADMIN_PASSWORD)
+- 36_video_processing (VIDEO_SERVICE_DID)
+- 46_video_cdn_playback (VIDEO_SERVICE_DID)
+- 59_web_client_browser_flow (WEB_CLIENT_TOPOLOGY)
+- 11_lab_oauth_login (SERVICE_URLS only, no getCharacter)
+
+**Batch 7 — Performance/stress scenarios (PDS1 + getCharacter):**
+- 28_repo_format_benchmarks, 29_depth_charger,
+  30_temporal_distortion, 31_noisy_neighbor,
+  33_tortoise_consumer, 34_format_roundtrip,
+  43_multi_device_sessions, 51_blob_garbage_collection,
+  52_rate_limit_behavior, 53_phone_verification,
+  54_negative_auth_paths, 55_takedown_read_enforcement,
+  56_federation_relay_propagation, 57_concurrent_record_conflict,
+  58_account_delete_cascade, 61_graph_read_verification,
+  62_session_refresh_lifecycle, 63_firehose_cursor_recovery
+
+**Total: 63 scenarios across 7 batches.**
 
 ### 3D. Remove mutable globals from `config.ts`
 
-**After all scenarios are migrated:**
+**After all 63 scenarios are migrated:**
 
-1. Remove the `let` exports: `PDS1`, `PDS2`, `SERVICE_URLS`,
-   `APPVIEW_ADMIN_SECRET`, `PDS_ADMIN_PASSWORD`, `TOPOLOGY_CAPABILITIES`,
-   `TOPOLOGY_CAPABILITIES_BY_ROLE`, `WEB_CLIENT_TOPOLOGY`, `VIDEO_SERVICE_DID`.
-2. Remove `refreshScenarioConfigFromEnv()`.
-3. Remove the default `registry` and the legacy `getCharacter()` /
-   `getCharactersByRole()` / `getCharactersByPds()` functions.
-4. Keep `createScenarioConfig()`, `createCharacterRegistry()`, `Character`,
-   `ScenarioConfig`, and the type definitions.
-5. Export `ScenarioContext` from `config.ts` (or move it to a dedicated file).
+1. Remove the `let` exports (lines 131–163):
+   - `PDS1`, `PDS2`, `SERVICE_URLS`, `APPVIEW_ADMIN_SECRET`,
+     `PDS_ADMIN_PASSWORD`, `TOPOLOGY_CAPABILITIES`,
+     `TOPOLOGY_CAPABILITIES_BY_ROLE`, `WEB_CLIENT_TOPOLOGY`,
+     `VIDEO_SERVICE_DID`
+2. Remove `defaultScenarioConfig` and `topology` module-level variables.
+3. Remove `refreshScenarioConfigFromEnv()` (lines 418–432).
+4. Remove the default `registry` variable and the legacy convenience
+   functions (lines 415–452):
+   - `resetCharacters()`, `getCharacter()`, `getCharactersByRole()`,
+     `getCharactersByPds()`
+5. Remove the `Character` constructor's default `pdsUrl = PDS1` parameter
+   (line 192). The `Character` class should not reference global state.
+   Change to `pdsUrl: string = ""` — the factory always provides a value.
+
+**What stays in `config.ts`:**
+- `WebClientConfig` interface
+- `ScenarioConfig` interface
+- `ScenarioConfigOptions` interface
+- `createScenarioConfig()` function
+- `Character` class
+- `CharacterRegistry` interface
+- `CharacterTemplate` interface and `BASE_TEMPLATES`
+- `createCharacterRegistry()` function
+
+**What moves to `scenario_context.ts`:**
+- `ScenarioContext` type alias
+- `createScenarioContext()` factory
 
 **Risk:** Medium. This is a breaking change for any external consumers of
 the mutable globals. But since this is `0.1.0-alpha.1`, breaking changes are
 acceptable. The `ScenarioContext` type provides a clean replacement.
+
+**Verification:** After removing the globals, grep to confirm zero references:
+
+```bash
+grep -rn "PDS1\|PDS2\|SERVICE_URLS\|APPVIEW_ADMIN_SECRET\|refreshScenarioConfigFromEnv\|TOPOLOGY_CAPABILITIES\|WEB_CLIENT_TOPOLOGY\|VIDEO_SERVICE_DID\|PDS_ADMIN_PASSWORD\|resetCharacters" packages/ scripts/ --include="*.ts" | grep -v "_test.ts" | grep -v "config.ts" | grep -v "scenario_context.ts"
+```
 
 ### 3E. Rename `diagnostics.ts` to `run_diagnostics.ts`
 
@@ -315,17 +316,23 @@ conceptually. The former collects run-level diagnostics (metadata, HTTP
 probes, log bundling); the latter collects Docker-level diagnostics
 (container state, compose info).
 
-**Change:** Rename `diagnostics.ts` → `run_diagnostics.ts`. Update the
-subpath export in `deno.json` from `./diagnostics` to `./run-diagnostics`.
-Update all consumers.
+**Change:**
+- Rename `diagnostics.ts` → `run_diagnostics.ts`
+- Update the subpath export in `deno.json` from `./diagnostics` to
+  `./run-diagnostics`
+- Update all consumers:
+  - `hamownia/run_command.ts` imports `collectDiagnostics, createRunContext`
+    from `./diagnostics.ts`
+  - `hamownia/mod.ts` re-exports from `./diagnostics.ts`
+  - `hamownia/atproto_network.ts` imports `collectDiagnostics`
 
-**Risk:** Low. Mechanical rename.
+**Risk:** Low. Mechanical rename + import updates.
 
 ---
 
 ## Phase 4: Boundary Check Hardening
 
-### 4A. Add `hamownia` → `dashboard` denial
+### 4A. Add `dashboard` to hamownia's denied set
 
 **Problem:** The boundary checker doesn't prevent hamownia from importing
 dashboard. If someone accidentally adds a `dashboard` import to hamownia,
@@ -336,41 +343,26 @@ the boundary check won't catch it.
 
 **Risk:** None. This is a preventive rule.
 
-### 4B. Add `gruszka` → `schemat` denial
-
-**Problem:** The boundary checker currently allows gruszka to import schemat.
-But gruszka is supposed to be a standalone XRPC client — it shouldn't depend
-on topology models.
-
-**Change:** Add `schemat` to gruszka's `denied` set (which already denies
-all `@garazyk/*` packages, so this is already covered — gruszka denies
-itself and all other packages).
-
-**Risk:** None. Already enforced.
-
 ---
 
 ## PR Sequencing
 
 | PR | Phase | Items | Description |
 |----|-------|-------|-------------|
-| 8 | 1 | 1A, 1B, 1C | Quick wins: delete orphan, remove ATPROTO_OTEL, fix baseline |
-| 9 | 2 | 2A, 2B | Thin run_scenarios.ts: create run_command module |
-| 10 | 3A–3B | 3A, 3B | Define ScenarioContext, update runner to support it |
-| 11 | 3C (batch 1) | — | Migrate first 10 scenarios to context injection |
-| 12 | 3C (batch 2) | — | Migrate next 10 scenarios |
-| 13 | 3C (batch 3) | — | Migrate next 10 scenarios |
-| 14 | 3C (batch 4) | — | Migrate next 10 scenarios |
-| 15 | 3C (batch 5) | — | Migrate next 10 scenarios |
-| 16 | 3C (batch 6–7) | — | Migrate remaining scenarios |
-| 17 | 3D, 3E | 3D, 3E | Remove mutable globals, rename diagnostics |
-| 18 | 4 | 4A | Boundary check hardening |
+| 8 | 1 | 1A, 1B, 1C | ✅ Quick wins: delete orphan, remove ATPROTO_OTEL, fix baseline |
+| 9 | 2 | 2A, 2B | ✅ Thin run_scenarios.ts: create run_command module |
+| 10 | 3A–3B | 3A, 3B | Define ScenarioContext, update host_child_runner |
+| 11 | 3C batch 1 | — | Migrate 10 simple scenarios (PDS1 + getCharacter) |
+| 12 | 3C batch 2 | — | Migrate 10 scenarios (+ SERVICE_URLS) |
+| 13 | 3C batch 3 | — | Migrate 11 scenarios (SERVICE_URLS + PDS1 + getCharacter) |
+| 14 | 3C batch 4 | — | Migrate 3 federation scenarios (PDS2) |
+| 15 | 3C batch 5 | — | Migrate 6 admin scenarios (APPVIEW_ADMIN_SECRET) |
+| 16 | 3C batch 6 | — | Migrate 5 special-symbol scenarios |
+| 17 | 3C batch 7 | — | Migrate 18 performance/stress scenarios |
+| 18 | 3D, 3E | 3D, 3E | Remove mutable globals, rename diagnostics |
+| 19 | 4 | 4A | Boundary check hardening |
 
-**Total: ~11 PRs** (Phases 1–2 are 2 PRs; Phase 3 is ~8 PRs; Phase 4 is 1 PR)
-
-Phases 1 and 2 can be done immediately. Phase 3 is the long pole — the
-config singleton migration is the most impactful change but also the most
-labor-intensive. Phase 4 is a trivial follow-up.
+**Total: ~12 PRs** (2 done, 10 remaining)
 
 ## Verification Gates
 
@@ -383,7 +375,7 @@ deno task dashboard:check
 deno test -A packages/schemat/ packages/hamownia/ packages/laweta/
 ```
 
-After Phase 3 PRs (scenario migrations), also run:
+After Phase 3C PRs (scenario migrations), also run:
 
 ```bash
 deno test -A scripts/scenarios/
@@ -393,5 +385,5 @@ After Phase 3D (removing mutable globals), verify no code still references
 the removed exports:
 
 ```bash
-grep -rn "PDS1\|PDS2\|SERVICE_URLS\|APPVIEW_ADMIN_SECRET\|refreshScenarioConfigFromEnv" packages/ scripts/
+grep -rn "PDS1\|PDS2\|SERVICE_URLS\|APPVIEW_ADMIN_SECRET\|refreshScenarioConfigFromEnv" packages/ scripts/ --include="*.ts"
 ```
