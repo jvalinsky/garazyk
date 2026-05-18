@@ -17,8 +17,7 @@
  */
 
 import { XrpcClient } from "@garazyk/gruszka";
-import { getCharacter } from "@garazyk/hamownia/config";
-import { PDS1 } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
 import { ScenarioResult, timedCall } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
@@ -28,6 +27,7 @@ function now() {
 }
 
 async function createPost(
+  ctx: ScenarioContext,
   client: XrpcClient,
   authorName: string,
   text: string,
@@ -36,7 +36,7 @@ async function createPost(
   reply?: any,
   embed?: any,
 ) {
-  const author = getCharacter(authorName);
+  const author = ctx.getCharacter(authorName);
   const record: any = {
     $type: "app.bsky.feed.post",
     text,
@@ -66,17 +66,17 @@ async function createPost(
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Content Creation & Interaction");
   result.start();
 
-  const client = new XrpcClient(PDS1);
+  const client = new XrpcClient(ctx.pds1);
 
   await timedCall(
     result,
     "Server health check",
     async () => {
-      const res = await fetch(`${PDS1}/xrpc/com.atproto.server.describeServer`);
+      const res = await fetch(`${ctx.pds1}/xrpc/com.atproto.server.describeServer`);
       if (!res.ok) throw new Error("Server not healthy");
     },
   );
@@ -88,7 +88,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const charNames = ["luna", "marcus", "rosa", "volt", "quiet"];
   for (const name of charNames) {
-    const char = getCharacter(name);
+    const char = ctx.getCharacter(name);
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
@@ -119,7 +119,7 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const active = charNames.filter((n) => getCharacter(n).did);
+  const active = charNames.filter((n) => ctx.getCharacter(n).did);
   if (active.length < 3) {
     result.stepFailed("Account creation", "Not enough accounts");
     result.finish();
@@ -127,7 +127,7 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   for (const name of active) {
-    const char = getCharacter(name);
+    const char = ctx.getCharacter(name);
     await timedCall(
       result,
       `Set profile: ${char.name}`,
@@ -147,6 +147,7 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   const lunaPost = await createPost(
+    ctx,
     client,
     "luna",
     "Just captured the most stunning image of the Orion Nebula! The colors are breathtaking. #astronomy",
@@ -154,6 +155,7 @@ export async function run(): Promise<ScenarioResult> {
   );
 
   const marcusPost = await createPost(
+    ctx,
     client,
     "marcus",
     "Just shipped a new XRPC handler for the PDS. Open source is the way!",
@@ -161,6 +163,7 @@ export async function run(): Promise<ScenarioResult> {
   );
 
   const rosaPost = await createPost(
+    ctx,
     client,
     "rosa",
     "Made the most incredible sourdough today. The crust was perfect!",
@@ -168,6 +171,7 @@ export async function run(): Promise<ScenarioResult> {
   );
 
   const voltPost = await createPost(
+    ctx,
     client,
     "volt",
     "New beat dropping this weekend. Get ready for the drop!",
@@ -180,6 +184,7 @@ export async function run(): Promise<ScenarioResult> {
       parent: { uri: lunaPost.uri, cid: lunaPost.cid },
     };
     await createPost(
+      ctx,
       client,
       "marcus",
       "The data pipeline for nebula images is fascinating — CBOR-encoded CAR blocks!",
@@ -193,6 +198,7 @@ export async function run(): Promise<ScenarioResult> {
 
   if (lunaPost) {
     await createPost(
+      ctx,
       client,
       "rosa",
       "Space food is underrated — imagine sourdough on the ISS!",
@@ -208,7 +214,7 @@ export async function run(): Promise<ScenarioResult> {
     result.stepSkipped("Rosa quotes Luna", "Missing post reference");
   }
 
-  const volt = getCharacter("volt");
+  const volt = ctx.getCharacter("volt");
   for (
     const { name, rec } of [{ name: "Luna", rec: lunaPost }, {
       name: "Marcus",
@@ -237,7 +243,7 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const quiet = getCharacter("quiet");
+  const quiet = ctx.getCharacter("quiet");
   if (lunaPost) {
     await timedCall(
       result,
@@ -251,8 +257,9 @@ export async function run(): Promise<ScenarioResult> {
     );
   }
 
-  const rosa = getCharacter("rosa");
+  const rosa = ctx.getCharacter("rosa");
   const rosaTemp = await createPost(
+    ctx,
     client,
     "rosa",
     "This post will be deleted soon. Don't get attached!",
@@ -291,7 +298,7 @@ export async function run(): Promise<ScenarioResult> {
 
   await new Promise((r) => setTimeout(r, 3000));
 
-  const luna = getCharacter("luna");
+  const luna = ctx.getCharacter("luna");
 
   await timedCall(
     result,
@@ -364,7 +371,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

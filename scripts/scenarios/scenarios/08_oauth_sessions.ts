@@ -19,8 +19,7 @@
  */
 
 import { XrpcClient } from "@garazyk/gruszka";
-import { getCharacter } from "@garazyk/hamownia/config";
-import { PDS1 } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
 import { ScenarioResult, timedCall } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
@@ -33,17 +32,17 @@ function now() {
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("OAuth2 & Sessions");
   result.start();
 
-  const client = new XrpcClient(PDS1);
+  const client = new XrpcClient(ctx.pds1);
 
   await timedCall(
     result,
     "Server health check",
     async () => {
-      const res = await fetch(`${PDS1}/xrpc/com.atproto.server.describeServer`);
+      const res = await fetch(`${ctx.pds1}/xrpc/com.atproto.server.describeServer`);
       if (!res.ok) throw new Error("Server not healthy");
     },
   );
@@ -55,7 +54,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const charNames = ["luna", "marcus"];
   for (const name of charNames) {
-    const char = getCharacter(name);
+    const char = ctx.getCharacter(name);
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
@@ -87,8 +86,8 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const luna = getCharacter("luna");
-  const marcus = getCharacter("marcus");
+  const luna = ctx.getCharacter("luna");
+  const marcus = ctx.getCharacter("marcus");
 
   if (!luna.did || !marcus.did) {
     result.stepFailed("Account creation", "Not all accounts created");
@@ -120,7 +119,7 @@ export async function run(): Promise<ScenarioResult> {
               "--client-id",
               "scenario-test-client",
               "--redirect-uri",
-              `${PDS1}/oauth/callback`,
+              `${ctx.pds1}/oauth/callback`,
             ],
           });
           const regRes = await regCmd.output();
@@ -146,7 +145,7 @@ export async function run(): Promise<ScenarioResult> {
 
   try {
     const authUrl =
-      `${PDS1}/oauth/authorize?client_id=scenario-test-client&redirect_uri=${PDS1}/oauth/callback&response_type=code&scope=atproto&state=test-state-123`;
+      `${ctx.pds1}/oauth/authorize?client_id=scenario-test-client&redirect_uri=${ctx.pds1}/oauth/callback&response_type=code&scope=atproto&state=test-state-123`;
     const authResp = await fetch(authUrl, { redirect: "manual" });
     let body: any = {};
     try {
@@ -174,11 +173,11 @@ export async function run(): Promise<ScenarioResult> {
     const tokenParams = new URLSearchParams();
     tokenParams.append("grant_type", "authorization_code");
     tokenParams.append("client_id", "scenario-test-client");
-    tokenParams.append("redirect_uri", `${PDS1}/oauth/callback`);
+    tokenParams.append("redirect_uri", `${ctx.pds1}/oauth/callback`);
     tokenParams.append("code", "test-invalid-code");
     tokenParams.append("code_verifier", "test-verifier");
 
-    const tokenResp = await fetch(`${PDS1}/oauth/token`, {
+    const tokenResp = await fetch(`${ctx.pds1}/oauth/token`, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: tokenParams.toString(),
@@ -201,7 +200,7 @@ export async function run(): Promise<ScenarioResult> {
     revokeParams.append("client_id", "scenario-test-client");
     revokeParams.append("token", "test-invalid-token");
 
-    const revokeResp = await fetch(`${PDS1}/oauth/revoke`, {
+    const revokeResp = await fetch(`${ctx.pds1}/oauth/revoke`, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: revokeParams.toString(),
@@ -354,7 +353,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

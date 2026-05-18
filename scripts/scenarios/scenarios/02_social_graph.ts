@@ -17,8 +17,8 @@
  */
 
 import { XrpcClient } from "@garazyk/gruszka";
-import { getCharacter } from "@garazyk/hamownia/config";
-import { PDS1 } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
+import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { ScenarioResult, timedCall } from "@garazyk/hamownia";
 export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
@@ -28,13 +28,14 @@ function now() {
 }
 
 async function createAccounts(
+  ctx: ScenarioContext,
   client: XrpcClient,
   names: string[],
   result: ScenarioResult,
 ) {
   const sessions: Record<string, any> = {};
   for (const name of names) {
-    const char = getCharacter(name);
+    const char = ctx.getCharacter(name);
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
@@ -69,13 +70,14 @@ async function createAccounts(
 }
 
 async function follow(
+  ctx: ScenarioContext,
   client: XrpcClient,
   followerName: string,
   targetName: string,
   result: ScenarioResult,
 ) {
-  const follower = getCharacter(followerName);
-  const target = getCharacter(targetName);
+  const follower = ctx.getCharacter(followerName);
+  const target = ctx.getCharacter(targetName);
 
   if (!follower.did || !follower.accessJwt) {
     result.stepSkipped(
@@ -116,17 +118,17 @@ async function follow(
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Social Graph");
   result.start();
 
-  const client = new XrpcClient(PDS1);
+  const client = new XrpcClient(ctx.pds1);
 
   await timedCall(
     result,
     "Server health check",
     async () => {
-      const res = await fetch(`${PDS1}/xrpc/com.atproto.server.describeServer`);
+      const res = await fetch(`${ctx.pds1}/xrpc/com.atproto.server.describeServer`);
       if (!res.ok) throw new Error("Server not healthy");
     },
   );
@@ -145,9 +147,9 @@ export async function run(): Promise<ScenarioResult> {
     "quiet",
     "admin",
   ];
-  await createAccounts(client, pds1Chars, result);
+  await createAccounts(ctx, client, pds1Chars, result);
 
-  const active = pds1Chars.filter((n) => getCharacter(n).did);
+  const active = pds1Chars.filter((n) => ctx.getCharacter(n).did);
   if (active.length < 4) {
     result.stepFailed(
       "Account creation",
@@ -158,7 +160,7 @@ export async function run(): Promise<ScenarioResult> {
   }
 
   for (const name of active) {
-    const char = getCharacter(name);
+    const char = ctx.getCharacter(name);
     await timedCall(
       result,
       `Set profile: ${char.name}`,
@@ -177,21 +179,21 @@ export async function run(): Promise<ScenarioResult> {
     );
   }
 
-  await follow(client, "marcus", "luna", result);
-  await follow(client, "marcus", "rosa", result);
-  await follow(client, "marcus", "volt", result);
-  await follow(client, "luna", "marcus", result);
+  await follow(ctx, client, "marcus", "luna", result);
+  await follow(ctx, client, "marcus", "rosa", result);
+  await follow(ctx, client, "marcus", "volt", result);
+  await follow(ctx, client, "luna", "marcus", result);
   for (const name of ["luna", "marcus", "rosa", "volt", "troll", "admin"]) {
-    await follow(client, "quiet", name, result);
+    await follow(ctx, client, "quiet", name, result);
   }
-  await follow(client, "rosa", "luna", result);
-  await follow(client, "rosa", "marcus", result);
-  await follow(client, "volt", "rosa", result);
+  await follow(ctx, client, "rosa", "luna", result);
+  await follow(ctx, client, "rosa", "marcus", result);
+  await follow(ctx, client, "volt", "rosa", result);
 
   await new Promise((r) => setTimeout(r, 2000));
 
-  const marcus = getCharacter("marcus");
-  const luna = getCharacter("luna");
+  const marcus = ctx.getCharacter("marcus");
+  const luna = ctx.getCharacter("luna");
 
   await timedCall(
     result,
@@ -221,7 +223,7 @@ export async function run(): Promise<ScenarioResult> {
     (f) => `count=${f.followers?.length || 0}`,
   );
 
-  const volt = getCharacter("volt");
+  const volt = ctx.getCharacter("volt");
   const followsResp = await timedCall(
     result,
     "Marcus lists follow records (for unfollow)",
@@ -262,7 +264,7 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const troll = getCharacter("troll");
+  const troll = ctx.getCharacter("troll");
   if (!luna.did || !luna.accessJwt) {
     result.stepSkipped("Luna blocks Trollface", "Luna account not created");
   } else if (!troll.did) {
@@ -342,7 +344,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });

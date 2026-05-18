@@ -21,8 +21,7 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { assert } from "@garazyk/hamownia";
 import { XrpcClient, XrpcError } from "@garazyk/gruszka";
-import { getCharacter } from "@garazyk/hamownia/config";
-import { PDS1 } from "@garazyk/hamownia/config";
+import type { ScenarioContext } from "@garazyk/hamownia/config";
 
 function now() {
   return new Date().toISOString();
@@ -32,11 +31,11 @@ function now() {
  * Executes the scenario logic.
  * @returns A promise that resolves to the scenario result
  */
-export async function run(): Promise<ScenarioResult> {
+export async function run(ctx: ScenarioContext): Promise<ScenarioResult> {
   const result = new ScenarioResult("Mutes, Relationships & Starter Packs");
   result.start();
 
-  const client = new XrpcClient(PDS1);
+  const client = new XrpcClient(ctx.pds1);
 
   await timedCall(result, "Server health check", async () => {
     await client.waitForHealthy(30);
@@ -49,7 +48,7 @@ export async function run(): Promise<ScenarioResult> {
 
   const charNames = ["luna", "marcus", "rosa", "troll", "quiet", "admin"];
   for (const name of charNames) {
-    const char = getCharacter(name);
+    const char = ctx.getCharacter(name);
     const session = await timedCall(
       result,
       `Create account: ${char.name}`,
@@ -68,9 +67,9 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const active = charNames.filter((n) => getCharacter(n).did);
+  const active = charNames.filter((n) => ctx.getCharacter(n).did);
   for (const name of active) {
-    const char = getCharacter(name);
+    const char = ctx.getCharacter(name);
     try {
       await client.records.createRecord(
         char.did,
@@ -87,16 +86,16 @@ export async function run(): Promise<ScenarioResult> {
     }
   }
 
-  const luna = getCharacter("luna");
-  const marcus = getCharacter("marcus");
-  const rosa = getCharacter("rosa");
-  const troll = getCharacter("troll");
-  const quiet = getCharacter("quiet");
+  const luna = ctx.getCharacter("luna");
+  const marcus = ctx.getCharacter("marcus");
+  const rosa = ctx.getCharacter("rosa");
+  const troll = ctx.getCharacter("troll");
+  const quiet = ctx.getCharacter("quiet");
 
   // Establish follows
   for (const [f, t] of [["luna", "marcus"], ["marcus", "luna"]] as const) {
-    const ff = getCharacter(f);
-    const tt = getCharacter(t);
+    const ff = ctx.getCharacter(f);
+    const tt = ctx.getCharacter(t);
     if (ff.did && tt.did) {
       await timedCall(
         result,
@@ -253,7 +252,7 @@ export async function run(): Promise<ScenarioResult> {
 }
 
 if (import.meta.main) {
-  run().then((res) => {
+  run(createScenarioContext()).then((res) => {
     console.log(res.summary());
     Deno.exit(res.ok ? 0 : 1);
   });
