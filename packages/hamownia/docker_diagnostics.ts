@@ -9,7 +9,7 @@
 
 import { join } from "@std/path";
 import { repoRoot, serviceUrl } from "@garazyk/schemat/runtime";
-import type { RunContext } from "@garazyk/laweta/atproto-runtime";
+import type { TopologyRunContext } from "@garazyk/schemat/runtime";
 
 /**
  * Collect run metadata, HTTP endpoint snapshots, and optional Docker state.
@@ -19,7 +19,7 @@ import type { RunContext } from "@garazyk/laweta/atproto-runtime";
  * @returns Resolves when diagnostics have been written.
  */
 export async function collectDiagnostics(
-  ctx: RunContext,
+  ctx: TopologyRunContext,
   composeFiles?: string[],
 ): Promise<void> {
   const dir = ctx.diagnosticsDir;

@@ -5,10 +5,12 @@
   "exports": {
     ".": "./mod.ts",
     "./atproto-network": "./atproto_network.ts",
+    "./binary-services": "./binary_services.ts",
     "./browser-flow": "./browser_flow.ts",
     "./config": "./config.ts",
     "./diagnostics": "./diagnostics.ts",
     "./docker-diagnostics": "./docker_diagnostics.ts",
+    "./docker-runner": "./docker_runner.ts",
     "./format": "./format.ts",
     "./instrumentation": "./instrumentation.ts",
     "./mock-twilio": "./mock_twilio.ts",
@@ -22,7 +24,8 @@
     "./run-loop": "./run_loop.ts",
     "./run-scenarios-types": "./run_scenarios_types.ts",
     "./scenario-runner": "./scenario_runner.ts",
-    "./scenario-selector": "./scenario_selector.ts"
+    "./scenario-selector": "./scenario_selector.ts",
+    "./stale-cleanup": "./stale_cleanup.ts"
   },
   "license": "Unlicense OR CC0-1.0"
 }

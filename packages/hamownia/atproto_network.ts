@@ -18,27 +18,75 @@ import {
   waitForService,
   waitForServiceCLI,
 } from "@garazyk/laweta";
-import {
-  type LocalNetworkOptions,
-  type RunContext,
-  startBinaryServices,
-  stopBinaryServices,
-  stopStaleDockerE2e,
-  stopStaleHostProcesses,
-} from "@garazyk/laweta/atproto-runtime";
 import { compileTopology, loadTopologyManifest } from "@garazyk/schemat";
 import {
   initRunDir as initTopologyRunDir,
   repoRoot,
+  type TopologyRunContext,
 } from "@garazyk/schemat/runtime";
+import { startBinaryServices, stopBinaryServices } from "./binary_services.ts";
 import { collectDiagnostics } from "./docker_diagnostics.ts";
 import { formatBytes } from "./format.ts";
 import { isOtelEnabled, withSpan } from "./otel.ts";
+import { stopStaleDockerE2e, stopStaleHostProcesses } from "./stale_cleanup.ts";
 
-export type {
-  LocalNetworkOptions,
-  RunContext,
-} from "@garazyk/laweta/atproto-runtime";
+// ---------------------------------------------------------------------------
+// Types — owned by hamownia, not re-exported from laweta
+// ---------------------------------------------------------------------------
+
+/**
+ * Options for launching the local Docker or binary ATProto network.
+ *
+ * @remarks
+ * Major execution paths are controlled by the binary, hybrid-network, and
+ * diagnostic flags.
+ */
+export interface LocalNetworkOptions {
+  /** Include the PDS2 service set */
+  withPds2?: boolean;
+  /** Use locally built binaries instead of Docker images */
+  useBinary?: boolean;
+  /** Leave the network running after the command completes */
+  keepRunning?: boolean;
+  /** Identifier for the current run */
+  runId?: string;
+  /** Directory where diagnostics are written */
+  diagnosticsDir?: string;
+  /** Browser client name or preset to run alongside the topology */
+  webClient?: string;
+  /** Browser flow depth or preset passed to the web client */
+  clientFlow?: string;
+  /** Allow host and container networking at the same time */
+  allowHybridNetwork?: boolean;
+  /** Topology preset name to resolve */
+  topology?: string;
+  /** Enable OpenTelemetry export */
+  otel?: boolean;
+  /** Skip the Docker image build stage */
+  skipDockerStage?: boolean;
+  /** Wait for an existing network instead of starting a new one */
+  waitOnly?: boolean;
+  /** Collect extra diagnostics on failure or shutdown */
+  collectDiagnostics?: boolean;
+}
+
+/**
+ * Runtime context for a local ATProto network run.
+ *
+ * This is a type alias for `TopologyRunContext` from `@garazyk/schemat/runtime`,
+ * which uses a structural interface for `statsSampler` rather than the concrete
+ * `ContainerStatsSampler` class. This avoids a hard dependency on the laweta
+ * stats implementation in the type signature.
+ *
+ * @deprecated Import `TopologyRunContext` from `@garazyk/schemat/runtime`
+ * directly. This alias will be removed once all consumers have migrated.
+ */
+export type RunContext = TopologyRunContext;
+
+// ---------------------------------------------------------------------------
+// Re-exports
+// ---------------------------------------------------------------------------
+
 export {
   neededPorts,
   repoRoot,
@@ -48,8 +96,8 @@ export {
 export { collectDiagnostics } from "./docker_diagnostics.ts";
 
 /** Initialize local-network run paths using the orchestration context type. */
-export function initRunDir(requestedId?: string): RunContext {
-  return initTopologyRunDir(requestedId) as RunContext;
+export function initRunDir(requestedId?: string): TopologyRunContext {
+  return initTopologyRunDir(requestedId);
 }
 
 /**
@@ -79,7 +127,7 @@ export async function startLocalNetwork(
     }
 
     if (options.useBinary) {
-      await startBinaryServices(ctx, options);
+      await startBinaryServices(ctx);
       return;
     }
 
