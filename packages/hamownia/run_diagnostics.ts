@@ -1,7 +1,7 @@
 /** E2E run diagnostics collection — metadata, HTTP probes, log bundling. @module diagnostics */
 import { join } from "@std/path";
 import { copy, exists } from "@std/fs";
-import { loadTopologyManifest } from "@garazyk/schemat";
+import { loadTopologyManifest, logInfo } from "@garazyk/schemat";
 
 const BASE_DIR = "/tmp/garazyk-atproto-e2e";
 
@@ -143,6 +143,60 @@ async function collectHttpEndpoint(
   await writeText(target, text);
 }
 
+/** Collect Docker diagnostics: ps, config, and logs. */
+async function collectDockerDiagnostics(
+  dir: string,
+  composeProject: string,
+  composeFiles: string[],
+): Promise<void> {
+  const dockerDir = join(dir, "docker");
+  await Deno.mkdir(dockerDir, { recursive: true });
+
+  const composeBase = ["compose", "-p", composeProject];
+  for (const f of composeFiles) {
+    composeBase.push("-f", f);
+  }
+
+  try {
+    const { stdout } = await new Deno.Command("docker", {
+      args: [...composeBase, "ps", "--all"],
+      stdout: "piped",
+      stderr: "piped",
+    }).output();
+    await writeText(join(dockerDir, "ps.txt"), new TextDecoder().decode(stdout));
+  } catch { /* ignore */ }
+
+  try {
+    const { stdout } = await new Deno.Command("docker", {
+      args: [...composeBase, "config"],
+      stdout: "piped",
+      stderr: "piped",
+    }).output();
+    await writeText(
+      join(dockerDir, "config.txt"),
+      new TextDecoder().decode(stdout),
+    );
+  } catch { /* ignore */ }
+
+  try {
+    const { stdout } = await new Deno.Command("docker", {
+      args: [
+        ...composeBase,
+        "logs",
+        "--no-color",
+        "--timestamps",
+        "--tail=3000",
+      ],
+      stdout: "piped",
+      stderr: "piped",
+    }).output();
+    await writeText(
+      join(dockerDir, "logs.txt"),
+      new TextDecoder().decode(stdout),
+    );
+  } catch { /* ignore */ }
+}
+
 /** Collect diagnostics for the current run: metadata, git info, service logs, HTTP probes. */
 export async function collectDiagnostics(
   context: E2ERunContext,
@@ -150,6 +204,7 @@ export async function collectDiagnostics(
     serviceUrls?: Record<string, string>;
     appviewAdminSecret?: string;
     label?: string;
+    composeFiles?: string[];
   } = {},
 ): Promise<string> {
   const outputDir = context.diagnosticsDir;
@@ -294,5 +349,14 @@ export async function collectDiagnostics(
     ),
   );
 
+  if (options.composeFiles && options.composeFiles.length > 0) {
+    await collectDockerDiagnostics(
+      outputDir,
+      context.composeProject,
+      options.composeFiles,
+    );
+  }
+
+  logInfo(`Diagnostics written to ${outputDir}`);
   return outputDir;
 }

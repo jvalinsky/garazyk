@@ -8,6 +8,7 @@
  */
 
 // Topology model and schema
+export * from "./logging.ts";
 export {
   loadTopologyPreset,
   resolvePreset,

@@ -1,4 +1,5 @@
 export * from "./doc_coverage.ts";
+export * from "./doc_validator.ts";
 export {
   buildReport as buildTsdocCoverageReport,
   collectSourceFiles,
