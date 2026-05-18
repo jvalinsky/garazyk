@@ -19,19 +19,15 @@
 
 import { bold, brightBlue } from "@std/fmt/colors";
 import { fromFileUrl, join } from "@std/path";
-import { startLocalNetwork, stopLocalNetwork } from "./lib/deno/docker.ts";
-import { collectDiagnostics, createRunContext } from "./lib/deno/diagnostics.ts";
-import { resolveTopology, WEB_CLIENT_PRESETS } from "./lib/deno/topology.ts";
-import type { BrowserFlow, Topology } from "./lib/deno/topology.ts";
-import { formatRequirement } from "./lib/deno/scenario_metadata.ts";
-import type { ScenarioInfo } from "./lib/deno/scenario_metadata.ts";
-import { discoverScenarios, selectScenarios } from "./lib/deno/scenario_selector.ts";
-import { runScenarioLoop } from "./lib/deno/run_loop.ts";
-import { createProcessLifecycle } from "./lib/deno/process_lifecycle.ts";
-import { writeOverallSummary } from "./lib/deno/report_writer.ts";
-import { initE2eTracing, isOtelEnabled, shutdownTracing } from "./lib/deno/otel.ts";
-import { ScenarioResult } from "./lib/deno/runner.ts";
-import type { RunnerArgs } from "./lib/deno/run_scenarios_types.ts";
+import { startLocalNetwork, stopLocalNetwork } from "@garazyk/hamownia/atproto-network";
+import { collectDiagnostics, createRunContext, formatRequirement, discoverScenarios, selectScenarios, ScenarioResult } from "@garazyk/hamownia";
+import type { ScenarioInfo, RunnerArgs } from "@garazyk/hamownia";
+import { runScenarioLoop } from "@garazyk/hamownia/run-loop";
+import { createProcessLifecycle } from "@garazyk/hamownia/process-lifecycle";
+import { writeOverallSummary } from "@garazyk/hamownia/report-writer";
+import { initE2eTracing, isOtelEnabled, shutdownTracing } from "@garazyk/hamownia/otel";
+import { resolveTopology, TopologyRegistry } from "@garazyk/schemat";
+import type { BrowserFlow, Topology } from "@garazyk/schemat";
 
 /**
  * Displays usage information for the test runner.
@@ -53,7 +49,7 @@ Options:
   --diagnostics-dir DIR   Write diagnostics to DIR
   --reports-dir DIR       Write scenario JSON reports to DIR
   --collect-diagnostics   Capture diagnostics for the current run and exit
-  --web-client PRESET     Add a web-client service (${Object.keys(WEB_CLIENT_PRESETS).join("|")})
+  --web-client PRESET     Add a web-client service (${TopologyRegistry.listWebClients().join("|")})
   --client-flow FLOW      Run browser flow scenarios: smoke, login, deep (default: none)
   --allow-hybrid-network  Permit browser clients to call public ATProto hosts
   --topology PRESET       Use a topology preset from scripts/scenarios/topologies/
@@ -169,9 +165,9 @@ function parseRunnerArgs(argv: string[]): RunnerArgs {
         }
         if (arg === "--web-client") {
           args.webClient = value;
-          if (!WEB_CLIENT_PRESETS[value]) {
+          if (!TopologyRegistry.getWebClient(value)) {
             console.error(`Unknown web client preset: ${value}`);
-            console.error(`Available: ${Object.keys(WEB_CLIENT_PRESETS).join(", ")}`);
+            console.error(`Available: ${TopologyRegistry.listWebClients().join(", ")}`);
             Deno.exit(2);
           }
         }
