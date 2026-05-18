@@ -32,8 +32,7 @@ export function setTelemetryTestHook(hook: TelemetryTestHook | null): void {
 
 /** Whether Docker primitive telemetry is enabled for this process. */
 export function isOtelEnabled(): boolean {
-  return Deno.env.get("OTEL_DENO") === "true" ||
-    Deno.env.get("ATPROTO_OTEL") === "true";
+  return Deno.env.get("OTEL_DENO") === "true";
 }
 
 /** Run an operation, preserving the call shape used by richer telemetry layers. */

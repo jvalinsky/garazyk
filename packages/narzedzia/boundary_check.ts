@@ -64,9 +64,7 @@ const rules: readonly BoundaryRule[] = [
   },
 ];
 
-const currentBaseline = new Set<string>([
-  "packages/schemat/topology_compiler_test.ts -> @garazyk/hamownia",
-]);
+const currentBaseline = new Set<string>([]);
 
 const importPattern =
   /\b(?:import|export)\s+(?:type\s+)?(?:[^"']*?\s+from\s+)?["'](@garazyk\/(gruszka|schemat|laweta|hamownia|narzedzia|dashboard)(?:\/[^"']*)?)["']|\bimport\s*\(\s*["'](@garazyk\/(gruszka|schemat|laweta|hamownia|narzedzia|dashboard)(?:\/[^"']*)?)["']\s*\)/g;
