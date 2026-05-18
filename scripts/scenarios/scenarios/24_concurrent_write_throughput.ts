@@ -23,7 +23,7 @@ import { assert } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
 import type { ScenarioContext } from "@garazyk/hamownia/config";
 import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
-import { createRunContext } from "@garazyk/hamownia/diagnostics";
+import { createRunContext } from "@garazyk/hamownia/run-diagnostics";
 import { join } from "@std/path";
 import {
   InstrumentationReport,

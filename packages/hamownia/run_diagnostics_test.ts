@@ -1,5 +1,5 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { redactDiagnosticText } from "./diagnostics.ts";
+import { redactDiagnosticText } from "./run_diagnostics.ts";
 
 Deno.test("redactDiagnosticText preserves JSON strings while redacting secrets", () => {
   const input = JSON.stringify({

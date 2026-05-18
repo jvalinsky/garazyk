@@ -18,7 +18,7 @@ import {
 import {
   collectDiagnostics,
   createRunContext,
-} from "./diagnostics.ts";
+} from "./run_diagnostics.ts";
 import { resolveTopology, TopologyRegistry } from "@garazyk/schemat";
 import type { BrowserFlow, Topology } from "@garazyk/schemat";
 import { formatRequirement } from "./mod.ts";

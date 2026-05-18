@@ -8,7 +8,7 @@
     "./binary-services": "./binary_services.ts",
     "./browser-flow": "./browser_flow.ts",
     "./config": "./config.ts",
-    "./diagnostics": "./diagnostics.ts",
+    "./run-diagnostics": "./run_diagnostics.ts",
     "./docker-diagnostics": "./docker_diagnostics.ts",
     "./docker-runner": "./docker_runner.ts",
     "./format": "./format.ts",

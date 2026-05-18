@@ -25,7 +25,7 @@ import { XrpcClient } from "@garazyk/gruszka";
 import type { ScenarioContext } from "@garazyk/hamownia/config";
 import { createScenarioContext } from "@garazyk/hamownia/scenario-context";
 import { FirehoseClient } from "@garazyk/gruszka";
-import { createRunContext } from "@garazyk/hamownia/diagnostics";
+import { createRunContext } from "@garazyk/hamownia/run-diagnostics";
 import {
   InstrumentationReport,
   OperationTimer,

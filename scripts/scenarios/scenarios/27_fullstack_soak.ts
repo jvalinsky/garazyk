@@ -26,7 +26,7 @@ export { ScenarioResult, StepResult, StepStatus } from "@garazyk/hamownia";
 export type { ScenarioReport } from "@garazyk/hamownia";
 import { XrpcClient } from "@garazyk/gruszka";
 import { assert } from "@garazyk/hamownia";
-import { createRunContext } from "@garazyk/hamownia/diagnostics";
+import { createRunContext } from "@garazyk/hamownia/run-diagnostics";
 import { join } from "@std/path";
 import { timedCall } from "@garazyk/hamownia";
 
