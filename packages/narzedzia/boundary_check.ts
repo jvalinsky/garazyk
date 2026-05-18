@@ -58,6 +58,11 @@ const rules: readonly BoundaryRule[] = [
       "packages/narzedzia must not depend on hamownia, laweta, or dashboard",
   },
   {
+    packageName: "hamownia",
+    denied: new Set(["dashboard"]),
+    description: "packages/hamownia must not depend on dashboard",
+  },
+  {
     packageName: "dashboard",
     denied: new Set(["narzedzia"]),
     description: "packages/dashboard must not depend on narzedzia",
