@@ -3,8 +3,9 @@ import { dirname, fromFileUrl } from "@std/path";
 import type { ScenarioInfo } from "./scenario_metadata.ts";
 import type { RunnerArgs } from "./run_scenarios_types.ts";
 import type { Topology } from "@garazyk/schemat";
+import { roleEnvKey } from "@garazyk/schemat";
 import { type ScenarioReport, ScenarioResult } from "./runner.ts";
-import { runScenarioInDocker } from "@garazyk/laweta";
+import { runScenarioInDocker } from "./docker_runner.ts";
 
 const HOST_CHILD_GRACE_MS = 2_000;
 
@@ -69,6 +70,7 @@ export async function runScenario(
         capabilities: topology.capabilities,
         scenarioPath: scenario.path,
         timeoutSeconds,
+        roleEnvMapper: roleEnvKey,
         env: {
           ...(topology.manifest?.scenarioEnv || {}),
           ...(topology.manifest?.env?.scenario || {}),
