@@ -17,14 +17,14 @@ let alwaysApproveCodes: string[] = ["000000"];
 function parseFlags(): typeof defaults {
   const args = parseArgs(Deno.args, { string: ["always-approve"] });
   return {
-    port: args.port ?? parseInt(Deno.env.get("PORT") ?? "8081", 10),
-    accountSid: args["account-sid"] ?? Deno.env.get("TWILIO_ACCOUNT_SID") ??
-      "AC00000000000000000000000000000000",
-    authToken: args["auth-token"] ?? Deno.env.get("TWILIO_AUTH_TOKEN") ??
-      "SK00000000000000000000000000000000",
-    alwaysApprove: args["always-approve"] ?? Deno.env.get("ALWAYS_APPROVE_CODES") ?? "000000",
-    latency: args.latency ?? parseInt(Deno.env.get("LATENCY_MS") ?? "0", 10),
-    failRate: args["fail-rate"] ?? parseFloat(Deno.env.get("FAIL_RATE") ?? "0"),
+    port: parseInt(String(args.port ?? Deno.env.get("PORT") ?? "8081"), 10),
+    accountSid: String(args["account-sid"] ?? Deno.env.get("TWILIO_ACCOUNT_SID") ??
+      "AC00000000000000000000000000000000"),
+    authToken: String(args["auth-token"] ?? Deno.env.get("TWILIO_AUTH_TOKEN") ??
+      "SK00000000000000000000000000000000"),
+    alwaysApprove: String(args["always-approve"] ?? Deno.env.get("ALWAYS_APPROVE_CODES") ?? "000000"),
+    latency: parseInt(String(args.latency ?? Deno.env.get("LATENCY_MS") ?? "0"), 10),
+    failRate: parseFloat(String(args["fail-rate"] ?? Deno.env.get("FAIL_RATE") ?? "0")),
   };
 }
 

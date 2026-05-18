@@ -109,6 +109,8 @@ export async function run(): Promise<ScenarioResult> {
   const storageMonitor = new StorageMonitor({ pds: [pdsDbPath, pdsWalPath] });
 
   const globalTimer = new OperationTimer();
+  const phaseTimer = new PhaseTimer();
+  const accounts = buildAccounts();
   let workloadCompleted = false;
 
   prometheus.start();
@@ -209,7 +211,7 @@ export async function run(): Promise<ScenarioResult> {
       return successes;
     });
     const burstResults = await Promise.all(burstPromises);
-    const burstSuccesses = burstResults.reduce((a, b) => a + b, 0);
+    const burstSuccesses = burstResults.reduce((a: number, b: number) => a + b, 0);
     const burstElapsed = (performance.now() - burstStart) / 1000;
     const burstRate = burstSuccesses / Math.max(burstElapsed, 0.01);
     result.stepPassed("Burst", `created=${burstSuccesses}, rate=${burstRate.toFixed(1)} writes/s`);
@@ -284,9 +286,9 @@ export async function run(): Promise<ScenarioResult> {
       return { c, d, a };
     });
     const mixedResults = await Promise.all(mixedPromises);
-    const mixedCreates = mixedResults.reduce((sum, r) => sum + r.c, 0);
-    const mixedDeletes = mixedResults.reduce((sum, r) => sum + r.d, 0);
-    const mixedApplies = mixedResults.reduce((sum, r) => sum + r.a, 0);
+    const mixedCreates = mixedResults.reduce((sum: number, r) => sum + r.c, 0);
+    const mixedDeletes = mixedResults.reduce((sum: number, r) => sum + r.d, 0);
+    const mixedApplies = mixedResults.reduce((sum: number, r) => sum + r.a, 0);
     result.stepPassed(
       "Mixed workload",
       `creates=${mixedCreates}, deletes=${mixedDeletes}, applyWrites=${mixedApplies}`,
