@@ -264,8 +264,8 @@ export async function run(): Promise<ScenarioResult> {
           marcus.accessJwt,
         );
       } catch (e) {
-        if (e instanceof XrpcError && e.status === 400 && e.body?.error === "BlobTooLarge") {
-          return e.body;
+        if (e instanceof XrpcError && e.status === 400 && (e.body as Record<string, unknown>)?.error === "BlobTooLarge") {
+          return e.body as { error: string };
         }
         throw e;
       }

@@ -61,13 +61,13 @@ async function main() {
     for await (const entry of Deno.readDir(topologyDir)) {
       if (entry.isFile && entry.name.endsWith(".json")) {
         const name = entry.name.replace(".json", "");
-        if (isAll || name.includes(topologyFilter)) {
+        if (isAll || name.includes(topologyFilter!)) {
           topologies.push(name);
         }
       }
     }
   } catch (err) {
-    console.error(red(`Failed to discover topologies in ${topologyDir}: ${err.message}`));
+    console.error(red(`Failed to discover topologies in ${topologyDir}: ${(err as Error).message}`));
     Deno.exit(1);
   }
   topologies.sort();
@@ -140,7 +140,7 @@ async function main() {
         );
         summary = JSON.parse(summaryText).summary;
       } catch (err) {
-        if (!parallel) console.error(red(`Failed to read summary for ${topology}: ${err.message}`));
+        if (!parallel) console.error(red(`Failed to read summary for ${topology}: ${(err as Error).message}`));
       }
 
       return {
@@ -152,7 +152,7 @@ async function main() {
         exitCode: code,
       };
     } catch (err) {
-      console.error(red(`Unexpected error running topology ${topology}: ${err.message}`));
+      console.error(red(`Unexpected error running topology ${topology}: ${(err as Error).message}`));
       return {
         topology,
         passed: 0,

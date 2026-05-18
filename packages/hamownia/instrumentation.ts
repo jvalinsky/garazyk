@@ -347,7 +347,7 @@ export class InstrumentationReport {
     public metricsTimeSeries: Record<string, unknown>,
     public processStats: Record<string, unknown>,
     public storageStats: Record<string, unknown>,
-    public phaseTimings: Record<string, number>,
+    public phaseTimings: Record<string, unknown>,
   ) {}
 
   /**
