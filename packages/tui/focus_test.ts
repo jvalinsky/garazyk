@@ -4,9 +4,8 @@
  * @module tui/focus_test
  */
 
-import { assertEquals, assert } from "jsr:@std/assert";
+import { assertEquals, assert } from "@std/assert";
 import { FocusRing } from "./focus.ts";
-import { PANEL_IDS } from "./layout.ts";
 
 Deno.test("FocusRing: starts on first panel", () => {
   const ring = new FocusRing();

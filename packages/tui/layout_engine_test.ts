@@ -4,7 +4,7 @@
  * @module tui/layout_engine_test
  */
 
-import { assertEquals, assert } from "jsr:@std/assert";
+import { assertEquals, assert } from "@std/assert";
 import {
   computeLayout,
   computePanelGeometry,
@@ -15,7 +15,6 @@ import {
   isValidBox,
   translateBox,
   type BoundingBox,
-  type PanelGeometry,
   type PanelLayout,
 } from "./layout_engine.ts";
 

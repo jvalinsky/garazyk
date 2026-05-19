@@ -83,14 +83,19 @@ export function renderView(
           isFocused,
         );
         break;
-      case "run":
+      case "run": {
+        // Show log text for the viewed run (if any)
+        const viewedId = state.runs.viewedRunId;
+        const logText = viewedId ? (state.logs.textByRunId[viewedId] ?? null) : null;
         panelCommands = renderRunPanel(
           panel,
           state.runs.active,
           state.runs.progressByRunId,
           isFocused,
+          logText,
         );
         break;
+      }
       case "history":
         panelCommands = renderHistoryPanel(
           panel,
