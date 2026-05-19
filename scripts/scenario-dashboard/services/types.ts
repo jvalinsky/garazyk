@@ -138,6 +138,123 @@ export interface Run {
   scenarioParams?: Record<string, ScenarioParamValue>;
 }
 
+// ---------------------------------------------------------------------------
+// RunEvent — event-driven lifecycle notifications from RunManager
+// ---------------------------------------------------------------------------
+
+/** Event emitted when a run starts. */
+export interface RunStartedEvent {
+  type: "run_started";
+  /** Run identifier */
+  runId: string;
+  /** Total scenarios scheduled */
+  totalScenarios: number;
+  /** Epoch milliseconds when the run started */
+  startedAt: number;
+}
+
+/** Event emitted when a run's lifecycle status changes. */
+export interface RunStatusEvent {
+  type: "run_status";
+  /** Run identifier */
+  runId: string;
+  /** New lifecycle status */
+  status: Run["status"];
+}
+
+/** Event emitted when a scenario within a run begins executing. */
+export interface ScenarioStartedEvent {
+  type: "scenario_started";
+  /** Run identifier */
+  runId: string;
+  /** Scenario identifier */
+  scenarioId: string;
+  /** Human-readable scenario name */
+  scenarioName: string;
+}
+
+/** Event emitted when a scenario within a run finishes. */
+export interface ScenarioFinishedEvent {
+  type: "scenario_finished";
+  /** Run identifier */
+  runId: string;
+  /** Scenario identifier */
+  scenarioId: string;
+  /** Human-readable scenario name */
+  scenarioName: string;
+  /** Final scenario status */
+  status: ScenarioStatus;
+  /** Number of passed assertions */
+  passed: number;
+  /** Number of failed assertions */
+  failed: number;
+  /** Number of skipped assertions */
+  skipped: number;
+  /** Scenario duration in milliseconds */
+  durationMs?: number;
+}
+
+/** Event emitted when a run completes successfully. */
+export interface RunCompletedEvent {
+  type: "run_completed";
+  /** Run identifier */
+  runId: string;
+  /** Process exit code */
+  exitCode: number;
+  /** Epoch milliseconds when the run finished */
+  finishedAt: number;
+  /** Total passed scenarios */
+  passed: number;
+  /** Total failed scenarios */
+  failed: number;
+  /** Total skipped scenarios */
+  skipped: number;
+}
+
+/** Event emitted when a run fails. */
+export interface RunFailedEvent {
+  type: "run_failed";
+  /** Run identifier */
+  runId: string;
+  /** Process exit code (0 if not available) */
+  exitCode: number;
+  /** Epoch milliseconds when the run finished */
+  finishedAt: number;
+  /** Reason the run failed */
+  reason: string;
+}
+
+/** Event emitted for each line of log output from a running process. */
+export interface LogLineEvent {
+  type: "log_line";
+  /** Run identifier */
+  runId: string;
+  /** Single line of log output (no trailing newline) */
+  line: string;
+}
+
+/** Discriminated union of all events emitted by RunManager. */
+export type RunEvent =
+  | RunStartedEvent
+  | RunStatusEvent
+  | ScenarioStartedEvent
+  | ScenarioFinishedEvent
+  | RunCompletedEvent
+  | RunFailedEvent
+  | LogLineEvent;
+
+/** A single step within a scenario report JSON. */
+export interface ScenarioStep {
+  /** Step name */
+  name: string;
+  /** Step status */
+  status: "passed" | "failed" | "skipped";
+  /** Failure message or detail text */
+  detail: string;
+  /** Step duration in milliseconds */
+  duration_ms: number;
+}
+
 /** Result of a single scenario within a run */
 export interface ScenarioResult {
   /** Primary key for the result record */
@@ -166,4 +283,26 @@ export interface ScenarioResult {
   startedAt?: number;
   /** Epoch milliseconds when the scenario finished */
   finishedAt?: number;
+}
+
+/** Parsed scenario result with deserialized steps and artifacts. */
+export interface ScenarioResultView {
+  /** Scenario identifier */
+  scenarioId: string;
+  /** Human-readable scenario name */
+  scenarioName: string;
+  /** Final scenario status */
+  status: ScenarioStatus;
+  /** Number of passed assertions or steps */
+  passed: number;
+  /** Number of failed assertions or steps */
+  failed: number;
+  /** Number of skipped assertions or steps */
+  skipped: number;
+  /** Scenario duration in milliseconds */
+  durationMs: number | null;
+  /** Parsed step list */
+  steps: ScenarioStep[];
+  /** Parsed artifact metadata, or null */
+  artifacts: Record<string, unknown> | null;
 }

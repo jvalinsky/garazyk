@@ -1,7 +1,8 @@
 /** Run Manager — manages the lifecycle of scenario runs. @module run_manager */
 import { fromFileUrl, join } from "$std/path/mod.ts";
+import { TextLineStream } from "@std/streams";
 import { db } from "../db/index.ts";
-import { Run, RunConfig } from "./types.ts";
+import { Run, RunConfig, RunEvent } from "./types.ts";
 import { fetchRun } from "../db/queries.ts";
 import { importRunReports } from "./report_scanner.ts";
 
@@ -47,15 +48,41 @@ export interface RunManager {
   ): Promise<{ runId: string } | { conflict: string }>;
   stopRun(runId: string, graceful?: boolean): Promise<void>;
   recover(): Promise<void>;
+  /** Subscribe to run lifecycle events. Returns an unsubscribe function. */
+  onEvent(listener: (event: RunEvent) => void): () => void;
 }
 
 class RunManagerImpl implements RunManager {
   private activeRun: Run | undefined = undefined;
   private childProcess: Deno.ChildProcess | undefined = undefined;
   #mutex = new AsyncMutex();
+  #listeners = new Set<(event: RunEvent) => void>();
+  #fsWatcher: Deno.FsWatcher | undefined = undefined;
+  #watchedReportsDir: string | undefined = undefined;
+  /** Set of report filenames already emitted as scenario_finished events. */
+  #emittedReports = new Set<string>();
 
   getActiveRun(): Run | undefined {
     return this.activeRun;
+  }
+
+  /** Emit an event to all registered listeners. */
+  #emit(event: RunEvent): void {
+    for (const listener of this.#listeners) {
+      try {
+        listener(event);
+      } catch (e) {
+        console.error("[run-manager] Event listener error:", e);
+      }
+    }
+  }
+
+  /** Subscribe to run lifecycle events. Returns an unsubscribe function. */
+  onEvent(listener: (event: RunEvent) => void): () => void {
+    this.#listeners.add(listener);
+    return () => {
+      this.#listeners.delete(listener);
+    };
   }
 
   async startRun(
@@ -124,6 +151,19 @@ class RunManagerImpl implements RunManager {
 
     this.activeRun = run;
 
+    // Emit run_started and run_status("starting")
+    this.#emit({
+      type: "run_started",
+      runId: run.id,
+      totalScenarios: run.totalScenarios,
+      startedAt: run.startedAt,
+    });
+    this.#emit({
+      type: "run_status",
+      runId: run.id,
+      status: "starting",
+    });
+
     // 3. Spawn process
     try {
       await this.spawnRunner(run);
@@ -135,6 +175,13 @@ class RunManagerImpl implements RunManager {
       this.updateRunInDb(run);
       await this.clearLockFile();
       this.activeRun = undefined;
+      this.#emit({
+        type: "run_failed",
+        runId: run.id,
+        exitCode: 0,
+        finishedAt: run.finishedAt!,
+        reason: "spawn_failed",
+      });
       return { runId };
     }
 
@@ -155,11 +202,22 @@ class RunManagerImpl implements RunManager {
       return;
     }
 
+    // Save a local reference before awaiting childProcess.status —
+    // the spawnRunner's .then() handler may set this.activeRun = undefined
+    // when the process exits, which races with this method.
+    const run = this.activeRun;
+
     console.log(
       `[run-manager] Stopping run ${runId} (graceful=${graceful})...`,
     );
-    this.activeRun.status = "stopping";
-    this.updateRunInDb(this.activeRun);
+    run.status = "stopping";
+    this.updateRunInDb(run);
+
+    this.#emit({
+      type: "run_status",
+      runId,
+      status: "stopping",
+    });
 
     if (this.childProcess) {
       if (graceful) {
@@ -184,14 +242,27 @@ class RunManagerImpl implements RunManager {
       }
     }
 
-    this.activeRun.status = "error";
-    this.activeRun.stopReason = "manual_stop";
-    this.activeRun.stoppedAt = Date.now();
-    this.activeRun.finishedAt = Date.now();
+    run.status = "error";
+    run.stopReason = "manual_stop";
+    run.stoppedAt = Date.now();
+    run.finishedAt = Date.now();
 
-    this.updateRunInDb(this.activeRun);
+    this.updateRunInDb(run);
     await this.clearLockFile();
-    this.activeRun = undefined;
+
+    this.#emit({
+      type: "run_failed",
+      runId,
+      exitCode: 0,
+      finishedAt: run.finishedAt,
+      reason: "manual_stop",
+    });
+
+    this.stopReportsWatcher();
+    // Only clear if another run hasn't taken over
+    if (this.activeRun?.id === runId) {
+      this.activeRun = undefined;
+    }
     this.childProcess = undefined;
   }
 
@@ -318,6 +389,154 @@ class RunManagerImpl implements RunManager {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // File watching for report files
+  // ---------------------------------------------------------------------------
+
+  /** Start watching the reports directory for new .json report files. */
+  private startReportsWatcher(reportsDir: string): void {
+    // Stop any existing watcher
+    this.stopReportsWatcher();
+
+    this.#watchedReportsDir = reportsDir;
+    this.#emittedReports.clear();
+
+    try {
+      this.#fsWatcher = Deno.watchFs(reportsDir);
+    } catch {
+      // watchFs not available on this platform — degrade gracefully.
+      // The polling-based progress handler in runtime.ts still works.
+      console.warn(
+        "[run-manager] Deno.watchFs unavailable, falling back to polling for reports",
+      );
+      return;
+    }
+
+    console.log(`[run-manager] Watching ${reportsDir} for report files`);
+
+    // Consume the watcher iterator in the background
+    (async () => {
+      try {
+        for await (const event of this.#fsWatcher!) {
+          if (event.kind === "create" || event.kind === "modify") {
+            for (const path of event.paths) {
+              await this.handleReportFile(path, reportsDir);
+            }
+          }
+        }
+      } catch (e) {
+        // Watcher was closed or errored — this is expected during stopReportsWatcher()
+        if (!(e instanceof Deno.errors.BadResource)) {
+          console.error("[run-manager] File watcher error:", e);
+        }
+      }
+    })();
+  }
+
+  /** Stop the active file watcher. */
+  private stopReportsWatcher(): void {
+    if (this.#fsWatcher) {
+      try {
+        this.#fsWatcher.close();
+      } catch {
+        // Already closed
+      }
+      this.#fsWatcher = undefined;
+      this.#watchedReportsDir = undefined;
+    }
+    this.#emittedReports.clear();
+  }
+
+  /** Check if a file path is a report file and emit scenario_finished if new. */
+  private async handleReportFile(
+    path: string,
+    reportsDir: string,
+  ): Promise<void> {
+    // Only process .json files in the reports directory
+    if (!path.endsWith(".json")) return;
+    if (path.endsWith("-progress.json")) return;
+
+    // Extract just the filename
+    const filename = path.startsWith(reportsDir)
+      ? path.slice(reportsDir.length + 1)
+      : path.split("/").pop() ?? path;
+    if (filename === "overall-summary.json") return;
+
+    // Skip already-emitted reports
+    if (this.#emittedReports.has(filename)) return;
+    this.#emittedReports.add(filename);
+
+    // Try to read and parse the report file
+    try {
+      const content = await Deno.readTextFile(path);
+      const report = JSON.parse(content) as {
+        scenario: string;
+        ok: boolean;
+        summary: { passed: number; failed: number; skipped: number };
+        duration_s: number;
+        metadata?: { scenario_id?: string };
+      };
+
+      const scenarioId = String(
+        report.metadata?.scenario_id ??
+          filename.match(/^(\d+)/)?.[1] ?? "00",
+      );
+
+      this.#emit({
+        type: "scenario_finished",
+        runId: this.activeRun?.id ?? "",
+        scenarioId,
+        scenarioName: report.scenario,
+        status: report.ok ? "passed" : "failed",
+        passed: report.summary.passed,
+        failed: report.summary.failed,
+        skipped: report.summary.skipped,
+        durationMs: Math.round(report.duration_s * 1000),
+      });
+    } catch {
+      // File may not be fully written yet — ignore and let the next
+      // modify event or the polling-based scanner pick it up.
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Log line streaming
+  // ---------------------------------------------------------------------------
+
+  /** Stream log lines from a child process's stdout and emit log_line events.
+   *
+   * Uses ReadableStream.tee() to split stdout into two branches:
+   * one for the log file (primary), one for line-by-line event emission.
+   * The tee must happen before any pipeTo() calls that would consume the stream.
+   */
+  private streamLogLines(
+    stdoutBranch: ReadableStream<Uint8Array>,
+    run: Run,
+  ): void {
+    const lineReader: ReadableStream<string> = stdoutBranch
+      .pipeThrough(new TextDecoderStream() as ReadableWritablePair<string, Uint8Array>)
+      .pipeThrough(new TextLineStream());
+
+    (async () => {
+      try {
+        for await (const line of lineReader) {
+          if (line.length === 0) continue;
+          this.#emit({
+            type: "log_line",
+            runId: run.id,
+            line,
+          });
+        }
+      } catch {
+        // Stream closed — expected when process exits
+      }
+    })();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Process spawning
+  // ---------------------------------------------------------------------------
+
   private async spawnRunner(run: Run) {
     const args = [
       "run",
@@ -370,12 +589,31 @@ class RunManagerImpl implements RunManager {
     this.updateRunInDb(run);
     await this.writeLockFile(run);
 
+    // Emit run_status("running")
+    this.#emit({
+      type: "run_status",
+      runId: run.id,
+      status: "running",
+    });
+
+    // Start watching the reports directory for new report files
+    if (run.reportsDir) {
+      this.startReportsWatcher(run.reportsDir);
+    }
+
+    // Tee stdout: one branch for the log file, one for line-by-line events.
+    // tee() must happen before any pipeTo() that would consume the stream.
+    const [logBranch, eventBranch] = this.childProcess.stdout.tee();
+
+    // Stream log lines for real-time display
+    this.streamLogLines(eventBranch, run);
+
     // Pipe outputs to log file.
     // Use Promise.all to coordinate both streams, and only close
     // logFile after both are done. This prevents the stdout pipe
     // from consuming logFile.writable before the stderr loop can
     // write to it, or vice versa.
-    const stdoutDone = this.childProcess.stdout.pipeTo(logFile.writable, {
+    const stdoutDone = logBranch.pipeTo(logFile.writable, {
       preventClose: true,
     });
 
@@ -425,6 +663,30 @@ class RunManagerImpl implements RunManager {
         console.error(`[run-manager] Failed to import reports for ${run.id}:`, e);
       }
       await this.clearLockFile();
+
+      // Emit completion event
+      if (status.success) {
+        this.#emit({
+          type: "run_completed",
+          runId: run.id,
+          exitCode: status.code,
+          finishedAt: run.finishedAt!,
+          passed: run.passed,
+          failed: run.failed,
+          skipped: run.skipped,
+        });
+      } else {
+        this.#emit({
+          type: "run_failed",
+          runId: run.id,
+          exitCode: status.code,
+          finishedAt: run.finishedAt!,
+          reason: run.stopReason ?? "nonzero_exit",
+        });
+      }
+
+      // Stop the file watcher
+      this.stopReportsWatcher();
 
       if (this.activeRun?.id === run.id) {
         this.activeRun = undefined;
