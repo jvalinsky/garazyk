@@ -327,6 +327,44 @@ static NSString *refreshTokenSessionID(NSString *refreshToken) {
     return [self storeRefreshToken:token forAccountDid:accountDid error:error];
 }
 
+- (BOOL)storeRefreshToken:(NSString *)token sessionID:(NSString *)sessionID forAccountDid:(NSString *)accountDid error:(NSError **)error {
+    NSUInteger ttl = self.refreshTokenTTLSeconds > 0 ? self.refreshTokenTTLSeconds : (30 * 24 * 60 * 60);
+    NSDate *expiresAt = [NSDate dateWithTimeIntervalSinceNow:ttl];
+    __block BOOL success = NO;
+    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+        success = [store storeRefreshToken:token sessionID:sessionID forAccountDid:accountDid expiresAt:expiresAt error:innerError];
+    } error:error];
+    return success;
+}
+
+- (nullable NSDictionary *)sessionInfoForRefreshToken:(NSString *)refreshToken error:(NSError **)error {
+    __block NSDictionary *info = nil;
+    [self.servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)reader;
+        info = [store sessionInfoForRefreshToken:refreshToken error:innerError];
+    } error:error];
+    return info;
+}
+
+- (BOOL)isSessionActive:(NSString *)sessionID forAccountDid:(NSString *)did error:(NSError **)error {
+    __block BOOL active = NO;
+    [self.servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)reader;
+        active = [store isSessionActive:sessionID forAccountDid:did error:innerError];
+    } error:error];
+    return active;
+}
+
+- (BOOL)revokeSession:(NSString *)sessionID error:(NSError **)error {
+    __block BOOL success = NO;
+    [self.servicePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **innerError) {
+        PDSActorStore *store = (PDSActorStore *)transactor;
+        success = [store revokeSession:sessionID error:innerError];
+    } error:error];
+    return success;
+}
+
 - (nullable NSString *)accountDidForRefreshToken:(NSString *)refreshToken error:(NSError **)error {
     __block NSString *did = nil;
     [self.servicePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **innerError) {
