@@ -15,14 +15,14 @@ import {
   fg,
   reverse,
 } from "@garazyk/tui";
-import type { PanelLayout } from "@garazyk/tui";
+import type { ResolvedNode } from "@garazyk/tui";
 import { panelContentArea } from "@garazyk/tui";
 import type { PanelState } from "../panel_state.ts";
 import type { ServiceStatus } from "../../services/types.ts";
 
 /** Render the network services panel. */
 export function renderNetworkPanel(
-  panel: PanelLayout,
+  panel: ResolvedNode,
   services: ServiceStatus[],
   panelState: PanelState,
   focused: boolean,
