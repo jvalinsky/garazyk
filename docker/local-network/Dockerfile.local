@@ -1,12 +1,12 @@
 # Dockerfile.local — Minimal runtime image using pre-built staging binaries.
 #
 # The binaries in staging/bin/ must be Linux ELF executables (not macOS Mach-O).
-# Use scripts/stage-docker-binaries.sh to build and populate them from the
+# Use scripts/stage_binaries.ts to build and populate them from the
 # Dockerfile.gnustep builder stage inside a Linux container.
 #
 # Usage:
-#   scripts/stage-docker-binaries.sh        # Build Linux binaries
-#   scripts/stage-docker-binaries.sh --check # Verify they are ELF
+#   deno run -A scripts/stage_binaries.ts        # Build Linux binaries
+#   deno run -A scripts/stage_binaries.ts --check # Verify they are ELF
 
 FROM ubuntu:22.04
 

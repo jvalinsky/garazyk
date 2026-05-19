@@ -10,6 +10,7 @@
     config.httpPort = 2585; // Default port for chat
     config.adminSecret = @"";
     config.pdsUrl = @"http://localhost:2583";
+    config.plcUrl = @"https://plc.directory";
     config.serviceDomain = nil; // will be computed
     return config;
 }
@@ -41,6 +42,7 @@
     if (json[@"httpPort"]) self.httpPort = [json[@"httpPort"] unsignedIntegerValue];
     if (json[@"adminSecret"]) self.adminSecret = json[@"adminSecret"];
     if (json[@"pdsUrl"]) self.pdsUrl = json[@"pdsUrl"];
+    if (json[@"plcUrl"]) self.plcUrl = json[@"plcUrl"];
     if (json[@"serviceDomain"]) self.serviceDomain = json[@"serviceDomain"];
     
     return YES;
@@ -52,7 +54,10 @@
     if (env[@"CHAT_DATA_DIR"]) self.dataDirectory = env[@"CHAT_DATA_DIR"];
     if (env[@"CHAT_HTTP_PORT"]) self.httpPort = (NSUInteger)[env[@"CHAT_HTTP_PORT"] integerValue];
     if (env[@"CHAT_ADMIN_SECRET"]) self.adminSecret = env[@"CHAT_ADMIN_SECRET"];
+    if (env[@"CHAT_PDS_URL"]) self.pdsUrl = env[@"CHAT_PDS_URL"];
     if (env[@"PDS_URL"]) self.pdsUrl = env[@"PDS_URL"];
+    if (env[@"CHAT_PLC_URL"]) self.plcUrl = env[@"CHAT_PLC_URL"];
+    if (env[@"PLC_URL"]) self.plcUrl = env[@"PLC_URL"];
     if (env[@"CHAT_SERVICE_DOMAIN"]) self.serviceDomain = env[@"CHAT_SERVICE_DOMAIN"];
 }
 
