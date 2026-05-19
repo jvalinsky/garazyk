@@ -263,8 +263,8 @@ async function resolveServiceHandler(url: string): Promise<ServiceHandler | null
   if (recentMatch) {
     const params = new URL(url, "http://localhost").searchParams;
     const limit = parseInt(params.get("limit") ?? "10");
-    return async () => {
-      return svc.queries.fetchRuns(svc.db.db, limit);
+    return () => {
+      return Promise.resolve(svc.queries.fetchRuns(svc.db.db, limit));
     };
   }
 
@@ -430,6 +430,12 @@ function constructMsg(
       }
       return { type: "metrics/received", stats: (d.stats ?? {}) as never, ...tokenField };
 
+    case "runs/recentReceived":
+      if (!Array.isArray(data)) {
+        return { type: "runs/recentFailed", error: "Malformed recent runs response", ...tokenField };
+      }
+      return { type: "runs/recentReceived", runs: data as Run[], ...tokenField };
+
     default:
       throw new Error(`Unknown success msg type: ${onSuccess}`);
   }
@@ -475,6 +481,8 @@ function constructErrorMsg(
       return { type: "logs/failed", error, ...runField, ...tokenField };
     case "metrics/failed":
       return { type: "metrics/failed", error, ...tokenField };
+    case "runs/recentFailed":
+      return { type: "runs/recentFailed", error, ...tokenField };
     default:
       throw new Error(`Unknown error msg type: ${onError}`);
   }

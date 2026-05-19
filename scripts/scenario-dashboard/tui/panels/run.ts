@@ -23,6 +23,7 @@ export function renderRunPanel(
   activeRun: Run | null,
   progressByRunId: Record<string, RunProgress>,
   focused: boolean,
+  logText: string | null,
 ): RenderCommand[] {
   const area = panelContentArea(panel);
   const clip = { x: area.x, y: area.y, width: area.width, height: area.height };
@@ -166,6 +167,25 @@ export function renderRunPanel(
       clip,
     });
     row++;
+  }
+
+  // Log tail (last few lines of log output when viewing a past run)
+  if (row < area.height && logText) {
+    const lines = logText.split("\n").filter((l) => l.length > 0);
+    const maxLogRows = Math.max(0, area.height - row - (focused ? 1 : 0));
+    const tailLines = lines.slice(-maxLogRows);
+    for (const line of tailLines) {
+      if (row >= area.height - (focused ? 1 : 0)) break;
+      cmds.push({
+        type: "text",
+        x: area.x,
+        y: area.y + row,
+        text: truncate(line, area.width),
+        style: dim(fg(COLORS.textMuted)),
+        clip,
+      });
+      row++;
+    }
   }
 
   // Actions

@@ -4,7 +4,7 @@
  * @module tui/layout_test
  */
 
-import { assertEquals, assert } from "jsr:@std/assert";
+import { assertEquals, assert } from "@std/assert";
 import { computeLayout, panelContentArea, findPanel, PANEL_IDS, PANEL_TITLES } from "./layout.ts";
 
 Deno.test("computeLayout: returns null for too-small terminal", () => {
@@ -38,7 +38,7 @@ Deno.test("computeLayout: wide layout (100+ cols)", () => {
 
   // Scenarios and History should be below
   const scenarios = findPanel(layout!, "scenarios")!;
-  const history = findPanel(layout!, "history")!;
+  const _history = findPanel(layout!, "history")!;
   assert(scenarios.y >= network.y + network.height - 1, "Scenarios should be below Network");
 });
 

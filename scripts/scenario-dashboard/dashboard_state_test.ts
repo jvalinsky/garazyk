@@ -5,7 +5,7 @@
  * All effects are verified as Cmd values — no fetch, no timers.
  */
 
-import { assert, assertEquals } from "jsr:@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import {
   bootCmds,
   type Cmd,
@@ -29,7 +29,7 @@ function step(state: DashboardState, msg: Msg): [DashboardState, Cmd[]] {
 }
 
 /** Apply a sequence of messages and return the final state + all cmds */
-function reduce(state: DashboardState, msgs: Msg[]): [DashboardState, Cmd[]] {
+function _reduce(state: DashboardState, msgs: Msg[]): [DashboardState, Cmd[]] {
   let s = state;
   let allCmds: Cmd[] = [];
   for (const msg of msgs) {
@@ -40,7 +40,7 @@ function reduce(state: DashboardState, msgs: Msg[]): [DashboardState, Cmd[]] {
   return [s, allCmds];
 }
 
-function findCmd(cmds: Cmd[], type: string): Cmd | undefined {
+function _findCmd(cmds: Cmd[], type: string): Cmd | undefined {
   return cmds.find((c) => c.type === type);
 }
 
@@ -190,7 +190,7 @@ Deno.test("runs/activeReceived: uses longer delay when idle", () => {
     failed: 0,
     skipped: 0,
   };
-  const [next, cmds] = step(state, { type: "runs/activeReceived", run });
+  const [_next3, cmds] = step(state, { type: "runs/activeReceived", run });
   const sched = scheduleCmds(cmds)[0];
   assert(sched && sched.type === "schedule");
   assertEquals(sched.delayMs, 10000); // 5x base when idle
@@ -199,7 +199,7 @@ Deno.test("runs/activeReceived: uses longer delay when idle", () => {
 Deno.test("runs/activeTimeout: deduplicates when in-flight", () => {
   const state = initState();
   const [inFlight] = step(state, { type: "runs/activeTimeout" });
-  const [next, cmds] = step(inFlight, { type: "runs/activeTimeout" });
+  const [_next2, cmds] = step(inFlight, { type: "runs/activeTimeout" });
   assertEquals(cmds.length, 0);
 });
 
@@ -238,7 +238,7 @@ Deno.test("runs/activeReceived: run switch invalidates stale in-flight polls", (
     failed: 0,
     skipped: 0,
   };
-  let state = initState({ runs: { ...initState().runs, active: runA, viewedRunId: runA.id } });
+  const state = initState({ runs: { ...initState().runs, active: runA, viewedRunId: runA.id } });
 
   // Start progress polling for run-A
   const [progressStarted] = step(state, { type: "runs/progressTimeout", runId: runA.id });
@@ -580,7 +580,7 @@ Deno.test("runs/recentFailed: backs off delay", () => {
 // ---------------------------------------------------------------------------
 
 Deno.test("backoff: doubles on consecutive failures, caps at max", () => {
-  let state = initState();
+  const state = initState();
   // First failure: 5000 * 2 = 10000
   const [s1] = step(state, { type: "network/healthFailed", error: "e1" });
   assertEquals(s1.network.healthCheckDelayMs, 10000);
@@ -596,7 +596,7 @@ Deno.test("backoff: doubles on consecutive failures, caps at max", () => {
 });
 
 Deno.test("backoff: resets on success", () => {
-  let state = initState();
+  const state = initState();
   const [s1] = step(state, { type: "network/healthFailed", error: "e1" });
   assertEquals(s1.network.healthCheckDelayMs, 10000);
   // Success resets

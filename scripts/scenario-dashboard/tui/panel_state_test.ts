@@ -4,7 +4,7 @@
  * @module tui/panel_state_test
  */
 
-import { assertEquals, assert } from "jsr:@std/assert";
+import { assertEquals, assert } from "@std/assert";
 import { ScreenBuffer, DEFAULT_STYLE, fg, ANSI } from "@garazyk/tui";
 import {
   createPanelState,

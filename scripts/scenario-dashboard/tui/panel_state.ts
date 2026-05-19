@@ -38,7 +38,7 @@ export function createPanelStates(): PanelStates {
 }
 
 /** Move cursor up by one row, scrolling if needed. */
-export function moveCursorUp(state: PanelState, visibleRows: number): PanelState {
+export function moveCursorUp(state: PanelState, _visibleRows: number): PanelState {
   if (state.cursor <= 0) return state;
   const newCursor = state.cursor - 1;
   const newOffset = newCursor < state.scrollOffset
