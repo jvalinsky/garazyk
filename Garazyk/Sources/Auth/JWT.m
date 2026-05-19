@@ -636,6 +636,14 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 - (JWT *)mintAccessTokenForDID:(NSString *)did
                         handle:(NSString *)handle
                         scopes:(NSArray<NSString *> *)scopes
+             dpopKeyThumbprint:(nullable NSString *)jkt
+                           error:(NSError **)error {
+    return [self mintAccessTokenForDID:did handle:handle scopes:scopes sessionID:nil dpopKeyThumbprint:jkt error:error];
+}
+
+- (JWT *)mintAccessTokenForDID:(NSString *)did
+                        handle:(NSString *)handle
+                        scopes:(NSArray<NSString *> *)scopes
                            error:(NSError **)error {
     return [self mintAccessTokenForDID:did handle:handle scopes:scopes sessionID:nil dpopKeyThumbprint:nil error:error];
 }
