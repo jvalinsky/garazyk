@@ -220,7 +220,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
 - (BOOL)authorDID:(NSString *)authorDID hasFollowForDID:(NSString *)targetDID error:(NSError **)error;
 
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSDictionary *> *statsCacheByDid;
-@property (nonatomic, strong) dispatch_queue_t statsCacheQueue;
+@property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t statsCacheQueue;
 
 /*! Per-DID write dispatcher. */
 @property (nonatomic, strong) PDSPerDidWriteDispatcher *writeDispatcher;
