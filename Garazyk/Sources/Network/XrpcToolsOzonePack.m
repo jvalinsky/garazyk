@@ -23,11 +23,7 @@ static NSString *ExtractAdminDid(HttpRequest *request,
                                  HttpResponse *response,
                                  id<XrpcRoutePackServices> services) {
     NSString *authHeader = [request headerForKey:@"Authorization"];
-    NSString *adminDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                       jwtMinter:services.jwtMinter
-                                                 adminController:services.adminController
-                                                         request:request
-                                                        response:response];
+    NSString *adminDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
     if (!adminDid) return nil;
 
     if (![[PDSAdminAuth sharedAuth] isAdminDid:adminDid]) {
