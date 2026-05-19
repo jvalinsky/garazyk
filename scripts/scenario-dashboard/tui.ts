@@ -128,6 +128,11 @@ async function runInteractiveTui(options: DashboardTuiOptions): Promise<void> {
   // Filter mode state
   let filterMode = false;
 
+  // Render timer — polls for state-driven updates (e.g., after fetch completes)
+  // This is needed because the main loop blocks on readKeys() and won't
+  // check needsRender until the next keypress.
+  let renderTimer: ReturnType<typeof setInterval> | undefined;
+
   // Set up terminal
   await enterTerminalMode();
 
@@ -173,6 +178,16 @@ async function runInteractiveTui(options: DashboardTuiOptions): Promise<void> {
       renderAndWrite(buf, runtime.state, layout, focus, panelStates);
     }
 
+    // Render timer — polls for state-driven updates (e.g., after fetch completes)
+    // This is needed because the main loop blocks on readKeys() and won't
+    // check needsRender until the next keypress.
+    renderTimer = setInterval(() => {
+      if (needsRender && layout) {
+        renderAndWrite(buf, runtime.state, layout, focus, panelStates);
+        needsRender = false;
+      }
+    }, 50); // 50ms = 20fps, responsive but not CPU-heavy
+
     // Main event loop
     for await (const key of readKeys()) {
       if (quit) break;
@@ -213,6 +228,7 @@ async function runInteractiveTui(options: DashboardTuiOptions): Promise<void> {
     }
   } finally {
     // Cleanup
+    if (renderTimer) clearInterval(renderTimer);
     unsubscribe();
     Deno.removeSignalListener("SIGWINCH", onResize);
     try { Deno.removeSignalListener("SIGTSTP", onSuspend); } catch { /* ignore */ }
