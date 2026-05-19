@@ -22,17 +22,22 @@
         token,
         sessionID,
         did,
-        [NSDateFormatter atproto_stringFromDate:[NSDate date]],
-        [NSDateFormatter atproto_stringFromDate:expiresAt]
+        @([[NSDate date] timeIntervalSince1970]),
+        @(expiresAt.timeIntervalSince1970)
     ];
     return [self executeParameterizedUpdate:sql params:params error:error];
+}
+
+- (BOOL)storeRefreshToken:(NSString *)token forAccountDid:(NSString *)did expiresAt:(NSDate *)expiresAt error:(NSError **)error {
+    NSString *sessionID = [[NSUUID UUID] UUIDString];
+    return [self storeRefreshToken:token sessionID:sessionID forAccountDid:did expiresAt:expiresAt error:error];
 }
 
 - (nullable NSDictionary *)sessionInfoForRefreshToken:(NSString *)token error:(NSError **)error {
     if (!token) return nil;
     NSString *sql = @"SELECT account_did, session_id FROM refresh_tokens WHERE token = ? AND expires_at > ?";
-    NSString *now = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
-    NSArray *rows = [self executeParameterizedQuery:sql params:@[token, now] error:error];
+    double now = [[NSDate date] timeIntervalSince1970];
+    NSArray *rows = [self executeParameterizedQuery:sql params:@[token, @(now)] error:error];
     if (rows.count > 0) {
         return rows.firstObject;
     }
@@ -47,8 +52,8 @@
 - (BOOL)isSessionActive:(NSString *)sessionID forAccountDid:(NSString *)did error:(NSError **)error {
     if (!sessionID || !did) return NO;
     NSString *sql = @"SELECT 1 FROM refresh_tokens WHERE session_id = ? AND account_did = ? AND expires_at > ? LIMIT 1";
-    NSString *now = [NSDateFormatter atproto_stringFromDate:[NSDate date]];
-    NSArray *rows = [self executeParameterizedQuery:sql params:@[sessionID, did, now] error:error];
+    double now = [[NSDate date] timeIntervalSince1970];
+    NSArray *rows = [self executeParameterizedQuery:sql params:@[sessionID, did, @(now)] error:error];
     return rows.count > 0;
 }
 

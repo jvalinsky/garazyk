@@ -1676,7 +1676,10 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     int rc = sqlite3_exec(db, "ALTER TABLE refresh_tokens ADD COLUMN session_id TEXT NOT NULL DEFAULT ''", NULL, NULL, &errMsg);
     if (rc != SQLITE_OK) {
         NSString *msg = errMsg ? @(errMsg) : @"";
-        if (errMsg) sqlite3_free(errMsg);
+        if (errMsg) {
+            sqlite3_free(errMsg);
+            errMsg = NULL;
+        }
         if (![msg containsString:@"duplicate column name"]) {
             if (error) {
                 *error = [NSError errorWithDomain:PDSMigrationErrorDomain

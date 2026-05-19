@@ -45,6 +45,14 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
 
 @implementation PDSDatabase (Private)
 
+- (void)safeExecuteSync:(void(^)(void))block {
+    if (dispatch_get_specific(kPDSDatabaseQueueKey)) {
+        block();
+    } else {
+        dispatch_sync(self.dbQueue, block);
+    }
+}
+
 - (void)bindData:(nullable NSData *)data toStatement:(sqlite3_stmt *)stmt index:(int)index {
     ATProtoDBBindValue(stmt, index, data);
 }
@@ -71,6 +79,19 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
     return ATProtoDBPlaceholders(values.count);
 }
 
+- (NSError *)errorWithMessage:(const char *)message code:(NSInteger)code {
+    NSString *msg = message ? @(message) : @"Unknown error";
+    return [NSError errorWithDomain:PDSDatabaseErrorDomain
+                               code:code
+                           userInfo:@{NSLocalizedDescriptionKey: msg}];
+}
+
+- (NSError *)errorWithDescription:(NSString *)message code:(NSInteger)code {
+    return [NSError errorWithDomain:PDSDatabaseErrorDomain
+                               code:code
+                           userInfo:@{NSLocalizedDescriptionKey: message ?: @"Unknown error"}];
+}
+
 @end
 
 @implementation PDSDatabase
@@ -88,14 +109,6 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
 
 - (void *)internalSQLiteHandle {
     return _db;
-}
-
-- (void)safeExecuteSync:(void(^)(void))block {
-    if (dispatch_get_specific(kPDSDatabaseQueueKey)) {
-        block();
-    } else {
-        dispatch_sync(self.dbQueue, block);
-    }
 }
 
 + (instancetype)databaseAtURL:(NSURL *)url {
@@ -902,6 +915,7 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
     NSString *refreshTokensSQL = @"CREATE TABLE IF NOT EXISTS refresh_tokens ("
                                  @"token TEXT PRIMARY KEY,"
                                  @"account_did TEXT NOT NULL,"
+                                 @"session_id TEXT NOT NULL DEFAULT '',"
                                  @"created_at REAL NOT NULL,"
                                  @"expires_at REAL NOT NULL"
                                  @")";
@@ -1026,32 +1040,6 @@ static const void *kPDSDatabaseQueueKey = &kPDSDatabaseQueueKey;
         if (result == [NSNull null]) {
             result = nil;
         }
-    }];
-    return result;
-}
-
-- (NSError *)errorWithMessage:(const char *)message code:(NSInteger)code {
-    __block id result = nil;
-    [self safeExecuteSync:^{
-
-    NSString *msg = message ? @(message) : @"Unknown error";
-    result = [NSError errorWithDomain:PDSDatabaseErrorDomain
-                               code:code
-                           userInfo:@{NSLocalizedDescriptionKey: msg}];
-    return;
-    }];
-    return result;
-}
-
-- (NSError *)errorWithDescription:(NSString *)message code:(NSInteger)code {
-    __block id result = nil;
-    [self safeExecuteSync:^{
-
-    result = [NSError errorWithDomain:PDSDatabaseErrorDomain
-                               code:code
-                           userInfo:@{NSLocalizedDescriptionKey: message ?: @"Unknown error"}];
-
-    return;
     }];
     return result;
 }
