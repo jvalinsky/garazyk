@@ -15,6 +15,7 @@
 #import "Network/XrpcChatBskyGroupPack.h"
 #import "Network/XrpcRoutePackServices.h"
 #import "App/ATProtoServiceConfiguration.h"
+#import "Core/DID.h"
 #import "Debug/GZLogger.h"
 
 @interface ChatRuntime ()
@@ -103,6 +104,12 @@
     if (self.configuration.pdsUrl.length > 0) {
         [ChatAuthManager sharedManager].pdsUrl = self.configuration.pdsUrl;
     }
+    
+    // Propagate PLC URL to the shared DID resolver
+    if (self.configuration.plcUrl.length > 0) {
+        [DIDResolver sharedResolver].plcURL = self.configuration.plcUrl;
+    }
+    
     // Set the service DID for audience validation in service auth JWTs.
     // The aud claim must match this service's DID (with #bsky_chat fragment).
     [ChatAuthManager sharedManager].serviceDID = self.configuration.serviceDID;
@@ -155,7 +162,7 @@
 
     // Add XRPC Route
     __weak typeof(self) weakSelf = self;
-    [self.httpServer addRoute:@"*" path:@"/xrpc/*" handler:^(HttpRequest *request, HttpResponse *response) {
+    [self.httpServer addRoute:@"*" path:@"/xrpc/:method" handler:^(HttpRequest *request, HttpResponse *response) {
         [weakSelf.dispatcher handleRequest:request response:response];
     }];
     
