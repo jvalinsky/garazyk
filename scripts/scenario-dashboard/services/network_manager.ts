@@ -22,9 +22,10 @@ import {
   DockerApiClient,
   formatMemory,
   healthStatus,
-} from "../../lib/deno/docker_api.ts";
-import { startLocalNetwork, stopLocalNetwork } from "../../lib/deno/docker.ts";
-import { ContainerEventWatcher, type WatcherEvent } from "../../lib/deno/docker_events.ts";
+  ContainerEventWatcher, 
+  type WatcherEvent
+} from "@garazyk/laweta";
+import { startLocalNetwork, stopLocalNetwork } from "@garazyk/hamownia/atproto-network";
 
 const SCRIPTS_DIR = join(
   fromFileUrl(new URL("../../scenarios", import.meta.url)),
