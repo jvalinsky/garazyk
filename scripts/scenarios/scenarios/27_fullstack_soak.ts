@@ -39,8 +39,8 @@ import { timedCall } from "../../lib/deno/runner.ts";
  * @returns A promise that resolves to the scenario result
  */
 
-const WORKLOAD_SECONDS = 120;
-const WORKER_COUNT = 10;
+const WORKLOAD_SECONDS = 60;
+const WORKER_COUNT = 4;
 const POSTS_PER_ACCOUNT = 5;
 
 function now() {

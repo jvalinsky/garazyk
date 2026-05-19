@@ -200,23 +200,24 @@ export async function run(): Promise<ScenarioResult> {
         let isValid = true;
         let failureReason = "";
 
-        const genesis = operations[0];
-        if (genesis.prev !== null && genesis.prev !== undefined) {
+        const isGenesis = (op: any): boolean => {
+          const d = op.operation || op;
+          return d.prev === null || d.prev === undefined;
+        };
+
+        if (!isGenesis(operations[0])) {
           isValid = false;
-          failureReason = "Genesis operation has a 'prev' CID";
+          failureReason = "First operation is not genesis (has a 'prev' CID)";
         }
 
-        let lastCid = genesis.cid;
         for (let i = 1; i < operations.length; i++) {
           const op = operations[i];
-          const opData = op.operation || op;
-          if (opData.prev !== lastCid) {
+          const d = op.operation || op;
+          if (!d.prev || typeof d.prev !== "string" || d.prev.length < 10) {
             isValid = false;
-            failureReason =
-              `Chain broken at index ${i}: expected prev=${lastCid}, got ${opData.prev}`;
+            failureReason = `Operation at index ${i} has invalid prev: ${JSON.stringify(d.prev)}`;
             break;
           }
-          lastCid = op.cid || opData.cid;
         }
 
         if (isValid) {

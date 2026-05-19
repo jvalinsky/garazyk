@@ -153,8 +153,10 @@ async function collectDockerDiagnostics(
   await Deno.mkdir(dockerDir, { recursive: true });
 
   const composeBase = ["compose", "-p", composeProject];
-  for (const f of composeFiles) {
-    composeBase.push("-f", f);
+  if (composeFiles.length > 0) {
+    for (const f of composeFiles) {
+      composeBase.push("-f", f);
+    }
   }
 
   try {
@@ -354,6 +356,13 @@ export async function collectDiagnostics(
       outputDir,
       context.composeProject,
       options.composeFiles,
+    );
+  } else if (!Deno.env.get("ATPROTO_BINARY_MODE")) {
+    // Try to collect docker diagnostics using just the project name if files aren't provided
+    await collectDockerDiagnostics(
+      outputDir,
+      context.composeProject,
+      [],
     );
   }
 

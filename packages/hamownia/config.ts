@@ -55,6 +55,8 @@ export interface ScenarioConfig {
   appviewAdminSecret: string;
   /** Local PDS admin password used by test services. */
   pdsAdminPassword: string;
+  /** Local UI admin password used by test services. */
+  uiAdminPassword: string;
   /** Public service URLs keyed by service role. */
   serviceUrls: Record<string, string>;
   /** Capability set supported by the resolved topology. */
@@ -79,6 +81,8 @@ export interface ScenarioConfigOptions {
   appviewAdminSecret?: string;
   /** PDS admin password override. */
   pdsAdminPassword?: string;
+  /** UI admin password override. */
+  uiAdminPassword?: string;
   /** Additional service URL overrides. */
   serviceUrls?: Record<string, string>;
   /** Video service DID override. */
@@ -112,6 +116,10 @@ export function createScenarioConfig(
       "localdevadmin",
     pdsAdminPassword: options.pdsAdminPassword ??
       Deno.env.get("PDS_ADMIN_PASSWORD") ??
+      "admin-localdev",
+    uiAdminPassword: options.uiAdminPassword ??
+      Deno.env.get("UI_ADMIN_PASSWORD") ??
+      Deno.env.get("GARAZYK_UI_ADMIN_PASSWORD") ??
       "admin-localdev",
     serviceUrls: {
       ...resolvedTopology.serviceUrls,

@@ -201,9 +201,15 @@ export async function run(): Promise<ScenarioResult> {
   if (rosa.did) {
     await timedCall(
       result,
-      "Rosa's starter packs",
+      "Wait for starter pack in AppView",
       async () => {
-        return await client.graph.getActorStarterPacks(rosa.did, { token: rosa.accessJwt });
+        const deadline = Date.now() + 30_000;
+        while (Date.now() < deadline) {
+          const r = await client.graph.getActorStarterPacks(rosa.did, { token: rosa.accessJwt });
+          if (r.starterPacks && r.starterPacks.length > 0) return r;
+          await new Promise((r) => setTimeout(r, 1000));
+        }
+        throw new Error("Timed out waiting for starter pack to appear in AppView");
       },
       (r) => `count=${r.starterPacks?.length || 0}`,
     );
