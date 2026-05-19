@@ -16,14 +16,14 @@ import {
   reverse,
   truncate,
 } from "@garazyk/tui";
-import type { PanelLayout } from "@garazyk/tui";
+import type { ResolvedNode } from "@garazyk/tui";
 import { panelContentArea } from "@garazyk/tui";
 import type { PanelState } from "../panel_state.ts";
 import type { Run } from "../../services/types.ts";
 
 /** Render the run history panel. */
 export function renderHistoryPanel(
-  panel: PanelLayout,
+  panel: ResolvedNode,
   recentRuns: Run[],
   metrics: Record<string, { cpu: string; mem: string }>,
   panelState: PanelState,
