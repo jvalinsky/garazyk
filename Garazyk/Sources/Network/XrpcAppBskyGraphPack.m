@@ -34,11 +34,7 @@
     // app.bsky.graph.getMutes - Get muted actors
     [dispatcher registerAppBskyGraphGetMutes:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                              jwtMinter:services.jwtMinter
-                                                      adminController:services.adminController
-                                                              request:request
-                                                             response:response];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
@@ -58,11 +54,7 @@
     // app.bsky.graph.getBlocks - Get blocked actors
     [dispatcher registerAppBskyGraphGetBlocks:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                              jwtMinter:services.jwtMinter
-                                                      adminController:services.adminController
-                                                              request:request
-                                                             response:response];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
@@ -82,11 +74,7 @@
     // app.bsky.graph.getListMutes - Get muted lists
     [dispatcher registerMethod:@"app.bsky.graph.getListMutes" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                              jwtMinter:services.jwtMinter
-                                                      adminController:services.adminController
-                                                              request:request
-                                                             response:response];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
@@ -135,11 +123,7 @@
     // app.bsky.graph.getListBlocks - Get blocked lists
     [dispatcher registerMethod:@"app.bsky.graph.getListBlocks" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                              jwtMinter:services.jwtMinter
-                                                      adminController:services.adminController
-                                                              request:request
-                                                             response:response];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
@@ -255,11 +239,7 @@
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                              jwtMinter:services.jwtMinter
-                                                      adminController:services.adminController
-                                                              request:request
-                                                             response:response];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) return;
         NSDictionary *body = request.jsonBody;
         NSString *targetDID = body[@"actor"];
@@ -284,11 +264,7 @@
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
         }
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                              jwtMinter:services.jwtMinter
-                                                      adminController:services.adminController
-                                                              request:request
-                                                             response:response];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) return;
         NSDictionary *body = request.jsonBody;
         NSString *targetDID = body[@"actor"];
@@ -322,12 +298,7 @@
         }
 
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *viewerDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                              jwtMinter:services.jwtMinter
-                                                      adminController:services.adminController
-                                                              request:request
-                                                             response:response];
-
+        NSString *viewerDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         NSMutableArray *relationships = [NSMutableArray array];
         for (NSString *otherDID in others) {
             NSError *error = nil;
@@ -447,11 +418,7 @@
     // app.bsky.graph.muteActorList - Mute a list
     [dispatcher registerMethod:@"app.bsky.graph.muteActorList" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                              jwtMinter:services.jwtMinter
-                                                      adminController:services.adminController
-                                                              request:request
-                                                             response:response];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
@@ -489,11 +456,7 @@
     // app.bsky.graph.unmuteActorList - Unmute a list
     [dispatcher registerMethod:@"app.bsky.graph.unmuteActorList" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                              jwtMinter:services.jwtMinter
-                                                      adminController:services.adminController
-                                                              request:request
-                                                             response:response];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
@@ -529,11 +492,7 @@
     // app.bsky.graph.muteThread - Mute a thread
     [dispatcher registerMethod:@"app.bsky.graph.muteThread" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                              jwtMinter:services.jwtMinter
-                                                      adminController:services.adminController
-                                                              request:request
-                                                             response:response];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
@@ -571,11 +530,7 @@
     // app.bsky.graph.unmuteThread - Unmute a thread
     [dispatcher registerMethod:@"app.bsky.graph.unmuteThread" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                              jwtMinter:services.jwtMinter
-                                                      adminController:services.adminController
-                                                              request:request
-                                                             response:response];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
@@ -699,11 +654,7 @@
     // app.bsky.graph.getStarterPacksWithMembership - List starter packs and viewer membership
     [dispatcher registerMethod:@"app.bsky.graph.getStarterPacksWithMembership" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *viewerDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                                jwtMinter:services.jwtMinter
-                                                        adminController:services.adminController
-                                                                request:request
-                                                               response:response];
+        NSString *viewerDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!viewerDid) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
@@ -761,11 +712,7 @@
     // app.bsky.graph.getListMutes - Get muted lists
     [dispatcher registerMethod:@"app.bsky.graph.getListMutes" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                              jwtMinter:services.jwtMinter
-                                                      adminController:services.adminController
-                                                              request:request
-                                                             response:response];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
@@ -810,11 +757,7 @@
     // app.bsky.graph.getListBlocks - Get blocked lists
     [dispatcher registerMethod:@"app.bsky.graph.getListBlocks" handler:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                              jwtMinter:services.jwtMinter
-                                                      adminController:services.adminController
-                                                              request:request
-                                                             response:response];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
@@ -940,11 +883,7 @@
     // app.bsky.graph.verification.createVerification
     [dispatcher registerAppBskyGraphVerificationCreateVerification:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                              jwtMinter:services.jwtMinter
-                                                      adminController:services.adminController
-                                                              request:request
-                                                             response:response];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;
@@ -982,11 +921,7 @@
     // app.bsky.graph.verification.deleteVerification
     [dispatcher registerAppBskyGraphVerificationDeleteVerification:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                              jwtMinter:services.jwtMinter
-                                                      adminController:services.adminController
-                                                              request:request
-                                                             response:response];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) {
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required"];
             return;

@@ -124,9 +124,8 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
             NSString *plcUrl = configuration.plcURL;
             if (!XrpcIdentityUsesMockPLC(configuration)) {
                 DIDPLCResolver *plcResolver = [[DIDPLCResolver alloc] initWithPlcUrl:plcUrl];
-                plcResolver.timeout = 5.0;
+                plcResolver.timeout = 2.0;
 
-                // Fetch the list of all DIDs from the PLC directory
                 NSURL *listURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@/_list", plcUrl]];
                 NSURLRequest *listReq = [NSURLRequest requestWithURL:listURL
                                                          cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
@@ -142,7 +141,9 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
                 }] resume];
                 dispatch_semaphore_wait(listSem, dispatch_time(DISPATCH_TIME_NOW, 5 * NSEC_PER_SEC));
 
-                if (listData && !listError) {
+                if (!listData || listError) {
+                    GZ_LOG_ERROR(@"resolveHandle: PLC list failed: %@", listError.localizedDescription ?: @"no data");
+                } else {
                     NSArray *didsList = [NSJSONSerialization JSONObjectWithData:listData options:0 error:nil];
                     if ([didsList isKindOfClass:[NSArray class]]) {
                         NSString *normalizedTarget = [normalizedHandle lowercaseString];
@@ -252,7 +253,7 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
     // com.atproto.identity.requestPlcOperationSignature
     [dispatcher registerComAtprotoIdentityRequestPlcOperationSignature:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request response:response];
+        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
@@ -299,7 +300,7 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
     // com.atproto.identity.signPlcOperation
     [dispatcher registerComAtprotoIdentitySignPlcOperation:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request response:response];
+        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
@@ -484,7 +485,7 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
     // com.atproto.identity.submitPlcOperation
     [dispatcher registerComAtprotoIdentitySubmitPlcOperation:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request response:response];
+        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
@@ -656,7 +657,7 @@ static BOOL XrpcIdentityUsesMockPLC(ATProtoServiceConfiguration *configuration) 
     // com.atproto.identity.updateHandle
     [dispatcher registerComAtprotoIdentityUpdateHandle:^(HttpRequest *request, HttpResponse *response) {
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader jwtMinter:jwtMinter adminController:adminController request:request response:response];
+        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;

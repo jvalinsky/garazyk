@@ -600,11 +600,7 @@ static NSDictionary *labelLookupParamsFromRequest(HttpRequest *request, NSString
         }
 
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                       jwtMinter:jwtMinter
-                                                 adminController:adminController
-                                                         request:request
-                                                        response:response];
+        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == HttpStatusOK) {
                 response.statusCode = HttpStatusUnauthorized;
