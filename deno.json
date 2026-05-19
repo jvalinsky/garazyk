@@ -4,7 +4,8 @@
     "./packages/gruszka",
     "./packages/schemat",
     "./packages/hamownia",
-    "./packages/narzedzia"
+    "./packages/narzedzia",
+    "./scripts/scenario-dashboard"
   ],
   "imports": {
     "@std/path": "jsr:@std/path@0.224.0",
@@ -17,7 +18,19 @@
     "playwright": "npm:playwright@^1.40.0",
     "@ipld/dag-cbor": "npm:@ipld/dag-cbor@^9.0.0",
     "cborg": "npm:cborg@5.1.1",
-    "zod": "npm:zod@^3.22.0"
+    "zod": "npm:zod@^3.22.0",
+    "preact": "https://esm.sh/preact@10.22.0",
+    "preact/": "https://esm.sh/preact@10.22.0/",
+    "@preact/signals": "https://esm.sh/*@preact/signals@1.2.3",
+    "@preact/signals-core": "https://esm.sh/*@preact/signals-core@1.5.1",
+    "@garazyk/laweta": "./packages/laweta/mod.ts",
+    "@garazyk/laweta/": "./packages/laweta/",
+    "@garazyk/hamownia": "./packages/hamownia/mod.ts",
+    "@garazyk/hamownia/": "./packages/hamownia/",
+    "@garazyk/gruszka": "./packages/gruszka/mod.ts",
+    "@garazyk/gruszka/": "./packages/gruszka/",
+    "@garazyk/schemat": "./packages/schemat/mod.ts",
+    "@garazyk/narzedzia": "./packages/narzedzia/mod.ts"
   },
   "tasks": {
     "check": "deno check packages/*/mod.ts",
