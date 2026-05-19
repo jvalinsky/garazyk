@@ -82,11 +82,19 @@ export async function createAccountOrLogin(
       handle,
       password,
     }) as unknown as ProcedureOutput<"com.atproto.server.createSession">;
-  } catch {
-    return await api.com.atproto.server.createSession({
-      identifier: handle,
-      password,
-    });
+  } catch (exc) {
+    if (exc instanceof XrpcError && exc.status === 400) {
+      const body = typeof exc.body === "string"
+        ? exc.body
+        : JSON.stringify(exc.body);
+      if (body.toLowerCase().includes("already exists")) {
+        return await api.com.atproto.server.createSession({
+          identifier: handle,
+          password,
+        });
+      }
+    }
+    throw exc;
   }
 }
 
