@@ -8,6 +8,8 @@
  * @module tui/renderer
  */
 
+import { getCharWidth } from "./text.ts";
+
 // ---------------------------------------------------------------------------
 // Cell — single character position in the buffer
 // ---------------------------------------------------------------------------
@@ -71,7 +73,9 @@ export class ScreenBuffer {
 
   /** Clear all cells to spaces with default style. */
   clear(): void {
-    this.cells.fill(emptyCell());
+    for (let i = 0; i < this.cells.length; i++) {
+      this.cells[i] = emptyCell();
+    }
   }
 
   /** Get the cell at (x, y). Returns undefined if out of bounds. */
@@ -87,11 +91,24 @@ export class ScreenBuffer {
   }
 
   /** Write a string starting at (x, y) with the given style. */
-  write(x: number, y: number, text: string, style: CellStyle = DEFAULT_STYLE): void {
-    for (let i = 0; i < text.length; i++) {
-      const cx = x + i;
+  write(
+    x: number,
+    y: number,
+    text: string,
+    style: CellStyle = DEFAULT_STYLE,
+  ): void {
+    let cx = x;
+    for (const char of text) {
       if (cx >= this.width) break;
-      this.setCell(cx, y, { char: text[i], style });
+      const w = getCharWidth(char);
+      if (w === 0) continue; // skip control characters
+      this.setCell(cx, y, { char, style });
+      // Mark following cells as continuation of a wide character
+      for (let i = 1; i < w; i++) {
+        if (cx + i >= this.width) break;
+        this.setCell(cx + i, y, { char: "", style });
+      }
+      cx += w;
     }
   }
 
@@ -108,11 +125,21 @@ export class ScreenBuffer {
     clip: { x: number; y: number; width: number; height: number },
   ): void {
     if (y < clip.y || y >= clip.y + clip.height) return;
-    for (let i = 0; i < text.length; i++) {
-      const cx = x + i;
-      if (cx < clip.x || cx >= clip.x + clip.width) continue;
+    let cx = x;
+    for (const char of text) {
       if (cx >= this.width) break;
-      this.setCell(cx, y, { char: text[i], style });
+      const w = getCharWidth(char);
+      if (w === 0) continue;
+      if (cx >= clip.x && cx < clip.x + clip.width) {
+        this.setCell(cx, y, { char, style });
+        for (let i = 1; i < w; i++) {
+          if (cx + i >= this.width) break;
+          if (cx + i >= clip.x && cx + i < clip.x + clip.width) {
+            this.setCell(cx + i, y, { char: "", style });
+          }
+        }
+      }
+      cx += w;
     }
   }
 
@@ -127,6 +154,32 @@ export class ScreenBuffer {
   ): void {
     for (let row = y; row < y + h; row++) {
       for (let col = x; col < x + w; col++) {
+        this.setCell(col, row, { char, style });
+      }
+    }
+  }
+
+  /**
+   * Fill a rectangular region clipped to a bounding box.
+   * Cells outside the clip region are silently skipped.
+   */
+  fillRectClipped(
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    char: string = " ",
+    style: CellStyle = DEFAULT_STYLE,
+    clip?: { x: number; y: number; width: number; height: number },
+  ): void {
+    if (!clip) {
+      this.fillRect(x, y, w, h, char, style);
+      return;
+    }
+    for (let row = y; row < y + h; row++) {
+      if (row < clip.y || row >= clip.y + clip.height) continue;
+      for (let col = x; col < x + w; col++) {
+        if (col < clip.x || col >= clip.x + clip.width) continue;
         this.setCell(col, row, { char, style });
       }
     }
@@ -340,7 +393,10 @@ export function underline(style: CellStyle = DEFAULT_STYLE): CellStyle {
 }
 
 /** Combine two styles (right overrides left). */
-export function mergeStyles(base: CellStyle, override: Partial<CellStyle>): CellStyle {
+export function mergeStyles(
+  base: CellStyle,
+  override: Partial<CellStyle>,
+): CellStyle {
   return { ...base, ...override };
 }
 
@@ -395,11 +451,9 @@ function encodeStyle(style: CellStyle): string {
   }
 
   if (style.bg >= 0) {
-    if (style.bg < 16) {
-      parts.push(`${40 + style.bg % 8}`);
-    } else {
-      parts.push(`48;5;${style.bg}`);
-    }
+    // Use 256-color mode for all backgrounds to correctly support
+    // bright colors (8-15) which have no standard 16-color bg codes
+    parts.push(`48;5;${style.bg}`);
   }
 
   return `\x1b[${parts.join(";")}m`;
@@ -429,37 +483,32 @@ let savedConsoleInfo: typeof console.info | null = null;
 /**
  * Enter alternate screen, hide cursor, set raw mode.
  *
- * Also redirects console.log/error/warn/info to stderr so that
+ * Also suppresses console.log/error/warn/info so that
  * service-layer logging (e.g. run-manager spawn messages) doesn't
- * corrupt the TUI's alternate screen buffer on stdout.
+ * corrupt the TUI's alternate screen buffer. In alternate screen mode,
+ * both stdout and stderr write to the same terminal device, so
+ * redirecting to stderr is not sufficient — output must be suppressed
+ * entirely or written to a file.
  */
 export async function enterTerminalMode(): Promise<void> {
   const encoder = new TextEncoder();
-  await Deno.stdout.write(encoder.encode(ENTER_ALT_SCREEN + CLEAR_SCREEN + CURSOR_HOME + HIDE_CURSOR));
+  await Deno.stdout.write(
+    encoder.encode(ENTER_ALT_SCREEN + CLEAR_SCREEN + CURSOR_HOME + HIDE_CURSOR),
+  );
   Deno.stdin.setRaw(true);
 
-  // Redirect console output to stderr to protect the TUI's stdout
+  // Suppress console output — both stdout and stderr go to the same
+  // terminal in alternate screen mode, so any write corrupts the TUI.
   savedConsoleLog = console.log;
   savedConsoleError = console.error;
   savedConsoleWarn = console.warn;
   savedConsoleInfo = console.info;
 
-  const stderrWriter = (prefix: string) =>
-    (...args: unknown[]) => {
-      try {
-        const text = args.map((a) =>
-          typeof a === "string" ? a : Deno.inspect(a, { colors: false })
-        ).join(" ");
-        Deno.stderr.writeSync(new TextEncoder().encode(`${prefix}${text}\n`));
-      } catch {
-        // If stderr write fails, silently drop — never write to stdout
-      }
-    };
-
-  console.log = stderrWriter("");
-  console.error = stderrWriter("[error] ");
-  console.warn = stderrWriter("[warn] ");
-  console.info = stderrWriter("[info] ");
+  const noop = (..._args: unknown[]) => {};
+  console.log = noop;
+  console.error = noop;
+  console.warn = noop;
+  console.info = noop;
 }
 
 /**
@@ -480,7 +529,9 @@ export async function exitTerminalMode(): Promise<void> {
 
   Deno.stdin.setRaw(false);
   const encoder = new TextEncoder();
-  await Deno.stdout.write(encoder.encode(SHOW_CURSOR + RESET + EXIT_ALT_SCREEN));
+  await Deno.stdout.write(
+    encoder.encode(SHOW_CURSOR + RESET + EXIT_ALT_SCREEN),
+  );
 }
 
 /** Write a string to stdout. */

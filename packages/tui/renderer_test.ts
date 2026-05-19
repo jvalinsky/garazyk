@@ -5,7 +5,7 @@
  */
 
 import { assertEquals, assert } from "jsr:@std/assert";
-import { ScreenBuffer, DEFAULT_STYLE, ANSI, fg, bold, dim } from "./renderer.ts";
+import { ScreenBuffer, DEFAULT_STYLE, ANSI, fg, bg, bold, dim } from "./renderer.ts";
 
 Deno.test("ScreenBuffer: setCell and getCell", () => {
   const buf = new ScreenBuffer(10, 5);
@@ -55,12 +55,44 @@ Deno.test("ScreenBuffer: write clips at right edge", () => {
   assertEquals(buf.getCell(4, 0)?.char, "e");
 });
 
+Deno.test("ScreenBuffer: write handles surrogate pairs (emoji)", () => {
+  const buf = new ScreenBuffer(10, 3);
+  buf.write(0, 0, "🎉Hi", DEFAULT_STYLE);
+  // Emoji is a single code point rendered as one cell
+  assertEquals(buf.getCell(0, 0)?.char, "🎉");
+  assertEquals(buf.getCell(1, 0)?.char, "H");
+  assertEquals(buf.getCell(2, 0)?.char, "i");
+});
+
+Deno.test("ScreenBuffer: write handles wide characters (CJK)", () => {
+  const buf = new ScreenBuffer(10, 3);
+  buf.write(0, 0, "A中B", DEFAULT_STYLE);
+  // 'A' at pos 0, '中' at pos 1-2 (width 2), 'B' at pos 3
+  assertEquals(buf.getCell(0, 0)?.char, "A");
+  assertEquals(buf.getCell(1, 0)?.char, "中");
+  assertEquals(buf.getCell(2, 0)?.char, ""); // continuation cell
+  assertEquals(buf.getCell(3, 0)?.char, "B");
+});
+
 Deno.test("ScreenBuffer: clear resets all cells", () => {
   const buf = new ScreenBuffer(10, 5);
   buf.write(0, 0, "Test", fg(ANSI.RED));
   buf.clear();
   assertEquals(buf.getCell(0, 0)?.char, " ");
   assertEquals(buf.getCell(0, 0)?.style.fg, -1);
+});
+
+Deno.test("ScreenBuffer: clear does not alias cells (each cell is independent)", () => {
+  const buf = new ScreenBuffer(10, 5);
+  buf.clear();
+  // Mutate one cell — others must remain unchanged
+  buf.setCell(0, 0, { char: "X", style: fg(ANSI.RED) });
+  assertEquals(buf.getCell(0, 0)?.char, "X");
+  assertEquals(buf.getCell(1, 0)?.char, " ");
+  assertEquals(buf.getCell(0, 1)?.char, " ");
+  // Verify the mutated cell's style is independent
+  assertEquals(buf.getCell(0, 0)?.style.fg, ANSI.RED);
+  assertEquals(buf.getCell(1, 0)?.style.fg, -1);
 });
 
 Deno.test("ScreenBuffer: resize resets dimensions and content", () => {
@@ -170,4 +202,20 @@ Deno.test("Style helpers: bold sets bold flag", () => {
 Deno.test("Style helpers: dim sets dim flag", () => {
   const style = dim(DEFAULT_STYLE);
   assertEquals(style.dim, true);
+});
+
+Deno.test("Style helpers: bg sets background color", () => {
+  const style = bg(ANSI.RED);
+  assertEquals(style.bg, ANSI.RED);
+  assertEquals(style.fg, -1);
+});
+
+Deno.test("Encoding: bright background colors use 256-color mode", () => {
+  const buf = new ScreenBuffer(10, 3);
+  // Bright red background (color 9)
+  const style = bg(9);
+  buf.setCell(0, 0, { char: "X", style });
+  const output = buf.diff();
+  // Bright backgrounds should use 48;5;9 (256-color), not 40+1 (which is dim red)
+  assert(output.includes("48;5;9"), `Expected 48;5;9 in output, got: ${output}`);
 });
