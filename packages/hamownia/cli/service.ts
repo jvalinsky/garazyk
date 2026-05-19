@@ -9,6 +9,8 @@ import {
   stopBinaryServices,
   type BinaryServiceName,
 } from "../binary_services.ts";
+import { psCommand } from "./ps.ts";
+import { topologyCommand } from "./topology.ts";
 
 const SERVICE_NAMES = Object.keys(BINARY_SERVICES) as BinaryServiceName[];
 const serviceType = new EnumType(SERVICE_NAMES);
@@ -134,4 +136,6 @@ export const serviceCommand = new Command()
   .command("restart", restartCmd)
   .command("status", statusCmd)
   .command("logs", logsCmd)
-  .command("reseed", reseedCmd);
+  .command("reseed", reseedCmd)
+  .command("ps", psCommand)
+  .command("topology", topologyCommand);
