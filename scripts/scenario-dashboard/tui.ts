@@ -22,8 +22,8 @@ import {
 } from "@garazyk/tui";
 import { readKeys, isKey, isCtrl, isQuit, Keys } from "@garazyk/tui";
 import type { Key } from "@garazyk/tui";
-import { computeLayout, PANEL_IDS, type PanelId } from "@garazyk/tui";
-import { panelContentArea } from "@garazyk/tui";
+import { dashboardLayoutTree, solveLayout, PANEL_IDS, type PanelId, type ResolvedNode } from "@garazyk/tui";
+import { findPanel, panelContentArea } from "@garazyk/tui";
 import { FocusRing } from "@garazyk/tui";
 import {
   createPanelStates,
@@ -37,6 +37,7 @@ import { createTuiRuntime, type TuiRuntimeHandle } from "./tui/runtime.ts";
 import { renderView } from "./tui/view.ts";
 import type { DashboardState } from "./dashboard_state.ts";
 import type { Msg } from "./dashboard_state.ts";
+import type { Run } from "./services/types.ts";
 import { fetchRuns } from "./db/queries.ts";
 import { db } from "./db/index.ts";
 import { getScenariosItemCount, getScenariosItemAt } from "./tui/panels/scenarios.ts";
@@ -87,8 +88,9 @@ async function renderOnce(options: DashboardTuiOptions): Promise<void> {
   const size = getTerminalSize() ?? { cols: 80, rows: 24 };
 
   if (size) {
-    const layout = computeLayout(size.cols, size.rows);
-    if (layout) {
+    const tree = dashboardLayoutTree(size.cols, size.rows);
+    if (tree) {
+      const layout = solveLayout(tree, { x: 0, y: 0, width: size.cols, height: size.rows });
       const buf = new ScreenBuffer(size.cols, size.rows);
       const focus = new FocusRing();
       const panelStates = createPanelStates();
@@ -120,7 +122,11 @@ async function runInteractiveTui(options: DashboardTuiOptions): Promise<void> {
   const focus = new FocusRing();
   const panelStates = createPanelStates();
   const buf = new ScreenBuffer(size.cols, size.rows);
-  let layout = computeLayout(size.cols, size.rows);
+  let layout: ResolvedNode | null = null;
+  const initialTree = dashboardLayoutTree(size.cols, size.rows);
+  if (initialTree) {
+    layout = solveLayout(initialTree, { x: 0, y: 0, width: size.cols, height: size.rows });
+  }
   let needsRender = true;
   let quit = false;
   let helpOverlay = false;
@@ -128,10 +134,8 @@ async function runInteractiveTui(options: DashboardTuiOptions): Promise<void> {
   // Filter mode state
   let filterMode = false;
 
-  // Render timer — polls for state-driven updates (e.g., after fetch completes)
-  // This is needed because the main loop blocks on readKeys() and won't
-  // check needsRender until the next keypress.
-  let renderTimer: ReturnType<typeof setInterval> | undefined;
+  // Note: render timer removed — onChange callback renders directly
+  // instead of polling needsRender at 50ms intervals.
 
   // Set up terminal
   await enterTerminalMode();
@@ -141,11 +145,14 @@ async function runInteractiveTui(options: DashboardTuiOptions): Promise<void> {
     const newSize = getTerminalSize();
     if (!newSize) return;
     buf.resize(newSize.cols, newSize.rows);
-    layout = computeLayout(newSize.cols, newSize.rows);
+    const newTree = dashboardLayoutTree(newSize.cols, newSize.rows);
+    layout = newTree
+      ? solveLayout(newTree, { x: 0, y: 0, width: newSize.cols, height: newSize.rows })
+      : null;
     if (layout) {
       needsRender = true;
       // Full redraw after resize
-      renderAndWrite(buf, runtime.state, layout!, focus, panelStates);
+      renderAndWrite(buf, runtime.state, layout, focus, panelStates);
     }
   };
 
@@ -161,15 +168,17 @@ async function runInteractiveTui(options: DashboardTuiOptions): Promise<void> {
   Deno.addSignalListener("SIGWINCH", onResize);
   try { Deno.addSignalListener("SIGTSTP", onSuspend); } catch { /* not supported on all platforms */ }
 
-  // Subscribe to state changes — re-clamp panel states and mark dirty
+  // Subscribe to state changes — re-clamp panel states and render immediately.
+  // This replaces the old 50ms render timer. onChange fires synchronously
+  // after every dispatch(), so rendering here is equivalent to the timer check
+  // but without the 50ms delay or CPU overhead.
   const unsubscribe = runtime.onChange(() => {
-    // Re-clamp panel states when data changes (e.g. after filtering, collapsing)
     if (layout) {
       for (const panelId of PANEL_IDS) {
         syncPanelItemCount(panelId, panelStates, runtime, layout);
       }
+      renderAndWrite(buf, runtime.state, layout, focus, panelStates);
     }
-    needsRender = true;
   });
 
   try {
@@ -177,16 +186,6 @@ async function runInteractiveTui(options: DashboardTuiOptions): Promise<void> {
     if (layout) {
       renderAndWrite(buf, runtime.state, layout, focus, panelStates);
     }
-
-    // Render timer — polls for state-driven updates (e.g., after fetch completes)
-    // This is needed because the main loop blocks on readKeys() and won't
-    // check needsRender until the next keypress.
-    renderTimer = setInterval(() => {
-      if (needsRender && layout) {
-        renderAndWrite(buf, runtime.state, layout, focus, panelStates);
-        needsRender = false;
-      }
-    }, 50); // 50ms = 20fps, responsive but not CPU-heavy
 
     // Main event loop
     for await (const key of readKeys()) {
@@ -207,6 +206,22 @@ async function runInteractiveTui(options: DashboardTuiOptions): Promise<void> {
       }
 
       // Handle key
+      // If the run detail overlay is active, intercept all keys for it
+      if (runtime.state.runs.detailRunId) {
+        if (isKey(key, Keys.ESCAPE) || isKey(key, "q") || isCtrl(key, "c")) {
+          runtime.dispatch({ type: "runs/closeDetail" });
+          needsRender = true;
+        } else if (isKey(key, Keys.UP) || isKey(key, "k")) {
+          runtime.dispatch({ type: "runs/detailCursorUp" });
+          needsRender = true;
+        } else if (isKey(key, Keys.DOWN) || isKey(key, "j")) {
+          runtime.dispatch({ type: "runs/detailCursorDown" });
+          needsRender = true;
+        }
+        // All other keys consumed by overlay (no-op)
+        continue;
+      }
+
       const handled = handleKey(
         key,
         runtime,
@@ -220,15 +235,14 @@ async function runInteractiveTui(options: DashboardTuiOptions): Promise<void> {
 
       if (handled) needsRender = true;
 
-      // Render if needed
+      // Render if needed (pass helpOverlay so the overlay renders on top)
       if (needsRender && layout) {
-        renderAndWrite(buf, runtime.state, layout, focus, panelStates);
+        renderAndWrite(buf, runtime.state, layout, focus, panelStates, helpOverlay);
         needsRender = false;
       }
     }
   } finally {
     // Cleanup
-    if (renderTimer) clearInterval(renderTimer);
     unsubscribe();
     Deno.removeSignalListener("SIGWINCH", onResize);
     try { Deno.removeSignalListener("SIGTSTP", onSuspend); } catch { /* ignore */ }
@@ -246,7 +260,7 @@ function handleKey(
   runtime: TuiRuntimeHandle,
   focus: FocusRing,
   panelStates: PanelStates,
-  layout: ReturnType<typeof computeLayout>,
+  layout: ResolvedNode | null,
   onQuit: () => void,
   onHelp: () => void,
   onFilter: () => void,
@@ -290,7 +304,7 @@ function handleKey(
       handled = handleRunKey(key, runtime);
       break;
     case "history":
-      handled = handleHistoryKey(key, runtime);
+      handled = handleHistoryKey(key, runtime, runtime.state.runs.recentRuns, panelStates.history);
       break;
   }
   if (handled) return true;
@@ -306,8 +320,8 @@ function handleKey(
 }
 
 /** Get the visible row count for a panel (content area minus reserved rows). */
-function getVisibleRows(panelId: PanelId, layout: NonNullable<ReturnType<typeof computeLayout>>): number {
-  const panel = layout.panels.find((p) => p.id === panelId);
+function getVisibleRows(panelId: PanelId, layout: ResolvedNode): number {
+  const panel = findPanel(layout, panelId);
   if (!panel) return 0;
   const area = panelContentArea(panel);
   let available = area.height;
@@ -335,7 +349,7 @@ function syncPanelItemCount(
   panelId: PanelId,
   panelStates: PanelStates,
   runtime: TuiRuntimeHandle,
-  layout: NonNullable<ReturnType<typeof computeLayout>>,
+  layout: ResolvedNode,
 ): void {
   const state = runtime.state;
   const visibleRows = getVisibleRows(panelId, layout);
@@ -371,7 +385,7 @@ function handleCursorUp(
   focus: FocusRing,
   panelStates: PanelStates,
   runtime: TuiRuntimeHandle,
-  layout: ReturnType<typeof computeLayout>,
+  layout: ResolvedNode | null,
 ): boolean {
   if (!layout) return false;
   const panelId = focus.current;
@@ -385,7 +399,7 @@ function handleCursorDown(
   focus: FocusRing,
   panelStates: PanelStates,
   runtime: TuiRuntimeHandle,
-  layout: ReturnType<typeof computeLayout>,
+  layout: ResolvedNode | null,
 ): boolean {
   if (!layout) return false;
   const panelId = focus.current;
@@ -482,7 +496,7 @@ function handleRunKey(key: Key, runtime: TuiRuntimeHandle): boolean {
   return false;
 }
 
-function handleHistoryKey(key: Key, runtime: TuiRuntimeHandle): boolean {
+function handleHistoryKey(key: Key, runtime: TuiRuntimeHandle, recentRuns: Run[], panelState: PanelState): boolean {
   if (isKey(key, "r") && !key.ctrl) {
     runtime.dispatch({ type: "runs/restartRequested" });
     return true;
@@ -492,6 +506,14 @@ function handleHistoryKey(key: Key, runtime: TuiRuntimeHandle): boolean {
     const active = runtime.state.runs.active;
     if (active) {
       runtime.dispatch({ type: "runs/viewRun", runId: active.id });
+    }
+    return true;
+  }
+  if (isKey(key, Keys.ENTER)) {
+    // Open run detail overlay for the selected run
+    const selected = recentRuns[panelState.cursor];
+    if (selected) {
+      runtime.dispatch({ type: "runs/viewDetail", runId: selected.id });
     }
     return true;
   }
@@ -530,11 +552,12 @@ function handleFilterKey(
 function renderAndWrite(
   buf: ScreenBuffer,
   state: DashboardState,
-  layout: NonNullable<ReturnType<typeof computeLayout>>,
+  layout: ResolvedNode,
   focus: FocusRing,
   panelStates: PanelStates,
+  helpOverlay = false,
 ): void {
-  renderView(buf, state, layout, focus, panelStates, state.runs.recentRuns);
+  renderView(buf, state, layout, focus, panelStates, state.runs.recentRuns, helpOverlay);
   const output = buf.diff();
   if (output) {
     writeToTerminal(output);
