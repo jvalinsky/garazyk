@@ -63,6 +63,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     payload.sub = dictionary[@"sub"];
     payload.aud = dictionary[@"aud"];
     payload.jti = dictionary[@"jti"];
+    payload.sid = dictionary[@"sid"];
     payload.did = dictionary[@"did"];
     payload.handle = dictionary[@"handle"];
     payload.scope = dictionary[@"scope"];
@@ -94,6 +95,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     if (self.sub) dict[@"sub"] = self.sub;
     if (self.aud) dict[@"aud"] = self.aud;
     if (self.jti) dict[@"jti"] = self.jti;
+    if (self.sid) dict[@"sid"] = self.sid;
     if (self.did) dict[@"did"] = self.did;
     if (self.handle) dict[@"handle"] = self.handle;
     if (self.scope) dict[@"scope"] = self.scope;
@@ -586,6 +588,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
 - (JWT *)mintAccessTokenForDID:(NSString *)did
                         handle:(NSString *)handle
                         scopes:(NSArray<NSString *> *)scopes
+                     sessionID:(nullable NSString *)sid
              dpopKeyThumbprint:(nullable NSString *)jkt
                            error:(NSError **)error {
     JWTPayload *payload = [[JWTPayload alloc] init];
@@ -599,6 +602,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
     payload.iat = [NSDate date];
     payload.exp = [NSDate dateWithTimeIntervalSinceNow:self.defaultExpiration];
     payload.jti = [[NSUUID UUID] UUIDString];
+    payload.sid = sid;
     
     if (jkt) {
         payload.cnf = @{@"jkt": jkt};
@@ -633,7 +637,7 @@ static NSCharacterSet *Base64URLCharacterSet(void) {
                         handle:(NSString *)handle
                         scopes:(NSArray<NSString *> *)scopes
                            error:(NSError **)error {
-    return [self mintAccessTokenForDID:did handle:handle scopes:scopes dpopKeyThumbprint:nil error:error];
+    return [self mintAccessTokenForDID:did handle:handle scopes:scopes sessionID:nil dpopKeyThumbprint:nil error:error];
 }
 
 - (JWT *)mintRefreshTokenForDID:(NSString *)did

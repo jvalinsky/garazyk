@@ -10,9 +10,12 @@ NS_ASSUME_NONNULL_BEGIN
 @interface PDSDatabase (Sessions)
 
 - (NSArray<NSDictionary *> *)listSessionsForDid:(NSString *)did error:(NSError **)error;
-- (BOOL)storeRefreshToken:(NSString *)token forAccountDid:(NSString *)did expiresAt:(NSDate *)expiresAt error:(NSError **)error;
+- (BOOL)storeRefreshToken:(NSString *)token sessionID:(NSString *)sessionID forAccountDid:(NSString *)did expiresAt:(NSDate *)expiresAt error:(NSError **)error;
+- (nullable NSDictionary *)sessionInfoForRefreshToken:(NSString *)token error:(NSError **)error;
 - (nullable NSString *)accountDidForRefreshToken:(NSString *)token error:(NSError **)error;
-- (BOOL)revokeSession:(NSString *)token error:(NSError **)error;
+- (BOOL)isSessionActive:(NSString *)sessionID forAccountDid:(NSString *)did error:(NSError **)error;
+- (BOOL)revokeRefreshToken:(NSString *)token error:(NSError **)error;
+- (BOOL)revokeSession:(NSString *)sessionID error:(NSError **)error;
 - (BOOL)revokeAllSessionsForDid:(NSString *)did error:(NSError **)error;
 - (NSArray<NSDictionary *> *)listAppPasswordsForDid:(NSString *)did error:(NSError **)error;
 /**
