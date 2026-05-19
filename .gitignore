@@ -29,9 +29,6 @@ __cmake_systeminformation/
 cmake_install.cmake
 CMakeCache.txt
 
-# Submodules
-vendor/secp256k1/
-
 # IDE
 .DS_Store
 .idea/
@@ -114,7 +111,9 @@ cache/
 # Runtime service databases
 did_cache/
 sequencer/
-service/
+/service/
+# service/ was too broad, ignored Garazyk/Sources/Database/Service/
+
 
 # Docker staging
 docker/local-network/staging/
@@ -126,10 +125,6 @@ scratchpad_*.md
 
 # CTest artifacts
 Testing/
-
-# Research and Reference (local copies)
-reference/
-vendor/reference/
 
 Garazyk/Tests/Blob/debug_blob_test.txt
 
