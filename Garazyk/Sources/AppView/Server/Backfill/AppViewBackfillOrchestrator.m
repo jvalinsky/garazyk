@@ -204,35 +204,41 @@
     GZ_LOG_INFO(@"[AppView Backfill] Completed backfill for %@", did);
 
     dispatch_async(_schedulerQueue, ^{
-        NSString *host = [self _hostForDID:did];
-        NSInteger hostCount = [self.activeWorkersByHost[host] integerValue];
-        self.activeWorkersByHost[host] = @(MAX(0, hostCount - 1));
-        self.activeWorkers = MAX(0, self.activeWorkers - 1);
-        [self _scheduleNextWorkers];
-    });
+        @try {
+            NSString *host = [self _hostForDID:did];
+            NSInteger hostCount = [self.activeWorkersByHost[host] integerValue];
+            self.activeWorkersByHost[host] = @(MAX(0, hostCount - 1));
+            self.activeWorkers = MAX(0, self.activeWorkers - 1);
+            [self _scheduleNextWorkers];
 
-    // Replay pending deltas
-    __block NSArray<AppViewPendingDelta *> *cachedDeltas = nil;
-    __block id cachedDelegate = nil;
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0), ^{
-        NSError *err = nil;
-        cachedDeltas = [self.database dequeuePendingDeltasForDID:did error:&err];
-        if (cachedDeltas.count > 0) {
-            GZ_LOG_INFO(@"[AppView Backfill] Replaying %lu pending deltas for %@",
-                         (unsigned long)cachedDeltas.count, did);
-            for (AppViewPendingDelta *delta in cachedDeltas) {
-                // Dispatch to indexers as if it were a live event
-                for (id<AppViewIndexer> indexer in self.indexers) {
-                    if ([indexer respondsToSelector:@selector(processPendingDelta:error:)]) {
-                        [indexer processPendingDelta:delta error:nil];
+            // Replay pending deltas on the serial scheduler queue to avoid
+            // concurrent database access when multiple backfills complete near-simultaneously.
+            NSError *err = nil;
+            NSArray<AppViewPendingDelta *> *cachedDeltas = [self.database dequeuePendingDeltasForDID:did error:&err];
+            if (cachedDeltas.count > 0) {
+                GZ_LOG_INFO(@"[AppView Backfill] Replaying %lu pending deltas for %@",
+                             (unsigned long)cachedDeltas.count, did);
+                for (AppViewPendingDelta *delta in cachedDeltas) {
+                    for (id<AppViewIndexer> indexer in self.indexers) {
+                        if ([indexer respondsToSelector:@selector(processPendingDelta:error:)]) {
+                            [indexer processPendingDelta:delta error:nil];
+                        }
                     }
                 }
             }
-        }
 
-        cachedDelegate = self.delegate;
-        if ([cachedDelegate respondsToSelector:@selector(orchestrator:didCompleteBackfillForDID:)]) {
-            [cachedDelegate orchestrator:self didCompleteBackfillForDID:did];
+            id cachedDelegate = self.delegate;
+            if ([cachedDelegate respondsToSelector:@selector(orchestrator:didCompleteBackfillForDID:)]) {
+                [cachedDelegate orchestrator:self didCompleteBackfillForDID:did];
+            }
+        } @catch (NSException *e) {
+            fprintf(stderr, "=== CRASH in AppViewBackfillOrchestrator didCompleteForDID ===\n");
+            fprintf(stderr, "Name: %s\n", [[e name] UTF8String] ?: "null");
+            fprintf(stderr, "Reason: %s\n", [[e reason] UTF8String] ?: "null");
+            fprintf(stderr, "UserInfo: %s\n", [[[e userInfo] description] UTF8String] ?: "null");
+            fprintf(stderr, "Stack:\n%s\n", [[[e callStackSymbols] componentsJoinedByString:@"\n"] UTF8String] ?: "null");
+            fprintf(stderr, "==============================================================\n");
+            @throw;
         }
     });
 }
