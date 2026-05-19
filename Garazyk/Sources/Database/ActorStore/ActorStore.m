@@ -329,7 +329,14 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 - (nullable PDSDatabaseRecord *)getRecord:(NSString *)uri forDid:(NSString *)did error:(NSError **)error {
     NSString *sql = @"SELECT uri, did, collection, rkey, cid, value, created_at, rev, subject_did FROM records WHERE uri = ?";
     NSArray *results = [self.database executeParameterizedQuery:sql params:@[uri] error:error];
-    if (results.count > 0) return [self recordFromDictionary:results.firstObject];
+    if (results.count > 0) {
+        return [self recordFromDictionary:results.firstObject];
+    } else {
+        // Diagnostic: list a few URIs from the same collection to see the format
+        NSString *diagSql = @"SELECT uri FROM records WHERE collection = ? LIMIT 5";
+        NSArray *diagResults = [self.database executeParameterizedQuery:diagSql params:@[uri.pathComponents.count > 2 ? uri.pathComponents[2] : @""] error:nil];
+        GZ_LOG_INFO(@"getRecord diag: uri=%@ not found. Sample URIs in collection: %@", uri, diagResults);
+    }
     return nil;
 }
 
@@ -366,6 +373,7 @@ const void * const kPDSActorStoreQueueKey = &kPDSActorStoreQueueKey;
 }
 
 - (BOOL)putRecord:(PDSDatabaseRecord *)record forDid:(NSString *)did error:(NSError **)error {
+    GZ_LOG_INFO(@"ActorStore putRecord: saving uri=%@ for did=%@", record.uri, did);
     NSString *sql = @"INSERT OR REPLACE INTO records (uri, did, collection, rkey, cid, value, created_at, rev, subject_did) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
     NSArray *params = @[record.uri ?: @"", did ?: @"", record.collection ?: @"", record.rkey ?: @"", record.cid ?: [NSNull null], record.value ?: [NSNull null], @(record.createdAt.timeIntervalSince1970), record.rev ?: [NSNull null], record.subjectDid ?: [NSNull null]];
     return [self.database executeParameterizedUpdate:sql params:params error:error];
