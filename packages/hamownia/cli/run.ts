@@ -124,7 +124,7 @@ export const runCommand = new Command()
     const root = await repoRoot();
     await executeRunnerArgs(args, {
       repoRoot: root,
-      scenarioDir: join(root, "scenarios"),
+      scenarioDir: join(root, "scripts", "scenarios", "scenarios"),
       scriptPath: join(root, "scripts", "run_scenarios.ts"),
     });
   });
