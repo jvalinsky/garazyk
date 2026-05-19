@@ -465,6 +465,17 @@ typedef NS_ENUM(NSInteger, JWTError) {
                            error:(NSError **)error;
 
 /*!
+ @method mintAccessTokenForDID:handle:scopes:dpopKeyThumbprint:error:
+
+ @abstract Mints an access token with a DPoP key thumbprint but without a session ID.
+ */
+- (JWT *)mintAccessTokenForDID:(NSString *)did
+                        handle:(NSString *)handle
+                        scopes:(NSArray<NSString *> *)scopes
+             dpopKeyThumbprint:(nullable NSString *)jkt
+                           error:(NSError **)error;
+
+/*!
  @method mintAccessTokenForDID:handle:scopes:error:
 
  @abstract Mints an access token without a DPoP key thumbprint.
