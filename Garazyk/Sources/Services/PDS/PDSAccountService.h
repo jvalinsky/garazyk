@@ -31,6 +31,8 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @protocol PDSAccountService <NSObject>
 
+@property (nonatomic, strong, readonly, nullable) id<PDSSessionRepository> sessionRepository;
+
 /*! Creates a new account with email, password, and handle. */
 - (nullable NSDictionary *)createAccountForEmail:(NSString *)email
                                         password:(NSString *)password

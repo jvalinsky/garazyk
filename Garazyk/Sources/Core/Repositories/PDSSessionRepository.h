@@ -46,7 +46,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param error Receives failure details.
  * @return YES if stored successfully, NO otherwise.
  */
-- (BOOL)storeRefreshToken:(NSString *)refreshToken forAccountDid:(NSString *)did error:(NSError **)error;
+- (BOOL)storeRefreshToken:(NSString *)refreshToken sessionID:(NSString *)sessionID forAccountDid:(NSString *)did error:(NSError **)error;
 
 /**
  * @abstract Retrieves the account DID associated with a refresh token.
@@ -54,15 +54,11 @@ NS_ASSUME_NONNULL_BEGIN
  * @param error Receives failure details.
  * @return The account DID, or nil if the token is not found or invalid.
  */
+- (nullable NSDictionary *)sessionInfoForRefreshToken:(NSString *)refreshToken error:(NSError **)error;
 - (nullable NSString *)accountDidForRefreshToken:(NSString *)refreshToken error:(NSError **)error;
-
-/**
- * @abstract Revokes (deletes) a specific refresh token.
- * @param refreshToken The refresh token to revoke.
- * @param error Receives failure details.
- * @return YES if revoked successfully, NO otherwise.
- */
+- (BOOL)isSessionActive:(NSString *)sessionID forAccountDid:(NSString *)did error:(NSError **)error;
 - (BOOL)revokeRefreshToken:(NSString *)refreshToken error:(NSError **)error;
+- (BOOL)revokeSession:(NSString *)sessionID error:(NSError **)error;
 
 /**
  * @abstract Revokes all refresh tokens for a specific account.
