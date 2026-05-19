@@ -186,6 +186,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t eventQueue;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t checkpointQueue;
 @property (nonatomic, PDS_DISPATCH_QUEUE_STRONG) dispatch_queue_t processingQueue;
+@property (nonatomic, strong) NSLock *stateLock;
 @property (nonatomic, strong) NSTimer *checkpointTimer;
 @property (nonatomic, assign, readwrite) BOOL isRunning;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *lagByRelay;
@@ -210,6 +211,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     _database              = database;
     _relayURLs             = [relayURLs copy];
     _connections           = [NSMutableArray array];
+    _stateLock             = [[NSLock alloc] init];
     _checkpointIntervalMs  = 5000;
     _isRunning             = NO;
     _lagByRelay            = [NSMutableDictionary dictionary];
@@ -218,9 +220,10 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
                                                    DISPATCH_QUEUE_SERIAL);
     _checkpointQueue       = dispatch_queue_create("dev.garazyk.appview.ingest.checkpoint",
                                                    DISPATCH_QUEUE_SERIAL);
-    // Concurrent processing queue for decoupled event processing
+    // Serial processing queue to ensure in-order record materialization and database consistency.
+    // Using a concurrent queue caused race conditions on repo rev checks and out-of-order writes.
     _processingQueue      = dispatch_queue_create("dev.garazyk.appview.ingest.processing",
-                                                   DISPATCH_QUEUE_CONCURRENT);
+                                                   DISPATCH_QUEUE_SERIAL);
     _relayHeartbeatTimeout = 10.0;
     // Allow environment override for backpressure threshold (default 5000, was 50000)
     {
@@ -236,8 +239,13 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
 }
 
 - (void)start {
-    if (_isRunning) return;
+    [_stateLock lock];
+    if (_isRunning) {
+        [_stateLock unlock];
+        return;
+    }
     _isRunning = YES;
+    [_stateLock unlock];
 
     for (NSString *relayURL in _relayURLs) {
         NSError *err = nil;
@@ -250,7 +258,11 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
             initWithRelayURL:relayURL startingSeq:startSeq owner:self];
         // Apply heartbeat timeout for dead-peer detection
         conn.client.firehose.heartbeatTimeout = self.relayHeartbeatTimeout;
+        
+        [_stateLock lock];
         [_connections addObject:conn];
+        [_stateLock unlock];
+        
         [conn.client connect];
     }
 
@@ -266,20 +278,27 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
 }
 
 - (void)stop {
+    [_stateLock lock];
     _isRunning = NO;
+    NSArray *connsToStop = [_connections copy];
+    [_connections removeAllObjects];
+    [_stateLock unlock];
 
     [_checkpointTimer invalidate];
     _checkpointTimer = nil;
 
-    for (AppViewRelayConnection *conn in _connections) {
+    for (AppViewRelayConnection *conn in connsToStop) {
         [conn.client disconnect];
     }
     [self flushCheckpoints];
-    [_connections removeAllObjects];
 }
 
 - (void)_flushCheckpointsOnQueue {
-    for (AppViewRelayConnection *conn in self.connections) {
+    [_stateLock lock];
+    NSArray *activeConnections = [self.connections copy];
+    [_stateLock unlock];
+
+    for (AppViewRelayConnection *conn in activeConnections) {
         int64_t durableSeq = [self.database durableCursorForRelayURL:conn.relayURL];
         if (durableSeq <= conn.lastCheckpointSeq) continue;
         AppViewCheckpoint *cp = [[AppViewCheckpoint alloc]
@@ -295,10 +314,16 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
         // Check if we can resume a paused relay (hysteresis: resume
         // when lag drops below half the backpressure threshold).
         int64_t lag = _highestSeenSeq - conn.lastCheckpointSeq;
-        if (lag < self.maxLagForBackpressure / 2 &&
-            [self.backpressureStateByRelay[conn.relayURL] integerValue] == 1) {
+        
+        [_stateLock lock];
+        BOOL isPaused = [self.backpressureStateByRelay[conn.relayURL] integerValue] == 1;
+        [_stateLock unlock];
+
+        if (lag < self.maxLagForBackpressure / 2 && isPaused) {
             [conn.client resumeReading];
+            [_stateLock lock];
             self.backpressureStateByRelay[conn.relayURL] = @0;
+            [_stateLock unlock];
             GZ_LOG_INFO(@"[AppView Ingest] Backpressure: RESUMING relay %@ (lag=%lld)",
                          conn.relayURL, (long long)lag);
         }
@@ -313,9 +338,11 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
 
 // Returns YES if backpressure is active (lag exceeds threshold)
 - (BOOL)_shouldApplyBackpressure:(int64_t)incomingSeq fromRelay:(NSString *)relayURL {
+    [_stateLock lock];
     if (incomingSeq > _highestSeenSeq) {
         _highestSeenSeq = incomingSeq;
     }
+    [_stateLock unlock];
 
     // Use the durable cursor (in-memory, updated on every processed event)
     // instead of lastCheckpointSeq (only updated on periodic flush).
@@ -333,12 +360,16 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
 }
 
 - (nullable AppViewRelayConnection *)_connectionForRelayURL:(NSString *)relayURL {
+    [_stateLock lock];
+    AppViewRelayConnection *found = nil;
     for (AppViewRelayConnection *conn in _connections) {
         if ([conn.relayURL isEqualToString:relayURL]) {
-            return conn;
+            found = conn;
+            break;
         }
     }
-    return nil;
+    [_stateLock unlock];
+    return found;
 }
 
 - (void)_timerFired {
@@ -371,9 +402,12 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
         AppViewRelayConnection *conn = [self _connectionForRelayURL:relayURL];
         if (conn && !conn.client.isReadingPaused) {
             [conn.client pauseReading];
+            [_stateLock lock];
             self.backpressureStateByRelay[relayURL] = @1;
+            int64_t lag = _highestSeenSeq - conn.lastCheckpointSeq;
+            [_stateLock unlock];
             GZ_LOG_WARN(@"[AppView Ingest] Backpressure: PAUSING relay %@ (lag=%lld)",
-                         relayURL, (long long)(_highestSeenSeq - conn.lastCheckpointSeq));
+                         relayURL, (long long)lag);
         }
         // Still persist the repair marker — it will be processed
         // when we resume and catch up via the repair worker.
@@ -401,7 +435,7 @@ static id ResolveCIDLinksInObject(id object, CARReader *reader, NSMutableSet *vi
     GZ_LOG_DEBUG(@"[AppView Ingest] Fast path for seq=%lld did=%@ took %.3fms",
                   (long long)seq, did, fastPathElapsed * 1000.0);
 
-    // Dispatch heavy processing to the concurrent processing queue.
+    // Dispatch heavy processing to the serial processing queue.
     // This decouples the relay callback thread from the CPU-intensive
     // CAR parsing, record materialization, and database writes.
     dispatch_async(_processingQueue, ^{

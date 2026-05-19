@@ -165,4 +165,59 @@
     XCTAssertEqualObjects(events[0][@"event_type"], @"dirty_repair");
 }
 
+- (void)testConcurrencySafety {
+    AppViewIngestEngine *engine = [[AppViewIngestEngine alloc]
+        initWithDatabase:self.db relayURLs:@[@"wss://relay1", @"wss://relay2"]];
+    engine.maxLagForBackpressure = 1000;
+    
+    // We use a high number of iterations to increase the chance of catching race conditions
+    const int iterations = 1000;
+    XCTestExpectation *expectation = [self expectationWithDescription:@"Concurrency tests completed"];
+    expectation.expectedFulfillmentCount = iterations * 2;
+    
+    dispatch_queue_t testQueue1 = dispatch_queue_create("test.queue.1", DISPATCH_QUEUE_CONCURRENT);
+    dispatch_queue_t testQueue2 = dispatch_queue_create("test.queue.2", DISPATCH_QUEUE_CONCURRENT);
+    
+    for (int i = 0; i < iterations; i++) {
+        dispatch_async(testQueue1, ^{
+            FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+            event.seq = 100 + i;
+            event.repo = [NSString stringWithFormat:@"did:plc:repo%d", i];
+            event.rev = [NSString stringWithFormat:@"rev%d", i];
+            
+            [engine _handleCommitEvent:event fromRelay:@"wss://relay1"];
+            [expectation fulfill];
+        });
+        
+        dispatch_async(testQueue2, ^{
+            FirehoseCommitEvent *event = [[FirehoseCommitEvent alloc] init];
+            event.seq = 5000 + i;
+            event.repo = [NSString stringWithFormat:@"did:plc:other%d", i];
+            event.rev = [NSString stringWithFormat:@"rev%d", i];
+            
+            [engine _handleCommitEvent:event fromRelay:@"wss://relay2"];
+            [expectation fulfill];
+        });
+    }
+    
+    [self waitForExpectationsWithTimeout:10.0 handler:nil];
+    
+    // Verify internal state remains consistent
+    // We can't directly access private properties, but we can verify side effects
+    // like highestSeenSeq which should be >= 5000 + iterations - 1
+    // and that the database has the expected number of events.
+    
+    // Wait for the engine's internal processing queue to finish
+    // Since it's serial now, we can just dispatch a sync block to it if we had access,
+    // or wait a bit.
+    [NSThread sleepForTimeInterval:1.0];
+    
+    NSError *err = nil;
+    NSArray *events = [self.db loadStoredEventsAfterCursor:0 limit:iterations * 3 error:&err];
+    XCTAssertNil(err);
+    // Some might be skipped due to idempotency if we picked overlapping DIDs/revs, 
+    // but here we used unique ones.
+    XCTAssertGreaterThanOrEqual(events.count, (NSUInteger)(iterations * 2));
+}
+
 @end
