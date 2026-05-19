@@ -647,11 +647,7 @@ static NSDictionary *localSyncHostEntry(PDSServiceDatabases *serviceDatabases,
   [dispatcher registerComAtprotoSyncListBlobs:^(HttpRequest *request,
                                                 HttpResponse *response) {
     NSString *authHeader = [request headerForKey:@"Authorization"];
-    NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                   jwtMinter:jwtMinter
-                                             adminController:adminController
-                                                     request:request
-                                                    response:response];
+    NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
     if (!did) {
       if (response.statusCode == HttpStatusOK) {
         response.statusCode = HttpStatusUnauthorized;

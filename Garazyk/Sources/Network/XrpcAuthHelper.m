@@ -8,6 +8,7 @@
 //
 
 #import "Network/XrpcAuthHelper.h"
+#import "Network/XrpcRoutePackServices.h"
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Auth/JWT.h"
@@ -16,10 +17,12 @@
 #import "Auth/CryptoUtils.h"
 #import "App/ATProtoServiceConfiguration.h"
 #import "App/PDSController.h"
+#import "Services/PDS/PDSAccountService.h"
 #import "Admin/PDSAdminController.h"
 #import "Admin/PDSAdminAuth.h"
 #import "Database/Service/ServiceDatabases.h"
 #import "Database/PDSDatabase.h"
+#import "Core/Repositories/PDSSessionRepository.h"
 #import "Debug/GZLogger.h"
 
 static BOOL XrpcAuthEnvBool(NSString *value) {
@@ -174,9 +177,24 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
 
 + (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
                              jwtMinter:(JWTMinter *)jwtMinter
-                       adminController:(id<PDSAdminController>)adminController
+                       adminController:(nullable id<PDSAdminController>)adminController
                                request:(HttpRequest *)request
-                              response:(HttpResponse *)response {
+                              response:(nullable HttpResponse *)response {
+    return [self extractDIDFromAuthHeader:authHeader
+                               jwtMinter:jwtMinter
+                         adminController:adminController
+                       sessionRepository:nil
+                                 request:request
+                                response:response];
+}
+
++ (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
+                             jwtMinter:(JWTMinter *)jwtMinter
+                       adminController:(nullable id<PDSAdminController>)adminController
+                     sessionRepository:(nullable id<PDSSessionRepository>)sessionRepository
+                               request:(HttpRequest *)request
+                              response:(nullable HttpResponse *)response {
+
     if (!authHeader) {
         [self setAuthRequiredResponse:response];
         return nil;
@@ -332,6 +350,20 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
         return nil;
     }
 
+    // Check session revocation
+    NSString *sid = jwt.payload.sid;
+    if (sid && sessionRepository) {
+        NSError *sessionError = nil;
+        if (![sessionRepository isSessionActive:sid forAccountDid:did error:&sessionError]) {
+            GZ_LOG_HTTP_WARN(@"JWT session revoked: sid=%@, did=%@", sid, did);
+            if (response) {
+                response.statusCode = HttpStatusUnauthorized;
+                [response setJsonBody:@{@"error": @"ExpiredToken", @"message": @"Session has been revoked"}];
+            }
+            return nil;
+        }
+    }
+
     // Check takedown status
     NSError *takedownError = nil;
     BOOL isTakedown = [adminController isAccountTakedownActive:did error:&takedownError];
@@ -354,9 +386,33 @@ static NSURL *XrpcAuthExpectedDPoPURL(HttpRequest *request, JWTMinter *jwtMinter
                             controller:(PDSController *)controller
                                request:(HttpRequest *)request
                               response:(HttpResponse *)response {
+    // Attempt to get session repository from controller's account service
+    id<PDSSessionRepository> sessionRepo = nil;
+    if ([controller.accountService respondsToSelector:@selector(sessionRepository)]) {
+        sessionRepo = controller.accountService.sessionRepository;
+    }
+    
     return [self extractDIDFromAuthHeader:authHeader
                                jwtMinter:controller.jwtMinter
                          adminController:controller.adminController
+                       sessionRepository:sessionRepo
+                                 request:request
+                                response:response];
+}
+
++ (NSString *)extractDIDFromAuthHeader:(NSString *)authHeader
+                              services:(id<XrpcRoutePackServices>)services
+                               request:(HttpRequest *)request
+                              response:(nullable HttpResponse *)response {
+    id<PDSSessionRepository> sessionRepo = nil;
+    if ([services.accountService respondsToSelector:@selector(sessionRepository)]) {
+        sessionRepo = services.accountService.sessionRepository;
+    }
+
+    return [self extractDIDFromAuthHeader:authHeader
+                               jwtMinter:services.jwtMinter
+                         adminController:services.adminController
+                       sessionRepository:sessionRepo
                                  request:request
                                 response:response];
 }

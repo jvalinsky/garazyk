@@ -50,11 +50,7 @@
         }
 
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *authenticatedDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                                      jwtMinter:jwtMinter
-                                                                adminController:adminController
-                                                                        request:request
-                                                                       response:response];
+        NSString *authenticatedDid = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!authenticatedDid) {
             return;
         }
@@ -118,11 +114,7 @@
                        handler:^(HttpRequest *request, HttpResponse *response) {
         // Require authenticated user
         NSString *authHeader = [request headerForKey:@"Authorization"];
-        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                       jwtMinter:jwtMinter
-                                                 adminController:adminController
-                                                         request:request
-                                                        response:response];
+        NSString *did = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!did) {
             if (response.statusCode == 0) {
                 response.statusCode = 401;
