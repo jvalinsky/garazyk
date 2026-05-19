@@ -11,14 +11,8 @@
 
 import { bold, brightBlue } from "@std/fmt/colors";
 import { fromFileUrl, join } from "@std/path";
-import {
-  startLocalNetwork,
-  stopLocalNetwork,
-} from "./atproto_network.ts";
-import {
-  collectDiagnostics,
-  createRunContext,
-} from "./run_diagnostics.ts";
+import { startLocalNetwork, stopLocalNetwork } from "./atproto_network.ts";
+import { collectDiagnostics, createRunContext } from "./run_diagnostics.ts";
 import { resolveTopology, TopologyRegistry } from "@garazyk/schemat";
 import type { BrowserFlow, Topology } from "@garazyk/schemat";
 import { formatRequirement } from "./mod.ts";
@@ -28,11 +22,8 @@ import { runScenarioLoop } from "./run_loop.ts";
 import type { ScenarioExecutionResult } from "./run_loop.ts";
 import { createProcessLifecycle } from "./process_lifecycle.ts";
 import { writeOverallSummary } from "./report_writer.ts";
-import {
-  initE2eTracing,
-  isOtelEnabled,
-  shutdownTracing,
-} from "./otel.ts";
+import { initE2eTracing, isOtelEnabled, shutdownTracing } from "./otel.ts";
+import { runPreflight } from "./preflight.ts";
 import { ScenarioResult } from "./runner.ts";
 import type { RunnerArgs } from "./run_scenarios_types.ts";
 
@@ -398,6 +389,12 @@ export async function runScenarioCommand(
 
     selected = selectScenarios(scenarios, args, topology);
     withPds2 = args.pds2 || selected.some((scenario) => scenario.needsPds2);
+
+    await runPreflight({
+      useBinary: args.binary,
+      clientFlow: args.clientFlow,
+      selectedScenarios: selected,
+    });
 
     if (args.setupOnly) {
       await startLocalNetwork({

@@ -16,6 +16,7 @@ import { createDockerClient } from "@garazyk/laweta";
 import { formatBytes } from "./format.ts";
 import { DurationCache, ProgressBar } from "./progress.ts";
 import { runScenario } from "./scenario_runner.ts";
+import { waitForHttp } from "@garazyk/laweta";
 import type { ScenarioInfo } from "./scenario_metadata.ts";
 import { ScenarioResult } from "./runner.ts";
 import type { RunnerArgs } from "./run_scenarios_types.ts";
@@ -29,6 +30,39 @@ export interface ScenarioExecutionResult {
   reportPaths: string[];
   /** Whether a container crash was detected before completion. */
   crashedContainer: boolean;
+}
+
+async function checkEssentialServicesHealth(
+  topology: Topology,
+): Promise<{ ok: boolean; message?: string }> {
+  const essentials = ["plc", "pds", "appview"];
+  const adminSecret = Deno.env.get("APPVIEW_ADMIN_SECRET") || "localdevadmin";
+
+  for (const name of essentials) {
+    const url = topology.serviceUrls[name];
+    if (!url) continue;
+
+    let healthUrl = url;
+    const headers: Record<string, string> = {};
+
+    if (name === "plc") healthUrl = `${url}/_health`;
+    if (name === "pds") {
+      healthUrl = `${url}/xrpc/com.atproto.server.describeServer`;
+    }
+    if (name === "appview") {
+      healthUrl = `${url}/admin/backfill/status`;
+      headers["Authorization"] = `Bearer ${adminSecret}`;
+    }
+
+    const ok = await waitForHttp(healthUrl, name.toUpperCase(), 5, headers);
+    if (!ok) {
+      return {
+        ok: false,
+        message: `Essential service "${name.toUpperCase()}" is unreachable or unhealthy at ${healthUrl}`,
+      };
+    }
+  }
+  return { ok: true };
 }
 
 /**
@@ -125,16 +159,19 @@ export async function runScenarioLoop(
       progress.start(`${scenario.id} - ${scenario.name}`);
       await writeProgress(i, scenario, true);
 
-      if (crashedContainer !== null) {
+      const health = await checkEssentialServicesHealth(topology);
+      if (!health.ok || crashedContainer !== null) {
         const crash: {
           serviceName: string;
           exitCode: number;
           oomKilled: boolean;
-        } = crashedContainer;
-        const crashInfo = crash.oomKilled
-          ? `Container "${crash.serviceName}" was OOM-killed (exit code ${crash.exitCode})`
-          : `Container "${crash.serviceName}" exited unexpectedly (exit code ${crash.exitCode})`;
-        console.error(red(`\n  Container crash detected: ${crashInfo}`));
+        } | null = crashedContainer;
+
+        const crashInfo = health.message || (crash?.oomKilled
+          ? `Container "${crash?.serviceName}" was OOM-killed (exit code ${crash?.exitCode})`
+          : `Container "${crash?.serviceName}" exited unexpectedly (exit code ${crash?.exitCode})`);
+
+        console.error(red(`\n  Service failure detected: ${crashInfo}`));
         console.error(yellow(`  Skipping remaining scenarios.`));
 
         const crashResult = new ScenarioResult(scenario.name);

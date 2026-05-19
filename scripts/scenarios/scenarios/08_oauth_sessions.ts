@@ -270,7 +270,7 @@ export async function run(): Promise<ScenarioResult> {
     await client.raw.post(
       "com.atproto.server.deleteSession",
       {},
-      marcus.refreshJwt || marcus.accessJwt,
+      marcus.accessJwt,
     );
     result.stepPassed("Marcus deletes session (logout)");
   } catch (exc: any) {

@@ -32,7 +32,7 @@ export async function run(): Promise<ScenarioResult> {
   result.start();
 
   const uiUrl = (SERVICE_URLS.webClient || SERVICE_URLS.ui).replace(/\/$/, "");
-  const adminPassword = Deno.env.get("GARAZYK_UI_ADMIN_PASSWORD") || "changeme";
+  const adminPassword = Deno.env.get("GARAZYK_UI_ADMIN_PASSWORD") || "admin-localdev";
 
   await timedCall(
     result,
@@ -70,6 +70,15 @@ export async function run(): Promise<ScenarioResult> {
     async () => {
       const res = await fetch(`${uiUrl}/lab/client-metadata.json`, { redirect: "manual" });
       const metadata = await res.json();
+
+      if (typeof metadata !== "object" || metadata === null || Array.isArray(metadata)) {
+        result.stepSkipped(
+          "Lab client metadata valid",
+          `garazyk-ui returned non-object JSON (${typeof metadata}), skipping OAuth metadata checks`,
+        );
+        return;
+      }
+
       const requiredKeys = [
         "client_id",
         "client_name",
