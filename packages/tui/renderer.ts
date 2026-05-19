@@ -11,6 +11,13 @@
 import { getCharWidth } from "./text.ts";
 
 // ---------------------------------------------------------------------------
+// NO_COLOR — https://no-color.org/
+// ---------------------------------------------------------------------------
+
+/** Whether the NO_COLOR environment variable is set. When true, color codes are suppressed but text attributes (bold, dim, reverse, underline) are preserved. */
+export const NO_COLOR: boolean = Deno.env.get("NO_COLOR") !== undefined;
+
+// ---------------------------------------------------------------------------
 // Cell — single character position in the buffer
 // ---------------------------------------------------------------------------
 
@@ -441,19 +448,23 @@ function encodeStyle(style: CellStyle): string {
   if (style.underline) parts.push("4");
   if (style.reverse) parts.push("7");
 
-  if (style.fg >= 0) {
-    if (style.fg < 16) {
-      parts.push(`${30 + style.fg % 8}`);
-      if (style.fg >= 8) parts.push("1"); // bright = bold trick
-    } else {
-      parts.push(`38;5;${style.fg}`);
+  // Skip color codes when NO_COLOR is set (https://no-color.org/)
+  // Text attributes (bold, dim, reverse, underline) are preserved.
+  if (!NO_COLOR) {
+    if (style.fg >= 0) {
+      if (style.fg < 16) {
+        parts.push(`${30 + style.fg % 8}`);
+        if (style.fg >= 8) parts.push("1"); // bright = bold trick
+      } else {
+        parts.push(`38;5;${style.fg}`);
+      }
     }
-  }
 
-  if (style.bg >= 0) {
-    // Use 256-color mode for all backgrounds to correctly support
-    // bright colors (8-15) which have no standard 16-color bg codes
-    parts.push(`48;5;${style.bg}`);
+    if (style.bg >= 0) {
+      // Use 256-color mode for all backgrounds to correctly support
+      // bright colors (8-15) which have no standard 16-color bg codes
+      parts.push(`48;5;${style.bg}`);
+    }
   }
 
   return `\x1b[${parts.join(";")}m`;
