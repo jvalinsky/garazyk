@@ -109,14 +109,19 @@ static NSString *XrpcChatAllowIncomingForDID(NSString *targetDid) {
                                                                        response:&urlResponse
                                                                           error:&error];
 
+    if (error) {
+        GZ_LOG_ERROR(@"allowIncoming: network error for %@ at %@: %@",
+                      targetDid, pdsUrl, error.localizedDescription);
+    }
+
     if (!data || urlResponse.statusCode == 404) {
-        // No declaration record — default to "all"
         return @"all";
     }
 
     if (urlResponse.statusCode < 200 || urlResponse.statusCode >= 300) {
-        GZ_LOG_ERROR(@"allowIncoming: PDS returned %ld for %@",
-                      (long)urlResponse.statusCode, targetDid);
+        NSString *body = data ? [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] : @"(no body)";
+        GZ_LOG_ERROR(@"allowIncoming: PDS returned %ld for %@: %@",
+                      (long)urlResponse.statusCode, targetDid, body);
         return @"all";
     }
 
