@@ -21,10 +21,11 @@
                                    response:(HttpResponse *)response {
     NSString *authHeader = [request headerForKey:@"Authorization"];
     return [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                          jwtMinter:self.jwtMinter
-                                    adminController:self.adminController
-                                            request:request
-                                           response:response];
+                                           jwtMinter:self.jwtMinter
+                                     adminController:self.adminController
+                                   sessionRepository:nil
+                                             request:request
+                                            response:response];
 }
 
 @end
