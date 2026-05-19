@@ -3,12 +3,27 @@ import { parseArgs } from "@std/cli/parse-args";
 
 /** State for a single verification code tracked by the mock server. */
 export interface MockVerificationState {
-  /** Verification code stored for the phone number. */
   code: string;
-  /** Unix timestamp in milliseconds when the code was created. */
   createdAt: number;
-  /** Whether the code has been verified. */
   verified: boolean;
+}
+
+/** Serializable snapshot of the mock Twilio server state. */
+export interface MockState {
+  store: Record<string, MockVerificationState>;
+  alwaysApproveCodes: string[];
+}
+
+/** Per-instance state for a mock Twilio server. */
+export class MockTwilioState {
+  store: Record<string, MockVerificationState> = {};
+  alwaysApproveCodes: string[] = ["000000"];
+  readonly startTime = Date.now();
+
+  reset(): void {
+    for (const key of Object.keys(this.store)) delete this.store[key];
+    this.alwaysApproveCodes = ["000000"];
+  }
 }
 
 /** Serializable snapshot of the mock Twilio server state. */
@@ -28,10 +43,6 @@ export interface MockTwilioServerConfig {
   latency?: number;
   failRate?: number;
 }
-
-const store: Record<string, MockVerificationState> = {};
-let alwaysApproveCodes: string[] = ["000000"];
-let startTime = Date.now();
 
 function normalizeAlwaysApprove(value: string): string[] {
   return value.split(",").map((s) => s.trim());
@@ -118,23 +129,21 @@ function jsonResponse(body: unknown, status = 200): Response {
 export async function handleMockTwilioRequest(
   req: Request,
   config: MockTwilioServerConfig,
+  state: MockTwilioState,
 ): Promise<Response> {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  // ── Control API ──────────────────────────────────────────────────────────
-
   if (path === "/__control/health") {
-    return jsonResponse({ status: "ok", uptime: Date.now() - startTime });
+    return jsonResponse({ status: "ok", uptime: Date.now() - state.startTime });
   }
 
   if (path === "/__control/state") {
-    return jsonResponse({ store, alwaysApproveCodes });
+    return jsonResponse({ store: state.store, alwaysApproveCodes: state.alwaysApproveCodes });
   }
 
   if (path === "/__control/reset" && req.method === "POST") {
-    for (const key of Object.keys(store)) delete store[key];
-    alwaysApproveCodes = ["000000"];
+    state.reset();
     return jsonResponse({ status: "ok" });
   }
 
@@ -143,7 +152,7 @@ export async function handleMockTwilioRequest(
     if (!body.phone || !body.code) {
       return jsonResponse({ error: "phone and code required" }, 400);
     }
-    store[body.phone] = {
+    state.store[body.phone] = {
       code: body.code,
       createdAt: Date.now(),
       verified: false,
@@ -156,7 +165,7 @@ export async function handleMockTwilioRequest(
     if (!Array.isArray(body.codes)) {
       return jsonResponse({ error: "codes array required" }, 400);
     }
-    alwaysApproveCodes = body.codes;
+    state.alwaysApproveCodes = body.codes;
     return jsonResponse({ status: "ok" });
   }
 
@@ -199,7 +208,7 @@ export async function handleMockTwilioRequest(
     }
 
     const code = generateCode();
-    store[phone] = { code, createdAt: Date.now(), verified: false };
+    state.store[phone] = { code, createdAt: Date.now(), verified: false };
 
     console.error(`[mock-twilio] Verifications: +${phone} -> code=${code}`);
 
@@ -251,12 +260,12 @@ export async function handleMockTwilioRequest(
       }, 400);
     }
 
-    const state = store[phone];
-    const isApproved = (state && state.code === code) ||
-      alwaysApproveCodes.includes(code);
+    const stored = state.store[phone];
+    const isApproved = (stored && stored.code === code) ||
+      state.alwaysApproveCodes.includes(code);
 
-    if (isApproved && state) {
-      state.verified = true;
+    if (isApproved && stored) {
+      stored.verified = true;
     }
 
     console.error(
@@ -282,12 +291,12 @@ export async function handleMockTwilioRequest(
 
 /** Start a mock Twilio server with the provided configuration. */
 export function serveMockTwilio(config: MockTwilioServerConfig): void {
-  startTime = Date.now();
-  alwaysApproveCodes = [...config.alwaysApprove];
+  const state = new MockTwilioState();
+  state.alwaysApproveCodes = [...config.alwaysApprove];
 
   console.error(`[mock-twilio] Starting on port ${config.port}`);
   console.error(
-    `[mock-twilio] Always-approve codes: ${alwaysApproveCodes.join(", ")}`,
+    `[mock-twilio] Always-approve codes: ${state.alwaysApproveCodes.join(", ")}`,
   );
   console.error(`[mock-twilio] Account SID: ${config.accountSid}`);
   if ((config.latency ?? 0) > 0) {
@@ -299,7 +308,7 @@ export function serveMockTwilio(config: MockTwilioServerConfig): void {
 
   void Deno.serve(
     { port: config.port, hostname: "127.0.0.1" },
-    (req) => handleMockTwilioRequest(req, config),
+    (req) => handleMockTwilioRequest(req, config, state),
   );
 }
 
