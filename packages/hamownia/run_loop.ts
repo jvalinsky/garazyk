@@ -160,16 +160,20 @@ export async function runScenarioLoop(
       await writeProgress(i, scenario, true);
 
       const health = await checkEssentialServicesHealth(topology);
-      if (!health.ok || crashedContainer !== null) {
-        const crash: {
-          serviceName: string;
-          exitCode: number;
-          oomKilled: boolean;
-        } | null = crashedContainer;
-
-        const crashInfo = health.message || (crash?.oomKilled
-          ? `Container "${crash?.serviceName}" was OOM-killed (exit code ${crash?.exitCode})`
-          : `Container "${crash?.serviceName}" exited unexpectedly (exit code ${crash?.exitCode})`);
+      // crashedContainer is reassigned asynchronously by the crash watcher callback,
+      // so TypeScript's flow analysis can't see the non-null path. Read it at the
+      // checkpoint and assert the union type explicitly.
+      const crashSnapshot = crashedContainer as {
+        serviceName: string;
+        exitCode: number;
+        oomKilled: boolean;
+      } | null;
+      if (!health.ok || crashSnapshot !== null) {
+        const crashInfo = health.message || (crashSnapshot
+          ? crashSnapshot.oomKilled
+            ? `Container "${crashSnapshot.serviceName}" was OOM-killed (exit code ${crashSnapshot.exitCode})`
+            : `Container "${crashSnapshot.serviceName}" exited unexpectedly (exit code ${crashSnapshot.exitCode})`
+          : "Unknown service failure");
 
         console.error(red(`\n  Service failure detected: ${crashInfo}`));
         console.error(yellow(`  Skipping remaining scenarios.`));

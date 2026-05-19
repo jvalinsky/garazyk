@@ -74,7 +74,7 @@ export async function checkPlaywright(required: boolean): Promise<PreflightResul
     return {
       ok: false,
       fatal: required,
-      message: `Playwright browser not found or failed to launch: ${err.message}`,
+      message: `Playwright browser not found or failed to launch: ${err instanceof Error ? err.message : String(err)}`,
       fixHint: "npx playwright install --with-deps chromium",
     };
   }

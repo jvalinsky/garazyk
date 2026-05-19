@@ -4,17 +4,17 @@ import { createCharacterRegistry, createScenarioConfig } from "./config.ts";
 import {
   applyTopologyEnvironment,
   startLocalNetwork,
-} from "@garazyk/hamownia/atproto-network";
+} from "@garazyk/hamownia/atproto_network.ts";
 import {
   defaultBinaryServices,
   startBinaryServices,
-} from "@garazyk/hamownia/binary-services";
-import { stopStaleDockerE2e } from "@garazyk/hamownia/stale-cleanup";
+} from "@garazyk/hamownia/binary_services.ts";
+import { stopStaleDockerE2e } from "@garazyk/hamownia/stale_cleanup.ts";
 import {
   buildDockerRunnerArgs,
   DOCKER_RUNNER_TIMEOUT_EXIT_CODE,
-} from "@garazyk/hamownia/docker-runner";
-import { buildOtelReexecEnv } from "@garazyk/hamownia/run-command";
+} from "@garazyk/hamownia/docker_runner.ts";
+import { buildOtelReexecEnv } from "@garazyk/hamownia/run_command.ts";
 
 Deno.test("hamownia root exposes scenario authoring primitives", () => {
   assertEquals(typeof ScenarioResult, "function");

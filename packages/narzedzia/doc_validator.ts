@@ -165,19 +165,14 @@ async function validateBashSyntax(code: string, filePath: string): Promise<boole
 
 /** Validate documentation diagrams (mermaid/dot). */
 export async function validateDocDiagrams(options: DocValidationOptions): Promise<boolean> {
-  logHeader("Validating documentation diagrams...");
-  // Implementation for diagram validation (mermaid, dot)
-  // This is a placeholder for porting validate-doc-diagrams.sh
-  logOk("All diagrams validated successfully (stub)");
-  return true;
+  logWarn("Documentation diagram validation not yet implemented");
+  return false;
 }
 
 /** Check for anti-patterns or specific tropes in documentation. */
 export async function checkDocPatterns(options: DocValidationOptions): Promise<boolean> {
-  logHeader("Checking documentation patterns...");
-  // Implementation for porting check-doc-patterns.sh
-  logOk("All pattern checks passed (stub)");
-  return true;
+  logWarn("Documentation pattern checking not yet implemented");
+  return false;
 }
 
 /** Entry point for documentation validation CLI. */
