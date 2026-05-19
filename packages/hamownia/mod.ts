@@ -101,6 +101,10 @@ export type { ScenarioExecutionResult } from "./run_loop.ts";
 export type { RunnerArgs } from "./run_scenarios_types.ts";
 export type { ScenarioRequirement } from "@garazyk/schemat";
 export {
+  appendScenarioLoopResult,
+  buildOtelReexecEnv,
+} from "./run_command.ts";
+export {
   handleMockTwilioRequest,
   MockTwilioServer,
   parseMockTwilioConfig,
