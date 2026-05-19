@@ -25,7 +25,7 @@ import {
   ContainerEventWatcher, 
   type WatcherEvent
 } from "@garazyk/laweta";
-import { startLocalNetwork, stopLocalNetwork } from "@garazyk/hamownia/atproto-network";
+import { startLocalNetwork, stopLocalNetwork } from "@garazyk/hamownia/atproto_network.ts";
 
 const SCRIPTS_DIR = join(
   fromFileUrl(new URL("../../scenarios", import.meta.url)),
