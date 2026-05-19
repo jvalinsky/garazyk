@@ -24,6 +24,8 @@ services:
     environment:
       - TZ=UTC
       - PDS_ALLOW_PRIVATE_SSRF=1
+      - PDS_ALLOW_HTTP=1
+      - PDS_RUNNING_TESTS=1
       - PDS_LEXICON_PATH=/usr/share/atprotopds/lexicons
       - HOME=/var/lib/atprotopds
       - PDS_DATA_DIR=/var/lib/atprotopds

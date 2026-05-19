@@ -30,6 +30,7 @@
 #import "Auth/Crypto/AuthCryptoECDSA.h"
 #import "Auth/Secp256k1.h"
 #import "Database/PDSDatabase.h"
+#import "Database/PDSDatabase+Sessions.h"
 #import "Debug/GZLogger.h"
 #import "Metrics/PDSMetrics.h"
 #import "Core/DID.h"
@@ -910,6 +911,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
 
     // Store refresh token in database (H3)
     [self.database storeRefreshToken:session.refreshToken
+                          sessionID:session.sessionID
                       forAccountDid:session.did
                           expiresAt:session.refreshTokenExpiresAt
                               error:nil];
@@ -1002,6 +1004,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
 
     // 6. Store new refresh token (H3)
     [self.database storeRefreshToken:newSession.refreshToken
+                          sessionID:newSession.sessionID
                       forAccountDid:newSession.did
                           expiresAt:newSession.refreshTokenExpiresAt
                               error:nil];

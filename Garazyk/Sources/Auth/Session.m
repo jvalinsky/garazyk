@@ -150,6 +150,7 @@ NSString * const SessionErrorDomain = @"com.atproto.pds.session";
         JWT *jwt = [self.minter mintAccessTokenForDID:self.did
                                                handle:self.handle
                                                scopes:scopes
+                                            sessionID:self.sessionID
                                     dpopKeyThumbprint:self.dpopKeyThumbprint
                                                  error:&error];
         if (jwt) {

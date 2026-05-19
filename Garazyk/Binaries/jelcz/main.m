@@ -39,6 +39,7 @@
 #import "Network/HttpRequest.h"
 #import "Network/HttpResponse.h"
 #import "Network/XrpcHandler.h"
+#import "Network/XrpcRoutePackServices.h"
 #import "Debug/GZLogger.h"
 
 static HttpServer *gServer = nil;
@@ -337,10 +338,18 @@ int run_serve(int argc, const char *argv[]) {
 
     // Initialize HTTP server
     XrpcDispatcher *dispatcher = [XrpcDispatcher sharedDispatcher];
-    [ATProtoVideoXrpcPack registerWithDispatcher:dispatcher
-                                         jobStore:database
-                                     authProvider:authProvider
-                                    blobProvider:blobProvider];
+    XrpcRoutePackServiceBag *routeServices = [[XrpcRoutePackServiceBag alloc] initWithDispatcher:dispatcher
+                                                                                       jwtMinter:nil
+                                                                                 adminController:nil
+                                                                                    configuration:nil
+                                                                                      adminSecret:nil
+                                                                                serviceDatabases:nil
+                                                                                userDatabasePool:nil
+                                                                                      rateLimiter:nil];
+    routeServices.videoJobStore = database;
+    routeServices.videoAuthProvider = authProvider;
+    routeServices.blobProvider = blobProvider;
+    [ATProtoVideoXrpcPack registerWithDispatcher:dispatcher services:routeServices];
 
     gServer = [HttpServer serverWithPort:config.port];
 

@@ -1,7 +1,7 @@
 {
   "server": {
     "host": "0.0.0.0",
-    "port": 2587,
+    "port": 2585,
     "data_dir": "/var/lib/atprotopds",
     "issuer": "http://127.0.0.1:2587",
     "available_user_domains": [

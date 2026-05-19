@@ -75,6 +75,7 @@
     return @"CREATE TABLE IF NOT EXISTS refresh_tokens ("
            @"    token TEXT PRIMARY KEY,"
            @"    account_did TEXT NOT NULL,"
+           @"    session_id TEXT NOT NULL,"
            @"    created_at REAL NOT NULL,"
            @"    expires_at REAL NOT NULL"
            @")";
