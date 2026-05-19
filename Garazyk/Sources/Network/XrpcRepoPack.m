@@ -369,10 +369,12 @@ static NSArray<PDSDatabaseRecord *> *importRepoExtractRecords(NSData *mstRootCID
         }
 
         NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+        GZ_LOG_INFO(@"getRecord: resolving uri=%@ for did=%@", uri, did);
         NSError *error = nil;
         NSDictionary *record = [recordService getRecord:uri forDid:did error:&error];
 
         if (error || !record) {
+            GZ_LOG_INFO(@"getRecord: not found uri=%@ (error=%@)", uri, error.localizedDescription);
             response.statusCode = HttpStatusNotFound;
             [response setJsonBody:@{@"error": @"RecordNotFound", @"message": @"Record not found"}];
             return;
