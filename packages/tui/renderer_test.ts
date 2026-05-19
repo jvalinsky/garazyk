@@ -4,7 +4,7 @@
  * @module tui/renderer_test
  */
 
-import { assertEquals, assert } from "jsr:@std/assert";
+import { assertEquals, assert } from "@std/assert";
 import { ScreenBuffer, DEFAULT_STYLE, ANSI, fg, bg, bold, dim } from "./renderer.ts";
 
 Deno.test("ScreenBuffer: setCell and getCell", () => {

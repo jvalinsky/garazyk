@@ -4,7 +4,7 @@
  * @module tui/input_test
  */
 
-import { assertEquals } from "jsr:@std/assert";
+import { assertEquals } from "@std/assert";
 import { parseKey, Keys, isKey, isCtrl, isQuit, type Key } from "./input.ts";
 
 /** Parse a key from a byte array (wraps the internal parseKey). */
