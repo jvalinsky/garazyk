@@ -30,13 +30,20 @@
     "@garazyk/gruszka": "./packages/gruszka/mod.ts",
     "@garazyk/gruszka/": "./packages/gruszka/",
     "@garazyk/schemat": "./packages/schemat/mod.ts",
-    "@garazyk/narzedzia": "./packages/narzedzia/mod.ts"
+    "@garazyk/narzedzia": "./packages/narzedzia/mod.ts",
+    "@cliffy/command": "jsr:@cliffy/command@^1.1.0",
+    "@cliffy/prompt": "jsr:@cliffy/prompt@^1.1.0"
+  },
+  "lint": {
+    "exclude": ["packages/gruszka/lexicons.ts"]
   },
   "tasks": {
     "check": "deno check packages/*/mod.ts",
-    "lint": "deno lint packages/",
+    "lint": "deno lint packages/ --ignore=packages/gruszka/lexicons.ts",
     "fmt": "deno fmt packages/",
     "test": "deno test -A packages/",
-    "generate-client": "deno run -A packages/gruszka/scripts/generate.ts"
+    "generate-client": "deno run -A packages/gruszka/scripts/generate.ts",
+    "hamownia": "deno run -A packages/hamownia/cli.ts",
+    "narzedzia": "deno run -A packages/narzedzia/cli.ts"
   }
 }
