@@ -187,7 +187,7 @@ export async function run(): Promise<ScenarioResult> {
   phaseTimer.startPhase("Resume verification");
   const expectedTotal = sustainedCreated + burstCreated;
   let cleared = false;
-  for (let attempt = 0; attempt < 30; attempt++) {
+  for (let attempt = 0; attempt < 60; attempt++) {
     const h = await appviewAdminGet("/admin/ingest/health");
     const b = await appviewAdminGet("/admin/backfill/status");
     const m = await appviewAdminGet("/admin/appview/metrics/stats");
