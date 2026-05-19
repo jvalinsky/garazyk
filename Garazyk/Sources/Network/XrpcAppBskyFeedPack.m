@@ -65,11 +65,7 @@
             [XrpcErrorHelper setAuthenticationError:response message:@"Authentication required for timeline"];
             return;
         }
-        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader
-                                                            jwtMinter:services.jwtMinter
-                                                      adminController:services.adminController
-                                                              request:request
-                                                             response:response];
+        NSString *actorDID = [XrpcAuthHelper extractDIDFromAuthHeader:authHeader services:services request:request response:response];
         if (!actorDID) return;
         NSInteger limit = 50;
         NSString *cursor = [request queryParamForKey:@"cursor"];
