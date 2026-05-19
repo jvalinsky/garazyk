@@ -21,6 +21,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) NSUInteger httpPort;
 @property (nonatomic, copy) NSString *adminSecret;
 @property (nonatomic, copy) NSString *pdsUrl;
+@property (nonatomic, copy) NSString *plcUrl;
 
 @property (nonatomic, copy) NSString *serviceDomain;
 @property (nonatomic, readonly) NSString *serviceDID;

@@ -18,8 +18,8 @@ import {
   type LocalNetworkOptions,
   startLocalNetwork,
   stopLocalNetwork,
-} from "@garazyk/hamownia/atproto-network";
-import { initE2eTracing } from "@garazyk/hamownia/otel";
+} from "../packages/hamownia/atproto_network.ts";
+import { initE2eTracing } from "../packages/hamownia/otel.ts";
 
 const args = parseArgs(Deno.args, {
   boolean: [
