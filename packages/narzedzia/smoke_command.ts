@@ -1,4 +1,3 @@
-import { parseArgs } from "@std/cli/parse-args";
 import { XrpcClient } from "@garazyk/gruszka";
 import { createCharacterRegistry, ScenarioResult, timedCall } from "@garazyk/hamownia";
 
@@ -85,31 +84,4 @@ export async function runSmoke(pdsUrl: string): Promise<ScenarioResult> {
   return result;
 }
 
-export async function smokeCommandMain(argv: string[]): Promise<void> {
-  const flags = parseArgs(argv, {
-    string: ["pds-url"],
-    boolean: ["help"],
-    alias: { h: "help" },
-    default: { "pds-url": "http://localhost:2583" },
-  });
 
-  if (flags.help) {
-    console.log(`Usage: smoke-command [options]
-
-Run a smoke test against a local ATProto PDS.
-
-Options:
-  --pds-url URL  PDS base URL (default: http://localhost:2583)
-  --help         Show this help
-`);
-    return;
-  }
-
-  const result = await runSmoke(flags["pds-url"]);
-  console.log(result.summary());
-  Deno.exit(result.ok ? 0 : 1);
-}
-
-if (import.meta.main) {
-  await smokeCommandMain(Deno.args);
-}

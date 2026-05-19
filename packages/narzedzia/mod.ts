@@ -1,3 +1,19 @@
+export { runSmoke } from "./smoke_command.ts";
+export {
+  CloudflareClient,
+  runBackfill,
+  runBackup,
+  runDnsAdd,
+  runSetupPds,
+  runValidateConfig,
+} from "./ops_command.ts";
+export type {
+  BackfillOptions,
+  BackupOptions,
+  DnsAddOptions,
+  SetupPdsOptions,
+  ValidateConfigOptions,
+} from "./ops_command.ts";
 export * from "./doc_coverage.ts";
 export * from "./doc_validator.ts";
 export {
