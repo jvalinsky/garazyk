@@ -561,6 +561,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
     PDSDatabaseRecord *record = [[PDSDatabaseRecord alloc] init];
     NSString *writeRev = [TID tid].stringValue;
     record.uri = uri;
+    GZ_LOG_INFO(@"PDSRecordService putRecord: saving uri=%@ for did=%@", uri, did);
     record.did = did;
     record.collection = collection;
     record.rkey = rkey;
@@ -990,6 +991,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
 
             // Build the database record
             NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+            GZ_LOG_INFO(@"PDSRecordService _applyWritesSerialized: building uri=%@ for did=%@", uri, did);
             NSError *cidError = nil;
             NSData *cborData = [ATProtoDagCBOR encodeJSONObject:record error:&cidError];
             if (!cborData) {
@@ -1113,6 +1115,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
             }
 
             NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+            GZ_LOG_INFO(@"PDSRecordService _applyWritesSerialized: building uri=%@ for did=%@", uri, did);
             PDSDatabaseRecord *existingRecord = [self.databasePool getRecord:uri forDid:did error:nil];
             NSString *previousRecordCID =
                 ([existingRecord.cid isKindOfClass:[NSString class]] &&
@@ -1199,6 +1202,7 @@ static BOOL validateCreatedAtCoherence(NSString *collection,
             }
 
             NSString *uri = [NSString stringWithFormat:@"at://%@/%@/%@", did, collection, rkey];
+            GZ_LOG_INFO(@"PDSRecordService _applyWritesSerialized: building uri=%@ for did=%@", uri, did);
             PDSDatabaseRecord *existingRecord = [self.databasePool getRecord:uri forDid:did error:nil];
             BOOL recordExists = (existingRecord != nil);
             NSString *previousRecordCID =

@@ -115,27 +115,34 @@ static NSString *XrpcChatAllowIncomingForDID(NSString *targetDid) {
     }
 
     if (!data || urlResponse.statusCode == 404) {
+        if (urlResponse.statusCode == 404) {
+            NSString *body = data ? [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] : @"(no body)";
+            GZ_LOG_INFO(@"allowIncoming: no declaration found for %@ (404). Body: %@", targetDid, body);
+        }
         return @"all";
     }
 
     if (urlResponse.statusCode < 200 || urlResponse.statusCode >= 300) {
         NSString *body = data ? [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] : @"(no body)";
-        GZ_LOG_ERROR(@"allowIncoming: PDS returned %ld for %@: %@",
-                      (long)urlResponse.statusCode, targetDid, body);
+        GZ_LOG_ERROR(@"allowIncoming: PDS returned %ld for %@ at %@: %@",
+                      (long)urlResponse.statusCode, targetDid, pdsUrl, body);
         return @"all";
     }
 
     id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
     if (![json isKindOfClass:[NSDictionary class]]) {
+        GZ_LOG_WARN(@"allowIncoming: invalid JSON from PDS for %@", targetDid);
         return @"all";
     }
 
     NSDictionary *value = ((NSDictionary *)json)[@"value"];
     if (![value isKindOfClass:[NSDictionary class]]) {
+        GZ_LOG_INFO(@"allowIncoming: no 'value' in declaration for %@, defaulting to 'all'", targetDid);
         return @"all";
     }
 
     NSString *allowIncoming = value[@"allowIncoming"];
+    GZ_LOG_INFO(@"allowIncoming: for %@ is '%@'", targetDid, allowIncoming);
     if ([allowIncoming isEqualToString:@"none"] ||
         [allowIncoming isEqualToString:@"following"] ||
         [allowIncoming isEqualToString:@"all"]) {
