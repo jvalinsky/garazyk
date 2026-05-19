@@ -32,7 +32,8 @@
     "@garazyk/schemat": "./packages/schemat/mod.ts",
     "@garazyk/narzedzia": "./packages/narzedzia/mod.ts",
     "@cliffy/command": "jsr:@cliffy/command@^1.1.0",
-    "@cliffy/prompt": "jsr:@cliffy/prompt@^1.1.0"
+    "@cliffy/prompt": "jsr:@cliffy/prompt@^1.1.0",
+    "@cliffy/table": "jsr:@cliffy/table@^1.1.0"
   },
   "lint": {
     "exclude": ["packages/gruszka/lexicons.ts"]
