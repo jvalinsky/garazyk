@@ -1,5 +1,6 @@
 /** List and summarize available topology presets. @module topology_list */
 import { resolvePreset, TopologyRegistry } from "./topology.ts";
+import { logWarn } from "./logging.ts";
 
 /** Summary info for a single topology preset. */
 export interface TopologyPresetSummary {
@@ -24,7 +25,8 @@ export async function listTopologyPresets(): Promise<TopologyPresetSummary[]> {
         name,
         description: topology.description,
       });
-    } catch {
+    } catch (err) {
+      logWarn(`Failed to resolve topology preset "${name}": ${err}`);
       presetsMap.set(name, { name });
     }
   }
