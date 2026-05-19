@@ -33,7 +33,7 @@ export async function discoverScenarios(): Promise<DiscoveredScenario[]> {
             category: categorize(id),
             needsPds2: needsPds2(id),
             requires,
-            parameters: getParameters(id),
+            parameters: getParameters(id) as Record<string, { type: "string" | "number" | "boolean"; default: string | number | boolean; description: string; }>,
           });
         }
       }

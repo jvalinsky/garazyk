@@ -5,6 +5,7 @@
     "./packages/schemat",
     "./packages/hamownia",
     "./packages/narzedzia",
+    "./packages/tui",
     "./scripts/scenario-dashboard"
   ],
   "imports": {
@@ -31,6 +32,7 @@
     "@garazyk/gruszka/": "./packages/gruszka/",
     "@garazyk/schemat": "./packages/schemat/mod.ts",
     "@garazyk/narzedzia": "./packages/narzedzia/mod.ts",
+    "@garazyk/tui": "./packages/tui/mod.ts",
     "@cliffy/command": "jsr:@cliffy/command@^1.1.0",
     "@cliffy/prompt": "jsr:@cliffy/prompt@^1.1.0",
     "@cliffy/table": "jsr:@cliffy/table@^1.1.0"
