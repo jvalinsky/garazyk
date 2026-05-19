@@ -174,6 +174,7 @@ export async function run(): Promise<ScenarioResult> {
     );
     if (refreshed) {
       luna.accessJwt = refreshed.accessJwt;
+      luna.refreshJwt = refreshed.refreshJwt;
     }
   } else {
     result.stepSkipped("Refresh session", "No refreshJwt available");

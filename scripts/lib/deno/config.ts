@@ -31,9 +31,10 @@ export const SERVICE_URLS: Record<string, string> = {
   pds2: pds2,
 };
 
-export const APPVIEW_ADMIN_SECRET = Deno.env.get("APPVIEW_ADMIN_SECRET") ?? "admin-secret";
-export const PDS_ADMIN_PASSWORD = Deno.env.get("PDS_ADMIN_PASSWORD") ?? "admin";
-export const VIDEO_SERVICE_DID = Deno.env.get("VIDEO_SERVICE_DID") ?? "did:example:video";
+export const APPVIEW_ADMIN_SECRET = config.appviewAdminSecret;
+export const PDS_ADMIN_PASSWORD = config.pdsAdminPassword;
+export const UI_ADMIN_PASSWORD = config.uiAdminPassword;
+export const VIDEO_SERVICE_DID = config.videoServiceDid;
 
 export const WEB_CLIENT_TOPOLOGY: WebClientConfig | undefined = config.webClientTopology;
 

@@ -1,8 +1,5 @@
 import { assertEquals } from "@std/assert";
-import {
-  appendScenarioLoopResult,
-  buildOtelReexecEnv,
-} from "./run_command.ts";
+import { appendScenarioLoopResult, buildOtelReexecEnv } from "./run_command.ts";
 import { ScenarioResult } from "./runner.ts";
 import type { ScenarioExecutionResult } from "./run_loop.ts";
 import type { ScenarioInfo } from "./scenario_metadata.ts";
