@@ -3,7 +3,8 @@
     "dev": "deno run -A --watch=static/,routes/ dev.ts",
     "build": "deno run -A dev.ts build",
     "start": "deno run -A main.ts",
-    "preview": "deno run -A main.ts"
+    "preview": "deno run -A main.ts",
+    "tui": "deno run -A tui.ts"
   },
   "imports": {
     "$fresh/": "https://deno.land/x/fresh@1.7.3/",

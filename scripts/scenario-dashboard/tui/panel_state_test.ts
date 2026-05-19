@@ -88,16 +88,51 @@ Deno.test("clampPanelState: clamps cursor to itemCount", () => {
 });
 
 Deno.test("clampPanelState: clamps scrollOffset", () => {
-  const state = { cursor: 0, scrollOffset: 50, itemCount: 100 };
+  // Cursor at 50, scrollOffset at 50, visibleRows=10 → visible 50-59
+  const state = { cursor: 50, scrollOffset: 50, itemCount: 100 };
   const clamped = clampPanelState(state, 100, 10);
-  // scrollOffset 50 is within valid range (0..90), so it stays
+  // scrollOffset 50 is valid (cursor 50 is within visible range 50-59)
   assertEquals(clamped.scrollOffset, 50);
 });
 
 Deno.test("clampPanelState: clamps scrollOffset when too large", () => {
-  const state = { cursor: 0, scrollOffset: 95, itemCount: 100 };
+  // Cursor at 95, scrollOffset at 95, visibleRows=10 → max offset = 90
+  // After clamping: scrollOffset=90, cursor=95, visible range 90-99 → cursor is visible
+  const state = { cursor: 95, scrollOffset: 95, itemCount: 100 };
   const clamped = clampPanelState(state, 100, 10);
-  assertEquals(clamped.scrollOffset, 90); // max offset = 100 - 10
+  assertEquals(clamped.scrollOffset, 90);
+});
+
+Deno.test("clampPanelState: scrolls to cursor when cursor is above visible area", () => {
+  // Cursor at 2, scrollOffset at 5 → cursor is above visible window
+  const state = { cursor: 2, scrollOffset: 5, itemCount: 20 };
+  const clamped = clampPanelState(state, 20, 5);
+  assertEquals(clamped.cursor, 2);
+  assertEquals(clamped.scrollOffset, 2); // scrolled up to make cursor visible
+});
+
+Deno.test("clampPanelState: scrolls to cursor when cursor is below visible area", () => {
+  // Cursor at 10, scrollOffset at 3, visibleRows=5 → visible is 3-7, cursor 10 is below
+  const state = { cursor: 10, scrollOffset: 3, itemCount: 20 };
+  const clamped = clampPanelState(state, 20, 5);
+  assertEquals(clamped.cursor, 10);
+  assertEquals(clamped.scrollOffset, 6); // 10 - 5 + 1 = 6
+});
+
+Deno.test("clampPanelState: empty list resets cursor and scroll", () => {
+  const state = { cursor: 5, scrollOffset: 3, itemCount: 10 };
+  const clamped = clampPanelState(state, 0, 5);
+  assertEquals(clamped.cursor, 0);
+  assertEquals(clamped.scrollOffset, 0);
+});
+
+Deno.test("clampPanelState: cursor stays visible after itemCount shrinks", () => {
+  // Was at cursor=8, scrollOffset=5, visibleRows=5 → visible 5-9
+  // itemCount shrinks to 6 → max cursor=5, visible should be 2-6
+  const state = { cursor: 8, scrollOffset: 5, itemCount: 10 };
+  const clamped = clampPanelState(state, 6, 5);
+  assertEquals(clamped.cursor, 5); // clamped to last item
+  assertEquals(clamped.scrollOffset, 1); // 5 - 5 + 1 = 1
 });
 
 // ---------------------------------------------------------------------------

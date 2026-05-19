@@ -4,8 +4,14 @@
  * @module tui/panels/run
  */
 
-import type { ScreenBuffer } from "@garazyk/tui";
-import { DEFAULT_STYLE, COLORS, ANSI, bold, dim, fg, reverse } from "@garazyk/tui";
+import type { RenderCommand } from "@garazyk/tui";
+import {
+  bold,
+  COLORS,
+  dim,
+  fg,
+  truncate,
+} from "@garazyk/tui";
 import type { PanelLayout } from "@garazyk/tui";
 import { panelContentArea } from "@garazyk/tui";
 import type { Run } from "../../services/types.ts";
@@ -13,44 +19,66 @@ import type { RunProgress } from "../../dashboard_state.ts";
 
 /** Render the active run panel. */
 export function renderRunPanel(
-  buf: ScreenBuffer,
   panel: PanelLayout,
   activeRun: Run | null,
   progressByRunId: Record<string, RunProgress>,
   focused: boolean,
-): void {
+): RenderCommand[] {
   const area = panelContentArea(panel);
+  const clip = { x: area.x, y: area.y, width: area.width, height: area.height };
+  const cmds: RenderCommand[] = [];
 
-  if (area.height < 1 || area.width < 10) return;
+  if (area.height < 1 || area.width < 10) return cmds;
 
   if (!activeRun) {
-    renderNoActiveRun(buf, area);
-    return;
+    return renderNoActiveRun(area, focused);
   }
 
   const progress = progressByRunId[activeRun.id];
-  const isLive = activeRun.status === "running" || activeRun.status === "starting";
+  const isLive = activeRun.status === "running" ||
+    activeRun.status === "starting";
 
   let row = 0;
 
   // Run ID + status
   const statusBadge = runStatusBadge(activeRun.status);
   const statusStyle = runStatusStyle(activeRun.status);
-  const runId = activeRun.id.length > 23
-    ? activeRun.id.slice(0, 23)
-    : activeRun.id;
+  const runId = truncate(activeRun.id, 23);
 
-  buf.write(area.x, area.y + row, statusBadge, statusStyle);
-  buf.write(area.x + statusBadge.length + 1, area.y + row, runId, bold(fg(COLORS.textPrimary)));
+  cmds.push({
+    type: "text",
+    x: area.x,
+    y: area.y + row,
+    text: statusBadge,
+    style: statusStyle,
+    clip,
+  });
+  cmds.push({
+    type: "text",
+    x: area.x + statusBadge.length + 1,
+    y: area.y + row,
+    text: runId,
+    style: bold(fg(COLORS.textPrimary)),
+    clip,
+  });
   row++;
 
   // Progress bar
   if (row < area.height) {
-    const completed = activeRun.passed + activeRun.failed + activeRun.skipped;
-    const total = activeRun.totalScenarios;
+    // Use progress.completed (from live report scanning) when available,
+    // fall back to the Run object's counts (only updated on completion)
+    const completed = progress?.completed ?? (activeRun.passed + activeRun.failed + activeRun.skipped);
+    const total = progress?.total ?? activeRun.totalScenarios;
     const barWidth = Math.min(area.width - 12, 30);
     const bar = progressBar(completed, total, barWidth);
-    buf.write(area.x, area.y + row, bar, fg(COLORS.textPrimary));
+    cmds.push({
+      type: "text",
+      x: area.x,
+      y: area.y + row,
+      text: bar,
+      style: fg(COLORS.textPrimary),
+      clip,
+    });
     row++;
   }
 
@@ -62,97 +90,175 @@ export function renderRunPanel(
 
     let col = area.x;
     if (passed > 0 || failed === 0) {
-      buf.write(col, area.y + row, `${passed} passed`, fg(COLORS.statusOk));
+      cmds.push({
+        type: "text",
+        x: col,
+        y: area.y + row,
+        text: `${passed} passed`,
+        style: fg(COLORS.statusOk),
+        clip,
+      });
       col += 10;
     }
     if (failed > 0) {
-      buf.write(col, area.y + row, `${failed} failed`, fg(COLORS.statusErr));
+      cmds.push({
+        type: "text",
+        x: col,
+        y: area.y + row,
+        text: `${failed} failed`,
+        style: fg(COLORS.statusErr),
+        clip,
+      });
       col += 10;
     }
     if (skipped > 0) {
-      buf.write(col, area.y + row, `${skipped} skipped`, fg(COLORS.statusWarn));
+      cmds.push({
+        type: "text",
+        x: col,
+        y: area.y + row,
+        text: `${skipped} skipped`,
+        style: fg(COLORS.statusWarn),
+        clip,
+      });
     }
     row++;
   }
 
   // Current scenario (from progress)
   if (row < area.height && progress && progress.total > 0) {
-    const current = `Scenario ${Math.min(progress.completed + 1, progress.total)}/${progress.total}: ${progress.currentScenario ?? "..."}`;
-    const truncated = current.length > area.width
-      ? current.slice(0, area.width - 1) + "…"
-      : current;
-    buf.write(area.x, area.y + row, truncated, fg(COLORS.textPrimary));
+    const current = `Scenario ${
+      Math.min(progress.completed + 1, progress.total)
+    }/${progress.total}: ${progress.currentScenario ?? "..."}`;
+    const truncated = truncate(current, area.width);
+    cmds.push({
+      type: "text",
+      x: area.x,
+      y: area.y + row,
+      text: truncated,
+      style: fg(COLORS.textPrimary),
+      clip,
+    });
     row++;
   }
 
   // Elapsed time
   if (row < area.height && isLive) {
     const elapsed = formatElapsed(Date.now() - activeRun.startedAt);
-    buf.write(area.x, area.y + row, `Elapsed: ${elapsed}`, dim(fg(COLORS.textSecondary)));
+    cmds.push({
+      type: "text",
+      x: area.x,
+      y: area.y + row,
+      text: `Elapsed: ${elapsed}`,
+      style: dim(fg(COLORS.textSecondary)),
+      clip,
+    });
     row++;
   }
 
   // Duration (for completed runs)
   if (row < area.height && !isLive && activeRun.durationS != null) {
-    buf.write(area.x, area.y + row, `Duration: ${formatDurationSec(activeRun.durationS)}`, dim(fg(COLORS.textSecondary)));
+    cmds.push({
+      type: "text",
+      x: area.x,
+      y: area.y + row,
+      text: `Duration: ${formatDurationSec(activeRun.durationS)}`,
+      style: dim(fg(COLORS.textSecondary)),
+      clip,
+    });
     row++;
   }
 
-  // Activity indicator (from progress)
-  if (row < area.height && isLive && progress) {
-    const secondsSinceUpdate = progress.updatedAt > 0
-      ? Math.floor((Date.now() - progress.updatedAt) / 1000)
-      : 0;
-    const level = staleLevel(secondsSinceUpdate);
-    const dot = level === "active" ? "●" : level === "slow" ? "◐" : "○";
-    const dotStyle = level === "active" ? fg(COLORS.statusOk) : level === "slow" ? fg(COLORS.statusWarn) : fg(COLORS.statusMuted);
-    const label = secondsSinceUpdate > 0
-      ? `Last activity: ${formatElapsed(secondsSinceUpdate * 1000)} ago`
-      : "Waiting for activity...";
-
-    buf.setCell(area.x, area.y + row, { char: dot, style: dotStyle });
-    buf.write(area.x + 2, area.y + row, label, dim(fg(COLORS.textSecondary)));
-    row++;
-  }
-
-  // Panel-local actions hint (if focused)
-  if (focused && area.height > 2) {
+  // Actions
+  if (focused && row < area.height) {
     const actionsRow = area.y + area.height - 1;
-    const actions = isLive ? "[S]top  [R]estart" : "[R]estart";
-    buf.write(area.x, actionsRow, actions, dim(fg(COLORS.accent)));
+    if (isLive) {
+      cmds.push({
+        type: "text",
+        x: area.x,
+        y: actionsRow,
+        text: "[S]top  [R]estart",
+        style: dim(fg(COLORS.accent)),
+        clip,
+      });
+    } else {
+      cmds.push({
+        type: "text",
+        x: area.x,
+        y: actionsRow,
+        text: "[R]estart",
+        style: dim(fg(COLORS.accent)),
+        clip,
+      });
+    }
   }
+
+  return cmds;
 }
 
-function renderNoActiveRun(buf: ScreenBuffer, area: { x: number; y: number; width: number; height: number }): void {
-  buf.write(area.x, area.y, "No active run", dim(fg(COLORS.textMuted)));
-  if (area.height > 2) {
-    buf.write(area.x, area.y + 2, "Select scenarios and press Enter to start", dim(fg(COLORS.textSecondary)));
-  }
-}
+function renderNoActiveRun(
+  area: { x: number; y: number; width: number; height: number },
+  focused: boolean,
+): RenderCommand[] {
+  const cmds: RenderCommand[] = [];
+  const clip = { x: area.x, y: area.y, width: area.width, height: area.height };
+  cmds.push({
+    type: "text",
+    x: area.x,
+    y: area.y,
+    text: "No active run",
+    style: dim(fg(COLORS.textMuted)),
+    clip,
+  });
 
+  if (focused && area.height >= 2) {
+    const actionsRow = area.y + area.height - 1;
+    cmds.push({
+      type: "text",
+      x: area.x,
+      y: actionsRow,
+      text: "[S]tart suite  [R]estart full",
+      style: dim(fg(COLORS.accent)),
+      clip,
+    });
+  }
+  return cmds;
+}
 function runStatusBadge(status: Run["status"]): string {
   switch (status) {
-    case "completed": return "[done]";
-    case "running": return "[run ]";
+    case "completed":
+      return "[done]";
+    case "running":
+      return "[run ]";
     case "starting":
-    case "stopping": return "[wait]";
-    case "error": return "[fail]";
+    case "stopping":
+      return "[wait]";
+    case "error":
+      return "[fail]";
   }
 }
 
-function runStatusStyle(status: Run["status"]): import("@garazyk/tui").CellStyle {
+function runStatusStyle(
+  status: Run["status"],
+): import("@garazyk/tui").CellStyle {
   switch (status) {
-    case "completed": return fg(COLORS.statusOk);
-    case "running": return fg(COLORS.statusWarn);
+    case "completed":
+      return fg(COLORS.statusOk);
+    case "running":
+      return fg(COLORS.statusWarn);
     case "starting":
-    case "stopping": return fg(COLORS.statusWarn);
-    case "error": return fg(COLORS.statusErr);
+    case "stopping":
+      return fg(COLORS.statusWarn);
+    case "error":
+      return fg(COLORS.statusErr);
   }
 }
 
 function progressBar(completed: number, total: number, width: number): string {
   if (total <= 0) return `[${"─".repeat(width)}]`;
-  const filled = Math.max(0, Math.min(width, Math.round((completed / total) * width)));
+  const filled = Math.max(
+    0,
+    Math.min(width, Math.round((completed / total) * width)),
+  );
   const bar = "█".repeat(filled) + "░".repeat(width - filled);
   return `[${bar}] ${completed}/${total}`;
 }
@@ -172,8 +278,3 @@ function formatDurationSec(s: number): string {
   return `${m}m ${sec}s`;
 }
 
-function staleLevel(secondsSinceUpdate: number): "active" | "slow" | "stale" {
-  if (secondsSinceUpdate < 30) return "active";
-  if (secondsSinceUpdate < 90) return "slow";
-  return "stale";
-}

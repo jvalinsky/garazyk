@@ -7,8 +7,15 @@
  * @module tui/panels/scenarios
  */
 
-import type { ScreenBuffer, CellStyle } from "@garazyk/tui";
-import { DEFAULT_STYLE, COLORS, ANSI, bold, dim, fg, reverse } from "@garazyk/tui";
+import type { CellStyle, RenderCommand } from "@garazyk/tui";
+import {
+  bold,
+  COLORS,
+  dim,
+  fg,
+  reverse,
+  truncate,
+} from "@garazyk/tui";
 import type { PanelLayout } from "@garazyk/tui";
 import { panelContentArea } from "@garazyk/tui";
 import type { PanelState } from "../panel_state.ts";
@@ -78,17 +85,18 @@ function buildFlatItems(
 
 /** Render the scenarios panel. */
 export function renderScenariosPanel(
-  buf: ScreenBuffer,
   panel: PanelLayout,
   scenarios: ScenarioMeta[],
   collapsedCategories: Set<string>,
   searchTerm: string,
   panelState: PanelState,
   focused: boolean,
-): void {
+): RenderCommand[] {
   const area = panelContentArea(panel);
+  const clip = { x: area.x, y: area.y, width: area.width, height: area.height };
+  const cmds: RenderCommand[] = [];
 
-  if (area.height < 1 || area.width < 10) return;
+  if (area.height < 1 || area.width < 10) return cmds;
 
   // Group scenarios by category
   const grouped: Record<string, ScenarioMeta[]> = {};
@@ -103,20 +111,27 @@ export function renderScenariosPanel(
   for (const [cat, list] of Object.entries(grouped)) {
     filtered[cat] = searchTerm
       ? list.filter((s) =>
-        s.id.includes(searchTerm) || s.name.toLowerCase().includes(searchTerm.toLowerCase())
+        s.id.includes(searchTerm) ||
+        s.name.toLowerCase().includes(searchTerm.toLowerCase())
       )
       : list;
   }
 
   // Build flat list of items
   const items = buildFlatItems(filtered, collapsedCategories);
-  const visibleRows = area.height - (searchTerm ? 2 : 1); // reserve search + actions
 
   let row = 0;
 
   // Search indicator
   if (searchTerm) {
-    buf.writeClipped(area.x, area.y + row, `/${searchTerm}█`, fg(COLORS.accent), area);
+    cmds.push({
+      type: "text",
+      x: area.x,
+      y: area.y + row,
+      text: `/${searchTerm}█`,
+      style: fg(COLORS.accent),
+      clip,
+    });
     row++;
   }
 
@@ -129,16 +144,19 @@ export function renderScenariosPanel(
     const isCursorRow = focused && i === cursor;
 
     // Highlight style for cursor row
-    const rowStyle = isCursorRow
-      ? reverse(fg(COLORS.accent))
-      : undefined;
+    const rowStyle = isCursorRow ? reverse(fg(COLORS.accent)) : undefined;
 
     if (item.type === "category") {
       const header = `${item.statusDot} ${item.label} (${item.count})`;
-      const style = isCursorRow
-        ? rowStyle!
-        : bold(fg(COLORS.textPrimary));
-      buf.writeClipped(area.x, area.y + row, header, style, area);
+      const style = isCursorRow ? rowStyle! : bold(fg(COLORS.textPrimary));
+      cmds.push({
+        type: "text",
+        x: area.x,
+        y: area.y + row,
+        text: header,
+        style,
+        clip,
+      });
     } else {
       // Scenario row
       const dotStyle = isCursorRow ? rowStyle! : item.statusStyle;
@@ -147,11 +165,31 @@ export function renderScenariosPanel(
 
       // Clear the row first for clean reverse-video highlight
       if (isCursorRow) {
-        buf.fillRect(area.x, area.y + row, area.width, 1, " ", rowStyle!);
+        cmds.push({
+          type: "rect",
+          box: { x: area.x, y: area.y + row, width: area.width, height: 1 },
+          char: " ",
+          style: rowStyle!,
+          clip,
+        });
       }
 
-      buf.writeClipped(area.x, area.y + row, item.statusDot, dotStyle, area);
-      buf.writeClipped(area.x + 2, area.y + row, name, nameStyle, area);
+      cmds.push({
+        type: "text",
+        x: area.x,
+        y: area.y + row,
+        text: item.statusDot,
+        style: dotStyle,
+        clip,
+      });
+      cmds.push({
+        type: "text",
+        x: area.x + 2,
+        y: area.y + row,
+        text: name,
+        style: nameStyle,
+        clip,
+      });
     }
 
     row++;
@@ -161,14 +199,30 @@ export function renderScenariosPanel(
   const summaryRow = area.y + area.height - 1;
   if (focused) {
     const actions = "[Enter] run  [/] filter  [Space] toggle";
-    buf.writeClipped(area.x, summaryRow, actions, dim(fg(COLORS.accent)), area);
+    cmds.push({
+      type: "text",
+      x: area.x,
+      y: summaryRow,
+      text: actions,
+      style: dim(fg(COLORS.accent)),
+      clip,
+    });
   } else {
     const total = scenarios.length;
     const passed = scenarios.filter((s) => s.lastStatus === "passed").length;
     const pct = total > 0 ? Math.round((passed / total) * 100) : 0;
     const summary = `Total: ${total}  Last: ${pct}% pass`;
-    buf.writeClipped(area.x, summaryRow, summary, dim(fg(COLORS.textSecondary)), area);
+    cmds.push({
+      type: "text",
+      x: area.x,
+      y: summaryRow,
+      text: summary,
+      style: dim(fg(COLORS.textSecondary)),
+      clip,
+    });
   }
+
+  return cmds;
 }
 
 /** Get the flat item count for the scenarios panel. */
@@ -187,7 +241,8 @@ export function getScenariosItemCount(
   for (const [cat, list] of Object.entries(grouped)) {
     filtered[cat] = searchTerm
       ? list.filter((s) =>
-        s.id.includes(searchTerm) || s.name.toLowerCase().includes(searchTerm.toLowerCase())
+        s.id.includes(searchTerm) ||
+        s.name.toLowerCase().includes(searchTerm.toLowerCase())
       )
       : list;
   }
@@ -211,7 +266,8 @@ export function getScenariosItemAt(
   for (const [cat, list] of Object.entries(grouped)) {
     filtered[cat] = searchTerm
       ? list.filter((s) =>
-        s.id.includes(searchTerm) || s.name.toLowerCase().includes(searchTerm.toLowerCase())
+        s.id.includes(searchTerm) ||
+        s.name.toLowerCase().includes(searchTerm.toLowerCase())
       )
       : list;
   }
@@ -221,23 +277,26 @@ export function getScenariosItemAt(
 
 function scenarioStatusDot(status?: string | null): string {
   switch (status) {
-    case "passed": return "●";
-    case "failed": return "✖";
-    case "skipped": return "○";
-    default: return "○";
+    case "passed":
+      return "●";
+    case "failed":
+      return "✖";
+    case "skipped":
+      return "○";
+    default:
+      return "○";
   }
 }
 
 function scenarioStatusStyle(status?: string | null): CellStyle {
   switch (status) {
-    case "passed": return fg(COLORS.statusOk);
-    case "failed": return fg(COLORS.statusErr);
-    case "skipped": return fg(COLORS.statusWarn);
-    default: return fg(COLORS.statusMuted);
+    case "passed":
+      return fg(COLORS.statusOk);
+    case "failed":
+      return fg(COLORS.statusErr);
+    case "skipped":
+      return fg(COLORS.statusWarn);
+    default:
+      return fg(COLORS.statusMuted);
   }
-}
-
-function truncate(s: string, maxLen: number): string {
-  if (s.length <= maxLen) return s;
-  return s.slice(0, maxLen - 1) + "…";
 }

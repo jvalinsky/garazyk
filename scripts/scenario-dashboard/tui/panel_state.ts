@@ -57,11 +57,18 @@ export function moveCursorDown(state: PanelState, visibleRows: number): PanelSta
   return { ...state, cursor: newCursor, scrollOffset: Math.max(0, newOffset) };
 }
 
-/** Clamp cursor and scroll after itemCount changes. */
+/** Clamp cursor and scroll after itemCount changes. Ensures cursor remains visible. */
 export function clampPanelState(state: PanelState, itemCount: number, visibleRows: number): PanelState {
   const maxCursor = Math.max(0, itemCount - 1);
   const cursor = Math.min(state.cursor, maxCursor);
+  // Clamp scroll offset to valid range
   const maxOffset = Math.max(0, itemCount - visibleRows);
-  const scrollOffset = Math.min(state.scrollOffset, maxOffset);
+  let scrollOffset = Math.min(state.scrollOffset, maxOffset);
+  // Enforce cursor visibility invariant: scrollOffset <= cursor < scrollOffset + visibleRows
+  if (cursor < scrollOffset) {
+    scrollOffset = cursor;
+  } else if (visibleRows > 0 && cursor >= scrollOffset + visibleRows) {
+    scrollOffset = cursor - visibleRows + 1;
+  }
   return { ...state, cursor, scrollOffset, itemCount };
 }

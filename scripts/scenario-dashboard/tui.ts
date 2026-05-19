@@ -92,7 +92,7 @@ async function renderOnce(options: DashboardTuiOptions): Promise<void> {
       const buf = new ScreenBuffer(size.cols, size.rows);
       const focus = new FocusRing();
       const panelStates = createPanelStates();
-      const recentRuns = fetchRuns(db, 6);
+      const recentRuns = state.runs.recentRuns;
       renderView(buf, state, layout, focus, panelStates, recentRuns);
       await writeToTerminal(buf.fullRedraw() + "\n");
       runtime.destroy();
@@ -156,8 +156,14 @@ async function runInteractiveTui(options: DashboardTuiOptions): Promise<void> {
   Deno.addSignalListener("SIGWINCH", onResize);
   try { Deno.addSignalListener("SIGTSTP", onSuspend); } catch { /* not supported on all platforms */ }
 
-  // Subscribe to state changes
+  // Subscribe to state changes — re-clamp panel states and mark dirty
   const unsubscribe = runtime.onChange(() => {
+    // Re-clamp panel states when data changes (e.g. after filtering, collapsing)
+    if (layout) {
+      for (const panelId of PANEL_IDS) {
+        syncPanelItemCount(panelId, panelStates, runtime, layout);
+      }
+    }
     needsRender = true;
   });
 
@@ -235,12 +241,6 @@ function handleKey(
   if (isKey(key, Keys.TAB) && !key.shift) { focus.next(); return true; }
   if (isKey(key, Keys.TAB) && key.shift) { focus.prev(); return true; }
   if (isKey(key, "?")) { onHelp(); return true; }
-  if (isKey(key, "r") && !key.ctrl) {
-    // Force refresh — re-dispatch boot cmds
-    runtime.dispatch({ type: "network/healthTimeout" });
-    runtime.dispatch({ type: "runs/activeTimeout" });
-    return true;
-  }
 
   // Panel jump keys (1-4)
   if (!key.ctrl && !key.alt && !key.shift) {
@@ -259,27 +259,59 @@ function handleKey(
     return handleCursorDown(focus, panelStates, runtime, layout);
   }
 
-  // Panel-specific keys
+  // Panel-specific keys — checked before global shortcuts so panel
+  // bindings like `r` (restart) take priority over global refresh
   const panel = focus.current;
+  let handled = false;
   switch (panel) {
     case "network":
-      return handleNetworkKey(key, runtime);
+      handled = handleNetworkKey(key, runtime);
+      break;
     case "scenarios":
-      return handleScenariosKey(key, runtime, panelStates, onFilter);
+      handled = handleScenariosKey(key, runtime, panelStates, onFilter);
+      break;
     case "run":
-      return handleRunKey(key, runtime);
+      handled = handleRunKey(key, runtime);
+      break;
     case "history":
-      return handleHistoryKey(key, runtime);
+      handled = handleHistoryKey(key, runtime);
+      break;
   }
+  if (handled) return true;
+
+  // Global refresh — Ctrl+R (after panel handlers have had their chance)
+  if (isCtrl(key, "r")) {
+    runtime.dispatch({ type: "network/healthTimeout" });
+    runtime.dispatch({ type: "runs/activeTimeout" });
+    return true;
+  }
+
   return false;
 }
 
-/** Get the visible row count for a panel (content area height minus actions row). */
+/** Get the visible row count for a panel (content area minus reserved rows). */
 function getVisibleRows(panelId: PanelId, layout: NonNullable<ReturnType<typeof computeLayout>>): number {
   const panel = layout.panels.find((p) => p.id === panelId);
   if (!panel) return 0;
   const area = panelContentArea(panel);
-  return Math.max(0, area.height - 1); // -1 for actions hint row
+  let available = area.height;
+
+  switch (panelId) {
+    case "scenarios":
+      // Search row (1 when filtering) + actions row (1)
+      available -= 2;
+      break;
+    case "history":
+      // Metrics row (1-2) + actions row (1)
+      available -= 3;
+      break;
+    default:
+      // Actions row (1)
+      available -= 1;
+      break;
+  }
+
+  return Math.max(0, available);
 }
 
 /** Update itemCount for a panel based on current state. */
@@ -310,8 +342,7 @@ function syncPanelItemCount(
       break;
     }
     case "history": {
-      const recentRuns = fetchRuns(db, 6);
-      panelStates[panelId] = clampPanelState(panelStates[panelId], recentRuns.length, visibleRows);
+      panelStates[panelId] = clampPanelState(panelStates[panelId], runtime.state.runs.recentRuns.length, visibleRows);
       break;
     }
     case "run":
@@ -405,15 +436,16 @@ function handleScenariosKey(
         });
       }
     } else if (item && item.type === "category") {
-      // Run all scenarios in this category
-      const scenarios = runtime.state.scenarios.all;
-      const ids = scenarios.map((s) => s.id);
+      // Run all scenarios in this category only
+      const categoryScenarios = runtime.state.scenarios.all.filter(
+        (s) => s.category === item.key,
+      );
+      const ids = categoryScenarios.map((s) => s.id);
       if (ids.length > 0) {
-        const byId = new Map(scenarios.map((s) => [s.id, s]));
         runtime.dispatch({
           type: "runs/startRequested",
           scenarioIds: ids,
-          pds2: ids.some((id) => byId.get(id)?.needsPds2),
+          pds2: categoryScenarios.some((s) => s.needsPds2),
         });
       }
     }
@@ -435,8 +467,16 @@ function handleRunKey(key: Key, runtime: TuiRuntimeHandle): boolean {
 }
 
 function handleHistoryKey(key: Key, runtime: TuiRuntimeHandle): boolean {
-  if (isKey(key, "r")) {
+  if (isKey(key, "r") && !key.ctrl) {
     runtime.dispatch({ type: "runs/restartRequested" });
+    return true;
+  }
+  if (isKey(key, "v") && !key.ctrl) {
+    // View log for the active run
+    const active = runtime.state.runs.active;
+    if (active) {
+      runtime.dispatch({ type: "runs/viewRun", runId: active.id });
+    }
     return true;
   }
   return false;
@@ -478,8 +518,7 @@ function renderAndWrite(
   focus: FocusRing,
   panelStates: PanelStates,
 ): void {
-  const recentRuns = fetchRuns(db, 6);
-  renderView(buf, state, layout, focus, panelStates, recentRuns);
+  renderView(buf, state, layout, focus, panelStates, state.runs.recentRuns);
   const output = buf.diff();
   if (output) {
     writeToTerminal(output);
@@ -625,4 +664,12 @@ function renderRun(run: import("./services/types.ts").Run): string {
   const status = run.status === "completed" ? "[done]" : run.status === "running" ? "[run ]" : run.status === "error" ? "[fail]" : "[wait]";
   const failures = run.failed > 0 ? `${run.failed} failed` : `${run.passed} passed`;
   return `${status} ${run.id.padEnd(23)} ${bar} ${failures}`;
+}
+
+// ---------------------------------------------------------------------------
+// Main entry point
+// ---------------------------------------------------------------------------
+
+if (import.meta.main) {
+  runDashboardTui();
 }

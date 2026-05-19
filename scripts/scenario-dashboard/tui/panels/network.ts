@@ -7,8 +7,14 @@
  * @module tui/panels/network
  */
 
-import type { ScreenBuffer, CellStyle } from "@garazyk/tui";
-import { DEFAULT_STYLE, COLORS, ANSI, bold, dim, fg, reverse } from "@garazyk/tui";
+import type { CellStyle, RenderCommand } from "@garazyk/tui";
+import {
+  bold,
+  COLORS,
+  dim,
+  fg,
+  reverse,
+} from "@garazyk/tui";
 import type { PanelLayout } from "@garazyk/tui";
 import { panelContentArea } from "@garazyk/tui";
 import type { PanelState } from "../panel_state.ts";
@@ -16,60 +22,114 @@ import type { ServiceStatus } from "../../services/types.ts";
 
 /** Render the network services panel. */
 export function renderNetworkPanel(
-  buf: ScreenBuffer,
   panel: PanelLayout,
   services: ServiceStatus[],
   panelState: PanelState,
   focused: boolean,
-): void {
+): RenderCommand[] {
   const area = panelContentArea(panel);
+  const clip = { x: area.x, y: area.y, width: area.width, height: area.height };
+  const cmds: RenderCommand[] = [];
 
-  if (area.height < 1 || area.width < 10) return;
+  if (area.height < 1 || area.width < 10) return cmds;
 
   let row = 0;
 
   // Service list
   if (services.length === 0) {
-    buf.writeClipped(area.x, area.y + row, "No services discovered", dim(fg(COLORS.textMuted)), area);
-    return;
+    cmds.push({
+      type: "text",
+      x: area.x,
+      y: area.y + row,
+      text: "No services discovered",
+      style: dim(fg(COLORS.textMuted)),
+      clip,
+    });
+    return cmds;
   }
 
   const scrollOffset = panelState.scrollOffset;
   const cursor = panelState.cursor;
 
-  for (let i = scrollOffset; i < services.length && row < area.height - 1; i++) {
+  for (
+    let i = scrollOffset;
+    i < services.length && row < area.height - 1;
+    i++
+  ) {
     const svc = services[i]!;
     const isCursorRow = focused && i === cursor;
 
     // Status dot
     const dot = statusDot(svc.status, svc.healthy);
-    const dotStyle = isCursorRow ? reverse(fg(COLORS.accent)) : statusDotStyle(svc.status, svc.healthy);
+    const dotStyle = isCursorRow
+      ? reverse(fg(COLORS.accent))
+      : statusDotStyle(svc.status, svc.healthy);
 
     // Name
     const name = (svc.label || svc.name).padEnd(12);
 
     // Status badge
     const badge = statusBadge(svc.status, svc.healthy);
-    const badgeStyle = isCursorRow ? reverse(fg(COLORS.accent)) : statusBadgeStyle(svc.status, svc.healthy);
+    const badgeStyle = isCursorRow
+      ? reverse(fg(COLORS.accent))
+      : statusBadgeStyle(svc.status, svc.healthy);
 
     // Endpoint
     const endpoint = svc.url || (svc.port ? `localhost:${svc.port}` : "");
 
     // Render — clear row first if cursor for clean highlight
     if (isCursorRow) {
-      buf.fillRect(area.x, area.y + row, area.width, 1, " ", reverse(fg(COLORS.accent)));
+      cmds.push({
+        type: "rect",
+        box: { x: area.x, y: area.y + row, width: area.width, height: 1 },
+        char: " ",
+        style: reverse(fg(COLORS.accent)),
+        clip,
+      });
     }
 
     let col = area.x;
-    buf.writeClipped(col, area.y + row, dot, dotStyle, area);
+    cmds.push({
+      type: "text",
+      x: col,
+      y: area.y + row,
+      text: dot,
+      style: dotStyle,
+      clip,
+    });
     col += 2;
-    buf.writeClipped(col, area.y + row, name, isCursorRow ? reverse(fg(COLORS.accent)) : bold(fg(COLORS.textPrimary)), area);
+    cmds.push({
+      type: "text",
+      x: col,
+      y: area.y + row,
+      text: name,
+      style: isCursorRow
+        ? reverse(fg(COLORS.accent))
+        : bold(fg(COLORS.textPrimary)),
+      clip,
+    });
     col += 12;
-    buf.writeClipped(col, area.y + row, badge, badgeStyle, area);
+    cmds.push({
+      type: "text",
+      x: col,
+      y: area.y + row,
+      text: badge,
+      style: badgeStyle,
+      clip,
+    });
     col += badge.length + 1;
 
     if (col + endpoint.length <= area.x + area.width) {
-      buf.writeClipped(col, area.y + row, endpoint, isCursorRow ? reverse(fg(COLORS.accent)) : dim(fg(COLORS.textSecondary)), area);
+      cmds.push({
+        type: "text",
+        x: col,
+        y: area.y + row,
+        text: endpoint,
+        style: isCursorRow
+          ? reverse(fg(COLORS.accent))
+          : dim(fg(COLORS.textSecondary)),
+        clip,
+      });
     }
 
     row++;
@@ -79,8 +139,17 @@ export function renderNetworkPanel(
   if (focused) {
     const actionsRow = area.y + area.height - 1;
     const actions = "[S]tart  [P]ds2  [X]stop  ↑↓ navigate";
-    buf.writeClipped(area.x, actionsRow, actions, dim(fg(COLORS.accent)), area);
+    cmds.push({
+      type: "text",
+      x: area.x,
+      y: actionsRow,
+      text: actions,
+      style: dim(fg(COLORS.accent)),
+      clip,
+    });
   }
+
+  return cmds;
 }
 
 /** Get the selected service, or null if no services. */
@@ -99,7 +168,10 @@ function statusDot(status: ServiceStatus["status"], healthy?: boolean): string {
   return "○";
 }
 
-function statusDotStyle(status: ServiceStatus["status"], healthy?: boolean): CellStyle {
+function statusDotStyle(
+  status: ServiceStatus["status"],
+  healthy?: boolean,
+): CellStyle {
   if (status === "running" && healthy !== false) return fg(COLORS.statusOk);
   if (status === "running" && healthy === false) return fg(COLORS.statusWarn);
   if (status === "starting") return fg(COLORS.statusWarn);
@@ -107,7 +179,10 @@ function statusDotStyle(status: ServiceStatus["status"], healthy?: boolean): Cel
   return fg(COLORS.statusMuted);
 }
 
-function statusBadge(status: ServiceStatus["status"], healthy?: boolean): string {
+function statusBadge(
+  status: ServiceStatus["status"],
+  healthy?: boolean,
+): string {
   if (status === "running" && healthy !== false) return " ok ";
   if (status === "running" && healthy === false) return " ?? ";
   if (status === "starting") return " .. ";
@@ -115,7 +190,10 @@ function statusBadge(status: ServiceStatus["status"], healthy?: boolean): string
   return " -- ";
 }
 
-function statusBadgeStyle(status: ServiceStatus["status"], healthy?: boolean): CellStyle {
+function statusBadgeStyle(
+  status: ServiceStatus["status"],
+  healthy?: boolean,
+): CellStyle {
   if (status === "running" && healthy !== false) return fg(COLORS.statusOk);
   if (status === "running" && healthy === false) return fg(COLORS.statusWarn);
   if (status === "starting") return fg(COLORS.statusWarn);

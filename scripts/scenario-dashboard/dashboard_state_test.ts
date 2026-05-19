@@ -227,6 +227,57 @@ Deno.test("runs polling: active and progress in-flight flags are independent", (
   assertEquals(fetchCmds(cmds)[0].url, "/api/runs/run-1/progress");
 });
 
+Deno.test("runs/activeReceived: run switch invalidates stale in-flight polls", () => {
+  // Set up: run-A is active with progress and logs in flight
+  const runA: Run = {
+    id: "run-A",
+    startedAt: Date.now(),
+    status: "running",
+    totalScenarios: 2,
+    passed: 0,
+    failed: 0,
+    skipped: 0,
+  };
+  let state = initState({ runs: { ...initState().runs, active: runA, viewedRunId: runA.id } });
+
+  // Start progress polling for run-A
+  const [progressStarted] = step(state, { type: "runs/progressTimeout", runId: runA.id });
+  assertEquals(progressStarted.runs.progressInFlight, true);
+  assertEquals(progressStarted.runs.progressInFlightRunId, "run-A");
+
+  // Start logs polling for run-A
+  const [logsStarted] = step(progressStarted, { type: "logs/timeout", runId: runA.id });
+  assertEquals(logsStarted.logs.fetchInFlight, true);
+  assertEquals(logsStarted.logs.inFlightRunId, "run-A");
+
+  // Now run-B becomes active (run switch)
+  const runB: Run = {
+    id: "run-B",
+    startedAt: Date.now(),
+    status: "running",
+    totalScenarios: 3,
+    passed: 0,
+    failed: 0,
+    skipped: 0,
+  };
+  const [next, cmds] = step(logsStarted, { type: "runs/activeReceived", run: runB });
+
+  // Stale in-flight flags should be cleared
+  assertEquals(next.runs.progressInFlight, false);
+  assertEquals(next.runs.progressInFlightRunId, null);
+  assertEquals(next.logs.fetchInFlight, false);
+  assertEquals(next.logs.inFlightRunId, null);
+
+  // New polls for run-B should be scheduled
+  const schedCmdTypes = scheduleCmds(cmds).map((c) => {
+    if (c.type === "schedule" && c.msg && "type" in c.msg) return c.msg.type;
+    return "";
+  });
+  assert(schedCmdTypes.includes("runs/progressTimeout"), "should schedule progress for run-B");
+  assert(schedCmdTypes.includes("logs/timeout"), "should schedule logs for run-B");
+  assert(schedCmdTypes.includes("metrics/timeout"), "should schedule metrics for run-B");
+});
+
 Deno.test("runs/progressReceived: ignores stale token response", () => {
   const run: Run = {
     id: "run-1",
@@ -458,12 +509,70 @@ Deno.test("tick: updates elapsed time counters", () => {
 
 Deno.test("bootCmds: returns initial fetch commands", () => {
   const cmds = bootCmds();
-  assertEquals(cmds.length, 4);
+  assertEquals(cmds.length, 5);
   const urls = fetchCmds(cmds).map((c) => c.url);
   assertEquals(urls.includes("/api/network/health"), true);
   assertEquals(urls.includes("/api/runs/active"), true);
   assertEquals(urls.includes("/api/scenarios"), true);
   assertEquals(urls.includes("/api/topologies"), true);
+  assertEquals(urls.includes("/api/runs/recent?limit=6"), true);
+});
+
+// ---------------------------------------------------------------------------
+// Recent runs polling
+// ---------------------------------------------------------------------------
+
+Deno.test("runs/recentTimeout: dispatches fetch when not in-flight", () => {
+  const state = initState();
+  const [next, cmds] = step(state, { type: "runs/recentTimeout" });
+  assertEquals(next.runs.recentInFlight, true);
+  assertEquals(fetchCmds(cmds).length, 1);
+  assertEquals(fetchCmds(cmds)[0].url, "/api/runs/recent?limit=6");
+});
+
+Deno.test("runs/recentTimeout: deduplicates when already in-flight", () => {
+  const state = initState();
+  const [inFlight] = step(state, { type: "runs/recentTimeout" });
+  const [next, cmds] = step(inFlight, { type: "runs/recentTimeout" });
+  assertEquals(next.runs.recentInFlight, true);
+  assertEquals(cmds.length, 0);
+});
+
+Deno.test("runs/recentReceived: stores runs and schedules next poll", () => {
+  const state = initState();
+  const [polling] = step(state, { type: "runs/recentTimeout" });
+  const runs: Run[] = [
+    {
+      id: "run-1",
+      startedAt: Date.now() / 1000,
+      status: "completed",
+      totalScenarios: 5,
+      passed: 5,
+      failed: 0,
+      skipped: 0,
+    },
+  ];
+  const [next, cmds] = step(polling, {
+    type: "runs/recentReceived",
+    runs,
+    token: polling.runs.recentToken,
+  });
+  assertEquals(next.runs.recentRuns, runs);
+  assertEquals(next.runs.recentInFlight, false);
+  assertEquals(scheduleCmds(cmds).length, 1);
+});
+
+Deno.test("runs/recentFailed: backs off delay", () => {
+  const state = initState();
+  const [polling] = step(state, { type: "runs/recentTimeout" });
+  const [next, cmds] = step(polling, {
+    type: "runs/recentFailed",
+    error: "timeout",
+    token: polling.runs.recentToken,
+  });
+  assertEquals(next.runs.recentInFlight, false);
+  assertEquals(next.runs.recentDelayMs, 10000); // 5000 * 2
+  assertEquals(scheduleCmds(cmds).length, 1);
 });
 
 // ---------------------------------------------------------------------------
