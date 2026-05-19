@@ -3,7 +3,7 @@
  */
 
 import { Database } from "sqlite3";
-import { Run, ScenarioStatus } from "../services/types.ts";
+import { Run, ScenarioResult, ScenarioResultView, ScenarioStatus, ScenarioStep } from "../services/types.ts";
 
 /** Normalize epoch timestamps: second-based values are converted to ms. */
 export function normalizeEpochMs(value: number | null | undefined): number | undefined {
@@ -128,4 +128,73 @@ export function fetchLatestResultPerScenario(
     failed: number;
     skipped: number;
   }>;
+}
+
+/**
+ * Fetch all scenario results for a given run, parsed into view model shape.
+ * Steps and artifacts are deserialized from JSON strings.
+ */
+export function fetchScenarioResults(
+  db: Database,
+  runId: string,
+): ScenarioResultView[] {
+  const rows = db.prepare(`
+    SELECT
+      scenario_id,
+      scenario_name,
+      status,
+      passed,
+      failed,
+      skipped,
+      duration_ms,
+      steps_json,
+      artifacts_json,
+      started_at,
+      finished_at
+    FROM scenario_results
+    WHERE run_id = ?
+    ORDER BY id
+  `).all(runId) as Array<{
+    scenario_id: string;
+    scenario_name: string;
+    status: ScenarioStatus;
+    passed: number;
+    failed: number;
+    skipped: number;
+    duration_ms: number | null;
+    steps_json: string;
+    artifacts_json: string | null;
+    started_at: number | null;
+    finished_at: number | null;
+  }>;
+
+  return rows.map((row): ScenarioResultView => {
+    let steps: ScenarioStep[] = [];
+    try {
+      steps = JSON.parse(row.steps_json) as ScenarioStep[];
+    } catch {
+      // Malformed JSON — leave empty
+    }
+
+    let artifacts: Record<string, unknown> | null = null;
+    if (row.artifacts_json) {
+      try {
+        artifacts = JSON.parse(row.artifacts_json) as Record<string, unknown>;
+      } catch {
+        // Malformed — leave null
+      }
+    }
+
+    return {
+      scenarioId: row.scenario_id,
+      scenarioName: row.scenario_name,
+      status: row.status,
+      passed: row.passed,
+      failed: row.failed,
+      skipped: row.skipped,
+      durationMs: row.duration_ms,
+      steps,
+      artifacts,
+    };
+  });
 }
