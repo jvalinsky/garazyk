@@ -60,6 +60,14 @@ export interface RunsSlice {
   progressInFlightRunId: string | null;
   /** Latest progress request token */
   progressToken: number;
+  /** Recent completed runs for the history panel */
+  recentRuns: Run[];
+  /** Whether a recent-runs fetch is in-flight */
+  recentInFlight: boolean;
+  /** Current backoff delay for next recent-runs poll (ms) */
+  recentDelayMs: number;
+  /** Latest recent-runs request token */
+  recentToken: number;
 }
 
 /** Per-run progress snapshot used for polling display. */
@@ -249,6 +257,10 @@ export type Msg =
   | { type: "runs/restartRequested" }
   | { type: "runs/restartSucceeded"; newRunId: string }
   | { type: "runs/restartFailed"; error: string }
+  // Recent runs (history panel)
+  | { type: "runs/recentReceived"; runs: Run[]; token?: number }
+  | { type: "runs/recentFailed"; error: string; token?: number }
+  | { type: "runs/recentTimeout"; token?: number }
   // Scenarios
   | { type: "scenarios/received"; scenarios: ScenarioMeta[] }
   | { type: "scenarios/failed"; error: string }
@@ -306,8 +318,22 @@ const BASE_PROGRESS_POLL_MS = 2000;
 const BASE_ACTIVE_POLL_MS = 2000;
 const BASE_LOG_POLL_MS = 2000;
 const BASE_METRICS_POLL_MS = 3000;
+const BASE_RECENT_POLL_MS = 5000;
 const MAX_BACKOFF_MS = 30000;
+/** Maximum entries kept in per-run-id maps (progress, logs) to prevent unbounded growth. */
+const MAX_RUN_CACHE_SIZE = 20;
 const BACKOFF_MULTIPLIER = 2;
+
+/** Trim a Record to keep at most `max` entries, evicting the oldest keys first. */
+function trimRecord<T>(record: Record<string, T>, max: number): Record<string, T> {
+  const keys = Object.keys(record);
+  if (keys.length <= max) return record;
+  // Keep the last `max` entries (most recently added)
+  const kept = keys.slice(-max);
+  const result: Record<string, T> = {};
+  for (const k of kept) result[k] = record[k]!;
+  return result;
+}
 
 // ---------------------------------------------------------------------------
 // update() — pure state transition function
@@ -472,47 +498,64 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
       const isActive = isLiveRun(msg.run);
       const delay = isActive ? BASE_ACTIVE_POLL_MS : BASE_ACTIVE_POLL_MS * 5; // 10s when idle
 
-      const runs: RunsSlice = {
+      let runs: RunsSlice = {
         ...state.runs,
         active: msg.run,
         activeInFlight: false,
         activeDelayMs: delay,
       };
+      let logs = state.logs;
+      let metrics = state.metrics;
 
       cmds.push({ type: "schedule", delayMs: delay, msg: { type: "runs/activeTimeout" } });
 
-      // Kick off log and metrics polling when a run becomes active
-      if (isActive && msg.run && !state.runs.progressInFlight) {
+      // Kick off log and metrics polling when a run becomes active.
+      // Always schedule for the new run — stale in-flight polls for the
+      // previous run will be rejected by token/runId checks.
+      const prevActiveId = state.runs.active?.id ?? null;
+      const newActiveId = msg.run?.id ?? null;
+      const runChanged = prevActiveId !== newActiveId;
+
+      if (isActive && msg.run) {
+        // Invalidate stale in-flight polls for the previous run
+        if (runChanged) {
+          if (state.runs.progressInFlight && state.runs.progressInFlightRunId !== newActiveId) {
+            runs = { ...runs, progressInFlight: false, progressInFlightRunId: null };
+          }
+          if (state.logs.fetchInFlight && state.logs.inFlightRunId !== newActiveId) {
+            logs = { ...logs, fetchInFlight: false, inFlightRunId: null };
+          }
+          if (state.metrics.fetchInFlight) {
+            metrics = { ...metrics, fetchInFlight: false };
+          }
+        }
+
         cmds.push({
           type: "schedule",
           delayMs: 0,
           msg: { type: "runs/progressTimeout", runId: msg.run.id },
         });
-      }
-      if (isActive && msg.run && !state.logs.fetchInFlight) {
         cmds.push({
           type: "schedule",
           delayMs: 0,
           msg: { type: "logs/timeout", runId: msg.run.id },
         });
-      }
-      if (isActive && !state.metrics.fetchInFlight) {
         cmds.push({ type: "schedule", delayMs: 0, msg: { type: "metrics/timeout" } });
       }
 
       // Clear metrics when no active run
-      if (!isActive && Object.keys(state.metrics.stats).length > 0) {
-        return [{ ...state, runs, metrics: { ...state.metrics, stats: {} } }, cmds];
+      if (!isActive && Object.keys(metrics.stats).length > 0) {
+        return [{ ...state, runs, logs, metrics: { ...metrics, stats: {} } }, cmds];
       }
 
       // If run just completed, clear progress
-      if (msg.run && !isActive && state.runs.progressByRunId[msg.run.id]) {
-        const progressByRunId = { ...state.runs.progressByRunId };
+      if (msg.run && !isActive && runs.progressByRunId[msg.run.id]) {
+        const progressByRunId = { ...runs.progressByRunId };
         delete progressByRunId[msg.run.id];
-        return [{ ...state, runs: { ...runs, progressByRunId } }, cmds];
+        return [{ ...state, runs: { ...runs, progressByRunId }, logs, metrics }, cmds];
       }
 
-      return [{ ...state, runs }, cmds];
+      return [{ ...state, runs, logs, metrics }, cmds];
     }
 
     case "runs/activeFailed": {
@@ -570,7 +613,10 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
 
       const runs: RunsSlice = {
         ...state.runs,
-        progressByRunId: { ...state.runs.progressByRunId, [runId]: msg.progress },
+        progressByRunId: trimRecord(
+          { ...state.runs.progressByRunId, [runId]: msg.progress },
+          MAX_RUN_CACHE_SIZE,
+        ),
         lastProgressMs: 0,
         progressDelayMs: delay,
         progressInFlight: false,
@@ -725,6 +771,52 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
       return [{ ...state, ux: { ...state.ux, busy: false } }, []];
     }
 
+    // ── Recent runs (history panel) ──────────────────────────────────────
+
+    case "runs/recentReceived": {
+      if (!shouldAccept(state.runs.recentToken, msg.token)) return [state, []];
+      const delay = BASE_RECENT_POLL_MS;
+      return [
+        {
+          ...state,
+          runs: {
+            ...state.runs,
+            recentRuns: msg.runs,
+            recentInFlight: false,
+            recentDelayMs: delay,
+          },
+        },
+        [{ type: "schedule", delayMs: delay, msg: { type: "runs/recentTimeout" } }],
+      ];
+    }
+
+    case "runs/recentFailed": {
+      if (!shouldAccept(state.runs.recentToken, msg.token)) return [state, []];
+      const backoff = Math.min(state.runs.recentDelayMs * BACKOFF_MULTIPLIER, MAX_BACKOFF_MS);
+      return [
+        {
+          ...state,
+          runs: { ...state.runs, recentInFlight: false, recentDelayMs: backoff },
+        },
+        [{ type: "schedule", delayMs: backoff, msg: { type: "runs/recentTimeout" } }],
+      ];
+    }
+
+    case "runs/recentTimeout": {
+      if (state.runs.recentInFlight) return [state, []]; // dedup
+      const token = nextToken(state.runs.recentToken);
+      return [
+        { ...state, runs: { ...state.runs, recentInFlight: true, recentToken: token } },
+        [{
+          type: "fetch",
+          url: "/api/runs/recent?limit=6",
+          onSuccess: "runs/recentReceived",
+          onError: "runs/recentFailed",
+          meta: { token },
+        }],
+      ];
+    }
+
     // ── Scenarios ────────────────────────────────────────────────────────
 
     case "scenarios/received": {
@@ -842,7 +934,10 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
       const delay = isActive ? BASE_LOG_POLL_MS : BASE_LOG_POLL_MS * 5;
       const logs: LogsSlice = {
         ...state.logs,
-        textByRunId: { ...state.logs.textByRunId, [runId]: msg.text },
+        textByRunId: trimRecord(
+          { ...state.logs.textByRunId, [runId]: msg.text },
+          MAX_RUN_CACHE_SIZE,
+        ),
         fetchInFlight: false,
         inFlightRunId: null,
         delayMs: delay,
@@ -1028,6 +1123,10 @@ export function createInitialState(overrides?: Partial<DashboardState>): Dashboa
       progressInFlight: false,
       progressInFlightRunId: null,
       progressToken: 0,
+      recentRuns: [],
+      recentInFlight: false,
+      recentDelayMs: BASE_RECENT_POLL_MS,
+      recentToken: 0,
     },
     scenarios: {
       all: [],
@@ -1099,6 +1198,12 @@ export function bootCmds(): Cmd[] {
       url: "/api/topologies",
       onSuccess: "topology/listReceived",
       onError: "topology/listFailed",
+    },
+    {
+      type: "fetch",
+      url: "/api/runs/recent?limit=6",
+      onSuccess: "runs/recentReceived",
+      onError: "runs/recentFailed",
     },
   ];
 }

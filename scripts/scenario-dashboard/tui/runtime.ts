@@ -8,6 +8,7 @@
  * @module tui/runtime
  */
 
+import { join } from "@std/path";
 import type { Cmd, DashboardState, Msg, RunProgress, TopologyPreview } from "../dashboard_state.ts";
 import { bootCmds, createInitialState, update } from "../dashboard_state.ts";
 import type { Run, ServiceStatus } from "../services/types.ts";
@@ -93,10 +94,7 @@ async function resolveServiceHandler(url: string): Promise<ServiceHandler | null
 
   // /api/runs/active
   if (url === "/api/runs/active") {
-    return async () => {
-      const run = svc.run.runManager.getActiveRun();
-      return { activeRun: run ?? null };
-    };
+    return () => Promise.resolve({ activeRun: svc.run.runManager.getActiveRun() ?? null });
   }
 
   // /api/runs/active/metrics
@@ -154,21 +152,80 @@ async function resolveServiceHandler(url: string): Promise<ServiceHandler | null
   if (progressMatch) {
     const runId = progressMatch[1]!;
     return async () => {
-      // Build progress from active run state
+      // Build progress from active run state + live report scanning
       const run = svc.run.runManager.getActiveRun();
-      const completed = run ? run.passed + run.failed + run.skipped : 0;
-      const total = run?.totalScenarios ?? 0;
+      if (!run || run.id !== runId) {
+        return {
+          exists: false,
+          runId,
+          total: 0,
+          completed: 0,
+          currentScenario: null,
+          currentScenarioId: null,
+          elapsedMs: 0,
+          updatedAt: Date.now(),
+          now: Date.now(),
+          running: false,
+        } satisfies RunProgress;
+      }
+
+      // Scan the reports directory for completed scenario reports
+      // to get real-time progress instead of waiting for run completion
+      let completed = 0;
+      let currentScenario: string | null = null;
+      let currentScenarioId: string | null = null;
+      if (run.reportsDir) {
+        try {
+          const reportFiles: string[] = [];
+          for await (const entry of Deno.readDir(run.reportsDir)) {
+            if (entry.isFile && entry.name.endsWith(".json") &&
+              !entry.name.endsWith("-progress.json") &&
+              entry.name !== "overall-summary.json") {
+              reportFiles.push(entry.name);
+            }
+          }
+          completed = reportFiles.length;
+
+          // The most recently modified report is likely the current scenario
+          if (reportFiles.length > 0 && reportFiles.length < run.totalScenarios) {
+            // Find the most recent report file
+            let latestName = reportFiles[0]!;
+            let latestMtime = 0;
+            for (const name of reportFiles) {
+              try {
+                const stat = await Deno.stat(join(run.reportsDir, name));
+                if (stat.mtime && stat.mtime.getTime() > latestMtime) {
+                  latestMtime = stat.mtime.getTime();
+                  latestName = name;
+                }
+              } catch {
+                // skip
+              }
+            }
+            // Extract scenario name from filename: 20260507-183659-01_account_lifecycle.json
+            const nameMatch = latestName.match(/^\d{8}-\d{6}-(.+)\.json$/);
+            if (nameMatch) {
+              currentScenario = nameMatch[1]!.replace(/_/g, " ");
+              const idMatch = nameMatch[1]!.match(/^(\d+)/);
+              currentScenarioId = idMatch ? idMatch[1] : null;
+            }
+          }
+        } catch {
+          // Reports dir may not exist yet — that's fine
+        }
+      }
+
       const progress: RunProgress = {
-        exists: !!run,
+        exists: true,
         runId,
-        total,
+        total: run.totalScenarios,
         completed,
-        currentScenario: null,
-        currentScenarioId: null,
-        elapsedMs: run ? Date.now() - run.startedAt : 0,
+        currentScenario,
+        currentScenarioId,
+        elapsedMs: Date.now() - run.startedAt,
         updatedAt: Date.now(),
         now: Date.now(),
-        running: run?.status === "running",
+        running: run.status === "running",
       };
       return progress;
     };
@@ -198,6 +255,16 @@ async function resolveServiceHandler(url: string): Promise<ServiceHandler | null
         }
       }
       return "";
+    };
+  }
+
+  // /api/runs/recent
+  const recentMatch = url.match(/^\/api\/runs\/recent(\?.*)?$/);
+  if (recentMatch) {
+    const params = new URL(url, "http://localhost").searchParams;
+    const limit = parseInt(params.get("limit") ?? "10");
+    return async () => {
+      return svc.queries.fetchRuns(svc.db.db, limit);
     };
   }
 
@@ -444,7 +511,10 @@ export function createTuiRuntime(initialState?: DashboardState): TuiRuntimeHandl
           handleSchedule(cmd, d);
           break;
         case "navigate":
-          // No-op in TUI — no URLs to navigate to
+          // In the web dashboard, navigate changes the URL.
+          // In the TUI, a navigate after start/restart means we should
+          // immediately re-fetch the active run so the UI updates.
+          d({ type: "runs/activeTimeout" });
           break;
         case "none":
           break;
