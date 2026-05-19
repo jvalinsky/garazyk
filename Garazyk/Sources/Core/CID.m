@@ -49,7 +49,7 @@ static const NSUInteger kMaxVarintSize = 9;
 }
 
 + (nullable instancetype)cidFromString:(NSString *)string {
-    if (!string || string.length == 0) {
+    if (![string isKindOfClass:[NSString class]] || string.length == 0) {
         return nil;
     }
     if (string.length > 256) {
