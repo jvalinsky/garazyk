@@ -278,17 +278,12 @@ export interface RunCommandOptions {
 }
 
 /**
- * Main entry point for the scenario runner command.
- *
- * @param argv - CLI arguments (typically `Deno.args`)
- * @param options - Paths required for scenario discovery and OTel re-exec
- * @returns A promise that resolves when execution completes
+ * Execute scenarios from a pre-parsed RunnerArgs.
  */
-export async function runScenarioCommand(
-  argv: string[],
+export async function executeRunnerArgs(
+  args: RunnerArgs,
   options: RunCommandOptions,
 ): Promise<void> {
-  const args = parseRunnerArgs(argv);
   if (args.otel && shouldReexecForOtel()) {
     const status = await reexecWithOtel(options.scriptPath);
     Deno.exit(status.code);
@@ -490,4 +485,19 @@ export async function runScenarioCommand(
   if (fatalError || totalFailed > 0) Deno.exit(1);
 
   lifecycle.scheduleDrainTimeout();
+}
+
+/**
+ * Main entry point for the scenario runner command.
+ *
+ * @param argv - CLI arguments (typically `Deno.args`)
+ * @param options - Paths required for scenario discovery and OTel re-exec
+ * @returns A promise that resolves when execution completes
+ */
+export async function runScenarioCommand(
+  argv: string[],
+  options: RunCommandOptions,
+): Promise<void> {
+  const args = parseRunnerArgs(argv);
+  await executeRunnerArgs(args, options);
 }
