@@ -2,15 +2,21 @@
  * View Layer — renders DashboardState into the ScreenBuffer
  *
  * Composes all panel renderers, the status bar, and the hint bar
- * into a single frame on the screen buffer.
+ * into a single frame on the screen buffer. All rendering goes
+ * through the command pipeline — no direct buffer writes.
  *
  * @module tui/view
  */
 
-import type { ScreenBuffer, CellStyle } from "@garazyk/tui";
-import { DEFAULT_STYLE, COLORS, ANSI, bold, dim, fg, reverse } from "@garazyk/tui";
+import type { RenderCommand, ScreenBuffer } from "@garazyk/tui";
+import {
+  bold,
+  COLORS,
+  DEFAULT_STYLE,
+  dim,
+  fg,
+} from "@garazyk/tui";
 import type { DashboardLayout, PanelId } from "@garazyk/tui";
-import { findPanel } from "@garazyk/tui";
 import type { FocusRing } from "@garazyk/tui";
 import type { PanelStates } from "./panel_state.ts";
 import type { DashboardState } from "../dashboard_state.ts";
@@ -19,6 +25,7 @@ import { renderNetworkPanel } from "./panels/network.ts";
 import { renderScenariosPanel } from "./panels/scenarios.ts";
 import { renderRunPanel } from "./panels/run.ts";
 import { renderHistoryPanel } from "./panels/history.ts";
+import { rasterize } from "@garazyk/tui";
 
 /** Render the full dashboard view onto the screen buffer. */
 export function renderView(
@@ -31,33 +38,43 @@ export function renderView(
 ): void {
   buf.clear();
 
+  const commands: RenderCommand[] = [];
+
   // Status bar
-  renderStatusBar(buf, layout.statusBar, state);
+  commands.push(...renderStatusBar(layout.statusBar, state));
 
   // Hint bar
-  renderHintBar(buf, layout.hintBar, focus);
+  commands.push(...renderHintBar(layout.hintBar, focus));
 
   // Panel borders
   for (const panel of layout.panels) {
     const isFocused = focus.isFocused(panel.id);
-    buf.box(panel.x, panel.y, panel.width, panel.height, DEFAULT_STYLE, isFocused);
-
-    // Panel title
     const title = panelTitle(panel.id);
-    buf.boxTitle(panel.x, panel.y, panel.width, title, DEFAULT_STYLE);
+    commands.push({
+      type: "box",
+      box: { x: panel.x, y: panel.y, width: panel.width, height: panel.height },
+      style: DEFAULT_STYLE,
+      title,
+      focused: isFocused,
+    });
   }
 
   // Panel content
   for (const panel of layout.panels) {
     const isFocused = focus.isFocused(panel.id);
     const ps = panelStates[panel.id];
+    let panelCommands: RenderCommand[] = [];
     switch (panel.id) {
       case "network":
-        renderNetworkPanel(buf, panel, state.network.services, ps, isFocused);
+        panelCommands = renderNetworkPanel(
+          panel,
+          state.network.services,
+          ps,
+          isFocused,
+        );
         break;
       case "scenarios":
-        renderScenariosPanel(
-          buf,
+        panelCommands = renderScenariosPanel(
           panel,
           state.scenarios.all,
           state.ux.collapsedCategories,
@@ -67,13 +84,27 @@ export function renderView(
         );
         break;
       case "run":
-        renderRunPanel(buf, panel, state.runs.active, state.runs.progressByRunId, isFocused);
+        panelCommands = renderRunPanel(
+          panel,
+          state.runs.active,
+          state.runs.progressByRunId,
+          isFocused,
+        );
         break;
       case "history":
-        renderHistoryPanel(buf, panel, recentRuns, state.metrics.stats, ps, isFocused);
+        panelCommands = renderHistoryPanel(
+          panel,
+          recentRuns,
+          state.metrics.stats,
+          ps,
+          isFocused,
+        );
         break;
     }
+    commands.push(...panelCommands);
   }
+
+  rasterize(commands, buf);
 }
 
 /** Panel display titles. */
@@ -88,23 +119,35 @@ function panelTitle(id: PanelId): string {
   return TITLES[id] ?? id;
 }
 
-/** Render the top status bar. */
+/** Generate render commands for the top status bar. */
 function renderStatusBar(
-  buf: ScreenBuffer,
   bar: { x: number; y: number; width: number },
   state: DashboardState,
-): void {
+): RenderCommand[] {
+  const cmds: RenderCommand[] = [];
+
   // Title
-  const title = bold(fg(COLORS.title));
-  buf.write(bar.x, bar.y, " Garazyk Scenario Dashboard", title);
+  cmds.push({
+    type: "text",
+    x: bar.x,
+    y: bar.y,
+    text: " Garazyk Scenario Dashboard",
+    style: bold(fg(COLORS.title)),
+  });
 
   // Time
   const time = new Date().toLocaleTimeString();
-  const timeStr = time.padStart(bar.width - 30);
-  buf.write(bar.x + bar.width - time.length - 1, bar.y, time, dim(fg(COLORS.textSecondary)));
+  cmds.push({
+    type: "text",
+    x: bar.x + bar.width - time.length - 1,
+    y: bar.y,
+    text: time,
+    style: dim(fg(COLORS.textSecondary)),
+  });
 
   // Running indicator
-  const runningServices = state.network.services.filter((s) => s.status === "running").length;
+  const runningServices =
+    state.network.services.filter((s) => s.status === "running").length;
   const totalServices = state.network.services.length;
   if (totalServices > 0) {
     const svcStr = ` ${runningServices}/${totalServices} svc `;
@@ -113,16 +156,24 @@ function renderStatusBar(
       : runningServices > 0
       ? fg(COLORS.statusWarn)
       : fg(COLORS.statusMuted);
-    buf.write(bar.x + 28, bar.y, svcStr, svcStyle);
+    cmds.push({
+      type: "text",
+      x: bar.x + 28,
+      y: bar.y,
+      text: svcStr,
+      style: svcStyle,
+    });
   }
+
+  return cmds;
 }
 
-/** Render the bottom hint bar. */
+/** Generate render commands for the bottom hint bar. */
 function renderHintBar(
-  buf: ScreenBuffer,
   bar: { x: number; y: number; width: number },
   focus: FocusRing,
-): void {
+): RenderCommand[] {
+  const cmds: RenderCommand[] = [];
   const hints = [
     "1 Network",
     "2 Scenarios",
@@ -130,6 +181,7 @@ function renderHintBar(
     "4 History",
     "q/Esc Quit",
     "Tab Switch",
+    "Ctrl+R Refresh",
   ];
 
   let col = bar.x + 1;
@@ -142,15 +194,33 @@ function renderHintBar(
       const num = numMatch[1]!;
       const label = numMatch[2]!;
       const isCurrent = parseInt(num) - 1 === focus.currentIndex;
-      const numStyle = isCurrent ? bold(fg(COLORS.accent)) : dim(fg(COLORS.textMuted));
-      const labelStyle = isCurrent ? fg(COLORS.textPrimary) : dim(fg(COLORS.textMuted));
+      const numStyle = isCurrent
+        ? bold(fg(COLORS.accent))
+        : dim(fg(COLORS.textMuted));
+      const labelStyle = isCurrent
+        ? fg(COLORS.textPrimary)
+        : dim(fg(COLORS.textMuted));
 
-      buf.write(col, bar.y, num, numStyle);
-      buf.write(col + 1, bar.y, ` ${label}`, labelStyle);
+      cmds.push({ type: "text", x: col, y: bar.y, text: num, style: numStyle });
+      cmds.push({
+        type: "text",
+        x: col + 1,
+        y: bar.y,
+        text: ` ${label}`,
+        style: labelStyle,
+      });
       col += hint.length + 2;
     } else {
-      buf.write(col, bar.y, hint, dim(fg(COLORS.textMuted)));
+      cmds.push({
+        type: "text",
+        x: col,
+        y: bar.y,
+        text: hint,
+        style: dim(fg(COLORS.textMuted)),
+      });
       col += hint.length + 2;
     }
   }
+
+  return cmds;
 }

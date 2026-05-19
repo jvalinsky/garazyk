@@ -7,8 +7,15 @@
  * @module tui/panels/history
  */
 
-import type { ScreenBuffer, CellStyle } from "@garazyk/tui";
-import { DEFAULT_STYLE, COLORS, ANSI, bold, dim, fg, reverse } from "@garazyk/tui";
+import type { RenderCommand } from "@garazyk/tui";
+import {
+  bold,
+  COLORS,
+  dim,
+  fg,
+  reverse,
+  truncate,
+} from "@garazyk/tui";
 import type { PanelLayout } from "@garazyk/tui";
 import { panelContentArea } from "@garazyk/tui";
 import type { PanelState } from "../panel_state.ts";
@@ -16,16 +23,17 @@ import type { Run } from "../../services/types.ts";
 
 /** Render the run history panel. */
 export function renderHistoryPanel(
-  buf: ScreenBuffer,
   panel: PanelLayout,
   recentRuns: Run[],
   metrics: Record<string, { cpu: string; mem: string }>,
   panelState: PanelState,
   focused: boolean,
-): void {
+): RenderCommand[] {
   const area = panelContentArea(panel);
+  const clip = { x: area.x, y: area.y, width: area.width, height: area.height };
+  const cmds: RenderCommand[] = [];
 
-  if (area.height < 1 || area.width < 10) return;
+  if (area.height < 1 || area.width < 10) return cmds;
 
   let row = 0;
   const cursor = panelState.cursor;
@@ -35,26 +43,57 @@ export function renderHistoryPanel(
 
   // Recent runs
   if (recentRuns.length === 0) {
-    buf.writeClipped(area.x, area.y + row, "No recorded runs", dim(fg(COLORS.textMuted)), area);
+    cmds.push({
+      type: "text",
+      x: area.x,
+      y: area.y + row,
+      text: "No recorded runs",
+      style: dim(fg(COLORS.textMuted)),
+      clip,
+    });
   } else {
     for (let i = scrollOffset; i < recentRuns.length && row < maxRunRows; i++) {
       const run = recentRuns[i]!;
       const isCursorRow = focused && i === cursor;
 
       const statusBadge = runStatusBadge(run.status);
-      const statusStyle = isCursorRow ? reverse(fg(COLORS.accent)) : runStatusStyle(run.status);
-      const runId = run.id.length > 20 ? run.id.slice(0, 20) : run.id;
+      const statusStyle = isCursorRow
+        ? reverse(fg(COLORS.accent))
+        : runStatusStyle(run.status);
+      const runId = truncate(run.id, 20);
 
       // Clear row for cursor highlight
       if (isCursorRow) {
-        buf.fillRect(area.x, area.y + row, area.width, 1, " ", reverse(fg(COLORS.accent)));
+        cmds.push({
+          type: "rect",
+          box: { x: area.x, y: area.y + row, width: area.width, height: 1 },
+          char: " ",
+          style: reverse(fg(COLORS.accent)),
+          clip,
+        });
       }
 
       let col = area.x;
-      buf.writeClipped(col, area.y + row, statusBadge, statusStyle, area);
+      cmds.push({
+        type: "text",
+        x: col,
+        y: area.y + row,
+        text: statusBadge,
+        style: statusStyle,
+        clip,
+      });
       col += statusBadge.length + 1;
 
-      buf.writeClipped(col, area.y + row, runId, isCursorRow ? reverse(fg(COLORS.accent)) : fg(COLORS.textPrimary), area);
+      cmds.push({
+        type: "text",
+        x: col,
+        y: area.y + row,
+        text: runId,
+        style: isCursorRow
+          ? reverse(fg(COLORS.accent))
+          : fg(COLORS.textPrimary),
+        clip,
+      });
       col += 21;
 
       // Results
@@ -62,14 +101,32 @@ export function renderHistoryPanel(
       const results = run.failed > 0
         ? `${completed}/${run.totalScenarios}  ${run.failed} fail`
         : `${completed}/${run.totalScenarios} pass`;
-      buf.writeClipped(col, area.y + row, results, isCursorRow ? reverse(fg(COLORS.accent)) : (run.failed > 0 ? fg(COLORS.statusErr) : fg(COLORS.statusOk)), area);
+      cmds.push({
+        type: "text",
+        x: col,
+        y: area.y + row,
+        text: results,
+        style: isCursorRow
+          ? reverse(fg(COLORS.accent))
+          : (run.failed > 0 ? fg(COLORS.statusErr) : fg(COLORS.statusOk)),
+        clip,
+      });
       col += 14;
 
       // Duration
       if (run.durationS != null) {
         const dur = formatDurationSec(run.durationS);
         if (col + dur.length <= area.x + area.width) {
-          buf.writeClipped(col, area.y + row, dur, isCursorRow ? reverse(fg(COLORS.accent)) : dim(fg(COLORS.textSecondary)), area);
+          cmds.push({
+            type: "text",
+            x: col,
+            y: area.y + row,
+            text: dur,
+            style: isCursorRow
+              ? reverse(fg(COLORS.accent))
+              : dim(fg(COLORS.textSecondary)),
+            clip,
+          });
         }
       }
 
@@ -80,7 +137,14 @@ export function renderHistoryPanel(
   // Metrics section
   if (hasMetrics(metrics) && row + 2 < area.height) {
     row++; // blank line
-    buf.writeClipped(area.x, area.y + row, "Metrics", bold(fg(COLORS.textPrimary)), area);
+    cmds.push({
+      type: "text",
+      x: area.x,
+      y: area.y + row,
+      text: "Metrics",
+      style: bold(fg(COLORS.textPrimary)),
+      clip,
+    });
     row++;
 
     for (const [name, stats] of Object.entries(metrics)) {
@@ -90,10 +154,31 @@ export function renderHistoryPanel(
       const cpu = `cpu: ${stats.cpu}`.padEnd(12);
       const mem = `mem: ${stats.mem}`;
 
-      buf.writeClipped(area.x, area.y + row, label, fg(COLORS.textPrimary), area);
-      buf.writeClipped(area.x + 11, area.y + row, cpu, dim(fg(COLORS.textSecondary)), area);
+      cmds.push({
+        type: "text",
+        x: area.x,
+        y: area.y + row,
+        text: label,
+        style: fg(COLORS.textPrimary),
+        clip,
+      });
+      cmds.push({
+        type: "text",
+        x: area.x + 11,
+        y: area.y + row,
+        text: cpu,
+        style: dim(fg(COLORS.textSecondary)),
+        clip,
+      });
       if (area.x + 11 + cpu.length + mem.length <= area.x + area.width) {
-        buf.writeClipped(area.x + 11 + cpu.length, area.y + row, mem, dim(fg(COLORS.textSecondary)), area);
+        cmds.push({
+          type: "text",
+          x: area.x + 11 + cpu.length,
+          y: area.y + row,
+          text: mem,
+          style: dim(fg(COLORS.textSecondary)),
+          clip,
+        });
       }
       row++;
     }
@@ -102,11 +187,19 @@ export function renderHistoryPanel(
   // Panel-local actions hint
   if (focused) {
     const actionsRow = area.y + area.height - 1;
-    const actions = "[Enter] view  [R]estart  ↑↓ scroll";
-    buf.writeClipped(area.x, actionsRow, actions, dim(fg(COLORS.accent)), area);
+    const actions = "[V]iew log  ↑↓ navigate";
+    cmds.push({
+      type: "text",
+      x: area.x,
+      y: actionsRow,
+      text: actions,
+      style: dim(fg(COLORS.accent)),
+      clip,
+    });
   }
-}
 
+  return cmds;
+}
 /** Get the selected run, or null. */
 export function getSelectedRun(
   recentRuns: Run[],
@@ -117,21 +210,31 @@ export function getSelectedRun(
 
 function runStatusBadge(status: Run["status"]): string {
   switch (status) {
-    case "completed": return "[done]";
-    case "running": return "[run ]";
+    case "completed":
+      return "[done]";
+    case "running":
+      return "[run ]";
     case "starting":
-    case "stopping": return "[wait]";
-    case "error": return "[fail]";
+    case "stopping":
+      return "[wait]";
+    case "error":
+      return "[fail]";
   }
 }
 
-function runStatusStyle(status: Run["status"]): CellStyle {
+function runStatusStyle(
+  status: Run["status"],
+): import("@garazyk/tui").CellStyle {
   switch (status) {
-    case "completed": return fg(COLORS.statusOk);
-    case "running": return fg(COLORS.badgeRunning);
+    case "completed":
+      return fg(COLORS.statusOk);
+    case "running":
+      return fg(COLORS.badgeRunning);
     case "starting":
-    case "stopping": return fg(COLORS.statusWarn);
-    case "error": return fg(COLORS.statusErr);
+    case "stopping":
+      return fg(COLORS.statusWarn);
+    case "error":
+      return fg(COLORS.statusErr);
   }
 }
 
@@ -142,6 +245,8 @@ function formatDurationSec(s: number): string {
   return `${m}m ${sec}s`;
 }
 
-function hasMetrics(metrics: Record<string, { cpu: string; mem: string }>): boolean {
+function hasMetrics(
+  metrics: Record<string, { cpu: string; mem: string }>,
+): boolean {
   return Object.keys(metrics).length > 0;
 }
