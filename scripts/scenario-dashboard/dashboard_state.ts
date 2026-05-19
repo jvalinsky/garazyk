@@ -16,7 +16,7 @@
  * The Runtime interprets Cmds into real I/O.
  */
 
-import type { Run, ScenarioResult, ServiceStatus } from "./services/types.ts";
+import type { Run, RunEvent, ScenarioResultView, ServiceStatus } from "./services/types.ts";
 
 // ---------------------------------------------------------------------------
 // State slices
@@ -68,6 +68,14 @@ export interface RunsSlice {
   recentDelayMs: number;
   /** Latest recent-runs request token */
   recentToken: number;
+  /** Run detail overlay: which run is being viewed, or null */
+  detailRunId: string | null;
+  /** Run detail overlay: fetched scenario results */
+  detailResults: ScenarioResultView[];
+  /** Run detail overlay: cursor position in scenario list */
+  detailCursor: number;
+  /** Run detail overlay: scroll offset for scenario list */
+  detailScrollOffset: number;
 }
 
 /** Per-run progress snapshot used for polling display. */
@@ -287,6 +295,14 @@ export type Msg =
   | { type: "ux/setScenarioParam"; key: string; value: unknown }
   | { type: "ux/toggleCategory"; category: string }
   | { type: "ux/setSearchTerm"; term: string }
+  // Run events (push-based from RunManager — replaces polling for active runs)
+  | { type: "runs/event"; event: RunEvent }
+  // Run detail overlay
+  | { type: "runs/viewDetail"; runId: string }
+  | { type: "runs/closeDetail" }
+  | { type: "runs/detailResults"; results: ScenarioResultView[] }
+  | { type: "runs/detailCursorUp" }
+  | { type: "runs/detailCursorDown" }
   // Tick (for elapsed time display)
   | { type: "tick"; nowMs: number };
 
@@ -1066,6 +1082,293 @@ export function update(state: DashboardState, msg: Msg): [DashboardState, Cmd[]]
       return [{ ...state, ux: { ...state.ux, searchTerm: msg.term } }, []];
     }
 
+    // ── Run events (push-based from RunManager) ────────────────────────
+
+    case "runs/event": {
+      const event = msg.event;
+
+      switch (event.type) {
+        case "run_started": {
+          // A new run has started — set active run and clear busy flag
+          const run: Run = {
+            id: event.runId,
+            startedAt: event.startedAt,
+            status: "starting",
+            totalScenarios: event.totalScenarios,
+            passed: 0,
+            failed: 0,
+            skipped: 0,
+          };
+          const runs: RunsSlice = {
+            ...state.runs,
+            active: run,
+            activeInFlight: false,
+            // Initialize progress for the new run
+            progressByRunId: trimRecord(
+              {
+                ...state.runs.progressByRunId,
+                [event.runId]: {
+                  exists: true,
+                  runId: event.runId,
+                  total: event.totalScenarios,
+                  completed: 0,
+                  currentScenario: null,
+                  currentScenarioId: null,
+                  elapsedMs: 0,
+                  updatedAt: Date.now(),
+                  now: Date.now(),
+                  running: true,
+                },
+              },
+              MAX_RUN_CACHE_SIZE,
+            ),
+          };
+          return [{ ...state, runs, ux: { ...state.ux, busy: false } }, []];
+        }
+
+        case "run_status": {
+          // Lifecycle status change for the active run
+          if (state.runs.active?.id !== event.runId) return [state, []];
+          return [{
+            ...state,
+            runs: { ...state.runs, active: { ...state.runs.active!, status: event.status } },
+          }, []];
+        }
+
+        case "scenario_started": {
+          // A scenario within the active run has started
+          if (state.runs.active?.id !== event.runId) return [state, []];
+          const progress = state.runs.progressByRunId[event.runId];
+          const updatedProgress: RunProgress = progress
+            ? { ...progress, currentScenario: event.scenarioName, currentScenarioId: event.scenarioId }
+            : {
+              exists: true,
+              runId: event.runId,
+              total: state.runs.active.totalScenarios,
+              completed: 0,
+              currentScenario: event.scenarioName,
+              currentScenarioId: event.scenarioId,
+              elapsedMs: Date.now() - state.runs.active.startedAt,
+              updatedAt: Date.now(),
+              now: Date.now(),
+              running: true,
+            };
+          return [{
+            ...state,
+            runs: {
+              ...state.runs,
+              progressByRunId: trimRecord(
+                { ...state.runs.progressByRunId, [event.runId]: updatedProgress },
+                MAX_RUN_CACHE_SIZE,
+              ),
+            },
+          }, []];
+        }
+
+        case "scenario_finished": {
+          // A scenario within the active run has finished
+          const progress = state.runs.progressByRunId[event.runId];
+          const prevCompleted = progress?.completed ?? 0;
+          const updatedProgress: RunProgress = progress
+            ? {
+              ...progress,
+              completed: prevCompleted + 1,
+              currentScenario: null,
+              currentScenarioId: null,
+              updatedAt: Date.now(),
+              now: Date.now(),
+            }
+            : {
+              exists: true,
+              runId: event.runId,
+              total: state.runs.active?.totalScenarios ?? 0,
+              completed: 1,
+              currentScenario: null,
+              currentScenarioId: null,
+              elapsedMs: 0,
+              updatedAt: Date.now(),
+              now: Date.now(),
+              running: true,
+            };
+
+          // Update active run counters
+          let active = state.runs.active;
+          if (active?.id === event.runId) {
+            active = {
+              ...active,
+              passed: active.passed + (event.status === "passed" ? 1 : 0),
+              failed: active.failed + (event.status === "failed" ? 1 : 0),
+              skipped: active.skipped + (event.status === "skipped" ? 1 : 0),
+            };
+          }
+
+          return [{
+            ...state,
+            runs: {
+              ...state.runs,
+              active,
+              progressByRunId: trimRecord(
+                { ...state.runs.progressByRunId, [event.runId]: updatedProgress },
+                MAX_RUN_CACHE_SIZE,
+              ),
+            },
+          }, []];
+        }
+
+        case "run_completed": {
+          // The run has finished successfully
+          let active = state.runs.active;
+          if (active?.id === event.runId) {
+            active = {
+              ...active,
+              status: "completed",
+              finishedAt: event.finishedAt,
+              passed: event.passed,
+              failed: event.failed,
+              skipped: event.skipped,
+            };
+          }
+          // Update progress to show final state
+          const progress = state.runs.progressByRunId[event.runId];
+          const finalProgress: RunProgress = progress
+            ? { ...progress, running: false, updatedAt: Date.now(), now: Date.now() }
+            : {
+              exists: true,
+              runId: event.runId,
+              total: event.passed + event.failed + event.skipped,
+              completed: event.passed + event.failed + event.skipped,
+              currentScenario: null,
+              currentScenarioId: null,
+              elapsedMs: 0,
+              updatedAt: Date.now(),
+              now: Date.now(),
+              running: false,
+            };
+
+          return [{
+            ...state,
+            runs: {
+              ...state.runs,
+              active,
+              progressByRunId: trimRecord(
+                { ...state.runs.progressByRunId, [event.runId]: finalProgress },
+                MAX_RUN_CACHE_SIZE,
+              ),
+            },
+            ux: { ...state.ux, busy: false },
+          }, []];
+        }
+
+        case "run_failed": {
+          // The run has failed or been stopped
+          let active = state.runs.active;
+          if (active?.id === event.runId) {
+            active = {
+              ...active,
+              status: "error",
+              finishedAt: event.finishedAt,
+              stopReason: event.reason,
+              exitCode: event.exitCode,
+            };
+          }
+
+          return [{
+            ...state,
+            runs: { ...state.runs, active },
+            ux: { ...state.ux, busy: false },
+          }, []];
+        }
+
+        case "log_line": {
+          // Append a log line to the text buffer
+          const prev = state.logs.textByRunId[event.runId] ?? "";
+          const appended = prev + (prev ? "\n" : "") + event.line;
+          return [{
+            ...state,
+            logs: {
+              ...state.logs,
+              textByRunId: trimRecord(
+                { ...state.logs.textByRunId, [event.runId]: appended },
+                MAX_RUN_CACHE_SIZE,
+              ),
+              lastUpdateMs: 0,
+            },
+          }, []];
+        }
+
+        default: {
+          // Exhaustiveness check for RunEvent
+          const _eventExhaustive: never = event;
+          return [state, []];
+        }
+      }
+    }
+
+    // ── Run detail overlay ──────────────────────────────────────────────
+
+    case "runs/viewDetail": {
+      // Open the detail overlay for a run — fetch its scenario results
+      return [
+        {
+          ...state,
+          runs: {
+            ...state.runs,
+            detailRunId: msg.runId,
+            detailResults: [],
+            detailCursor: 0,
+            detailScrollOffset: 0,
+          },
+        },
+        [{
+          type: "fetch",
+          url: `/api/runs/${msg.runId}/results`,
+          onSuccess: "runs/detailResults",
+          onError: "runs/closeDetail", // close overlay on fetch failure
+        }],
+      ];
+    }
+
+    case "runs/closeDetail": {
+      return [{
+        ...state,
+        runs: {
+          ...state.runs,
+          detailRunId: null,
+          detailResults: [],
+          detailCursor: 0,
+          detailScrollOffset: 0,
+        },
+      }, []];
+    }
+
+    case "runs/detailResults": {
+      const results = msg.results;
+      const cursor = Math.min(state.runs.detailCursor, Math.max(0, results.length - 1));
+      return [{
+        ...state,
+        runs: { ...state.runs, detailResults: results, detailCursor: cursor },
+      }, []];
+    }
+
+    case "runs/detailCursorUp": {
+      const cursor = Math.max(0, state.runs.detailCursor - 1);
+      // Adjust scroll offset to keep cursor visible
+      const scrollOffset = Math.min(state.runs.detailScrollOffset, cursor);
+      return [{
+        ...state,
+        runs: { ...state.runs, detailCursor: cursor, detailScrollOffset: scrollOffset },
+      }, []];
+    }
+
+    case "runs/detailCursorDown": {
+      const maxCursor = Math.max(0, state.runs.detailResults.length - 1);
+      const cursor = Math.min(maxCursor, state.runs.detailCursor + 1);
+      return [{
+        ...state,
+        runs: { ...state.runs, detailCursor: cursor },
+      }, []];
+    }
+
     // ── Tick ─────────────────────────────────────────────────────────────
 
     case "tick": {
@@ -1127,6 +1430,10 @@ export function createInitialState(overrides?: Partial<DashboardState>): Dashboa
       recentInFlight: false,
       recentDelayMs: BASE_RECENT_POLL_MS,
       recentToken: 0,
+      detailRunId: null,
+      detailResults: [],
+      detailCursor: 0,
+      detailScrollOffset: 0,
     },
     scenarios: {
       all: [],

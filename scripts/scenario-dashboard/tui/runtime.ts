@@ -11,7 +11,7 @@
 import { join } from "@std/path";
 import type { Cmd, DashboardState, Msg, RunProgress, TopologyPreview } from "../dashboard_state.ts";
 import { bootCmds, createInitialState, update } from "../dashboard_state.ts";
-import type { Run, ServiceStatus } from "../services/types.ts";
+import type { Run, RunEvent, ServiceStatus } from "../services/types.ts";
 
 // ---------------------------------------------------------------------------
 // Runtime handle
@@ -268,6 +268,15 @@ async function resolveServiceHandler(url: string): Promise<ServiceHandler | null
     };
   }
 
+  // /api/runs/:id/results
+  const resultsMatch = url.match(/^\/api\/runs\/([^/]+)\/results$/);
+  if (resultsMatch) {
+    const runId = resultsMatch[1]!;
+    return () => {
+      return Promise.resolve({ results: svc.queries.fetchScenarioResults(svc.db.db, runId) });
+    };
+  }
+
   // /api/scenarios
   if (url === "/api/scenarios") {
     return async () => {
@@ -512,9 +521,18 @@ export function createTuiRuntime(initialState?: DashboardState): TuiRuntimeHandl
   function interpretCmds(cmds: Cmd[], d: (msg: Msg) => void): void {
     for (const cmd of cmds) {
       switch (cmd.type) {
-        case "fetch":
+        case "fetch": {
+          // Skip progress and log polling when events are driving updates
+          // for the active run. The runs/event handler keeps the state fresh.
+          if (state.runs.active && (
+            cmd.url.match(/^\/api\/runs\/[^/]+\/progress$/) ||
+            cmd.url.match(/^\/api\/runs\/[^/]+\/logs$/)
+          )) {
+            break;
+          }
           handleFetch(cmd, d);
           break;
+        }
         case "schedule":
           handleSchedule(cmd, d);
           break;
@@ -564,6 +582,10 @@ export function createTuiRuntime(initialState?: DashboardState): TuiRuntimeHandl
     for (const id of timerIds) clearTimeout(id);
     timerIds.length = 0;
     listeners.length = 0;
+    if (eventUnsubscribe) {
+      eventUnsubscribe();
+      eventUnsubscribe = undefined;
+    }
   }
 
   // Boot: run initial fetches
@@ -574,6 +596,14 @@ export function createTuiRuntime(initialState?: DashboardState): TuiRuntimeHandl
     dispatch({ type: "tick", nowMs: Date.now() });
   }, 1000);
   timerIds.push(tickId);
+
+  // Subscribe to RunManager events — push-based updates replace polling
+  let eventUnsubscribe: (() => void) | undefined;
+  loadServices().then((svc) => {
+    eventUnsubscribe = svc.run.runManager.onEvent((event: RunEvent) => {
+      dispatch({ type: "runs/event", event });
+    });
+  });
 
   return {
     get state() { return state; },
