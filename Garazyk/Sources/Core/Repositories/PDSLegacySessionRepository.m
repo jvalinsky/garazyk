@@ -39,4 +39,20 @@
     return [_serviceDatabases deleteRefreshTokensForAccount:did error:error];
 }
 
+- (BOOL)storeRefreshToken:(NSString *)refreshToken sessionID:(NSString *)sessionID forAccountDid:(NSString *)did error:(NSError **)error {
+    return [_serviceDatabases storeRefreshToken:refreshToken sessionID:sessionID forAccountDid:did error:error];
+}
+
+- (nullable NSDictionary *)sessionInfoForRefreshToken:(NSString *)refreshToken error:(NSError **)error {
+    return [_serviceDatabases sessionInfoForRefreshToken:refreshToken error:error];
+}
+
+- (BOOL)isSessionActive:(NSString *)sessionID forAccountDid:(NSString *)did error:(NSError **)error {
+    return [_serviceDatabases isSessionActive:sessionID forAccountDid:did error:error];
+}
+
+- (BOOL)revokeSession:(NSString *)sessionID error:(NSError **)error {
+    return [_serviceDatabases revokeSession:sessionID error:error];
+}
+
 @end

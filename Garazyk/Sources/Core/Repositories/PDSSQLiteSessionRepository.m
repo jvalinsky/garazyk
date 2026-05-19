@@ -20,35 +20,58 @@
 
 #pragma mark - PDSSessionRepository
 
-- (BOOL)storeRefreshToken:(NSString *)token forAccountDid:(NSString *)accountDid error:(NSError **)error {
+- (BOOL)storeRefreshToken:(NSString *)token sessionID:(NSString *)sessionID forAccountDid:(NSString *)accountDid error:(NSError **)error {
     // Default expiration: 30 days
     NSDate *expiresAt = [NSDate dateWithTimeIntervalSinceNow:(30 * 24 * 60 * 60)];
-    return [self storeRefreshToken:token forAccountDid:accountDid expiresAt:expiresAt error:error];
+    return [self storeRefreshToken:token sessionID:sessionID forAccountDid:accountDid expiresAt:expiresAt error:error];
 }
 
-- (BOOL)storeRefreshToken:(NSString *)token forAccountDid:(NSString *)accountDid expiresAt:(NSDate *)expiresAt error:(NSError **)error {
+- (BOOL)storeRefreshToken:(NSString *)token sessionID:(NSString *)sessionID forAccountDid:(NSString *)accountDid expiresAt:(NSDate *)expiresAt error:(NSError **)error {
     __block BOOL success = NO;
     [_databasePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
-        PDSActorStore *store = (PDSActorStore *)transactor;
-        success = [store storeRefreshToken:token forAccountDid:accountDid expiresAt:expiresAt error:blockError];
+        PDSDatabase *db = (PDSDatabase *)transactor;
+        success = [db storeRefreshToken:token sessionID:sessionID forAccountDid:accountDid expiresAt:expiresAt error:blockError];
     } error:error];
     return success;
 }
 
-- (nullable NSString *)accountDidForRefreshToken:(NSString *)refreshToken error:(NSError **)error {
-    __block NSString *did = nil;
+- (nullable NSDictionary *)sessionInfoForRefreshToken:(NSString *)refreshToken error:(NSError **)error {
+    __block NSDictionary *info = nil;
     [_databasePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
-        PDSActorStore *store = (PDSActorStore *)reader;
-        did = [store accountDidForRefreshToken:refreshToken error:blockError];
+        PDSDatabase *db = (PDSDatabase *)reader;
+        info = [db sessionInfoForRefreshToken:refreshToken error:blockError];
     } error:error];
-    return did;
+    return info;
+}
+
+- (nullable NSString *)accountDidForRefreshToken:(NSString *)refreshToken error:(NSError **)error {
+    NSDictionary *info = [self sessionInfoForRefreshToken:refreshToken error:error];
+    return info[@"account_did"];
+}
+
+- (BOOL)isSessionActive:(NSString *)sessionID forAccountDid:(NSString *)did error:(NSError **)error {
+    __block BOOL active = NO;
+    [_databasePool readWithDid:@"__service__" block:^(id<PDSActorStoreReader> reader, NSError **blockError) {
+        PDSDatabase *db = (PDSDatabase *)reader;
+        active = [db isSessionActive:sessionID forAccountDid:did error:blockError];
+    } error:error];
+    return active;
 }
 
 - (BOOL)revokeRefreshToken:(NSString *)token error:(NSError **)error {
     __block BOOL success = NO;
     [_databasePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
-        PDSActorStore *store = (PDSActorStore *)transactor;
-        success = [store revokeRefreshToken:token error:blockError];
+        PDSDatabase *db = (PDSDatabase *)transactor;
+        success = [db revokeRefreshToken:token error:blockError];
+    } error:error];
+    return success;
+}
+
+- (BOOL)revokeSession:(NSString *)sessionID error:(NSError **)error {
+    __block BOOL success = NO;
+    [_databasePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
+        PDSDatabase *db = (PDSDatabase *)transactor;
+        success = [db revokeSession:sessionID error:blockError];
     } error:error];
     return success;
 }
@@ -56,8 +79,8 @@
 - (BOOL)revokeAllRefreshTokensForAccountDid:(NSString *)accountDid error:(NSError **)error {
     __block BOOL success = NO;
     [_databasePool transactWithDid:@"__service__" block:^(id<PDSActorStoreTransactor> transactor, NSError **blockError) {
-        PDSActorStore *store = (PDSActorStore *)transactor;
-        success = [store revokeAllRefreshTokensForAccountDid:accountDid error:blockError];
+        PDSDatabase *db = (PDSDatabase *)transactor;
+        success = [db revokeAllSessionsForDid:accountDid error:blockError];
     } error:error];
     return success;
 }

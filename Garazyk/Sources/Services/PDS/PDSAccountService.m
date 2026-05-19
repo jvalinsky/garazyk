@@ -109,12 +109,15 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
 
 - (nullable NSString *)mintAccessTokenForDID:(NSString *)did
                                        handle:(NSString *)handle
+                                    sessionID:(nullable NSString *)sessionID
                                         error:(NSError **)error {
     NSError *primaryMintError = nil;
     if (self.minter) {
         JWT *jwt = [self.minter mintAccessTokenForDID:did
                                                handle:handle
                                                scopes:@[@"atproto"]
+                                            sessionID:sessionID
+                                    dpopKeyThumbprint:nil
                                                 error:&primaryMintError];
         NSString *encoded = [jwt encodedToken];
         if (encoded.length > 0) {
@@ -156,6 +159,8 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     JWT *fallbackJWT = [fallbackMinter mintAccessTokenForDID:did
                                                       handle:handle
                                                       scopes:@[@"atproto"]
+                                                   sessionID:sessionID
+                                           dpopKeyThumbprint:nil
                                                        error:&fallbackMintError];
     NSString *fallbackToken = [fallbackJWT encodedToken];
     if (fallbackToken.length > 0) {
@@ -171,6 +176,12 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
                                }];
     }
     return nil;
+}
+
+- (nullable NSString *)mintAccessTokenForDID:(NSString *)did
+                                       handle:(NSString *)handle
+                                        error:(NSError **)error {
+    return [self mintAccessTokenForDID:did handle:handle sessionID:nil error:error];
 }
 
 - (nullable NSDictionary *)createAccountForEmail:(NSString *)email
@@ -243,8 +254,10 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
 
     // Generate tokens
     NSError *mintError = nil;
+    NSString *sessionID = [[NSUUID UUID] UUIDString];
     NSString *accessToken = [self mintAccessTokenForDID:resolvedDid
                                                  handle:handle
+                                              sessionID:sessionID
                                                   error:&mintError];
     if (!accessToken) {
         if (error) {
@@ -280,7 +293,7 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     account.accessJwt = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
     account.refreshJwt = [refreshToken dataUsingEncoding:NSUTF8StringEncoding];
     [_accountRepository saveAccount:account error:nil];
-    [_sessionRepository storeRefreshToken:refreshToken forAccountDid:resolvedDid error:nil];
+    [_sessionRepository storeRefreshToken:refreshToken sessionID:sessionID forAccountDid:resolvedDid error:nil];
 
     if (self.serviceDatabases) {
         NSDictionary *details = @{
@@ -397,8 +410,10 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
 
     // Generate new tokens
     NSError *mintError = nil;
+    NSString *sessionID = [[NSUUID UUID] UUIDString];
     NSString *accessToken = [self mintAccessTokenForDID:account.did
                                                  handle:account.handle
+                                              sessionID:sessionID
                                                   error:&mintError];
     if (!accessToken) {
         if (error) {
@@ -416,7 +431,7 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     account.accessJwt = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
     account.refreshJwt = [refreshToken dataUsingEncoding:NSUTF8StringEncoding];
     [_accountRepository saveAccount:account error:nil];
-    [_sessionRepository storeRefreshToken:refreshToken forAccountDid:account.did error:nil];
+    [_sessionRepository storeRefreshToken:refreshToken sessionID:sessionID forAccountDid:account.did error:nil];
 
     return @{
         @"did": account.did,
@@ -541,13 +556,16 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
                                        error:(NSError **)error {
 
     NSError *dbError = nil;
-    NSString *did = [_sessionRepository accountDidForRefreshToken:refreshToken error:&dbError];
+    NSDictionary *sessionInfo = [_sessionRepository sessionInfoForRefreshToken:refreshToken error:&dbError];
+    NSString *did = sessionInfo[@"account_did"];
+    NSString *sessionID = sessionInfo[@"session_id"];
+    
     PDSDatabaseAccount *account = nil;
     if (did) {
         account = [_accountRepository accountForDid:did error:&dbError];
     }
 
-    if (!account) {
+    if (!account || !sessionID) {
         if (error) {
             *error = [ATProtoError errorWithCode:ATProtoErrorCodeInvalidCredentials
                                        message:@"Invalid refresh token"];
@@ -558,10 +576,11 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     // Revoke old refresh token (Rotation)
     [_sessionRepository revokeRefreshToken:refreshToken error:nil];
 
-    // Generate new access token
+    // Generate new access token - preserving same sessionID
     NSError *mintError = nil;
     NSString *accessToken = [self mintAccessTokenForDID:account.did
                                                  handle:account.handle
+                                              sessionID:sessionID
                                                   error:&mintError];
     if (!accessToken) {
         if (error) {
@@ -581,7 +600,7 @@ static BOOL PDSConstantTimeEqualData(NSData *a, NSData *b) {
     account.accessJwt = [accessToken dataUsingEncoding:NSUTF8StringEncoding];
     account.refreshJwt = [newRefreshToken dataUsingEncoding:NSUTF8StringEncoding];
     [_accountRepository saveAccount:account error:nil];
-    [_sessionRepository storeRefreshToken:newRefreshToken forAccountDid:account.did error:nil];
+    [_sessionRepository storeRefreshToken:newRefreshToken sessionID:sessionID forAccountDid:account.did error:nil];
 
     return @{
         @"accessJwt": accessToken,
