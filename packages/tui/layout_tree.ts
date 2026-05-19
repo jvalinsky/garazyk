@@ -72,18 +72,31 @@ export function solveLayout(root: LayoutNode, bounds: BoundingBox): ResolvedNode
       }
     }
 
-    // Distribute remaining space among growing children
+    // Distribute remaining space among growing children.
+    // Floor the base size and give remainder pixels to the last growing child
+    // to ensure all coordinates are integers (terminal cells are discrete).
     const availSize = isRow ? bounds.width : bounds.height;
-    const growSize = growCount > 0 ? Math.max(0, (availSize - fixedSize) / growCount) : 0;
+    const totalGrow = growCount > 0 ? Math.max(0, availSize - fixedSize) : 0;
+    const baseGrowSize = growCount > 0 ? Math.floor(totalGrow / growCount) : 0;
+    const remainder = growCount > 0 ? totalGrow - baseGrowSize * growCount : 0;
 
     let offset = 0;
+    let growIndex = 0;
     for (const child of children) {
-      const childWidth = typeof child.width === "number" 
-        ? child.width 
-        : (isRow ? growSize : bounds.width);
+      const isGrow = isRow
+        ? typeof child.width !== "number"
+        : typeof child.height !== "number";
+
+      // Last growing child gets the remainder pixels
+      const extra = (isGrow && growIndex === growCount - 1) ? remainder : 0;
+      const childWidth = typeof child.width === "number"
+        ? child.width
+        : (isRow ? baseGrowSize + extra : bounds.width);
       const childHeight = typeof child.height === "number"
         ? child.height
-        : (isRow ? bounds.height : growSize);
+        : (isRow ? bounds.height : baseGrowSize + extra);
+
+      if (isGrow) growIndex++;
 
       const childBounds: BoundingBox = {
         x: bounds.x + (isRow ? offset : 0),

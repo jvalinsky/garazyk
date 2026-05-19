@@ -1,55 +1,76 @@
 /**
- * Panel Layout Engine
+ * Panel Layout — Public API
  *
- * Computes panel positions and sizes based on terminal dimensions.
- * Uses a widget dashboard layout (2x2 grid) on wide terminals,
- * and a vertical stack on narrow terminals.
- *
- * Layout computation is delegated to `layout_engine.ts`. This module
- * re-exports the public API for backwards compatibility.
+ * Re-exports layout types and utilities. Layout tree construction
+ * is in `dashboard_layout.ts` and tree solving is in `layout_tree.ts`.
  *
  * @module tui/layout
  */
 
 export type {
-  DashboardLayout,
   PanelId,
   PanelLayout,
 } from "./layout_engine.ts";
 
 export {
-  computeLayout,
-  computeNarrowLayout,
-  computeWideLayout,
   PANEL_IDS,
   PANEL_TITLES,
 } from "./layout_engine.ts";
 
-import type { DashboardLayout, PanelId, PanelLayout } from "./layout_engine.ts";
+export {
+  dashboardLayoutTree,
+} from "./dashboard_layout.ts";
+
+export type {
+  LayoutNode,
+  ResolvedNode,
+  Direction,
+  Sizing,
+} from "./layout_tree.ts";
+
+export {
+  solveLayout,
+  findResolvedNode,
+  flattenResolvedNodes,
+} from "./layout_tree.ts";
+
+import type { ResolvedNode } from "./layout_tree.ts";
 
 /** Border padding (1 cell each side). */
 const BORDER = 1;
 
 /**
- * Get the inner content area of a panel (inside borders).
+ * Get the inner content area of a resolved panel node (inside borders).
+ *
+ * @param node - A resolved layout node with absolute coordinates
+ * @returns The inner content area inside the 1-cell border
  */
-export function panelContentArea(panel: PanelLayout): {
+export function panelContentArea(node: ResolvedNode): {
   x: number;
   y: number;
   width: number;
   height: number;
 } {
   return {
-    x: panel.x + BORDER,
-    y: panel.y + BORDER,
-    width: Math.max(0, panel.width - 2 * BORDER),
-    height: Math.max(0, panel.height - 2 * BORDER),
+    x: node.x + BORDER,
+    y: node.y + BORDER,
+    width: Math.max(0, node.width - 2 * BORDER),
+    height: Math.max(0, node.height - 2 * BORDER),
   };
 }
 
 /**
- * Find a panel layout by ID.
+ * Find a resolved panel node by ID in the tree.
+ *
+ * @param root - The resolved layout tree
+ * @param id - The panel ID to search for
+ * @returns The found node or undefined
  */
-export function findPanel(layout: DashboardLayout, id: PanelId): PanelLayout | undefined {
-  return layout.panels.find((p) => p.id === id);
+export function findPanel(root: ResolvedNode, id: string): ResolvedNode | undefined {
+  if (root.id === id) return root;
+  for (const child of root.children) {
+    const found = findPanel(child, id);
+    if (found) return found;
+  }
+  return undefined;
 }
