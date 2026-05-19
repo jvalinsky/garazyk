@@ -12,14 +12,14 @@ import {
   fg,
   truncate,
 } from "@garazyk/tui";
-import type { PanelLayout } from "@garazyk/tui";
+import type { ResolvedNode } from "@garazyk/tui";
 import { panelContentArea } from "@garazyk/tui";
 import type { Run } from "../../services/types.ts";
 import type { RunProgress } from "../../dashboard_state.ts";
 
 /** Render the active run panel. */
 export function renderRunPanel(
-  panel: PanelLayout,
+  panel: ResolvedNode,
   activeRun: Run | null,
   progressByRunId: Record<string, RunProgress>,
   focused: boolean,

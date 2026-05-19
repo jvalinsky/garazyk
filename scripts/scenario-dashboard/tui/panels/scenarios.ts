@@ -16,7 +16,7 @@ import {
   reverse,
   truncate,
 } from "@garazyk/tui";
-import type { PanelLayout } from "@garazyk/tui";
+import type { ResolvedNode } from "@garazyk/tui";
 import { panelContentArea } from "@garazyk/tui";
 import type { PanelState } from "../panel_state.ts";
 import type { ScenarioMeta } from "../../dashboard_state.ts";
@@ -85,7 +85,7 @@ function buildFlatItems(
 
 /** Render the scenarios panel. */
 export function renderScenariosPanel(
-  panel: PanelLayout,
+  panel: ResolvedNode,
   scenarios: ScenarioMeta[],
   collapsedCategories: Set<string>,
   searchTerm: string,

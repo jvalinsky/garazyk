@@ -15,9 +15,11 @@ import {
   DEFAULT_STYLE,
   dim,
   fg,
+  reverse,
 } from "@garazyk/tui";
-import type { DashboardLayout, PanelId } from "@garazyk/tui";
+import type { PanelId, ResolvedNode } from "@garazyk/tui";
 import type { FocusRing } from "@garazyk/tui";
+import { findPanel } from "@garazyk/tui";
 import type { PanelStates } from "./panel_state.ts";
 import type { DashboardState } from "../dashboard_state.ts";
 import type { Run } from "../services/types.ts";
@@ -25,31 +27,44 @@ import { renderNetworkPanel } from "./panels/network.ts";
 import { renderScenariosPanel } from "./panels/scenarios.ts";
 import { renderRunPanel } from "./panels/run.ts";
 import { renderHistoryPanel } from "./panels/history.ts";
+import { renderRunDetailOverlay } from "./panels/run_detail.ts";
 import { rasterize } from "@garazyk/tui";
+
+/** Panel IDs in the order they appear in the layout tree. */
+const PANEL_IDS: PanelId[] = ["network", "scenarios", "run", "history"];
 
 /** Render the full dashboard view onto the screen buffer. */
 export function renderView(
   buf: ScreenBuffer,
   state: DashboardState,
-  layout: DashboardLayout,
+  layout: ResolvedNode,
   focus: FocusRing,
   panelStates: PanelStates,
   recentRuns: Run[] = [],
+  helpOverlay = false,
 ): void {
   buf.clear();
 
   const commands: RenderCommand[] = [];
 
   // Status bar
-  commands.push(...renderStatusBar(layout.statusBar, state));
+  const statusBar = findPanel(layout, "status-bar");
+  if (statusBar) {
+    commands.push(...renderStatusBar(statusBar, state));
+  }
 
   // Hint bar
-  commands.push(...renderHintBar(layout.hintBar, focus));
+  const hintBar = findPanel(layout, "hint-bar");
+  if (hintBar) {
+    commands.push(...renderHintBar(hintBar, focus));
+  }
 
   // Panel borders
-  for (const panel of layout.panels) {
-    const isFocused = focus.isFocused(panel.id);
-    const title = panelTitle(panel.id);
+  for (const panelId of PANEL_IDS) {
+    const panel = findPanel(layout, panelId);
+    if (!panel) continue;
+    const isFocused = focus.isFocused(panelId);
+    const title = panelTitle(panelId);
     commands.push({
       type: "box",
       box: { x: panel.x, y: panel.y, width: panel.width, height: panel.height },
@@ -60,11 +75,13 @@ export function renderView(
   }
 
   // Panel content
-  for (const panel of layout.panels) {
-    const isFocused = focus.isFocused(panel.id);
-    const ps = panelStates[panel.id];
+  for (const panelId of PANEL_IDS) {
+    const panel = findPanel(layout, panelId);
+    if (!panel) continue;
+    const isFocused = focus.isFocused(panelId);
+    const ps = panelStates[panelId];
     let panelCommands: RenderCommand[] = [];
-    switch (panel.id) {
+    switch (panelId) {
       case "network":
         panelCommands = renderNetworkPanel(
           panel,
@@ -110,6 +127,26 @@ export function renderView(
   }
 
   rasterize(commands, buf);
+
+  // Help overlay — rendered on top of the normal view
+  if (helpOverlay) {
+    renderHelpOverlay(buf);
+  }
+
+  // Run detail overlay — rendered on top of everything
+  if (state.runs.detailRunId) {
+    const detailRun = recentRuns.find((r) => r.id === state.runs.detailRunId) ??
+      state.runs.active;
+    if (detailRun && detailRun.id === state.runs.detailRunId) {
+      renderRunDetailOverlay(
+        buf,
+        detailRun,
+        state.runs.detailResults,
+        state.runs.detailCursor,
+        state.runs.detailScrollOffset,
+      );
+    }
+  }
 }
 
 /** Panel display titles. */
@@ -126,7 +163,7 @@ function panelTitle(id: PanelId): string {
 
 /** Generate render commands for the top status bar. */
 function renderStatusBar(
-  bar: { x: number; y: number; width: number },
+  bar: ResolvedNode,
   state: DashboardState,
 ): RenderCommand[] {
   const cmds: RenderCommand[] = [];
@@ -173,59 +210,191 @@ function renderStatusBar(
   return cmds;
 }
 
-/** Generate render commands for the bottom hint bar. */
+/** Panel-specific keybinding hints for the context-sensitive hint bar. */
+const PANEL_HINTS: Record<PanelId, string[]> = {
+  network: ["s Start", "p PDS2", "x Stop"],
+  scenarios: ["/ Filter", "Space Toggle", "Enter Run"],
+  run: ["s Stop", "r Restart"],
+  history: ["r Restart", "v View log"],
+};
+
+/** Global hints shown at the end of the hint bar regardless of focused panel. */
+const GLOBAL_HINTS = ["1-4 Panel", "Tab Switch", "q Quit"];
+
+/** Generate render commands for the bottom hint bar. Shows context-sensitive hints based on the focused panel. */
 function renderHintBar(
-  bar: { x: number; y: number; width: number },
+  bar: ResolvedNode,
   focus: FocusRing,
 ): RenderCommand[] {
   const cmds: RenderCommand[] = [];
-  const hints = [
-    "1 Network",
-    "2 Scenarios",
-    "3 Run",
-    "4 History",
-    "q/Esc Quit",
-    "Tab Switch",
-    "Ctrl+R Refresh",
-  ];
+  const panel = focus.current;
+  const panelHints = PANEL_HINTS[panel] ?? [];
+
+  // Build the full hint list: panel-specific first, then global
+  const hints: string[] = [...panelHints, ...GLOBAL_HINTS];
 
   let col = bar.x + 1;
   for (const hint of hints) {
-    if (col + hint.length > bar.x + bar.width) break;
+    // Split hint into key part and label part
+    const spaceIdx = hint.indexOf(" ");
+    const key = spaceIdx > 0 ? hint.slice(0, spaceIdx) : hint;
+    const label = spaceIdx > 0 ? hint.slice(spaceIdx + 1) : "";
+    const fullLen = hint.length;
 
-    // Highlight the currently focused panel number
-    const numMatch = hint.match(/^(\d) (.+)/);
-    if (numMatch) {
-      const num = numMatch[1]!;
-      const label = numMatch[2]!;
-      const isCurrent = parseInt(num) - 1 === focus.currentIndex;
-      const numStyle = isCurrent
-        ? bold(fg(COLORS.accent))
-        : dim(fg(COLORS.textMuted));
-      const labelStyle = isCurrent
-        ? fg(COLORS.textPrimary)
-        : dim(fg(COLORS.textMuted));
+    if (col + fullLen > bar.x + bar.width) break;
 
-      cmds.push({ type: "text", x: col, y: bar.y, text: num, style: numStyle });
+    // Key is highlighted, label is muted
+    cmds.push({
+      type: "text",
+      x: col,
+      y: bar.y,
+      text: key,
+      style: bold(fg(COLORS.accent)),
+    });
+    if (label) {
       cmds.push({
         type: "text",
-        x: col + 1,
+        x: col + key.length,
         y: bar.y,
         text: ` ${label}`,
-        style: labelStyle,
-      });
-      col += hint.length + 2;
-    } else {
-      cmds.push({
-        type: "text",
-        x: col,
-        y: bar.y,
-        text: hint,
         style: dim(fg(COLORS.textMuted)),
       });
-      col += hint.length + 2;
     }
+    col += fullLen + 2; // +2 for spacing between hints
   }
 
   return cmds;
+}
+
+// ---------------------------------------------------------------------------
+// Help overlay
+// ---------------------------------------------------------------------------
+
+/** Keybinding sections for the help overlay. */
+const HELP_SECTIONS: Array<{ title: string; bindings: Array<{ key: string; action: string }> }> = [
+  {
+    title: "Global",
+    bindings: [
+      { key: "1-4", action: "Jump to panel" },
+      { key: "Tab", action: "Switch panel" },
+      { key: "?", action: "Toggle help" },
+      { key: "q / Esc", action: "Quit" },
+      { key: "Ctrl+R", action: "Refresh" },
+    ],
+  },
+  {
+    title: "Network",
+    bindings: [
+      { key: "s", action: "Start network" },
+      { key: "p", action: "Start with PDS2" },
+      { key: "x", action: "Stop network" },
+    ],
+  },
+  {
+    title: "Scenarios",
+    bindings: [
+      { key: "/", action: "Filter" },
+      { key: "Space", action: "Toggle category" },
+      { key: "Enter", action: "Run scenario/category" },
+    ],
+  },
+  {
+    title: "Run",
+    bindings: [
+      { key: "s", action: "Stop run" },
+      { key: "r", action: "Restart run" },
+    ],
+  },
+  {
+    title: "History",
+    bindings: [
+      { key: "r", action: "Restart run" },
+      { key: "v", action: "View log" },
+    ],
+  },
+];
+
+/** Render a full-screen help overlay on top of the current buffer content. */
+function renderHelpOverlay(buf: ScreenBuffer): void {
+  const overlayStyle = reverse(DEFAULT_STYLE);
+  const titleStyle = reverse(bold(DEFAULT_STYLE));
+  const keyStyle = reverse(bold(fg(COLORS.accent)));
+  const actionStyle = reverse(dim(DEFAULT_STYLE));
+
+  // Calculate content dimensions
+  let maxBindingWidth = 0;
+  let totalRows = 0; // content rows (not counting border)
+  for (const section of HELP_SECTIONS) {
+    totalRows += 1; // section title
+    for (const binding of section.bindings) {
+      const line = `  ${binding.key.padEnd(8)} ${binding.action}`;
+      if (line.length > maxBindingWidth) maxBindingWidth = line.length;
+      totalRows++;
+    }
+    totalRows += 1; // blank line between sections
+  }
+  totalRows += 1; // "Press any key" footer
+
+  const boxWidth = Math.min(maxBindingWidth + 4, buf.width - 2); // +4 for padding and border
+  const boxHeight = Math.min(totalRows + 2, buf.height - 2); // +2 for border
+  const boxX = Math.floor((buf.width - boxWidth) / 2);
+  const boxY = Math.floor((buf.height - boxHeight) / 2);
+
+  // Fill the entire screen with reverse-video background
+  buf.fillRect(0, 0, buf.width, buf.height, " ", overlayStyle);
+
+  // Draw the help box border
+  buf.box(boxX, boxY, boxWidth, boxHeight, overlayStyle, false);
+  buf.boxTitle(boxX, boxY, boxWidth, "Help", overlayStyle);
+
+  // Render content inside the box
+  let row = boxY + 1; // start inside the top border
+  const maxRow = boxY + boxHeight - 2; // stay inside the bottom border
+  const contentX = boxX + 2; // left padding inside border
+  const contentWidth = boxWidth - 4; // usable width inside border
+
+  for (const section of HELP_SECTIONS) {
+    if (row > maxRow) break;
+
+    // Section title
+    buf.writeClipped(contentX, row, section.title, titleStyle, {
+      x: boxX + 1,
+      y: boxY + 1,
+      width: boxWidth - 2,
+      height: boxHeight - 2,
+    });
+    row++;
+
+    // Keybindings
+    for (const binding of section.bindings) {
+      if (row > maxRow) break;
+      const keyText = `  ${binding.key}`.padEnd(10);
+      buf.writeClipped(contentX, row, keyText, keyStyle, {
+        x: boxX + 1,
+        y: boxY + 1,
+        width: boxWidth - 2,
+        height: boxHeight - 2,
+      });
+      buf.writeClipped(contentX + 10, row, binding.action, actionStyle, {
+        x: boxX + 1,
+        y: boxY + 1,
+        width: boxWidth - 2,
+        height: boxHeight - 2,
+      });
+      row++;
+    }
+
+    // Blank line between sections
+    row++;
+  }
+
+  // Footer
+  if (row <= maxRow) {
+    buf.writeClipped(contentX, row, "Press any key to close", reverse(dim(DEFAULT_STYLE)), {
+      x: boxX + 1,
+      y: boxY + 1,
+      width: boxWidth - 2,
+      height: boxHeight - 2,
+    });
+  }
 }
