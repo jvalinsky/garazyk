@@ -8,7 +8,7 @@
  */
 
 import { fromFileUrl, join } from "@std/path";
-import { runScenarioCommand } from "@garazyk/hamownia/run-command";
+import { runScenarioCommand } from "../packages/hamownia/run_command.ts";
 
 const scriptDir = fromFileUrl(new URL(".", import.meta.url));
 

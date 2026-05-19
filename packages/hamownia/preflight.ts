@@ -54,7 +54,7 @@ export async function checkStagedBinaries(): Promise<PreflightResult> {
       ok: false,
       fatal: true,
       message: `Missing staged binaries: ${missing.join(", ")}`,
-      fixHint: "./scripts/stage-docker-binaries.sh",
+      fixHint: "deno run -A scripts/stage_binaries.ts",
     };
   }
 
