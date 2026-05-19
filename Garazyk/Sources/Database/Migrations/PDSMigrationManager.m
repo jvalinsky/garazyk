@@ -1659,6 +1659,58 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
 
 @end
 
+#pragma mark - V12 Session Revocation Migration
+
+@interface V12SessionRevocationSchema : NSObject <PDSMigration>
+@end
+
+@implementation V12SessionRevocationSchema
+
+- (NSInteger)version { return 12; }
+
+- (NSString *)name { return @"session_revocation_schema"; }
+
+- (BOOL)up:(sqlite3 *)db error:(NSError **)error {
+    // Add session_id to refresh_tokens
+    char *errMsg = NULL;
+    int rc = sqlite3_exec(db, "ALTER TABLE refresh_tokens ADD COLUMN session_id TEXT NOT NULL DEFAULT ''", NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        NSString *msg = errMsg ? @(errMsg) : @"";
+        if (errMsg) sqlite3_free(errMsg);
+        if (![msg containsString:@"duplicate column name"]) {
+            if (error) {
+                *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                             code:PDSMigrationErrorMigrationFailed
+                                         userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"V12 up failed: %@", msg]}];
+            }
+            return NO;
+        }
+    }
+    if (errMsg) sqlite3_free(errMsg);
+
+    // Backfill session_id with token value for existing sessions
+    rc = sqlite3_exec(db, "UPDATE refresh_tokens SET session_id = token WHERE session_id = ''", NULL, NULL, &errMsg);
+    if (rc != SQLITE_OK) {
+        if (errMsg) sqlite3_free(errMsg);
+    }
+    
+    // Add idx_refresh_tokens_session
+    sqlite3_exec(db, "CREATE INDEX IF NOT EXISTS idx_refresh_tokens_session ON refresh_tokens(session_id)", NULL, NULL, NULL);
+
+    return YES;
+}
+
+- (BOOL)down:(sqlite3 *)db error:(NSError **)error {
+    if (error) {
+        *error = [NSError errorWithDomain:PDSMigrationErrorDomain
+                                     code:PDSMigrationErrorMigrationFailed
+                                 userInfo:@{NSLocalizedDescriptionKey: @"V12SessionRevocationSchema is not reversible"}];
+    }
+    return NO;
+}
+
+@end
+
 #pragma mark - Convenience Factory Methods
 
 @implementation PDSMigrationManager (Factory)
@@ -1675,6 +1727,7 @@ NSString * const PDSMigrationErrorDomain = @"com.atproto.pds.migration";
     [manager registerMigration:[[V8OzoneSubjectsSchema alloc] init]];
     [manager registerMigration:[[BlobsMimeTypeRename alloc] initWithVersion:9]];
     [manager registerMigration:[[V10PendingFactorTokensSchema alloc] init]];
+    [manager registerMigration:[[V12SessionRevocationSchema alloc] init]];
     return manager;
 }
 

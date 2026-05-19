@@ -160,6 +160,9 @@ typedef NS_ENUM(NSInteger, JWTError) {
 /*! Unique token identifier. */
 @property (nonatomic, copy, nullable) NSString *jti;
 
+/*! Session identifier (ATProto-specific). */
+@property (nonatomic, copy, nullable) NSString *sid;
+
 /*! The DID of the token subject (ATProto-specific). */
 @property (nonatomic, copy, nullable) NSString *did;
 
@@ -457,6 +460,7 @@ typedef NS_ENUM(NSInteger, JWTError) {
 - (JWT *)mintAccessTokenForDID:(NSString *)did
                         handle:(NSString *)handle
                         scopes:(NSArray<NSString *> *)scopes
+                     sessionID:(nullable NSString *)sid
              dpopKeyThumbprint:(nullable NSString *)jkt
                            error:(NSError **)error;
 
