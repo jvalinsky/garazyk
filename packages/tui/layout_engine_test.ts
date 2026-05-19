@@ -1,12 +1,11 @@
 /**
- * Tests for the pure layout engine.
+ * Tests for the pure layout engine — geometry utilities.
  *
  * @module tui/layout_engine_test
  */
 
 import { assertEquals, assert } from "@std/assert";
 import {
-  computeLayout,
   computePanelGeometry,
   overlaps,
   contains,
@@ -198,19 +197,22 @@ Deno.test("translateBox: handles negative offsets", () => {
   assertEquals(translated, { x: 5, y: 5, width: 20, height: 20 });
 });
 
-// ── Non-overlap property tests ────────────────────────────────────────────────
+// ── Non-overlap property tests (using tree solver) ───────────────────────────
+
+import { dashboardLayoutTree, solveLayout, findResolvedNode, PANEL_IDS } from "./layout.ts";
 
 /**
- * Helper: assert that no two panels in a layout overlap.
+ * Helper: assert that no two panels in a resolved layout overlap.
  *
  * Validates Property 1 from the design doc:
- *   ∀ p1, p2 ∈ layout.panels where p1 ≠ p2: ¬overlaps(p1, p2)
+ *   ∀ p1, p2 ∈ panels where p1 ≠ p2: ¬overlaps(p1, p2)
  */
 function assertNoPanelOverlap(cols: number, rows: number): void {
-  const layout = computeLayout(cols, rows);
-  assert(layout !== null, `Expected non-null layout for ${cols}x${rows}`);
+  const tree = dashboardLayoutTree(cols, rows);
+  assert(tree !== null, `Expected non-null tree for ${cols}x${rows}`);
+  const layout = solveLayout(tree, { x: 0, y: 0, width: cols, height: rows });
 
-  const panels = layout.panels;
+  const panels = PANEL_IDS.map((id) => findResolvedNode(layout, id)!).filter(Boolean);
   for (let i = 0; i < panels.length; i++) {
     for (let j = i + 1; j < panels.length; j++) {
       const p1 = panels[i]!;
@@ -269,21 +271,21 @@ Deno.test("non-overlap: narrow layout 50x20", () => {
   assertNoPanelOverlap(50, 20);
 });
 
-// Terminal too small — computeLayout returns null
+// Terminal too small — dashboardLayoutTree returns null
 
 Deno.test("non-overlap: returns null for too-small terminal (cols < 40)", () => {
-  const layout = computeLayout(39, 24);
-  assertEquals(layout, null, "Should return null for cols < 40");
+  const tree = dashboardLayoutTree(39, 24);
+  assertEquals(tree, null, "Should return null for cols < 40");
 });
 
 Deno.test("non-overlap: returns null for too-small terminal (rows < 16)", () => {
-  const layout = computeLayout(80, 15);
-  assertEquals(layout, null, "Should return null for rows < 16");
+  const tree = dashboardLayoutTree(80, 15);
+  assertEquals(tree, null, "Should return null for rows < 16");
 });
 
 Deno.test("non-overlap: returns null for tiny terminal", () => {
-  const layout = computeLayout(10, 10);
-  assertEquals(layout, null, "Should return null for tiny terminal");
+  const tree = dashboardLayoutTree(10, 10);
+  assertEquals(tree, null, "Should return null for tiny terminal");
 });
 
 // Boundary between wide and narrow
