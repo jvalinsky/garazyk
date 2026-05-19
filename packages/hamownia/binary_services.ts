@@ -36,8 +36,8 @@ const PDS_CONFIG = {
   rate_limit: { enabled: true, did_limit: 60, did_window: 60, blob_limit: 50, blob_window: 3600 },
   providers: { phone_verification: { type: "twilio" } },
   registration: { phone_verification_required: false },
-  auth: { master_secret: "test-master-secret-123" },
 };
+
 
 /**
  * Service descriptors for binary management.
@@ -289,7 +289,13 @@ export async function resolveBinaryServiceStartPlan(
       break;
     case "pds": {
       const configPath = join(dataDir, "pds-config.json");
-      await Deno.writeTextFile(configPath, JSON.stringify(PDS_CONFIG, null, 2));
+      const pdsAuthMasterSecret = Deno.env.get("PDS_MASTER_SECRET")
+        ?? crypto.randomUUID().replace(/-/g, "");
+      const pdsConfig = {
+        ...PDS_CONFIG,
+        auth: { master_secret: pdsAuthMasterSecret },
+      };
+      await Deno.writeTextFile(configPath, JSON.stringify(pdsConfig, null, 2));
       args = [
         "serve",
         "--config",
@@ -305,7 +311,6 @@ export async function resolveBinaryServiceStartPlan(
       env.PDS_PLC_URL = serviceUrl("plc");
       break;
     }
-      break;
     case "relay":
       args = [
         "serve",

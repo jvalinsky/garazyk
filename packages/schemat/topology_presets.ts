@@ -296,6 +296,19 @@ function pdsVolumes(name: string, config: string) {
   ];
 }
 
+function generateHex(bytes = 32): string {
+  const buf = new Uint8Array(bytes);
+  crypto.getRandomValues(buf);
+  return Array.from(buf).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+const PDS_MASTER_SECRET = Deno.env.get("PDS_MASTER_SECRET") ??
+  generateHex();
+const PDS_ADMIN_PASSWORD = Deno.env.get("PDS_ADMIN_PASSWORD") ??
+  generateHex(8);
+const APPVIEW_ADMIN_SECRET = Deno.env.get("APPVIEW_ADMIN_SECRET") ??
+  generateHex(8);
+
 function localPdsEnv() {
   return {
     TZ: "UTC",
@@ -304,9 +317,8 @@ function localPdsEnv() {
     PDS_LEXICON_PATH: "/usr/share/atprotopds/lexicons",
     HOME: "/var/lib/atprotopds",
     PDS_RATELIMIT_ENABLED: "false",
-    PDS_MASTER_SECRET:
-      "32107992c973da8445b485263cb2bd3157859cb94294a2355e3c4a7b0f825afe",
-    PDS_ADMIN_PASSWORD: "admin-localdev",
+    PDS_MASTER_SECRET,
+    PDS_ADMIN_PASSWORD,
   };
 }
 
@@ -401,7 +413,7 @@ const GARAZYK_DEFAULT = defineTopology({
         "--no-backfill",
       ],
       env: {
-        APPVIEW_ADMIN_SECRET: "localdevadmin",
+        APPVIEW_ADMIN_SECRET,
         APPVIEW_PLC_URL: "http://local-plc:2582",
         APPVIEW_PDS_URL: "http://local-pds:2583",
       },
@@ -409,7 +421,7 @@ const GARAZYK_DEFAULT = defineTopology({
       volumes: [volume.named("local_appview_data", "/var/lib/atprotopds")],
       health: topologyHealth.http({
         path: "/admin/backfill/status",
-        headers: { Authorization: "Bearer localdevadmin" },
+        headers: { Authorization: `Bearer ${APPVIEW_ADMIN_SECRET}` },
       }),
       capabilities: appviewBasicCaps,
       dependsOnRoles: [Role.relay],
@@ -1206,7 +1218,7 @@ const SYRENA = defineTopology({
         PDS_ALLOW_HTTP: "1",
         PDS_LEXICON_PATH: "/usr/share/atprotopds/lexicons",
         PDS_WRITE_PROXY_OVERRIDE: "http://local-pds:2583",
-        APPVIEW_ADMIN_SECRET: "localdevadmin",
+        APPVIEW_ADMIN_SECRET,
         APPVIEW_DATA_DIR: "/var/lib/atprotopds",
         APPVIEW_PLC_URL: "http://local-plc:2582",
         APPVIEW_PDS_URL: "http://local-pds:2583",
@@ -1216,7 +1228,7 @@ const SYRENA = defineTopology({
       volumes: [volume.named("local_appview_data", "/var/lib/atprotopds")],
       health: topologyHealth.http({
         path: "/admin/backfill/status",
-        headers: { Authorization: "Bearer localdevadmin" },
+        headers: { Authorization: `Bearer ${APPVIEW_ADMIN_SECRET}` },
       }),
       capabilities: appviewBasicCaps,
       dependsOnRoles: [Role.relay],
