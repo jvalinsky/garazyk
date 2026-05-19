@@ -44,6 +44,11 @@
     XCTAssertNil([CID cidFromString:@"xafyreifzjut3te2nhyekklss27nh3k72ysco7y32koao5eei66wof36n5e"], @"Should reject CID strings with the wrong multibase prefix");
     XCTAssertNil([CID cidFromString:@"bafyre"], @"Should reject truncated CID strings");
     XCTAssertNil([CID cidFromString:@"bafyrgifzjut3te2nhyekklss27nh3k72ysco7y32koao5eei66wof36n5e"], @"Should reject unsupported multihash algorithms");
+    
+    // Type safety tests
+    XCTAssertNil([CID cidFromString:(id)@[@"not a string"]], @"Should return nil for non-string input (NSArray)");
+    XCTAssertNil([CID cidFromString:(id)@{@"$link": @"bafy..."}], @"Should return nil for non-string input (NSDictionary)");
+    XCTAssertNil([CID cidFromString:(id)[NSNull null]], @"Should return nil for NSNull");
 }
 
 #pragma mark - CID Equality

@@ -10,3 +10,6 @@
 [submodule "vendor/reference/libobjc2"]
 	path = vendor/reference/libobjc2
 	url = https://github.com/gnustep/libobjc2.git
+[submodule "vendor/secp256k1"]
+	path = vendor/secp256k1
+	url = https://github.com/bitcoin-core/secp256k1
