@@ -1000,7 +1000,7 @@ static void OAuth2LogEphemeralJWTKeyModeOnce(void) {
     if (existingSession) {
         [self.activeSessions removeObjectForKey:existingSession.sessionID];
     }
-    [self.database revokeSession:request.refreshToken error:nil];
+    [self.database revokeRefreshToken:request.refreshToken error:nil];
 
     // 6. Store new refresh token (H3)
     [self.database storeRefreshToken:newSession.refreshToken
