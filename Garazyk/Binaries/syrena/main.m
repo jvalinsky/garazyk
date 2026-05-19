@@ -21,9 +21,30 @@
 #import "Core/NSDateFormatter+ATProto.h"
 #import "Compat/PlatformShims/CrashReporting/PDSCrashReporter.h"
 #import "Compat/PlatformShims/SignalHandling/PDSSignalManager.h"
+#import <execinfo.h>
 #if defined(GNUSTEP)
 #import <curl/curl.h>
 #endif
+
+static void uncaughtExceptionHandler(NSException *exception) {
+    fprintf(stderr, "=== UNCAUGHT NSException ===\n");
+    fprintf(stderr, "Name: %s\n", [[exception name] UTF8String] ?: "null");
+    fprintf(stderr, "Reason: %s\n", [[exception reason] UTF8String] ?: "null");
+    fprintf(stderr, "UserInfo: %s\n", [[[exception userInfo] description] UTF8String] ?: "null");
+    fprintf(stderr, "Stack:\n%s\n",
+            [[[exception callStackSymbols] componentsJoinedByString:@"\n"] UTF8String] ?: "null");
+    fprintf(stderr, "=============================\n");
+}
+
+static void sigabrtHandler(int sig) {
+    void *callstack[128];
+    int frames = backtrace(callstack, 128);
+    fprintf(stderr, "=== SIGABRT (signal %d) ===\n", sig);
+    backtrace_symbols_fd(callstack, frames, STDERR_FILENO);
+    fprintf(stderr, "============================\n");
+    signal(sig, SIG_DFL);
+    raise(sig);
+}
 
 static const char *executable_name = "syrena";
 static AppViewRuntime *gShutdownRuntime = nil;
@@ -191,6 +212,15 @@ static BOOL parse_appview_options(NSArray<NSString *> *args,
 int main(int argc, const char * argv[]) {
     [[PDSSignalManager sharedManager] installIgnoredSignals];
     [PDSCrashReporter installCrashHandlersWithExecutableName:"syrena"];
+
+    NSSetUncaughtExceptionHandler(&uncaughtExceptionHandler);
+
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = sigabrtHandler;
+    sigemptyset(&sa.sa_mask);
+    sigaction(SIGABRT, &sa, NULL);
+
 #if defined(GNUSTEP)
     curl_global_init(CURL_GLOBAL_ALL);
 #endif
