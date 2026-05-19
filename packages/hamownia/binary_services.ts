@@ -295,6 +295,7 @@ export async function resolveBinaryServiceStartPlan(
         ...PDS_CONFIG,
         auth: { master_secret: pdsAuthMasterSecret },
       };
+      Deno.mkdirSync(dataDir, { recursive: true });
       await Deno.writeTextFile(configPath, JSON.stringify(pdsConfig, null, 2));
       args = [
         "serve",
