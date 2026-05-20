@@ -149,7 +149,7 @@ function renderLexicons(docs: LexiconDoc[]): {
 /* eslint-disable */
 // @ts-nocheck
 
-export interface LexiconQuery<Params = any, Input = any, Output = any> {
+export interface LexiconQuery<Params = unknown, Input = unknown, Output = unknown> {
   inputEncoding?: string;
   outputEncoding?: string;
   params?: Params;
@@ -157,7 +157,7 @@ export interface LexiconQuery<Params = any, Input = any, Output = any> {
   output?: Output;
 }
 
-export interface LexiconProcedure<Input = any, Output = any> {
+export interface LexiconProcedure<Input = unknown, Output = unknown> {
   inputEncoding?: string;
   outputEncoding?: string;
   input?: Input;
@@ -301,7 +301,7 @@ export interface CallOptions {
 }
 
 export interface XrpcCaller {
-  call(method: string, data?: any, tokenOrOpts?: string | CallOptions): Promise<any>;
+  call(method: string, data?: unknown, tokenOrOpts?: string | CallOptions): Promise<unknown>;
 }
 
 /** Strongly typed nested API client. */
